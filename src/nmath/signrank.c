@@ -1,6 +1,6 @@
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 1999-2001  The R Development Core Team
+ *  Copyright (C) 1999-2003  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,10 +54,7 @@ static void w_free(int n)
     n = imax2(n, SIGNRANK_MAX);
     for (i = n; i >= 0; i--)
         if (w[i])
-        {
             free((void *)w[i]);
-            w[i] = 0;
-        }
     free((void *)w);
     w = 0;
     allocated_n = 0;
@@ -71,8 +68,8 @@ void signrank_free()
 
 static void w_init_maybe(int n)
 {
-    if (w && (n > SIGNRANK_MAX))
-        w_free(SIGNRANK_MAX);
+    if (w && (n > allocated_n))
+        w_free(allocated_n);
 
     if (!w)
     {
