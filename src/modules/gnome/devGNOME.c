@@ -22,6 +22,10 @@
 #include <config.h>
 #endif
 
+/* Avoid braced-groups warning from -Wall */
+#define G_STMT_START do
+#define G_STMT_END while (0)
+
 #include <gnome.h>
 #include <math.h>
 
@@ -375,16 +379,16 @@ static void toolbar_print_cb(GtkWidget *widget, gpointer data)
 }
 
 static GnomeUIInfo graphics_toolbar[] = {
-    {GNOME_APP_UI_ITEM, "Activate", "Make this window the current device", toolbar_activate_cb, NULL, NULL,
+    {GNOME_APP_UI_ITEM, "Activate", "Make this window the current device", (gpointer)toolbar_activate_cb, NULL, NULL,
      GNOME_APP_PIXMAP_STOCK, GNOME_STOCK_PIXMAP_JUMP_TO, 0, (GdkModifierType)0, NULL},
     GNOMEUIINFO_SEPARATOR,
-    {GNOME_APP_UI_ITEM, "Save As", "Save as a PostScript file", toolbar_save_as_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
-     GNOME_STOCK_PIXMAP_SAVE_AS, 0, (GdkModifierType)0, NULL},
-    {GNOME_APP_UI_ITEM, "Print", "Print graphics", toolbar_print_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
+    {GNOME_APP_UI_ITEM, "Save As", "Save as a PostScript file", (gpointer)toolbar_save_as_cb, NULL, NULL,
+     GNOME_APP_PIXMAP_STOCK, GNOME_STOCK_PIXMAP_SAVE_AS, 0, (GdkModifierType)0, NULL},
+    {GNOME_APP_UI_ITEM, "Print", "Print graphics", (gpointer)toolbar_print_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
      GNOME_STOCK_PIXMAP_PRINT, 0, (GdkModifierType)0, NULL},
     GNOMEUIINFO_SEPARATOR,
-    {GNOME_APP_UI_ITEM, "Close", "Close this graphics device", toolbar_close_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
-     GNOME_STOCK_PIXMAP_CLOSE, 0, (GdkModifierType)0, NULL},
+    {GNOME_APP_UI_ITEM, "Close", "Close this graphics device", (gpointer)toolbar_close_cb, NULL, NULL,
+     GNOME_APP_PIXMAP_STOCK, GNOME_STOCK_PIXMAP_CLOSE, 0, (GdkModifierType)0, NULL},
     GNOMEUIINFO_END};
 
 static void GNOME_NewPage(int fill, double gamma, NewDevDesc *dd)
