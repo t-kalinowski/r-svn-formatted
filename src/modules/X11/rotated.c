@@ -34,8 +34,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#ifndef HAVE_STRDUP
-extern char *strdup();
+#if defined(HAVE_DECL_STRDUP) && !HAVE_DECL_STRDUP
+extern char *strdup(const char *s1);
 #endif
 #include "rotated.h"
 

@@ -33,9 +33,6 @@
 #include "Startup.h"
 
 #include <string.h>
-#ifndef HAVE_STRDUP
-extern char *strdup();
-#endif
 
 extern SA_TYPE SaveAction;
 extern SA_TYPE RestoreAction;
@@ -237,6 +234,7 @@ SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
+#ifdef HAVE_PUTENV
 static int Rputenv(char *str)
 {
     char *buf;
@@ -248,6 +246,7 @@ static int Rputenv(char *str)
     /* no free here: storage remains in use */
     return 0;
 }
+#endif
 
 SEXP do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
