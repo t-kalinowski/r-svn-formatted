@@ -21,19 +21,6 @@ static char *copyright = "Copyright (C) 1991, 1992, 1993, Chris Thewalt";
 #include "getline.h"
 static int gl_tab(); /* forward reference needed for gl_tab_hook */
 
-/******************** imported interface *********************************/
-
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#ifdef __unix__
-#include <signal.h>
-#endif
-
-extern int isatty();
-extern void *malloc();
-extern void free();
-
 /********************* exported interface ********************************/
 
 char *getline();    /* read a line of input */
@@ -44,29 +31,42 @@ void gl_strwidth(); /* to bind gl_strlen */
 int (*gl_in_hook)() = 0;
 int (*gl_out_hook)() = 0;
 int (*gl_tab_hook)() = gl_tab;
-/*#ifdef Win32
-void (*gl_events_hook)() = 0;
-#endif*/
+
+/******************** imported interface *********************************/
+
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+#include <setjmp.h>
+#ifdef __unix__
+#include <signal.h>
+#endif
+
+extern int isatty();
+extern void *malloc();
+extern void *calloc();
+extern void free();
 
 /******************** internal interface *********************************/
 
-#define BUF_SIZE 1024
+static int BUF_SIZE;           /* dimension of the buffer received*/
+static int gl_init_done = -1;  /* terminal mode flag  */
+static int gl_termw = 80;      /* actual terminal width */
+static int gl_scroll = 27;     /* width of EOL scrolling region */
+static int gl_width = 0;       /* net size available for input */
+static int gl_extent = 0;      /* how far to redraw, 0 means all */
+static int gl_overwrite = 0;   /* overwrite mode */
+static int gl_pos, gl_cnt = 0; /* position and size of input */
+static char *gl_buf;           /* input buffer */
+static char *gl_killbuf;       /* killed text */
+static char *gl_prompt;        /* to save the prompt string */
+static char gl_intrc = 0;      /* keyboard SIGINT char */
+static char gl_quitc = 0;      /* keyboard SIGQUIT char */
+static char gl_suspc = 0;      /* keyboard SIGTSTP char */
+static char gl_dsuspc = 0;     /* delayed SIGTSTP char */
+static int gl_search_mode = 0; /* search mode flag */
 
-static int gl_init_done = -1;          /* terminal mode flag  */
-static int gl_termw = 80;              /* actual terminal width */
-static int gl_scroll = 27;             /* width of EOL scrolling region */
-static int gl_width = 0;               /* net size available for input */
-static int gl_extent = 0;              /* how far to redraw, 0 means all */
-static int gl_overwrite = 0;           /* overwrite mode */
-static int gl_pos, gl_cnt = 0;         /* position and size of input */
-static char gl_buf[BUF_SIZE];          /* input buffer */
-static char gl_killbuf[BUF_SIZE] = ""; /* killed text */
-static char *gl_prompt;                /* to save the prompt string */
-static char gl_intrc = 0;              /* keyboard SIGINT char */
-static char gl_quitc = 0;              /* keyboard SIGQUIT char */
-static char gl_suspc = 0;              /* keyboard SIGTSTP char */
-static char gl_dsuspc = 0;             /* delayed SIGTSTP char */
-static int gl_search_mode = 0;         /* search mode flag */
+static jmp_buf gl_jmp;
 
 static void gl_init();         /* prepare to edit a line */
 static void gl_cleanup();      /* to undo gl_init */
@@ -130,7 +130,7 @@ extern void exit();
 /* guido masarotto (3/12/98)*/
 #include <windows.h>
 static HANDLE Win32InputStream = NULL;
-static DWORD OldWin32Mode;
+static DWORD OldWin32Mode, AltIsDown;
 #endif
 
 #ifdef __unix__
@@ -233,8 +233,9 @@ static void gl_char_init() /* turn off input echo */
     /* guido masarotto (3/12/98)*/
     if (!Win32InputStream)
         Win32InputStream = GetStdHandle(STD_INPUT_HANDLE);
-    /*   GetConsoleMode(Win32InputStream,&OldWin32Mode);*/
-    SetConsoleMode(Win32InputStream, 0);
+    GetConsoleMode(Win32InputStream, &OldWin32Mode);
+    SetConsoleMode(Win32InputStream, ENABLE_PROCESSED_INPUT);
+    AltIsDown = 0;
 #endif
 }
 
@@ -260,8 +261,9 @@ static void gl_char_cleanup() /* undo effects of gl_char_init */
 #endif
 
 #ifdef Win32
-/* guido masarotto (3/12/98)*/
-/*   SetConsoleMode(Win32InputStream,OldWin32Mode);*/
+    /* guido masarotto (3/12/98)*/
+    SetConsoleMode(Win32InputStream, OldWin32Mode);
+    AltIsDown = 0;
 #endif
 }
 
@@ -357,24 +359,25 @@ static int gl_getc()
         INPUT_RECORD r;
         DWORD st;
         WORD vk;
-        int bbb = 0, ddd;
+        int bbb = 0, nAlt = 0, n, d;
         c = 0;
         while (!c)
         {
-            a = 0;
-            /*   while(!a) {
-                 PeekConsoleInput(Win32InputStream, &r, 1, &a);
-                 if (gl_events_hook)
-                 gl_events_hook();
-                 }*/
             ReadConsoleInput(Win32InputStream, &r, 1, &a);
             if (!(r.EventType == KEY_EVENT))
                 break;
+            st = r.Event.KeyEvent.dwControlKeyState;
+            vk = r.Event.KeyEvent.wVirtualKeyCode;
             if (r.Event.KeyEvent.bKeyDown)
             {
-                st = r.Event.KeyEvent.dwControlKeyState;
-                vk = r.Event.KeyEvent.wVirtualKeyCode;
-                if (st > CAPSLOCK_ON)
+                if (vk == VK_MENU)
+                {
+                    AltIsDown = 1;
+                    nAlt = 0;
+                    bbb = 0;
+                }
+                else if (st > CAPSLOCK_ON)
+                {
                     switch (vk)
                     {
                     case VK_LEFT:
@@ -389,17 +392,6 @@ static int gl_getc()
                     case VK_END:
                         c = '\005';
                         break;
-                    }
-                else
-                    ddd = r.Event.KeyEvent.uChar.AsciiChar;
-            }
-            else
-            {
-                st = r.Event.KeyEvent.dwControlKeyState;
-                vk = r.Event.KeyEvent.wVirtualKeyCode;
-                if (st > CAPSLOCK_ON)
-                    switch (vk)
-                    {
                     case VK_UP:
                         c = 16;
                         break;
@@ -410,9 +402,9 @@ static int gl_getc()
                         c = '\004';
                         break;
                     }
-                if (st == LEFT_ALT_PRESSED + NUMLOCK_ON)
+                }
+                else if (AltIsDown)
                 {
-                    int n;
                     switch (vk)
                     {
                     case VK_INSERT:
@@ -450,15 +442,23 @@ static int gl_getc()
                     }
                     if (n >= 0)
                         bbb = 10 * bbb + n;
+                    nAlt += 1;
+                    if (nAlt == 3)
+                    {
+                        c = (bbb < 256) && (bbb > 0) ? bbb : 0;
+                        bbb = 0;
+                        nAlt = 0;
+                    }
                 }
-                if (vk == VK_MENU)
-                {
-                    c = (bbb < 256) && (bbb > 0) ? bbb : 0;
-                    bbb = 0;
-                }
-                if ((c == 0) && (st != LEFT_ALT_PRESSED) && (st != LEFT_ALT_PRESSED) &&
-                    r.Event.KeyEvent.uChar.AsciiChar)
-                    c = (!ddd) ? r.Event.KeyEvent.uChar.AsciiChar : ddd;
+                else
+                    c = r.Event.KeyEvent.uChar.AsciiChar;
+            }
+            else if (vk == VK_MENU)
+            {
+                AltIsDown = 0;
+                c = (bbb < 256) && (bbb > 0) ? bbb : 0;
+                bbb = 0;
+                nAlt = 0;
             }
             if ((c < -127) || (c > 255))
                 c = 0;
@@ -467,7 +467,6 @@ static int gl_getc()
         }
     }
 #endif
-
     return c;
 }
 
@@ -506,7 +505,7 @@ static void gl_error(buf) char *buf;
 
     gl_cleanup();
     write(2, buf, len);
-    exit(1);
+    longjmp(gl_jmp, 1);
 }
 
 static void gl_init()
@@ -518,6 +517,8 @@ static void gl_init()
     }
     if (isatty(0) == 0 || isatty(1) == 0)
         gl_error("\n*** Error: getline(): not interactive, use stdio.\n");
+    if (!(gl_killbuf = calloc(BUF_SIZE, sizeof(char))))
+        gl_error("\n*** Error: getline(): no enough memory.\n");
     gl_char_init();
     gl_init_done = 1;
 }
@@ -527,6 +528,7 @@ static void gl_cleanup()
 {
     if (gl_init_done > 0)
         gl_char_cleanup();
+    free(gl_killbuf);
     gl_init_done = 0;
 }
 
@@ -543,21 +545,30 @@ void gl_setwidth(w) int w;
     }
 }
 
-char *getline(prompt) char *prompt;
+char *getline(prompt, buf, buflen) char *prompt, *buf;
+int buflen;
 {
     int c, loc, tmp;
 
 #ifdef __unix__
     int sig;
 #endif
-
+    BUF_SIZE = buflen;
+    gl_buf = buf;
+    gl_buf[0] = '\0';
+    if (setjmp(gl_jmp))
+    {
+        gl_newline();
+        gl_cleanup();
+        return gl_buf;
+    }
     gl_init();
+    gl_pos = 0;
     gl_prompt = (prompt) ? prompt : "";
-    gl_buf[0] = 0;
     if (gl_in_hook)
         gl_in_hook(gl_buf);
     gl_fixup(gl_prompt, -2, BUF_SIZE);
-    while ((c = gl_getc()) > 0)
+    while ((c = gl_getc()) >= 0)
     {
         gl_extent = 0; /* reset to full extent */
         if (!iscntrl(c))
@@ -640,7 +651,8 @@ char *getline(prompt) char *prompt;
                 gl_redraw(); /* ^L */
                 break;
             case '\016': /* ^N */
-                strcpy(gl_buf, hist_next());
+                strncpy(gl_buf, hist_next(), BUF_SIZE - 2);
+                gl_buf[BUF_SIZE - 2] = '\0';
                 if (gl_in_hook)
                     gl_in_hook(gl_buf);
                 gl_fixup(gl_prompt, 0, BUF_SIZE);
@@ -649,7 +661,8 @@ char *getline(prompt) char *prompt;
                 gl_overwrite = !gl_overwrite; /* ^O */
                 break;
             case '\020': /* ^P */
-                strcpy(gl_buf, hist_prev());
+                strncpy(gl_buf, hist_prev(), BUF_SIZE - 2);
+                gl_buf[BUF_SIZE - 2] = '\0';
                 if (gl_in_hook)
                     gl_in_hook(gl_buf);
                 gl_fixup(gl_prompt, 0, BUF_SIZE);
@@ -676,13 +689,15 @@ char *getline(prompt) char *prompt;
                     switch (c = gl_getc())
                     {
                     case 'A': /* up */
-                        strcpy(gl_buf, hist_prev());
+                        strncpy(gl_buf, hist_prev(), BUF_SIZE - 2);
+                        gl_buf[BUF_SIZE - 2] = '\0';
                         if (gl_in_hook)
                             gl_in_hook(gl_buf);
                         gl_fixup(gl_prompt, 0, BUF_SIZE);
                         break;
                     case 'B': /* down */
-                        strcpy(gl_buf, hist_next());
+                        strncpy(gl_buf, hist_next(), BUF_SIZE - 2);
+                        gl_buf[BUF_SIZE - 2] = '\0';
                         if (gl_in_hook)
                             gl_in_hook(gl_buf);
                         gl_fixup(gl_prompt, 0, BUF_SIZE);
@@ -742,8 +757,8 @@ char *getline(prompt) char *prompt;
             }
         }
     }
+    gl_newline();
     gl_cleanup();
-    gl_buf[0] = 0;
     return gl_buf;
 }
 
@@ -752,8 +767,11 @@ static void gl_addchar(c) int c;
 {
     int i;
 
-    if (gl_cnt >= BUF_SIZE - 1)
-        gl_error("\n*** Error: getline(): input buffer overflow\n");
+    if (gl_cnt >= BUF_SIZE - 2)
+    {
+        gl_putc('\a');
+        return;
+    }
     if (gl_overwrite == 0 || gl_pos == gl_cnt)
     {
         for (i = gl_cnt; i >= gl_pos; i--)
@@ -831,9 +849,10 @@ static void gl_newline()
     int change = gl_cnt;
     int len = gl_cnt;
     int loc = gl_width - 5; /* shifts line back to start position */
-
     if (gl_cnt >= BUF_SIZE - 1)
+    {
         gl_error("\n*** Error: getline(): input buffer overflow\n");
+    }
     if (gl_out_hook)
     {
         change = gl_out_hook(gl_buf);
@@ -940,12 +959,13 @@ int change, cursor;
     int extra;                /* adjusts when shift (scroll) happens */
     int i;
     int new_right = -1; /* alternate right bound, using gl_extent */
-    int l1, l2;
+    int l1, l2, ll;
 
     if (change == -2)
     { /* reset */
+        while (gl_pos--)
+            gl_putc('\b');
         gl_pos = gl_cnt = gl_shift = off_right = off_left = 0;
-        gl_putc('\r');
         gl_puts(prompt);
         strcpy(last_prompt, prompt);
         change = 0;
@@ -955,9 +975,11 @@ int change, cursor;
     {
         l1 = gl_strlen(last_prompt);
         l2 = gl_strlen(prompt);
+        ll = gl_pos + l1;
         gl_cnt = gl_cnt + l1 - l2;
         strcpy(last_prompt, prompt);
-        gl_putc('\r');
+        while (ll--)
+            gl_putc('\b');
         gl_puts(prompt);
         gl_pos = gl_shift;
         gl_width = gl_termw - l2;
@@ -1263,7 +1285,8 @@ static void search_addchar(c) int c;
             gl_buf[0] = 0;
             hist_pos = hist_last;
         }
-        strcpy(gl_buf, hist_buf[hist_pos]);
+        strncpy(gl_buf, hist_buf[hist_pos], BUF_SIZE - 2);
+        gl_buf[BUF_SIZE - 2] = '\0';
     }
     if ((loc = strstr(gl_buf, search_string)) != 0)
     {
@@ -1323,7 +1346,8 @@ static void search_back(new_search) int new_search;
             }
             else if ((loc = strstr(p, search_string)) != 0)
             {
-                strcpy(gl_buf, p);
+                strncpy(gl_buf, p, BUF_SIZE - 2);
+                gl_buf[BUF_SIZE - 2] = '\0';
                 gl_fixup(search_prompt, 0, loc - p);
                 if (new_search)
                     search_last = hist_pos;
@@ -1364,7 +1388,8 @@ static void search_forw(new_search) int new_search;
             }
             else if ((loc = strstr(p, search_string)) != 0)
             {
-                strcpy(gl_buf, p);
+                strncpy(gl_buf, p, BUF_SIZE - 2);
+                gl_buf[BUF_SIZE - 2] = '\0';
                 gl_fixup(search_prompt, 0, loc - p);
                 if (new_search)
                     search_last = hist_pos;
