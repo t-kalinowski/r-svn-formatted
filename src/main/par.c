@@ -1828,9 +1828,11 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(2);
     }
     else
+    {
         errorcall(call, "invalid parameter passed to \"par\"\n");
-    /* should really only do this if specifying new pars ?
-     * yes! [MM] */
+        return R_NilValue /* -Wall */;
+    }
+    /* should really only do this if specifying new pars ?  yes! [MM] */
     if (new_spec && call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return value;
