@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999, 2001  Guido Masarotto and the R Development Core Team
+ *  Copyright (C) 1999, 2001, 2004  Guido Masarotto and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -71,8 +71,10 @@ static void my_png_warning(png_structp png_ptr, png_const_charp msg)
     warning("libpng: %s", (char *)msg);
 }
 
+#define CN (100.0 / 2.54)
+
 int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp,
-                unsigned int transparent)
+                unsigned int transparent, int res)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -205,6 +207,9 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
         png_set_tRNS(png_ptr, info_ptr, trans, ncols, trans_values);
     }
 
+    if (res > 0)
+        png_set_pHYs(png_ptr, info_ptr, res / 0.0254, res / 0.0254, PNG_RESOLUTION_METER);
+
     /* Write the file header information.  REQUIRED */
     png_write_info(png_ptr, info_ptr);
 
@@ -301,7 +306,7 @@ static void my_output_message(j_common_ptr cinfo)
 }
 
 int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, int quality,
-                 FILE *outfile)
+                 FILE *outfile, int res)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
@@ -351,6 +356,12 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
     cinfo.input_components = 3;     /* # of color components per pixel */
     cinfo.in_color_space = JCS_RGB; /* colorspace of input image */
     jpeg_set_defaults(&cinfo);
+    if (res > 0)
+    {
+        cinfo.density_unit = 1; /* pixels per inch */
+        cinfo.X_density = res;
+        cinfo.Y_density = res;
+    }
     jpeg_set_quality(&cinfo, quality, TRUE);
     /* Step 4: Start compressor */
     jpeg_start_compress(&cinfo, TRUE);
@@ -421,14 +432,14 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
         BMPERROR;
 #define HEADERSIZE 54
 
-int R_SaveAsBmp(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp)
+int R_SaveAsBmp(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp, int res)
 {
     unsigned long col, palette[256];
     int i, j, r, ncols, mid, high, low, withpalette;
     int bfOffBits, bfSize, biBitCount, biClrUsed, pad;
     unsigned short wrd;
     unsigned long dwrd;
-    long lng;
+    long lng, lres;
     DECLARESHIFTS;
 
     /* Have we less than 256 different colors? */
@@ -500,8 +511,10 @@ int R_SaveAsBmp(void *d, int width, int height, unsigned long (*gp)(void *, int,
     BMPW(biBitCount); /* biBitCount */
     BMPDW(0);         /* biCompression=BI_RGB */
     BMPDW(0);         /* biSizeImage (with BI_RGB not needed)*/
-    BMPLONG(0);       /* XPels/M <- used only by Windows?*/
-    BMPLONG(0);       /* XPels/M */
+    lres = (long)(0.5 + res / 0.0254);
+    Rprintf("%d %d %x\n", res, lres, lres);
+    BMPLONG(lres);    /* XPels/M <- used only by Windows?*/
+    BMPLONG(lres);    /* XPels/M */
     BMPDW(biClrUsed); /* biClrUsed */
     BMPDW(0);         /* biClrImportant All colours are important */
 
