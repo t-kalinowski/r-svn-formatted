@@ -42,6 +42,7 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     int igcase_opt, value_opt, options = 0, erroffset;
     const char *errorptr;
     pcre *re_pcre;
+    const unsigned char *tables;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -104,7 +105,9 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (igcase_opt)
         options |= PCRE_CASELESS;
 
-    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, NULL);
+    tables = pcre_maketables();
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, tables);
+    pcre_free((void *)tables);
     if (!re_pcre)
         errorcall(call, "invalid regular expression");
 
