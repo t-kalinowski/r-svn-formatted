@@ -205,9 +205,9 @@ int Rf_initialize_R(int ac, char **av)
             else
             {
 #ifdef HAVE_X11
-                sprintf(msg, "WARNING: unknown gui `%s', using X11\n", p);
+                snprintf(msg, 1024, "WARNING: unknown gui `%s', using X11\n", p);
 #else
-                sprintf(msg, "WARNING: unknown gui `%s', using none\n", p);
+                snprintf(msg, 1024, "WARNING: unknown gui `%s', using none\n", p);
 #endif
                 R_ShowMessage(msg);
             }
@@ -268,13 +268,13 @@ int Rf_initialize_R(int ac, char **av)
             }
             else
             {
-                sprintf(msg, "WARNING: unknown option %s\n", *av);
+                snprintf(msg, 1024, "WARNING: unknown option %s\n", *av);
                 R_ShowMessage(msg);
             }
         }
         else
         {
-            sprintf(msg, "ARGUMENT '%s' __ignored__\n", *av);
+            snprintf(msg, 1024, "ARGUMENT '%s' __ignored__\n", *av);
             R_ShowMessage(msg);
         }
     }

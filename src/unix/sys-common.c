@@ -62,7 +62,7 @@ FILE *R_OpenLibraryFile(char *file)
     char buf[256];
     FILE *fp;
 
-    sprintf(buf, "%s/library/base/R/%s", R_Home, file);
+    snprintf(buf, 256, "%s/library/base/R/%s", R_Home, file);
     fp = R_fopen(buf, "r");
     return fp;
 }
@@ -79,7 +79,7 @@ FILE *R_OpenSysInitFile(void)
     char buf[256];
     FILE *fp;
 
-    sprintf(buf, "%s/library/base/R/Rprofile", R_Home);
+    snprintf(buf, 256, "%s/library/base/R/Rprofile", R_Home);
     fp = R_fopen(buf, "r");
     return fp;
 }
@@ -96,10 +96,10 @@ FILE *R_OpenSiteFile(void)
             return fp;
         if ((fp = R_fopen(getenv("RPROFILE"), "r")))
             return fp;
-        sprintf(buf, "%s/etc/Rprofile.site", R_Home);
+        snprintf(buf, 256, "%s/etc/Rprofile.site", R_Home);
         if ((fp = R_fopen(buf, "r")))
             return fp;
-        sprintf(buf, "%s/etc/Rprofile", R_Home);
+        snprintf(buf, 256, "%s/etc/Rprofile", R_Home);
         if ((fp = R_fopen(buf, "r")))
             return fp;
     }
@@ -554,7 +554,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
                      !strcmp(*av, "-V") || !strcmp(*av, "-n") || !strcmp(*av, "-v"))
             {
-                sprintf(msg, "WARNING: option %s no longer supported\n", *av);
+                snprintf(msg, 1024, "WARNING: option %s no longer supported\n", *av);
                 R_ShowMessage(msg);
             }
             /* mop up --max/min/-n/vsize */
@@ -570,7 +570,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     p = &(*av)[12];
                 if (p == NULL)
                 {
-                    sprintf(msg, "WARNING: no value given for %s\n", *av);
+                    snprintf(msg, 1024, "WARNING: no value given for %s\n", *av);
                     R_ShowMessage(msg);
                     break;
                 }
@@ -578,7 +578,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 if (ierr)
                 {
                     if (ierr < 0)
-                        sprintf(msg, "WARNING: %s value is invalid: ignored\n", *av);
+                        snprintf(msg, 1024, "WARNING: %s value is invalid: ignored\n", *av);
                     else
                         sprintf(msg, "WARNING: %s=%ld`%c': too large and ignored\n", *av, value,
                                 (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
@@ -765,7 +765,7 @@ static int process_Renviron(char *filename)
 
     if (!filename || !(fp = fopen(filename, "r")))
         return 0;
-    sprintf(msg, "\n   File %s contains invalid line(s)", filename);
+    snprintf(msg, MSG_SIZE + 50, "\n   File %s contains invalid line(s)", filename);
 
     while (fgets(sm, BUF_SIZE, fp))
     {
@@ -830,7 +830,7 @@ void process_site_Renviron()
         R_ShowMessage("path to Renviron.site is too long: skipping");
         return;
     }
-    sprintf(buf, "%s/etc/Renviron.site", R_Home);
+    snprintf(buf, PATH_MAX, "%s/etc/Renviron.site", R_Home);
     process_Renviron(buf);
 }
 
@@ -853,7 +853,7 @@ void process_user_Renviron()
             s = getenv("HOME");
         if (!s)
             return;
-        sprintf(buf, "%s/.Renviron", s);
+        snprintf(buf, 1024, "%s/.Renviron", s);
         s = buf;
     }
 #endif

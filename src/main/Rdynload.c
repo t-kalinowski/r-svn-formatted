@@ -376,7 +376,7 @@ static Rboolean R_callDLLUnload(DllInfo *dllInfo)
     DL_FUNC f;
     R_RegisteredNativeSymbol sym;
 
-    sprintf(buf, "R_unload_%s", dllInfo->name);
+    snprintf(buf, 1024, "R_unload_%s", dllInfo->name);
     f = R_dlsym(dllInfo, buf, &sym);
     if (f)
         f(dllInfo);
@@ -722,9 +722,9 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name, R_RegisteredNativeSymbol
         return (NULL);
 
 #ifdef HAVE_NO_SYMBOL_UNDERSCORE
-    sprintf(buf, "%s", name);
+    snprintf(buf, MAXIDSIZE + 1, "%s", name);
 #else
-    sprintf(buf, "_%s", name);
+    snprintf(buf, MAXIDSIZE + 1, "_%s", name);
 #endif
 
 #ifdef HAVE_F77_UNDERSCORE
@@ -855,7 +855,7 @@ int moduleCdynload(char *module, int local, int now)
 
     if (!p)
         return 0;
-    sprintf(dllpath, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
+    snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
     res = AddDLL(dllpath, local, now);
     if (!res)
         warning("unable to load shared library \"%s\":\n  %s", dllpath, DLLerror);

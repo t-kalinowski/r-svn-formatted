@@ -525,7 +525,7 @@ void setup_Rmainloop(void)
     {
         char buf[256];
 
-        sprintf(buf, "%s/library/tcltk/exec/Tk-frontend.R", R_Home);
+        snprintf(buf, 256, "%s/library/tcltk/exec/Tk-frontend.R", R_Home);
         R_LoadProfile(R_fopen(buf, "r"), R_GlobalEnv);
     }
 

@@ -680,7 +680,7 @@ void R_RunExitFinalizers(void); /* in memory.c */
 
 void Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
-    unsigned char buf[128];
+    unsigned char buf[1024];
     char *tmpdir;
 
     if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
@@ -744,7 +744,7 @@ void Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
     CleanEd();
     if ((tmpdir = getenv("R_SESSION_TMPDIR")))
     {
-        sprintf((char *)buf, "rm -rf %s", tmpdir);
+        snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
         system((char *)buf);
     }
     if (saveact != SA_SUICIDE)
@@ -807,7 +807,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
             }
             fclose(tfp);
         }
-        sprintf(buf, "%s < %s", pager, filename);
+        snprintf(buf, 1024, "%s < %s", pager, filename);
         res = system(buf);
         unlink(filename);
         return (res != 0);

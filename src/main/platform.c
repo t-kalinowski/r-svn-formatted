@@ -611,7 +611,7 @@ static void count_files(char *dnp, int *count, int allfiles, int recursive, int 
 #ifdef HAVE_STAT
                 if (recursive)
                 {
-                    sprintf(p, "%s%s%s", dnp, R_FileSep, de->d_name);
+                    snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
                     stat(p, &sb);
                     if ((sb.st_mode & S_IFDIR) > 0)
                     {
@@ -652,12 +652,12 @@ static void list_files(char *dnp, char *stem, int *count, SEXP ans, int allfiles
 #ifdef HAVE_STAT
                 if (recursive)
                 {
-                    sprintf(p, "%s%s%s", dnp, R_FileSep, de->d_name);
+                    snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
                     stat(p, &sb);
                     if ((sb.st_mode & S_IFDIR) > 0)
                     {
                         if (stem)
-                            sprintf(stem2, "%s%s%s", stem, R_FileSep, de->d_name);
+                            snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
                         else
                             strcpy(stem2, de->d_name);
                         list_files(p, stem2, count, ans, allfiles, recursive, pattern, reg);
@@ -807,13 +807,13 @@ SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(type) || length(type) < 1 || isNull(type))
         error("invalid \"type\" argument");
     strcpy(ctype, CHAR(STRING_ELT(type, 0)));
-    sprintf(topicbuf, "%s\t", CHAR(STRING_ELT(topic, 0)));
+    snprintf(topicbuf, 256, "%s\t", CHAR(STRING_ELT(topic, 0)));
     ltopicbuf = strlen(topicbuf);
     npath = length(path);
     for (i = 0; i < npath; i++)
     {
-        sprintf(linebuf, "%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), "help",
-                CHAR(STRING_ELT(sep, 0)), CHAR(STRING_ELT(indexname, 0)));
+        snprintf(linebuf, 256, "%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), "help",
+                 CHAR(STRING_ELT(sep, 0)), CHAR(STRING_ELT(indexname, 0)));
         if ((fp = R_fopen(R_ExpandFileName(linebuf), "rt")) != NULL)
         {
             while (filbuf(linebuf, fp))
@@ -825,17 +825,17 @@ SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
                         p++;
                     fclose(fp);
                     if (!strcmp(ctype, "html"))
-                        sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), "html",
-                                CHAR(STRING_ELT(sep, 0)), p, ".html");
+                        snprintf(topicbuf, 256, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)),
+                                 "html", CHAR(STRING_ELT(sep, 0)), p, ".html");
                     else if (!strcmp(ctype, "R-ex"))
-                        sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), "R-ex",
-                                CHAR(STRING_ELT(sep, 0)), p, ".R");
+                        snprintf(topicbuf, 256, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)),
+                                 "R-ex", CHAR(STRING_ELT(sep, 0)), p, ".R");
                     else if (!strcmp(ctype, "latex"))
-                        sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), "latex",
-                                CHAR(STRING_ELT(sep, 0)), p, ".tex");
+                        snprintf(topicbuf, 256, "%s%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)),
+                                 "latex", CHAR(STRING_ELT(sep, 0)), p, ".tex");
                     else /* type = "help" */
-                        sprintf(topicbuf, "%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)), ctype,
-                                CHAR(STRING_ELT(sep, 0)), p);
+                        snprintf(topicbuf, 256, "%s%s%s%s%s", CHAR(STRING_ELT(path, i)), CHAR(STRING_ELT(sep, 0)),
+                                 ctype, CHAR(STRING_ELT(sep, 0)), p);
                     return mkString(topicbuf);
                 }
             }
