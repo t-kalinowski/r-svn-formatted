@@ -117,6 +117,7 @@ void R_load_gnome_shlib(void); /* in dynload.c */
 */
 Rboolean useaqua = FALSE;
 Rboolean CocoaGUI = FALSE;
+Rboolean useCocoa = FALSE;
 #endif
 
 int Rf_initialize_R(int ac, char **av)
@@ -188,6 +189,8 @@ int Rf_initialize_R(int ac, char **av)
 #ifdef HAVE_AQUA
             else if (!strcmp(p, "aqua") || !strcmp(p, "AQUA"))
                 useaqua = TRUE;
+            else if (!strcmp(p, "cocoa") || !strcmp(p, "COCOA"))
+                useCocoa = TRUE;
 #endif
             else if (!strcmp(p, "X11") || !strcmp(p, "x11"))
                 useX11 = TRUE;

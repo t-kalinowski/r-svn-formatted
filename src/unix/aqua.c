@@ -64,6 +64,7 @@
 #include <Carbon/Carbon.h>
 extern Rboolean useaqua;  /* from src/unix/system.c */
 extern Rboolean CocoaGUI; /* from src/unix/system.c */
+extern Rboolean useCocoa; /* from src/unix/system.c */
 
 /*
  -------------------------------------------------------- Cocoa interface functions ------
@@ -140,6 +141,8 @@ extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_
 DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_FocusOnConsole, ptr_Raqua_Edit, ptr_do_dataentry,
     ptr_do_browsepkgs, ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_InitAquaIO,
     ptr_RSetConsoleWidth;
+
+DL_FUNC ptr_R_ProcessEvents;
 
 void R_ProcessEvents(void);
 OSStatus StartUpGUI(void)
@@ -401,12 +404,15 @@ void R_ProcessEvents(void)
     EventTargetRef theTarget;
     bool conv = false;
 
-    if (!useaqua)
+    if (!useaqua | !useCocoa)
     {
         if (R_interrupts_pending)
             onintr();
-        return;
     }
+
+    if (useCocoa)
+        ptr_R_ProcessEvents();
+
     /*
     if(CocoaGUI)
     cocoaProcessEvents(0);
