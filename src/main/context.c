@@ -297,7 +297,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
         n = -n;
 
     if (n < 0)
-        errorcall(R_GlobalContext->call, _("not that many enclosing environments"));
+        errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
 
     while (cptr->nextcontext != NULL)
     {
@@ -315,7 +315,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
     if (n == 0 && cptr->nextcontext == NULL)
         return R_GlobalEnv;
     else
-        error(_("sys.frame: not that many enclosing functions"));
+        errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     return R_NilValue; /* just for -Wall */
 }
 
@@ -330,7 +330,7 @@ int R_sysparent(int n, RCNTXT *cptr)
     int j;
     SEXP s;
     if (n <= 0)
-        errorcall(R_ToplevelContext->call, _("only positive arguments are allowed"));
+        errorcall(R_ToplevelContext->call, _("only positive values of 'n' are allowed"));
     while (cptr->nextcontext != NULL && n > 1)
     {
         if (cptr->callflag & CTXT_FUNCTION)
@@ -381,7 +381,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     else
         n = -n;
     if (n < 0)
-        errorcall(R_GlobalContext->call, _("invalid frame number"));
+        errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag & CTXT_FUNCTION)
@@ -395,7 +395,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     }
     if (n == 0 && cptr->nextcontext == NULL)
         return (duplicate(cptr->call));
-    errorcall(R_GlobalContext->call, _("not that many enclosing functions"));
+    errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     return R_NilValue; /* just for -Wall */
 }
 
@@ -406,7 +406,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     else
         n = -n;
     if (n < 0)
-        errorcall(R_GlobalContext->call, _("invalid frame number"));
+        errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag & CTXT_FUNCTION)
@@ -420,7 +420,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     }
     if (n == 0 && cptr->nextcontext == NULL)
         return duplicate(cptr->callfun); /***** do we need to DUP? */
-    errorcall(R_GlobalContext->call, _("not that many enclosing functions"));
+    errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     return R_NilValue; /* just for -Wall */
 }
 
@@ -481,11 +481,11 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         n = -1;
 
-    if (n == NA_INTEGER)
-        errorcall(call, _("invalid number of environment levels"));
     switch (PRIMVAL(op))
     {
     case 1: /* parent */
+        if (n == NA_INTEGER)
+            errorcall(call, _("invalid value for 'n'"));
         nframe = framedepth(cptr);
         rval = allocVector(INTSXP, 1);
         i = nframe;
@@ -496,8 +496,12 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         INTEGER(rval)[0] = i;
         return rval;
     case 2: /* call */
+        if (n == NA_INTEGER)
+            errorcall(call, _("invalid value for 'which'"));
         return R_syscall(n, cptr);
     case 3: /* frame */
+        if (n == NA_INTEGER)
+            errorcall(call, _("invalid value for 'which'"));
         return R_sysframe(n, cptr);
     case 4: /* sys.nframe */
         rval = allocVector(INTSXP, 1);
@@ -531,9 +535,11 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
             INTEGER(rval)[i] = R_sysparent(nframe - i, cptr);
         return rval;
     case 9: /* sys.function */
+        if (n == NA_INTEGER)
+            errorcall(call, _("invalid value for 'which'"));
         return (R_sysfunction(n, cptr));
     default:
-        error(_("internal error in do_sys"));
+        error(_("internal error in 'do_sys'"));
         return R_NilValue; /* just for -Wall */
     }
 }
@@ -548,7 +554,7 @@ SEXP do_parentframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = asInteger(t);
 
     if (n == NA_INTEGER || n < 1)
-        errorcall(call, _("invalid number of environment levels"));
+        errorcall(call, _("invalid value for 'n'"));
 
     cptr = R_GlobalContext;
     t = cptr->sysparent;
