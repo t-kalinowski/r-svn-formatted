@@ -540,10 +540,15 @@ static SEXP subDots(SEXP rho)
     char tbuf[10];
 
     dots = findVarInFrame(FRAME(rho), R_DotsSymbol);
+
+    if (dots == R_MissingArg)
+        return dots;
+
     len = length(dots);
     PROTECT(rval = allocList(len));
     for (a = dots, b = rval, i = 1; a != R_NilValue; a = CDR(a), b = CDR(b), i++)
     {
+        TAG(b) = TAG(a);
         if (isSymbol(PREXPR(CAR(a))) || isLanguage(PREXPR(CAR(a))))
         {
             sprintf(tbuf, "..%d", i);
