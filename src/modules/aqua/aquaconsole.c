@@ -71,7 +71,7 @@ TXNFrameID InframeID = 0;
 WindowRef RAboutWindow = NULL;
 pascal void RAboutHandler(WindowRef window);
 #define kRAppSignature '0FFF'
-int RFontSize = 12;
+// int 	RFontSize = 12;
 
 void RSetTab(int tabsize);
 void RSetFontSize(int size);
@@ -166,6 +166,14 @@ static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
 static short PreferencesItem = -1;
 
+void GetRPrefs(void);
+void SaveRPrefs(void);
+int PrefTabSize, PrefFontSize;
+RGBColor PrefRFGOutColor;
+RGBColor PrefRBGOutColor;
+RGBColor PrefRFGInColor;
+RGBColor PrefRBGInColor;
+
 TXNControlTag ROutTag[] = {kTXNIOPrivilegesTag, kTXNNoUserIOTag, kTXNWordWrapStateTag};
 TXNControlData ROutData[] = {kTXNReadWrite, kTXNReadOnly, kTXNNoAutoWrap};
 
@@ -203,6 +211,9 @@ void Raqua_StartConsole(void)
 
     ShowWindow(ConsoleWindow);
 
+    GetRPrefs();
+    SaveRPrefs();
+
     InitCursor();
 
     if (TXNVersionInformation == (void *)kUnresolvedCFragSymbolAddress)
@@ -225,11 +236,12 @@ void Raqua_StartConsole(void)
 
         err = TXNNewObject(NULL, ConsoleWindow, &OutFrame, frameOptions, kTXNTextEditStyleFrameType, kTXNTextensionFile,
                            kTXNSystemDefaultEncoding, &RConsoleOutObject, &OutframeID, 0);
-
+        fprintf(stderr, "\n err(1) =%d", err);
         frameOptions = kTXNShowWindowMask | kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNDrawGrowIconMask;
 
         err = TXNNewObject(NULL, ConsoleWindow, &InFrame, frameOptions, kTXNTextEditStyleFrameType, kTXNTextensionFile,
                            kTXNSystemDefaultEncoding, &RConsoleInObject, &InframeID, 0);
+        fprintf(stderr, "\n err(2) =%d", err);
 
         if (err == noErr)
         {
@@ -240,6 +252,8 @@ void Raqua_StartConsole(void)
                 err = TXNActivate(RConsoleInObject, InframeID, kScrollBarsAlwaysActive);
                 if (err != noErr)
                     goto noconsole;
+
+                fprintf(stderr, "\n err(3) =%d", err);
 
                 err = SetWindowProperty(ConsoleWindow, 'GRIT', 'tFrm', sizeof(TXNFrameID), &OutframeID);
                 err = SetWindowProperty(ConsoleWindow, 'GRIT', 'tObj', sizeof(TXNObject), &RConsoleOutObject);
@@ -268,6 +282,7 @@ void Raqua_StartConsole(void)
                                                  RGlobalWinEvents, 0, NULL);
             err = AEInstallEventHandler(kCoreEventClass, kAEQuitApplication,
                                         NewAEEventHandlerUPP(QuitAppleEventHandler), 0, false);
+            fprintf(stderr, "\n err(5) =%d", err);
 
             TXNFocus(RConsoleOutObject, true);
             InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec,
@@ -305,6 +320,9 @@ void Raqua_StartConsole(void)
         SetMenuItemCommandID(HelpMenu, RunExampleItem, kRExampleRun);
     }
 
+    RSetTab(PrefTabSize);
+    RSetFontSize(PrefFontSize);
+
 noconsole:
     if (bundleURL)
         CFRelease(bundleURL);
@@ -323,8 +341,8 @@ RGBColor RFGInColor = {0xffff, 0x0000, 0x0000};
 RGBColor RBGOutColor = {0xeeee, 0xeeee, 0xeeee};
 RGBColor RBGInColor = {0xeeff, 0xeeff, 0xeeff};
 
-TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGOutColor}};
-TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGInColor}};
+TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &PrefRFGInColor}};
+TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &PrefRFGOutColor}};
 
 void Raqua_WriteConsole(char *buf, int len)
 {
@@ -353,10 +371,10 @@ void RSetColors(void)
 
     /* setting BG colors */
     RBGInfo.bgType = kTXNBackgroundTypeRGB;
-    RBGInfo.bg.color = RBGOutColor;
+    RBGInfo.bg.color = PrefRBGOutColor;
     TXNSetBackground(RConsoleOutObject, &RBGInfo);
 
-    RBGInfo.bg.color = RBGInColor;
+    RBGInfo.bg.color = PrefRBGInColor;
     TXNSetBackground(RConsoleInObject, &RBGInfo);
 }
 
@@ -371,6 +389,7 @@ OSStatus InitMLTE(void)
 
     defaults.fontID = fontID;
     defaults.pointSize = kTXNDefaultFontSize;
+    fprintf(stderr, "\n fontsize=%d, %d", PrefFontSize, (Fixed)PrefFontSize);
     defaults.encoding =
         CreateTextEncoding(kTextEncodingMacRoman, kTextEncodingDefaultVariant, kTextEncodingDefaultFormat);
     defaults.fontStyle = kTXNDefaultFontStyle;
@@ -378,6 +397,7 @@ OSStatus InitMLTE(void)
     options = kTXNWantMoviesMask | kTXNWantSoundMask | kTXNWantGraphicsMask;
 
     status = TXNInitTextension(&defaults, 1, options);
+
     return (status);
 }
 
@@ -387,6 +407,7 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     Handle DataHandle;
     TXNOffset oStartOffset;
     TXNOffset oEndOffset;
+
     int i, lg = 0, pptlen, txtlen;
 
     if (!InputFinished)
@@ -566,7 +587,7 @@ void RSetTab(int tabsize)
     TXNControlTag tabtag = kTXNTabSettingsTag;
     TXNControlData tabdata;
 
-    tabdata.tabValue.value = tabsize * RFontSize;
+    tabdata.tabValue.value = tabsize * PrefFontSize; // RFontSize;
     tabdata.tabValue.tabType = kTXNRightTab;
 
     TXNSetTXNObjectControls(RConsoleOutObject, false, 1, &tabtag, &tabdata);
@@ -1016,7 +1037,7 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
 
     err = TXNSetTXNObjectControls(RHelpObject, false, 3, RHelpTag, RHelpData);
 
-    tabdata.tabValue.value = 10 * RFontSize;
+    tabdata.tabValue.value = 10 * PrefFontSize; // RFontSize;
     tabdata.tabValue.tabType = kTXNRightTab;
 
     TXNSetTXNObjectControls(RHelpObject, false, 1, &tabtag, &tabdata);
@@ -1405,6 +1426,233 @@ void mac_loadhistory(char *file)
         }
     }
     fclose(fp);
+}
+
+/*
+RGBColor RFGOutColor = { 0x0000, 0x0000, 0xffff};
+RGBColor RFGInColor = { 0xffff, 0x0000, 0x0000};
+RGBColor RBGOutColor = {0xeeee, 0xeeee, 0xeeee};
+RGBColor RBGInColor = { 0xeeff, 0xeeff, 0xeeff};
+
+*/
+
+void GetRPrefs(void)
+{
+
+    CFStringRef appName = CFSTR("RAqua");
+    CFStringRef tabsizeKey = CFSTR("Tab Size");
+    CFStringRef fontsizeKey = CFSTR("Font Size");
+    CFStringRef outfgKey = CFSTR("OutFg Color");
+    CFStringRef outbgKey = CFSTR("OutBg Color");
+    CFStringRef infgKey = CFSTR("InFg Color");
+    CFStringRef inbgKey = CFSTR("InBg Color");
+    CFNumberRef value;
+    int tabsize, fontsize;
+    CFDataRef color;
+    RGBColor fgout, bgout, fgin, bgin;
+
+    // First retrieve the previous value...
+
+    // CFPreferencesCopyAppValue() and CFPreferencesSetAppValue() are the most straightforward way
+    // for an app to read/write preferences that are per user and per app; they will apply on all
+    // machines (on which this user can log in, of course --- for users who are local to a machine,
+    // the preferences will end up being restricted to that host). These functions also do a search
+    // through the various cases; if a preference has been set in a less-specific domain (for
+    // instance, "all apps"), its value will be retrieved with this call. This allows globally
+    // setting some preference values (which makes more sense for some preferences than others).
+
+    // Note that you can read/write any "property list" type in preferences; these are
+    // CFArray, CFDictionary, CFNumber, CFBoolean, CFData, and CFString.
+    // This example just shows CFNumber.
+
+    /* Tab Size */
+    value = CFPreferencesCopyAppValue(tabsizeKey, appName);
+    if (value)
+    {
+        if (!CFNumberGetValue(value, kCFNumberIntType, &tabsize))
+            tabsize = 10;
+        CFRelease(value);
+    }
+    else
+        tabsize = 10; /* set default value */
+
+    PrefTabSize = tabsize;
+    if (value)
+        CFRelease(value);
+
+    /* Font Size */
+    value = CFPreferencesCopyAppValue(fontsizeKey, appName);
+    if (value)
+    {
+        if (!CFNumberGetValue(value, kCFNumberIntType, &fontsize))
+            fontsize = 12;
+        CFRelease(value);
+    }
+    else
+        fontsize = 12; /* set default value */
+
+    PrefFontSize = fontsize;
+
+    /*  Console Out Foreground color */
+    color = CFPreferencesCopyAppValue(outfgKey, appName);
+    if (color)
+    {
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &fgout);
+    }
+    else
+    {
+        fgout.red = 0x0000;
+        fgout.green = 0x0000;
+        fgout.blue = 0xffff;
+    }
+
+    PrefRFGOutColor.red = fgout.red;
+    PrefRFGOutColor.green = fgout.green;
+    PrefRFGOutColor.blue = fgout.blue;
+
+    if (color)
+        CFRelease(color);
+
+    /*  Console Out Background color */
+    color = CFPreferencesCopyAppValue(outbgKey, appName);
+    if (color)
+    {
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &bgout);
+    }
+    else
+    {
+        bgout.red = 0xeeee;
+        bgout.green = 0xeeee;
+        bgout.blue = 0xeeee;
+    }
+
+    PrefRBGOutColor.red = bgout.red;
+    PrefRBGOutColor.green = bgout.green;
+    PrefRBGOutColor.blue = bgout.blue;
+
+    if (color)
+        CFRelease(color);
+
+    /*  Console In Foreground color */
+    color = CFPreferencesCopyAppValue(infgKey, appName);
+    if (color)
+    {
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &fgin);
+    }
+    else
+    {
+        fgin.red = 0xffff;
+        fgin.green = 0x0000;
+        fgin.blue = 0x0000;
+    }
+
+    PrefRFGInColor.red = fgin.red;
+    PrefRFGInColor.green = fgin.green;
+    PrefRFGInColor.blue = fgin.blue;
+
+    if (color)
+        CFRelease(color);
+
+    /*  Console In Background color */
+    color = CFPreferencesCopyAppValue(inbgKey, appName);
+    if (color)
+    {
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &bgin);
+    }
+    else
+    {
+        bgin.red = 0xeeff;
+        bgin.green = 0xeeff;
+        bgin.blue = 0xeeff;
+    }
+
+    PrefRBGInColor.red = bgin.red;
+    PrefRBGInColor.green = bgin.green;
+    PrefRBGInColor.blue = bgin.blue;
+
+    if (color)
+        CFRelease(color);
+}
+
+void SaveRPrefs(void)
+{
+
+    CFStringRef appName = CFSTR("RAqua");
+    CFStringRef tabsizeKey = CFSTR("Tab Size");
+    CFStringRef fontsizeKey = CFSTR("Font Size");
+    CFStringRef outfgKey = CFSTR("OutFg Color");
+    CFStringRef outbgKey = CFSTR("OutBg Color");
+    CFStringRef infgKey = CFSTR("InFg Color");
+    CFStringRef inbgKey = CFSTR("InBg Color");
+    CFNumberRef value;
+    int tabsize, fontsize;
+    CFDataRef color;
+    RGBColor fgout, bgout, fgin, bgin;
+
+    tabsize = PrefTabSize;
+    fontsize = PrefFontSize;
+
+    fgout.red = PrefRFGOutColor.red;
+    fgout.green = PrefRFGOutColor.green;
+    fgout.blue = PrefRFGOutColor.blue;
+
+    bgout.red = PrefRBGOutColor.red;
+    bgout.green = PrefRBGOutColor.green;
+    bgout.blue = PrefRBGOutColor.blue;
+
+    fgin.red = PrefRFGInColor.red;
+    fgin.green = PrefRFGInColor.green;
+    fgin.blue = PrefRFGInColor.blue;
+
+    bgin.red = PrefRBGInColor.red;
+    bgin.green = PrefRBGInColor.green;
+    bgin.blue = PrefRBGInColor.blue;
+
+    /* Tab Size */
+    value = CFNumberCreate(NULL, kCFNumberIntType, &tabsize);
+    CFPreferencesSetAppValue(tabsizeKey, value, appName);
+    CFRelease(value);
+
+    /* Font Size */
+    value = CFNumberCreate(NULL, kCFNumberIntType, &fontsize);
+    CFPreferencesSetAppValue(fontsizeKey, value, appName);
+    CFRelease(value);
+
+    color = CFDataCreate(NULL, &fgout, sizeof(fgout));
+    if (color)
+    {
+        CFPreferencesSetAppValue(outfgKey, color, appName);
+        CFRelease(color);
+    }
+
+    color = CFDataCreate(NULL, &bgout, sizeof(bgout));
+    if (color)
+    {
+        CFPreferencesSetAppValue(outbgKey, color, appName);
+        CFRelease(color);
+    }
+
+    color = CFDataCreate(NULL, &fgin, sizeof(fgin));
+    if (color)
+    {
+        CFPreferencesSetAppValue(infgKey, color, appName);
+        CFRelease(color);
+    }
+
+    color = CFDataCreate(NULL, &bgin, sizeof(bgin));
+    if (color)
+    {
+        CFPreferencesSetAppValue(inbgKey, color, appName);
+        CFRelease(color);
+    }
+
+    // Without an explicit synchronize, the saved values actually do not get written out.
+    // If you are writing multiple preferences, you might want to sync only after the last one.
+    // A preference panel might want to synchronize when the user hits "OK".
+    // In some cases you might not want to sync at all until the app quits.
+    // The AppKit automatically synchronizes on app termination, so Cocoa apps don't need to do this.
+
+    (void)CFPreferencesAppSynchronize(appName);
 }
 
 #endif /* HAVE_AQUA */
