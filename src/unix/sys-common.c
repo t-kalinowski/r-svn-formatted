@@ -776,7 +776,7 @@ static int process_Renviron(char *filename)
 
     while (fgets(sm, BUF_SIZE, fp))
     {
-        sm[BUF_SIZE] = '\0';
+        sm[BUF_SIZE - 1] = '\0';
         s = rmspace(sm);
         if (strlen(s) == 0 || s[0] == '#')
             continue;
