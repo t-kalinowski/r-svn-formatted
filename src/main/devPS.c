@@ -394,6 +394,9 @@ static int GetNextItem(FILE *fp, char *dest, int c)
             p = fgets(buf, 1000, fp);
 #endif
         }
+        /* check for incomplete encoding file */
+        if (!p)
+            return 1;
         while (isspace((int)*p))
             p++;
         if (p == '\0' || *p == '%' || *p == '\n')
