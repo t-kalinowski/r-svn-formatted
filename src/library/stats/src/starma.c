@@ -455,11 +455,16 @@ void forkal(Starma G, int d, int il, double *delta, double *y, double *amse, int
 
     sigma2 = 0.0;
     for (j = 0; j < nt; j++)
-        if (!ISNAN(tmp = G->resid[j]))
+    {
+        /* MacOS X/gcc 3.5 does/didn't have isnan defined properly */
+        tmp = G->resid[j];
+        if (!ISNAN(tmp))
         {
             nu++;
             sigma2 += tmp * tmp;
         }
+    }
+
     sigma2 /= nu;
 
     /*     reset the initial a and P when differencing occurs */
