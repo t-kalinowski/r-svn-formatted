@@ -28,9 +28,7 @@
 #include <gnome.h>
 #include <sys/types.h>
 
-#ifdef HAVE_REGCOMP
 #include <regex.h>
-#endif /* HAVE_REGCOMP */
 
 #define ERRBUF_SIZE 500
 #define MSGBUF_SIZE 2000
@@ -72,7 +70,6 @@ void find_update_text_cache(void)
 
 void find_compile_regex(GnomeFindDialog *find_dialog)
 {
-#ifdef HAVE_REGCOMP
     int cflags;
     int regex_result;
     char errbuf[ERRBUF_SIZE];
@@ -112,18 +109,15 @@ void find_compile_regex(GnomeFindDialog *find_dialog)
             return;
         }
     }
-#endif /* HAVE_REGCOMP */
 }
 
 void find_free_regex(void)
 {
-#ifdef HAVE_REGCOMP
     if (preg != NULL)
     {
         regfree(preg);
         preg = NULL;
     }
-#endif /* HAVE_REGCOMP */
 }
 
 void find_free_select(gpointer data, gpointer user_data)
@@ -234,7 +228,6 @@ int find_update_line_cache(GnomeFindDialog *find_dialog)
     find_line_cache = g_strndup(find_text_cache + line_cache_start, line_cache_end - line_cache_start + 1);
 
     /* Search line */
-#ifdef HAVE_REGCOMP
     if (find_params.regex == TRUE)
     {
         /* Regular expression search */
@@ -289,7 +282,6 @@ int find_update_line_cache(GnomeFindDialog *find_dialog)
     }
     else
     {
-#endif /* HAVE_REGCOMP */
         /* Literal search */
         for (tmp_find_pos = line_cache_start; tmp_find_pos <= line_cache_end; tmp_find_pos++)
         {
@@ -311,9 +303,7 @@ int find_update_line_cache(GnomeFindDialog *find_dialog)
                 find_current_match = g_list_append(find_current_match, (gpointer)find_select);
             }
         }
-#ifdef HAVE_REGCOMP
     }
-#endif /* HAVE_REGCOMP */
 
     if (find_line_cache != NULL)
     {
@@ -534,11 +524,7 @@ void edit_find_cb(GtkWidget *widget, gpointer data)
 {
     GtkWidget *find_dialog;
 
-#ifdef HAVE_REGCOMP
     find_dialog = gnome_find_dialog_new("Find text", &find_params, TRUE, TRUE, TRUE);
-#else
-    find_dialog = gnome_find_dialog_new("Find text", &find_params, TRUE, TRUE, FALSE);
-#endif /* HAVE_REGCOMP */
 
     gnome_dialog_set_parent(GNOME_DIALOG(find_dialog), GTK_WINDOW(R_gtk_main_window));
 
