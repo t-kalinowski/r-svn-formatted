@@ -205,7 +205,7 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
             free(dev);
             errorcall(call, "unable to start device Quartz\n");
         }
-        gsetVar(install(".Device"), mkString("Quartz"), R_NilValue);
+        gsetVar(install(".Device"), mkString("quartz"), R_NilValue);
         dd = GEcreateDevDesc(dev);
         addDevice((DevDesc *)dd);
         GEinitDisplayList(dd);
