@@ -1466,6 +1466,8 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     SEXP call, pcall, s;
     SEXPTYPE type;
     int i, j, n;
+    char **cptr;
+
     if (!isFunction((SEXP)func))
         error("invalid function in call_R");
     if (nargs < 0)
@@ -1501,23 +1503,24 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
         case STRSXP:
             n = lengths[i];
             CAR(pcall) = allocVector(STRSXP, n);
+            cptr = (char **)arguments[i];
             for (j = 0; j < n; j++)
             {
-                s = allocSExp(CHARSXP);
-                CHAR(s) = (char *)(arguments[i]);
-                LENGTH(s) = strlen(CHAR(s));
-                STRING(CAR(pcall))[i] = s;
+                STRING(CAR(pcall))[j] = mkChar(cptr[j]);
             }
+            LENGTH(CAR(pcall)) = n;
             break;
             /* FIXME : This copy is unnecessary! */
+            /* FIXME : This is obviously incorrect so disable
         case VECSXP:
             n = lengths[i];
             CAR(pcall) = allocVector(VECSXP, n);
-            for (j = 0; j < n; j++)
-            {
-                VECTOR(s)[i] = (SEXP)(arguments[i]);
+            for (j = 0 ; j < n ; j++) {
+            VECTOR(s)[i] = (SEXP)(arguments[i]);
             }
-            break;
+            break; */
+        default:
+            error("Mode `%s' is not supported in call_R", modes[i]);
         }
         if (names && names[i])
             TAG(pcall) = install(names[i]);
