@@ -28,7 +28,7 @@ SEXP do_getenv(SEXP, SEXP, SEXP, SEXP);
 #endif
 
 /*
- *	printname  c-entry  offset  eval  arity  pp-info  mark
+ *	printname  c-entry  offset  eval  arity	 pp-info  mark
  *
  *	Note:	We now consider eval to be made up of two digits XY.
  *		X = 1 says that this is an internal function which must
@@ -40,7 +40,7 @@ SEXP do_getenv(SEXP, SEXP, SEXP, SEXP);
  *		we should switch R_Visible off (the least common situation).
  *		Y=1 says that this is an internal function (as above) and
  *		Z=1 says evaluate arguments before calling and Z=0 says
- *              don't evaluate.
+ *		don't evaluate.
  *
  * E.g:		SEXP do_cat(SEXP, SEXP, SEXP, SEXP);
  *
