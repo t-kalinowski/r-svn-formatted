@@ -5212,7 +5212,8 @@ unsigned int LTYpar(SEXP value, int index)
         code = INTEGER(value)[index];
         if (code == NA_INTEGER || code <= 0)
             return NA_INTEGER;
-        code = (code - 1) % nlinetype;
+        if (code > 0)
+            code = (code - 1) % nlinetype + 1;
         return linetype[code].pattern;
     }
     else if (isReal(value))
