@@ -2046,10 +2046,9 @@ Display *Rf_getX11Display()
  */
 int Rf_setX11Display(Display *dpy, double gamma_fac, X_COLORTYPE colormodel, int maxcube, Rboolean setHandlers)
 {
-    static int alreadyDone = 0;
-    if (alreadyDone)
-        return (TRUE);
-    alreadyDone = 1;
+    /*    static int alreadyDone = 0;
+        if(alreadyDone) return(TRUE);
+        alreadyDone = 1; */
     display = dpy;
 
 #define SETGAMMA
