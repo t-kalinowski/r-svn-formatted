@@ -484,8 +484,8 @@ static int findGapDown(double *xxx, double *yyy, int ns, double labelDistance, D
         return -n;
 }
 
-static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labels, int cnum, int drawLabels,
-                    int method, int vectorFonts, int typeface, int fontindex, double atom, DevDesc *dd)
+static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labels, int cnum, Rboolean drawLabels,
+                    int method, Rboolean vectorFonts, int typeface, int fontindex, double atom, DevDesc *dd)
 {
     double f, xl, xh, yl, yh, zll, zhl, zlh, zhh, xx[4], yy[4];
     double xend, yend;
@@ -511,8 +511,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
     SEXP label1 = PROTECT(allocVector(REALSXP, 8));
     SEXP label2;
     SEXP lab;
-    int gotLabel = 0;
-    int ddl; /** Don't draw label */
+    Rboolean gotLabel = FALSE;
+    Rboolean ddl; /* Don't draw label -- currently unused, i.e. always FALSE*/
 
     for (i = 0; i < nx - 1; i++)
     {
@@ -815,7 +815,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                     labelHeight = GStrHeight(buffer, INCHES, dd);
                 }
 
-                if ((drawLabels == 1) && (labelDistance > 0))
+                if (drawLabels && labelDistance > 0)
                 {
                     /* Try to find somewhere to draw the label */
                     switch (method)
@@ -834,7 +834,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                         */
                         index = 0;
                         range = 0;
-                        gotLabel = 0;
+                        gotLabel = FALSE;
                         if (useStart(xxx, yyy, ns, dd))
                         {
                             iii = 0;
@@ -866,7 +866,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                 {
                                     index = iii;
                                     range = n;
-                                    gotLabel = 1;
+                                    gotLabel = TRUE;
                                 }
                             }
                         }
@@ -879,7 +879,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                         lowestVariance = 9999999; /* A large number */
                         index = 0;
                         range = 0;
-                        gotLabel = 0;
+                        gotLabel = FALSE;
                         for (iii = 0; iii < ns; iii++)
                         {
                             distanceSum = 0;
@@ -948,7 +948,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                 }
                             }
                             if (lowestVariance < 9999999)
-                                gotLabel = 1;
+                                gotLabel = TRUE;
                         }
                     } /* switch (method) */
 
@@ -1008,7 +1008,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                             UNPROTECT_PTR(labelList);
                             labelList = PROTECT(CONS(label2, labelList));
 
-                            ddl = 0;
+                            ddl = FALSE;
                             /* draw an extra bit of segment if the label
                                doesn't fill the gap */
                             if (closest)
@@ -1062,7 +1062,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                 }
                             }
 
-                            if (ddl == 0)
+                            if (!ddl)
                             {
                                 /* convert to INCHES for calculation of
                                    angle to draw text
@@ -1079,7 +1079,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                             }
                         } /* if (gotLabel) */
                     }     /* if (method == 0) else ... */
-                }         /* if ((drawLabels == 1) && (labelDistance > 0)) */
+                }         /* if (drawLabels && labelDistance > 0) */
                 else
                 {
                     GPolyline(ns, xxx, yyy, USER, dd);
@@ -1088,8 +1088,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 GMode(0, dd);
                 C_free((char *)xxx);
                 C_free((char *)yyy);
-            }
-        }
+            }              /* while */
+        }                  /* for(i .. )  for(j ..) */
     UNPROTECT_PTR(label1); /* pwwwargh! This is messy, but last thing
                   protected is likely labelList, and that needs
                   to be preserved across calls */
@@ -1105,9 +1105,9 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     double cexsave;
     double atom, zmin, zmax;
     char *vmax, *vmax0;
-    int drawLabels;
     int method;
-    int vectorFonts = 0;
+    Rboolean drawLabels;
+    Rboolean vectorFonts = FALSE;
     int typeface = 0;
     int fontindex = 0;
     double labcex;
@@ -1147,7 +1147,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     labcex = asReal(CAR(args));
     args = CDR(args);
 
-    drawLabels = asLogical(CAR(args));
+    drawLabels = (Rboolean)asLogical(CAR(args));
     args = CDR(args);
 
     method = asInteger(CAR(args));
@@ -1158,7 +1158,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(vfont = FixupVFont(CAR(args)));
     if (!isNull(vfont))
     {
-        vectorFonts = 1;
+        vectorFonts = TRUE;
         typeface = INTEGER(vfont)[0];
         fontindex = INTEGER(vfont)[1];
     }
@@ -2104,7 +2104,7 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
         GArrow(v1[0] / v1[3], v1[1] / v1[3], v2[0] / v2[3], v2[1] / v2[3], USER, 0.1, 10, 2, dd);
         break;
     case 2: /* "detailed": normal ticks as per 2D plots */
-        PROTECT(at = CreateAtVector(axp, range, 7, 0));
+        PROTECT(at = CreateAtVector(axp, range, 7, FALSE));
         PROTECT(lab = labelformat(at));
         for (i = 0; i < length(at); i++)
         {
@@ -2357,8 +2357,7 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     ProcessInlinePars(args, dd);
     if (length(border) > 1)
         dd->gp.fg = INTEGER(border)[0];
-    dd->gp.xlog = 0;
-    dd->gp.ylog = 0;
+    dd->gp.xlog = dd->gp.ylog = FALSE;
 
     /* Set up the light vector (if any) */
     if (DoLighting)

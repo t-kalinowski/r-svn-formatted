@@ -37,7 +37,7 @@ static DevDesc *MathDevice;
 static unsigned int BoxColor;
 static unsigned int TextColor;
 static double BaseCex = 1;
-static int MetricUnit = INCHES;
+static GUnit MetricUnit = INCHES;
 
 /* Font Definitions */
 
@@ -2856,7 +2856,7 @@ static BBOX RenderOffsetElement(SEXP expr, double x, double y, int draw)
 
 /* #ifdef'ed this function out to shut -Wall up */
 #ifdef OLD
-static void GExpressionBBox(SEXP expr, int units, double *width, double *height, double *depth, DevDesc *dd)
+static void GExpressionBBox(SEXP expr, GUnit units, double *width, double *height, double *depth, DevDesc *dd)
 {
     BBOX bbox;
     MathDevice = dd;
@@ -2879,7 +2879,7 @@ static void GExpressionBBox(SEXP expr, int units, double *width, double *height,
 }
 #endif
 
-double GExpressionWidth(SEXP expr, int units, DevDesc *dd)
+double GExpressionWidth(SEXP expr, GUnit units, DevDesc *dd)
 {
     BBOX bbox;
     double width;
@@ -2894,7 +2894,7 @@ double GExpressionWidth(SEXP expr, int units, DevDesc *dd)
         return GConvertXUnits(width, INCHES, units, dd);
 }
 
-double GExpressionHeight(SEXP expr, int units, DevDesc *dd)
+double GExpressionHeight(SEXP expr, GUnit units, DevDesc *dd)
 {
     BBOX bbox;
     double height;
@@ -2948,7 +2948,7 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
     CosAngle = cos(rot);
     SinAngle = sin(rot);
     RenderElement(expr, 1);
-}
+} /* GMathText */
 
 void GMMathText(SEXP str, int side, double line, int outer, double at, int las, DevDesc *dd)
 {
@@ -2969,31 +2969,25 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
 
     if (outer)
     {
+        xadj = MathDevice->gp.adj;
+        yadj = NA_REAL;
         switch (side)
         {
         case 1:
-            coords = OMA1;
             a = 0;
-            xadj = MathDevice->gp.adj;
-            yadj = NA_REAL;
+            coords = OMA1;
             break;
         case 2:
-            coords = OMA2;
             a = 90;
-            xadj = MathDevice->gp.adj;
-            yadj = NA_REAL;
+            coords = OMA2;
             break;
         case 3:
+            a = 0;
             coords = OMA3;
-            a = 0.0;
-            xadj = MathDevice->gp.adj;
-            yadj = NA_REAL;
             break;
         case 4:
+            a = 90;
             coords = OMA4;
-            a = 90.0;
-            xadj = MathDevice->gp.adj;
-            yadj = NA_REAL;
             break;
         default:
             return; /* never happens */
@@ -3081,4 +3075,4 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         }
         GMathText(at, line, coords, str, xadj, yadj, a, dd);
     }
-}
+} /* GMMathText */
