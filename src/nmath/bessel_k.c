@@ -7,108 +7,118 @@ static double xmax = 705.342; /* maximal x for UNscaled answer, see below */
 
 double bessel_k(double x, double alpha, double expo)
 {
-    long nb = 1, ncalc = 1, ize;
-    double b[1];
+    long nb, ncalc, ize;
+    double *bk;
+#ifdef IEEE_754
+    /* NaNs propagated correctly */
+    if (ISNAN(x) || ISNAN(alpha))
+        return x + alpha;
+#endif
     ize = (long)expo;
-    K_bessel(&x, &alpha, &nb, &ize, b, &ncalc);
+    nb = 1 + (long)floor(alpha); /* nb-1 <= alpha < nb */
+    alpha -= (nb - 1);
+    bk = (double *)calloc(nb, sizeof(double));
+    K_bessel(&x, &alpha, &nb, &ize, bk, &ncalc);
     if (ncalc != nb)
     { /* error input */
+        warning("bessel_k: ncalc (=%d) != nb (=%d); alpha=%g. Arg. out of range?\n", ncalc, nb, alpha);
     }
-    return b[0];
+
+    return bk[nb - 1];
 }
 
 void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *ncalc)
-/*-------------------------------------------------------------------
-
-  This FORTRAN 77 routine calculates modified Bessel functions
-  of the second kind, K SUB(N+ALPHA) (X), for non-negative
-  argument X, and non-negative order N+ALPHA, with or without
-  exponential scaling.
-
-  Explanation of variables in the calling sequence
-
-  Description of output values ..
-
- X     - Working precision non-negative float argument for which
-     K's or exponentially scaled K's (K*EXP(X))
-     are to be calculated.	If K's are to be calculated,
-     X must not be greater than XMAX (see below).
- ALPHA - Working precision fractional part of order for which
-     K's or exponentially scaled K's (K*EXP(X)) are
-     to be calculated.  0 <= ALPHA < 1.0.
- NB    - Integer number of functions to be calculated, NB > 0.
-     The first function calculated is of order ALPHA, and the
-     last is of order (NB - 1 + ALPHA).
- IZE   - Integer type.	IZE = 1 if unscaled K's are to be calculated,
-     and 2 if exponentially scaled K's are to be calculated.
- BK    - Working precision output vector of length NB.	If the
-     routine terminates normally (NCALC=NB), the vector BK
-     contains the functions K(ALPHA,X), ... , K(NB-1+ALPHA,X),
-     or the corresponding exponentially scaled functions.
-     If (0 < NCALC < NB), BK(I) contains correct function
-     values for I <= NCALC, and contains the ratios
-     K(ALPHA+I-1,X)/K(ALPHA+I-2,X) for the rest of the array.
- NCALC - Integer output variable indicating possible errors.
-     Before using the vector BK, the user should check that
-     NCALC=NB, i.e., all orders have been calculated to
-     the desired accuracy.	See error returns below.
-
-
- *******************************************************************
-
- Error returns
-
-  In case of an error, NCALC != NB, and not all K's are
-  calculated to the desired accuracy.
-
-  NCALC < -1:  An argument is out of range. For example,
-       NB <= 0, IZE is not 1 or 2, or IZE=1 and ABS(X) >= XMAX.
-       In this case, the B-vector is not calculated,
-       and NCALC is set to MIN0(NB,0)-2	 so that NCALC != NB.
-  NCALC = -1:  Either  K(ALPHA,X) >= XINF  or
-       K(ALPHA+NB-1,X)/K(ALPHA+NB-2,X) >= XINF.	 In this case,
-       the B-vector is not calculated.	Note that again
-       NCALC != NB.
-
-  0 < NCALC < NB: Not all requested function values could
-       be calculated accurately.  BK(I) contains correct function
-       values for I <= NCALC, and contains the ratios
-       K(ALPHA+I-1,X)/K(ALPHA+I-2,X) for the rest of the array.
-
-
- Intrinsic functions required are:
-
-     ABS, AINT, EXP, INT, LOG, MAX, MIN, SINH, SQRT
-
-
- Acknowledgement
-
-  This program is based on a program written by J. B. Campbell
-  (2) that computes values of the Bessel functions K of float
-  argument and float order.  Modifications include the addition
-  of non-scaled functions, parameterization of machine
-  dependencies, and the use of more accurate approximations
-  for SINH and SIN.
-
- References: "On Temme's Algorithm for the Modified Bessel
-          Functions of the Third Kind," Campbell, J. B.,
-          TOMS 6(4), Dec. 1980, pp. 581-586.
-
-         "A FORTRAN IV Subroutine for the Modified Bessel
-          Functions of the Third Kind of Real Order and Real
-          Argument," Campbell, J. B., Report NRC/ERB-925,
-          National Research Council, Canada.
-
-  Latest modification: May 30, 1989
-
-  Modified by: W. J. Cody and L. Stoltz
-           Applied Mathematics Division
-           Argonne National Laboratory
-           Argonne, IL  60439
-
- -------------------------------------------------------------------
-*/
 {
+    /*-------------------------------------------------------------------
+
+      This FORTRAN 77 routine calculates modified Bessel functions
+      of the second kind, K SUB(N+ALPHA) (X), for non-negative
+      argument X, and non-negative order N+ALPHA, with or without
+      exponential scaling.
+
+      Explanation of variables in the calling sequence
+
+      Description of output values ..
+
+     X     - Working precision non-negative float argument for which
+         K's or exponentially scaled K's (K*EXP(X))
+         are to be calculated.	If K's are to be calculated,
+         X must not be greater than XMAX (see below).
+     ALPHA - Working precision fractional part of order for which
+         K's or exponentially scaled K's (K*EXP(X)) are
+         to be calculated.  0 <= ALPHA < 1.0.
+     NB    - Integer number of functions to be calculated, NB > 0.
+         The first function calculated is of order ALPHA, and the
+         last is of order (NB - 1 + ALPHA).
+     IZE   - Integer type.	IZE = 1 if unscaled K's are to be calculated,
+         and 2 if exponentially scaled K's are to be calculated.
+     BK    - Working precision output vector of length NB.	If the
+         routine terminates normally (NCALC=NB), the vector BK
+         contains the functions K(ALPHA,X), ... , K(NB-1+ALPHA,X),
+         or the corresponding exponentially scaled functions.
+         If (0 < NCALC < NB), BK(I) contains correct function
+         values for I <= NCALC, and contains the ratios
+         K(ALPHA+I-1,X)/K(ALPHA+I-2,X) for the rest of the array.
+     NCALC - Integer output variable indicating possible errors.
+         Before using the vector BK, the user should check that
+         NCALC=NB, i.e., all orders have been calculated to
+         the desired accuracy.	See error returns below.
+
+
+     *******************************************************************
+
+     Error returns
+
+      In case of an error, NCALC != NB, and not all K's are
+      calculated to the desired accuracy.
+
+      NCALC < -1:  An argument is out of range. For example,
+           NB <= 0, IZE is not 1 or 2, or IZE=1 and ABS(X) >= XMAX.
+           In this case, the B-vector is not calculated,
+           and NCALC is set to MIN0(NB,0)-2	 so that NCALC != NB.
+      NCALC = -1:  Either  K(ALPHA,X) >= XINF  or
+           K(ALPHA+NB-1,X)/K(ALPHA+NB-2,X) >= XINF.	 In this case,
+           the B-vector is not calculated.	Note that again
+           NCALC != NB.
+
+      0 < NCALC < NB: Not all requested function values could
+           be calculated accurately.  BK(I) contains correct function
+           values for I <= NCALC, and contains the ratios
+           K(ALPHA+I-1,X)/K(ALPHA+I-2,X) for the rest of the array.
+
+
+     Intrinsic functions required are:
+
+         ABS, AINT, EXP, INT, LOG, MAX, MIN, SINH, SQRT
+
+
+     Acknowledgement
+
+      This program is based on a program written by J. B. Campbell
+      (2) that computes values of the Bessel functions K of float
+      argument and float order.  Modifications include the addition
+      of non-scaled functions, parameterization of machine
+      dependencies, and the use of more accurate approximations
+      for SINH and SIN.
+
+     References: "On Temme's Algorithm for the Modified Bessel
+              Functions of the Third Kind," Campbell, J. B.,
+              TOMS 6(4), Dec. 1980, pp. 581-586.
+
+             "A FORTRAN IV Subroutine for the Modified Bessel
+              Functions of the Third Kind of Real Order and Real
+              Argument," Campbell, J. B., Report NRC/ERB-925,
+              National Research Council, Canada.
+
+      Latest modification: May 30, 1989
+
+      Modified by: W. J. Cody and L. Stoltz
+               Applied Mathematics Division
+               Argonne National Laboratory
+               Argonne, IL  60439
+
+     -------------------------------------------------------------------
+    */
 
     /*
      ---------------------------------------------------------------------
@@ -199,26 +209,34 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
     long iend, i, j, k, m, itemp, mplus1;
     double x2by4, twox, c, blpha, ratio, wminf;
     double d1, d2, d3, f0, f1, f2, p0, q0, t1, t2, twonu;
-    double dm, ex, bk1, bk2, enu;
+    double dm, ex, bk1, bk2, nu;
 
     ex = *x;
-    enu = *alpha;
+    nu = *alpha;
     *ncalc = imin2(*nb, 0) - 2;
-    if (*nb > 0 && (0. <= enu && enu < 1.) && (1 <= *ize && *ize <= 2) && (*ize != 1 || ex <= xmax) && ex > 0.)
-    {
-        k = 0;
-        if (enu < sqxmin)
+    if (*nb > 0 && (0. <= nu && nu < 1.) && (1 <= *ize && *ize <= 2) && ex > 0.)
+    { /* maybe fixme: treat the case x = 0 ? */
+        if (*ize == 1 && ex > xmax)
         {
-            enu = 0.;
+            ML_ERROR(ME_RANGE);
+            *ncalc = *nb;
+            for (i = 0; i < *nb; i++)
+                bk[i] = ML_POSINF;
+            return;
         }
-        else if (enu > .5)
+        k = 0;
+        if (nu < sqxmin)
+        {
+            nu = 0.;
+        }
+        else if (nu > .5)
         {
             k = 1;
-            enu -= 1.;
+            nu -= 1.;
         }
-        twonu = enu + enu;
+        twonu = nu + nu;
         iend = *nb + k - 1;
-        c = enu * enu;
+        c = nu * nu;
         d3 = -c;
         if (ex <= 1.)
         {
@@ -237,12 +255,12 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                 t1 = c * t1 + q[i - 1];
                 t2 = c * t2 + q[i];
             }
-            d1 = enu * d1;
-            t1 = enu * t1;
+            d1 = nu * d1;
+            t1 = nu * t1;
             f1 = log(ex);
-            f0 = a + enu * (p[7] - enu * (d1 + d2) / (t1 + t2)) - f1;
-            q0 = exp(-enu * (a - enu * (p[7] + enu * (d1 - d2) / (t1 - t2)) - f1));
-            f1 = enu * f0;
+            f0 = a + nu * (p[7] - nu * (d1 + d2) / (t1 + t2)) - f1;
+            q0 = exp(-nu * (a - nu * (p[7] + nu * (d1 - d2) / (t1 - t2)) - f1));
+            f1 = nu * f0;
             p0 = exp(f1);
             /* -----------------------------------------------------------
                Calculation of F0 =
@@ -254,6 +272,8 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                 d1 = c * d1 + r[i];
                 t1 = c * t1 + s[i];
             }
+            /* d2 := sinh(f1)/ nu = sinh(f1)/(f1/f0)
+             *     = f0 * sinh(f1)/f1 */
             if (fabs(f1) <= .5)
             {
                 f1 *= f1;
@@ -266,9 +286,9 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
             }
             else
             {
-                d2 = sinh(f1) / enu;
+                d2 = sinh(f1) / nu;
             }
-            f0 = d2 - enu * d1 / (t1 * p0);
+            f0 = d2 - nu * d1 / (t1 * p0);
             if (ex <= 1e-10)
             {
                 /* ---------------------------------------------------------
@@ -322,9 +342,9 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
             }
             else
             {
-                /* --------------------------------------------------------------------
-                  10^-10 < X <= 1.0
-                 -------------------------------------------------------------------- */
+                /* ------------------------------------------------------
+                   10^-10 < X <= 1.0
+                   ------------------------------------------------------ */
                 c = 1.;
                 x2by4 = ex * ex / 4.;
                 p0 = .5 * p0;
@@ -342,8 +362,8 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                     d3 = d1 + d3;
                     c = x2by4 * c / d2;
                     f0 = (d2 * f0 + p0 + q0) / d3;
-                    p0 /= d2 - enu;
-                    q0 /= d2 + enu;
+                    p0 /= d2 - nu;
+                    q0 /= d2 + nu;
                     t1 = c * f0;
                     t2 = c * (p0 - d2 * f0);
                     bk1 += t1;
@@ -401,7 +421,7 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                    -----------------------------------------------------------*/
                 d2 = ftrunc(estm[2] * ex + estm[3]);
                 m = (long)d2;
-                c = fabs(enu);
+                c = fabs(nu);
                 d3 = c + c;
                 d1 = d3 - 1.;
                 f1 = DBL_MIN;
@@ -460,7 +480,7 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                Calculation of K(ALPHA+1,X)
                from K(ALPHA,X) and  K(ALPHA+1,X)/K(ALPHA,X)
                --------------------------------------------------------- */
-            bk2 = bk1 + bk1 * (enu + .5 - ratio) / ex;
+            bk2 = bk1 + bk1 * (nu + .5 - ratio) / ex;
         }
         /*--------------------------------------------------------------------
           Calculation of 'NCALC', K(ALPHA+I,X),	 I  =  0, 1, ... , NCALC-1,
@@ -481,7 +501,7 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
         {
             return;
         }
-        m = imin2((long)(wminf - enu), iend);
+        m = imin2((long)(wminf - nu), iend);
         for (i = 2; i <= m; ++i)
         {
             t1 = bk1;
@@ -490,16 +510,12 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
             if (ex < 1.)
             {
                 if (bk1 >= DBL_MAX / twonu * ex)
-                {
-                    goto L195;
-                }
+                    break;
             }
             else
             {
                 if (bk1 / ex >= DBL_MAX / twonu)
-                {
-                    goto L195;
-                }
+                    break;
             }
             bk2 = twonu / ex * bk1 + t1;
             itemp = i;
@@ -509,7 +525,7 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
                 bk[j - 1] = bk2;
             }
         }
-    L195:
+
         m = itemp;
         if (m == iend)
         {
