@@ -309,7 +309,7 @@ static const short yycheck[] = {
     -1,  -1, 35,  36,  37, 38, 39,  40,  41,  12, -1, 44, 45, 46, 47,  -1, -1, 35, 36,  37, 38, 39, 40, 41, -1,  -1, 44,
     45,  46, 47,  -1,  -1, -1, -1,  37,  38,  39, 40, 41, -1, -1, 44,  45, 46, 47};
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/lib/bison.simple"
+#line 3 "/usr/share/misc/bison.simple"
 
 /* Skeleton output parser for bison,
    Copyright (C) 1984, 1989, 1990 Free Software Foundation, Inc.
@@ -504,7 +504,7 @@ static void __yy_memcpy(char *to, char *from, int count)
 #endif
 #endif
 
-#line 196 "/usr/lib/bison.simple"
+#line 196 "/usr/share/misc/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -1315,7 +1315,7 @@ yyreduce:
     }
     }
     /* the action file gets copied in in place of this dollarsign */
-#line 498 "/usr/lib/bison.simple"
+#line 498 "/usr/share/misc/bison.simple"
 
     yyvsp -= yylen;
     yyssp -= yylen;
@@ -2768,6 +2768,10 @@ static int NumericValue(int c)
     return NUM_CONST;
 }
 
+/* Strings may contain the standard ANSI escapes and octal */
+/* specifications of the form \o, \oo or \ooo, where 'o' */
+/* is an octal digit. */
+
 static int StringValue(int c)
 {
     int quote = c;
@@ -2782,32 +2786,52 @@ static int StringValue(int c)
         if (c == '\\')
         {
             c = xxgetc();
-            switch (c)
+            if ('0' <= c && c <= '8')
             {
-            case 'a':
-                c = '\a';
-                break;
-            case 'b':
-                c = '\b';
-                break;
-            case 'f':
-                c = '\f';
-                break;
-            case 'n':
-                c = '\n';
-                break;
-            case 'r':
-                c = '\r';
-                break;
-            case 't':
-                c = '\t';
-                break;
-            case 'v':
-                c = '\v';
-                break;
-            case '\\':
-                c = '\\';
-                break;
+                int octal = c - '0';
+                if ('0' <= (c = xxgetc()) && c <= '8')
+                {
+                    octal = 8 * octal + c - '0';
+                    if ('0' <= (c = xxgetc()) && c <= '8')
+                    {
+                        octal = 8 * octal + c - '0';
+                    }
+                    else
+                        xxungetc(c);
+                }
+                else
+                    xxungetc(c);
+                c = octal;
+            }
+            else
+            {
+                switch (c)
+                {
+                case 'a':
+                    c = '\a';
+                    break;
+                case 'b':
+                    c = '\b';
+                    break;
+                case 'f':
+                    c = '\f';
+                    break;
+                case 'n':
+                    c = '\n';
+                    break;
+                case 'r':
+                    c = '\r';
+                    break;
+                case 't':
+                    c = '\t';
+                    break;
+                case 'v':
+                    c = '\v';
+                    break;
+                case '\\':
+                    c = '\\';
+                    break;
+                }
             }
         }
         *p++ = c;
