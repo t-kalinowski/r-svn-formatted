@@ -248,14 +248,14 @@ static void SetLineType(NewDevDesc *dd, int newlty, double nlwd)
     gint i, j, newlwd;
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
 
-    newlwd = nlwd;
+    newlwd = nlwd; /*cast*/
     if (newlty != gtkd->lty || newlwd != gtkd->lwd)
     {
         gtkd->lty = newlty;
         gtkd->lwd = newlwd;
 
         if (newlty == 0)
-        {
+        { /* solid */
             if (newlwd <= 1)
                 newlwd = 0;
 
