@@ -287,7 +287,7 @@ static void GA_Size(double *left, double *right, double *bottom, double *top, Ne
 static void GA_Resize(NewDevDesc *dd);
 static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
-static Rboolean GA_Open(NewDevDesc *, gadesc *, char *, double, double, Rboolean, int, int, double, int, int);
+static Rboolean GA_Open(NewDevDesc *, gadesc *, char *, double, double, Rboolean, int, int, double, int, int, int);
 
 /********************************************************/
 /* end of list of required device driver actions 	*/
@@ -343,8 +343,8 @@ static void SaveAsWin(NewDevDesc *dd, char *display)
     ndd->displayList = R_NilValue;
     if (GADeviceDriver(ndd, display, fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
-                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, 1, NA_INTEGER, NA_INTEGER, FALSE,
-                       R_GlobalEnv))
+                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, White, 1, NA_INTEGER, NA_INTEGER,
+                       FALSE, R_GlobalEnv))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -1583,7 +1583,7 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
 }
 
 static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double h, Rboolean recording, int resize,
-                        int canvascolor, double gamma, int xpos, int ypos)
+                        int canvascolor, double gamma, int xpos, int ypos, int bg)
 {
     rect rr;
     char buf[600]; /* allow for pageno formats */
@@ -1592,7 +1592,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
         RFontInit();
 
     /* Foreground and Background Colors */
-    xd->bg = dd->startfill = 0xffffffff; /* transparent */
+    xd->bg = dd->startfill = bg; /* 0xffffffff; transparent */
     xd->col = dd->startcol = R_RGB(0, 0, 0);
 
     xd->fgcolor = Black;
@@ -2437,8 +2437,8 @@ static void GA_Hold(NewDevDesc *dd)
 /********************************************************/
 
 Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
-                        Rboolean recording, int resize, int canvas, double gamma, int xpos, int ypos, Rboolean buffered,
-                        SEXP psenv)
+                        Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
+                        Rboolean buffered, SEXP psenv)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -2471,7 +2471,7 @@ Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double heig
 
     /* Start the Device Driver and Hardcopy.  */
 
-    if (!GA_Open(dd, xd, display, width, height, recording, resize, canvas, gamma, xpos, ypos))
+    if (!GA_Open(dd, xd, display, width, height, recording, resize, canvas, gamma, xpos, ypos, bg))
     {
         free(xd);
         return FALSE;
