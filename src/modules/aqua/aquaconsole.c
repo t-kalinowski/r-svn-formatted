@@ -534,9 +534,9 @@ OSStatus SetUpGUI(void)
         WeHaveCocoa = true;
 
     /*   if( (err = CreateNibReference(CFSTR("main"), &nibRef)) != noErr) goto guifailure; */
-    fprintf(stderr, "\ncocomenu=%x", cocoaFeatures & cocoa_menu);
-    fprintf(stderr, "\ncocobasic=%x", cocoaFeatures & cocoa_basic);
-    fprintf(stderr, "\ncocoloop=%x", cocoaFeatures & cocoa_loop);
+    fprintf(stderr, "\nSetUpGUI:cocomenu=%x", cocoaFeatures & cocoa_menu);
+    fprintf(stderr, "\nSetUpGUI:cocobasic=%x", cocoaFeatures & cocoa_basic);
+    fprintf(stderr, "\nSetUpGUI:cocoloop=%x", cocoaFeatures & cocoa_loop);
 
     if ((cocoaFeatures & cocoa_menu) == 0)
     { /* if Cocoa bundle doesn't provide the menu, we create it */
@@ -835,10 +835,11 @@ OSStatus InstallAppHandlers(void)
     OSStatus err = noErr;
 
     InstallStandardEventHandler(GetApplicationEventTarget());
-
-    if (cocoaFeatures & cocoa_menu == 0)
+    if ((cocoaFeatures & cocoa_menu) == 0)
+    {
         err = InstallApplicationEventHandler(NewEventHandlerUPP(RCmdHandler), GetEventTypeCount(RCmdEvents), RCmdEvents,
                                              0, NULL);
+    }
 
     err = InstallApplicationEventHandler(NewEventHandlerUPP(RWinHandler), GetEventTypeCount(RGlobalWinEvents),
                                          RGlobalWinEvents, 0, NULL);
