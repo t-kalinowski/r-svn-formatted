@@ -1613,9 +1613,7 @@ SEXP do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, names, dims;
-#ifdef IEEE_754
     double xr, xi;
-#endif
     int i, n;
     checkArity(op, args);
 #ifdef stringent_is
@@ -1635,14 +1633,13 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         dims = names = R_NilValue;
-#ifdef IEEE_754
     switch (TYPEOF(x))
     {
     case REALSXP:
         for (i = 0; i < n; i++)
         {
             xr = REAL(x)[i];
-            if (xr != xr /*NaN*/ || R_FINITE(xr))
+            if (ISNAN(xr) || R_FINITE(xr))
                 LOGICAL(ans)[i] = 0;
             else
                 LOGICAL(ans)[i] = 1;
@@ -1653,7 +1650,7 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             xr = COMPLEX(x)[i].r;
             xi = COMPLEX(x)[i].i;
-            if ((xr != xr || R_FINITE(xr)) && (xi != xi || R_FINITE(xi)))
+            if ((ISNAN(xr) || R_FINITE(xr)) && (ISNAN(xi) || R_FINITE(xi)))
                 LOGICAL(ans)[i] = 0;
             else
                 LOGICAL(ans)[i] = 1;
@@ -1663,10 +1660,6 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
     }
-#else
-    for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = 0;
-#endif
     if (!isNull(dims))
         setAttrib(ans, R_DimSymbol, dims);
     if (!isNull(names))
