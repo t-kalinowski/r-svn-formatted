@@ -201,8 +201,8 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
 {
     int count;
     Tcl_Obj *tclobj, *elem;
-    int ret, i;
-    SEXP obj, val;
+    int i;
+    SEXP val;
 
     val = CADR(args);
 
@@ -258,8 +258,8 @@ SEXP RTcl_ObjFromDoubleVector(SEXP args)
 {
     int count;
     Tcl_Obj *tclobj, *elem;
-    int ret, i;
-    SEXP obj, val;
+    int i;
+    SEXP val;
 
     val = CADR(args);
 
@@ -314,8 +314,8 @@ SEXP RTcl_ObjFromIntVector(SEXP args)
 {
     int count;
     Tcl_Obj *tclobj, *elem;
-    int ret, i;
-    SEXP obj, val;
+    int i;
+    SEXP val;
 
     val = CADR(args);
 
