@@ -4,6 +4,7 @@
 #include <Rdefines.h>
 
 #include "embeddedRCall.h"
+#include "config.h"
 #include "Defn.h"
 
 int eval_R_command(const char *funcName, int argc, char *argv[])
