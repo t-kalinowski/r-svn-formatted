@@ -48,14 +48,14 @@ int R_X11_Init(void)
     initialized = -1;
     if (strcmp(R_GUIType, "none") == 0)
     {
-        warning("X11 module is not available under this GUI");
+        warning(_("X11 module is not available under this GUI"));
         return initialized;
     }
     res = moduleCdynload("R_X11", 1, 1);
     if (!res)
         return initialized;
     if (!ptr->access)
-        error("X11 routines cannot be accessed in module");
+        error(_("X11 routines cannot be accessed in module"));
     initialized = 1;
     return initialized;
 }
@@ -73,7 +73,7 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP rho)
         return (*ptr->X11)(call, op, args, rho);
     else
     {
-        error("R_X11 module cannot be loaded");
+        error(_("X11 module cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -93,7 +93,7 @@ SEXP X11_do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
         return (*ptr->de)(call, op, args, rho);
     else
     {
-        error("R_X11 module cannot be loaded");
+        error(_("X11 module cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -105,7 +105,7 @@ Rboolean R_GetX11Image(int d, void *pximage, int *pwidth, int *pheight)
         return (*ptr->image)(d, pximage, pwidth, pheight);
     else
     {
-        error("R_X11 module cannot be loaded");
+        error(_("X11 module cannot be loaded"));
         return FALSE;
     }
 }
@@ -119,21 +119,21 @@ Rboolean R_access_X11(void)
 
 SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error("X11 is not available");
+    error(_("X11 is not available"));
     return R_NilValue;
 }
 
 #ifndef HAVE_AQUA
 SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error("X11 is not available");
+    error(_("X11 is not available"));
     return R_NilValue;
 }
 #endif
 
 Rboolean R_GetX11Image(int d, void *pximage, int *pwidth, int *pheight)
 {
-    error("X11 is not available");
+    error(_("X11 is not available"));
     return FALSE;
 }
 #endif

@@ -61,7 +61,7 @@ extern Rboolean UsingReadline;
 
 void Rstd_Suicide(char *s)
 {
-    REprintf("Fatal error: %s\n", s);
+    REprintf(_("Fatal error: %s\n"), s);
     R_CleanUp(SA_SUICIDE, 2, 0);
 }
 
@@ -113,7 +113,7 @@ int R_SelectEx(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, stru
         if (SIGSETJMP(seljmpbuf, 1))
         {
             myintr();
-            error("interrupt handler must not return");
+            error(_("interrupt handler must not return"));
             return 0; /* not reached */
         }
         else
@@ -477,7 +477,7 @@ void pushReadline(char *prompt, rl_vcpfunc_t f)
     if (ReadlineStack.current >= ReadlineStack.max)
     {
         warning(
-            "An unusual circumstance has arisen in the nesting of readline input. Please report using bug.report()");
+            _("An unusual circumstance has arisen in the nesting of readline input. Please report using bug.report()"));
     }
     else
         ReadlineStack.fun[++ReadlineStack.current] = f;
@@ -586,19 +586,19 @@ int Rstd_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory
             {
                 cd = Riconv_open("", R_StdinEnc);
                 if (!cd)
-                    error("encoding '%s' is not recognised", R_StdinEnc);
+                    error(_("encoding '%s' is not recognised"), R_StdinEnc);
             }
             res = Riconv(cd, &ib, &inb, &ob, &onb);
             *ob = '\0';
             err = res == (size_t)(-1);
             /* errors lead to part of the input line being ignored */
             if (err)
-                fputs("<ERROR: invalid input in encoding> ", stdout);
+                fputs(_("<ERROR: invalid input in encoding> "), stdout);
             strncpy((char *)buf, obuf, len);
 #else
             if (!cd)
             {
-                warning("re-encoding is not available on this system");
+                warning(_("re-encoding is not available on this system"));
                 cd = (void *)1;
             }
 #endif
@@ -910,10 +910,10 @@ void Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
 
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, "invalid file argument");
+        errorcall(call, _("invalid file argument"));
     p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
     if (strlen(p) > PATH_MAX - 1)
-        errorcall(call, "file argument is too long");
+        errorcall(call, _("file argument is too long"));
     strcpy(file, p);
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
     if (R_Interactive && UsingReadline)
@@ -922,9 +922,9 @@ void Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
         read_history(file);
     }
     else
-        errorcall(call, "no history mechanism available");
+        errorcall(call, _("no history mechanism available"));
 #else
-    errorcall(call, "no history mechanism available");
+    errorcall(call, _("no history mechanism available"));
 #endif
 }
 
@@ -935,10 +935,10 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
 
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, "invalid file argument");
+        errorcall(call, _("invalid file argument"));
     p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
     if (strlen(p) > PATH_MAX - 1)
-        errorcall(call, "file argument is too long");
+        errorcall(call, _("file argument is too long"));
     strcpy(file, p);
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
     if (R_Interactive && UsingReadline)
@@ -949,9 +949,9 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     }
     else
-        errorcall(call, "no history available to save");
+        errorcall(call, _("no history available to save"));
 #else
-    errorcall(call, "no history available to save");
+    errorcall(call, _("no history available to save"));
 #endif
 }
 
@@ -982,7 +982,7 @@ SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     timeint = asReal(CAR(args));
     if (ISNAN(timeint) || timeint < 0)
-        errorcall(call, "invalid time value");
+        errorcall(call, _("invalid 'time' value"));
     tm = timeint * 1e6;
 
     start = times(&timeinfo);
@@ -1014,7 +1014,7 @@ SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else  /* not _R_HAVE_TIMING_ */
 SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error("Sys.sleep is not implemented on this system");
+    error(_("Sys.sleep is not implemented on this system"));
     return R_NilValue; /* -Wall */
 }
 #endif /* not _R_HAVE_TIMING_ */
