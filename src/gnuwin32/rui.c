@@ -188,7 +188,7 @@ static void menuprint(control m)
 
 static void menusavefile(control m)
 {
-    consolesavefile(RConsole);
+    consolesavefile(RConsole, 0);
     show(RConsole);
 }
 

@@ -1481,7 +1481,7 @@ del(lpr);
 setcursor(cur);
 FVOIDEND
 
-void consolesavefile(console c) FBEGIN char *fn;
+void consolesavefile(console c, int pager) FBEGIN char *fn;
 cursor cur;
 FILE *fp;
 int x0, y0, x1, y1, cl;
