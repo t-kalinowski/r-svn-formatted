@@ -40,8 +40,6 @@ static double ckendall(int k, int n, double **w)
     if (w[n] == 0)
     {
         w[n] = (double *)R_alloc(u + 1, sizeof(double));
-        if (!w[n])
-            error("allocation error in ckendall().");
         memset(w[n], '\0', sizeof(double) * (u + 1));
         for (i = 0; i <= u; i++)
             w[n][i] = -1;
@@ -68,8 +66,6 @@ dkendall(Sint *len, double *x, Sint *n) {
     double **w;
 
     w = (double **) R_alloc(*n + 1, sizeof(double *));
-    if (!w)
-	error("allocation error in dkendall().");
 
     for (i = 0; i < *len; i++)
 	if (fabs(x[i] - floor(x[i] + 0.5)) > 1e-7) {
@@ -87,8 +83,6 @@ void pkendall(Sint *len, double *x, Sint *n)
     double **w;
 
     w = (double **)R_alloc(*n + 1, sizeof(double *));
-    if (!w)
-        error("allocation error in pkendall().");
     memset(w, '\0', sizeof(double *) * (*n + 1));
 
     for (i = 0; i < *len; i++)
