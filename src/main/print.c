@@ -17,11 +17,11 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *
- *  print.default()  ->  do_printdefault & its sub-functions.
- *                       do_printmatrix, do_sink, do_invisible
+ *  print.default()  ->	 do_printdefault & its sub-functions.
+ *			 do_printmatrix, do_sink, do_invisible
  *
- *  See ./printutils.c   for general remarks on Printing
- *                       and the Encode.. utils.
+ *  See ./printutils.c	 for general remarks on Printing
+ *			 and the Encode.. utils.
  *
  *  Also ./printvector.c,  ./printarray.c
  */
@@ -93,7 +93,10 @@ SEXP do_invisible(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int quote, right;
-    SEXP a, x, rowlab, collab, oldnames;
+    SEXP a, x, rowlab, collab;
+#ifdef OLD
+    SEXP oldnames;
+#endif
     checkArity(op, args);
     PrintDefaults(rho);
     a = args;
@@ -129,8 +132,10 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         collab = R_NilValue;
 #endif
     printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, right, rowlab, collab);
+#ifdef OLD
     setAttrib(x, R_DimNamesSymbol, oldnames);
     UNPROTECT(1);
+#endif
     return x;
 }
 
