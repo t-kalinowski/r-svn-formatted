@@ -61,7 +61,7 @@ static SEXP makeRTclObject(Tcl_Obj *tclobj)
 static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     int status, i;
-    SEXP text, expr, ans;
+    SEXP text, expr, ans = R_NilValue /* -Wall */;
 
     text = PROTECT(allocVector(STRSXP, argc - 1));
     for (i = 1; i < argc; i++)
