@@ -258,7 +258,7 @@ END:
         {
 #ifdef DEBUG_q
             if (i == 1)
-                REprintf("no final Newton step because dgamma(*)== 0!");
+                REprintf("no final Newton step because dgamma(*)== 0!\n");
 #endif
             break;
         }
@@ -275,7 +275,7 @@ END:
             /* no improvement */
 #ifdef DEBUG_q
             if (i == 1 && max_it_Newton > 1)
-                REprintf("no Newton step done since delta{p} >= last delta");
+                REprintf("no Newton step done since delta{p} >= last delta\n");
 #endif
             break;
         } /* else : */
