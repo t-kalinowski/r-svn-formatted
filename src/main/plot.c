@@ -21,7 +21,6 @@
 
 /*---------------- BIG "FIXME" : Accept "lwd" wherever there's	lty !!! ----
  *		   ====================================================
- *---> need  FixupLwd ?
  */
 
 #ifdef HAVE_CONFIG_H
@@ -145,30 +144,30 @@ SEXP FixupPch(SEXP pch, DevDesc *dd)
     n = length(pch);
     if (n == 0)
     {
-        ans = allocVector(INTSXP, n = 1);
+        ans = allocVector(INTSXP, 1);
         INTEGER(ans)[0] = dd->gp.pch;
     }
     else if (isList(pch))
     {
-        ans = allocVector(INTSXP, n = n);
+        ans = allocVector(INTSXP, n);
         for (i = 0; pch != R_NilValue; pch = CDR(pch))
             INTEGER(ans)[i++] = asInteger(CAR(pch));
     }
     else if (isInteger(pch))
     {
-        ans = allocVector(INTSXP, n = n);
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = INTEGER(pch)[i];
     }
     else if (isReal(pch))
     {
-        ans = allocVector(INTSXP, n = n);
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = R_FINITE(REAL(pch)[i]) ? REAL(pch)[i] : NA_INTEGER;
     }
     else if (isString(pch))
     {
-        ans = allocVector(INTSXP, n = n);
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = CHAR(STRING(pch)[i])[0];
     }
@@ -186,16 +185,46 @@ SEXP FixupLty(SEXP lty, DevDesc *dd)
 {
     int i, n;
     SEXP ans;
-    if (length(lty) == 0)
+    n = length(lty);
+    if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
         INTEGER(ans)[0] = dd->gp.lty;
     }
     else
     {
-        ans = allocVector(INTSXP, n = length(lty));
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = LTYpar(lty, i);
+    }
+    return ans;
+}
+
+SEXP FixupLwd(SEXP lwd, DevDesc *dd)
+{
+    int i, n;
+    double w;
+    SEXP ans = NULL;
+
+    n = length(lwd);
+    if (n == 0)
+    {
+        ans = allocVector(REALSXP, 1);
+        REAL(ans)[0] = dd->gp.lwd;
+    }
+    else
+    {
+        PROTECT(lwd = coerceVector(lwd, REALSXP));
+        n = length(lwd);
+        ans = allocVector(REALSXP, n);
+        for (i = 0; i < n; i++)
+        {
+            w = REAL(lwd)[i];
+            if (w < 0)
+                w = NA_REAL;
+            REAL(ans)[i] = w;
+        }
+        UNPROTECT(1);
     }
     return ans;
 }
@@ -204,14 +233,15 @@ SEXP FixupFont(SEXP font)
 {
     int i, k, n;
     SEXP ans = R_NilValue; /* -Wall*/
-    if (length(font) == 0)
+    n = length(font);
+    if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
         INTEGER(ans)[0] = NA_INTEGER;
     }
     else if (isInteger(font) || isLogical(font))
     {
-        ans = allocVector(INTSXP, n = length(font));
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
         {
             k = INTEGER(font)[i];
@@ -222,7 +252,7 @@ SEXP FixupFont(SEXP font)
     }
     else if (isReal(font))
     {
-        ans = allocVector(INTSXP, n = length(font));
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
         {
             k = REAL(font)[i];
@@ -241,6 +271,7 @@ SEXP FixupCol(SEXP col, DevDesc *dd)
     int i, n;
     SEXP ans;
 
+    n = length(col);
     if (length(col) == 0)
     {
         ans = allocVector(INTSXP, 1);
@@ -248,7 +279,7 @@ SEXP FixupCol(SEXP col, DevDesc *dd)
     }
     else if (isList(col))
     {
-        ans = allocVector(INTSXP, n = length(col));
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
         {
             INTEGER(ans)[i] = RGBpar(CAR(col), 0, dd);
@@ -257,7 +288,7 @@ SEXP FixupCol(SEXP col, DevDesc *dd)
     }
     else
     {
-        ans = allocVector(INTSXP, n = length(col));
+        ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = RGBpar(col, i, dd);
     }
@@ -269,7 +300,7 @@ SEXP FixupCex(SEXP cex)
     SEXP ans = R_NilValue; /* -Wall*/
     int i, n;
     double c;
-
+    n = length(cex);
     if (length(cex) == 0)
     {
         ans = allocVector(REALSXP, 1);
@@ -277,7 +308,7 @@ SEXP FixupCex(SEXP cex)
     }
     else if (isReal(cex))
     {
-        ans = allocVector(REALSXP, n = length(cex));
+        ans = allocVector(REALSXP, n);
         for (i = 0; i < n; i++)
         {
             c = REAL(cex)[i];
@@ -289,7 +320,7 @@ SEXP FixupCex(SEXP cex)
     }
     else if (isInteger(cex) || isLogical(cex))
     {
-        ans = allocVector(REALSXP, n = length(cex));
+        ans = allocVector(REALSXP, n);
         for (i = 0; i < n; i++)
         {
             c = INTEGER(cex)[i];
@@ -1414,7 +1445,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     nlty = length(lty);
     args = CDR(args);
 
-    PROTECT(lwd = CAR(args));
+    PROTECT(lwd = FixupLwd(args, dd));
     nlwd = length(lwd);
     args = CDR(args);
 
@@ -2261,16 +2292,16 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* abline(a, b, h, v, col, lty, ...)	-- lwd !!! -- */
-    SEXP a, b, h, v, col, lty;
-    int i, ncol, nlines, nlty;
+    /* abline(a, b, h, v, col, lty, ...) */
+    SEXP a, b, h, v, col, lty, lwd;
+    int i, ncol, nlines, nlty, nlwd;
     double aa, bb, x[2], y[2];
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
 
     GCheckState(dd);
 
-    if (length(args) < 4)
+    if (length(args) < 5)
         errorcall(call, "too few arguments\n");
 
     if ((a = CAR(args)) != R_NilValue)
@@ -2297,6 +2328,10 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     nlty = length(lty);
 
+    PROTECT(lwd = FixupLwd(CAR(args), dd));
+    args = CDR(args);
+    nlwd = length(lwd);
+
     GSavePars(dd);
 
     nlines = 0;
@@ -2318,6 +2353,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!R_FINITE(aa) || !R_FINITE(bb))
             errorcall(call, "\"a\" and \"b\" must be finite\n");
         dd->gp.col = INTEGER(col)[0];
+        dd->gp.lwd = REAL(lwd)[0];
         if (nlty && INTEGER(lty)[0] != NA_INTEGER)
             dd->gp.lty = INTEGER(lty)[0];
         else
@@ -2325,25 +2361,28 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         GMode(1, dd);
         x[0] = dd->gp.usr[0];
         x[1] = dd->gp.usr[1];
-        if (dd->gp.xlog || dd->gp.ylog)
+        if (R_FINITE(dd->gp.lwd))
         {
-            double xx[101], yy[101];
-            int i;
-            double xstep = (x[1] - x[0]) / 100;
-            for (i = 0; i < 100; i++)
+            if (dd->gp.xlog || dd->gp.ylog)
             {
-                xx[i] = x[0] + i * xstep;
-                yy[i] = aa + xx[i] * bb;
+                double xx[101], yy[101];
+                int i;
+                double xstep = (x[1] - x[0]) / 100;
+                for (i = 0; i < 100; i++)
+                {
+                    xx[i] = x[0] + i * xstep;
+                    yy[i] = aa + xx[i] * bb;
+                }
+                xx[100] = x[1];
+                yy[100] = aa + x[1] * bb;
+                GPolyline(101, xx, yy, USER, dd);
             }
-            xx[100] = x[1];
-            yy[100] = aa + x[1] * bb;
-            GPolyline(101, xx, yy, USER, dd);
-        }
-        else
-        {
-            y[0] = aa + dd->gp.usr[0] * bb;
-            y[1] = aa + dd->gp.usr[1] * bb;
-            GLine(x[0], y[0], x[1], y[1], USER, dd);
+            else
+            {
+                y[0] = aa + dd->gp.usr[0] * bb;
+                y[1] = aa + dd->gp.usr[1] * bb;
+                GLine(x[0], y[0], x[1], y[1], USER, dd);
+            }
         }
         GMode(0, dd);
         nlines++;
@@ -2358,8 +2397,9 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
                 dd->gp.lty = INTEGER(lty)[nlines % nlty];
             else
                 dd->gp.lty = dd->dp.lty;
+            dd->gp.lwd = REAL(lwd)[nlines % nlwd];
             aa = REAL(h)[i];
-            if (R_FINITE(aa))
+            if (R_FINITE(aa) && R_FINITE(dd->gp.lwd))
             {
                 x[0] = dd->gp.usr[0];
                 x[1] = dd->gp.usr[1];
@@ -2381,8 +2421,9 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
                 dd->gp.lty = INTEGER(lty)[nlines % nlty];
             else
                 dd->gp.lty = dd->dp.lty;
+            dd->gp.lwd = REAL(lwd)[nlines % nlwd];
             aa = REAL(v)[i];
-            if (R_FINITE(aa))
+            if (R_FINITE(aa) && R_FINITE(dd->gp.lwd))
             {
                 y[0] = dd->gp.usr[2];
                 y[1] = dd->gp.usr[3];
@@ -2394,7 +2435,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         GMode(0, dd);
     }
-    UNPROTECT(2);
+    UNPROTECT(3);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
