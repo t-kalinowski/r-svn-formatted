@@ -9,16 +9,16 @@
 #include "Mathlib.h"
 
 /*----------- DEBUGGING -------------*/
-/* #define DEBUG
- * rather use  make CFLAGS='-DDEBUG -g -I/usr/local/include -I../include'
+/* #define DEBUG_pnch
+ * rather use  make CFLAGS='-DDEBUG_pnch -g -I/usr/local/include -I../include'
 
  * -- Feb.1, 1998 (R 0.62 alpha); M.Maechler:  still have
  - INFINITE loop \
  - bad precision / in some cases
 
  */
-#ifdef DEBUG
-#include <stdio.h>
+#ifdef DEBUG_pnch
+#include "PrtUtil.h"
 #endif
 
 double pnchisq(double x, double f, double theta)
@@ -54,8 +54,8 @@ double pnchisq(double x, double f, double theta)
 #endif
 
     lam = theta * half;
-#ifdef DEBUG
-    printf("pnchisq(x=%12g, f=%12g, theta=%12g):\n", x, f, theta);
+#ifdef DEBUG_pnch
+    REprintf("pnchisq(x=%12g, f=%12g, theta=%12g):\n", x, f, theta);
 #endif
 
     /* evaluate the first term */
@@ -72,8 +72,8 @@ double pnchisq(double x, double f, double theta)
 
     term = v * t;
     ans = term;
-#ifdef DEBUG
-    printf("\t v=exp(-th/2)=%12g, x/2=%12g, f/2=%12g ==> t=%12g\n", v, x2, f2, t);
+#ifdef DEBUG_pnch
+    REprintf("\t v=exp(-th/2)=%12g, x/2=%12g, f/2=%12g ==> t=%12g\n", v, x2, f2, t);
 #endif
 
     /* check if (f+2n) is greater than x */
@@ -83,8 +83,8 @@ double pnchisq(double x, double f, double theta)
     twon = n * 2;
     for (;;)
     {
-#ifdef DEBUG
-        printf(" _OL_: n=%d", n);
+#ifdef DEBUG_pnch
+        REprintf(" _OL_: n=%d", n);
 #endif
         if (f + twon - x > zero)
         {
@@ -95,8 +95,8 @@ double pnchisq(double x, double f, double theta)
         }
         for (;;)
         {
-#ifdef DEBUG
-            printf(" il: n=%d", n);
+#ifdef DEBUG_pnch
+            REprintf(" il: n=%d", n);
 #endif
             /* evaluate the next term of the */
             /* expansion and then the partial sum */
@@ -112,8 +112,8 @@ double pnchisq(double x, double f, double theta)
                 break;
         L10:
             bound = t * x / (f + twon - x);
-#ifdef DEBUG
-            printf("\tL10: n=%d; term=%12g; bound=%12g\n", n, term, bound);
+#ifdef DEBUG_pnch
+            REprintf("\tL10: n=%d; term=%12g; bound=%12g\n", n, term, bound);
 #endif
             if (bound <= errmax || n > itrmax)
                 goto L_End;
@@ -122,8 +122,8 @@ double pnchisq(double x, double f, double theta)
 L_End:
     if (bound > errmax)
         ML_ERROR(ME_PRECISION);
-#ifdef DEBUG
-    printf("\tL_End: n=%d; term=%12g; bound=%12g\n", n, term, bound);
+#ifdef DEBUG_pnch
+    REprintf("\tL_End: n=%d; term=%12g; bound=%12g\n", n, term, bound);
 #endif
     return ans;
 }
