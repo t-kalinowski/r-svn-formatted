@@ -55,7 +55,7 @@ extern int ConsoleAcceptCmd;
 static menubar RMenuBar;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mcopy, mcopypaste, mlazy, mconfig,
     mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart, mFAQ, mrwFAQ,
-    mpkgl, mpkgi, mpkgil;
+    mpkgl, mpkgi, mpkgil, mpkgu;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext;
 static menu m, mman;
 static char cmd[1024];
@@ -298,6 +298,14 @@ static void menupkgload(control m)
     show(RConsole);
 }
 
+static void menupkgupdate(control m)
+{
+    if (!ConsoleAcceptCmd)
+        return;
+    consolecmd(RConsole, "update.packages()");
+    show(RConsole);
+}
+
 static void menupkginstallcran(control m)
 {
     if (!ConsoleAcceptCmd)
@@ -441,6 +449,7 @@ static void menuact(control m)
         enable(mpkgl);
         enable(mpkgi);
         enable(mpkgil);
+        enable(mpkgu);
     }
     if (consolecancopy(RConsole))
     {
@@ -469,6 +478,7 @@ static void menuact(control m)
         disable(mpkgl);
         disable(mpkgi);
         disable(mpkgil);
+        disable(mpkgu);
     }
     draw(RMenuBar);
 }
@@ -838,6 +848,8 @@ int setupui()
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgi = newmenuitem("Install package from CRAN", 0, menupkginstallcran));
     MCHECK(mpkgil = newmenuitem("Install package from local zip file", 0, menupkginstalllocal));
+    MCHECK(newmenuitem("-", 0, NULL));
+    MCHECK(mpkgu = newmenuitem("Update packages from CRAN", 0, menupkgupdate));
 #ifdef USE_MDI
     newmdimenu();
 #endif
