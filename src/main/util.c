@@ -506,7 +506,10 @@ int ncols(SEXP s)
         t = getAttrib(s, R_DimSymbol);
         if (t == R_NilValue)
             return 1;
-        return INTEGER(t)[1];
+        if (LENGTH(t) >= 2)
+            return INTEGER(t)[1];
+        /* This is a 1D (or possibly 0D array) */
+        return 1;
     }
     else if (isFrame(s))
     {

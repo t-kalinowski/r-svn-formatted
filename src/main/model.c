@@ -1857,8 +1857,12 @@ alldone:;
     if (intrcept)
         INTEGER(assign)[k++] = 0;
     for (j = 0; j < nterms; j++)
+    {
+        if (INTEGER(count)[j] <= 0)
+            warning("problem with term %d in model.matrix: no columns are assigned", j + 1);
         for (i = 0; i < INTEGER(count)[j]; i++)
             INTEGER(assign)[k++] = j + 1;
+    }
 
     /* Create column labels for the matrix columns. */
 
