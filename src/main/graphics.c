@@ -3316,7 +3316,7 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
     double ir;
     char *vmax;
     double *xc, *yc;
-    int result;
+    int result, result2;
     int xpdsaved = dd->gp.xpd;
     ir = radius / dd->gp.ipr[0];
     ir = (ir > 0) ? ir : 1;
@@ -3332,9 +3332,9 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
         break;
     default: /* Partial clipping; draw poly[line|gon] */
         dd->gp.xpd = 2;
-        result = clipCircleCode(x, y, coords, ir, dd);
+        result2 = clipCircleCode(x, y, coords, ir, dd);
         dd->gp.xpd = xpdsaved;
-        if (dd->dp.canClip && result == -2)
+        if (dd->dp.canClip && result2 == -2)
         {
             GClip(dd);
             dd->dp.circle(x, y, coords, ir, bg, fg, dd);
