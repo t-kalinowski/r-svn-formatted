@@ -1097,6 +1097,7 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
                   int maxcube, int canvascolor)
 {
     /* if we have to bail out with "error", then must free(dd) and free(xd) */
+    /* That means the *caller*: the X11DeviceDriver code frees xd, for example */
 
     XEvent event;
     int iw, ih;
@@ -1157,7 +1158,10 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
     if (!displayOpen)
     {
         if ((display = XOpenDisplay(p)) == NULL)
+        {
+            warning("unable to open connection to X11 display`%s'", p);
             return FALSE;
+        }
         DisplayOpened = TRUE;
         Rf_setX11Display(display, gamma_fac, colormodel, maxcube, TRUE);
         displayOpen = TRUE;
@@ -1180,7 +1184,7 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
     xd->fg = dd->dp.fg = R_RGB(0, 0, 0);
     xd->col = dd->dp.col = xd->fg;
     xd->canvas = canvascolor;
-    if (type == JPEG & !R_OPAQUE(xd->canvas))
+    if (type == JPEG && !R_OPAQUE(xd->canvas))
     {
         warning("jpeg() does not support transparency: using white bg");
         xd->canvas = 0xffffff;
@@ -1208,7 +1212,10 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
                                             DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
                                             CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) ==
                 0)
+            {
+                warning("unable to create X11 window");
                 return FALSE;
+            }
 
             XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace,
                             (unsigned char *)"R Graphics", 13);
@@ -1247,7 +1254,10 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
         xd->windowWidth = iw = w;
         xd->windowHeight = ih = h;
         if ((xd->window = XCreatePixmap(display, rootwin, iw, ih, DefaultDepth(display, screen))) == 0)
+        {
+            warning("unable to create pixmap");
             return FALSE;
+        }
         /* Save the devDesc* with the window for event dispatching */
         /* Is this needed? */
         XSaveContext(display, xd->window, devPtrContext, (caddr_t)dd);
