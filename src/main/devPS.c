@@ -74,6 +74,31 @@ static struct
 
     {"Times", {"tir_____.afm", "tib_____.afm", "tii_____.afm", "tibi____.afm", "sy______.afm"}},
 
+    /* URW equivalents */
+    {"URWGothic", {"a010013l.afm", "a010015l.afm", "a010033l.afm", "a010035l.afm", "s050000l.afm"}},
+
+    {"URWBookman", {"b018012l.afm", "b018015l.afm", "b018032l.afm", "b018035l.afm", "s050000l.afm"}},
+
+    {"NimbusMon", {"n022003l.afm", "n022004l.afm", "n022023l.afm", "n022024l.afm", "s050000l.afm"}},
+
+    {"NimbusSan", {"n019003l.afm", "n019004l.afm", "n019023l.afm", "n019024l.afm", "s050000l.afm"}},
+
+    {"URWHelvetica", {"n019003l.afm", "n019004l.afm", "n019023l.afm", "n019024l.afm", "s050000l.afm"}},
+
+    {"NimbusSanCond", {"n019043l.afm", "n019044l.afm", "n019063l.afm", "n019064l.afm", "s050000l.afm"}},
+
+    {"CenturySch", {"c059013l.afm", "c059016l.afm", "c059033l.afm", "c059036l.afm", "s050000l.afm"}},
+
+    {"URWPalladio", {"p052003l.afm", "p052004l.afm", "p052023l.afm", "p052024l.afm", "s050000l.afm"}},
+
+    {"NimbusRom", {"n021003l.afm", "n021004l.afm", "n021023l.afm", "n021024l.afm", "s050000l.afm"}},
+
+    {"URWTimes", {"n021003l.afm", "n021004l.afm", "n021023l.afm", "n021024l.afm", "s050000l.afm"}},
+
+    /* Computer Modern as recoded by Brian D'Urso */
+    {"ComputerModern",
+     {"CM_regular_10.afm", "CM_boldx_10.afm", "CM_italic_10.afm", "CM_boldx_italic_10.afm", "CM_symbol_10.afm"}},
+
     {NULL}};
 
 static char familyname[5][50];
@@ -641,9 +666,20 @@ static void PSEncodeFont(FILE *fp, char *encname)
     /* include encoding unless it is ISOLatin1Encoding, which is predefined */
     if (strcmp(encname, "ISOLatin1Encoding"))
         fprintf(fp, "%% begin encoding\n%s def\n%% end encoding\n", enccode);
+
+    /* allow user to specify ps fragment for encoding */
     fontreencoding = findVar(install(".ps.fontreencoding"), R_GlobalEnv);
     if (fontreencoding != R_UnboundValue)
     {
+        if (!isString(fontreencoding))
+            error("Object `.ps.fontreencoding' is not a character vector");
+        for (i = 0; i < length(fontreencoding); i++)
+            fprintf(fp, "%s\n", CHAR(STRING_ELT(fontreencoding, i)));
+    }
+    else if (strcmp(familyname[4], "CMSY10") == 0)
+    {
+        /* use different ps fragment for CM fonts */
+        fontreencoding = findVar(install(".ps.cm.fontreencoding"), R_GlobalEnv);
         if (!isString(fontreencoding))
             error("Object `.ps.fontreencoding' is not a character vector");
         for (i = 0; i < length(fontreencoding); i++)
@@ -695,6 +731,15 @@ static void PSFileHeader(FILE *fp, char *encname, char *papername, double paperw
         for (i = 0; i < length(resourcecomments); i++)
             fprintf(fp, "%s\n", CHAR(STRING_ELT(resourcecomments, i)));
     }
+    else if (strcmp(familyname[4], "CMSY10") == 0)
+    {
+        resourcecomments = findVar(install(".ps.cm.resourcecomments"), R_GlobalEnv);
+        if (!isString(resourcecomments))
+            error("Object .ps.cm.resourcecomments is not a character vector");
+        for (i = 0; i < length(resourcecomments); i++)
+            fprintf(fp, "%s\n", CHAR(STRING_ELT(resourcecomments, i)));
+    }
+
     if (!EPSFheader)
         fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 () ()\n", papername, paperwidth, paperheight);
     fprintf(fp, "%%%%Title: R Graphics Output\n");
