@@ -276,10 +276,6 @@ static void RNGkind(RNGtype newkind)
     /* Choose a new kind of RNG.
      * Initialize its seed by calling the old RNG's unif_rand()
      */
-    GetRNGstate();
-
-    RNG_Init(newkind, unif_rand() * UINT_MAX);
-
     switch (newkind)
     {
     case WICHMANN_HILL:
@@ -291,8 +287,9 @@ static void RNGkind(RNGtype newkind)
     default:
         error("RNGkind: unimplemented RNG kind %d", newkind);
     }
+    GetRNGstate();
+    RNG_Init(newkind, unif_rand() * UINT_MAX);
     RNG_kind = newkind;
-
     PutRNGstate();
 }
 
@@ -474,7 +471,7 @@ static double MT_genrand()
 #define ran_arr_cycle R_KT_ran_arr_cycle
 #define ran_arr_ptr R_KT_ran_arr_ptr
 #define ran_arr_sentinel R_KT_ran_arr_sentinel
-#define ran_x R_KT_ran_x
+#define ran_x dummy
 
 /* ===================  Knuth TAOCP ========================== */
 
@@ -500,7 +497,7 @@ static double MT_genrand()
 #define MM (1L << 30)                           /* the modulus */
 #define mod_diff(x, y) (((x) - (y)) & (MM - 1)) /* subtraction mod MM */
 
-long ran_x[KK]; /* the generator state */
+/*long ran_x[KK]; */ /* the generator state */
 
 /* void ran_array(long aa[],int n) */
 void ran_array(aa, n) /* put n new random numbers in aa */
@@ -603,7 +600,6 @@ static Int32 KT_next()
 
 Void RNG_Init_KT(Int32 seed)
 {
-    RNG_Table[KNUTH_TAOCP].i_seed = ran_x;
     ran_start(seed % 1073741821);
     KT_pos = 100;
 }
