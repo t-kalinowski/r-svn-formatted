@@ -19,8 +19,6 @@
  * Originally written by Jonathan Rougier, email J.C.Rougier@durham.ac.uk
  */
 
-/* <UTF8> char here is handled as a whole string */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -29,11 +27,6 @@
 
 #define MAXLINE MAXELTSIZE
 
-/* Simple wrapper for C sprintf function: now (1.6.0) checks the
-   types and handles the R specials.
-
-   We make no attempt to allow fmt to be MBCS.
-*/
 SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, nargs, cnt, v;
@@ -102,8 +95,8 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                 {
                     /* recognise selected types from Table B-1 of K&R */
-
-                    chunk = strcspn(formatString + cur, "disfeEgGx") + 1;
+                    /* This is MBCS-OK, as we are in a format spec */
+                    chunk = strcspn(formatString + cur, "disfeEgGxX") + 1;
                     if (cur + chunk > n)
                         errorcall(call, _("unrecognised format at end of string"));
 
@@ -147,6 +140,8 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                     {
                     case 'd':
                     case 'i':
+                    case 'x':
+                    case 'X':
                         if (TYPEOF(this) == REALSXP)
                         {
                             double r = REAL(this)[0];
@@ -184,8 +179,8 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                     case INTSXP: {
                         int x = INTEGER(this)[ns % lens[nthis]];
-                        if (strcspn(fmt, "dix") >= strlen(fmt))
-                            error("%s", _("use format %d, %i or %x for integer objects"));
+                        if (strcspn(fmt, "dixX") >= strlen(fmt))
+                            error("%s", _("use format %d, %i, %x or %X for integer objects"));
                         if (x == NA_INTEGER)
                         {
                             fmt[strlen(fmt) - 1] = 's';
@@ -257,9 +252,13 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
             else
-            { /* not '%' : handle string part */
-
-                chunk = strcspn(formatString + cur, "%");
+            {                                               /* not '%' : handle string part */
+                char *ch = strchr(formatString + cur, '%'); /* MBCS-aware
+                                           version used */
+                if (ch)
+                    chunk = ch - formatString - cur;
+                else
+                    chunk = strlen(formatString + cur);
                 strncpy(bit, formatString + cur, chunk);
                 bit[chunk] = '\0';
             }
