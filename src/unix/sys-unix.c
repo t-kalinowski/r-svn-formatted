@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-1999   Robert Gentleman, Ross Ihaka
+ *  Copyright (C) 1997-2000   Robert Gentleman, Ross Ihaka
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -167,8 +167,8 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP tlist = R_NilValue, tchar, rval;
 
     checkArity(op, args);
-    if (!isString(CAR(args)))
-        errorcall(call, "character argument expected");
+    if (!isValidStringF(CAR(args)))
+        errorcall(call, "non-empty character argument expected");
     if (isLogical(CADR(args)))
         read = INTEGER(CADR(args))[0];
     if (read)
