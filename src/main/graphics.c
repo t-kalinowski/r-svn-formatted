@@ -5516,7 +5516,7 @@ int selectDevice(int devNum)
         return selectDevice(nextDevice(devNum));
 }
 
-void removeDevice(int devNum)
+static void removeDevice(int devNum)
 {
     if ((devNum > 0) && (devNum < R_MaxDevices) && (R_Devices[devNum] != NULL))
     {
@@ -5601,7 +5601,7 @@ void recordGraphicOperation(SEXP op, SEXP args, DevDesc *dd)
     }
 }
 
-void restoredpSaved(DevDesc *dd)
+static void restoredpSaved(DevDesc *dd)
 {
     /* NOTE that not all params should be restored before playing */
     /* the display list (e.g., don't restore the device size) */
