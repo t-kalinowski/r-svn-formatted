@@ -661,6 +661,7 @@ SEXP do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
             if (!drop || len > 1)
             {
+                PROTECT(ans);
                 PROTECT(attr = allocVector(INTSXP, 1));
                 INTEGER(attr)[0] = length(ans);
                 setAttrib(ans, R_DimSymbol, attr);
@@ -674,6 +675,7 @@ SEXP do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                     setAttrib(ans, R_NamesSymbol, R_NilValue);
                     UNPROTECT(1);
                 }
+                UNPROTECT(1);
             }
         }
     }
