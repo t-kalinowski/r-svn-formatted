@@ -216,8 +216,13 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     if (x.i == 0.0)
         x.i = 0.0;
 
+#ifdef IEEE_754
     if (ISNA(x.r) || ISNA(x.i))
     {
+#else
+    if (R_FINITE(x.r) || R_FINITE(x.i))
+    {
+#endif
         sprintf(Encodebuf, "%*s%*s", R_print.gap, "", wr + wi + 2, CHAR(R_print.na_string));
     }
     else
