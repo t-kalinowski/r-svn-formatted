@@ -1691,7 +1691,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             for (i = risponse; i < nVar; i++)
             {
-                if (INTEGER(nlevs)[i] > 1 && INTEGER(factors)[i + j * nVar] == 1)
+                if (INTEGER(nlevs)[i] > 1 && INTEGER(factors)[i + j * nVar] > 0)
                 {
                     INTEGER(factors)[i + j * nVar] = 2;
                     goto alldone;
