@@ -1849,7 +1849,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP sx, sy, sxy, txt, adj, pos, cex, col, font, vf, vfont;
+    SEXP sx, sy, sxy, txt, adj, pos, cex, col, font, vfont;
     int i, n, ncex, ncol, nfont, ntxt, xpd;
     double adjx = 0, adjy = 0, offset = 0.5;
     double *x, *y;
