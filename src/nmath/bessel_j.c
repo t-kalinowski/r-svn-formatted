@@ -247,8 +247,6 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                               2.585201673888497664e22,
                               6.2044840173323943936e23};
 
-    extern double gamma_cody(double);
-
     /* Local variables */
     long nend, intx, nbmx, i, j, k, l, m, n, nstart;
 
