@@ -456,6 +456,7 @@ static SEXP PowerTerms(SEXP left, SEXP right)
     pow = asInteger(right);
     if (pow == NA_INTEGER || pow <= 1)
         error("Invalid power in formula\n");
+    term = R_NilValue; /* -Wall */
     PROTECT(left = EncodeVars(left));
     right = left;
     for (i = 1; i < pow; i++)
@@ -1313,6 +1314,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* a data frame.  Be deeply suspicious here! */
 
     nc = length(data);
+    nr = 0; /* -Wall */
     if (!isNull(data))
     {
         nr = nrows(VECTOR(data)[0]);
@@ -1527,6 +1529,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* Note: the values of "nvar" and "nterms" are the REAL number of */
     /* variables in the model data frame and the number of model terms. */
 
+    nvar = nterms = 0; /* -Wall */
     PROTECT(factors = duplicate(getAttrib(terms, install("factors"))));
     if (length(factors) == 0)
     {
@@ -1546,9 +1549,12 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* Get the variable names from the factor matrix */
 
     vnames = getAttrib(factors, R_DimNamesSymbol);
-    if (length(vnames) < 1 || (nvar - intercept > 0 && !isString(VECTOR(vnames)[0])))
-        errorcall(call, "invalid terms argument\n");
-    vnames = VECTOR(vnames)[0];
+    if (length(factors) > 0)
+    {
+        if (length(vnames) < 1 || (nvar - intercept > 0 && !isString(VECTOR(vnames)[0])))
+            errorcall(call, "invalid terms argument\n");
+        vnames = VECTOR(vnames)[0];
+    }
 
     /* Get the variables from the model frame.  First perform */
     /* elementary sanity checks.  Notes:  1) We need at least */
@@ -1758,9 +1764,10 @@ alldone:;
             bufp = &buf[0];
             for (i = 0; i < nvar; i++)
             {
-                var_i = VECTOR(variable)[i];
-                if (ll = INTEGER(factors)[i + j * nvar])
+                ll = INTEGER(factors)[i + j * nvar];
+                if (ll)
                 {
+                    var_i = VECTOR(variable)[i];
                     if (!first)
                         bufp = AppendString(bufp, ".");
                     first = 0;
@@ -1818,6 +1825,7 @@ alldone:;
 
     /* b) Now loop over the model terms */
 
+    contrast = R_NilValue; /* -Wall */
     for (k = 0; k < nterms; k++)
     {
         for (i = 0; i < nvar; i++)
