@@ -2150,6 +2150,11 @@ void con_close(int i)
     con = getConnection(i);
     if (con->isopen)
         con->close(con);
+    if (strcmp(con->class, "gzcon") == 0)
+    {
+        Rgzconn priv = (Rgzconn)con->private;
+        con_close(priv->ncon);
+    }
     con->destroy(con);
     free(con->class);
     free(con->description);
@@ -3614,10 +3619,17 @@ static void gzcon_close(Rconnection con)
     else
         err = inflateEnd(&(priv->s));
     if (priv->inbuf)
+    {
         free(priv->inbuf);
+        priv->inbuf = Z_NULL;
+    }
     if (priv->outbuf)
+    {
         free(priv->outbuf);
-    icon->close(icon);
+        priv->outbuf = Z_NULL;
+    }
+    if (icon->isopen)
+        icon->close(icon);
     con->isopen = FALSE;
 }
 
@@ -3699,14 +3711,14 @@ static int gzcon_fgetc(Rconnection con)
 SEXP do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, class;
-    int i, ncon, level;
+    int i, icon, ncon, level;
     Rconnection incon = NULL, new = NULL;
-    char *m, *mode = NULL; /* -Wall */
+    char *m, *mode = NULL /* -Wall */, description[12];
 
     checkArity(op, args);
     if (!inherits(CAR(args), "connection"))
         errorcall(call, "`con' is not a connection");
-    incon = getConnection(asInteger(CAR(args)));
+    incon = getConnection(icon = asInteger(CAR(args)));
     level = asInteger(CADR(args));
     if (level == NA_INTEGER || level < 0 || level > 9)
         errorcall(call, "`level' must be one of 0 ... 9");
@@ -3730,15 +3742,16 @@ SEXP do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         free(new);
         error("allocation of gzcon connection failed");
     }
-    strcpy(new->class, "file");
-    new->description = (char *)malloc(strlen("gzcon") + 1);
+    strcpy(new->class, "gzcon");
+    sprintf(description, "gzcon(%d)", icon);
+    new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
     {
         free(new->class);
         free(new);
         error("allocation of gzcon connection failed");
     }
-    init_con(new, "gzcon", mode);
+    init_con(new, description, mode);
     new->text = FALSE;
     new->open = &gzcon_open;
     new->close = &gzcon_close;
@@ -3755,12 +3768,15 @@ SEXP do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         error("allocation of gzcon connection failed");
     }
     ((Rgzconn)(new->private))->con = incon;
+    ((Rgzconn)(new->private))->ncon = icon;
     ((Rgzconn)(new->private))->cp = level;
 
     ncon = NextConnection();
     Connections[ncon] = new;
     for (i = 0; i < 256; i++)
         new->encoding[i] = incon->encoding[i];
+    if (incon->isopen)
+        new->open(new);
 
     PROTECT(ans = allocVector(INTSXP, 1));
     INTEGER(ans)[0] = ncon;
