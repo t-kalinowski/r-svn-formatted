@@ -27,6 +27,10 @@
  *  previous anarchy.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include "IOStuff.h"
 
 /* Move the iob->write_buf pointer to the next */

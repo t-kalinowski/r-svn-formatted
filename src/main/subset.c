@@ -34,6 +34,10 @@
  *  separately, but then we would have more to keep in step.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include "Defn.h"
 
 /* ExtractSubset does the transfer of elements from "x" to "result" */
