@@ -127,7 +127,9 @@ static void PicTeX_Rect(double, double, double, double, int, int, int, DevDesc *
 static void PicTeX_Resize(DevDesc *);
 static double PicTeX_StrWidth(char *, DevDesc *);
 static void PicTeX_Text(double, double, int, char *, double, double, double, DevDesc *);
+#ifdef _not_used_
 static void PicTeX_MetricInfo(int, double *, double *, double *, DevDesc *);
+#endif
 
 /* Support routines */
 
@@ -177,11 +179,12 @@ static void PicTeX_Deactivate(DevDesc *dd)
 {
 }
 
+#ifdef _not_used_
 static void PicTeX_MetricInfo(int c, double *accent, double *descent, double *width, DevDesc *dd)
 {
     error("Metric information not yet available for this device");
 }
-
+#endif
 /* Initialize the device */
 
 static int PicTeX_Open(DevDesc *dd, picTeXDesc *ptd)
