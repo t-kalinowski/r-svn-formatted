@@ -66,7 +66,6 @@ char *R_Date()
 
 SEXP do_date(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    char *date;
     checkArity(op, args);
     return mkString(R_Date());
 }
@@ -321,9 +320,10 @@ SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         strcpy(dirname, dnp);
         if ((dir = opendir(dirname)) == NULL)
             errorcall(call, "invalid directory/folder name\n");
-        while (de = readdir(dir))
+        while ((de = readdir(dir)))
         {
             if (allfiles || !R_HiddenFile(de->d_name))
+            {
 #ifdef HAVE_REGCOMP
                 if (pattern)
                 {
@@ -333,6 +333,7 @@ SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
                 else
 #endif
                     count++;
+            }
         }
         closedir(dir);
     }
@@ -350,9 +351,10 @@ SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
             dnp = NULL;
         if ((dir = opendir(dirname)) == NULL)
             errorcall(call, "invalid directory/folder name\n");
-        while (de = readdir(dir))
+        while ((de = readdir(dir)))
         {
             if (allfiles || !R_HiddenFile(de->d_name))
+            {
 #ifdef HAVE_REGCOMP
                 if (pattern)
                 {
@@ -362,6 +364,7 @@ SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
                 else
 #endif
                     STRING(ans)[count++] = filename(dnp, de->d_name);
+            }
         }
         closedir(dir);
     }
@@ -387,7 +390,6 @@ SEXP do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP file, ans;
     int i, nfile;
-    FILE *fp;
     checkArity(op, args);
     if (!isString(file = CAR(args)))
         errorcall(call, "invalid file argument\n");
@@ -456,7 +458,7 @@ SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
                 if (strncmp(linebuf, topicbuf, ltopicbuf) == 0)
                 {
                     p = &linebuf[ltopicbuf - 1];
-                    while (isspace(*p))
+                    while (isspace((int)*p))
                         p++;
                     fclose(fp);
                     if (html)
