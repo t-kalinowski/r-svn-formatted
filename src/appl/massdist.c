@@ -1,6 +1,6 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1996  Robert Gentleman and Ross Ihaka
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1996	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 #include "Mathlib.h"
 
-int massdist(double *x, int *nx, double *xlow, double *xhigh, double *y, int *ny)
+void massdist(double *x, int *nx, double *xlow, double *xhigh, double *y, int *ny)
 {
     double fx, xdelta, xmass, xpos;
     int i, ix, ixmax, ixmin;
@@ -54,5 +54,4 @@ int massdist(double *x, int *nx, double *xlow, double *xhigh, double *y, int *ny
 
     for (i = 0; i < *ny; i++)
         y[i] *= xmass;
-    return 0;
 }

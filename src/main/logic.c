@@ -50,6 +50,8 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
     y = CADR(args);
     if (!isNumeric(x) || !isNumeric(y))
         errorcall(call, "operations are possible only for numeric or logical types\n");
+    tsp = R_NilValue;   /* -Wall */
+    class = R_NilValue; /* -Wall */
     xarray = isArray(x);
     yarray = isArray(y);
     xts = isTs(x);
@@ -295,7 +297,7 @@ static int haveNA;
 SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, s, t;
-    int count, narm;
+    int narm;
 
     if (DispatchGroup("Summary", call, op, args, env, &s))
         return s;
@@ -305,46 +307,31 @@ SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
     haveTrue = 0;
     haveFalse = 0;
     haveNA = 0;
-    count = 0;
 
     for (s = args; s != R_NilValue; s = CDR(s))
     {
         t = CAR(s);
         if (LGLSXP <= TYPEOF(t) && TYPEOF(t) <= CPLXSXP)
         {
-            /* coerceVector protects its argument */
-            /* so this actually works just fine */
+            /* coerceVector protects its argument so this actually works
+               just fine */
             t = coerceVector(t, LGLSXP);
             checkValues(LOGICAL(t), LENGTH(t));
-            count = count + LENGTH(t);
         }
         else if (!isNull(t))
             errorcall(call, "incorrect argument type\n");
     }
-    s = allocVector(LGLSXP, 1L);
     if (narm)
         haveNA = 0;
+
+    s = allocVector(LGLSXP, 1L);
     if (PRIMVAL(op) == 1)
     { /* ALL */
-        if (count == 0)
-            LOGICAL(s)[0] = 1;
-        else if (haveTrue && !haveFalse && !haveNA)
-            LOGICAL(s)[0] = 1;
-        else if (haveFalse)
-            LOGICAL(s)[0] = 0;
-        else
-            LOGICAL(s)[0] = NA_LOGICAL;
+        LOGICAL(s)[0] = haveNA ? NA_LOGICAL : !haveFalse;
     }
     else
     { /* ANY */
-        if (count == 0)
-            LOGICAL(s)[0] = 0;
-        else if (haveTrue)
-            LOGICAL(s)[0] = 1;
-        else if (haveFalse && !haveTrue && !haveNA)
-            LOGICAL(s)[0] = 0;
-        else
-            LOGICAL(s)[0] = NA_LOGICAL;
+        LOGICAL(s)[0] = haveNA ? NA_LOGICAL : haveTrue;
     }
     return s;
 }

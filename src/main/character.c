@@ -561,8 +561,13 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
         {
             nmatch += 1;
-            ns += length_adj(t, regmatch, reg.re_nsub);
-            offset += regmatch[0].rm_eo;
+            if (regmatch[0].rm_eo == 0)
+                offset++;
+            else
+            {
+                ns += length_adj(t, regmatch, reg.re_nsub);
+                offset += regmatch[0].rm_eo;
+            }
             if (s[offset] == '\0' || !global)
                 break;
         }
@@ -581,8 +586,16 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 for (j = 0; j < regmatch[0].rm_so; j++)
                     *u++ = s[offset + j];
-                u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
-                offset += regmatch[0].rm_eo;
+                if (regmatch[0].rm_eo == 0)
+                {
+                    *u++ = s[offset];
+                    offset++;
+                }
+                else
+                {
+                    u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
+                    offset += regmatch[0].rm_eo;
+                }
                 if (s[offset] == '\0' || !global)
                     break;
             }

@@ -872,6 +872,8 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(CAR(args)))
         errorcall(call, "wrong argument\n");
 
+    sprintf(ConsolePrompt, "Selection: ");
+
     while ((c = ConsoleGetchar()) != '\n' && c != R_EOF)
     {
         if (bufp >= &buffer[MAXELTSIZE - 2])
