@@ -182,7 +182,7 @@ OSErr DoSource(void);
 OSErr SourceFile(FSSpec *myfss);
 int GetTextSize(void);
 int GetScreenRes(void);
-static Boolean RunningOnCarbonX(void);
+Boolean RunningOnCarbonX(void);
 
 void consolecmd(char *cmd);
 static pascal void NavEventFilter(NavEventCallbackMessage, NavCBRec *, void *);
@@ -1784,7 +1784,7 @@ cleanup:
     return err;
 }
 
-static Boolean RunningOnCarbonX(void)
+Boolean RunningOnCarbonX(void)
 {
     UInt32 response;
 
