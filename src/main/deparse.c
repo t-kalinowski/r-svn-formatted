@@ -268,8 +268,8 @@ SEXP deparse1line(SEXP call, Rboolean abbrev)
 SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP saveenv, tval;
-    int i, ifile;
-    Rboolean wasopen;
+    int i, ifile, res;
+    Rboolean wasopen, havewarned = FALSE;
     Rconnection con = (Rconnection)1; /* stdout */
 
     checkArity(op, args);
@@ -302,7 +302,11 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (ifile == 1)
             Rprintf("%s\n", CHAR(STRING_ELT(tval, i)));
         else
-            Rconn_printf(con, "%s\n", CHAR(STRING_ELT(tval, i)));
+        {
+            res = Rconn_printf(con, "%s\n", CHAR(STRING_ELT(tval, i)));
+            if (!havewarned && res < strlen(CHAR(STRING_ELT(tval, i))) + 1)
+                warningcall(call, "wrote too few characters");
+        }
     if (!wasopen)
         con->close(con);
     return (CAR(args));
@@ -311,8 +315,8 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP file, names, o, objs, tval;
-    int i, j, nobjs;
-    Rboolean wasopen;
+    int i, j, nobjs, res;
+    Rboolean wasopen, havewarned = FALSE;
     Rconnection con;
 
     checkArity(op, args);
@@ -357,12 +361,16 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
                 error("cannot open the connection");
         for (i = 0; i < nobjs; i++)
         {
-            Rconn_printf(con, "\"%s\" <-\n", CHAR(STRING_ELT(names, i)));
+            res = Rconn_printf(con, "\"%s\" <-\n", CHAR(STRING_ELT(names, i)));
+            if (!havewarned && res < strlen(CHAR(STRING_ELT(names, i))) + 4)
+                warningcall(call, "wrote too few characters");
             if (TYPEOF(CAR(o)) != CLOSXP || isNull(tval = getAttrib(CAR(o), R_SourceSymbol)))
                 tval = deparse1(CAR(o), 0);
             for (j = 0; j < LENGTH(tval); j++)
             {
-                Rconn_printf(con, "%s\n", CHAR(STRING_ELT(tval, j)));
+                res = Rconn_printf(con, "%s\n", CHAR(STRING_ELT(tval, j)));
+                if (!havewarned && res < strlen(CHAR(STRING_ELT(tval, j))) + 1)
+                    warningcall(call, "wrote too few characters");
             }
             o = CDR(o);
         }
