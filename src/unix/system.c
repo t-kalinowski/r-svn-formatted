@@ -907,6 +907,7 @@ int __main()
 /* If the time/ctime version fails */
 /* use the follwing */
 
+#ifdef GONE
 #ifdef FALLBACK
 static char datebuf[64];
 char *R_Date()
@@ -934,6 +935,7 @@ char *R_Date()
     time(&t);
     return ctime(&t);
 }
+#endif
 #endif
 
 void R_ShowFile(char *file, char *title)
