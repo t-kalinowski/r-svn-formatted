@@ -21,9 +21,18 @@
 /* 27/03/2000 win32-api needs this for ANSI compliance */
 #define NONAMELESSUNION
 
+#include <windows.h>
 #include <shlobj.h>
 
 /* browse for a folder under the Desktop, return the path in the argument */
+
+int CALLBACK InitBrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+    if (uMsg == BFFM_INITIALIZED)
+        SendMessage(hwnd, BFFM_SETSELECTION, 1, lpData);
+    return (0);
+}
+
 void selectfolder(char *folder)
 {
     char buf[MAX_PATH];
@@ -33,22 +42,17 @@ void selectfolder(char *folder)
     LPITEMIDLIST pidlDesktop;
     LPITEMIDLIST pidlBrowse;
 
-    strcpy(folder, "");
     /* Get the shell's allocator. */
     if (!SUCCEEDED(SHGetMalloc(&g_pMalloc)))
         return;
 
-    /* Get the PIDL for the desktop. */
-    if (!SUCCEEDED(SHGetSpecialFolderLocation(hwnd, CSIDL_DESKTOP, &pidlDesktop)))
-        return;
-
     bi.hwndOwner = hwnd;
-    bi.pidlRoot = pidlDesktop;
+    bi.pidlRoot = NULL;
     bi.pszDisplayName = buf;
     bi.lpszTitle = "Choose a directory";
-    bi.ulFlags = 0;
-    bi.lpfn = NULL;
-    bi.lParam = 0;
+    bi.ulFlags = BIF_RETURNONLYFSDIRS;
+    bi.lpfn = (BFFCALLBACK)InitBrowseCallbackProc;
+    bi.lParam = (int)folder;
 
     /* Browse for a folder and return its PIDL. */
     pidlBrowse = SHBrowseForFolder(&bi);
