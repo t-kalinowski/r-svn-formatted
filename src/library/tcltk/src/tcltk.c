@@ -11,7 +11,9 @@
 
 #include "Rinternals.h"
 #include "R_ext/PrtUtil.h"
+#ifndef Win32
 #include "R_ext/eventloop.h"
+#endif
 
 /* From Parse.h -- must find better solution: */
 #define PARSE_NULL 0
@@ -134,6 +136,7 @@ SEXP dotTclcallback(SEXP args)
     return ans;
 }
 
+#ifndef Win32
 /* Add/delete Tcl/Tk event handler */
 
 static void (*OldHandler)(void);
@@ -169,6 +172,7 @@ void delTcl(void)
     R_wait_usec = OldTimeout;
     Tcl_loaded = 0;
 }
+#endif
 
 void tcltk_init()
 {
@@ -179,29 +183,33 @@ void tcltk_init()
                     get the windows but no event
                     handling. */
     if (code != TCL_OK)
-        REprintf("%s\n", Tcl_interp->result);
+        error(Tcl_interp->result);
 
     code = Tk_Init(Tcl_interp); /* Load Tk into interpreter */
     if (code != TCL_OK)
-        REprintf("%s\n", Tcl_interp->result);
+        error(Tcl_interp->result);
 
     Tcl_StaticPackage(Tcl_interp, "Tk", Tk_Init, Tk_SafeInit);
 
     code = Tcl_Eval(Tcl_interp, "wm withdraw ."); /* Hide window */
     if (code != TCL_OK)
-        REprintf("%s\n", Tcl_interp->result);
+        error(Tcl_interp->result);
 
     Tcl_CreateCommand(Tcl_interp, "R_eval", R_eval, (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 
     Tcl_CreateCommand(Tcl_interp, "R_call", R_call, (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 
+#ifdef Win32
+    Tcl_SetServiceMode(TCL_SERVICE_ALL);
+#else
     addTcl();
+#endif
 
     /*** We may want to revive this at some point ***/
 
 #if 0
   code = Tcl_EvalFile(Tcl_interp, "init.tcl");
   if (code != TCL_OK)
-    REprintf("%s\n", Tcl_interp->result);
+    error("%s\n", Tcl_interp->result);
 #endif
 }
