@@ -60,7 +60,7 @@ if defined(__MWERKS__) && defined(Macintosh)
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
+/*#    include <netinet/tcp.h>*/
 #endif
 #endif
 
@@ -73,7 +73,7 @@ extern int h_errno; /* HP-UX 9.05 and GUSI forget to declare this in netdb.h */
 
 #define MAXBACKLOG 5
 
-#if (defined(Unix) || defined(Macintosh)) && !defined(HAVE_BSD_NETWORKING)
+#if defined(Win32) && !defined(HAVE_BSD_NETWORKING)
 static char socket_msg[] = "sockets are not available on this system\n";
 #endif
 
@@ -97,6 +97,7 @@ int __initialize(void *ignoredParameter)
 }
 #endif
 
+/* Initialize the socket services */
 int Sock_init()
 {
 #if defined(Win32)
@@ -120,6 +121,7 @@ int Sock_init()
     return 0;
 }
 
+/* open a socket for listening */
 int Sock_open(Sock_port_t port, Sock_error_t perr)
 {
 #if defined(Win32) || defined(HAVE_BSD_NETWORKING)
@@ -142,6 +144,7 @@ int Sock_open(Sock_port_t port, Sock_error_t perr)
 #endif
 }
 
+/* listen on a socket, return name of connecting host in cname */
 int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
 {
 #if defined(Win32) || defined(HAVE_BSD_NETWORKING)
@@ -176,6 +179,7 @@ int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
 #endif
 }
 
+/* open and connect to a socket */
 int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
 {
 #if defined(Win32) || defined(HAVE_BSD_NETWORKING)
@@ -211,6 +215,7 @@ int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
 #endif
 }
 
+/* close a socket */
 int Sock_close(int fd, Sock_error_t perr)
 {
 #ifdef Win32
@@ -224,6 +229,7 @@ int Sock_close(int fd, Sock_error_t perr)
         return 0;
 }
 
+/* read from a socket */
 ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
 {
 #if defined(Win32) || defined(HAVE_BSD_NETWORKING)
@@ -241,6 +247,7 @@ ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
 #endif
 }
 
+/* write to a socket */
 ssize_t Sock_write(int fd, void *buf, size_t size, Sock_error_t perr)
 {
 #if defined(Win32) || defined(HAVE_BSD_NETWORKING)

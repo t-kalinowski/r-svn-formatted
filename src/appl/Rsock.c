@@ -24,9 +24,7 @@
 #include <config.h>
 #endif
 
-#ifndef Macintosh /* Jago: macro already defined */
-#define NULL 0
-#endif
+#include <stdlib.h> /* for NULL */
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -65,7 +63,7 @@ static void cleanup(void)
 static int enter_sock(int fd)
 {
 #ifdef DEBUG
-    printf("entersock(%d)\n", fd);
+    printf("enter_sock(%d)\n", fd);
 #endif
     if (fd == -1)
         return 0;
@@ -165,7 +163,7 @@ void Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
     *len = (int)n;
 }
 
-#if !(defined(Win32) || defined(Macintosh)) /* Jago was: #ifndef Win32 */
+#ifdef Unix
 #include <signal.h>
 #include <sys/wait.h>
 static void sig_child(int sig)
