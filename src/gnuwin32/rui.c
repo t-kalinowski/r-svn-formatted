@@ -64,8 +64,8 @@ static menubar RMenuBar;
 static popup RConsolePopup;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
     mlazy, mconfig, mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mmanadmin, mman0,
-    mapropos, mhelpstart, mhelpsearch, mFAQ, mrwFAQ, mpkgl, mpkgm, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde, mCRAN,
-    mrepos;
+    mapropos, mhelpstart, mhelpsearch, mFAQ, mrwFAQ, mpkgl, mpkgm, mpkgi, mpkgil, mpkgu, /*mpkgb, mpkgbu,*/
+    mde, mCRAN, mrepos;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext, lmanadmin;
 static menu m, mman;
 static char cmd[1024];
@@ -398,20 +398,22 @@ static void menupkgupdate(control m)
     /*    show(RConsole); */
 }
 
+#if 0
 static void menupkgupdatebioc(control m)
 {
-    if (!ConsoleAcceptCmd)
-        return;
-    consolecmd(RConsole, "update.packages(repos=getOption(\"BIOC\"))");
-    /*    show(RConsole); */
+    if (!ConsoleAcceptCmd) return;
+    consolecmd(RConsole,
+	       "update.packages(repos=getOption(\"BIOC\"))");
+/*    show(RConsole); */
 }
 
-static void menupkginstallbioc(control m)
+
+static void menupkginstallbioc(control m) 
 {
-    if (!ConsoleAcceptCmd)
-        return;
+    if (!ConsoleAcceptCmd) return;
     consolecmd(RConsole, "utils:::menuInstallBioc()");
 }
+#endif
 
 static void menupkgcranmirror(control m)
 {
@@ -427,11 +429,11 @@ static void menupkgrepos(control m)
     consolecmd(RConsole, "utils::setRepositories()");
 }
 
-static void menupkginstallcran(control m)
+static void menupkginstallpkgs(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "utils:::menuInstallCran()");
+    consolecmd(RConsole, "utils:::menuInstallPkgs()");
     /*    show(RConsole); */
 }
 
@@ -602,10 +604,9 @@ static void menuact(control m)
         enable(mpkgl);
         enable(mpkgm);
         enable(mpkgi);
-        enable(mpkgb);
         enable(mpkgil);
         enable(mpkgu);
-        enable(mpkgbu);
+        /* enable(mpkgb); enable(mpkgbu); */
         enable(mde);
         enable(mCRAN);
         enable(mrepos);
@@ -624,10 +625,9 @@ static void menuact(control m)
         disable(mpkgl);
         disable(mpkgm);
         disable(mpkgi);
-        disable(mpkgb);
         disable(mpkgil);
         disable(mpkgu);
-        disable(mpkgbu);
+        /* disable(mpkgb); disable(mpkgbu); */
         disable(mde);
         disable(mCRAN);
         disable(mrepos);
@@ -1036,13 +1036,15 @@ int RguiPackageMenu()
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgm = newmenuitem(G_("Set CRAN mirror..."), 0, menupkgcranmirror));
     MCHECK(mrepos = newmenuitem(G_("Select repositories..."), 0, menupkgrepos));
-    MCHECK(mpkgi = newmenuitem(G_("Install package(s)..."), 0, menupkginstallcran));
+    MCHECK(mpkgi = newmenuitem(G_("Install package(s)..."), 0, menupkginstallpkgs));
     MCHECK(mpkgu = newmenuitem(G_("Update packages"), 0, menupkgupdate));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgil = newmenuitem(G_("Install package(s) from local zip files..."), 0, menupkginstalllocal));
-    MCHECK(newmenuitem("-", 0, NULL));
-    MCHECK(mpkgb = newmenuitem(G_("Install package(s) from Bioconductor..."), 0, menupkginstallbioc));
-    MCHECK(mpkgbu = newmenuitem(G_("Update packages from Bioconductor"), 0, menupkgupdatebioc));
+    /*    MCHECK(newmenuitem("-", 0, NULL));
+        MCHECK(mpkgb = newmenuitem(G_("Install package(s) from Bioconductor..."),
+                       0, menupkginstallbioc));
+        MCHECK(mpkgbu = newmenuitem(G_("Update packages from Bioconductor"),
+        0, menupkgupdatebioc)); */
     return 0;
 }
 
