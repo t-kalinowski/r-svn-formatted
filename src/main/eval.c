@@ -797,7 +797,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, "bad for loop sequence");
         }
         REPROTECT(ans = eval(body, rho), api);
-    for_next:
+    for_next:;
     }
 for_break:
     endcontext(&cntxt);
