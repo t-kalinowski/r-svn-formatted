@@ -229,7 +229,7 @@ static void CreateBrowsePkg(WindowRef window, ControlRef *browser)
                    &frameAndFocus);
 }
 
-char *bpNames[] = {"Install/Update", "Available Packages", "Available version", "Installed version"};
+char *bpNames[] = {"Install/Update", "Package", "Available version", "Installed version"};
 
 static void ConfigureBrowsePkg(ControlRef browser)
 {

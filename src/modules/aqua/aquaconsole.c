@@ -93,13 +93,15 @@ extern SA_TYPE RestoreAction;
 #define kRCmdInstallFromCRAN 'cran'
 #define kRCmdInstallFromBioC 'bioc'
 #define kRCmdBinaryUpdateFromCRAN 'crub'
-#define kRCmdBinaryUpdateFromBioC 'bcub'
 #define kRCmdBinaryInstallFromCRAN 'crab'
 #define kRCmdBinaryInstallFromBioC 'biob'
 #define kRCmdUpdateFromCRAN 'crup'
 #define kRCmdUpdateFromBioC 'bcup'
 #define kRCmdInstallFromSrc 'ipfs'
 #define kRCmdInstallFromSrcDir 'ipsd'
+#define kRCmdBioCBundleAll 'bial'
+#define kRCmdBioCBundleAffy 'biaf'
+#define kRCmdBioCBundleCDNA 'bicd'
 
 /* items in the Help Menu */
 #define kRHelpStart 'rhlp'
@@ -1336,10 +1338,6 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 consolecmd("browse.update.pkgs(type=\"source\")");
                 break;
 
-            case kRCmdUpdateFromBioC:
-                consolecmd("browse.update.pkgs(\"BIOC\",type=\"source\")");
-                break;
-
             case kRCmdBinaryInstallFromCRAN:
                 consolecmd("browse.pkgs()");
                 break;
@@ -1352,14 +1350,31 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 consolecmd("browse.update.pkgs()");
                 break;
 
-            case kRCmdBinaryUpdateFromBioC:
-                consolecmd("browse.update.pkgs(\"BIOC\")");
-                break;
-
             case kRCmdInstallFromSrc:
                 consolecmd("install.from.file()\r");
                 break;
 
+                /* Bioconductor */
+            case kRCmdUpdateFromBioC:
+                consolecmd("{library(reposTools);update.packages2()}");
+                break;
+
+            case kRCmdBioCBundleAll:
+                consolecmd(
+                    "local({source(paste(getOption('BIOC'), 'getBioC.R',sep='/'), local=TRUE); getBioC('all')})");
+                break;
+
+            case kRCmdBioCBundleAffy:
+                consolecmd(
+                    "local({source(paste(getOption('BIOC'), 'getBioC.R',sep='/'), local=TRUE); getBioC('affy')})");
+                break;
+
+            case kRCmdBioCBundleCDNA:
+                consolecmd(
+                    "local({source(paste(getOption('BIOC'), 'getBioC.R',sep='/'), local=TRUE); getBioC('cdna')})");
+                break;
+
+                /* Local source files */
             case kRCmdInstallFromSrcDir:
                 if (DoSelectDirectory(buf, "Choose Package Directory") == noErr)
                 {

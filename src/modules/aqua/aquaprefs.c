@@ -80,6 +80,9 @@ void CallFontPanel(void);
 #define kAntiAliasingBox 3013
 #define kAutoRefreshBox 3014
 
+#define kCRANmirrorText 4501
+#define kBIOCmirrorText 4502
+
 #define kApplyPrefsButton 5000
 #define kCancelPrefsButton 5001
 #define kDefaultPrefsButton 5002
@@ -105,6 +108,8 @@ ControlID InputColorID = {kPrefControlsSig, kInputColorText};
 ControlID OutputColorID = {kPrefControlsSig, kOutputColorText};
 ControlID BufferingID = {kPrefControlsSig, kBufferingBox};
 ControlID BufferSizeID = {kPrefControlsSig, kBufferSizeSlider};
+ControlID CRANmirrorID = {kPrefControlsSig, kCRANmirrorText};
+ControlID BIOCmirrorID = {kPrefControlsSig, kBIOCmirrorText};
 
 static char DefaultConsoleFontName[] = "Courier";
 static int DefaultConsoleFontSize = 14;
@@ -122,6 +127,8 @@ static int DefaultAutoRefresh = 1;
 static int DefaultOverrideRDefaults = 0;
 static int DefaultBuffering = 1;
 static int DefaultBufferSize = 10;
+static char DefaultCRANmirror[] = "http://cran.r-project.org";
+static char DefaultBIOCmirror[] = "http://www.bioconductor.org";
 
 ControlRef GrabCRef(WindowRef theWindow, OSType theSig, SInt32 theNum);
 
@@ -129,9 +136,11 @@ Boolean isConsoleFont = true;
 
 OSStatus MySetFontSelection(void);
 OSStatus MyGetFontSelection(EventRef event);
+void RSetPackagePrefs(void);
 
 /* external symbols from aquaconsole.c */
 extern void RSetColors(void);
+extern void consolecmd(char *cmd);
 
 EventTypeSpec tabControlEvents[] = {{kEventClassControl, kEventControlHit}, {kEventClassCommand, kEventCommandProcess}};
 
@@ -153,6 +162,7 @@ CFStringRef appName, tabsizeKey, fontsizeKey, consolefontKey, devicefontKey;
 CFStringRef outfgKey, outbgKey, infgKey, inbgKey, bufferingKey, bufferSizeKey;
 CFStringRef devWidthKey, devHeightKey, devPSizeKey;
 CFStringRef devAutoRefreshKey, devAntialiasingKey, devOverrideRDefKey;
+CFStringRef CRANmirrorKey, BIOCmirrorKey;
 
 OSStatus InstallPrefsHandlers(void);
 void SetUpPrefSymbols(void);
@@ -177,6 +187,8 @@ void SetUpPrefSymbols(void)
     devOverrideRDefKey = CFSTR("Override R Defaults");
     bufferingKey = CFSTR("Buffered Output");
     bufferSizeKey = CFSTR("Output Buffer Size");
+    CRANmirrorKey = CFSTR("CRAN mirror");
+    BIOCmirrorKey = CFSTR("BIOC mirror");
 }
 
 OSStatus InstallPrefsHandlers(void)
@@ -296,6 +308,8 @@ void SetDefaultPrefs(void)
     DefaultPrefs.OverrideRDefaults = DefaultOverrideRDefaults;
     DefaultPrefs.Buffering = DefaultBuffering;
     DefaultPrefs.BufferSize = DefaultBufferSize;
+    strcpy(DefaultPrefs.CRANmirror, DefaultCRANmirror);
+    strcpy(DefaultPrefs.BIOCmirror, DefaultBIOCmirror);
 }
 
 void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To)
@@ -317,6 +331,8 @@ void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To)
     To->OverrideRDefaults = From->OverrideRDefaults;
     To->Buffering = From->Buffering;
     To->BufferSize = From->BufferSize;
+    strcpy(To->CRANmirror, From->CRANmirror);
+    strcpy(To->BIOCmirror, From->BIOCmirror);
 }
 
 void GetRPrefs(void)
@@ -328,7 +344,7 @@ void GetRPrefs(void)
     double devheight, devwidth;
     CFDataRef color;
     RGBColor fgout, bgout, fgin, bgin;
-    char consolefont[255], devicefont[255];
+    char consolefont[255], devicefont[255], CRANmirror[255], BIOCmirror[255];
     int autorefresh, antialiasing, overrideRdef, buffering, buffersize;
 
     SetUpPrefSymbols();
@@ -558,6 +574,32 @@ void GetRPrefs(void)
     if (color)
         CFRelease(color);
 
+    /* CRAN mirror */
+    text = CFPreferencesCopyAppValue(CRANmirrorKey, appName);
+    if (text)
+    {
+        if (!CFStringGetCString(text, CRANmirror, 255, kCFStringEncodingMacRoman))
+            strcpy(CRANmirror, DefaultPrefs.CRANmirror);
+        CFRelease(text);
+    }
+    else
+        strcpy(CRANmirror, DefaultPrefs.CRANmirror); /* set default value */
+
+    strcpy(CurrentPrefs.CRANmirror, CRANmirror);
+
+    /* BIOC repository  */
+    text = CFPreferencesCopyAppValue(BIOCmirrorKey, appName);
+    if (text)
+    {
+        if (!CFStringGetCString(text, BIOCmirror, 255, kCFStringEncodingMacRoman))
+            strcpy(BIOCmirror, DefaultPrefs.BIOCmirror);
+        CFRelease(text);
+    }
+    else
+        strcpy(BIOCmirror, DefaultPrefs.BIOCmirror); /* set default value */
+
+    strcpy(CurrentPrefs.BIOCmirror, BIOCmirror);
+
     SetUpPrefsWindow(&CurrentPrefs);
 }
 
@@ -578,6 +620,20 @@ void SetUpPrefsWindow(RAquaPrefsPointer Settings)
     /* Sets the Device Font name */
     GetControlByID(RPrefsWindow, &DeviceFontTextID, &myControl);
     text = CFStringCreateWithFormat(NULL, NULL, CFSTR("%s %d pt"), Settings->DeviceFontName, Settings->DevicePointSize);
+    SetControlData(myControl, kControlEditTextPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &text);
+    DrawOneControl(myControl);
+    CFRelease(text);
+
+    /* Sets the CRAN mirror  name */
+    GetControlByID(RPrefsWindow, &CRANmirrorID, &myControl);
+    text = CFStringCreateWithFormat(NULL, NULL, CFSTR("%s"), Settings->CRANmirror);
+    SetControlData(myControl, kControlEditTextPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &text);
+    DrawOneControl(myControl);
+    CFRelease(text);
+
+    /* Sets the BioC repository  name */
+    GetControlByID(RPrefsWindow, &BIOCmirrorID, &myControl);
+    text = CFStringCreateWithFormat(NULL, NULL, CFSTR("%s"), Settings->BIOCmirror);
     SetControlData(myControl, kControlEditTextPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &text);
     DrawOneControl(myControl);
     CFRelease(text);
@@ -638,7 +694,7 @@ void SaveRPrefs(void)
     double devwidth, devheight;
     CFDataRef color;
     RGBColor fgout, bgout, fgin, bgin;
-    char consolefont[255], devicefont[255];
+    char consolefont[255], devicefont[255], cran[255], bioc[255];
     int autorefresh, antialiasing, overrideRdef, buffering, buffersize;
 
     tabsize = CurrentPrefs.TabSize;
@@ -658,6 +714,9 @@ void SaveRPrefs(void)
     overrideRdef = CurrentPrefs.OverrideRDefaults;
     buffering = CurrentPrefs.Buffering;
     buffersize = CurrentPrefs.BufferSize;
+
+    strcpy(bioc, CurrentPrefs.BIOCmirror);
+    strcpy(cran, CurrentPrefs.CRANmirror);
 
     /* Tab Size */
     value = CFNumberCreate(NULL, kCFNumberIntType, &tabsize);
@@ -718,6 +777,17 @@ void SaveRPrefs(void)
     CFPreferencesSetAppValue(bufferSizeKey, value, appName);
     CFRelease(value);
 
+    /* CRAN */
+    text = CFStringCreateWithCString(NULL, cran, kCFStringEncodingMacRoman);
+    CFPreferencesSetAppValue(CRANmirrorKey, text, appName);
+    CFRelease(text);
+
+    /* BIOC */
+    text = CFStringCreateWithCString(NULL, bioc, kCFStringEncodingMacRoman);
+    CFPreferencesSetAppValue(BIOCmirrorKey, text, appName);
+    CFRelease(text);
+
+    /* colors */
     color = CFDataCreate(NULL, (UInt8 *)&fgout, sizeof(fgout));
     if (color)
     {
@@ -768,7 +838,7 @@ static pascal OSStatus PrefsTabEventHandlerProc(EventHandlerCallRef inCallRef, E
         // Hide the current pane and make the user selected pane the active one
         // our 3 tab pane IDs.  Put a dummy in so we can index without subtracting 1 (this array is zero based,
         // control values are 1 based).
-        int tabList[] = {kDummyValue, kTabMasterID, kTabMasterID + 1};
+        int tabList[] = {kDummyValue, kTabMasterID, kTabMasterID + 1, kTabMasterID + 2};
 
         // hide the current one, and set the new one
         SetControlVisibility(GrabCRef(theWindow, kTabPaneSig, tabList[lastPaneSelected]), false, true);
@@ -785,7 +855,7 @@ static pascal OSStatus PrefsTabEventHandlerProc(EventHandlerCallRef inCallRef, E
 
 static void SetInitialTabState(WindowRef theWindow)
 {
-    int tabList[] = {kTabMasterID, kTabMasterID + 1};
+    int tabList[] = {kTabMasterID, kTabMasterID + 1, kTabMasterID + 2};
     short qq = 0;
     // If we just run without setting the initial state, then the tab control
     // will have both (or all) sets of controls overlapping each other.
@@ -821,6 +891,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
     RGBColor outColor;
     ControlFontStyleRec controlStyle;
     ControlRef myControl;
+    char cran[255], bioc[255], cmd[600];
 
     if (FPIsFontPanelVisible())
         return (eventNotHandledErr);
@@ -839,6 +910,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
         RSetTab();
         RSetFontSize();
         RSetFont();
+        RSetPackagePrefs();
         break;
 
     case kCancelPrefsButton:
@@ -851,6 +923,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
         RSetTab();
         RSetFontSize();
         RSetFont();
+        RSetPackagePrefs();
         SaveRPrefs();
         HideWindow(theWindow);
         break;
@@ -1035,6 +1108,17 @@ void GetDialogPrefs(void)
 
     strcpy(CurrentPrefs.DeviceFontName, TempPrefs.DeviceFontName);
     CurrentPrefs.DevicePointSize = TempPrefs.DevicePointSize;
+
+    /* FIXME: need error handling here */
+    GetControlByID(RPrefsWindow, &CRANmirrorID, &controlField);
+    GetControlData(controlField, 0, kControlEditTextCFStringTag, sizeof(CFStringRef), &text, &actualSize);
+    CFStringGetCString(text, CurrentPrefs.CRANmirror, 255, kCFStringEncodingMacRoman);
+    CFRelease(text);
+
+    GetControlByID(RPrefsWindow, &BIOCmirrorID, &controlField);
+    GetControlData(controlField, 0, kControlEditTextCFStringTag, sizeof(CFStringRef), &text, &actualSize);
+    CFStringGetCString(text, CurrentPrefs.BIOCmirror, 255, kCFStringEncodingMacRoman);
+    CFRelease(text);
 }
 
 void pickColor(RGBColor inColour, RGBColor *outColor)
@@ -1046,6 +1130,24 @@ void pickColor(RGBColor inColour, RGBColor *outColor)
     CopyCStringToPascal("Choose a text colour:", prompt);
     if (!GetColor(where, prompt, &inColour, outColor))
         *outColor = inColour;
+}
+
+/* sets options from Packages pane of Preferences */
+void RSetPackagePrefs(void)
+{
+    char cmd[600];
+    static char oldBIOC[255] = "http://www.bioconductor.org", oldCRAN[255] = "http://cran.r-project.org";
+
+    /* actual work */
+    if (strcmp(oldCRAN, CurrentPrefs.CRANmirror) | strcmp(oldBIOC, CurrentPrefs.BIOCmirror))
+    {
+        strcpy(oldCRAN, CurrentPrefs.CRANmirror);
+        strcpy(oldBIOC, CurrentPrefs.BIOCmirror);
+        sprintf(cmd, "options(CRAN='%s',BIOC='%s')", oldCRAN, oldBIOC);
+        consolecmd(cmd);
+    }
+
+    return;
 }
 
 void ActivatePrefsWindow(void)
