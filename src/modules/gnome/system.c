@@ -49,8 +49,6 @@
 
 #include "../../unix/Runix.h"
 
-#include "devGNOME.h"
-
 #include "Startup.h"
 
 #include "gtkconsole.h"
