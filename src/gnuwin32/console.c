@@ -854,6 +854,8 @@ if (p->kind == PAGER)
         setfirstvisible(c, NEWFV + ROWS);
     if (k == 'B' - 'A' + 1)
         setfirstvisible(c, NEWFV - ROWS);
+    if (k == 1)
+        consoleselectall(c);
     return;
 }
 storekey(c, k);
