@@ -632,7 +632,12 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
 
 #ifdef SUPPORT_MBCS
     char *buff;
-    if (utf8locale && !utf8strIsASCII((char *)str) && face != 5)
+    if (utf8locale && !utf8strIsASCII((char *)str) &&
+        /*
+         * Every fifth font is a symbol font
+         * See postscriptFonts()
+         */
+        (face % 5) != 0)
     {
         buff = alloca(strlen((char *)str) + 1);
         /* Output string cannot be longer */
@@ -2944,7 +2949,12 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
     {
         SetColor(gc->col, dd);
 #ifdef SUPPORT_MBCS
-        if (utf8locale && !utf8strIsASCII(str) && pd->current.font != 5)
+        if (utf8locale && !utf8strIsASCII(str) &&
+            /*
+             * Every fifth font is a symbol font
+             * See postscriptFonts()
+             */
+            (pd->current.font % 5) != 0)
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
