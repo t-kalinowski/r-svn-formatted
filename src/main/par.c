@@ -1309,8 +1309,8 @@ static SEXP Query(char *what, DevDesc *dd)
     }
     else if (streql(what, "ann"))
     {
-        value = allocVector(INTSXP, 1);
-        INTEGER(value)[0] = dd->dp.ann;
+        value = allocVector(LGLSXP, 1);
+        LOGICAL(value)[0] = (dd->dp.ann != 0);
     }
     else if (streql(what, "ask"))
     {
