@@ -1,6 +1,6 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -44,9 +44,9 @@ static void activaterect(int);
    So that coercion back and forth maintains values of ssNA_REAL and ssNA_STRING
    I have set ssNA_STRING to be coerceVector(ssNA_REAL), very weird but easy.
 
-        At some point the text drawing, line drawing etc should simply call
-        the appropriate graphics functions rather than have all this duplicate
-        code.
+    At some point the text drawing, line drawing etc should simply call
+    the appropriate graphics functions rather than have all this duplicate
+    code.
 
  */
 
@@ -108,7 +108,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     doneSpread = 1;
     SeenChar = 0;
 
-    /* setup inputlist  */
+    /* setup inputlist	*/
 
     if (indata != R_NilValue)
     {
@@ -262,7 +262,7 @@ void drawwindow()
         drawline(i * box_w, 0, i * box_w, windowHeight);
     for (i = 1; i <= nhigh; i++)
         drawline(0, i * box_h, windowWidth, i * box_h);
-    colmax = colmin + (nwide - 2); /* so row 0 and col 0 are reserved for labels */
+    colmax = colmin + (nwide - 2); /* row 0 and col 0 are reserved for labels */
     rowmax = rowmin + (nhigh - 2);
     printlabs();
     if (inputlist != R_NilValue)
@@ -443,10 +443,7 @@ void activaterect(int which)
     ReleaseDC(RDEWnd, devHdc);
 }
 
-/*
-        when a buttonpress event happens find the square that is being pointed to
-
- */
+/* when a buttonpress event happens find the square that is being pointed to */
 
 int findsquare()
 {
@@ -542,7 +539,7 @@ static SEXP getccol()
 
 /*
    close up the entry to a square, put the value that has been entered
-   into  the correct place and as the correct type
+   into	 the correct place and as the correct type
  */
 
 void closerect()
@@ -634,7 +631,7 @@ void printstring(char *ibuf, int buflen, int row, int col)
     y_pos = row * box_h;
     clearrect(col, row);
     /*(col * box_w + text_offset, row * box_h + text_offset,
-              box_w - 2 * text_offset, box_h - 2 * text_offset);*/
+      box_w - 2 * text_offset, box_h - 2 * text_offset);*/
     len = nchars(ibuf, buflen);
     drawtext(x_pos + text_offset, y_pos + text_offset, ibuf, len);
 }
@@ -651,7 +648,8 @@ int nchars(char *ibuf, int len)
 
 /*
    handlechar has to be able to parse decimal numbers and strings,
-   depending on the current column type, only printing characters should get this far
+   depending on the current column type,
+   only printing characters should get this far
  */
 
 void handlechar(WPARAM c)

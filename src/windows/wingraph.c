@@ -1,5 +1,5 @@
 /*  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,29 +26,28 @@
 
 #define STRICT
 
-/* OUTSTANDING ISSUES                   */
+/* OUTSTANDING ISSUES */
 
-/* 1) line types for fat lines via LineDDA       */
+/* 1) line types for fat lines via LineDDA	 */
 
 /* Only True Type Fonts can be rotated so we need to choose one
     -GetRasterizerCaps indicates whether TrueType is available on
-                the machine
+        the machine
     -EnumFontFamilies can be called to enumerate available fonts
-        and you can check these to see if they are TrueType
+    and you can check these to see if they are TrueType
     -CHOOSEFONT (the interactive dialog) has a flag that allows
-        only TrueType fonts to be enumerated (should we allow
-        only TrueType??)
+    only TrueType fonts to be enumerated (should we allow
+    only TrueType??)
 
-        MetaFiles:
-                -a means of enabling print (the easy way is bitmaps
-                but I doubt all printers will support this).
-                -currently every graphics command must be executed twice; once to
-                plot to the screen and once to store it in the meta file (be careful
-                to only use commands that are allowable in metafiles...)
-                -clipping is a real problem with metafiles; the clipping info
-                is in device coords (so when you go to print on a laser printer
-                you need to transform all the clips)
-
+ MetaFiles:
+      - a means of enabling print (the easy way is bitmaps
+    but I doubt all printers will support this).
+      - currently every graphics command must be executed twice; once to
+    plot to the screen and once to store it in the meta file (be careful
+    to only use commands that are allowable in metafiles...)
+      - clipping is a real problem with metafiles; the clipping info
+    is in device coords (so when you go to print on a laser printer
+    you need to transform all the clips)
 */
 
 #define G_PI 3.141592653589793238462643383276
@@ -103,13 +102,13 @@ static char *Rfacename[] = {"", "Bold", "Italic", "Bold Italic"};
 #define LARGEST 24
 
 /*
-        face - whether the type face is normal or bold or ...
+    face - whether the type face is normal or bold or ...
 
-        size - the size of the font desired in points
+    size - the size of the font desired in points
 
-        rot  - the desired rotation; this can be passed as a
-                negative value to force a new font (ie. for the
-                meta file)
+    rot  - the desired rotation; this can be passed as a
+        negative value to force a new font (ie. for the
+        meta file)
 */
 
 static void Win_RGSetFont(int face, int size, double rot)
@@ -130,7 +129,8 @@ static void Win_RGSetFont(int face, int size, double rot)
     trot = (double)RGraphLF.lfEscapement / 10;
 
     if (size != fontsize || face != fontface || rot != trot)
-    { /*we create a new font */
+    {
+        /* we create a new font */
         if (rot >= 0)
             RGraphLF.lfEscapement = (LONG)rot * 10;
 
@@ -188,7 +188,8 @@ static void SetColor(unsigned col, int object)
     HDC Ihdc;
     COLORREF fcol, fixColor();
 
-    fcol = RGB(R_RED(col), R_GREEN(col), R_BLUE(col)); /* to account for the different bit patterns in R and Windoze */
+    fcol = RGB(R_RED(col), R_GREEN(col), R_BLUE(col));
+    /* to account for the different bit patterns in R and Windoze */
     Ihdc = GetDC(RGraphWnd);
 
     switch (object)
@@ -412,9 +413,10 @@ LRESULT FAR PASCAL GraphWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED)
-        { /* we must start a new plot because the clipping
-cannot be scaled properly
-GetClientRect(hWnd, &r1); */
+        {
+            /* we must start a new plot because the clipping
+               cannot be scaled properly
+               GetClientRect(hWnd, &r1); */
             if (HIWORD(lParam) != graphicsRect.bottom || LOWORD(lParam) != graphicsRect.right)
             {
                 graphicsRect.bottom = HIWORD(lParam);
@@ -495,7 +497,7 @@ void doGraphicsMenu(HWND GWnd, WPARAM wParam, LPARAM lParam)
     case RRR_SETUP:
         SysBeep();
         /*
-        SetupPrinter(); */
+          SetupPrinter(); */
         break;
     case RRR_PRINT:
         if (RGMhdc != NULL)
@@ -884,7 +886,7 @@ static void Win_Rect(double x0, double y0, double x1, double y1, int bg, int fg)
 }
 
 /* Rotated Text
-        xlast and ylast are meant to be the lower left corner of the box
+    xlast and ylast are meant to be the lower left corner of the box
    xc and yc indicate text justification
    0 means left justified,
    1 means right justified
@@ -961,21 +963,21 @@ static void Win_Mode(int mode)
 {
     return;
     /*
-            if( mode == 1 || mode == 2)
-                    if( RGMhmf != NULL )  { // we're adding to the current picture
-                            Win_SetMetaDC();
-                            PlayMetaFile(RGMhdc, RGMhmf);
-                            DeleteMetaFile(RGMhmf);
-                            RGMhmf=NULL;
-                    }
-            if( mode == 0 )
-                    if( RGMhdc != NULL )  {
-                            if( RGMhmf != NULL )
-                                    DeleteMetaFile(RGMhmf);
-                            RGMhmf=CloseMetaFile(RGMhdc);
-                            RGMhdc=NULL;
-                    }
-    */
+      if( mode == 1 || mode == 2)
+      if( RGMhmf != NULL )	{ // we're adding to the current picture
+      Win_SetMetaDC();
+      PlayMetaFile(RGMhdc, RGMhmf);
+      DeleteMetaFile(RGMhmf);
+      RGMhmf=NULL;
+      }
+      if( mode == 0 )
+      if( RGMhdc != NULL )	{
+      if( RGMhmf != NULL )
+      DeleteMetaFile(RGMhmf);
+      RGMhmf=CloseMetaFile(RGMhdc);
+      RGMhdc=NULL;
+      }
+      */
 }
 
 /* Keep the Graphics Window in Front */

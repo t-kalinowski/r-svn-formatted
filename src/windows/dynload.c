@@ -1,7 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997  The R Core Team
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997	The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,8 +50,8 @@
  *  2. The dlopen interface is not available.
  *
  *  In this case we use the table "CFunTabEntry" to locate functions
- *  in the executable.  We do this by straight linear search through
- *  the table.  Note that the content of the table is created at
+ *  in the executable.	We do this by straight linear search through
+ *  the table.	Note that the content of the table is created at
  *  system build time from the list in ../appl/ROUTINES.
  */
 

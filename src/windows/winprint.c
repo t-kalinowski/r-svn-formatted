@@ -1,4 +1,4 @@
-/*  R : A Computer Langage for Statistical Data Analysis
+/*  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,8 @@
 BOOL bPrint;
 HWND hdlgCancel;
 
-/* sizes of the printer P*** and the window W*** needed to translate the clipping region */
+/* sizes of the printer P*** and the window W***
+   needed to translate the clipping region */
 static float PPixelsX, PPixelsY, PMMX, PMMY;
 static float WPixelsX, WPixelsY, WMMX, WMMY;
 

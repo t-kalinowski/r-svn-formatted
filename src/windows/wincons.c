@@ -1,5 +1,5 @@
-/*  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
+/*  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,36 +28,38 @@
 
 /*    General Comments
 
-        R For Windows is implemented useing the Multiple Document Interface. The
-        basics were taken from Petzold, Programming Windows 95 and in many places
-        ideas were borrowed from Luke Tierney's XLisp-Stat. The errors I made up
-        myself.
-        The MDI has a main frame that manages all of the client (or child windows).
-        For R we have a main frame and then the console window, the graphics window,
-        the data entry window and a pop-up editor window all created under the graphics
-        window.
+ R For Windows is implemented useing the Multiple Document Interface. The
+ basics were taken from Petzold, Programming Windows 95 and in many places
+ ideas were borrowed from Luke Tierney's XLisp-Stat. The errors I made up
+ myself.
+ The MDI has a main frame that manages all of the client (or child
+ windows).  For R we have a main frame and then the console window,
+ the graphics window, the data entry window and a pop-up editor window
+ all created under the graphics window.
 
-        Window Variables
-        ===============
-        RInst - The MDI instance.
-        RFrame - The MDI frame.
-        RClient - The MDI client window. Handling window for the MDI.
-        RConsole - The Console window
-        RConsoleFrame - The Frame for the console window.
+    Window Variables
+    ===============
+    RInst - The MDI instance.
+    RFrame - The MDI frame.
+    RClient - The MDI client window. Handling window for the MDI.
+    RConsole - The Console window
+    RConsoleFrame - The Frame for the console window.
 
-        RGraphWnd -  The Graphics window.
-        REditWnd  -  The editor window.
-        RDEWnd    -  The data entry window.
+    RGraphWnd -  The Graphics window.
+    REditWnd  -  The editor window.
+    RDEWnd	  -  The data entry window.
 
-        Both the Console and the EditWnd have frames that are MDI child windows. This lets them
-        handle the menu changes that are required when they come to the top. Within that
-        frame they have a Windows multiline edit dialogue window running.
+ Both the Console and the EditWnd have frames that are MDI child
+ windows. This lets them handle the menu changes that are required
+ when they come to the top. Within that frame they have a Windows
+ multiline edit dialogue window running.
 
 
-PASTING TEXT: Text is pasted into the editor one line at a time. I don't see a better
-way to do it given that we need to stick '\r' in at the end of each line and the parser
-is really dealing with a line at a time. When the console editor runs out of room the top
-lines are cut out of the buffer and the remaining lines shifted down.
+ PASTING TEXT: Text is pasted into the editor one line at a time. I
+ don't see a better way to do it given that we need to stick '\r' in at
+ the end of each line and the parser is really dealing with a line at a
+ time. When the console editor runs out of room the top lines are cut
+ out of the buffer and the remaining lines shifted down.
 
 */
 HINSTANCE RInst;
@@ -74,11 +76,11 @@ static LPSTR RPasteP;
 static int RPasteLen;
 
 /*
-    InStart locates the position in the text buffer of the end of the
-    last statement executed. Anything from here to the end can be modified.
+  InStart locates the position in the text buffer of the end of the
+  last statement executed. Anything from here to the end can be modified.
 
-    InFlag is used to see when a carriage return is pressed and hence
-    a statement should be sent to the grammar.
+  InFlag is used to see when a carriage return is pressed and hence
+  a statement should be sent to the grammar.
 */
 
 static int InStart;
@@ -240,8 +242,8 @@ errcd:
     return;
 }
 /*
-        use a MDI interface for the console; the actual console will be
-        a client window under the base MDI window
+ use a MDI interface for the console; the actual console will be
+ a client window under the base MDI window
 */
 BOOL InitApplication(HINSTANCE hinstCurrent)
 {
@@ -403,7 +405,8 @@ HWND CreateConsoleWind(HWND hWndParent, HMENU hMenu, HANDLE hInstance)
     HWND hWnd;
 
     GetClientRect(hWndParent, (LPRECT)&Rect);
-    /* the (HMENU) RRR_EDIT is used by ConsoleWndProc to trap EN_**** messages */
+    /* the (HMENU) RRR_EDIT is used by ConsoleWndProc to trap
+       EN_**** messages */
     hWnd = CreateWindow(
         "Edit", NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
         0, 0, (Rect.right - Rect.left), (Rect.bottom - Rect.top), hWndParent, (HMENU)RRR_EDIT, hInstance, NULL);
@@ -477,7 +480,7 @@ LRESULT CALLBACK EdWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         if (LOWORD(curPos) < InStart)
         {
             RSetCursor(); /*SysBeep();
-            return 0;*/
+                    return 0;*/
         }
         switch (wParam)
         {
@@ -511,7 +514,7 @@ LRESULT CALLBACK ConsoleWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_SIZE:
         MoveWindow(RConsole, 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
         if (!IsIconic(hWnd))
-        { // ### to avoid problems with maximizing
+        { /* ### to avoid problems with maximizing*/
             DefMDIChildProc(hWnd, message, wParam, lParam);
             SendMessage(RClient, WM_MDIRESTORE, (WPARAM)hWnd, 0);
             return (0);
@@ -774,11 +777,11 @@ LPARAM lParam;
 }
 
 /*************************************************************/
-/* This function print the given prompt at the console       */
-/* and then transfers up to bufsize characters into the      */
+/* This function print the given prompt at the console	     */
+/* and then transfers up to bufsize characters into the	     */
 /* buffer pointed to by buf. The last two characters should  */
-/* be set to \n\0. If hist is non-zero then the line is      */
-/* added to any command line history-haha                    */
+/* be set to \n\0. If hist is non-zero then the line is	     */
+/* added to any command line history-haha		     */
 
 int R_ReadConsole(char *prompt, char *buf, int bufsize, int hist)
 {
@@ -896,7 +899,7 @@ void R_ClearerrConsole(void)
         clearerr(stdin);
 }
 
-/*--- F i l e    H an d l i n g    C o d e ---*/
+/*--- F i l e	 H an d l i n g	   C o d e ---*/
 
 FILE *R_OpenLibraryFile(char *file)
 {
@@ -963,7 +966,7 @@ void SysBeep(void)
 }
 
 /* copy selection to the clipboard and set the cursor to the end of
-        the selection
+    the selection
 */
 void RSelToClip(void)
 {
@@ -971,8 +974,8 @@ void RSelToClip(void)
 }
 
 /* check to see if the current caret pos is the current line
-        if so then paste there, otherwise paste at the end of the
-        text
+    if so then paste there, otherwise paste at the end of the
+    text
 */
 
 void RPasteFromClip(void)
@@ -1016,9 +1019,9 @@ void RPasteFromClip(void)
     RPasteP = GlobalLock(RPasteText);
     RPasteLen = strlen(RPasteP);
     /* handle the insertion pt: if we are in the current input line
-            don't do anything but if we are elsewhere go to the end of the
-            text and start there
-    */
+       don't do anything but if we are elsewhere go to the end of the
+       text and start there
+       */
     sel = Edit_GetSel(RConsole);
     selb = LOWORD(sel);
     sstart = Edit_GetTextLength(RConsole);
@@ -1044,7 +1047,7 @@ void RClearSel(void)
 }
 
 /* Trim the edit buffer so that there are at most savelines lines and
-        savechars chars in it
+    savechars chars in it
 */
 
 void RTrimBuffer(void)
@@ -1096,7 +1099,7 @@ extern BOOL CALLBACK Menu_SetMem(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
             vsize = strtol(memval, &p, 10);
             if (*p)
             {
-                MessageBox(RConsole, "The  VSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(RConsole, "The VSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);
                 sprintf(memval, "%d", (int)((R_VSize * sizeof(VECREC)) + 1048575) / 1048576);
                 SetDlgItemText(hDlg, 102, memval);
                 return 1;
@@ -1109,7 +1112,7 @@ extern BOOL CALLBACK Menu_SetMem(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
             nsize = strtol(memval, &p, 10);
             if (*p)
             {
-                MessageBox(RConsole, "The  NSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(RConsole, "The NSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);
                 sprintf(memval, "%d", (int)R_NSize);
                 SetDlgItemText(hDlg, 103, memval);
                 return 1;

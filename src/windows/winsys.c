@@ -1,6 +1,6 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -181,8 +181,8 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
 
     if (0 == setjmp(R_Winjbuf))
         mainloop();
-    else
-        EventLoop(); /* run the windows event loop so that everything closes down */
+    else /* run the windows event loop so that everything closes down */
+        EventLoop();
 exiting:
     DestroyMenu(RMenuDE);
     DestroyMenu(RMenuGraph);
@@ -191,11 +191,12 @@ exiting:
     return 0;
 }
 
-/* query memory and see if NSize and/or Vsize have been set
-   if so the current setting is returned
-   a negative return value indicates an error of some type.
-   0 indicates it was not set
-   a positive value is the value that is currently set
+/*
+ query memory and see if NSize and/or Vsize have been set.
+ if so the current setting is returned.
+ a negative return value indicates an error of some type.
+ 0 indicates it was not set;
+ a positive value is the value that is currently set.
 */
 
 int R_QueryMemory(char *regname)
@@ -227,9 +228,9 @@ int R_QueryMemory(char *regname)
 }
 
 /*
-R_SetMemory has no effect on the current session. It merely posts the
-chosen values for R_NSize and R_Vsize to the registry. They will be retrieved
-and used for subsequent sessions.
+  R_SetMemory has no effect on the current session. It merely posts the
+  chosen values for R_NSize and R_Vsize to the registry. They will be retrieved
+  and used for subsequent sessions.
   NSize = # of cons cells
   VSize = size of vector heap in bytes
 */
@@ -387,7 +388,7 @@ void dump_image(char *fname, int jump)
     /* check to see if another drive was specified;
        must be a right way to do this one;
        currently (1997) this size stuff is being ignored
-    */
+       */
     if (fname[1] == ':')
         strncpy(tstr, fname, 2);
     else

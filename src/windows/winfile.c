@@ -1,5 +1,5 @@
-/*  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
+/*  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -99,10 +99,7 @@ SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
-/* return a STRSXP with a single element that is a valid temporary
-   file name
-*/
-
+/* return a STRSXP with a single element that is a valid temporary file name */
 SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
@@ -114,9 +111,10 @@ SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* wincat cat's infile to outfile. If they are disk files then append is used to
-determine whether to append the information. If outfile is R_NilValue then infile
-will be printed across the terminal, a line at a time
+/* wincat cat's infile to outfile.
+   If they are disk files then append is used to determine whether to
+   append the information. If outfile is R_NilValue then infile will
+   be printed across the terminal, a line at a time
 */
 
 SEXP do_wincat(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -167,11 +165,10 @@ SEXP do_wincat(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-/* getbasename  finds the directory path to the file being opened */
+/* getbasename	finds the directory path to the file being opened */
 
 static int getbasename(char *bn, char *fn, char *ifile)
 {
-
     char *p, t[MAX_PATH], fname[MAX_PATH], *delims = {"/\\"}, *bs = {"/"};
     int n, ebs;
 
@@ -273,37 +270,37 @@ SEXP do_sysfile(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef OLD
 if (!more && GetLastError() != ERROR_NO_MORE_FILES)
-    error("file handling error\n");
-if (!SearchPath(tmp, CHAR(STRING(CADR(args))[0]), NULL, MAX_PATH, pbuf, &lpFile))
 {
-    /*need to look at all subdirectories */
-    sprintf(tmp, "%s\\%s\\*.*", home, CHAR(STRING(CAR(args))[0]));
-    hSearch = FindFirstFile(tmp, &FileData);
-    SetLastError(NO_ERROR);
-    while (more && !done)
+    error("file handling error\n");
+    if (!SearchPath(tmp, CHAR(STRING(CADR(args))[0]), NULL, MAX_PATH, pbuf, &lpFile))
     {
-        if ((FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+        /*need to look at all subdirectories */
+        sprintf(tmp, "%s\\%s\\*.*", home, CHAR(STRING(CAR(args))[0]));
+        hSearch = FindFirstFile(tmp, &FileData);
+        SetLastError(NO_ERROR);
+        while (more && !done)
         {
-            sprintf(tmp2, "%s\\%s\\%s", home, CHAR(STRING(CAR(args))[0]), FileData.cFileName);
-            done = SearchPath(tmp2, CHAR(STRING(CADR(args))[0]), NULL, MAX_PATH, pbuf, &lpFile);
+            if ((FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+            {
+                sprintf(tmp2, "%s\\%s\\%s", home, CHAR(STRING(CAR(args))[0]), FileData.cFileName);
+                done = SearchPath(tmp2, CHAR(STRING(CADR(args))[0]), NULL, MAX_PATH, pbuf, &lpFile);
+            }
+            more = FindNextFile(hSearch, &FileData);
         }
-        more = FindNextFile(hSearch, &FileData);
+        FindClose(hSearch);
+        if (!more && GetLastError() != ERROR_NO_MORE_FILES)
+            error("file handling error\n");
+        if (!done)
+        {
+            STRING(ans)[0] = mkChar("");
+            UNPROTECT(1);
+            return (ans);
+        }
     }
-    FindClose(hSearch);
-    if (!more && GetLastError() != ERROR_NO_MORE_FILES)
-        error("file handling error\n");
-    if (!done)
-    {
-        STRING(ans)[0] = mkChar("");
-        UNPROTECT(1);
-        return (ans);
-    }
-}
-STRING(ans)[i] = mkChar(pbuf);
+    STRING(ans)[i] = mkChar(pbuf);
 }
 UNPROTECT(1);
 return (ans);
-}
 #endif
 
 static HWND RFileWnd, RDirWnd;
@@ -379,7 +376,6 @@ static void SetFileNames(void)
 
 static void ReadDataFile(char *filename)
 {
-
     SEXP fname, ncall, t;
 
     PROTECT(ncall = allocList(2));
