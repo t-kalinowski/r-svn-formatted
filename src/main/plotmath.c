@@ -2952,8 +2952,8 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
 
 void GMMathText(SEXP str, int side, double line, int outer, double at, int las, DevDesc *dd)
 {
-    int coords, subcoords;
-    double angle, xadj, yadj;
+    int coords = 0, subcoords;
+    double xadj, yadj = 0, angle = 0;
 
 #ifdef BUG61
 #else
