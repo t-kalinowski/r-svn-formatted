@@ -71,7 +71,7 @@ SEXP mkCLOSXP(SEXP formals, SEXP body, SEXP rho)
 
 /* mkChar - make a character (CHARSXP) variable */
 
-SEXP mkChar(char *name)
+SEXP mkChar(const char *name)
 {
     SEXP c;
 
