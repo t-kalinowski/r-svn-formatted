@@ -114,7 +114,7 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     ogc = gc_reporting;
     gc_reporting = asLogical(CAR(args));
-    gc();
+    R_gc();
     gc_reporting = ogc;
     /*- now return the [free , total ] for cells and heap */
     PROTECT(value = allocVector(INTSXP, 6));
@@ -229,7 +229,7 @@ char *R_alloc(long nelem, int eltsize)
     {
         if (FORCE_GC || R_VMax - R_VTop < size)
         {
-            gc();
+            R_gc();
             if (R_VMax - R_VTop < size)
                 mem_err_heap(size);
         }
@@ -275,7 +275,7 @@ SEXP allocSExp(SEXPTYPE t)
     SEXP s;
     if (FORCE_GC || R_FreeSEXP == NULL)
     {
-        gc();
+        R_gc();
         if (R_FreeSEXP == NULL)
             mem_err_cons();
     }
@@ -303,7 +303,7 @@ SEXP allocString(int length)
     /* we need to do the gc here so allocSExp doesn't! */
     if (FORCE_GC || R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
-        gc();
+        R_gc();
         if (R_FreeSEXP == NULL)
             mem_err_cons();
         if (R_VMax - R_VTop < size)
@@ -375,7 +375,7 @@ SEXP allocVector(SEXPTYPE type, int length)
     /* we need to do the gc here so allocSExp doesn't! */
     if (FORCE_GC || R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
-        gc();
+        R_gc();
         if (R_FreeSEXP == NULL)
             mem_err_cons();
         if (R_VMax - R_VTop < size)
@@ -423,7 +423,7 @@ SEXP allocList(int n)
 
 /* "gc" a mark-sweep garbage collector */
 
-void gc(void)
+void R_gc(void)
 {
 #ifdef HAVE_SIGLONGJMP
     sigset_t mask, omask;
