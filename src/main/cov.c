@@ -446,6 +446,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
             if (nrows(y) != n)
                 errorcall(call, "incompatible dimensions");
             ncy = ncols(y);
+            ansmat = (1);
         }
         else
         {
@@ -453,7 +454,6 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
                 errorcall(call, "incompatible dimensions");
             ncy = 1;
         }
-        ansmat = (ansmat || isMatrix(y));
     }
     args = CDR(args);
     /* Arg.3:  method */
