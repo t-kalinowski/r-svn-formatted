@@ -1450,7 +1450,10 @@ static void SetFont(int style, int size, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
     if (style < 1 || style > 5)
+    {
+        warning("attempt to use invalid font %d replaced by font 1", style);
         style = 1;
+    }
     if (size < 1 || size > pd->maxpointsize)
         size = 10;
     if (size != pd->current.fontsize || style != pd->current.fontstyle)
@@ -2514,7 +2517,10 @@ static void XFig_Text(double x, double y, char *str, double rot, double hadj, R_
     double size = floor(gc->cex * gc->ps + 0.5);
 
     if (style < 1 || style > 5)
+    {
+        warning("attempt to use invalid font %d replaced by font 1", style);
         style = 1;
+    }
     pd->fontsize = size;
     pd->fontstyle = style;
     if (style == 5)
@@ -2557,16 +2563,23 @@ static void XFig_Hold(NewDevDesc *dd)
 static double XFig_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
 
-    return floor(gc->cex * gc->ps + 0.5) *
-           PostScriptStringWidth((unsigned char *)str, &(pd->metrics[gc->fontface - 1]));
+    if (face < 1 || face > 5)
+        face = 1;
+
+    return floor(gc->cex * gc->ps + 0.5) * PostScriptStringWidth((unsigned char *)str, &(pd->metrics[face - 1]));
 }
 
 static void XFig_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
 
-    PostScriptMetricInfo(c, ascent, descent, width, &(pd->metrics[gc->fontface - 1]));
+    if (face < 1 || face > 5)
+        face = 1;
+
+    PostScriptMetricInfo(c, ascent, descent, width, &(pd->metrics[face - 1]));
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
     *width = floor(gc->cex * gc->ps + 0.5) * *width;
@@ -3331,7 +3344,10 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     double a, b, rot1;
 
     if (face < 1 || face > 5)
+    {
+        warning("attempt to use invalid font %d replaced by font 1", face);
         face = 1;
+    }
     rot1 = rot * DEG2RAD;
     a = size * cos(rot1);
     b = size * sin(rot1);
