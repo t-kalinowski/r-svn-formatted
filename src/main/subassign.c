@@ -1122,10 +1122,19 @@ static SEXP frameAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     nrs = LENGTH(sr);
     ncs = LENGTH(sc);
 
+    /* FIXME - if y is a matrix then convert it to data frame */
+
     if (isList(y) || isFrame(y))
         PROTECT(y);
     else
-        PROTECT(y = CONS(y, R_NilValue));
+    {
+        SEXP tmp;
+        PROTECT(y);
+        PROTECT(tmp = lang2(install("as.data.frame"), y));
+        y = eval(tmp, R_NilValue);
+        UNPROTECT(2);
+        PROTECT(y);
+    }
     ncy = length(y);
 
     PROTECT(ss = allocList(2));
