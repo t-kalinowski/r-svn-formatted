@@ -360,7 +360,8 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (a = CAR(s); a != R_NilValue; a = CDR(a), i++, m = CDR(m))
                 {
                     sprintf(tbuf, "..%d", i);
-                    TAG(m) = mkSYMSXP(mkChar(tbuf), R_UnboundValue);
+                    TAG(m) = mkSYMSXP(PROTECT(mkChar(tbuf)), R_UnboundValue);
+                    UNPROTECT(1);
                     CAR(m) = CAR(a);
                 }
             }
@@ -371,7 +372,6 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         actuals = t;
-        UNPROTECT(1);
     }
 
     /* we can't duplicate because it would force the promises */
@@ -529,7 +529,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     CAR(newcall) = method;
     ans = applyMethod(newcall, nextfun, matchedarg, env, m);
-    UNPROTECT(8);
+    UNPROTECT(9);
     UNPROTECT(1);
     return (ans);
 }
