@@ -2562,13 +2562,11 @@ Rboolean switch_stdout(int icon, int closeOnExit)
 
     if (icon == 0)
         error("cannot switch output to stdin");
-    else if (icon == 1)
+    else if (icon == 1 || icon == 2)
     {
-        R_OutputCon = SinkCons[++R_SinkNumber] = 1;
+        R_OutputCon = SinkCons[++R_SinkNumber] = icon;
         SinkConsClose[R_SinkNumber] = 0;
     }
-    else if (icon == 2)
-        error("cannot switch output to stderr");
     else if (icon >= 3)
     {
         Rconnection con = getConnection(icon); /* checks validity */
@@ -2590,7 +2588,7 @@ Rboolean switch_stdout(int icon, int closeOnExit)
         }
         else
         {
-            R_SinkNumber--;
+            R_OutputCon = SinkCons[--R_SinkNumber];
             if ((icon = SinkCons[R_SinkNumber + 1]) >= 3)
             {
                 Rconnection con = getConnection(icon);
@@ -2599,7 +2597,6 @@ Rboolean switch_stdout(int icon, int closeOnExit)
                 else if (SinkConsClose[R_SinkNumber + 1] == 2) /* destroy it */
                     con_close(icon);
             }
-            R_OutputCon = SinkCons[R_SinkNumber];
         }
     }
     return TRUE;
