@@ -1561,7 +1561,7 @@ static SEXP NewReadVec(SEXPTYPE type, SEXP sym_table, SEXP env_table, FILE *fp)
     SEXP my_vec;
 
     length = InInteger(fp);
-    my_vec = allocVector(type, length);
+    PROTECT(my_vec = allocVector(type, length));
     switch (type)
     {
     case CHARSXP:
@@ -1588,6 +1588,7 @@ static SEXP NewReadVec(SEXPTYPE type, SEXP sym_table, SEXP env_table, FILE *fp)
     default:
         error("NewReadVec called with non-vector type");
     }
+    UNPROTECT(1);
     return my_vec;
 }
 
@@ -1607,11 +1608,11 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp)
     {
     case SYMSXP:
         pos = InInteger(fp);
-        s = pos ? VECTOR(sym_table)[pos - 1] : R_NilValue;
+        PROTECT(s = pos ? VECTOR(sym_table)[pos - 1] : R_NilValue);
         break;
     case ENVSXP:
         pos = InInteger(fp);
-        s = pos ? VECTOR(env_table)[pos - 1] : R_NilValue;
+        PROTECT(s = pos ? VECTOR(env_table)[pos - 1] : R_NilValue);
         break;
     case LISTSXP:
     case LANGSXP:
@@ -1621,12 +1622,12 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp)
         TAG(s) = NewReadItem(sym_table, env_table, fp);
         CAR(s) = NewReadItem(sym_table, env_table, fp);
         CDR(s) = NewReadItem(sym_table, env_table, fp);
-        UNPROTECT(1);
+        /*UNPROTECT(1);*/
         break;
     case SPECIALSXP:
     case BUILTINSXP:
         AllocBuffer(MAXELTSIZE - 1);
-        s = mkPRIMSXP(StrToInternal(InString(fp)), type == BUILTINSXP);
+        PROTECT(s = mkPRIMSXP(StrToInternal(InString(fp)), type == BUILTINSXP));
         break;
     case CHARSXP:
     case LGLSXP:
@@ -1636,7 +1637,7 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp)
     case STRSXP:
     case VECSXP:
     case EXPRSXP:
-        s = NewReadVec(type, sym_table, env_table, fp);
+        PROTECT(s = NewReadVec(type, sym_table, env_table, fp));
         break;
     default:
         error("NewReadItem: unknown type %i", type);
@@ -1644,6 +1645,7 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp)
     LEVELS(s) = levs;
     OBJECT(s) = objf;
     ATTRIB(s) = NewReadItem(sym_table, env_table, fp);
+    UNPROTECT(1); /* s */
     return s;
 }
 
