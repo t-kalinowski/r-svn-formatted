@@ -2589,7 +2589,8 @@ void putdots(int *pold, int new)
         else if ((i + 1) % 10 == 0)
             REprintf(" ");
     }
-    fflush(stderr);
+    if (R_Consolefile)
+        fflush(R_Consolefile);
 }
 
 /* TODO select file mode based on ContentType ? */
