@@ -19,11 +19,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include "win-nls.h"
-
 #include <windows.h>
 #include <shlobj.h>
 
@@ -103,13 +98,13 @@ char *getRUser()
     if ((p = getenv("R_USER")))
     {
         if (strlen(p) >= MAX_PATH)
-            R_Suicide(_("Invalid R_USER"));
+            R_Suicide("Invalid R_USER");
         strcpy(RUser, p);
     }
     else if ((p = getenv("HOME")))
     {
         if (strlen(p) >= MAX_PATH)
-            R_Suicide(_("Invalid HOME"));
+            R_Suicide("Invalid HOME");
         strcpy(RUser, p);
     }
     else if (ShellGetPersonalDirectory(RUser))
@@ -119,10 +114,10 @@ char *getRUser()
     else if ((p = getenv("HOMEDRIVE")) && (q = getenv("HOMEPATH")))
     {
         if (strlen(p) >= MAX_PATH)
-            R_Suicide(_("Invalid HOMEDRIVE"));
+            R_Suicide("Invalid HOMEDRIVE");
         strcpy(RUser, p);
         if (strlen(RUser) + strlen(q) >= MAX_PATH)
-            R_Suicide(_("Invalid HOMEDRIVE+HOMEPATH"));
+            R_Suicide("Invalid HOMEDRIVE+HOMEPATH");
         strcat(RUser, q);
     }
     else
