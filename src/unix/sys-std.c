@@ -134,7 +134,7 @@ int R_SelectEx(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, stru
             oldSigintHandler = signal(SIGINT, handleSelectInterrupt);
 
             /* once the new sinal handler is in place we need to check
-               for abd handle any pending interrupt registered by the
+               for and handle any pending interrupt registered by the
                standard handler. */
             if (R_interrupts_pending)
             {
