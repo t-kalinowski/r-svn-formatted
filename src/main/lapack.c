@@ -25,7 +25,8 @@
 #include "R_ext/Rdynpriv.h"
 
 typedef SEXP (*sDL_FUNC)();
-static sDL_FUNC ptr_svd, ptr_rs, ptr_rg, ptr_zgesv, ptr_zgeqp3, ptr_qr_coef_cmplx, ptr_qr_qy_cmplx, ptr_svd_cmplx;
+static sDL_FUNC ptr_svd, ptr_rs, ptr_rg, ptr_zgesv, ptr_zgeqp3, ptr_qr_coef_cmplx, ptr_qr_qy_cmplx, ptr_svd_cmplx,
+    ptr_rs_cmplx, ptr_rg_cmplx;
 
 /*
 SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
@@ -36,6 +37,8 @@ SEXP La_zgeqp3(SEXP A)
 SEXP qr_coef_cmplx(SEXP Q, SEXP B)
 SEXP qr_qy_cmplx(SEXP Q, SEXP B, SEXP trans)
 SEXP La_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
+SEXP La_rs_complex(SEXP x, SEXP only_values)
+SEXP La_rg_complex(SEXP x, SEXP only_values)
 */
 
 static int initialized = 0;
@@ -62,6 +65,10 @@ static void La_Init(void)
     if (!(ptr_qr_qy_cmplx = (sDL_FUNC)R_FindSymbol("qr_qy_cmplx", "lapack")))
         return;
     if (!(ptr_svd_cmplx = (sDL_FUNC)R_FindSymbol("La_svd_cmplx", "lapack")))
+        return;
+    if (!(ptr_rs_cmplx = (sDL_FUNC)R_FindSymbol("La_rs_cmplx", "lapack")))
+        return;
+    if (!(ptr_rg_cmplx = (sDL_FUNC)R_FindSymbol("La_rg_cmplx", "lapack")))
         return;
 
     initialized = 1;
@@ -107,12 +114,38 @@ SEXP La_rs(SEXP x, SEXP only_values)
     }
 }
 
+SEXP La_rs_cmplx(SEXP x, SEXP only_values)
+{
+    if (!initialized)
+        La_Init();
+    if (initialized > 0)
+        return (*ptr_rs_cmplx)(x, only_values);
+    else
+    {
+        error("lapack routines cannot be loaded");
+        return R_NilValue;
+    }
+}
+
 SEXP La_rg(SEXP x, SEXP only_values)
 {
     if (!initialized)
         La_Init();
     if (initialized > 0)
         return (*ptr_rg)(x, only_values);
+    else
+    {
+        error("lapack routines cannot be loaded");
+        return R_NilValue;
+    }
+}
+
+SEXP La_rg_cmplx(SEXP x, SEXP only_values)
+{
+    if (!initialized)
+        La_Init();
+    if (initialized > 0)
+        return (*ptr_rg_cmplx)(x, only_values);
     else
     {
         error("lapack routines cannot be loaded");
