@@ -27,6 +27,7 @@
  */
 
 #include "Mathlib.h"
+#include "Errormsg.h" /* for warning() */
 
 static double *w[WILCOX_MMAX][WILCOX_NMAX];
 
