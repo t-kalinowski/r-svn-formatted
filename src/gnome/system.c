@@ -1166,8 +1166,8 @@ int R_ChooseFile(int new, char *buf, int len)
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(fs)->ok_button), "clicked", (GtkSignalFunc)R_ChooseFile_ok, NULL);
     gtk_signal_connect(GTK_OBJECT(GTK_FILE_SELECTION(fs)->cancel_button), "clicked", (GtkSignalFunc)R_ChooseFile_cancel,
                        NULL);
-    gtk_signal_connect(GTK_FILE_SELECTION(fs), "delete", (GtkSignalFunc)R_ChooseFile_cancel, NULL);
-    gtk_signal_connect(GTK_FILE_SELECTION(fs), "destroy", (GtkSignalFunc)R_ChooseFile_cancel, NULL);
+    gtk_signal_connect(GTK_OBJECT(fs), "delete", (GtkSignalFunc)R_ChooseFile_cancel, NULL);
+    gtk_signal_connect(GTK_OBJECT(fs), "destroy", (GtkSignalFunc)R_ChooseFile_cancel, NULL);
 
     gtk_widget_show(fs);
     gtk_main();
