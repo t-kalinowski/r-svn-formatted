@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2004  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2005  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -644,7 +644,9 @@ static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics, i
                 wx = metrics->CharInfo[(int)PS_hyphen].WX;
             else
 #endif
+                if (wc < 256)
                 wx = metrics->CharInfo[wc].WX;
+            else wx == NA_SHORT);
             if (wx == NA_SHORT)
                 warning("font width unknown for character 0x%x", wc);
             else
@@ -707,7 +709,7 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
         *ascent = 0;
         *descent = 0;
         *width = 0;
-        warning("font metrics unknown for Unicode character %d", c);
+        warning("font metrics unknown for Unicode character 0x%x", c);
     }
     else
     {
@@ -716,7 +718,7 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
         wx = metrics->CharInfo[c].WX;
         if (wx == NA_SHORT)
         {
-            warning("font metrics unknown for character %d", c);
+            warning("font metrics unknown for character 0x%x", c);
             wx = 0;
         }
         *width = 0.001 * wx;
@@ -2046,52 +2048,6 @@ static void utf8toLatin1(char *in, char *out)
             out[i] = (char)wbuff[i];
     }
     out[res] = '\0';
-}
-#endif
-
-#ifdef OLD
-static void utf8toLatin1(char *in, char *out)
-{
-    unsigned char *p = (unsigned char *)in, *q = (unsigned char *)out, p2;
-    int i, clen;
-
-    while (*p)
-    {
-        if (*p < 0x80)
-        {
-            *q++ = *p++;
-        }
-        else if (*p == 0xc2)
-        {
-            p2 = *++p;
-            if (!p2)
-                break; /* That's an error */
-            *q++ = p2;
-            p++;
-        }
-        else if (*p == 0xc3)
-        {
-            p2 = *++p;
-            if (!p2)
-                break; /* That's an error */
-            *q++ = p2 | 0x40;
-            p++;
-        }
-        else if (*p > 0xc3)
-        { /* Not Latin-1 */
-            *q++ = '.';
-            /* unsafe *p += utf8clen(*p); */
-            clen = utf8clen(*p);
-            for (i = 0; i < clen; i++)
-                if (*p++)
-                    break;
-        }
-        else
-        { /* invalid */
-            *p++;
-        }
-    }
-    *q = '\0';
 }
 #endif
 
