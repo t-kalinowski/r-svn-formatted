@@ -73,6 +73,16 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
+void mem_err_heap()
+{
+    error("heap memory (%ldKb) exhausted\n", (R_VSize * sizeof(VECREC)) / 1024);
+}
+
+void mem_err_cons()
+{
+    error("cons memory (%ld cells) exhausted\n", R_NSize);
+}
+
 #ifdef Macintosh
 Handle gStackH;
 Handle gNHeapH;
@@ -194,7 +204,7 @@ char *R_alloc(long nelem, int eltsize)
         {
             gc();
             if (R_VMax - R_VTop < size)
-                error("memory exhausted\n");
+                mem_err_heap();
         }
         R_VMax -= size;
     }
@@ -238,7 +248,7 @@ SEXP allocSExp(SEXPTYPE t)
     {
         gc();
         if (R_FreeSEXP == NULL)
-            error("memory exhausted\n");
+            mem_err_cons();
     }
     s = R_FreeSEXP;
     R_FreeSEXP = CDR(s);
@@ -275,8 +285,10 @@ SEXP allocString(int length)
     if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
         gc();
-        if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
-            error("memory exhausted\n");
+        if (R_FreeSEXP == NULL)
+            mem_err_cons();
+        if (R_VMax - R_VTop < size)
+            mem_err_heap();
     }
 
 #ifdef oldmem
@@ -359,8 +371,10 @@ SEXP allocVector(SEXPTYPE type, int length)
     if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
         gc();
-        if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
-            error("memory exhausted\n");
+        if (R_FreeSEXP == NULL)
+            mem_err_cons();
+        if (R_VMax - R_VTop < size)
+            mem_err_heap();
     }
 
 #ifdef oldmem

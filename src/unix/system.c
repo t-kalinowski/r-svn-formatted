@@ -649,6 +649,21 @@ void R_RestoreGlobalEnv(void)
 
 extern char **environ;
 
+SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans;
+    clock_t elapsed;
+    elapsed = (times(&timeinfo) - StartTime) / (double)CLK_TCK;
+    ans = allocVector(REALSXP, 5);
+    REAL(ans)[0] = timeinfo.tms_utime / (double)CLK_TCK;
+    REAL(ans)[1] = timeinfo.tms_stime / (double)CLK_TCK;
+    REAL(ans)[2] = elapsed;
+    REAL(ans)[3] = timeinfo.tms_cutime / (double)CLK_TCK;
+    REAL(ans)[4] = timeinfo.tms_cstime / (double)CLK_TCK;
+    return ans;
+}
+#endif
+
 SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, j;
@@ -685,21 +700,6 @@ SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(1);
     return (ans);
 }
-
-SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP ans;
-    clock_t elapsed;
-    elapsed = (times(&timeinfo) - StartTime) / (double)CLK_TCK;
-    ans = allocVector(REALSXP, 5);
-    REAL(ans)[0] = timeinfo.tms_utime / (double)CLK_TCK;
-    REAL(ans)[1] = timeinfo.tms_stime / (double)CLK_TCK;
-    REAL(ans)[2] = elapsed;
-    REAL(ans)[3] = timeinfo.tms_cutime / (double)CLK_TCK;
-    REAL(ans)[4] = timeinfo.tms_cstime / (double)CLK_TCK;
-    return ans;
-}
-#endif
 
 SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 {
