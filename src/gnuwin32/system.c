@@ -91,7 +91,7 @@ void R_ProcessEvents(void)
     if (UserBreak)
     {
         UserBreak = FALSE;
-        raise(SIGINT);
+        onintr();
     }
     R_CallBackHook();
     if (R_tcldo)
