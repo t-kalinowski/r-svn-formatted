@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2001  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1995-2005  Robert Gentleman, Ross Ihaka and the
  *			     R Development Core Team
  *  Copyright (C) 2003	     The R Foundation
  *
@@ -241,10 +241,10 @@ static int FixupColor(int *r, int *g, int *b)
     return fix;
 }
 
-static hcl2rgb(double h, double c, double l, double *R, double *G, double *B)
+static void hcl2rgb(double h, double c, double l, double *R, double *G, double *B)
 {
     double L, U, V;
-    double u, v, uN, vN;
+    double u, v;
     double X, Y, Z;
 
     /* Step 1 : Convert to CIE-LUV */
