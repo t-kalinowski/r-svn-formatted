@@ -6,12 +6,12 @@
 
 #include <signal.h>
 
-// Primitive functions:
-// - run a string
+/* Primitive functions:
+   - run a string */
 
 void R_gtk_terminal_run_initial()
 {
-    // delete any existing input
+    /* delete any existing input */
     if (gtk_text_get_length(GTK_TEXT(R_gtk_terminal_text)) > GTK_CONSOLE(R_gtk_terminal_text)->input_start_index)
     {
         gtk_editable_delete_text(GTK_EDITABLE(R_gtk_terminal_text), GTK_CONSOLE(R_gtk_terminal_text)->input_start_index,
@@ -23,10 +23,10 @@ void R_gtk_terminal_run_partial(gchar *code)
 {
     gint insert_pos;
 
-    // where to insert the command
+    /* where to insert the command */
     insert_pos = gtk_text_get_length(GTK_TEXT(R_gtk_terminal_text));
 
-    // insert the command
+    /* insert the command */
     gtk_editable_insert_text(GTK_EDITABLE(R_gtk_terminal_text), code, strlen(code), &insert_pos);
 }
 
@@ -34,10 +34,10 @@ void R_gtk_terminal_run_final(gchar *code)
 {
     gint insert_pos;
 
-    // where to insert the command
+    /* where to insert the command */
     insert_pos = gtk_text_get_length(GTK_TEXT(R_gtk_terminal_text));
 
-    // insert the command
+    /* insert the command */
     gtk_editable_insert_text(GTK_EDITABLE(R_gtk_terminal_text), code, strlen(code), &insert_pos);
 
     if (!strchr(code, '\n'))
@@ -46,7 +46,7 @@ void R_gtk_terminal_run_final(gchar *code)
         gtk_editable_insert_text(GTK_EDITABLE(R_gtk_terminal_text), "\n", 1, &insert_pos);
     }
 
-    // signal the text box
+    /* signal the text box */
     gtk_signal_emit_by_name(GTK_OBJECT(R_gtk_terminal_text), "console_line_ready");
 }
 
@@ -56,7 +56,7 @@ void R_gtk_terminal_run(gchar *code)
     R_gtk_terminal_run_final(code);
 }
 
-// Higher level functions
+/* Higher level functions */
 
 static GtkWidget *R_gtk_os_file = NULL;
 static gint R_gtk_os_signal_ok;
