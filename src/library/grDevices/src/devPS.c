@@ -4423,7 +4423,7 @@ static void PDF_Encodings(PDFDesc *pd)
         }
         else if (strcmp(encoding->name, "ISOLatin1Encoding") == 0)
         {
-            fprintf(pd->pdffp, "/BaseEncoding /PDFDocEncoding\n");
+            fprintf(pd->pdffp, "/BaseEncoding /WinAnsiEncoding\n");
             fprintf(
                 pd->pdffp,
                 "/Differences [ 45/minus 96/quoteleft\n144/dotlessi /grave /acute /circumflex /tilde /macron /breve "
@@ -5079,6 +5079,11 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     rot1 = rot * DEG2RAD;
     a = size * cos(rot1);
     b = size * sin(rot1);
+    /* avoid printing -0.00 on rotated text */
+    if (fabs(a) < 0.01)
+        a = 0.0;
+    if (fabs(b) < 0.01)
+        b = 0.0;
     if (!pd->inText)
         texton(pd);
     /*
