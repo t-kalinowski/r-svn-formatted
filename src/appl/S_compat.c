@@ -21,6 +21,10 @@
 /* S compatibility library - mapping some internal functions in S to R
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include "S_compat.h"
 
 extern longint F77_NAME(dqrdc2)(double *, longint *, longint *, longint *, double *, longint *, double *, longint *,
