@@ -448,7 +448,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(args) < 3)
         errorcall(call, "too few arguments\n");
 
-    /*  Required arguments  */
+    /*  Required arguments	*/
 
     which = asInteger(CAR(args));
     if (which < 1 || which > 4)
@@ -524,8 +524,10 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         GP->col = fg;
         GStartPath();
+        /* axis line */
         GMoveTo(XMAP(xt(REAL(at)[0])), y);
         GLineTo(XMAP(xt(REAL(at)[n - 1])), y);
+        /* ticks */
         for (i = 0; i < n; i++)
         {
             x = XMAP(xt(REAL(at)[i]));
@@ -537,6 +539,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         GEndPath();
         GP->col = GP->colaxis;
+        /* labels */
         tlast = -1.0;
         gap = GStrWidth("m", 2); /* FIXUP x/y distance */
         for (i = 0; i < n; i++)
@@ -551,7 +554,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 labw = GStrWidth(CHAR(STRING(lab)[i]), 2);
                 tnew = x - 0.5 * labw;
                 if (tnew - tlast >= gap)
-                {
+                { /* there's room */
                     GMtext(CHAR(STRING(lab)[i]), which, GP->mgp[1], 0, xt(REAL(at)[i]), GP->las);
                     tlast = x + 0.5 * labw;
                 }
@@ -612,7 +615,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/*  plot.xy(xy, type, pch, lty, col, cex, ...)  */
+/*  plot.xy(xy, type, pch, lty, col, cex, ...)	*/
 /*  plot points or lines of various types  */
 
 SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -1250,7 +1253,9 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/* mtext(text, side, line, outer, at = NULL) */
+/* mtext(text, side, line, outer, at = NULL, ...)
+ *
+ * where ... supports  adj, cex, col, font  */
 
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1331,8 +1336,6 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
             break;
         }
     }
-
-    /*======= now you should MAKE USE of adjx, adjy !!! =======*/
 
     PROTECT(cex = FixupCex(GetPar("cex", args)));
     if (FINITE(REAL(cex)[0]))
