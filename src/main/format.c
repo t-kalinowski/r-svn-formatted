@@ -69,10 +69,15 @@ void formatLogical(int *x, int n, int *fieldwidth)
     *fieldwidth = 1;
     for (i = 0; i < n; i++)
     {
-        if (x[i] == NA_LOGICAL && *fieldwidth < R_print.na_width)
-            *fieldwidth = R_print.na_width;
+        if (x[i] == NA_LOGICAL)
+        {
+            if (*fieldwidth < R_print.na_width)
+                *fieldwidth = R_print.na_width;
+        }
         else if (x[i] != 0 && *fieldwidth < 4)
+        {
             *fieldwidth = 4;
+        }
         else if (x[i] == 0 && *fieldwidth < 5)
         {
             *fieldwidth = 5;
