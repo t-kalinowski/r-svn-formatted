@@ -164,7 +164,7 @@ static SEXP SetOption(SEXP tag, SEXP value)
 void InitOptions(void)
 {
     SEXP t, val, v;
-    PROTECT(v = val = allocList(7));
+    PROTECT(v = val = allocList(8));
     TAG(v) = install("prompt");
     CAR(v) = mkString("> ");
     v = CDR(v);
@@ -191,6 +191,10 @@ void InitOptions(void)
     STRING(t)[0] = mkChar("unordered");
     STRING(t)[1] = mkChar("ordered");
     namesgets(CAR(v), t);
+    v = CDR(v);
+    TAG(v) = install("verbose");
+    CAR(v) = allocVector(LGLSXP, 1);
+    LOGICAL(CAR(v))[0] = R_Verbose;
     SYMVALUE(install(".Options")) = val;
     UNPROTECT(2);
 }
