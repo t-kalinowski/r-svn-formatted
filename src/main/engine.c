@@ -1352,7 +1352,14 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, int
                     if (!R_FINITE(yc))
                         yc = 0.5;
                     yoff = (1 - yc) * (n - 1) - i;
-                    yoff = fromDeviceHeight(yoff * cex * dd->dev->cra[1], GE_INCHES, dd);
+                    /* cra is based on the font pointsize at the
+                     * time the device was created.
+                     * Adjust for potentially different current pointsize.
+                     * This is a crude calculation that might be better
+                     * performed using a device call that responds with
+                     * the current font pointsize in device coordinates.
+                     */
+                    yoff = fromDeviceHeight(yoff * cex * dd->dev->cra[1] * ps / dd->dev->startps, GE_INCHES, dd);
                     xoff = -yoff * sin_rot;
                     yoff = yoff * cos_rot;
                     xoff = x + xoff;
@@ -1931,11 +1938,18 @@ double GEStrHeight(char *str, int font, double cex, double ps, GEDevDesc *dd)
     for (s = str; *s; s++)
         if (*s == '\n')
             n++;
-    h = n * cex * dd->dev->cra[1];
+    /* cra is based on the font pointsize at the
+     * time the device was created.
+     * Adjust for potentially different current pointsize
+     * This is a crude calculation that might be better
+     * performed using a device call that responds with
+     * the current font pointsize in device coordinates.
+     */
+    h = n * cex * dd->dev->cra[1] * ps / dd->dev->startps;
     /* Add in the ascent of the font, if available */
     GEMetricInfo('M', font, cex, ps, &asc, &dsc, &wid, dd);
     if ((asc == 0.0) && (dsc == 0.0) && (wid == 0.0))
-        asc = cex * dd->dev->cra[1];
+        asc = cex * dd->dev->cra[1] * ps / dd->dev->startps;
     h += asc;
     return h;
 }
