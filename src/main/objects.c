@@ -179,7 +179,6 @@ static SEXP matchmethargs(SEXP oldargs, SEXP newargs)
  *    3. fix up the argument list; it should be the arguments to the
  *	 generic matched to the formals of the method to be invoked */
 
-#ifdef EXPERIMENTAL_NAMESPACES
 SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
 {
     SEXP val;
@@ -220,13 +219,8 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
         return val;
     }
 }
-#endif
 
-#ifdef EXPERIMENTAL_NAMESPACES
 int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP callrho, SEXP defrho, SEXP *ans)
-#else
-int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans)
-#endif
 {
     SEXP class, method, sxp, t, s, matchedarg;
     SEXP op, formals, newrho, newcall, tmp;
@@ -288,11 +282,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
     {
         sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, i)));
         method = install(buf);
-#ifdef EXPERIMENTAL_NAMESPACES
         sxp = R_LookupMethod(method, rho, callrho, defrho);
-#else
-        sxp = findVar(method, rho);
-#endif
         /* autoloading requires that promises be evaluated <TSL>*/
         if (TYPEOF(sxp) == PROMSXP)
         {
@@ -317,13 +307,11 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
             PROTECT(t = mkString(buf));
             defineVar(install(".Method"), t, newrho);
             UNPROTECT(1);
-#ifdef EXPERIMENTAL_NAMESPACES
             if (R_UseNamespaceDispatch)
             {
                 defineVar(install(".GenericCallEnv"), callrho, newrho);
                 defineVar(install(".GenericDefEnv"), defrho, newrho);
             }
-#endif
             t = newcall;
             SETCAR(t, method);
             R_GlobalContext->callflag = CTXT_GENERIC;
@@ -335,11 +323,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
     }
     sprintf(buf, "%s.default", generic);
     method = install(buf);
-#ifdef EXPERIMENTAL_NAMESPACES
     sxp = R_LookupMethod(method, rho, callrho, defrho);
-#else
-    sxp = findVar(method, rho);
-#endif
     if (TYPEOF(sxp) == PROMSXP)
         sxp = eval(sxp, rho);
     if (isFunction(sxp))
@@ -349,13 +333,11 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
         PROTECT(t = mkString(buf));
         defineVar(install(".Method"), t, newrho);
         UNPROTECT(1);
-#ifdef EXPERIMENTAL_NAMESPACES
         if (R_UseNamespaceDispatch)
         {
             defineVar(install(".GenericCallEnv"), callrho, newrho);
             defineVar(install(".GenericDefEnv"), defrho, newrho);
         }
-#endif
         t = newcall;
         SETCAR(t, method);
         R_GlobalContext->callflag = CTXT_GENERIC;
@@ -377,9 +359,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[128];
     SEXP ans, generic, obj;
-#ifdef EXPERIMENTAL_NAMESPACES
     SEXP callenv, defenv;
-#endif
     int nargs;
     RCNTXT *cptr;
 
@@ -388,7 +368,6 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nargs < 0)
         errorcall(call, "corrupt internals!");
 
-#ifdef EXPERIMENTAL_NAMESPACES
     /* get environments needed for dispatching.
        callenv = environment from which the generic was called
        defenv = environment where the generic was defined */
@@ -397,7 +376,6 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         error("UseMethod used in an inappropriate fashion");
     callenv = cptr->sysparent;
     defenv = TYPEOF(env) == ENVSXP ? ENCLOS(env) : R_NilValue;
-#endif
 
     if (nargs)
         PROTECT(generic = eval(CAR(args), env));
@@ -429,13 +407,8 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     strcpy(buf, CHAR(STRING_ELT(generic, 0)));
 
-#ifdef EXPERIMENTAL_NAMESPACES
     if (usemethod(buf, obj, call, CDR(args), env, callenv, defenv, &ans) == 1)
     {
-#else
-    if (usemethod(buf, obj, call, CDR(args), env, &ans) == 1)
-    {
-#endif
         UNPROTECT(1);
         PROTECT(ans);
         findcontext(CTXT_RETURN, env, ans);
@@ -488,9 +461,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans, s, t, class, method, matchedarg, generic, nextfun;
     SEXP sysp, m, formals, actuals, tmp, newcall;
     SEXP a, group, basename;
-#ifdef EXPERIMENTAL_NAMESPACES
     SEXP callenv, defenv;
-#endif
     RCNTXT *cptr;
     int i, j, cftmp;
 
@@ -515,7 +486,6 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(CAR(cptr->call)) == LANGSXP)
         error("NextMethod called from anonymous function");
 
-#ifdef EXPERIMENTAL_NAMESPACES
     /* Find dispatching environments. Promises shouldn't occur, but
        check to be on the safe side.  If the variables are not in the
        environment (the method was called outside a method dispatch)
@@ -538,17 +508,12 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         callenv = env;
         defenv = R_GlobalEnv;
     }
-#endif
 
     /* set up the arglist */
-#ifdef EXPERIMENTAL_NAMESPACES
     /**** FIXME: need test for symbol? */
     s = R_LookupMethod(CAR(cptr->call), env, callenv, defenv);
     if (TYPEOF(s) == PROMSXP)
         s = eval(s, env);
-#else
-    s = findFun(CAR(cptr->call), cptr->sysparent);
-#endif
     if (TYPEOF(s) != CLOSXP)
     {
         errorcall(R_NilValue, "function is not a closure");
@@ -744,7 +709,6 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = j; i < length(class); i++)
     {
         sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(class, i)));
-#ifdef EXPERIMENTAL_NAMESPACES
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
         if (TYPEOF(nextfun) == PROMSXP)
             nextfun = eval(nextfun, env);
@@ -760,20 +724,13 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             if (isFunction(nextfun))
                 break;
         }
-#else
-        nextfun = findVar(install(buf), env);
-#endif
         if (isFunction(nextfun))
             break;
     }
     if (!isFunction(nextfun))
     {
         sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
-#ifdef EXPERIMENTAL_NAMESPACES
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-#else
-        nextfun = findVar(install(buf), env);
-#endif
         if (TYPEOF(nextfun) == PROMSXP)
             nextfun = eval(nextfun, env);
         if (!isFunction(nextfun))
@@ -808,13 +765,11 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(method, j, mkChar(buf));
     }
     defineVar(install(".Method"), method, m);
-#ifdef EXPERIMENTAL_NAMESPACES
     if (R_UseNamespaceDispatch)
     {
         defineVar(install(".GenericCallEnv"), callenv, m);
         defineVar(install(".GenericDefEnv"), defenv, m);
     }
-#endif
     method = install(buf);
 
     defineVar(install(".Generic"), generic, m);
