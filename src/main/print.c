@@ -463,7 +463,7 @@ void PrintValueEnv(SEXP s, SEXP env)
     if (isObject(s))
     {
         PROTECT(call = lang2(install("print"), s));
-        eval(call, R_NilValue);
+        eval(call, env);
         UNPROTECT(1);
     }
     else
