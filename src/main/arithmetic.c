@@ -897,9 +897,9 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return math1(op, CAR(args), atanh);
 
     case 40:
-        return math1(op, CAR(args), lgamma);
+        return math1(op, CAR(args), lgammafn);
     case 41:
-        return math1(op, CAR(args), gamma);
+        return math1(op, CAR(args), gammafn);
 
     case 42:
         return math1(op, CAR(args), digamma);
