@@ -2767,13 +2767,12 @@ void GMetricInfo(int c, double *ascent, double *descent, double *width, int unit
     }
 }
 
-/*  Check that everything is initialized  */
-/*  Interpretation  */
-/*  mode = 0, graphics off */
-/*  mode = 1, graphics on */
-/*  mode = 2, graphical input on */
-/*  (Ignored by most drivers)	 */
-
+/* Check that everything is initialized :
+    Interpretation :
+    mode = 0, graphics off
+    mode = 1, graphics on
+    mode = 2, graphical input on (ignored by most drivers)
+*/
 void GMode(int mode, DevDesc *dd)
 {
     if (NoDevices())
@@ -2784,12 +2783,11 @@ void GMode(int mode, DevDesc *dd)
     dd->gp.devmode = dd->dp.devmode = mode;
 }
 
-/* GPolygon -- Draw a polygon  */
-/* Filled with color bg and outlined with color fg  */
-/* These may both be NA_INTEGER	 */
-/* If device can't clip we should use something */
-/* like Sutherland-Hodgman here */
-
+/* GPolygon -- Draw a polygon
+ *	Filled with color bg and outlined with color fg
+ *	These may both be NA_INTEGER
+ * If device can't clip we should use something like Sutherland-Hodgman here
+ */
 typedef enum
 {
     Left = 0,
@@ -3437,7 +3435,7 @@ double GStrHeight(char *str, int units, DevDesc *dd)
         if (*s == '\n')
             n++;
     h = n * GConvertYUnits(1, CHARS, DEVICE, dd);
-    /*  Add in the ascent of the font, if available */
+    /* Add in the ascent of the font, if available */
     GMetricInfo('M', &asc, &dsc, &wid, DEVICE, dd);
     if ((asc == 0.0) && (dsc == 0.0) && (wid == 0.0))
         asc = GConvertYUnits(1, CHARS, DEVICE, dd);
@@ -4225,7 +4223,7 @@ void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
             GPolygon(3, xx, yy, INCHES, dd->gp.col, NA_INTEGER, dd);
             break;
 
-        case 18:
+        case 18: /* S filled diamond */
             xc = RADIUS * GSTR_0;
             GConvert(&x, &y, coords, INCHES, dd);
             xx[0] = x;
@@ -4244,7 +4242,7 @@ void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
             GCircle(x, y, coords, xc, dd->gp.col, dd->gp.col, dd);
             break;
 
-        case 20: /* R Dot */
+        case 20: /* R `Dot' (small circle) */
             xc = SMALL * GSTR_0;
             GCircle(x, y, coords, xc, dd->gp.col, dd->gp.col, dd);
             break;
