@@ -136,7 +136,7 @@ SEXP spline_value(SEXP knots, SEXP coeff, SEXP order, SEXP x, SEXP deriv)
     SEXP val;
     splPTR sp;
     double *xx, *kk;
-    int der, i, j, n, nk;
+    int der, i, n, nk;
 
     PROTECT(knots = coerceVector(knots, REALSXP));
     kk = REAL(knots);
@@ -187,7 +187,7 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
     /* functions (or their derivatives) at */
     /* xvals.  */
     int nd, nk, nx, i, j, *ders;
-    double *kk, *xx, *dd, *dpt, *coeff;
+    double *kk, *xx;
     SEXP val, offsets;
     splPTR sp = Calloc(1, struct spl_struct);
 
