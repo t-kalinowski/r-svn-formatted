@@ -583,7 +583,7 @@ SEXP do_dimnamesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         return (ans);
     PROTECT(args = ans);
     checkArity(op, args);
-    if (NAMED(CAR(args)) > 2)
+    if (NAMED(CAR(args)) > 1)
         SETCAR(args, duplicate(CAR(args)));
     setAttrib(CAR(args), R_DimNamesSymbol, CADR(args));
     UNPROTECT(1);
