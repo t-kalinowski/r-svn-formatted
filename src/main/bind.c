@@ -1,6 +1,5 @@
 #define TRYIT
-/*
- */
+/*	^^^^ new since 0.63.{2?} -- for do_bind() */
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
@@ -702,14 +701,14 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
             count = 0;
             NewExtractNames(args, R_NilValue, TAG(args), recurse);
         }
-#endif
+#endif /*EXPT*/
         setAttrib(ans, R_NamesSymbol, ans_names);
         UNPROTECT(1);
-#endif
+#endif /* (not) OLD */
     }
     UNPROTECT(2);
     return ans;
-}
+} /* do_c */
 
 SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -897,7 +896,7 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     UNPROTECT(2);
     return ans;
-}
+} /* do_unlist */
 
 static SEXP rho;
 
@@ -918,21 +917,24 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (mode)
     {
-        a = args;
-        t = CDR(call);
         /* FIXME KH 1998/06/23
            This should obviously do something useful, but
            currently breaks [cr]bind() if one arg is a df
-           while (a != R_NilValue) {
-               if (t == R_NilValue)
-               errorcall(call, "corrupt data frame args!\n");
-               p = mkPROMISE(CAR(t), rho);
-               PRVALUE(p) = CAR(a);
-               CAR(a) = p;
-               t = CDR(t);
-               a = CDR(a);
-           }
         */
+#ifdef OLD_DF
+        a = args;
+        t = CDR(call);
+        while (a != R_NilValue)
+        {
+            if (t == R_NilValue)
+                errorcall(call, "corrupt data frame args!\n");
+            p = mkPROMISE(CAR(t), rho);
+            PRVALUE(p) = CAR(a);
+            CAR(a) = p;
+            t = CDR(t);
+            a = CDR(a);
+        }
+#endif
         switch (PRIMVAL(op))
         {
         case 1:
@@ -953,7 +955,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     /* There are no data frames in the argument list. */
     /* Perform default action */
 
-    rho = env;
+    rho = env; /* GLOBAL */
     ans_flags = 0;
     ans_length = 0;
     ans_nnames = 0;
@@ -961,7 +963,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     for (t = args; t != R_NilValue; t = CDR(t))
         AnswerType(CAR(t), 0, 0);
 
-    /* zero-extent matrices shouldn't give NULL
+    /* zero-extent matrices shouldn't give NULL, anymore :
        if (ans_length == 0)
        return R_NilValue;
     */
@@ -1027,15 +1029,15 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
 {
     int i, j, k, idx, n;
     int have_rnames, have_cnames;
-    int nrnames, mrnames;
+    int nnames, mnames;
     int rows, cols, mrows;
     int warned;
     SEXP dn, t, u, result, dims;
 
     have_rnames = 0;
     have_cnames = 0;
-    nrnames = 0;
-    mrnames = 0;
+    nnames = 0;
+    mnames = 0;
     rows = 0;
     cols = 0;
     /* mrows = 0;*/
@@ -1068,8 +1070,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
     if (mrows != -1)
         rows = mrows;
 
-    /* Check conformability of vector arguments. */
-    /* Look for dimnames. */
+    /* Check conformability of vector arguments. -- Look for dimnames. */
 
     n = 0;
     warned = 0;
@@ -1087,7 +1088,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
                     if (VECTOR(dn)[1] != R_NilValue)
                         have_cnames = 1;
                     if (VECTOR(dn)[0] != R_NilValue)
-                        mrnames = mrows;
+                        mnames = mrows;
                 }
             }
             else
@@ -1103,11 +1104,11 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
                 dn = getAttrib(CAR(t), R_NamesSymbol);
                 if (TAG(t) != R_NilValue)
                     have_cnames = 1;
-                nrnames = imax2(nrnames, length(dn));
+                nnames = imax2(nnames, length(dn));
             }
         }
     }
-    if (mrnames || nrnames == rows)
+    if (mnames || nnames == rows)
         have_rnames = 1;
 
     PROTECT(result = allocMatrix(mode, rows, cols));
@@ -1118,7 +1119,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
         for (t = args; t != R_NilValue; t = CDR(t))
         {
             if (length(CAR(t)) > 0)
-            {
+            { /* rbind() has ">=" here */
                 u = CAR(t) = coerceVector(CAR(t), STRSXP);
                 k = LENGTH(u);
                 idx = (!isMatrix(CAR(t))) ? rows : k;
@@ -1171,15 +1172,16 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
             }
         }
     }
+
     /* Adjustment of dimnames attributes. */
     if (have_cnames | have_rnames)
     {
-        SEXP cn, cnu;
+        SEXP nam, tnam;
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_cnames)
-            cn = VECTOR(dn)[1] = allocVector(STRSXP, cols);
+            nam = VECTOR(dn)[1] = allocVector(STRSXP, cols);
         else
-            cn = R_NilValue; /* -Wall */
+            nam = R_NilValue; /* -Wall */
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
@@ -1190,38 +1192,39 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
                 {
 
                     u = getAttrib(CAR(t), R_DimNamesSymbol);
-                    cnu = GetColNames(u);
+                    tnam = GetColNames(u);
 
                     if (have_rnames && GetRowNames(dn) == R_NilValue && GetRowNames(u) != R_NilValue)
                         SetRowNames(dn, duplicate(GetRowNames(u)));
 
-                    if (cnu != R_NilValue)
+                    /* rbind() does this only  if(have_?names) .. : */
+                    if (tnam != R_NilValue)
                     {
-                        for (i = 0; i < length(cnu); i++)
-                            STRING(cn)[j++] = STRING(cnu)[i];
+                        for (i = 0; i < length(tnam); i++)
+                            STRING(nam)[j++] = STRING(tnam)[i];
                     }
                     else if (have_cnames)
                     {
                         for (i = 0; i < ncols(CAR(t)); i++)
-                            STRING(cn)[j++] = R_BlankString;
+                            STRING(nam)[j++] = R_BlankString;
                     }
                 }
                 else if (length(CAR(t)) > 0)
                 {
 
                     u = getAttrib(CAR(t), R_NamesSymbol);
-                    cnu = u;
+                    tnam = u;
 
                     if (have_rnames && GetRowNames(dn) == R_NilValue && u != R_NilValue && length(u) == rows)
                         SetRowNames(dn, duplicate(u));
 
                     if (TAG(t) != R_NilValue)
                     {
-                        STRING(cn)[j++] = PRINTNAME(TAG(t));
+                        STRING(nam)[j++] = PRINTNAME(TAG(t));
                     }
                     else if (have_cnames)
                     {
-                        STRING(cn)[j++] = R_BlankString;
+                        STRING(nam)[j++] = R_BlankString;
                     }
                 }
             }
@@ -1231,21 +1234,21 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
     }
     UNPROTECT(1);
     return result;
-}
+} /* cbind */
 
 static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
 {
     int i, j, k, n;
     int have_rnames, have_cnames;
-    int ncnames, mcnames;
+    int nnames, mnames;
     int rows, cols, mcols, mrows;
     int warned;
-    SEXP dims, dn, result, t, u;
+    SEXP dn, t, u, result, dims;
 
     have_rnames = 0;
     have_cnames = 0;
-    ncnames = 0;
-    mcnames = 0;
+    nnames = 0;
+    mnames = 0;
     rows = 0;
     cols = 0;
     mcols = 0;
@@ -1277,8 +1280,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     if (mcols != 0)
         cols = mcols;
 
-    /* check conformability of vector arguments */
-    /* look for dimnames */
+    /* Check conformability of vector arguments. -- Look for dimnames. */
 
     n = 0;
     warned = 0;
@@ -1296,7 +1298,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                     if (VECTOR(dn)[0] != R_NilValue)
                         have_rnames = 1;
                     if (VECTOR(dn)[1] != R_NilValue)
-                        mcnames = mcols;
+                        mnames = mcols;
                 }
             }
             else
@@ -1312,23 +1314,23 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 dn = getAttrib(CAR(t), R_NamesSymbol);
                 if (TAG(t) != R_NilValue)
                     have_rnames = 1;
-                ncnames = imax2(ncnames, length(dn));
+                nnames = imax2(nnames, length(dn));
             }
         }
     }
-    if (mcnames || ncnames == cols)
+    if (mnames || nnames == cols)
         have_cnames = 1;
 
     PROTECT(result = allocMatrix(mode, rows, cols));
     n = 0;
+
     if (mode == STRSXP)
     {
         for (t = args; t != R_NilValue; t = CDR(t))
         {
             if (length(CAR(t)) >= 0)
-            {
-                CAR(t) = coerceVector(CAR(t), STRSXP);
-                u = CAR(t);
+            { /* cbind() has ">" here */
+                u = CAR(t) = coerceVector(CAR(t), STRSXP);
                 k = LENGTH(u);
                 mrows = (isMatrix(u)) ? nrows(u) : 1;
                 if (k == 0)
@@ -1339,8 +1341,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 n += mrows;
             }
         }
-        UNPROTECT(1);
-        return result;
+        /* 0.63.3 erroneously:	return result; */
     }
     else if (mode == CPLXSXP)
     {
@@ -1348,8 +1349,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
         {
             if (length(CAR(t)) > 0)
             {
-                CAR(t) = coerceVector(CAR(t), CPLXSXP);
-                u = CAR(t);
+                u = CAR(t) = coerceVector(CAR(t), CPLXSXP);
                 k = LENGTH(u);
                 mrows = (isMatrix(u)) ? nrows(u) : 1;
                 for (i = 0; i < mrows; i++)
@@ -1358,64 +1358,67 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 n += mrows;
             }
         }
-        UNPROTECT(1);
-        return result;
+        /* 0.63.3 erroneously:	return result; */
     }
-    for (t = args; t != R_NilValue; t = CDR(t))
+    else
     {
-        if (length(CAR(t)) >= 0)
+        for (t = args; t != R_NilValue; t = CDR(t))
         {
-            u = CAR(t);
-            k = LENGTH(u);
-            /* mrows = (isMatrix(u)) ? nrows(u) : 1; */
-            if (isMatrix(u))
+            if (length(CAR(t)) >= 0)
             {
-                mrows = nrows(u);
-            }
-            else
-            {
-                if (length(u) == 0)
-                    mrows = 0;
-                else
-                    mrows = 1;
-            }
-            if (TYPEOF(u) <= INTSXP)
-            {
-                if (mode <= INTSXP)
+                u = CAR(t);
+                k = LENGTH(u);
+                /* mrows = (isMatrix(u)) ? nrows(u) : 1; */
+                if (isMatrix(u))
                 {
-                    for (i = 0; i < mrows; i++)
-                        for (j = 0; j < cols; j++)
-                            INTEGER(result)[i + n + (j * rows)] = INTEGER(u)[(i + j * mrows) % k];
-                    n += mrows;
+                    mrows = nrows(u);
+                }
+                else
+                {
+                    if (length(u) == 0)
+                        mrows = 0;
+                    else
+                        mrows = 1;
+                }
+                if (TYPEOF(u) <= INTSXP)
+                {
+                    if (mode <= INTSXP)
+                    {
+                        for (i = 0; i < mrows; i++)
+                            for (j = 0; j < cols; j++)
+                                INTEGER(result)[i + n + (j * rows)] = INTEGER(u)[(i + j * mrows) % k];
+                        n += mrows;
+                    }
+                    else
+                    {
+                        for (i = 0; i < mrows; i++)
+                            for (j = 0; j < cols; j++)
+                                REAL(result)
+                                [i + n + (j * rows)] =
+                                    (INTEGER(u)[(i + j * mrows) % k]) == NA_INTEGER ? NA_REAL
+                                                                                    : INTEGER(u)[(i + j * mrows) % k];
+                        n += mrows;
+                    }
                 }
                 else
                 {
                     for (i = 0; i < mrows; i++)
                         for (j = 0; j < cols; j++)
-                            REAL(result)
-                            [i + n + (j * rows)] =
-                                (INTEGER(u)[(i + j * mrows) % k]) == NA_INTEGER ? NA_REAL
-                                                                                : INTEGER(u)[(i + j * mrows) % k];
+                            REAL(result)[i + n + (j * rows)] = REAL(u)[(i + j * mrows) % k];
                     n += mrows;
                 }
-            }
-            else
-            {
-                for (i = 0; i < mrows; i++)
-                    for (j = 0; j < cols; j++)
-                        REAL(result)[i + n + (j * rows)] = REAL(u)[(i + j * mrows) % k];
-                n += mrows;
             }
         }
     }
+    /* Adjustment of dimnames attributes. */
     if (have_rnames | have_cnames)
     {
-        SEXP rn, rnu;
+        SEXP nam, tnam;
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_rnames)
-            rn = VECTOR(dn)[0] = allocVector(STRSXP, rows);
+            nam = VECTOR(dn)[0] = allocVector(STRSXP, rows);
         else
-            rn = R_NilValue; /* -Wall */
+            nam = R_NilValue; /* -Wall */
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
@@ -1426,22 +1429,23 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 {
 
                     u = getAttrib(CAR(t), R_DimNamesSymbol);
-                    rnu = GetRowNames(u);
+                    tnam = GetRowNames(u);
 
                     if (have_cnames && GetColNames(dn) == R_NilValue && GetColNames(u) != R_NilValue)
                         SetColNames(dn, duplicate(GetColNames(u)));
 
+                    /* cbind() doesn't test have_?names BEFORE tnam!=Nil..:*/
                     if (have_rnames)
                     {
-                        if (rnu != R_NilValue)
+                        if (tnam != R_NilValue)
                         {
-                            for (i = 0; i < length(rnu); i++)
-                                STRING(rn)[j++] = STRING(rnu)[i];
+                            for (i = 0; i < length(tnam); i++)
+                                STRING(nam)[j++] = STRING(tnam)[i];
                         }
                         else
                         {
                             for (i = 0; i < nrows(CAR(t)); i++)
-                                STRING(rn)[j++] = R_BlankString;
+                                STRING(nam)[j++] = R_BlankString;
                         }
                     }
                 }
@@ -1449,15 +1453,19 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 {
 
                     u = getAttrib(CAR(t), R_NamesSymbol);
-                    rnu = u;
+                    tnam = u;
 
                     if (have_cnames && GetColNames(dn) == R_NilValue && u != R_NilValue && length(u) == cols)
                         SetColNames(dn, duplicate(u));
 
                     if (TAG(t) != R_NilValue)
-                        STRING(rn)[j++] = PRINTNAME(TAG(t));
+                    {
+                        STRING(nam)[j++] = PRINTNAME(TAG(t));
+                    }
                     else if (have_rnames)
-                        STRING(rn)[j++] = R_BlankString;
+                    {
+                        STRING(nam)[j++] = R_BlankString;
+                    }
                 }
             }
         }
@@ -1466,4 +1474,4 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     }
     UNPROTECT(1);
     return result;
-}
+} /* rbind */
