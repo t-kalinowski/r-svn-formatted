@@ -284,7 +284,7 @@ static void MKsetup(int n, HashData *d)
     int n4 = 2 * n;
 
     if (n < 0 || n > 536870912) /* protect against overflow to -ve */
-        error("length %d is too large for hashing", n);
+        error(_("length %d is too large for hashing"), n);
     d->M = 2;
     d->K = 1;
     while (d->M < n4)
@@ -402,7 +402,7 @@ SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isVector(x))
     {
         PrintValue(x);
-        error("%s() applies only to vectors", (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
+        error(_("%s() applies only to vectors"), (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
     }
 
     dup = duplicated(x);
@@ -514,7 +514,7 @@ SEXP do_match(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if ((!isVector(CAR(args)) && !isNull(CAR(args))) || (!isVector(CADR(args)) && !isNull(CADR(args))))
-        error("match requires vector arguments");
+        error(_("match requires vector arguments"));
 
     /* Coerce to a common type; type == NILSXP is ok here.
      * Note that R's match() does only coerce factors (to character).
@@ -581,10 +581,10 @@ SEXP do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     n_target = LENGTH(target);
     dups_ok = asLogical(CADDR(args));
     if (dups_ok == NA_LOGICAL)
-        errorcall(call, "invalid \"duplicates.ok\" argument");
+        errorcall(call, _("invalid 'duplicates.ok' argument"));
 
     if (!isString(input) || !isString(target))
-        errorcall(call, "argument is not of mode character");
+        errorcall(call, _("argument is not of mode character"));
 
     used = (int *)R_alloc(n_target, sizeof(int));
     for (j = 0; j < n_target; j++)
@@ -661,7 +661,7 @@ SEXP do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     n_target = LENGTH(target);
 
     if (!isString(input) || !isString(target))
-        errorcall(call, "argument is not of mode character");
+        errorcall(call, _("argument is not of mode character"));
 
     ans = allocVector(INTSXP, n_input);
 
@@ -760,7 +760,7 @@ static SEXP subDots(SEXP rho)
     dots = findVar(R_DotsSymbol, rho);
 
     if (dots == R_UnboundValue)
-        error("... used in a situation where it doesn't exist");
+        error(_("... used in a situation where it doesn't exist"));
 
     if (dots == R_MissingArg)
         return dots;
@@ -800,7 +800,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(funcall) != LANGSXP)
     {
         b = deparse1(funcall, 1, SIMPLEDEPARSE);
-        errorcall(call, "%s is not a valid call", CHAR(STRING_ELT(b, 0)));
+        errorcall(call, _("%s is not a valid call"), CHAR(STRING_ELT(b, 0)));
     }
 
     /* Get the function definition */
@@ -861,7 +861,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(b) != CLOSXP)
     {
         b = deparse1(b, 1, SIMPLEDEPARSE);
-        errorcall(call, "%s is not a function", CHAR(STRING_ELT(b, 0)));
+        errorcall(call, _("%s is not a function"), CHAR(STRING_ELT(b, 0)));
     }
 
     /* Do we expand ... ? */
@@ -870,7 +870,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (expdots == NA_LOGICAL)
     {
         b = deparse1(CADDR(args), 1, SIMPLEDEPARSE);
-        errorcall(call, "%s is not a logical", CHAR(STRING_ELT(b, 0)));
+        errorcall(call, _("%s is not a logical"), CHAR(STRING_ELT(b, 0)));
     }
 
     /* Get the formals and match the actual args */
@@ -1036,7 +1036,7 @@ SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
         }
         break;
     default:
-        error("non-numeric matrix in rowsum: this can't happen");
+        error(_("non-numeric matrix in rowsum(): this can't happen"));
     }
 
     UNPROTECT(2); /*HashTable, matches*/
@@ -1069,7 +1069,7 @@ SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
     {
         xcol = VECTOR_ELT(x, i);
         if (!isNumeric(xcol))
-            error("non-numeric dataframe in rowsum");
+            error(_("non-numeric data frame in rowsum"));
         switch (TYPEOF(xcol))
         {
         case REALSXP:
@@ -1097,7 +1097,7 @@ SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
             break;
 
         default:
-            error("this can't happen");
+            error(_("this can't happen"));
         }
     }
     namesgets(ans, getAttrib(x, R_NamesSymbol));
@@ -1156,11 +1156,11 @@ SEXP do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     names = CAR(args);
     if (!isString(names))
-        errorcall(call, "names must be a character vector");
+        errorcall(call, _("'names' must be a character vector"));
     n = LENGTH(names);
     sep = CADR(args);
     if (!isString(sep) || LENGTH(sep) != 1)
-        errorcall(call, "sep must be a character string");
+        errorcall(call, _("'sep' must be a character string"));
     csep = CHAR(STRING_ELT(sep, 0));
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
@@ -1236,7 +1236,7 @@ SEXP csduplicated(SEXP x)
     HashData data;
 
     if (TYPEOF(x) != STRSXP)
-        error("csduplicated not called on a STRSXP");
+        error(_("csduplicated not called on a STRSXP"));
     n = LENGTH(x);
     HashTableSetup1(x, &data);
     PROTECT(data.HashTable);

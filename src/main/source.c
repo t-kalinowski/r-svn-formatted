@@ -72,7 +72,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = -1;
         s = R_ParseVector(text, num, &status);
         if (status != PARSE_OK)
-            errorcall(call, "parse error");
+            errorcall(call, _("parse error"));
     }
     else if (ifile >= 3)
     { /* file != "" */
@@ -80,12 +80,12 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = -1;
         if (!wasopen)
             if (!con->open(con))
-                error("cannot open the connection");
+                error(_("cannot open the connection"));
         s = R_ParseConn(con, num, &status);
         if (!wasopen)
             con->close(con);
         if (status != PARSE_OK)
-            errorcall(call, "syntax error on line %d", R_ParseError);
+            errorcall(call, _("syntax error on line %d"), R_ParseError);
     }
     else
     {
@@ -93,7 +93,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = 1;
         s = R_ParseBuffer(&R_ConsoleIob, num, &status, prompt);
         if (status != PARSE_OK)
-            errorcall(call, "parse error");
+            errorcall(call, _("parse error"));
     }
     UNPROTECT(2);
     return s;

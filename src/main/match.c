@@ -110,7 +110,7 @@ Rboolean pmatch(SEXP formal, SEXP tag, Rboolean exact)
     }
     return psmatch(f, t, exact);
 fail:
-    error("invalid partial string match");
+    error(_("invalid partial string match"));
     return FALSE; /* for -Wall */
 }
 
@@ -226,12 +226,13 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
                         if (havedots)
                             goto nextarg1;
 #endif
-                        error("formal argument \"%s\" matched by multiple actual arguments", CHAR(PRINTNAME(TAG(f))));
+                        error(_("formal argument \"%s\" matched by multiple actual arguments"),
+                              CHAR(PRINTNAME(TAG(f))));
 #ifdef MULTIPLE_MATCHES
                     }
 #endif
                     if (ARGUSED(b) == 2)
-                        error("argument %d matches multiple formal arguments", i);
+                        error(_("argument %d matches multiple formal arguments"), i);
                     SETCAR(a, CAR(b));
                     if (CAR(b) != R_MissingArg)
                         SET_MISSING(a, 0); /* not missing this arg */
@@ -274,14 +275,14 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
                     if (ARGUSED(b) != 2 && TAG(b) != R_NilValue && pmatch(TAG(f), TAG(b), seendots))
                     {
                         if (ARGUSED(b))
-                            error("argument %d matches multiple formal arguments", i);
+                            error(_("argument %d matches multiple formal arguments"), i);
                         if (ARGUSED(f) == 1)
 #ifdef MULTIPLE_MATCHES
                         {
                             if (havedots)
                                 goto nextarg2;
 #endif
-                            error("formal argument \"%s\" matched by multiple actual arguments",
+                            error(_("formal argument \"%s\" matched by multiple actual arguments"),
                                   CHAR(PRINTNAME(TAG(f))));
 #ifdef MULTIPLE_MATCHES
                         }
@@ -382,7 +383,7 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
         /* Check that all arguments are used */
         for (b = supplied; b != R_NilValue; b = CDR(b))
             if (!ARGUSED(b) && CAR(b) != R_MissingArg)
-                errorcall(R_GlobalContext->call, "unused argument(s) (%s ...)",
+                errorcall(R_GlobalContext->call, _("unused argument(s) (%s ...)"),
                           /* anything better when b is "untagged" ? : */
                           TAG(b) != R_NilValue ? CHAR(PRINTNAME(TAG(b))) : "");
     }

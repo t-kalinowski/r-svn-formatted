@@ -254,19 +254,19 @@ R_len_t asVecSize(SEXP x)
         case LGLSXP:
             res = IntegerFromLogical(LOGICAL(x)[0], &warn);
             if (res == NA_INTEGER)
-                error("vector size cannot be NA");
+                error(_("vector size cannot be NA"));
             return res;
         case INTSXP:
             res = INTEGER(x)[0];
             if (res == NA_INTEGER)
-                error("vector size cannot be NA");
+                error(_("vector size cannot be NA"));
             return res;
         case REALSXP:
             d = REAL(x)[0];
             if (d < 0)
-                error("vector size cannot be negative");
+                error(_("vector size cannot be negative"));
             if (d > R_LEN_T_MAX)
-                error("vector size specified is too large");
+                error(_("vector size specified is too large"));
             return (R_size_t)d;
         default:
             UNIMPLEMENTED_TYPE("asVecSize", x);
@@ -525,7 +525,7 @@ int nrows(SEXP s)
         return nrows(CAR(s));
     }
     else
-        error("object is not a matrix");
+        error(_("object is not a matrix"));
     return -1;
 }
 
@@ -547,7 +547,7 @@ int ncols(SEXP s)
         return length(s);
     }
     else
-        error("object is not a matrix");
+        error(_("object is not a matrix"));
     return -1; /*NOTREACHED*/
 }
 
@@ -619,7 +619,7 @@ Rboolean isFactor(SEXP s)
 
 Rboolean isObject(SEXP s)
 {
-    return OBJECT(s); /* really `1-bit unsigned int' */
+    return OBJECT(s); /* really '1-bit unsigned int' */
 }
 
 Rboolean inherits(SEXP s, char *name)
@@ -694,7 +694,7 @@ SEXP type2str(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return mkChar(TypeTable[i].str);
     }
-    error("type %d is unimplemented in type2str", t);
+    error(_("type %d is unimplemented in type2str"), t);
     return R_NilValue; /* for -Wall */
 }
 
@@ -709,7 +709,7 @@ SEXP type2symbol(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return install((char *)&TypeTable[i].str);
     }
-    error("type %d is unimplemented in type2symbol", t);
+    error(_("type %d is unimplemented in type2symbol"), t);
     return R_NilValue; /* for -Wall */
 }
 
@@ -720,9 +720,9 @@ void UNIMPLEMENTED_TYPEt(char *s, SEXPTYPE t)
     for (i = 0; TypeTable[i].str; i++)
     {
         if (TypeTable[i].type == t)
-            error("unimplemented type '%s' in %s\n", TypeTable[i].str, s);
+            error(_("unimplemented type '%s' in %s\n"), TypeTable[i].str, s);
     }
-    error("unimplemented type (%d) in %s\n", t, s);
+    error(_("unimplemented type (%d) in %s\n"), t, s);
 }
 
 void UNIMPLEMENTED_TYPE(char *s, SEXP x)
@@ -802,7 +802,7 @@ SEXP EnsureString(SEXP s)
         s = R_BlankString;
         break;
     default:
-        error("invalid tag in name extraction");
+        error(_("invalid tag in name extraction"));
     }
     return s;
 }
@@ -810,7 +810,7 @@ SEXP EnsureString(SEXP s)
 void checkArity(SEXP op, SEXP args)
 {
     if (PRIMARITY(op) >= 0 && PRIMARITY(op) != length(args))
-        error("%d argument%s passed to \"%s\" which requires %d.", length(args), (length(args) == 1 ? "" : "s"),
+        error(_("%d argument%s passed to \"%s\" which requires %d"), length(args), (length(args) == 1 ? "" : "s"),
               PRIMNAME(op), PRIMARITY(op));
 }
 
@@ -821,13 +821,13 @@ SEXP nthcdr(SEXP s, int n)
         while (n-- > 0)
         {
             if (s == R_NilValue)
-                error("\"nthcdr\" list shorter than %d", n);
+                error(_("\"nthcdr\" list shorter than %d"), n);
             s = CDR(s);
         }
         return s;
     }
     else
-        error("\"nthcdr\" needs a list to CDR down");
+        error(_("\"nthcdr\" needs a list to CDR down"));
     return R_NilValue; /* for -Wall */
 }
 
@@ -909,14 +909,14 @@ SEXP do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     xi = CAR(args);
     if (!isInteger(xi) || !(nx = LENGTH(xi)))
-        error("invalid `xinds' argument");
+        error(_("invalid 'xinds' argument"));
     yi = CADR(args);
     if (!isInteger(yi) || !(ny = LENGTH(yi)))
-        error("invalid `yinds' argument");
+        error(_("invalid 'yinds' argument"));
     if (!LENGTH(ans = CADDR(args)) || NA_LOGICAL == (all_x = asLogical(ans)))
-        errorcall(call, "`all.x' must be TRUE or FALSE");
+        errorcall(call, _("'all.x' must be TRUE or FALSE"));
     if (!LENGTH(ans = CADDDR(args)) || NA_LOGICAL == (all_y = asLogical(ans)))
-        errorcall(call, "`all.y' must be TRUE or FALSE");
+        errorcall(call, _("'all.y' must be TRUE or FALSE"));
     /* 1. determine result sizes */
     if (all_x)
     {
@@ -1014,12 +1014,12 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
-        errorcall(call, "character argument expected");
+        errorcall(call, _("character argument expected"));
     path = R_ExpandFileName(CHAR(STRING_ELT(s, 0)));
 #ifdef HAVE_CHDIR
     if (chdir(path) < 0)
 #endif
-        errorcall(call, "cannot change working directory");
+        errorcall(call, _("cannot change working directory"));
     return (R_NilValue);
 }
 
@@ -1033,13 +1033,13 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (TYPEOF(s = CAR(args)) != STRSXP)
-        errorcall(call, "a character vector argument expected");
+        errorcall(call, _("a character vector argument expected"));
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
         p = R_ExpandFileName(CHAR(STRING_ELT(s, i)));
         if (strlen(p) > PATH_MAX - 1)
-            errorcall(call, "path too long");
+            errorcall(call, _("path too long"));
         strcpy(buf, p);
 #ifdef Win32
         R_fixslash(buf);
@@ -1069,13 +1069,13 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (TYPEOF(s = CAR(args)) != STRSXP)
-        errorcall(call, "a character vector argument expected");
+        errorcall(call, _("a character vector argument expected"));
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
         p = R_ExpandFileName(CHAR(STRING_ELT(s, i)));
         if (strlen(p) > PATH_MAX - 1)
-            errorcall(call, "path too long");
+            errorcall(call, _("path too long"));
         strcpy(buf, p);
 #ifdef Win32
         R_fixslash(buf);
@@ -1116,25 +1116,25 @@ SEXP do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (TYPEOF(x = CAR(args)) != STRSXP)
-        errorcall(call, "a character vector argument expected");
+        errorcall(call, _("a character vector argument expected"));
     w = asInteger(CADR(args));
     if (w != NA_INTEGER && w < 0)
-        errorcall(call, "invalid value for 'w'");
+        errorcall(call, _("invalid value for 'w'"));
     findWidth = (w == NA_INTEGER);
     s = CADDR(args);
     if (LENGTH(s) != 1 || TYPEOF(s) != STRSXP)
-        errorcall(call, "invalid value for 'quote'");
+        errorcall(call, _("invalid value for 'quote'"));
     cs = CHAR(STRING_ELT(s, 0));
     if (strlen(cs) > 0)
         quote = cs[0];
     if (strlen(cs) > 1)
-        warningcall(call, "only the first character of 'quote' will be used");
+        warningcall(call, _("only the first character of 'quote' will be used"));
     justify = asInteger(CADDDR(args));
     if (justify == NA_INTEGER)
-        errorcall(call, "invalid value for 'justify'");
+        errorcall(call, _("invalid value for 'justify'"));
     na = asLogical(CAD4R(args));
     if (na == NA_LOGICAL)
-        errorcall(call, "invalid value for 'na'");
+        errorcall(call, _("invalid value for 'na'"));
 
     len = LENGTH(x);
     if (findWidth)
@@ -1190,7 +1190,7 @@ size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps)
         return (size_t)0;
     used = mbrtowc(wc, s, n, ps);
     if ((int)used < 0)
-        error("invalid multibyte string");
+        error(_("invalid multibyte string"));
     return used;
 }
 
@@ -1208,16 +1208,16 @@ void mbcsToLatin1(char *in, char *out)
 
     if (res == (size_t)(-1))
     {
-        warning("invalid text in mbcsToLatin1");
+        warning(_("invalid text in mbcsToLatin1"));
         *out = '\0';
         return;
     }
     wbuff = (wchar_t *)alloca((res + 1) * sizeof(wchar_t));
     if (!wbuff)
-        error("allocation failure in mbcsToLatin1");
+        error(_("allocation failure in mbcsToLatin1"));
     mres = mbstowcs(wbuff, in, res + 1);
     if (mres == (size_t)-1)
-        error("invalid input found in mbcsToLatin1");
+        error(_("invalid input found in mbcsToLatin1"));
     for (i = 0; i < res; i++)
     {
         /* here we do assume Unicode wchars */
@@ -1340,7 +1340,7 @@ void F77_SYMBOL(rexitc)(char *msg, int *nchar)
     char buf[256];
     if (nc > 255)
     {
-        warning("error message truncated to 255 chars");
+        warning(_("error message truncated to 255 chars"));
         nc = 255;
     }
     strncpy(buf, msg, nc);
@@ -1354,7 +1354,7 @@ void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
     char buf[256];
     if (nc > 255)
     {
-        warning("warning message truncated to 255 chars");
+        warning(_("warning message truncated to 255 chars"));
         nc = 255;
     }
     strncpy(buf, msg, nc);
