@@ -794,6 +794,13 @@ SEXP do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (nsubs != 1 || !isString(CAR(subs)) || length(CAR(subs)) != 1)
             error(_("wrong arguments for subsetting an environment"));
         ans = findVarInFrame(x, install(CHAR(STRING_ELT(CAR(subs), 0))));
+        if (TYPEOF(ans) == PROMSXP)
+        {
+            PROTECT(ans);
+            ans = eval(ans, R_GlobalEnv);
+            UNPROTECT(1);
+        }
+
         UNPROTECT(1);
         if (ans == R_UnboundValue)
             return (R_NilValue);
@@ -1056,10 +1063,20 @@ SEXP R_subset3_dflt(SEXP x, SEXP input)
     }
     else if (isEnvironment(x))
     {
-        UNPROTECT(2);
         y = findVarInFrame(x, install(CHAR(input)));
+        if (TYPEOF(y) == PROMSXP)
+        {
+            PROTECT(y);
+            y = eval(y, R_GlobalEnv);
+            UNPROTECT(1);
+        }
+        UNPROTECT(2);
         if (y != R_UnboundValue)
+        {
+            if (NAMED(x) > NAMED(y))
+                SET_NAMED(y, NAMED(x));
             return (y);
+        }
         return R_NilValue;
     }
     UNPROTECT(2);
