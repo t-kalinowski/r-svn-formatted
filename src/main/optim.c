@@ -685,7 +685,7 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
 
 /* Nelder-Mead */
 void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fail, double abstol, double intol,
-           void *ex, double alpha, double beta, double gamm, int trace, int *fncount, int maxit)
+           void *ex, double alpha, double bet, double gamm, int trace, int *fncount, int maxit)
 {
     char action[50];
     int C;
@@ -862,7 +862,7 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
                     }
 
                     for (i = 0; i < n; i++)
-                        Bvec[i] = (1 - beta) * P[i][H - 1] + beta * P[i][C - 1];
+                        Bvec[i] = (1 - bet) * P[i][H - 1] + bet * P[i][C - 1];
                     f = fminfn(n, Bvec, ex);
                     if (!R_FINITE(f))
                         f = big;
@@ -887,7 +887,7 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
                                 {
                                     for (i = 0; i < n; i++)
                                     {
-                                        P[i][j] = beta * (P[i][j] - P[i][L - 1]) + P[i][L - 1];
+                                        P[i][j] = bet * (P[i][j] - P[i][L - 1]) + P[i][L - 1];
                                         size += fabs(P[i][j] - P[i][L - 1]);
                                     }
                                 }
