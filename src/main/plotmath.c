@@ -44,11 +44,13 @@ static unsigned int TextColor;
  */
 static double BaseCex = 1;
 static double MathGamma;
+static char *MathFontFamily;
 /* The value of font passed into GEMathText
  * May be modified by plotmath code -- it is plotmath code's
  * responsibility to save and restore temporary changes.
  */
 static int MathFont;
+static double MathLineHeight;
 /* A temporary value of cex that may be modified by plotmath code.
  */
 static double MathCex;
@@ -124,6 +126,10 @@ static void PMoveTo(double x, double y)
 static double FontHeight()
 {
     double height, depth, width;
+    /*
+     * FIXME:  When fontfamily is passed to GEMetricInfo,
+     * this will need updating (times many in this file)
+     */
     GEMetricInfo(0, MathFont, MathCex, MathPs, &height, &depth, &width, MathDevice);
     return fromDeviceHeight(height + depth, MetricUnit, MathDevice);
 }
@@ -1004,8 +1010,8 @@ static BBOX RenderSymbolChar(int ascii, int draw)
     {
         asciiStr[0] = ascii;
         asciiStr[1] = '\0';
-        GEText(ConvertedX(), ConvertedY(), asciiStr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFont, MathCex,
-               MathPs, MathDevice);
+        GEText(ConvertedX(), ConvertedY(), asciiStr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFontFamily,
+               MathFont, MathLineHeight, MathCex, MathPs, MathDevice);
         PMoveAcross(bboxWidth(bbox));
     }
     SetFont(prev);
@@ -1049,8 +1055,8 @@ static BBOX RenderSymbolStr(char *str, int draw)
             {
                 chr[0] = *s;
                 PMoveAcross(lastItalicCorr);
-                GEText(ConvertedX(), ConvertedY(), chr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFont, MathCex,
-                       MathPs, MathDevice);
+                GEText(ConvertedX(), ConvertedY(), chr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFontFamily,
+                       MathFont, MathLineHeight, MathCex, MathPs, MathDevice);
                 PMoveAcross(bboxWidth(glyphBBox));
             }
             bboxWidth(resultBBox) += lastItalicCorr;
@@ -1076,8 +1082,8 @@ static BBOX RenderChar(int ascii, int draw)
     {
         asciiStr[0] = ascii;
         asciiStr[1] = '\0';
-        GEText(ConvertedX(), ConvertedY(), asciiStr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFont, MathCex,
-               MathPs, MathDevice);
+        GEText(ConvertedX(), ConvertedY(), asciiStr, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFontFamily,
+               MathFont, MathLineHeight, MathCex, MathPs, MathDevice);
         PMoveAcross(bboxWidth(bbox));
     }
     return bbox;
@@ -1098,8 +1104,8 @@ static BBOX RenderStr(char *str, int draw)
         }
         if (draw)
         {
-            GEText(ConvertedX(), ConvertedY(), str, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFont, MathCex,
-                   MathPs, MathDevice);
+            GEText(ConvertedX(), ConvertedY(), str, 0.0, 0.0, CurrentAngle, TextColor, MathGamma, MathFontFamily,
+                   MathFont, MathLineHeight, MathCex, MathPs, MathDevice);
             PMoveAcross(bboxWidth(resultBBox));
         }
         if (UsingItalics())
@@ -2946,7 +2952,13 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
     BoxColor = name2col("pink");
     TextColor = col;
     MathGamma = gamma;
+    /*
+     * FIXME:  When fontfamily and lineheight are passed to GEMathText
+     * need to use those instead of "" and 1 below
+     */
+    MathFontFamily = "";
     MathFont = font;
+    MathLineHeight = 1;
     MathCex = cex;
     MathPs = ps;
     CurrentStyle = STYLE_D;
