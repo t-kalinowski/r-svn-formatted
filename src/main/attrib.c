@@ -1057,7 +1057,7 @@ static SEXP data_part(SEXP obj)
     SETCAR(e, s_getDataPart);
     val = CDR(e);
     SETCAR(val, obj);
-    val = eval(e, R_GlobalEnv);
+    val = eval(e, R_MethodsNamespace);
     UNPROTECT(1);
     return (val);
 }
@@ -1073,7 +1073,7 @@ static SEXP set_data_part(SEXP obj, SEXP rhs)
     SETCAR(val, obj);
     val = CDR(val);
     SETCAR(val, rhs);
-    val = eval(e, R_GlobalEnv);
+    val = eval(e, R_MethodsNamespace);
     UNPROTECT(1);
     return (val);
 }

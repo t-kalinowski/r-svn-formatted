@@ -27,8 +27,8 @@ Rboolean R_GetVarLocMISSING(R_varloc_t);
 
 /* from Defn.h */
 typedef SEXP (*R_stdGen_ptr_t)(SEXP, SEXP, SEXP);
-R_stdGen_ptr_t R_get_standardGeneric_ptr();               /* get method */
-R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t); /* set method */
+R_stdGen_ptr_t R_get_standardGeneric_ptr();                     /* get method */
+R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t, SEXP); /* set method */
 
 /* attrib.c */
 SEXP R_data_class(SEXP obj, int singleString);
@@ -64,9 +64,11 @@ static SEXP f_x_i_skeleton, fgets_x_i_skeleton, f_x_skeleton, fgets_x_skeleton;
 
 SEXP R_quick_method_check(SEXP object, SEXP fsym, SEXP fdef);
 
-static SEXP R_target, R_defined, R_nextMethod;
+static SEXP R_target, R_defined, R_nextMethod, R_source;
 static SEXP R_dot_target, R_dot_defined, R_dot_nextMethod;
 static SEXP R_loadMethod_name, R_dot_Method;
+
+static SEXP Methods_Namespace = NULL;
 
 static char *check_single_string(SEXP, Rboolean, char *);
 static char *check_symbol_or_string(SEXP obj, Rboolean nonEmpty, char *what);
@@ -77,6 +79,7 @@ static void init_loadMethod()
     R_target = install("target");
     R_defined = install("defined");
     R_nextMethod = install("nextMethod");
+    R_source = install("source");
     R_loadMethod_name = install("loadMethod");
     R_dot_target = install(".target");
     R_dot_defined = install(".defined");
@@ -84,11 +87,15 @@ static void init_loadMethod()
     R_dot_Method = install(".Method");
 }
 
-void R_initMethodDispatch()
+SEXP R_initMethodDispatch(SEXP envir)
 {
-    R_set_standardGeneric_ptr(R_standardGeneric);
+    if (envir && !isNull(envir))
+        Methods_Namespace = envir;
+    R_set_standardGeneric_ptr(R_standardGeneric, Methods_Namespace);
+    if (!Methods_Namespace)
+        Methods_Namespace = R_GlobalEnv;
     if (initialized)
-        return;
+        return (envir);
     R_set_quick_method_check(R_quick_method_check);
     s_dot_Methods = Rf_install(".Methods");
     s_skeleton = Rf_install("skeleton");
@@ -122,8 +129,8 @@ void R_initMethodDispatch()
     UNPROTECT(1);
 
     /* some special lists of primitive skeleton calls */
-    R_PreserveObject(R_short_skeletons = findVar(Rf_install(".ShortPrimitiveSkeletons"), R_GlobalEnv));
-    R_PreserveObject(R_empty_skeletons = findVar(Rf_install(".EmptyPrimitiveSkeletons"), R_GlobalEnv));
+    R_PreserveObject(R_short_skeletons = findVar(Rf_install(".ShortPrimitiveSkeletons"), Methods_Namespace));
+    R_PreserveObject(R_empty_skeletons = findVar(Rf_install(".EmptyPrimitiveSkeletons"), Methods_Namespace));
     if (R_short_skeletons == R_UnboundValue || R_empty_skeletons == R_UnboundValue)
         error("Couldn't find the skeleton calls for methods (package  detached?): expect very bad things to happen");
     f_x_i_skeleton = VECTOR_ELT(R_short_skeletons, 0);
@@ -132,6 +139,7 @@ void R_initMethodDispatch()
     fgets_x_skeleton = VECTOR_ELT(R_empty_skeletons, 1);
     init_loadMethod();
     initialized = 1;
+    return (envir);
 }
 
 #ifdef UNUSED
@@ -317,7 +325,7 @@ static SEXP R_S_getAllMethods(SEXP fname, SEXP fdef)
     SETCAR(e, fdef);
     /* We don't do checking here:  the calls from do_dispatch check
      * argument types. */
-    val = eval(call, R_GlobalEnv);
+    val = eval(call, Methods_Namespace);
     UNPROTECT(1);
     return (val);
 }
@@ -340,7 +348,7 @@ static SEXP R_S_MethodsListSelect(SEXP fname, SEXP ev, SEXP mlist, SEXP f_env)
         val = CDR(val);
         SETCAR(val, f_env);
     }
-    val = R_tryEval(e, R_GlobalEnv, &check_err);
+    val = R_tryEval(e, Methods_Namespace, &check_err);
     if (check_err)
         error("S language method selection got an error when called from internal dispatch for function \"%s\"",
               check_symbol_or_string(fname, TRUE, "Function name for method selection called internally"));
@@ -590,7 +598,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
     Rboolean prim_case = FALSE;
 
     if (!initialized)
-        R_initMethodDispatch();
+        R_initMethodDispatch(NULL);
     fsym = fname;
     /* TODO:  the code for do_standardGeneric does a test of fsym,
      * with a less informative error message.  Should combine them.*/
@@ -908,6 +916,10 @@ static SEXP R_loadMethod(SEXP def, SEXP fname, SEXP ev)
             defineVar(R_dot_nextMethod, CAR(s), ev);
             found++;
         }
+        else if (t == R_source)
+        {
+            /* ignore */ found++;
+        }
     }
     defineVar(R_dot_Method, def, ev);
     /* this shouldn't be needed but check the generic being
@@ -979,4 +991,13 @@ SEXP R_methodsPackageMetaName(SEXP prefix, SEXP name)
     SET_STRING_ELT(ans, 0, mkChar(str));
     UNPROTECT(1);
     return ans;
+}
+
+SEXP R_identC(SEXP e1, SEXP e2)
+{
+    if (TYPEOF(e1) == STRSXP && TYPEOF(e1) == STRSXP && length(e1) == 1 && length(e2) == 1 &&
+        streql(CHAR(STRING_ELT(e1, 0)), CHAR(STRING_ELT(e2, 0))))
+        return R_TRUE;
+    else
+        return R_FALSE;
 }
