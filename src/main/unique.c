@@ -689,7 +689,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(funcall) != LANGSXP)
     {
-        b = deparse1(funcall, 1, TRUE, FALSE);
+        b = deparse1(funcall, 1, SIMPLEDEPARSE);
         errorcall(call, "%s is not a valid call", CHAR(STRING_ELT(b, 0)));
     }
 
@@ -750,7 +750,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(b) != CLOSXP)
     {
-        b = deparse1(b, 1, TRUE, FALSE);
+        b = deparse1(b, 1, SIMPLEDEPARSE);
         errorcall(call, "%s is not a function", CHAR(STRING_ELT(b, 0)));
     }
 
@@ -759,7 +759,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     expdots = asLogical(CAR(CDDR(args)));
     if (expdots == NA_LOGICAL)
     {
-        b = deparse1(CADDR(args), 1, TRUE, FALSE);
+        b = deparse1(CADDR(args), 1, SIMPLEDEPARSE);
         errorcall(call, "%s is not a logical", CHAR(STRING_ELT(b, 0)));
     }
 
