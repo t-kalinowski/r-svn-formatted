@@ -87,6 +87,10 @@ static double csignrank(int k, int n)
     if (w[n] == 0)
     {
         w[n] = (double *)calloc(c + 1, sizeof(double));
+        if (!w[n])
+        {
+            MATHLIB_ERROR("%s", "signrank allocation error");
+        }
         for (i = 0; i <= c; i++)
             w[n][i] = -1;
     }

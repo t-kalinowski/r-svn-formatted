@@ -25,6 +25,10 @@
 #include "bessel.h"
 #include "nmath.h"
 
+#ifndef MATHLIB_STANDALONE
+#include "R_ext/Memory.h"
+#endif
+
 static void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc);
 
 double bessel_y(double x, double alpha)
@@ -49,7 +53,13 @@ double bessel_y(double x, double alpha)
     }
     nb = 1 + (long)floor(alpha); /* nb-1 <= alpha < nb */
     alpha -= (nb - 1);
+#ifdef MATHLIB_STANDALONE
     by = (double *)calloc(nb, sizeof(double));
+    if (!by)
+        MATHLIB_ERROR("%s", "bessel_y allocation error");
+#else
+    by = (double *)R_alloc(nb, sizeof(double));
+#endif
     Y_bessel(&x, &alpha, &nb, by, &ncalc);
     if (ncalc != nb)
     { /* error input */
@@ -62,7 +72,9 @@ double bessel_y(double x, double alpha)
             MATHLIB_WARNING2("bessel_y(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
     }
     x = by[nb - 1];
+#ifdef MATHLIB_STANDALONE
     free(by);
+#endif
     return x;
 }
 

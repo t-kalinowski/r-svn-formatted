@@ -16,7 +16,7 @@
 #endif /* mac */
 
 #include <stdio.h>
-#include "R_ext/RS.h"
+#include "R_ext/Memory.h"
 #include "R_ext/Applic.h"
 
 #undef max
@@ -442,13 +442,12 @@ L50:
 }
 
 /* Auxiliary routine to get rid of limitations on the number of factors
-   in the model. */
+   in the model.
+
+   Changed to use R_alloc to avoid memory leak if routine was interrupted.
+*/
 
 static int *lvector(int n)
 {
-    int *v;
-    v = Calloc(n, int);
-    if (!v)
-        PROBLEM "allocation failure" RECOVER(NULL_ENTRY);
-    return v;
+    return (int *)R_alloc(n, sizeof(int));
 }
