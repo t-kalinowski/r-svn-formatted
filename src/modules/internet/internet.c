@@ -69,7 +69,9 @@ static Rboolean url_open(Rconnection con)
         ctxt = in_R_HTTPOpen(url, 0);
         if (ctxt == NULL)
         {
-            error("cannot open URL `%s'", url);
+            /* if we call error() we get a connection leak*/
+            /* so do_url has to raise the error*/
+            /* error("cannot open URL `%s'", url); */
             return FALSE;
         }
         ((Rurlconn)(con->private))->ctxt = ctxt;
@@ -78,7 +80,9 @@ static Rboolean url_open(Rconnection con)
         ctxt = in_R_FTPOpen(url);
         if (ctxt == NULL)
         {
-            error("cannot open URL `%s'", url);
+            /* if we call error() we get a connection leak*/
+            /* so do_url has to raise the error*/
+            /* error("cannot open URL `%s'", url); */
             return FALSE;
         }
         ((Rurlconn)(con->private))->ctxt = ctxt;
