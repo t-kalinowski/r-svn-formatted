@@ -46,9 +46,11 @@ extern char *alloca(size_t);
 
 extern UImode CharacterMode;
 
+#ifdef SUPPORT_MBCS
+#if 0
 static int wcwidth(wchar_t ucs)
 {
-    return 1 + 
+  return 1 +
     (ucs >= 0x1100 &&
      (ucs <= 0x115f ||                    /* Hangul Jamo init. consonants */
       ucs == 0x2329 || ucs == 0x232a ||
@@ -62,8 +64,13 @@ static int wcwidth(wchar_t ucs)
       (ucs >= 0x20000 && ucs <= 0x2fffd) ||
       (ucs >= 0x30000 && ucs <= 0x3fffd)*/));
 }
+#endif
 
-#ifdef SUPPORT_MBCS
+static int wcwidth(wchar_t ucs)
+{
+    return (ucs == L'M') ? 3 : 1;
+}
+
 static mbstate_t mb_st; /* use for char transpose as well */
 
 /* This is input from the keyboard, so we do not do validity checks.
@@ -107,11 +114,15 @@ int inline mb_char_len(char *buf, int clength)
 void setCURCOL(ConsoleData p)
 {
 #ifdef SUPPORT_MBCS
-    char *cur_line = LINE(NUMLINES - 1) + prompt_len;
-    char save = cur_line[cur_byte];
-    cur_line[cur_byte] = '\0';
-    CURCOL = mbstowcs(NULL, cur_line, 100000) + prompt_wid;
-    cur_line[cur_byte] = save;
+    char *P = LINE(NUMLINES - 1) + prompt_len;
+    int w0 = 0;
+    wchar_t wc;
+    while (P < LINE(NUMLINES - 1) + prompt_len + cur_byte)
+    {
+        P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
+        w0 += wcwidth(wc);
+    }
+    CURCOL = w0 + prompt_wid;
 #else
     CURCOL = cur_byte + prompt_wid;
 #endif
@@ -390,26 +401,26 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
     r = rect(BORDERX + fch * FW, BORDERY + j * FH, (lch - fch + 1) * FW, FH);
     gfillrect(p->bm, bgr, r);
 
-    if (len > fch)
+    if (len > FC + fch)
     {
         /* Some of the string is visible: */
 #ifndef SUPPORT_MBCS
         /* we don't know the string length, so modify it in place */
         if (FC && (fch == 0))
         {
-            chf = s[0];
-            s[0] = '$';
+            chf = s[FC];
+            s[FC] = '$';
         }
         else
             chf = '\0';
-        if ((len > COLS) && (lch == COLS - 1))
+        if ((len > FC + COLS) && (lch == COLS - 1))
         {
-            chl = s[lch];
-            s[lch] = '$';
+            chl = s[FC + lch];
+            s[FC + lch] = '$';
         }
         else
             chl = '\0';
-        last = lch + 1;
+        last = FC + lch + 1;
         if (len > last)
         {
             ch = s[last];
@@ -417,17 +428,16 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
         }
         else
             ch = '\0';
-        gdrawstr(p->bm, p->f, fgr, pt(r.x, r.y), &s[fch]);
+        gdrawstr(p->bm, p->f, fgr, pt(r.x, r.y), &s[FC + fch]);
         /* restore the string */
         if (ch)
             s[last] = ch;
         if (chl)
-            s[lch] = chl;
+            s[FC + lch] = chl;
         if (chf)
-            s[fch] = chf;
+            s[FC] = chf;
 #else
-        buff = alloca(strlen(s) + 1); /* overkill */
-        q = buff;
+        q = buff = alloca(strlen(s) + 1); /* overkill */
 
         if (FC && (fch == 0))
         {
@@ -435,7 +445,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
             fch++;
         }
         memset(&mb_st, 0, sizeof(mbstate_t));
-        for (w0 = 0; w0 < fch;)
+        for (w0 = -FC; w0 < fch;)
         {
             P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
             w0 += wcwidth(wc);
@@ -444,8 +454,8 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
            Possibly have a widechar hanging over.
            It's not clear what to do, so fill with blanks.
         */
-        if (fch - w0 > 1)
-            for (i = 1; i < fch - w0; i++)
+        if (w0 > fch)
+            for (i = 0; i < w0 - fch; i++)
                 *q++ = ' ';
 
         while (w0 < lch)
@@ -453,12 +463,35 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
             used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
             w0 += wcwidth(wc);
             if (w0 > lch)
-                break;
+            {
+                break; /* char straddling the right edge
+                      is not displayed */
+            }
             for (j = 0; j < used; j++)
+            {
                 *q++ = *P++;
+                if (*P == 'M')
+                {
+                    *q++ = 'N';
+                    *q++ = 'O';
+                }
+            }
         }
-        if ((len > COLS) && (lch == COLS - 1))
+        if ((len > FC + COLS) && (lch == COLS - 1))
             *q++ = '$';
+        else
+        {
+            used = mbrtowc(NULL, P, MB_CUR_MAX, &mb_st);
+            for (j = 0; j < used; j++)
+            {
+                if (*P == 'M')
+                {
+                    *q++ = 'N';
+                    *q++ = 'O';
+                }
+                *q++ = *P++;
+            }
+        }
         *q = '\0';
         gdrawstr(p->bm, p->f, fgr, pt(r.x, r.y), buff);
 #endif
@@ -473,11 +506,14 @@ static int writeline(ConsoleData p, int i, int j)
     char *s;
     int insel, len, col1, d;
     int c1, c2, c3, x0, y0, x1, y1;
+#ifdef SUPPORT_MBCS
+    rect r;
+#endif
 
     if ((i < 0) || (i >= NUMLINES))
         return 0;
-    s = VLINE(i);
-#ifdef SUPPORT_UCS
+    s = LINE(i);
+#ifdef SUPPORT_MBCS
     len = mbswidth(s);
 #else
     len = strlen(s);
@@ -511,17 +547,24 @@ static int writeline(ConsoleData p, int i, int j)
     {
 #ifdef SUPPORT_MBCS
         { /* determine the width of the current char */
-            int w0;
+            int w0, used = 0, ii;
             wchar_t wc;
-            char *P = s;
+            char *P = s, nn[10];
             memset(&mb_st, 0, sizeof(mbstate_t));
-            for (w0 = 0; w0 < CURCOL;)
+            for (w0 = 0; w0 <= CURCOL;)
             {
-                P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
+                used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
                 w0 += wcwidth(wc);
+                P += used;
             }
-            w0 = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
-            WLHELPER(CURCOL - FC, CURCOL - FC + w0 - 1, p->bg, p->ufg);
+            w0 = wcwidth(wc);
+            P -= used;
+            r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
+            gfillrect(p->bm, p->ufg, r);
+            for (ii = 0; ii < used; ii++)
+                nn[ii] = P[ii];
+            nn[used] = '\0';
+            gdrawstr(p->bm, p->f, p->bg, pt(r.x, r.y), nn);
         }
 #else
         WLHELPER(CURCOL - FC, CURCOL - FC, p->bg, p->ufg);
@@ -574,10 +617,12 @@ void drawconsole(control c, rect r)
 
     ll = min(NUMLINES, ROWS);
     if (!BM)
-        FVOIDRETURN; /* This is a workaround for PR#1711.  BM should never be null here */
+        return;
+    ; /* This is a workaround for PR#1711.  BM should never be null here */
     gfillrect(BM, p->bg, getrect(BM));
     if (!ll)
-        FVOIDRETURN;
+        return;
+    ;
     for (i = 0; i < ll; i++)
     {
         wd = WRITELINE(NEWFV + i, i);
@@ -591,7 +636,7 @@ void drawconsole(control c, rect r)
     if (maxwd < COLS - 1)
         maxwd = COLS - 1;
     maxwd += FC;
-    gchangescrollbar(c, HWINSB, FC, maxwd, COLS, p->kind == CONSOLE || NUMLINES > ROWS);
+    gchangescrollbar(c, HWINSB, FC, maxwd - FC, COLS, p->kind == CONSOLE || NUMLINES > ROWS);
     gchangescrollbar(c, VWINSB, FV, NUMLINES - 1, ROWS, p->kind == CONSOLE);
 }
 
@@ -602,7 +647,8 @@ void setfirstvisible(control c, int fv)
     int ds, rw, ww;
 
     if (NUMLINES <= ROWS)
-        FVOIDRETURN;
+        return;
+    ;
     if (fv < 0)
         fv = 0;
     else if (fv > NUMLINES - ROWS)
@@ -611,12 +657,14 @@ void setfirstvisible(control c, int fv)
         fv = 0;
     ds = fv - FV;
     if ((ds == 0) && !p->needredraw)
-        FVOIDRETURN;
+        return;
+    ;
     if (abs(ds) > 1)
     {
         NEWFV = fv;
         REDRAW;
-        FVOIDRETURN;
+        return;
+        ;
     }
     if (p->needredraw)
     {
@@ -626,7 +674,8 @@ void setfirstvisible(control c, int fv)
         if (ds == 0)
         {
             RSHOW(RLINE(ww));
-            FVOIDRETURN;
+            return;
+            ;
         }
     }
     if (ds == 1)
@@ -659,7 +708,11 @@ void setfirstcol(control c, int newcol)
     {
         for (i = 0, ml = 0; i < ll; i++)
         {
+#ifdef SUPPORT_MBCS
+            li = mbswidth(LINE(NEWFV + i));
+#else
             li = strlen(LINE(NEWFV + i));
+#endif
             ml = (ml < li) ? li : ml;
         }
         ml = ml - COLS;
@@ -685,7 +738,8 @@ void console_mousedrag(control c, int button, point pt)
         r = ((pt.y > 32000) ? 0 : ((pt.y > HEIGHT) ? HEIGHT : pt.y)) / FH;
         s = ((pt.x > 32000) ? 0 : ((pt.x > WIDTH) ? WIDTH : pt.x)) / FW;
         if ((r < 0) || (r > ROWS) || (s < 0) || (s > COLS))
-            FVOIDRETURN;
+            return;
+        ;
         p->my1 = FV + r;
         p->mx1 = FC + s;
         p->needredraw = 1;
@@ -782,7 +836,8 @@ static void storekey(control c, int k)
     if (p->numkeys >= NKEYS)
     {
         gabeep();
-        FVOIDRETURN;
+        return;
+        ;
     }
     p->kbuf[(p->firstkey + p->numkeys) % NKEYS] = k;
     p->numkeys++;
@@ -895,7 +950,8 @@ void consolepaste(control c)
         REDRAW;
     }
     if (p->kind == PAGER)
-        FVOIDRETURN;
+        return;
+    ;
     if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) && (pc = (char *)GlobalLock(hglb)))
     {
         if (p->clp)
@@ -937,7 +993,8 @@ void consolepastecmds(control c)
         REDRAW;
     }
     if (p->kind == PAGER)
-        FVOIDRETURN;
+        return;
+    ;
     if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) && (pc = (char *)GlobalLock(hglb)))
     {
         if (p->clp)
@@ -998,12 +1055,14 @@ static void consoletoclipboardHelper(control c, int x0, int y0, int x1, int y1)
     if (!(hglb = GlobalAlloc(GHND, ll)))
     {
         R_ShowMessage("Insufficient memory: text not copied to the clipboard");
-        FVOIDRETURN;
+        return;
+        ;
     }
     if (!(s = (char *)GlobalLock(hglb)))
     {
         R_ShowMessage("Insufficient memory: text not copied to the clipboard");
-        FVOIDRETURN;
+        return;
+        ;
     }
     i = y0;
     j = x0;
@@ -1029,7 +1088,8 @@ static void consoletoclipboardHelper(control c, int x0, int y0, int x1, int y1)
     {
         R_ShowMessage("Unable to open the clipboard");
         GlobalFree(hglb);
-        FVOIDRETURN;
+        return;
+        ;
     }
     SetClipboardData(CF_TEXT, hglb);
     CloseClipboard();
@@ -1648,7 +1708,8 @@ void consoleresize(console c, rect r)
     int rr, pcols = COLS;
 
     if (((WIDTH == r.width) && (HEIGHT == r.height)) || (r.width == 0) || (r.height == 0)) /* minimize */
-        FVOIDRETURN;
+        return;
+    ;
     /*
      *  set first visible to keep the bottom line on a console,
      *  the middle line on a pager
@@ -1675,8 +1736,9 @@ void consoleresize(console c, rect r)
         return;
     }
     if (!p->lbuf)
-        FVOIDRETURN; /* don't implement resize if no content
-       yet in pager */
+        return;
+    ; /* don't implement resize if no content
+yet in pager */
     if (p->r >= 0)
     {
         if (NUMLINES > ROWS)
@@ -1766,7 +1828,8 @@ void consoleprint(console c)
     char buf[1024];
     cursor cur;
     if (!(lpr = newprinter(0.0, 0.0, "")))
-        FVOIDRETURN;
+        return;
+    ;
     show(c);
     /*
      * If possible, we avoid to use FixedFont for printer since it hasn't the

@@ -1692,12 +1692,14 @@ static void declose(control m)
     R_de_up = FALSE;
 }
 
-static void deresize(console c, rect r) FBEGIN
+static void deresize(console c, rect r)
+{
     if (((WIDTH == r.width) && (HEIGHT == r.height)) || (r.width == 0) || (r.height == 0)) /* minimize */
-    FVOIDRETURN;
-WIDTH = r.width;
-HEIGHT = r.height;
-FVOIDEND
+        return;
+    ;
+    WIDTH = r.width;
+    HEIGHT = r.height;
+}
 
 static void menudehelp(control m)
 {
