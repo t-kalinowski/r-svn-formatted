@@ -28,8 +28,10 @@
 #include "S.h"      /* unif_rand(), seed_in(), seed_out() */
 #include "Applic.h" /* for the QR	  routines */
 #include "Utils.h"  /* for the sort() routines */
-#include "Arith.h"  /* R_PosInf */
+/* #include "Arith.h"  R_PosInf -- doesn't work on non-IEEE machines */
 #include <math.h>
+#include <limits.h>
+#define BIG DBL_MAX
 
 /* GLOBAL Variables, explicitly allocated and freed: */
 static double *coef, *qraux, *work, *res, *yr, *xr, *means, *d2, *d2copy;
@@ -177,7 +179,7 @@ void lqs_fitlots(double *x, double *y, longint *n, longint *p, longint *qn, long
     longint rank, info, n100 = 100;
     long ignored;
     int firsttrial = 1;
-    double a = 0.0, tol = 1.0e-7, sum, thiscrit, best = R_PosInf, target, old, new, dummy;
+    double a = 0.0, tol = 1.0e-7, sum, thiscrit, best = BIG, target, old, new, dummy;
 
     lqs_setup(n, p, nwhich);
 
@@ -410,7 +412,7 @@ void mve_fitlots(double *x, longint *n, longint *p, longint *qn, longint *mcd, l
     int i, iter, j, nn = *n, quan = *qn, trial, this_sing;
     longint nnew = *nwhich;
     long ignored;
-    double det, best = R_PosInf, thiscrit, lim;
+    double det, best = BIG, thiscrit, lim;
 
     if (*mcd != 1)
         mve_setup(n, p, nwhich);
