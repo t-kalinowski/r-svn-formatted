@@ -29,6 +29,8 @@
 #include <Rmath.h>
 #include <Rdevices.h>
 
+#include <R_ext/RConverters.h>
+
 #ifndef max
 #define max(a, b) ((a > b) ? (a) : (b))
 #endif
@@ -41,9 +43,7 @@ static SEXP PkgSymbol = NULL;
 
 static char DLLname[PATH_MAX];
 
-/* This is a per-platform function which looks up */
-/* entry points in DLLs in a platform specific way. */
-
+/* This looks up entry points in DLLs in a platform specific way. */
 DL_FUNC R_FindSymbol(char const *, char const *);
 
 /* Convert an R object to a non-moveable C/Fortran object and return
@@ -51,7 +51,7 @@ DL_FUNC R_FindSymbol(char const *, char const *);
    than vectors and lists unaltered.
 */
 
-static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort)
+static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const char *name, R_toCConverter **converter)
 {
     int *iptr;
     float *sptr;
@@ -60,6 +60,26 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort)
     Rcomplex *zptr;
     SEXP *lptr, CSingSymbol = install("Csingle");
     int i, l, n;
+
+    if (converter)
+        *converter = NULL;
+
+    if (length(getAttrib(s, R_ClassSymbol)))
+    {
+        R_CConvertInfo info;
+        int success;
+        void *ans;
+
+        info.naok = naok;
+        info.dup = dup;
+        info.narg = narg;
+        info.Fort = Fort;
+        info.name = name;
+
+        ans = Rf_convertToC(s, &info, &success, converter);
+        if (success)
+            return (ans);
+    }
 
     switch (TYPEOF(s))
     {
@@ -363,7 +383,7 @@ static SEXP naokfind(SEXP args, int *len, int *naok, int *dup)
     return args;
 }
 
-static void setDLLname(SEXP s)
+static void setDLLname(SEXP s, char *DLLName)
 {
     SEXP ss = CAR(s);
     char *name;
@@ -391,14 +411,14 @@ static SEXP pkgtrim(SEXP args)
         {
             if (pkgused++ == 1)
                 warning("PACKAGE used more than once");
-            setDLLname(s);
+            setDLLname(s, DLLname);
             return R_NilValue;
         }
         if (TAG(ss) == PkgSymbol)
         {
             if (pkgused++ == 1)
                 warning("PACKAGE used more than once");
-            setDLLname(ss);
+            setDLLname(ss, DLLname);
             SETCDR(s, CDR(ss));
         }
         s = CDR(s);
@@ -969,6 +989,7 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     int dup, havenames, naok, nargs, which;
     DL_FUNC fun;
     SEXP ans, pargs, s;
+    R_toCConverter *argConverters[65];
     char buf[128], *p, *q, *vmax;
     if (NaokSymbol == NULL || DupSymbol == NULL || PkgSymbol == NULL)
     {
@@ -994,18 +1015,6 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "too many arguments in foreign function call");
     cargs = (void **)R_alloc(nargs, sizeof(void *));
 
-    /* Convert the arguments for use in foreign */
-    /* function calls.  Note that we copy twice */
-    /* once here, on the way into the call, and */
-    /* once below on the way out. */
-
-    nargs = 0;
-    for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
-    {
-        cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which);
-        nargs++;
-    }
-
     /* Make up the load symbol and look it up. */
 
     p = CHAR(STRING_ELT(op, 0));
@@ -1026,6 +1035,18 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!(fun = R_FindSymbol(buf, DLLname)))
 #endif /* Macintosh */
         errorcall(call, "C/Fortran function name not in load table");
+
+    /* Convert the arguments for use in foreign */
+    /* function calls.  Note that we copy twice */
+    /* once here, on the way into the call, and */
+    /* once below on the way out. */
+
+    nargs = 0;
+    for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
+    {
+        cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, buf, argConverters + nargs);
+        nargs++;
+    }
 
     switch (nargs)
     {
@@ -1432,12 +1453,31 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     havenames = 0;
     if (dup)
     {
+        R_FromCConvertInfo info;
+        info.cargs = cargs;
+        info.allArgs = args;
+        info.nargs = nargs;
+        info.functionName = buf;
         nargs = 0;
         for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
         {
-            PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), which));
-            SET_ATTRIB(s, duplicate(ATTRIB(CAR(pargs))));
-            SET_OBJECT(s, OBJECT(CAR(pargs)));
+            if (argConverters[nargs])
+            {
+                if (argConverters[nargs]->reverse)
+                {
+                    info.argIndex = nargs;
+                    s = argConverters[nargs]->reverse(cargs[nargs], CAR(pargs), &info, argConverters[nargs]);
+                }
+                else
+                    s = R_NilValue;
+                PROTECT(s);
+            }
+            else
+            {
+                PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), which));
+                SET_ATTRIB(s, duplicate(ATTRIB(CAR(pargs))));
+                SET_OBJECT(s, OBJECT(CAR(pargs)));
+            }
             if (TAG(pargs) != R_NilValue)
                 havenames = 1;
             SET_VECTOR_ELT(ans, nargs, s);
@@ -1580,7 +1620,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     case CPLXSXP:
     case STRSXP:
         if (nres > 0)
-            results[0] = RObjToCPtr(s, 1, 1, 0, 0);
+            results[0] = RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL);
         break;
     case VECSXP:
         n = length(s);
@@ -1588,7 +1628,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             n = nres;
         for (i = 0; i < n; i++)
         {
-            results[i] = RObjToCPtr(VECTOR_ELT(s, i), 1, 1, 0, 0);
+            results[i] = RObjToCPtr(VECTOR_ELT(s, i), 1, 1, 0, 0, (const char *)NULL, NULL);
         }
         break;
     case LISTSXP:
@@ -1597,7 +1637,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             n = nres;
         for (i = 0; i < n; i++)
         {
-            results[i] = RObjToCPtr(s, 1, 1, 0, 0);
+            results[i] = RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL);
             s = CDR(s);
         }
         break;
