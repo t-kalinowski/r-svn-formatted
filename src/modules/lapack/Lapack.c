@@ -668,6 +668,7 @@ static SEXP modLa_chol(SEXP A)
     }
     else
         error("A must be a numeric matrix");
+    return R_NilValue; /* -Wall */
 }
 
 static SEXP modLa_chol2inv(SEXP A, SEXP size)
@@ -711,6 +712,7 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
     }
     else
         error("A must be a numeric matrix");
+    return R_NilValue; /* -Wall */
 }
 
 #include <R_ext/Rlapack.h>
