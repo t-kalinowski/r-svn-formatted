@@ -744,15 +744,17 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
      *	i.e., the vector of tick mark locations,
      *	when none has been specified (= default).
      *
-     *	axp[0:2] = (x1, x2, nint), where x1..x2 are the extreme tick marks
-     *
+     *	axp[0:2] = (x1, x2, nInt), where x1..x2 are the extreme tick marks
+     *                 {unless in log case, where nint \in {1,2,3 ; -1,-2,....}
+     *                  and the `nint' argument is used.
+
      *	The resulting REAL vector must have length >= 1, ideally >= 2
      */
     SEXP at = R_NilValue; /* -Wall*/
     double umin, umax, dn, rng, small;
     int i, n, ne;
     if (!logflag || axp[2] < 0)
-    {                            /* ---- linear axis ---- Only use	axp[]  arg. */
+    {                            /* --- linear axis --- Only use axp[] arg. */
         n = fabs(axp[2]) + 0.25; /* >= 0 */
         dn = imax2(1, n);
         rng = axp[1] - axp[0];
@@ -909,14 +911,14 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* axis(side, at, labels, tick, line, pos,
-     *      outer, font, vfont, lty, lwd, col, ...) */
+     *	    outer, font, vfont, lty, lwd, col, ...) */
 
     SEXP at, lab, vfont;
     int col, font, lty;
     int i, n, nint = 0, ntmp, side, *ind, outer;
     int istart, iend, incr;
     Rboolean dolabels, doticks, logflag = FALSE;
-    Rboolean vectorFonts = FALSE;
+    Rboolean create_at, vectorFonts = FALSE;
     double x, y, temp, tnew, tlast;
     double axp[3], usr[2];
     double gap, labw, low, high, line, pos, lwd;
@@ -1064,7 +1066,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Determine the tickmark positions.  Note that these may fall */
     /* outside the plot window. We will clip them in the code below. */
 
-    if (length(at) == 0)
+    create_at = (length(at) == 0);
+    if (create_at)
     {
         PROTECT(at = CreateAtVector(axp, usr, nint, logflag));
     }
@@ -1127,7 +1130,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* no! we do allow an `lty' argument -- will not be used often though
-     *  Rf_gpptr(dd)->lty = LTY_SOLID; */
+     *	Rf_gpptr(dd)->lty = LTY_SOLID; */
     Rf_gpptr(dd)->lty = lty;
     Rf_gpptr(dd)->lwd = lwd;
 
