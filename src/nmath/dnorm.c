@@ -28,6 +28,7 @@
  */
 
 #include "Mathlib.h"
+#include "dpq.h"
 
 double dnorm4(double x, double mu, double sigma, int give_log)
 {
