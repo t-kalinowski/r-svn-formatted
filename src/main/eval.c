@@ -1104,6 +1104,7 @@ SEXP do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
         v = CAR(vals);
         break;
     default:
+        warningcall(call, "multi-argument returns are deprecated");
         for (v = vals; v != R_NilValue; v = CDR(v))
         {
             if (CAR(v) == R_MissingArg)
