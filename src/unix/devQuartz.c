@@ -313,8 +313,8 @@ void GetQuartzParameters(double *width, double *height, double *ps, char *family
 {
     if (useaqua)
         CocoaGetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos);
-    //	else
-    //		ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos);
+    /*	else
+            ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos); */
 }
 
 #endif
