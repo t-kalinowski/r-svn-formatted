@@ -86,27 +86,27 @@ static double cansari(int k, int m, int n, double ***w)
     return (w[m][n][k]);
 }
 
-#if 0
 /*
-  Is this ever called?
+  Is this ever called? There is no .C() in the package.
+  However, apparently users know about it.
  */
-void
-dansari(Sint *len, double *x, Sint *m, Sint *n)
+void dansari(Sint *len, double *x, Sint *m, Sint *n)
 {
     Sint i;
-    double ***w;    
+    double ***w;
 
     w = w_init(*m, *n);
     for (i = 0; i < *len; i++)
-	if (fabs(x[i] - floor(x[i] + 0.5)) > 1e-7) {
-	    x[i] = 0;
-	} else {
-	    x[i] = cansari((Sint)x[i], (Sint)*m, (Sint)*n, w)
-		/ choose(*m + *n, *m);
-	}
+        if (fabs(x[i] - floor(x[i] + 0.5)) > 1e-7)
+        {
+            x[i] = 0;
+        }
+        else
+        {
+            x[i] = cansari((Sint)x[i], (Sint)*m, (Sint)*n, w) / choose(*m + *n, *m);
+        }
     /* w_free(*m, *n, w); */
 }
-#endif
 
 void pansari(Sint *len, double *x, Sint *m, Sint *n)
 {
