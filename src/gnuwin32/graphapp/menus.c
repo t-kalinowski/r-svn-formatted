@@ -71,7 +71,7 @@ static int find_menu_position(menu parent, char *name)
     {
         do
         {
-            if (m->text == name)
+            if (strcmp(m->text, name) == 0)
                 break;
             which++;
             m = m->next;
