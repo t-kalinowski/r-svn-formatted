@@ -1158,7 +1158,7 @@ SEXP do_signalCondition(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
         }
         else
-            gotoExitingHandler(cond, call, entry);
+            gotoExitingHandler(cond, ecall, entry);
     }
     R_HandlerStack = oldstack;
     UNPROTECT(1);
