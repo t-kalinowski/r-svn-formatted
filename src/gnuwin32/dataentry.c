@@ -900,7 +900,7 @@ static void printstring(char *ibuf, int buflen, int row, int col, int left)
         if (left)
         {
             strncpy(buf, ibuf + buflen - fw, fw);
-            buf[fw + 1] = '\0';
+            buf[fw] = '\0';
             *buf = '<';
         }
         else
