@@ -36,10 +36,11 @@ static R_CallMethodDef CallEntries[] = {
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16), EXTDEF(XFig, 11),
-                                           EXTDEF(PDF, 13),   EXTDEF(Quartz, -1),
+static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16), EXTDEF(XFig, 11), EXTDEF(PDF, 13),
 #ifdef WIN32
                                            EXTDEF(devga, 15), EXTDEF(savePlot, 3),
+#else
+                                           EXTDEF(Quartz, -1),
 #endif
                                            {NULL, NULL, 0}};
 
