@@ -3819,7 +3819,8 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
                 xadj = dd->gp.adj;
                 yadj = 0.5;
 #else
-                xadj = 1.0;
+                /* xadj = 1.0; */
+                xadj = dd->gp.adj;
                 yadj = 0.3333;
 #endif
             }
