@@ -823,7 +823,6 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
 {
     StringHandle hPrompt;
     Str255 defaultName;
-    //  StandardFileReply	reply;
     Point where = {-1, -1}; /* autocenter's dialog */
     OSErr err = noErr;
     OSErr anErr = noErr;
@@ -849,8 +848,6 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
         /* otherwise use the window title
            as default name for CustomPutFile
         */
-        if (window == NULL)
-            window = FrontWindow();
         GetWTitle(window, defaultName);
     }
 
@@ -1228,6 +1225,9 @@ void DoFileChoice(SInt16 menuItem, WindowPtr window)
     EventRecord myEvent;
     SInt16 WinIndex;
     Boolean haveCancel;
+
+    if (window == NULL)
+        window = FrontWindow();
 
     switch (menuItem)
     {
@@ -1698,12 +1698,6 @@ OSErr InitializeMenus(void)
         AppendResMenu(menu, kTypeDeskAccessory);
     }
 
-/*	if ( ( menu = GetMenuHandle ( kMenuFont ) ) != nil )
-    {
-        // create the Font menu
-        AppendResMenu ( menu, kTypeFont ) ;
-    }
-*/
 #endif
 
     // draw the menu bar
