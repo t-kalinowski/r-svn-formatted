@@ -1004,13 +1004,16 @@ SEXP VectorToPairList(SEXP);
 
 SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP expr, env;
+    SEXP expr, env, encl;
     int nback;
     RCNTXT cntxt;
 
     checkArity(op, args);
     expr = CAR(args);
     env = CADR(args);
+    encl = CADDR(args);
+    if (!isNull(encl) && !isEnvironment(encl))
+        errorcall(call, "invalid 3rd argument\n");
     switch (TYPEOF(env))
     {
     case NILSXP:
@@ -1020,13 +1023,12 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     case LISTSXP:
         PROTECT(env = allocSExp(ENVSXP));
         FRAME(env) = duplicate(CADR(args));
-        ENCLOS(env) = R_GlobalEnv;
+        ENCLOS(env) = encl;
         break;
     case VECSXP:
         PROTECT(env = allocSExp(ENVSXP));
         FRAME(env) = VectorToPairList(CADR(args));
-        ENCLOS(env) = R_GlobalEnv;
-        break;
+        ENCLOS(env) = encl;
         break;
     case INTSXP:
     case REALSXP:
