@@ -302,6 +302,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 #ifdef ESCquote
                 case '\'':
 #endif
+                    len += 2;
+                    break;
 #ifdef ESC_BARE_QUOTE
                 case '\"':
                     len += 2;
