@@ -22,30 +22,31 @@
 #include "modreg.h"
 #include <R_ext/Rdynload.h>
 
-R_CallMethodDef CallEntries[] = {{"R_isoreg", (DL_FUNC)&R_isoreg, 1}, {NULL, NULL, 0}};
+static R_CallMethodDef CallEntries[] = {{"R_isoreg", (DL_FUNC)&R_isoreg, 1}, {NULL, NULL, 0}};
 
-R_NativePrimitiveArgType Srunmed_t[6] = {REALSXP, REALSXP, INTSXP, INTSXP, INTSXP, INTSXP};
-R_NativePrimitiveArgType Trunmed_t[9] = {INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, INTSXP, INTSXP};
+static R_NativePrimitiveArgType Srunmed_t[6] = {REALSXP, REALSXP, INTSXP, INTSXP, INTSXP, INTSXP};
+static R_NativePrimitiveArgType Trunmed_t[9] = {INTSXP, INTSXP,  REALSXP, REALSXP, INTSXP,
+                                                INTSXP, REALSXP, INTSXP,  INTSXP};
 
-R_CMethodDef CEntries[] = {{"BDRksmooth", (DL_FUNC)&BDRksmooth, 8},
-                           {"loess_raw", (DL_FUNC)&loess_raw, 24},
-                           {"loess_dfit", (DL_FUNC)&loess_dfit, 13},
-                           {"loess_dfitse", (DL_FUNC)&loess_dfitse, 16},
-                           {"loess_ifit", (DL_FUNC)&loess_ifit, 8},
-                           {"loess_ise", (DL_FUNC)&loess_ise, 15},
-                           {"Srunmed", (DL_FUNC)&Srunmed, 6, Srunmed_t},
-                           {"Trunmed", (DL_FUNC)&Trunmed, 9, Trunmed_t},
-                           {NULL, NULL, 0}};
+static R_CMethodDef CEntries[] = {{"BDRksmooth", (DL_FUNC)&BDRksmooth, 8},
+                                  {"loess_raw", (DL_FUNC)&loess_raw, 24},
+                                  {"loess_dfit", (DL_FUNC)&loess_dfit, 13},
+                                  {"loess_dfitse", (DL_FUNC)&loess_dfitse, 16},
+                                  {"loess_ifit", (DL_FUNC)&loess_ifit, 8},
+                                  {"loess_ise", (DL_FUNC)&loess_ise, 15},
+                                  {"Srunmed", (DL_FUNC)&Srunmed, 6, Srunmed_t},
+                                  {"Trunmed", (DL_FUNC)&Trunmed, 9, Trunmed_t},
+                                  {NULL, NULL, 0}};
 
-R_FortranMethodDef FortEntries[] = {{"lowesw", (DL_FUNC)&F77_SUB(lowesw), 4},
-                                    {"lowesp", (DL_FUNC)&F77_SUB(lowesp), 7},
-                                    {"setppr", (DL_FUNC)&F77_SUB(setppr), 6},
-                                    {"smart", (DL_FUNC)&F77_SUB(smart), 16},
-                                    {"pppred", (DL_FUNC)&F77_SUB(pppred), 5},
-                                    {"qsbart", (DL_FUNC)&F77_SUB(qsbart), 21},
-                                    {"bvalus", (DL_FUNC)&F77_SUB(bvalus), 7},
-                                    {"supsmu", (DL_FUNC)&F77_SUB(supsmu), 10},
-                                    {NULL, NULL, 0}};
+static R_FortranMethodDef FortEntries[] = {{"lowesw", (DL_FUNC)&F77_SUB(lowesw), 4},
+                                           {"lowesp", (DL_FUNC)&F77_SUB(lowesp), 7},
+                                           {"setppr", (DL_FUNC)&F77_SUB(setppr), 6},
+                                           {"smart", (DL_FUNC)&F77_SUB(smart), 16},
+                                           {"pppred", (DL_FUNC)&F77_SUB(pppred), 5},
+                                           {"qsbart", (DL_FUNC)&F77_SUB(qsbart), 21},
+                                           {"bvalus", (DL_FUNC)&F77_SUB(bvalus), 7},
+                                           {"supsmu", (DL_FUNC)&F77_SUB(supsmu), 10},
+                                           {NULL, NULL, 0}};
 
 void R_init_modreg(DllInfo *dll)
 {
