@@ -159,23 +159,16 @@ char *EncodeReal(double x, int w, int d, int e)
         x = 0.0;
     if (!R_FINITE(x))
     {
-#ifdef IEEE_754
         if (ISNA(x))
             sprintf(Encodebuf, "%*s", w, CHAR(R_print.na_string));
+#ifdef IEEE_754
         else if (ISNAN(x))
             sprintf(Encodebuf, "%*s", w, "NaN");
-        else if (x > 0)
-            sprintf(Encodebuf, "%*s", w, "Inf");
-        else
-            sprintf(Encodebuf, "%*s", w, "-Inf");
-#else
-        if (ISNA(x))
-            sprintf(Encodebuf, "%*s", w, CHAR(R_print.na_string));
-        else if (x > 0)
-            sprintf(Encodebuf, "%*s", w, "Inf");
-        else
-            sprintf(Encodebuf, "%*s", w, "-Inf");
 #endif
+        else if (x > 0)
+            sprintf(Encodebuf, "%*s", w, "Inf");
+        else
+            sprintf(Encodebuf, "%*s", w, "-Inf");
     }
     else if (e)
     {
