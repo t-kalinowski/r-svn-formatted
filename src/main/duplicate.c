@@ -90,6 +90,7 @@ SEXP duplicate(SEXP s)
     case SPECIALSXP:
     case BUILTINSXP:
     case EXTPTRSXP:
+    case WEAKREFSXP:
         return s;
     case CLOSXP:
         PROTECT(s);

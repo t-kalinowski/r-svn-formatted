@@ -689,6 +689,7 @@ const static struct
                  {"expression", EXPRSXP},
                  {"list", VECSXP},
                  {"externalptr", EXTPTRSXP},
+                 {"weakref", WEAKREFSXP},
                  /* aliases : */
                  {"numeric", REALSXP},
                  {"name", SYMSXP},

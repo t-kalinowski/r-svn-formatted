@@ -577,6 +577,9 @@ void PrintValueRec(SEXP s, SEXP env)
     case EXTPTRSXP:
         Rprintf("<pointer: %p>\n", R_ExternalPtrAddr(s));
         break;
+    case WEAKREFSXP:
+        Rprintf("<weak reference>\n");
+        break;
     default:
         UNIMPLEMENTED("PrintValueRec");
     }
