@@ -233,7 +233,7 @@ static int length_adj(char *repl, int *ovec, int nsubexpr)
     return n;
 }
 
-static char *string_adj(char *target, char *orig, char *repl, int *ovec, int nsubexpr)
+static char *string_adj(char *target, char *orig, char *repl, int *ovec)
 {
     int i, k;
     char *p = repl, *t = target;
@@ -268,7 +268,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, vec, ans;
     int i, j, n, ns, nns, nmatch, offset, re_nsub;
-    int global, igcase_opt, erroffset;
+    int global, igcase_opt, erroffset, eflag, last_match;
     int options = 0;
     char *s, *t, *u, *uu;
     const char *errorptr;
@@ -362,18 +362,23 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             errorcall(call, _("input string %d is invalid in this locale"), i + 1);
         }
 #endif
-        while (pcre_exec(re_pcre, re_pe, s + offset, nns - offset, 0, 0, ovector, 30) >= 0)
+        eflag = 0;
+        last_match = 0;
+        while (pcre_exec(re_pcre, re_pe, s, nns, offset, eflag, ovector, 30) >= 0)
         {
             nmatch += 1;
-            if (ovector[1] == 0)
-                offset++;
-            else
+            ns += length_adj(t, ovector, re_nsub);
+            offset = ovector[1];
+            /* If we have a 0-length match, move on a char */
+            /* <MBCS FIXME> advance by a char not a byte */
+            if (ovector[1] == ovector[0])
             {
-                ns += length_adj(t, ovector, re_nsub);
-                offset += ovector[1];
+                offset++;
             }
             if (s[offset] == '\0' || !global)
                 break;
+            eflag = PCRE_NOTBOL;
+            last_match = ovector[1];
         }
         if (nmatch == 0)
             SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
@@ -384,22 +389,24 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             s = CHAR(STRING_ELT(vec, i));
             t = CHAR(STRING_ELT(rep, 0));
             uu = u = CHAR(STRING_ELT(ans, i));
-            while (pcre_exec(re_pcre, re_pe, s + offset, nns - offset, 0, 0, ovector, 30) >= 0)
+            eflag = 0;
+            last_match = 0;
+            while (pcre_exec(re_pcre, re_pe, s, nns, offset, eflag, ovector, 30) >= 0)
             {
-                for (j = 0; j < ovector[0]; j++)
-                    *u++ = s[offset + j];
-                if (ovector[1] == 0)
-                {
-                    *u++ = s[offset];
-                    offset++;
-                }
-                else
-                {
-                    u = string_adj(u, &s[offset], t, ovector, re_nsub);
-                    offset += ovector[1];
-                }
+                /* printf("%s, %d, %d %d\n", s, offset,
+                   ovector[0], ovector[1]); */
+                for (j = offset; j < ovector[0]; j++)
+                    *u++ = s[j];
+                u = string_adj(u, s, t, ovector);
+                offset = ovector[1];
+                /* <MBCS FIXME> advance by a char */
+                if (ovector[1] == ovector[0])
+                    *u++ = s[offset++];
+
                 if (s[offset] == '\0' || !global)
                     break;
+                eflag = PCRE_NOTBOL;
+                last_match = ovector[1];
             }
             for (j = offset; s[j]; j++)
                 *u++ = s[j];
@@ -487,6 +494,7 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             st = ovector[0];
             INTEGER(ans)[i] = st + 1; /* index from one */
             INTEGER(matchlen)[i] = ovector[1] - st;
+#ifdef SUPPORT_UTF8
             if (!useBytes && mbcslocale)
             {
                 char *buff;
@@ -508,6 +516,7 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (INTEGER(matchlen)[i] < 0) /* an invalid string */
                     INTEGER(matchlen)[i] = NA_INTEGER;
             }
+#endif
         }
         else
         {
