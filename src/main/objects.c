@@ -569,15 +569,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (CAR(m) == R_MissingArg)
                 {
-
-                    /*#ifdef USE_HASHTABLE */
                     tmp = findVarInFrame3(cptr->cloenv, TAG(m), TRUE);
-
-                    /* Old */
-                    /* tmp = findVarInFrame3(FRAME(cptr->cloenv), TAG(m)); */
-
-                    /*#endif  USE_HASHTABLE */
-
                     if (tmp == R_MissingArg)
                         break;
                 }
