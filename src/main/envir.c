@@ -57,6 +57,9 @@
   We use a basic se[parate chaining algorithm.	A hash table consists
   of SEXP (vector) which contains a number of SEXPs (lists).
 
+  The only non-static function is R_NewHashedEnv, which allows code to
+  request a hashed environment.  All others are static to allow
+  internal changes of implementation without affecting client code.
 */
 
 #define HASHSIZE(x) LENGTH(x)
@@ -107,7 +110,7 @@ extern int R_Newhashpjw(char *s)
 
 */
 
-void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
+static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
 {
     SEXP chain;
 
@@ -150,7 +153,7 @@ void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
 
 */
 
-SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
+static SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
 {
     SEXP chain;
 
@@ -191,7 +194,7 @@ SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
 
 */
 
-SEXP R_HashGetLoc(int hashcode, SEXP symbol, SEXP table)
+static SEXP R_HashGetLoc(int hashcode, SEXP symbol, SEXP table)
 {
     SEXP chain;
 
@@ -227,7 +230,7 @@ SEXP R_HashGetLoc(int hashcode, SEXP symbol, SEXP table)
 
 */
 
-SEXP R_NewHashTable(int size, int growth_rate)
+static SEXP R_NewHashTable(int size, int growth_rate)
 {
     SEXP table;
 
@@ -245,6 +248,24 @@ SEXP R_NewHashTable(int size, int growth_rate)
     SET_HASHPRI(table, 0);
     UNPROTECT(1);
     return (table);
+}
+
+/*----------------------------------------------------------------------
+
+  R_NewHashedEnv
+
+  Returns a new environment with a hash table initialized with default
+  size/growth settings.  The only non-static hash table function.
+*/
+
+SEXP R_NewHashedEnv(SEXP enclos)
+{
+    SEXP s;
+
+    PROTECT(s = NewEnvironment(R_NilValue, R_NilValue, enclos));
+    SET_HASHTAB(s, R_NewHashTable(0, 0)); /* 0, 0 gets the recomended minima */
+    UNPROTECT(1);
+    return s;
 }
 
 /*----------------------------------------------------------------------
@@ -267,7 +288,7 @@ static SEXP DeleteItem(SEXP symbol, SEXP lst)
     return lst;
 }
 
-void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
+static void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
 {
     SET_VECTOR_ELT(table, hashcode % HASHSIZE(table),
                    DeleteItem(symbol, VECTOR_ELT(table, hashcode % HASHSIZE(table))));
@@ -285,7 +306,7 @@ void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
 
 */
 
-SEXP R_HashResize(SEXP table)
+static SEXP R_HashResize(SEXP table)
 {
     SEXP new_table, chain, new_chain, tmp_chain;
     int /*hash_grow,*/ counter, new_hashcode;
@@ -341,7 +362,7 @@ SEXP R_HashResize(SEXP table)
 
 */
 
-int R_HashSizeCheck(SEXP table)
+static int R_HashSizeCheck(SEXP table)
 {
     int resize;
     double thresh_val;
@@ -369,7 +390,7 @@ int R_HashSizeCheck(SEXP table)
 
 */
 
-SEXP R_HashFrame(SEXP rho)
+static SEXP R_HashFrame(SEXP rho)
 {
     int hashcode;
     SEXP frame, chain, tmp_chain, table;
