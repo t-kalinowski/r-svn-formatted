@@ -122,6 +122,8 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (2 * eps);
+                if (!R_FINITE(df[i]))
+                    error("non-finite values encountered in finite-difference calculation");
                 REAL(x)[i] = p[i] * (OS->parscale[i]);
             }
         }
@@ -151,6 +153,8 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (epsused + eps);
+                if (!R_FINITE(df[i]))
+                    error("non-finite values encountered in finite-difference calculation");
                 REAL(x)[i] = p[i] * (OS->parscale[i]);
             }
         }
@@ -168,8 +172,10 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     double *dpar, *opar, val, abstol, reltol;
     char *tn;
     OptStruct OS;
+    char *vmax;
 
     checkArity(op, args);
+    vmax = vmaxget();
     OS = (OptStruct)R_alloc(1, sizeof(opt_struct));
     OS->usebounds = 0;
     OS->R_env = rho;
@@ -360,6 +366,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     VECTOR(res)[2] = counts;
     INTEGER(conv)[0] = ifail;
     VECTOR(res)[3] = conv;
+    vmaxset(vmax);
     UNPROTECT(6);
     return res;
 }
@@ -371,8 +378,10 @@ SEXP do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     OptStruct OS;
     int npar, i, j;
     double *dpar, *df1, *df2, eps;
+    char *vmax;
 
     checkArity(op, args);
+    vmax = vmaxget();
     OS = (OptStruct)R_alloc(1, sizeof(opt_struct));
     OS->R_env = rho;
     par = CAR(args);
@@ -432,6 +441,7 @@ SEXP do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
             [i * npar + j] = (OS->fnscale) * (df1[j] - df2[j]) / (2 * eps * (OS->parscale[i]) * (OS->parscale[j]));
         dpar[i] = dpar[i] + eps;
     }
+    vmaxset(vmax);
     UNPROTECT(4);
     return ans;
 }
@@ -1100,6 +1110,8 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
         if (strncmp(task, "FG", 2) == 0)
         {
             f = fminfn(n, x, OS);
+            if (!R_FINITE(f))
+                error("L-BFGS-B needs finite values of fn");
             fmingr(n, x, g, OS);
         }
         else if (strncmp(task, "NEW_X", 5) == 0)
