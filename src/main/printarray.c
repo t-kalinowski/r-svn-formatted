@@ -340,7 +340,7 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
 
 void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right)
 {
-    SEXP l, dimnames, rl, cl;
+    SEXP dimnames, rl, cl;
     int r, c;
 
     r = INTEGER(dim)[0];
@@ -449,13 +449,14 @@ void printArray(SEXP x, int quote)
     printArrayGeneral(x, getAttrib(x, R_DimSymbol), quote);
 }
 
+/* not used (0.62;  April 23, 1998 -- MM (-Wall)
 static int CountColumns(SEXP x)
 {
-    int k = 0;
-    while (x != R_NilValue && isList(x))
-    {
+    int k =0;
+    while(x != R_NilValue && isList(x) ) {
         k += ncols(CAR(x));
         x = CDR(x);
     }
     return k;
 }
+--*/

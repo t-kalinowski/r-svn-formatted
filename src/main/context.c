@@ -177,12 +177,14 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag == CTXT_RETURN)
+        {
             if (n == 0)
             { /* we need to detach the enclosing env */
                 return cptr->cloenv;
             }
             else
                 n--;
+        }
         cptr = cptr->nextcontext;
     }
     if (n == 0 && cptr->nextcontext == NULL)
@@ -271,10 +273,12 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag == CTXT_RETURN)
+        {
             if (n == 0)
                 return (duplicate(cptr->call));
             else
                 n--;
+        }
         cptr = cptr->nextcontext;
     }
     if (n == 0 && cptr->nextcontext == NULL)
@@ -296,6 +300,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag == CTXT_RETURN)
+        {
             if (n == 0)
             {
                 s = CAR(cptr->call);
@@ -309,6 +314,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
             }
             else
                 n--;
+        }
         cptr = cptr->nextcontext;
     }
     if (n == 0 && cptr->nextcontext == NULL)
