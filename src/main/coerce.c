@@ -735,7 +735,7 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error("object cannot be coerced to vector type\n");
+        error("pairlist object cannot be coerced to  vector type [%d]\n", type);
 
     /* If any tags are non-null then we */
     /* need to add a names attribute. */
@@ -814,7 +814,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error("object cannot be coerced to vector type\n");
+        error("(list) object cannot be coerced to vector type %d\n", type);
 
     names = getAttrib(v, R_NamesSymbol);
     if (names != R_NilValue)
@@ -946,7 +946,7 @@ static SEXP asFunction(SEXP x)
 
 static SEXP ascommon(SEXP call, SEXP u, int type)
 {
-    /* coerce 'u' to 'type' : */
+    /* -> as.vector(..) or as.XXX(.) : coerce 'u' to 'type' : */
     SEXP v;
 #ifdef OLD
     if (type == SYMSXP)
@@ -975,7 +975,11 @@ static SEXP ascommon(SEXP call, SEXP u, int type)
             v = coerceVector(v, type);
             UNPROTECT(1);
         }
-        if (type == LISTSXP &&
+        /* drop attributes() and class() in some cases: */
+        if ((type == LISTSXP
+             /* already loses 'names' where it shouldn't:
+            || type == VECSXP) */
+             ) &&
             !(TYPEOF(u) == LANGSXP || TYPEOF(u) == LISTSXP || TYPEOF(u) == EXPRSXP || TYPEOF(u) == VECSXP))
         {
             ATTRIB(v) = R_NilValue;
@@ -992,23 +996,6 @@ static SEXP ascommon(SEXP call, SEXP u, int type)
     else
         errorcall(call, "cannot coerce to vector\n");
     return u; /* -Wall */
-}
-
-/* as.logical */
-/* as.integer */
-/* as.real */
-/* as.numeric*/
-/* as.complex */
-/* as.character */
-/* as.list */
-/* as.expression */
-/* as.function */
-/* as.name */
-
-SEXP do_as(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    checkArity(op, args);
-    return ascommon(call, CAR(args), PRIMVAL(op));
 }
 
 SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1034,7 +1021,7 @@ SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
         type = str2type(CHAR(STRING(CADR(args))[0]));
 
     switch (type)
-    {
+    { /* only those are valid : */
     case SYMSXP:
     case LGLSXP:
     case INTSXP:
@@ -1042,17 +1029,17 @@ SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     case CPLXSXP:
     case STRSXP:
     case EXPRSXP:
-    case VECSXP:
-    case LISTSXP:
-    case CLOSXP:
-    case ANYSXP:
+    case VECSXP:  /* list */
+    case LISTSXP: /* pairlist */
+    case CLOSXP:  /* non-primitive function */
+    case ANYSXP:  /* any */
         break;
     default:
         errorcall(call, "invalid mode\n");
     }
     ans = ascommon(call, CAR(args), type);
     switch (TYPEOF(ans))
-    {
+    { /* keep attributes for these:*/
     case NILSXP:
     case VECSXP:
     case EXPRSXP:
@@ -1286,7 +1273,11 @@ SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(LGLSXP, 1));
     if (streql(CHAR(STRING(CADR(args))[0]), "any"))
     {
-        LOGICAL(ans)[0] = isVector(CAR(args));
+        LOGICAL(ans)[0] = isVector(CAR(args)); /* from ./util.c */
+    }
+    else if (streql(CHAR(STRING(CADR(args))[0]), "numeric"))
+    {
+        LOGICAL(ans)[0] = (isNumeric(CAR(args)) && !isLogical(CAR(args)));
     }
     else if (streql(CHAR(STRING(CADR(args))[0]), CHAR(type2str(TYPEOF(CAR(args))))))
     {
@@ -1294,9 +1285,9 @@ SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         LOGICAL(ans)[0] = 0;
-    UNPROTECT(1);
+
     /* We allow a "names" attribute on any vector. */
-    if (ATTRIB(CAR(args)) != R_NilValue)
+    if (LOGICAL(ans)[0] && ATTRIB(CAR(args)) != R_NilValue)
     {
         a = ATTRIB(CAR(args));
         while (a != R_NilValue)
@@ -1304,11 +1295,12 @@ SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (TAG(a) != R_NamesSymbol)
             {
                 LOGICAL(ans)[0] = 0;
-                return ans;
+                break;
             }
             a = CDR(a);
         }
     }
+    UNPROTECT(1);
     return (ans);
 }
 

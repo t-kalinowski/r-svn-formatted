@@ -147,7 +147,7 @@ static double bvalues[] = {
     6.01580873900642368e+08, -1.51163157670921569e+10, 4.29614643061166667e+11, -1.37116552050883328e+13,
     4.88332318973593167e+14, -1.92965793419400681e+16};
 
-static double *b = &bvalues[-1];
+static double *b = (double *)&bvalues - 1;
 static int nmax = 100;
 
 void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)

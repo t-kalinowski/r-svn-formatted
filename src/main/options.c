@@ -205,29 +205,30 @@ void InitOptions(void)
     UNPROTECT(2);
 }
 
+#if 0
 /* FIXME : This functionality should be universal */
 /* See also in bind.c. */
 
 /* static */ SEXP EnsureString(SEXP s)
 {
-    switch (TYPEOF(s))
-    {
+    switch(TYPEOF(s)) {
     case SYMSXP:
-        s = PRINTNAME(s);
-        break;
+	s = PRINTNAME(s);
+	break;
     case STRSXP:
-        s = STRING(s)[0];
-        break;
+	s = STRING(s)[0];
+	break;
     case CHARSXP:
-        break;
+	break;
     case NILSXP:
-        s = R_BlankString;
-        break;
+	s = R_BlankString;
+	break;
     default:
-        error("invalid tag in name extraction\n");
+	error("invalid tag in name extraction\n");
     }
     return s;
 }
+#endif
 
 SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
 {

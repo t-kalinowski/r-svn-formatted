@@ -114,8 +114,13 @@ SEXP eval(SEXP e, SEXP rho)
 #endif
             UNPROTECT(1);
         }
+#ifdef OLD
         else if (!isNull(tmp))
             NAMED(tmp) = 1;
+#else
+        else if (!isNull(tmp) && NAMED(tmp) < 1)
+            NAMED(tmp) = 1;
+#endif
         break;
     case PROMSXP:
         if (PRVALUE(e) == R_UnboundValue)
@@ -424,7 +429,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (tmp == CTXT_BREAK)
                 break; /* break */
             else
-                continue; /* next  */
+                continue; /* next	 */
         }
         else
         {
@@ -512,7 +517,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (cond == CTXT_BREAK)
                 break; /* break */
             else
-                continue; /* next  */
+                continue; /* next	 */
         }
         else
         {
@@ -654,12 +659,12 @@ SEXP do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /*
  *  Assignments for complex LVAL specifications. This is the stuff that
- *  nightmares are made of ...  Note that "evalseq" preprocesses the LHS
+ *  nightmares are made of ...	Note that "evalseq" preprocesses the LHS
  *  of an assignment.  Given an expression, it builds a list of partial
  *  values for the exression.  For example, the assignment x$a[3] <- 10
  *  with LHS x$a[3] yields the (improper) list:
  *
- *	 (eval(x$a[3])  eval(x$a)  eval(x)  .  x)
+ *	 (eval(x$a[3])	eval(x$a)  eval(x)  .  x)
  *
  *  (Note the terminating symbol).  The partial evaluations are carried
  *  out efficiently using previously computed components.
@@ -838,7 +843,7 @@ SEXP evalList(SEXP el, SEXP rho)
         /* we just ignore it and return the cdr with all its */
         /* expressions evaluated; if it is bound to a ... list */
         /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value.  */
+        /* the list of resulting values into the return value.	*/
         /* Anything else bound to a ... symbol is an error */
 
         if (CAR(el) == R_DotsSymbol)
@@ -888,7 +893,7 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
         /* we just ignore it and return the cdr with all its */
         /* expressions evaluated; if it is bound to a ... list */
         /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value.  */
+        /* the list of resulting values into the return value.	*/
         /* Anything else bound to a ... symbol is an error */
 
         if (CAR(el) == R_DotsSymbol)
@@ -928,7 +933,7 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
     return CDR(ans);
 }
 
-/* Create a promise to evaluate each argument.  Although this is most */
+/* Create a promise to evaluate each argument.	Although this is most */
 /* naturally attacked with a recursive algorithm, we use the iterative */
 /* form below because it is does not cause growth of the pointer */
 /* protection stack, and because it is a little more efficient. */
@@ -943,7 +948,7 @@ SEXP promiseArgs(SEXP el, SEXP rho)
     {
 
         /* If we have a ... symbol, we look to see what it */
-        /* is bound to.  If its binding is Null (i.e. zero length) */
+        /* is bound to.	 If its binding is Null (i.e. zero length) */
         /* we just ignore it and return the cdr with all its */
         /* expressions promised; if it is bound to a ... list */
         /* of promises, we repromise all the promises and then splice */
@@ -1091,15 +1096,15 @@ SEXP EvalArgs(SEXP el, SEXP rho, int dropmissing)
         return evalListKeepMissing(el, rho);
 }
 
-/* DispatchOrEval is used in internal functions which dispatch to */
-/* object methods (e.g. "[" or "[[").  The code either builds promises */
-/* and dispatches to the appropriate method, or it evauates the */
-/* (unevaluated) arguments it comes in with and returns them so that */
-/* the generic built-in C code can continue. */
+/* DispatchOrEval is used in internal functions which dispatch to
+ * object methods (e.g. "[" or "[[").  The code either builds promises
+ * and dispatches to the appropriate method, or it evaluates the
+ * (unevaluated) arguments it comes in with and returns them so that
+ * the generic built-in C code can continue.
 
-/* To call this an ugly hack would be to insult all existing ugly hacks */
-/* at large in the world. */
-
+ * To call this an ugly hack would be to insult all existing ugly hacks
+ * at large in the world.
+ */
 int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropmissing)
 {
     SEXP x;
@@ -1177,6 +1182,8 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
 
     j = length(class);
     sxp = R_NilValue;
+    /* -Wall: */ gr = R_NilValue;
+    meth = R_NilValue;
     /* Need to interleave looking for group and generic methods */
     /* eg if class(x) is "foo" "bar" then x>3 should invoke */
     /* "Ops.foo" rather than ">.bar" */

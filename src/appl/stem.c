@@ -1,6 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998  Robert Gentleman, Ross Ihaka and R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,17 +19,8 @@
  */
 
 #include "Mathlib.h"
-#include <stdio.h>
-
-void Rprintf(char *, ...);
-void rsort(double *, int);
-
-#ifndef Win32
-
-#define min(x, y) ((x < y) ? x : y)
-#define max(x, y) ((x < y) ? y : x)
-
-#endif
+#include "PrtUtil.h"
+#include "Utils.h"
 
 static void stem_print(int close, int dist, int ndigits)
 {
@@ -52,10 +44,10 @@ static int stem_leaf(double *x, int n, double scale, int width, double atom)
     Rprintf("\n");
     r = atom + (x[n - 1] - x[0]) / scale;
     c = pow(10., (11. - (int)(log10(r) + 10)));
-    mm = min(2, max((int)(r * c / 25), 0));
+    mm = imin2(2, imax2(0, (int)(r * c / 25)));
     k = 3 * mm + 2 - 150 / (n + 50);
     if ((k - 1) * (k - 2) * (k - 5) == 0)
-        c = c * 10;
+        c *= 10.;
 
     mu = 10;
     if (k * (k - 4) * (k - 8) == 0)
@@ -73,7 +65,6 @@ static int stem_leaf(double *x, int n, double scale, int width, double atom)
 
     /* Starting cell */
 
-    lo = floor(x[0] * c / mu) * mu;
     if (lo < 0 && floor(x[0] * c) == lo)
         lo = lo - mu;
     hi = lo + mu;
@@ -85,45 +76,31 @@ static int stem_leaf(double *x, int n, double scale, int width, double atom)
 
     /* Print out the info about the decimal place */
 
-    pdigits = -floor(log10(c) + 0.5) + 1;
-    if (pdigits == 0)
-        Rprintf("  The decimal point is at the |\n\n");
-    else if (pdigits > 0)
-        Rprintf("  The decimal point is %d digit(s) to the right of the |\n\n", pdigits);
-    else
-        Rprintf("  The decimal point is %d digit(s) to the left of the |\n\n", abs(pdigits));
+    pdigits = 1 - floor(log10(c) + 0.5);
 
+    Rprintf("  The decimal point is ");
+    if (pdigits == 0)
+        Rprintf("at the |\n\n");
+    else
+        Rprintf("%d digit(s) to the %s of the |\n\n", abs(pdigits), (pdigits > 0) ? "right" : "left");
     i = 0;
     do
     {
         if (lo < 0)
-        {
             stem_print(hi, lo, ndigits);
-        }
         else
-        {
             stem_print(lo, hi, ndigits);
-        }
         j = 0;
         do
         {
             if (x[i] < 0)
-                xi = x[i] * c - 0.5;
+                xi = x[i] * c - .5;
             else
-                xi = x[i] * c + 0.5;
+                xi = x[i] * c + .5;
 
-            if (hi == 0)
-            {
-                if (x[i] >= 0)
-                    break;
-            }
-            else
-            {
-                if (lo < 0 && xi > hi)
-                    break;
-                if (lo >= 0 && xi >= hi)
-                    break;
-            }
+            if ((hi == 0 && x[i] >= 0) || (lo < 0 && xi > hi) || (lo >= 0 && xi >= hi))
+                break;
+
             j++;
             if (j <= width - 12)
             {
@@ -138,8 +115,8 @@ static int stem_leaf(double *x, int n, double scale, int width, double atom)
         Rprintf("\n");
         if (i >= n)
             break;
-        hi = hi + mu;
-        lo = lo + mu;
+        hi += mu;
+        lo += mu;
     } while (1);
     Rprintf("\n");
     return 1;
@@ -147,6 +124,5 @@ static int stem_leaf(double *x, int n, double scale, int width, double atom)
 
 int stemleaf(double *x, int *n, double *scale, int *width, double *atom)
 {
-    stem_leaf(x, *n, *scale, *width, *atom);
-    return 0;
+    return stem_leaf(x, *n, *scale, *width, *atom);
 }

@@ -159,17 +159,11 @@ deliver:
 #define C2 0.180025191068563
 #define g(x) (C1 * exp(-x * x / 2.0) - C2 * (a - fabs(x)))
 
-#ifndef Win32
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-
 static double a = 2.216035867166471;
 
 double snorm()
 {
     double t, u1, u2, u3;
-    double sunif();
 
     u1 = sunif();
     if (u1 < 0.884070402298758)
@@ -194,8 +188,8 @@ double snorm()
     region3:
         u2 = sunif();
         u3 = sunif();
-        t = a - 0.630834801921960 * min(u2, u3);
-        if (max(u2, u3) <= 0.755591531667601)
+        t = a - 0.630834801921960 * fmin2(u2, u3);
+        if (fmax2(u2, u3) <= 0.755591531667601)
             return (u2 < u3) ? t : -t;
         if (0.034240503750111 * fabs(u2 - u3) <= g(t))
             return (u2 < u3) ? t : -t;
@@ -207,8 +201,8 @@ double snorm()
     region2:
         u2 = sunif();
         u3 = sunif();
-        t = 0.479727404222441 + 1.105473661022070 * min(u2, u3);
-        if (max(u2, u3) <= 0.872834976671790)
+        t = 0.479727404222441 + 1.105473661022070 * fmin2(u2, u3);
+        if (fmax2(u2, u3) <= 0.872834976671790)
             return (u2 < u3) ? t : -t;
         if (0.049264496373128 * fabs(u2 - u3) <= g(t))
             return (u2 < u3) ? t : -t;
@@ -218,8 +212,8 @@ double snorm()
 region1:
     u2 = sunif();
     u3 = sunif();
-    t = 0.479727404222441 - 0.595507138015940 * min(u2, u3);
-    if (max(u2, u3) <= 0.805577924423817)
+    t = 0.479727404222441 - 0.595507138015940 * fmin2(u2, u3);
+    if (fmax2(u2, u3) <= 0.805577924423817)
         return (u2 < u3) ? t : -t;
     goto region1;
 }

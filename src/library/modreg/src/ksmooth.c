@@ -2,11 +2,7 @@
  *  modreg/src/ksmooth.c by B. D. Ripley  Copyright (C) 1998
  */
 
-#include <S.h>
-#include <math.h>
-
-#define NA_REAL R_NaReal
-extern double R_NaReal;
+#include "Arith.h"
 
 static double dokern(double x, int kern)
 {
