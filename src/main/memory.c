@@ -156,21 +156,28 @@ static int R_VGrowIncrMin = 80000, R_VShrinkIncrMin = 0;
    never set below the current ones. */
 static int R_MaxVSize = INT_MAX;
 static int R_MaxNSize = INT_MAX;
+static int vsfac = 1; /* current units for vsize: changes at initialization */
 
 int R_GetMaxVSize(void)
 {
-    return R_MaxVSize;
+    if (R_MaxVSize == INT_MAX)
+        return INT_MAX;
+    return R_MaxVSize * vsfac;
 }
+
 void R_SetMaxVSize(int size)
 {
-    if (size >= R_VSize)
-        R_MaxVSize = size;
+    if (size == INT_MAX)
+        return;
+    if (size >= R_VSize * vsfac)
+        R_MaxVSize = (size + 1) / sizeof(VECREC);
 }
 
 int R_GetMaxNSize(void)
 {
     return R_MaxNSize;
 }
+
 void R_SetMaxNSize(int size)
 {
     if (size >= R_NSize)
@@ -695,13 +702,13 @@ static void AdjustHeapSize(int size_needed)
     {
         R_NSize -= R_NShrinkIncrMin + R_NShrinkIncrFrac * R_NSize;
         if (R_NSize < NNeeded)
-            R_NSize = NNeeded;
+            R_NSize = (NNeeded < R_MaxNSize) ? NNeeded : R_MaxNSize;
         if (R_NSize < orig_R_NSize)
             R_NSize = orig_R_NSize;
     }
 
     if (vect_occup > 1.0)
-        R_VSize = VNeeded;
+        R_VSize = (VNeeded < R_MaxVSize) ? VNeeded : R_MaxVSize;
     if (vect_occup > R_VGrowFrac)
     {
         int change = R_VGrowIncrMin + R_VGrowIncrFrac * R_NSize;
@@ -1044,7 +1051,7 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     R_gc();
     gc_reporting = ogc;
     /*- now return the [used , gc trigger size] for cells and heap */
-    PROTECT(value = allocVector(INTSXP, 8));
+    PROTECT(value = allocVector(INTSXP, 10));
     INTEGER(value)[0] = onsize - R_Collected;
     INTEGER(value)[1] = ovsize - VHEAP_FREE();
     INTEGER(value)[4] = R_NSize;
@@ -1054,18 +1061,20 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     INTEGER(value)[3] = 10.0 * (ovsize - VHEAP_FREE()) / 131072.0 + 0.999;
     INTEGER(value)[6] = 10.0 * R_NSize / 1048576.0 * sizeof(SEXPREC) + 0.999;
     INTEGER(value)[7] = 10.0 * R_VSize / 131072.0 + 0.999;
+    INTEGER(value)[8] = (R_MaxNSize < INT_MAX) ? (10.0 * R_MaxNSize / 1048576.0 * sizeof(SEXPREC) + 0.999) : NA_INTEGER;
+    INTEGER(value)[9] = (R_MaxVSize < INT_MAX) ? (10.0 * R_MaxVSize / 131072.0 + 0.999) : NA_INTEGER;
     UNPROTECT(1);
     return value;
 }
 
 static void mem_err_heap(long size)
 {
-    errorcall(R_NilValue, "vector memory exhausted");
+    errorcall(R_NilValue, "vector memory exhausted (limit reached?)");
 }
 
 static void mem_err_cons()
 {
-    errorcall(R_NilValue, "cons memory exhausted");
+    errorcall(R_NilValue, "cons memory exhausted (limit reached?)");
 }
 
 /* InitMemory : Initialise the memory to be used in R. */
@@ -1081,7 +1090,8 @@ void InitMemory()
         R_Suicide("couldn't allocate memory for pointer stack");
     R_PPStackTop = 0;
 
-    R_VSize = (((R_VSize + 1) / sizeof(VECREC)));
+    vsfac = sizeof(VECREC);
+    R_VSize = (((R_VSize + 1) / vsfac));
 
     UNMARK_NODE(&UnmarkedNodeTemplate);
 
@@ -1563,6 +1573,27 @@ static void R_gc_internal(int size_needed)
            `100% free' ! */
         REprintf("%.1f Mbytes of heap free (%d%%)\n", vcells * sizeof(VECREC) / Mega, (int)vfrac);
     }
+}
+
+SEXP do_memlimits(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans;
+    int nsize, vsize, tmp;
+
+    checkArity(op, args);
+    nsize = asInteger(CAR(args));
+    vsize = asInteger(CADR(args));
+    if (nsize != NA_INTEGER)
+        R_SetMaxNSize(nsize);
+    if (vsize != NA_INTEGER)
+        R_SetMaxVSize(vsize);
+    PROTECT(ans = allocVector(INTSXP, 2));
+    tmp = R_GetMaxNSize();
+    INTEGER(ans)[0] = (tmp == INT_MAX) ? NA_INTEGER : tmp;
+    tmp = R_GetMaxVSize();
+    INTEGER(ans)[1] = (tmp == INT_MAX) ? NA_INTEGER : tmp;
+    UNPROTECT(1);
+    return ans;
 }
 
 SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)

@@ -322,6 +322,8 @@ void R_DefParams(Rstart Rp)
     Rp->DebugInitFile = FALSE;
     Rp->vsize = R_VSIZE;
     Rp->nsize = R_NSIZE;
+    Rp->max_vsize = INT_MAX;
+    Rp->max_nsize = INT_MAX;
 #ifdef Win32
     Rp->NoRenviron = FALSE;
 #endif
@@ -405,6 +407,8 @@ void R_SetParams(Rstart Rp)
     LoadInitFile = Rp->LoadInitFile;
     DebugInitFile = Rp->DebugInitFile;
     SetSize(Rp->vsize, Rp->nsize);
+    R_SetMaxNSize(Rp->max_nsize);
+    R_SetMaxVSize(Rp->max_vsize);
     CommandLineArgs = Rp->CommandLineArgs;
     NumCommandLineArgs = Rp->NumCommandLineArgs;
 #ifdef Win32
@@ -473,16 +477,16 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 R_ShowMessage(msg);
                 exit(0);
             }
-            else if (!strcmp(*av, "--print-nsize"))
-            {
-                Rprintf("%d\n", R_NSize);
-                exit(0);
-            }
-            else if (!strcmp(*av, "--print-vsize"))
-            {
-                Rprintf("%d\n", R_VSize);
-                exit(0);
-            }
+#if 0
+	    else if(!strcmp(*av, "--print-nsize")) {
+		Rprintf("%d\n", R_NSize);
+		exit(0);
+	    }
+	    else if(!strcmp(*av, "--print-vsize")) {
+		Rprintf("%d\n", R_VSize);
+		exit(0);
+	    }
+#endif
             else if (!strcmp(*av, "--save"))
             {
                 Rp->SaveAction = SA_SAVE;
@@ -544,15 +548,49 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
-                     !strcmp(*av, "-V"))
+                     !strcmp(*av, "-V") || !strcmp(*av, "-n") || !strcmp(*av, "-v"))
             {
                 sprintf(msg, "WARNING: option %s no longer supported\n", *av);
                 R_ShowMessage(msg);
             }
-            else if ((*av)[1] == 'v')
+            /* mop up --max/min/-n/vsize */
+            else if (strncmp(*av + 7, "size", 4) == 0)
             {
-                R_ShowMessage("ERROR: option `-v' is defunct.  Use `--vsize' instead.\n");
-                exit(1);
+                if (strlen(*av) < 13)
+                {
+                    ac--;
+                    av++;
+                    p = *av;
+                }
+                else
+                    p = &(*av)[12];
+                if (p == NULL)
+                {
+                    sprintf(msg, "WARNING: no value given for %s\n", *av);
+                    R_ShowMessage(msg);
+                    break;
+                }
+                value = Decode2Long(p, &ierr);
+                if (ierr)
+                {
+                    if (ierr < 0)
+                        sprintf(msg, "WARNING: %s value is invalid: ignored\n", *av);
+                    else
+                        sprintf(msg, "WARNING: %s=%ld`%c': too large and ignored\n", *av, value,
+                                (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
+                    R_ShowMessage(msg);
+                }
+                else
+                {
+                    if (!strncmp(*av, "--min-nsize", 11))
+                        Rp->nsize = value;
+                    if (!strncmp(*av, "--max-nsize", 11))
+                        Rp->max_nsize = value;
+                    if (!strncmp(*av, "--min-vsize", 11))
+                        Rp->vsize = value;
+                    if (!strncmp(*av, "--max-vsize", 11))
+                        Rp->max_vsize = value;
+                }
             }
             else if (strncmp(*av, "--vsize", 7) == 0)
             {
@@ -581,11 +619,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 }
                 else
                     Rp->vsize = value;
-            }
-            else if ((*av)[1] == 'n')
-            {
-                R_ShowMessage("ERROR: option `-n' is defunct.  Use `--nsize' instead.\n");
-                exit(1);
             }
             else if (strncmp(*av, "--nsize", 7) == 0)
             {
