@@ -23,22 +23,28 @@
 #include "nmath.h"
 #include "dpq.h"
 
-double qnchisq(double p, double n, double lambda, int lower_tail, int log_p)
+double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
 {
-    const double acu = 1e-12;
-    const double Eps = 1e-6; /* must be > acu */
+    const double accu = 1e-13;
+    const double racc = 4 * DBL_EPSILON;
+    /* these two are for the "search" loops, can have less accuracy: */
+    const double Eps = 1e-11;  /* must be > accu */
+    const double rEps = 1e-10; /* relative tolerance ... */
 
     double ux, lx, nx, pp;
 
 #ifdef IEEE_754
-    if (ISNAN(p) || ISNAN(n) || ISNAN(lambda))
-        return p + n + lambda;
+    if (ISNAN(p) || ISNAN(df) || ISNAN(lambda))
+        return p + df + lambda;
 #endif
-    if (!R_FINITE(n))
+    if (!R_FINITE(df))
         ML_ERR_return_NAN;
 
-    n = floor(n + 0.5);
-    if (n < 1 || lambda < 0)
+    /* Was
+     * df = floor(df + 0.5);
+     * if (df < 1 || lambda < 0) ML_ERR_return_NAN;
+     */
+    if (df < 0 || lambda < 0)
         ML_ERR_return_NAN;
 
     R_Q_P01_check(p);
@@ -55,19 +61,19 @@ double qnchisq(double p, double n, double lambda, int lower_tail, int log_p)
     if (lower_tail)
     {
         pp = p * (1 + Eps); /*not good when p ~= 1; caught via DBL_MAX */
-        for (ux = 1.; ux < DBL_MAX && pnchisq_raw(ux, n, lambda, Eps, 128) < pp; ux *= 2)
+        for (ux = 1.; ux < DBL_MAX && pnchisq_raw(ux, df, lambda, Eps, rEps, 10000) < pp; ux *= 2)
             ;
         pp = p * (1 - Eps);
-        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, n, lambda, Eps, 128) > pp; lx *= 0.5)
+        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, lambda, Eps, rEps, 10000) > pp; lx *= 0.5)
             ;
     }
     else
     {
         pp = (p > Eps) ? 1 + Eps : 1;
-        for (ux = 1.; ux < DBL_MAX && pnchisq_raw(ux, n, lambda, Eps, 128) + p < pp; ux *= 2)
+        for (ux = 1.; ux < DBL_MAX && pnchisq_raw(ux, df, lambda, Eps, rEps, 10000) + p < pp; ux *= 2)
             ;
         pp = 1 - Eps;
-        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, n, lambda, Eps, 128) + p > pp; lx *= 0.5)
+        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, lambda, Eps, rEps, 10000) + p > pp; lx *= 0.5)
             ;
     }
 
@@ -77,10 +83,10 @@ double qnchisq(double p, double n, double lambda, int lower_tail, int log_p)
     do
     {
         nx = 0.5 * (lx + ux);
-        if (pnchisq_raw(nx, n, lambda, acu, 1000) > p)
+        if (pnchisq_raw(nx, df, lambda, accu, racc, 100000) > p)
             ux = nx;
         else
             lx = nx;
-    } while ((ux - lx) / nx > acu);
+    } while ((ux - lx) / nx > accu);
     return 0.5 * (ux + lx);
 }
