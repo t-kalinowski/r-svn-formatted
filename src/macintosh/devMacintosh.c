@@ -39,10 +39,6 @@ static char *SaveString(SEXP sxp, int offset)
     return s;
 }
 
-void InitEd()
-{
-}
-
 /*  Macintosh Device Driver Parameters:
  *  -----------------		cf with ../unix/X11/devX11.c
  *  display	= display
