@@ -132,7 +132,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     R_ParseCnt = 0;
     x = PROTECT(R_ParseFile(fp, -1, &status));
     if (status != PARSE_OK)
-        errorcall(call, "An error occurred on line %d\n use a command like\n x <- vi()\n to recover", R_ParseError);
+        errorcall(call, "An error occurred on line %d\n use a command like\n x <- edit()\n to recover", R_ParseError);
     else
         fclose(fp);
     R_ResetConsole();
