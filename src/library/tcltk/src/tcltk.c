@@ -554,6 +554,7 @@ void tcltk_init(void)
 }
 
 #ifndef Win32
+#ifndef TCL80
 /* ----- Tcl/Tk console routines ----- */
 
 /* From src/unix/devUI.h */
@@ -638,4 +639,5 @@ void RTcl_ActivateConsole()
     R_Consolefile = NULL;
     R_Outputfile = NULL;
 }
+#endif
 #endif

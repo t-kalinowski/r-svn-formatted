@@ -1,6 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998-2001 Ross Ihaka and the R Development Core team.
+ *  Copyright (C) 2002      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -209,10 +210,16 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
     {
         if (ex <= 0 || (*ize == 1 && ex > xmax_BESS_K))
         {
-            ML_ERROR(ME_RANGE);
+            if (ex <= 0)
+            {
+                ML_ERROR(ME_RANGE);
+                for (i = 0; i < *nb; i++)
+                    bk[i] = ML_POSINF;
+            }
+            else /* would only have underflow */
+                for (i = 0; i < *nb; i++)
+                    bk[i] = 0.;
             *ncalc = *nb;
-            for (i = 0; i < *nb; i++)
-                bk[i] = ML_POSINF;
             return;
         }
         k = 0;
