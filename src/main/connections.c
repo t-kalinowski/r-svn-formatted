@@ -2911,6 +2911,7 @@ void *R_HTTPOpen(const char *url)
     HttpQueryInfo(wictxt->session, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &status, &d1, &d2);
     if (status != 200)
     {
+        d2 = 0;
         HttpQueryInfo(wictxt->session, HTTP_QUERY_STATUS_TEXT, &buf, &d3, &d2);
         InternetCloseHandle(wictxt->session);
         InternetCloseHandle(wictxt->hand);
@@ -2920,8 +2921,9 @@ void *R_HTTPOpen(const char *url)
 
     if (!IDquiet)
     {
-        HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_LENGTH | HTTP_QUERY_FLAG_NUMBER, &status, &d1, &d2);
         HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_TYPE, &buf, &d3, &d2);
+        d2 = 0;
+        HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_LENGTH | HTTP_QUERY_FLAG_NUMBER, &status, &d1, &d2);
         Rprintf("Content type `%s' length %d bytes\n", buf, status);
     }
 
