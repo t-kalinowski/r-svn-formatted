@@ -23,11 +23,6 @@
 #include <config.h>
 #endif
 
-/* we substitute if XDR is not found */
-#ifndef HAVE_XDR
-#define HAVE_XDR 1
-#endif
-
 #define NEED_CONNECTION_PSTREAMS
 #include <Defn.h>
 #include <Rmath.h>
@@ -291,7 +286,6 @@ static SEXP AsciiLoadOld(FILE *fp, int version)
 
 /* ----- L o w l e v e l -- X D R -- I / O ----- */
 
-#ifdef HAVE_XDR
 #ifndef INT_32_BITS
 /* The way XDR is used pretty much assumes that int is 32 bits and
    maybe even 2's complement representation--without that, NA_INTEGER
@@ -303,7 +297,8 @@ static SEXP AsciiLoadOld(FILE *fp, int version)
 #error code requires that int have 32 bits
 #endif
 
-#include <rpc/rpc.h>
+#include <rpc/types.h>
+#include <rpc/xdr.h>
 
     static XDR xdrs;
 
@@ -372,7 +367,6 @@ static SEXP XdrLoad(FILE *fp)
     InTerm = XdrInTerm;
     return DataLoad(fp);
 }
-#endif /* HAVE_XDR */
 
 /* ----- L o w l e v e l -- B i n a r y -- I / O ----- */
 
@@ -1708,50 +1702,7 @@ static SEXP NewBinaryLoad(FILE *fp)
     return NewDataLoad(fp);
 }
 
-#ifndef HAVE_XDR
-static void OutIntegerBinary(FILE *fp, int i)
-{
-    if (fwrite(&i, sizeof(int), 1, fp) != 1)
-        error("a binary write error occured");
-}
-
-static void OutStringBinary(FILE *fp, char *s)
-{
-    int n = strlen(s);
-    OutIntegerBinary(fp, n);
-    if (fwrite(s, sizeof(char), n, fp) != n)
-        error("a binary string write error occured");
-}
-
-static void OutRealBinary(FILE *fp, double x)
-{
-    if (fwrite(&x, sizeof(double), 1, fp) != 1)
-        error("a write error occured");
-}
-
-static void OutComplexBinary(FILE *fp, Rcomplex x)
-{
-    if (fwrite(&x, sizeof(Rcomplex), 1, fp) != 1)
-        error("a write error occured");
-}
-
-static void NewBinarySave(SEXP s, FILE *fp)
-{
-    OutInit = DummyInit;
-    OutInteger = OutIntegerBinary;
-    OutReal = OutRealBinary;
-    OutComplex = OutComplexBinary;
-    OutString = OutStringBinary;
-    OutSpace = DummyOutSpace;
-    OutNewline = DummyOutNewline;
-    OutTerm = DummyTerm;
-    NewDataSave(s, fp);
-}
-#endif /* not HAVE_XDR */
-
 /* ----- L o w l e v e l -- X D R -- I / O ----- */
-
-#ifdef HAVE_XDR
 
 static void InInitXdr(FILE *fp)
 {
@@ -1865,7 +1816,6 @@ static SEXP NewXdrLoad(FILE *fp)
     InTerm = InTermXdr;
     return NewDataLoad(fp);
 }
-#endif /* HAVE_XDR */
 
 /* ----- F i l e -- M a g i c -- N u m b e r s ----- */
 
@@ -1965,13 +1915,8 @@ static void R_SaveToFileV(SEXP obj, FILE *fp, int ascii, int version)
         }
         else
         {
-#ifdef HAVE_XDR
             R_WriteMagic(fp, R_MAGIC_XDR_V1);
             NewXdrSave(obj, fp);
-#else
-            R_WriteMagic(fp, R_MAGIC_BINARY_V1);
-            NewBinarySave(obj, fp);
-#endif /* HAVE_XDR */
         }
     }
     else
@@ -1986,14 +1931,8 @@ static void R_SaveToFileV(SEXP obj, FILE *fp, int ascii, int version)
         }
         else
         {
-#ifdef HAVE_XDR
             magic = R_MAGIC_XDR_V2;
             type = R_pstream_xdr_format;
-#else
-            warning("portable binary format is not available; using ascii");
-            magic = R_MAGIC_ASCII_V2;
-            type = R_pstream_ascii_format;
-#endif
         }
         R_WriteMagic(fp, magic);
         R_InitFileOutPStream(&out, fp, type, version, NULL, NULL);
@@ -2017,10 +1956,8 @@ SEXP R_LoadFromFile(FILE *fp, int startup)
     magic = R_ReadMagic(fp);
     switch (magic)
     {
-#ifdef HAVE_XDR
     case R_MAGIC_XDR:
         return (XdrLoad(fp));
-#endif /* HAVE_XDR */
     case R_MAGIC_BINARY:
         return (BinaryLoad(fp));
     case R_MAGIC_ASCII:
@@ -2033,21 +1970,17 @@ SEXP R_LoadFromFile(FILE *fp, int startup)
         return (NewAsciiLoad(fp));
     case R_MAGIC_BINARY_V1:
         return (NewBinaryLoad(fp));
-#ifdef HAVE_XDR
     case R_MAGIC_XDR_V1:
         return (NewXdrLoad(fp));
-#endif /* HAVE_XDR */
     case R_MAGIC_ASCII_V2:
         R_InitFileInPStream(&in, fp, R_pstream_ascii_format, NULL, NULL);
         return R_Unserialize(&in);
     case R_MAGIC_BINARY_V2:
         R_InitFileInPStream(&in, fp, R_pstream_binary_format, NULL, NULL);
         return R_Unserialize(&in);
-#ifdef HAVE_XDR
     case R_MAGIC_XDR_V2:
         R_InitFileInPStream(&in, fp, R_pstream_xdr_format, NULL, NULL);
         return R_Unserialize(&in);
-#endif /* HAVE_XDR */
     default:
         switch (magic)
         {
@@ -2215,7 +2148,6 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
 
 void R_XDREncodeDouble(double d, void *buf)
 {
-#ifdef HAVE_XDR
     XDR xdrs;
     int success;
 
@@ -2224,14 +2156,10 @@ void R_XDREncodeDouble(double d, void *buf)
     xdr_destroy(&xdrs);
     if (!success)
         error("XDR write failed");
-#else
-    error("XDR is not available on this system");
-#endif
 }
 
 double R_XDRDecodeDouble(void *buf)
 {
-#ifdef HAVE_XDR
     XDR xdrs;
     double d;
     int success;
@@ -2242,15 +2170,10 @@ double R_XDRDecodeDouble(void *buf)
     if (!success)
         error("XDR read failed");
     return d;
-#else
-    error("XDR is not available on this system");
-    return 0.0; /* keep compiler happy */
-#endif
 }
 
 void R_XDREncodeInteger(int i, void *buf)
 {
-#ifdef HAVE_XDR
     XDR xdrs;
     int success;
 
@@ -2259,14 +2182,10 @@ void R_XDREncodeInteger(int i, void *buf)
     xdr_destroy(&xdrs);
     if (!success)
         error("XDR write failed");
-#else
-    error("XDR is not available on this system");
-#endif
 }
 
 int R_XDRDecodeInteger(void *buf)
 {
-#ifdef HAVE_XDR
     XDR xdrs;
     int i, success;
 
@@ -2276,10 +2195,6 @@ int R_XDRDecodeInteger(void *buf)
     if (!success)
         error("XDR read failed");
     return i;
-#else
-    error("XDR is not available on this system");
-    return 0; /* keep compiler happy */
-#endif
 }
 
 void R_SaveGlobalEnvToFile(const char *name)
@@ -2387,14 +2302,8 @@ SEXP do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-#ifdef HAVE_XDR
         magic = "RDX2\n";
         type = R_pstream_xdr_format;
-#else
-        warning("portable binary format is not available; using ascii");
-        magic = "RDA2\n";
-        type = R_pstream_ascii_format;
-#endif
     }
 
     if (con->text)
