@@ -315,8 +315,38 @@ static GnomeUIInfo main_menu[] = {GNOMEUIINFO_MENU_FILE_TREE(file_menu),
                                   GNOMEUIINFO_MENU_HELP_TREE(help_menu),
                                   GNOMEUIINFO_END};
 
+/*
+   Temporary functions to blank out items in the user interface
+   that aren't working.  These should be removed when everything
+   is working!
+*/
+
+static blank_menu_item(GnomeUIInfo *item, int *index)
+{
+    int i;
+
+    for (i = 0; i < 10; i++)
+    {
+        if (index[i] == -1)
+            return;
+        gtk_widget_set_sensitive(GTK_WIDGET(item[index[i]].widget), FALSE);
+    }
+}
+
+static blank_inactive_items()
+{
+    int file_menu_inactive[3] = {4, 5, -1};
+    int data_menu_inactive[4] = {0, 1, 2, -1};
+    int commands_menu_inactive[2] = {6, -1};
+
+    blank_menu_item(file_menu, file_menu_inactive);
+    blank_menu_item(data_menu, data_menu_inactive);
+    blank_menu_item(commands_menu, commands_menu_inactive);
+}
+
 void R_gtk_terminal_add_menu(GtkWidget *window)
 {
     gnome_app_create_menus(GNOME_APP(window), main_menu);
     gnome_app_install_menu_hints(GNOME_APP(window), main_menu);
+    blank_inactive_items();
 }
