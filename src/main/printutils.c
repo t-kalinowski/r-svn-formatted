@@ -211,7 +211,7 @@ char *EncodeReal(double x, int w, int d, int e)
 #endif
     }
     else
-    {
+    { /* e = 0 */
         sprintf(fmt, "%%%d.%df", w, d);
         sprintf(buffer->data, fmt, x);
     }
