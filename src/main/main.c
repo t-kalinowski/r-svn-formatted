@@ -357,9 +357,18 @@ void setup_Rmainloop(void)
             strcpy(Rlocale, p);
         else
             strcpy(Rlocale, "");
-        setlocale(LC_CTYPE, Rlocale);
-        setlocale(LC_COLLATE, Rlocale);
-        setlocale(LC_TIME, Rlocale);
+        if ((p = getenv("LC_CTYPE")))
+            setlocale(LC_CTYPE, p);
+        else
+            setlocale(LC_CTYPE, Rlocale);
+        if ((p = getenv("LC_COLLATE")))
+            setlocale(LC_COLLATE, p);
+        else
+            setlocale(LC_COLLATE, Rlocale);
+        if ((p = getenv("LC_TIME")))
+            setlocale(LC_TIME, p);
+        else
+            setlocale(LC_TIME, Rlocale);
     }
 #else
     setlocale(LC_CTYPE, "");   /*- make ISO-latin1 etc. work for LOCALE users */
