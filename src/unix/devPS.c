@@ -631,6 +631,7 @@ static void PS_Circle(double x, double y, double r, int bg, int fg)
     if (fg != NA_INTEGER)
     {
         SetColor(fg);
+        SetLinetype(GP->lty);
         PostScriptOpenCircle(psfp, x, y, r);
     }
 }
@@ -645,6 +646,7 @@ static void PS_Polygon(int n, double *x, double *y, int bg, int fg)
     if (fg != NA_INTEGER)
     {
         SetColor(fg);
+        SetLinetype(GP->lty);
         PostScriptOpenPolygon(psfp, x, y, n);
     }
 }
