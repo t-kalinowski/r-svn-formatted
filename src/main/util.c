@@ -1177,6 +1177,7 @@ int utf8clen(char c)
 #endif
 
 #ifdef SUPPORT_MBCS
+/* A version that reports failure as an error */
 size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps)
 {
     size_t used;
@@ -1187,6 +1188,11 @@ size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps)
     if ((int)used < 0)
         error("invalid multibyte string");
     return used;
+}
+
+Rboolean mbcsValid(char *str)
+{
+    return (mbstowcs(NULL, str, 0) >= 0);
 }
 
 /* We do this conversion ourselves to do our own error recovery */
