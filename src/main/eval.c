@@ -219,7 +219,8 @@ static void R_InitProfiling(char *filename, int append, double dinterval)
     wait = interval / 1000;
     if (!(ProfileEvent = CreateEvent(NULL, FALSE, FALSE, NULL)) || (_beginthread(ProfileThread, 0, &wait) == -1))
         R_Suicide("unable to create profiling thread");
-#else  /* not Win32 */
+    Sleep(wait / 2); /* suspend this thread to ensure that the other one starts */
+#else                /* not Win32 */
     signal(SIGPROF, doprof);
 
     itv.it_interval.tv_sec = 0;
@@ -228,7 +229,7 @@ static void R_InitProfiling(char *filename, int append, double dinterval)
     itv.it_value.tv_usec = interval;
     if (setitimer(ITIMER_PROF, &itv, NULL) == -1)
         R_Suicide("setting profile timer failed");
-#endif /* not Win32 */
+#endif               /* not Win32 */
     R_Profiling = 1;
 }
 
