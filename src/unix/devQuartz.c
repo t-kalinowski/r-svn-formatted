@@ -415,7 +415,6 @@ void HaveFlush(CGContextRef c, Rboolean flush)
 
 SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#if defined(Macintosh) || defined(__APPLE_CC__)
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *display, *vmax, *family = NULL;
@@ -464,10 +463,6 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
-#else
-    warning("Quartz device not available on this platform\n");
-#endif
-
     return R_NilValue;
 }
 
