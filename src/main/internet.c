@@ -40,10 +40,6 @@
 #define USE_WININET 2
 #endif
 
-#ifdef HAVE_BSD_NETWORKING
-#define HAVE_LIBXML 1
-#endif
-
 static Rboolean IDquiet = TRUE;
 
 static void url_open(Rconnection con)
@@ -259,7 +255,7 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
         fclose(out);
         fclose(in);
 
-#if defined(HAVE_LIBXML) || defined(USE_WININET)
+#ifdef HAVE_INTERNET
     }
     else if (strncmp(url, "http://", 7) == 0)
     {
@@ -435,8 +431,7 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-#ifdef HAVE_LIBXML
-#define INTERNET 1
+#if defined(HAVE_LIBXML) && !defined(USE_WININET)
 
 void *R_HTTPOpen(const char *url)
 {
@@ -551,7 +546,6 @@ void R_FTPClose(void *ctx)
 #endif /* HAVE_LIBXML */
 
 #ifdef USE_WININET
-#define INTERNET 2
 
 #include <windows.h>
 #include <wininet.h>
@@ -564,8 +558,6 @@ typedef struct wictxt
 } wIctxt, *WIctxt;
 
 #ifdef USE_WININET_ASYNC
-#undef INTERNET
-#define INTERNET 3
 static int timeout;
 
 static int callback_status;
@@ -581,7 +573,7 @@ static void CALLBACK InternetCallback(HINTERNET hInternet, DWORD context, DWORD 
         callback_res = (LPINTERNET_ASYNC_RESULT)lpvStatusInformation;
     }
 }
-#endif
+#endif /* USE_WININET_ASYNC */
 
 void *R_HTTPOpen(const char *url)
 {
@@ -820,7 +812,7 @@ void R_FTPClose(void *ctx)
 }
 #endif
 
-#ifndef INTERNET
+#ifndef HAVE_INTERNET
 void *R_HTTPOpen(const char *url)
 {
     return NULL;
