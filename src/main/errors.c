@@ -348,7 +348,7 @@ void error(const char *format, ...)
 
 /* Unwind the call stack in an orderly fashion */
 /* calling the code installed by on.exit along the way */
-/* and finally longjmping to the top repl loop */
+/* and finally longjmping to the innermost TOPLEVEL context */
 
 void jump_to_toplevel()
 {
@@ -409,6 +409,8 @@ void jump_to_toplevel()
             inError = 0;
             findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
         }
+        if (c->callflag == CTXT_TOPLEVEL)
+            break;
     }
     if (!R_Interactive && !haveHandler && inError)
     {
