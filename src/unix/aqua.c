@@ -73,7 +73,8 @@ static DL_FUNC Rdlsym(void *handle, char const *name)
 extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_FlushConsole, ptr_R_ClearerrConsole,
     ptr_R_StartConsole, ptr_R_ShowFiles, ptr_R_loadhistory, ptr_R_savehistory, ptr_R_ChooseFile;
 
-DL_FUNC ptr_do_wsbrowser, ptr_DoCloseHandler, ptr_GetQuartzParameters, ptr_Raqua_Edit;
+DL_FUNC ptr_do_wsbrowser, ptr_DoCloseHandler, ptr_GetQuartzParameters, ptr_Raqua_Edit, ptr_do_dataentry,
+    ptr_do_browsepkgs;
 
 /* This is called too early to use moduleCdynload */
 void R_load_aqua_shlib(void)
@@ -151,6 +152,12 @@ void R_load_aqua_shlib(void)
     ptr_Raqua_Edit = Rdlsym(handle, "Raqua_Edit");
     if (!ptr_Raqua_Edit)
         R_Suicide("Cannot load Raqua_Edit");
+    ptr_do_dataentry = Rdlsym(handle, "Raqua_dataentry");
+    if (!ptr_do_dataentry)
+        R_Suicide("Cannot load Raqua_dataentry");
+    ptr_do_browsepkgs = Rdlsym(handle, "Raqua_browsepkgs");
+    if (!ptr_do_browsepkgs)
+        R_Suicide("Cannot load Raqua_browsepkgs");
 }
 
 OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
@@ -161,6 +168,16 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     return (ptr_do_wsbrowser(call, op, args, env));
+}
+
+SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    return (ptr_do_dataentry(call, op, args, env));
+}
+
+SEXP do_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    return (ptr_do_browsepkgs(call, op, args, env));
 }
 
 #else
