@@ -129,12 +129,17 @@ static int DeleteDLL(char *path)
     return 0;
 found:
 #ifdef CACHE_DLL_SYM
-    for (i = 0; i < nCPFun; i++)
+    for (i = nCPFun - 1; i >= 0; i--)
         if (!strcmp(CPFun[i].pkg, LoadedDLL[loc].name))
         {
-            strcpy(CPFun[i].pkg, CPFun[nCPFun].pkg);
-            strcpy(CPFun[i].name, CPFun[nCPFun].name);
-            CPFun[i].func = CPFun[nCPFun--].func;
+            if (i < nCPFun - 1)
+            {
+                strcpy(CPFun[i].name, CPFun[--nCPFun].name);
+                strcpy(CPFun[i].pkg, CPFun[nCPFun].pkg);
+                CPFun[i].func = CPFun[nCPFun].func;
+            }
+            else
+                nCPFun--;
         }
 #endif
     free(LoadedDLL[loc].name);
@@ -236,7 +241,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
 
 #ifdef CACHE_DLL_SYM
     for (i = 0; i < nCPFun; i++)
-        if (!strcmp(pkg, CPFun[i].pkg) && !strcmp(name, CPFun[i].name))
+        if (!strcmp(name, CPFun[i].name) && (all || !strcmp(pkg, CPFun[i].pkg)))
             return CPFun[i].func;
 #endif
 
@@ -253,7 +258,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
 #ifdef CACHE_DLL_SYM
                 if (strlen(pkg) <= 20 && strlen(name) <= 20 && nCPFun < 100)
                 {
-                    strcpy(CPFun[nCPFun].pkg, pkg);
+                    strcpy(CPFun[nCPFun].pkg, LoadedDLL[i].name);
                     strcpy(CPFun[nCPFun].name, name);
                     CPFun[nCPFun++].func = fcnptr;
                 }
@@ -307,6 +312,8 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
 
 static void GetFullDLLPath(SEXP call, char *buf, char *path)
 {
+    char *p;
+
     if ((path[0] != '/') && (path[0] != '\\') && (path[1] != ':'))
     {
         if (!getcwd(buf, MAX_PATH))
@@ -316,6 +323,10 @@ static void GetFullDLLPath(SEXP call, char *buf, char *path)
     }
     else
         strcpy(buf, path);
+    /* fix slashes to allow inconsistent usage later */
+    for (p = buf; *p; p++)
+        if (*p == '\\')
+            *p = '/';
 }
 
 /* do_dynload implements the R-Interface for the */
