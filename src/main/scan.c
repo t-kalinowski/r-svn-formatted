@@ -474,7 +474,8 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
     return bns;
 }
 
-static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill, SEXP stripwhite, int blskip)
+static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill, SEXP stripwhite, int blskip,
+                      int multiline)
 {
     SEXP ans, new, old, w;
     char buffer[MAXELTSIZE];
@@ -603,7 +604,12 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
 
 done:
     if (badline)
-        warning("line %d did not have %d elements", badline, nc);
+    {
+        if (multiline)
+            warning("line %d did not have %d elements", badline, nc);
+        else
+            error("line %d did not have %d elements", badline, nc);
+    }
 
     if (colsread != 0)
     {
@@ -654,7 +660,7 @@ done:
 SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes;
-    int i, c, nlines, nmax, nskip, flush, fill, blskip;
+    int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline;
 
     checkArity(op, args);
 
@@ -685,10 +691,14 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     quiet = asLogical(CAR(args));
     args = CDR(args);
     blskip = asLogical(CAR(args));
+    args = CDR(args);
+    multiline = asLogical(CAR(args));
     if (quiet == NA_LOGICAL)
         quiet = 0;
     if (blskip == NA_LOGICAL)
         blskip = 1;
+    if (multiline == NA_LOGICAL)
+        multiline = 1;
     if (nskip < 0 || nskip == NA_INTEGER)
         nskip = 0;
     if (nlines < 0 || nlines == NA_INTEGER)
@@ -772,7 +782,7 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
 
     case VECSXP:
-        ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip);
+        ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip, multiline);
         break;
     default:
         if (!ttyflag && !wasopen)
