@@ -60,7 +60,8 @@ static char *SaveString(SEXP sxp, int offset)
 
 SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd;
+    NewDevDesc *dev = NULL;
+    GEDevDesc *dd;
     char *vmax;
     char *file, *paper, *family = NULL, *bg, *fg, *cmd;
     char *afms[5], *encoding;
@@ -118,20 +119,20 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
-        if (!(dd = (DevDesc *)calloc(1, sizeof(DevDesc))))
+        if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
-        dd->displayList = R_NilValue;
-        GInit(&dd->dp);
-        if (!PSDeviceDriver(dd, file, paper, family, afms, encoding, bg, fg, width, height, (double)horizontal, ps,
-                            onefile, pagecentre, printit, cmd))
+        dev->displayList = R_NilValue;
+        if (!PSDeviceDriver((DevDesc *)dev, file, paper, family, afms, encoding, bg, fg, width, height,
+                            (double)horizontal, ps, onefile, pagecentre, printit, cmd))
         {
-            free(dd);
+            free(dev);
             errorcall(call, "unable to start device PostScript");
         }
         gsetVar(install(".Device"), mkString("postscript"), R_NilValue);
-        addDevice(dd);
-        initDisplayList(dd);
+        dd = GEcreateDevDesc(dev);
+        addDevice((DevDesc *)dd);
+        initDisplayList((DevDesc *)dd);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
@@ -212,7 +213,8 @@ SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd;
+    NewDevDesc *dev = NULL;
+    GEDevDesc *dd;
     char *vmax;
     char *file, *paper, *family, *bg, *fg;
     int horizontal, onefile, pagecentre;
@@ -246,20 +248,20 @@ SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
-        if (!(dd = (DevDesc *)calloc(1, sizeof(DevDesc))))
+        if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
-        dd->displayList = R_NilValue;
-        GInit(&dd->dp);
-        if (!XFigDeviceDriver(dd, file, paper, family, bg, fg, width, height, (double)horizontal, ps, onefile,
-                              pagecentre))
+        dev->displayList = R_NilValue;
+        if (!XFigDeviceDriver((DevDesc *)dev, file, paper, family, bg, fg, width, height, (double)horizontal, ps,
+                              onefile, pagecentre))
         {
-            free(dd);
+            free(dev);
             errorcall(call, "unable to start device xfig");
         }
         gsetVar(install(".Device"), mkString("xfig"), R_NilValue);
-        addDevice(dd);
-        initDisplayList(dd);
+        dd = GEcreateDevDesc(dev);
+        addDevice((DevDesc *)dd);
+        initDisplayList((DevDesc *)dd);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
@@ -280,7 +282,8 @@ SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd;
+    NewDevDesc *dev = NULL;
+    GEDevDesc *dd;
     char *vmax;
     char *file, *encoding, *family, *bg, *fg;
     double height, width, ps;
@@ -309,19 +312,19 @@ SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
-        if (!(dd = (DevDesc *)calloc(1, sizeof(DevDesc))))
+        if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
-        dd->displayList = R_NilValue;
-        GInit(&dd->dp);
-        if (!PDFDeviceDriver(dd, file, family, encoding, bg, fg, width, height, ps, onefile))
+        dev->displayList = R_NilValue;
+        if (!PDFDeviceDriver((DevDesc *)dev, file, family, encoding, bg, fg, width, height, ps, onefile))
         {
-            free(dd);
+            free(dev);
             errorcall(call, "unable to start device pdf");
         }
         gsetVar(install(".Device"), mkString("pdf"), R_NilValue);
-        addDevice(dd);
-        initDisplayList(dd);
+        dd = GEcreateDevDesc(dev);
+        addDevice((DevDesc *)dd);
+        initDisplayList((DevDesc *)dd);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
