@@ -344,7 +344,12 @@ SEXP FixupVFont(SEXP vfont)
         typeface = INTEGER(vf)[0];
         if (typeface < 0 || typeface > 7)
             error("Invalid vfont value [typeface]");
-        minindex = 0;
+        /* For each of the typefaces {0..7}, there are several fontindices
+           available; how many depends on the typeface.
+           The possible combinations are "given" in ./g_fontdb.c
+           and also listed in help(Hershey).
+         */
+        minindex = 1;
         switch (typeface)
         {
         case 0: /* serif */
@@ -361,6 +366,7 @@ SEXP FixupVFont(SEXP vfont)
         case 4: /* gothic german */
         case 5: /* gothic italian */
             maxindex = 1;
+            break;
         case 7: /* sans serif symbol */
             maxindex = 2;
         }
