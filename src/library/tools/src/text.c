@@ -64,10 +64,8 @@ SEXP delim_match(SEXP x, SEXP delims)
         start = end = -1;
         s0 = s = CHAR(STRING_ELT(x, i));
         pos = is_escaped = delim_depth = 0;
-        for (; *s; pos++)
+        while ((c = *s) != '\0')
         {
-            /* Rprintf("%s, %d:%d\n", s, start, end);*/
-            c = *s;
             if (c == '\n')
             {
                 is_escaped = FALSE;
@@ -96,7 +94,7 @@ SEXP delim_match(SEXP x, SEXP delims)
                     pos++;
                 }
             }
-            else if (strncmp(s, delim_end, end) == 0)
+            else if (strncmp(s, delim_end, lend) == 0)
             {
                 if (delim_depth > 1)
                     delim_depth--;
@@ -125,6 +123,7 @@ SEXP delim_match(SEXP x, SEXP delims)
 #else
             s++;
 #endif
+            pos++;
         }
         if (end > -1)
         {
