@@ -450,7 +450,7 @@ static void (*OldHandler)(void);
 static int OldTimeout;
 static int Tcl_loaded = 0;
 
-void TclHandler(void)
+static void TclHandler(void)
 {
     while (Tcl_DoOneEvent(TCL_DONT_WAIT))
         ;
@@ -458,14 +458,14 @@ void TclHandler(void)
     OldHandler();
 }
 
-int Gtk_TclHandler(void)
+static int Gtk_TclHandler(void)
 {
     while (Tcl_DoOneEvent(TCL_DONT_WAIT))
         ;
     return 1;
 }
 
-void addTcl(void)
+static void addTcl(void)
 {
     if (Tcl_loaded)
         error("Tcl already loaded");
@@ -507,11 +507,11 @@ void delTcl(void)
 /* ----- Event loop interface routines -------- */
 static Tcl_Time timeout;
 
-void RTcl_setupProc(ClientData clientData, int flags)
+static void RTcl_setupProc(ClientData clientData, int flags)
 {
     Tcl_SetMaxBlockTime(&timeout);
 }
-void RTcl_eventProc(RTcl_Event *evPtr, int flags)
+static void RTcl_eventProc(RTcl_Event *evPtr, int flags)
 {
     fd_set *readMask = R_checkActivity(0 /*usec*/, 1 /*ignore_stdin*/);
 
@@ -520,7 +520,7 @@ void RTcl_eventProc(RTcl_Event *evPtr, int flags)
 
     R_runHandlers(R_InputHandlers, readMask);
 }
-void RTcl_checkProc(ClientData clientData, int flags)
+static void RTcl_checkProc(ClientData clientData, int flags)
 {
     fd_set *readMask = R_checkActivity(0 /*usec*/, 1 /*ignore_stdin*/);
     RTcl_Event *evPtr;
