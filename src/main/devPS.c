@@ -895,19 +895,24 @@ static void PostScriptSetFont(FILE *fp, int typeface, double size)
     fprintf(fp, "/ps %.0f def %s %.0f s\n", size, TypeFaceDef[typeface], size);
 }
 
-static void PostScriptSetLineTexture(FILE *fp, int *lty, int nlty, double lwd)
+static void PostScriptSetLineTexture(FILE *fp, char *dashlist, int nlty, double lwd)
 {
-    double dash;
-    int i;
-    fprintf(fp, "[");
-    for (i = 0; i < nlty; i++)
-    {
-        dash = (lwd >= 1 ? lwd : 1) * ((i % 2) ? lty[i] + 1 : lty[i] - 1);
-        if (dash < 0)
-            dash = 0;
-        fprintf(fp, " %.2f", dash);
-    }
-    fprintf(fp, "] 0 setdash\n");
+/* use same macro for Postscript and PDF */
+#define PP_SetLineTexture(_CMD_)                                                                                       \
+    double dash;                                                                                                       \
+    int i;                                                                                                             \
+    fprintf(fp, "[");                                                                                                  \
+    for (i = 0; i < nlty; i++)                                                                                         \
+    {                                                                                                                  \
+        dash = (lwd >= 1 ? lwd : 1) *                                                                                  \
+               ((i % 2) ? dashlist[i] + 1 : ((nlty == 1 && dashlist[i] == 1.) ? 1. : dashlist[i] - 1));                \
+        if (dash < 0)                                                                                                  \
+            dash = 0;                                                                                                  \
+        fprintf(fp, " %.2f", dash);                                                                                    \
+    }                                                                                                                  \
+    fprintf(fp, "] 0 %s\n", _CMD_)
+
+    PP_SetLineTexture("setdash");
 }
 
 static void PostScriptMoveTo(FILE *fp, double x, double y)
@@ -1353,7 +1358,8 @@ static void SetFill(int color, NewDevDesc *dd)
 static void SetLineStyle(int newlty, double newlwd, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
-    int i, ltyarray[8];
+    char dashlist[8];
+    int i;
 
     if (pd->current.lty != newlty || pd->current.lwd != newlwd)
     {
@@ -1363,10 +1369,10 @@ static void SetLineStyle(int newlty, double newlwd, NewDevDesc *dd)
         /* process lty : */
         for (i = 0; i < 8 && newlty & 15; i++)
         {
-            ltyarray[i] = newlty & 15;
+            dashlist[i] = newlty & 15;
             newlty = newlty >> 4;
         }
-        PostScriptSetLineTexture(pd->psfp, ltyarray, i, newlwd * 0.75);
+        PostScriptSetLineTexture(pd->psfp, dashlist, i, newlwd * 0.75);
     }
 }
 
@@ -2801,28 +2807,17 @@ static void PDF_SetFill(int color, NewDevDesc *dd)
     }
 }
 
-/* Note that the line texture is scaled by the line width.
-   Almost the same as PS, but the operator has a short name */
-
-static void PDFSetLineTexture(FILE *fp, int *lty, int nlty, double lwd)
+/* Note that the line texture is scaled by the line width.*/
+static void PDFSetLineTexture(FILE *fp, char *dashlist, int nlty, double lwd)
 {
-    double dash;
-    int i;
-    fprintf(fp, "[");
-    for (i = 0; i < nlty; i++)
-    {
-        dash = (lwd >= 1 ? lwd : 1) * ((i % 2) ? lty[i] + 1 : lty[i] - 1);
-        if (dash < 0)
-            dash = 0;
-        fprintf(fp, " %.2f", dash);
-    }
-    fprintf(fp, "] 0 d\n");
+    PP_SetLineTexture("d");
 }
 
 static void PDF_SetLineStyle(int newlty, double newlwd, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
-    int i, ltyarray[8];
+    char dashlist[8];
+    int i;
 
     if (pd->current.lty != newlty || pd->current.lwd != newlwd)
     {
@@ -2832,10 +2827,10 @@ static void PDF_SetLineStyle(int newlty, double newlwd, NewDevDesc *dd)
         /* process lty : */
         for (i = 0; i < 8 && newlty & 15; i++)
         {
-            ltyarray[i] = newlty & 15;
+            dashlist[i] = newlty & 15;
             newlty = newlty >> 4;
         }
-        PDFSetLineTexture(pd->pdffp, ltyarray, i, newlwd * 0.75);
+        PDFSetLineTexture(pd->pdffp, dashlist, i, newlwd * 0.75);
     }
 }
 

@@ -63,7 +63,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
     {
         SEXP tmp = allocVector(STRSXP, 1);
         PROTECT(tmp);
-        SET_STRING_ELT(tmp, 0, (iS) ? PRINTNAME(x) : deparse1(x, 0));
+        SET_STRING_ELT(tmp, 0, (iS) ? PRINTNAME(x) : STRING_ELT(deparse1(x, 0), 0));
         REPROTECT(x = tmp, xpi);
         UNPROTECT(1);
     }
@@ -71,7 +71,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
     {
         SEXP tmp = allocVector(STRSXP, 1);
         PROTECT(tmp);
-        SET_STRING_ELT(tmp, 0, (iS) ? PRINTNAME(y) : deparse1(y, 0));
+        SET_STRING_ELT(tmp, 0, (iS) ? PRINTNAME(y) : STRING_ELT(deparse1(y, 0), 0));
         REPROTECT(y = tmp, ypi);
         UNPROTECT(1);
     }

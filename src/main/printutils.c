@@ -592,7 +592,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
             char buf[BUFSIZE];
             int slen;
 
-            vsprintf(buf, format, arg);
+            vsnprintf(buf, BUFSIZE, format, arg);
             slen = strlen(buf);
             R_WriteConsole(buf, slen);
         }
