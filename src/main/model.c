@@ -1847,7 +1847,7 @@ alldone:;
                 {
                     var_i = VECTOR_ELT(variable, i);
                     if (!first)
-                        bufp = AppendString(bufp, ".");
+                        bufp = AppendString(bufp, ":");
                     first = 0;
                     if (isFactor(var_i))
                     {
