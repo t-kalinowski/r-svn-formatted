@@ -1170,6 +1170,12 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
         type = JPEG;
         p = "";
     }
+    else if (!strcmp(dsp, "XImage"))
+    {
+        type = XIMAGE;
+        xd->fp = NULL;
+        p = "";
+    }
     else
         type = WINDOW;
     xd->type = type;
@@ -1531,7 +1537,7 @@ static void X11_Close(DevDesc *dd)
     }
     else
     {
-        if (xd->npages)
+        if (xd->npages && xd->type != XIMAGE)
         {
             int i;
             XImage *xi;
@@ -1546,7 +1552,8 @@ static void X11_Close(DevDesc *dd)
         }
         XFreeGC(display, xd->wgc);
         XFreePixmap(display, xd->window);
-        fclose(xd->fp);
+        if (xd->type != XIMAGE && xd->fp != NULL)
+            fclose(xd->fp);
     }
 
     numX11Devices--;
@@ -2113,4 +2120,24 @@ Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double heig
     R_ProcessEvents((void *)NULL);
 
     return TRUE;
+}
+
+Rboolean R_GetX11Image(int d, XImage **pximage, int *pwidth, int *pheight)
+{
+    SEXP dev = elt(findVar(install(".Devices"), R_NilValue), d);
+
+    if (TYPEOF(dev) != STRSXP ||
+        !(strcmp(CHAR(STRING_ELT(dev, 0)), "XImage") == 0 || strncmp(CHAR(STRING_ELT(dev, 0)), "PNG", 3) == 0 ||
+          strncmp(CHAR(STRING_ELT(dev, 0)), "X11", 3) == 0))
+        return FALSE;
+    else
+    {
+        DevDesc *dd = GetDevice(d);
+        x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+
+        *pximage = XGetImage(display, xd->window, 0, 0, xd->windowWidth, xd->windowHeight, AllPlanes, ZPixmap);
+        *pwidth = xd->windowWidth;
+        *pheight = xd->windowHeight;
+        return TRUE;
+    }
 }

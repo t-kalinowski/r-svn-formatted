@@ -105,6 +105,8 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "PNG";
     else if (!strncmp(display, "jpeg::", 6))
         devname = "JPEG";
+    else if (!strcmp(display, "XImage"))
+        devname = "XImage";
 
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS

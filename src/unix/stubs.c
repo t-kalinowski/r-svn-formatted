@@ -32,6 +32,12 @@ Rboolean stub_X11DeviceDriver(DevDesc *dd, char *display, double width, double h
     return FALSE;
 }
 
+Rboolean stub_R_GetX11Image(int d, void *ppximage, int *pwidth, int *pheight)
+{
+    error("the x11 device has not been loaded");
+    return FALSE;
+}
+
 Rboolean stub_GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
     error("the gnome device is not loaded in this version of R");
