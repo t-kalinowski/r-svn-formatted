@@ -24,6 +24,8 @@
  *                          printers can be deleted by 'del(printer)'
  */
 
+#define ENABLE_NLS 1
+#include "../win-nls.h"
 #include "internal.h"
 #include "rui.h"
 
@@ -88,7 +90,7 @@ static HDC chooseprinter()
     {
         rc = CommDlgExtendedError(); /* 0 means user cancelled */
         if (rc)
-            R_ShowMessage("Unable to choose printer");
+            R_ShowMessage(_("Unable to choose printer"));
     }
     return dc;
 }
@@ -121,7 +123,7 @@ printer newprinter(double width, double height, char *name)
     obj = new_object(PrinterObject, (HANDLE)hDC, get_printer_base());
     if (!obj)
     {
-        R_ShowMessage("Insufficient memory for new printer");
+        R_ShowMessage(_("Insufficient memory for new printer"));
         DeleteDC(hDC);
         return NULL;
     }
@@ -159,7 +161,7 @@ printer newprinter(double width, double height, char *name)
 
     if (StartDoc(hDC, &docinfo) <= 0)
     {
-        R_ShowMessage("Unable to start the print job");
+        R_ShowMessage(_("Unable to start the print job"));
         del(obj);
         return NULL;
     }
