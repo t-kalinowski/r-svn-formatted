@@ -229,6 +229,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *errorptr;
     pcre *re_pcre;
     pcre_extra *re_pe;
+    const unsigned char *tables;
 
     checkArity(op, args);
 
@@ -251,7 +252,8 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
     if (igcase_opt)
         options |= PCRE_CASELESS;
 
-    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, NULL);
+    tables = pcre_maketables();
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, tables);
     if (!re_pcre)
         errorcall(call, "invalid regular expression");
     re_nsub = pcre_info(re_pcre, NULL, NULL);
@@ -343,6 +345,7 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, n, st, erroffset;
     const char *errorptr;
     pcre *re_pcre;
+    const unsigned char *tables;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -353,7 +356,8 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(pat) || length(pat) < 1 || !isString(text) || length(text) < 1)
         errorcall(call, R_MSG_IA);
 
-    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), 0, &errorptr, &erroffset, NULL);
+    tables = pcre_maketables();
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), 0, &errorptr, &erroffset, tables);
     if (!re_pcre)
         errorcall(call, "invalid regular expression");
     n = length(text);
