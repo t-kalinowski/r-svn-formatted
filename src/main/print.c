@@ -481,7 +481,10 @@ static void PrintExpression(SEXP s)
     u = deparse1(s, 0);
     n = LENGTH(u);
     for (i = 0; i < n; i++)
-        Rprintf("%s\n", CHAR(STRING(u)[i]));
+    {
+        Rprintf(CHAR(STRING(u)[i]));
+        Rprintf("\n");
+    }
 }
 
 /* PrintValueRec -- recursively print an SEXP
@@ -506,7 +509,9 @@ void PrintValueRec(SEXP s, SEXP env)
         Rprintf(".Primitive(\"%s\")\n", PRIMNAME(s));
         break;
     case CHARSXP:
-        Rprintf("\"%s\"\n", EncodeString(CHAR(s), 0, '"', adj_left));
+        Rprintf("\"");
+        Rprintf(EncodeString(CHAR(s), 0, '"', adj_left));
+        Rprintf("\"\n");
         break;
     case EXPRSXP:
         PrintExpression(s);
@@ -641,7 +646,8 @@ static void printAttributes(SEXP s, SEXP env)
             if (i > 1)
                 Rprintf("\n");
             sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, adj_left));
-            Rprintf("%s\n", tagbuf);
+            Rprintf(tagbuf);
+            Rprintf("\n");
             PrintValueRec(CAR(a), env);
         nextattr:
             *ptag = '\0';
