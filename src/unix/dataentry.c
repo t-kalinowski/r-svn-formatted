@@ -32,23 +32,26 @@
 #endif
 
 /*
-   The spreadsheet function returns a list of vectors. The types of these
-   vectors can be specified by the user as can their names. It the names
-   are specified they are set during initialization. The user can change
-   these via a menu interface, they can also change the type.
+   The spreadsheet function returns a list of vectors. The types of
+   these vectors can be specified by the user as can their names. It
+   the names are specified they are set during initialization. The
+   user can change these via a menu interface, they can also change
+   the type.
 
-   The vectors are created too long and if they need to be increased this
-   is done by using the next higher power of 2. They start 100 long. To cut
-   them to the correct length for return you need to know the largest row number
-   that was assigned to. LEVELS (sxpinfo.gp) is used to keep track of this,
-   separately for each vector. Vectors are initialized to NA when they are
-   created so that NA is returned for any cell that was not set by the user.
-   So that coercion back and forth maintains values of ssNA_REAL and ssNA_STRING
-   I have set ssNA_STRING to be coerceVector(ssNA_REAL), very weird but easy.
+   The vectors are created too long and if they need to be increased
+   this is done by using the next higher power of 2. They start 100
+   long. To cut them to the correct length for return you need to know
+   the largest row number that was assigned to. LEVELS (sxpinfo.gp) is
+   used to keep track of this, separately for each vector. Vectors are
+   initialized to NA when they are created so that NA is returned for
+   any cell that was not set by the user.  So that coercion back and
+   forth maintains values of ssNA_REAL and ssNA_STRING I have set
+   ssNA_STRING to be coerceVector(ssNA_REAL), very weird but easy.
 
-   In Macintosh we need to call the main event loop to get events. This ensures
-   that the spreadsheet interacts well with the other windows. Under X windows
-   we let the window manager handle those sorts of details.
+   In Macintosh we need to call the main event loop to get
+   events. This ensures that the spreadsheet interacts well with the
+   other windows. Under X windows we let the window manager handle
+   those sorts of details.
 
  */
 
@@ -415,7 +418,8 @@ void drawwindow()
     Rsync();
 }
 
-/* find_coords finds the coordinates of the upper left corner of the given square on the screen */
+/* find_coords finds the coordinates of the upper left corner of the
+   given square on the screen */
 
 void find_coords(int row, int col, int *xcoord, int *ycoord)
 {
@@ -423,10 +427,7 @@ void find_coords(int row, int col, int *xcoord, int *ycoord)
     *ycoord = bwidth + hwidth + box_h * row;
 }
 
-/*
-   draw the window with the top left box at column wcol and
-   row wrow
- */
+/* draw the window with the top left box at column wcol and row wrow */
 
 void jumpwin(int wcol, int wrow)
 {
@@ -444,7 +445,8 @@ void jumpwin(int wcol, int wrow)
 void advancerect(int which)
 {
 
-    /* if we are in the header, changing a name then only down is allowed */
+    /* if we are in the header, changing a name then only down is
+       allowed */
     if (crow < 1 && which != DOWN)
     {
         bell();
@@ -525,10 +527,9 @@ void drawrow(int whichrow)
     Rsync();
 }
 
-/*
-   printelt: print the correct value from vector[vrow] into the
-   spread sheet in row ssrow and col sscol
- */
+/* printelt: print the correct value from vector[vrow] into the
+   spreadsheet in row ssrow and col sscol */
+
 void printelt(SEXP invec, int vrow, int ssrow, int sscol)
 {
     char *strp;
@@ -663,12 +664,11 @@ static int checkquit(int xw)
 }
 #endif
 
-/*
-   when a buttonpress event happens find the square that is being pointed to
-   if the pointer is in the header we need to see if the quit button was
-   pressed and if so quit. This is done by having findsquare return an int
-   which is zero if we should quit and one otherwise
- */
+/* when a buttonpress event happens find the square that is being
+   pointed to if the pointer is in the header we need to see if the
+   quit button was pressed and if so quit. This is done by having
+   findsquare return an int which is zero if we should quit and one
+   otherwise */
 
 int findsquare()
 {
@@ -763,10 +763,8 @@ static SEXP getccol()
     return (CAR(tmp));
 }
 
-/*
-   close up the entry to a square, put the value that has been entered
-   into  the correct place and as the correct type
- */
+/* close up the entry to a square, put the value that has been entered
+   into the correct place and as the correct type */
 
 void closerect()
 {
@@ -815,10 +813,10 @@ void closerect()
     bufp = buf;
 }
 
-/*
-   print a null terminated string, check to see if it is longer than the print area and print
-   it, left adjusted if necessary; clear the area of previous text;
- */
+/* print a null terminated string, check to see if it is longer than
+   the print area and print it, left adjusted if necessary; clear the
+   area of previous text; */
+
 void printstring(char *ibuf, int buflen, int row, int col)
 {
     int len, x_pos, y_pos;
@@ -847,10 +845,9 @@ void clearrect()
     Rsync();
 }
 
-/*
-   handlechar has to be able to parse decimal numbers and strings,
-   depending on the current column type, only printing characters should get this far
- */
+/* handlechar has to be able to parse decimal numbers and strings,
+   depending on the current column type, only printing characters
+   should get this far */
 
 void handlechar(char *text)
 {
@@ -869,8 +866,8 @@ void handlechar(char *text)
             currentexp = 3;
         else if (TYPEOF(CAR(tvec)) == STRSXP) /* character data */
             currentexp = 2;
-        else
-            currentexp = 1; /* numeric data */
+        else /* numeric data */
+            currentexp = 1;
         clearrect();
         highlightrect();
     }
@@ -1201,7 +1198,7 @@ static void copyarea(int src_x, int src_y, int dest_x, int dest_y)
     SetRect(&destRect, tp1.h, tp1.v, tp2.h, tp2.v);
     CopyBits(&screenBits, &screenBits, &srcRect, &destRect, srcCopy, 0);
     /*
-       &srcRect, &destRect, srcCopy, &dataentryWindow->clipRgn); */
+      &srcRect, &destRect, srcCopy, &dataentryWindow->clipRgn); */
 }
 
 /* clear the text from an area */
@@ -1340,7 +1337,7 @@ static void closewin()
     activeContext = &stdioContext;
 }
 
-#else
+#else /* X11 */
 
 /* Event Loop Functions */
 
@@ -1439,7 +1436,8 @@ int initwin()
     if (font_info == NULL)
         return 1; /* ERROR */
 
-    /* find out how wide the input boxes should be and set up the window size defaults */
+    /* find out how wide the input boxes should be and set up the
+       window size defaults */
 
     twidth = textwidth(digits, strlen(digits));
     box_w = twidth + 4;
@@ -1477,7 +1475,8 @@ int initwin()
     XSelectInput(iodisplay, iowindow, ButtonPressMask | KeyPressMask | ExposureMask | StructureNotifyMask);
     XMapRaised(iodisplay, iowindow);
 
-    /* now set up the menu-window, for now use the same text dimensions as above */
+    /* now set up the menu-window, for now use the same text
+       dimensions as above */
 
     menuwindow = XCreateSimpleWindow(iodisplay, root, 0, 0, twidth, 4 * box_h, 2, ioblack, iowhite);
     for (i = 0; i < 4; i++)
@@ -1492,7 +1491,8 @@ int initwin()
     XChangeWindowAttributes(iodisplay, menuwindow, CWBackingStore | CWOverrideRedirect, &winattr);
     Rsync();
 
-    /* this next sequence makes sure the window is up and ready before you start drawing in it */
+    /* this next sequence makes sure the window is up and ready before
+       you start drawing in it */
 
     XNextEvent(iodisplay, &ioevent);
     if (ioevent.xany.type == Expose)
@@ -1516,13 +1516,6 @@ static void cleararea(int xpos, int ypos, int width, int height)
 {
     XClearArea(iodisplay, iowindow, xpos, ypos, width, height, 0);
 }
-
-#ifdef OLD
-static void clearwindow()
-{
-    XClearWindow(iodisplay, iowindow);
-}
-#endif
 
 static void copyarea(int src_x, int src_y, int dest_x, int dest_y)
 {
@@ -1623,9 +1616,9 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
         XDrawString(iodisplay, menupanes[2], iogc, box_w - 20, box_h - 3, "X", 1);
 
     /*
-       start an event loop; we're looking for a button press and a button
-       release in the same window
-     */
+      start an event loop; we're looking for a button press and a button
+      release in the same window
+    */
 
     while (1)
     {
@@ -1673,7 +1666,9 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
                     goto done;
                 }
             }
-        } /* this doesn't work and perhaps I should move it up to the main control loop */
+        }
+        /* this doesn't work and perhaps I should move it up to the
+           main control loop */
         else if (event.type == Expose)
         {
             if (event.xexpose.window == menuwindow)
