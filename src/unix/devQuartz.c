@@ -293,8 +293,11 @@ unsigned char Mac2Lat[] = {
 
 #if HAVE_AQUA
 extern DL_FUNC ptr_GetQuartzParameters;
-extern DL_FUNC ptr_FocusOnConsole;
-extern Rboolean useaqua, useCocoa;
+extern Rboolean useaqua;
+
+/* FIXME: CocoaInnerQuartzDevice shold be renamed ptr_innerQuartzDevice
+          as any entry to "Cocoa???" is now replaced by a generic name ptr_???
+*/
 
 extern Rboolean CocoaInnerQuartzDevice(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                        char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg);
@@ -302,18 +305,18 @@ extern Rboolean CocoaInnerQuartzDevice(NewDevDesc *dd, char *display, double wid
 extern void CocoaGetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,
                                      Rboolean *autorefresh, int *quartzpos);
 
+/* FIXME: CocoaGetQuartzParameters should be ptr_GetQuartzParameter as any entry to
+          "Cocoa???" is now replaced by a generic name ptr_???
+*/
 void GetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,
                          Rboolean *autorefresh, int *quartzpos)
 {
-    if (useCocoa)
+    if (useaqua)
         CocoaGetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos);
-    else
-        ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos);
+    //	else
+    //		ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh, quartzpos);
 }
-void FocusOnConsole(void)
-{
-    ptr_FocusOnConsole();
-}
+
 #endif
 
 #define kQuartzTopRight 1
@@ -508,7 +511,7 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
 Rboolean QuartzDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, char *family,
                             Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg)
 {
-    if (useCocoa)
+    if (useaqua)
         return CocoaInnerQuartzDevice((NewDevDesc *)dd, display, width, height, pointsize, family, antialias,
                                       autorefresh, quartzpos, bg);
     else
@@ -616,11 +619,6 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
 
     dd->deviceSpecific = (void *)xd;
     dd->displayListOn = TRUE;
-
-#ifdef HAVE_AQUA
-    if (useaqua)
-        FocusOnConsole();
-#endif
 
     return 1;
 }
@@ -1493,7 +1491,7 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
 
     testo[0] = c;
     testo[1] = '\0';
-
+    fprintf(stderr, "c=%c,>%s<\n", c, testo);
     GetPort(&savedPort);
 
     SetPort(GetWindowPort(xd->window));
@@ -1545,6 +1543,7 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
     }
 
     SetPort(savedPort);
+    fprintf(stderr, "ascent=%f, descent=%f,width=%f\n", *ascent, *descent, *width);
 
     return;
 }

@@ -113,8 +113,6 @@ void R_setStartTime(void); /* in sys-unix.c */
     and in unix/aqua.c
 */
 Rboolean useaqua = FALSE;
-Rboolean CocoaGUI = FALSE;
-Rboolean useCocoa = FALSE;
 #endif
 
 int Rf_initialize_R(int ac, char **av)
@@ -187,7 +185,7 @@ int Rf_initialize_R(int ac, char **av)
             else if (!strcmp(p, "aqua") || !strcmp(p, "AQUA"))
                 useaqua = TRUE;
             else if (!strcmp(p, "cocoa") || !strcmp(p, "COCOA"))
-                useCocoa = TRUE;
+                useaqua = TRUE;
 #endif
             else if (!strcmp(p, "X11") || !strcmp(p, "x11"))
                 useX11 = TRUE;
@@ -218,11 +216,6 @@ int Rf_initialize_R(int ac, char **av)
 #endif /* HAVE_X11 */
 #ifdef HAVE_AQUA
     if (useaqua)
-    {
-        R_load_aqua_shlib();
-        R_GUIType = "AQUA";
-    }
-    if (useCocoa)
         R_GUIType = "AQUA";
 #endif
 #ifdef HAVE_TCLTK
@@ -314,11 +307,6 @@ int Rf_initialize_R(int ac, char **av)
         Rstd_read_history(R_HistoryFile);
     fpu_setup(1);
 
-#ifdef HAVE_AQUA
-    if (useaqua & !CocoaGUI)
-        R_StartConsole(TRUE);
-#endif
-
     return (0);
 }
 
@@ -340,7 +328,7 @@ int R_EditFiles(int nfile, char **file, char **title, char *editor)
 {
     char buf[1024];
 #if defined(HAVE_AQUA)
-    if (useCocoa)
+    if (useaqua)
     {
         return (ptr_R_EditFiles(nfile, file, title, editor));
     }
