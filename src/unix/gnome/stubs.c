@@ -24,10 +24,18 @@
 #endif
 
 #include "Defn.h"
+#include "Graphics.h"
 
 SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho);
 
 SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     return RX11_dataentry(call, op, args, rho);
+}
+
+int stub_X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, double gamma,
+                         int colormodel, int maxcube)
+{
+    error("no x11 device in this version of R");
+    return 0;
 }
