@@ -13,8 +13,8 @@
 #include <config.h>
 #endif
 
-#include "R_ext/Boolean.h" /* TRUE,... */
-#include "R_ext/Applic.h"
+#include <R_ext/Boolean.h> /* TRUE,... */
+#include <R_ext/Applic.h>
 
 static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *iabv, int *na, int *maxa, int *ibel,
                   int *nb, int *maxb)

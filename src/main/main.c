@@ -740,7 +740,7 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
     /*NOTREACHED*/
 }
 
-#include "R_ext/Callbacks.h"
+#include <R_ext/Callbacks.h>
 
 static R_ToplevelCallbackEl *Rf_ToplevelTaskHandlers = NULL;
 

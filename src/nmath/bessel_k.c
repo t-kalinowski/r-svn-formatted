@@ -26,7 +26,7 @@
 #include "nmath.h"
 
 #ifndef MATHLIB_STANDALONE
-#include "R_ext/Memory.h"
+#include <R_ext/Memory.h>
 #endif
 
 static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *ncalc);
