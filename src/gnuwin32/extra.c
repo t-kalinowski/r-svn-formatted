@@ -338,6 +338,8 @@ SEXP do_flushconsole(SEXP call, SEXP op, SEXP args, SEXP env)
     TCHAR szCSDVersion[ 128 ];
     } OSVERSIONINFO; */
 
+/* defined in w32api 1.2, but not in 1.1 or earlier */
+#ifndef VER_NT_WORKSTATION
 #define VER_NT_WORKSTATION 0x0000001
 #define VER_NT_DOMAIN_CONTROLLER 0x0000002
 #define VER_NT_SERVER 0x0000003
@@ -370,6 +372,7 @@ typedef struct _OSVERSIONINFOEX
     BYTE wProductType;
     BYTE wReserved;
 } OSVERSIONINFOEX;
+#endif
 
 SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -427,7 +430,7 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
             if (osvi.wProductType == VER_NT_WORKSTATION)
             {
                 if (osvi.wSuiteMask & VER_SUITE_PERSONAL)
-                    type = "Personal";
+                    type = "Home Edition";
                 else
                     type = "Professional";
             }
