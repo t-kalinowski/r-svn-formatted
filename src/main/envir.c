@@ -2381,7 +2381,7 @@ static SEXP matchEnvir(SEXP call, char *what)
         if (isString(name) && length(name) > 0 && !strcmp(CHAR(STRING_ELT(name, 0)), what))
             return t;
     }
-    errorcall(call, "Package named \"%s\" not found in search list", what);
+    errorcall(call, "no item called \"%s\" in the search list", what);
     return R_NilValue;
 }
 
