@@ -1480,6 +1480,16 @@ SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     ndims = length(dims);
     nsubs = length(subs);
 
+    /* ENVSXP special case first */
+    if (TYPEOF(x) == ENVSXP)
+    {
+        if (nsubs != 1 || !isString(CAR(subs)) || length(CAR(subs)) != 1)
+            error("wrong args for environment subassignment");
+        defineVar(install(CHAR(STRING_ELT(CAR(subs), 0))), y, x);
+        UNPROTECT(1);
+        return (x);
+    }
+
     stretch = 0;
     if (isVector(x))
     {
@@ -1840,6 +1850,11 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
             SETCAR(x, val);
             SET_TAG(x, nlist);
         }
+    }
+    /* cannot use isEnvironment since we do not want NULL here */
+    else if (TYPEOF(x) == ENVSXP)
+    {
+        defineVar(nlist, val, x);
     }
     else
     {

@@ -770,6 +770,19 @@ SEXP do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (nsubs > 1 && nsubs != ndims)
         errorcall(call, "incorrect number of subscripts");
 
+    /* split out ENVSXP for now */
+    if (TYPEOF(x) == ENVSXP)
+    {
+        if (nsubs != 1 || !isString(CAR(subs)) || length(CAR(subs)) != 1)
+            error("wrong arguments for subsetting an environment");
+        ans = findVarInFrame(x, install(CHAR(STRING_ELT(CAR(subs), 0))));
+        UNPROTECT(1);
+        if (ans == R_UnboundValue)
+            return (R_NilValue);
+        return (ans);
+    }
+
+    /* back to the regular program */
     if (!(isVector(x) || isList(x) || isLanguage(x)))
         errorcall(call, R_MSG_ob_nonsub);
 
@@ -1018,6 +1031,14 @@ SEXP R_subset3_dflt(SEXP x, SEXP input)
                 SET_NAMED(y, NAMED(x));
             return y;
         }
+        return R_NilValue;
+    }
+    else if (isEnvironment(x))
+    {
+        UNPROTECT(2);
+        y = findVarInFrame(x, install(CHAR(input)));
+        if (y != R_UnboundValue)
+            return (y);
         return R_NilValue;
     }
     UNPROTECT(2);
