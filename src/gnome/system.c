@@ -154,7 +154,7 @@ void R_gtk_terminal_line_event(GtkWidget *widget)
 
 /* Fill a text buffer with user typed console input. */
 
-int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
+int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     if (!R_Interactive)
     {
@@ -981,7 +981,7 @@ static GnomeUIInfo pager_toolbar[] = {
     GNOMEUIINFO_ITEM_STOCK("Close", "Close pager", pagertb_close, GNOME_STOCK_PIXMAP_CLOSE),
     GNOMEUIINFO_END};
 
-int R_ShowFiles(int nfile, char **file, char **title, char *wtitle)
+int R_ShowFiles(int nfile, char **file, char **title, char *wtitle, int del, char *pager)
 {
     pager_data_t *pager_data;
     GtkWidget *toolbar;
