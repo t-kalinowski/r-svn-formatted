@@ -573,7 +573,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
                 *recurse = v;
             }
             if (last == NULL)
-                last = ans = next;
+                ans = next;
             else
                 SETCDR(last, next);
         }
@@ -586,7 +586,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
                 *usenames = v;
             }
             if (last == NULL)
-                last = ans = next;
+                ans = next;
             else
                 SETCDR(last, next);
         }
@@ -596,15 +596,17 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
     return ans;
 }
 
-/* The change to lists based on dotted pairs has meant that it was */
-/* necessary to separate the internal code for "c" and "unlist". */
-/* Although the functions are quite similar, they operate on very */
-/* different data structures. */
+/* The change to lists based on dotted pairs has meant that it was
+   necessary to separate the internal code for "c" and "unlist".
+   Although the functions are quite similar, they operate on very
+   different data structures.
+*/
 
-/* The major difference between the two functions is that the value of */
-/* the "recursive" argument is FALSE by default for "c" and TRUE for */
-/* "unlist".  In addition, "list" takes ... while "unlist" takes a single */
-/* argument, and unlist has two optional arguments, while list has none. */
+/* The major difference between the two functions is that the value of
+   the "recursive" argument is FALSE by default for "c" and TRUE for
+   "unlist".  In addition, "c" takes ... while "unlist" takes a single
+   argument.
+*/
 
 SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
 {
