@@ -55,6 +55,7 @@ static char *SaveString(SEXP sxp, int offset, SEXP gcall)
  *  pagecentre  = centre plot region on paper?
  *  printit     = `print' after closing device?
  *  command     = `print' command
+ *  title       = character string
  */
 
 SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -63,7 +64,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     GEDevDesc *dd;
     char *vmax;
     char *file, *paper, *family = NULL, *bg, *fg, *cmd;
-    char *afms[5], *encoding;
+    char *afms[5], *encoding, *title;
     int i, horizontal, onefile, pagecentre, printit;
     double height, width, ps;
     SEXP fam;
@@ -113,6 +114,8 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     printit = asLogical(CAR(args));
     args = CDR(args);
     cmd = SaveString(CAR(args), 0, call);
+    args = CDR(args);
+    title = SaveString(CAR(args), 0, call);
 
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
@@ -126,7 +129,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
          */
         dev->savedSnapshot = R_NilValue;
         if (!PSDeviceDriver((DevDesc *)dev, file, paper, family, afms, encoding, bg, fg, width, height,
-                            (double)horizontal, ps, onefile, pagecentre, printit, cmd))
+                            (double)horizontal, ps, onefile, pagecentre, printit, cmd, title))
         {
             free(dev);
             errorcall(call, "unable to start device PostScript");
@@ -288,6 +291,8 @@ SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
  *  width	= width in inches
  *  height	= height in inches
  *  ps		= pointsize
+ *  onefile     = {TRUE: normal; FALSE: single page per file}
+ *  title
  */
 
 SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -295,7 +300,7 @@ SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
-    char *file, *encoding, *family, *bg, *fg;
+    char *file, *encoding, *family, *bg, *fg, *title;
     double height, width, ps;
     int onefile;
 
@@ -317,6 +322,8 @@ SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
     ps = asReal(CAR(args));
     args = CDR(args);
     onefile = asLogical(CAR(args));
+    args = CDR(args);
+    title = SaveString(CAR(args), 0, call);
 
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
@@ -329,7 +336,7 @@ SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!PDFDeviceDriver((DevDesc *)dev, file, family, encoding, bg, fg, width, height, ps, onefile))
+        if (!PDFDeviceDriver((DevDesc *)dev, file, family, encoding, bg, fg, width, height, ps, onefile, title))
         {
             free(dev);
             errorcall(call, "unable to start device pdf");
