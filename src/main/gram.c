@@ -3215,8 +3215,6 @@ static int SymbolValue(int c)
     return SYMBOL;
 }
 
-static int not_warned_on_underline = 1;
-
 /* Split the input stream into tokens. */
 /* This is the lowest of the parsing levels. */
 
@@ -3277,9 +3275,7 @@ symbol:
     if (c == '_')
     {
         yylval = install("<-");
-        /* if(not_warned_on_underline)  */
         warning("The use of _ is soon to be removed: you will be warned repeatedly");
-        /* not_warned_on_underline = 0; */
         return LEFT_ASSIGN;
     }
 
