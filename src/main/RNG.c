@@ -307,7 +307,7 @@ void GetRNGstate()
             warning(".Random.seed was invalid: re-initializing");
             RNG_kind = RNG_DEFAULT;
             }*/
-        if (newN01 < 0 || newN01 > INVERSION)
+        if (newN01 < 0 || newN01 > KINDERMAN_RAMAGE)
             error(".Random.seed[0] is not a valid Normal type");
         switch (newRNG)
         {
@@ -353,7 +353,7 @@ void PutRNGstate()
     int len_seed, j;
     SEXP seeds;
 
-    if (RNG_kind < 0 || RNG_kind > KNUTH_TAOCP2 || N01_kind < 0 || N01_kind > INVERSION)
+    if (RNG_kind < 0 || RNG_kind > KNUTH_TAOCP2 || N01_kind < 0 || N01_kind > KINDERMAN_RAMAGE)
     {
         warning("Internal .Random.seed is corrupt: not saving");
         return;
@@ -401,7 +401,7 @@ static void Norm_kind(N01type kind)
 {
     if (kind == -1)
         kind = N01_DEFAULT;
-    if (kind < 0 || kind > INVERSION)
+    if (kind < 0 || kind > KINDERMAN_RAMAGE)
         error("invalid Normal type in RNGkind");
     if (kind == USER_NORM)
     {
