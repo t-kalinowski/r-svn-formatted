@@ -42,8 +42,8 @@ R_CallMethodDef CallEntries[] = {{"setup_starma", (DL_FUNC)&setup_starma, 8},
                                  {"Dotrans", (DL_FUNC)&Dotrans, 2},
                                  {"arma0_kfore", (DL_FUNC)&arma0_kfore, 4},
                                  {"Starma_method", (DL_FUNC)&Starma_method, 2},
-                                 {"Invtrans", (DL_FUNC)&Dotrans, 2},
-                                 {"Gradtrans", (DL_FUNC)&Dotrans, 2},
+                                 {"Invtrans", (DL_FUNC)&Invtrans, 2},
+                                 {"Gradtrans", (DL_FUNC)&Gradtrans, 2},
                                  {NULL, NULL, 0}};
 
 R_FortranMethodDef FortEntries[] = {
@@ -51,5 +51,5 @@ R_FortranMethodDef FortEntries[] = {
 
 void R_init_ts(DllInfo *dll)
 {
-    R_registerRoutines(dll, CEntries, NULL, FortEntries, NULL);
+    R_registerRoutines(dll, CEntries, CallEntries, FortEntries, NULL);
 }
