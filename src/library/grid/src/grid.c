@@ -895,7 +895,7 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
     LViewportContext vpc;
     LTransform transform;
     SEXP currentvp, currentgp;
-    SEXP devloc;
+    SEXP devloc = R_NilValue; /* -Wall */
     /* Get the current device
      */
     GEDevDesc *dd = getDevice();
