@@ -1243,12 +1243,30 @@ SEXP do_libfixup(SEXP call, SEXP op, SEXP args, SEXP rho)
     env = CADR(args);
     if (TYPEOF(lib) != ENVSXP || !isEnvironment(env))
         errorcall(call, "invalid arguments\n");
-    p = FRAME(lib);
-    while (p != R_NilValue)
+    if (HASHTAB(lib) != R_NilValue)
     {
-        if (TYPEOF(CAR(p)) == CLOSXP)
-            CLOENV(CAR(p)) = env;
-        p = CDR(p);
+        int i, n;
+        n = length(HASHTAB(lib));
+        for (i = 0; i < n; i++)
+        {
+            p = VECTOR(HASHTAB(lib))[i];
+            while (p != R_NilValue)
+            {
+                if (TYPEOF(CAR(p)) == CLOSXP)
+                    CLOENV(CAR(p)) = env;
+                p = CDR(p);
+            }
+        }
+    }
+    else
+    {
+        p = FRAME(lib);
+        while (p != R_NilValue)
+        {
+            if (TYPEOF(CAR(p)) == CLOSXP)
+                CLOENV(CAR(p)) = env;
+            p = CDR(p);
+        }
     }
     return lib;
 }
