@@ -121,27 +121,30 @@ static int numX11Devices = 0;
 /* Device Driver Actions */
 
 static void newX11_Activate(NewDevDesc *dd);
-static void newX11_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void newX11_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                          NewDevDesc *dd);
 static void newX11_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void newX11_Close(NewDevDesc *dd);
 static void newX11_Deactivate(NewDevDesc *dd);
 static void newX11_Hold(NewDevDesc *dd);
 static Rboolean newX11_Locator(double *x, double *y, NewDevDesc *dd);
-static void newX11_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd);
+static void newX11_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                        NewDevDesc *dd);
 static void newX11_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
                               NewDevDesc *dd);
 static void newX11_Mode(int mode, NewDevDesc *dd);
-static void newX11_NewPage(int fill, NewDevDesc *dd);
+static void newX11_NewPage(int fill, double gamma, NewDevDesc *dd);
 Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double h, double gamma_fac,
                      X_COLORTYPE colormodel, int maxcube, int canvascolor);
-static void newX11_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd);
-static void newX11_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd);
-static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd,
-                        NewDevDesc *dd);
+static void newX11_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                           NewDevDesc *dd);
+static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
+static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
+                        double lwd, NewDevDesc *dd);
 static void newX11_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double newX11_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex,
-                        double ps, NewDevDesc *dd);
+static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                        double cex, double ps, NewDevDesc *dd);
 
 /*************************************************/
 /* End of list of required device driver actions */
@@ -590,7 +593,7 @@ static void handleEvent(XEvent event)
             dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
             xd->resize = 0;
         }
-        GEplayDisplayList((GEDevDesc *)GetDevice(devNumber(dd)));
+        GEplayDisplayList((GEDevDesc *)GetDevice(devNumber((DevDesc *)dd)));
     }
     else if (event.type == ConfigureNotify)
     {
@@ -1357,7 +1360,7 @@ static void newX11_Size(double *left, double *right, double *bottom, double *top
     *top = 0.0;
 }
 
-static void newX11_NewPage(int fill, NewDevDesc *dd)
+static void newX11_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
@@ -1545,8 +1548,8 @@ static void newX11_Deactivate(NewDevDesc *dd)
     XSync(display, 0);
 }
 
-static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd,
-                        NewDevDesc *dd)
+static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
+                        double lwd, NewDevDesc *dd)
 {
     int tmp;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1580,7 +1583,8 @@ static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int
 #endif
 }
 
-static void newX11_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void newX11_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                          NewDevDesc *dd)
 {
     int ir, ix, iy;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1606,7 +1610,8 @@ static void newX11_Circle(double x, double y, double r, int col, int fill, int l
     }
 }
 
-static void newX11_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd)
+static void newX11_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                        NewDevDesc *dd)
 {
     int xx1, yy1, xx2, yy2;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1630,7 +1635,7 @@ static void newX11_Line(double x1, double y1, double x2, double y2, int col, int
     }
 }
 
-static void newX11_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd)
+static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -1665,7 +1670,8 @@ static void newX11_Polyline(int n, double *x, double *y, int col, int lty, doubl
     vmaxset(vmax);
 }
 
-static void newX11_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void newX11_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                           NewDevDesc *dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -1704,8 +1710,8 @@ static void newX11_Polygon(int n, double *x, double *y, int col, int fill, int l
     vmaxset(vmax);
 }
 
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex,
-                        double ps, NewDevDesc *dd)
+static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                        double cex, double ps, NewDevDesc *dd)
 {
     int len, size;
     /*    double xl, yl, rot1;*/
@@ -1815,7 +1821,7 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
         return FALSE;
     }
 
-    Rf_setNewX11DeviceData((NewDevDesc *)(dd), xd);
+    Rf_setNewX11DeviceData((NewDevDesc *)(dd), gamma_fac, xd);
 
 #if BUG
     R_ProcessEvents((void *)NULL);
@@ -1829,7 +1835,7 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
   methods/functions. It also specifies the current values of the
   dimensions of the device, and establishes the fonts, line styles, etc.
  */
-int Rf_setNewX11DeviceData(NewDevDesc *dd, newX11Desc *xd)
+int Rf_setNewX11DeviceData(NewDevDesc *dd, double gamma_fac, newX11Desc *xd)
 {
     dd->newDevStruct = 1;
 
@@ -1891,12 +1897,16 @@ int Rf_setNewX11DeviceData(NewDevDesc *dd, newX11Desc *xd)
     dd->canResizeText = TRUE;
     dd->canClip = TRUE;
     dd->canHAdj = 0;
+    dd->canChangeGamma = FALSE;
 
     dd->ask = FALSE;
 
     dd->startps = xd->basefontsize;
     dd->startcol = xd->col;
     dd->startfill = xd->fill;
+    dd->startlty = LTY_SOLID;
+    dd->startfont = 1;
+    dd->startgamma = gamma_fac;
 
     /* initialise x11 device description */
     /* (most of the work has been done in X11_Open) */

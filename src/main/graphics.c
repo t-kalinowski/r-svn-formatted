@@ -2829,7 +2829,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
                 yy[1] = y2;
                 if (dd->newDevStruct)
                     ((GEDevDesc *)dd)
-                        ->dev->polyline(2, xx, yy, gpptr(dd)->col, gpptr(dd)->lty, gpptr(dd)->lwd,
+                        ->dev->polyline(2, xx, yy, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
                                         ((GEDevDesc *)dd)->dev);
                 else
                     dpptr(dd)->polyline(2, xx, yy, DEVICE, dd);
@@ -2845,8 +2845,8 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
                 {
                     if (dd->newDevStruct)
                         ((GEDevDesc *)dd)
-                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->lty, gpptr(dd)->lwd,
-                                            ((GEDevDesc *)dd)->dev);
+                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->lty,
+                                            gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
                     else
                         dpptr(dd)->polyline(count, xx, yy, DEVICE, dd);
                 }
@@ -2860,8 +2860,8 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
                 {
                     if (dd->newDevStruct)
                         ((GEDevDesc *)dd)
-                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->lty, gpptr(dd)->lwd,
-                                            ((GEDevDesc *)dd)->dev);
+                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->lty,
+                                            gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
                     else
                         dpptr(dd)->polyline(count, xx, yy, DEVICE, dd);
                 }
@@ -2875,8 +2875,8 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
                 {
                     if (dd->newDevStruct)
                         ((GEDevDesc *)dd)
-                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->lty, gpptr(dd)->lwd,
-                                            ((GEDevDesc *)dd)->dev);
+                            ->dev->polyline(count, xx, yy, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->lty,
+                                            gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
                     else
                         dpptr(dd)->polyline(count, xx, yy, DEVICE, dd);
                 }
@@ -2952,7 +2952,8 @@ void GLine(double x1, double y1, double x2, double y2, int coords, DevDesc *dd)
             GConvert(&x1, &y1, coords, DEVICE, dd);
             GConvert(&x2, &y2, coords, DEVICE, dd);
             ((GEDevDesc *)dd)
-                ->dev->line(x1, y1, x2, y2, gpptr(dd)->col, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+                ->dev->line(x1, y1, x2, y2, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                            ((GEDevDesc *)dd)->dev);
         }
         else
             dpptr(dd)->line(x1, y1, x2, y2, coords, dd);
@@ -3297,7 +3298,8 @@ static void clipPolygon(int n, double *x, double *y, int coords, int bg, int fg,
             npts = GClipPolygon(x, y, n, coords, 1, xc, yc, dd);
             if (dd->newDevStruct)
                 ((GEDevDesc *)dd)
-                    ->dev->polygon(npts, xc, yc, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+                    ->dev->polygon(npts, xc, yc, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                                   ((GEDevDesc *)dd)->dev);
             else
                 dpptr(dd)->polygon(npts, xc, yc, coords, bg, fg, dd);
         }
@@ -3486,7 +3488,9 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
         if (dpptr(dd)->canClip)
             GClip(dd);
         if (dd->newDevStruct)
-            ((GEDevDesc *)dd)->dev->circle(x, y, ir, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+            ((GEDevDesc *)dd)
+                ->dev->circle(x, y, ir, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                              ((GEDevDesc *)dd)->dev);
         else
             dpptr(dd)->circle(x, y, DEVICE, ir, bg, fg, dd);
         break;
@@ -3506,7 +3510,8 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
             GClip(dd);
             if (dd->newDevStruct)
                 ((GEDevDesc *)dd)
-                    ->dev->circle(x, y, ir, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+                    ->dev->circle(x, y, ir, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                                  ((GEDevDesc *)dd)->dev);
             else
                 dpptr(dd)->circle(x, y, DEVICE, ir, bg, fg, dd);
         }
@@ -3539,7 +3544,7 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
                     npts = GClipPolygon(xc, yc, result, DEVICE, 1, xcc, ycc, dd);
                     if (dd->newDevStruct)
                         ((GEDevDesc *)dd)
-                            ->dev->polygon(npts, xcc, ycc, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd,
+                            ->dev->polygon(npts, xcc, ycc, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
                                            ((GEDevDesc *)dd)->dev);
                     else
                         dpptr(dd)->polygon(npts, xcc, ycc, DEVICE, bg, fg, dd);
@@ -3632,7 +3637,8 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
             GClip(dd);
         if (dd->newDevStruct)
             ((GEDevDesc *)dd)
-                ->dev->rect(x0, y0, x1, y1, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+                ->dev->rect(x0, y0, x1, y1, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                            ((GEDevDesc *)dd)->dev);
         else
             dpptr(dd)->rect(x0, y0, x1, y1, DEVICE, bg, fg, dd);
         break;
@@ -3648,7 +3654,8 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
             GClip(dd);
             if (dd->newDevStruct)
                 ((GEDevDesc *)dd)
-                    ->dev->rect(x0, y0, x1, y1, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd, ((GEDevDesc *)dd)->dev);
+                    ->dev->rect(x0, y0, x1, y1, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
+                                ((GEDevDesc *)dd)->dev);
             else
                 dpptr(dd)->rect(x0, y0, x1, y1, DEVICE, bg, fg, dd);
         }
@@ -3687,7 +3694,7 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
                     npts = GClipPolygon(xc, yc, 4, DEVICE, 1, xcc, ycc, dd);
                     if (dd->newDevStruct)
                         ((GEDevDesc *)dd)
-                            ->dev->polygon(npts, xcc, ycc, fg, bg, gpptr(dd)->lty, gpptr(dd)->lwd,
+                            ->dev->polygon(npts, xcc, ycc, fg, bg, gpptr(dd)->gamma, gpptr(dd)->lty, gpptr(dd)->lwd,
                                            ((GEDevDesc *)dd)->dev);
                     else
                         dpptr(dd)->polygon(npts, xcc, ycc, DEVICE, bg, fg, dd);
@@ -3846,7 +3853,7 @@ static void clipText(double x, double y, char *str, double rot, int clipToDevice
         {
             GConvert(&x, &y, INCHES, DEVICE, dd);
             ((GEDevDesc *)dd)
-                ->dev->text(x, y, str, rot, hadj, gpptr(dd)->col, gpptr(dd)->font, gpptr(dd)->cex,
+                ->dev->text(x, y, str, rot, hadj, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->font, gpptr(dd)->cex,
                             (double)gpptr(dd)->ps, ((GEDevDesc *)dd)->dev);
         }
         else
@@ -3859,7 +3866,7 @@ static void clipText(double x, double y, char *str, double rot, int clipToDevice
             {
                 GConvert(&x, &y, INCHES, DEVICE, dd);
                 ((GEDevDesc *)dd)
-                    ->dev->text(x, y, str, rot, hadj, gpptr(dd)->col, gpptr(dd)->font, gpptr(dd)->cex,
+                    ->dev->text(x, y, str, rot, hadj, gpptr(dd)->col, gpptr(dd)->gamma, gpptr(dd)->font, gpptr(dd)->cex,
                                 (double)gpptr(dd)->ps, ((GEDevDesc *)dd)->dev);
             }
             else

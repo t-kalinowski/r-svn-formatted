@@ -635,7 +635,7 @@ static Rboolean clipLine(double *x1, double *y1, double *x2, double *y2, int toD
  */
 /* If the device canClip, R clips line to device extent and
    device does all other clipping. */
-void GELine(double x1, double y1, double x2, double y2, int col, int lty, double lwd, GEDevDesc *dd)
+void GELine(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd, GEDevDesc *dd)
 {
     Rboolean clip_ok;
     if (lty == LTY_BLANK)
@@ -649,7 +649,7 @@ void GELine(double x1, double y1, double x2, double y2, int col, int lty, double
         clip_ok = clipLine(&x1, &y1, &x2, &y2, 0, dd);
     }
     if (clip_ok)
-        dd->dev->line(x1, y1, x2, y2, col, lty, lwd, dd->dev);
+        dd->dev->line(x1, y1, x2, y2, col, gamma, lty, lwd, dd->dev);
 }
 
 /****************************************************************
@@ -657,7 +657,8 @@ void GELine(double x1, double y1, double x2, double y2, int col, int lty, double
  ****************************************************************
  */
 
-static void CScliplines(int n, double *x, double *y, int col, int lty, double lwd, int toDevice, GEDevDesc *dd)
+static void CScliplines(int n, double *x, double *y, int col, double gamma, int lty, double lwd, int toDevice,
+                        GEDevDesc *dd)
 {
     int ind1, ind2;
     /*int firstPoint = 1;*/
@@ -694,7 +695,7 @@ static void CScliplines(int n, double *x, double *y, int col, int lty, double lw
                 yy[0] = y1;
                 xx[1] = x2;
                 yy[1] = y2;
-                dd->dev->polyline(2, xx, yy, col, lty, lwd, dd->dev);
+                dd->dev->polyline(2, xx, yy, col, gamma, lty, lwd, dd->dev);
             }
             else if (ind1)
             {
@@ -704,7 +705,7 @@ static void CScliplines(int n, double *x, double *y, int col, int lty, double lw
                 yy[1] = y2;
                 count = 2;
                 if (i == n - 1)
-                    dd->dev->polyline(count, xx, yy, col, lty, lwd, dd->dev);
+                    dd->dev->polyline(count, xx, yy, col, gamma, lty, lwd, dd->dev);
             }
             else if (ind2)
             {
@@ -712,7 +713,7 @@ static void CScliplines(int n, double *x, double *y, int col, int lty, double lw
                 yy[count] = y2;
                 count++;
                 if (count > 1)
-                    dd->dev->polyline(count, xx, yy, col, lty, lwd, dd->dev);
+                    dd->dev->polyline(count, xx, yy, col, gamma, lty, lwd, dd->dev);
             }
             else
             {
@@ -720,7 +721,7 @@ static void CScliplines(int n, double *x, double *y, int col, int lty, double lw
                 yy[count] = y2;
                 count++;
                 if (i == n - 1 && count > 1)
-                    dd->dev->polyline(count, xx, yy, col, lty, lwd, dd->dev);
+                    dd->dev->polyline(count, xx, yy, col, gamma, lty, lwd, dd->dev);
             }
         }
         x1 = x[i];
@@ -737,25 +738,26 @@ static void CScliplines(int n, double *x, double *y, int col, int lty, double lw
 /* Clip and draw the polyline.
    If clipToDevice = 0, clip according to dd->dev->gp.xpd
    If clipToDevice = 1, clip to the device extent */
-static void clipPolyline(int n, double *x, double *y, int col, int lty, double lwd, int clipToDevice, GEDevDesc *dd)
+static void clipPolyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, int clipToDevice,
+                         GEDevDesc *dd)
 {
-    CScliplines(n, x, y, col, lty, lwd, clipToDevice, dd);
+    CScliplines(n, x, y, col, gamma, lty, lwd, clipToDevice, dd);
 }
 
 /* Draw a series of line segments. */
 /* If the device canClip, R clips to the device extent and the device
    does all other clipping */
-void GEPolyline(int n, double *x, double *y, int col, int lty, double lwd, GEDevDesc *dd)
+void GEPolyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, GEDevDesc *dd)
 {
     if (lty == LTY_BLANK)
         return;
     if (dd->dev->canClip)
     {
-        clipPolyline(n, x, y, col, lty, lwd, 1, dd); /* clips to device extent
-                             then draws */
+        clipPolyline(n, x, y, col, gamma, lty, lwd, 1, dd); /* clips to device extent
+                                                      then draws */
     }
     else
-        clipPolyline(n, x, y, col, lty, lwd, 0, dd);
+        clipPolyline(n, x, y, col, gamma, lty, lwd, 0, dd);
 }
 
 /****************************************************************
@@ -953,7 +955,7 @@ int clipPoly(double *x, double *y, int n, int store, int toDevice, double *xout,
     return (cnt);
 }
 
-static void clipPolygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, int toDevice,
+static void clipPolygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd, int toDevice,
                         GEDevDesc *dd)
 {
     double *xc = NULL, *yc = NULL;
@@ -971,7 +973,7 @@ static void clipPolygon(int n, double *x, double *y, int col, int fill, int lty,
         }
         xc[n] = x[0];
         yc[n] = y[0];
-        GEPolyline(n + 1, xc, yc, col, lty, lwd, dd);
+        GEPolyline(n + 1, xc, yc, col, gamma, lty, lwd, dd);
     }
     else
     {
@@ -983,7 +985,7 @@ static void clipPolygon(int n, double *x, double *y, int col, int fill, int lty,
             xc = (double *)R_alloc(npts, sizeof(double));
             yc = (double *)R_alloc(npts, sizeof(double));
             npts = clipPoly(x, y, n, 1, toDevice, xc, yc, dd);
-            dd->dev->polygon(npts, xc, yc, col, fill, lty, lwd, dd->dev);
+            dd->dev->polygon(npts, xc, yc, col, fill, gamma, lty, lwd, dd->dev);
         }
     }
 }
@@ -992,16 +994,16 @@ static void clipPolygon(int n, double *x, double *y, int col, int fill, int lty,
  * GEPolygon
  ****************************************************************
  */
-void GEPolygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, GEDevDesc *dd)
+void GEPolygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd, GEDevDesc *dd)
 {
     if (lty == LTY_BLANK)
         return;
     if (dd->dev->canClip)
     {
-        clipPolygon(n, x, y, col, fill, lty, lwd, 1, dd);
+        clipPolygon(n, x, y, col, fill, gamma, lty, lwd, 1, dd);
     }
     else
-        clipPolygon(n, x, y, col, fill, lty, lwd, 0, dd);
+        clipPolygon(n, x, y, col, fill, gamma, lty, lwd, 0, dd);
 }
 
 /****************************************************************
@@ -1077,7 +1079,7 @@ static int clipCircleCode(double x, double y, double r, int toDevice, GEDevDesc 
  * GECircle
  ****************************************************************
  */
-void GECircle(double x, double y, double radius, int col, int fill, int lty, double lwd, GEDevDesc *dd)
+void GECircle(double x, double y, double radius, int col, int fill, double gamma, int lty, double lwd, GEDevDesc *dd)
 {
     char *vmax;
     double *xc, *yc;
@@ -1088,7 +1090,7 @@ void GECircle(double x, double y, double radius, int col, int fill, int lty, dou
     switch (result)
     {
     case -2: /* No clipping;  draw all of circle */
-        dd->dev->circle(x, y, radius, col, fill, lty, lwd, dd->dev);
+        dd->dev->circle(x, y, radius, col, fill, gamma, lty, lwd, dd->dev);
         break;
     case -1: /* Total clipping; draw nothing */
         break;
@@ -1096,7 +1098,7 @@ void GECircle(double x, double y, double radius, int col, int fill, int lty, dou
         result = clipCircleCode(x, y, radius, !dd->dev->canClip, dd);
         if (dd->dev->canClip && result == -2)
         {
-            dd->dev->circle(x, y, radius, col, fill, lty, lwd, dd->dev);
+            dd->dev->circle(x, y, radius, col, fill, gamma, lty, lwd, dd->dev);
         }
         else
         {
@@ -1106,7 +1108,7 @@ void GECircle(double x, double y, double radius, int col, int fill, int lty, dou
             convertCircle(x, y, radius, result, xc, yc);
             if (fill == NA_INTEGER)
             {
-                GEPolyline(result + 1, xc, yc, col, lty, lwd, dd);
+                GEPolyline(result + 1, xc, yc, col, gamma, lty, lwd, dd);
             }
             else
             {
@@ -1119,7 +1121,7 @@ void GECircle(double x, double y, double radius, int col, int fill, int lty, dou
                     xcc = (double *)R_alloc(npts, sizeof(double));
                     ycc = (double *)R_alloc(npts, sizeof(double));
                     npts = clipPoly(xc, yc, result, 1, !dd->dev->canClip, xcc, ycc, dd);
-                    dd->dev->polygon(npts, xcc, ycc, col, fill, lty, lwd, dd->dev);
+                    dd->dev->polygon(npts, xcc, ycc, col, fill, gamma, lty, lwd, dd->dev);
                 }
             }
             vmaxset(vmax);
@@ -1162,7 +1164,8 @@ static int clipRectCode(double x0, double y0, double x1, double y1, int toDevice
  */
 /* Filled with color fill and outlined with color col  */
 /* These may both be NA_INTEGER	 */
-void GERect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd, GEDevDesc *dd)
+void GERect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
+            GEDevDesc *dd)
 {
     char *vmax;
     double *xc, *yc;
@@ -1174,12 +1177,12 @@ void GERect(double x0, double y0, double x1, double y1, int col, int fill, int l
     case 0: /* rectangle totally clipped; draw nothing */
         break;
     case 1: /* rectangle totally inside;  draw all */
-        dd->dev->rect(x0, y0, x1, y1, col, fill, lty, lwd, dd->dev);
+        dd->dev->rect(x0, y0, x1, y1, col, fill, gamma, lty, lwd, dd->dev);
         break;
     case 2: /* rectangle intersects clip region;  use polygon clipping */
         result = clipRectCode(x0, y0, x1, y1, !dd->dev->canClip, dd);
         if (result == 1)
-            dd->dev->rect(x0, y0, x1, y1, col, fill, lty, lwd, dd->dev);
+            dd->dev->rect(x0, y0, x1, y1, col, fill, gamma, lty, lwd, dd->dev);
         else
         {
             vmax = vmaxget();
@@ -1197,7 +1200,7 @@ void GERect(double x0, double y0, double x1, double y1, int col, int fill, int l
             yc[4] = y0;
             if (fill == NA_INTEGER)
             {
-                GEPolyline(5, xc, yc, col, lty, lwd, dd);
+                GEPolyline(5, xc, yc, col, gamma, lty, lwd, dd);
             }
             else
             { /* filled rectangle */
@@ -1210,7 +1213,7 @@ void GERect(double x0, double y0, double x1, double y1, int col, int fill, int l
                     xcc = (double *)R_alloc(npts, sizeof(double));
                     ycc = (double *)R_alloc(npts, sizeof(double));
                     npts = clipPoly(xc, yc, 4, 1, !dd->dev->canClip, xcc, ycc, dd);
-                    dd->dev->polygon(npts, xcc, ycc, col, fill, lty, lwd, dd->dev);
+                    dd->dev->polygon(npts, xcc, ycc, col, fill, gamma, lty, lwd, dd->dev);
                 }
             }
             vmaxset(vmax);
@@ -1266,8 +1269,8 @@ static int clipTextCode(double x, double y, char *str, double rot, double hadj, 
     return clipRectCode(left, bottom, right, top, toDevice, dd);
 }
 
-static void clipText(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                     int toDevice, GEDevDesc *dd)
+static void clipText(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                     double cex, double ps, int toDevice, GEDevDesc *dd)
 {
     int result = clipTextCode(x, y, str, rot, hadj, font, cex, ps, toDevice, dd);
     switch (result)
@@ -1275,12 +1278,12 @@ static void clipText(double x, double y, char *str, double rot, double hadj, int
     case 0: /* text totally clipped; draw nothing */
         break;
     case 1: /* text totally inside;  draw all */
-        dd->dev->text(x, y, str, rot, hadj, col, font, cex, ps, dd->dev);
+        dd->dev->text(x, y, str, rot, hadj, col, gamma, font, cex, ps, dd->dev);
         break;
     case 2:           /* text intersects clip region
                  act according to value of clipToDevice */
         if (toDevice) /* Device will do clipping */
-            dd->dev->text(x, y, str, rot, hadj, col, font, cex, ps, dd->dev);
+            dd->dev->text(x, y, str, rot, hadj, col, gamma, font, cex, ps, dd->dev);
         else /* don't draw anything; this could be made less crude :) */
             ;
     }
@@ -1292,8 +1295,8 @@ static void clipText(double x, double y, char *str, double rot, double hadj, int
  */
 /* If you want EXACT centering of text (e.g., like in GSymbol) */
 /* then pass NA_REAL for xc and yc */
-void GEText(double x, double y, char *str, double xc, double yc, double rot, int col, int font, double cex, double ps,
-            GEDevDesc *dd)
+void GEText(double x, double y, char *str, double xc, double yc, double rot, int col, double gamma, int font,
+            double cex, double ps, GEDevDesc *dd)
 {
     char *sbuf = NULL;
     if (str && *str)
@@ -1425,10 +1428,10 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, int
                 ybottom = toDeviceY(ybottom, GE_INCHES, dd);
                 if (dd->dev->canClip)
                 {
-                    clipText(xleft, ybottom, sbuf, rot, hadj, col, font, cex, ps, 1, dd);
+                    clipText(xleft, ybottom, sbuf, rot, hadj, col, gamma, font, cex, ps, 1, dd);
                 }
                 else
-                    clipText(xleft, ybottom, sbuf, rot, hadj, col, font, cex, ps, 0, dd);
+                    clipText(xleft, ybottom, sbuf, rot, hadj, col, gamma, font, cex, ps, 0, dd);
                 sb = sbuf;
                 i += 1;
             }
@@ -1476,8 +1479,8 @@ void GEMode(int mode, GEDevDesc *dd)
  * angles -- in those cases, a conversion to and from GE_INCHES is done
  * to preserve angles.
  */
-void GESymbol(double x, double y, int pch, double size, int col, int fill, double lty, double lwd, int font, double cex,
-              double ps, GEDevDesc *dd)
+void GESymbol(double x, double y, int pch, double size, int col, int fill, double gamma, double lty, double lwd,
+              int font, double cex, double ps, GEDevDesc *dd)
 {
     double r, xc, yc;
     double xx[4], yy[4];
@@ -1489,13 +1492,13 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
     {
         if (pch == '.')
         {
-            GERect(x - .5, y - .5, x + .5, y + .5, col, NA_INTEGER, lty, lwd, dd);
+            GERect(x - .5, y - .5, x + .5, y + .5, col, NA_INTEGER, gamma, lty, lwd, dd);
         }
         else
         {
             str[0] = pch;
             str[1] = '\0';
-            GEText(x, y, str, NA_REAL, NA_REAL, 0., col, font, cex, ps, dd);
+            GEText(x, y, str, NA_REAL, NA_REAL, 0., col, gamma, font, cex, ps, dd);
         }
     }
     else
@@ -1508,12 +1511,12 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
         case 0: /* S square */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GERect(x - xc, y - yc, x + xc, y + yc, NA_INTEGER, col, lty, lwd, dd);
+            GERect(x - xc, y - yc, x + xc, y + yc, NA_INTEGER, col, gamma, lty, lwd, dd);
             break;
 
         case 1: /* S octahedron ( circle) */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, NA_INTEGER, lty, lwd, dd);
+            GECircle(x, y, xc, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 2: /* S triangle - point up */
@@ -1527,21 +1530,21 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            GEPolygon(3, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 3: /* S plus */
             xc = toDeviceWidth(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y, x + xc, y, col, lty, lwd, dd);
-            GELine(x, y - yc, x, y + yc, col, lty, lwd, dd);
+            GELine(x - xc, y, x + xc, y, col, gamma, lty, lwd, dd);
+            GELine(x, y - yc, x, y + yc, col, gamma, lty, lwd, dd);
             break;
 
         case 4: /* S times */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y - yc, x + xc, y + yc, col, lty, lwd, dd);
-            GELine(x - xc, y + yc, x + xc, y - yc, col, lty, lwd, dd);
+            GELine(x - xc, y - yc, x + xc, y + yc, col, gamma, lty, lwd, dd);
+            GELine(x - xc, y + yc, x + xc, y - yc, col, gamma, lty, lwd, dd);
             break;
 
         case 5: /* S diamond */
@@ -1555,7 +1558,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[2] = y;
             xx[3] = x;
             yy[3] = y - yc;
-            GEPolygon(4, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(4, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 6: /* S triangle - point down */
@@ -1569,33 +1572,33 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y + yc;
             xx[2] = x - xc;
             yy[2] = y + yc;
-            GEPolygon(3, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 7: /* S square and times superimposed */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, lty, lwd, dd);
-            GELine(x - xc, y - yc, x + xc, y + yc, col, lty, lwd, dd);
-            GELine(x - xc, y + yc, x + xc, y - yc, col, lty, lwd, dd);
+            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, gamma, lty, lwd, dd);
+            GELine(x - xc, y - yc, x + xc, y + yc, col, gamma, lty, lwd, dd);
+            GELine(x - xc, y + yc, x + xc, y - yc, col, gamma, lty, lwd, dd);
             break;
 
         case 8: /* S plus and times superimposed */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y - yc, x + xc, y + yc, col, lty, lwd, dd);
-            GELine(x - xc, y + yc, x + xc, y - yc, col, lty, lwd, dd);
+            GELine(x - xc, y - yc, x + xc, y + yc, col, gamma, lty, lwd, dd);
+            GELine(x - xc, y + yc, x + xc, y - yc, col, gamma, lty, lwd, dd);
             xc = toDeviceWidth(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y, x + xc, y, col, lty, lwd, dd);
-            GELine(x, y - yc, x, y + yc, col, lty, lwd, dd);
+            GELine(x - xc, y, x + xc, y, col, gamma, lty, lwd, dd);
+            GELine(x, y - yc, x, y + yc, col, gamma, lty, lwd, dd);
             break;
 
         case 9: /* S diamond and plus superimposed */
             xc = toDeviceWidth(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y, x + xc, y, col, lty, lwd, dd);
-            GELine(x, y - yc, x, y + yc, col, lty, lwd, dd);
+            GELine(x - xc, y, x + xc, y, col, gamma, lty, lwd, dd);
+            GELine(x, y - yc, x, y + yc, col, gamma, lty, lwd, dd);
             xx[0] = x - xc;
             yy[0] = y;
             xx[1] = x;
@@ -1604,16 +1607,16 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[2] = y;
             xx[3] = x;
             yy[3] = y - yc;
-            GEPolygon(4, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(4, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 10: /* S hexagon (circle) and plus superimposed */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, NA_INTEGER, lty, lwd, dd);
+            GECircle(x, y, xc, col, NA_INTEGER, gamma, lty, lwd, dd);
             xc = toDeviceWidth(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y, x + xc, y, col, lty, lwd, dd);
-            GELine(x, y - yc, x, y + yc, col, lty, lwd, dd);
+            GELine(x - xc, y, x + xc, y, col, gamma, lty, lwd, dd);
+            GELine(x, y - yc, x, y + yc, col, gamma, lty, lwd, dd);
             break;
 
         case 11: /* S superimposed triangles */
@@ -1627,39 +1630,39 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y + yc;
             xx[2] = x - xc;
             yy[2] = y + yc;
-            GEPolygon(3, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             xx[0] = x;
             yy[0] = y + r;
             xx[1] = x + xc;
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            GEPolygon(3, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 12: /* S square and plus superimposed */
             xc = toDeviceWidth(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(M_SQRT2 * RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y, x + xc, y, col, lty, lwd, dd);
-            GELine(x, y - yc, x, y + yc, col, lty, lwd, dd);
+            GELine(x - xc, y, x + xc, y, col, gamma, lty, lwd, dd);
+            GELine(x, y - yc, x, y + yc, col, gamma, lty, lwd, dd);
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, lty, lwd, dd);
+            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 13: /* S octagon (circle) and times superimposed */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, NA_INTEGER, lty, lwd, dd);
+            GECircle(x, y, xc, col, NA_INTEGER, gamma, lty, lwd, dd);
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GELine(x - xc, y - yc, x + xc, y + yc, col, lty, lwd, dd);
-            GELine(x - xc, y + yc, x + xc, y - yc, col, lty, lwd, dd);
+            GELine(x - xc, y - yc, x + xc, y + yc, col, gamma, lty, lwd, dd);
+            GELine(x - xc, y + yc, x + xc, y - yc, col, gamma, lty, lwd, dd);
             break;
 
         case 14: /* S square and point-up triangle superimposed */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, lty, lwd, dd);
+            GERect(x - xc, y - yc, x + xc, y + yc, col, NA_INTEGER, gamma, lty, lwd, dd);
             xc = RADIUS * GSTR_0;
             r = toDeviceHeight(TRC0 * xc, GE_INCHES, dd);
             yc = toDeviceHeight(TRC2 * xc, GE_INCHES, dd);
@@ -1670,7 +1673,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            GEPolygon(3, xx, yy, col, NA_INTEGER, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, NA_INTEGER, gamma, lty, lwd, dd);
             break;
 
         case 15: /* S filled square */
@@ -1684,12 +1687,12 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[2] = y + yc;
             xx[3] = x - xc;
             yy[3] = y + yc;
-            GEPolygon(4, xx, yy, NA_INTEGER, col, lty, lwd, dd);
+            GEPolygon(4, xx, yy, NA_INTEGER, col, gamma, lty, lwd, dd);
             break;
 
         case 16: /* S filled octagon (circle) */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, col, lty, lwd, dd);
+            GECircle(x, y, xc, col, col, gamma, lty, lwd, dd);
             break;
 
         case 17: /* S filled point-up triangle */
@@ -1703,7 +1706,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            GEPolygon(3, xx, yy, NA_INTEGER, col, lty, lwd, dd);
+            GEPolygon(3, xx, yy, NA_INTEGER, col, gamma, lty, lwd, dd);
             break;
 
         case 18: /* S filled diamond */
@@ -1717,28 +1720,28 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[2] = y;
             xx[3] = x;
             yy[3] = y - yc;
-            GEPolygon(4, xx, yy, NA_INTEGER, col, lty, lwd, dd);
+            GEPolygon(4, xx, yy, NA_INTEGER, col, gamma, lty, lwd, dd);
             break;
 
         case 19: /* R filled circle */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, col, lty, lwd, dd);
+            GECircle(x, y, xc, col, col, gamma, lty, lwd, dd);
             break;
 
         case 20: /* R `Dot' (small circle) */
             xc = SMALL * size;
-            GECircle(x, y, xc, col, col, lty, lwd, dd);
+            GECircle(x, y, xc, col, col, gamma, lty, lwd, dd);
             break;
 
         case 21: /* circles */
             xc = RADIUS * size;
-            GECircle(x, y, xc, col, fill, lty, lwd, dd);
+            GECircle(x, y, xc, col, fill, gamma, lty, lwd, dd);
             break;
 
         case 22: /* squares */
             xc = toDeviceWidth(RADIUS * SQRC * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * SQRC * GSTR_0, GE_INCHES, dd);
-            GERect(x - xc, y - yc, x + xc, y + yc, col, fill, lty, lwd, dd);
+            GERect(x - xc, y - yc, x + xc, y + yc, col, fill, gamma, lty, lwd, dd);
             break;
 
         case 23: /* diamonds */
@@ -1752,7 +1755,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[2] = y + yc;
             xx[3] = x - xc;
             yy[3] = y;
-            GEPolygon(4, xx, yy, col, fill, lty, lwd, dd);
+            GEPolygon(4, xx, yy, col, fill, gamma, lty, lwd, dd);
             break;
 
         case 24: /* triangle (point up) */
@@ -1766,7 +1769,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            GEPolygon(3, xx, yy, col, fill, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, fill, gamma, lty, lwd, dd);
             break;
 
         case 25: /* triangle (point down) */
@@ -1780,7 +1783,7 @@ void GESymbol(double x, double y, int pch, double size, int col, int fill, doubl
             yy[1] = y + yc;
             xx[2] = x - xc;
             yy[2] = y + yc;
-            GEPolygon(3, xx, yy, col, fill, lty, lwd, dd);
+            GEPolygon(3, xx, yy, col, fill, gamma, lty, lwd, dd);
             break;
         }
     }

@@ -55,25 +55,28 @@ extern int GetScreenRes(void);
 /* Device Driver Actions */
 
 static void Mac_Activate(NewDevDesc *dd);
-static void Mac_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void Mac_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd);
 static void Mac_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void Mac_Close(NewDevDesc *dd);
 static void Mac_Deactivate(NewDevDesc *dd);
 static void Mac_Hold(NewDevDesc *dd);
 static Rboolean Mac_Locator(double *x, double *y, NewDevDesc *dd);
-static void Mac_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd);
+static void Mac_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                     NewDevDesc *dd);
 static void Mac_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
                            NewDevDesc *dd);
 static void Mac_Mode(int mode, NewDevDesc *dd);
-static void Mac_NewPage(int fill, NewDevDesc *dd);
-static void Mac_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd);
-static void Mac_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd);
-static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd,
+static void Mac_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void Mac_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                        NewDevDesc *dd);
+static void Mac_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
+static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
                      NewDevDesc *dd);
 static void Mac_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double Mac_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void Mac_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                     NewDevDesc *dd);
+static void Mac_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                     double cex, double ps, NewDevDesc *dd);
 static Rboolean Mac_Open(NewDevDesc *, MacDesc *, char *, double, double);
 
 extern CGrafPtr printerPort;
@@ -317,7 +320,7 @@ static void Mac_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd)
 {
 }
 
-static void Mac_NewPage(int fill, NewDevDesc *dd)
+static void Mac_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     Rect portRect;
@@ -473,7 +476,8 @@ static void Mac_Deactivate(NewDevDesc *dd)
    double code suppressed.
 */
 
-static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
+                     NewDevDesc *dd)
 {
     int tmp;
     Rect myRect;
@@ -543,7 +547,8 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fi
 /* coordinates                                                        */
 /**********************************************************************/
 
-static void Mac_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void Mac_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd)
 {
     int ir, ix, iy;
     Rect myRect;
@@ -599,7 +604,8 @@ static void Mac_Circle(double x, double y, double r, int col, int fill, int lty,
    control but still enhanhced.
 */
 
-static void Mac_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd)
+static void Mac_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                     NewDevDesc *dd)
 {
     int xx1, yy1, xx2, yy2;
     short dx, dy;
@@ -683,7 +689,7 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int col, int lt
 /* DEVICE coordinates using GConvert                                  */
 /**********************************************************************/
 
-static void Mac_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd)
+static void Mac_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
 {
     int i, startXX, startYY;
     double startX, startY;
@@ -722,7 +728,8 @@ static void Mac_Polyline(int n, double *x, double *y, int col, int lty, double l
    Polygon are now drawn using lty and lwd parameter
    doubled code suppressed.
 */
-static void Mac_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void Mac_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                        NewDevDesc *dd)
 {
     int i;
     double startX, startY, startXX, startYY;
@@ -798,8 +805,8 @@ double deg2rad = 0.01745329251994329576;
     Jago, April 2001, Stefano M. Iacus
 */
 
-static void Mac_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                     NewDevDesc *dd)
+static void Mac_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                     double cex, double ps, NewDevDesc *dd)
 {
     int Stringlen;
     int xx, yy, x1, y1;
@@ -837,7 +844,6 @@ static void Mac_Text(double x, double y, char *str, double rot, double hadj, int
     {
         x1 = TextWidth(str, 0, Stringlen);
         y1 = cex * dd->cra[1];
-        //	y1 = cex * dd->dev->cra[1];
         /*	y1 = GConvertYUnits(1, CHARS, DEVICE, dd); */
         x += -xc * x1 * cos(toRadian(rot)) + yc * y1 * sin(toRadian(rot));
         y -= -xc * x1 * sin(toRadian(rot)) - yc * y1 * cos(toRadian(rot));
@@ -1043,6 +1049,8 @@ Rboolean innerMacDeviceDriver(NewDevDesc *dd, char *display, double width, doubl
     ps = 2 * (ps / 2);
     dd->startps = ps;
     dd->startfont = 1;
+    dd->startlty = LTY_SOLID;
+    dd->startgamma = 1;
 
     dd->newDevStruct = 1;
 
@@ -1087,6 +1095,7 @@ Rboolean innerMacDeviceDriver(NewDevDesc *dd, char *display, double width, doubl
     dd->canResizeText = TRUE;
     dd->canClip = FALSE;
     dd->canHAdj = 0;
+    dd->canChangeGamma = FALSE;
 
     /* It is used to set the font that you will be used on the postscript and
        drawing.

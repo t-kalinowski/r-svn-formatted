@@ -1011,25 +1011,29 @@ typedef struct
 /* Device Driver Actions */
 
 static void PS_Activate(NewDevDesc *dd);
-static void PS_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void PS_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                      NewDevDesc *dd);
 static void PS_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void PS_Close(NewDevDesc *dd);
 static void PS_Deactivate(NewDevDesc *dd);
 static void PS_Hold(NewDevDesc *dd);
 static Rboolean PS_Locator(double *x, double *y, NewDevDesc *dd);
-static void PS_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd);
+static void PS_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                    NewDevDesc *dd);
 static void PS_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
                           NewDevDesc *dd);
 static void PS_Mode(int mode, NewDevDesc *dd);
-static void PS_NewPage(int fill, NewDevDesc *dd);
+static void PS_NewPage(int fill, double gamma, NewDevDesc *dd);
 static Rboolean PS_Open(NewDevDesc *, PostScriptDesc *);
-static void PS_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd);
-static void PS_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd);
-static void PS_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void PS_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd);
+static void PS_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
+static void PS_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
+                    NewDevDesc *dd);
 static void PS_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PS_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void PS_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                    NewDevDesc *dd);
+static void PS_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font, double cex,
+                    double ps, NewDevDesc *dd);
 
 /* PostScript Support (formerly in PostScript.c) */
 
@@ -1199,6 +1203,7 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
     dd->startlty = 0;
     dd->startfill = setbg;
     dd->startcol = setfg;
+    dd->startgamma = 1;
 
     /* Set graphics parameters that must be set by device driver. */
     /* Page dimensions in points. */
@@ -1233,6 +1238,7 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
     dd->canResizeText = 1;
     dd->canClip = 1;
     dd->canHAdj = 2;
+    dd->canChangeGamma = FALSE;
 
     /*	Start the driver */
 
@@ -1458,7 +1464,7 @@ static void PS_Size(double *left, double *right, double *bottom, double *top, Ne
 
 static void PostScriptClose(NewDevDesc *dd);
 
-static void PS_NewPage(int fill, NewDevDesc *dd)
+static void PS_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
@@ -1480,10 +1486,11 @@ static void PS_NewPage(int fill, NewDevDesc *dd)
 
     if (R_ALPHA(fill) == 0)
     {
-        PS_Rect(0, 0, 72.0 * pd->pagewidth, 72.0 * pd->pageheight, NA_INTEGER, fill, 1,
-                1, /* lty and lwd settings don't matter because
-                    * no border is drawn.
-                    */
+        PS_Rect(0, 0, 72.0 * pd->pagewidth, 72.0 * pd->pageheight, NA_INTEGER, fill,
+                1,    /* gamma cannot be set for PS device */
+                1, 1, /* lty and lwd settings don't matter because
+                       * no border is drawn.
+                       */
                 dd);
     }
 }
@@ -1558,7 +1565,8 @@ static void PS_MetricInfo(int c, int font, double cex, double ps, double *ascent
     *width = floor(cex * ps + 0.5) * *width;
 }
 
-static void PS_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PS_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
+                    NewDevDesc *dd)
 {
     int code;
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -1585,7 +1593,8 @@ static void PS_Rect(double x0, double y0, double x1, double y1, int col, int fil
     }
 }
 
-static void PS_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PS_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                      NewDevDesc *dd)
 {
     int code;
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -1612,7 +1621,8 @@ static void PS_Circle(double x, double y, double r, int col, int fill, int lty, 
     }
 }
 
-static void PS_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd)
+static void PS_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                    NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
@@ -1628,7 +1638,8 @@ static void PS_Line(double x1, double y1, double x2, double y2, int col, int lty
     }
 }
 
-static void PS_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PS_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd)
 {
     PostScriptDesc *pd;
     double xx, yy;
@@ -1667,7 +1678,7 @@ static void PS_Polygon(int n, double *x, double *y, int col, int fill, int lty, 
     }
 }
 
-static void PS_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd)
+static void PS_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
 {
     PostScriptDesc *pd;
     double xx, yy;
@@ -1692,8 +1703,8 @@ static void PS_Polyline(int n, double *x, double *y, int col, int lty, double lw
     }
 }
 
-static void PS_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                    NewDevDesc *dd)
+static void PS_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font, double cex,
+                    double ps, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
@@ -1864,25 +1875,28 @@ static int XF_SetLty(int lty)
 /* Device Driver Actions */
 
 static void XFig_Activate(NewDevDesc *dd);
-static void XFig_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void XFig_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                        NewDevDesc *dd);
 static void XFig_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void XFig_Close(NewDevDesc *dd);
 static void XFig_Deactivate(NewDevDesc *dd);
 static void XFig_Hold(NewDevDesc *dd);
 static Rboolean XFig_Locator(double *x, double *y, NewDevDesc *dd);
-static void XFig_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd);
+static void XFig_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                      NewDevDesc *dd);
 static void XFig_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
                             NewDevDesc *dd);
 static void XFig_Mode(int mode, NewDevDesc *dd);
-static void XFig_NewPage(int fill, NewDevDesc *dd);
-static void XFig_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd);
-static void XFig_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd);
-static void XFig_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd,
+static void XFig_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void XFig_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                         NewDevDesc *dd);
+static void XFig_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
+static void XFig_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
                       NewDevDesc *dd);
 static void XFig_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double XFig_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void XFig_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                      NewDevDesc *dd);
+static void XFig_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                      double cex, double ps, NewDevDesc *dd);
 static Rboolean XFig_Open(NewDevDesc *, XFigDesc *);
 
 static int XFig_basenums[] = {4, 8, 12, 16, 20, 24, 28, 0};
@@ -2017,6 +2031,7 @@ static Rboolean innerXFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, c
     dd->startfont = 1;
     dd->startfill = pd->bg;
     dd->startcol = pd->col;
+    dd->startgamma = 1;
 
     /* Set graphics parameters that must be set by device driver. */
     /* Page dimensions in points. */
@@ -2049,6 +2064,7 @@ static Rboolean innerXFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, c
     dd->canResizeText = 1;
     dd->canClip = 0;
     dd->canHAdj = 1; /* 0, 0.5, 1 */
+    dd->canChangeGamma = FALSE;
 
     pd->XFigColors[7] = 0xffffff;
     pd->nXFigColors = 32;
@@ -2172,7 +2188,7 @@ static void XFig_Size(double *left, double *right, double *bottom, double *top, 
 }
 
 #define CHUNK 10000
-static void XFig_NewPage(int fill, NewDevDesc *dd)
+static void XFig_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     char buf[PATH_MAX];
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
@@ -2269,8 +2285,8 @@ static void XFig_Deactivate(NewDevDesc *dd)
 {
 }
 
-static void XFig_Rect(double x0, double y0, double x1, double y1, int col, int fill, int inlty, double inlwd,
-                      NewDevDesc *dd)
+static void XFig_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int inlty,
+                      double inlwd, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2300,7 +2316,8 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, int col, int f
     fprintf(fp, "  %d %d\n", ix0, iy0);
 }
 
-static void XFig_Circle(double x, double y, double r, int col, int fill, int inlty, double inlwd, NewDevDesc *dd)
+static void XFig_Circle(double x, double y, double r, int col, int fill, double gamma, int inlty, double inlwd,
+                        NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2324,7 +2341,8 @@ static void XFig_Circle(double x, double y, double r, int col, int fill, int inl
     fprintf(fp, "  %d %d %d %d %d %d %d %d \n", ix, iy, ir, ir, ix, iy, ix + ir, iy);
 }
 
-static void XFig_Line(double x1, double y1, double x2, double y2, int col, int inlty, double inlwd, NewDevDesc *dd)
+static void XFig_Line(double x1, double y1, double x2, double y2, int col, double gamma, int inlty, double inlwd,
+                      NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2345,7 +2363,8 @@ static void XFig_Line(double x1, double y1, double x2, double y2, int col, int i
     }
 }
 
-static void XFig_Polygon(int n, double *x, double *y, int col, int fill, int inlty, double inlwd, NewDevDesc *dd)
+static void XFig_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int inlty, double inlwd,
+                         NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2373,7 +2392,7 @@ static void XFig_Polygon(int n, double *x, double *y, int col, int fill, int inl
     }
 }
 
-static void XFig_Polyline(int n, double *x, double *y, int col, int inlty, double inlwd, NewDevDesc *dd)
+static void XFig_Polyline(int n, double *x, double *y, int col, double gamma, int inlty, double inlwd, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2400,8 +2419,8 @@ static void XFig_Polyline(int n, double *x, double *y, int col, int inlty, doubl
 
 static int styles[4] = {0, 2, 1, 3};
 
-static void XFig_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                      NewDevDesc *dd)
+static void XFig_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                      double cex, double ps, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
@@ -2522,25 +2541,28 @@ typedef struct
 
 static Rboolean PDF_Open(NewDevDesc *, PDFDesc *);
 static void PDF_Activate(NewDevDesc *dd);
-static void PDF_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd);
+static void PDF_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd);
 static void PDF_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void PDF_Close(NewDevDesc *dd);
 static void PDF_Deactivate(NewDevDesc *dd);
 static void PDF_Hold(NewDevDesc *dd);
 static Rboolean PDF_Locator(double *x, double *y, NewDevDesc *dd);
-static void PDF_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd);
+static void PDF_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                     NewDevDesc *dd);
 static void PDF_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
                            NewDevDesc *dd);
 static void PDF_Mode(int mode, NewDevDesc *dd);
-static void PDF_NewPage(int fill, NewDevDesc *dd);
-static void PDF_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd);
-static void PDF_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd);
-static void PDF_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd,
+static void PDF_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void PDF_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                        NewDevDesc *dd);
+static void PDF_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
+static void PDF_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
                      NewDevDesc *dd);
 static void PDF_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PDF_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void PDF_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                     NewDevDesc *dd);
+static void PDF_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                     double cex, double ps, NewDevDesc *dd);
 
 static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, char *encoding, char *bg, char *fg,
                                      double width, double height, double ps, int onefile)
@@ -2602,6 +2624,7 @@ static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, c
     dd->startfont = 1;
     dd->startfill = setbg;
     dd->startcol = setfg;
+    dd->startgamma = 1;
 
     /* Set graphics parameters that must be set by device driver. */
     /* Page dimensions in points. */
@@ -2634,6 +2657,7 @@ static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, c
     dd->canResizeText = 1;
     dd->canClip = 0;
     dd->canHAdj = 0;
+    dd->canChangeGamma = FALSE;
 
     /*	Start the driver */
 
@@ -2941,7 +2965,7 @@ static void PDF_endpage(PDFDesc *pd)
     fprintf(pd->pdffp, "%d 0 obj\n%d\nendobj\n", pd->nobjs, here - pd->startstream);
 }
 
-static void PDF_NewPage(int fill, NewDevDesc *dd)
+static void PDF_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     char buf[512];
@@ -2998,7 +3022,8 @@ static void PDF_Deactivate(NewDevDesc *dd)
 {
 }
 
-static void PDF_Rect(double x0, double y0, double x1, double y1, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PDF_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
+                     NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int code;
@@ -3032,7 +3057,8 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, int col, int fi
 }
 
 /* r is in device coords */
-static void PDF_Circle(double x, double y, double r, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PDF_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                       NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int code, tr;
@@ -3092,7 +3118,8 @@ static void PDF_Circle(double x, double y, double r, int col, int fill, int lty,
     }
 }
 
-static void PDF_Line(double x1, double y1, double x2, double y2, int col, int lty, double lwd, NewDevDesc *dd)
+static void PDF_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
+                     NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
 
@@ -3106,7 +3133,8 @@ static void PDF_Line(double x1, double y1, double x2, double y2, int col, int lt
     }
 }
 
-static void PDF_Polygon(int n, double *x, double *y, int col, int fill, int lty, double lwd, NewDevDesc *dd)
+static void PDF_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                        NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     double xx, yy;
@@ -3149,7 +3177,7 @@ static void PDF_Polygon(int n, double *x, double *y, int col, int fill, int lty,
     }
 }
 
-static void PDF_Polyline(int n, double *x, double *y, int col, int lty, double lwd, NewDevDesc *dd)
+static void PDF_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     double xx, yy;
@@ -3174,8 +3202,8 @@ static void PDF_Polyline(int n, double *x, double *y, int col, int lty, double l
     }
 }
 
-static void PDF_Text(double x, double y, char *str, double rot, double hadj, int col, int font, double cex, double ps,
-                     NewDevDesc *dd)
+static void PDF_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
+                     double cex, double ps, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int size = (int)floor(cex * ps + 0.5);
