@@ -282,7 +282,7 @@ int Rf_initialize_R(int ac, char **av)
     R_HistorySize = 512;
     if ((p = getenv("R_HISTSIZE")))
     {
-        value = Decode2Long(p, &ierr);
+        value = R_Decode2Long(p, &ierr);
         if (ierr != 0 || value < 0)
             REprintf("WARNING: invalid R_HISTSIZE ignored;");
         else
