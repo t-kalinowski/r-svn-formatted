@@ -290,10 +290,9 @@ static void doSpreadKey(int key, DEEvent *event)
     {
         if (clength > 0)
         {
-            buf[clength - 1] = ' ';
-            printstring(buf, clength, crow, ccol);
             clength--;
             bufp--;
+            printstring(buf, clength, crow, ccol, 1);
         }
         else
             bell();
@@ -450,7 +449,7 @@ void drawrow(int whichrow)
         drawrectangle(i * box_w, src_y, box_w, box_h);
 
     sprintf(rlab, "R %d", rowmin + whichrow - 1);
-    printstring(rlab, strlen(rlab), whichrow, 0);
+    printstring(rlab, strlen(rlab), whichrow, 0, 0);
 
     lenip = length(inputlist);
     for (i = colmin; i <= colmax; i++)
@@ -481,7 +480,7 @@ void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         if (REAL(invec)[vrow] != ssNA_REAL)
         {
             strp = EncodeElement(invec, vrow, 0);
-            printstring(strp, strlen(strp), ssrow, sscol);
+            printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
     else if (TYPEOF(invec) == STRSXP)
@@ -489,7 +488,7 @@ void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         if (!streql(CHAR(STRING(invec)[vrow]), CHAR(STRING(ssNA_STRING)[0])))
         {
             strp = EncodeElement(invec, vrow, 0);
-            printstring(strp, strlen(strp), ssrow, sscol);
+            printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
     else
@@ -514,11 +513,11 @@ void drawcol(int whichcol)
     {
         tmp = nthcdr(inputlist, whichcol + colmin - 2);
         if (TAG(tmp) != R_NilValue)
-            printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol);
+            printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol, 0);
         else
         {
             sprintf(clab, "var%d", whichcol + colmin - 1);
-            printstring(clab, strlen(clab), 0, whichcol);
+            printstring(clab, strlen(clab), 0, whichcol, 0);
         }
         if (CAR(tmp) != R_NilValue)
         {
@@ -530,7 +529,7 @@ void drawcol(int whichcol)
     else
     {
         sprintf(clab, "var%d", whichcol + colmin - 1);
-        printstring(clab, strlen(clab), 0, whichcol);
+        printstring(clab, strlen(clab), 0, whichcol, 0);
     }
     Rsync();
 }
@@ -548,12 +547,12 @@ static void drawelt(int whichrow, int whichcol)
         {
             if (TAG(tmp) != R_NilValue)
             {
-                printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol);
+                printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol, 0);
             }
             else
             {
                 sprintf(clab, "var%d", whichcol + colmin - 1);
-                printstring(clab, strlen(clab), 0, whichcol);
+                printstring(clab, strlen(clab), 0, whichcol, 0);
             }
         }
         else if (CAR(tmp) != R_NilValue && (i = rowmin + whichrow - 2) < (int)LEVELS(CAR(tmp)))
@@ -562,10 +561,10 @@ static void drawelt(int whichrow, int whichcol)
     else if (whichrow == 0)
     {
         sprintf(clab, "var%d", whichcol + colmin - 1);
-        printstring(clab, strlen(clab), 0, whichcol);
+        printstring(clab, strlen(clab), 0, whichcol, 0);
     }
     else
-        printstring("", 0, whichrow, whichcol);
+        printstring("", 0, whichrow, whichcol, 0);
 
     Rsync();
 }
@@ -740,7 +739,7 @@ static SEXP getccol()
     return (CAR(tmp));
 }
 
-/* close up the entry to a square, put the value that has been entered
+/* close up the entry to a cell, put the value that has been entered
    into the correct place and as the correct type */
 
 void closerect()
@@ -758,9 +757,10 @@ void closerect()
             {
                 /* then we are entering a new column name */
                 if (length(inputlist) < ccol + colmin - 1)
-                    inputlist = listAppend(inputlist, allocList((ccol - colmin - 1 + length(inputlist))));
+                    inputlist = listAppend(inputlist, allocList((ccol - colmin - 1 - length(inputlist))));
                 tvec = nthcdr(inputlist, ccol + colmin - 2);
                 TAG(tvec) = install(buf);
+                printstring(buf, strlen(buf), 0, ccol - colmin + 1, 0);
             }
             else
             {
@@ -775,12 +775,13 @@ void closerect()
                 }
                 else
                     REAL(cvec)[(rowmin + crow - 2)] = atof(buf);
+                drawelt(crow, ccol);
             }
         }
         else if (crow == 0)
         {
             sprintf(buf, "var%d", ccol);
-            printstring(buf, strlen(buf), 0, ccol - colmin + 1);
+            printstring(buf, strlen(buf), 0, ccol - colmin + 1, 0);
         }
         else
         {
@@ -810,25 +811,34 @@ void closerect()
    the print area and print it, left adjusted if necessary; clear the
    area of previous text; */
 
-void printstring(char *ibuf, int buflen, int row, int col)
+void printstring(char *ibuf, int buflen, int row, int col, int left)
 {
-    int len, x_pos, y_pos;
+    int i, x_pos, y_pos;
+    char buf[45], *pc = buf;
 
     find_coords(row, col, &x_pos, &y_pos);
     cleararea(col * box_w + 2, hwidth + row * box_h + 2, box_w - 3, box_h - 3);
-    len = nchars(ibuf, buflen);
-    drawtext(x_pos + text_offset, y_pos + box_h - text_offset, ibuf, len);
+    strncpy(buf, ibuf, buflen);
+    if (left)
+    {
+        for (i = buflen; i > 1; i--)
+        {
+            if (textwidth(pc, i) < (box_w - text_offset))
+                break;
+            *(++pc) = '<';
+        }
+    }
+    else
+    {
+        for (i = buflen; i > 1; i--)
+        {
+            if (textwidth(buf, i) < (box_w - text_offset))
+                break;
+            *(pc + i - 2) = '>';
+        }
+    }
+    drawtext(x_pos + text_offset, y_pos + box_h - text_offset, pc, i);
     Rsync();
-}
-
-int nchars(char *ibuf, int len)
-{
-    int i;
-
-    for (i = len; i > 1; i--)
-        if (textwidth(ibuf, i) < (box_w - text_offset))
-            break;
-    return i;
 }
 
 void clearrect()
@@ -902,7 +912,7 @@ void handlechar(char *text)
                 goto donehc;
             break;
         default:
-            if (!isdigit(text[0]))
+            if (!isdigit((int)text[0]))
                 goto donehc;
             break;
         }
@@ -927,7 +937,7 @@ void handlechar(char *text)
     }
 
     *bufp++ = text[0];
-    printstring(buf, clength, crow, ccol);
+    printstring(buf, clength, crow, ccol, 1);
     return;
 
 donehc:
@@ -948,18 +958,18 @@ void printlabs()
     for (i = colmin; i <= colmax; i++)
         if (TAG(tppoint) != R_NilValue)
         {
-            printstring(CHAR(PRINTNAME(TAG(tppoint))), strlen(CHAR(PRINTNAME(TAG(tppoint)))), 0, i - colmin + 1);
+            printstring(CHAR(PRINTNAME(TAG(tppoint))), strlen(CHAR(PRINTNAME(TAG(tppoint)))), 0, i - colmin + 1, 0);
             tppoint = CDR(tppoint);
         }
         else
         {
             sprintf(clab, "var%d", i);
-            printstring(clab, strlen(clab), 0, i - colmin + 1);
+            printstring(clab, strlen(clab), 0, i - colmin + 1, 0);
         }
     for (i = rowmin; i <= rowmax; i++)
     {
         sprintf(clab, "R %d", i);
-        printstring(clab, strlen(clab), i - rowmin + 1, 0);
+        printstring(clab, strlen(clab), i - rowmin + 1, 0, 0);
     }
 }
 
@@ -1009,12 +1019,13 @@ static void doControl(DEEvent *event)
 
     (*event).xkey.state = 0;
     i = XLookupString(event, text, 1, &iokey, 0);
+    /* one row overlap when scrolling: top line <--> bottom line */
     if (text[0] == 'f')
         jumpwin(colmin, rowmax);
     else if (text[0] == 'b')
     {
-        i = (1 > rowmin - nhigh) ? 1 : rowmin - nhigh;
-        jumpwin(colmin, i);
+        i = rowmin - nhigh + 2;
+        jumpwin(colmin, (i < 1) ? 1 : i);
     }
 }
 
