@@ -95,10 +95,40 @@ static int Strtoi(const char *nptr, int base)
     return (res);
 }
 
-static double Strtod(const char *nptr, char **endptr)
+/* Like R_strtod, but allow NA to be a failure if NA is false */
+static double Rs_strtod(const char *c, char **end, Rboolean NA)
+{
+    double x;
+
+    if (NA && strncmp(c, "NA", 2) == 0)
+    {
+        x = NA_REAL;
+        *end = (char *)c + 2; /* coercion for -Wall */
+    }
+    else if (strncmp(c, "NaN", 3) == 0)
+    {
+        x = R_NaN;
+        *end = (char *)c + 3;
+    }
+    else if (strncmp(c, "Inf", 3) == 0)
+    {
+        x = R_PosInf;
+        *end = (char *)c + 3;
+    }
+    else if (strncmp(c, "-Inf", 4) == 0)
+    {
+        x = R_NegInf;
+        *end = (char *)c + 4;
+    }
+    else
+        x = strtod(c, end);
+    return x;
+}
+
+static double Strtod(const char *nptr, char **endptr, Rboolean NA)
 {
     if (decchar == '.')
-        return R_strtod(nptr, endptr);
+        return Rs_strtod(nptr, endptr, NA);
     else
     {
         /* jump through some hoops... This is a kludge!
@@ -115,19 +145,19 @@ static double Strtod(const char *nptr, char **endptr)
                 convbuf[i] = '.';
             else if (convbuf[i] == '.')
                 convbuf[i] = decchar;
-        x = R_strtod(convbuf, &end);
+        x = Rs_strtod(convbuf, &end, NA);
         *endptr = (char *)nptr + (end - convbuf);
         return x;
     }
 }
 
-static Rcomplex strtoc(const char *nptr, char **endptr)
+static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA)
 {
     Rcomplex z;
     double x, y;
     char *s, *endp;
 
-    x = Strtod(nptr, &endp);
+    x = Strtod(nptr, &endp, NA);
     if (isBlankString(endp))
     {
         z.r = x;
@@ -142,7 +172,7 @@ static Rcomplex strtoc(const char *nptr, char **endptr)
     else
     {
         s = endp;
-        y = Strtod(s, &endp);
+        y = Strtod(s, &endp, NA);
         if (*endp == 'i')
         {
             z.r = x;
@@ -417,7 +447,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
             REAL(ans)[i] = NA_REAL;
         else
         {
-            REAL(ans)[i] = Strtod(buffer, &endp);
+            REAL(ans)[i] = Strtod(buffer, &endp, TRUE);
             if (!isBlankString(endp))
                 expected("a real", buffer);
         }
@@ -427,7 +457,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
             COMPLEX(ans)[i].r = COMPLEX(ans)[i].i = NA_REAL;
         else
         {
-            COMPLEX(ans)[i] = strtoc(buffer, &endp);
+            COMPLEX(ans)[i] = strtoc(buffer, &endp, TRUE);
             if (!isBlankString(endp))
                 expected("a complex", buffer);
         }
@@ -1154,10 +1184,10 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         res = Strtoi(tmp, 10);
         if (res == NA_INTEGER)
             isinteger = FALSE;
-        Strtod(tmp, &endp);
+        Strtod(tmp, &endp, TRUE);
         if (!isBlankString(endp))
             isreal = FALSE;
-        strtoc(tmp, &endp);
+        strtoc(tmp, &endp, TRUE);
         if (!isBlankString(endp))
             iscomplex = FALSE;
     }
@@ -1223,7 +1253,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
                 REAL(rval)[i] = NA_REAL;
             else
             {
-                REAL(rval)[i] = Strtod(tmp, &endp);
+                REAL(rval)[i] = Strtod(tmp, &endp, FALSE);
                 if (!isBlankString(endp))
                 {
                     isreal = FALSE;
@@ -1247,7 +1277,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
                 COMPLEX(rval)[i].r = COMPLEX(rval)[i].i = NA_REAL;
             else
             {
-                COMPLEX(rval)[i] = strtoc(tmp, &endp);
+                COMPLEX(rval)[i] = strtoc(tmp, &endp, FALSE);
                 if (!isBlankString(endp))
                 {
                     iscomplex = FALSE;
@@ -1273,8 +1303,11 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(dup = duplicated(cvec));
             j = 0;
             for (i = 0; i < len; i++)
+            {
                 if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i)), 1))
                     j++;
+            }
+
             PROTECT(levs = allocVector(STRSXP, j));
             j = 0;
             for (i = 0; i < len; i++)
@@ -1378,7 +1411,7 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     first = LENGTH(CAR(args)) + 1;
     if (isdigit((int)*bufp))
     {
-        first = Strtod(buffer, NULL);
+        first = Strtod(buffer, NULL, TRUE);
     }
     else
     {
