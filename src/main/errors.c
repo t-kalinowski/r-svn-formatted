@@ -43,7 +43,7 @@ static int inError = 0;
 static int inWarning = 0;
 static int inPrintWarnings = 0;
 
-static void jump_to_top_ex(Rboolean, Rboolean, Rboolean, Rboolean);
+static void jump_to_top_ex(Rboolean, Rboolean, Rboolean, Rboolean, Rboolean);
 
 /* Interface / Calling Hierarchy :
 
@@ -83,10 +83,11 @@ void R_CheckUserInterrupt(void)
 void onintr()
 {
     REprintf("\n");
-    /* attempt to run user error option, save a traceback, show
-       warnings, and reset console; not clear this is what we really
-       want, but this preserves current behavior */
-    jump_to_top_ex(TRUE, TRUE, TRUE, TRUE);
+    /* Attempt to run user error option, save a traceback, show
+       warnings, and reset console; also stop at restart (try/browser)
+       frames.  Not clear this is what we really want, but this
+       preserves current behavior */
+    jump_to_top_ex(TRUE, TRUE, TRUE, TRUE, FALSE);
 }
 
 /* SIGUSR1: save and quit
@@ -425,7 +426,7 @@ void errorcall(SEXP call, const char *format, ...)
             R_Warnings = R_NilValue;
             REprintf("Lost warning messages\n");
         }
-        jump_to_top_ex(FALSE, FALSE, FALSE, FALSE);
+        jump_to_top_ex(FALSE, FALSE, FALSE, FALSE, FALSE);
     }
 
     /* set up a context to restore inError value on exit */
@@ -471,7 +472,7 @@ void errorcall(SEXP call, const char *format, ...)
         PrintWarnings();
     }
 
-    jump_to_top_ex(TRUE, TRUE, TRUE, TRUE);
+    jump_to_top_ex(TRUE, TRUE, TRUE, TRUE, FALSE);
 
     /* not reached */
     endcontext(&cntxt);
@@ -505,7 +506,8 @@ void error(const char *format, ...)
 /* calling the code installed by on.exit along the way */
 /* and finally longjmping to the innermost TOPLEVEL context */
 
-static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean processWarnings, Rboolean resetConsole)
+static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean processWarnings, Rboolean resetConsole,
+                           Rboolean ignoreRestartContexts)
 {
     RCNTXT cntxt;
     RCNTXT *c;
@@ -571,19 +573,25 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
        you can do is reset things and exit.  */
 
     /* find the jump target; do the jump if target is a CTXT_RESTART */
-    for (c = R_GlobalContext; c; c = c->nextcontext)
+    if (ignoreRestartContexts)
+        c = R_ToplevelContext;
+    else
     {
-        if (c->callflag & CTXT_FUNCTION)
-            nback++;
-        if (IS_RESTART_BIT_SET(c->callflag))
+        for (c = R_GlobalContext; c; c = c->nextcontext)
         {
-            inError = 0;
-            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
+            if (c->callflag & CTXT_FUNCTION)
+                nback++;
+            if (IS_RESTART_BIT_SET(c->callflag))
+            {
+                inError = 0;
+                findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
+            }
+            if (c->callflag == CTXT_TOPLEVEL)
+                break;
         }
-        if (c->callflag == CTXT_TOPLEVEL)
-            break;
     }
-    /* at this point we should have c == R_ToplevelContext */
+    /* at this point, i.e. if we have not exitid with findcontext, we
+       should have c == R_ToplevelContext */
 
     /* Run onexit/cend code for all contexts down to but not including
        the jump target.  This may cause recursive calls to
@@ -632,8 +640,9 @@ void jump_to_toplevel()
 {
     /* no traceback, no user error option; for now, warnings are
        printed here and console is reset -- eventually these should be
-       done after arriving at the jump target */
-    jump_to_top_ex(FALSE, FALSE, TRUE, TRUE);
+       done after arriving at the jump target.  Now ignores
+       try/browser frames--it really is a jump to toplevel */
+    jump_to_top_ex(FALSE, FALSE, TRUE, TRUE, TRUE);
 }
 
 SEXP do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
