@@ -256,7 +256,7 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     if (gamma < 0 || gamma > 100)
         errorcall(call, "invalid gamma value");
 
-    if (!isString(CAR(args)) || length(CAR(args)) < 1)
+    if (!isValidString(CAR(args)))
         error("invalid colortype passed to X11 driver");
     cname = CHAR(STRING(CAR(args))[0]);
     if (strcmp(cname, "mono") == 0)
