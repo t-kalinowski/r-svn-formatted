@@ -760,7 +760,7 @@ SEXP do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP s;
+    SEXP s, t;
     if (length(args) != 2)
         WrongArgCount(asym[PRIMVAL(op)]);
     if (isString(CAR(args)))
@@ -773,7 +773,12 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             s = eval(CADR(args), rho);
             if (NAMED(s))
-                s = duplicate(s);
+            {
+                PROTECT(s);
+                t = duplicate(s);
+                UNPROTECT(1);
+                s = t;
+            }
             PROTECT(s);
             R_Visible = 0;
             defineVar(CAR(args), s, rho);
