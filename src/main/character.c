@@ -95,10 +95,12 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP d, s, x, stype;
     int i, len;
     char *type;
-#if defined(SUPPORT_UTF8) && defined(HAVE_WCSWIDTH)
-    char *xi;
+#ifdef SUPPORT_UTF8
     int nc;
+    char *xi;
+#ifdef HAVE_WCSWIDTH
     wchar_t *wc;
+#endif
 #endif
 
     checkArity(op, args);
@@ -146,9 +148,9 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
 #ifdef SUPPORT_UTF8
-#ifdef HAVE_WCSWIDTH
                 xi = CHAR(STRING_ELT(x, i));
                 nc = mbstowcs(NULL, xi, 0);
+#ifdef HAVE_WCSWIDTH
                 if (nc >= 0)
                 {
                     AllocBuffer((nc + 1) * sizeof(wchar_t));
@@ -160,7 +162,7 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
 #endif
-                    INTEGER(s)[i] = NA_INTEGER;
+                    INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
 #else
                 INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
 #endif
@@ -571,7 +573,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
             if (utf8locale && !utf8strIsASCII(buf))
             {
-                char bf[MB_CUR_MAX], *p = buf;
+                char bf[20 /* > MB_CUR_MAX */], *p = buf;
                 int used;
 
                 ntok = mbstowcs(NULL, buf, 0);
