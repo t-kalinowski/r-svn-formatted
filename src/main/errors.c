@@ -207,6 +207,7 @@ void warningcall(SEXP call, const char *format, ...)
         va_start(ap, format);
         Rvsnprintf(buf, BUFSIZE, format, ap);
         va_end(ap);
+        inWarning = 0; /* PR1570 */
         errorcall(call, "(converted from warning) %s", buf);
     }
     else if (w == 1)
