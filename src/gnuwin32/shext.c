@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  file shext.c
  *  Copyright (C) 2001  Guido Masarotto and Brian Ripley
- *                2003  R Development Core Team
+ *                2004  R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,4 +61,27 @@ void selectfolder(char *folder)
         SHGetPathFromIDList(pidlBrowse, folder);
         g_pMalloc->lpVtbl->Free(g_pMalloc, pidlBrowse);
     }
+}
+
+int ShellGetPersonalDirectory(char *folder) /* Folder is assumed to be at least MAX_PATH long */
+{
+    LPMALLOC g_pMalloc;
+    LPITEMIDLIST pidlUser;
+    int result;
+
+    result = 0;
+
+    /* Get the shell's allocator. */
+    if (SUCCEEDED(SHGetMalloc(&g_pMalloc)))
+    {
+
+        /* Get the PIDL of the user's Directory. */
+        if (SUCCEEDED(SHGetSpecialFolderLocation(0, CSIDL_PERSONAL, &pidlUser)))
+        {
+            if (SUCCEEDED(SHGetPathFromIDList(pidlUser, folder)))
+                result = 1;
+            g_pMalloc->lpVtbl->Free(g_pMalloc, pidlUser);
+        }
+    }
+    return (result);
 }
