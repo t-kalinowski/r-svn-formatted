@@ -216,6 +216,7 @@ SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     strcpy(dest, R_ExpandFileName(CHAR(STRING_ELT(CAR(args), 0))));
     if (!R_FileExists(dest))
         errorcall(call, "destination does not exist");
+
     rc = do_unzip(zipname, dest, ntopics, topics);
     if (rc != UNZ_OK)
         switch (rc)
@@ -693,7 +694,11 @@ static unzFile unzOpen(const char *path)
 
     if (unz_copyright[0] != ' ')
         return NULL;
+#ifdef Macintosh
+    fin = R_fopen(path, "rb");
+#else
     fin = fopen(path, "rb");
+#endif
     if (fin == NULL)
         return NULL;
     central_pos = unzlocal_SearchCentralDir(fin);
