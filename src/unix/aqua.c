@@ -184,9 +184,6 @@ SEXP do_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
 
 void R_ProcessEvents(void)
 {
-    EventRef theEvent;
-    EventTargetRef theTarget = GetEventDispatcherTarget();
-
     if (CheckEventQueueForUserCancel())
         onintr();
 }
