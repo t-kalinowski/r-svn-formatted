@@ -854,6 +854,7 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         NONE,
         PARTIAL,
+        PARTIAL2,
         FULL
     } match = NONE;
 
@@ -881,9 +882,11 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
             }
             else if (match == PARTIAL)
+            {
                 /* this match is partial and we already have a partial match,
                    so the query is ambiguous and we return R_NilValue */
-                return R_NilValue;
+                match = PARTIAL2;
+            }
             else
             {
                 tag = tmp;
@@ -891,6 +894,8 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+    if (match == PARTIAL2)
+        return R_NilValue;
 
     /* unless a full match has been found, check for a "names" attribute */
     if (match != FULL && !strncmp(CHAR(PRINTNAME(R_NamesSymbol)), str, n))
