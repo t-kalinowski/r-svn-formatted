@@ -863,7 +863,8 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!wasopen)
         {
             strcpy(con->mode, "r");
-            con->open(con);
+            if (!con->open(con))
+                error("cannot open the connection");
         }
         for (i = 0; i < nskip; i++)
             while ((c = scanchar(FALSE)) != '\n' && c != R_EOF)
@@ -968,7 +969,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!wasopen)
         {
             strcpy(con->mode, "r");
-            con->open(con);
+            if (!con->open(con))
+                error("cannot open the connection");
         }
         for (i = 0; i < nskip; i++)
             while ((c = scanchar(FALSE)) != '\n' && c != R_EOF)
@@ -1429,7 +1431,8 @@ SEXP do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!wasopen)
     {
         strcpy(con->mode, "r");
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
     }
     else
     { /* for a non-blocking connection, more input may

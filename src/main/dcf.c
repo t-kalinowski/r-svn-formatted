@@ -43,7 +43,8 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
         error("cannot read from this connection");
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
 
     PROTECT(what = coerceVector(CADR(args), STRSXP));
     nwhat = LENGTH(what);

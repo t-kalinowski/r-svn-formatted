@@ -119,7 +119,8 @@ static void null_close(Rconnection con)
 
 static void null_destroy(Rconnection con)
 {
-    free(con->private);
+    if (con->private)
+        free(con->private);
 }
 
 static int null_vfprintf(Rconnection con, const char *format, va_list ap)
@@ -214,6 +215,7 @@ void init_con(Rconnection new, char *description, char *mode)
     new->write = &null_write;
     new->nPushBack = 0;
     new->save = -1000;
+    new->private = NULL;
 }
 
 /* ------------------- file connections --------------------- */
@@ -954,7 +956,7 @@ static Rconnection newgzfile(char *description, char *mode, int compress)
     new->fflush = &gzfile_fflush;
     new->read = &gzfile_read;
     new->write = &gzfile_write;
-    new->private = (void *)malloc(sizeof(struct fileconn));
+    new->private = (void *)malloc(sizeof(struct gzfileconn));
     if (!new->private)
     {
         free(new->description);
@@ -1020,6 +1022,205 @@ SEXP do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error("zlib is not available on this system");
+    return R_NilValue; /* -Wall */
+}
+#endif
+
+/* ------------------- bzipped file connections --------------------- */
+
+#if defined(HAVE_BZLIB)
+#include <bzlib.h>
+
+static Rboolean bzfile_open(Rconnection con)
+{
+    FILE *fp;
+    BZFILE *bfp;
+    int bzerror;
+
+    con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
+    con->canread = !con->canwrite;
+    fp = fopen(R_ExpandFileName(con->description), con->mode);
+    if (!fp)
+    {
+        warning("cannot open bzip2-ed file `%s'", R_ExpandFileName(con->description));
+        return FALSE;
+    }
+    if (con->canread)
+    {
+        bfp = BZ2_bzReadOpen(&bzerror, fp, 0, 0, NULL, 0);
+        if (bzerror != BZ_OK)
+        {
+            BZ2_bzReadClose(&bzerror, bfp);
+            fclose(fp);
+            warning("file `%s' appears no tot be compressed by bzip2", R_ExpandFileName(con->description));
+            return FALSE;
+        }
+    }
+    else
+    {
+        bfp = BZ2_bzWriteOpen(&bzerror, fp, 9, 0, 0);
+        if (bzerror != BZ_OK)
+        {
+            BZ2_bzWriteClose(&bzerror, bfp, 0, NULL, NULL);
+            fclose(fp);
+            warning("file `%s' appears no tot be compressed by bzip2", R_ExpandFileName(con->description));
+            return FALSE;
+        }
+    }
+    ((Rbzfileconn)(con->private))->fp = fp;
+    ((Rbzfileconn)(con->private))->bfp = bfp;
+    con->isopen = TRUE;
+    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
+        con->text = FALSE;
+    else
+        con->text = TRUE;
+    con->save = -1000;
+    return TRUE;
+}
+
+static void bzfile_close(Rconnection con)
+{
+    int bzerror;
+    BZFILE *bfp = (BZFILE *)((Rbzfileconn)(con->private))->bfp;
+    FILE *fp = (FILE *)((Rbzfileconn)(con->private))->fp;
+
+    if (con->canread)
+        BZ2_bzReadClose(&bzerror, bfp);
+    else
+        BZ2_bzWriteClose(&bzerror, bfp, 0, NULL, NULL);
+    fclose(fp);
+    con->isopen = FALSE;
+}
+
+static int bzfile_fgetc(Rconnection con)
+{
+    BZFILE *bfp = (BZFILE *)((Rbzfileconn)(con->private))->bfp;
+    char buf[1];
+    int bzerror, size, p;
+
+    size = BZ2_bzRead(&bzerror, bfp, buf, 1);
+    if (bzerror == BZ_STREAM_END)
+        return R_EOF;
+    if (bzerror != BZ_OK || size < 1)
+        return R_EOF;
+    p = buf[0] % 256;
+    return con->encoding[p];
+}
+
+static size_t bzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    BZFILE *bfp = (BZFILE *)((Rbzfileconn)(con->private))->bfp;
+    int bzerror;
+
+    return BZ2_bzRead(&bzerror, bfp, ptr, size * nitems) / size;
+}
+
+static size_t bzfile_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    BZFILE *bfp = (BZFILE *)((Rbzfileconn)(con->private))->bfp;
+    int bzerror;
+
+    BZ2_bzWrite(&bzerror, bfp, (const voidp)ptr, size * nitems);
+    if (bzerror != BZ_OK)
+        return 0;
+    else
+        return nitems;
+}
+
+static Rconnection newbzfile(char *description, char *mode)
+{
+    Rconnection new;
+    new = (Rconnection)malloc(sizeof(struct Rconn));
+    if (!new)
+        error("allocation of file connection failed");
+    new->class = (char *)malloc(strlen("bzfile") + 1);
+    if (!new->class)
+    {
+        free(new);
+        error("allocation of bzfile connection failed");
+    }
+    strcpy(new->class, "bzfile");
+    new->description = (char *)malloc(strlen(description) + 1);
+    if (!new->description)
+    {
+        free(new->class);
+        free(new);
+        error("allocation of bzfile connection failed");
+    }
+    init_con(new, description, mode);
+
+    new->canseek = FALSE;
+    new->open = &bzfile_open;
+    new->close = &bzfile_close;
+    new->vfprintf = &dummy_vfprintf;
+    new->fgetc = &bzfile_fgetc;
+    new->seek = &null_seek;
+    new->fflush = &null_fflush;
+    new->read = &bzfile_read;
+    new->write = &bzfile_write;
+    new->private = (void *)malloc(sizeof(struct bzfileconn));
+    if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
+        error("allocation of bzfile connection failed");
+    }
+    return new;
+}
+
+SEXP do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP sfile, sopen, ans, class, enc;
+    char *file, *open;
+    int i, ncon;
+    Rconnection con = NULL;
+
+    checkArity(op, args);
+    sfile = CAR(args);
+    if (!isString(sfile) || length(sfile) < 1)
+        errorcall(call, "invalid `description' argument");
+    if (length(sfile) > 1)
+        warning("only first element of `description' argument used");
+    file = CHAR(STRING_ELT(sfile, 0));
+    sopen = CADR(args);
+    if (!isString(sopen) || length(sopen) != 1)
+        error("invalid `open' argument");
+    enc = CADDR(args);
+    if (!isInteger(enc) || length(enc) != 256)
+        error("invalid `enc' argument");
+    open = CHAR(STRING_ELT(sopen, 0));
+    ncon = NextConnection();
+    con = Connections[ncon] = newbzfile(file, strlen(open) ? open : "r");
+
+    for (i = 0; i < 256; i++)
+        con->encoding[i] = (unsigned char)INTEGER(enc)[i];
+
+    /* open it if desired */
+    if (strlen(open))
+    {
+        Rboolean success = con->open(con);
+        if (!success)
+        {
+            con_close(ncon);
+            error("unable to open connection");
+        }
+    }
+
+    PROTECT(ans = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = ncon;
+    PROTECT(class = allocVector(STRSXP, 2));
+    SET_STRING_ELT(class, 0, mkChar("bzfile"));
+    SET_STRING_ELT(class, 1, mkChar("connection"));
+    classgets(ans, class);
+    UNPROTECT(2);
+
+    return ans;
+}
+#else
+SEXP do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    error("libbzip2 is not available on this system");
     return R_NilValue; /* -Wall */
 }
 #endif
@@ -1856,7 +2057,8 @@ SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     wasopen = con->isopen;
     if (!wasopen)
     {
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
     }
     else
     { /* for a non-blocking connection, more input may
@@ -1963,7 +2165,8 @@ SEXP do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
         error("cannot write to this connection");
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
     for (i = 0; i < length(text); i++)
         writecon(con, "%s%s", CHAR(STRING_ELT(text, i)), CHAR(STRING_ELT(sep, 0)));
     if (!wasopen)
@@ -2053,7 +2256,8 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
 
     if (!strcmp(what, "character"))
     {
@@ -2270,7 +2474,8 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
 
     if (TYPEOF(object) == STRSXP)
     {
@@ -2470,7 +2675,8 @@ SEXP do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
 
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
 
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0, m = i + 1; i < n; i++)
@@ -2545,7 +2751,8 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
 
     wasopen = con->isopen;
     if (!wasopen)
-        con->open(con);
+        if (!con->open(con))
+            error("cannot open the connection");
 
     if (TYPEOF(object) == STRSXP)
     {
@@ -2697,7 +2904,8 @@ Rboolean switch_stdout(int icon, int closeOnExit)
         toclose = 2 * closeOnExit;
         if (!con->isopen)
         {
-            con->open(con);
+            if (!con->open(con))
+                error("cannot open the connection");
             toclose = 1;
         }
         R_OutputCon = SinkCons[++R_SinkNumber] = icon;
