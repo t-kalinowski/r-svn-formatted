@@ -211,7 +211,20 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff)
     */
     SEXP svec;
     int savedigits;
-    LocalParseData localData = {0, 0, 0, 0, TRUE, 0, R_NilValue, {NULL, 0, BUFSIZE}, DEFAULT_Cutoff};
+    /* The following gives warning (when "-pedantic" is used):
+       In function `deparse1WithCutoff': initializer element
+       is not computable at load time -- and its because of R_NilValue
+       (RH 7.1 gcc 2.96  wrongly gives an error with "-pedantic")
+    */
+    LocalParseData localData = {0,
+                                0,
+                                0,
+                                0,
+                                /*startline = */ TRUE,
+                                0,
+                                /*strvec = */ R_NilValue,
+                                /*DeparseBuffer=*/{NULL, 0, BUFSIZE},
+                                DEFAULT_Cutoff};
     DeparseBuffer *buffer = &localData.buffer;
     localData.cutoff = cutoff;
 
