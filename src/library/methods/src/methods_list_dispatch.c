@@ -348,21 +348,26 @@ static SEXP R_S_sysfunction(int n, SEXP ev)
     return val;
 }
 
+#if 0 /* -Wall warns and this confuses users */
 static SEXP R_get_function_env(SEXP obj, SEXP fname)
 {
-    if (TYPEOF(obj) != CLOSXP)
-        error("retrieved object for \"%s\" was not a function", CHAR_STAR(fname));
+    if(TYPEOF(obj) != CLOSXP)
+	error("retrieved object for \"%s\" was not a function",
+	      CHAR_STAR(fname));
     return CLOENV(obj);
 }
+
 
 static SEXP R_get_from_f_env(SEXP env, SEXP what, SEXP fname)
 {
     SEXP obj;
     obj = findVarInFrame(env, what);
-    if (obj == R_UnboundValue)
-        error("No \"%s\" object in environment of function \"%s\"", CHAR_STAR(what), CHAR_STAR(fname));
+    if(obj == R_UnboundValue)
+	error("No \"%s\" object in environment of function \"%s\"",
+	      CHAR_STAR(what), CHAR_STAR(fname));
     return obj;
 }
+#endif
 
 /* quick tests for generic and non-generic functions.  May mistakenly
    identify non-generics as generics:  a class with data part of type
@@ -544,9 +549,9 @@ static SEXP nonstandard_primitive(primitive_type which, SEXP skeleton, SEXP prim
 /* C version of the standardGeneric R function. */
 SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
 {
-    SEXP f_env, mlist, f, val, call, fsym;
+    SEXP f_env = R_NilValue, mlist = R_NilValue, f, val, call, fsym; /* -Wall */
     int nprotect = 0;
-    Rboolean prim_case;
+    Rboolean prim_case = FALSE;
 
     if (!initialized)
         R_initMethodDispatch();
