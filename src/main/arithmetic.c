@@ -366,7 +366,7 @@ static SEXP binary(SEXP op, SEXP args)
     }
 
     if (mismatch)
-        warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length\n");
+        warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length");
 
     if (TYPEOF(x) == CPLXSXP || TYPEOF(y) == CPLXSXP)
     {
@@ -830,9 +830,9 @@ static SEXP math1(SEXP op, SEXP sa, double (*f)())
         }
         if (naflag)
 #ifdef IEEE_754
-            warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+            warningcall(lcall, "NaNs produced");
 #else
-            warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+            warningcall(lcall, "NAs produced");
 #endif
         ATTRIB(sy) = duplicate(ATTRIB(sa));
         OBJECT(sy) = OBJECT(sa);
@@ -975,9 +975,9 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
     }
     if (naflag)
 #ifdef IEEE_754
-        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NaNs produced");
 #else
-        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NAs produced");
 #endif
     if (n == na)
     {
@@ -1248,9 +1248,9 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     }
     if (naflag)
 #ifdef IEEE_754
-        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NaNs produced");
 #else
-        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NAs produced");
 #endif
     if (n == na)
     {
@@ -1466,9 +1466,9 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     }
     if (naflag)
 #ifdef IEEE_754
-        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NaNs produced");
 #else
-        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warningcall(lcall, "NAs produced");
 #endif
     if (n == na)
     {

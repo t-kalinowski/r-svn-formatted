@@ -466,11 +466,11 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP str
 
 done:
     if (badline)
-        warning("line %d did not have %d elements\n", badline, nc);
+        warning("line %d did not have %d elements", badline, nc);
 
     if (colsread != 0)
     {
-        warning("number of items read is not a multiple of the number of columns\n");
+        warning("number of items read is not a multiple of the number of columns");
         buffer[0] = '\0'; /* this is an NA */
         for (ii = colsread; ii < nc; ii++)
         {

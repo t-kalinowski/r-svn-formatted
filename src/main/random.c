@@ -52,7 +52,7 @@ static void GetRNGstate()
             {
                 /* BACKWARDS COMPATIBILITY: */
                 seed_off = 1;
-                warning("Wrong length .Random.seed; forgot initial RNGkind? set to Wichmann-Hill\n");
+                warning("Wrong length .Random.seed; forgot initial RNGkind? set to Wichmann-Hill");
                 /* compatibility mode */
                 RNG_kind = WICHMANN_HILL;
             }
@@ -236,7 +236,7 @@ SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
             error("internal error in do_random1\n");
         }
         if (naflag)
-            warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+            warningcall(call, "NAs produced");
 
         PutRNGstate();
         UNPROTECT(1);
@@ -325,7 +325,7 @@ SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
             error("internal error in do_random2\n");
         }
         if (naflag)
-            warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+            warningcall(call, "NAs produced");
 
         PutRNGstate();
         UNPROTECT(2);
@@ -415,7 +415,7 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
             error("internal error in do_random2\n");
         }
         if (naflag)
-            warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+            warningcall(call, "NAs produced");
 
         PutRNGstate();
         UNPROTECT(3);

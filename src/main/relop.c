@@ -127,7 +127,7 @@ SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     if (mismatch)
-        warningcall(call, "longer object length\n\tis not a multiple of shorter object length\n");
+        warningcall(call, "longer object length\n\tis not a multiple of shorter object length");
 
     if (isString(x) || isString(y))
     {

@@ -209,7 +209,7 @@ SEXP findFun(SEXP symbol, SEXP rho)
                 return (vl);
             if (vl == R_MissingArg)
                 error("Argument \"%s\" is missing, with no default\n", CHAR(PRINTNAME(symbol)));
-            warning("ignored non function \"%s\"\n", CHAR(PRINTNAME(symbol)));
+            warning("ignored non function \"%s\"", CHAR(PRINTNAME(symbol)));
         }
         rho = ENCLOS(rho);
     }

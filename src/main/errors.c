@@ -30,41 +30,55 @@ void onintr()
     jump_to_toplevel();
 }
 
-void warningcall(SEXP call, char *format, ...)
+static void setupwarnings(void)
 {
-    va_list(ap);
-    char *dcall;
-    dcall = CHAR(STRING(deparse1(call, 0))[0]);
-    REprintf("Warning in %s : ", dcall);
-    va_start(ap, format);
-    REvprintf(format, ap);
-    va_end(ap);
+    R_Warnings = allocVector(VECSXP, 50);
+    setAttrib(R_Warnings, R_NamesSymbol, allocVector(STRSXP, 50));
 }
 
 #define BUFSIZE 8192
 void warning(const char *format, ...)
 {
+    char buf[BUFSIZE];
+
+    va_list(ap);
+    va_start(ap, format);
+    vsprintf(buf, format, ap);
+    va_end(ap);
+    warningcall(R_NilValue, buf);
+}
+
+void warningcall(SEXP call, char *format, ...)
+{
     int w, slen;
     SEXP names, s;
-    char buf[BUFSIZE];
+    char *dcall, buf[BUFSIZE];
     RCNTXT *cptr;
 
     w = asInteger(GetOption(install("warn"), R_NilValue));
+    if (w == NA_INTEGER) /* set to a sensible value */
+        w = 0;
     if (w < 0) /* ignore */
         return;
     else if (w >= 2)
-    { /* it's an error */
+    { /* make it an error */
         va_list(ap);
         va_start(ap, format);
         slen = vsprintf(buf, format, ap);
         va_end(ap);
-        error("(converted from warning) %s\n", buf);
+        errorcall(call, "(converted from warning) %s\n", buf);
         return;
     }
     else if (w == 1)
     { /* print as they happen */
         va_list(ap);
-        REprintf("Warning: ");
+        if (call != R_NilValue)
+        {
+            dcall = CHAR(STRING(deparse1(call, 0))[0]);
+            REprintf("Warning in %s : ", dcall);
+        }
+        else
+            REprintf("Warning: ");
         va_start(ap, format);
         REvprintf(format, ap);
         va_end(ap);
@@ -72,22 +86,14 @@ void warning(const char *format, ...)
         return;
     }
     else if (w == 0)
-    {
+    { /* collect them */
         va_list(ap);
         va_start(ap, format);
         if (!R_CollectWarnings)
-        {
-            R_Warnings = allocVector(VECSXP, 50);
-            names = allocVector(STRSXP, 50);
-            setAttrib(R_Warnings, R_NamesSymbol, names);
-        }
+            setupwarnings();
         if (R_CollectWarnings > 49)
             return;
-        cptr = R_GlobalContext->nextcontext;
-        s = R_GlobalContext->sysparent;
-        while (cptr->callflag != CTXT_RETURN && cptr->nextcontext != NULL)
-            cptr = cptr->nextcontext;
-        VECTOR(R_Warnings)[R_CollectWarnings] = cptr->call;
+        VECTOR(R_Warnings)[R_CollectWarnings] = call;
         slen = vsprintf(buf, format, ap);
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
@@ -106,7 +112,10 @@ void PrintWarnings(void)
     {
         REprintf("Warning message: \n");
         names = CAR(ATTRIB(R_Warnings));
-        REprintf("%s in : %s \n", CHAR(STRING(names)[0]), CHAR(STRING(deparse1(VECTOR(R_Warnings)[0], 0))[0]));
+        if (VECTOR(R_Warnings)[0] == R_NilValue)
+            REprintf("%s \n", CHAR(STRING(names)[0]));
+        else
+            REprintf("%s in: %s \n", CHAR(STRING(names)[0]), CHAR(STRING(deparse1(VECTOR(R_Warnings)[0], 0))[0]));
     }
     else if (R_CollectWarnings <= 10)
     {
@@ -114,8 +123,11 @@ void PrintWarnings(void)
         names = CAR(ATTRIB(R_Warnings));
         for (i = 0; i < R_CollectWarnings; i++)
         {
-            REprintf("%d: %s in : %s \n", i + 1, CHAR(STRING(names)[i]),
-                     CHAR(STRING(deparse1(VECTOR(R_Warnings)[i], 0))[0]));
+            if (STRING(R_Warnings)[i] == R_NilValue)
+                REprintf("%d: %s \n", i + 1, CHAR(STRING(names)[i]));
+            else
+                REprintf("%d: %s in: %s \n", i + 1, CHAR(STRING(names)[i]),
+                         CHAR(STRING(deparse1(VECTOR(R_Warnings)[i], 0))[0]));
         }
     }
     else
@@ -139,12 +151,26 @@ void PrintWarnings(void)
 
 void errorcall(SEXP call, char *format, ...)
 {
+    RCNTXT *cptr;
+
     va_list(ap);
     char *dcall;
     if (inError)
         jump_now();
-    dcall = CHAR(STRING(deparse1(call, 0))[0]);
-    REprintf("Error in %s : ", dcall);
+#ifdef FOO
+    cptr = R_GlobalContext;
+    while (cptr->callflag != CTXT_RETURN && cptr->nextcontext != NULL)
+        cptr = cptr->nextcontext;
+    if (cptr->callflag == CTXT_RETURN)
+        do_browser(cptr->call, R_NilValue, R_NilValue, cptr->cloenv);
+#endif
+    if (call != R_NilValue)
+    {
+        dcall = CHAR(STRING(deparse1(call, 0))[0]);
+        REprintf("Error in %s : ", dcall);
+    }
+    else
+        REprintf("Error: ");
     va_start(ap, format);
     REvprintf(format, ap);
     va_end(ap);
@@ -261,13 +287,18 @@ void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    RCNTXT *cptr;
+
+    cptr = cptr = R_GlobalContext->nextcontext;
+    while (cptr->callflag != CTXT_RETURN && cptr->nextcontext != NULL)
+        cptr = cptr->nextcontext;
     if (CAR(args) != R_NilValue)
     {
         CAR(args) = coerceVector(CAR(args), STRSXP);
-        warning("%s", CHAR(STRING(CAR(args))[0]));
+        warningcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
     }
     else
-        warning("%s", "");
+        warningcall(cptr->call, "%s", "");
     return CAR(args);
 }
 
