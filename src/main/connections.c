@@ -1225,6 +1225,245 @@ SEXP do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 #endif
 
+/* ------------------- clipboard connections --------------------- */
+
+#ifdef Win32
+#include <windows.h>
+extern int clipboardhastext(); /* from ga.h */
+
+static Rboolean clp_open(Rconnection con)
+{
+    Rclpconn this = con->private;
+    HGLOBAL hglb;
+    char *pc;
+
+    con->isopen = TRUE;
+    con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
+    con->canread = !con->canwrite;
+    this->pos = 0;
+    if (con->canread)
+    {
+        /* copy the clipboard contents now */
+        if (clipboardhastext() && OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) &&
+            (pc = (char *)GlobalLock(hglb)))
+        {
+            int len = strlen(pc);
+            this->buff = (char *)malloc(len + 1);
+            this->last = this->len = len;
+            if (this->buff)
+            {
+                strcpy(this->buff, pc);
+                GlobalUnlock(hglb);
+                CloseClipboard();
+            }
+            else
+            {
+                GlobalUnlock(hglb);
+                CloseClipboard();
+                warning("memory allocation to copy clipboard failed");
+                return FALSE;
+            }
+        }
+        else
+        {
+            warning("clipboard cannot be opened or contains no text");
+            return FALSE;
+        }
+    }
+    else
+    {
+        int len = 32 * 1024;
+        this->buff = (char *)malloc(len + 1);
+        this->len = len;
+        this->last = 0;
+        if (!this->buff)
+        {
+            warning("memory allocation to open clipboard failed");
+            return FALSE;
+        }
+    }
+    con->text = TRUE;
+    con->save = -1000;
+
+    return TRUE;
+}
+
+static void clp_writeout(Rconnection con)
+{
+    Rclpconn this = con->private;
+
+    HGLOBAL hglb;
+    char *s, *p;
+    if ((hglb = GlobalAlloc(GHND, this->len)) && (s = (char *)GlobalLock(hglb)))
+    {
+        p = this->buff;
+        while (p < this->buff + this->pos)
+            *s++ = *p++;
+        *s = '\0';
+        GlobalUnlock(hglb);
+        if (!OpenClipboard(NULL) || !EmptyClipboard())
+        {
+            warning("Unable to open the clipboard");
+            GlobalFree(hglb);
+        }
+        else
+        {
+            SetClipboardData(CF_TEXT, hglb);
+            CloseClipboard();
+        }
+    }
+}
+
+static void clp_close(Rconnection con)
+{
+    Rclpconn this = con->private;
+
+    con->isopen = FALSE;
+    if (con->canwrite)
+        clp_writeout(con);
+    free(this->buff);
+}
+
+static int clp_fgetc(Rconnection con)
+{
+    Rclpconn this = con->private;
+    int c;
+
+    if (this->pos >= this->len)
+        return R_EOF;
+    c = this->buff[this->pos++];
+    return con->encoding[c];
+}
+
+static long clp_seek(Rconnection con, int where, int origin, int rw)
+{
+    Rclpconn this = con->private;
+    int newpos, oldpos = this->pos;
+
+    if (where == NA_INTEGER)
+        return oldpos;
+
+    switch (origin)
+    {
+    case 2:
+        newpos = this->pos + where;
+        break;
+    case 3:
+        newpos = this->last + where;
+        break;
+    default:
+        newpos = where;
+    }
+    if (newpos < 0 || newpos >= this->last)
+        error("attempt to seek outside the range of the clipboard");
+    else
+        this->pos = newpos;
+
+    return oldpos;
+}
+
+static void clp_truncate(Rconnection con)
+{
+    Rclpconn this = con->private;
+
+    if (!con->isopen || !con->canwrite)
+        error("can only truncate connections open for writing");
+    this->last = this->pos;
+}
+
+static int clp_fflush(Rconnection con)
+{
+    if (!con->isopen || !con->canwrite)
+        return 1;
+    clp_writeout(con);
+    return 0;
+}
+
+static size_t clp_read(void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    Rclpconn this = con->private;
+    int available = this->len - this->pos, request = size * nitems, used;
+    used = (request < available) ? request : available;
+    strncpy(ptr, this->buff, used);
+    return (size_t)used / size;
+}
+
+static size_t clp_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    Rclpconn this = con->private;
+    int i, len = size * nitems, used = 0;
+    char c, *p = (char *)ptr, *q = this->buff + this->pos;
+
+    /* clipboard requires CRLF termination */
+    for (i = 0; i < len; i++)
+    {
+        if (this->pos >= this->len)
+            break;
+        c = *p++;
+        if (c == '\n')
+        {
+            *q++ = '\r';
+            this->pos++;
+            if (this->pos >= this->len)
+                break;
+        }
+        *q++ = c;
+        this->pos++;
+        used++;
+    }
+    if (this->last < this->pos)
+        this->last = this->pos;
+    return (size_t)used / size;
+}
+
+static Rconnection newclp(char *mode)
+{
+    Rconnection new;
+    char description[] = "clipboard";
+
+    if (strlen(mode) != 1 || (mode[0] != 'r' && mode[0] != 'w'))
+        error("`mode' for the clipboard must be `r' or `w'");
+    new = (Rconnection)malloc(sizeof(struct Rconn));
+    if (!new)
+        error("allocation of clipboard connection failed");
+    new->class = (char *)malloc(strlen(description) + 1);
+    if (!new->class)
+    {
+        free(new);
+        error("allocation of clipboard connection failed");
+    }
+    strcpy(new->class, description);
+    new->description = (char *)malloc(strlen(description) + 1);
+    if (!new->description)
+    {
+        free(new->class);
+        free(new);
+        error("allocation of clipboard connection failed");
+    }
+    init_con(new, description, mode);
+    new->open = &clp_open;
+    new->close = &clp_close;
+    new->vfprintf = &dummy_vfprintf;
+    new->fgetc = &clp_fgetc;
+    new->seek = &clp_seek;
+    new->truncate = &clp_truncate;
+    new->fflush = &clp_fflush;
+    new->read = &clp_read;
+    new->write = &clp_write;
+    new->canseek = TRUE;
+    new->private = (void *)malloc(sizeof(struct clpconn));
+    if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
+        error("allocation of clipboard connection failed");
+    }
+    return new;
+}
+
+#endif /* Win32 */
+
 /* ------------------- terminal connections --------------------- */
 
 /* The size of the console buffer */
@@ -3146,7 +3385,12 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         { /* call to file() */
             if (strlen(url) == 0)
                 open = "w+";
-            con = newfile(url, strlen(open) ? open : "r");
+#ifdef Win32
+            if (strcmp(url, "clipboard") == 0)
+                con = newclp(strlen(open) ? open : "r");
+            else
+#endif
+                con = newfile(url, strlen(open) ? open : "r");
             class2 = "file";
         }
         else
