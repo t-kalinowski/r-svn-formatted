@@ -219,7 +219,7 @@ char *EncodeComplex(complex x, int wr, int dr, int er, int wi, int di, int ei)
         Re = (char *)calloc(strlen(tmp) + 1, sizeof(char));
         strcpy(Re, tmp);
 
-        if (flagNegIm = (x.i < 0))
+        if ((flagNegIm = (x.i < 0)))
             x.i = -x.i;
         tmp = EncodeReal(x.i, wi, di, ei);
         Im = (char *)calloc(strlen(tmp) + 1, sizeof(char));
