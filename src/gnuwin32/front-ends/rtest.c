@@ -114,7 +114,8 @@ int main(int argc, char **argv)
     }
     else
     {
-        strcpy(RHome, "c:/R/R-release");
+        fprintf(stderr, "R_HOME must be set\n");
+        exit(1);
     }
     Rp->rhome = RHome;
     /*
