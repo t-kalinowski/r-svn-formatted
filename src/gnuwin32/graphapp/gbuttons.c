@@ -199,11 +199,13 @@ long getpastelength()
     char *text;
     long pastelen;
     if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) && (text = (char *)GlobalLock(hglb)))
+    {
         pastelen = strlen(text);
+        GlobalUnlock(hglb);
+        CloseClipboard();
+    }
     else
         pastelen = 0;
-    GlobalUnlock(hglb);
-    CloseClipboard();
     return pastelen;
 }
 
