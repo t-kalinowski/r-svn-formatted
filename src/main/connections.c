@@ -1790,7 +1790,7 @@ SEXP do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* ------------------- open, close, seek --------------------- */
+/* -------------- open, close, seek, truncate, flush ------------------ */
 
 SEXP do_open(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1944,6 +1944,17 @@ SEXP do_truncate(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
     con->truncate(con);
+    return R_NilValue;
+}
+
+SEXP do_flush(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    Rconnection con = NULL;
+
+    checkArity(op, args);
+    con = getConnection(asInteger(CAR(args)));
+    if (con->canwrite)
+        con->fflush(con);
     return R_NilValue;
 }
 
