@@ -274,6 +274,9 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
 
 #ifdef HAVE_JPEG
 
+/* jconfig.h included by jpeglib.h may define these unconditionally */
+#undef HAVE_STDDEF_H
+#undef HAVE_STDLIB_H
 #include <jpeglib.h>
 #include <setjmp.h>
 
