@@ -4042,8 +4042,8 @@ ColorDataBaseEntry ColorDataBase[] = {{"white", "#FFFFFF", 0},
                                       {"yellowgreen", "#9ACD32", 0},
                                       {NULL, NULL, 0}};
 
-int ColorTableSize;
-unsigned int ColorTable[COLOR_TABLE_SIZE];
+int R_ColorTableSize;
+unsigned int R_ColorTable[COLOR_TABLE_SIZE];
 
 /* Hex Digit to Integer Conversion */
 
@@ -4134,7 +4134,7 @@ unsigned int number2col(char *nm, DevDesc *dd)
     if (index == 0)
         return dd->dp.bg;
     else
-        return ColorTable[(index - 1) % ColorTableSize];
+        return R_ColorTable[(index - 1) % R_ColorTableSize];
 }
 
 static char ColBuf[8];
@@ -4212,7 +4212,7 @@ unsigned int RGBpar(SEXP x, int i, DevDesc *dd)
         if (index < 0)
             return dd->dp.bg;
         else
-            return ColorTable[abs(index) % ColorTableSize];
+            return R_ColorTable[abs(index) % R_ColorTableSize];
     }
     else if (isReal(x))
     {
@@ -4222,7 +4222,7 @@ unsigned int RGBpar(SEXP x, int i, DevDesc *dd)
         if (index < 0)
             return dd->dp.bg;
         else
-            return ColorTable[abs(index) % ColorTableSize];
+            return R_ColorTable[abs(index) % R_ColorTableSize];
     }
     return 0; /* should not occur */
 }
@@ -4240,8 +4240,8 @@ void InitColors()
 
     /* Install Default Palette */
     for (i = 0; DefaultPalette[i]; i++)
-        ColorTable[i] = str2col(DefaultPalette[i], NULL);
-    ColorTableSize = i;
+        R_ColorTable[i] = str2col(DefaultPalette[i], NULL);
+    R_ColorTableSize = i;
 }
 
 /*  LINE TEXTURE CODE */
