@@ -795,18 +795,19 @@ SEXP R_GetTraceback(int skip)
     SEXP s, t;
 
     for (c = R_GlobalContext, ns = skip; c; c = c->nextcontext)
-    {
         if (c->callflag == CTXT_RETURN || c->callflag == CTXT_GENERIC)
+        {
             if (ns > 0)
                 ns--;
             else
                 nback++;
-    }
+        }
 
     PROTECT(s = allocList(nback));
     t = s;
     for (c = R_GlobalContext; c; c = c->nextcontext)
         if (c->callflag & CTXT_FUNCTION)
+        {
             if (skip > 0)
                 skip--;
             else
@@ -814,6 +815,7 @@ SEXP R_GetTraceback(int skip)
                 SETCAR(t, deparse1(c->call, 0));
                 t = CDR(t);
             }
+        }
     UNPROTECT(1);
     return s;
 }
