@@ -1864,7 +1864,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     dd->dp.canChangeFont = 0;
     dd->dp.canRotateText = 1;
     dd->dp.canResizeText = 1;
-    dd->dp.canClip = 0;
+    dd->dp.canClip = 1;
 
     /* initialise x11 device description (most of the work */
     /* has been done in X11_Open) */
