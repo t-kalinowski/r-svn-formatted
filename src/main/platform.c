@@ -576,8 +576,22 @@ static SEXP filename(char *dir, char *file)
     SEXP ans;
     if (dir)
     {
-        ans = allocString(strlen(dir) + strlen(R_FileSep) + strlen(file));
-        sprintf(CHAR(ans), "%s%s%s", dir, R_FileSep, file);
+#ifdef Win32
+        switch (dir[strlen(dir) - 1])
+        {
+        case '/':
+        case '\\':
+        case ':':
+            ans = allocString(strlen(dir) + strlen(file));
+            sprintf(CHAR(ans), "%s%s", dir, file);
+            break;
+        default:
+#endif
+            ans = allocString(strlen(dir) + strlen(R_FileSep) + strlen(file));
+            sprintf(CHAR(ans), "%s%s%s", dir, R_FileSep, file);
+#ifdef Win32
+        }
+#endif
     }
     else
     {
