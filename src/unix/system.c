@@ -439,6 +439,13 @@ int main(int ac, char **av)
             {
                 R_Quiet = 1;
             }
+            else if (!strcmp(*av, "--vanilla"))
+            {
+                DefaultSaveAction = 2;    /* --no-save */
+                DefaultRestoreAction = 0; /* --no-restore */
+                LoadSiteFile = 0;         /* --no-site-file */
+                LoadInitFile = 0;         /* --no-init-file */
+            }
             else if (!strcmp(*av, "--verbose"))
             {
                 R_Verbose = 1;
@@ -542,7 +549,7 @@ int main(int ac, char **av)
         }
         else
         {
-            printf("ARGUMENT %s\n", *av);
+            printf("ARGUMENT '%s' __ignored__\n", *av);
         }
     }
 
