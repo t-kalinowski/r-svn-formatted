@@ -622,7 +622,8 @@ void Raqua_StartConsole(Rboolean OpenConsole)
     InstallEventLoopIdleTimer(GetMainEventLoop(), kEventDurationMillisecond, kEventDurationMillisecond * 2,
                               (EventLoopIdleTimerUPP)RIdleTimer, NULL, &Inst_RIdleTimer);
 
-    InstallEventLoopTimer(GetMainEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, &Inst_OtherEventLoops);
+    InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationMillisecond * 10, NewEventLoopTimerUPP(OtherEventLoops),
+                          NULL, &Inst_OtherEventLoops);
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond / 5, NewEventLoopTimerUPP(ReadStdoutTimer), NULL,
                           &Inst_ReadStdoutTimer);
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond * 5, NewEventLoopTimerUPP(FlushConsoleTimer),
