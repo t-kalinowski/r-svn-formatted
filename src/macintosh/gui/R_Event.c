@@ -81,6 +81,7 @@
 #include <Rdevices.h>
 
 Boolean EventsInit = false;
+extern Boolean RunningOnCarbonX(void);
 
 UInt32 sSleepTime = 0;     // sleep time for WaitNextEvent()
 RgnHandle sMouseRgn = nil; // mouse region for WaitNextEvent()
@@ -636,9 +637,12 @@ void DoWindowEvent(const EventRecord *event)
     }
 
     case activateEvt: {
-        if (window != Console_Window)
-            BringToFront(Console_Window);
-        BringToFront(window);
+        if (RunningOnCarbonX())
+        {
+            if (window != Console_Window)
+                BringToFront(Console_Window);
+            BringToFront(window);
+        }
         DoActivate((event->modifiers & activeFlag) != 0, window);
         break;
     }
