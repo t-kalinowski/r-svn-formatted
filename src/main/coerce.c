@@ -859,6 +859,18 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     return rval;
 }
 
+static SEXP coerceSymbol(SEXP v, SEXPTYPE type)
+{
+    SEXP rval = R_NilValue;
+    if (type == EXPRSXP)
+    {
+        PROTECT(rval = allocVector(type, 1));
+        SET_VECTOR_ELT(rval, 0, v);
+        UNPROTECT(1);
+    }
+    return rval;
+}
+
 SEXP coerceVector(SEXP v, SEXPTYPE type)
 {
     SEXP ans = R_NilValue; /* -Wall */
@@ -871,10 +883,10 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     case NILSXP:
         ans = coerceNull(v, type);
         break;
+#endif
     case SYMSXP:
         ans = coerceSymbol(v, type);
         break;
-#endif
     case NILSXP:
     case LISTSXP:
     case LANGSXP:
@@ -1000,7 +1012,7 @@ static SEXP ascommon(SEXP call, SEXP u, int type)
     {
         return asFunction(u);
     }
-    else if (isVector(u) || isList(u) || isLanguage(u))
+    else if (isVector(u) || isList(u) || isLanguage(u) || (isSymbol(u) && type == EXPRSXP))
     {
         if (NAMED(u))
             v = duplicate(u);

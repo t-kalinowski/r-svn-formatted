@@ -761,7 +761,13 @@ if (st == CtrlKey)
         break;
     case 'V':
     case 'Y':
-        consolepaste(c);
+        if (p->kind == PAGER)
+        {
+            consolecopy(c);
+            consolepaste(RConsole);
+        }
+        else
+            consolepaste(c);
         st = -1;
         break;
     case 'X':

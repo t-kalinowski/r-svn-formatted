@@ -376,8 +376,11 @@ SEXP FixupVFont(SEXP vfont)
     return ans;
 }
 
-/* list("label", cex=, col=, font=, vfont=) */
-
+/* GetTextArg() : extract from call and possibly set text arguments
+ *  ("label", cex=, col=, font=, vfont=)
+ *
+ * Called from  do_title()  [only]
+ */
 static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex, int *pfont, int *pvfont)
 {
     int i, n, col, font, vfont;
@@ -394,6 +397,7 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
     switch (TYPEOF(spec))
     {
     case LANGSXP:
+    case SYMSXP:
         UNPROTECT(1);
         PROTECT(txt = coerceVector(spec, EXPRSXP));
         break;
@@ -1329,27 +1333,29 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(args) < 6)
         errorcall(call, "too few arguments");
 
-    sx = R_NilValue; /* -Wall */
-    sy = R_NilValue; /* -Wall */
+        /* Required Arguments */
+#define PLOT_XY_DEALING(subname)                                                                                       \
+    sx = R_NilValue; /* -Wall */                                                                                       \
+    sy = R_NilValue; /* -Wall */                                                                                       \
+    sxy = CAR(args);                                                                                                   \
+    if (isNewList(sxy) && length(sxy) >= 2)                                                                            \
+    {                                                                                                                  \
+        internalTypeCheck(call, sx = VECTOR_ELT(sxy, 0), REALSXP);                                                     \
+        internalTypeCheck(call, sy = VECTOR_ELT(sxy, 1), REALSXP);                                                     \
+    }                                                                                                                  \
+    else if (isList(sxy) && length(sxy) >= 2)                                                                          \
+    {                                                                                                                  \
+        internalTypeCheck(call, sx = CAR(sxy), REALSXP);                                                               \
+        internalTypeCheck(call, sy = CADR(sxy), REALSXP);                                                              \
+    }                                                                                                                  \
+    else                                                                                                               \
+        errorcall(call, "invalid plotting structure");                                                                 \
+    if (LENGTH(sx) != LENGTH(sy))                                                                                      \
+        error("x and y lengths differ in" subname "().");                                                              \
+    n = LENGTH(sx);                                                                                                    \
+    args = CDR(args)
 
-    /* Required Arguments */
-    sxy = CAR(args);
-    if (isNewList(sxy) && length(sxy) >= 2)
-    {
-        internalTypeCheck(call, sx = VECTOR_ELT(sxy, 0), REALSXP);
-        internalTypeCheck(call, sy = VECTOR_ELT(sxy, 1), REALSXP);
-    }
-    else if (isList(sxy) && length(sxy) >= 2)
-    {
-        internalTypeCheck(call, sx = CAR(sxy), REALSXP);
-        internalTypeCheck(call, sy = CADR(sxy), REALSXP);
-    }
-    else
-        errorcall(call, "invalid plotting structure");
-    if (LENGTH(sx) != LENGTH(sy))
-        error("x and y lengths differ for plot");
-    n = LENGTH(sx);
-    args = CDR(args);
+    PLOT_XY_DEALING("plot.xy");
 
     if (isNull(CAR(args)))
         type = 'p';
@@ -1547,7 +1553,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     default: /* OTHERWISE */
         errorcall(call, "invalid plot type '%c'", type);
 
-    } /* switch(type) */
+    } /* End {switch(type)} */
 
     if (type == 'p' || type == 'b' || type == 'o')
     {
@@ -1892,9 +1898,14 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* polygon(x, y, col, border) */
+    /* polygon(x, y, col, border, lty, xpd, ...) */
     SEXP sx, sy, col, border, lty, sxpd;
-    int nx = 1, ny = 1, ncol, nborder, nlty, xpd, i, start = 0;
+#ifdef Older
+    int nx = 1, ny = 1;
+#else
+    int nx;
+#endif
+    int ncol, nborder, nlty, xpd, i, start = 0;
     int num = 0;
     double *x, *y, xx, yy, xold, yold;
 
@@ -1905,7 +1916,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (length(args) < 2)
         errorcall(call, "too few arguments");
-
+#ifdef Older
     if (!isNumeric(CAR(args)) || (nx = LENGTH(CAR(args))) <= 0)
         errorcall(call, "first argument invalid");
     sx = SETCAR(args, coerceVector(CAR(args), REALSXP));
@@ -1918,18 +1929,26 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (ny != nx)
         errorcall(call, "x and y lengths differ in polygon");
+#else
+    /* (x,y) is checked in R via xy.coords() ; no need here : */
+    sx = SETCAR(args, coerceVector(CAR(args), REALSXP));
+    args = CDR(args);
+    sy = SETCAR(args, coerceVector(CAR(args), REALSXP));
+    args = CDR(args);
+    nx = LENGTH(sx);
+#endif
 
     PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
-    ncol = LENGTH(col);
     args = CDR(args);
+    ncol = LENGTH(col);
 
     PROTECT(border = FixupCol(CAR(args), dd->gp.fg));
-    nborder = LENGTH(border);
     args = CDR(args);
+    nborder = LENGTH(border);
 
     PROTECT(lty = FixupLty(CAR(args), dd->gp.lty));
-    nlty = length(lty);
     args = CDR(args);
+    nlty = length(lty);
 
     sxpd = CAR(args);
     if (sxpd != R_NilValue)
@@ -1939,6 +1958,8 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
+    RecordGraphicsCall(call);
+    ProcessInlinePars(args, dd);
 
     if (xpd == NA_INTEGER)
         dd->gp.xpd = 2;
@@ -1993,8 +2014,11 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP sx, sy, sxy, txt, adj, pos, cex, col, font, vfont;
-    int i, n, ncex, ncol, nfont, ntxt, xpd;
+    /* text(xy, labels, adj, pos, offset,
+     *	vfont, cex, col, font, xpd, ...)
+     */
+    SEXP sx, sy, sxy, sxpd, txt, adj, pos, cex, col, font, vfont;
+    int i, n, npos, ncex, ncol, nfont, ntxt, xpd;
     double adjx = 0, adjy = 0, offset = 0.5;
     double *x, *y;
     double xx, yy;
@@ -2007,29 +2031,13 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(args) < 3)
         errorcall(call, "too few arguments");
 
-    sx = R_NilValue; /* -Wall */
-    sy = R_NilValue; /* -Wall */
+    PLOT_XY_DEALING("text");
 
-    sxy = CAR(args);
-    if (isNewList(sxy) && length(sxy) >= 2)
-    {
-        internalTypeCheck(call, sx = VECTOR_ELT(sxy, 0), REALSXP);
-        internalTypeCheck(call, sy = VECTOR_ELT(sxy, 1), REALSXP);
-    }
-    else if (isList(sxy) && length(sxy) >= 2)
-    {
-        internalTypeCheck(call, sx = CAR(sxy), REALSXP);
-        internalTypeCheck(call, sy = CADR(sxy), REALSXP);
-    }
-    else
-        errorcall(call, "invalid plotting structure");
-    if (LENGTH(sx) != LENGTH(sy))
-        error("x and y lengths differ for plot");
-    n = LENGTH(sx);
-    args = CDR(args);
-
+    /* labels */
     txt = CAR(args);
-    if (!isExpression(txt))
+    if (isSymbol(txt) || isLanguage(txt))
+        txt = coerceVector(txt, EXPRSXP);
+    else if (!isExpression(txt))
         txt = coerceVector(txt, STRSXP);
     PROTECT(txt);
     if (length(txt) <= 0)
@@ -2060,7 +2068,8 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     PROTECT(pos = coerceVector(CAR(args), INTSXP));
-    for (i = 0; i < length(pos); i++)
+    npos = length(pos);
+    for (i = 0; i < npos; i++)
         if (INTEGER(pos)[i] < 1 || INTEGER(pos)[i] > 4)
             errorcall(call, "invalid pos value");
     args = CDR(args);
@@ -2085,9 +2094,11 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     nfont = LENGTH(font);
     args = CDR(args);
 
-    xpd = asLogical(CAR(args));
-    if (xpd == NA_LOGICAL)
-        xpd = dd->gp.xpd; /* was 0 */
+    sxpd = CAR(args); /* xpd: NULL -> par("xpd") */
+    if (sxpd != R_NilValue)
+        xpd = asInteger(sxpd);
+    else
+        xpd = dd->gp.xpd;
     args = CDR(args);
 
     x = REAL(sx);
@@ -2098,6 +2109,8 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     GSavePars(dd);
     RecordGraphicsCall(call);
     ProcessInlinePars(args, dd);
+
+    dd->gp.xpd = (xpd == NA_INTEGER) ? 2 : xpd;
 
     GMode(1, dd);
     for (i = 0; i < n; i++)
@@ -2119,9 +2132,9 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
                 dd->gp.font = INTEGER(font)[i % nfont];
             else
                 dd->gp.font = dd->dp.font;
-            if (length(pos) > 0)
+            if (npos > 0)
             {
-                switch (INTEGER(pos)[i % length(pos)])
+                switch (INTEGER(pos)[i % npos])
                 {
                 case 1:
                     yy = yy - offset;
@@ -2264,8 +2277,10 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Arg1 : text= */
     text = CAR(args);
-    if (!isExpression(text))
-        text = coerceVector(CAR(args), STRSXP);
+    if (isSymbol(text) || isLanguage(text))
+        text = coerceVector(text, EXPRSXP);
+    else if (!isExpression(text))
+        text = coerceVector(text, STRSXP);
     PROTECT(text);
     n = ntext = length(text);
     if (ntext <= 0)
