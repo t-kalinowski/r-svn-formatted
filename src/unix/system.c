@@ -1020,7 +1020,7 @@ int R_ChooseFile(int new, char *buf, int len)
     R_ReadConsole("Enter file name: ", buf, len, 0);
     namelen = strlen(buf);
     bufp = &buf[namelen - 1];
-    while (bufp > buf && isspace(*bufp))
+    while (bufp >= buf && isspace(*bufp))
         *bufp-- = '\0';
     return strlen(buf);
 }
