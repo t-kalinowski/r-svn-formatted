@@ -165,7 +165,7 @@ int R_finite(double x)
 #ifdef Macintosh
     return isfinite(x);
 #endif
-#ifndef FINITE_BROKEN
+#ifdef HAVE_WORKING_FINITE
     return finite(x);
 #else
 #ifdef _AIX
@@ -308,13 +308,13 @@ static double myfmod(double x1, double x2)
     return x1 - floor(q) * x2;
 }
 
-#ifdef LOG_BROKEN
+#ifdef HAVE_WORKING_LOG
+#define R_log log
+#else
 double R_log(double x)
 {
     return (x > 0 ? log(x) : x < 0 ? R_NaN : R_NegInf);
 }
-#else
-#define R_log log
 #endif
 
 #ifdef POW_DIRTY
