@@ -452,7 +452,7 @@ static void readline_handler(char *line)
  the host application will probably not let things get that far and trap the
  signals itself.
 */
-static void handleInterrupt()
+static void handleInterrupt(void)
 {
     popReadline();
     onintr();
