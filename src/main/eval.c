@@ -288,14 +288,13 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     }
 
     endcontext(&cntxt);
-    UNPROTECT(1);
 
     if (DEBUG(op))
     {
         Rprintf("exiting from: ");
         PrintValueRec(call, rho);
     }
-    UNPROTECT(2);
+    UNPROTECT(3);
     return (tmp);
 }
 

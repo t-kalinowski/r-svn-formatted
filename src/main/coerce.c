@@ -1416,7 +1416,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isList(CAR(args)) && !isVector(CAR(args)))
         errorcall(call, "is.nan applies only to lists and vectors\n");
 #endif
-    ans = allocVector(LGLSXP, length(CAR(args)));
+    PROTECT(ans = allocVector(LGLSXP, length(CAR(args))));
     x = CAR(args);
     n = length(x);
     if (isVector(x))
@@ -1502,7 +1502,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (isVector(x))
         UNPROTECT(2);
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 

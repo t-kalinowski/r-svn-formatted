@@ -3023,7 +3023,15 @@ static BBOX RenderOffsetElement(SEXP expr, double x, double y, int draw)
 
 void GExpressionBBox(SEXP expr, int units, double *width, double *height, double *depth, DevDesc *dd)
 {
-    BBOX bbox = RenderElement(expr, 0);
+    BBOX bbox;
+    MathDevice = dd;
+    /* The following two lines don't look right to me, but I inserted them
+       because otherwise you get trouble if you calculate BBoxes without
+       plotting any math first... Similar problem in the next two functions
+         --pd */
+    CurrentStyle = STYLE_D;
+    SetFont(PlainFont);
+    bbox = RenderElement(expr, 0);
     *width = bboxWidth(bbox);
     *height = bboxHeight(bbox);
     *depth = bboxDepth(bbox);
@@ -3037,8 +3045,13 @@ void GExpressionBBox(SEXP expr, int units, double *width, double *height, double
 
 double GExpressionWidth(SEXP expr, int units, DevDesc *dd)
 {
-    BBOX bbox = RenderElement(expr, 0);
-    double width = bboxWidth(bbox);
+    BBOX bbox;
+    double width;
+    MathDevice = dd;
+    CurrentStyle = STYLE_D;
+    SetFont(PlainFont);
+    bbox = RenderElement(expr, 0);
+    width = bboxWidth(bbox);
     if (units == INCHES)
         return width;
     else
@@ -3047,8 +3060,13 @@ double GExpressionWidth(SEXP expr, int units, DevDesc *dd)
 
 double GExpressionHeight(SEXP expr, int units, DevDesc *dd)
 {
-    BBOX bbox = RenderElement(expr, 0);
-    double height = bboxHeight(bbox) + bboxDepth(bbox);
+    BBOX bbox;
+    double height;
+    MathDevice = dd;
+    CurrentStyle = STYLE_D;
+    SetFont(PlainFont);
+    bbox = RenderElement(expr, 0);
+    height = bboxHeight(bbox) + bboxDepth(bbox);
     if (units == INCHES)
         return height;
     else
