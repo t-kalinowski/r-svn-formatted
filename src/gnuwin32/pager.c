@@ -73,7 +73,7 @@ static xbuf file2xbuf(char *name, int del)
         return NULL;
     }
     vv = GetFileSize(f, NULL);
-    p = (char *)winmalloc((size_t)vv + 1);
+    p = (char *)malloc((size_t)vv + 1);
     if (!p)
     {
         CloseHandle(f);
@@ -109,7 +109,7 @@ static xbuf file2xbuf(char *name, int del)
             else
                 xbufaddc(xb, *q);
         }
-    winfree(p);
+    free(p);
     return xb;
 }
 

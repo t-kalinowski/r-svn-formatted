@@ -26,7 +26,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "graphapp/ga.h" /* for winmalloc, winfree */
 #include "run.h"
 
 static char RunError[256] = "";
@@ -38,7 +37,7 @@ static char *expandcmd(char *cmd)
     char fl[MAX_PATH], fn[MAX_PATH];
     int d, ext;
 
-    if (!(s = (char *)winmalloc(MAX_PATH + strlen(cmd))))
+    if (!(s = (char *)malloc(MAX_PATH + strlen(cmd))))
     {
         strcpy(RunError, "Insufficient memory (expandcmd)");
         return NULL;
@@ -96,7 +95,7 @@ static char *expandcmd(char *cmd)
     }
     if (!d)
     {
-        winfree(s);
+        free(s);
         strncpy(RunError, p, 200);
         strcat(RunError, " not found");
         *q = c;
@@ -138,7 +137,7 @@ static HANDLE pcreate(char *cmd, char *finput, int newconsole, int visible, int 
         hIN = CreateFile(finput, GENERIC_READ, 0, &sa, OPEN_EXISTING, 0, NULL);
         if (hIN == INVALID_HANDLE_VALUE)
         {
-            winfree(ecmd);
+            free(ecmd);
             strcpy(RunError, "Impossible to redirect input");
             return NULL;
         }
@@ -188,10 +187,10 @@ static HANDLE pcreate(char *cmd, char *finput, int newconsole, int visible, int 
     {
         strcpy(RunError, "Impossible to run '");
         strncat(RunError, ecmd, 200);
-        winfree(ecmd);
+        free(ecmd);
         return NULL;
     }
-    winfree(ecmd);
+    free(ecmd);
     CloseHandle(pi.hThread);
     return pi.hProcess;
 }
@@ -242,7 +241,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput)
     HANDLE hOUT, hERR, hThread, hTHIS, hTemp;
     DWORD id;
 
-    if (!(r = (rpipe *)winmalloc(sizeof(struct structRPIPE))))
+    if (!(r = (rpipe *)malloc(sizeof(struct structRPIPE))))
     {
         strcpy(RunError, "Insufficient memory (rpipeOpen)");
         return NULL;
@@ -352,6 +351,6 @@ int rpipeClose(rpipe *r)
     CloseHandle(r->write);
     CloseHandle(r->process);
     i = r->exitcode;
-    winfree(r);
+    free(r);
     return i;
 }
