@@ -40,6 +40,11 @@
 extern console RConsole;
 extern Rboolean AllDevicesKilled;
 
+/* a colour used to represent the background on png if transparent
+   NB: must be grey as used as RGB and BGR
+*/
+#define PNG_TRANS 0xfefefe
+
 /* these really are globals: per machine, not per window */
 static double user_xpinch = 0.0, user_ypinch = 0.0;
 
@@ -207,7 +212,7 @@ static void GA_Line(double, double, double, double, int, DevDesc *);
 static Rboolean GA_Locator(double *, double *, DevDesc *);
 static void GA_Mode(int);
 static void GA_NewPage(DevDesc *);
-static Rboolean GA_Open(DevDesc *, gadesc *, char *, double, double, Rboolean, int, rgb);
+static Rboolean GA_Open(DevDesc *, gadesc *, char *, double, double, Rboolean, int, int);
 static void GA_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void GA_Polyline(int, double *, double *, int, DevDesc *);
 static void GA_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -1436,7 +1441,7 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, double w, double h, Rboole
 }
 
 static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, Rboolean recording, int resize,
-                        rgb canvascolor)
+                        int canvascolor)
 {
     rect rr;
 
@@ -1449,7 +1454,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     xd->col = dd->dp.col = xd->fg;
 
     xd->fgcolor = Black;
-    xd->bgcolor = xd->canvascolor = canvascolor;
+    xd->bgcolor = xd->canvascolor = GArgb(canvascolor, 1.0);
     xd->outcolor = myGetSysColor(COLOR_APPWORKSPACE);
     xd->rescale_factor = 1.0;
     xd->fast = 1; /* Use `cosmetic pens' if available */
@@ -1468,7 +1473,11 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     }
     else if (!strncmp(dsp, "png:", 4) || !strncmp(dsp, "bmp:", 4))
     {
-        xd->bg = dd->dp.bg = R_RGB(255, 255, 255); /* white */
+        if (R_OPAQUE(canvascolor))
+            xd->bg = dd->dp.bg = GArgb(canvascolor, 1.0);
+        else
+            xd->bg = dd->dp.bg = canvascolor;
+        /* was R_RGB(255, 255, 255); white */
         xd->kind = (dsp[0] == 'p') ? PNG : BMP;
         if (!Load_Rbitmap_Dll())
         {
@@ -1495,6 +1504,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     else if (!strncmp(dsp, "jpeg:", 5))
     {
         char *p = strchr(&dsp[5], ':');
+        xd->bg = dd->dp.bg = GArgb(canvascolor, 1.0);
         xd->kind = JPEG;
         if (!p)
             return FALSE;
@@ -1766,7 +1776,7 @@ static void GA_NewPage(DevDesc *dd)
         xd->needsave = TRUE;
         xd->clip = getrect(xd->gawin);
         if (R_OPAQUE(xd->bg) || xd->kind == PNG || xd->kind == BMP || xd->kind == JPEG)
-            DRAW(gfillrect(_d, xd->bgcolor, xd->clip));
+            DRAW(gfillrect(_d, R_OPAQUE(xd->bg) ? xd->bgcolor : PNG_TRANS, xd->clip));
     }
     else
     {
@@ -2239,7 +2249,7 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
 
     /* Start the Device Driver and Hardcopy.  */
 
-    if (!GA_Open(dd, xd, display, width, height, recording, resize, GArgb(canvas, 1.0)))
+    if (!GA_Open(dd, xd, display, width, height, recording, resize, canvas))
     {
         free(xd);
         return FALSE;
@@ -2436,7 +2446,7 @@ static void SaveAsBitmap(DevDesc *dd)
     gsetcliprect(xd->gawin, getrect(xd->gawin));
     if (xd->kind == PNG)
         R_SaveAsPng(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->fp,
-                    R_OPAQUE(xd->bg) ? 0 : xd->canvascolor);
+                    R_OPAQUE(xd->bg) ? 0 : PNG_TRANS);
     else if (xd->kind == JPEG)
         R_SaveAsJpeg(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->quality, xd->fp);
     else
