@@ -60,9 +60,9 @@ extern int ConsoleAcceptCmd, R_is_running;
 extern Rboolean DebugMenuitem;
 
 static menubar RMenuBar;
-static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mcopy, mcopypaste, mlazy, mconfig,
-    mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart, mhelpsearch, mFAQ,
-    mrwFAQ, mpkgl, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde, mCRAN;
+static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
+    mlazy, mconfig, mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart,
+    mhelpsearch, mFAQ, mrwFAQ, mpkgl, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde, mCRAN;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext;
 static menu m, mman;
 static char cmd[1024];
@@ -225,6 +225,14 @@ static void menupaste(control m)
     else
         askok("No text available");
     /*    show(RConsole); */
+}
+
+static void menupastecmds(control m)
+{
+    if (consolecanpaste(RConsole))
+        consolepastecmds(RConsole);
+    else
+        askok("No text available");
 }
 
 static void menucopypaste(control m)
@@ -609,9 +617,15 @@ static void menuact(control m)
     }
 
     if (consolecanpaste(RConsole))
+    {
         enable(mpaste);
+        enable(mpastecmds);
+    }
     else
+    {
         disable(mpaste);
+        disable(mpastecmds);
+    }
 
     draw(RMenuBar);
 }
@@ -932,47 +946,55 @@ static void dropconsole(control m, char *fn)
     askok("Can only drop .R, .RData and .rda files");
 }
 
-static MenuItem ConsolePopup[] = {{"Copy", menucopy, 0},
-                                  {"Paste", menupaste, 0},
-                                  {"Copy and paste", menucopypaste, 0},
+static MenuItem ConsolePopup[] = {                                           /* Numbers used below */
+                                  {"Copy", menucopy, 0},                     /* 0 */
+                                  {"Paste", menupaste, 0},                   /* 1 */
+                                  {"Paste commands only", menupastecmds, 0}, /* 2 */
+                                  {"Copy and paste", menucopypaste, 0},      /* 3 */
                                   {"-", 0, 0},
-                                  {"Clear window", menuclear, 0},
+                                  {"Clear window", menuclear, 0}, /* 5 */
                                   {"-", 0, 0},
-                                  {"Select all", menuselectall, 0},
+                                  {"Select all", menuselectall, 0}, /* 7 */
                                   {"-", 0, 0},
-                                  {"Buffered output", menulazy, 0},
-                                  {"Stay on top", menuconsolestayontop, 0},
+                                  {"Buffered output", menulazy, 0},         /* 9 */
+                                  {"Stay on top", menuconsolestayontop, 0}, /* 10 */
                                   LASTMENUITEM};
 
 static void popupact(control m)
 {
     if (consolegetlazy(RConsole))
-        check(ConsolePopup[8].m);
+        check(ConsolePopup[9].m);
     else
-        uncheck(ConsolePopup[8].m);
+        uncheck(ConsolePopup[9].m);
 
     if (consolecancopy(RConsole))
     {
         enable(ConsolePopup[0].m);
-        enable(ConsolePopup[2].m);
+        enable(ConsolePopup[3].m);
     }
     else
     {
         disable(ConsolePopup[0].m);
-        disable(ConsolePopup[2].m);
+        disable(ConsolePopup[3].m);
     }
     if (consolecanpaste(RConsole))
+    {
         enable(ConsolePopup[1].m);
+        enable(ConsolePopup[2].m);
+    }
     else
+    {
         disable(ConsolePopup[1].m);
+        disable(ConsolePopup[2].m);
+    }
     if (ismdi())
-        disable(ConsolePopup[9].m);
+        disable(ConsolePopup[10].m);
     else
     {
         if (isTopmost(RConsole))
-            check(ConsolePopup[9].m);
+            check(ConsolePopup[10].m);
         else
-            uncheck(ConsolePopup[9].m);
+            uncheck(ConsolePopup[10].m);
     }
 }
 
@@ -1072,6 +1094,7 @@ int setupui()
     MCHECK(newmenu("Edit"));
     MCHECK(mcopy = newmenuitem("Copy", 'C', menucopy));
     MCHECK(mpaste = newmenuitem("Paste", 'V', menupaste));
+    MCHECK(mpastecmds = newmenuitem("Paste commands only", 0, menupastecmds));
     MCHECK(mcopypaste = newmenuitem("Copy and Paste", 'X', menucopypaste));
     MCHECK(newmenuitem("Select all", 0, menuselectall));
     MCHECK(newmenuitem("Clear console", 'L', menuclear));
