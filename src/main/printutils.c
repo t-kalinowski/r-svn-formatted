@@ -309,9 +309,14 @@ int Rstrlen(SEXP s, int quote)
             case '\0':
                 len += 2;
                 break;
-            default: /* print in octal */
+            default:
+#ifdef Win32
+                len += ((unsigned int)*p < 32) ? 5 : 1;
+#else
+                /* print in octal */
                 len += 5;
                 break;
+#endif
             }
         p++;
     }
@@ -421,10 +426,23 @@ char *EncodeString(SEXP s, int w, int quote, int right)
                 *q++ = '0';
                 break;
 
-            default: /* print in octal */
+            default:
+#ifdef Win32 /* It seems Windows does not know what is printable! */
+                if ((unsigned int)*p < 32)
+                {
+                    /* print in octal */
+                    snprintf(buf, 5, "\\%03o", (unsigned char)*p);
+                    for (j = 0; j < 4; j++)
+                        *q++ = buf[j];
+                }
+                else
+                    *q++ = *p;
+#else
+                /* print in octal */
                 snprintf(buf, 5, "\\%03o", (unsigned char)*p);
                 for (j = 0; j < 4; j++)
                     *q++ = buf[j];
+#endif
                 break;
             }
         p++;
