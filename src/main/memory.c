@@ -298,9 +298,7 @@ SEXP allocString(int length)
         if (R_VMax - R_VTop < size)
             mem_err_heap(size);
     }
-
     GC_PROT(s = allocSExp(CHARSXP));
-
     CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
     BACKPOINTER(*R_VTop) = s;
@@ -490,7 +488,6 @@ SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
 void unmarkPhase(void)
 {
     int i;
-
     for (i = 0; i < R_NSize; i++)
         MARK(&R_NHeap[i]) = 0;
 }
@@ -539,7 +536,6 @@ void markPhase(void)
 void markSExp(SEXP s)
 {
     int i;
-
     if (s && !MARK(s))
     {
         MARK(s) = 1;
@@ -589,9 +585,7 @@ void compactPhase(void)
     VECREC *vto, *vfrom;
     SEXP s;
     int i, size;
-
     vto = vfrom = R_VHeap;
-
     while (vfrom < R_VTop)
     {
         s = BACKPOINTER(*vfrom);
@@ -650,6 +644,7 @@ void scanPhase(void)
     {
         if (!MARK(&R_NHeap[i]))
         {
+            /* Call Destructors Here */
             CDR(&R_NHeap[i]) = R_FreeSEXP;
             R_FreeSEXP = &R_NHeap[i];
             R_Collected++;
@@ -795,8 +790,9 @@ void R_chk_free(void *ptr)
 
 /* This code keeps a list of objects which are not assigned to variables
    but which are required to persist across garbage collections.  The
-   objects are registered with R_PreserveObject and Deregistered with
-   R_UnpreserveObject. - ihaka */
+   objects are registered with R_PreserveObject and deregistered with
+   R_UnpreserveObject.  This is experimental code, it would not be wise
+   to rely on it at this point - ihaka */
 
 void R_PreserveObject(SEXP object)
 {
