@@ -1153,6 +1153,7 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
             return FALSE;
         DisplayOpened = TRUE;
         Rf_setX11Display(display, gamma_fac, colormodel, maxcube, TRUE);
+        displayOpen = TRUE;
         if (xd->handleOwnEvents == FALSE)
             addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
     }
@@ -1528,7 +1529,6 @@ static void X11_Close(DevDesc *dd)
 #endif
         if (xd->handleOwnEvents == FALSE)
             removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
-
         XCloseDisplay(display);
         displayOpen = FALSE;
     }
@@ -2030,9 +2030,7 @@ int Rf_setX11Display(Display *dpy, double gamma_fac, X_COLORTYPE colormodel, int
 {
     static int alreadyDone = 0;
     if (alreadyDone)
-    {
         return (TRUE);
-    }
     alreadyDone = 1;
     display = dpy;
 
