@@ -596,7 +596,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         }
         if (R_Consolefile)
         {
-            vfprintf(R_Consolefile, format, arg);
+            /* try to interleave stdout and stderr carefully */
+            if (R_Outputfile && (R_Outputfile != R_Consolefile))
+            {
+                fflush(R_Outputfile);
+                vfprintf(R_Consolefile, format, arg);
+                fflush(R_Consolefile);
+            }
+            else
+                vfprintf(R_Consolefile, format, arg);
         }
         else
         {
