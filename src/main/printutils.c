@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1999, The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -146,6 +147,7 @@ char *EncodeReal(double x, int w, int d, int e)
     }
     else if (e)
     {
+#ifndef Win32
         if (d)
         {
             sprintf(fmt, "%%#%d.%de", w, d);
@@ -156,6 +158,18 @@ char *EncodeReal(double x, int w, int d, int e)
             sprintf(fmt, "%%%d.%de", w, d);
             sprintf(Encodebuf, fmt, x);
         }
+#else
+        /* Win32 libraries always use e+xxx format so avoid them */
+        int kp = (x == 0.0) ? 0 : floor(log10(fabs(x))), ee = 1;
+        x = x / pow(10.0, (double)kp);
+        if (abs(kp) >= 100)
+            ee = 2;
+        if (d)
+            sprintf(fmt, "%%#%d.%dfe%%+0%dd", w - ee - 3, d, ee + 2);
+        else
+            sprintf(fmt, "%%%d.%dfe%%+0%dd", w - ee - 3, d, ee + 2);
+        sprintf(Encodebuf, fmt, x, kp);
+#endif
     }
     else
     {
@@ -517,6 +531,7 @@ void RightMatrixColumnLabel(SEXP cl, int j, int w)
         Rprintf("%*s[,%ld]%*s", PRINT_GAP, "", j + 1, w - IndexWidth(j + 1) - 3, "");
     }
 }
+
 void LeftMatrixColumnLabel(SEXP cl, int j, int w)
 {
     int l;
