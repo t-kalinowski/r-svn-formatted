@@ -1244,7 +1244,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (asIs)
         {
-            rval = cvec;
+            PROTECT(rval = cvec); /* just to balance */
         }
         else
         {
