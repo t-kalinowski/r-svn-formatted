@@ -3487,7 +3487,7 @@ SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* strheight(str, units) */
-    SEXP ans, str;
+    SEXP ans, str, ch;
     int i, n, units;
     double cex, cexsave;
     DevDesc *dd = CurrentDevice();
@@ -3517,7 +3517,10 @@ SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isExpression(str))
             REAL(ans)[i] = GExpressionHeight(VECTOR_ELT(str, i), GMapUnits(units), dd);
         else
-            REAL(ans)[i] = GStrHeight(CHAR(STRING_ELT(str, i)), GMapUnits(units), dd);
+        {
+            ch = STRING_ELT(str, i);
+            REAL(ans)[i] = (ch == NA_STRING) ? NA_REAL : GStrHeight(CHAR(ch), GMapUnits(units), dd);
+        }
     Rf_gpptr(dd)->cex = cexsave;
     UNPROTECT(1);
     return ans;
@@ -3526,7 +3529,7 @@ SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* strwidth(str, units) */
-    SEXP ans, str;
+    SEXP ans, str, ch;
     int i, n, units;
     double cex, cexsave;
     DevDesc *dd = CurrentDevice();
@@ -3556,7 +3559,10 @@ SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isExpression(str))
             REAL(ans)[i] = GExpressionWidth(VECTOR_ELT(str, i), GMapUnits(units), dd);
         else
-            REAL(ans)[i] = GStrWidth(CHAR(STRING_ELT(str, i)), GMapUnits(units), dd);
+        {
+            ch = STRING_ELT(str, i);
+            REAL(ans)[i] = (ch == NA_STRING) ? NA_REAL : GStrWidth(CHAR(ch), GMapUnits(units), dd);
+        }
     Rf_gpptr(dd)->cex = cexsave;
     UNPROTECT(1);
     return ans;
