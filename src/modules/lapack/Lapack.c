@@ -64,7 +64,7 @@ SEXP La_rs(SEXP x, SEXP only_values)
     else
         jobv[0] = 'V';
 
-    values = allocVector(REALSXP, n);
+    PROTECT(values = allocVector(REALSXP, n));
     rvalues = REAL(values);
     /* ask for optimal size of work array */
     lwork = -1;
@@ -90,7 +90,7 @@ SEXP La_rs(SEXP x, SEXP only_values)
     SET_STRING_ELT(nm, 0, mkChar("values"));
     setAttrib(ret, R_NamesSymbol, nm);
     SET_VECTOR_ELT(ret, 0, values);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return ret;
 }
 
