@@ -447,7 +447,7 @@ static int findGapUp(double *xxx, double *yyy, int ns, double labelDistance, Dev
         dY = yyy[jjj] - yyy[jjj - n - 1];
         dXC = GConvertXUnits(dX, USER, INCHES, dd);
         dYC = GConvertYUnits(dY, USER, INCHES, dd);
-        distanceSum = sqrt(dXC * dXC + dYC * dYC);
+        distanceSum = pythag(dXC, dYC);
         jjj = (jjj + 1);
         n += 1;
     }
@@ -473,8 +473,8 @@ static int findGapDown(double *xxx, double *yyy, int ns, double labelDistance, D
         dY = yyy[jjj] - yyy[jjj + n + 1];
         dXC = GConvertXUnits(dX, USER, INCHES, dd);
         dYC = GConvertYUnits(dY, USER, INCHES, dd);
-        distanceSum = sqrt(dXC * dXC + dYC * dYC);
-        jjj = (jjj - 1);
+        distanceSum = pythag(dXC, dYC);
+        jjj--;
         n -= 1;
     }
     if (distanceSum < labelDistance)
@@ -898,7 +898,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                 dY = yyy[jjj] - yyy[jjj - n - 1];
                                 dXC = GConvertXUnits(dX, USER, INCHES, dd);
                                 dYC = GConvertYUnits(dY, USER, INCHES, dd);
-                                distanceSum = sqrt(dXC * dXC + dYC * dYC);
+                                distanceSum = pythag(dXC, dYC);
 
                                 /* Calculate the variance of the gradients
                                    of the segments that will make way for the
@@ -997,7 +997,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 
                             dx = GConvertXUnits(xxx[index + range] - xxx[index], USER, INCHES, dd);
                             dy = GConvertYUnits(yyy[index + range] - yyy[index], USER, INCHES, dd);
-                            dxy = sqrt(dx * dx + dy * dy);
+                            dxy = pythag(dx, dy);
 
                             /* save the current label for checking overlap */
                             label2 = allocVector(REALSXP, 8);
@@ -1643,40 +1643,6 @@ static double FacetShade(double *u, double *v)
     return pow(sum, Shade);
 }
 
-/* Determine the depth ordering of the facets to ensure */
-/* that they are drawn in an occlusion compatible order. */
-
-static void OrderFacets(double *depth, int *index, int n)
-{
-    int i, j, h;
-    int itmp;
-
-    h = 1;
-    do
-    {
-        h = 3 * h + 1;
-    } while (h <= n);
-
-    do
-    {
-        h = h / 3;
-        for (i = h; i < n; i++)
-        {
-            itmp = index[i];
-            j = i;
-            while (depth[index[j - h]] < depth[itmp])
-            {
-                index[j] = index[j - h];
-                j = j - h;
-                if (j < h)
-                    goto next_h;
-            }
-        next_h:
-            index[j] = itmp;
-        }
-    } while (h != 1);
-}
-
 /* For each facet, determine the farthest point from the eye. */
 /* Sorting the facets so that these depths are decreasing */
 /* yields an occlusion compatible ordering. */
@@ -1715,7 +1681,9 @@ static void DepthOrder(double *z, double *x, double *y, int nx, int ny, double *
                 }
             depth[i + j * nx1] = d;
         }
-    OrderFacets(depth, index, nx1 * ny1);
+    /* Determine the depth ordering of the facets to ensure
+       that they are drawn in an occlusion compatible order. */
+    rsort_with_index(depth, index, nx1 * ny1);
 }
 
 static void DrawFacets(double *z, double *x, double *y, int nx, int ny, int *index, double xs, double ys, double zs,
