@@ -70,6 +70,11 @@ static void (*my_R_Busy)(int);
  *   Called at I/O, during eval etc to process GUI events.
  */
 
+void (*R_tcldo)();
+static void tcl_do_none()
+{
+}
+
 void R_ProcessEvents(void)
 {
     while (peekevent())
@@ -80,6 +85,7 @@ void R_ProcessEvents(void)
         raise(SIGINT);
     }
     R_CallBackHook();
+    R_tcldo();
 }
 
 /*
@@ -738,6 +744,7 @@ int cmdlineoptions(int ac, char **av)
     }
     Rp->rhome = getRHOME();
 
+    R_tcldo = tcl_do_none;
     /*
      * try R_USER then HOME then working directory
      */
