@@ -1130,7 +1130,7 @@ static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
     return n;
 }
 
-static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmatch, int nsubexpr)
+static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmatch)
 {
     int i, k;
     char *p = repl, *t = target;
@@ -1167,7 +1167,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     regex_t reg;
     regmatch_t regmatch[10];
     int i, j, n, ns, nmatch, offset;
-    int global, igcase_opt, extended_opt, fixed_opt, cflags, eflags;
+    int global, igcase_opt, extended_opt, fixed_opt, cflags, eflags, last_end;
     char *s, *t, *u;
     char *spat = NULL; /* -Wall */
     int patlen = 0, replen = 0, st, nr = 1;
@@ -1304,19 +1304,27 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             eflags = 0;
+            last_end = -1;
+            /* This is not correct, as it cannot know if say \b is
+               matching the beginning of the string.  It needs to use
+               re_search, with considerable changes */
             while (regexec(&reg, &s[offset], 10, regmatch, eflags) == 0)
             {
                 nmatch += 1;
-                if (regmatch[0].rm_eo == 0)
-                    /* <MBCS FIXME> advance by a char */
-                    offset++;
-                else
+                offset += regmatch[0].rm_eo;
+                /* Do not repeat a 0-length match after a match, so
+                   gsub("a*", "x", "baaac") is "xbxcx" not "xbxxcx" */
+                if (offset > last_end)
                 {
                     ns += length_adj(t, regmatch, reg.re_nsub);
-                    offset += regmatch[0].rm_eo;
+                    last_end = offset;
                 }
                 if (s[offset] == '\0' || !global)
                     break;
+                /* If we have a 0-length match, move on */
+                /* <MBCS FIXME> advance by a char */
+                if (regmatch[0].rm_eo == regmatch[0].rm_so)
+                    offset++;
                 eflags = REG_NOTBOL;
             }
             if (nmatch == 0)
@@ -1333,23 +1341,24 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 u = CHAR(STRING_ELT(ans, i));
                 ns = strlen(s);
                 eflags = 0;
+                last_end = -1;
                 while (regexec(&reg, &s[offset], 10, regmatch, eflags) == 0)
                 {
+                    /* printf("%s, %d %d\n", &s[offset],
+                       regmatch[0].rm_so, regmatch[0].rm_eo); */
                     for (j = 0; j < regmatch[0].rm_so; j++)
                         *u++ = s[offset + j];
-                    if (regmatch[0].rm_eo == 0)
+                    if (offset + regmatch[0].rm_eo > last_end)
                     {
-                        /* <MBCS FIXME> advance by a char */
-                        *u++ = s[offset];
-                        offset++;
+                        u = string_adj(u, &s[offset], t, regmatch);
+                        last_end = offset + regmatch[0].rm_eo;
                     }
-                    else
-                    {
-                        u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
-                        offset += regmatch[0].rm_eo;
-                    }
+                    offset += regmatch[0].rm_eo;
                     if (s[offset] == '\0' || !global)
                         break;
+                    /* <MBCS FIXME> advance by a char */
+                    if (regmatch[0].rm_eo == regmatch[0].rm_so)
+                        *u++ = s[offset++];
                     eflags = REG_NOTBOL;
                 }
                 if (offset < ns)
