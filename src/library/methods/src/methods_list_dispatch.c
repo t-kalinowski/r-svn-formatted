@@ -240,9 +240,11 @@ static SEXP clearOverride(SEXP mlist)
             return mlist;
         }
     warning("Could not find the methods list object to clear in R_clear_method_selection");
+    return R_NilValue;
 }
 
-static char *any = "ANY";
+/* static char* any = "ANY"; unused */
+
 static SEXP R_find_method(SEXP mlist, char *class, SEXP fname, SEXP ev, SEXP arg, SEXP class_obj, int *inherited)
 {
     /* find the element of the methods list that matches this class,
@@ -296,6 +298,7 @@ static SEXP R_S_mergeGenericFunctions(SEXP fname)
     return (val);
 }
 
+#ifdef UNUSED
 static SEXP R_S_generic_skeleton(SEXP fname)
 {
     SEXP e, val;
@@ -320,6 +323,21 @@ static SEXP R_S_objectsEnv(SEXP ev)
     return (val);
 }
 
+static SEXP R_S_sysframe(int n, SEXP ev)
+{
+    SEXP e, val, arg;
+    PROTECT(e = allocVector(LANGSXP, 2));
+    PROTECT(val = Rf_findFun(s_sys_dot_frame, R_GlobalEnv));
+    PROTECT(arg = NEW_INTEGER(1));
+    INTEGER_DATA(arg)[0] = n;
+    SETCAR(e, val);
+    SETCAR(CDR(e), arg);
+    val = eval(e, ev);
+    UNPROTECT(3);
+    return val;
+}
+#endif
+
 static SEXP R_S_MethodsListSelect(SEXP fname, SEXP ev, SEXP optional, SEXP mlist, SEXP arg, SEXP class)
 {
     SEXP e, val;
@@ -340,20 +358,6 @@ static SEXP R_S_MethodsListSelect(SEXP fname, SEXP ev, SEXP optional, SEXP mlist
     SETCAR(val, class);
     val = eval(e, R_NilValue);
     UNPROTECT(2);
-    return val;
-}
-
-static SEXP R_S_sysframe(int n, SEXP ev)
-{
-    SEXP e, val, arg;
-    PROTECT(e = allocVector(LANGSXP, 2));
-    PROTECT(val = Rf_findFun(s_sys_dot_frame, R_GlobalEnv));
-    PROTECT(arg = NEW_INTEGER(1));
-    INTEGER_DATA(arg)[0] = n;
-    SETCAR(e, val);
-    SETCAR(CDR(e), arg);
-    val = eval(e, ev);
-    UNPROTECT(3);
     return val;
 }
 
@@ -579,9 +583,10 @@ static SEXP nonstandard_primitive(primitive_type which, SEXP skeleton, SEXP prim
 /* C version of the standardGeneric R function. */
 SEXP R_standardGeneric(SEXP fname, SEXP ev)
 {
-    SEXP mlist, deflt, final, f, val, f_env = R_NilValue, fdef, call, fsym;
-    int inherited, merged = 0;
+    SEXP mlist, final, f, val, f_env = R_NilValue, fdef, call, fsym;
+    int merged = 0;
     primitive_type prim_case;
+
     fsym = fname;
     if (!isSymbol(fsym))
         fsym = install(CHAR(asChar(fsym)));
@@ -637,7 +642,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
             call = nonstandard_primitive(prim_case, call, f, ev);
         else
             /* the skeleton is almost surely a call to the same primitive, but we
-           don't need to assume that. */
+               don't need to assume that. */
             SETCAR(call, f);
         PROTECT(call);
         val = eval(call, ev);
@@ -662,7 +667,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
             UNPROTECT(1);
             return val;
         }
-        /* else, it's an errror */
+    /* else, it's an errror */
     default:
         error("invalid object (non-function) used as method");
         return R_NilValue;
@@ -675,7 +680,7 @@ static SEXP do_dispatch(SEXP fname, SEXP ev, SEXP optional, SEXP mlist, SEXP *fi
     SEXP arg_slot, arg_sym, arg, method, this_method, child, class_obj;
     int inherited;
     *final_p = mlist; /* to signal possible re-computation of mlist to add
-               inherited element. */
+             inherited element. */
     PROTECT(arg_slot = R_get_attr(mlist, "argument"));
     if (arg_slot == R_NilValue)
     {
@@ -688,7 +693,7 @@ static SEXP do_dispatch(SEXP fname, SEXP ev, SEXP optional, SEXP mlist, SEXP *fi
     {
         arg_name = CHAR(asChar(arg_slot));
         /* shouldn't happen, since argument in class MethodsList has class
-         "name" */
+           "name" */
         arg_sym = install(arg_name);
     }
     UNPROTECT(1); /* arg_slot */
