@@ -787,11 +787,11 @@ void editorsetfont(font f)
 {
     int i, ismod;
     textbox t;
-    setfont(f);
-    for (i = 0; i < neditors; ++i)
+    for (i = 0; i < neditors; i++)
     {
         t = getdata(REditors[i]);
-        ismod = ggetmodified(t); /* Don't change the modification flag when changing font  */
+        ismod = ggetmodified(t);
+        /* Don't change the modification flag when changing font  */
         settextfont(t, f);
         gsetmodified(t, ismod);
         show(t);
