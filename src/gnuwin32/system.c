@@ -48,6 +48,7 @@ SA_TYPE RestoreAction = SA_RESTORE;
 Rboolean LoadSiteFile = TRUE;
 Rboolean LoadInitFile = TRUE;
 Rboolean DebugInitFile = FALSE;
+Rboolean DebugMenuitem = FALSE;
 
 __declspec(dllexport) UImode CharacterMode;
 int ConsoleAcceptCmd;
@@ -606,6 +607,7 @@ void R_SetWin32(Rstart Rp)
     pR_ShowMessage = Rp->message;
     R_yesnocancel = Rp->yesnocancel;
     my_R_Busy = Rp->busy;
+    DebugMenuitem = Rp->DebugMenuitem;
     /* Process R_HOME/etc/Renviron.site, then
        .Renviron or ~/.Renviron, if it exists.
        Only used here in embedded versions */
@@ -721,6 +723,7 @@ int cmdlineoptions(int ac, char **av)
 
     R_DefParams(Rp);
     Rp->CharacterMode = CharacterMode;
+    Rp->DebugMenuitem = DebugMenuitem;
     for (i = 1; i < ac; i++)
         if (!strcmp(av[i], "--no-environ") || !strcmp(av[i], "--vanilla"))
             Rp->NoRenviron = TRUE;
@@ -854,6 +857,10 @@ int cmdlineoptions(int ac, char **av)
                 }
                 else
                     R_max_memory = value;
+            }
+            else if (!strcmp(*av, "--debug"))
+            {
+                Rp->DebugMenuitem = TRUE;
             }
             else if (!strcmp(*av, "--args"))
             {
