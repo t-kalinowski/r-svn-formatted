@@ -17,7 +17,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy.c,v 1.13 2002/04/30 19:13:56 ripley Exp $
+ *  $Id: rproxy.c,v 1.14 2003/09/13 15:14:09 murdoch Exp $
  */
 
 #define NONAMELESSUNION
@@ -35,7 +35,7 @@
 #include <Graphics.h>
 #include <Rdevices.h>
 
-// static connector information
+/* static connector information */
 #define CONNECTOR_NAME "R Statistics Interpreter Connector"
 #define CONNECTOR_DESCRIPTION "Implements abstract connector interface to R"
 #define CONNECTOR_COPYRIGHT "(C) 1999-2001, Thomas Baier"
@@ -43,7 +43,7 @@
 #define CONNECTOR_VERSION_MAJOR "1"
 #define CONNECTOR_VERSION_MINOR "0"
 
-// interpreter information here at the moment until I know better...
+/* interpreter information here at the moment until I know better... */
 #define INTERPRETER_NAME "R"
 #define INTERPRETER_DESCRIPTION "A Computer Language for Statistical Data Analysis"
 #define INTERPRETER_COPYRIGHT "(C) R Development Core Team"
@@ -77,7 +77,7 @@ int SYSCALL R_get_version(R_Proxy_Object_Impl *object, unsigned long *version)
     return SC_PROXY_OK;
 }
 
-// 00-02-18 | baier | R_init(), R_Proxy_init() now take parameter-string
+/* 00-02-18 | baier | R_init(), R_Proxy_init() now take parameter-string */
 int SYSCALL R_init(R_Proxy_Object_Impl *object, char const *parameters)
 {
     int lRc = SC_PROXY_ERR_UNKNOWN;
@@ -140,7 +140,7 @@ int SYSCALL R_retain(R_Proxy_Object_Impl *object)
     return SC_PROXY_OK;
 }
 
-// 00-06-19 | baier | release graphics device
+/* 00-06-19 | baier | release graphics device */
 int SYSCALL R_release(R_Proxy_Object_Impl *object)
 {
     if (object == NULL)
@@ -148,7 +148,7 @@ int SYSCALL R_release(R_Proxy_Object_Impl *object)
         return SC_PROXY_ERR_INVALIDARG;
     }
 
-    // reference count must not be 0 here
+    /* reference count must not be 0 here */
     assert(object->ref_count > 0);
 
     (object->ref_count)--;
@@ -184,7 +184,7 @@ int SYSCALL R_set_symbol(R_Proxy_Object_Impl *object, char const *symbol, BDX_Da
 {
     int lRc = 0;
 
-    // check parameters
+    /* check parameters */
     if ((object == NULL) || (symbol == NULL) || (strlen(symbol) == 0) || (data == NULL))
     {
         return SC_PROXY_ERR_INVALIDARG;
@@ -204,7 +204,7 @@ int SYSCALL R_get_symbol(R_Proxy_Object_Impl *object, char const *symbol, BDX_Da
 {
     int lRc = 0;
 
-    // check parameters
+    /* check parameters */
     if ((object == NULL) || (symbol == NULL) || (strlen(symbol) == 0) || (data == NULL))
     {
         return SC_PROXY_ERR_INVALIDARG;
@@ -290,12 +290,12 @@ int SYSCALL R_free_data_buffer(R_Proxy_Object_Impl *object, BDX_Data *data)
     assert(data->version == BDX_VERSION);
 
     bdx_free(data);
-    //  free (data);
+    /*  free (data); */
 
     return SC_PROXY_OK;
 }
 
-// 00-06-19 | baier | only set if version matches
+/* 00-06-19 | baier | only set if version matches */
 int SYSCALL R_set_output_device(R_Proxy_Object_Impl *object, struct _SC_CharacterDevice *device)
 {
     unsigned long lCurrentVersion = 0;
@@ -397,7 +397,7 @@ int SYSCALL R_query_info(R_Proxy_Object_Impl *object, long main_key, long sub_ke
 
     return SC_PROXY_OK;
 }
-// 01-01-25 | baier | new parameters
+/* 01-01-25 | baier | new parameters */
 int R_Proxy_Graphics_Driver(NewDevDesc *pDD, char *pDisplay, double pWidth, double pHeight, double pPointSize,
                             Rboolean pRecording, int pResize, struct _SC_GraphicsDevice *pDevice);
 
@@ -412,8 +412,8 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
 
     if (__graphics_device)
     {
-        // remove the graphics device from the set of drivers
-        // @TB
+        /* remove the graphics device from the set of drivers */
+        /* @TB */
         __graphics_device->vtbl->release(__graphics_device);
         __graphics_device = NULL;
     }
@@ -436,7 +436,7 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
     __graphics_device = device;
     __graphics_device->vtbl->retain(device);
 
-    // add the graphics device to the set of drivers
+    /* add the graphics device to the set of drivers */
     {
         NewDevDesc *lDev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
         GEDevDesc *lDD;
@@ -456,7 +456,7 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
     return SC_PROXY_OK;
 }
 
-// global object table
+/* global object table */
 SC_Proxy_Object_Vtbl global_proxy_object_vtbl = {(SC_PROXY_GET_VERSION)R_get_version,
                                                  (SC_PROXY_INIT)R_init,
                                                  (SC_PROXY_TERMINATE)R_terminate,

@@ -17,7 +17,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: bdx.c,v 1.5 2001/04/05 09:42:35 ripley Exp $
+ *  $Id: bdx.c,v 1.6 2003/09/13 15:14:09 murdoch Exp $
  */
 
 #include <stdlib.h>
@@ -31,17 +31,17 @@ void bdx_free(BDX_Data *data)
         return;
     }
 
-    // even for scalars, the dimensions are correctly initialized (just a 1
-    // dimension structure with just one element)
+    /* even for scalars, the dimensions are correctly initialized (just a 1 */
+    /* dimension structure with just one element) */
     assert(data != NULL);
     assert(data->dimensions != NULL);
     assert(data->raw_data != NULL);
 
-    // is it a character array/vector/scalar? if yes, release the data
+    /* is it a character array/vector/scalar? if yes, release the data */
     if ((data->type & BDX_SMASK) == BDX_STRING)
     {
-        // treat the data as a 1-dimensional array with |dim1|*|dim2|*...
-        // elements
+        /* treat the data as a 1-dimensional array with |dim1|*|dim2|*... */
+        /* elements */
         int total_size = 1;
         int i;
 
@@ -59,7 +59,7 @@ void bdx_free(BDX_Data *data)
         }
     }
 
-    // free data pointers, dimension data and the data block itself
+    /* free data pointers, dimension data and the data block itself */
     free(data->raw_data);
     free(data->dimensions);
     free(data);
