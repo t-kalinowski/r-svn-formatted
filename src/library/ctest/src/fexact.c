@@ -480,7 +480,9 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
     /* Compute log factorials */
     fact[0] = 0.;
     fact[1] = 0.;
-    fact[2] = log(2.); /* MM: old code assuming log() to be SLOW */
+    if (ntot >= 2)
+        fact[2] = log(2.);
+    /* MM: old code assuming log() to be SLOW */
     for (i = 3; i <= ntot; i += 2)
     {
         fact[i] = fact[i - 1] + log((double)i);
@@ -1151,6 +1153,8 @@ L120:
         {
             key = it[i] + key * kyy;
         }
+        if (key < 0)
+            PROBLEM "Bug in FEXACT: gave negative key" RECOVER(NULL_ENTRY);
         /* Table index */
         ipn = key % ldst + 1;
         /* Find empty position */
