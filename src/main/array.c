@@ -988,3 +988,168 @@ SEXP do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
     UNPROTECT(6); /* dimsa, perm, r, dimsr, resize, dna */
     return r;
 }
+
+/* colSums(x, n, p, na.rm) and friends */
+SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP x, ans = R_NilValue;
+    int OP, n, p, cnt = 0, i, j, type;
+    Rboolean NaRm;
+    int *ix;
+    double *rx, sum = 0.0;
+    /* Rcomplex cx, csum;*/
+
+    checkArity(op, args);
+    x = CAR(args);
+    args = CDR(args);
+    n = asInteger(CAR(args));
+    args = CDR(args);
+    p = asInteger(CAR(args));
+    args = CDR(args);
+    NaRm = asLogical(CAR(args));
+    if (n == NA_INTEGER || n <= 0)
+        errorcall(call, "invalid value of n");
+    if (p == NA_INTEGER || p <= 0)
+        errorcall(call, "invalid value of p");
+    if (NaRm == NA_LOGICAL)
+        errorcall(call, "invalid value of na.rm");
+
+    OP = PRIMVAL(op);
+    switch (type = TYPEOF(x))
+    {
+    case LGLSXP:
+        break;
+    case INTSXP:
+        break;
+    case REALSXP:
+        break;
+        /*    case CPLXSXP: break; */
+    default:
+        errorcall(call, "`x' must be numeric");
+    }
+
+    if (OP == 0 || OP == 1)
+    { /* columns */
+        PROTECT(ans = allocVector(REALSXP, p));
+        for (j = 0; j < p; j++)
+        {
+            switch (type)
+            {
+            case REALSXP:
+                rx = REAL(x);
+                for (cnt = 0, sum = 0., i = 0; i < n; i++)
+                    if (!ISNAN(rx[i + n * j]))
+                    {
+                        cnt++;
+                        sum += rx[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            case INTSXP:
+                ix = INTEGER(x);
+                for (cnt = 0, sum = 0., i = 0; i < n; i++)
+                    if (ix[i + n * j] != NA_INTEGER)
+                    {
+                        cnt++;
+                        sum += ix[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            case LGLSXP:
+                ix = LOGICAL(x);
+                for (cnt = 0, sum = 0., i = 0; i < n; i++)
+                    if (ix[i + n * j] != NA_LOGICAL)
+                    {
+                        cnt++;
+                        sum += ix[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            }
+            if (OP == 1)
+            {
+                if (cnt > 0)
+                    sum /= cnt;
+                else
+                    sum = NA_REAL;
+            }
+            REAL(ans)[j] = sum;
+        }
+    }
+
+    if (OP == 2 || OP == 3)
+    { /* rows */
+        PROTECT(ans = allocVector(REALSXP, n));
+        for (i = 0; i < n; i++)
+        {
+            switch (type)
+            {
+            case REALSXP:
+                rx = REAL(x);
+                for (cnt = 0, sum = 0., j = 0; j < p; j++)
+                    if (!ISNAN(rx[i + n * j]))
+                    {
+                        cnt++;
+                        sum += rx[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            case INTSXP:
+                ix = INTEGER(x);
+                for (cnt = 0, sum = 0., j = 0; j < p; j++)
+                    if (ix[i + n * j] != NA_INTEGER)
+                    {
+                        cnt++;
+                        sum += ix[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            case LGLSXP:
+                ix = LOGICAL(x);
+                for (cnt = 0, sum = 0., j = 0; j < p; j++)
+                    if (ix[i + n * j] != NA_LOGICAL)
+                    {
+                        cnt++;
+                        sum += ix[i + n * j];
+                    }
+                    else if (!NaRm)
+                    {
+                        sum = NA_REAL;
+                        break;
+                    }
+                break;
+            }
+            if (OP == 3)
+            {
+                if (cnt > 0)
+                    sum /= cnt;
+                else
+                    sum = NA_REAL;
+            }
+            REAL(ans)[i] = sum;
+        }
+    }
+
+    UNPROTECT(1);
+    return ans;
+}
