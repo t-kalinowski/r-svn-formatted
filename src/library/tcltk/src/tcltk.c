@@ -1,4 +1,10 @@
+
 #include "tcltk.h" /* declarations of our `public' interface */
+#ifndef TCL80
+#define SUPPORT_MBCS 1
+/* Includes Nakama's internationalization patches */
+#endif
+
 extern int (*R_timeout_handler)();
 extern long R_timeout_val;
 
@@ -121,15 +127,39 @@ static int R_call_lang(ClientData clientData, Tcl_Interp *interp, int argc, CONS
 
 static Tcl_Obj *tk_eval(char *cmd)
 {
+#ifdef SUPPORT_MBCS
+    char *cmd_utf8;
+    Tcl_DString cmd_utf8_ds;
+
+    Tcl_DStringInit(&cmd_utf8_ds);
+    cmd_utf8 = Tcl_ExternalToUtfDString(NULL, cmd, -1, &cmd_utf8_ds);
+    if (Tcl_Eval(RTcl_interp, cmd_utf8) == TCL_ERROR)
+#else
     if (Tcl_Eval(RTcl_interp, cmd) == TCL_ERROR)
+#endif
     {
         char p[512];
         if (strlen(Tcl_GetStringResult(RTcl_interp)) > 500)
             strcpy(p, "tcl error.\n");
         else
-            sprintf(p, "[tcl] %s.\n", Tcl_GetStringResult(RTcl_interp));
+#ifdef SUPPORT_MBCS
+        {
+            char *res;
+            Tcl_DString res_ds;
+
+            Tcl_DStringInit(&res_ds);
+            res = Tcl_UtfToExternalDString(NULL, Tcl_GetStringResult(RTcl_interp), -1, &res_ds);
+            snprintf(p, sizeof(p), "[tcl] %s.\n", res);
+            Tcl_DStringFree(&res_ds);
+        }
+#else
+            snprintf(p, sizeof(p), "[tcl] %s.\n", Tcl_GetStringResult(RTcl_interp));
+#endif
         error(p);
     }
+#ifdef SUPPORT_MBCS
+    Tcl_DStringFree(&cmd_utf8_ds);
+#endif
     return Tcl_GetObjResult(RTcl_interp);
 }
 
@@ -193,7 +223,18 @@ SEXP dotTclObjv(SEXP args)
         if (strlen(Tcl_GetStringResult(RTcl_interp)) > 500)
             strcpy(p, "tcl error.\n");
         else
-            sprintf(p, "[tcl] %s.\n", Tcl_GetStringResult(RTcl_interp));
+#ifdef SUPPORT_MBCS
+        {
+            char *res;
+            Tcl_DString res_ds;
+            Tcl_DStringInit(&res_ds);
+            res = Tcl_UtfToExternalDString(NULL, Tcl_GetStringResult(RTcl_interp), -1, &res_ds);
+            snprintf(p, sizeof(p), "[tcl] %s.\n", res);
+            Tcl_DStringFree(&res_ds);
+        }
+#else
+            snprintf(p, sizeof(p), "[tcl] %s.\n", Tcl_GetStringResult(RTcl_interp));
+#endif
         error(p);
     }
 
@@ -237,9 +278,22 @@ SEXP RTcl_AssignObjToVar(SEXP args)
 SEXP RTcl_StringFromObj(SEXP args)
 {
     char *str;
+#ifdef SUPPORT_MBCS
+    SEXP so;
+    char *s;
+    Tcl_DString s_ds;
+
+    Tcl_DStringInit(&s_ds);
+    str = Tcl_GetStringFromObj((Tcl_Obj *)R_ExternalPtrAddr(CADR(args)), NULL);
+    s = Tcl_UtfToExternalDString(NULL, str, -1, &s_ds);
+    so = mkString(s);
+    Tcl_DStringFree(&s_ds);
+    return (so);
+#else
 
     str = Tcl_GetStringFromObj((Tcl_Obj *)R_ExternalPtrAddr(CADR(args)), NULL);
     return mkString(str);
+#endif
 }
 
 SEXP RTcl_ObjAsCharVector(SEXP args)
@@ -255,13 +309,28 @@ SEXP RTcl_ObjAsCharVector(SEXP args)
 
     PROTECT(ans = allocVector(STRSXP, count));
     for (i = 0; i < count; i++)
+#ifdef SUPPORT_MBCS
+    {
+        char *s;
+        Tcl_DString s_ds;
+        Tcl_DStringInit(&s_ds);
+        s = Tcl_UtfToExternalDString(NULL, (Tcl_GetStringFromObj(elem[i], NULL)), -1, &s_ds);
+        SET_STRING_ELT(ans, i, mkChar(s));
+        Tcl_DStringFree(&s_ds);
+    }
+#else
         SET_STRING_ELT(ans, i, mkChar(Tcl_GetStringFromObj(elem[i], NULL)));
+#endif
     UNPROTECT(1);
     return ans;
 }
 
 SEXP RTcl_ObjFromCharVector(SEXP args)
 {
+#ifdef SUPPORT_MBCS
+    char *s;
+    Tcl_DString s_ds;
+#endif
     int count;
     Tcl_Obj *tclobj, *elem;
     int i;
@@ -274,12 +343,28 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
 
     count = length(val);
     if (count == 1 && LOGICAL(drop)[0])
+#ifdef SUPPORT_MBCS
+    {
+        Tcl_DStringInit(&s_ds);
+        s = Tcl_ExternalToUtfDString(NULL, CHAR(STRING_ELT(val, 0)), -1, &s_ds);
+        Tcl_SetStringObj(tclobj, s, -1);
+        Tcl_DStringFree(&s_ds);
+    }
+#else
         Tcl_SetStringObj(tclobj, CHAR(STRING_ELT(val, 0)), -1);
+#endif
     else
         for (i = 0; i < count; i++)
         {
             elem = Tcl_NewObj();
+#ifdef SUPPORT_MBCS
+            Tcl_DStringInit(&s_ds);
+            s = Tcl_ExternalToUtfDString(NULL, CHAR(STRING_ELT(val, i)), -1, &s_ds);
+            Tcl_SetStringObj(elem, s, -1);
+            Tcl_DStringFree(&s_ds);
+#else
             Tcl_SetStringObj(elem, CHAR(STRING_ELT(val, i)), -1);
+#endif
             Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
         }
 
@@ -523,7 +608,19 @@ SEXP dotTclcallback(SEXP args)
     else
         error("argument is not of correct type");
 
+#ifdef SUPPORT_MBCS
+    {
+        char *s;
+        Tcl_DString s_ds;
+
+        Tcl_DStringInit(&s_ds);
+        s = Tcl_UtfToExternalDString(NULL, rval, -1, &s_ds);
+        ans = mkString(s);
+        Tcl_DStringFree(&s_ds);
+    }
+#else
     ans = mkString(rval);
+#endif
     return ans;
 }
 
