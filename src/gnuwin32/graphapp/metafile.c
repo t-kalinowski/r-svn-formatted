@@ -96,7 +96,7 @@ metafile newmetafile(char *name, rect r)
     wr.right = (ppix * r.width) / cppix;
     wr.bottom = (ppiy * r.height) / cppiy;
 
-    hDC = CreateEnhMetaFile(NULL, strlen(name) ? name : NULL, &wr, "GraphApp");
+    hDC = CreateEnhMetaFile(NULL, strlen(name) ? name : NULL, &wr, "GraphApp\0\0");
     if (!hDC)
     {
         R_ShowMessage("Unable to create metafile");
