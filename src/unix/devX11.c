@@ -108,6 +108,7 @@ static Colormap cmap;                   /* Default color map */
 static int blackpixel;                  /* Black */
 static int whitepixel;                  /* White */
 static XContext devPtrContext;
+static Atom _XA_WM_PROTOCOLS, protocol;
 
 static int displayOpen = 0;
 static int numX11Devices = 0;
@@ -193,15 +194,15 @@ static double pixelHeight(void)
 
 void ProcessEvents(void)
 {
+    caddr_t temp;
+    DevDesc *dd;
+    x11Desc *xd;
     while (displayOpen && XPending(display))
     {
         XNextEvent(display, &event);
         /* printf("%i\n",event.type); */
         if (event.xany.type == Expose)
         {
-            caddr_t temp;
-            DevDesc *dd;
-            x11Desc *xd;
             while (XCheckTypedEvent(display, Expose, &event))
                 ;
             XFindContext(display, event.xexpose.window, devPtrContext, &temp);
@@ -213,9 +214,6 @@ void ProcessEvents(void)
         }
         else if (event.type == ConfigureNotify)
         {
-            caddr_t temp;
-            DevDesc *dd;
-            x11Desc *xd;
             XFindContext(display, event.xconfigure.window, devPtrContext, &temp);
             dd = (DevDesc *)temp;
             xd = (x11Desc *)dd->deviceSpecific;
@@ -223,6 +221,13 @@ void ProcessEvents(void)
             xd->windowHeight = event.xconfigure.height;
             xd->resize = 1;
         }
+        else if ((event.type == ClientMessage) && (event.xclient.message_type == _XA_WM_PROTOCOLS))
+            if (event.xclient.data.l[0] == protocol)
+            {
+                XFindContext(display, event.xclient.window, devPtrContext, &temp);
+                dd = (DevDesc *)temp;
+                KillDevice(dd);
+            }
     }
 }
 
@@ -634,6 +639,12 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
 
     xd->gcursor = XCreateFontCursor(display, CURSOR);
     XDefineCursor(display, xd->window, xd->gcursor);
+
+    /* set up protocols so that window manager sends */
+    /* me an event when user "destroys" window */
+    _XA_WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", 0);
+    protocol = XInternAtom(display, "WM_DELETE_WINDOW", 0);
+    XSetWMProtocols(display, xd->window, &protocol, 1);
 
     /* Save the devDesc* with the window for event dispatching */
     XSaveContext(display, xd->window, devPtrContext, (caddr_t)dd);
