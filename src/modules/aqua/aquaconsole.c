@@ -79,8 +79,6 @@ typedef struct GlobalsStruct GlobalsStruct;
 GlobalsStruct g; /*	Globals */
 
 void Raqua_ProcessEvents(void);
-extern OSStatus InitPrintSession(void);
-extern void ClosePrintSession(void);
 extern OSStatus OpenPageSetup(WindowRef window);
 extern OSStatus OpenPrintDialog(WindowRef window);
 
@@ -405,8 +403,6 @@ void Raqua_StartConsole(void)
     RSetFont();
 
     EnableMenuCommand(NULL, kHICommandPreferences);
-
-    InitPrintSession();
 
 noconsole:
     if (bundleURL)
