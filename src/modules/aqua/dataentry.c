@@ -493,7 +493,7 @@ static pascal OSStatus deGetSetItemData(ControlRef browser, DataBrowserItemID it
                 else
                     REAL(tmp)[row - 1] = NA_REAL;
             }
-
+            SetWindowModified(DataEntryWindow, true);
             CFRelease(text);
         }
     }

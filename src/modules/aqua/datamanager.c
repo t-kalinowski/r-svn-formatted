@@ -359,6 +359,7 @@ static pascal OSStatus dmGetSetItemData(ControlRef browser, DataBrowserItemID it
         {
             InstallDSet[row - 1] = !InstallDSet[row - 1];
             err = SetDataBrowserItemDataBooleanValue(itemData, InstallDSet[row - 1]);
+            SetWindowModified(DataManagerWindow, true);
         }
         else
             err = errDataBrowserPropertyNotSupported;

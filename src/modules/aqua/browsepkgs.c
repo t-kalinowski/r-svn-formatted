@@ -395,6 +395,7 @@ static pascal OSStatus bpGetSetItemData(ControlRef browser, DataBrowserItemID it
         {
             InstallPkg[row - 1] = !InstallPkg[row - 1];
             err = SetDataBrowserItemDataBooleanValue(itemData, InstallPkg[row - 1]);
+            SetWindowModified(BrowsePkgWindow, true);
         }
         else
             err = errDataBrowserPropertyNotSupported;
