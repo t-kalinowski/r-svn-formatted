@@ -1102,6 +1102,7 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         default:
             error("incompatible types in subset assignment");
         }
+    next_i:;
         if (n > 1)
         {
             j = 0;
@@ -1111,7 +1112,6 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
                 j = (j + 1) % k;
             }
         }
-    next_i:;
     }
     UNPROTECT(3);
     vmaxset(vmax);
