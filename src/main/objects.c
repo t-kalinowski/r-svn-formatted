@@ -1079,23 +1079,26 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     /* store a preserved pointer to the generic function if there is not
        one there currently.  Unpreserve it if no more methods, but don't
        replace it otherwise:  the generic definition is not allowed to
-       change while it's still defined! */
+       change while it's still defined! (the stored methods list can,
+       however) */
     value = prim_generics[offset];
     if (code == NO_METHODS && prim_generics[offset])
     {
         R_ReleaseObject(prim_generics[offset]);
         prim_generics[offset] = 0;
+        prim_mlist[offset] = 0;
     }
-    else if (fundef && !prim_generics[offset])
+    else if (fundef && !isNull(fundef) && !prim_generics[offset])
     {
+        SEXP env;
         R_PreserveObject(fundef);
         if (TYPEOF(fundef) != CLOSXP)
             error("The formal definition of a primitive generic must be a function object (got type %s)",
                   type2str(TYPEOF(fundef)));
         prim_generics[offset] = fundef;
-        if (mlist)
-            prim_mlist[offset] = mlist;
     }
+    if (mlist && !isNull(mlist))
+        prim_mlist[offset] = mlist;
     return value;
 }
 
@@ -1132,9 +1135,9 @@ void R_set_quick_method_check(R_stdGen_ptr_t value)
    the stored generic function corresponding to the op.  Requires that
    the methods be set up to return a special object rather than trying
    to evaluate the default (which would get us into a loop). */
-SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP x)
+SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP fundef, value;
+    SEXP fundef, value, mlist;
     int offset;
     prim_methods_t current;
     offset = PRIMOFFSET(op);
@@ -1143,12 +1146,13 @@ SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP x)
     current = prim_methods[offset];
     if (current == NO_METHODS || current == SUPPRESSED)
         return (NULL);
-    fundef = prim_generics[offset];
-    if (!fundef || TYPEOF(fundef) != CLOSXP)
-        error("Internal error:  stored generic for \"%s\" was not a function", PRIMNAME(op));
-    if (quick_method_check_ptr)
+    /* check that the methods for this function have been collected (by
+       getAllMethods), and that method check pointer has been set by
+       library(methods) */
+    mlist = prim_mlist[offset];
+    if (mlist && !isNull(mlist) && quick_method_check_ptr)
     {
-        value = (*quick_method_check_ptr)(args, prim_mlist[offset]);
+        value = (*quick_method_check_ptr)(args, mlist);
         if (isPrimitive(value))
             return (NULL);
         if (isFunction(value))
@@ -1156,6 +1160,9 @@ SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP x)
             return applyClosure(call, value, args, rho, R_NilValue);
         /* else, need to perform full method search */
     }
+    fundef = prim_generics[offset];
+    if (!fundef || TYPEOF(fundef) != CLOSXP)
+        error("primitive function \"%s\" has been set for methods but no  generic function supplied", PRIMNAME(op));
     prim_methods[offset] = SUPPRESSED;
     /* To do:  arrange for the setting to be restored in case of an
        error in method search */

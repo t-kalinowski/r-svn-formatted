@@ -231,7 +231,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist)
         if (isNull(value) || isFunction(value))
             return value;
         /* continue matching args down the tree */
-        methods = value;
+        methods = R_get_attr(value, "allMethods");
     }
     return (R_NilValue);
 }
@@ -594,7 +594,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                the original function is a closure */
             if (firstCall)
             {
-                deflt = R_find_method(mlist, "ANY", fname);
+                PROTECT(deflt = R_find_method(mlist, "ANY", fname));
+                nprotect++;
                 prim_case = isPrimitive(deflt);
                 if (prim_case)
                 {
@@ -623,7 +624,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                 {
                     if (prim_case)
                     {
-                        do_set_prim_method(op, "reset", prev_fun, NULL);
+                        do_set_prim_method(op, "reset", prev_fun, value);
                     }
                     else
                     {
@@ -776,9 +777,7 @@ function  MethodListSelect in R */
     return method;
 }
 
-SEXP R_M_setPrimitiveMethods(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef)
+SEXP R_M_setPrimitiveMethods(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mlist)
 {
-    SEXP mlist;
-    mlist = R_get_from_f_env(R_get_function_env(fundef, fname), s_dot_Methods, fname);
     return R_set_prim_method(fname, op, code_vec, fundef, mlist);
 }
