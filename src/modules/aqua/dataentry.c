@@ -207,6 +207,7 @@ Boolean OpenDataEntry(void)
 {
     OSStatus err = noErr;
     int i, j, k;
+    Rect bounds;
     EventTypeSpec deEvents[] = {
         {kEventClassCommand, kEventCommandProcess},          {kEventClassCommand, kEventCommandUpdateStatus},
         {kEventClassWindow, kEventWindowGetIdealSize},       {kEventClassWindow, kEventWindowBoundsChanged},
@@ -261,6 +262,9 @@ Boolean OpenDataEntry(void)
     SetDataBrowserSelectionFlags(DataEntryControl, kDataBrowserSelectOnlyOne);
     // SetAutomaticControlDragTrackingEnabledForWindow( DataEntryWindow, true );
     ShowWindow(DataEntryWindow);
+
+    GetPortBounds(GetWindowPort(DataEntryWindow), &bounds);
+    SizeControl(DataEntryControl, bounds.right - bounds.left, bounds.bottom - bounds.top);
 }
 
 void EmptyDataEntry(void)

@@ -118,6 +118,7 @@ Boolean OpenBrowsePkg(void)
 {
     OSStatus err = noErr;
     int i, j, k;
+    Rect bounds;
     EventTypeSpec bpEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                 {kEventClassCommand, kEventCommandUpdateStatus},
                                 {kEventClassWindow, kEventWindowGetIdealSize},
@@ -170,6 +171,9 @@ Boolean OpenBrowsePkg(void)
     AddDataBrowserItems(BrowsePkgControl, kDataBrowserNoItem, NumOfPkgs, PkgID, kDataBrowserItemNoProperty);
 
     ShowWindow(BrowsePkgWindow);
+
+    GetPortBounds(GetWindowPort(BrowsePkgWindow), &bounds);
+    SizeControl(BrowsePkgControl, bounds.right - bounds.left, bounds.bottom - bounds.top);
 }
 
 void EmptyBrowsePkg(void)

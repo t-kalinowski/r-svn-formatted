@@ -313,6 +313,7 @@ void OpenDataBrowser(void)
 {
     OSStatus err = noErr;
     int i;
+    Rect bounds;
     EventTypeSpec windowEvents[] = {
         {kEventClassCommand, kEventCommandProcess},     {kEventClassCommand, kEventCommandUpdateStatus},
         {kEventClassWindow, kEventWindowClose},         {kEventClassWindow, kEventWindowGetIdealSize},
@@ -339,18 +340,20 @@ void OpenDataBrowser(void)
     if (WSpaceBrowser == NULL)
     {
         CreateDataBrowser(BrowserWindow, &WSpaceBrowser);
+        InstallDataBrowserCallbacks(WSpaceBrowser);
+
         /* Configure the DataBrowser */
         if (!isBrowserOpen)
             ConfigureDataBrowser(WSpaceBrowser);
         err = SetDataBrowserTarget(WSpaceBrowser, 1);
+
+        AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, RootItems, kDataBrowserItemNoProperty);
 
         /* Set the keyboard focus */
         SetKeyboardFocus(BrowserWindow, WSpaceBrowser, kControlDataBrowserPart);
 
         /* Store DB as a window property */
         SetWindowProperty(BrowserWindow, kMyCreator, kMyDataBrowser, sizeof(WSpaceBrowser), &WSpaceBrowser);
-
-        InstallDataBrowserCallbacks(WSpaceBrowser);
     }
 
     if (WSpaceBrowser == NULL)
@@ -359,9 +362,10 @@ void OpenDataBrowser(void)
         return;
     }
 
-    AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, RootItems, kDataBrowserItemNoProperty);
-
     ShowWindow(BrowserWindow);
+
+    GetPortBounds(GetWindowPort(BrowserWindow), &bounds);
+    SizeControl(WSpaceBrowser, bounds.right - bounds.left, bounds.bottom - bounds.top);
 
     isBrowserOpen = true;
 }
