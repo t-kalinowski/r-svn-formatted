@@ -219,6 +219,7 @@ void DoTools(SInt16 menuItem);
 void doUserMenu(SInt16 menuItem);
 
 SavingOption DoWeSaveIt(WindowPtr window);
+Boolean isBrowserWindow(WindowRef window);
 
 OSErr MyOpenDocument(FSSpec *documentFSSpec, SFTypeList *typeList);
 OSErr R_EditFile(SEXP call, char *fname, Boolean isanewfile);
@@ -722,7 +723,7 @@ void PrepareMenus(void)
     Str255 itemText;
     SInt32 selStart, selEnd;
     SInt32 threshold;
-    WEActionKind actionKind;
+    WEActionKind actionKind = weAKNone;
     WEStyleMode mode;
     TextStyle ts;
     Boolean temp;
@@ -738,6 +739,10 @@ void PrepareMenus(void)
 
     /* get associated WE instance
      */
+
+    if (isBrowserWindow(window))
+        return;
+
     we = (window != nil) ? GetWindowWE(window) : nil;
 
     /* *** FILE MENU ***
@@ -831,7 +836,7 @@ void PrepareMenus(void)
         we = GetWindowWE(window);
 
         //	enable Paste if there's anything pasteable on the Clipboard
-        if (WECanPaste(we))
+        if ((we != nil) && (WECanPaste(we)))
         {
             if (!isGraphicWindow(window))
                 EnableMenuItem(menu, kItemPaste);
@@ -839,7 +844,8 @@ void PrepareMenus(void)
 
         /* enable Undo if anything can be undone
          */
-        actionKind = WEGetUndoInfo(&temp, we);
+        if (we)
+            actionKind = WEGetUndoInfo(&temp, we);
 
         if (actionKind != weAKNone)
         {
@@ -1464,6 +1470,8 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
     return err;
 }
 
+extern void CloseDataBrowser(WindowRef window);
+
 /* DoClose:
    In here, you need to understand that different windows have
    different close methods.  For a Graphic window, when you close it, you
@@ -1473,6 +1481,7 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
    For Console and Edit windows, when you close, you need to ask
    whether they want to save the content or not, but for graphic
    window, it is not necessary.
+   The Data Browser window simply closes.
  */
 
 OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
@@ -1488,8 +1497,15 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
     static ModalFilterUPP sFilterProc = nil;
     char cmd[40];
     SInt16 WinIndex;
+    UInt32 size;
 
     SelectWindow(window);
+
+    if (isBrowserWindow(window))
+    {
+        CloseDataBrowser(window);
+        return (noErr);
+    }
 
     if ((win_num = isHelpWindow(window)))
     {
@@ -2010,6 +2026,16 @@ void DoEditChoice(SInt16 menuItem)
     }
 }
 
+Boolean isBrowserWindow(WindowRef window)
+{
+    UInt32 size;
+
+    if (GetWindowPropertySize(window, kMyCreator, kMyDataBrowser, &size) == noErr)
+        return (true);
+    else
+        return (false);
+}
+
 void DoPaste(WindowPtr window)
 {
     WEReference we = nil;
@@ -2099,6 +2125,9 @@ void changeSize(WindowPtr window, SInt16 newSize)
    Some usefule shortcuts
 
  */
+
+extern void OpenDataBrowser(void);
+
 void DoTools(SInt16 menuItem)
 {
     WindowPtr window = FrontWindow();
@@ -2109,6 +2138,14 @@ void DoTools(SInt16 menuItem)
 
     switch (menuItem)
     {
+
+    case kItemBrowseWSpace:
+        OpenDataBrowser();
+        break;
+
+    case kItemUpdateBrowser:
+        Rprintf("\n updating...");
+        break;
 
     case kItemShowWSpace:
         consolecmd("ls()");
