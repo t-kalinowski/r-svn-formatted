@@ -22,8 +22,8 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
-#include "Fileio.h"
+#include <Defn.h>
+#include <Fileio.h>
 
 #include <time.h>
 
@@ -340,7 +340,7 @@ SEXP do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
 #elif HAVE_NDIR_H
 #include <ndir.h>
 #elif defined(Macintosh)
-#include "dirent.h" /* We use a local equivalent to dirent.h */
+#include "dirent.h" /* use a local equivalent to dirent.h */
 #endif
 
 #ifdef USE_SYSTEM_REGEX
@@ -587,16 +587,20 @@ SEXP do_filechoose(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #ifdef HAVE_STAT
 #ifndef Macintosh
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#else
+#endif
+#else /* Macintosh */
 #include <types.h>
 #ifndef __MRC__
 #include <stat.h>
 #else
 #include <mpw_stat.h>
 #endif
-#endif /* mac */
+#endif /* Macintosh */
 
 #if defined(Unix) && defined(HAVE_PWD_H) && defined(HAVE_GRP_H) && defined(HAVE_GETPWUID) && defined(HAVE_GETGRGID)
 #include <pwd.h>

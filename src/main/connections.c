@@ -482,17 +482,21 @@ static Rconnection newfile(char *description, char *mode)
 
 #ifdef HAVE_STAT
 #ifndef Macintosh
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#else
+#endif
+#else /* Macintosh */
 #include <types.h>
 #ifndef __MRC__
 #include <stat.h>
 #else
 #include <mpw_stat.h>
 #endif
-#endif /* mac */
-#endif
+#endif /* Macintosh */
+#endif /* HAVE_STAT */
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
