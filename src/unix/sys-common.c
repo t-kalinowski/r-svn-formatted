@@ -487,18 +487,22 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 sprintf(msg, "WARNING: option %s no longer supported\n", *av);
                 R_ShowMessage(msg);
             }
-            else if ((value = (*av)[1] == 'v') || !strcmp(*av, "--vsize"))
+            else if ((*av)[1] == 'v')
             {
-                if (value)
-                    R_ShowMessage("WARNING: option `-v' is deprecated.  Use `--vsize' instead.\n");
-                if (!value || (*av)[2] == '\0')
+                R_ShowMessage("ERROR: option `-v' is defunct.  Use `--vsize' instead.\n");
+                exit(1);
+            }
+            else if (strcmp(*av, "--vsize") > 0)
+            {
+                if (strlen(*av) < 9)
                 {
+                    R_ShowMessage("WARNING: use `--vsize=V' rather than `--vsize V'.\n");
                     ac--;
                     av++;
                     p = *av;
                 }
                 else
-                    p = &(*av)[2];
+                    p = &(*av)[8];
                 if (p == NULL)
                 {
                     R_ShowMessage("WARNING: no vsize given\n");
@@ -517,19 +521,22 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 else
                     Rp->vsize = value;
             }
-            else if ((value = (*av)[1] == 'n') || !strcmp(*av, "--nsize"))
+            else if ((*av)[1] == 'n')
             {
-                if (value)
-                    R_ShowMessage("WARNING: option `-n' is deprecated.  "
-                                  "Use `--nsize' instead.\n");
-                if (!value || (*av)[2] == '\0')
+                R_ShowMessage("ERROR: option `-n' is defunct.  Use `--nsize' instead.\n");
+                exit(1);
+            }
+            else if (strcmp(*av, "--nsize") > 0)
+            {
+                if (strlen(*av) < 9)
                 {
+                    R_ShowMessage("WARNING: use `--nsize=V' rather than `--nsize V'.\n");
                     ac--;
                     av++;
                     p = *av;
                 }
                 else
-                    p = &(*av)[2];
+                    p = &(*av)[8];
                 if (p == NULL)
                 {
                     R_ShowMessage("WARNING: no nsize given\n");
