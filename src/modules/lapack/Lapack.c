@@ -932,6 +932,9 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
 
     if (!(isMatrix(Ain) && isReal(Ain)))
         error("A must be a real matrix");
+    useLog = asLogical(logarithm);
+    if (useLog == NA_LOGICAL)
+        error("argument logarithm must be logical");
     PROTECT(A = duplicate(Ain));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     n = Adims[0];
@@ -939,35 +942,40 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
         error("A must be a square matrix");
     jpvt = (int *)R_alloc(n, sizeof(int));
     F77_CALL(dgetrf)(&n, &n, REAL(A), &n, jpvt, &info);
-    if (info != 0)
-        error("error code %d from Lapack routine dgetrf", info);
     sign = 1;
-    for (i = 0; i < n; i++)
-        if (jpvt[i] != (i + 1))
-            sign = -sign;
-    useLog = asLogical(logarithm);
-    if (useLog == NA_LOGICAL)
-        error("argument logarithm must be logical");
-    if (useLog)
-    {
-        modulus = 0.0;
-        for (i = 0; i < n; i++)
-        {
-            double dii = REAL(A)[i * (n + 1)]; /* ith diagonal element */
-            modulus += log(dii < 0 ? -dii : dii);
-            if (dii < 0)
-                sign = -sign;
-        }
+    if (info < 0)
+        error("error code %d from Lapack routine dgetrf", info);
+    else if (info > 0)
+    { /* Singular matrix:  U[i,i] (i := info) is 0 */
+        /*warning("Lapack dgetrf(): singular matrix: U[%d,%d]=0", info,info);*/
+        modulus = (useLog ? R_NegInf : 0.);
     }
     else
     {
-        modulus = 1.0;
         for (i = 0; i < n; i++)
-            modulus *= REAL(A)[i * (n + 1)];
-        if (modulus < 0)
+            if (jpvt[i] != (i + 1))
+                sign = -sign;
+        if (useLog)
         {
-            modulus = -modulus;
-            sign = -sign;
+            modulus = 0.0;
+            for (i = 0; i < n; i++)
+            {
+                double dii = REAL(A)[i * (n + 1)]; /* ith diagonal element */
+                modulus += log(dii < 0 ? -dii : dii);
+                if (dii < 0)
+                    sign = -sign;
+            }
+        }
+        else
+        {
+            modulus = 1.0;
+            for (i = 0; i < n; i++)
+                modulus *= REAL(A)[i * (n + 1)];
+            if (modulus < 0)
+            {
+                modulus = -modulus;
+                sign = -sign;
+            }
         }
     }
     val = PROTECT(allocVector(VECSXP, 2));
