@@ -26,9 +26,8 @@
 
 #include "Graphics.h"
 #include "Defn.h"
-#include "Mathlib.h" /* for floor(), fmax2(),.. in GPretty(.) */
+#include "Mathlib.h" /* eg. fmax2() */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -96,14 +95,13 @@ double Log10(double x)
     return (FINITE(x) && x > 0.0) ? log10(x) : NA_REAL;
 }
 
-/* In interpreted R, units are as follows:   */
-/*	1 = "user"			     */
-/*	2 = "figure"			     */
-/*	3 = "inches"			     */
-/* the function GMapUnits provides a mapping */
-/* between interpreted units and internal    */
-/* units.				     */
-
+/* In interpreted R, units are as follows:
+ *	1 = "user"
+ *	2 = "figure"
+ *	3 = "inches"
+ * the function GMapUnits provides a mapping
+ * between interpreted units and internal units.
+ */
 int GMapUnits(int Runits)
 {
     switch (Runits)
@@ -2759,48 +2757,40 @@ void GLPretty(double *xmin, double *xmax, int *n)
 #define LPR_SMALL 2
 #define LPR_MEDIUM 3
 
-/* Generate pretty tick values - logarithmic scale */
-/* This only does a very simple setup.	The real */
-/* work happens when the axis is drawn. */
 void GLPretty(double *ul, double *uh, int *n)
 {
-    /* Generate pretty tick values - logarithmic scale */
-    /* This only does a very simple setup.  The real */
-    /* work happens when the axis is drawn. */
-
+    /* Generate pretty tick values --	LOGARITHMIC scale
+     * This only does a very simple setup.
+     * The real work happens when the axis is drawn. */
     int p1, p2;
     p1 = ceil(log10(*ul));
     p2 = floor(log10(*uh));
 
     if (p2 - p1 <= 0)
     {
-        /* Very small range */
-        /* Use tickmarks from a linear scale */
-        /* Splus uses n = 9 here, but that is dumb */
+        /* Very small range : Use tickmarks from a linear scale
+         *		      Splus uses n = 9 here, but that is dumb */
         GPretty(ul, uh, n);
         *n = -*n;
     }
     else if (p2 - p1 <= LPR_SMALL)
     {
-        /* Small range */
-        /* Use 1,2,5,10 times 10^k tickmarks */
+        /* Small range :  Use 1,2,5,10 times 10^k tickmarks */
         *ul = pow(10., (double)p1);
         *uh = pow(10., (double)p2);
         *n = 3;
     }
     else if (p2 - p1 <= LPR_MEDIUM)
     {
-        /* Medium range */
-        /* Use 1,5 times 10^k tickmarks */
+        /* Medium range :  Use 1,5 times 10^k tickmarks */
         *ul = pow(10., (double)p1);
         *uh = pow(10., (double)p2);
         *n = 2;
     }
     else
     {
-        /* Large range */
-        /* Use 10^k tickmarks */
-        /* But decimate, when there are too many */
+        /* Large range : Use 10^k tickmarks
+         *		 But decimate, when there are too many */
         *ul = pow(10., (double)p1);
         *uh = pow(10., (double)p2);
         *n = 1;
@@ -2816,13 +2806,15 @@ void GPretty(double *lo, double *up, int *ndiv)
      */
 
     double dx, cell, unit, base, U;
-    double x1, x2;
-    int nd0;
     int ns, nu;
     short i_small;
+    double x1, x2;
+    int nd0; /* for the diagnostic output only */
 
-    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || *ndiv == 0)
-        error("infinite axis extents\n");
+    if (*ndiv <= 0)
+        error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
+    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf)
+        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
 
     x1 = *lo;
     x2 = *up;
@@ -2877,14 +2869,18 @@ void GPretty(double *lo, double *up, int *ndiv)
 #endif
     nu--;
 
+    *ndiv = nu - ns;
+    if (*ndiv <= 0)
+    {
+        REprintf("Problematic axis setup.\nGpretty(%g,%g,%d):"
+                 "cell=%g, ndiv= %d <=0;\t\t(ns,nu)=(%d,%d);"
+                 "dx=%g, unit=%3e, ismall=%1d.\n",
+                 x1, x2, nd0, cell, *ndiv, ns, nu, dx, unit, (int)i_small);
+        *ndiv = 1;
+        nu = ns + 1;
+    }
     *lo = ns * unit;
     *up = nu * unit;
-    *ndiv = nu - ns;
-
-    if (*ndiv <= 0)
-        printf("Gpretty(%g,%g,%d): cell=%g, ndiv= %d <=0;\t\t(ns,nu)=(%d,%d);"
-               "dx=%g, unit=%3e, ismall=%1d.\n",
-               x1, x2, nd0, cell, *ndiv, ns, nu, dx, unit, (int)i_small);
 }
 
 #define SMALL 0.25
