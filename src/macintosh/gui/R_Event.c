@@ -67,11 +67,14 @@
 #include "RIntf.h"
 #endif
 
+#include <Debugging.h>
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include "Defn.h"
 #include "Graphics.h"
+#include "Fileio.h"
 #include "Startup.h" /* Jago */
 #include <Rdevices.h>
 
@@ -114,6 +117,9 @@ extern RGBColor gTypeColour;
 
 char *StrCalloc(unsigned short size);
 char *StrFree(char *strPtr);
+
+pascal OSStatus REventHandler(EventHandlerCallRef, EventRef, void *);
+static OSStatus HandleWindowCommand(EventRef inEvent);
 
 void DoGenKeyDown(const EventRecord *event, Boolean Console);
 extern pascal OSErr FSpGetFullPath(const FSSpec *, short *, Handle *);
@@ -871,7 +877,7 @@ static pascal OSErr HandleOpenDocument(const AppleEvent *ae, AppleEvent *reply, 
         InitFile[pathLen] = '\0';
         HUnlock((Handle)pathName);
 
-        if (!(fp = fopen(InitFile, "rb")))
+        if (!(fp = R_fopen(InitFile, "rb")))
         { /* binary file */
             RWrite("File cannot be opened !");
             /* warning here perhaps */
@@ -988,6 +994,12 @@ pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, l
     return 0;
 }
 
+const EventTypeSpec events[] = {{kEventClassWindow, kEventWindowClose},
+                                {kEventClassControl, kEventControlHit},
+                                {kEventClassCommand, kEventCommandProcess},
+                                {kEventClassCommand, kEventCommandUpdateStatus},
+                                {kEventClassCommand, kEventCommandProcess}};
+
 /* InitializeEvents: modified to let R interact with other processes
                      such as UnZip tools, Browsers, etc.
                      AppleEvents handlers are now installed only if
@@ -1028,6 +1040,11 @@ OSErr InitializeEvents(void)
     /* install Handler for CFommandline-Application-Event ('do_CMD')   */
     if ((err = AEInstallEventHandler(kCMDEventClass, kCMDEvent, NewAEEventHandlerUPP(HandleDoCommandLine), 0, false)) !=
         noErr)
+        goto cleanup;
+
+    /* Installs a generic event handler */
+    if ((err = InstallEventHandler(GetApplicationEventTarget(), NewEventHandlerUPP(REventHandler), sizeof(events),
+                                   events, NULL, NULL)) != noErr)
         goto cleanup;
 
     gAEIdleUPP = NewAEIdleUPP(idleProc);
@@ -1075,4 +1092,64 @@ char *StrFree(char *strPtr)
     }
 
     return NULL;
+}
+
+pascal OSStatus REventHandler(EventHandlerCallRef x, EventRef inEvent, void *y)
+{
+    OSStatus result = eventNotHandledErr;
+
+    switch (GetEventClass(inEvent))
+    {
+    case kEventClassCommand:
+        result = HandleWindowCommand(inEvent);
+        break;
+
+    default:
+        break;
+    }
+
+    return result;
+}
+
+/* This routine is charged to handlcommand events */
+/* Jago August 2001, Stefano M. Iacus             */
+
+static OSStatus HandleWindowCommand(EventRef inEvent)
+{
+    HICommand command;
+    OSStatus result = eventNotHandledErr;
+    WindowRef window;
+
+    GetEventParameter(inEvent, kEventParamDirectObject, typeHICommand, NULL, sizeof(command), NULL, &command);
+
+    window = GetUserFocusWindow();
+    check(command.attributes & kHICommandFromMenu);
+
+    switch (GetEventKind(inEvent))
+    {
+    case kEventCommandProcess: {
+        if (command.commandID == kHICommandPreferences)
+        {
+            result = noErr;
+            R_ShowMessage("Preferences");
+            /*
+            EventRef event; CreateEvent(
+                NULL, kEventClassWindow,
+                kEventWindowClose, GetCurrentEventTime(),
+                kEventAttributeUserEvent, &event);
+
+            SetEventParameter(
+                event, kEventParamDirectObject,
+                typeWindowRef, sizeof(window), &window);
+
+            SendEventToWindow(event, GetUserFocusWindow());*/
+        }
+    }
+    break;
+
+    default:
+        break;
+    }
+
+    return result;
 }
