@@ -56,12 +56,10 @@ double lbeta(double a, double b)
         {
             return ML_POSINF;
         }
-#ifdef IEEE_754
     else if (!R_FINITE(q))
     {
         return ML_NEGINF;
     }
-#endif
 
     if (p >= 10)
     {

@@ -60,12 +60,10 @@ double beta(double a, double b)
         {
             return ML_POSINF;
         }
-#ifdef IEEE_754
     else if (!R_FINITE(a) || !R_FINITE(b))
     {
         return 0;
     }
-#endif
 
     if (a + b < xmax)
         return gammafn(a) * gammafn(b) / gammafn(a + b);

@@ -39,9 +39,12 @@
 #endif
 
 #include <float.h>
-#include "Fortran.h" /* for POW_DI */
+#include "Mathlib.h" /* for R_pow_di */
 #include "Arith.h"
 #include "Applic.h"
+
+#define True (1)
+#define False (0)
 
 static void calct(int *);
 static void fxshft(int *, double *, double *, int *);
@@ -106,7 +109,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
     sinr = (float).99756405;
     xx = (float).70710678;
     yy = -xx;
-    *fail = FALSE;
+    *fail = False;
 
     nn = *degree;
     d1 = nn - 1;
@@ -115,7 +118,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
 
     if (opr[0] == 0.0 && opi[0] == 0.0)
     {
-        *fail = TRUE;
+        *fail = True;
         return 0;
     }
 
@@ -201,7 +204,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
         /* the zerofinder has failed on two major passes */
         /* return empty handed */
 
-        *fail = TRUE;
+        *fail = True;
         return 0;
 
     /* the second stage jumps directly to the third stage iteration.
@@ -308,8 +311,8 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
 
     polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
 
-    test = TRUE;
-    pasd = FALSE;
+    test = True;
+    pasd = False;
 
     /* calculate first t = -p(s)/h(s). */
 
@@ -339,11 +342,11 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
             d__2 = ti - oti;
             if (cpoly_cmod(&d__1, &d__2) >= cpoly_cmod(zr, zi) * 0.5)
             {
-                pasd = FALSE;
+                pasd = False;
             }
             else if (!pasd)
             {
-                pasd = TRUE;
+                pasd = True;
             }
             else
             {
@@ -370,7 +373,7 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
                 /* turn off testing and restore */
                 /* h, s, pv and t. */
 
-                test = FALSE;
+                test = False;
                 for (i = 1; i <= n; i++)
                 {
                     hr[i - 1] = shr[i - 1];
@@ -404,8 +407,8 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
     static double r1, r2, mp, ms, tp, relstp;
     static double omp;
 
-    *conv = FALSE;
-    b = FALSE;
+    *conv = False;
+    b = False;
     sr = *zr;
     si = *zi;
 
@@ -440,7 +443,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
                 /* one zero to dominate. */
 
                 tp = relstp;
-                b = TRUE;
+                b = True;
                 if (relstp < eta)
                     tp = eta;
                 r1 = sqrt(tp);
@@ -484,7 +487,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
     return;
 
 L_conv:
-    *conv = TRUE;
+    *conv = True;
     *zr = sr;
     *zi = si;
 }
@@ -705,7 +708,7 @@ static void cpoly_scale(int *nn, double *pt, double *eta, double *infin, double 
                 sc = 1.0;
         }
         ell = (int)(log(sc) / log(*base) + 0.5);
-        *fact = POW_DI(base, &ell);
+        *fact = R_pow_di(*base, ell);
     }
     else
         *fact = 1.0;

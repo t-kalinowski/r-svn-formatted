@@ -132,10 +132,8 @@ double qtukey(double p, double rr, double cc, double df, int lower_tail, int log
 #endif
 
     R_Q_P01_check(p);
-#ifndef IEEE_754
     if (p == 1)
         ML_ERR_return_NAN;
-#endif
 
     /* df must be > 1 */
     /* there must be at least two values */

@@ -62,7 +62,6 @@ double pnorm5(double x, double mu, double sigma, int lower_tail, int log_p)
         ML_ERR_return_NAN;
 
     x = (x - mu) / sigma;
-#ifdef IEEE_754
     if (!R_FINITE(x))
     {
         if (ISNAN(x)) /* e.g. x=mu=Inf */
@@ -72,7 +71,6 @@ double pnorm5(double x, double mu, double sigma, int lower_tail, int log_p)
         else
             return R_DT_1;
     }
-#endif
 
     pnorm_both(x, &p, &cp, (lower_tail ? 0 : 1), log_p);
 

@@ -24,8 +24,7 @@
 
 #include "Defn.h"
 #include "Mathlib.h"
-#include "Fortran.h" /* POW_DI */
-#include "Applic.h"  /* R_cpoly */
+#include "Applic.h" /* R_cpoly */
 
 #include "arithmetic.h" /* complex_ */
 
@@ -125,7 +124,7 @@ static void complex_pow(Rcomplex *r, Rcomplex *a, Rcomplex *b)
         }
         if (a->r == 0. && b->r == (ib = (int)b->r))
         { /* (|a|*i)^b */
-            x = POW_DI(&(a->i), &ib);
+            x = R_pow_di(a->i, ib);
             if (ib % 2)
             { /* ib is odd ==> imaginary r */
                 r->r = 0.;

@@ -79,10 +79,8 @@ double gammafn(double x)
         dxrel = sqrt(d1mach(4));
     }
 
-#ifdef IEEE_754
     if (ISNAN(x))
         return x;
-#endif
 
     y = fabs(x);
 
