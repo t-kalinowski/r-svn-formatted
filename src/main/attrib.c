@@ -761,6 +761,8 @@ void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl, char **rn, char **cn)
     {
         *rl = R_NilValue;
         *cl = R_NilValue;
+        *rn = NULL;
+        *cn = NULL;
     }
     else
     {
