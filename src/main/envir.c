@@ -1747,7 +1747,7 @@ static SEXP getOneVal(SEXP vec, int i)
 /* get multiple values from an environment */
 SEXP do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, env, t1, x, mode, ifnotfound, ifnfnd;
+    SEXP ans, env, x, mode, ifnotfound, ifnfnd;
     SEXPTYPE gmode;
     int ginherits = 0, nvals, nmode, nifnfnd, i;
 
@@ -2317,7 +2317,7 @@ SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
    names */
 SEXP R_lsInternal(SEXP env, Rboolean all)
 {
-    int i, k, n;
+    int k;
     SEXP ans;
 
     /* Step 1 : Compute the Vector Size */
@@ -2357,7 +2357,7 @@ SEXP R_lsInternal(SEXP env, Rboolean all)
 SEXP do_env2list(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP env, ans, names;
-    int i, k, n, all;
+    int k, all;
 
     checkArity(op, args);
 
