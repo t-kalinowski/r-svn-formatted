@@ -22,6 +22,7 @@
 #include "Rregex.h"
 
 static SEXP allocMatrixNA(SEXPTYPE, int, int);
+static void transferVector(SEXP s, SEXP t);
 
 SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -75,7 +76,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     nret *= 2;
                     PROTECT(retval2 = allocMatrixNA(STRSXP, LENGTH(what), nret));
-                    copyMatrix(retval2, retval, 0);
+                    transferVector(retval2, retval);
                     UNPROTECT_PTR(retval);
                     retval = retval2;
                 }
@@ -199,4 +200,17 @@ static SEXP allocMatrixNA(SEXPTYPE mode, int nrow, int ncol)
     }
     UNPROTECT(1);
     return (retval);
+}
+
+/* This one is needed because the normal copy operations will do
+   recycling */
+
+static void transferVector(SEXP s, SEXP t)
+{
+    int i, ns, nt;
+
+    nt = LENGTH(t);
+    ns = LENGTH(s);
+    for (i = 0; i < nt; i++)
+        SET_STRING_ELT(s, i, STRING_ELT(t, i));
 }
