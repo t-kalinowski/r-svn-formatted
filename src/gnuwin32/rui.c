@@ -884,6 +884,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
     return 0;
 }
 
+#define NEW
 int windelmenu(char *menu, char *errmsg)
 {
     int i, j;
@@ -899,7 +900,7 @@ int windelmenu(char *menu, char *errmsg)
         return 3;
     }
 #ifdef NEW
-    delobj(usermenus[i]);
+    remove_menu_item(usermenus[i]);
     nmenus--;
     for (j = i; j < nmenus; j++)
     {
