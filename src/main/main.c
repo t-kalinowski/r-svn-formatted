@@ -528,7 +528,6 @@ void setup_Rmainloop(void)
     if (R_GUIType == "Tk")
     {
         char buf[256];
-        FILE *fp;
 
         sprintf(buf, "%s/library/tcltk/exec/Tk-frontend.R", R_Home);
         R_LoadProfile(R_fopen(buf, "r"), R_GlobalEnv);
