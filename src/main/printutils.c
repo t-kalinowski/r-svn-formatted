@@ -56,7 +56,7 @@
 #define BUFSIZE 8192
 /* FIXME: we shouldn't use a fixed BUFSIZE at all
    -----  Rather, e.g. use moderate BUFSIZE (e.g. 256),
-      then  ALLOCATE  if we need more.
+      then	ALLOCATE  if we need more.
  or replace the whole idea of		  sprintf(Encodebuf,..) ?
  */
 static char Encodebuf[BUFSIZE];
@@ -183,9 +183,7 @@ char *EncodeComplex(complex x, int wr, int dr, int er, int wi, int di, int ei)
 {
     char fmt[64], *efr, *efi;
 
-    /* IEEE allows signed zeros */
-    /* We strip these here */
-
+    /* IEEE allows signed zeros; strip these here */
     if (x.r == 0.0)
         x.r = 0.0;
     if (x.i == 0.0)
