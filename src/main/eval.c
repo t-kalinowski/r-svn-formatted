@@ -1276,10 +1276,10 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
 }
 
 /* gr needs to be protected on return from this function */
-static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *gr, SEXP *meth, int *which, SEXP rho)
+static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *gr, SEXP *meth, int *which, char *buf,
+                       SEXP rho)
 {
     int len, whichclass;
-    char buf[512];
 
     len = length(class);
 
@@ -1313,13 +1313,13 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
     int i, j, nargs, lwhich, rwhich, set;
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
     SEXP rclass, rmeth, rgr, rsxp;
-    char buf[512], generic[128], *pt;
+    char lbuf[512], rbuf[512], generic[128], *pt;
 
     /* check whether we are processing the default method */
     if (isSymbol(CAR(call)))
     {
-        sprintf(buf, "%s", CHAR(PRINTNAME(CAR(call))));
-        pt = strtok(buf, ".");
+        sprintf(lbuf, "%s", CHAR(PRINTNAME(CAR(call))));
+        pt = strtok(lbuf, ".");
         pt = strtok(NULL, ".");
 
         if (pt != NULL && !strcmp(pt, "default"))
@@ -1353,11 +1353,11 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
     rgr = R_NilValue;
     rmeth = R_NilValue;
 
-    findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, rho);
+    findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, lbuf, rho);
     PROTECT(lgr);
 
     if (nargs == 2)
-        findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, rho);
+        findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, rbuf, rho);
     else
         rwhich = 0;
 
@@ -1386,6 +1386,7 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
             lgr = rgr;
             lclass = rclass;
             lwhich = rwhich;
+            strcpy(lbuf, rbuf);
         }
     }
 
@@ -1404,7 +1405,7 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
             {
                 if (!strcmp(CHAR(STRING(t)[j]), CHAR(STRING(lclass)[lwhich])))
                 {
-                    STRING(m)[i] = mkChar(buf);
+                    STRING(m)[i] = mkChar(lbuf);
                     set = 1;
                     break;
                 }
