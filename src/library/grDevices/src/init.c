@@ -45,6 +45,6 @@ static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX), EXTDEF(PostScript), E
 
 void R_init_grDevices(DllInfo *dll)
 {
-    R_useDynamicSymbols(dll, FALSE);
     R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
+    R_useDynamicSymbols(dll, FALSE);
 }
