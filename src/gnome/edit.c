@@ -50,6 +50,7 @@ void InitEd()
 SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     errorcall(call, "edit() is unavailable\n");
+    return NULL;
     /*
     int i, status;
     SEXP x, fn, envir, ed;

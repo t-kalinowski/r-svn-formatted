@@ -122,7 +122,6 @@ static GnomeUIInfo pager_toolbar[] = {
 int R_ShowFiles(int nfile, char **file, char **title, char *wtitle, int del, char *pager)
 {
     pager_data_t *pager_data;
-    GtkWidget *toolbar;
     GtkWidget *table, *vscrollbar;
     gchar *realtitle;
     GtkStyle *textstyle;
@@ -200,7 +199,7 @@ int R_ShowFiles(int nfile, char **file, char **title, char *wtitle, int del, cha
 
                 /* strip backspaced stuff */
                 if (*buf == '\b')
-                    *buf == ' ';
+                    *buf = ' ';
                 for (j = buf, k = buf; j < buf + readlen; j++)
                 {
                     if (*j == '\b')

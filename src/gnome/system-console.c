@@ -32,7 +32,6 @@ int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
             return 0;
         if (!R_Slave)
             fputs(buf, stdout);
-        return 1;
     }
     else
     {
@@ -44,6 +43,8 @@ int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 
         gtk_console_read(GTK_CONSOLE(R_gtk_terminal_text), buf, len, addtohistory);
     }
+
+    return 1;
 }
 
 /* Write a text buffer to the console. */
