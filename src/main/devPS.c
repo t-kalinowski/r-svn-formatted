@@ -1073,7 +1073,10 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
         sprintf(buf, "%s/afm/%s.%s", R_Home, Family[pd->fontfamily].font[i].abbr,
                 (i == 4) ? "afm" : Extension[pd->encoding]);
         if (!PostScriptLoadFontMetrics(buf, &(metrics[i])))
+        {
+            warning("cannot read afm file %s", buf);
             return 0;
+        }
     }
 
     if (strlen(pd->filename) == 0)
@@ -1096,6 +1099,11 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
 #else
         pd->psfp = popen(pd->filename + 1, "w");
         pd->open_type = 1;
+        if (!pd->psfp)
+        {
+            warning("cannot open `postscript' pipe to `%s'", pd->filename + 1);
+            return 0;
+        }
 #endif
     }
     else
@@ -1105,7 +1113,10 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
         pd->open_type = 0;
     }
     if (!pd->psfp)
+    {
+        warning("cannot open `postscript' file argument `%s'", buf);
         return 0;
+    }
 
     if (pd->landscape)
         PSFileHeader(pd->psfp, pd->fontfamily, pd->encoding, pd->papername, pd->paperwidth, pd->paperheight,
