@@ -454,22 +454,8 @@ static int Wpipe_fgetc(Rconnection con)
     rpipe *rp = ((RWpipeconn)con->private)->rp;
     int c;
 
-    if (con->save != -1000)
-    {
-        c = con->save;
-        con->save = -1000;
-    }
-    else
-    {
-        c = rpipeGetc(rp);
-    }
+    c = rpipeGetc(rp);
     return c == NOLAUNCH ? R_EOF : c;
-}
-
-static int Wpipe_ungetc(int c, Rconnection con)
-{
-    con->save = c;
-    return c;
 }
 
 static long null_seek(Rconnection con, int where, int origin)
@@ -594,7 +580,6 @@ Rconnection newWpipe(char *description, char *mode)
     new->destroy = &Wpipe_destroy;
     new->vfprintf = &Wpipe_vfprintf;
     new->fgetc = &Wpipe_fgetc;
-    new->ungetc = &Wpipe_ungetc;
     new->seek = &null_seek;
     new->truncate = &null_truncate;
     new->fflush = &Wpipe_fflush;
