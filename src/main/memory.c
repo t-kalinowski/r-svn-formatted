@@ -2424,6 +2424,10 @@ int *(INTEGER)(SEXP x)
 {
     return INTEGER(x);
 }
+Rbyte *(RAW)(SEXP x)
+{
+    return RAW(x);
+}
 double *(REAL)(SEXP x)
 {
     return REAL(x);
