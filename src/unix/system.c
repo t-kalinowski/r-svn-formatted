@@ -108,7 +108,9 @@
 
 #ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
+#ifdef HAVE_READLINE_HISTORY_H
 #include <readline/history.h>
+#endif
 #endif
 
 static int UsingReadline = 1;
@@ -182,23 +184,20 @@ void R_WriteConsole(char *buf, int len)
 
 void R_ResetConsole()
 {
-    R_Console = 1;
 }
 
 /* Stdio support to ensure the console file buffer is flushed */
 
 void R_FlushConsole()
 {
-    if (R_Console == 1)
-        fflush(stdin);
+    fflush(stdin);
 }
 
 /* Reset stdin if the user types EOF on the console. */
 
 void R_ClearerrConsole()
 {
-    if (R_Console == 1)
-        clearerr(stdin);
+    clearerr(stdin);
 }
 
 /*--- File Handling Code ---*/
@@ -412,7 +411,6 @@ void R_CleanUp(int ask)
     if (R_DirtyImage)
     {
     qask:
-        R_Console = 1;
         R_ClearerrConsole();
         R_FlushConsole();
         if (!isatty(0) && ask == 1)
