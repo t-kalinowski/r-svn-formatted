@@ -711,6 +711,7 @@ int StrToInternal(char *s)
     return 0;
 }
 
+#ifdef OLD
 /* string hashing */
 int hashpjw(char *s)
 {
@@ -727,6 +728,7 @@ int hashpjw(char *s)
     }
     return h % HSIZE;
 }
+#endif
 
 static void installFunTab(int i)
 {
@@ -815,14 +817,15 @@ SEXP install(char *name)
 {
     char buf[MAXIDSIZE + 1];
     SEXP sym;
-    int i;
+    int i, hashcode;
 
     if (*name == '\0')
         error("attempt to use zero-length variable name");
     if (strlen(name) > MAXIDSIZE)
         error("symbol print-name too long");
     strcpy(buf, name);
-    i = hashpjw(buf);
+    hashcode = R_Newhashpjw(buf);
+    i = hashcode % HSIZE;
     /* Check to see if the symbol is already present. */
     /* If it is return it. */
     for (sym = R_SymbolTable[i]; sym != R_NilValue; sym = CDR(sym))
@@ -830,6 +833,8 @@ SEXP install(char *name)
             return (CAR(sym));
     /* Create a new symbol node and link it into the table. */
     sym = mkSYMSXP(mkChar(buf), R_UnboundValue);
+    HASHVALUE(PRINTNAME(sym)) = hashcode;
+    HASHASH(PRINTNAME(sym)) = 1;
     R_SymbolTable[i] = CONS(sym, R_SymbolTable[i]);
     return (sym);
 }

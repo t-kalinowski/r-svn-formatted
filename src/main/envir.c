@@ -83,7 +83,7 @@
 
 */
 
-static int newhashpjw(char *s)
+extern int R_Newhashpjw(char *s)
 {
     char *p;
     unsigned h = 0, g;
@@ -309,7 +309,7 @@ SEXP R_HashResize(SEXP table)
         chain = VECTOR(table)[counter];
         while (!isNull(chain))
         {
-            new_hashcode = newhashpjw(CHAR(PRINTNAME(TAG(chain)))) % HASHSIZE(new_table);
+            new_hashcode = R_Newhashpjw(CHAR(PRINTNAME(TAG(chain)))) % HASHSIZE(new_table);
             new_chain = VECTOR(new_table)[new_hashcode];
             /* If using a primary slot then increase HASHPRI */
             if (isNull(new_chain))
@@ -385,7 +385,12 @@ SEXP R_HashFrame(SEXP rho)
     frame = FRAME(rho);
     while (!isNull(frame))
     {
-        hashcode = newhashpjw(CHAR(PRINTNAME(TAG(frame)))) % HASHSIZE(table);
+        if (!HASHASH(PRINTNAME(TAG(frame))))
+        {
+            HASHVALUE(PRINTNAME(TAG(frame))) = R_Newhashpjw(CHAR(PRINTNAME(TAG(frame))));
+            HASHASH(PRINTNAME(TAG(frame))) = 1;
+        }
+        hashcode = HASHVALUE(PRINTNAME(TAG(frame))) % HASHSIZE(table);
         chain = VECTOR(table)[hashcode];
         /* If using a primary slot then increase HASHPRI */
         if (isNull(chain))
@@ -478,6 +483,7 @@ void InitGlobalEnv()
 void unbindVar(SEXP symbol, SEXP rho)
 {
     int hashcode;
+    SEXP c;
     if (HASHTAB(rho) == R_NilValue)
     {
         SEXP *v = &(FRAME(rho));
@@ -494,7 +500,13 @@ void unbindVar(SEXP symbol, SEXP rho)
     }
     else
     {
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         R_HashDelete(hashcode, symbol, HASHTAB(rho));
     }
 }
@@ -512,7 +524,7 @@ void unbindVar(SEXP symbol, SEXP rho)
 SEXP findVarLocInFrame(SEXP rho, SEXP symbol)
 {
     int hashcode;
-    SEXP frame;
+    SEXP frame, c;
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
@@ -522,7 +534,13 @@ SEXP findVarLocInFrame(SEXP rho, SEXP symbol)
     }
     else
     {
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         /* Will return 'R_NilValue' if not found */
         return (R_HashGetLoc(hashcode, symbol, HASHTAB(rho)));
     }
@@ -542,7 +560,7 @@ SEXP findVarLocInFrame(SEXP rho, SEXP symbol)
 SEXP findVarInFrame(SEXP rho, SEXP symbol)
 {
     int hashcode;
-    SEXP frame;
+    SEXP frame, c;
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
@@ -555,7 +573,13 @@ SEXP findVarInFrame(SEXP rho, SEXP symbol)
     }
     else
     {
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         /* Will return 'R_UnboundValue' if not found */
         return (R_HashGet(hashcode, symbol, HASHTAB(rho)));
     }
@@ -758,7 +782,7 @@ SEXP findFun(SEXP symbol, SEXP rho)
 void defineVar(SEXP symbol, SEXP value, SEXP rho)
 {
     int hashcode;
-    SEXP frame;
+    SEXP frame, c;
     R_DirtyImage = 1;
     if (HASHTAB(rho) == R_NilValue)
     {
@@ -783,8 +807,13 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
     }
     else
     {
-        /* Do the hash table thing */
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         R_HashSet(hashcode, symbol, HASHTAB(rho), value);
     }
 }
@@ -801,7 +830,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 {
     int hashcode;
-    SEXP frame;
+    SEXP frame, c;
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
@@ -818,7 +847,13 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
     else
     {
         /* Do the hash table thing */
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         R_HashSet(hashcode, symbol, HASHTAB(rho), value);
     }
     return R_NilValue;
@@ -879,14 +914,20 @@ void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 static SEXP mfindVarInFrame(SEXP rho, SEXP symbol)
 {
     int hashcode;
-    SEXP frame;
+    SEXP frame, c;
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
     }
     else
     {
-        hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
+        c = PRINTNAME(symbol);
+        if (!HASHASH(c))
+        {
+            HASHVALUE(c) = R_Newhashpjw(CHAR(c));
+            HASHASH(c) = 1;
+        }
+        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         frame = VECTOR(HASHTAB(rho))[hashcode];
     }
     while (frame != R_NilValue)
@@ -1000,7 +1041,10 @@ SEXP do_remove(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         done = 0;
         tsym = install(CHAR(STRING(name)[i]));
-        hashcode = newhashpjw(CHAR(PRINTNAME(tsym)));
+        if (!HASHASH(PRINTNAME(tsym)))
+            hashcode = R_Newhashpjw(CHAR(PRINTNAME(tsym)));
+        else
+            hashcode = HASHVALUE(PRINTNAME(tsym));
         tenv = envarg;
         while (tenv != R_NilValue)
         {
