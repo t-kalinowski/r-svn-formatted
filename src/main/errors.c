@@ -310,8 +310,10 @@ void jump_to_toplevel()
         }
     }
     if (!R_Interactive && !haveHandler && inError)
+    {
+        REprintf("Execution halted\n");
         R_CleanUp(SA_NOSAVE, 1, 0); /* quit, no save, no .Last, status=1 */
-
+    }
     if (R_Sinkfile)
         R_Outputfile = R_Sinkfile;
     else
