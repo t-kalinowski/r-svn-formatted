@@ -441,6 +441,11 @@ static void symcrossprod(double *x, int nr, int nc, double *z)
             for (j = 0; j < i; j++)
                 z[i + nc * j] = z[j + nc * i];
     }
+    else
+    { /* zero-extent operations should return zeroes */
+        for (i = 0; i < nc * nc; i++)
+            z[i] = 0;
+    }
 }
 
 static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, double *z)
@@ -451,6 +456,12 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
     if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
     {
         F77_CALL(dgemm)(transa, transb, &ncx, &ncy, &nrx, &one, x, &nrx, y, &nry, &zero, z, &ncx);
+    }
+    else
+    { /* zero-extent operations should return zeroes */
+        int i;
+        for (i = 0; i < ncx * ncy; i++)
+            z[i] = 0;
     }
 #else
     int i, j, k;
@@ -486,6 +497,12 @@ static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int 
     if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
     {
         F77_CALL(zgemm)(transa, transb, &ncx, &ncy, &nrx, &one, x, &nrx, y, &nry, &zero, z, &ncx);
+    }
+    else
+    { /* zero-extent operations should return zeroes */
+        int i;
+        for (i = 0; i < ncx * ncy; i++)
+            z[i].r = z[i].i = 0;
     }
 #else
     int i, j, k;
