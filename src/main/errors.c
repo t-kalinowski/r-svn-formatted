@@ -63,6 +63,19 @@ static int inWarning = 0;
   WarningMessage()-> warningcall (but with message from WarningDB[]).
 */
 
+void R_CheckUserInterrupt(void)
+{
+#ifdef Win32
+    R_ProcessEvents();
+#else
+    if (R_interrupts_pending)
+    {
+        R_interrupts_pending = 0;
+        onintr();
+    }
+#endif /* Win32 */
+}
+
 void onintr()
 {
     REprintf("\n");
