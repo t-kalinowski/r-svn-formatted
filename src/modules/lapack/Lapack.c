@@ -121,12 +121,12 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
     {
         /* ask for optimal size of work array */
         lwork = -1;
-        F77_CALL(dsyev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, &info);
+        F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, &info);
         lwork = (int)tmp;
         if (lwork < 3 * n - 1)
             lwork = 3 * n - 1; /* Sanity check */
         work = (double *)R_alloc(lwork, sizeof(double));
-        F77_CALL(dsyev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, &info);
+        F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, &info);
         if (info != 0)
             error("error code %d from Lapack routine dsyev", info);
     }
@@ -143,7 +143,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
         /* ask for optimal size of work arrays */
         lwork = -1;
         liwork = -1;
-        F77_CALL(dsyevr)
+        F77_CALL(rsyevr)
         (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, &tmp, &lwork,
          &itmp, &liwork, &info);
         lwork = (int)tmp;
@@ -151,7 +151,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
 
         work = (double *)R_alloc(lwork, sizeof(double));
         iwork = (int *)R_alloc(liwork, sizeof(int));
-        F77_CALL(dsyevr)
+        F77_CALL(rsyevr)
         (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, work, &lwork,
          iwork, &liwork, &info);
         if (info != 0)
