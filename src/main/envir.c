@@ -716,7 +716,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 {
     int hashcode;
-    SEXP frame, tmp;
+    SEXP frame;
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
