@@ -1364,14 +1364,17 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     ny1 = length(sy1);
     args = CDR(args);
 
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    PROTECT(col = FixupCol(CAR(args), dd));
     ncol = LENGTH(col);
+    args = CDR(args);
 
-    PROTECT(lty = FixupLty(GetPar("lty", args), dd));
+    PROTECT(lty = FixupLty(CAR(args), dd));
     nlty = length(lty);
+    args = CDR(args);
 
-    PROTECT(lwd = GetPar("lwd", args));
+    PROTECT(lwd = CAR(args));
     nlwd = length(lwd);
+    args = CDR(args);
 
     /*
         xpd = asLogical(GetPar("xpd", args));
