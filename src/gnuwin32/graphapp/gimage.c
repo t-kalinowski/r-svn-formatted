@@ -55,7 +55,7 @@ static image copy2image8(drawing dw)
         for (x = 0; x < w; x++)
         {
             p.x = x;
-            col = getpixel(p);
+            col = ggetpixel(dw, p);
             /* only allow one transparent colour in the cmap: */
             if (col & 0xF0000000UL)
                 col = 0xFFFFFFFFUL; /* transparent */
@@ -104,7 +104,7 @@ static image copy2image8(drawing dw)
         for (x = 0; x < w; x++)
         {
             p.x = x;
-            col = getpixel(p);
+            col = ggetpixel(dw, p);
             /* only allow one transparent colour in the cmap: */
             if (col & 0xF0000000UL)
                 col = 0xFFFFFFFFUL; /* transparent */
@@ -161,7 +161,7 @@ static image copy2image32(drawing dw)
         for (x = 0; x < w; x++)
         {
             p.x = x;
-            *pixel32 = getpixel(p);
+            *pixel32 = ggetpixel(dw, p);
             pixel32 += 1;
         }
     }
@@ -175,8 +175,11 @@ static image copy2image32(drawing dw)
 image bitmaptoimage(drawing dw)
 {
     image new_img;
+    rect r = ggetcliprect(dw);
+    gsetcliprect(dw, getrect(dw));
     new_img = copy2image8(dw);
     if (!new_img)
         new_img = copy2image32(dw);
+    gsetcliprect(dw, r);
     return new_img;
 }
