@@ -2688,6 +2688,22 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(ans = allocVector(LGLSXP, n));
             p = (void *)LOGICAL(ans);
         }
+        else if (!strcmp(what, "raw"))
+        {
+            sizedef = 1;
+            mode = 1;
+            if (size == NA_INTEGER)
+                size = sizedef;
+            switch (size)
+            {
+            case 1:
+                break;
+            default:
+                error("raw is always of size 1");
+            }
+            PROTECT(ans = allocVector(RAWSXP, n));
+            p = (void *)RAW(ans);
+        }
         else if (!strcmp(what, "numeric") || !strcmp(what, "double"))
         {
             sizedef = sizeof(double);
@@ -2884,6 +2900,12 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             if (size != sizeof(Rcomplex))
                 error("size changing is not supported for complex vectors");
             break;
+        case RAWSXP:
+            if (size == NA_INTEGER)
+                size = 1;
+            if (size != 1)
+                error("size changing is not supported for raw vectors");
+            break;
         default:
             error("That type is unimplemented");
         }
@@ -2963,6 +2985,9 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             break;
         case CPLXSXP:
             memcpy(buf, COMPLEX(object), size * len);
+            break;
+        case RAWSXP:
+            memcpy(buf, RAW(object), len); /* size = 1 */
             break;
         }
 

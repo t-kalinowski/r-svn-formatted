@@ -69,6 +69,13 @@ SEXP ScalarString(SEXP x)
     return ans;
 }
 
+SEXP ScalarRaw(Rbyte x)
+{
+    SEXP ans = allocVector(RAWSXP, 1);
+    RAW(ans)[0] = x;
+    return ans;
+}
+
 const static char *const truenames[] = {
     "T", "True", "TRUE", "true", (char *)0,
 };
@@ -345,6 +352,7 @@ Rboolean isVectorAtomic(SEXP s)
     case REALSXP:
     case CPLXSXP:
     case STRSXP:
+    case RAWSXP:
         return TRUE;
     default: /* including NULL */
         return FALSE;
@@ -360,6 +368,7 @@ Rboolean isVector(SEXP s) /* === isVectorList() or isVectorAtomic() */
     case REALSXP:
     case CPLXSXP:
     case STRSXP:
+    case RAWSXP:
 
     case VECSXP:
     case EXPRSXP:
@@ -636,6 +645,7 @@ const static struct
                  {"bytecode", BCODESXP},
 #endif
                  {"weakref", WEAKREFSXP},
+                 {"raw", RAWSXP},
                  /* aliases : */
                  {"numeric", REALSXP},
                  {"name", SYMSXP},

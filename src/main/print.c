@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1998	Robert Gentleman and Ross Ihaka.
- *  Copyright (C) 2000-2003	The R Development Core Team.
+ *  Copyright (C) 2000-2004	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -316,6 +316,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 else
                     pbuf = Rsprintf("Character,%d", LENGTH(tmp));
                 break;
+            case RAWSXP:
+                pbuf = Rsprintf("Raw,%d", LENGTH(tmp));
+                break;
             case LISTSXP:
             case VECSXP:
                 pbuf = Rsprintf("List,%d", length(tmp));
@@ -460,6 +463,10 @@ static void printList(SEXP s, SEXP env)
 
             case STRSXP:
                 pbuf = Rsprintf("Character,%d", LENGTH(CAR(s)));
+                break;
+
+            case RAWSXP:
+                pbuf = Rsprintf("Raw,%d", LENGTH(CAR(s)));
                 break;
 
             case LISTSXP:
@@ -637,6 +644,7 @@ void PrintValueRec(SEXP s, SEXP env)
     case REALSXP:
     case STRSXP:
     case CPLXSXP:
+    case RAWSXP:
         PROTECT(t = getAttrib(s, R_DimSymbol));
         if (TYPEOF(t) == INTSXP)
         {

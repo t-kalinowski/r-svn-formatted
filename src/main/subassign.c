@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2003   The R Development Core Team
+ *  Copyright (C) 1997-2004   The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -137,6 +137,12 @@ static SEXP EnlargeVector(SEXP x, R_len_t newlen)
         for (i = len; i < newlen; i++)
             SET_VECTOR_ELT(newx, i, R_NilValue);
         break;
+    case RAWSXP:
+        for (i = 0; i < len; i++)
+            RAW(newx)[i] = RAW(x)[i];
+        for (i = len; i < newlen; i++)
+            RAW(newx)[i] = (Rbyte)0;
+        break;
     }
 
     /* Adjust the attribute list. */
@@ -182,6 +188,7 @@ static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level, SEXP call)
     case 1616: /* character  <- character  */
     case 1919: /* vector     <- vector     */
     case 2020: /* expression <- expression */
+    case 2424: /* raw        <- raw        */
 
         redo_which = FALSE;
         break;
@@ -587,6 +594,17 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         x = DeleteListElements(x, indx);
         UNPROTECT(4);
         return x;
+        break;
+
+    case 2424: /* raw   <- raw	  */
+
+        for (i = 0; i < n; i++)
+        {
+            ii = INTEGER(indx)[i];
+            ii = ii - 1;
+            RAW(x)[ii] = RAW(y)[i % ny];
+        }
+        break;
 
     default:
         warningcall(call, "sub assignment (*[*] <- *) not done; __bug?__");
@@ -1356,6 +1374,7 @@ SEXP do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     case STRSXP:
     case EXPRSXP:
     case VECSXP:
+    case RAWSXP:
         switch (nsubs)
         {
         case 0:
