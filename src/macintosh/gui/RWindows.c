@@ -69,6 +69,8 @@
 
 /*    INCLUDE HEADER FILE     */
 
+#include <RCarbon.h>
+
 #ifndef __ALIASES__
 #include <Aliases.h>
 #endif
