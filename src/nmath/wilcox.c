@@ -247,6 +247,7 @@ double qwilcox(double x, double m, double n)
     q = 0;
     if (x <= 0.5)
     {
+        x = x - 10 * DBL_EPSILON;
         for (;;)
         {
             p += cwilcox(q, m, n) / c;
@@ -257,7 +258,7 @@ double qwilcox(double x, double m, double n)
     }
     else
     {
-        x = 1 - x;
+        x = 1 - x + 10 * DBL_EPSILON;
         for (;;)
         {
             p += cwilcox(q, m, n) / c;

@@ -206,6 +206,7 @@ double qsignrank(double x, double n)
     q = 0;
     if (x <= 0.5)
     {
+        x = x - 10 * DBL_EPSILON;
         for (;;)
         {
             p += csignrank(q, n) * f;
@@ -216,7 +217,7 @@ double qsignrank(double x, double n)
     }
     else
     {
-        x = 1 - x;
+        x = 1 - x + 10 * DBL_EPSILON;
         for (;;)
         {
             p += csignrank(q, n) * f;
