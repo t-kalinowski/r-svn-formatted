@@ -156,7 +156,15 @@ void Rsockfork(int *pidno)
 
 /* --------- for use in socket connections ---------- */
 
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
 #include <R_ext/R-ftp-http.h>
+
+#ifdef Win32
+#include <winsock.h>
+#include <io.h>
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#define EINPROGRESS WSAEINPROGRESS
+#endif
 
 #ifdef HAVE_BSD_NETWORKING
 #include <netdb.h>
@@ -480,3 +488,5 @@ int R_SockWrite(int sockp, const void *buf, int len)
     res = (int)send(sockp, buf, len, 0);
     return (res >= 0) ? res : -socket_errno();
 }
+
+#endif /* defined(Win32) || defined(HAVE_BSD_NETWORKING) */
