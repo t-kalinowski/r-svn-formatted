@@ -224,6 +224,8 @@ static R_CallMethodDef callMethods[] = {
 
     /* Reflectance for the dynamically loaded native symbols. */
     CALLDEF(R_getSymbolInfo, 2),
+    CALLDEF(R_getDllTable, 0),
+    CALLDEF(R_getRegisteredRoutines, 1),
 
     /* mapply */
     CALLDEF(do_mapply, 4),
