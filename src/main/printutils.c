@@ -80,10 +80,19 @@ R_size_t R_Decode2Long(char *p, int *ierr)
         return v;
     /* else look for letter-code ending : */
     if (R_Verbose)
-        REprintf("Decode2Long(): v=%ld\n", v);
-    if (p[0] == 'M')
+        REprintf("R_Decode2Long(): v=%ld\n", v);
+    if (p[0] == 'G')
     {
-        if ((Mega * (double)v) > LONG_MAX)
+        if ((Giga * (double)v) > R_SIZE_T_MAX)
+        {
+            *ierr = 1;
+            return (v);
+        }
+        return (Giga * v);
+    }
+    else if (p[0] == 'M')
+    {
+        if ((Mega * (double)v) > R_SIZE_T_MAX)
         {
             *ierr = 1;
             return (v);
@@ -92,7 +101,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
     }
     else if (p[0] == 'K')
     {
-        if ((1024 * (double)v) > LONG_MAX)
+        if ((1024 * (double)v) > R_SIZE_T_MAX)
         {
             *ierr = 2;
             return (v);
@@ -101,7 +110,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
     }
     else if (p[0] == 'k')
     {
-        if ((1000 * (double)v) > LONG_MAX)
+        if ((1000 * (double)v) > R_SIZE_T_MAX)
         {
             *ierr = 3;
             return (v);
