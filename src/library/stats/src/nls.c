@@ -1,5 +1,5 @@
 /*
- *  $Id: nls.c,v 1.1 2003/12/11 07:16:08 ripley Exp $
+ *  $Id: nls.c,v 1.2 2004/05/17 08:12:39 ripley Exp $
  *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
@@ -227,7 +227,7 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
     }
     for (i = 0; i < LENGTH(ans); i++)
     {
-        if (!R_finite(REAL(ans)[i]))
+        if (!R_FINITE(REAL(ans)[i]))
             error("Missing value or an Infinity produced when evaluating the model");
     }
     for (i = 0; i < LENGTH(theta); i++)
@@ -254,7 +254,7 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
             UNPROTECT(1);
             for (k = 0; k < LENGTH(ans); k++)
             {
-                if (!R_finite(REAL(ans_del)[k]))
+                if (!R_FINITE(REAL(ans_del)[k]))
                     error("Missing value or an Infinity produced when evaluating the model");
                 REAL(gradient)[start + k] = (REAL(ans_del)[k] - REAL(ans)[k]) / delta;
             }
