@@ -241,9 +241,12 @@ char *R_tmpnam(const char *prefix)
 
     if (!prefix)
         prefix = ""; /* NULL */
-    tmp = getenv("TMP");
+    tmp = getenv("R_SESSION_TMPDIR");
     if (!tmp)
+        tmp = getenv("TMP");
+    else if (!tmp)
         tmp = getenv("TEMP");
+
     if (tmp && strlen(tmp) < PATH_MAX - 25)
         strcpy(tmp1, tmp);
     else
@@ -264,6 +267,26 @@ char *R_tmpnam(const char *prefix)
     res = (char *)malloc((strlen(tm) + 1) * sizeof(char));
     strcpy(res, tm);
     return res;
+}
+
+SEXP do_tempdir(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans;
+    char *tmp;
+
+    checkArity(op, args);
+
+    tmp = getenv("R_SESSION_TMPDIR");
+    if (!tmp)
+        tmp = getenv("TMP");
+    else if (!tmp)
+        tmp = getenv("TEMP");
+    else
+        tmp = "/tmp";
+    PROTECT(ans = allocVector(STRSXP, 1));
+    SET_STRING_ELT(ans, 1, mkChar(tmp));
+    UNPROTECT(1);
+    return (ans);
 }
 
 SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
