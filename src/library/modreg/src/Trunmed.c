@@ -34,6 +34,8 @@
  * Added  print_level  and end_rule  arguments
  */
 
+/* this includes R.h, hence lots of system headers.
+   Avoid their name, e.g. for heapsort() */
 #include "modreg.h"
 
 /* Variable	name	descri- | Identities from paper
@@ -49,7 +51,7 @@ static void swap(int l, int r, double *window, int *outlist, int *nrlist, int pr
 {
     /* swap positions `l' and `r' in window[] and nrlist[]
      *
-     * ---- Used in heapsort() and many other routines
+     * ---- Used in R_heapsort() and many other routines
      */
     int nl, nr;
     double tmp;
@@ -69,7 +71,7 @@ static void swap(int l, int r, double *window, int *outlist, int *nrlist, int pr
 
 static void siftup(int l, int r, double *window, int *outlist, int *nrlist, int print_level)
 {
-    /* Used only in heapsort() */
+    /* Used only in R_heapsort() */
     int i, j, nrold;
     double x;
 
@@ -98,7 +100,7 @@ static void siftup(int l, int r, double *window, int *outlist, int *nrlist, int 
     nrlist[i] = nrold;
 }
 
-static void heapsort(int low, int up, double *window, int *outlist, int *nrlist, int print_level)
+static void R_heapsort(int low, int up, double *window, int *outlist, int *nrlist, int print_level)
 {
     int l, u;
 
@@ -130,7 +132,7 @@ static void inittree(int n, int k, int k2, const double *data, double *window, i
     }
 
     /* sort the window[] -- sort *only* called here */
-    heapsort(1, k, window, outlist, nrlist, print_level);
+    R_heapsort(1, k, window, outlist, nrlist, print_level);
 
     big = fabs(window[k]);
     if (big < fabs(window[1]))
