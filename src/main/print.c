@@ -284,6 +284,7 @@ static void PrintExpression(SEXP s)
     SEXP u, v, nms;
     int i, n;
 
+#ifdef OLD
     PROTECT(u = v = allocList(LENGTH(s) + 1));
     TYPEOF(u) = LANGSXP;
     CAR(u) = install("expression");
@@ -298,10 +299,15 @@ static void PrintExpression(SEXP s)
         u = CDR(u);
     }
     u = deparse1(v, 0);
+#else
+    u = deparse1(s, 0);
+#endif
     n = LENGTH(u);
     for (i = 0; i < n; i++)
         Rprintf("%s\n", CHAR(STRING(u)[i]));
+#ifdef OLD
     UNPROTECT(1);
+#endif
 }
 
 /* PrintValueRec - recursively print an SEXP

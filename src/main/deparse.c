@@ -74,6 +74,7 @@ static void scalar2buff(SEXP);
 static void writeline(void);
 static void factor2buff(SEXP, int);
 static void vector2buff(SEXP);
+static void vec2buff(SEXP);
 static void linebreak();
 void deparse2(SEXP, SEXP);
 
@@ -369,6 +370,9 @@ static void deparse2buff(SEXP s)
     case SYMSXP:
         print2buff(CHAR(PRINTNAME(s)));
         break;
+    case CHARSXP:
+        print2buff(CHAR(s));
+        break;
     case SPECIALSXP:
     case BUILTINSXP:
         sprintf(tpb, ".Primitive(\"%s\")", PRIMNAME(s));
@@ -391,7 +395,11 @@ static void deparse2buff(SEXP s)
         if (length(s) <= 0)
             print2buff("expression()");
         else
-            deparse2buff(VECTOR(s)[0]);
+        {
+            print2buff("expression(");
+            vec2buff(s);
+            print2buff(")");
+        }
         break;
     case LISTSXP:
         attr1(s);
@@ -774,6 +782,37 @@ static void factor2buff(SEXP vector, int ordered)
     print2buff(")");
 }
 
+/* vec2buff : New Code */
+/* Deparse vectors of S-expressions. */
+/* In particular, this deparses objects of mode expression. */
+
+static void vec2buff(SEXP v)
+{
+    SEXP nv;
+    int i, lbreak, n;
+
+    lbreak = 0;
+    n = length(v);
+    nv = getAttrib(v, R_NamesSymbol);
+    if (length(nv) == 0)
+        nv = R_NilValue;
+
+    for (i = 0; i < n; i++)
+    {
+        if (i > 0)
+            print2buff(", ");
+        linebreak(&lbreak);
+        if (!isNull(nv) && !isNull(STRING(nv)[i]) && *CHAR(STRING(nv)[i]))
+        {
+            deparse2buff(STRING(nv)[i]);
+            print2buff(" = ");
+        }
+        deparse2buff(VECTOR(v)[i]);
+    }
+    if (lbreak)
+        indent--;
+}
+
 static void args2buff(SEXP arglist, int lineb, int formals)
 {
     int lbreak = 0;
@@ -802,9 +841,6 @@ static void args2buff(SEXP arglist, int lineb, int formals)
         }
         else
             deparse2buff(CAR(arglist));
-        /*
-        linebreak(&lbreak);
-        */
         arglist = CDR(arglist);
         if (arglist != R_NilValue)
         {
