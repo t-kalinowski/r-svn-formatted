@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2000  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -497,16 +497,11 @@ static void deparse2buff(SEXP s)
         print2buff("<environment>");
         break;
     case VECSXP:
-        if (length(s) <= 0)
-            print2buff("list()");
-        else
-        {
-            attr1(s);
-            print2buff("list(");
-            vec2buff(s);
-            print2buff(")");
-            attr2(s);
-        }
+        attr1(s);
+        print2buff("list(");
+        vec2buff(s);
+        print2buff(")");
+        attr2(s);
         break;
     case EXPRSXP:
         if (length(s) <= 0)
