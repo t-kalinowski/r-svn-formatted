@@ -1445,7 +1445,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     nlty = length(lty);
     args = CDR(args);
 
-    PROTECT(lwd = FixupLwd(args, dd));
+    PROTECT(lwd = FixupLwd(CAR(args), dd));
     nlwd = length(lwd);
     args = CDR(args);
 
