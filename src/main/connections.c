@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-3   The R Development Core Team.
+ *  Copyright (C) 2000-4   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2986,6 +2986,7 @@ static SEXP readFixedString(Rconnection con, int len)
 {
     char *buf, *p;
     int pos, m;
+    SEXP ans;
 
     buf = (char *)R_alloc(len + 1, sizeof(char));
     for (pos = 0; pos < len; pos++)
@@ -3001,7 +3002,10 @@ static SEXP readFixedString(Rconnection con, int len)
         }
     }
     buf[pos] = '\0';
-    return mkChar(buf);
+    /* String may contain nuls so don't use mkChar */
+    ans = allocString(pos);
+    memcpy(CHAR(ans), buf, pos);
+    return ans;
 }
 
 /* readChar(con, nchars) */
