@@ -25,6 +25,10 @@
 #include <config.h>
 #endif
 
+#ifdef SUPPORT_GUI_MBCS
+#define SUPPORT_MBCS 1
+#endif
+
 #include "Defn.h"
 #include <R_ext/Riconv.h>
 #include "Fileio.h"
@@ -508,7 +512,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
                 else
                 {
                     /* Quote path if necessary */
-                    if (pager[0] != '"' && strchr(pager, ' '))
+                    if (pager[0] != '"' && Rf_strchr(pager, ' '))
                         snprintf(buf, 1024, "\"%s\" \"%s\"", pager, file[i]);
                     else
                         snprintf(buf, 1024, "%s \"%s\"", pager, file[i]);
@@ -566,7 +570,7 @@ int R_EditFiles(int nfile, char **file, char **title, char *editor)
             else
             {
                 /* Quote path if necessary */
-                if (editor[0] != '"' && strchr(editor, ' '))
+                if (editor[0] != '"' && Rf_strchr(editor, ' '))
                     snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[i]);
                 else
                     snprintf(buf, 1024, "%s \"%s\"", editor, file[i]);
@@ -702,7 +706,7 @@ static void env_command_line(int *pac, char **argv)
     while (--ac)
     {
         ++av;
-        if (**av != '-' && strchr(*av, '='))
+        if (**av != '-' && Rf_strchr(*av, '='))
             Putenv(*av);
         else
             argv[newac++] = *av;
@@ -948,7 +952,7 @@ int cmdlineoptions(int ac, char **av)
                 for (p = path; *p; p++)
                     if (*p == '\\')
                         *p = '/';
-                p = strrchr(path, '/');
+                p = Rf_strrchr(path, '/');
                 if (p)
                 {
                     *p = '\0';
