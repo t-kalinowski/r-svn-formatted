@@ -73,10 +73,12 @@
 #include "Startup.h" /* Jago */
 #include <Rdevices.h>
 
+Boolean EventsInit = false;
+
 SEXP R_LoadFromFile(FILE *, int);
 
-static UInt32 sSleepTime = 0;     // sleep time for WaitNextEvent()
-static RgnHandle sMouseRgn = nil; // mouse region for WaitNextEvent()
+UInt32 sSleepTime = 0;     // sleep time for WaitNextEvent()
+RgnHandle sMouseRgn = nil; // mouse region for WaitNextEvent()
 PicHandle WinPic;
 Boolean fstart = true;
 SInt16 Help_Window = 1;
@@ -85,7 +87,6 @@ WindowPtr Help_Windows[MAX_NUM_H_WIN + 1];
 AEIdleUPP gAEIdleUPP;
 EventRecord gERecord;
 Boolean gQuit, gInBackground;
-EventRecord gERecord;
 
 #define kResumeMask 1 /* bit of message field for resume vs. suspend */
 
@@ -613,7 +614,6 @@ void DoWindowEvent(const EventRecord *event)
     switch (event->what)
     {
     case updateEvt: {
-        // Rprintf("\n doupdate");
         DoUpdate(window);
         break;
     }
@@ -699,20 +699,13 @@ void ProcessEvent(void)
         break;
 
     case mouseDown:
-        // Rprintf("\n domousedown");
         DoMouseDown(&event);
         break;
 
     case keyDown:
     case autoKey:
 
-        if ((event.modifiers & cmdKey) && ((event.message & charCodeMask) == '.'))
-        {
-            Rprintf("\n\n <- User Canceled -> \n");
-            /*    DoQuit();*/
-        }
-        else
-            DoKeyDown(&event);
+        DoKeyDown(&event);
 
         break;
 
@@ -722,23 +715,10 @@ void ProcessEvent(void)
         {
             CGrafPtr thePort;
 
-            // Rprintf("\n update");
-
             thePort = GetWindowPort(windowPtr);
 
             /* flush the entire port */
-            if (QDIsPortBuffered(thePort))
-                QDFlushPortBuffer(thePort, NULL);
-
-            /* flush part of the port */
-            //   if (QDIsPortBuffered(thePort)) {
-            //       RgnHandle theRgn;
-            //       theRgn = NewRgn();
-            /* local port coordinates */
-            //       SetRectRgn(theRgn, dd->dp.left, dd->dp.top, dd->dp.right, dd->dp.bottom);
-            //       QDFlushPortBuffer(thePort, theRgn);
-            //       DisposeRgn(theRgn);
-            //   }
+            QDFlushPortBuffer(thePort, NULL);
         }
         if (!haveResize)
             DoWindowEvent(&event);
@@ -1008,6 +988,9 @@ OSErr InitializeEvents(void)
     gAEIdleUPP = NewAEIdleUPP(idleProc);
 
 cleanup:
+    if (err == noErr)
+        EventsInit = true;
+
     return err;
 }
 
