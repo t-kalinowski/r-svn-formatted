@@ -1105,7 +1105,11 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     if (isString(name))
         name = install(CHAR(STRING_ELT(name, 0)));
     if (name == s_dot_Data)
-        return set_data_part(obj, value);
+    {
+        obj = set_data_part(obj, value);
+        UNPROTECT(nprotect);
+        return (obj);
+    }
     if (isNull(value))
         /* slots, but not attributes, can be NULL.  Store a special symbol
            instead. */
