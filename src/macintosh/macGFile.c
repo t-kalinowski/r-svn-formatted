@@ -60,7 +60,6 @@ extern Boolean WeArePasting;
 
 OSErr doRSave(Boolean *haveCancel)
 {
-    FILE *fp;
     OSErr err;
 
     if (strlen(InitFile) == 0)
@@ -72,14 +71,7 @@ OSErr doRSave(Boolean *haveCancel)
         *haveCancel = false;
         err = noErr;
 
-        fp = R_fopen(InitFile, "wb"); /* binary file */
-        if (!fp)
-            error("can't save data -- unable to write ./%s\n", InitFile);
-        if (HASHTAB(R_GlobalEnv) != R_NilValue)
-            R_SaveToFile(HASHTAB(R_GlobalEnv), fp, 0);
-        else
-            R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
-        fclose(fp);
+        R_SaveGlobalEnvToFile(InitFile);
     }
     return err;
 }
@@ -96,7 +88,6 @@ OSErr doRSaveAs(Boolean *haveCancel)
     StandardFileReply fileReply;
     OSType fileType;
     OSErr osError = 0;
-    FILE *fp;
     SInt16 pathLen;
     Handle pathName = NULL;
     char path[MAC_FILE_SIZE], cur_path[MAC_FILE_SIZE];
@@ -138,17 +129,8 @@ OSErr doRSaveAs(Boolean *haveCancel)
                 InitFile[pathLen] = '\0';
                 HUnlock((Handle)pathName);
 
-                if (fp = R_fopen(InitFile, "wb"))
-                { /* binary file */
-                    if (HASHTAB(R_GlobalEnv) != R_NilValue)
-                        R_SaveToFile(HASHTAB(R_GlobalEnv), fp, 0);
-                    else
-                        R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
-                    fclose(fp);
-                    anErr = NavCompleteSave(&reply, kNavTranslateInPlace);
-                }
-                else
-                    error("can't save data -- unable to write ./%s\n", InitFile);
+                R_SaveGlobalEnvToFile(InitFile);
+                anErr = NavCompleteSave(&reply, kNavTranslateInPlace);
             }
         }
 
