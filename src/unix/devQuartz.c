@@ -56,13 +56,16 @@ unsigned char Mac2Lat[] = {
 #define R_BLUE(col) (((col) >> 16) & 255)
 #define kRAppSignature '0FFF'
 
+#if HAVE_AQUA
 extern DL_FUNC ptr_GetQuartzParameters;
+extern Rboolean useaqua;
 
 void GetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,
                          Rboolean *autorefresh)
 {
     ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh);
 }
+#endif
 
 #define kOnScreen 0
 #define kOnFilePDF 1
@@ -216,7 +219,10 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
         dev->savedSnapshot = R_NilValue;
 
         strcpy(fontfamily, family);
-        GetQuartzParameters(&width, &height, &ps, fontfamily, &antialias, &autorefresh);
+#ifdef HAVE_AQUA
+        if (useaqua)
+            GetQuartzParameters(&width, &height, &ps, fontfamily, &antialias, &autorefresh);
+#endif
 
         if (!QuartzDeviceDriver((DevDesc *)dev, display, width, height, ps, fontfamily, antialias, autorefresh))
         {
