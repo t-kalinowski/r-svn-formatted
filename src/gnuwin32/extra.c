@@ -417,7 +417,7 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         OSVERSIONINFOEX osvi;
         osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-        if (GetVersionEx(&osvi))
+        if (GetVersionEx((OSVERSIONINFO *)&osvi))
         {
             char tmp[] = "", *desc = tmp, *type = tmp;
             if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
