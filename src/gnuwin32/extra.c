@@ -994,7 +994,7 @@ int Rwin_rename(char *from, char *to)
         res = (MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) == 0);
         break;
     default:
-        if (!DeleteFile(from) && GetLastError() != ERROR_FILE_NOT_FOUND)
+        if (!DeleteFile(to) && GetLastError() != ERROR_FILE_NOT_FOUND)
             return 1;
         res = (MoveFile(from, to) == 0);
     }
