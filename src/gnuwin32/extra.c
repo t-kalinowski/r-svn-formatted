@@ -32,6 +32,7 @@
 #include <time.h>
 #include <windows.h>
 #include "graphapp/ga.h"
+#include "devga.h"
 #include "rui.h"
 
 char *R_tmpnam(const char *prefix, const char *tempdir)
@@ -1254,57 +1255,142 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 extern window RFrame; /* from rui.c */
 
-SEXP do_setTitle(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP getIdentification()
 {
-    SEXP title = CAR(args);
-    char *ptitle, buf[512];
+    SEXP result;
 
-    checkArity(op, args);
-    if (!isString(title) || LENGTH(title) != 1)
-        errorcall(call, "'title' must be a character string");
-    ptitle = CHAR(STRING_ELT(title, 0));
+    PROTECT(result = allocVector(STRSXP, 1));
     switch (CharacterMode)
     {
     case RGui:
         if (RguiMDI & RW_MDI)
-        {
-            strcpy(buf, "Rgui");
-            if (strlen(ptitle))
-            {
-                strcat(buf, ": ");
-                strncat(buf, ptitle, 507);
-                buf[511] = '\0';
-                settext(RFrame, buf);
-            }
-        }
+            SET_STRING_ELT(result, 0, mkChar("RGui"));
         else
-        {
-            strcpy(buf, "R Console");
-            if (strlen(ptitle))
-            {
-                strcat(buf, ": ");
-                strncat(buf, ptitle, 499);
-                buf[511] = '\0';
-            }
-            settext(RConsole, buf);
-        }
+            SET_STRING_ELT(result, 0, mkChar("R Console"));
+        break;
+    case RTerm:
+        SET_STRING_ELT(result, 0, mkChar("Rterm"));
+    default:
+        /* do nothing */
+        break; /* -Wall */
+    }
+    UNPROTECT(1);
+    return result;
+}
+
+SEXP getWindowTitle()
+{
+    SEXP result;
+    char buf[512];
+
+    PROTECT(result = allocVector(STRSXP, 1));
+    switch (CharacterMode)
+    {
+    case RGui:
+        if (RguiMDI & RW_MDI)
+            SET_STRING_ELT(result, 0, mkChar(gettext(RFrame)));
+        else
+            SET_STRING_ELT(result, 0, mkChar(gettext(RConsole)));
+        break;
+    case RTerm:
+        GetConsoleTitle(buf, 512);
+        buf[511] = '\0';
+        SET_STRING_ELT(result, 0, mkChar(buf));
+    default:
+        /* do nothing */
+        break; /* -Wall */
+    }
+    UNPROTECT(1);
+    return result;
+}
+
+SEXP setTitle(char *title)
+{
+    SEXP result;
+
+    PROTECT(result = getWindowTitle());
+
+    switch (CharacterMode)
+    {
+    case RGui:
+        if (RguiMDI & RW_MDI)
+            settext(RFrame, title);
+        else
+            settext(RConsole, title);
         break;
     case RTerm:
         if (R_Interactive)
-        {
-            strcpy(buf, "Rterm");
-            if (strlen(ptitle))
-            {
-                strcat(buf, ": ");
-                strncat(buf, ptitle, 506);
-                buf[511] = '\0';
-            }
-            SetConsoleTitle(buf);
-        }
+            SetConsoleTitle(title);
         break;
     default:
         /* do nothing */
         break; /* -Wall */
     }
-    return R_NilValue;
+    UNPROTECT(1);
+    return result;
+}
+
+SEXP do_getIdentification(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    checkArity(op, args);
+    return getIdentification();
+}
+
+SEXP do_setTitle(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP title = CAR(args);
+
+    checkArity(op, args);
+    if (!isString(title) || LENGTH(title) != 1)
+        errorcall(call, "'title' must be a character string");
+    return setTitle(CHAR(STRING_ELT(title, 0)));
+}
+
+SEXP do_getWindowTitle(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    checkArity(op, args);
+    return getWindowTitle();
+}
+
+int getConsoleHandle(char *which)
+{
+    if (CharacterMode != RGui)
+        return (0);
+    else if (strcmp(which, "Console") == 0 && RConsole)
+        return (getHandle(RConsole));
+    else if (strcmp(which, "Frame") == 0 && RFrame)
+        return (getHandle(RFrame));
+    else if (strcmp(which, "Process") == 0)
+        return ((int)GetCurrentProcess());
+    else if (strcmp(which, "ProcessId") == 0)
+        return ((int)GetCurrentProcessId());
+    else
+        return (0);
+}
+
+extern int getDeviceHandle(int); /* from devga.c */
+
+SEXP do_getWindowHandle(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP result;
+    int handle;
+    SEXP which = CAR(args);
+
+    result = R_NilValue; /* to avoid warnings */
+
+    checkArity(op, args);
+    if (LENGTH(which) != 1)
+        errorcall(call, "'which' must be length 1");
+    if (isString(which))
+        handle = getConsoleHandle(CHAR(STRING_ELT(which, 0)));
+    else if (isInteger(which))
+        handle = getDeviceHandle(INTEGER(which)[0]);
+    else
+        handle = 0;
+
+    PROTECT(result = allocVector(INTSXP, 1));
+    INTEGER(result)[0] = handle;
+    UNPROTECT(1);
+
+    return result;
 }
