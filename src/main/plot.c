@@ -871,7 +871,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     ytckCoords = MAR2;
 
     /* Draw the axis */
-    GMode(dd, 1);
+    GMode(1, dd);
     switch (side)
     {
     case 1:
@@ -1059,7 +1059,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
     }
 
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: during replay, call == R_NilValue */
@@ -1150,7 +1150,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         dd->gp.cex = dd->gp.cexbase;
 
-    GMode(dd, 1);
+    GMode(1, dd);
     GClip(dd);
 
     if (type == 'l' || type == 'o')
@@ -1289,7 +1289,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
     UNPROTECT(5);
     /* NOTE: only record operation if no "error"  */
@@ -1384,7 +1384,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     x1 = REAL(sx1);
     y1 = REAL(sy1);
 
-    GMode(dd, 1);
+    GMode(1, dd);
     for (i = 0; i < n; i++)
     {
         xx[0] = x0[i % nx0];
@@ -1403,7 +1403,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
             GLine(xx[0], yy[0], xx[1], yy[1], DEVICE, dd);
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
 
     UNPROTECT(3);
@@ -1464,7 +1464,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     yb = REAL(syb);
     yt = REAL(syt);
 
-    GMode(dd, 1);
+    GMode(1, dd);
     for (i = 0; i < n; i++)
     {
         if (nlty && INTEGER(lty)[i % nlty] != NA_INTEGER)
@@ -1480,7 +1480,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
         if (FINITE(x0) && FINITE(y0) && FINITE(x1) && FINITE(y1))
             GRect(x0, y0, x1, y1, DEVICE, INTEGER(col)[i % ncol], INTEGER(border)[i % nborder], dd);
     }
-    GMode(dd, 0);
+    GMode(0, dd);
 
     GRestorePars(dd);
     UNPROTECT(3);
@@ -1558,7 +1558,7 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     x1 = REAL(sx1);
     y1 = REAL(sy1);
 
-    GMode(dd, 1);
+    GMode(1, dd);
     for (i = 0; i < n; i++)
     {
         xx0 = x0[i % nx0];
@@ -1580,7 +1580,7 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
             GArrow(xx0, yy0, xx1, yy1, DEVICE, hlength, angle, code, dd);
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
 
     UNPROTECT(3);
@@ -1635,7 +1635,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GSavePars(dd);
 
-    GMode(dd, 1);
+    GMode(1, dd);
 
     dd->gp.xpd = xpd;
 
@@ -1672,7 +1672,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
         yold = yy;
     }
 
-    GMode(dd, 0);
+    GMode(0, dd);
 
     GRestorePars(dd);
     UNPROTECT(3);
@@ -1766,7 +1766,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     ProcessInlinePars(args, dd);
     dd->gp.xpd = xpd;
 
-    GMode(dd, 1);
+    GMode(1, dd);
     for (i = 0; i < n; i++)
     {
         xx = x[i % n];
@@ -1792,7 +1792,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
                 GText(xx, yy, DEVICE, CHAR(STRING(txt)[i % ntxt]), adjx, adjy, dd->gp.srt, dd);
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
 
     GRestorePars(dd);
     UNPROTECT(4);
@@ -1941,12 +1941,12 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         gpnewsave = dd->gp.new;
         dpnewsave = dd->dp.new;
     }
-    GMode(dd, 1);
+    GMode(1, dd);
     if (isExpression(text))
         GMMathText(VECTOR(text)[0], side, line, outer, at, dd->gp.las, dd);
     else
         GMtext(CHAR(STRING(text)[0]), side, line, outer, at, dd->gp.las, dd);
-    GMode(dd, 0);
+    GMode(0, dd);
 
     GRestorePars(dd);
     if (outer)
@@ -2004,7 +2004,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 
     adj = dd->gp.adj;
 
-    GMode(dd, 1);
+    GMode(1, dd);
     if (Main != R_NilValue)
     {
         dd->gp.cex = dd->gp.cexbase * dd->gp.cexmain;
@@ -2064,7 +2064,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
                 GMtext(CHAR(STRING(ylab)[i]), 2, dd->gp.mgp[0] - i, 0, yNPCtoUsr(adj, dd), 0, dd);
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
@@ -2136,7 +2136,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             dd->gp.lty = INTEGER(lty)[0];
         else
             dd->gp.lty = dd->dp.lty;
-        GMode(dd, 1);
+        GMode(1, dd);
         x[0] = dd->gp.usr[0];
         x[1] = dd->gp.usr[1];
         if (dd->gp.xlog || dd->gp.ylog)
@@ -2159,12 +2159,12 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             y[1] = aa + dd->gp.usr[1] * bb;
             GLine(x[0], y[0], x[1], y[1], USER, dd);
         }
-        GMode(dd, 0);
+        GMode(0, dd);
         nlines++;
     }
     if (h != R_NilValue)
     {
-        GMode(dd, 1);
+        GMode(1, dd);
         for (i = 0; i < LENGTH(h); i++)
         {
             dd->gp.col = INTEGER(col)[nlines % ncol];
@@ -2183,11 +2183,11 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             nlines++;
         }
-        GMode(dd, 0);
+        GMode(0, dd);
     }
     if (v != R_NilValue)
     {
-        GMode(dd, 1);
+        GMode(1, dd);
         for (i = 0; i < LENGTH(v); i++)
         {
             dd->gp.col = INTEGER(col)[nlines % ncol];
@@ -2206,7 +2206,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             nlines++;
         }
-        GMode(dd, 0);
+        GMode(0, dd);
     }
     UNPROTECT(2);
     GRestorePars(dd);
@@ -2245,9 +2245,9 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
             dd->gp.col = dd->gp.fg;
     }
     dd->gp.xpd = 1;
-    GMode(dd, 1);
+    GMode(1, dd);
     GBox(which, dd);
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
@@ -2273,7 +2273,7 @@ SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(nobs = allocVector(INTSXP, 1));
     i = 0;
 
-    GMode(dd, 2);
+    GMode(2, dd);
     while (i < n)
     {
         if (!GLocator(&(REAL(x)[i]), &(REAL(y)[i]), USER, dd))
@@ -2284,7 +2284,7 @@ SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
             REAL(y)[i] = pow(10., REAL(y)[i]);
         i += 1;
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     INTEGER(nobs)[0] = i;
     while (i < n)
     {
@@ -2350,7 +2350,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         LOGICAL(ind)[i] = 0;
 
     k = 0;
-    GMode(dd, 2);
+    GMode(2, dd);
     while (k < npts)
     {
         if (!GLocator(&xp, &yp, INCHES, dd))
@@ -2418,7 +2418,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
-    GMode(dd, 0);
+    GMode(0, dd);
     ans = allocList(2);
     CAR(ans) = ind;
     CADR(ans) = pos;
@@ -2723,9 +2723,9 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     dnd_offset = GConvertYUnits(GStrWidth("m", INCHES, dd), INCHES, USER, dd);
 
     dd->gp.xpd = 1;
-    GMode(dd, 1);
+    GMode(1, dd);
     drawdend(dnd_n, &x, &y, dd);
-    GMode(dd, 0);
+    GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
@@ -2875,9 +2875,9 @@ SEXP do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GSavePars(dd);
 
-    GMode(dd, 1);
+    GMode(1, dd);
     GRect(0.0, 0.0, 1.0, 1.0, NDC, INTEGER(col)[0], NA_INTEGER, dd);
-    GMode(dd, 0);
+    GMode(0, dd);
 
     GRestorePars(dd);
     UNPROTECT(1);
