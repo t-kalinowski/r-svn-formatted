@@ -1046,7 +1046,7 @@ int RguiCommonHelp(menu m)
     lmandata = check_doc_file("doc\\manual\\R-data.pdf");
     if (!lmandata)
         disable(mmandata);
-    MCHECK(mmanlang = newmenuitem("R Language Manual", 0, menumainlang));
+    MCHECK(mmanlang = newmenuitem("R Language Definition", 0, menumainlang));
     lmanlang = check_doc_file("doc\\manual\\R-lang.pdf");
     if (!lmanlang)
         disable(mmanlang);
