@@ -1,5 +1,5 @@
 /* From http://www.netlib.org/specfun/rjbesl	Fortran translated by f2c,...
- *      ------------------------------=#----	Martin Maechler, ETH Zurich
+ *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
 #include "Mathlib.h"
 #include "Error.h"
@@ -29,7 +29,9 @@ double bessel_j(double x, double alpha)
         else
             warning("bessel_j(%g,nu=%g): precision lost in result\n", x, nb + alpha);
     }
-    return bj[nb - 1];
+    x = bj[nb - 1];
+    free(bj);
+    return x;
 }
 
 void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
@@ -229,7 +231,7 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
     long nend, intx, nbmx, i, j, k, l, m, n, nstart;
 
     double nu, twonu, capp, capq, pold, vcos, test, vsin;
-    double p, s, t, z, alpem, halfx, tempa, tempb, tempc, psave, plast;
+    double p, s, t, z, alpem, halfx, aa, bb, cc, psave, plast;
     double tover, t1, alp2em, em, en, xc, xk, xm, psavel, gnu, xin, sum;
 
     /* Parameter adjustment */
@@ -268,7 +270,7 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
             /* ---------------------------------------------------------------------
              Two-term ascending series for small X.
              --------------------------------------------------------------------- */
-            tempa = 1.;
+            aa = 1.;
             alpem = 1. + nu;
             halfx = 0.;
             if (*x > enmten)
@@ -277,14 +279,14 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
             }
             if (nu != 0.)
             {
-                tempa = pow(halfx, nu) / (nu * gamma_cody(nu));
+                aa = pow(halfx, nu) / (nu * gamma_cody(nu));
             }
-            tempb = 0.;
+            bb = 0.;
             if (*x + 1. > 1.)
             {
-                tempb = -halfx * halfx;
+                bb = -halfx * halfx;
             }
-            b[1] = tempa + tempa * tempb / alpem;
+            b[1] = aa + aa * bb / alpem;
             if (*x != 0. && b[1] == 0.)
             {
                 *ncalc = 0;
@@ -303,22 +305,22 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                     /* ----------------------------------------------
                        Calculate higher order functions.
                        ---------------------------------------------- */
-                    tempc = halfx;
+                    cc = halfx;
                     tover = (enmten + enmten) / *x;
-                    if (tempb != 0.)
+                    if (bb != 0.)
                     {
-                        tover = enmten / tempb;
+                        tover = enmten / bb;
                     }
                     for (n = 2; n <= *nb; ++n)
                     {
-                        tempa /= alpem;
+                        aa /= alpem;
                         alpem += 1.;
-                        tempa *= tempc;
-                        if (tempa <= tover * alpem)
+                        aa *= cc;
+                        if (aa <= tover * alpem)
                         {
-                            tempa = 0.;
+                            aa = 0.;
                         }
-                        b[n] = tempa + tempa * tempb / alpem;
+                        b[n] = aa + aa * bb / alpem;
                         if (b[n] == 0. && *ncalc > n)
                         {
                             *ncalc = n - 1;
@@ -446,12 +448,12 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                             p = en * plast / *x - pold;
                         } while (p <= 1.);
 
-                        tempb = en / *x;
+                        bb = en / *x;
                         /* -----------------------------------------------
                            Calculate backward test and find NCALC,
                            the highest N such that the test is passed.
                            ----------------------------------------------- */
-                        test = pold * plast * (.5 - .5 / (tempb * tempb));
+                        test = pold * plast * (.5 - .5 / (bb * bb));
                         test /= ensig;
                         p = plast * tover;
                         --n;
@@ -496,8 +498,8 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
         L190:
             ++n;
             en += 2.;
-            tempb = 0.;
-            tempa = 1. / p;
+            bb = 0.;
+            aa = 1. / p;
             m = (n << 1) - (n / 2 << 2);
             sum = 0.;
             em = floor((double)n / 2); /* integer division*/
@@ -505,7 +507,7 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
             alp2em = em + em + nu;
             if (m != 0)
             {
-                sum = tempa * alpem * alp2em / em;
+                sum = aa * alpem * alp2em / em;
             }
             nend = n - *nb;
             if (nend > 0)
@@ -517,9 +519,9 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                 for (l = 1; l <= nend; ++l, --n)
                 {
                     en -= 2.;
-                    tempc = tempb;
-                    tempb = tempa;
-                    tempa = en * tempb / *x - tempc;
+                    cc = bb;
+                    bb = aa;
+                    aa = en * bb / *x - cc;
                     m = 2 - m;
                     if (m != 0)
                     {
@@ -532,14 +534,14 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                         alpem = em - 1. + nu;
                         if (alpem == 0.)
                             alpem = 1.;
-                        sum = (sum + tempa * alp2em) * alpem / em;
+                        sum = (sum + aa * alp2em) * alpem / em;
                     }
                 }
             }
             /*--------------------------------------------------
               Store b[NB].
               --------------------------------------------------*/
-            b[n] = tempa;
+            b[n] = aa;
             if (nend >= 0)
             {
                 if (*nb <= 1)
@@ -559,7 +561,7 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                        -----------------------------------------*/
                     --n;
                     en -= 2.;
-                    b[n] = en * tempa / *x - tempb;
+                    b[n] = en * aa / *x - bb;
                     if (n == 1)
                     {
                         goto L240;
@@ -619,17 +621,17 @@ void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                Normalize.  Divide all b[N] by sum.
                ---------------------------------------------------*/
             if (nu + 1. != 1.)
-            {
                 sum *= (gamma_cody(nu) * pow(.5 * *x, -nu));
-            }
-            tempa = enmten;
+
+            aa = enmten;
             if (sum > 1.)
-                tempa *= sum;
+                aa *= sum;
             for (n = 1; n <= *nb; ++n)
             {
-                if (fabs(b[n]) < tempa)
+                if (fabs(b[n]) < aa)
                     b[n] = 0.;
-                b[n] /= sum;
+                else
+                    b[n] /= sum;
             }
         }
     }

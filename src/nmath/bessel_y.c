@@ -1,5 +1,5 @@
 /* From http://www.netlib.org/specfun/rybesl	Fortran translated by f2c,...
- *      ------------------------------=#----	Martin Maechler, ETH Zurich
+ *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
 #include "Mathlib.h"
 #include "Error.h"
@@ -26,7 +26,9 @@ double bessel_y(double x, double alpha)
         else /* ncalc >= 0 */
             warning("bessel_y(%g,nu=%g): precision lost in result\n", x, nb + alpha);
     }
-    return by[nb - 1];
+    x = by[nb - 1];
+    free(by);
+    return x;
 }
 
 void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc)
@@ -220,7 +222,7 @@ void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc)
         xna = ftrunc(nu + .5);
         na = (long)xna;
         if (na == 1)
-        { /* <==>  .5 <= *alpha < 1  <==>  -5. <= nu < 0 */
+        { /* <==>  .5 <= *alpha < 1	 <==>  -5. <= nu < 0 */
             nu -= xna;
         }
         if (nu == -.5)
@@ -239,13 +241,10 @@ void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc)
             f = nu * d;
             e = pow(b, -nu);
             if (fabs(nu) < del)
-            {
                 c = M_1_PI;
-            }
             else
-            {
                 c = nu / sin(nu * M_PI);
-            }
+
             /* ------------------------------------------------------------
                Computation of sinh(f)/f
                ------------------------------------------------------------ */
@@ -291,13 +290,10 @@ void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc)
             q = M_1_PI / g;
             c = nu * M_PI_2;
             if (fabs(c) < del)
-            {
                 r = 1.;
-            }
             else
-            {
                 r = sin(c) / c;
-            }
+
             r = M_PI * c * r * r;
             c = 1.;
             d = -b * b;
@@ -433,13 +429,9 @@ void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc)
                 p += 1.;
                 q += q0;
                 if (k == 1)
-                {
                     ya = M_SQRT_2dPI * (p * cosmu - q * sinmu) / den;
-                }
                 else
-                {
                     ya1 = M_SQRT_2dPI * (p * cosmu - q * sinmu) / den;
-                }
                 dmu += 1.;
             }
         }
