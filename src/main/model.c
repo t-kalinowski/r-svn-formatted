@@ -1684,13 +1684,15 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (isOrdered(var_i))
         {
             LOGICAL(ordered)[i] = 1;
-            INTEGER(nlevs)[i] = nlevels(var_i);
+            if ((INTEGER(nlevs)[i] = nlevels(var_i)) < 2)
+                errorcall(call, "variable %d has fewer than 2 levels", i + 1);
             INTEGER(columns)[i] = ncols(var_i);
         }
         else if (isUnordered(var_i))
         {
             LOGICAL(ordered)[i] = 0;
-            INTEGER(nlevs)[i] = nlevels(var_i);
+            if ((INTEGER(nlevs)[i] = nlevels(var_i)) < 2)
+                errorcall(call, "variable %d has fewer than 2 levels", i + 1);
             INTEGER(columns)[i] = ncols(var_i);
         }
         else if (isLogical(var_i))
