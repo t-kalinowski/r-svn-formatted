@@ -197,7 +197,7 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
             return val;
         else
         {
-            SEXP table = findVarInFrame3(defrho, install(".MethodsTable"), TRUE);
+            SEXP table = findVarInFrame3(defrho, install(".__S3MethodsTable__."), TRUE);
             if (TYPEOF(table) == PROMSXP)
                 table = eval(table, R_NilValue);
             if (TYPEOF(table) == ENVSXP)
