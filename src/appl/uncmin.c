@@ -26,6 +26,7 @@
 #include <math.h>
 #include "S.h"
 #include "Applic.h"
+#include "PrtUtil.h" /* Rprintf and printRealVector */
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
@@ -2574,23 +2575,23 @@ static void result(int nr, int n, const double x[], double f, const double g[], 
     if (iflg != 0)
     {
         Rprintf("Step:\n");
-        printRealVector(p, n, 1);
+        printRealVector((double *)p, n, 1);
     }
 
     /* Print current iterate */
 
     Rprintf("Parameter:\n");
-    printRealVector(x, n, 1);
+    printRealVector((double *)x, n, 1);
 
     /* Print function value */
 
     Rprintf("Function Value\n");
-    printRealVector(&f, 1, 1);
+    printRealVector((double *)&f, 1, 1);
 
     /* Print gradient */
 
     Rprintf("Gradient:\n");
-    printRealVector(g, n, 1);
+    printRealVector((double *)g, n, 1);
 
 #ifdef NEVER
     /* Print Hessian */
