@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -104,7 +104,7 @@ void natural_spline(int n, double *x, double *y, double *b, double *c, double *d
 
     /* Backward substitution */
 
-    c[n - 1] = c[n - 1] / b[n - 1];
+    c[nm1] = c[nm1] / b[nm1];
     for (i = n - 2; i > 1; i--)
         c[i] = (c[i] - d[i] * c[i + 1]) / b[i];
 
@@ -117,7 +117,7 @@ void natural_spline(int n, double *x, double *y, double *b, double *c, double *d
     b[1] = (y[2] - y[1]) / d[1] - d[i] * c[2];
     c[1] = 0.0;
     d[1] = c[2] / d[1];
-    b[n] = (y[n] - y[n - 1]) / d[n - 1] + 2.0 * d[n - 1] * c[n - 1];
+    b[n] = (y[n] - y[nm1]) / d[nm1] + 2.0 * d[nm1] * c[nm1];
     for (i = 2; i < n; i++)
     {
         b[i] = (y[i + 1] - y[i]) / d[i] - d[i] * (c[i + 1] + 2.0 * c[i]);
@@ -125,7 +125,7 @@ void natural_spline(int n, double *x, double *y, double *b, double *c, double *d
         c[i] = 3.0 * c[i];
     }
     c[n] = 0.0;
-    d[n] = d[n - 1];
+    d[n] = d[nm1];
 
     return;
 }
@@ -172,8 +172,8 @@ void fmm_spline(int n, double *x, double *y, double *b, double *c, double *d)
     /* Set up tridiagonal system */
     /* b = diagonal, d = offdiagonal, c = right hand side */
 
-    d[1] = (x[2] - x[1]);
-    c[2] = (y[2] - y[1]) / d[1];
+    d[1] = x[2] - x[1];
+    c[2] = (y[2] - y[1]) / d[1]; /* = +/- Inf	for x[1]=x[2] -- problem? */
     for (i = 2; i < n; i++)
     {
         d[i] = x[i + 1] - x[i];
@@ -187,14 +187,14 @@ void fmm_spline(int n, double *x, double *y, double *b, double *c, double *d)
     /* from divided differences */
 
     b[1] = -d[1];
-    b[n] = -d[n - 1];
+    b[n] = -d[nm1];
     c[1] = c[n] = 0.0;
     if (n > 3)
     {
         c[1] = c[3] / (x[4] - x[2]) - c[2] / (x[3] - x[1]);
-        c[n] = c[n - 1] / (x[n] - x[n - 2]) - c[n - 2] / (x[n - 1] - x[n - 3]);
+        c[n] = c[nm1] / (x[n] - x[n - 2]) - c[n - 2] / (x[nm1] - x[n - 3]);
         c[1] = c[1] * d[1] * d[1] / (x[4] - x[1]);
-        c[n] = -c[n] * d[n - 1] * d[n - 1] / (x[n] - x[n - 3]);
+        c[n] = -c[n] * d[nm1] * d[nm1] / (x[n] - x[n - 3]);
     }
 
     /* Gaussian elimination */
@@ -209,7 +209,7 @@ void fmm_spline(int n, double *x, double *y, double *b, double *c, double *d)
     /* Backward substitution */
 
     c[n] = c[n] / b[n];
-    for (i = n - 1; i >= 1; i--)
+    for (i = nm1; i >= 1; i--)
         c[i] = (c[i] - d[i] * c[i + 1]) / b[i];
 
     /* c[i] is now the sigma[i-1] of the text */
@@ -223,7 +223,7 @@ void fmm_spline(int n, double *x, double *y, double *b, double *c, double *d)
         c[i] = 3.0 * c[i];
     }
     c[n] = 3.0 * c[n];
-    d[n] = d[n - 1];
+    d[n] = d[nm1];
     return;
 }
 
@@ -260,16 +260,16 @@ void periodic_spline(int n, double *x, double *y, double *b, double *c, double *
     nm1 = n - 1;
 
     /* Set up the matrix system */
-    /* A = diagonal  B = off-diagonal  C = rhs */
+    /* A = diagonal	 B = off-diagonal  C = rhs */
 
 #define A b
 #define B d
 #define C c
 
     B[1] = x[2] - x[1];
-    B[n - 1] = (x[n] - x[n - 1]);
-    A[1] = 2.0 * (B[1] + (x[n - 1] - x[n - 2]));
-    C[1] = (y[2] - y[1]) / B[1] - (y[n] - y[n - 1]) / B[n - 1];
+    B[nm1] = x[n] - x[nm1];
+    A[1] = 2.0 * (B[1] + (x[nm1] - x[n - 2]));
+    C[1] = (y[2] - y[1]) / B[1] - (y[n] - y[nm1]) / B[nm1];
 
     for (i = 2; i < n; i++)
     {
@@ -340,6 +340,15 @@ void periodic_spline(int n, double *x, double *y, double *b, double *c, double *
     d[n] = d[1];
     return;
 }
+#undef A
+#undef B
+#undef C
+#undef L
+#undef M
+#undef E
+#undef Y
+#undef D
+#undef X
 
 int spline_coef(int *method, int *n, double *x, double *y, double *b, double *c, double *d, double *e)
 {
