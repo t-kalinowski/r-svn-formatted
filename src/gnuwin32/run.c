@@ -460,7 +460,7 @@ static int Wpipe_fgetc(Rconnection con)
     return c == NOLAUNCH ? R_EOF : c;
 }
 
-static long null_seek(Rconnection con, int where, int origin, int rw)
+static long null_seek(Rconnection con, double where, int origin, int rw)
 {
     error("seek not enabled for this connection");
     return 0; /* -Wall */
