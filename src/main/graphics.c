@@ -5309,7 +5309,7 @@ unsigned int rgb2col(char *rgb)
 unsigned int name2col(char *nm)
 {
     int i;
-    if (strcmp(nm, "NA") == 0)
+    if (strcmp(nm, "NA") == 0 || strcmp(nm, "transparent") == 0)
         return NA_INTEGER;
     for (i = 0; ColorDataBase[i].name; i++)
     {
@@ -5357,6 +5357,9 @@ char *RGB2rgb(unsigned int r, unsigned int g, unsigned int b)
 char *col2name(unsigned int col)
 {
     int i;
+
+    if (R_ALPHA(col) != 0)
+        return "transparent";
     for (i = 0; ColorDataBase[i].name; i++)
     {
         if (col == ColorDataBase[i].code)

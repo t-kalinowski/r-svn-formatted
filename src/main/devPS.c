@@ -32,6 +32,8 @@
 #include "Fileio.h"
 #include <Rdevices.h>
 
+#define INVALID_COL 0xff0a0b0c
+
 /* Define this to use hyphen except in -[0-9] */
 #undef USE_HYPHEN
 /* In ISOLatin1, minus is 45 and hyphen is 173 */
@@ -1264,9 +1266,9 @@ static void Invalidate(DevDesc *dd)
     pd->current.fontstyle = -1;
     pd->current.lwd = -1;
     pd->current.lty = -1;
-    pd->current.col = 0xffffffff;
-    pd->current.fill = 0xffffffff;
-    pd->current.bg = 0xffffffff;
+    pd->current.col = INVALID_COL;
+    pd->current.fill = INVALID_COL;
+    pd->current.bg = INVALID_COL;
 }
 
 static void PS_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
@@ -1304,7 +1306,7 @@ static void PS_NewPage(DevDesc *dd)
     PostScriptStartPage(pd->psfp, pd->pageno);
     Invalidate(dd);
 
-    if (dd->gp.bg != R_RGB(255, 255, 255))
+    if (R_ALPHA(dd->gp.bg) == 0)
     {
         PS_Rect(0, 0, 72.0 * pd->pagewidth, 72.0 * pd->pageheight, DEVICE, dd->gp.bg, NA_INTEGER, dd);
     }
@@ -1413,7 +1415,7 @@ static void PS_Rect(double x0, double y0, double x1, double y1, int coords, int 
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
 
     if (code)
     {
@@ -1442,7 +1444,7 @@ static void PS_Circle(double x, double y, int coords, double r, int bg, int fg, 
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
 
     if (code)
     {
@@ -1466,12 +1468,15 @@ static void PS_Line(double x1, double y1, double x2, double y2, int coords, DevD
     GConvert(&x1, &y1, coords, DEVICE, dd);
     GConvert(&x2, &y2, coords, DEVICE, dd);
     /* FIXME : clip to the device extents here */
-    SetColor(dd->gp.col, dd);
-    SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
-    PostScriptStartPath(pd->psfp);
-    PostScriptMoveTo(pd->psfp, x1, y1);
-    PostScriptLineTo(pd->psfp, x2, y2);
-    PostScriptEndPath(pd->psfp);
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        SetColor(dd->gp.col, dd);
+        SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        PostScriptStartPath(pd->psfp);
+        PostScriptMoveTo(pd->psfp, x1, y1);
+        PostScriptLineTo(pd->psfp, x2, y2);
+        PostScriptEndPath(pd->psfp);
+    }
 }
 
 static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *dd)
@@ -1488,7 +1493,7 @@ static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
 
     if (code)
     {
@@ -1522,21 +1527,24 @@ static void PS_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
     int i;
 
     pd = (PostScriptDesc *)dd->deviceSpecific;
-    SetColor(dd->gp.col, dd);
-    SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
-    fprintf(pd->psfp, "np\n");
-    xx = x[0];
-    yy = y[0];
-    GConvert(&xx, &yy, coords, DEVICE, dd);
-    fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
-    for (i = 1; i < n; i++)
+    if (R_ALPHA(dd->gp.col) == 0)
     {
-        xx = x[i];
-        yy = y[i];
+        SetColor(dd->gp.col, dd);
+        SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        fprintf(pd->psfp, "np\n");
+        xx = x[0];
+        yy = y[0];
         GConvert(&xx, &yy, coords, DEVICE, dd);
-        fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
+        fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
+        for (i = 1; i < n; i++)
+        {
+            xx = x[i];
+            yy = y[i];
+            GConvert(&xx, &yy, coords, DEVICE, dd);
+            fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
+        }
+        fprintf(pd->psfp, "o\n");
     }
-    fprintf(pd->psfp, "o\n");
 }
 
 static void PS_Text(double x, double y, int coords, char *str, double rot, double hadj, DevDesc *dd)
@@ -1545,8 +1553,11 @@ static void PS_Text(double x, double y, int coords, char *str, double rot, doubl
 
     GConvert(&x, &y, coords, DEVICE, dd);
     SetFont(dd->gp.font, (int)floor(dd->gp.cex * dd->gp.ps + 0.5), dd);
-    SetColor(dd->gp.col, dd);
-    PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot);
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        SetColor(dd->gp.col, dd);
+        PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot);
+    }
 }
 
 static Rboolean PS_Locator(double *x, double *y, DevDesc *dd)
@@ -2037,7 +2048,7 @@ static void XFig_NewPage(DevDesc *dd)
         pd->XFigColors[7] = 0xffffff;
         pd->nXFigColors = 32;
     }
-    if (dd->dp.bg != R_RGB(255, 255, 255))
+    if (R_ALPHA(dd->dp.bg) == 0)
     {
         int cbg = XF_SetColor(dd->dp.bg, pd);
         int ix0, iy0, ix1, iy1;
@@ -2103,8 +2114,8 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, int coords, in
     int cbg = XF_SetColor(bg, pd), cfg = XF_SetColor(fg, pd), cpen, dofill, lty = XF_SetLty(dd->gp.lty),
         lwd = dd->gp.lwd * 0.833 + 0.5;
 
-    cpen = (fg != NA_INTEGER) ? cfg : -1;
-    dofill = (bg != NA_INTEGER) ? 20 : -1;
+    cpen = (R_ALPHA(fg) == 0) ? cfg : -1;
+    dofill = (R_ALPHA(bg) == 0) ? 20 : -1;
 
     GConvert(&x0, &y0, coords, DEVICE, dd);
     XFconvert(&x0, &y0, pd);
@@ -2135,8 +2146,8 @@ static void XFig_Circle(double x, double y, int coords, double r, int bg, int fg
     int cbg = XF_SetColor(bg, pd), cfg = XF_SetColor(fg, pd), cpen, dofill, lty = XF_SetLty(dd->gp.lty),
         lwd = dd->gp.lwd * 0.833 + 0.5;
 
-    cpen = (fg != NA_INTEGER) ? cfg : -1;
-    dofill = (bg != NA_INTEGER) ? 20 : -1;
+    cpen = (R_ALPHA(fg) == 0) ? cfg : -1;
+    dofill = (R_ALPHA(bg) == 0) ? 20 : -1;
 
     GConvert(&x, &y, coords, DEVICE, dd);
     XFconvert(&x, &y, pd);
@@ -2162,14 +2173,17 @@ static void XFig_Line(double x1, double y1, double x2, double y2, int coords, De
     XFconvert(&x1, &y1, pd);
     GConvert(&x2, &y2, coords, DEVICE, dd);
     XFconvert(&x2, &y2, pd);
-    fprintf(fp, "2 1 ");                           /* Polyline */
-    fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1); /* style, thickness */
-    fprintf(fp, "%d %d ", XF_SetColor(dd->gp.col, pd), 7);
-    /* pen colour fill colour */
-    fprintf(fp, "100 0 -1 ");                   /* depth, pen style, area fill */
-    fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd); /* style value, join .... */
-    fprintf(fp, "%d\n", 2);                     /* number of points */
-    fprintf(fp, "%d %d %d %d\n", (int)x1, (int)y1, (int)x2, (int)y2);
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        fprintf(fp, "2 1 ");                           /* Polyline */
+        fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1); /* style, thickness */
+        fprintf(fp, "%d %d ", XF_SetColor(dd->gp.col, pd), 7);
+        /* pen colour fill colour */
+        fprintf(fp, "100 0 -1 ");                   /* depth, pen style, area fill */
+        fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd); /* style value, join .... */
+        fprintf(fp, "%d\n", 2);                     /* number of points */
+        fprintf(fp, "%d %d %d %d\n", (int)x1, (int)y1, (int)x2, (int)y2);
+    }
 }
 
 static void XFig_Polygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *dd)
@@ -2181,8 +2195,8 @@ static void XFig_Polygon(int n, double *x, double *y, int coords, int bg, int fg
     int cbg = XF_SetColor(bg, pd), cfg = XF_SetColor(fg, pd), cpen, dofill, lty = XF_SetLty(dd->gp.lty),
         lwd = dd->gp.lwd * 0.833 + 0.5;
 
-    cpen = (fg != NA_INTEGER) ? cfg : -1;
-    dofill = (bg != NA_INTEGER) ? 20 : -1;
+    cpen = (R_ALPHA(fg) == 0) ? cfg : -1;
+    dofill = (R_ALPHA(bg) == 0) ? 20 : -1;
 
     fprintf(fp, "2 3 ");                           /* Polyline */
     fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1); /* style, thickness */
@@ -2208,19 +2222,22 @@ static void XFig_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
     double xx, yy;
     int i, lty = XF_SetLty(dd->gp.lty), lwd = dd->gp.lwd * 0.833 + 0.5;
 
-    fprintf(fp, "2 1 ");                                   /* Polyline */
-    fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1);         /* style, thickness */
-    fprintf(fp, "%d %d ", XF_SetColor(dd->gp.col, pd), 7); /* pen colour fill colour */
-    fprintf(fp, "100 0 -1 ");                              /* depth, pen style, area fill */
-    fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd);            /* style value, join .... */
-    fprintf(fp, "%d\n", n);                                /* number of points */
-    for (i = 0; i < n; i++)
+    if (R_ALPHA(dd->gp.col) == 0)
     {
-        xx = x[i];
-        yy = y[i];
-        GConvert(&xx, &yy, coords, DEVICE, dd);
-        XFconvert(&xx, &yy, pd);
-        fprintf(fp, "  %d %d\n", (int)xx, (int)yy);
+        fprintf(fp, "2 1 ");                                   /* Polyline */
+        fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1);         /* style, thickness */
+        fprintf(fp, "%d %d ", XF_SetColor(dd->gp.col, pd), 7); /* pen colour fill colour */
+        fprintf(fp, "100 0 -1 ");                              /* depth, pen style, area fill */
+        fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd);            /* style value, join .... */
+        fprintf(fp, "%d\n", n);                                /* number of points */
+        for (i = 0; i < n; i++)
+        {
+            xx = x[i];
+            yy = y[i];
+            GConvert(&xx, &yy, coords, DEVICE, dd);
+            XFconvert(&xx, &yy, pd);
+            fprintf(fp, "  %d %d\n", (int)xx, (int)yy);
+        }
     }
 }
 
@@ -2244,16 +2261,19 @@ static void XFig_Text(double x, double y, int coords, char *str, double rot, dou
 
     GConvert(&x, &y, coords, DEVICE, dd);
     XFconvert(&x, &y, pd);
-    fprintf(fp, "4 %d ", (int)floor(2 * hadj)); /* Text, how justified */
-    fprintf(fp, "%d 100 0 ", XF_SetColor(dd->gp.col, pd));
-    /* color, depth, pen_style */
-    fprintf(fp, "%d %d %.4f 4 ", fontnum, (int)size, rot * DEG2RAD);
-    /* font pointsize angle flags (Postscript font) */
-    fprintf(fp, "%d %d ", (int)(16.667 * GStrHeight(str, DEVICE, dd) + 0.5),
-            (int)(16.667 * GStrWidth(str, DEVICE, dd) + 0.5));
-    fprintf(fp, "%d %d ", (int)x, (int)y);
-    XF_WriteString(fp, str);
-    fprintf(fp, "\\001\n");
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        fprintf(fp, "4 %d ", (int)floor(2 * hadj)); /* Text, how justified */
+        fprintf(fp, "%d 100 0 ", XF_SetColor(dd->gp.col, pd));
+        /* color, depth, pen_style */
+        fprintf(fp, "%d %d %.4f 4 ", fontnum, (int)size, rot * DEG2RAD);
+        /* font pointsize angle flags (Postscript font) */
+        fprintf(fp, "%d %d ", (int)(16.667 * GStrHeight(str, DEVICE, dd) + 0.5),
+                (int)(16.667 * GStrWidth(str, DEVICE, dd) + 0.5));
+        fprintf(fp, "%d %d ", (int)x, (int)y);
+        XF_WriteString(fp, str);
+        fprintf(fp, "\\001\n");
+    }
 }
 
 static Rboolean XFig_Locator(double *x, double *y, DevDesc *dd)
@@ -2494,7 +2514,7 @@ static void PDF_Invalidate(DevDesc *dd)
     /* page starts with black as the default fill and stroke colours */
     pd->current.col = 0;
     pd->current.fill = 0;
-    pd->current.bg = 0xffffffff;
+    pd->current.bg = INVALID_COL;
 }
 
 static void PDF_SetLineColor(int color, DevDesc *dd)
@@ -2777,7 +2797,7 @@ static void PDF_NewPage(DevDesc *dd)
     fprintf(pd->pdffp, "1 J 1 j 10 M q\n");
     PDF_Invalidate(dd);
 
-    if (dd->gp.bg != R_RGB(255, 255, 255))
+    if (R_ALPHA(dd->gp.bg) == 0)
     {
         PDF_SetFill(dd->gp.bg, dd);
         fprintf(pd->pdffp, "0 0 %.2f %.2f re f\n", 72.0 * pd->width, 72.0 * pd->height);
@@ -2807,7 +2827,7 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, int coords, int
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int code;
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
     if (code)
     {
         if (pd->inText)
@@ -2846,7 +2866,7 @@ static void PDF_Circle(double x, double y, int coords, double r, int bg, int fg,
 
     GConvert(&x, &y, coords, DEVICE, dd);
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
 
     if (code)
     {
@@ -2891,7 +2911,7 @@ static void PDF_Circle(double x, double y, int coords, double r, int bg, int fg,
             a = 2. / 0.722 * r;
             xx = x - 0.396 * a;
             yy = y - 0.347 * a;
-            tr = (bg != NA_INTEGER) + 2 * (fg != NA_INTEGER) - 1;
+            tr = (R_ALPHA(bg) == 0) + 2 * (R_ALPHA(fg) == 0) - 1;
             if (!pd->inText)
                 texton(pd);
             fprintf(pd->pdffp, "/F6 1 Tf %d Tr %.2f 0 0 %.2f %.2f %.2f Tm", tr, a, a, xx, yy);
@@ -2904,13 +2924,16 @@ static void PDF_Line(double x1, double y1, double x2, double y2, int coords, Dev
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
 
-    PDF_SetLineColor(dd->gp.col, dd);
-    PDF_SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
-    GConvert(&x1, &y1, coords, DEVICE, dd);
-    GConvert(&x2, &y2, coords, DEVICE, dd);
-    if (pd->inText)
-        textoff(pd);
-    fprintf(pd->pdffp, "%.2f %.2f m %.2f %.2f l S\n", x1, y1, x2, y2);
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        PDF_SetLineColor(dd->gp.col, dd);
+        PDF_SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        GConvert(&x1, &y1, coords, DEVICE, dd);
+        GConvert(&x2, &y2, coords, DEVICE, dd);
+        if (pd->inText)
+            textoff(pd);
+        fprintf(pd->pdffp, "%.2f %.2f m %.2f %.2f l S\n", x1, y1, x2, y2);
+    }
 }
 
 static void PDF_Polygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *dd)
@@ -2919,7 +2942,7 @@ static void PDF_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
     double xx, yy;
     int i, code;
 
-    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+    code = 2 * (R_ALPHA(bg) == 0) + (R_ALPHA(fg) == 0);
 
     if (code)
     {
@@ -2966,20 +2989,23 @@ static void PDF_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
 
     if (pd->inText)
         textoff(pd);
-    PDF_SetLineColor(dd->gp.col, dd);
-    PDF_SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
-    xx = x[0];
-    yy = y[0];
-    GConvert(&xx, &yy, coords, DEVICE, dd);
-    fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
-    for (i = 1; i < n; i++)
+    if (R_ALPHA(dd->gp.col) == 0)
     {
-        xx = x[i];
-        yy = y[i];
+        PDF_SetLineColor(dd->gp.col, dd);
+        PDF_SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        xx = x[0];
+        yy = y[0];
         GConvert(&xx, &yy, coords, DEVICE, dd);
-        fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
+        fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
+        for (i = 1; i < n; i++)
+        {
+            xx = x[i];
+            yy = y[i];
+            GConvert(&xx, &yy, coords, DEVICE, dd);
+            fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
+        }
+        fprintf(pd->pdffp, "S\n");
     }
-    fprintf(pd->pdffp, "S\n");
 }
 
 static void PDF_Text(double x, double y, int coords, char *str, double rot, double hadj, DevDesc *dd)
@@ -2995,10 +3021,13 @@ static void PDF_Text(double x, double y, int coords, char *str, double rot, doub
     GConvert(&x, &y, coords, DEVICE, dd);
     if (!pd->inText)
         texton(pd);
-    PDF_SetFill(dd->gp.col, dd);
-    fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", face, a, b, -b, a, x, y);
-    PostScriptWriteString(pd->pdffp, str);
-    fprintf(pd->pdffp, " Tj\n");
+    if (R_ALPHA(dd->gp.col) == 0)
+    {
+        PDF_SetFill(dd->gp.col, dd);
+        fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", face, a, b, -b, a, x, y);
+        PostScriptWriteString(pd->pdffp, str);
+        fprintf(pd->pdffp, " Tj\n");
+    }
 }
 
 static Rboolean PDF_Locator(double *x, double *y, DevDesc *dd)
