@@ -40,6 +40,6 @@ double pgeom(double x, double p, int lower_tail, int log_p)
     if (!R_FINITE(x))
         return R_DT_1;
     if (log_p && !lower_tail)
-        return log(1 - p) * (x + 1);
+        return log1p(-p) * (x + 1);
     return R_DT_Cval(pow(1 - p, x + 1));
 }
