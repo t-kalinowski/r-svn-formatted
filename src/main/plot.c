@@ -1168,7 +1168,19 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 axis_base = GConvertY(0.0, outer, NFC, dd) - GConvertYUnits(line, LINES, NFC, dd);
             if (R_FINITE(Rf_gpptr(dd)->tck))
-                axis_tick = axis_base + GConvertYUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+            {
+                double len, xu, yu;
+                if (Rf_gpptr(dd)->tck > 0.5)
+                    len = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+                else
+                {
+                    xu = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    yu = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    xu = (fabs(xu) < fabs(yu)) ? xu : yu;
+                    len = GConvertYUnits(xu, INCHES, NFC, dd);
+                }
+                axis_tick = axis_base + len;
+            }
             else
                 axis_tick = axis_base + GConvertYUnits(Rf_gpptr(dd)->tcl, LINES, NFC, dd);
         }
@@ -1179,7 +1191,19 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 axis_base = GConvertY(1.0, outer, NFC, dd) + GConvertYUnits(line, LINES, NFC, dd);
             if (R_FINITE(Rf_gpptr(dd)->tck))
-                axis_tick = axis_base - GConvertYUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+            {
+                double len, xu, yu;
+                if (Rf_gpptr(dd)->tck > 0.5)
+                    len = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+                else
+                {
+                    xu = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    yu = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    xu = (fabs(xu) < fabs(yu)) ? xu : yu;
+                    len = GConvertYUnits(xu, INCHES, NFC, dd);
+                }
+                axis_tick = axis_base - len;
+            }
             else
                 axis_tick = axis_base - GConvertYUnits(Rf_gpptr(dd)->tcl, LINES, NFC, dd);
         }
@@ -1281,7 +1305,19 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 axis_base = GConvertX(0.0, outer, NFC, dd) - GConvertXUnits(line, LINES, NFC, dd);
             if (R_FINITE(Rf_gpptr(dd)->tck))
-                axis_tick = axis_base + GConvertXUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+            {
+                double len, xu, yu;
+                if (Rf_gpptr(dd)->tck > 0.5)
+                    len = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+                else
+                {
+                    xu = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    yu = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    xu = (fabs(xu) < fabs(yu)) ? xu : yu;
+                    len = GConvertXUnits(xu, INCHES, NFC, dd);
+                }
+                axis_tick = axis_base + len;
+            }
             else
                 axis_tick = axis_base + GConvertXUnits(Rf_gpptr(dd)->tcl, LINES, NFC, dd);
         }
@@ -1292,7 +1328,19 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 axis_base = GConvertX(1.0, outer, NFC, dd) + GConvertXUnits(line, LINES, NFC, dd);
             if (R_FINITE(Rf_gpptr(dd)->tck))
-                axis_tick = axis_base - GConvertXUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+            {
+                double len, xu, yu;
+                if (Rf_gpptr(dd)->tck > 0.5)
+                    len = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, NFC, dd);
+                else
+                {
+                    xu = GConvertXUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    yu = GConvertYUnits(Rf_gpptr(dd)->tck, NPC, INCHES, dd);
+                    xu = (fabs(xu) < fabs(yu)) ? xu : yu;
+                    len = GConvertXUnits(xu, INCHES, NFC, dd);
+                }
+                axis_tick = axis_base - len;
+            }
             else
                 axis_tick = axis_base - GConvertXUnits(Rf_gpptr(dd)->tcl, LINES, NFC, dd);
         }
