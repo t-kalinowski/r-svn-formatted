@@ -60,7 +60,7 @@ int matherr(struct exception *exc)
 /* Arithmetic Initialization */
 
 #ifdef HAVE_ISNAN
-double R_Zero_Hack = 0.0; /* silence the compiler */
+double R_Zero_Hack = 0.0; /* Silence the Sun compiler */
 #endif
 
 void InitArithmetic()
@@ -192,12 +192,10 @@ static SEXP real_unary(int, SEXP);
 static SEXP real_binary(int, SEXP, SEXP);
 static SEXP integer_binary(int, SEXP, SEXP);
 
-#ifdef COMPLEX_DATA
 extern SEXP complex_unary(int, SEXP);
 extern SEXP complex_binary(int, SEXP, SEXP);
 extern SEXP complex_math1(SEXP, SEXP, SEXP, SEXP);
 extern SEXP complex_math2(SEXP, SEXP, SEXP, SEXP);
-#endif
 
 static int naflag;
 static SEXP lcall;
@@ -237,11 +235,7 @@ static SEXP binary(SEXP op, SEXP args)
     if (isNull(y))
         y = CADR(args) = allocVector(REALSXP, 0);
 
-#ifdef COMPLEX_DATA
     if (!(isNumeric(x) || isComplex(x)) || !(isNumeric(y) || isComplex(y)))
-#else
-    if (!isNumeric(x) || !isNumeric(y))
-#endif
         errorcall(lcall, "non-numeric argument to binary operator\n");
 
     mismatch = 0;
@@ -311,16 +305,13 @@ static SEXP binary(SEXP op, SEXP args)
     if (mismatch)
         warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length\n");
 
-#ifdef COMPLEX_DATA
     if (TYPEOF(x) == CPLXSXP || TYPEOF(y) == CPLXSXP)
     {
         x = CAR(args) = coerceVector(x, CPLXSXP);
         y = CADR(args) = coerceVector(y, CPLXSXP);
         x = complex_binary(PRIMVAL(op), x, y);
     }
-    else
-#endif
-        if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
+    else if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
     {
         x = CAR(args) = coerceVector(x, REALSXP);
         y = CADR(args) = coerceVector(y, REALSXP);
@@ -368,10 +359,8 @@ static SEXP unary(SEXP op, SEXP s1)
         return integer_unary(PRIMVAL(op), s1);
     case REALSXP:
         return real_unary(PRIMVAL(op), s1);
-#ifdef COMPLEX_DATA
     case CPLXSXP:
         return complex_unary(PRIMVAL(op), s1);
-#endif
     default:
         errorcall(lcall, "Invalid argument to unary operator\n");
     }
@@ -415,8 +404,12 @@ static SEXP real_unary(int code, SEXP s1)
         n = LENGTH(s1);
         for (i = 0; i < n; i++)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = -REAL(s1)[i];
+#else
             x = REAL(s1)[i];
-            REAL(ans)[i] = FINITE(x) ? ((x == 0.0) ? 0.0 : -x) : NA_REAL;
+            REAL(ans)[i] = NAN(x) ? NA_REAL : ((x == 0.0) ? 0.0 : -x);
+#endif
         }
         return ans;
     default:
@@ -573,83 +566,111 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
     case PLUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2))
-                REAL(ans)[i] = MATH_CHECK(x1 + x2);
-            else
+            if (NAN(x1) || NAN(x2))
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 + x2);
+#endif
         }
         break;
     case MINUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2))
-                REAL(ans)[i] = MATH_CHECK(x1 - x2);
-            else
+            if (NAN(x1) || NAN(x2))
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 - x2);
+#endif
         }
         break;
     case TIMESOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2))
-                REAL(ans)[i] = MATH_CHECK(x1 * x2);
-            else
+            if (NAN(x1) && NAN(x2))
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 * x2);
+#endif
         }
         break;
     case DIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2) && x2 != 0.0)
-                REAL(ans)[i] = MATH_CHECK(x1 / x2);
-            else
+            if (NAN(x1) || NAN(x2) || x2 == 0)
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 / x2);
+#endif
         }
         break;
     case POWOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = pow(REAL(s1)[i1], REAL(s2)[i2]);
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2))
-                REAL(ans)[i] = MATH_CHECK(pow(x1, x2));
-            else
+            if (NAN(x1) || NAN(x2))
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(pow(x1, x2));
+#endif
         }
         break;
     case MODOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2) && x2 != 0.0)
-                REAL(ans)[i] = MATH_CHECK(myfmod(x1, x2));
-            else
+            if (NAN(x1) || NAN(x2) || x2 == 0)
                 REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(myfmod(x1, x2));
+#endif
         }
         break;
     case IDIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
+#ifdef IEEE_754
+            REAL(ans)[i] = floor(REAL(s1)[i1] / REAL(s2)[i2]);
+#else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (FINITE(x1) && FINITE(x2))
+            if (NAN(x1) || NAN(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
             {
-                if (x2 == 0.0)
-                    REAL(ans)[i] = 0.0;
+                if (x2 == 0)
+                    REAL(ans)[i] = 0;
                 else
                     REAL(ans)[i] = MATH_CHECK(floor(x1 / x2));
             }
-            else
-                REAL(ans)[i] = NA_REAL;
+#endif
         }
         break;
     }
@@ -689,17 +710,17 @@ static SEXP math1(SEXP op, SEXP sa, double (*f)())
         naflag = 0;
         for (i = 0; i < n; i++)
         {
-            if (FINITE(a[i]))
+            if (NAN(a[i]))
+                y[i] = NA_REAL;
+            else
             {
                 y[i] = MATH_CHECK(f(a[i]));
-                if (!FINITE(y[i]))
+                if (NAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
                 }
             }
-            else
-                y[i] = NA_REAL;
         }
         if (naflag)
             warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
@@ -721,10 +742,8 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     if (DispatchGroup("Math", call, op, args, env, &s))
         return s;
 
-#ifdef COMPLEX_DATA
     if (isComplex(CAR(args)))
         return complex_math1(call, op, args, env);
-#endif
     lcall = call;
 
     switch (PRIMVAL(op))
@@ -817,17 +836,17 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
         {
             ai = a[ia];
             bi = b[ib];
-            if (FINITE(ai) && FINITE(bi))
+            if (NAN(ai) || NAN(bi))
+                y[i] = NA_REAL;
+            else
             {
                 y[i] = MATH_CHECK(f(ai, bi));
-                if (!FINITE(y[i]))
+                if (NAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
                 }
             }
-            else
-                y[i] = NA_REAL;
         }
     }
     if (naflag)
@@ -852,10 +871,8 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
-#ifdef COMPLEX_DATA
     if (isComplex(CAR(args)))
         return complex_math2(call, op, args, env);
-#endif
 
     switch (PRIMVAL(op))
     {
@@ -922,18 +939,14 @@ SEXP do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (n = length(args))
     {
     case 1:
-#ifdef COMPLEX_DATA
         if (isComplex(CAR(args)))
             return complex_math1(call, op, args, env);
         else
-#endif
             return math1(op, CAR(args), atan);
     case 2:
-#ifdef COMPLEX_DATA
         if (isComplex(CAR(args)) || isComplex(CDR(args)))
             return complex_math2(call, op, args, env);
         else
-#endif
             return math2(op, CAR(args), CADR(args), atan2);
     default:
         error("%d arguments passed to \"atan\" which requires 1 or 2\n", n);
@@ -981,18 +994,14 @@ SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (n = length(args))
     {
     case 1:
-#ifdef COMPLEX_DATA
         if (isComplex(CAR(args)))
             return complex_math1(call, op, args, env);
         else
-#endif
             return math1(op, CAR(args), log);
     case 2:
-#ifdef COMPLEX_DATA
         if (isComplex(CAR(args)) || isComplex(CDR(args)))
             return complex_math2(call, op, args, env);
         else
-#endif
             return math2(op, CAR(args), CADR(args), logbase);
     default:
         error("%d arguments passed to \"log\" which requires 1 or 2\n", n);
@@ -1041,17 +1050,17 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
             ai = a[ia];
             bi = b[ib];
             ci = c[ic];
-            if (FINITE(ai) && FINITE(bi) && FINITE(ci))
+            if (NAN(ai) || NAN(bi) || NAN(ci))
+                y[i] = NA_REAL;
+            else
             {
                 y[i] = MATH_CHECK(f(ai, bi, ci));
-                if (!FINITE(y[i]))
+                if (NAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
                 }
             }
-            else
-                y[i] = NA_REAL;
         }
     }
     if (naflag)
@@ -1162,7 +1171,7 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return math3(op, CAR(args), CADR(args), CADDR(args), qweibull);
 
     /*
-    case 34:  return math3(op, CAR(args), CADR(args), CADDR(args), dnchisq);
+      case 34:  return math3(op, CAR(args), CADR(args), CADDR(args), dnchisq);
     */
     case 35:
         return math3(op, CAR(args), CADR(args), CADDR(args), pnchisq);
@@ -1221,17 +1230,17 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
             bi = b[ib];
             ci = c[ic];
             di = d[id];
-            if (FINITE(ai) && FINITE(bi) && FINITE(ci) && FINITE(di))
+            if (NAN(ai) || NAN(bi) || NAN(ci) || NAN(di))
+                y[i] = NA_REAL;
+            else
             {
                 y[i] = MATH_CHECK(f(ai, bi, ci, di));
-                if (!FINITE(y[i]))
+                if (NAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
                 }
             }
-            else
-                y[i] = NA_REAL;
         }
     }
     if (naflag)

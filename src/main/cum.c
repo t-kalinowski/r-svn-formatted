@@ -27,7 +27,7 @@ static SEXP cumsum(SEXP x, SEXP s)
     sum = 0.0;
     for (i = 0; i < length(x); i++)
     {
-        if (REAL(x)[i] == R_NaReal)
+        if (NAN(REAL(x)[i]))
             break;
         sum += REAL(x)[i];
         REAL(s)[i] = sum;
@@ -44,7 +44,7 @@ static SEXP ccumsum(SEXP x, SEXP s)
     sum.i = 0;
     for (i = 0; i < length(x); i++)
     {
-        if (!FINITE(COMPLEX(x)[i].r) || !FINITE(COMPLEX(x)[i].i))
+        if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
             break;
         sum.r += COMPLEX(x)[i].r;
         sum.i += COMPLEX(x)[i].i;
@@ -62,7 +62,7 @@ static SEXP cumprod(SEXP x, SEXP s)
     prod = 1.0;
     for (i = 0; i < length(x); i++)
     {
-        if (REAL(x)[i] == R_NaReal)
+        if (NAN(REAL(x)[i]))
             break;
         prod *= REAL(x)[i];
         REAL(s)[i] = prod;
@@ -79,7 +79,7 @@ static SEXP ccumprod(SEXP x, SEXP s)
     prod.i = 0;
     for (i = 0; i < length(x); i++)
     {
-        if (!FINITE(COMPLEX(x)[i].r) || !FINITE(COMPLEX(x)[i].i))
+        if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
             break;
         tmp.r = prod.r;
         tmp.i = prod.i;
@@ -99,7 +99,7 @@ static SEXP cummax(SEXP x, SEXP s)
     max = REAL(x)[0];
     for (i = 0; i < length(x); i++)
     {
-        if (REAL(x)[i] == R_NaReal)
+        if (NAN(REAL(x)[i]))
             break;
         max = (max > REAL(x)[i]) ? max : REAL(x)[i];
         REAL(s)[i] = max;
@@ -115,7 +115,7 @@ static SEXP cummin(SEXP x, SEXP s)
     min = REAL(x)[0];
     for (i = 0; i < length(x); i++)
     {
-        if (REAL(x)[i] == R_NaReal)
+        if (NAN(REAL(x)[i]))
             break;
         min = (min < REAL(x)[i]) ? min : REAL(x)[i];
         REAL(s)[i] = min;

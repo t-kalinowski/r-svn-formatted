@@ -658,7 +658,7 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (TYPEOF(CADR(args)) == REALSXP || TYPEOF(CADR(args)) == INTSXP)
         {
             where = asInteger(CADR(args));
-            genv = sysframe(where, R_GlobalContext);
+            genv = R_sysframe(where, R_GlobalContext);
         }
         else if (TYPEOF(CADR(args)) != ENVSXP)
             errorcall(call, "invalid envir argument\n");

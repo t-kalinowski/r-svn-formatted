@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1995-1997, 1998  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,11 +15,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *
+ *  See ./printutils.c	 for remarks on Printing and the Encoding utils.
+ *  See ./format.c	 for the formatXXXX functions used below.
  */
 
-/*== see ./printutils.c	 for general remarks on Printing and the Encode.. utils.
- *== see ./format.c	 for the  format_FOO_  functions used below.
- */
 #include "Defn.h"
 #include "Print.h"
 
@@ -178,7 +180,6 @@ void printRealVector(double *x, int n, int index)
     Rprintf("\n");
 }
 
-#ifdef COMPLEX_DATA
 void printComplexVector(complex *x, int n, int index)
 {
     int i, w, wr, dr, er, wi, di, ei, labwidth, width;
@@ -210,6 +211,8 @@ void printComplexVector(complex *x, int n, int index)
             else
                 width = 0;
         }
+#define TESTING
+#ifdef TESTING
         if (FINITE(x[i].r) && FINITE(x[i].i))
         {
             Rprintf("%*s%s", PRINT_GAP, "", EncodeReal(x[i].r, wr, dr, er));
@@ -219,12 +222,19 @@ void printComplexVector(complex *x, int n, int index)
                 Rprintf("-%si", EncodeReal(-x[i].i, wi, di, ei));
         }
         else
-            Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
+        {
+            if (NAN(x[i].r) || NAN(x[i].i))
+                Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
+            else
+                Rprintf("%*s", w, "Inf");
+        }
+#else
+        Rprintf("%s", EncodeComplex(x[i], wr, dr, er, wi, di, ei));
+#endif
         width += w;
     }
     Rprintf("\n");
 }
-#endif
 
 static void printStringVector(SEXP *x, int n, int quote, int index)
 {
@@ -292,11 +302,9 @@ void printVector(SEXP x, int index, int quote)
             else
                 printStringVector(STRING(x), n, 0, index);
             break;
-#ifdef COMPLEX_DATA
         case CPLXSXP:
             printComplexVector(COMPLEX(x), n, index);
             break;
-#endif
         }
     else
         switch (TYPEOF(x))
@@ -319,11 +327,9 @@ void printVector(SEXP x, int index, int quote)
         case STRSXP:
             Rprintf("character(0)\n");
             break;
-#ifdef COMPLEX_DATA
         case CPLXSXP:
             Rprintf("complex(0)\n");
             break;
-#endif
         }
 }
 
@@ -466,7 +472,6 @@ static void printNamedRealVector(double *x, int n, SEXP *names)
     Rprintf("\n");
 }
 
-#ifdef COMPLEX_DATA
 static void printNamedComplexVector(complex *x, int n, SEXP *names)
 {
     int i, j, k, w, wn, wr, dr, er, wi, di, ei, nlines, nperline;
@@ -508,7 +513,6 @@ static void printNamedComplexVector(complex *x, int n, SEXP *names)
     }
     Rprintf("\n");
 }
-#endif
 
 static void printNamedStringVector(SEXP *x, int n, int quote, SEXP *names)
 {
@@ -567,11 +571,9 @@ void printNamedVector(SEXP x, SEXP names, int quote)
         case REALSXP:
             printNamedRealVector(REAL(x), n, STRING(names));
             break;
-#ifdef COMPLEX_DATA
         case CPLXSXP:
             printNamedComplexVector(COMPLEX(x), n, STRING(names));
             break;
-#endif
         case STRSXP:
             if (quote)
                 quote = '"';

@@ -151,7 +151,7 @@ void formatInteger(int *x, int n, int *fieldwidth)
 /*---------------------------------------------------------------------------
  * scientific format determination for real numbers.
  * This is time-critical code.	 It is worth optimizing.
-
+ *
  *    nsig		digits altogether
  *    kpower+1		digits to the left of "."
  *    kpower+1+sgn	including sign
@@ -236,11 +236,13 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     int left, right, sleft;
     int mnl, mxl, rt, mxsl, mxns, mF;
     int neg, sgn, kpower, nsig;
-    int i, naflag;
+    int i, naflag, posinf, neginf;
 
     eps = pow(10.0, -(double)print_digits);
 
     naflag = 0;
+    posinf = 0;
+    neginf = 0;
     neg = 0;
     rt = mxl = mxsl = mxns = INT_MIN;
     mnl = INT_MAX;
@@ -249,7 +251,14 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     {
         if (!FINITE(x[i]))
         {
-            naflag = 1;
+            if (NAN(x[i]))
+                naflag = 1;
+#ifdef IEEE_754
+            else if (x[i] > 0)
+                posinf = 1;
+            else
+                neginf = 1;
+#endif
         }
         else
         {
@@ -310,6 +319,12 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     } /* else : "E" Exponential format -- all done above */
     if (naflag && *m < print_na_width)
         *m = print_na_width;
+#ifdef IEEE_754
+    if (posinf && *m < 3)
+        *m = 3;
+    if (neginf && *m < 4)
+        *m = 4;
+#endif
 }
 
 #ifdef COMPLEX_DATA
@@ -321,10 +336,16 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     int neg, sgn;
     int i, kpower, nsig;
     int naflag;
+#ifdef IEEE_754
+    int posinf;
+#endif
 
     eps = pow(10.0, -(double)print_digits);
 
     naflag = 0;
+#ifdef IEEE_754
+    posinf;
+#endif
     neg = 0;
 
     rt = mxl = mxsl = mxns = INT_MIN;
@@ -333,13 +354,21 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
 
     for (i = 0; i < l; i++)
     {
-        if (!FINITE(x[i].r) || !FINITE(x[i].i))
+
+        /* real part */
+
+        if (!FINITE(x[i].r))
         {
-            naflag = 1;
+            if (NAN(x[i].r))
+                naflag = 1;
+#ifdef IEEE_754
+            else
+                posinf = 1;
+#endif
+            goto done;
         }
         else
         {
-            /* real part */
 
             scientific(&(x[i].r), &sgn, &kpower, &nsig);
 
@@ -359,10 +388,24 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
                 mxsl = sleft; /* max left including sign(s) */
             if (nsig > mxns)
                 mxns = nsig; /* max sig digits */
+        }
+        /* imaginary part */
 
-            /* imaginary part */
-            /* this is always unsigned */
-            /* we explicitly put the sign in when we print */
+        /* this is always unsigned */
+        /* we explicitly put the sign in when we print */
+
+        if (!FINITE(x[i].i))
+        {
+            if (NAN(x[i].i))
+                naflag = 1;
+#ifdef IEEE_754
+            else
+                posinf = 1;
+#endif
+            goto done;
+        }
+        else
+        {
 
             scientific(&(x[i].i), &sgn, &kpower, &nsig);
 
@@ -381,15 +424,20 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
             if (nsig > i_mxns)
                 i_mxns = nsig;
         }
+    done:;
     }
 
-    /* overall format for real part	  ---  comments see in	formatReal(.) --*/
+    /* overall format for real part	*/
+    /* see comments see in formatReal() */
 
     if (mnl == INT_MAX)
     {
         *er = 0;
         *ei = 0;
-        *mr = print_na_width - 2;
+        if (naflag)
+            *mr = print_na_width - 2;
+        else
+            *mr = 1; /* 3 - 2 */
         *mi = 0;
         *nr = 0;
         *ni = 0;
@@ -435,5 +483,11 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
         *ni = i_rt;
         *mi = mF;
     }
+    if (naflag && *mr < print_na_width)
+        *mr = print_na_width;
+#ifdef IEEE_754
+    if (posinf && *mr < 3)
+        *mr = 3;
+#endif
 }
 #endif

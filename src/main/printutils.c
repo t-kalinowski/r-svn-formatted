@@ -92,7 +92,16 @@ char *EncodeReal(double x, int w, int d, int e)
         x = 0.0;
     if (!FINITE(x))
     {
+#ifdef IEEE_754
+        if (NAN(x))
+            sprintf(Encodebuf, "%*s", w, CHAR(print_na_string));
+        else if (x > 0)
+            sprintf(Encodebuf, "%*s", w, "Inf");
+        else
+            sprintf(Encodebuf, "%*s", w, "-Inf");
+#else
         sprintf(Encodebuf, "%*s", w, CHAR(print_na_string));
+#endif
     }
     else if (e)
     {
@@ -128,9 +137,12 @@ char *EncodeComplex(complex x, int wr, int dr, int er, int wi, int di, int ei)
         x.i = 0.0;
     if (!FINITE(x.r) || !FINITE(x.i))
     {
-        sprintf(Encodebuf, "%*s", wr + wi + 2, CHAR(print_na_string));
+        if (NAN(x.r) || NAN(x.i))
+            sprintf(Encodebuf, "%*s%*s", PRINT_GAP, "", wr + wi + 2, CHAR(print_na_string));
+        else
+            sprintf(Encodebuf, "%*s%*s", PRINT_GAP, "", wr + wi + 2, "Inf");
     }
-    if (x.r == 0.0)
+    else if (x.r == 0.0)
     {
         if (ei)
         {

@@ -39,17 +39,15 @@ SEXP complex_unary(int code, SEXP s1)
         for (i = 0; i < n; i++)
         {
             x = COMPLEX(s1)[i];
-            if (FINITE(x.r) && FINITE(x.i))
-            {
-                if (x.r != 0.0)
-                    COMPLEX(ans)[i].r = -x.r;
-                if (x.i != 0.0)
-                    COMPLEX(ans)[i].i = -x.i;
-            }
-            else
+            if (NAN(x.r) || NAN(x.i))
             {
                 COMPLEX(ans)[i].r = NA_REAL;
                 COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(ans)[i].r = -x.r;
+                COMPLEX(ans)[i].i = -x.i;
             }
         }
         return ans;
@@ -133,15 +131,15 @@ SEXP complex_binary(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (FINITE(x1.r) && FINITE(x1.i) && FINITE(x2.r) && FINITE(x2.i))
-            {
-                COMPLEX(ans)[i].r = MATH_CHECK(x1.r + x2.r);
-                COMPLEX(ans)[i].i = MATH_CHECK(x1.i + x2.i);
-            }
-            else
+            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
             {
                 COMPLEX(ans)[i].r = NA_REAL;
                 COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(ans)[i].r = MATH_CHECK(x1.r + x2.r);
+                COMPLEX(ans)[i].i = MATH_CHECK(x1.i + x2.i);
             }
         }
         break;
@@ -150,15 +148,15 @@ SEXP complex_binary(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (FINITE(x1.r) && FINITE(x1.i) && FINITE(x2.r) && FINITE(x2.i))
-            {
-                COMPLEX(ans)[i].r = MATH_CHECK(x1.r - x2.r);
-                COMPLEX(ans)[i].i = MATH_CHECK(x1.i - x2.i);
-            }
-            else
+            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
             {
                 COMPLEX(ans)[i].r = NA_REAL;
                 COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(ans)[i].r = MATH_CHECK(x1.r - x2.r);
+                COMPLEX(ans)[i].i = MATH_CHECK(x1.i - x2.i);
             }
         }
         break;
@@ -167,15 +165,15 @@ SEXP complex_binary(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (FINITE(x1.r) && FINITE(x1.i) && FINITE(x2.r) && FINITE(x2.i))
-            {
-                COMPLEX(ans)[i].r = MATH_CHECK(x1.r * x2.r - x1.i * x2.i);
-                COMPLEX(ans)[i].i = MATH_CHECK(x1.r * x2.i + x1.i * x2.r);
-            }
-            else
+            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
             {
                 COMPLEX(ans)[i].r = NA_REAL;
                 COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(ans)[i].r = MATH_CHECK(x1.r * x2.r - x1.i * x2.i);
+                COMPLEX(ans)[i].i = MATH_CHECK(x1.r * x2.i + x1.i * x2.r);
             }
         }
         break;
@@ -184,7 +182,12 @@ SEXP complex_binary(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (FINITE(x1.r) && FINITE(x1.i) && FINITE(x2.r) && FINITE(x2.i))
+            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
+            {
+                COMPLEX(ans)[i].r = NA_REAL;
+                COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
                 complex_div(&COMPLEX(ans)[i], &x1, &x2);
         }
         break;
@@ -193,7 +196,12 @@ SEXP complex_binary(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (FINITE(x1.r) && FINITE(x1.i) && FINITE(x2.r) && FINITE(x2.i))
+            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
+            {
+                COMPLEX(ans)[i].r = NA_REAL;
+                COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
                 complex_pow(&COMPLEX(ans)[i], &x1, &x2);
         }
         break;
@@ -219,13 +227,13 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
-                if (FINITE(COMPLEX(x)[i].r) && FINITE(COMPLEX(x)[i].i))
+                if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
                 {
-                    REAL(y)[i] = COMPLEX(x)[i].r;
+                    REAL(y)[i] = NA_REAL;
                 }
                 else
                 {
-                    REAL(y)[i] = NA_REAL;
+                    REAL(y)[i] = COMPLEX(x)[i].r;
                 }
             }
             break;
@@ -233,13 +241,13 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
-                if (FINITE(COMPLEX(x)[i].r) && FINITE(COMPLEX(x)[i].i))
+                if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
                 {
-                    REAL(y)[i] = COMPLEX(x)[i].i;
+                    REAL(y)[i] = NA_REAL;
                 }
                 else
                 {
-                    REAL(y)[i] = NA_REAL;
+                    REAL(y)[i] = COMPLEX(x)[i].i;
                 }
             }
             break;
@@ -247,13 +255,13 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
-                if (FINITE(COMPLEX(x)[i].r) && FINITE(COMPLEX(x)[i].i))
+                if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
                 {
-                    REAL(y)[i] = hypot(COMPLEX(x)[i].r, COMPLEX(x)[i].i);
+                    REAL(y)[i] = NA_REAL;
                 }
                 else
                 {
-                    REAL(y)[i] = NA_REAL;
+                    REAL(y)[i] = hypot(COMPLEX(x)[i].r, COMPLEX(x)[i].i);
                 }
             }
             break;
@@ -261,13 +269,13 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
-                if (FINITE(COMPLEX(x)[i].r) && FINITE(COMPLEX(x)[i].i))
+                if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
                 {
-                    REAL(y)[i] = atan2(COMPLEX(x)[i].i, COMPLEX(x)[i].r);
+                    REAL(y)[i] = NA_REAL;
                 }
                 else
                 {
-                    REAL(y)[i] = NA_REAL;
+                    REAL(y)[i] = atan2(COMPLEX(x)[i].i, COMPLEX(x)[i].r);
                 }
             }
             break;
@@ -275,15 +283,15 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             y = allocVector(CPLXSXP, n);
             for (i = 0; i < n; i++)
             {
-                if (FINITE(COMPLEX(x)[i].r) && FINITE(COMPLEX(x)[i].i))
-                {
-                    COMPLEX(y)[i].r = COMPLEX(x)[i].r;
-                    COMPLEX(y)[i].i = -COMPLEX(x)[i].i;
-                }
-                else
+                if (NAN(COMPLEX(x)[i].r) || NAN(COMPLEX(x)[i].i))
                 {
                     COMPLEX(y)[i].r = NA_REAL;
                     COMPLEX(y)[i].i = NA_REAL;
+                }
+                else
+                {
+                    COMPLEX(y)[i].r = COMPLEX(x)[i].r;
+                    COMPLEX(y)[i].i = -COMPLEX(x)[i].i;
                 }
             }
             break;
@@ -307,18 +315,18 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
         case 4: /* Arg */
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
-                if (FINITE(REAL(x)[i]))
-                    REAL(y)[i] = 0;
-                else
+                if (NAN(REAL(x)[i]))
                     REAL(y)[i] = NA_REAL;
+                else
+                    REAL(y)[i] = 0;
             break;
         case 3: /* Mod */
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
-                if (FINITE(REAL(x)[i]))
-                    REAL(y)[i] = fabs(REAL(x)[i]);
-                else
+                if (NAN(REAL(x)[i]))
                     REAL(y)[i] = NA_REAL;
+                else
+                    REAL(y)[i] = fabs(REAL(x)[i]);
             break;
         }
         UNPROTECT(1);
@@ -540,20 +548,20 @@ static void cmath1(void (*f)(), complex *x, complex *y, int n)
 
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i].r) && FINITE(x[i].i))
+        if (NAN(x[i].r) || NAN(x[i].i))
+        {
+            y[i].r = NA_REAL;
+            y[i].i = NA_REAL;
+        }
+        else
         {
             f(&y[i], &x[i]);
-            if (!FINITE(y[i].r) || !FINITE(y[i].i))
+            if (NAN(y[i].r) || NAN(y[i].i))
             {
                 y[i].r = NA_REAL;
                 y[i].i = NA_REAL;
                 naflag = 1;
             }
-        }
-        else
-        {
-            y[i].r = NA_REAL;
-            y[i].i = NA_REAL;
         }
     }
 }
@@ -651,8 +659,10 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
     if (na < 1 || na < 1)
     {
         for (i = 0; i < n; i++)
+        {
             y[i].r = NA_REAL;
-        y[i].i = NA_REAL;
+            y[i].i = NA_REAL;
+        }
     }
     else
     {
@@ -661,20 +671,20 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
         {
             ai = a[i % na];
             bi = b[i % nb];
-            if (FINITE(ai.r) && FINITE(ai.i) && FINITE(bi.r) && FINITE(bi.i))
+            if (NAN(ai.r) && NAN(ai.i) && NAN(bi.r) && NAN(bi.i))
+            {
+                y[i].r = NA_REAL;
+                y[i].i = NA_REAL;
+            }
+            else
             {
                 f(&y[i], &ai, &bi);
-                if (!FINITE(y[i].r) || !FINITE(y[i].i))
+                if (NAN(y[i].r) || NAN(y[i].i))
                 {
                     y[i].r = NA_REAL;
                     y[i].i = NA_REAL;
                     naflag = 1;
                 }
-            }
-            else
-            {
-                y[i].r = NA_REAL;
-                y[i].i = NA_REAL;
             }
         }
     }
@@ -791,7 +801,7 @@ SEXP do_polyroot(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < n; i++)
         {
-            if (!FINITE(COMPLEX(z)[i].r) || !FINITE(COMPLEX(z)[i].i))
+            if (NAN(COMPLEX(z)[i].r) || NAN(COMPLEX(z)[i].i))
                 errorcall(call, "NA in polynomial coefficients\n");
             REAL(zr)[degree - i] = COMPLEX(z)[i].r;
             REAL(zi)[degree - i] = COMPLEX(z)[i].i;

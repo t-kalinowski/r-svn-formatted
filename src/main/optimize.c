@@ -59,7 +59,7 @@ static double F77_SYMBOL(fcn1)(double *x)
             goto badvalue;
         if (!FINITE(REAL(s)[0]))
         {
-            REprintf("warning: NA replaced by maximum positive value\n");
+            REprintf("warning: NA/Inf replaced by maximum positive value\n");
             return DBL_MAX;
         }
         else
@@ -152,7 +152,7 @@ static double F77_SYMBOL(fcn2)(double *x)
             goto badvalue;
         if (!FINITE(REAL(s)[0]))
         {
-            REprintf("warning: NA replaced by maximum positive value\n");
+            REprintf("warning: NA/Inf replaced by maximum positive value\n");
             return DBL_MAX;
         }
         else
@@ -261,7 +261,7 @@ static int F77_SYMBOL(fcn)(int *n, double *x, double *f)
             goto badvalue;
         if (!FINITE(REAL(s)[0]))
         {
-            REprintf("warning: NA replaced by maximum positive value\n");
+            REprintf("warning: NA/Inf replaced by maximum positive value\n");
             *f = DBL_MAX;
         }
         else

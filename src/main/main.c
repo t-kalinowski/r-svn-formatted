@@ -304,7 +304,7 @@ void mainloop()
 #ifdef HAVE_LOCALE_H
     setlocale(LC_CTYPE, "");   /*- make ISO-latin1 etc. work LOCALE users */
     setlocale(LC_COLLATE, ""); /*- alphabetically sorting */
-    setlocale(LC_MESSAGES, "");
+                               /* setlocale(LC_MESSAGES,""); */
 #endif
     InitMemory();
     InitNames();

@@ -53,7 +53,7 @@ static void rsum(double *x, int n, double *value)
     s = 0;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i]))
+        if (!NAN(x[i]))
         {
             s += x[i];
             count += 1;
@@ -76,7 +76,7 @@ static void csum(complex *x, int n, complex *value)
     s.i = 0;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i].r) && FINITE(x[i].i))
+        if (!NAN(x[i].r) && !NAN(x[i].i))
         {
             s.r += x[i].r;
             s.i += x[i].i;
@@ -122,9 +122,9 @@ static void rmin(double *x, int n, double *value)
     s = NA_REAL;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i]))
+        if (!NAN(x[i]))
         {
-            if (!FINITE(s) || s > x[i])
+            if (NAN(s) || s > x[i])
                 s = x[i];
             count += 1;
         }
@@ -165,9 +165,9 @@ static void rmax(double *x, int n, double *value)
     s = NA_REAL;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i]))
+        if (!NAN(x[i]))
         {
-            if (!FINITE(s) || s < x[i])
+            if (NAN(s) || s < x[i])
                 s = x[i];
             count += 1;
         }
@@ -198,7 +198,7 @@ static void iprod(int *x, int n, double *value)
             *value = NA_REAL;
             return;
         }
-        if (!FINITE(s))
+        if (NAN(s))
         {
             *value = NA_REAL;
             return;
@@ -214,7 +214,7 @@ static void rprod(double *x, int n, double *value)
     s = 1;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i]))
+        if (!NAN(x[i]))
         {
             s = MATH_CHECK(s * x[i]);
             count += 1;
@@ -225,7 +225,7 @@ static void rprod(double *x, int n, double *value)
             *value = NA_REAL;
             return;
         }
-        if (!FINITE(s))
+        if (NAN(s))
         {
             *value = NA_REAL;
             return;
@@ -242,7 +242,7 @@ static void cprod(complex *x, int n, complex *value)
     s.i = 0;
     for (i = 0; i < n; i++)
     {
-        if (FINITE(x[i].r) && FINITE(x[i].i))
+        if (!NAN(x[i].r) && !NAN(x[i].i))
         {
             count += 1;
             t.r = s.r;
@@ -257,7 +257,7 @@ static void cprod(complex *x, int n, complex *value)
             value->i = NA_REAL;
             return;
         }
-        if (!FINITE(s.r) || !FINITE(s.i))
+        if (NAN(s.r) || NAN(s.i))
         {
             value->r = NA_REAL;
             value->i = NA_REAL;
@@ -304,7 +304,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     isum(INTEGER(a), length(a), &tmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(tmp))
+                        if (NAN(tmp))
                             goto na_answer;
                         zcum.r = zcum.r + tmp;
                     }
@@ -313,7 +313,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     rsum(REAL(a), length(a), &tmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(tmp))
+                        if (NAN(tmp))
                             goto na_answer;
                         zcum.r = zcum.r + tmp;
                     }
@@ -323,7 +323,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     csum(COMPLEX(a), length(a), &ztmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(ztmp.r))
+                        if (NAN(ztmp.r))
                             goto na_answer;
                         zcum.r = zcum.r + ztmp.r;
                         zcum.i = zcum.i + ztmp.i;
@@ -370,9 +370,9 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 default:
                     goto badarg;
                 }
-                if (!FINITE(tmp))
+                if (NAN(tmp))
                     goto na_answer;
-                if (count != oldcount && (!FINITE(zcum.r) || tmp < zcum.r))
+                if (count != oldcount && (NAN(zcum.r) || tmp < zcum.r))
                     zcum.r = tmp;
             }
             args = CDR(args);
@@ -399,9 +399,9 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 default:
                     goto badarg;
                 }
-                if (!FINITE(tmp))
+                if (NAN(tmp))
                     goto na_answer;
-                if (count != oldcount && (!FINITE(zcum.r) || tmp > zcum.r))
+                if (count != oldcount && (NAN(zcum.r) || tmp > zcum.r))
                     zcum.r = tmp;
             }
             args = CDR(args);
@@ -424,7 +424,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     iprod(INTEGER(a), length(a), &tmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(tmp))
+                        if (NAN(tmp))
                             goto na_answer;
                         zcum.r = zcum.r * tmp;
                         zcum.i = zcum.i * tmp;
@@ -434,7 +434,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     rprod(REAL(a), length(a), &tmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(tmp))
+                        if (NAN(tmp))
                             goto na_answer;
                         zcum.r = zcum.r * tmp;
                         zcum.i = zcum.i * tmp;
@@ -445,7 +445,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     cprod(COMPLEX(a), length(a), &ztmp);
                     if (count != oldcount)
                     {
-                        if (!FINITE(ztmp.r))
+                        if (NAN(ztmp.r))
                             goto na_answer;
                         z.r = zcum.r;
                         z.i = zcum.i;
@@ -565,7 +565,11 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                             INTEGER(rval)[i % len] = 0;
                         break;
                     case REALSXP:
-                        if (!FINITE(REAL(u)[i]))
+                        if (NAN(REAL(u)[i]))
+                            INTEGER(rval)[i % len] = 0;
+                        break;
+                    case CPLXSXP:
+                        if (NAN(COMPLEX(u)[i].r) || NAN(COMPLEX(u)[i].i))
                             INTEGER(rval)[i % len] = 0;
                         break;
                     case STRSXP:
@@ -592,7 +596,11 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         INTEGER(rval)[i % len] = 0;
                     break;
                 case REALSXP:
-                    if (!FINITE(REAL(u)[i]))
+                    if (NAN(REAL(u)[i]))
+                        INTEGER(rval)[i % len] = 0;
+                    break;
+                case CPLXSXP:
+                    if (NAN(COMPLEX(u)[i].r) || NAN(COMPLEX(u)[i].i))
                         INTEGER(rval)[i % len] = 0;
                     break;
                 case STRSXP:
