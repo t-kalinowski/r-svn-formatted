@@ -196,7 +196,7 @@ void R_SizeFromEnv(Rstart Rp)
     {
         value = Decode2Long(p, &ierr);
         if (ierr != 0 || value > Max_Vsize || value < Min_Vsize)
-            R_ShowMessage("WARNING: invalid R_VSIZE ignored;");
+            R_ShowMessage("WARNING: invalid R_VSIZE ignored\n");
         else
             Rp->vsize = value;
     }
@@ -204,7 +204,7 @@ void R_SizeFromEnv(Rstart Rp)
     {
         value = Decode2Long(p, &ierr);
         if (ierr != 0 || value > Max_Nsize || value < Min_Nsize)
-            R_ShowMessage("WARNING: invalid R_NSIZE ignored;");
+            R_ShowMessage("WARNING: invalid R_NSIZE ignored\n");
         else
             Rp->nsize = value;
     }
@@ -212,25 +212,31 @@ void R_SizeFromEnv(Rstart Rp)
 
 static void SetSize(int vsize, int nsize)
 {
+    char msg[1024];
+
     if (vsize < 1000)
     {
-        REprintf("WARNING: vsize ridiculously low, Megabytes assumed\n");
+        R_ShowMessage("WARNING: vsize ridiculously low, Megabytes assumed\n");
         vsize *= Mega;
     }
     if (vsize < Min_Vsize || vsize > Max_Vsize)
     {
-        REprintf("WARNING: invalid v(ector heap)size '%d' ignored;"
-                 "using default = %gM\n",
-                 vsize, R_VSIZE / Mega);
+        sprintf(msg,
+                "WARNING: invalid v(ector heap)size '%d' ignored\n"
+                "using default = %gM\n",
+                vsize, R_VSIZE / Mega);
+        R_ShowMessage(msg);
         R_VSize = R_VSIZE;
     }
     else
         R_VSize = vsize;
     if (nsize < Min_Nsize || nsize > Max_Nsize)
     {
-        REprintf("WARNING: invalid language heap (n)size '%d' ignored,"
-                 " using default = %d\n",
-                 nsize, R_NSIZE);
+        sprintf(msg,
+                "WARNING: invalid language heap (n)size '%d' ignored,"
+                " using default = %d\n",
+                nsize, R_NSIZE);
+        R_ShowMessage(msg);
         R_NSize = R_NSIZE;
     }
     else
@@ -256,7 +262,7 @@ void R_SetParams(Rstart Rp)
 
 /* Remove and process common command-line arguments */
 
-void R_common_badargs()
+static void R_common_badargs()
 {
     R_ShowMessage("invalid argument passed to R\n");
     exit(1);
@@ -349,15 +355,17 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     p = &(*av)[2];
                 if (p == NULL)
                 {
-                    R_ShowMessage("WARNING: no vsize given");
+                    R_ShowMessage("WARNING: no vsize given\n");
                     break;
                 }
                 value = Decode2Long(p, &ierr);
                 if (ierr)
                 {
-                    if (ierr < 0)
-                        R_common_badargs(); /* if(*p) goto badargs; */
-                    sprintf(msg, "--vsize %ld'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
+                    if (ierr < 0) /* R_common_badargs(); */
+                        sprintf(msg, "WARNING: --vsize value is invalid: ignored\n");
+                    else
+                        sprintf(msg, "WARNING: --vsize %ld'%c': too large and ignored\n", value,
+                                (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
                     R_ShowMessage(msg);
                 }
                 else
@@ -378,15 +386,17 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     p = &(*av)[2];
                 if (p == NULL)
                 {
-                    R_ShowMessage("WARNING: no nsize given");
+                    R_ShowMessage("WARNING: no nsize given\n");
                     break;
                 }
                 value = Decode2Long(p, &ierr);
                 if (ierr)
                 {
-                    if (ierr < 0)
-                        R_common_badargs();
-                    sprintf(msg, "--nsize %ld'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
+                    if (ierr < 0) /* R_common_badargs(); */
+                        sprintf(msg, "WARNING: --vsize value is invalid: ignored\n");
+                    else
+                        sprintf(msg, "WARNING: --nsize %ld'%c': too large and ignored\n", value,
+                                (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
                     R_ShowMessage(msg);
                 }
                 else
