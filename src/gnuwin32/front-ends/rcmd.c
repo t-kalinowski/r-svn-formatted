@@ -230,7 +230,14 @@ int main(int argc, char **argv)
                     fprintf(stderr, "command line too long\n");
                     exit(27);
                 }
-                strcat(cmd, argv[i]);
+                if (strchr(argv[i], ' '))
+                {
+                    strcat(cmd, "\"");
+                    strcat(cmd, argv[i]);
+                    strcat(cmd, "\"");
+                }
+                else
+                    strcat(cmd, argv[i]);
             }
             /*	    printf("cmd is %s\n", cmd); */
             res = system(cmd);
