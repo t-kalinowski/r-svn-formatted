@@ -327,7 +327,7 @@ SEXP classgets(SEXP vec, SEXP class)
     {
         if (length(class) <= 0)
         {
-            SET_ATTRIB(vec, stripAttrib(R_ClassSymbol, vec));
+            SET_ATTRIB(vec, stripAttrib(R_ClassSymbol, ATTRIB(vec)));
             SET_OBJECT(vec, 0);
         }
         else
