@@ -59,6 +59,10 @@ TXNObject RConsoleObject = NULL;
 bool WeHaveConsole = false;
 bool InputFinished = false;
 
+WindowRef RAboutWindow;
+pascal void RAboutHandler(WindowRef window);
+#define kRAppSignature '????'
+
 void Raqua_StartConsole(void);
 void Raqua_WriteConsole(char *buf, int len);
 int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory);
@@ -66,11 +70,23 @@ void Raqua_ResetConsole(void);
 void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
 
+#define kRAboutWinCmd 'abou'
+#define kRVersionInfoID 132
+
 static const EventTypeSpec REvents[] = {{kEventClassTextInput, kEventTextInputUnicodeForKeyEvent}};
 
-void R_CarbonProcessEvents(void);
+static const EventTypeSpec aboutSpec = {kEventClassWindow, kEventWindowClose};
+
+static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon);
+static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
+pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 
 WindowRef ConsoleWindow = NULL;
+
+static const EventTypeSpec KeybEvents[] = {kEventClassKeyboard, kEventRawKeyUp};
+
+static const EventTypeSpec kCommandEvents[] = {{kEventClassCommand, kEventCommandProcess},
+                                               {kEventClassCommand, kEventCommandUpdateStatus}};
 
 void Raqua_StartConsole(void)
 {
@@ -78,7 +94,8 @@ void Raqua_StartConsole(void)
     OSErr err = noErr;
     CFURLRef bundleURL = NULL;
     CFBundleRef RBundle = NULL;
-    char buf[300];
+    MenuRef demoMenuRef = NULL;
+    /*    char                buf[300]; */
 
     /*    sprintf(buf,"%s/aqua.bundle",R_HomeDir());
      fprintf(stderr,"\n buf=%s",buf);
@@ -156,8 +173,7 @@ void Raqua_StartConsole(void)
                 /* sets the state of the scrollbars so they are drawn correctly */
                 err = TXNActivate(RConsoleObject, frameID, kScrollBarsSyncWithFocus);
                 if (err != noErr)
-                {   /* Check for availability of MLTE api */
-                    /*  fprintf(stderr,"\nNO TXNACti error=%d\n",err);	*/
+                { /* Check for availability of MLTE api */
                     goto fine;
                 }
 
@@ -170,6 +186,18 @@ void Raqua_StartConsole(void)
         {
             WeHaveConsole = true;
             InstallStandardEventHandler(GetApplicationEventTarget());
+            err = InstallApplicationEventHandler(KeybHandler, GetEventTypeCount(KeybEvents), KeybEvents, 0, NULL);
+            err = AEInstallEventHandler(kCoreEventClass, kAEQuitApplication,
+                                        NewAEEventHandlerUPP(QuitAppleEventHandler), 0, false);
+            //         InstallEventHandler( GetWindowEventTarget( ConsoleWindow ), CommandHandler, GetEventTypeCount(
+            //         kCommandEvents ),
+            //			kCommandEvents, ConsolWindow, NULL );
+
+            //      err = CreateWindowFromNib(nibRef,CFSTR("AboutWindow"),&RAboutWindow);
+            //      fprintf(stderr,"\n AboutWin err=%d",err);
+
+            //   InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec, (void
+            //   *)RAboutWindow, NULL);
         }
         else
             WeHaveConsole = false;
@@ -185,10 +213,8 @@ fine:
     return;
 }
 
-/*
-   alla fine si deve chiamare TXNTerminateTextension();
-   prima di ExitToShell();
-*/
+/* BEWARE: before quitting R via ExitToShell() call TXNTerminateTextension() */
+
 void Aqua_RWrite(char *buf);
 TXNOffset LastStartOffset = 0;
 
@@ -245,7 +271,7 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
         Aqua_RWrite(prompt);
 
     while (!InputFinished)
-        R_CarbonProcessEvents();
+        RunApplicationEventLoop();
 
     if (InputFinished)
     {
@@ -271,74 +297,6 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     }
 
     return (1);
-}
-
-void R_CarbonProcessEvents(void)
-{
-    EventRef REvent;
-    UInt32 EventKind, EventClass;
-    OSStatus err = noErr;
-    UInt32 RKeyCode;
-
-    ReceiveNextEvent(0, NULL, kEventDurationForever, true, &REvent);
-
-    EventKind = GetEventKind(REvent);
-    EventClass = GetEventClass(REvent);
-
-    // fprintf(stderr,"\n CarbonProcess class=%d kind=%d",EventClass,EventKind);
-    switch (EventClass)
-    {
-
-    case kEventClassTextInput:
-        // fprintf(stderr,"\nkEventClassTextInput");
-        break;
-
-    case kEventClassMouse:
-        // fprintf(stderr,"\nkEventClassMouse");
-        break;
-
-    case kEventClassKeyboard:
-        // fprintf(stderr,"\nkEventClassKeyboard");
-        err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
-        // fprintf(stderr,"\n err=%d, chr=%d",err,RKeyCode);
-        if ((RKeyCode == 36) && (EventKind == kEventRawKeyUp))
-        {
-            // fprintf(stderr,"\n enter key");
-            InputFinished = true;
-        }
-        break;
-
-    case kEventClassApplication:
-        // fprintf(stderr,"\nkEventClassApplication");
-        break;
-
-    case kEventClassWindow:
-        // fprintf(stderr,"\nkEventClassWindow");
-        break;
-
-    case kEventClassCommand:
-        // fprintf(stderr,"\nkEventClassCommand");
-        break;
-
-    case kEventClassAppleEvent:
-        // fprintf(stderr,"\nkEventClassAppleEvent");
-        break;
-
-    case kEventClassMenu:
-        // fprintf(stderr,"\nkEventClassMenu");
-        break;
-
-    case kEventClassControl:
-        // fprintf(stderr,"\nkEventClassControl");
-        break;
-
-    default:
-        // fprintf(stderr,"\n evento diverso");
-        break;
-    }
-
-    SendEventToEventTarget(REvent, GetEventDispatcherTarget());
-    ReleaseEvent(REvent);
 }
 
 void Aqua_RWrite(char *buf)
@@ -371,6 +329,75 @@ void Raqua_ClearerrConsole()
 {
 }
 
-#endif
+static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void *inUserData)
+{
+    OSStatus err = eventNotHandledErr;
+    UInt32 RKeyCode;
+
+    /* make sure that we're processing a keyboard event */
+    if (GetEventClass(REvent) == kEventClassKeyboard)
+    {
+        switch (GetEventKind(REvent))
+        {
+        case kEventRawKeyUp:
+            err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
+            if (RKeyCode == 36)
+            { /* we check wheter return key is released */
+                InputFinished = true;
+                QuitApplicationEventLoop();
+            }
+            break;
+            //   case kEventRawKeyDown:
+            //    err = GetEventParameter (REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL,
+            //    &RKeyCode); fprintf(stderr,"\n key=%d",RKeyCode);
+            //   break;
+
+        default:
+            break;
+        }
+    }
+}
+
+pascal void RAboutHandler(WindowRef window)
+{
+    CFStringRef text;
+    CFStringRef appBundle;
+    ControlID versionInfoID = {kRAppSignature, kRVersionInfoID};
+    ControlRef versionControl;
+    ControlFontStyleRec controlStyle;
+
+    appBundle = CFBundleGetMainBundle();
+    text = (CFStringRef)CFBundleGetValueForInfoDictionaryKey(appBundle, CFSTR("CFBundleGetInfoString"));
+    if ((text == CFSTR(" ")) || (text == NULL))
+        text = CFSTR("Nameless Application");
+    GetControlByID(window, &versionInfoID, &versionControl);
+    SetControlData(versionControl, kControlLabelPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &text);
+    controlStyle.flags = kControlUseJustMask;
+    controlStyle.just = teCenter;
+    SetControlFontStyle(versionControl, &controlStyle);
+    ShowWindow(window);
+    SelectWindow(window);
+}
+
+pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event, void *userData)
+{
+    OSStatus result = eventNotHandledErr;
+    UInt32 eventKind;
+
+    eventKind = GetEventKind(event);
+    if (eventKind == kEventWindowClose)
+    {
+        HideWindow((WindowRef)userData);
+        result = noErr;
+    }
+    return result;
+}
+
+static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon)
+{
+    fprintf(stderr, "\n quit app");
+}
+
+#endif /* HAVE_AQUA */
 
 #endif /* __AQUA_CONSOLE__ */
