@@ -118,7 +118,7 @@ Boolean OpenDataManager(void)
     InstallWindowEventHandler(DataManagerWindow, NewEventHandlerUPP(DoCloseHandler), 1, RCloseWinEvent,
                               (void *)DataManagerWindow, NULL);
 
-    SetWindowTitleWithCFString(DataManagerWindow, CFSTR("R DataManagerWindow"));
+    SetWindowTitleWithCFString(DataManagerWindow, CFSTR("RAqua: Datasets in installed packages"));
 
     /* Create the DataBrowser */
     CreateDataManager(DataManagerWindow, &DataManagerControl);
