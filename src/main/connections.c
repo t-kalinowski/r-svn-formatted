@@ -3737,7 +3737,7 @@ static void gzcon_close(Rconnection con)
         err = deflateEnd(&(priv->s));
         /* NB: these must be little-endian */
         putLong(icon, priv->crc);
-        putLong(icon, priv->s.total_in);
+        putLong(icon, (uLong)(priv->s.total_in & 0xffffffff));
     }
     else
         err = inflateEnd(&(priv->s));
