@@ -21,7 +21,7 @@
  */
 
 #include "Fortran.h"
-#include "Errormsg.h"
+#include "Error.h"
 
 double DABS(double *a)
 {

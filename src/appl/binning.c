@@ -18,9 +18,8 @@
  */
 
 #include "Mathlib.h"
-#include "Errormsg.h"
-/* instead of #include "Defn.h" : */
-#define NA_INTEGER R_NaInt
+#include "Error.h"
+#include "Arith.h"
 
 /* bincode  cuts up the data using half open intervals defined as [a,b)
    bincode2 cuts up the data using half open intervals defined as (a,b]
