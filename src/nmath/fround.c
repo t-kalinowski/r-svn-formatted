@@ -28,6 +28,13 @@
 
 #include "Mathlib.h"
 
+#ifndef HAVE_RINT
+#define USE_BUILTIN_RINT
+#endif
+
+#ifdef USE_BUILTIN_RINT
+#define R_rint private_rint
+
 /* The largest integer which can be represented */
 /* exactly in floating point form. */
 
@@ -55,6 +62,10 @@ static double private_rint(double x)
         return tmp + biggest;
     }
 }
+
+#else
+#define R_rint rint
+#endif
 
 double fround(double x, double digits)
 {
@@ -87,5 +98,5 @@ double fround(double x, double digits)
     {
         intx = 0.0;
     }
-    return sgn * (intx + private_rint(x * pow10) / pow10);
+    return sgn * (intx + R_rint(x * pow10) / pow10);
 }
