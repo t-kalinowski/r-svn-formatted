@@ -34,7 +34,7 @@
 
 #define PS_minus_default 45
 /* wrongly was 177 (plusminus);
-   hyphen = 45 or 173;	(n-dash not available as code!)
+   hyphen = 173;   (endash not available as code!)
    175 = "¯" (macron)
 */
 static char PS_minus = PS_minus_default; /*-> TODO: make this a ps.option() !*/
@@ -52,21 +52,21 @@ static struct
     char *afmfile[4];
 } Family[] = {
 
-    {"AvantGarde", {"agw_____.lt1", "agd_____.lt1", "agwo____.lt1", "agdo____.lt1"}},
+    {"AvantGarde", {"agw_____.afm", "agd_____.afm", "agwo____.afm", "agdo____.afm"}},
 
-    {"Bookman", {"bkl_____.lt1", "bkd_____.lt1", "bkli____.lt1", "bkdi____.lt1"}},
+    {"Bookman", {"bkl_____.afm", "bkd_____.afm", "bkli____.afm", "bkdi____.afm"}},
 
-    {"Courier", {"com_____.lt1", "cob_____.lt1", "coo_____.lt1", "cobo____.lt1"}},
+    {"Courier", {"com_____.afm", "cob_____.afm", "coo_____.afm", "cobo____.afm"}},
 
-    {"Helvetica", {"hv______.lt1", "hvb_____.lt1", "hvo_____.lt1", "hvbo____.lt1"}},
+    {"Helvetica", {"hv______.afm", "hvb_____.afm", "hvo_____.afm", "hvbo____.afm"}},
 
-    {"Helvetica-Narrow", {"hvn_____.lt1", "hvnb____.lt1", "hvno____.lt1", "hvnbo___.lt1"}},
+    {"Helvetica-Narrow", {"hvn_____.afm", "hvnb____.afm", "hvno____.afm", "hvnbo___.afm"}},
 
-    {"NewCenturySchoolbook", {"ncr_____.lt1", "ncb_____.lt1", "nci_____.lt1", "ncbi____.lt1"}},
+    {"NewCenturySchoolbook", {"ncr_____.afm", "ncb_____.afm", "nci_____.afm", "ncbi____.afm"}},
 
-    {"Palatino", {"por_____.lt1", "pob_____.lt1", "poi_____.lt1", "pobi____.lt1"}},
+    {"Palatino", {"por_____.afm", "pob_____.afm", "poi_____.afm", "pobi____.afm"}},
 
-    {"Times", {"tir_____.lt1", "tib_____.lt1", "tii_____.lt1", "tibi____.lt1"}},
+    {"Times", {"tir_____.afm", "tib_____.afm", "tii_____.afm", "tibi____.afm"}},
 
     {NULL}};
 
@@ -302,6 +302,7 @@ static char familyname[5][50];
 /* These are the basic entities in the AFM file */
 
 #define BUFSIZE 512
+#define NA_SHORT -30000
 
 typedef struct
 {
@@ -458,14 +459,14 @@ static char charnames[256][25];
 static int GetCharInfo(char *buf, FontMetricInfo *metrics, int ISOLatin1)
 {
     char *p = buf, charname[25];
-    int nchar, i;
+    int nchar, nchar2 = -1, i;
     short WX;
 
     if (!MatchKey(buf, "C "))
         return 0;
     p = SkipToNextItem(p);
     sscanf(p, "%d", &nchar);
-    if (nchar < 0)
+    if (nchar < 0 && !ISOLatin1)
         return 1;
     p = SkipToNextKey(p);
 
@@ -481,14 +482,21 @@ static int GetCharInfo(char *buf, FontMetricInfo *metrics, int ISOLatin1)
     if (ISOLatin1)
     {
         sscanf(p, "%s", charname);
+#ifdef DEBUG_PS
+        Rprintf("char name %s\n", charname);
+#endif
+        /* a few chars appear twice in ISOLatin1 */
+        nchar = nchar2 = -1;
         for (i = 32; i < 256; i++)
             if (!strcmp(charname, ISOLatin1Encoding[i - 32]))
             {
-                nchar = i;
                 strcpy(charnames[i], charname);
-                break;
+                if (nchar == -1)
+                    nchar = i;
+                else
+                    nchar2 = i;
             }
-        if (i > 255)
+        if (nchar == -1)
             return 1;
     }
     else
@@ -508,6 +516,18 @@ static int GetCharInfo(char *buf, FontMetricInfo *metrics, int ISOLatin1)
     Rprintf("nchar = %d %d %d %d %d %d\n", nchar, metrics->CharInfo[nchar].WX, metrics->CharInfo[nchar].BBox[0],
             metrics->CharInfo[nchar].BBox[1], metrics->CharInfo[nchar].BBox[2], metrics->CharInfo[nchar].BBox[3]);
 #endif
+    if (nchar2 > 0)
+    {
+        metrics->CharInfo[nchar2].WX = WX;
+        sscanf(p, "%hd %hd %hd %hd", &(metrics->CharInfo[nchar2].BBox[0]), &(metrics->CharInfo[nchar2].BBox[1]),
+               &(metrics->CharInfo[nchar2].BBox[2]), &(metrics->CharInfo[nchar2].BBox[3]));
+
+#ifdef DEBUG_PS
+        Rprintf("nchar = %d %d %d %d %d %d\n", nchar2, metrics->CharInfo[nchar2].WX, metrics->CharInfo[nchar2].BBox[0],
+                metrics->CharInfo[nchar2].BBox[1], metrics->CharInfo[nchar2].BBox[2],
+                metrics->CharInfo[nchar2].BBox[3]);
+#endif
+    }
     return 1;
 }
 
@@ -542,7 +562,7 @@ static int GetKPX(char *buf, int nkp, FontMetricInfo *metrics)
 static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, char *fontname, int ISOLatin1)
 {
     char buf[BUFSIZE], *p;
-    int mode, i = 0, ii, nKPX = 0;
+    int mode, i = 0, j, ii, nKPX = 0;
     FILE *fp;
 
     if (strchr(fontpath, FILESEP[0]))
@@ -560,7 +580,9 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
     for (ii = 0; ii < 256; ii++)
     {
         charnames[ii][0] = '\0';
-        metrics->CharInfo[ii].WX = 0;
+        metrics->CharInfo[ii].WX = NA_SHORT;
+        for (j = 0; j < 4; j++)
+            metrics->CharInfo[ii].BBox[j] = 0;
     }
     while (fgets(buf, BUFSIZE, fp))
     {
@@ -658,13 +680,19 @@ error:
 static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
 {
     int sum = 0, i;
+    short wx;
     unsigned char p1, p2;
     for (; *p; p++)
     {
         if (*p == '-' && isdigit(p[1]))
-            sum += metrics->CharInfo[(int)PS_minus].WX;
+            wx = metrics->CharInfo[(int)PS_minus].WX;
         else
-            sum += metrics->CharInfo[*p].WX;
+            wx = metrics->CharInfo[*p].WX;
+        if (wx == NA_SHORT)
+            warning("font width unknown for character `%c'");
+        else
+            sum += wx;
+
         /* check for kerning adjustment */
         p1 = p[0];
         p2 = p[1];
@@ -681,6 +709,8 @@ static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
 
 static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics)
 {
+    short wx;
+
     if (c == 0)
     {
         *ascent = 0.001 * metrics->FontBBox[3];
@@ -691,7 +721,13 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
     {
         *ascent = 0.001 * metrics->CharInfo[c].BBox[3];
         *descent = -0.001 * metrics->CharInfo[c].BBox[1];
-        *width = 0.001 * metrics->CharInfo[c].WX;
+        wx = metrics->CharInfo[c].WX;
+        if (wx == NA_SHORT)
+        {
+            warning("font metrics unknown for character `%c'");
+            wx = 0;
+        }
+        *width = 0.001 * wx;
     }
 }
 
