@@ -16,51 +16,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *
- *
- *      MEMORY MANAGEMENT
  */
-#ifdef USE_GENERATIONAL_GC
+
 /*
- *	The code enabled by defining USE_GENERATIONAL_GC implements a
- *	non-moving generational collector with two or three
- *	generations.
+ *	This code implements a non-moving generational collector
+ *      with two or three generations.
  *
  *	Memory allocated by R_alloc is maintained in a stack.  Code
  *	that R_allocs memory must use vmaxget and vmaxset to obtain
  *	and reset the stack pointer.
  */
-#else
-/*
- *	Separate areas are maintained for fixed and variable sized
- *	objects.  The first of these is allocated as an array of
- *	SEXPRECs and the second as an array of VECRECs.  The fixed
- *	sized objects are assembled into a free list and cons cells
- *	are allocated from it.  When the list is exhausted, a
- *	mark-sweep garbage collection takes place and the free list
- *	is rebuilt.  Variable size objects are allocated in the VECREC
- *	area.  During a garbage collection, these are compacted to the
- *	beginning of the VECREC array.
- *
- *	The top end of the VECREC array is also used by R_alloc to
- *	maintain a stack of non-relocatable memory blocks.  These are
- *	used in calls to .Fortran and .C (and for other temporary
- *	purposes).  They are freed using a stack discipline.
- *
- *	+---------------------------------------------------+
- *	| allocated vectors |	free	| R-alloc'ed blocks |
- *	+---------------------------------------------------+
- *	                    ^           ^
- *	                    |           |
- *	                    R_VTop      R_VMax
- *
- *	If a piece of code R-allocs some blocks, it is required to
- *	reset the R_VMax pointer back to its original value before it
- *	exits.  This can be done with the functions vmaxget and
- *	vmaxset.
- */
-#endif
 
 #define USE_RINTERNALS
 
@@ -68,7 +33,6 @@
 #include <config.h>
 #endif
 
-/* #include "Memory.h" included in Defn.h */
 #include "Defn.h"
 #include "Graphics.h"
 
@@ -100,12 +64,6 @@ static SEXPREC UnmarkedNodeTemplate;
 #define NODE_IS_MARKED(s) (MARK(s) == 1)
 #define MARK_NODE(s) (MARK(s) = 1)
 #define UNMARK_NODE(s) (MARK(s) = 0)
-
-#ifdef USE_GENERATIONAL_GC
-
-#ifdef ALLOW_OLD_SAVE
-#error saving old-style workspaces is not compatible with generational GC
-#endif
 
 /* Tuning Constants. Most of these could be made settable from R,
    within some reasonable constraints at least.  Since there are quite
@@ -475,7 +433,7 @@ static void DEBUG_GC_SUMMARY(int full_gc)
 #else
 #define DEBUG_CHECK_NODE_COUNTS(s)
 #define DEBUG_GC_SUMMARY(x)
-#endif
+#endif /* DEBUG_GC */
 
 #ifdef DEBUG_ADJUST_HEAP
 static void DEBUG_ADJUST_HEAP_PRINT(double node_occup, double vect_occup)
@@ -491,9 +449,9 @@ static void DEBUG_ADJUST_HEAP_PRINT(double node_occup, double vect_occup)
 }
 #else
 #define DEBUG_ADJUST_HEAP_PRINT(node_occup, vect_occup)
-#endif
+#endif /* DEBUG_ADJUST_HEAP */
 
-#ifdef DEGUG_RELEASE_MEM
+#ifdef DEBUG_RELEASE_MEM
 static void DEBUG_RELEASE_PRINT(int rel_pages, int maxrel_pages, int i)
 {
     if (maxrel_pages > 0)
@@ -508,7 +466,7 @@ static void DEBUG_RELEASE_PRINT(int rel_pages, int maxrel_pages, int i)
 }
 #else
 #define DEBUG_RELEASE_PRINT(rel_pages, maxrel_pages, i)
-#endif
+#endif /* DEBUG_RELEASE_MEM */
 
 /* Page Allocation and Release. */
 
@@ -759,11 +717,13 @@ static void old_to_new(SEXP x, SEXP y)
     } while (0)
 
 /* Node Sorting.  SortNodes attempts to improve locality of reference
-by rearranging the free list to place nodes on the same place page
-together and order nodes within pages.  This involves a sweep of the
-heap, so it should not be done too often, but doing it at least
-occationally does seem essential.  Sorting on each full colllection s
-probably sufficient. */
+   by rearranging the free list to place nodes on the same place page
+   together and order nodes within pages.  This involves a sweep of the
+   heap, so it should not be done too often, but doing it at least
+   occasionally does seem essential.  Sorting on each full colllection is
+   probably sufficient.
+*/
+
 #define SORT_NODES
 #ifdef SORT_NODES
 static void SortNodes(void)
@@ -904,7 +864,7 @@ again:
         FORWARD_NODE(ctxt->conexit); /* on.exit expressions */
 
     FORWARD_NODE(framenames); /* used for interprocedure
-               communication in model.c */
+                 communication in model.c */
 
     FORWARD_NODE(R_PreciousList);
 
@@ -988,17 +948,6 @@ again:
         DEBUG_GC_SUMMARY(gens_collected == NUM_OLD_GENERATIONS);
     }
 }
-#else /* no USE_GENERATIONAL_GC */
-static void markPhase(void);
-static void markSExp(SEXP s);
-static void compactPhase(void);
-static void scanPhase(void);
-
-#define VHEAP_FREE() (R_VMax - R_VTop)
-#define NO_FREE_NODES() (R_FreeSEXP == NULL)
-#define GET_FREE_NODE(s) ((s) = R_FreeSEXP, R_FreeSEXP = CDR(R_FreeSEXP))
-#define CHECK_OLD_TO_NEW(x, y)
-#endif
 
 SEXP do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1034,7 +983,6 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     ogc = gc_reporting;
     gc_reporting = asLogical(CAR(args));
-#ifdef USE_GENERATIONAL_GC
     num_old_gens_to_collect = NUM_OLD_GENERATIONS;
     R_gc();
     gc_reporting = ogc;
@@ -1049,45 +997,18 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     INTEGER(value)[3] = 10.0 * (ovsize - VHEAP_FREE()) / 131072.0 + 0.999;
     INTEGER(value)[6] = 10.0 * R_NSize / 1048576.0 * sizeof(SEXPREC) + 0.999;
     INTEGER(value)[7] = 10.0 * R_VSize / 131072.0 + 0.999;
-#else
-    R_gc();
-    gc_reporting = ogc;
-    /*- now return the [free , total ] for cells and heap */
-    PROTECT(value = allocVector(INTSXP, 6));
-    INTEGER(value)[0] = R_Collected;
-    INTEGER(value)[1] = VHEAP_FREE();
-    INTEGER(value)[2] = R_NSize;
-    INTEGER(value)[3] = R_VSize;
-    /* next two are in 0.1Mb, rounded up */
-    INTEGER(value)[4] = 10.0 * R_NSize / 1048576.0 * sizeof(SEXPREC) + 0.999;
-    INTEGER(value)[5] = 10.0 * R_VSize / 131072.0 + 0.999;
-#endif
     UNPROTECT(1);
     return value;
 }
 
 static void mem_err_heap(long size)
 {
-#ifdef USE_GENERATIONAL_GC
     errorcall(R_NilValue, "vector memory exhausted");
-#else
-    errorcall(R_NilValue,
-              "heap memory (%ld Kb) exhausted [needed %ld Kb more]\n       See \"help(Memory)\" on how to increase the "
-              "heap size.",
-              (R_VSize * sizeof(VECREC)) / 1024, (size * sizeof(VECREC)) / 1024);
-#endif
 }
 
 static void mem_err_cons()
 {
-#ifdef USE_GENERATIONAL_GC
     errorcall(R_NilValue, "cons memory exhausted");
-#else
-    errorcall(
-        R_NilValue,
-        "cons memory (%ld cells) exhausted\n       See \"help(Memory)\" on how to increase the number of cons cells.",
-        R_NSize);
-#endif
 }
 
 /* InitMemory : Initialise the memory to be used in R. */
@@ -1096,9 +1017,7 @@ static void mem_err_cons()
 void InitMemory()
 {
     int i;
-#ifdef USE_GENERATIONAL_GC
     int gen;
-#endif
 
     gc_reporting = R_Verbose;
     if (!(R_PPStack = (SEXP *)malloc(R_PPStackSize * sizeof(SEXP))))
@@ -1109,7 +1028,6 @@ void InitMemory()
 
     UNMARK_NODE(&UnmarkedNodeTemplate);
 
-#ifdef USE_GENERATIONAL_GC
     for (i = 0; i < NUM_NODE_CLASSES; i++)
     {
         for (gen = 0; gen < NUM_OLD_GENERATIONS; gen++)
@@ -1137,23 +1055,6 @@ void InitMemory()
     SET_NODE_CLASS(&UnmarkedNodeTemplate, 0);
     orig_R_NSize = R_NSize;
     orig_R_VSize = R_VSize;
-#else
-    if (!(R_NHeap = (SEXPREC *)malloc(R_NSize * sizeof(SEXPREC))))
-        R_Suicide("couldn't allocate memory for node heap");
-
-    for (i = 0; i < R_NSize - 1; i++)
-        CDR(&R_NHeap[i]) = &R_NHeap[i + 1];
-    CDR(&R_NHeap[R_NSize - 1]) = NULL;
-    R_FreeSEXP = &R_NHeap[0];
-
-    if (!(R_VHeap = (VECREC *)malloc(R_VSize * sizeof(VECREC))))
-        R_Suicide("couldn't allocate memory for vector heap");
-    R_VTop = &R_VHeap[0];
-    R_VMax = &R_VHeap[R_VSize - 1];
-
-    /* unmark all nodes to preserve the invariant */
-    unmarkPhase();
-#endif
 
     /* R_NilValue */
     /* THIS MUST BE THE FIRST CONS CELL ALLOCATED */
@@ -1170,7 +1071,6 @@ void InitMemory()
     ATTRIB(R_NilValue) = R_NilValue;
 }
 
-#ifdef USE_GENERATIONAL_GC
 /* Since memory allocated from the heap is non-moving, R_alloc just
    allocates off the heap as CHARSXP's and maintains the stack of
    allocations thorugh the ATTRIB pointer.  The stack pointer R_VStack
@@ -1198,38 +1098,6 @@ char *R_alloc(long nelem, int eltsize)
     else
         return NULL;
 }
-#else
-char *vmaxget(void)
-{
-    return (char *)R_VMax;
-}
-
-void vmaxset(char *ovmax)
-{
-    if (ovmax)
-        R_VMax = (VECREC *)ovmax;
-    else
-        R_VMax = &R_VHeap[R_VSize - 1];
-}
-
-char *R_alloc(long nelem, int eltsize)
-{
-    unsigned int size = BYTE2VEC(nelem * eltsize);
-    if (size > 0)
-    {
-        if (FORCE_GC || R_VMax - R_VTop < size)
-        {
-            R_gc_internal(size);
-            if (R_VMax - R_VTop < size)
-                mem_err_heap(size);
-        }
-        R_VMax -= size;
-        return (char *)R_VMax;
-    }
-    else
-        return NULL;
-}
-#endif
 
 /* S COMPATIBILITY */
 
@@ -1414,10 +1282,8 @@ SEXP allocVector(SEXPTYPE type, int length)
     int i;
     long size = 0;
     int alloc_size;
-#ifdef USE_GENERATIONAL_GC
     int node_class;
     int old_R_VSize;
-#endif
 
     if (length < 0)
         errorcall(R_GlobalContext->call, "negative length vectors are not allowed");
@@ -1468,7 +1334,6 @@ SEXP allocVector(SEXPTYPE type, int length)
         error("invalid type/length (%d/%d) in vector allocation", type, length);
     }
 
-#ifdef USE_GENERATIONAL_GC
     if (size <= NodeClassSize[1])
     {
         node_class = 1;
@@ -1488,17 +1353,9 @@ SEXP allocVector(SEXPTYPE type, int length)
             }
         }
     }
-#else
-    /* add space for header */
-    if (size > 0)
-        size += 1;
-    alloc_size = size;
-#endif
 
-#ifdef USE_GENERATIONAL_GC
     /* save current R_VSize to roll back adjustment if malloc fails */
     old_R_VSize = R_VSize;
-#endif
 
     /* we need to do the gc here so allocSExp doesn't! */
     if (FORCE_GC || NO_FREE_NODES() || alloc_size > VHEAP_FREE())
@@ -1512,7 +1369,6 @@ SEXP allocVector(SEXPTYPE type, int length)
 
     if (size > 0)
     {
-#ifdef USE_GENERATIONAL_GC
         if (node_class < NUM_SMALL_NODE_CLASSES)
         {
             CLASS_GET_FREE_NODE(node_class, s);
@@ -1538,12 +1394,6 @@ SEXP allocVector(SEXPTYPE type, int length)
         }
         ATTRIB(s) = R_NilValue;
         TYPEOF(s) = type;
-#else
-        GC_PROT(s = allocSExpNonCons(type));
-        CHAR(s) = (char *)(R_VTop + 1);
-        BACKPOINTER(*R_VTop) = s;
-        R_VTop += size;
-#endif
     }
     else
     {
@@ -1638,31 +1488,23 @@ static void R_gc_internal(int size_needed)
     double vfrac;
 
     gc_count++;
-#ifndef USE_GENERATIONAL_GC
-    if (gc_reporting)
-        REprintf("Garbage collection [nr. %d]...", gc_count);
-#endif
 
     BEGIN_SUSPEND_INTERRUPTS
     {
         gc_start_timing();
-#ifdef USE_GENERATIONAL_GC
         RunGenCollect(size_needed);
-#else
-        markPhase();
-        compactPhase();
-        scanPhase();
-#endif
         gc_end_timing();
     }
     END_SUSPEND_INTERRUPTS;
 
     if (gc_reporting)
     {
-        REprintf("\n%ld cons cells free (%ld%%)\n", R_Collected, (100 * R_Collected / R_NSize));
+        REprintf("\n%d cons cells free (%d%%)\n", R_Collected, (100 * R_Collected / R_NSize));
         vcells = VHEAP_FREE();
         vfrac = (100.0 * vcells) / R_VSize;
-        REprintf("%ld Kbytes of heap free (%.0f%%)\n", vcells * sizeof(VECREC) / 1024, vfrac);
+        /* arrange for percentage to be rounded down, or we get
+           `100% free' ! */
+        REprintf("%.1f Mbytes of heap free (%d%%)\n", vcells * sizeof(VECREC) / Mega, (int)vfrac);
     }
 }
 
@@ -1701,7 +1543,6 @@ SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
 
     BEGIN_SUSPEND_INTERRUPTS
     {
-#ifdef USE_GENERATIONAL_GC
         int gen;
 
         /* run a full GC to make sure that all stuff in use in in Old space */
@@ -1716,210 +1557,11 @@ SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
                     INTEGER(ans)[TYPEOF(s)]++;
             }
         }
-#else
-        markPhase();
-        for (i = 0; i < R_NSize; i++)
-            if (NODE_IS_MARKED(&R_NHeap[i]))
-                INTEGER(ans)[TYPEOF(&R_NHeap[i])]++;
-        unmarkPhase(); /* could be done smarter */
-#endif
     }
     END_SUSPEND_INTERRUPTS;
     UNPROTECT(2);
     return ans;
 }
-
-#ifndef USE_GENERATIONAL_GC
-/* "unmarkPhase" reset mark in ALL cons cells */
-
-void unmarkPhase(void)
-{
-    int i;
-    SEXP p = R_NHeap;
-    for (i = R_NSize; i--; p++)
-        if (NODE_IS_MARKED(p))
-            UNMARK_NODE(p);
-}
-
-/* "markPhase" set mark in all accessible cons cells */
-
-static void markPhase(void)
-{
-    int i;
-    DevDesc *dd;
-    RCNTXT *ctxt;
-
-    markSExp(R_NilValue); /* Builtin constants */
-    markSExp(NA_STRING);
-    markSExp(R_BlankString);
-    markSExp(R_UnboundValue);
-    markSExp(R_MissingArg);
-    markSExp(R_CommentSxp);
-
-    markSExp(R_GlobalEnv); /* Global environment */
-    markSExp(R_Warnings);  /* Warnings, if any */
-
-    for (i = 0; i < HSIZE; i++) /* Symbol table */
-        markSExp(R_SymbolTable[i]);
-
-    if (R_CurrentExpr != NULL) /* Current expression */
-        markSExp(R_CurrentExpr);
-
-    for (i = 0; i < R_MaxDevices; i++)
-    { /* Device display lists */
-        dd = GetDevice(i);
-        if (dd)
-            markSExp(dd->displayList);
-    }
-
-    for (ctxt = R_GlobalContext; ctxt != NULL; ctxt = ctxt->nextcontext)
-        markSExp(ctxt->conexit); /* on.exit expressions */
-
-    markSExp(framenames); /* used for interprocedure
-               communication in model.c */
-
-    markSExp(R_PreciousList);
-
-    for (i = 0; i < R_PPStackTop; i++) /* Protected pointers */
-        markSExp(R_PPStack[i]);
-}
-
-/* "markSExp" set mark in s and all cells accessible from it */
-
-static void markSExp(SEXP s)
-{
-    int i;
-
-tailcall_entry:
-    if (s && !NODE_IS_MARKED(s))
-    {
-        MARK_NODE(s);
-        if (ATTRIB(s) != R_NilValue)
-            markSExp(ATTRIB(s));
-        switch (TYPEOF(s))
-        {
-        case NILSXP:
-        case BUILTINSXP:
-        case SPECIALSXP:
-        case CHARSXP:
-        case LGLSXP:
-        case INTSXP:
-        case REALSXP:
-        case CPLXSXP:
-            break;
-        case STRSXP:
-        case EXPRSXP:
-        case VECSXP:
-            for (i = 0; i < LENGTH(s); i++)
-                markSExp(STRING_ELT(s, i));
-            break;
-        case ENVSXP:
-            markSExp(FRAME(s));
-            markSExp(ENCLOS(s));
-            markSExp(HASHTAB(s));
-            break;
-        case CLOSXP:
-        case PROMSXP:
-        case LISTSXP:
-        case LANGSXP:
-        case DOTSXP:
-        case SYMSXP:
-            markSExp(TAG(s));
-            markSExp(CAR(s));
-            /* use parameterized jump (i.e. assignment+goto) instead of
-               recursive tail call markSExp(CDR(s)) to reduce stack use */
-            s = CDR(s);
-            goto tailcall_entry;
-        default:
-            abort();
-        }
-    }
-}
-
-/* "compactPhase" compact the vector heap */
-
-static void compactPhase(void)
-{
-    VECREC *vto, *vfrom;
-    SEXP s;
-    int i, size;
-    vto = vfrom = R_VHeap;
-    while (vfrom < R_VTop)
-    {
-        s = BACKPOINTER(*vfrom);
-        switch (TYPEOF(s))
-        { /* get size in bytes */
-        case CHARSXP:
-            size = LENGTH(s) + 1;
-            break;
-        case LGLSXP:
-        case INTSXP:
-            size = LENGTH(s) * sizeof(int);
-            break;
-        case REALSXP:
-            size = LENGTH(s) * sizeof(double);
-            break;
-        case CPLXSXP:
-            size = LENGTH(s) * sizeof(Rcomplex);
-            break;
-        case STRSXP:
-        case EXPRSXP:
-        case VECSXP:
-            size = LENGTH(s) * sizeof(SEXP);
-            break;
-        default:
-            abort();
-        }
-        size = 1 + BYTE2VEC(size);
-        if (NODE_IS_MARKED(s))
-        {
-#if 0 /* help debug heap problems */
-	    if (CHAR(s) != (char *) (vfrom + 1))
-		error("inconsistency during heap compaction");
-#endif
-            if (vfrom != vto)
-            {
-                for (i = 0; i < size; i++)
-                    vto[i] = vfrom[i];
-            }
-            CHAR(BACKPOINTER(*vto)) = (char *)(vto + 1);
-            vto += size;
-            vfrom += size;
-        }
-        else
-        {
-            vfrom += size;
-        }
-    }
-    R_VTop = vto;
-}
-
-/* "scanPhase" reconstruct free list from cells not marked */
-
-static void scanPhase(void)
-{
-    register int i;
-    register SEXP p = R_NHeap, tmp = NULL;
-
-    tmp = NULL;
-    R_Collected = 0;
-    for (i = R_NSize; i--;)
-    {
-        if (!NODE_IS_MARKED(p))
-        {
-            /* Call Destructors Here */
-            CDR(p) = tmp;
-            tmp = p++;
-            R_Collected++;
-        }
-        else
-        {
-            UNMARK_NODE(p++);
-        }
-    }
-    R_FreeSEXP = tmp;
-}
-#endif
 
 /* "protect" push a single argument onto R_PPStack */
 
