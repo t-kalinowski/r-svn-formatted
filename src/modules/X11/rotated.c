@@ -87,7 +87,7 @@ static int debug = 0;
 
 /* ---------------------------------------------------------------------- */
 
-static double round(double x)
+static double myround(double x)
 {
     return floor(x + 0.5);
 }
@@ -341,8 +341,8 @@ static int XRotPaintAlignedString(Display *dpy, XFontStruct *font, double angle,
         hot_x = (double)item->max_width / 2 * style.magnify;
 
     /* pre-calculate sin and cos */
-    sin_angle = round(sin(angle) * 1000.0) / 1000.0;
-    cos_angle = round(cos(angle) * 1000.0) / 1000.0;
+    sin_angle = myround(sin(angle) * 1000.0) / 1000.0;
+    cos_angle = myround(cos(angle) * 1000.0) / 1000.0;
 
     /* rotate hot_x and hot_y around bitmap centre */
     hot_xp = hot_x * cos_angle - hot_y * sin_angle;
@@ -839,8 +839,8 @@ static RotatedTextItem *XRotCreateTextItem(Display *dpy, XFontStruct *font, doub
     XSetForeground(dpy, font_gc, 1);
 
     /* pre-calculate sin and cos */
-    sin_angle = round(sin(angle) * 1000.0) / 1000.0;
-    cos_angle = round(cos(angle) * 1000.0) / 1000.0;
+    sin_angle = myround(sin(angle) * 1000.0) / 1000.0;
+    cos_angle = myround(cos(angle) * 1000.0) / 1000.0;
 
     /* text background will be drawn using XFillPolygon */
     item->corners_x = (double *)malloc((unsigned)(4 * item->nl * sizeof(double)));
@@ -1344,8 +1344,8 @@ XPoint *XRotTextExtents(Display *dpy, XFontStruct *font, double angle, int x, in
     rows_in = nl * height;
 
     /* pre-calculate sin and cos */
-    sin_angle = round(sin(angle) * 1000.0) / 1000.0;
-    cos_angle = round(cos(angle) * 1000.0) / 1000.0;
+    sin_angle = myround(sin(angle) * 1000.0) / 1000.0;
+    cos_angle = myround(cos(angle) * 1000.0) / 1000.0;
 
     /* y position */
     if (align == TLEFT || align == TCENTRE || align == TRIGHT)
