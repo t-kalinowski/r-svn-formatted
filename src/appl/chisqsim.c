@@ -178,7 +178,7 @@ void chisqsim(int *nrow, int *ncol, int *nrowt, int *ncolt, int *n, int *b, doub
     for (iter = 0; iter < *b; ++iter)
     {
         rcont2(nrow, ncol, nrowt, ncolt, n, fact, jwork, observed);
-        /* Calculate chi-square value from the random table: */
+        /* Calculate chi-squared value from the random table: */
         chi = 0.;
         for (i = 0; i < *nrow; ++i)
         {
