@@ -2384,8 +2384,6 @@ SEXP R_ParseVector(SEXP text, int n, int *status)
     }
 }
 
-static int prompt_type;
-
 static char *Prompt(SEXP prompt, int type)
 {
     if (type == 1)
@@ -2693,8 +2691,6 @@ int yyerror(char *s)
 
 static void CheckFormalArgs(SEXP formlist, SEXP new)
 {
-    int i;
-
     while (formlist != R_NilValue)
     {
         if (TAG(formlist) == new)
@@ -2879,7 +2875,6 @@ static int SymbolValue(int c)
 static int token()
 {
     int c, kw;
-    char *p;
 
     if (SavedToken)
     {
@@ -2889,8 +2884,6 @@ static int token()
         SavedToken = 0;
         return c;
     }
-
-again:
 
     c = SkipSpace();
 

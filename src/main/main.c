@@ -140,6 +140,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 
     for (;;)
     {
+        Reset_C_alloc();
         R_PPStackTop = savestack;
         R_CurrentExpr = R_Parse1File(fp, 1, &status);
         switch (status)
@@ -215,6 +216,8 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
                 break;
             }
         }
+        if (browselevel)
+            Reset_C_alloc();
         R_PPStackTop = savestack;
         R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status);
 
@@ -311,6 +314,7 @@ void mainloop()
     InitEd();
     InitArithmetic();
     InitColors();
+    Init_C_alloc();
 
     /* Initialize the global context for error handling. */
     /* This provides a target for any non-local gotos */
