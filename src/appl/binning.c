@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *                2002  R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,12 +43,14 @@ void bincode(double *x, int *pn, double *breaks, int *pnb, int *code, int *right
     lft = !(*right);
 
     for (i = 0; i < n; i++)
-        if (R_FINITE(x[i]))
+    {
+        code[i] = NA_INTEGER;
+        if (!ISNAN(x[i]))
         {
             lo = 0;
             hi = nb1;
             if (x[i] < breaks[lo] || breaks[hi] < x[i] || (x[i] == breaks[lft ? hi : lo] && !*include_border))
-                code[i] = NA_INTEGER;
+                ;
             else
             {
                 while (hi - lo >= 2)
@@ -63,6 +66,7 @@ void bincode(double *x, int *pn, double *breaks, int *pnb, int *code, int *right
         }
         else if (!*naok)
             error("NA's in .C(\"bincode\",... NAOK=FALSE)");
+    }
 }
 
 /* bincount is called by  hist(.)  [only]
@@ -136,5 +140,5 @@ void bincode2(double *x, int *pn, double *breaks, int *pnb, int *code, int *incl
             }
         }
         else if (!*naok)
-            error("NA's in .C(\"bincode2\",... NAOK=FALSE)");
+            error("NA's in .C(\"bincode2\",... naok=FALSE)");
 }
