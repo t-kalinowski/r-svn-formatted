@@ -101,7 +101,8 @@ static int extract_one(unzFile uf, char *dest, char *filename)
     if (*p == '/')
     { /* Don't know how these are stored in Mac zip files */
         *p = '\0';
-        err = R_mkdir(outname);
+        if (!R_FileExists(outname))
+            err = R_mkdir(outname);
     }
     else
     {
