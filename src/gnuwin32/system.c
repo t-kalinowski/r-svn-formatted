@@ -589,7 +589,8 @@ static void env_command_line(int *pac, char **argv)
 
     while (--ac)
     {
-        if (strchr(*++av, '='))
+        ++av;
+        if (**av != '-' && strchr(*av, '='))
             Putenv(*av);
         else
             argv[newac++] = *av;
