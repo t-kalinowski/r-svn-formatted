@@ -1755,12 +1755,12 @@ static int xxgetc(void)
     }
     if (c == '\n')
         R_ParseError += 1;
-    if (GenerateCode && FunctionLevel > 0)
+    if (KeepSource && GenerateCode && FunctionLevel > 0)
     {
         if (SourcePtr < FunctionSource + MAXFUNSIZE)
             *SourcePtr++ = c;
         else
-            yyerror("function is too long to keep source");
+            error("function is too long to keep source");
     }
     xxcharcount++;
     return c;
@@ -1770,7 +1770,7 @@ static int xxungetc(int c)
 {
     if (c == '\n')
         R_ParseError -= 1;
-    if (GenerateCode && FunctionLevel > 0)
+    if (KeepSource && GenerateCode && FunctionLevel > 0)
         SourcePtr--;
     xxcharcount--;
     return ptr_ungetc(c);
@@ -2150,7 +2150,7 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
                     { /* over-long line */
                         char *LongLine = (char *)malloc(nc);
                         if (!LongLine)
-                            yyerror("unable to allocate space to source line");
+                            error("unable to allocate space to source line");
                         strncpy(LongLine, (char *)p0, nc);
                         LongLine[nc] = '\0';
                         SET_STRING_ELT(source, lines++, mkChar((char *)LongLine));
@@ -3198,7 +3198,7 @@ static int SymbolValue(int c)
         if (kw == FUNCTION)
         {
             if (FunctionLevel >= MAXNEST)
-                yyerror("functions nested too deeply in source code");
+                error("functions nested too deeply in source code");
             if (FunctionLevel++ == 0 && GenerateCode)
             {
                 strcpy((char *)FunctionSource, "function");
