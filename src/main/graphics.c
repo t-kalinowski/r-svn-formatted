@@ -2873,7 +2873,8 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
                     {
                         double xtest = x;
                         double ytest = y;
-                        GConvert(&xtest, &ytest, NDC, NFC, dd);
+                        /* FIXME: This needs checking */
+                        /* GConvert(&xtest, &ytest, NDC, NFC, dd); */
                         if (xtest < 0 || ytest < 0 || xtest > 1 || ytest > 1)
                             return;
                     }
@@ -3198,17 +3199,17 @@ void GPretty(double *lo, double *up, int *ndiv)
 }
 
 #define SMALL 0.25
-#ifdef OLD
-#define RADIUS 0.425
-#else
 #define RADIUS 0.375
-#endif
 #define SQRC 0.88622692545275801364 /* sqrt(pi / 4) */
 #define DMDC 1.25331413731550025119 /* sqrt(pi / 4) * sqrt(2) */
 #define TRC0 1.55512030155621416073 /* sqrt(4 * pi/(3 * sqrt(3))) */
 #define TRC1 1.34677368708859836060 /* TRC0 * sqrt(3) / 2 */
 #define TRC2 0.77756015077810708036 /* TRC0 / 2 */
-#define CMAG 1.1                    /* Circle magnifier */
+#ifdef Macintosh
+#define CMAG 1.0
+#else
+#define CMAG 1.1 /* Circle magnifier */
+#endif
 
 /* Draw one of the R special symbols. */
 void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
@@ -3459,7 +3460,7 @@ void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
             break;
 
         case 21: /* circles */
-            xc = RADIUS * GStrWidth("0", INCHES, dd);
+            xc = RADIUS * CMAG * GStrWidth("0", INCHES, dd);
             GCircle(x, y, coords, xc, dd->gp.bg, dd->gp.col, dd);
             break;
 
