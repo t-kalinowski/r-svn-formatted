@@ -116,6 +116,8 @@
 static int UsingReadline = 1;
 static int DefaultSaveAction = 0;
 static int DefaultRestoreAction = 1;
+static int LoadSiteFile = 1;
+static int LoadInitFile = 1;
 
 /*--- I/O Support Code ---*/
 
@@ -307,6 +309,25 @@ FILE *R_OpenSysInitFile(void)
     return fp;
 }
 
+FILE *R_OpenSiteFile(void)
+{
+    char buf[256];
+    FILE *fp;
+
+    fp = NULL;
+
+    if (LoadSiteFile)
+    {
+        if (fp = R_fopen(getenv("RPROFILE"), "r"))
+            return fp;
+        sprintf(buf, "%s/etc/Rprofile", getenv("RHOME"));
+        if (fp = R_fopen(buf, "r"))
+            return fp;
+    }
+
+    return fp;
+}
+
 FILE *R_OpenInitFile(void)
 {
     char buf[256];
@@ -314,12 +335,14 @@ FILE *R_OpenInitFile(void)
 
     fp = NULL;
 
-    if (fp = R_fopen(".Rprofile", "r"))
-        return fp;
-
-    sprintf(buf, "%s/.Rprofile", getenv("HOME"));
-    if (fp = R_fopen(buf, "r"))
-        return fp;
+    if (LoadInitFile)
+    {
+        if (fp = R_fopen(".Rprofile", "r"))
+            return fp;
+        sprintf(buf, "%s/.Rprofile", getenv("HOME"));
+        if (fp = R_fopen(buf, "r"))
+            return fp;
+    }
 
     return fp;
 }
@@ -355,30 +378,48 @@ int main(int ac, char **av)
     {
         if (**++av == '-')
         {
-            if (!strcmp(*av, "-save"))
+            if (!strcmp(*av, "-V") || !strcmp(*av, "--version"))
+            {
+                fprintf(stderr, "Version %s.%s %s (%s %s, %s)\n", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
+                exit(0);
+            }
+            else if (!strcmp(*av, "--save"))
             {
                 DefaultSaveAction = 3;
             }
-            else if (!strcmp(*av, "-nosave"))
+            else if (!strcmp(*av, "--no-save"))
             {
                 DefaultSaveAction = 2;
             }
-            else if (!strcmp(*av, "-restore"))
+            else if (!strcmp(*av, "--restore"))
             {
                 DefaultRestoreAction = 1;
             }
-            else if (!strcmp(*av, "-norestore"))
+            else if (!strcmp(*av, "--no-restore"))
             {
                 DefaultRestoreAction = 0;
             }
-            else if (!strcmp(*av, "-noreadline"))
+            else if (!strcmp(*av, "--no-readline"))
             {
                 UsingReadline = 0;
             }
-            else if (!strcmp(*av, "-quiet") || !strcmp(*av, "-q"))
+            else if (!strcmp(*av, "--quiet") || !strcmp(*av, "-q"))
             {
                 R_Quiet = 1;
                 break;
+            }
+            else if (!strcmp(*av, "--no-site-file"))
+            {
+                LoadSiteFile = 0;
+            }
+            else if (!strcmp(*av, "--no-init-file"))
+            {
+                LoadInitFile = 0;
+            }
+            else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
+                     !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet"))
+            {
+                REprintf("WARNING: option %s no longer supported\n", *av);
             }
             else if ((*av)[1] == 'v')
             {
@@ -394,7 +435,7 @@ int main(int ac, char **av)
                 if (*p)
                     goto badargs;
                 if (value < 1 || value > 1000)
-                    REprintf("warning: invalid vector heap size ignored\n");
+                    REprintf("WARNING: invalid vector heap size ignored\n");
                 else
                     R_VSize = value * 1048576; /* 1 MByte := 2^20 Bytes*/
             }
@@ -412,13 +453,13 @@ int main(int ac, char **av)
                 if (*p)
                     goto badargs;
                 if (value < R_NSize || value > 1000000)
-                    REprintf("warning: invalid language heap size ignored\n");
+                    REprintf("WARNING: invalid language heap size ignored\n");
                 else
                     R_NSize = value;
             }
             else
             {
-                REprintf("warning: unknown option %s\n", *av);
+                REprintf("WARNING: unknown option %s\n", *av);
                 break;
             }
         }
@@ -436,7 +477,7 @@ int main(int ac, char **av)
     R_Sinkfile = NULL;
 
     if (!R_Interactive && DefaultSaveAction == 0)
-        R_Suicide("you must specify -save or -nosave");
+        R_Suicide("you must specify `--save' or `--no-save'");
 
 #ifdef __FreeBSD__
     fpsetmask(0);
