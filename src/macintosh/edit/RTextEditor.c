@@ -438,6 +438,7 @@ void R_WriteConsole1(char *buf, SInt32 buflen)
     if (stringona)
     {
         strncpy(stringona, buf, outlen);
+
         for (i = 0; i < outlen; i++)
             if (buf[i] == '\n')
                 stringona[i] = '\r';
@@ -529,12 +530,10 @@ void GWdoErrorAlert(SInt16 errorType)
     {
         GetIndString(narrativeText, rStringList, errorType + 1);
         RWrite("No more window");
-        //		StandardAlert(kAlertCautionAlert,labelText,narrativeText,&paramRec,&itemHit);
     }
     else
     {
         Do_StandardAlert(labelText);
-        //		StandardAlert(kAlertStopAlert,labelText,0,&paramRec,&itemHit);
         if (errorType < 7)
             ExitToShell();
     }
@@ -549,6 +548,8 @@ void do_Down_Array(void)
 {
     WEReference we;
     SInt32 textLength;
+    char mybuf[40];
+
     if (g_start_Cmd != g_end_Cmd)
     {
         we = GetWindowWE(Console_Window);
@@ -596,6 +597,7 @@ void do_Up_Array(void)
 {
     WEReference we;
     SInt32 textLength;
+
     if (g_start_Cmd != g_end_Cmd)
     {
 

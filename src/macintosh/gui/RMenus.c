@@ -1103,15 +1103,16 @@ OSErr DoOpenText(Boolean editable)
 
     DoNew(editable);
 
-    RemWinMenuItem();
+    RemWinMenuItem(Edit_Windows[Edit_Window - 1]);
 
-    err = ReadTextFile(&myfss, GetWindowWE(Edit_Windows[Edit_Window - 1]));
+    err = ReadTextFile(&myfss, Edit_Windows[Edit_Window - 1]);
 
-    UniqueWinTitle();
+    UniqueWinTitle(Edit_Windows[Edit_Window - 1]);
     if (Edit_Window > 2)
         RepositionWindow(Edit_Windows[Edit_Window - 1], Edit_Windows[Edit_Window - 2], kWindowCascadeOnParentWindow);
 
     SetWindowProxyFSSpec(Edit_Windows[Edit_Window - 1], &myfss);
+    ShowWindow(Edit_Windows[Edit_Window - 1]);
 
     return err;
 }
@@ -1186,17 +1187,17 @@ OSErr R_EditFile(SEXP call, char *fname, Boolean isanewfile)
 
     DoNew(TRUE);
 
-    RemWinMenuItem();
+    RemWinMenuItem(Edit_Windows[Edit_Window - 1]);
 
-    err = ReadTextFile(&myfss, GetWindowWE(Edit_Windows[Edit_Window - 1]));
+    err = ReadTextFile(&myfss, Edit_Windows[Edit_Window - 1]);
 
-    UniqueWinTitle();
+    UniqueWinTitle(Edit_Windows[Edit_Window - 1]);
 
     if (Edit_Window > 2)
         RepositionWindow(Edit_Windows[Edit_Window - 1], Edit_Windows[Edit_Window - 2], kWindowCascadeOnParentWindow);
 
     SetWindowProxyFSSpec(Edit_Windows[Edit_Window - 1], &myfss);
-
+    ShowWindow(Edit_Windows[Edit_Window - 1]);
     return err;
 }
 
@@ -1254,16 +1255,16 @@ OSErr R_NewFile(SEXP call, char *fname)
 
     DoNew(TRUE);
 
-    RemWinMenuItem();
+    RemWinMenuItem(Edit_Windows[Edit_Window - 1]);
 
     SetWTitle(Edit_Windows[Edit_Window - 1], winName);
 
     SelectWindow(Edit_Windows[Edit_Window - 1]);
 
-    UniqueWinTitle();
+    UniqueWinTitle(Edit_Windows[Edit_Window - 1]);
     if (Edit_Window > 2)
         RepositionWindow(Edit_Windows[Edit_Window - 1], Edit_Windows[Edit_Window - 2], kWindowCascadeOnParentWindow);
-
+    ShowWindow(Edit_Windows[Edit_Window - 1]);
     return err;
 }
 
@@ -1499,7 +1500,7 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
 
         GetWTitle(Help_Windows[win_num], Cur_Title);
         // SelectWindow(Help_Windows[win_num]);
-        RemWinMenuItem();
+        RemWinMenuItem(window);
         adjustHelpPtr(win_num);
         DestroyWindow(window);
         return noErr;
@@ -1607,7 +1608,7 @@ furtherstep:
     {
         if ((win_num = isEditWindow(window)))
         {
-            RemWinMenuItem();
+            RemWinMenuItem(window);
             adjustEditPtr(win_num);
         }
         /* destroy the window */
