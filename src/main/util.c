@@ -77,12 +77,13 @@ static char *falsenames[] = {
     "F", "False", "FALSE", "false", (char *)0,
 };
 
+/* int, not Rboolean, for NA_LOGICAL : */
 int asLogical(SEXP x)
 {
     if (isVectorAtomic(x))
     {
         if (LENGTH(x) < 1)
-            return NA_INTEGER;
+            return NA_LOGICAL;
         switch (TYPEOF(x))
         {
         case LGLSXP:
