@@ -75,7 +75,7 @@ extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_
     ptr_R_ShowMessage, ptr_R_Suicide;
 
 DL_FUNC ptr_do_wsbrowser, ptr_DoCloseHandler, ptr_GetQuartzParameters, ptr_Raqua_Edit, ptr_do_dataentry,
-    ptr_do_browsepkgs;
+    ptr_do_browsepkgs, ptr_do_datamanger, ptr_do_packagemanger;
 
 void R_ProcessEvents(void);
 
@@ -166,6 +166,12 @@ void R_load_aqua_shlib(void)
     ptr_R_CleanUp = Rdlsym(handle, "Raqua_CleanUp");
     if (!ptr_R_CleanUp)
         R_Suicide("Cannot load Raqua_CleanUp");
+    ptr_do_datamanger = Rdlsym(handle, "Raqua_datamanger");
+    if (!ptr_do_datamanger)
+        R_Suicide("Cannot load Raqua_datamanger");
+    ptr_do_packagemanger = Rdlsym(handle, "Raqua_packagemanger");
+    if (!ptr_do_packagemanger)
+        R_Suicide("Cannot load Raqua_packagemanger");
 }
 
 OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
@@ -186,6 +192,16 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     return (ptr_do_browsepkgs(call, op, args, env));
+}
+
+SEXP do_datamanger(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    return (ptr_do_datamanger(call, op, args, env));
+}
+
+SEXP do_packagemanger(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    return (ptr_do_packagemanger(call, op, args, env));
 }
 
 void R_ProcessEvents(void)
