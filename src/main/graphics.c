@@ -3229,7 +3229,7 @@ void GLPretty(double *ul, double *uh, int *n)
         *n = -*n;
     }
     else
-    { /* extra tickmarks --> CreateAtVector(.) in	../plot.c */
+    { /* extra tickmarks --> CreateAtVector() in ./plot.c */
         *ul = pow(10., (double)p1);
         *uh = pow(10., (double)p2);
         if (p2 - p1 <= LPR_SMALL)

@@ -2,6 +2,7 @@
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
  *  Copyright (C) 2000 The R Development Core Team
+ *  Copyright (C) 2004 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,8 +28,6 @@
 
 double pcauchy(double x, double location, double scale, int lower_tail, int log_p)
 {
-    const double x_big = pow(5 * DBL_EPSILON, -0.25); /* = 5478.3 for IEEE */
-
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
         return x + location + scale;
@@ -48,25 +47,15 @@ double pcauchy(double x, double location, double scale, int lower_tail, int log_
             return R_DT_1;
     }
 #endif
-    /* for large (negative || "upper tail & positive")  x,
-       the standard formula suffers from cancellation */
-    if (x < 0 && lower_tail && (-x) > x_big)
+    if (!lower_tail)
+        x = -x;
+    /* for large x, the standard formula suffers from cancellation.
+     * This is from Morten Welinder thanks to  Ian Smith's  atan(1/x) : */
+    if (fabs(x) > 1)
     {
-        /* P = 1/(pi*(-x)) *(1 - 1/(3* x^2)) */
-        if (log_p)
-            return -log(-M_PI * x) + log1p(-1. / (3 * x * x));
-        /* else */
-        return (1 - 1. / (3 * x * x)) / (-M_PI * x);
+        double y = atan(1 / x) / M_PI;
+        return (x > 0) ? R_D_Clog(y) : R_D_val(-y);
     }
-    /* else */
-    if (x > 0 && !lower_tail && x > x_big)
-    {
-        /* P = 1 - 1/(pi*x) *(1 - 1/(3* x^2))  */
-        if (log_p)
-            return -log(M_PI * x) + log1p(-1. / (3 * x * x));
-        /* else */
-        return (1 - 1. / (3 * x * x)) / (M_PI * x);
-    }
-    /* else */
-    return R_DT_val(0.5 + atan(x) / M_PI);
+    else
+        return R_D_val(0.5 + atan(x) / M_PI);
 }
