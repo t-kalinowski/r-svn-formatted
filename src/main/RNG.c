@@ -164,6 +164,10 @@ static void FixupSeeds(RNGtype kind, int initial)
         if (!notallzero)
             RNG_Table[kind].i_seed[3] = 37;
         break;
+
+    case KNUTH_TAOCP:
+        /* -Wall: never get here */
+        break;
     }
 }
 
