@@ -1782,7 +1782,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 break;
 
             case kRAquaFAQ:
-                consolecmd("system(\"open http://cran.r-project.org/bin/macos/rmac-FAQ.html\")");
+                consolecmd("system(\"open http://cran.r-project.org/bin/macosx/RAqua-FAQ.html\")");
                 break;
 
             case kRHelpOnTopic:
