@@ -190,10 +190,10 @@ static int null_fgetc(Rconnection con)
     return 0; /* -Wall */
 }
 
-static long null_seek(Rconnection con, double where, int origin, int rw)
+static double null_seek(Rconnection con, double where, int origin, int rw)
 {
     error("seek not enabled for this connection");
-    return 0; /* -Wall */
+    return 0.; /* -Wall */
 }
 
 static void null_truncate(Rconnection con)
@@ -345,11 +345,15 @@ static int file_fgetc(Rconnection con)
     return feof(fp) ? R_EOF : con->encoding[c];
 }
 
-static long file_seek(Rconnection con, double where, int origin, int rw)
+static double file_seek(Rconnection con, double where, int origin, int rw)
 {
     Rfileconn this = con->private;
     FILE *fp = this->fp;
+#if defined(HAVE_OFF_T) && defined(__USE_LARGEFILE)
+    off_t pos = f_tell(fp);
+#else
     long pos = f_tell(fp);
+#endif
     int whence = SEEK_SET;
 
     /* make sure both positions are set */
@@ -385,7 +389,7 @@ static long file_seek(Rconnection con, double where, int origin, int rw)
     default:
         whence = SEEK_SET;
     }
-    f_seek(fp, (long)where, whence);
+    f_seek(fp, where, whence);
     if (this->last_was_write)
         this->wpos = f_tell(this->fp);
     else
@@ -906,24 +910,26 @@ static int gzfile_fgetc(Rconnection con)
         return con->encoding[c];
 }
 
-static long gzfile_seek(Rconnection con, double where, int origin, int rw)
+static double gzfile_seek(Rconnection con, double where, int origin, int rw)
 {
     gzFile fp = ((Rgzfileconn)(con->private))->fp;
-    long pos = gztell(fp);
-    int whence = SEEK_SET;
+    z_off_t pos = gztell(fp);
+    int res, whence = SEEK_SET;
 
     switch (origin)
     {
     case 2:
         whence = SEEK_CUR;
     case 3:
-        whence = SEEK_END;
+        error("whence = \"end\" is not implemented for gzfile connections");
     default:
         whence = SEEK_SET;
     }
     if (where >= 0)
-        gzseek(fp, (int)where, whence);
-    return pos;
+        res = gzseek(fp, (z_off_t)where, whence);
+    if (res == -1)
+        warning("seek on a gzfile connection returned an internal error");
+    return (double)pos;
 }
 
 static int gzfile_fflush(Rconnection con)
@@ -1355,7 +1361,7 @@ static int clp_fgetc(Rconnection con)
     return con->encoding[c];
 }
 
-static long clp_seek(Rconnection con, double where, int origin, int rw)
+static double clp_seek(Rconnection con, double where, int origin, int rw)
 {
     Rclpconn this = con->private;
     int newpos, oldpos = this->pos;
@@ -1379,7 +1385,7 @@ static long clp_seek(Rconnection con, double where, int origin, int rw)
     else
         this->pos = newpos;
 
-    return oldpos;
+    return (double)oldpos;
 }
 
 static void clp_truncate(Rconnection con)
@@ -1685,7 +1691,7 @@ static int text_fgetc(Rconnection con)
         return (int)(this->data[this->cur++]);
 }
 
-static long text_seek(Rconnection con, double where, int origin, int rw)
+static double text_seek(Rconnection con, double where, int origin, int rw)
 {
     if (where >= 0)
         error("seek is not relevant for text connection");
@@ -2258,7 +2264,7 @@ SEXP do_seek(SEXP call, SEXP op, SEXP args, SEXP env)
     origin = asInteger(CADDR(args));
     rw = asInteger(CADDDR(args));
     PROTECT(ans = allocVector(REALSXP, 1));
-    REAL(ans)[0] = (double)con->seek(con, where, origin, rw);
+    REAL(ans)[0] = con->seek(con, where, origin, rw);
     UNPROTECT(1);
     return ans;
 }
