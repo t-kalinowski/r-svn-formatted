@@ -1546,8 +1546,13 @@ int DispatchOrEval(SEXP call, char *generic, SEXP args, SEXP rho, SEXP *ans, int
             PROTECT(pargs = promiseArgs(args, rho));
             SET_PRVALUE(CAR(pargs), x);
             begincontext(&cntxt, CTXT_RETURN, call, rho, rho, pargs);
+#ifdef EXPERIMENTAL_NAMESPACES
+            if (usemethod(generic, x, call, pargs, rho, rho, R_NilValue, ans))
+            {
+#else
             if (usemethod(generic, x, call, pargs, rho, ans))
             {
+#endif
                 endcontext(&cntxt);
                 UNPROTECT(2);
                 return 1;
@@ -1589,8 +1594,13 @@ int DispatchOrEval(SEXP call, char *generic, SEXP args, SEXP rho, SEXP *ans, int
             /* PROTECT(args = promiseArgs(args, rho)); */
             SET_PRVALUE(CAR(args), x);
             begincontext(&cntxt, CTXT_RETURN, call, rho, rho, args);
+#ifdef EXPERIMENTAL_NAMESPACES
+            if (usemethod(generic, x, call, args, rho, rho, R_NilValue, ans))
+            {
+#else
             if (usemethod(generic, x, call, args, rho, ans))
             {
+#endif
                 endcontext(&cntxt);
                 UNPROTECT(2);
                 return 1;
@@ -1621,7 +1631,11 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
     {
         sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, whichclass)));
         *meth = install(buf);
+#ifdef EXPERIMENTAL_NAMESPACES
+        *sxp = R_LookupMethod(*meth, rho, rho, R_NilValue);
+#else
         *sxp = findVar(*meth, rho);
+#endif
         if (isFunction(*sxp))
         {
             *gr = mkString("");
@@ -1768,6 +1782,13 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
         SET_STRING_ELT(t, j, duplicate(STRING_ELT(lclass, lwhich++)));
     defineVar(install(".Class"), t, newrho);
     UNPROTECT(1);
+#ifdef EXPERIMENTAL_NAMESPACES
+    if (R_UseNamespaceDispatch)
+    {
+        defineVar(install(".GenericCallEnv"), rho, newrho);
+        defineVar(install(".GenericDefEnv"), R_NilValue, newrho);
+    }
+#endif
 
     PROTECT(t = LCONS(lmeth, CDR(call)));
 
