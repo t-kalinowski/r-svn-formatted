@@ -514,7 +514,6 @@ void Raqua_StartConsole(void)
         Raqua_read_history(R_HistoryFile);
 
     InstallEventLoopTimer(GetCurrentEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, NULL);
-    fprintf(stderr, "\ntimer just installed");
 
 noconsole:
     if (bundleURL)
@@ -526,10 +525,8 @@ noconsole:
 
 static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData)
 {
-    R_runHandlers(R_InputHandlers, R_checkActivity(10, 1));
+    R_runHandlers(R_InputHandlers, R_checkActivity(0, 1));
 }
-
-/* BEWARE: before quitting R via ExitToShell() call TXNTerminateTextension() */
 
 void CloseRAquaConsole(void);
 void CloseRAquaConsole(void)
