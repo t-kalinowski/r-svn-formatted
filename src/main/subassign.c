@@ -1148,55 +1148,52 @@ static SEXP listRemove(SEXP x, SEXP s)
     return CDR(a);
 }
 
-SEXP listAssign1(SEXP call, SEXP x, SEXP subs, SEXP y)
+/* unused
+static SEXP listAssign1(SEXP call, SEXP x, SEXP subs, SEXP y)
 {
     SEXP ax, ay, px, py, dims;
     int i, nsubs, ny;
 
     nsubs = length(subs);
-    switch (nsubs)
-    {
+    switch (nsubs) {
     case 0:
-        break;
+    break;
     case 1:
-        if (y == R_NilValue)
-            x = listRemove(x, CAR(subs));
-        else
-            x = SimpleListAssign(call, x, subs, y);
-        break;
+    if (y == R_NilValue)
+        x = listRemove(x, CAR(subs));
+    else
+        x = SimpleListAssign(call, x, subs, y);
+    break;
     default:
-        dims = getAttrib(x, R_DimSymbol);
-        if (dims == R_NilValue || LENGTH(dims) != length(subs))
-            error("incorrect number of subscripts");
+    dims = getAttrib(x, R_DimSymbol);
+    if (dims == R_NilValue || LENGTH(dims) != length(subs))
+        error("incorrect number of subscripts");
 
-        PROTECT(ax = allocArray(STRSXP, dims));
-        for (px = x, i = 0; px != R_NilValue; px = CDR(px))
-            STRING(ax)[i++] = CAR(px);
-        setAttrib(ax, R_DimNamesSymbol, getAttrib(x, R_DimNamesSymbol));
-        if (isList(y))
-        {
-            ny = length(y);
-            PROTECT(ay = allocVector(STRSXP, ny));
-            for (py = y, i = 0; py != R_NilValue; py = CDR(py))
-                STRING(ay)[i++] = CAR(py);
-        }
-        else
-        {
-            ny = 1;
-            PROTECT(ay = allocVector(STRSXP, 1));
-            STRING(ay)[0] = y;
-        }
-        if (nsubs == 2)
-            ax = MatrixAssign(call, ax, subs, ay);
-        else
-            ax = ArrayAssign(call, ax, subs, ay);
-        for (px = x, i = 0; px != R_NilValue; px = CDR(px))
-            CAR(px) = duplicate(STRING(ax)[i++]);
-        UNPROTECT(2);
-        break;
+    PROTECT(ax = allocArray(STRSXP, dims));
+    for (px = x, i = 0; px != R_NilValue; px = CDR(px))
+        STRING(ax)[i++] = CAR(px);
+    setAttrib(ax, R_DimNamesSymbol, getAttrib(x, R_DimNamesSymbol));
+    if (isList(y)) {
+        ny = length(y);
+        PROTECT(ay = allocVector(STRSXP, ny));
+        for (py = y, i = 0; py != R_NilValue; py = CDR(py))
+        STRING(ay)[i++] = CAR(py);
+    }
+    else {
+        ny = 1;
+        PROTECT(ay = allocVector(STRSXP, 1));
+        STRING(ay)[0] = y;
+    }
+    if (nsubs == 2) ax = MatrixAssign(call, ax, subs, ay);
+    else ax = ArrayAssign(call, ax, subs, ay);
+    for (px = x, i = 0; px != R_NilValue; px = CDR(px))
+        CAR(px) = duplicate(STRING(ax)[i++]);
+    UNPROTECT(2);
+    break;
     }
     return x;
 }
+*/
 
 static void SubAssignArgs(SEXP args, SEXP *x, SEXP *s, SEXP *y)
 {

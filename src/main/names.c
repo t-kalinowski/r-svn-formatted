@@ -728,7 +728,7 @@ int hashpjw(char *s)
     return h % HSIZE;
 }
 
-extern void installFunTab(int i)
+static void installFunTab(int i)
 {
     if ((R_FunTab[i].eval % 100) / 10)
         INTERNAL(install(R_FunTab[i].name)) = mkPRIMSXP(i, R_FunTab[i].eval % 10);
@@ -736,7 +736,7 @@ extern void installFunTab(int i)
         SYMVALUE(install(R_FunTab[i].name)) = mkPRIMSXP(i, R_FunTab[i].eval % 10);
 }
 
-void SymbolShortcuts()
+static void SymbolShortcuts()
 {
     R_Bracket2Symbol = install("[[");
     R_BracketSymbol = install("[");

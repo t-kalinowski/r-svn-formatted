@@ -158,7 +158,8 @@ static void lowest(double *x, double *y, int n, double *xs, double *ys, int nlef
     }
 }
 
-void clowess(double *x, double *y, int n, double f, int nsteps, double delta, double *ys, double *rw, double *res)
+static void clowess(double *x, double *y, int n, double f, int nsteps, double delta, double *ys, double *rw,
+                    double *res)
 {
     int i, iter, j, last, m1, m2, nleft, nright, ns, ok;
     double alpha, c1, c9, cmad, cut, d1, d2, denom, r;

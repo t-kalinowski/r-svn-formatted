@@ -77,13 +77,13 @@
 
 #define EPSILON DBL_EPSILON
 
-double zeroin(                                   /* An estimate of the root */
-              double ax,                         /* Left border | of the range	*/
-              double bx,                         /* Right border| the root is seeked*/
-              double (*f)(double x, void *info), /* Function under investigation	*/
-              void *info,                        /* Add'l info passed on to f	*/
-              double *Tol,                       /* Acceptable tolerance		*/
-              int *Maxit)                        /* Max # of iterations */
+double R_zeroin(                                   /* An estimate of the root */
+                double ax,                         /* Left border | of the range	*/
+                double bx,                         /* Right border| the root is seeked*/
+                double (*f)(double x, void *info), /* Function under investigation	*/
+                void *info,                        /* Add'l info passed on to f	*/
+                double *Tol,                       /* Acceptable tolerance		*/
+                int *Maxit)                        /* Max # of iterations */
 {
     double a, b, c, /* Abscissae, descr. see above	*/
         fa, fb, fc; /* f(a), f(b), f(c) */

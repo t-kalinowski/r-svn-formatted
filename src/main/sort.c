@@ -315,7 +315,7 @@ void cPsort(Rcomplex *x, int n, int k)
 #undef TYPE_CMP
 }
 
-void sPsort(SEXP *x, int n, int k)
+static void sPsort(SEXP *x, int n, int k)
 {
     SEXP v, w;
 #define TYPE_CMP scmp
@@ -323,7 +323,7 @@ void sPsort(SEXP *x, int n, int k)
 #undef TYPE_CMP
 }
 
-void Psort(SEXP x, int k)
+static void Psort(SEXP x, int k)
 {
     switch (TYPEOF(x))
     {
@@ -456,7 +456,7 @@ static int listgreater(int i, int j, SEXP key)
     return 1;
 }
 
-void orderVector(int *index, int n, SEXP key, int greater())
+static void orderVector(int *index, int n, SEXP key, int greater())
 {
     int i, j, h;
     int itmp;
