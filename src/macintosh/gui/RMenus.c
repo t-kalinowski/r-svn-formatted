@@ -770,6 +770,9 @@ OSErr SaveWindow(const FSSpec *pFileSpec, WindowPtr window)
     Str255 Cur_Title, curString;
     Boolean EqString;
 
+    if (window == NULL)
+        window = FrontWindow();
+
     hDocument = GetWindowDocument(window);
 
     if (isGraphicWindow(window))
@@ -846,6 +849,8 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
         /* otherwise use the window title
            as default name for CustomPutFile
         */
+        if (window == NULL)
+            window = FrontWindow();
         GetWTitle(window, defaultName);
     }
 
