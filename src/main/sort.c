@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998-2002   The R Development Core Team.
+ *  Copyright (C) 2004        The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -841,6 +842,13 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
     int *in;
     double *rk;
     int i, j, k, n;
+    char *ties_str;
+    enum
+    {
+        AVERAGE,
+        MAX,
+        MIN
+    } ties_kind = AVERAGE;
 
     checkArity(op, args);
     if (args == R_NilValue)
@@ -852,6 +860,15 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(indx = allocVector(INTSXP, n));
     PROTECT(rank = allocVector(REALSXP, n));
     UNPROTECT(2);
+    ties_str = CHAR(STRING_ELT(coerceVector(CADR(args), STRSXP), 0));
+    if (!strcmp(ties_str, "average"))
+        ties_kind = AVERAGE;
+    else if (!strcmp(ties_str, "max"))
+        ties_kind = MAX;
+    else if (!strcmp(ties_str, "min"))
+        ties_kind = MIN;
+    else
+        error("invalid ties.method for rank() [should never happen]");
     if (n > 0)
     {
         in = INTEGER(indx);
@@ -866,9 +883,22 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
             while ((j < n - 1) && equal(in[j], in[j + 1], x, TRUE))
                 j++;
             if (i != j)
-            {
-                for (k = i; k <= j; k++)
-                    rk[in[k]] = (i + j + 2) / 2.0;
+            { /* ties */
+                switch (ties_kind)
+                {
+                case AVERAGE:
+                    for (k = i; k <= j; k++)
+                        rk[in[k]] = (i + j + 2) / 2.;
+                    break;
+                case MAX:
+                    for (k = i; k <= j; k++)
+                        rk[in[k]] = j + 1;
+                    break;
+                case MIN:
+                    for (k = i; k <= j; k++)
+                        rk[in[k]] = i + 1;
+                    break;
+                }
             }
             else
                 rk[in[i]] = i + 1;
