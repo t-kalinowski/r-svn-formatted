@@ -439,7 +439,6 @@ void jump_to_toplevel()
        the jump target */
     R_run_onexits(c);
 
-    vmaxset(NULL);
     if (!R_Interactive && !haveHandler && inError)
     {
         REprintf("Execution halted\n");

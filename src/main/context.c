@@ -46,6 +46,7 @@
  *			at exit from the closure (normal or abnormal).
  *	cend		a pointer to function which executes if there is
  *			non-local return (i.e. an error)
+ *	vmax		the current setting of the R_alloc stack
  *
  *  Context types can be one of:
  *
@@ -147,6 +148,7 @@ void R_restore_globals(RCNTXT *cptr)
 {
     R_PPStackTop = cptr->cstacktop;
     R_EvalDepth = cptr->evaldepth;
+    vmaxset(cptr->vmax);
 }
 
 /* jumpfun - jump to the named context */
@@ -186,6 +188,7 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->conexit = R_NilValue;
     cptr->cend = NULL;
     cptr->promargs = promargs;
+    cptr->vmax = vmaxget();
     R_GlobalContext = cptr;
 }
 
