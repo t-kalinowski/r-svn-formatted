@@ -44,6 +44,12 @@
 extern int errno;
 #endif
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#else
+extern char *alloca(size_t);
+#endif
+
 #define INVALID_COL 0xff0a0b0c
 
 /* Define this to use hyphen except in -[0-9] */
@@ -2025,21 +2031,25 @@ static void PostScriptCircle(FILE *fp, double x, double y, double r)
 }
 
 /* We do this conversion ourselves to do our own error recovery */
-#define WBUFFSIZE 1000
 #ifdef SUPPORT_UTF8
 static void utf8toLatin1(char *in, char *out)
 {
-    wchar_t wbuff[WBUFFSIZE + 1]; /* FIXME */
+    wchar_t *wbuff;
     int i;
-    size_t res = mbstowcs(NULL, in, 0);
+    size_t res = mbstowcs(NULL, in, 0), mres;
 
-    if (res == (size_t)(-1) || res > 1000)
+    if (res == (size_t)(-1))
     {
         warning("invalid text in utf8toLatin1");
         *out = '\0';
         return;
     }
-    mbstowcs(wbuff, in, WBUFFSIZE);
+    wbuff = (wchar_t *)alloca((res + 1) * sizeof(wchar_t));
+    if (!wbuff)
+        error("allocation failure in utf8toLatin1");
+    mres = mbstowcs(wbuff, in, res + 1);
+    if (mres == (size_t)-1)
+        error("invalid input found in utf8toLatin1");
     for (i = 0; i < res; i++)
     {
         /* here we do assume Unicode wchars */
@@ -2985,7 +2995,7 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
 {
     char *str1 = str;
 #ifdef SUPPORT_UTF8
-    char buff[WBUFFSIZE + 1]; /* FIXME */
+    char *buff;
 #endif
 
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -2997,6 +3007,9 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
 #ifdef SUPPORT_UTF8
         if (utf8locale && !utf8strIsASCII(str) && pd->current.font != 5)
         {
+            buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
+            if (!buff)
+                error("allocation failure in PS_Text");
             utf8toLatin1(str, buff);
             str1 = buff;
         }
@@ -5025,7 +5038,7 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     double a, b, rot1;
     char *str1 = str;
 #ifdef SUPPORT_UTF8
-    char buff[WBUFFSIZE + 1]; /* FIXME */
+    char *buff;
 #endif
 
     if (face < 1 || face > 5)
@@ -5054,6 +5067,9 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
 #ifdef SUPPORT_UTF8
         if (utf8locale && !utf8strIsASCII(str1) && face < 5)
         {
+            buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
+            if (!buff)
+                error("allocation failure in PDF_Text");
             utf8toLatin1(str, buff);
             str1 = buff;
         }
