@@ -386,7 +386,7 @@ SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     {
-        ans = allocString(strlen(CHAR(base)) + strlen(CHAR(tag)));
+        ans = allocString(strlen(CHAR(base)) + strlen(CHAR(tag)) + 1);
         sprintf(CHAR(ans), "%s.%s", CHAR(base), CHAR(tag));
     }
     else if (*CHAR(base))

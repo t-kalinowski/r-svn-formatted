@@ -1651,7 +1651,7 @@ SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
         val = duplicate(val);
     PROTECT(val);
 
-    if (isList(x) || isLanguage(x))
+    if ((isList(x) || isLanguage(x)) && !isNull(x))
     {
         nlist = CADR(args);
         if (isString(nlist))

@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997 Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998-1999	The R Core Team
  *
  *  This source code module:
  *  Copyright (C) 1997, 1998 Paul Murrell and Ross Ihaka
@@ -151,7 +152,7 @@ static double DescDepth()
     return depth;
 }
 
-#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+#ifdef NOT_used_currently /*-- out 'def'	 (-Wall) --*/
 static double AscHeight()
 {
     double height, depth, width, save;
@@ -565,7 +566,7 @@ static double CenterShift(BBOX bbox)
     return 0.5 * (bboxHeight(bbox) - bboxDepth(bbox));
 }
 
-#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+#ifdef NOT_used_currently /*-- out 'def'	 (-Wall) --*/
 static BBOX DrawBBox(BBOX bbox, double xoffset, double yoffset)
 {
     double xsaved = CurrentX;
@@ -1082,7 +1083,7 @@ static int StringAtom(SEXP expr)
     return (TYPEOF(expr) == STRSXP);
 }
 
-#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+#ifdef NOT_used_currently /*-- out 'def'	 (-Wall) --*/
 static int symbolAtom(SEXP expr)
 {
     int i;
@@ -1098,7 +1099,7 @@ static int symbolAtom(SEXP expr)
 /* Code to determine a font from the */
 /* nature of the expression */
 
-#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+#ifdef NOT_used_currently /*-- out 'def'	 (-Wall) --*/
 static FontType CurrentFont = 3;
 #endif
 static FontType GetFont()
@@ -1136,7 +1137,7 @@ static BBOX RenderOffsetElement(SEXP, double, double, int);
 static BBOX RenderExpression(SEXP, int);
 static BBOX RenderSymbolChar(int, int);
 
-/*  Code to Generate Bounding Boxes and Draw Formulae.  */
+/*  Code to Generate Bounding Boxes and Draw Formulae.	*/
 
 static BBOX RenderItalicCorr(BBOX bbox, int draw)
 {
@@ -2139,7 +2140,7 @@ static BBOX RenderDelim(int which, double dist, int draw)
         break;
     default:
         error("group is incomplete\n");
-        break;
+        return ansBBox; /*never reached*/
     }
     topBBox = GlyphBBox(top);
     extBBox = GlyphBBox(ext);
@@ -2460,7 +2461,7 @@ static BBOX RenderOp(SEXP expr, int draw)
  *
  *  Tunable parameteters :
  *
- *  RADICAL_GAP    The gap between the nucleus and the radical extension.
+ *  RADICAL_GAP	   The gap between the nucleus and the radical extension.
  *  RADICAL_SPACE  Extra space to the left and right of the nucleus.
  *
  */
@@ -3107,7 +3108,7 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
 
 void GMMathText(SEXP str, int side, double line, int outer, double at, int las, DevDesc *dd)
 {
-    int coords;
+    int coords = 0;
     double a, xadj, yadj;
 
     MathDevice = dd;
@@ -3142,6 +3143,8 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
             xadj = MathDevice->gp.adj;
             yadj = NA_REAL;
             break;
+        default:
+            return; /* never happens */
         }
         GMathText(at, line, coords, str, xadj, yadj, a, dd);
     }
@@ -3150,8 +3153,8 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         switch (side)
         {
         case 1:
-            if (las == 2)
-            {
+            if (las == 2 || las == 3)
+            { /* perpendicular */
                 at = at - GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line + dd->gp.yLineBias;
                 a = 90.0;
@@ -3186,8 +3189,8 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
             coords = MAR2;
             break;
         case 3:
-            if (las == 2)
-            {
+            if (las == 2 || las == 3)
+            { /* perpendicular */
                 at = at - GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line + dd->gp.yLineBias;
                 a = 90.0;
@@ -3221,6 +3224,8 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
             }
             coords = MAR4;
             break;
+        default:
+            return; /* never happens */
         }
         GMathText(at, line, coords, str, xadj, yadj, a, dd);
     }

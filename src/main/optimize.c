@@ -600,7 +600,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
  *  p(n)   --> step taken
  *  itncnt --> iteration number k
  *  iflg   --> flag controlling info to print
- *  ipr	   --> device to which to send output
+ *  ipr	   --> device to which to send output [unused in C]
  */
 
 int F77_SYMBOL(result)(int *nr, int *n, double *x, double *f, double *g, double *a, double *p, int *itncnt, int *iflg,

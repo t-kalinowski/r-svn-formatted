@@ -375,7 +375,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (0 <= ix && ix <= 2)
+        if (0 <= ix && ix <= 3)
             dd->dp.las = dd->gp.las = ix;
         else
             par_error(what);
@@ -1084,7 +1084,7 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (0 <= ix && ix <= 2)
+        if (0 <= ix && ix <= 3)
             dd->gp.las = ix;
         else
             par_error(what);

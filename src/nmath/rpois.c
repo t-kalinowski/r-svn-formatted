@@ -19,7 +19,7 @@
  *  SYNOPSIS
  *
  *    #include "Mathlib.h"
- *    double dpois(double x, double lambda)
+ *    double rpois(double lambda)
  *
  *  DESCRIPTION
  *
@@ -34,7 +34,7 @@
  */
 
 /* Factorial Table */
-double fact[10] = {1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0};
+static double fact[10] = {1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0};
 
 #define a0 -0.5
 #define a1 0.3333333

@@ -1,7 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997  The R Core Team
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997-1999 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,8 +50,8 @@
  *  2. The dlopen interface is not available.
  *
  *  In this case we use the table "CFunTabEntry" to locate functions
- *  in the executable.  We do this by straight linear search through
- *  the table.  Note that the content of the table is created at
+ *  in the executable.	We do this by straight linear search through
+ *  the table.	Note that the content of the table is created at
  *  system build time from the list in ../appl/ROUTINES.
  */
 
@@ -83,7 +83,7 @@ static CFunTabEntry CFunTab[] = {
     {NULL, NULL}};
 
 /* The following code loads in a compatibility module written by Luke
-   Tierney to support S version 4 on Hewlett-Packard machines.  The
+   Tierney to support S version 4 on Hewlett-Packard machines.	The
    relevant defines are set up by autoconf. */
 
 #ifdef HAVE_DLFCN_H
@@ -149,6 +149,10 @@ found:
     return 1;
 }
 
+#define DLLerrBUFSIZE 1000
+static char DLLerror[DLLerrBUFSIZE] = "";
+/* the error message; length taken from ERRBUFSIZE in ./hpdlfcn.c  */
+
 /* Inserts the specified DLL at the start of the DLL list */
 /* All the other entries are "moved down" by one. */
 /* Returns 1 if the library was successfully added */
@@ -161,13 +165,20 @@ static int AddDLL(char *path)
     char *dpath;
     int i;
     if (CountDLL == MAX_NUM_DLLS)
+    {
+        strcpy(DLLerror, "Maximal number of DLLs reached...");
         return 0;
+    }
     handle = dlopen(path, RTLD_LAZY);
     if (handle == NULL)
+    {
+        strcpy(DLLerror, dlerror());
         return 0;
+    }
     dpath = malloc(strlen(path) + 1);
     if (dpath == NULL)
     {
+        strcpy(DLLerror, "Couldn't allocate space for 'path'");
         dlclose(handle);
         return 0;
     }
@@ -203,7 +214,7 @@ DL_FUNC R_FindSymbol(char const *name)
     /* It is only meant to be used in systems supporting */
     /* the dlopen() interface, in which systems data and  */
     /* function pointers _are_ the same size and _can_   */
-    /* be cast without loss of information.              */
+    /* be cast without loss of information.		     */
 
     for (i = 0; i < CountDLL; i++)
     {
@@ -250,7 +261,7 @@ SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
     GetFullDLLPath(call, buf, CHAR(STRING(CAR(args))[0]));
     DeleteDLL(buf);
     if (!AddDLL(buf))
-        errorcall(call, "unable to load shared library \"%s\"\n", buf);
+        errorcall(call, "unable to load shared library \"%s\":\n  %s\n", buf, DLLerror);
     return R_NilValue;
 }
 

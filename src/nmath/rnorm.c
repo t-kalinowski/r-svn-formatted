@@ -35,10 +35,13 @@ double rnorm(double mu, double sigma)
 #ifdef IEEE_754
         !finite(mu) || !finite(sigma) ||
 #endif
-        sigma <= 0.0)
+        sigma < 0.0)
     {
         ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
-    return mu + sigma * snorm();
+    else if (sigma == 0.0)
+        return mu;
+    else
+        return mu + sigma * snorm();
 }

@@ -870,7 +870,30 @@ static void args2buff(SEXP arglist, int lineb, int formals)
     {
         if (TAG(arglist) != R_NilValue)
         {
-            deparse2buff(TAG(arglist));
+#if 0
+	    deparse2buff(TAG(arglist));
+#else
+            char tpb[120];
+            SEXP s = TAG(arglist);
+
+            if (s == R_DotsSymbol || isValidName(CHAR(PRINTNAME(s))))
+                print2buff(CHAR(PRINTNAME(s)));
+            else
+            {
+                if (strlen(CHAR(PRINTNAME(s))) < 117)
+                {
+                    sprintf(tpb, "\"%s\"", CHAR(PRINTNAME(s)));
+                    print2buff(tpb);
+                }
+                else
+                {
+                    sprintf(tpb, "\"");
+                    strncat(tpb, CHAR(PRINTNAME(s)), 117);
+                    strcat(tpb, "\"");
+                    print2buff(tpb);
+                }
+            }
+#endif
             if (formals)
             {
                 if (CAR(arglist) != R_MissingArg)

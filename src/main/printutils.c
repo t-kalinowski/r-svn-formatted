@@ -52,7 +52,12 @@
 #include "Mathlib.h"
 #include "Print.h"
 
-#define BUFSIZE 512
+#define BUFSIZE 8192
+/* FIXME: we shouldn't use a fixed BUFSIZE at all
+   -----  Rather, e.g. use moderate BUFSIZE (e.g. 256),
+      then  ALLOCATE  if we need more.
+ or replace the whole idea of		  sprintf(Encodebuf,..) ?
+ */
 static char Encodebuf[BUFSIZE];
 
 char *EncodeLogical(int x, int w)

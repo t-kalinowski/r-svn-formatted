@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R core team.
+ *  Copyright (C) 1997--1999  Robert Gentleman, Ross Ihaka and the R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -874,7 +874,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(1, dd);
     switch (side)
     {
-    case 1:
+    case 1: /*--- x-axis -- horizontal --- */
     case 3:
         GetAxisLimits(dd->gp.usr[0], dd->gp.usr[1], &low, &high);
         if (side == 3)
@@ -956,8 +956,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     labw = GStrWidth(CHAR(STRING(lab)[i]), NFC, dd);
                     tnew = tempx - 0.5 * labw;
-                    /* Check that there is room for labels */
-                    if (dd->gp.las == 2 || tnew - tlast >= gap)
+                    /* Check room for  perpendicular labels: */
+                    if (dd->gp.las == 2 || dd->gp.las == 3 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[i]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
                         tlast = tempx + 0.5 * labw;
@@ -966,7 +966,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         break;
-    case 2:
+
+    case 2: /*--- y-axis -- vertical --- */
     case 4:
         GetAxisLimits(dd->gp.usr[2], dd->gp.usr[3], &low, &high);
         if (side == 4)
@@ -1048,7 +1049,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                     labw = GStrWidth(CHAR(STRING(lab)[i]), INCHES, dd);
                     labw = GConvertYUnits(labw, INCHES, NFC, dd);
                     tnew = tempy - 0.5 * labw;
-                    if (dd->gp.las > 0 || tnew - tlast >= gap)
+                    /* Check room for  perpendicular labels: */
+                    if (dd->gp.las == 1 || dd->gp.las == 2 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[i]), side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
                         tlast = tempy + 0.5 * labw;
@@ -1872,10 +1874,10 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         switch (dd->gp.las)
         {
-        case 0:
+        case 0: /* parallel to axis */
             adj = 0.5;
             break;
-        case 1:
+        case 1: /* horizontal */
             switch (side)
             {
             case 1:
@@ -1889,7 +1891,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
                 adj = 0.0;
                 break;
             }
-        case 2:
+        case 2: /* perpendicular to axis */
             switch (side)
             {
             case 1:
@@ -1899,6 +1901,20 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
             case 3:
             case 4:
                 adj = 0.0;
+                break;
+            }
+        case 3: /* vertical */
+            switch (side)
+            {
+            case 1:
+                adj = 1.0;
+                break;
+            case 3:
+                adj = 0.0;
+                break;
+            case 2:
+            case 4:
+                adj = 0.5;
                 break;
             }
         }
