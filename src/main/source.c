@@ -25,6 +25,7 @@
 #include "Fileio.h"
 #include "IOStuff.h"
 #include "Parse.h"
+#include "Rconnections.h"
 
 extern IoBuffer R_ConsoleIob;
 /* extern int errno; No longer used */
@@ -38,16 +39,21 @@ extern IoBuffer R_ConsoleIob;
 */
 SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP file, text, prompt, s;
-    FILE *fp;
+    SEXP text, prompt, s;
+    Rconnection con;
+    int ifile, wasopen;
     int num, pstacktop, status;
+
     checkArity(op, args);
     pstacktop = R_PPStackTop;
     R_ParseError = 0;
     R_ParseCnt = 0;
 
-    PROTECT(file = coerceVector(CAR(args), STRSXP));
+    ifile = asInteger(CAR(args));
     args = CDR(args);
+
+    con = getConnection(ifile);
+    wasopen = con->isopen;
     num = asInteger(CAR(args));
     args = CDR(args);
     PROTECT(text = coerceVector(CAR(args), STRSXP));
@@ -67,15 +73,15 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (status != PARSE_OK)
             errorcall(call, "parse error");
     }
-    else if (isValidStringF(file))
+    else if (ifile >= 3)
     { /* file != "" */
         if (num == NA_INTEGER)
             num = -1;
-        fp = R_fopen(R_ExpandFileName(CHAR(STRING_ELT(file, 0))), "r");
-        if (!fp)
-            errorcall(call, "unable to open file for parsing");
-        s = R_ParseFile(fp, num, &status);
-        fclose(fp);
+        if (!wasopen)
+            con->open(con);
+        s = R_ParseConn(con, num, &status);
+        if (!wasopen)
+            con->close(con);
         if (status != PARSE_OK)
             errorcall(call, "syntax error on line %d", R_ParseError);
     }
@@ -87,6 +93,6 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (status != PARSE_OK)
             errorcall(call, "parse error");
     }
-    UNPROTECT(3);
+    UNPROTECT(2);
     return s;
 }

@@ -24,6 +24,7 @@
 
 #include "Defn.h"
 #include "Fileio.h"
+#include "Rconnections.h"
 
 /* The size of vector initially allocated by scan */
 #define SCAN_BLOCKSIZE 1000
@@ -41,7 +42,8 @@ static int sepchar = 0;
 static int decchar = '.';
 static char *quoteset;
 static char *quotesave = NULL;
-static FILE *fp;
+static Rconnection con;
+static int wasopen;
 static int ttyflag;
 static int quiet;
 static SEXP NAstrings;
@@ -145,7 +147,7 @@ static int scanchar(void)
         save = 0;
         return c;
     }
-    return (ttyflag) ? ConsoleGetchar() : R_fgetc(fp);
+    return (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
 }
 
 static void unscanchar(int c)
@@ -297,8 +299,8 @@ static void expected(char *what, char *got)
         while ((c = scanchar()) != R_EOF && c != '\n')
             ;
     }
-    else
-        fclose(fp);
+    else if (!wasopen)
+        con->close(con);
     error("\"scan\" expected %s, got \"%s\"", what, got);
 }
 
@@ -412,7 +414,6 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         }
         else
         {
-            /* REprintf("|%s|\n", buffer);*/
             extractItem(buffer, ans, n);
             if (++n == maxitems)
             {
@@ -491,8 +492,8 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
     {
         if (!isVector(VECTOR_ELT(what, i)))
         {
-            if (!ttyflag)
-                fclose(fp);
+            if (!ttyflag & !wasopen)
+                con->close(con);
             error("\"scan\": invalid \"what=\" specified");
         }
         SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(what, i)), blksize));
@@ -644,7 +645,6 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes;
     int i, c, nlines, nmax, nskip, flush, fill, blskip;
-    char *filename;
 
     checkArity(op, args);
 
@@ -728,28 +728,25 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         errorcall(call, "invalid quote symbol set");
 
-    filename = NULL;
-    if (isValidString(file))
+    i = asInteger(file);
+    if (i == 0)
     {
-        filename = CHAR(STRING_ELT(file, 0));
-        if (strlen(filename) == 0) /* file == "" */
-            filename = NULL;
+        ttyflag = 1;
     }
     else
-        errorcall(call, "invalid file name");
-
-    if (filename)
     {
+        con = getConnection(i);
         ttyflag = 0;
-        filename = R_ExpandFileName(filename);
-        if ((fp = R_fopen(filename, "r")) == NULL)
-            errorcall(call, "can't open file %s", filename);
+        wasopen = con->isopen;
+        if (!wasopen)
+        {
+            strcpy(con->mode, "r");
+            con->open(con);
+        }
         for (i = 0; i < nskip; i++)
             while ((c = scanchar()) != '\n' && c != R_EOF)
                 ;
     }
-    else
-        ttyflag = 1;
 
     ans = R_NilValue; /* -Wall */
     save = 0;
@@ -768,12 +765,12 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip);
         break;
     default:
-        if (!ttyflag)
-            fclose(fp);
+        if (!ttyflag && !wasopen)
+            con->close(con);
         errorcall(call, "invalid \"what=\" specified");
     }
-    if (!ttyflag)
-        fclose(fp);
+    if (!ttyflag && !wasopen)
+        con->close(con);
     return ans;
 }
 
@@ -782,7 +779,6 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans, file, sep, bns, quotes;
     int nfields, nskip, i, c, inquote, quote = 0;
     int blocksize, nlines, blskip;
-    char *filename = ""; /* -Wall */
 
     checkArity(op, args);
 
@@ -826,18 +822,21 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         errorcall(call, "invalid quote symbol set");
 
-    if (isValidStringF(file))
+    i = asInteger(file);
+    if (i == 0)
     {
-        filename = CHAR(STRING_ELT(file, 0));
+        ttyflag = 1;
     }
     else
-        errorcall(call, "invalid file name");
-
-    if (filename)
     {
-        filename = R_ExpandFileName(filename);
-        if ((fp = R_fopen(filename, "r")) == NULL)
-            errorcall(call, "can't open file %s", filename);
+        con = getConnection(i);
+        ttyflag = 0;
+        wasopen = con->isopen;
+        if (!wasopen)
+        {
+            strcpy(con->mode, "r");
+            con->open(con);
+        }
         for (i = 0; i < nskip; i++)
             while ((c = scanchar()) != '\n' && c != R_EOF)
                 ;
@@ -888,7 +887,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
                 nfields++;
             if (inquote && (c == R_EOF || c == '\n'))
             {
-                fclose(fp);
+                if (!wasopen)
+                    con->close(con);
                 errorcall(call, "string terminated by newline or EOF");
             }
             if (inquote && c == quote)
@@ -910,7 +910,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     if (c == R_EOF || c == '\n')
                     {
-                        fclose(fp);
+                        if (!wasopen)
+                            con->close(con);
                         errorcall(call, "string terminated by newline or EOF");
                     }
                 }
@@ -927,7 +928,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
 donecf:
-    fclose(fp);
+    if (!wasopen)
+        con->close(con);
 
     if (nlines < 0)
     {
@@ -1144,100 +1146,4 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     ans = allocVector(INTSXP, 1);
     INTEGER(ans)[0] = first;
     return ans;
-}
-
-/* readLines(file = "", n = 1, ok = TRUE) */
-/* FIXME fixed buffer size */
-#define BUF_SIZE 1000
-SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP ans = R_NilValue, ans2;
-    int i, n, nn, nnn, ok, nread, c, nbuf, buf_size = BUF_SIZE;
-    char *filename, *buf;
-    SEXP file;
-    FILE *fp = NULL;
-
-    checkArity(op, args);
-    file = CAR(args);
-    n = asInteger(CADR(args));
-    if (n == NA_INTEGER)
-        errorcall(call, "invalid value for `n'");
-    ok = asLogical(CADDR(args));
-    if (ok == NA_LOGICAL)
-        errorcall(call, "invalid value for `ok'");
-    filename = NULL;
-    if (isValidString(file))
-    {
-        filename = CHAR(STRING_ELT(file, 0));
-        if (strlen(filename) == 0)
-            filename = NULL;
-    }
-    else
-        errorcall(call, "invalid file name");
-    if (filename)
-    {
-        filename = R_ExpandFileName(filename);
-        if ((fp = R_fopen(filename, "r")) == NULL)
-            errorcall(call, "cannot open file %s", filename);
-    }
-    else
-    {
-        errorcall(call, "must specify file name");
-    }
-    buf = (char *)malloc(buf_size);
-    if (!buf)
-        error("cannot allocate buffer in readLines");
-    nn = (n < 0) ? 1000 : n; /* initially allocate space for 1000 lines */
-    nnn = (n < 0) ? INT_MAX : n;
-    PROTECT(ans = allocVector(STRSXP, nn));
-    for (nread = 0; nread < nnn; nread++)
-    {
-        if (nread >= nn)
-        {
-            ans2 = allocVector(STRSXP, 2 * nn);
-            for (i = 0; i < nn; i++)
-                SET_STRING_ELT(ans2, i, STRING_ELT(ans, i));
-            nn *= 2;
-            UNPROTECT(1); /* old ans */
-            PROTECT(ans = ans2);
-        }
-        nbuf = 0;
-        while ((c = fgetc(fp)) != EOF)
-        {
-            if (nbuf == buf_size)
-            {
-                buf_size *= 2;
-                buf = (char *)realloc(buf, buf_size);
-                if (!buf)
-                    error("cannot allocate buffer in readLines");
-            }
-            if (c != '\n')
-                buf[nbuf++] = c;
-            else
-                break;
-        }
-        buf[nbuf] = '\0';
-        SET_STRING_ELT(ans, nread, mkChar(buf));
-        if (c == EOF)
-            goto no_more_lines;
-    }
-    UNPROTECT(1);
-    free(buf);
-    fclose(fp);
-    return ans;
-no_more_lines:
-    free(buf);
-    fclose(fp);
-    if (nbuf > 0)
-    { /* incomplete last line */
-        nread++;
-        warningcall(call, "incomplete final line");
-    }
-    if (n < nnn && !ok)
-        errorcall(call, "too few lines read");
-    PROTECT(ans2 = allocVector(STRSXP, nread));
-    for (i = 0; i < nread; i++)
-        SET_STRING_ELT(ans2, i, STRING_ELT(ans, i));
-    UNPROTECT(2);
-    return ans2;
 }
