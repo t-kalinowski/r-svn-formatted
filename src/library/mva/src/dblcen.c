@@ -1,7 +1,7 @@
 #include <math.h>
 #include "mva.h"
 
-/* Double Centering for Multidimensional Scaling */
+/* Double Centering for Classical Multidimensional Scaling */
 
 void dblcen(double *a, int *na)
 {
@@ -13,9 +13,7 @@ void dblcen(double *a, int *na)
     {
         sum = 0;
         for (j = 0; j < n; j++)
-        {
             sum += a[i + j * n];
-        }
         sum /= n;
         for (j = 0; j < n; j++)
             a[i + j * n] -= sum;
