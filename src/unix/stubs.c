@@ -26,7 +26,7 @@
 #include "devUI.h"
 
 Rboolean stub_X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, double gamma,
-                              X_COLORTYPE colormodel, int maxcube)
+                              X_COLORTYPE colormodel, int maxcube, int canvascolor)
 {
     error("the x11 device has not been loaded");
     return FALSE;

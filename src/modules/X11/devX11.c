@@ -130,7 +130,7 @@ static void X11_Line(double, double, double, double, int, DevDesc *);
 static Rboolean X11_Locator(double *, double *, DevDesc *);
 static void X11_Mode(int, DevDesc *);
 static void X11_NewPage(DevDesc *);
-Rboolean X11_Open(DevDesc *, x11Desc *, char *, double, double, double, X_COLORTYPE, int);
+Rboolean X11_Open(DevDesc *, x11Desc *, char *, double, double, double, X_COLORTYPE, int, int);
 static void X11_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void X11_Polyline(int, double *, double *, int, DevDesc *);
 static void X11_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -1089,7 +1089,7 @@ static int R_X11IOErr(Display *dsp)
 }
 
 Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma_fac, X_COLORTYPE colormodel,
-                  int maxcube)
+                  int maxcube, int canvascolor)
 {
     /* if we have to bail out with "error", then must free(dd) and free(xd) */
 
@@ -1159,7 +1159,8 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
         if (xd->handleOwnEvents == FALSE)
             addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
     }
-    whitepixel = GetX11Pixel(255, 255, 255);
+    /* whitepixel = GetX11Pixel(255, 255, 255); */
+    whitepixel = GetX11Pixel(R_RED(canvascolor), R_GREEN(canvascolor), R_BLUE(canvascolor));
     blackpixel = GetX11Pixel(0, 0, 0);
 
     if (!SetBaseFont(xd))
@@ -1173,6 +1174,7 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
     xd->bg = dd->dp.bg = 0xffffffff; /* R_RGB(255, 255, 255); */
     xd->fg = dd->dp.fg = R_RGB(0, 0, 0);
     xd->col = dd->dp.col = xd->fg;
+    xd->canvas = canvascolor;
 
     /* Try to create a simple window. */
     /* We want to know about exposures */
@@ -1395,7 +1397,7 @@ static void X11_NewPage(DevDesc *dd)
     {
         if (xd->npages++)
             error("attempt to draw second page on pixmap device");
-        xd->bg = R_OPAQUE(dd->dp.bg) ? dd->dp.bg : 0xffffff;
+        xd->bg = R_OPAQUE(dd->dp.bg) ? dd->dp.bg : xd->canvas;
         SetColor(xd->bg, dd);
         XFillRectangle(display, xd->window, xd->wgc, 0, 0, xd->windowWidth, xd->windowHeight);
         return;
@@ -1404,7 +1406,7 @@ static void X11_NewPage(DevDesc *dd)
     FreeX11Colors();
     if ((model == PSEUDOCOLOR2) || (xd->bg != dd->dp.bg))
     {
-        xd->bg = R_OPAQUE(dd->dp.bg) ? dd->dp.bg : 0xffffff;
+        xd->bg = R_OPAQUE(dd->dp.bg) ? dd->dp.bg : xd->canvas;
         whitepixel = GetX11Pixel(R_RED(xd->bg), R_GREEN(xd->bg), R_BLUE(xd->bg));
         XSetWindowBackground(display, xd->window, whitepixel);
     }
@@ -1499,7 +1501,7 @@ static void X11_Close(DevDesc *dd)
             xi = XGetImage(display, xd->window, 0, 0, xd->windowWidth, xd->windowHeight, AllPlanes, ZPixmap);
             if (xd->type == PNG)
                 R_SaveAsPng(xi, xd->windowWidth, xd->windowHeight, bitgp, 0, xd->fp,
-                            R_OPAQUE(dd->dp.bg) ? 0 : 0xffffff);
+                            R_OPAQUE(dd->dp.bg) ? 0 : xd->canvas);
             else if (xd->type == JPEG)
                 R_SaveAsJpeg(xi, xd->windowWidth, xd->windowHeight, bitgp, 0, xd->quality, xd->fp);
             XDestroyImage(xi);
@@ -1982,7 +1984,7 @@ static void X11_Hold(DevDesc *dd)
 /*	7) maxcube			*/
 
 Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double height, double pointsize, double gamma_fac,
-                         X_COLORTYPE colormodel, int maxcube)
+                         X_COLORTYPE colormodel, int maxcube, int canvascolor)
 {
     x11Desc *xd;
 
@@ -1992,7 +1994,7 @@ Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double heig
 
     /*	Start the Device Driver and Hardcopy.  */
 
-    if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube))
+    if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube, canvascolor))
     {
         free(xd);
         return FALSE;

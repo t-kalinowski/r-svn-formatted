@@ -57,7 +57,9 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char *display, *vmax, *cname, *devname;
     double height, width, ps, gamma;
-    int colormodel, maxcubesize;
+    int colormodel, maxcubesize, canvascolor;
+    SEXP sc;
+
     gcall = call;
     vmax = vmaxget();
 
@@ -99,6 +101,11 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     maxcubesize = asInteger(CAR(args));
     if (maxcubesize < 1 || maxcubesize > 256)
         maxcubesize = 256;
+    args = CDR(args);
+    sc = CAR(args);
+    if (!isString(sc) && !isInteger(sc) && !isLogical(sc) && !isReal(sc))
+        errorcall(call, "invalid value of `canvas'");
+    canvascolor = RGBpar(sc, 0);
 
     devname = "X11";
     if (!strncmp(display, "png::", 5))
@@ -108,13 +115,14 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (!strcmp(display, "XImage"))
         devname = "XImage";
 
-    Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, devname, ptr_X11DeviceDriver);
+    Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, canvascolor, devname,
+                    ptr_X11DeviceDriver);
     vmaxset(vmax);
     return R_NilValue;
 }
 
 DevDesc *Rf_addX11Device(char *display, double width, double height, double ps, double gamma, int colormodel,
-                         int maxcubesize, char *devname, X11DeviceDriverRoutine deviceDriverRoutine)
+                         int maxcubesize, int canvascolor, char *devname, X11DeviceDriverRoutine deviceDriverRoutine)
 {
     DevDesc *dd = NULL;
     R_CheckDeviceAvailable();
@@ -127,7 +135,7 @@ DevDesc *Rf_addX11Device(char *display, double width, double height, double ps, 
         dd->displayList = R_NilValue;
         GInit(&dd->dp);
         if (!deviceDriverRoutine ||
-            !(deviceDriverRoutine)(dd, display, width, height, ps, gamma, colormodel, maxcubesize))
+            !(deviceDriverRoutine)(dd, display, width, height, ps, gamma, colormodel, maxcubesize, canvascolor))
         {
             free(dd);
             errorcall(gcall, "unable to start device %s", devname);
