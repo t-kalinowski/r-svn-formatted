@@ -87,7 +87,8 @@ FILE *R_OpenSiteFile(void)
 void R_RestoreGlobalEnv(void)
 {
     FILE *fp;
-    SEXP lst;
+    SEXP img, lst;
+    int i;
 
     if (RestoreAction == SA_RESTORE)
     {
@@ -99,11 +100,27 @@ void R_RestoreGlobalEnv(void)
 #ifdef OLD
         FRAME(R_GlobalEnv) = R_LoadFromFile(fp, 1);
 #else
-        PROTECT(lst = R_LoadFromFile(fp, 1));
-        while (lst != R_NilValue)
+        PROTECT(img = R_LoadFromFile(fp, 1));
+        switch (TYPEOF(img))
         {
-            setVarInFrame(R_GlobalEnv, TAG(lst), CAR(lst));
-            lst = CDR(lst);
+        case LISTSXP:
+            while (img != R_NilValue)
+            {
+                setVarInFrame(R_GlobalEnv, TAG(img), CAR(img));
+                img = CDR(img);
+            }
+            break;
+        case VECSXP:
+            for (i = 0; i < LENGTH(img); i++)
+            {
+                lst = VECTOR(img)[i];
+                while (lst != R_NilValue)
+                {
+                    setVarInFrame(R_GlobalEnv, TAG(lst), CAR(lst));
+                    lst = CDR(lst);
+                }
+            }
+            break;
         }
         UNPROTECT(1);
 #endif
@@ -118,7 +135,10 @@ void R_SaveGlobalEnv(void)
     FILE *fp = R_fopen(".RData", "wb"); /* binary file */
     if (!fp)
         error("can't save data -- unable to open ./.RData\n");
-    R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
+    if (HASHTAB(R_GlobalEnv) != R_NilValue)
+        R_SaveToFile(HASHTAB(R_GlobalEnv), fp, 0);
+    else
+        R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
     fclose(fp);
 }
 
