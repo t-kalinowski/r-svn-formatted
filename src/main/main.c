@@ -30,6 +30,10 @@
 /* include user interface symbols which are included */
 /* in separate platform dependent modules. */
 
+/* The R Home Directory */
+
+char *R_Home; /* The Root of the R Tree */
+
 /* Memory Management */
 
 int R_NSize = R_NSIZE; /* Size of cons cell heap */
