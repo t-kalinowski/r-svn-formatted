@@ -1293,7 +1293,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     int i, j, k, n;
     int have_rnames, have_cnames;
     int nnames, mnames;
-    int rows, cols, mcols, mrows;
+    int rows, cols, mcols, mrows, have_mcols;
     int warned;
     SEXP dn, t, u, result, dims, expr;
 
@@ -1304,6 +1304,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     rows = 0;
     cols = 0;
     mcols = 0;
+    have_mcols = 0;
 
     /* check conformability of matrix arguments */
 
@@ -1316,8 +1317,11 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
             dims = getAttrib(u, R_DimSymbol);
             if (length(dims) == 2)
             {
-                if (mcols == 0)
+                if (!have_mcols)
+                {
                     mcols = INTEGER(dims)[1];
+                    have_mcols = 1;
+                }
                 else if (mcols != INTEGER(dims)[1])
                     errorcall(call, "number of columns of matrices must match (see arg %d)", n + 1);
                 rows += INTEGER(dims)[0];
@@ -1330,7 +1334,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
         }
         n++;
     }
-    if (mcols != 0)
+    if (have_mcols)
         cols = mcols;
 
     /* Check conformability of vector arguments. -- Look for dimnames. */
@@ -1383,8 +1387,8 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
         for (t = args; t != R_NilValue; t = CDR(t))
         {
             u = PRVALUE(CAR(t));
-            if (length(u) >= 0)
-            { /* cbind() has ">" here */
+            if (length(u) > 0)
+            {
                 u = coerceVector(u, STRSXP);
                 k = LENGTH(u);
                 mrows = (isMatrix(u)) ? nrows(u) : 1;
