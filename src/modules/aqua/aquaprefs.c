@@ -60,7 +60,7 @@ static void SetInitialTabState(WindowRef theWindow);
 void CallFontPanel(void);
 
 /* R Preferences version */
-#define RAquaPrefsVer 4L
+#define RAquaPrefsVer 5L
 
 /* button ID for Preferences panel */
 #define kRFontFacePopUp 1002
@@ -91,6 +91,9 @@ void CallFontPanel(void);
 #define kGrabStdoutBox 6000
 #define kGrabStderrBox 6001
 
+#define kDefaultDirText 6009
+#define kDefaultDirButton 6010
+
 #define kApplyPrefsButton 5000
 #define kCancelPrefsButton 5001
 #define kDefaultPrefsButton 5002
@@ -116,6 +119,7 @@ ControlID AntiAliasingID = {kPrefControlsSig, kAntiAliasingBox};
 ControlID QuartzPosID = {kPrefControlsSig, kQuartzPosPopUp};
 ControlID InputColorID = {kPrefControlsSig, kInputColorText};
 ControlID OutputColorID = {kPrefControlsSig, kOutputColorText};
+ControlID DefaultDirTextID = {kPrefControlsSig, kDefaultDirText};
 ControlID CRANmirrorID = {kPrefControlsSig, kCRANmirrorText};
 ControlID BIOCmirrorID = {kPrefControlsSig, kBIOCmirrorText};
 ControlID GlobalPackagesID = {kPrefControlsSig, kGlobalPackagesBox};
@@ -141,6 +145,7 @@ static int DefaultOverrideRDefaults = 0;
 static int DefaultQuartzPos = 1;
 static char DefaultCRANmirror[] = "http://cran.r-project.org";
 static char DefaultBIOCmirror[] = "http://www.bioconductor.org";
+static char DefaultWorkingDir[] = "~/";
 static int DefaultGlobalPackages = 0;
 static int DefaultGrabStdout = 0;
 static int DefaultGrabStderr = 0;
@@ -160,10 +165,10 @@ void RSetPipes(void);
 /* external symbols from aquaconsole.c */
 extern void RSetColors(void);
 extern void consolecmd(char *cmd);
-extern void OpenStdoutPipe();
-extern void OpenStderrPipe();
-extern void CloseStdoutPipe();
-extern void CloseStderrPipe();
+extern void OpenStdoutPipe(void);
+extern void OpenStderrPipe(void);
+extern void CloseStdoutPipe(void);
+extern void CloseStderrPipe(void);
 
 EventTypeSpec tabControlEvents[] = {{kEventClassControl, kEventControlHit}, {kEventClassCommand, kEventCommandProcess}};
 
@@ -182,7 +187,7 @@ void GetRPrefs(void);
 void SaveRPrefs(void);
 void SaveConsolePosToPrefs(void);
 
-CFStringRef appName, RPrefsVerKey;
+CFStringRef appName, RPrefsVerKey, WorkingDirKey;
 CFStringRef RTabSizeKey, RFontSizeKey, RFontFaceKey, devicefontKey;
 CFStringRef outfgKey, outbgKey, infgKey, inbgKey;
 CFStringRef devWidthKey, devHeightKey, devPSizeKey;
@@ -199,6 +204,7 @@ void SetUpPrefSymbols(void)
     appName = CFSTR("org.r-project.R");
     RPrefsVerKey = CFSTR("R Preference Version");
     RTabSizeKey = CFSTR("R Tab Size");
+    WorkingDirKey = CFSTR("Working Directory");
     RFontSizeKey = CFSTR("R Font Size");
     RFontFaceKey = CFSTR("R Font Face");
     devicefontKey = CFSTR("Device Font");
@@ -241,6 +247,10 @@ OSStatus InstallPrefsHandlers(void)
                                      GenContEventHandlerProc, GetEventTypeCount(okcanxControlEvents),
                                      okcanxControlEvents, RPrefsWindow, NULL);
 
+    err =
+        InstallControlEventHandler(GrabCRef(RPrefsWindow, kPrefControlsSig, kDefaultDirButton), GenContEventHandlerProc,
+                                   GetEventTypeCount(okcanxControlEvents), okcanxControlEvents, RPrefsWindow, NULL);
+
     err = InstallControlEventHandler(GrabCRef(RPrefsWindow, kPrefControlsSig, kDefaultPrefsButton),
                                      GenContEventHandlerProc, GetEventTypeCount(okcanxControlEvents),
                                      okcanxControlEvents, RPrefsWindow, NULL);
@@ -279,10 +289,17 @@ pascal void RPrefsHandler(WindowRef window)
     ControlID versionInfoID = {kRAppSignature, kRVersionInfoID};
     ControlRef versionControl;
     ControlFontStyleRec controlStyle;
+    EventRef RPrefsEvent;
 
     CopyPrefs(&CurrentPrefs, &TempPrefs);
     SetUpPrefsWindow(&TempPrefs);
     SetInitialTabState(window);
+
+    /* We force refresh of the Preference Window */
+    CreateEvent(NULL, kEventClassWindow, kEventWindowUpdate, 0, kEventAttributeNone, &RPrefsEvent);
+    SetEventParameter(RPrefsEvent, kEventParamDirectObject, typeWindowRef, sizeof(typeWindowRef), window);
+    SendEventToEventTarget(RPrefsEvent, GetWindowEventTarget(RPrefsWindow));
+    ReleaseEvent(RPrefsEvent);
 
     ShowWindow(window);
 }
@@ -337,6 +354,7 @@ void SetDefaultPrefs(void)
     DefaultPrefs.QuartzPos = DefaultQuartzPos;
     strcpy(DefaultPrefs.CRANmirror, DefaultCRANmirror);
     strcpy(DefaultPrefs.BIOCmirror, DefaultBIOCmirror);
+    strcpy(DefaultPrefs.WorkingDirectory, DefaultWorkingDir);
     DefaultPrefs.GlobalPackages = DefaultGlobalPackages;
     DefaultPrefs.GrabStdout = DefaultGrabStdout;
     DefaultPrefs.GrabStderr = DefaultGrabStderr;
@@ -364,6 +382,7 @@ void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To)
     To->QuartzPos = From->QuartzPos;
     strcpy(To->CRANmirror, From->CRANmirror);
     strcpy(To->BIOCmirror, From->BIOCmirror);
+    strcpy(To->WorkingDirectory, From->WorkingDirectory);
     To->GlobalPackages = From->GlobalPackages;
     To->GrabStdout = From->GrabStdout;
     To->GrabStderr = From->GrabStderr;
@@ -381,7 +400,7 @@ void GetRPrefs(void)
     CFDataRef color, bounds;
     RGBColor fgout, bgout, fgin, bgin;
     Rect consolebounds;
-    char devicefont[255], CRANmirror[255], BIOCmirror[255];
+    char devicefont[255], CRANmirror[255], BIOCmirror[255], WorkingDir[255];
     int autorefresh, antialiasing, overrideRdef;
     int grabstdout, grabstderr, globalpackages, saveconsolepos, setconsolewidth;
 
@@ -624,6 +643,20 @@ void GetRPrefs(void)
 
     strcpy(CurrentPrefs.BIOCmirror, BIOCmirror);
 
+    /*  Working Directory   */
+    text = CFPreferencesCopyAppValue(WorkingDirKey, appName);
+    if (text)
+    {
+        if (!CFStringGetCString(text, WorkingDir, 255, kCFStringEncodingMacRoman))
+            strcpy(WorkingDir, DefaultPrefs.WorkingDirectory);
+        CFRelease(text);
+        text = NULL;
+    }
+    else
+        strcpy(WorkingDir, DefaultPrefs.WorkingDirectory); /* set default value */
+
+    strcpy(CurrentPrefs.WorkingDirectory, WorkingDir);
+
     /* new packages go in root */
     value = CFPreferencesCopyAppValue(GlobalPackagesKey, appName);
     if (value)
@@ -751,6 +784,17 @@ void SetUpPrefsWindow(RAquaPrefsPointer Settings)
         text = NULL;
     }
 
+    /* Sets the Working Directory  name */
+    GetControlByID(RPrefsWindow, &DefaultDirTextID, &myControl);
+    text = CFStringCreateWithCString(NULL, Settings->WorkingDirectory, kCFStringEncodingMacRoman);
+    if (text)
+    {
+        SetControlData(myControl, kControlEditTextPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &text);
+        DrawOneControl(myControl);
+        CFRelease(text);
+        text = NULL;
+    }
+
     /* Sets color font for Output Console */
     GetControlByID(RPrefsWindow, &OutputColorID, &myControl);
     controlStyle.foreColor = Settings->FGOutputColor;
@@ -839,7 +883,7 @@ void SaveRPrefs(void)
     double devwidth, devheight;
     CFDataRef color, bounds;
     RGBColor fgout, bgout, fgin, bgin;
-    char devicefont[255], cran[255], bioc[255];
+    char devicefont[255], cran[255], bioc[255], workdir[255];
     int autorefresh, antialiasing, overrideRdef;
     long prefver;
     int grabstdout, grabstderr, globalpackages, saveconsolepos, setconsolewidth;
@@ -868,6 +912,7 @@ void SaveRPrefs(void)
     setconsolewidth = CurrentPrefs.SetConsoleWidthOnResize;
     strcpy(bioc, CurrentPrefs.BIOCmirror);
     strcpy(cran, CurrentPrefs.CRANmirror);
+    strcpy(workdir, CurrentPrefs.WorkingDirectory);
 
     /* Prefs Version */
     value = CFNumberCreate(NULL, kCFNumberLongType, &prefver);
@@ -991,6 +1036,15 @@ void SaveRPrefs(void)
     if (text)
     {
         CFPreferencesSetAppValue(BIOCmirrorKey, text, appName);
+        CFRelease(text);
+        text = NULL;
+    }
+
+    /* WorkingDir */
+    text = CFStringCreateWithCString(NULL, workdir, kCFStringEncodingMacRoman);
+    if (text)
+    {
+        CFPreferencesSetAppValue(WorkingDirKey, text, appName);
         CFRelease(text);
         text = NULL;
     }
@@ -1145,6 +1199,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
     ControlFontStyleRec controlStyle;
     ControlRef myControl;
     char cran[255], bioc[255], cmd[600];
+    CFStringRef text;
 
     if (FPIsFontPanelVisible())
         return (eventNotHandledErr);
@@ -1171,6 +1226,24 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
 
     case kCancelPrefsButton:
         HideWindow(theWindow);
+        break;
+
+    case kDefaultDirButton:
+        if (DoSelectDirectory(cmd, "Choose a Startup Working Directory") == noErr)
+        {
+            strcpy(TempPrefs.WorkingDirectory, cmd);
+            text = CFStringCreateWithCString(NULL, cmd, kCFStringEncodingASCII);
+            if (text)
+            {
+                GetControlByID(RPrefsWindow, &DefaultDirTextID, &myControl);
+                SetControlData(myControl, kControlEditTextPart, kControlStaticTextCFStringTag, sizeof(CFStringRef),
+                               &text);
+                controlStyle.flags = kControlUseJustMask;
+                CFRelease(text);
+                text = NULL;
+            }
+            Draw1Control(myControl);
+        }
         break;
 
     case kSavePrefsButton:
@@ -1377,6 +1450,8 @@ void GetDialogPrefs(void)
         CFRelease(text);
         text = NULL;
     }
+
+    strcpy(CurrentPrefs.WorkingDirectory, TempPrefs.WorkingDirectory);
 
     GetControlByID(RPrefsWindow, &GlobalPackagesID, &controlField);
     CurrentPrefs.GlobalPackages = GetControl32BitValue(controlField);

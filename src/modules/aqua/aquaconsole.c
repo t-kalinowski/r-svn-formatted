@@ -153,6 +153,7 @@ void GraphicCopy(WindowPtr window);
 #define kRGUIBusy 1000
 #define kRGUISep 1001
 #define kRGUIText 1002
+#define kRWorkingDirText 1045
 
 #define kRCustomEventClass 'revt'
 #define kRWakeUpPlease 'wake'
@@ -413,8 +414,6 @@ static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyDow
 
 static const EventTypeSpec RReadEvents[] = {{kEventClassRead, kEventRead}};
 
-EventRef WakeUpEvent;
-
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
@@ -487,10 +486,12 @@ TXNMargins txnMargins;
 static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData);
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData);
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData);
+static pascal void WorkingDirTimer(EventLoopTimerRef inTimer, void *inUserData);
 
 EventLoopTimerRef Inst_OtherEventLoops;
 EventLoopTimerRef Inst_ReadStdoutTimer;
 EventLoopTimerRef Inst_FlushConsoleTimer;
+EventLoopTimerRef Inst_WorkingDirTimer;
 
 extern void SaveConsolePosToPrefs(void);
 extern Rect ConsoleWindowBounds;
@@ -663,6 +664,21 @@ extern RSetPipes(void);
 void InitAquaIO(void);
 void CloseAquaIO(void);
 
+void ChangeStartupDir(void);
+
+void ForceConsoleRefresh(void);
+void ForceConsoleRefresh(void)
+{
+    EventRef RConsoleEvent;
+    if (ConsoleWindow)
+    {
+        CreateEvent(NULL, kEventClassWindow, kEventWindowUpdate, 0, kEventAttributeNone, &RConsoleEvent);
+        SetEventParameter(RConsoleEvent, kEventParamDirectObject, typeWindowRef, sizeof(typeWindowRef), ConsoleWindow);
+        SendEventToEventTarget(RConsoleEvent, GetWindowEventTarget(ConsoleWindow));
+        ReleaseEvent(RConsoleEvent);
+    }
+}
+
 void InitAquaIO(void)
 {
     StdoutFName = R_tmpnam("RStdout", R_TempDir);
@@ -685,7 +701,6 @@ void Raqua_StartConsole(Rboolean OpenConsole)
         InitAboutWindow();
 
         GetRPrefs();
-        // fprintf(stderr,"\nfg red=%x, fg blue=%x", CurrentPrefs.FGInputColor.red, CurrentPrefs.FGInputColor.blue);
         RSetPipes();
 
         RepositionWindow(ConsoleWindow, NULL, kWindowCascadeOnMainScreen);
@@ -706,8 +721,6 @@ void Raqua_StartConsole(Rboolean OpenConsole)
         if (SetUPConsole() != noErr)
             goto noconsole;
 
-        CreateEvent(NULL, kRCustomEventClass, kRWakeUpPlease, 0, kEventAttributeNone, &WakeUpEvent);
-
         if (err == noErr)
             InstallPrefsHandlers();
     }
@@ -723,11 +736,12 @@ void Raqua_StartConsole(Rboolean OpenConsole)
             RSetTab();
             RSetFontSize();
             RSetFont();
+            RSetColors();
             if ((cocoaFeatures & cocoa_menu) == 0)
                 SetUpRAquaMenu(); /* if Cocoa provides no menu, we should */
         }
 
-        chdir(R_ExpandFileName("~/"));
+        ChangeStartupDir();
 
         if (R_RestoreHistory)
             Raqua_read_history(R_HistoryFile);
@@ -739,12 +753,17 @@ void Raqua_StartConsole(Rboolean OpenConsole)
                           &Inst_ReadStdoutTimer);
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationMillisecond * 50,
                           NewEventLoopTimerUPP(FlushConsoleTimer), NULL, &Inst_FlushConsoleTimer);
+    InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond * 2, NewEventLoopTimerUPP(WorkingDirTimer), NULL,
+                          &Inst_WorkingDirTimer);
 
     RAqua2Front();
 
     if (ConsoleWindow != NULL)
         if (!WeHaveCocoa)
+        {
             SelectWindow(ConsoleWindow);
+            ForceConsoleRefresh();
+        }
     InitCursor();
 
     if (WeHaveCocoa)
@@ -754,6 +773,31 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 
 noconsole:
     CloseRAquaConsole();
+}
+
+void ShowWorkingDir(void);
+void ShowWorkingDir(void)
+{
+    CFStringRef text;
+    char buf[301];
+    ControlID WorkingDirID = {kRGUI, kRWorkingDirText};
+    ControlRef WorkingDirControl;
+    ControlFontStyleRec controlStyle;
+
+    getcwd(buf, 300);
+    GetControlByID(ConsoleWindow, &WorkingDirID, &WorkingDirControl);
+    SetControlData(WorkingDirControl, kControlEntireControl, kControlStaticTextTextTag, strlen(buf), buf);
+    controlStyle.flags = kControlUseJustMask;
+    controlStyle.just = teFlushLeft;
+    DrawOneControl(WorkingDirControl);
+}
+
+void ChangeStartupDir(void)
+{
+
+    //    chdir(R_ExpandFileName("~/"));
+    chdir(R_ExpandFileName(CurrentPrefs.WorkingDirectory));
+    ShowWorkingDir();
 }
 
 OSStatus InstallAppHandlers(void)
@@ -834,6 +878,11 @@ void SetUpRAquaMenu(void)
     DrawMenuBar();
 }
 
+static pascal void WorkingDirTimer(EventLoopTimerRef inTimer, void *inUserData)
+{
+    ShowWorkingDir();
+}
+
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData)
 {
     Aqua_FlushBuffer();
@@ -858,10 +907,10 @@ void CloseRAquaConsole(void)
 
     TXNTerminateTextension();
 
-    ReleaseEvent(WakeUpEvent);
     RemoveEventLoopTimer(Inst_OtherEventLoops);
     RemoveEventLoopTimer(Inst_ReadStdoutTimer);
     RemoveEventLoopTimer(Inst_FlushConsoleTimer);
+    RemoveEventLoopTimer(Inst_WorkingDirTimer);
 
     CloseAquaIO();
     if (RbundleURL)
@@ -1271,6 +1320,7 @@ void Raqua_ResetConsole()
 /* Stdio support to ensure the console file buffer is flushed */
 void Raqua_FlushConsole()
 {
+    ForceConsoleRefresh();
     Aqua_FlushBuffer();
 }
 
@@ -2016,14 +2066,17 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
             case kRCmdChangeWorkDir:
                 if (DoSelectDirectory(buf, "Choose R Working Directory") == noErr)
                     chdir(buf);
+                ShowWorkingDir();
                 break;
 
             case kRCmdShowWorkDir:
                 consolecmd("getwd()");
+                ShowWorkingDir();
                 break;
 
             case kRCmdResetWorkDir:
-                consolecmd("setwd(\"~/\")");
+                ChangeStartupDir();
+                ShowWorkingDir();
                 break;
 
                 /* Packages menu */
