@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  file dounzip.c
- *  first part Copyright (C) 2002-4  the R Development Core Team
+ *  first part Copyright (C) 2002-5  the R Development Core Team
  *  second part Copyright (C) 1998 Gilles Vollant
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -43,11 +43,9 @@
 static int R_mkdir(char *path)
 {
 #ifdef Win32
-    char *p, local[PATH_MAX];
+    char local[PATH_MAX];
     strcpy(local, path);
-    for (p = local; *p; p++)
-        if (*p == '/')
-            *p = '\\';
+    R_fixbackslash(local);
     return mkdir(local);
 #endif
 #ifdef Unix
@@ -83,9 +81,7 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
         strcat(outname, filename_inzip);
     }
 #ifdef Win32
-    for (p = outname; *p; p++)
-        if (*p == '\\')
-            *p = '/';
+    R_fixslash(outname);
 #endif
     p = outname + strlen(outname) - 1;
     if (*p == '/')
@@ -98,7 +94,7 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
     {
         /* make parents as required: have already checked dest exists */
         pp = outname + strlen(dest) + 1;
-        while ((p = strrchr(pp, '/')))
+        while ((p = Rf_strrchr(pp, '/')))
         {
             strcpy(dirs, outname);
             dirs[p - outname] = '\0';
@@ -282,7 +278,7 @@ static Rboolean unz_open(Rconnection con)
         return FALSE;
     }
     strcpy(path, p);
-    p = strrchr(path, ':');
+    p = Rf_strrchr(path, ':');
     if (!p)
     {
         warning("invalid description of unz connection");
@@ -595,7 +591,7 @@ static int unzlocal_getLong(FILE *fin, uLong *pX)
     return err;
 }
 
-/* My own strcmpi / strcasecmp */
+/* My own strcmpi / strcasecmp NOT USED in R */
 static int strcmpcasenosensitive_internal(const char *fileName1, const char *fileName2)
 {
     for (;;)
@@ -630,10 +626,10 @@ static int strcmpcasenosensitive_internal(const char *fileName1, const char *fil
 
 /*
    Compare two filename (fileName1,fileName2).
-   If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
-   If iCaseSenisivity = 2, comparision is not case sensitivity (like strcmpi
+   If iCaseSensitivity = 1, comparision is case sensitivity (like strcmp)
+   If iCaseSensitivity = 2, comparision is not case sensitivity (like strcmpi
                                                                 or strcasecmp)
-   If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
+   If iCaseSensitivity = 0, case sensitivity is defaut of your operating system
         (like 1 on Unix, 2 on Windows)
 
 */

@@ -1796,7 +1796,7 @@ int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP 
             }
         }
         if (TYPEOF(CAR(call)) == SYMSXP)
-            pt = strrchr(CHAR(PRINTNAME(CAR(call))), '.');
+            pt = Rf_strrchr(CHAR(PRINTNAME(CAR(call))), '.');
         else
             pt = NULL;
 
@@ -1847,7 +1847,7 @@ int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP 
     {
         char *pt;
         if (TYPEOF(CAR(call)) == SYMSXP)
-            pt = strrchr(CHAR(PRINTNAME(CAR(call))), '.');
+            pt = Rf_strrchr(CHAR(PRINTNAME(CAR(call))), '.');
         else
             pt = NULL;
 
@@ -3738,10 +3738,10 @@ char *R_CompiledFileName(char *fname, char *buf, size_t bsize)
     char *basename, *ext;
 
     /* find the base name and the extension */
-    basename = strrchr(fname, FILESEP[0]);
+    basename = Rf_strrchr(fname, FILESEP[0]);
     if (basename == NULL)
         basename = fname;
-    ext = strrchr(basename, '.');
+    ext = Rf_strrchr(basename, '.');
 
     if (ext != NULL && strcmp(ext, R_COMPILED_EXTENSION) == 0)
     {

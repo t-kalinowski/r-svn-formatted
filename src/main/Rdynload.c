@@ -527,7 +527,7 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
         R_osDynSymbol->fixPath(dpath);
 
     /* keep only basename from path */
-    p = strrchr(dpath, FILESEP[0]);
+    p = Rf_strrchr(dpath, FILESEP[0]);
     if (!p)
         p = dpath;
     else

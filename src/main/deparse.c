@@ -644,12 +644,28 @@ static char *backquotify(char *s)
         return s;
 
     *t++ = '`';
-    while (*s)
+#ifdef SUPPORT_MBCS
+    if (mbcslocale && !utf8locale)
     {
-        if (*s == '`' || *s == '\\')
-            *t++ = '\\';
-        *t++ = *s++;
+        mbstate_t mb_st;
+        int j, used;
+        mbs_init(&mb_st);
+        while (used = Mbrtowc(NULL, s, MB_CUR_MAX, &mb_st))
+        {
+            if (*s == '`' || *s == '\\')
+                *t++ = '\\';
+            for (j = 0; j < used; j++)
+                *t++ = *s++;
+        }
     }
+    else
+#endif
+        while (*s)
+        {
+            if (*s == '`' || *s == '\\')
+                *t++ = '\\';
+            *t++ = *s++;
+        }
     *t++ = '`';
     *t = '\0';
     return buf;

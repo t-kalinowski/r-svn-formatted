@@ -1440,7 +1440,7 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (recursive)
     {
         p = dir;
-        while ((p = strchr(p + 1, '/')))
+        while ((p = Rf_strchr(p + 1, '/')))
         {
             *p = '\0';
             res = mkdir(dir, 0777);
@@ -1478,13 +1478,11 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
         recursive = 0;
     strcpy(dir, R_ExpandFileName(CHAR(STRING_ELT(path, 0))));
     /* need DOS paths on Win 9x */
-    for (p = dir; *p != '\0'; p++)
-        if (*p == '/')
-            *p = '\\';
+    R_fixbackslash(dir);
     if (recursive)
     {
         p = dir;
-        while ((p = strchr(p + 1, '\\')))
+        while ((p = Rf_strchr(p + 1, '\\')))
         {
             *p = '\0';
             res = mkdir(dir);
