@@ -522,6 +522,9 @@ FUNTAB R_FunTab[] = {
     {"add.menu.cmd", do_addmenucmd, 0, 11, 2, PP_FUNCALL},
     {"del.menu.cmd", do_delmenucmd, 0, 11, 1, PP_FUNCALL},
     {"get.menu.cmd", do_getmenucmd, 0, 11, 1, PP_FUNCALL},
+    {"get.num.cmd", do_getnumcmd, 0, 11, 1, PP_FUNCALL},
+    {"del.num.cmd", do_delnumcmd, 0, 11, 1, PP_FUNCALL},
+    {"del.usr.cmd", do_delusrcmd, 0, 11, 0, PP_FUNCALL},
 #endif
     {"parse", do_parse, 0, 11, 4, PP_FUNCALL},
     {"save", do_save, 0, 111, 5, PP_FUNCALL},
