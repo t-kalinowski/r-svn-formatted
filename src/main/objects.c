@@ -1039,7 +1039,14 @@ SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     PROTECT(args);
     PROTECT(arg = CAR(args));
+    if (!isValidStringF(arg))
+        error("Argument to standardGeneric must be a non-empty character string");
+
     PROTECT(fdef = get_this_generic(args));
+
+    if (isNull(fdef))
+        error("Call to standardGeneric(\"", CHAR(STRING_ELT(arg, 0)),
+              "\") apparently not from the body of that generic function");
 
     value = (*ptr)(arg, env, fdef);
 
@@ -1225,7 +1232,7 @@ argument to standardGeneric.
 */
 static SEXP get_this_generic(SEXP args)
 {
-    SEXP rval = NULL;
+    SEXP value = R_NilValue, rval;
     static SEXP gen_name;
     int i, n;
     RCNTXT *cptr;
@@ -1250,11 +1257,14 @@ static SEXP get_this_generic(SEXP args)
         {
             SEXP generic = getAttrib(rval, gen_name);
             if (TYPEOF(generic) == STRSXP && !strcmp(CHAR(asChar(generic)), fname))
+            {
+                value = rval;
                 break;
+            }
         }
     }
     UNPROTECT(1);
-    return (rval);
+    return (value);
 }
 
 /* Could there be methods for this op?	Checks
