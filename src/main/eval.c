@@ -994,13 +994,6 @@ void CheckFormals(SEXP ls)
                 error("invalid formal argument list for \"function\"\n");
 }
 
-/* Error recovery for incorrect argument count error. */
-
-void WrongArgCount(char *s)
-{
-    error("incorrect number of arguments to \"%s\"\n", s);
-}
-
 /* Evaluate the first argument in the environment specified by */
 /* the second argument. */
 
