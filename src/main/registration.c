@@ -266,9 +266,8 @@ static R_CallMethodDef callMethods[] = {
 #name, (DL_FUNC)&name, -1                                                                                      \
     }
 
-static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags), EXTDEF(call_dqagi), EXTDEF(PicTeX),
-                                                EXTDEF(PostScript), EXTDEF(XFig),       EXTDEF(PDF),
-                                                {NULL, NULL, 0}};
+static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags), EXTDEF(call_dqagi), EXTDEF(PostScript),
+                                                EXTDEF(XFig),       EXTDEF(PDF),        {NULL, NULL, 0}};
 
 #define FDEF(name)                                                                                                     \
     {                                                                                                                  \
