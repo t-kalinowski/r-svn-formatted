@@ -1192,7 +1192,7 @@ SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, nn));
     for (nread = 0; nread < nnn; nread++)
     {
-        if (nread > nn)
+        if (nread >= nn)
         {
             ans2 = allocVector(STRSXP, 2 * nn);
             for (i = 0; i < nn; i++)
