@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2000  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1995-2001  Robert Gentleman, Ross Ihaka and the
  *			     R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,11 @@
                 sum = NA_REAL;                                                                                         \
             }                                                                                                          \
             else                                                                                                       \
+            {                                                                                                          \
                 sum = (sum / n1) / (xsd * ysd);                                                                        \
+                if (sum > 1.)                                                                                          \
+                    sum = 1.;                                                                                          \
+            }                                                                                                          \
         }                                                                                                              \
         else                                                                                                           \
             sum /= n1;                                                                                                 \
@@ -109,6 +113,8 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
 }
 #undef COV_PAIRWISE_BODY
 
+#define ANS(I, J) ans[I + J * ncx]
+
 static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, double *ans, int *sd_0, int cor)
 
 {
@@ -126,7 +132,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
     {
         for (i = 0; i < ncx; i++)
             for (j = 0; j < ncx; j++)
-                ans[i + j * ncx] = NA_REAL;
+                ANS(i, j) = NA_REAL;
         return;
     }
     /* variable means */
@@ -152,14 +158,14 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
             for (k = 0; k < n; k++)
                 if (ind[k] != 0)
                     sum += (xx[k] - xxm) * (yy[k] - yym);
-            ans[j + i * ncx] = ans[i + j * ncx] = sum / (nobs - 1);
+            ANS(j, i) = ANS(i, j) = sum / (nobs - 1);
         }
     }
 
     if (cor)
     {
         for (i = 0; i < ncx; i++)
-            xm[i] = sqrt(ans[i + i * ncx]);
+            xm[i] = sqrt(ANS(i, i));
         for (i = 0; i < ncx; i++)
         {
             for (j = 0; j < i; j++)
@@ -167,15 +173,21 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                 if (xm[i] == 0 || xm[j] == 0)
                 {
                     *sd_0 = 1;
-                    ans[j + i * ncx] = ans[i + j * ncx] = NA_REAL;
+                    ANS(j, i) = ANS(i, j) = NA_REAL;
                 }
                 else
-                    ans[j + i * ncx] = ans[i + j * ncx] /= (xm[i] * xm[j]);
+                {
+                    sum = ANS(i, j) / (xm[i] * xm[j]);
+                    if (sum > 1.)
+                        sum = 1.;
+                    ANS(j, i) = ANS(i, j) = sum;
+                }
             }
-            ans[i + i * ncx] = 1.0;
+            ANS(i, i) = 1.0;
         }
     }
 }
+
 static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double *xm, double *ym, int *ind, double *ans,
                           int *sd_0, int cor)
 {
@@ -193,7 +205,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
     {
         for (i = 0; i < ncx; i++)
             for (j = 0; j < ncy; j++)
-                ans[i + j * ncx] = NA_REAL;
+                ANS(i, j) = NA_REAL;
         return;
     }
     /* variable means */
@@ -229,7 +241,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
             for (k = 0; k < n; k++)
                 if (ind[k] != 0)
                     sum += (xx[k] - xxm) * (yy[k] - yym);
-            ans[i + j * ncx] = sum / n1;
+            ANS(i, j) = sum / n1;
         }
     }
 
@@ -256,20 +268,23 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
             ym[j] = sqrt(sum / n1);
         }
         for (i = 0; i < ncx; i++)
-        {
             for (j = 0; j < ncy; j++)
-            {
                 if (xm[i] == 0. || ym[j] == 0.)
                 {
                     *sd_0 = 1;
-                    ans[i + j * ncx] = NA_REAL;
+                    ANS(i, j) = NA_REAL;
                 }
                 else
-                    ans[i + j * ncx] /= (xm[i] * ym[j]);
-            }
-        }
-    }
-}
+                {
+                    ANS(i, j) /= (xm[i] * ym[j]);
+                    if (ANS(i, j) > 1.)
+                        ANS(i, j) = 1.;
+                }
+    } /* cor */
+
+} /* cov_complete2 */
+
+#undef ANS
 
 /* This might look slightly inefficient, but it is designed to
  * optimise paging in virtual memory systems ...
@@ -315,7 +330,7 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind, i
 #undef COMPLETE_1
 
 /* cov | cor( x, y, use = {1,		2,		3}
-                    "all.obs", "complete.obs", "pairwise.complete.obs") */
+            "all.obs", "complete.obs", "pairwise.complete.obs") */
 SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y, ans, xm, ym, ind;
