@@ -162,11 +162,11 @@ static int R_AppendFile(char *file1, char *file2)
     FILE *fp1, *fp2;
     char buf[APPENDBUFSIZE];
     int nchar, status = 0;
-    if ((fp1 = fopen(file1, "a")) == NULL)
+    if ((fp1 = R_fopen(R_ExpandFileName(file1), "a")) == NULL)
     {
         return 0;
     }
-    if ((fp2 = fopen(file2, "r")) == NULL)
+    if ((fp2 = R_fopen(R_ExpandFileName(file2), "r")) == NULL)
     {
         fclose(fp1);
         return 0;
@@ -213,8 +213,7 @@ SEXP do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (STRING(f1)[i % n1] == R_NilValue || STRING(f2)[i % n2] == R_NilValue)
             LOGICAL(ans)[i] = 0;
         else
-            LOGICAL(ans)
-            [i] = R_AppendFile(R_ExpandFileName(CHAR(STRING(f1)[i % n1])), R_ExpandFileName(CHAR(STRING(f2)[i % n2])));
+            LOGICAL(ans)[i] = R_AppendFile(CHAR(STRING(f1)[i % n1]), CHAR(STRING(f2)[i % n2]));
     }
     UNPROTECT(1);
     return ans;
@@ -234,7 +233,7 @@ SEXP do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         LOGICAL(ans)[i] = 0;
-        if (STRING(fn)[i] != R_NilValue && (fp = fopen(CHAR(STRING(fn)[i]), "w")) != NULL)
+        if (STRING(fn)[i] != R_NilValue && (fp = R_fopen(R_ExpandFileName(CHAR(STRING(fn)[i])), "w")) != NULL)
         {
             LOGICAL(ans)[i] = 1;
             fclose(fp);
