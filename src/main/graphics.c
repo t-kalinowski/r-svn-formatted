@@ -2869,6 +2869,7 @@ void clipPoint(Edge b, double x, double y, double *xout, double *yout, int *cnt,
     /* For all, if point is 'inside' */
     /* proceed to next clip edge, if any */
     if (inside(b, x, y, clip))
+    {
         if (b < Top)
             clipPoint(b + 1, x, y, xout, yout, cnt, store, clip, cs);
         else
@@ -2880,6 +2881,7 @@ void clipPoint(Edge b, double x, double y, double *xout, double *yout, int *cnt,
             }
             (*cnt)++;
         }
+    }
 }
 
 void closeClip(double *xout, double *yout, int *cnt, int store, GClipRect *clip, GClipState *cs)
@@ -3052,7 +3054,7 @@ double GStrHeight(char *str, int units, DevDesc *dd)
 void GText(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
 {
     /* Deallocate any prior string buffer */
-    static *sbuf = NULL;
+    static char *sbuf = NULL;
     if (sbuf)
     {
         free(sbuf);

@@ -1440,249 +1440,249 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(CDR(args) = EvalSubassignArgs(CDR(args), rho));
     SubAssignArgs(args, &x, &subs, &y);
 
-#if 0
-<<<<<<< subassign.c
-#endif
     /* Handle NULL left-hand sides.  If the right-hand side */
     /* is NULL, just return the left-hand size otherwise, */
     /* convert to a zero length list (VECSXP). */
 
-    if (isNull(x)) {
-        if (isNull(y)) {
+    if (isNull(x))
+    {
+        if (isNull(y))
+        {
             UNPROTECT(1);
-	    return x;
+            return x;
         }
         UNPROTECT(1);
         PROTECT(x = allocVector(TYPEOF(y), 0));
-#if 0
-=======
-    if (length(x) == 0) {
-	if (length(y) > 1)
-	    x = coerceVector(x, VECSXP);
-	else if (length(y) == 1) {
-	    if (TYPEOF(x) != VECSXP)
-		x = coerceVector(x, TYPEOF(y));
-	}
-	else {
-	    UNPROTECT(1);
-	    return(x);
-	}
->>>>>>> 1.28.2.5
-#endif
     }
 
     /* Ensure that the LHS is a local variable. */
     /* If it is not, then make a local copy. */
 
-    if (NAMED(x) == 2) {
-	CAR(args) = x = duplicate(x);
+    if (NAMED(x) == 2)
+    {
+        CAR(args) = x = duplicate(x);
     }
     dims = getAttrib(x, R_DimSymbol);
     ndims = length(dims);
     nsubs = length(subs);
 
     stretch = 0;
-    if (isVector(x)) {
-	if (!isVectorList(x) && LENGTH(y) > 1)
-	    error("more elements supplied than there are to replace\n");
-	if (nsubs == 1) {
-	    offset = OneIndex(x, CAR(subs), length(x), 0, &newname);
-	    if (isVectorList(x) && isNull(y)) {
-		x = DeleteOneVectorListItem(x, offset);
-		UNPROTECT(1);
-		return x;
-	    }
-	    if (offset < 0)
-		error("[[]] subscript out of bounds\n");
-	    if (offset >= LENGTH(x))
-		    stretch = offset + 1;
-	}
-	else {
-	    if (ndims != nsubs)
-		error("[[]] improper number of subscripts\n");
-	    PROTECT(index = allocVector(INTSXP, ndims));
-	    names = getAttrib(x, R_DimNamesSymbol);
-	    for (i = 0; i < ndims; i++) {
-		INTEGER(index)[i] = get1index(CAR(subs), isNull(names) ?
-					      R_NilValue : VECTOR(names)[i],
-					      INTEGER(dims)[i],
-					      0);
-		subs = CDR(subs);
-		if (INTEGER(index)[i] < 0 ||
-		    INTEGER(index)[i] >= INTEGER(dims)[i])
-		    error("[[]] subscript out of bounds\n");
-	    }
-	    offset = 0;
-	    for (i = (ndims - 1); i > 0; i--)
-		offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
-	    offset += INTEGER(index)[0];
-	    UNPROTECT(1);
-	}
-	which = 100 * TYPEOF(x) + TYPEOF(y);
+    if (isVector(x))
+    {
+        if (!isVectorList(x) && LENGTH(y) > 1)
+            error("more elements supplied than there are to replace\n");
+        if (nsubs == 1)
+        {
+            offset = OneIndex(x, CAR(subs), length(x), 0, &newname);
+            if (isVectorList(x) && isNull(y))
+            {
+                x = DeleteOneVectorListItem(x, offset);
+                UNPROTECT(1);
+                return x;
+            }
+            if (offset < 0)
+                error("[[]] subscript out of bounds\n");
+            if (offset >= LENGTH(x))
+                stretch = offset + 1;
+        }
+        else
+        {
+            if (ndims != nsubs)
+                error("[[]] improper number of subscripts\n");
+            PROTECT(index = allocVector(INTSXP, ndims));
+            names = getAttrib(x, R_DimNamesSymbol);
+            for (i = 0; i < ndims; i++)
+            {
+                INTEGER(index)
+                [i] = get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR(names)[i], INTEGER(dims)[i], 0);
+                subs = CDR(subs);
+                if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
+                    error("[[]] subscript out of bounds\n");
+            }
+            offset = 0;
+            for (i = (ndims - 1); i > 0; i--)
+                offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
+            offset += INTEGER(index)[0];
+            UNPROTECT(1);
+        }
+        which = 100 * TYPEOF(x) + TYPEOF(y);
 
-	SubassignTypeFix(&x, &y, which, stretch, 2);
-	PROTECT(x);
+        SubassignTypeFix(&x, &y, which, stretch, 2);
+        PROTECT(x);
 
-	switch (which) {
+        switch (which)
+        {
 
-	case 1010:	/* logical   <- logical	  */
-	case 1310:	/* integer   <- logical	  */
-	case 1013:	/* logical   <- integer	  */
-	case 1313:	/* integer   <- integer	  */
+        case 1010: /* logical   <- logical	  */
+        case 1310: /* integer   <- logical	  */
+        case 1013: /* logical   <- integer	  */
+        case 1313: /* integer   <- integer	  */
 
-	    INTEGER(x)[offset] = INTEGER(y)[0];
-	    break;
+            INTEGER(x)[offset] = INTEGER(y)[0];
+            break;
 
-	case 1410:	/* real	     <- logical	  */
-	case 1413:	/* real	     <- integer	  */
+        case 1410: /* real	     <- logical	  */
+        case 1413: /* real	     <- integer	  */
 
-	    if (INTEGER(y)[0] == NA_INTEGER)
-		REAL(x)[offset] = NA_REAL;
-	    else
-		REAL(x)[offset] = INTEGER(y)[0];
-	    break;
+            if (INTEGER(y)[0] == NA_INTEGER)
+                REAL(x)[offset] = NA_REAL;
+            else
+                REAL(x)[offset] = INTEGER(y)[0];
+            break;
 
-	case 1014:	/* logical   <- real	  */
-	case 1314:	/* integer   <- real	  */
-	case 1414:	/* real	     <- real	  */
+        case 1014: /* logical   <- real	  */
+        case 1314: /* integer   <- real	  */
+        case 1414: /* real	     <- real	  */
 
-	    REAL(x)[offset] = REAL(y)[0];
-	    break;
+            REAL(x)[offset] = REAL(y)[0];
+            break;
 
-	case 1510:	/* complex   <- logical	  */
-	case 1513:	/* complex   <- integer	  */
+        case 1510: /* complex   <- logical	  */
+        case 1513: /* complex   <- integer	  */
 
-	    if (INTEGER(y)[0] == NA_INTEGER) {
-		COMPLEX(x)[offset].r = NA_REAL;
-		COMPLEX(x)[offset].i = NA_REAL;
-	    }
-	    else {
-		COMPLEX(x)[offset].r = INTEGER(y)[0];
-		COMPLEX(x)[offset].i = 0.0;
-	    }
-	    break;
+            if (INTEGER(y)[0] == NA_INTEGER)
+            {
+                COMPLEX(x)[offset].r = NA_REAL;
+                COMPLEX(x)[offset].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(x)[offset].r = INTEGER(y)[0];
+                COMPLEX(x)[offset].i = 0.0;
+            }
+            break;
 
-	case 1514:	/* complex   <- real	  */
+        case 1514: /* complex   <- real	  */
 
-	    if (ISNA(REAL(y)[0])) {
-		COMPLEX(x)[offset].r = NA_REAL;
-		COMPLEX(x)[offset].i = NA_REAL;
-	    }
-	    else {
-		COMPLEX(x)[offset].r = REAL(y)[0];
-		COMPLEX(x)[offset].i = 0.0;
-	    }
-	    break;
+            if (ISNA(REAL(y)[0]))
+            {
+                COMPLEX(x)[offset].r = NA_REAL;
+                COMPLEX(x)[offset].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(x)[offset].r = REAL(y)[0];
+                COMPLEX(x)[offset].i = 0.0;
+            }
+            break;
 
-	case 1015:	/* logical   <- complex	  */
-	case 1315:	/* integer   <- complex	  */
-	case 1415:	/* real	     <- complex	  */
-	case 1515:	/* complex   <- complex	  */
+        case 1015: /* logical   <- complex	  */
+        case 1315: /* integer   <- complex	  */
+        case 1415: /* real	     <- complex	  */
+        case 1515: /* complex   <- complex	  */
 
-	    COMPLEX(x)[offset] = COMPLEX(y)[0];
-	    break;
+            COMPLEX(x)[offset] = COMPLEX(y)[0];
+            break;
 
-	case 1610:	/* character <- logical	  */
-	case 1613:	/* character <- integer	  */
-	case 1614:	/* character <- real	  */
-	case 1615:	/* character <- complex	  */
-	case 1616:	/* character <- character */
-	case 1016:	/* logical   <- character */
-	case 1316:	/* integer   <- character */
-	case 1416:	/* real	     <- character */
-	case 1516:	/* complex   <- character */
+        case 1610: /* character <- logical	  */
+        case 1613: /* character <- integer	  */
+        case 1614: /* character <- real	  */
+        case 1615: /* character <- complex	  */
+        case 1616: /* character <- character */
+        case 1016: /* logical   <- character */
+        case 1316: /* integer   <- character */
+        case 1416: /* real	     <- character */
+        case 1516: /* complex   <- character */
 
-	    STRING(x)[offset] = STRING(y)[0];
-	    break;
+            STRING(x)[offset] = STRING(y)[0];
+            break;
 
-	case 1019:      /* logical    <- vector     */
-	case 1319:      /* integer    <- vector     */
-	case 1419:      /* real       <- vector     */
-	case 1519:      /* complex    <- vector     */
-	case 1619:      /* character  <- vector     */
+        case 1019: /* logical    <- vector     */
+        case 1319: /* integer    <- vector     */
+        case 1419: /* real       <- vector     */
+        case 1519: /* complex    <- vector     */
+        case 1619: /* character  <- vector     */
 
-	case 1901:	/* vector     <- symbol	    */
-	case 1906:	/* vector     <- language   */
-	case 1910:      /* vector     <- logical    */
-	case 1913:      /* vector     <- integer    */
-	case 1914:      /* vector     <- real       */
-	case 1915:      /* vector     <- complex    */
-	case 1916:      /* vector     <- character  */
+        case 1901: /* vector     <- symbol	    */
+        case 1906: /* vector     <- language   */
+        case 1910: /* vector     <- logical    */
+        case 1913: /* vector     <- integer    */
+        case 1914: /* vector     <- real       */
+        case 1915: /* vector     <- complex    */
+        case 1916: /* vector     <- character  */
 
-	    VECTOR(x)[offset] = VECTOR(y)[0];
-	    break;
+            VECTOR(x)[offset] = VECTOR(y)[0];
+            break;
 
-	case 2001:	/* expression <- symbol	    */
-	case 2006:	/* expression <- language   */
-	case 2010:	/* expression <- logical    */
-	case 2013:	/* expression <- integer    */
-	case 2014:	/* expression <- real	    */
-	case 2015:	/* expression <- complex    */
-	case 2016:	/* expression <- character  */
-	case 1919:      /* vector     <- vector     */
-	case 2020:	/* expression <- expression */
+        case 2001: /* expression <- symbol	    */
+        case 2006: /* expression <- language   */
+        case 2010: /* expression <- logical    */
+        case 2013: /* expression <- integer    */
+        case 2014: /* expression <- real	    */
+        case 2015: /* expression <- complex    */
+        case 2016: /* expression <- character  */
+        case 1919: /* vector     <- vector     */
+        case 2020: /* expression <- expression */
 
-            if( NAMED(y) ) y = duplicate(y);
-	    VECTOR(x)[offset] = y;
-	    break;
+            if (NAMED(y))
+                y = duplicate(y);
+            VECTOR(x)[offset] = y;
+            break;
 
-	default:
-	    error("incompatible types in subset assignment\n");
-	}
-	/* If we stretched, we may have a new name. */
-	/* In this case we must create a names attribute */
-	/* (if it doesn't already exist) and set the new */
-	/* value in the names attribute. */
-	if (stretch && newname != R_NilValue) {
-	    names = getAttrib(x, R_NamesSymbol);
-	    if (names == R_NilValue) {
-		PROTECT(names = allocVector(STRSXP, length(x)));
-		STRING(names)[offset] = newname;
-		setAttrib(x, R_NamesSymbol, names);
-		UNPROTECT(1);
-	    }
-	    else
-		STRING(names)[offset] = newname;
-	}
-	UNPROTECT(1);
+        default:
+            error("incompatible types in subset assignment\n");
+        }
+        /* If we stretched, we may have a new name. */
+        /* In this case we must create a names attribute */
+        /* (if it doesn't already exist) and set the new */
+        /* value in the names attribute. */
+        if (stretch && newname != R_NilValue)
+        {
+            names = getAttrib(x, R_NamesSymbol);
+            if (names == R_NilValue)
+            {
+                PROTECT(names = allocVector(STRSXP, length(x)));
+                STRING(names)[offset] = newname;
+                setAttrib(x, R_NamesSymbol, names);
+                UNPROTECT(1);
+            }
+            else
+                STRING(names)[offset] = newname;
+        }
+        UNPROTECT(1);
     }
-    else if (isList(x) || isLanguage(x)) {
-	/* if (NAMED(y)) */
-	y = duplicate(y);
-	PROTECT(y);
-	if (nsubs == 1) {
-	    if (isNull(y)) {
-		x = listRemove(x, CAR(subs));
-	    }
-	    else {
-		PROTECT(y = CONS(y, R_NilValue));
-		x = SimpleListAssign(call, x, subs, y);
-		UNPROTECT(1);
-	    }
-	}
-	else {
-	    if (ndims != nsubs)
-		error("[[]] improper number of subscripts\n");
-	    PROTECT(index = allocVector(INTSXP, ndims));
-	    names = getAttrib(x, R_DimNamesSymbol);
-	    for (i = 0; i < ndims; i++) {
-		INTEGER(index)[i] = get1index(CAR(subs), CAR(names),
-					      INTEGER(dims)[i], 0);
-		subs = CDR(subs);
-		if (INTEGER(index)[i] < 0 ||
-		    INTEGER(index)[i] >= INTEGER(dims)[i])
-		    error("[[]] subscript out of bounds\n");
-	    }
-	    offset = 0;
-	    for (i = (ndims - 1); i > 0; i--)
-		offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
-	    offset += INTEGER(index)[0];
-	    CAR(nthcdr(x, offset)) = duplicate(y);
-	    UNPROTECT(1);
-	}
-	UNPROTECT(1);
+    else if (isList(x) || isLanguage(x))
+    {
+        /* if (NAMED(y)) */
+        y = duplicate(y);
+        PROTECT(y);
+        if (nsubs == 1)
+        {
+            if (isNull(y))
+            {
+                x = listRemove(x, CAR(subs));
+            }
+            else
+            {
+                PROTECT(y = CONS(y, R_NilValue));
+                x = SimpleListAssign(call, x, subs, y);
+                UNPROTECT(1);
+            }
+        }
+        else
+        {
+            if (ndims != nsubs)
+                error("[[]] improper number of subscripts\n");
+            PROTECT(index = allocVector(INTSXP, ndims));
+            names = getAttrib(x, R_DimNamesSymbol);
+            for (i = 0; i < ndims; i++)
+            {
+                INTEGER(index)[i] = get1index(CAR(subs), CAR(names), INTEGER(dims)[i], 0);
+                subs = CDR(subs);
+                if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
+                    error("[[]] subscript out of bounds\n");
+            }
+            offset = 0;
+            for (i = (ndims - 1); i > 0; i--)
+                offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
+            offset += INTEGER(index)[0];
+            CAR(nthcdr(x, offset)) = duplicate(y);
+            UNPROTECT(1);
+        }
+        UNPROTECT(1);
     }
-    else errorcall(gcall, "object is not subsetable\n");
+    else
+        errorcall(gcall, "object is not subsetable\n");
 
     UNPROTECT(1);
     NAMED(x) = 0;
@@ -1699,131 +1699,153 @@ SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(x = eval(CAR(args), env));
     val = CADDR(args);
-    if (NAMED(val)) val = duplicate(val);
+    if (NAMED(val))
+        val = duplicate(val);
     PROTECT(val);
 
-    if ((isList(x) || isLanguage(x)) && !isNull(x)) {
-	nlist = CADR(args);
-	if (isString(nlist))
-	    nlist = install(CHAR(STRING(nlist)[0]));
-	if (TAG(x) == nlist) {
-	    if (val == R_NilValue) {
-		ATTRIB(CDR(x)) = ATTRIB(x);
-		OBJECT(CDR(x)) = OBJECT(x);
-		NAMED(CDR(x)) = NAMED(x);
-		x = CDR(x);
-	    }
-	    else
-		CAR(x) = val;
-	}
-	else {
-	    for (t = x; t != R_NilValue; t = CDR(t))
-		if (TAG(CDR(t)) == nlist) {
-		    if (val == R_NilValue)
-			CDR(t) = CDDR(t);
-		    else
-			CAR(CDR(t)) = val;
-		    break;
-		}
-		else if (CDR(t) == R_NilValue && val != R_NilValue) {
-		    SETCDR(t, allocSExp(LISTSXP));
-		    TAG(CDR(t)) = nlist;
-		    CADR(t) = val;
-		    break;
-		}
-	}
-	if (x == R_NilValue && val != R_NilValue) {
-	    x = allocList(1);
-	    CAR(x) = val;
-	    TAG(x) = nlist;
-	}
+    if ((isList(x) || isLanguage(x)) && !isNull(x))
+    {
+        nlist = CADR(args);
+        if (isString(nlist))
+            nlist = install(CHAR(STRING(nlist)[0]));
+        if (TAG(x) == nlist)
+        {
+            if (val == R_NilValue)
+            {
+                ATTRIB(CDR(x)) = ATTRIB(x);
+                OBJECT(CDR(x)) = OBJECT(x);
+                NAMED(CDR(x)) = NAMED(x);
+                x = CDR(x);
+            }
+            else
+                CAR(x) = val;
+        }
+        else
+        {
+            for (t = x; t != R_NilValue; t = CDR(t))
+                if (TAG(CDR(t)) == nlist)
+                {
+                    if (val == R_NilValue)
+                        CDR(t) = CDDR(t);
+                    else
+                        CAR(CDR(t)) = val;
+                    break;
+                }
+                else if (CDR(t) == R_NilValue && val != R_NilValue)
+                {
+                    SETCDR(t, allocSExp(LISTSXP));
+                    TAG(CDR(t)) = nlist;
+                    CADR(t) = val;
+                    break;
+                }
+        }
+        if (x == R_NilValue && val != R_NilValue)
+        {
+            x = allocList(1);
+            CAR(x) = val;
+            TAG(x) = nlist;
+        }
     }
-    else {
-	int i, imatch, nx;
-	SEXP names;
+    else
+    {
+        int i, imatch, nx;
+        SEXP names;
 
-	if (!(isNewList(x) || isExpression(x))) {
-	    warning("Coercing LHS to a list");
-	    x = coerceVector(x, VECSXP);
-	}
-	names = getAttrib(x, R_NamesSymbol);
-	nx = length(x);
-	nlist = CADR(args);
-	if (isString(nlist))
-	    nlist = STRING(nlist)[0];
-	else
-	    nlist = PRINTNAME(nlist);
-	if (isNull(val)) {
-	    /* If "val" is NULL, this is an element deletion */
-	    /* if there is a match to "nlist" otherwise "x" */
-	    /* is unchanged.  The attributes need adjustment. */
-	    if (names != R_NilValue) {
-		imatch = -1;
-		for (i = 0; i < nx; i++)
-		    if (NonNullStringMatch(STRING(names)[i], nlist)) {
-			imatch = i;
-			break;
-		    }
-		if (imatch >= 0) {
-		    SEXP ans, ansnames;
-		    int ii;
-		    PROTECT(ans = allocVector(VECSXP, nx - 1));
-		    PROTECT(ansnames = allocVector(STRSXP, nx - 1));
-		    for (i = 0, ii = 0; i < nx; i++)
-			if (i != imatch) {
-			    VECTOR(ans)[ii] = VECTOR(x)[i];
-			    STRING(ansnames)[ii] = STRING(names)[i];
-			    ii++;
-			}
-		    setAttrib(ans, R_NamesSymbol, ansnames);
-		    copyMostAttrib(x, ans);
-		    UNPROTECT(2);
-		    x = ans;
-		}
-		/* else x is unchanged */
-	    }
-	}
-	else {
-	    /* If "val" is non-NULL, we are either replacing */
-	    /* an existing list element or we are adding a new */
-	    /* element. */
-	    imatch = -1;
-	    if (!isNull(names)) {
-		for (i = 0; i < nx; i++)
-		    if (NonNullStringMatch(STRING(names)[i], nlist)) {
-			imatch = i;
-			break;
-		    }
-	    }
-	    if (imatch >= 0) {
-		/* We are just replacing an element */
-		VECTOR(x)[imatch] = val;
-	    }
-	    else {
-		/* We are introducing a new element. */
-		/* Enlarge the list, add the new element */
-		/* and finally, adjust the attributes. */
-		SEXP ans, ansnames;
-		PROTECT(ans = allocVector(VECSXP, nx + 1));
-		PROTECT(ansnames = allocVector(STRSXP, nx + 1));
-		for (i = 0; i < nx; i++)
-		    VECTOR(ans)[i] = VECTOR(x)[i];
-		if (isNull(names)) {
-		    for (i = 0; i < nx; i++)
-			STRING(ansnames)[i] = R_BlankString;
-		}
-		else {
-		    for (i = 0; i < nx; i++)
-			STRING(ansnames)[i] = STRING(names)[i];
-		}
-		VECTOR(ans)[nx] = val;
-		STRING(ansnames)[nx] = nlist;
-		setAttrib(ans, R_NamesSymbol, ansnames);
-		copyMostAttrib(x, ans);
-		UNPROTECT(2);
-		x = ans;
-	    }
-	}
+        if (!(isNewList(x) || isExpression(x)))
+        {
+            warning("Coercing LHS to a list");
+            x = coerceVector(x, VECSXP);
+        }
+        names = getAttrib(x, R_NamesSymbol);
+        nx = length(x);
+        nlist = CADR(args);
+        if (isString(nlist))
+            nlist = STRING(nlist)[0];
+        else
+            nlist = PRINTNAME(nlist);
+        if (isNull(val))
+        {
+            /* If "val" is NULL, this is an element deletion */
+            /* if there is a match to "nlist" otherwise "x" */
+            /* is unchanged.  The attributes need adjustment. */
+            if (names != R_NilValue)
+            {
+                imatch = -1;
+                for (i = 0; i < nx; i++)
+                    if (NonNullStringMatch(STRING(names)[i], nlist))
+                    {
+                        imatch = i;
+                        break;
+                    }
+                if (imatch >= 0)
+                {
+                    SEXP ans, ansnames;
+                    int ii;
+                    PROTECT(ans = allocVector(VECSXP, nx - 1));
+                    PROTECT(ansnames = allocVector(STRSXP, nx - 1));
+                    for (i = 0, ii = 0; i < nx; i++)
+                        if (i != imatch)
+                        {
+                            VECTOR(ans)[ii] = VECTOR(x)[i];
+                            STRING(ansnames)[ii] = STRING(names)[i];
+                            ii++;
+                        }
+                    setAttrib(ans, R_NamesSymbol, ansnames);
+                    copyMostAttrib(x, ans);
+                    UNPROTECT(2);
+                    x = ans;
+                }
+                /* else x is unchanged */
+            }
+        }
+        else
+        {
+            /* If "val" is non-NULL, we are either replacing */
+            /* an existing list element or we are adding a new */
+            /* element. */
+            imatch = -1;
+            if (!isNull(names))
+            {
+                for (i = 0; i < nx; i++)
+                    if (NonNullStringMatch(STRING(names)[i], nlist))
+                    {
+                        imatch = i;
+                        break;
+                    }
+            }
+            if (imatch >= 0)
+            {
+                /* We are just replacing an element */
+                VECTOR(x)[imatch] = val;
+            }
+            else
+            {
+                /* We are introducing a new element. */
+                /* Enlarge the list, add the new element */
+                /* and finally, adjust the attributes. */
+                SEXP ans, ansnames;
+                PROTECT(ans = allocVector(VECSXP, nx + 1));
+                PROTECT(ansnames = allocVector(STRSXP, nx + 1));
+                for (i = 0; i < nx; i++)
+                    VECTOR(ans)[i] = VECTOR(x)[i];
+                if (isNull(names))
+                {
+                    for (i = 0; i < nx; i++)
+                        STRING(ansnames)[i] = R_BlankString;
+                }
+                else
+                {
+                    for (i = 0; i < nx; i++)
+                        STRING(ansnames)[i] = STRING(names)[i];
+                }
+                VECTOR(ans)[nx] = val;
+                STRING(ansnames)[nx] = nlist;
+                setAttrib(ans, R_NamesSymbol, ansnames);
+                copyMostAttrib(x, ans);
+                UNPROTECT(2);
+                x = ans;
+            }
+        }
     }
     UNPROTECT(2);
     NAMED(x) = 0;

@@ -71,7 +71,15 @@ double fround(double x, double digits)
 {
     double pow10, sgn, intx;
     static double maxdigits = DBL_DIG - 1;
+    /* FIXME: Hmm, have quite a host of these:
 
+       1) ./fprec.c   uses  MAXPLACES = DLB_DIG  ``instead''
+       2) ../main/coerce.c   & ../main/deparse.c have  DBL_DIG  directly
+       3) ../main/options.c has   #define MAX_DIGITS 22  for options(digits)
+
+       Really should decide on a (Platform.h dependent ?) global MAX_DIGITS.
+       --MM--
+     */
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(digits))
         return x + digits;
