@@ -36,7 +36,7 @@ double qexp(double p, double scale, int lower_tail, int log_p)
         ML_ERR_return_NAN;
 
     if (p == R_DT_0)
-        return 0.;
+        return 0;
 
     return -scale * R_DT_Clog(p);
 }
