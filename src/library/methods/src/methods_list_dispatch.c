@@ -692,7 +692,7 @@ Rboolean is_missing_arg(SEXP arg, SEXP symbol, SEXP ev)
     }
     if (arg == R_MissingArg)
         return TRUE;
-    if (TYPEOF(arg) == PROMSXP && TYPEOF(PREXPR(arg)) == SYMSXP)
+    if (TYPEOF(arg) == PROMSXP && PRVALUE(arg) == R_UnboundValue && TYPEOF(PREXPR(arg)) == SYMSXP)
         return is_missing_arg(NULL, PREXPR(arg), PRENV(arg));
     else
         return FALSE;
