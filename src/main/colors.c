@@ -62,7 +62,7 @@ SEXP do_palette(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (StrMatch("default", CHAR(STRING(val)[0])))
             setpalette(DefaultPalette);
         else
-            errorcall(call, "unknown palette\n");
+            errorcall(call, "unknown palette (need >= 2 colors)\n");
     }
     else if (n > 1)
     {
@@ -213,7 +213,7 @@ SEXP do_gray(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         level = REAL(lev)[i];
         if (ISNAN(level) || level < 0 || level > 1)
-            errorcall(call, "invalid gray level\n");
+            errorcall(call, "invalid gray level, must be in [0,1].\n");
         ilevel = 255 * level;
         STRING(ans)[i] = mkChar(RGB2rgb(ilevel, ilevel, ilevel));
     }
