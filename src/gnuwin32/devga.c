@@ -22,9 +22,6 @@
  *  ../unix/X11/devX11.c --
  */
 
-/* comment out to disable double-buffering */
-#define BUFFERED
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -119,7 +116,10 @@ static drawing _d;
 
 #define SHOW                                                                                                           \
     if (xd->kind == SCREEN)                                                                                            \
-        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+    {                                                                                                                  \
+        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));                                                         \
+        GALastUpdate = GetTickCount();                                                                                 \
+    }
 #define SH                                                                                                             \
     if (xd->kind == SCREEN && xd->buffered)                                                                            \
     GA_Timer(xd)
@@ -1930,6 +1930,8 @@ static void GA_NewPage(int fill, double gamma, NewDevDesc *dd)
     }
     if (xd->kind == SCREEN)
     {
+        if (xd->buffered)
+            SHOW;
 #ifdef PLOTHISTORY
         if (xd->recording && xd->needsave)
             AddtoPlotHistory(dd->savedSnapshot, 0);
@@ -1958,6 +1960,7 @@ static void GA_NewPage(int fill, double gamma, NewDevDesc *dd)
         xd->clip = getregion(xd);
         DRAW(gfillrect(_d, xd->bgcolor, xd->clip));
     }
+    SH;
 }
 
 /********************************************************/
