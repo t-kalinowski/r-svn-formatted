@@ -457,6 +457,10 @@ static void Quartz_Size(double *left, double *right, double *bottom, double *top
     return;
 }
 
+void Quartz_ReSizeWin(NewDevDesc *dd)
+{
+}
+
 static void Quartz_NewPage(int fill, double gamma, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;

@@ -55,29 +55,6 @@
 #ifdef HAVE_AQUA
 #include <Carbon/Carbon.h>
 
-typedef struct
-{
-    int cex;
-    int windowWidth;
-    int windowHeight;
-    Boolean resize;
-    int Text_Font; /* 0 is system font and 4 is monaco */
-    int fontface;  /* Typeface */
-    int fontsize;  /* Size in points */
-    int usefixed;
-    int color; /* color */
-    int fill;  /* fill color */
-    WindowPtr window;
-    int lineType;
-    int lineWidth;
-    Boolean Antialias; /* Use Antialiasing */
-    Boolean Autorefresh;
-    char *family;
-    CGContextRef context; /* This is the Contetx used by Quartz */
-    double xscale;
-    double yscale;
-} QuartzDesc;
-
 OSStatus InitMLTE(void);
 TXNObject RConsoleOutObject = NULL;
 TXNObject RConsoleInObject = NULL;
@@ -151,7 +128,8 @@ static const EventTypeSpec KeybEvents[] = {kEventClassKeyboard, kEventRawKeyUp};
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
-static const EventTypeSpec RWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged}};
+static const EventTypeSpec RWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged},
+                                           {kEventClassWindow, kEventWindowClose}};
 
 MenuRef HelpMenu = NULL; /* Will be the Reference to Apple's Help Menu */
 static short RHelpMenuItem = -1;
@@ -159,6 +137,12 @@ static short RTopicHelpItem = -1;
 static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
 static short PreferencesItem = -1;
+
+TXNControlTag ROutTag[] = {kTXNIOPrivilegesTag, kTXNNoUserIOTag, kTXNWordWrapStateTag};
+TXNControlData ROutData[] = {kTXNReadWrite, kTXNReadOnly, kTXNNoAutoWrap};
+
+TXNControlTag RInTag[] = {kTXNWordWrapStateTag};
+TXNControlData RInData[] = {kTXNNoAutoWrap};
 
 void Raqua_StartConsole(void)
 {
@@ -237,6 +221,8 @@ void Raqua_StartConsole(void)
         {
             WeHaveConsole = true;
             RescaleInOut(0.8);
+            TXNSetTXNObjectControls(RConsoleOutObject, false, 3, ROutTag, ROutData);
+            TXNSetTXNObjectControls(RConsoleInObject, false, 1, RInTag, RInData);
 
             InstallStandardEventHandler(GetApplicationEventTarget());
             err = InstallApplicationEventHandler(KeybHandler, GetEventTypeCount(KeybEvents), KeybEvents, 0, NULL);
@@ -296,10 +282,13 @@ noconsole:
 
 void Aqua_RWrite(char *buf);
 
-RGBColor RFGOutColor = {0xffff, 0xffff, 0xffff};
-RGBColor RFGInColor = {0xffff, 0x2222, 0x2222};
-RGBColor RBGOutColor = {0x5555, 0x5555, 0x5555};
-RGBColor RBGInColor = {0xffff, 0xffff, 0xffff};
+RGBColor RFGOutColor = {0x0000, 0x0000, 0xffff};
+RGBColor RFGInColor = {0xffff, 0x0000, 0x0000};
+RGBColor RBGOutColor = {0xeeee, 0xeeee, 0xeeee};
+RGBColor RBGInColor = {0xeeff, 0xeeff, 0xeeff};
+
+TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGOutColor}};
+TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGInColor}};
 
 void Raqua_WriteConsole(char *buf, int len)
 {
@@ -309,6 +298,7 @@ void Raqua_WriteConsole(char *buf, int len)
 
     if (WeHaveConsole)
     {
+        TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
         err = TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
     }
     else
@@ -320,14 +310,11 @@ void Raqua_WriteConsole(char *buf, int len)
 void RSetColors(void)
 {
     TXNBackground RBGInfo;
-    TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGOutColor}};
-    TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGInColor}};
 
     /* setting FG colors */
-    TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, 100000);
-    TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, 100000);
+    TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
+    TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, kTXNEndOffset);
 
-    // TXNDraw (RConsoleOutObject,NULL);
     /* setting BG colors */
     RBGInfo.bgType = kTXNBackgroundTypeRGB;
     RBGInfo.bg.color = RBGOutColor;
@@ -371,6 +358,7 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     if (!InputFinished)
         Aqua_RWrite(prompt);
     TXNFocus(RConsoleInObject, true);
+    TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, kTXNEndOffset);
 
     while (!InputFinished)
         RunApplicationEventLoop();
@@ -404,7 +392,9 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
 void Aqua_RWrite(char *buf)
 {
     if (WeHaveConsole)
+    {
         TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
+    }
 }
 
 /* Indicate that input is coming from the console */
@@ -532,10 +522,12 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
         {
             switch (command.commandID)
             {
-
+                /* File Menu */
             case kHICommandNew:
                 fprintf(stderr, "\n new");
                 break;
+
+                /* Edit Menu */
 
             case kHICommandPaste:
                 if (TXNIsScrapPastable())
@@ -547,7 +539,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 
             /*
                If selection occurs in both RConsole-Out and RConsole-In, only the
-               text selectied in the RConsole-Out is copied to the clipboard.
+               text selected in the RConsole-Out is copied to the clipboard.
                I'm not sure if it should be the contrary.
             */
             case kHICommandCopy:
@@ -668,8 +660,8 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 void RescaleInOut(double prop)
 {
     Rect WinBounds, InRect, OutRect;
+
     GetWindowPortBounds(ConsoleWindow, &WinBounds);
-    /* SetRect(*Rect, left, top, right, bottom) */
     SetRect(&OutRect, 0, 0, WinBounds.right, (int)(WinBounds.bottom * prop));
     SetRect(&InRect, 0, (int)(WinBounds.bottom * prop + 1), WinBounds.right, WinBounds.bottom);
     TXNSetFrameBounds(RConsoleInObject, InRect.top, InRect.left, InRect.bottom, InRect.right, InframeID);
@@ -692,36 +684,39 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     Point MouseLoc;
     RgnHandle CursorRgn;
     NewDevDesc *dd;
-    QuartzDesc *xd = NULL;
     WindowRef EventWindow;
+    EventRef REvent;
 
-    switch (GetEventClass(inEvent))
+    if (GetEventClass(inEvent) != kEventClassWindow)
+        return (err);
+
+    GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
+    GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL, &EventWindow);
+    switch (eventKind)
     {
-    case kEventClassWindow:
-        GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
-        GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL,
-                          &EventWindow);
-        if ((eventKind == kEventWindowBoundsChanged) && (RWinCode != 9))
+
+    case kEventWindowBoundsChanged:
+        if (RWinCode != 9)
         {
             if (EventWindow == ConsoleWindow)
                 RescaleInOut(0.8);
             else
             {
-                err = GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum);
-                if (err == noErr)
-                {
-                    dd = ((GEDevDesc *)GetDevice(devnum))->dev;
-                    if (dd)
+                if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum) == noErr)
+                    if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
                     {
-                        xd = (QuartzDesc *)dd->deviceSpecific;
-                        if (xd)
-                        {
-                            dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
-                            GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
-                        }
+                        dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
+                        GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
                     }
-                }
             }
+        }
+        break;
+
+    case kEventWindowClose:
+        if (EventWindow != ConsoleWindow)
+        {
+            CreateEvent(NULL, kCoreEventClass, kAEQuitApplication, 0, kEventAttributeNone, &REvent);
+            SendEventToEventTarget(REvent, GetApplicationEventTarget());
         }
         break;
 
@@ -729,7 +724,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
         break;
     }
 
-    return err;
+    return noErr;
 }
 
 /* consolecmd: is used to write in the input R console
