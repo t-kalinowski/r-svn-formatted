@@ -36,7 +36,7 @@ double qunif(double x, double a, double b)
 #endif
     if (b <= a || x < 0 || x > 1)
     {
-        ML_ERROR(ML_DOMAIN);
+        ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
     return a + x * (b - a);

@@ -74,13 +74,13 @@ double chebyshev_eval(double x, double *a, int n)
 
     if (n < 1 || n > 1000)
     {
-        ML_ERROR(ML_DOMAIN);
+        ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
 
     if (x < -1.1 || x > 1.1)
     {
-        ML_ERROR(ML_DOMAIN);
+        ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
 

@@ -80,10 +80,10 @@ static double qinv(double p, double c, double v)
     yi = sqrt(log(1.0 / (ps * ps)));
     t = yi + ((((yi * p4 + p3) * yi + p2) * yi + p1) * yi + p0) / ((((yi * q4 + q3) * yi + q2) * yi + q1) * yi + q0);
     if (v < vmax)
-        t = t + (t * t * t + t) / v / 4.0;
+        t += (t * t * t + t) / v / 4.0;
     q = c1 - c2 * t;
     if (v < vmax)
-        q = q - c3 / v + c4 * t / v;
+        q += -c3 / v + c4 * t / v;
     return t * (q * log(c - 1.0) + c5);
 }
 
@@ -197,7 +197,7 @@ double qtukey(double p, double rr, double cc, double df)
             return ans;
     }
 
-    /* The process did not converge */
+    /* The process did not converge in 'maxiter' iterations */
 
     ML_ERROR(ME_NOCONV);
     return ans;
