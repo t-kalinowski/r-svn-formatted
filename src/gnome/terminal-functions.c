@@ -88,7 +88,6 @@ void R_gtk_terminal_interrupt()
 
 void R_gtk_terminal_quit()
 {
-    R_gtk_gui_quit = TRUE;
     R_gtk_terminal_run("quit()\n");
 }
 
