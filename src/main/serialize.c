@@ -697,9 +697,9 @@ static void UnpackFlags(int flags, SEXPTYPE *ptype, int *plevs, int *pisobj, int
 {
     *ptype = DECODE_TYPE(flags);
     *plevs = DECODE_LEVELS(flags);
-    *pisobj = flags & IS_OBJECT_BIT_MASK;
-    *phasattr = flags & HAS_ATTR_BIT_MASK;
-    *phastag = flags & HAS_TAG_BIT_MASK;
+    *pisobj = flags & IS_OBJECT_BIT_MASK ? TRUE : FALSE;
+    *phasattr = flags & HAS_ATTR_BIT_MASK ? TRUE : FALSE;
+    *phastag = flags & HAS_TAG_BIT_MASK ? TRUE : FALSE;
 }
 
 /*
