@@ -161,7 +161,7 @@ int IntegerFromString(SEXP x, int *warn)
 {
     double xdouble;
     char *endp;
-    if (x != R_NaString)
+    if (x != R_NaString && !isBlankString(CHAR(x)))
     {
         xdouble = strtod(CHAR(x), &endp);
         if (isBlankString(endp))
@@ -211,7 +211,7 @@ double RealFromString(SEXP x, int *warn)
 {
     double xdouble;
     char *endp;
-    if (x != R_NaString)
+    if (x != R_NaString && !isBlankString(CHAR(x)))
     {
         xdouble = strtod(CHAR(x), &endp);
         if (isBlankString(endp))
@@ -277,7 +277,7 @@ Rcomplex ComplexFromString(SEXP x, int *warn)
     char *endp = CHAR(x);
     ;
     z.r = z.i = NA_REAL;
-    if (x != R_NaString)
+    if (x != R_NaString && !isBlankString(endp))
     {
         xr = strtod(endp, &endp);
         if (isBlankString(endp))
