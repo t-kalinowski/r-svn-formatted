@@ -1,6 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R Core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -53,7 +54,7 @@
 #define MIN_Cutoff 20
 #define DEFAULT_Cutoff 60
 #define MAX_Cutoff (BUFSIZE - 12)
-/* ----- MAX_Cutoff  <  BUFSIZE !! */
+/* ----- MAX_Cutoff  <	BUFSIZE !! */
 
 static int cutoff = DEFAULT_Cutoff;
 
@@ -72,7 +73,9 @@ static void print2buff(char *);
 static void printtab2buff(int);
 static void scalar2buff(SEXP);
 static void writeline(void);
+#ifdef NotUsed
 static void factor2buff(SEXP, int);
+#endif
 static void vector2buff(SEXP);
 static void vec2buff(SEXP);
 static void linebreak();
@@ -94,7 +97,7 @@ void deparse2(SEXP, SEXP);
     call this deeper function with the appropriate argument.
 
     I wonder why I didn't just do this? -- it would have been
-    quicker than writing this note.  I guess it needs a bit
+    quicker than writing this note.	 I guess it needs a bit
     more thought ...
 */
 
@@ -125,7 +128,7 @@ SEXP do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* The function deparse1 gets a second argument; abbrev. */
 /* If abbrev is 1 then the returned value is a STRSXP of */
-/* length 1 with at most 10 characters.  This is use for */
+/* length 1 with at most 10 characters.	 This is use for */
 /* plot labelling etc. */
 
 SEXP deparse1(SEXP call, int abbrev)
@@ -757,6 +760,7 @@ static void vector2buff(SEXP vector)
     }
 }
 
+#ifdef NotUsed
 static void factor2buff(SEXP vector, int ordered)
 {
     int tlen, i;
@@ -781,7 +785,7 @@ static void factor2buff(SEXP vector, int ordered)
     print2buff(strp);
     print2buff(")");
 }
-
+#endif
 /* vec2buff : New Code */
 /* Deparse vectors of S-expressions. */
 /* In particular, this deparses objects of mode expression. */
@@ -862,7 +866,7 @@ static void printtab2buff(int ntab)
 
     for (i = 1; i <= ntab; i++)
         if (i <= 4)
-            print2buff("        ");
+            print2buff("	    ");
         else
             print2buff(" ");
 }

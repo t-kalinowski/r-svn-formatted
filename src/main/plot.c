@@ -1708,10 +1708,15 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
+
 {
-    /* mtext(text, side, line, outer, at = NULL, ...) */
-    /* where ... supports  adj, cex, col, font	*/
-    SEXP cex, col, font, text;
+    /* mtext(text, side, line, outer, at = NULL, ...)
+     *				     where "..."  supports  adj, cex, col, font
+     */
+    SEXP text;
+#ifdef OLD
+    SEXP cex, col, font;
+#endif
     double line, at, adj = 0;
     int side, outer;
     int newsave = 0;
@@ -1860,7 +1865,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* title(main=NULL, sub=NULL, xlab=NULL, ylab=NULL, ...) */
-    SEXP main, xlab, ylab, sub;
+    SEXP Main, xlab, ylab, sub;
     double adj, offset;
     int i, n;
     SEXP originalArgs = args;
@@ -1871,10 +1876,10 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(args) < 4)
         errorcall(call, "too few arguments\n");
 
-    main = sub = xlab = ylab = R_NilValue;
+    Main = sub = xlab = ylab = R_NilValue;
 
     if (CAR(args) != R_NilValue && LENGTH(CAR(args)) > 0)
-        main = CAR(args);
+        Main = CAR(args);
     args = CDR(args);
 
     if (CAR(args) != R_NilValue && LENGTH(CAR(args)) > 0)
@@ -1898,21 +1903,21 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     adj = dd->gp.adj;
 
     GMode(dd, 1);
-    if (main != R_NilValue)
+    if (Main != R_NilValue)
     {
         dd->gp.cex = dd->gp.cexbase * dd->gp.cexmain;
         dd->gp.col = dd->gp.colmain;
         dd->gp.font = dd->gp.fontmain;
-        if (isExpression(main))
+        if (isExpression(Main))
         {
-            GMathText(xNPCtoUsr(adj, dd), 0.5 * dd->gp.mar[2], MAR3, VECTOR(main)[0], 0.5, 0.5, 0.0, dd);
+            GMathText(xNPCtoUsr(adj, dd), 0.5 * dd->gp.mar[2], MAR3, VECTOR(Main)[0], 0.5, 0.5, 0.0, dd);
         }
         else
         {
-            n = length(main);
+            n = length(Main);
             offset = 0.5 * (n - 1) + 0.5 * dd->gp.mar[2];
             for (i = 0; i < n; i++)
-                GText(xNPCtoUsr(adj, dd), offset - i, MAR3, CHAR(STRING(main)[i]), adj, 0.5, 0.0, dd);
+                GText(xNPCtoUsr(adj, dd), offset - i, MAR3, CHAR(STRING(Main)[i]), adj, 0.5, 0.0, dd);
         }
     }
     if (sub != R_NilValue)
@@ -2303,9 +2308,12 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, labs, offset, colors, ltypes, saveargs;
+    SEXP x, labs, offset, saveargs;
     double adj, xpd, wd, ht, lw, gw, xi, xmin, xmax;
+#ifdef OLD
+    SEXP colors, ltypes;
     double save_mar[4];
+#endif
     int save_mUnits, save_defaultPlot;
     int i, n;
     DevDesc *dd;
