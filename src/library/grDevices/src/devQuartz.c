@@ -416,7 +416,6 @@ static void Quartz_SetLineMitre(double lmitre, NewDevDesc *dd);
 static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDevDesc *dd);
 static CGContextRef GetContext(QuartzDesc *xd);
 
-static SEXP gcall;
 static char *SaveString(SEXP sxp, int offset)
 {
     char *s;
@@ -435,11 +434,11 @@ bool WeAreOnPanther = false;
  *  width	= width in inches
  *  height	= height in inches
  *  ps		= pointsize
- *  family  = Postscript fon family name
- *  Antialias = wheter to make antialiasing
+ *  family  = Postscript font family name
+ *  Antialias = whether to make antialiasing
  */
 
-SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP Quartz(SEXP arg)
 {
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
@@ -449,19 +448,21 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean antialias, autorefresh;
     SInt32 macVer;
     int quartzpos = 1;
+
     gcall = call;
     vmax = vmaxget();
-    display = SaveString(CAR(args), 0);
+    args = CDR(args); /* skip entry point name */
+    display = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
     height = asReal(CAR(args));
     args = CDR(args);
     if (width <= 0 || height <= 0)
-        errorcall(call, "invalid width or height");
+        error("invalid width or height in quartz");
     ps = asReal(CAR(args));
     args = CDR(args);
-    family = SaveString(CAR(args), 0);
+    family = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     antialias = asLogical(CAR(args));
     args = CDR(args);
@@ -496,7 +497,7 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
                                 quartzpos, 0xffffffff))
         {
             free(dev);
-            errorcall(call, "unable to start device Quartz\n");
+            error("unable to start device Quartz");
         }
         gsetVar(install(".Device"), mkString("quartz"), R_NilValue);
         dd = GEcreateDevDesc(dev);
@@ -1599,7 +1600,7 @@ OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, voi
 }
 
 #else
-SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP Quartz(SEXP args)
 {
     warning("Quartz device not available on this platform\n");
     return R_NilValue;

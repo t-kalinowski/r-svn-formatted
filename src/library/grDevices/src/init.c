@@ -36,8 +36,8 @@ static R_CallMethodDef CallEntries[] = {
 #name, (DL_FUNC)&name, -1                                                                                      \
     }
 
-static R_ExternalMethodDef ExtEntries[] = {
-    EXTDEF(PicTeX), EXTDEF(PostScript), EXTDEF(XFig), EXTDEF(PDF), {NULL, NULL, 0}};
+static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX), EXTDEF(PostScript), EXTDEF(XFig),
+                                           EXTDEF(PDF),    EXTDEF(Quartz),     {NULL, NULL, 0}};
 
 void R_init_grDevices(DllInfo *dll)
 {
