@@ -1485,11 +1485,11 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3(args, qgamma);
 
     case 16:
-        return Math3(args, dlnorm);
+        return Math3_1(args, dlnorm);
     case 17:
-        return Math3(args, plnorm);
+        return Math3_2(args, plnorm);
     case 18:
-        return Math3(args, qlnorm);
+        return Math3_2(args, qlnorm);
 
     case 19:
         return Math3(args, dlogis);
@@ -1506,11 +1506,11 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3(args, qnbinom);
 
     case 25:
-        return Math3(args, dnorm);
+        return Math3_1(args, dnorm);
     case 26:
-        return Math3(args, pnorm);
+        return Math3_2(args, pnorm);
     case 27:
-        return Math3(args, qnorm);
+        return Math3_2(args, qnorm);
 
     case 28:
         return Math3(args, dunif);
