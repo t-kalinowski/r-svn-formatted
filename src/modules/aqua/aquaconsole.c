@@ -175,6 +175,8 @@ void Raqua_StartConsole(void)
             WeHaveConsole = false;
     }
 
+    SelectWindow(ConsoleWindow);
+
 fine:
     if (bundleURL)
         CFRelease(bundleURL);
@@ -187,7 +189,6 @@ fine:
    alla fine si deve chiamare TXNTerminateTextension();
    prima di ExitToShell();
 */
-int RITERS = 0;
 void Aqua_RWrite(char *buf);
 TXNOffset LastStartOffset = 0;
 
@@ -207,12 +208,6 @@ void Raqua_WriteConsole(char *buf, int len)
     {
         fprintf(stderr, "%s", buf);
     }
-    /*    if(RITERS ==100){
-             RunApplicationEventLoop();
-             RITERS=0;
-             }
-         RITERS++;
-    */
 }
 
 OSStatus InitMLTE(void)
