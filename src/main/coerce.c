@@ -22,7 +22,7 @@
 #include "Print.h"
 
 /* This section of code handles type conversion for elements */
-/* of data vectors.  Type coersion throughout R should use these */
+/* of data vectors.  Type coercion throughout R should use these */
 /* routines to ensure consistency. */
 
 static char *truenames[] = {
@@ -37,14 +37,14 @@ static char *falsenames[] = {
 #define WARN_INACC 2
 #define WARN_IMAG 4
 
-void CoersionWarning(int warn)
+void CoercionWarning(int warn)
 {
     if (warn & WARN_NA)
-        warning("NAs introduced by coersion\n");
+        warning("NAs introduced by coercion\n");
     if (warn & WARN_INACC)
-        warning("inaccurate integer conversion in coersion\n");
+        warning("inaccurate integer conversion in coercion\n");
     if (warn & WARN_IMAG)
-        warning("imaginary parts discarded in coersion\n");
+        warning("imaginary parts discarded in coercion\n");
 }
 
 int LogicalFromInteger(int x, int *warn)
@@ -403,7 +403,7 @@ static SEXP coerceToLogical(SEXP v)
         break;
     }
     if (warn)
-        CoersionWarning(warn);
+        CoercionWarning(warn);
     UNPROTECT(1);
     return ans;
 }
@@ -434,7 +434,7 @@ static SEXP coerceToInteger(SEXP v)
         break;
     }
     if (warn)
-        CoersionWarning(warn);
+        CoercionWarning(warn);
     UNPROTECT(1);
     return ans;
 }
@@ -465,7 +465,7 @@ static SEXP coerceToReal(SEXP v)
         break;
     }
     if (warn)
-        CoersionWarning(warn);
+        CoercionWarning(warn);
     UNPROTECT(1);
     return ans;
 }
@@ -496,7 +496,7 @@ static SEXP coerceToComplex(SEXP v)
         break;
     }
     if (warn)
-        CoersionWarning(warn);
+        CoercionWarning(warn);
     UNPROTECT(1);
     return ans;
 }
@@ -1177,7 +1177,7 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == ENVSXP);
         break;
     case LISTSXP: /* is.list */
-        LOGICAL(ans)[0] = ((TYPEOF(CAR(args)) == VECSXP) || TYPEOF(CAR(args)) == NILSXP);
+        LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == VECSXP);
         break;
     case EXPRSXP: /* is.expression */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == EXPRSXP);
