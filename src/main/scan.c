@@ -155,14 +155,26 @@ static void unscanchar(int c)
     save = c;
 }
 
-static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
+static char *growBuffer(char *buffer, int *nbuf)
+{
+    int old = *nbuf, new = 2 * old;
+    char *newbuf;
+
+    newbuf = S_realloc(buffer, new, old, sizeof(char));
+    *nbuf = new;
+    return newbuf;
+}
+
+static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
 {
     /* The basic reader function, called from scanVector() and scanFrame().
        Reads into _buffer_	which later will be read out by extractItem().
     */
-    char *bufp = buffer;
-    int c, quote, filled;
-    Rboolean warned = FALSE;
+    char *buffer, *bufp;
+    int c, quote, filled, nbuf = MAXELTSIZE, m;
+
+    buffer = (char *)R_alloc(MAXELTSIZE, sizeof(char));
+    m = 0;
 
     filled = 1;
     if (sepchar == 0)
@@ -175,21 +187,13 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
             filled = c;
             goto donefill;
         }
-        warned = FALSE;
         if (type == STRSXP && strchr(quoteset, c))
         {
             quote = c;
             while ((c = scanchar()) != R_EOF && c != quote)
             {
-                if (bufp >= &buffer[MAXELTSIZE - 2])
-                {
-                    if (!warned)
-                    {
-                        warning("string truncated to 8190 chars in scan");
-                        warned = TRUE;
-                    }
-                    continue;
-                }
+                if (m >= nbuf - 2)
+                    buffer = growBuffer(buffer, &nbuf);
                 if (c == '\\')
                 {
                     c = scanchar();
@@ -200,7 +204,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
                     else if (c == 'r')
                         c = '\r';
                 }
-                *bufp++ = c;
+                buffer[m++] = c;
             }
             c = scanchar();
             while (c == ' ' || c == '\t')
@@ -214,16 +218,9 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
         { /* not a char string */
             do
             {
-                if (bufp >= &buffer[MAXELTSIZE - 2])
-                {
-                    if (!warned)
-                    {
-                        warning("string truncated to 8190 chars in scan");
-                        warned = TRUE;
-                    }
-                    continue;
-                }
-                *bufp++ = c;
+                if (m >= nbuf - 2)
+                    buffer = growBuffer(buffer, &nbuf);
+                buffer[m++] = c;
             } while (!isspace(c = scanchar()) && c != R_EOF);
             while (c == ' ' || c == '\t')
                 c = scanchar();
@@ -252,22 +249,16 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
             inquote:
                 while ((c = scanchar()) != R_EOF && c != quote)
                 {
-                    if (bufp >= &buffer[MAXELTSIZE - 2])
-                    {
-                        if (!warned)
-                        {
-                            warning("string truncated to 8190 chars in scan");
-                            warned = TRUE;
-                        }
-                        continue;
-                    }
-                    *bufp++ = c;
+                    if (m >= nbuf - 2)
+                        buffer = growBuffer(buffer, &nbuf);
+                    buffer[m++] = c;
                 }
                 c = scanchar();
                 if (c == quote)
                 {
-                    if (bufp < &buffer[MAXELTSIZE - 2])
-                        *bufp++ = quote;
+                    if (m >= nbuf - 2)
+                        buffer = growBuffer(buffer, &nbuf);
+                    buffer[m++] = quote;
                     goto inquote; /* FIXME: Ick! Clean up logic */
                 }
                 if (c == sepchar || c == '\n' || c == '\r' || c == R_EOF)
@@ -281,33 +272,27 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
                     continue;
                 }
             }
-            if (!strip || bufp != buffer || !isspace(c))
+            if (!strip || m > 0 || !isspace(c))
             {
-                if (bufp >= &buffer[MAXELTSIZE - 2])
-                {
-                    if (!warned)
-                    {
-                        warning("string truncated to 8190 chars in scan");
-                        warned = TRUE;
-                    }
-                    continue;
-                }
-                else
-                    *bufp++ = c;
+                if (m >= nbuf - 2)
+                    buffer = growBuffer(buffer, &nbuf);
+                buffer[m++] = c;
             }
         }
         filled = c;
     }
 donefill:
     /* strip trailing white space, if desired and if item is non-null */
-    if (strip && bufp > buffer)
+    bufp = &buffer[m];
+    if (strip && m > 0)
     {
         while (isspace((int)*--bufp))
             ;
         bufp++;
     }
     *bufp = '\0';
-    return filled;
+    *bch = filled;
+    return buffer;
 }
 
 /* If mode = 0 use for numeric fields where "" is NA
@@ -392,7 +377,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
 {
     SEXP ans, bns;
     int blocksize, c, i, n, linesread, nprev, strip, bch;
-    char buffer[MAXELTSIZE];
+    char *buffer;
 
     if (maxitems > 0)
         blocksize = maxitems;
@@ -440,7 +425,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
             PROTECT(ans);
             copyVector(ans, bns);
         }
-        bch = fillBuffer(buffer, type, strip);
+        buffer = fillBuffer(type, strip, &bch);
         if (nprev == n && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (ttyflag || bch == R_EOF)
@@ -511,7 +496,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
                       int multiline)
 {
     SEXP ans, new, old, w;
-    char buffer[MAXELTSIZE];
+    char *buffer = NULL;
     int blksize, c, i, ii, j, n, nc, linesread, colsread, strip, bch;
     int badline;
 
@@ -604,7 +589,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
             }
         }
 
-        bch = fillBuffer(buffer, TYPEOF(VECTOR_ELT(ans, ii)), strip);
+        buffer = fillBuffer(TYPEOF(VECTOR_ELT(ans, ii)), strip, &bch);
         if (colsread == 0 && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (ttyflag || bch == R_EOF)
