@@ -1516,9 +1516,10 @@ Rboolean winNewFrameConfirm(void)
 
 /* UTF-8 support ----------------------------------------------- */
 
+/* This is currently only used for faking UTF-8 locale conversions */
+
 #ifdef SUPPORT_UTF8
 #define FAKE_UTF8 1
-#endif
 
 size_t Rmbrtowc(wchar_t *wc, const char *s)
 {
@@ -1674,3 +1675,4 @@ size_t Rwcstombs(char *s, const wchar_t *wc, size_t n)
     return wcstombs(s, wc, n);
 #endif
 }
+#endif
