@@ -2476,9 +2476,9 @@ Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double heig
     /* Window Dimensions in Pixels */
     rr = getrect(xd->gawin);
     dd->left = (xd->kind == PRINTER) ? rr.x : 0; /* left */
-    dd->right = dd->left + rr.width;             /* right */
+    dd->right = dd->left + rr.width - 0.0001;    /* right */
     dd->top = (xd->kind == PRINTER) ? rr.y : 0;  /* top */
-    dd->bottom = dd->top + rr.height;            /* bottom */
+    dd->bottom = dd->top + rr.height - 0.0001;   /* bottom */
 
     if (resize == 3)
     { /* might have got a shrunken window */
@@ -2669,7 +2669,6 @@ static void SaveAsBitmap(NewDevDesc *dd)
     rect r, r2;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     unsigned char *data;
-    int row_bytes;
 
     r = ggetcliprect(xd->gawin);
     gsetcliprect(xd->gawin, r2 = getrect(xd->gawin));
@@ -2677,7 +2676,7 @@ static void SaveAsBitmap(NewDevDesc *dd)
     {
         if (getdepth(xd->gawin) > 8)
         {
-            getbitmapdata2(xd->gawin, &data, &row_bytes);
+            getbitmapdata2(xd->gawin, &data);
             if (data)
             {
                 png_rows = r2.width;
@@ -2713,8 +2712,10 @@ static void SaveAsBitmap(NewDevDesc *dd)
 static void SaveAsPng(NewDevDesc *dd, char *fn)
 {
     FILE *fp;
-    rect r;
+    rect r, r2;
+    unsigned char *data;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
+
     if (!Load_Rbitmap_Dll())
     {
         R_ShowMessage("Impossible to load Rbitmap.dll");
@@ -2730,8 +2731,21 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
         return;
     }
     r = ggetcliprect(xd->bm);
-    gsetcliprect(xd->bm, getrect(xd->bm));
-    R_SaveAsPng(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp, 0);
+    gsetcliprect(xd->bm, r2 = getrect(xd->bm));
+    if (getdepth(xd->gawin) > 8)
+    {
+        getbitmapdata2(xd->bm, &data);
+        if (data)
+        {
+            png_rows = r2.width;
+            R_SaveAsPng(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp, 0);
+            free(data);
+        }
+        else
+            warning("processing of the plot ran out of memory");
+    }
+    else
+        R_SaveAsPng(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp, 0);
     /* R_OPAQUE(xd->bg) ? 0 : xd->canvascolor) ; */
     gsetcliprect(xd->bm, r);
     fclose(fp);
@@ -2740,8 +2754,10 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
 static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
 {
     FILE *fp;
-    rect r;
+    rect r, r2;
+    unsigned char *data;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
+
     if (!Load_Rbitmap_Dll())
     {
         R_ShowMessage("Impossible to load Rbitmap.dll");
@@ -2756,8 +2772,21 @@ static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
         return;
     }
     r = ggetcliprect(xd->bm);
-    gsetcliprect(xd->bm, getrect(xd->bm));
-    R_SaveAsJpeg(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, quality, fp);
+    gsetcliprect(xd->bm, r2 = getrect(xd->bm));
+    if (getdepth(xd->gawin) > 8)
+    {
+        getbitmapdata2(xd->bm, &data);
+        if (data)
+        {
+            png_rows = r2.width;
+            R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, quality, fp);
+            free(data);
+        }
+        else
+            warning("processing of the plot ran out of memory");
+    }
+    else
+        R_SaveAsJpeg(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, quality, fp);
     gsetcliprect(xd->bm, r);
     fclose(fp);
 }
@@ -2765,8 +2794,10 @@ static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
 static void SaveAsBmp(NewDevDesc *dd, char *fn)
 {
     FILE *fp;
-    rect r;
+    rect r, r2;
+    unsigned char *data;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
+
     if (!Load_Rbitmap_Dll())
     {
         R_ShowMessage("Impossible to load Rbitmap.dll");
@@ -2782,8 +2813,21 @@ static void SaveAsBmp(NewDevDesc *dd, char *fn)
         return;
     }
     r = ggetcliprect(xd->bm);
-    gsetcliprect(xd->bm, getrect(xd->bm));
-    R_SaveAsBmp(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
+    gsetcliprect(xd->bm, r2 = getrect(xd->bm));
+    if (getdepth(xd->gawin) > 8)
+    {
+        getbitmapdata2(xd->bm, &data);
+        if (data)
+        {
+            png_rows = r2.width;
+            R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp);
+            free(data);
+        }
+        else
+            warning("processing of the plot ran out of memory");
+    }
+    else
+        R_SaveAsBmp(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
     gsetcliprect(xd->bm, r);
     fclose(fp);
 }
