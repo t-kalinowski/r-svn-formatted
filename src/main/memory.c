@@ -216,6 +216,9 @@ static R_size_t R_SmallVallocSize = 0;
 static R_size_t orig_R_NSize;
 static R_size_t orig_R_VSize;
 
+static R_size_t R_N_maxused = 0;
+static R_size_t R_V_maxused = 0;
+
 /* Node Classes.  Non-vector nodes are of class zero. Small vector
    nodes are in classes 1, ..., NUM_SMALL_NODE_CLASSES, and large
    vector nodes are in class LARGE_NODE_CLASS.  For vector nodes the
@@ -1426,17 +1429,18 @@ SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value;
-    int ogc;
+    int ogc, reset_max;
     R_size_t onsize = R_NSize;
 
     checkArity(op, args);
     ogc = gc_reporting;
     gc_reporting = asLogical(CAR(args));
+    reset_max = asLogical(CADR(args));
     num_old_gens_to_collect = NUM_OLD_GENERATIONS;
     R_gc();
     gc_reporting = ogc;
     /*- now return the [used , gc trigger size] for cells and heap */
-    PROTECT(value = allocVector(INTSXP, 10));
+    PROTECT(value = allocVector(INTSXP, 14));
     INTEGER(value)[0] = onsize - R_Collected;
     INTEGER(value)[1] = R_VSize - VHEAP_FREE();
     /* carefully here: we can't report large sizes in R's integer */
@@ -1449,6 +1453,15 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     INTEGER(value)[7] = 10. * R_VSize / Mega * vsfac + 0.999;
     INTEGER(value)[8] = (R_MaxNSize < R_SIZE_T_MAX) ? (10. * R_MaxNSize / Mega * sizeof(SEXPREC) + 0.999) : NA_INTEGER;
     INTEGER(value)[9] = (R_MaxVSize < R_SIZE_T_MAX) ? (10. * R_MaxVSize / Mega * vsfac + 0.999) : NA_INTEGER;
+    if (reset_max)
+    {
+        R_N_maxused = INTEGER(value)[0];
+        R_V_maxused = INTEGER(value)[1];
+    }
+    INTEGER(value)[10] = (R_N_maxused < INT_MAX) ? R_N_maxused : NA_INTEGER;
+    INTEGER(value)[11] = (R_V_maxused < INT_MAX) ? R_V_maxused : NA_INTEGER;
+    INTEGER(value)[12] = 10. * R_N_maxused / Mega * sizeof(SEXPREC) + 0.999;
+    INTEGER(value)[13] = 10. * R_V_maxused / Mega * vsfac + 0.999;
     UNPROTECT(1);
     return value;
 }
@@ -2001,6 +2014,8 @@ static void gc_end_timing(void)
 #endif /* _R_HAVE_TIMING_ */
 }
 
+#define MAX(a, b) (a) < (b) ? (b) : (a)
+
 static void R_gc_internal(R_size_t size_needed)
 {
     R_size_t vcells;
@@ -2010,6 +2025,9 @@ static void R_gc_internal(R_size_t size_needed)
 again:
 
     gc_count++;
+
+    R_N_maxused = MAX(R_N_maxused, R_NodesInUse);
+    R_V_maxused = MAX(R_V_maxused, R_VSize - VHEAP_FREE());
 
     BEGIN_SUSPEND_INTERRUPTS
     {
