@@ -381,16 +381,16 @@ static int GetNextItem(FILE *fp, char *dest, int c)
 static char enccode[5000];
 
 /* Load encoding array from a file: defaults to the R_HOME/afm directory */
-static int LoadEncoding(char *fontpath, char *encname, Rboolean isPDF)
+static int LoadEncoding(char *encpath, char *encname, Rboolean isPDF)
 {
     char buf[BUFSIZE];
     int i;
     FILE *fp;
 
-    if (strchr(fontpath, FILESEP[0]))
-        strcpy(buf, fontpath);
+    if (strchr(encpath, FILESEP[0]))
+        strcpy(buf, encpath);
     else
-        sprintf(buf, "%s%safm%s%s", R_Home, FILESEP, FILESEP, fontpath);
+        sprintf(buf, "%s%safm%s%s", R_Home, FILESEP, FILESEP, encpath);
 #ifdef DEBUG_PS
     Rprintf("encoding path is %s\n", buf);
 #endif
@@ -820,7 +820,8 @@ typedef struct
     int pageno;         /* page number */
 
     int fontfamily;         /* font family */
-    char encname[PATH_MAX]; /* font encoding */
+    char encpath[PATH_MAX]; /* font encoding file */
+    char encname[100];      /* font encoding */
     char **afmpaths;        /* for user-specified family */
     int maxpointsize;
 
@@ -925,7 +926,7 @@ Rboolean PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char
     strcpy(pd->filename, file);
     strcpy(pd->papername, paper);
     pd->fontfamily = strcmp(family, "User") ? MatchFamily(family) : USERAFM;
-    strcpy(pd->encname, encoding);
+    strcpy(pd->encpath, encoding);
     pd->afmpaths = afmpaths;
 
     setbg = str2col(bg);
@@ -1179,7 +1180,7 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
     char buf[512], *p;
     int i;
 
-    if (!LoadEncoding(pd->encname, pd->encname, FALSE))
+    if (!LoadEncoding(pd->encpath, pd->encname, FALSE))
         error("problem loading encoding file");
     for (i = 0; i < 4; i++)
     {
@@ -2304,8 +2305,9 @@ typedef struct
     int pageno; /* page number */
 
     int fontfamily;         /* font family */
-    char encname[PATH_MAX]; /* font encoding */
-    char **afmpaths;        /* for user-specified family */
+    char encpath[PATH_MAX]; /* font encoding */
+    char encname[100];
+    char **afmpaths; /* for user-specified family */
     int maxpointsize;
 
     double width;     /* plot width in inches */
@@ -2386,7 +2388,7 @@ Rboolean PDFDeviceDriver(DevDesc *dd, char *file, char *family, char *encoding, 
     /* initialize PDF device description */
     strcpy(pd->filename, file);
     pd->fontfamily = MatchFamily(family);
-    strcpy(pd->encname, encoding);
+    strcpy(pd->encpath, encoding);
     setbg = str2col(bg);
     setfg = str2col(fg);
 
@@ -2586,6 +2588,7 @@ static void PDF_EncodeFont(PDFDesc *pd, int nobj)
     }
     else
     {
+        fprintf(pd->pdffp, "/BaseEncoding /PDFDocEncoding\n");
         fprintf(pd->pdffp, "/Differences [ 0 %s ]\n", enccode);
     }
     fprintf(pd->pdffp, ">>\nendobj\n");
@@ -2683,7 +2686,7 @@ static Rboolean PDF_Open(DevDesc *dd, PDFDesc *pd)
     char buf[512], *p;
     int i;
 
-    if (!LoadEncoding(pd->encname, pd->encname, TRUE))
+    if (!LoadEncoding(pd->encpath, pd->encname, TRUE))
         error("problem loading encoding file");
     for (i = 0; i < 4; i++)
     {
