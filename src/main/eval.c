@@ -1093,6 +1093,7 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         int i, n;
         PROTECT(expr);
         n = LENGTH(expr);
+        tmp = R_NilValue;
         begincontext(&cntxt, CTXT_RETURN, call, env, rho, args);
         if (!SETJMP(cntxt.cjmpbuf))
             for (i = 0; i < n; i++)
@@ -1121,7 +1122,7 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;
-    SEXP t, s, ans;
+    SEXP s, ans;
     cptr = R_GlobalContext;
     /* get the args supplied */
     while (cptr != NULL)

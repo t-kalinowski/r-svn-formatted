@@ -405,7 +405,6 @@ static unsigned int GetPseudoColor1Pixel(int r, int g, int b)
 
 static unsigned int GetPseudoColor2Pixel(int r, int g, int b)
 {
-    XColor newxcolor;
     int i;
     /* Search for previously allocated color */
     for (i = 0; i < PaletteSize; i++)
@@ -1747,21 +1746,6 @@ int X11ConnectionNumber()
         return ConnectionNumber(display);
     else
         return 0;
-}
-
-/* X11 Color Allocation code */
-
-/* return the position of the highest set bit in ul */
-/* as an integer (0-31), or -1 if none */
-static int highbit(unsigned long ul)
-{
-    int i;
-    unsigned long hb;
-    hb = 0x8000;
-    hb = (hb << 16); /* hb = 0x80000000UL */
-    for (i = 31; ((ul & hb) == 0) && i >= 0; i--, ul <<= 1)
-        ;
-    return i;
 }
 
 int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)

@@ -123,7 +123,6 @@ void warningcall(SEXP call, char *format, ...)
 void PrintWarnings(void)
 {
     int i;
-    char *pout;
     SEXP names, s, t;
 
     inWarning = 1;
@@ -173,13 +172,12 @@ void PrintWarnings(void)
 
 void errorcall(SEXP call, char *format, ...)
 {
-    RCNTXT *cptr;
-
     va_list(ap);
     char *dcall;
     if (inError)
         jump_now();
 #ifdef FOO
+    RCNTXT *cptr;
     cptr = R_GlobalContext;
     while (cptr->callflag != CTXT_RETURN && cptr->nextcontext != NULL)
         cptr = cptr->nextcontext;
@@ -314,7 +312,7 @@ SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;
 
-    cptr = cptr = R_GlobalContext->nextcontext;
+    cptr = R_GlobalContext->nextcontext;
     while (cptr->callflag != CTXT_RETURN && cptr->nextcontext != NULL)
         cptr = cptr->nextcontext;
     if (CAR(args) != R_NilValue)
