@@ -39,11 +39,14 @@ void BDRksmooth(double *x, double *y, int *n, double *xp, double *yp, int *np, i
         {
             if (x[i] < x0 - cutoff)
                 imin = i;
-            if (x[i] > x0 + cutoff)
-                break;
-            w = dokern(fabs(x[i] - x0) / bw, *kern);
-            num += w * y[i];
-            den += w;
+            else
+            {
+                if (x[i] > x0 + cutoff)
+                    break;
+                w = dokern(fabs(x[i] - x0) / bw, *kern);
+                num += w * y[i];
+                den += w;
+            }
         }
         if (den > 0)
             yp[j] = num / den;
