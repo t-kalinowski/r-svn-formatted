@@ -866,9 +866,9 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
     int hashcode;
     SEXP frame, c;
     R_DirtyImage = 1;
-    if (HASHTAB(rho) == R_NilValue)
+    if (rho != R_NilValue)
     {
-        if (rho != R_NilValue)
+        if (HASHTAB(rho) == R_NilValue)
         {
             frame = FRAME(rho);
             while (frame != R_NilValue)
@@ -883,23 +883,23 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
             }
             SET_FRAME(rho, CONS(value, FRAME(rho)));
             SET_TAG(FRAME(rho), symbol);
-            return;
         }
-        SET_SYMVALUE(symbol, value);
+        else
+        {
+            c = PRINTNAME(symbol);
+            if (!HASHASH(c))
+            {
+                SET_HASHVALUE(c, R_Newhashpjw(CHAR(c)));
+                SET_HASHASH(c, 1);
+            }
+            hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
+            R_HashSet(hashcode, symbol, HASHTAB(rho), value);
+            if (R_HashSizeCheck(HASHTAB(rho)))
+                SET_HASHTAB(rho, R_HashResize(HASHTAB(rho)));
+        }
     }
     else
-    {
-        c = PRINTNAME(symbol);
-        if (!HASHASH(c))
-        {
-            SET_HASHVALUE(c, R_Newhashpjw(CHAR(c)));
-            SET_HASHASH(c, 1);
-        }
-        hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
-        R_HashSet(hashcode, symbol, HASHTAB(rho), value);
-        if (R_HashSizeCheck(HASHTAB(rho)))
-            SET_HASHTAB(rho, R_HashResize(HASHTAB(rho)));
-    }
+        SET_SYMVALUE(symbol, value);
 }
 
 /*----------------------------------------------------------------------
