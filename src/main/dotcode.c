@@ -27,7 +27,7 @@
 
 #include <Defn.h>
 #include <Rmath.h>
-#include <Devices.h>
+#include <Rdevices.h>
 
 #ifndef max
 #define max(a, b) ((a > b) ? (a) : (b))
@@ -1421,6 +1421,7 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), which));
             SET_ATTRIB(s, duplicate(ATTRIB(CAR(pargs))));
+            SET_OBJECT(s, OBJECT(CAR(pargs)));
             if (TAG(pargs) != R_NilValue)
                 havenames = 1;
             SET_VECTOR_ELT(ans, nargs, s);

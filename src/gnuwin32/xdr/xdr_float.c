@@ -112,7 +112,7 @@ register float *fp;
 #endif
 #endif
 
-#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_)
+#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_) && !defined(Macintosh)
     struct ieee_single is;
     struct vax_single vs, *vsp;
     struct sgl_limits *lim;
@@ -122,7 +122,7 @@ register float *fp;
     {
 
     case XDR_ENCODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
+#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_) || defined(Macintosh)
         return (XDR_PUTLONG(xdrs, (long *)fp));
 #else
         vs = *((struct vax_single *)fp);
@@ -142,7 +142,7 @@ register float *fp;
 #endif
 
     case XDR_DECODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
+#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_) || defined(Macintosh)
         return (XDR_GETLONG(xdrs, (long *)fp));
 #else
         vsp = (struct vax_single *)fp;
@@ -216,7 +216,7 @@ bool_t xdr_double(xdrs, dp) register XDR *xdrs;
 double *dp;
 {
     register long *lp;
-#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_)
+#if !defined(mc68000) && !defined(sparc) && !defined(mips) && !defined(mmax) && !defined(_X86_) && !defined(Macintosh)
     struct ieee_double id;
     struct vax_double vd;
     register struct dbl_limits *lim;
@@ -227,7 +227,7 @@ double *dp;
     {
 
     case XDR_ENCODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
+#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_) || defined(Macintosh)
         lp = (long *)dp;
 #else
         vd = *((struct vax_double *)dp);
@@ -253,7 +253,7 @@ double *dp;
         return (XDR_PUTLONG(xdrs, lp++) && XDR_PUTLONG(xdrs, lp));
 #endif
     case XDR_DECODE:
-#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_)
+#if defined(mc68000) || defined(sparc) || defined(mips) || defined(mmax) || defined(_X86_) || defined(Macintosh)
         lp = (long *)dp;
 #if defined(_X86_)
         return (XDR_GETLONG(xdrs, lp + 1) && XDR_GETLONG(xdrs, lp));
@@ -283,7 +283,6 @@ double *dp;
         *dp = *((double *)&vd);
         return (TRUE);
 #endif
-
     case XDR_FREE:
         return (TRUE);
     }

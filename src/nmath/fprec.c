@@ -110,7 +110,7 @@ double fprec(double x, double digits)
     else
     { /* -- LARGE or small -- */
         do_round = max10e - l10 >= R_pow_di(10., -dig);
-        e2 = (e10 > 0) ? 16 : -16;
+        e2 = dig + ((e10 > 0) ? 16 : -16);
         p10 = R_pow_di(10., e2);
         x *= p10;
         P10 = R_pow_di(10., e10 - e2);

@@ -33,7 +33,7 @@
 
 #include <Defn.h>
 #include <Graphics.h>
-#include <Devices.h>      /* KillAllDevices */
+#include <Rdevices.h>     /* KillAllDevices */
 #include <Rmath.h>        /* eg. fmax2() */
 #include <R_ext/Applic.h> /* pretty0() */
 
@@ -3935,11 +3935,7 @@ void GPretty(double *lo, double *up, int *ndiv)
 #define TRC0 1.55512030155621416073 /* sqrt(4 * pi/(3 * sqrt(3))) */
 #define TRC1 1.34677368708859836060 /* TRC0 * sqrt(3) / 2 */
 #define TRC2 0.77756015077810708036 /* TRC0 / 2 */
-#ifdef Macintosh
-#define CMAG 1.0
-#else
-#define CMAG 1.0 /* Circle magnifier, now defunct */
-#endif
+#define CMAG 1.0                    /* Circle magnifier, now defunct */
 #ifdef OLDSYMSIZE
 #define GSTR_0 GStrWidth("0", INCHES, dd)
 #else

@@ -489,7 +489,9 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         error("empty `what=' specified");
     }
 
-    if (maxlines > 0)
+    if (maxitems > 0)
+        blksize = maxitems;
+    else if (maxlines > 0)
         blksize = maxlines;
     else
         blksize = SCAN_BLOCKSIZE;
@@ -1010,7 +1012,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < len; i++)
     {
         tmp = CHAR(STRING_ELT(cvec, i));
-        if (strlen(tmp) == 0 || isNAstring(tmp, 1))
+        if (strlen(tmp) == 0 || isNAstring(tmp, 1) || isBlankString(tmp))
             REAL(rval)[i] = NA_REAL;
         else
         {

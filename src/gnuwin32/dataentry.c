@@ -1000,7 +1000,8 @@ static void de_drawline(int fromx, int fromy, int tox, int toy)
 
 static void drawrectangle(int xpos, int ypos, int width, int height, int lwd, int fore)
 {
-    gdrawrect(de, lwd, 0, (fore == 1) ? p->ufg : p->bg, rect(xpos, ypos, width, height));
+    /* only used on screen, so always fast */
+    gdrawrect(de, lwd, 0, (fore == 1) ? p->ufg : p->bg, rect(xpos, ypos, width, height), 1);
 }
 
 static void de_drawtext(int xpos, int ypos, char *text)

@@ -27,7 +27,7 @@
 
 #include <Defn.h>
 #include <Graphics.h>
-#include <Devices.h>
+#include <Rdevices.h>
 #include <stdio.h>
 #include "opt.h"
 #include "graphapp/ga.h"
@@ -142,6 +142,7 @@ typedef struct
     int px, py, lty, lwd;
     int resizing; /* {1,2,3} */
     double rescale_factor;
+    int fast; /* Use fast fixed-width lines? */
 } gadesc;
 
 rect getregion(gadesc *xd)
@@ -250,7 +251,7 @@ static void SaveAsPostscript(DevDesc *dd, char *fn)
 
     if (!ndd)
     {
-        R_ShowMessage("No enough memory to copy graphics window");
+        R_ShowMessage("Not enough memory to copy graphics window");
         return;
     }
     if (!R_CheckDeviceAvailableBool())
@@ -439,11 +440,11 @@ static void SetFont(int face, int size, double rot, DevDesc *dd)
 
     if (face < 1 || face > fontnum)
         face = 1;
-    size = MulDiv(size, xd->wanteddpi, xd->truedpi);
     if (size < SMALLEST)
         size = SMALLEST;
     if (size > LARGEST)
         size = LARGEST;
+    size = MulDiv(size, xd->wanteddpi, xd->truedpi);
     if (!xd->usefixed && (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle))
     {
         del(xd->font);
@@ -1358,6 +1359,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     xd->fgcolor = Black;
     xd->bgcolor = White;
     xd->rescale_factor = 1.0;
+    xd->fast = 1; /* Use `cosmetic pens' if available */
     xd->xshift = xd->yshift = 0;
     if (!dsp[0])
     {
@@ -1381,7 +1383,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         }
         /*
           Observe that given actual graphapp implementation 256 is
-          irrilevant,i.e., depth of the bitmap is the one of graphic card
+          irrelevant,i.e., depth of the bitmap is the one of graphic card
           if required depth > 1
         */
         if (((xd->gawin = newbitmap(w, h, 256)) == NULL) || ((xd->fp = fopen(&dsp[4], "wb")) == NULL))
@@ -1431,8 +1433,9 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
             return FALSE;
         if (strncmp(dsp, s, ls) || (dsp[ls] && (dsp[ls] != ':')))
             return FALSE;
-        xd->gawin = newmetafile((ld > ls) ? &dsp[ls + 1] : "", rect(0, 0, MM_PER_INCH * w, MM_PER_INCH * h));
+        xd->gawin = newmetafile((ld > ls) ? &dsp[ls + 1] : "", MM_PER_INCH * w, MM_PER_INCH * h);
         xd->kind = METAFILE;
+        xd->fast = 0; /* use scalable line widths */
         if (!xd->gawin)
             return FALSE;
     }
@@ -1440,7 +1443,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
         xd->wanteddpi = 72;
     else
-        xd->wanteddpi = xd->rescale_factor * xd->truedpi;
+        xd->wanteddpi = xd->truedpi;
     if (!SetBaseFont(xd))
     {
         Rprintf("can't find any fonts\n");
@@ -1790,7 +1793,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, int coords, int 
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-        DRAW(gdrawrect(_d, xd->lwd, xd->lty, xd->fgcolor, r));
+        DRAW(gdrawrect(_d, xd->lwd, xd->lty, xd->fgcolor, r, 0));
     }
 }
 
@@ -1837,7 +1840,7 @@ static void GA_Circle(double x, double y, int coords, double r, int col, int bor
     {
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
         SetColor(border, dd);
-        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr));
+        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr, 0));
     }
 }
 
@@ -1864,7 +1867,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, int coords, DevD
     yy2 = (int)y2;
 
     SetColor(dd->gp.col, dd), SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-    DRAW(gdrawline(_d, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2)));
+    DRAW(gdrawline(_d, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0));
 }
 
 /********************************************************/
@@ -1892,7 +1895,7 @@ static void GA_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
         p[i].y = (int)devy;
     }
     SetColor(dd->gp.col, dd), SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-    DRAW(gdrawpolyline(_d, xd->lwd, xd->lty, xd->fgcolor, p, n, 0));
+    DRAW(gdrawpolyline(_d, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0));
     C_free((char *)p);
 }
 
@@ -1936,7 +1939,7 @@ static void GA_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-        DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, points, n));
+        DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, points, n, 0));
     }
     C_free((char *)points);
 }
@@ -1958,7 +1961,7 @@ static void GA_Text(double x, double y, int coords, char *str, double rot, doubl
 
     size = dd->gp.cex * dd->gp.ps + 0.5;
     GConvert(&x, &y, coords, DEVICE, dd);
-    SetFont(dd->gp.font, size, 0.0, dd);
+    //    SetFont(dd->gp.font, size, 0.0, dd);
     pixs = -1;
     xl = 0.0;
     yl = -pixs;
@@ -2123,6 +2126,7 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
         free(xd);
         return FALSE;
     }
+    dd->deviceSpecific = (void *)xd;
     /* Set up Data Structures  */
 
     dd->dp.open = GA_Open;
@@ -2163,6 +2167,8 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
     gcharmetric(xd->gawin, xd->font, -1, &a, &d, &w);
     dd->dp.cra[0] = w * xd->rescale_factor;
     dd->dp.cra[1] = (a + d) * xd->rescale_factor;
+    /* Set basefont to full size: now allow for initial re-scale */
+    xd->wanteddpi = xd->truedpi * xd->rescale_factor;
 
     /* Character Addressing Offsets */
     /* These are used to plot a single plotting character */
@@ -2193,7 +2199,6 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
 
     xd->resize = (resize == 3);
     xd->locator = FALSE;
-    dd->deviceSpecific = (void *)xd;
     dd->displayListOn = TRUE;
     if (RConsole && (xd->kind != SCREEN))
         show(RConsole);

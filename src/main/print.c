@@ -707,7 +707,7 @@ void CustomPrintValue(SEXP s, SEXP env)
 
 /* xxxpr are mostly for S compatibility (as mentioned in V&R) */
 
-int F77_NAME(dblepr0)(char *label, int *nchar, double *data, int *ndata)
+int F77_NAME(dblep0)(char *label, int *nchar, double *data, int *ndata)
 {
     int k, nc = *nchar;
 
@@ -747,7 +747,7 @@ int F77_NAME(intpr0)(char *label, int *nchar, int *data, int *ndata)
     return (0);
 }
 
-int F77_NAME(realpr0)(char *label, int *nchar, float *data, int *ndata)
+int F77_NAME(realp0)(char *label, int *nchar, float *data, int *ndata)
 {
     int k, nc = *nchar, nd = *ndata;
     double *ddata;

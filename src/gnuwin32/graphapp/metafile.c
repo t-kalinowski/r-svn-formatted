@@ -71,7 +71,8 @@ static object get_metafile_base(void)
     return metafile_base;
 }
 
-metafile newmetafile(char *name, rect r)
+/* width and height are in mm */
+metafile newmetafile(char *name, double width, double height)
 {
     metafile obj;
     HDC hDC;
@@ -93,8 +94,8 @@ metafile newmetafile(char *name, rect r)
 
     wr.left = 0;
     wr.top = 0;
-    wr.right = (ppix * r.width) / cppix;
-    wr.bottom = (ppiy * r.height) / cppiy;
+    wr.right = (ppix * width) / cppix;
+    wr.bottom = (ppiy * height) / cppiy;
 
     hDC = CreateEnhMetaFile(NULL, strlen(name) ? name : NULL, &wr, "GraphApp\0\0");
     if (!hDC)
@@ -109,7 +110,7 @@ metafile newmetafile(char *name, rect r)
         DeleteEnhMetaFile(CloseEnhMetaFile(hDC));
         return NULL;
     }
-    obj->rect = rect(0, 0, (ppix * r.width) / 2540, (ppiy * r.height) / 2540);
+    obj->rect = rect(0, 0, (ppix * width) / 2540, (ppiy * height) / 2540);
     obj->depth = GetDeviceCaps(hDC, BITSPIXEL) * GetDeviceCaps(hDC, PLANES);
     obj->die = private_delmetafile;
     obj->drawstate = copydrawstate();
