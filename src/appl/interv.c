@@ -30,7 +30,7 @@
 int F77_SUB(interv)(double *xt, int *n, double *x, Rboolean *rightmost_closed, Rboolean *all_inside, int *ilo,
                     int *mflag)
 {
-    return findIntervall(xt, *n, *x, *rightmost_closed, *all_inside, *ilo, mflag);
+    return findInterval(xt, *n, *x, *rightmost_closed, *all_inside, *ilo, mflag);
 }
 
 /* This one to be called from R {via .C(..)} :
@@ -43,12 +43,12 @@ void find_interv_vec(double *xt, int *n, double *x, int *nx, int *rightmost_clos
     for (i = 0; i < *nx; i++)
     {
         mfl = *all_inside;
-        ii = findIntervall(xt, *n, x[i], *rightmost_closed, *all_inside, ii, &mfl);
+        ii = findInterval(xt, *n, x[i], *rightmost_closed, *all_inside, ii, &mfl);
         indx[i] = ii;
     }
 }
 
-int findIntervall(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, int ilo, int *mflag)
+int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, int ilo, int *mflag)
 {
     int istep, middle, ihi;
 
@@ -64,7 +64,7 @@ int findIntervall(double *xt, int n, double x, Rboolean rightmost_closed, Rboole
         should be closed, i.e. result := n-1 if x == x[n]
       mflag =: all_inside	    {logical} indicating if result should be coerced
             to lie inside {1, n-1}
-      ilo   typically the result of the last call to findIntervall(.)
+      ilo   typically the result of the last call to findInterval(.)
             `ilo' used to be a static variable (in Fortran) which is not
         desirable in R anymore (threads!).
         Instead, you *should* use a reasonable value, in the first call.
@@ -192,4 +192,4 @@ L50:
         else
             ihi = middle;
     }
-} /* findIntervall */
+} /* findInterval */
