@@ -67,7 +67,7 @@
    This uses byte-level access, which is generally OK as comparisons
    are with ASCII chars.
 
-   isValidName has been changed to cope.
+   typeofnext SymbolValue isValidName have been changed to cope.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -81,6 +81,11 @@
 #include "IOStuff.h" /*-> Defn.h */
 #include "Fileio.h"
 #include "Parse.h"
+
+#ifdef SUPPORT_UTF8
+#include <wchar.h>
+#include <wctype.h>
+#endif
 
 #define yyconst const
 
@@ -2919,14 +2924,43 @@ static void ifpop(void)
 static int typeofnext(void)
 {
     int k, c;
+#ifdef SUPPORT_UTF8
+    int clen;
+#endif
+
     c = xxgetc();
-    if (isdigit(c))
-        k = 1;
-    else if (isalpha(c) || c == '.')
-        k = 2;
+#ifdef SUPPORT_UTF8
+    if (utf8locale && (clen = utf8clen(c)) > 1)
+    {
+        wchar_t wc;
+        int i;
+        char s[6];
+
+        s[0] = c;
+        s[clen] = '\0';
+        for (i = 1; i < clen; i++)
+            s[i] = xxgetc();
+        mbrtowc(&wc, s, clen, NULL);
+        if (iswdigit(wc))
+            k = 1;
+        else if (iswalpha(wc) || c == '.')
+            k = 2;
+        else
+            k = 3;
+        for (i = clen - 1; i >= 0; i--)
+            xxungetc(s[i]);
+    }
     else
-        k = 3;
-    xxungetc(c);
+#endif
+    {
+        if (isdigit(c))
+            k = 1;
+        else if (isalpha(c) || c == '.')
+            k = 2;
+        else
+            k = 3;
+        xxungetc(c);
+    }
     return k;
 }
 
@@ -3273,11 +3307,6 @@ static int SpecialValue(int c)
     return SPECIAL;
 }
 
-#ifdef SUPPORT_UTF8
-#include <wchar.h>
-#include <wctype.h>
-#endif
-
 /* return 1 if name is a valid name 0 otherwise */
 int isValidName(char *name)
 {
@@ -3294,9 +3323,9 @@ int isValidName(char *name)
         used = mbrtowc(&wc, p, n, NULL);
         p += used;
         n -= used;
-        if (wc != '.' && !iswalpha(wc))
+        if (wc != L'.' && !iswalpha(wc))
             return 0;
-        if (wc == '.')
+        if (wc == L'.')
         {
             mbrtowc(&wc, p, n, NULL);
             if (iswdigit(wc))
@@ -3313,6 +3342,7 @@ int isValidName(char *name)
             return 0;
     }
     else
+#endif
     {
         int c = *p++;
         if (c != '.' && !isalpha(c))
@@ -3324,17 +3354,6 @@ int isValidName(char *name)
         if (c != '\0')
             return 0;
     }
-#else
-    int c = *p++;
-    if (c != '.' && !isalpha(c))
-        return 0;
-    if (c == '.' && isdigit((int)*p))
-        return 0;
-    while (c = *p++, (isalnum(c) || c == '.' || c == '_'))
-        ;
-    if (c != '\0')
-        return 0;
-#endif
 
     if (strcmp(name, "...") == 0)
         return 1;
@@ -3350,10 +3369,43 @@ static int SymbolValue(int c)
 {
     int kw;
     DECLARE_YYTEXT_BUFP(yyp);
-    do
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
     {
-        YYTEXT_PUSH(c, yyp);
-    } while ((c = xxgetc()) != R_EOF && (isalnum(c) || c == '.' || c == '_'));
+        while (1)
+        {
+            wchar_t wc;
+            int i, clen;
+            char s[6];
+            YYTEXT_PUSH(c, yyp);
+            c = xxgetc();
+            if (c == R_EOF)
+                break;
+            if (c == '.' || c == '_')
+                continue;
+            clen = utf8clen(c);
+            if (clen > 1)
+            {
+                s[0] = c;
+                s[clen] = '\0';
+                for (i = 1; i < clen; i++)
+                    s[i] = xxgetc();
+                mbrtowc(&wc, s, clen, NULL);
+                for (i = clen - 1; i >= 0; i--)
+                    xxungetc(s[i]);
+                if (!iswalnum(wc))
+                    break;
+            }
+            else if (!isalnum(c))
+                break;
+        }
+    }
+    else
+#endif
+        do
+        {
+            YYTEXT_PUSH(c, yyp);
+        } while ((c = xxgetc()) != R_EOF && (isalnum(c) || c == '.' || c == '_'));
     xxungetc(c);
     YYTEXT_PUSH('\0', yyp);
     if ((kw = KeywordLookup(yytext)))
@@ -3384,6 +3436,12 @@ static int SymbolValue(int c)
 static int token()
 {
     int c, kw;
+#ifdef SUPPORT_UTF8
+    wchar_t wc;
+    int i, clen;
+    char s[6];
+#endif
+
     if (SavedToken)
     {
         c = SavedToken;
@@ -3413,7 +3471,24 @@ static int token()
 
     /* literal numbers */
 
-    if (c == '.' || isdigit(c))
+    if (c == '.')
+        return NumericValue(c);
+#ifdef SUPPORT_UTF8
+    if (utf8locale && (clen = utf8clen(c)) > 1)
+    {
+        s[0] = c;
+        s[clen] = '\0';
+        for (i = 1; i < clen; i++)
+            s[i] = xxgetc();
+        mbrtowc(&wc, s, clen, NULL);
+        for (i = clen - 1; i >= 0; i--)
+            xxungetc(s[i]);
+        if (iswdigit(wc))
+            return NumericValue(c);
+    }
+    else
+#endif
+        if (isdigit(c))
         return NumericValue(c);
 
     /* literal strings */
@@ -3432,7 +3507,24 @@ static int token()
         return QuotedSymbolValue(c);
 symbol:
 
-    if (c == '.' || isalpha(c))
+    if (c == '.')
+        return SymbolValue(c);
+#ifdef SUPPORT_UTF8
+    if (utf8locale && (clen = utf8clen(c)) > 1)
+    {
+        s[0] = c;
+        s[clen] = '\0';
+        for (i = 1; i < clen; i++)
+            s[i] = xxgetc();
+        mbrtowc(&wc, s, clen, NULL);
+        for (i = clen - 1; i >= 0; i--)
+            xxungetc(s[i]);
+        if (iswalpha(wc))
+            return SymbolValue(c);
+    }
+    else
+#endif
+        if (isalpha(c))
         return SymbolValue(c);
 
     /* compound tokens */

@@ -485,7 +485,7 @@ static int LoadEncoding(char *encpath, char *encname, CNAME *encnames, char *enc
     return 1;
 }
 
-/* Load font metrics from a file: defaults to the R_HOME/afm directory */
+/* Load font metrics from a file: defaults to the R_HOME/library/grDevices/afm directory */
 
 static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo *metrics, char *fontname,
                                      CNAME *charnames, CNAME *encnames, int reencode)
@@ -652,6 +652,13 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
         *ascent = 0.001 * metrics->FontBBox[3];
         *descent = -0.001 * metrics->FontBBox[1];
         *width = 0.001 * (metrics->FontBBox[2] - metrics->FontBBox[0]);
+    }
+    else if (c > 255)
+    { /* Unicode */
+        *ascent = 0;
+        *descent = 0;
+        *width = 0;
+        warning("font metrics unknown for Unicode character %d", c);
     }
     else
     {

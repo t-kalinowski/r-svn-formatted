@@ -1147,15 +1147,16 @@ Rboolean utf8strIsASCII(char *str)
     return TRUE;
 }
 
-/* written with str not char as other MBCS encodings may need
-   more of the string. */
+/* Number of additional bytes */
 static const unsigned char utf8_table4[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                             2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
 
 int utf8clen(char c)
 {
-    return utf8_table4[(unsigned char)c & 0x3f];
+    if ((c & 0xc0) != 0xc0)
+        return 1;
+    return 1 + utf8_table4[c & 0x3f];
 }
 
 void F77_SYMBOL(rexitc)(char *msg, int *nchar)
