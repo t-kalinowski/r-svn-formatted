@@ -85,6 +85,8 @@
 /*  Includes                                                                 */
 /*****************************************************************************/
 
+#include <RCarbon.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -207,6 +209,9 @@ char *mac_getenv(const char *name)
     sprintf(temp_path, "%s:.Renviron", R_Home);
 
     err = FSpLocationFromFullPath(strlen(temp_path), temp_path, &spec);
+
+    if (err != noErr)
+        return err_str; // NULL; /* there is no enviroment-file */
 
     /* try open the file in the folder R_HOME:etc */
 
