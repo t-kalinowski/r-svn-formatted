@@ -131,7 +131,9 @@ void R_SaveGlobalEnv(void)
 
 #ifdef HAVE_STAT
 #include <sys/types.h>
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 
 Rboolean R_FileExists(char *path)
 {
