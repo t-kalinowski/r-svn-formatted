@@ -1249,7 +1249,7 @@ SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* If the dispatch fails, we "drop through" to the default code below. */
 
     gcall = call;
-    if (DispatchOrEval(call, op, args, rho, &ans, 0))
+    if (DispatchOrEval(call, "[<-", args, rho, &ans, 0))
         return (ans);
 
     PROTECT(args = ans);
@@ -1376,7 +1376,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     gcall = call;
 
-    if (DispatchOrEval(call, op, args, rho, &ans, 0))
+    if (DispatchOrEval(call, "[[<-", args, rho, &ans, 0))
         return (ans);
 
     PROTECT(args = ans);
@@ -1672,7 +1672,7 @@ SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
     /* replace the second argument with a string */
     SETCADR(args, input);
 
-    if (DispatchOrEval(call, op, args, env, &ans, 0))
+    if (DispatchOrEval(call, "$<-", args, env, &ans, 0))
         return (ans);
 
 #ifdef OLD
