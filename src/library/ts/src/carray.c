@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999        Martyn Plummer
+ *  Copyright (C) 1999	      Martyn Plummer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 /* Functions for dynamically allocating arrays
 
    The Array structure contains pointers to arrays which are allocated
-   using the R_alloc function.  Although the .C() interface cleans up
+   using the R_alloc function.	Although the .C() interface cleans up
    all memory assigned with R_alloc, judicious use of getvmax() setvmax()
    to free this memory is probably wise. See memory.c in R core.
 
@@ -187,7 +187,7 @@ Array subarray(Array a, int index)
     offset = index;
     switch (DIM_LENGTH(a))
     {
-        /* NB Falling through here */
+    /* NB Falling through here */
     case 4:
         offset *= DIM(a)[DIM_LENGTH(a) - 4 + 1];
         ARRAY3(b) = ARRAY3(a) + offset;
@@ -215,24 +215,15 @@ int test_array_conform(Array a1, Array a2)
     int i, ans = FALSE;
 
     if (DIM_LENGTH(a1) != DIM_LENGTH(a2))
-    {
-        ans = FALSE;
-    }
+        return FALSE;
     else
-    {
         for (i = 0; i < DIM_LENGTH(a1); i++)
         {
             if (DIM(a1)[i] == DIM(a2)[i])
-            {
                 ans = TRUE;
-            }
             else
-            {
-                ans = FALSE;
-                break;
-            }
+                return FALSE;
         }
-    }
 
     return ans;
 }
