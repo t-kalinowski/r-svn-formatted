@@ -310,7 +310,7 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
          */
         if ((isNull(viewportLayoutPosRow(vp)) && isNull(viewportLayoutPosCol(vp))) || isNull(viewportLayout(parent)))
             fillViewportLocationFromViewport(vp, &vpl);
-        else
+        else if (checkPosRowPosCol(vp, parent))
             calcViewportLocationFromLayout(viewportLayoutPosRow(vp), viewportLayoutPosCol(vp), parent, &vpl);
     }
     /* NOTE that we are not doing a transformLocn here because
