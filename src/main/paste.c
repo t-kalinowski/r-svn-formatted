@@ -60,7 +60,7 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(sep) || LENGTH(sep) <= 0)
         errorcall(call, "invalid separator");
     sep = STRING_ELT(sep, 0);
-    sepw = LENGTH(sep);
+    sepw = strlen(CHAR(sep)); /* not LENGTH as might contain \0 */
 
     collapse = CADDR(args);
     if (!isNull(collapse))
@@ -91,7 +91,7 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             k = length(VECTOR_ELT(x, j));
             if (k > 0)
-                pwidth += LENGTH(STRING_ELT(VECTOR_ELT(x, j), i % k));
+                pwidth += strlen(CHAR(STRING_ELT(VECTOR_ELT(x, j), i % k)));
         }
         pwidth += (nx - 1) * sepw;
         tmpchar = allocString(pwidth);
@@ -103,8 +103,7 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 s = CHAR(STRING_ELT(VECTOR_ELT(x, j), i % k));
                 strcpy(buf, s);
-
-                buf += LENGTH(STRING_ELT(VECTOR_ELT(x, j), i % k));
+                buf += strlen(s);
             }
             if (j != nx - 1 && sepw != 0)
             {
@@ -120,10 +119,10 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     if (collapse != R_NilValue && (nx = LENGTH(ans)) != 0)
     {
         sep = STRING_ELT(collapse, 0);
-        sepw = LENGTH(sep);
+        sepw = strlen(CHAR(sep));
         pwidth = 0;
         for (i = 0; i < nx; i++)
-            pwidth += LENGTH(STRING_ELT(ans, i));
+            pwidth += strlen(CHAR(STRING_ELT(ans, i)));
         pwidth += (nx - 1) * sepw;
         tmpchar = allocString(pwidth);
         buf = CHAR(tmpchar);

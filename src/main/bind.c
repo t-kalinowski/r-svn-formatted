@@ -370,7 +370,7 @@ static SEXP NewBase(SEXP base, SEXP tag)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     {
-        ans = allocString(strlen(CHAR(tag)) + strlen(CHAR(base)) + 2);
+        ans = allocString(strlen(CHAR(tag)) + strlen(CHAR(base)) + 1);
         sprintf(CHAR(ans), "%s.%s", CHAR(base), CHAR(tag));
     }
     else if (*CHAR(tag))
