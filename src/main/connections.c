@@ -78,7 +78,7 @@ Rconnection getConnection(int n)
 {
     Rconnection con = NULL;
 
-    if (n < 0 || n == NA_INTEGER || !(con = Connections[n]))
+    if (n < 0 || n >= NCONNECTIONS || n == NA_INTEGER || !(con = Connections[n]))
         error("invalid connection");
     return con;
 }
@@ -88,7 +88,7 @@ Rconnection getConnection_no_err(int n)
 {
     Rconnection con = NULL;
 
-    if (n < 0 || n == NA_INTEGER || !(con = Connections[n]))
+    if (n < 0 || n >= NCONNECTIONS || n == NA_INTEGER || !(con = Connections[n]))
         return NULL;
     return con;
 }
