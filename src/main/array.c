@@ -78,7 +78,17 @@ SEXP do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     lendat = length(vals);
     nr = asInteger(snr);
+    if (nr == NA_INTEGER) /* This is < 0 */
+        error("matrix: invalid nrow value (too large or NA)");
+    if (nr < 0)
+        error("matrix: invalid nrow value (< 0)");
     nc = asInteger(snc);
+    if (nc < 0)
+        error("matrix: invalid ncol value (< 0)");
+    if (nc == NA_INTEGER)
+        error("matrix: invalid ncol value (too large or NA)");
+    if (nc < 0)
+        error("matrix: invalid ncol value (< 0)");
 
     if (lendat > 0)
     {
@@ -96,6 +106,9 @@ SEXP do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
             warning("data length exceeds size of matrix");
         }
     }
+
+    if ((double)nr * (double)nc > INT_MAX)
+        error("matrix: too many elements specified");
 
     PROTECT(snr = allocMatrix(TYPEOF(vals), nr, nc));
     if (lendat)
@@ -152,6 +165,8 @@ SEXP allocMatrix(SEXPTYPE mode, int nrow, int ncol)
 
     if (nrow < 0 || ncol < 0)
         error("negative extents to matrix");
+    if ((double)nrow * (double)ncol > INT_MAX)
+        error("allocMatrix: too many elements specified");
     n = nrow * ncol;
     PROTECT(s = allocVector(mode, n));
     PROTECT(t = allocVector(INTSXP, 2));
@@ -166,10 +181,16 @@ SEXP allocArray(SEXPTYPE mode, SEXP dims)
 {
     SEXP array;
     int i, n;
+    double dn;
 
-    n = 1;
+    dn = n = 1;
     for (i = 0; i < LENGTH(dims); i++)
-        n = n * INTEGER(dims)[i];
+    {
+        dn *= INTEGER(dims)[i];
+        if (dn > INT_MAX)
+            error("allocArray: too many elements specified by dims");
+        n *= INTEGER(dims)[i];
+    }
 
     PROTECT(dims = duplicate(dims));
     PROTECT(array = allocVector(mode, n));
