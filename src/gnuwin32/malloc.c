@@ -861,14 +861,9 @@ struct mallinfo
 
     /* R Specific declarations here */
 
-    /* The maximum via either sbrk or mmap */
-    unsigned long max_total_mem = 0;
-
     extern unsigned int R_max_memory;
-
-/* reserve 256MB to ensure large contiguous space */
-#define RESERVED_SIZE (256 * 1024 * 1024)
-    unsigned int R_reserved_size = RESERVED_SIZE;
+    extern int R_Is_Running;
+    void Rf_warning(const char *, ...);
 
 /* ---------- description of public routines ------------ */
 
@@ -3020,8 +3015,6 @@ mstate av;
                 sum += av->sbrked_mem;
                 if (sum > (CHUNK_SIZE_T)(av->max_total_mem))
                     av->max_total_mem = sum;
-                /* R Memory Statistics */
-                max_total_mem = av->max_total_mem;
 
                 check_chunk(p);
 
@@ -3327,8 +3320,6 @@ mstate av;
         sum += av->mmapped_mem;
         if (sum > (CHUNK_SIZE_T)(av->max_total_mem))
             av->max_total_mem = sum;
-        /* R Memory Statistics */
-        max_total_mem = av->max_total_mem;
 
         check_malloc_state();
 
@@ -4304,8 +4295,6 @@ size_t bytes;
             sum += av->sbrked_mem;
             if (sum > (CHUNK_SIZE_T)(av->max_total_mem))
                 av->max_total_mem = sum;
-            /* R Memory Statistics */
-            max_total_mem = av->max_total_mem;
 
             return chunk2mem(newp);
         }
@@ -5414,8 +5403,16 @@ static void *sbrk(long size)
             assert((unsigned)g_last->top_committed % g_pagesize == 0);
             assert(0 < commit_size && commit_size % g_pagesize == 0);
             {
+                mstate av = get_malloc_state();
+                void *base_committed;
+                if (av->sbrked_mem + av->mmapped_mem + size > R_max_memory)
+                {
+                    if (R_Is_Running)
+                        Rf_warning("Reached total allocation of %dMb: see help(memory.size)", R_max_memory / 1048576);
+                    goto sbrk_exit;
+                }
                 /* Commit this */
-                void *base_committed = VirtualAlloc(g_last->top_committed, commit_size, MEM_COMMIT, PAGE_READWRITE);
+                base_committed = VirtualAlloc(g_last->top_committed, commit_size, MEM_COMMIT, PAGE_READWRITE);
                 /* Check returned pointer for consistency */
                 if (base_committed != g_last->top_committed)
                     goto sbrk_exit;
@@ -5524,6 +5521,7 @@ static void *mmap(void *ptr, long size, long prot, long type, long handle, long 
 {
     static long g_pagesize;
     static long g_regionsize;
+    mstate av = get_malloc_state();
 #ifdef TRACESB
     printf("mmap %ld\n", size);
 #endif
@@ -5540,6 +5538,13 @@ static void *mmap(void *ptr, long size, long prot, long type, long handle, long 
     assert((unsigned)ptr % g_regionsize == 0);
     assert(size % g_pagesize == 0);
     /* Allocate this */
+    if (av->sbrked_mem + av->mmapped_mem + size > R_max_memory)
+    {
+        if (R_Is_Running)
+            Rf_warning("Reached total allocation of %dMb: see help(memory.size)", R_max_memory / 1048576);
+        ptr = (void *)MORECORE_FAILURE;
+        goto mmap_exit;
+    }
     ptr = VirtualAlloc(ptr, size, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
     if (!ptr)
     {
