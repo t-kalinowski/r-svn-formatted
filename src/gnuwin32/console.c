@@ -46,6 +46,23 @@ extern char *alloca(size_t);
 
 extern UImode CharacterMode;
 
+static int wcwidth(wchar_t ucs)
+{
+    return 1 + 
+    (ucs >= 0x1100 &&
+     (ucs <= 0x115f ||                    /* Hangul Jamo init. consonants */
+      ucs == 0x2329 || ucs == 0x232a ||
+      (ucs >= 0x2e80 && ucs <= 0xa4cf &&
+       ucs != 0x303f) ||                  /* CJK ... Yi */
+      (ucs >= 0xac00 && ucs <= 0xd7a3) || /* Hangul Syllables */
+      (ucs >= 0xf900 && ucs <= 0xfaff) || /* CJK Compatibility Ideographs */
+      (ucs >= 0xfe30 && ucs <= 0xfe6f) || /* CJK Compatibility Forms */
+      (ucs >= 0xff00 && ucs <= 0xff60) || /* Fullwidth Forms */
+      (ucs >= 0xffe0 && ucs <= 0xffe6) /* ||
+      (ucs >= 0x20000 && ucs <= 0x2fffd) ||
+      (ucs >= 0x30000 && ucs <= 0x3fffd)*/));
+}
+
 #ifdef SUPPORT_MBCS
 static mbstate_t mb_st; /* use for char transpose as well */
 
@@ -53,18 +70,20 @@ static mbstate_t mb_st; /* use for char transpose as well */
    OTOH, we do allow stateful encodings, assuming the state is reset
    at the beginning of each line */
 
-int mb_char_len(char *buf, int clength)
+int mb_char_len(char *buf, int clength, wchar_t *wc)
 {
     int i, mb_len = 0;
 
     memset(&mb_st, 0, sizeof(mbstate_t));
-    for (i = 0; i <= clength; i += mb_len)
+    for (i = 0; i < clength; i += mb_len)
         mb_len = mbrlen(buf + i, MB_CUR_MAX, &mb_st);
+    mb_len = mbrtowc(wc, buf + clength, MB_CUR_MAX, &mb_st);
     return mb_len;
 }
 #else
-int inline mb_char_len(char *buf, int clength)
+int inline mb_char_len(char *buf, int clength, char *wc)
 {
+    *wc = 0;
     return 1;
 }
 #endif
@@ -377,6 +396,8 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
         if (chf)
             s[fch] = chf;
 #else
+        /* <FIXME> This needs to be more complicated to take double widths
+           into account */
         buff = alloca(strlen(s)); /* overkill */
         q = buff;
         if (FC && (fch == 0))
@@ -1250,7 +1271,8 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory) 
 char *cur_line;
 char *aLine;
 int ns0 = NUMLINES;
-int mb_len;
+int mb_len, wid = 0;
+wchar_t wc;
 
 /* print the prompt */
 xbufadds(p->lbuf, prompt, 1);
@@ -1329,14 +1351,24 @@ for (;;)
             break;
         case CHARLEFT:
             if (cur_pos > 0)
-                cur_pos -= mb_char_len(cur_line, cur_pos - 1);
+            {
+                cur_pos -= mb_char_len(cur_line, cur_pos - 1, &wc);
+                wid = wcwidth(wc);
+                if (wid > 1)
+                    COLS -= (wid - 1);
+            }
             break;
         case ENDLINE:
             cur_pos = max_pos;
             break;
         case CHARRIGHT:
             if (cur_pos < max_pos)
-                cur_pos += mb_char_len(cur_line, cur_pos);
+            {
+                cur_pos += mb_char_len(cur_line, cur_pos, &wc);
+                wid = wcwidth(wc);
+                if (wid > 1)
+                    COLS += (wid - 1);
+            }
             break;
         case KILLRESTOFLINE:
             max_pos = cur_pos;
@@ -1357,7 +1389,7 @@ for (;;)
         case BACKCHAR:
             if (cur_pos > 0)
             {
-                mb_len = mb_char_len(cur_line, cur_pos - 1);
+                mb_len = mb_char_len(cur_line, cur_pos - 1, &wc);
                 cur_pos -= mb_len;
                 for (i = cur_pos; i <= max_pos - mb_len; i++)
                     cur_line[i] = cur_line[i + mb_len];
@@ -1369,7 +1401,7 @@ for (;;)
                 break;
             if (cur_pos < max_pos)
             {
-                mb_len = mb_char_len(cur_line, cur_pos);
+                mb_len = mb_char_len(cur_line, cur_pos, &wc);
                 for (i = cur_pos; i <= max_pos - mb_len; i++)
                     cur_line[i] = cur_line[i + mb_len];
                 max_pos -= mb_len;
@@ -1381,10 +1413,13 @@ for (;;)
             if (cur_pos >= max_pos)
                 break;
             {
-                int j, l_len = mb_char_len(cur_line, cur_pos - 1), r_len;
+                int j, l_len = mb_char_len(cur_line, cur_pos - 1, &wc), r_len;
+                int lw, rw;
                 /* we should not reset the state here */
 #ifdef SUPPORT_MBCS
-                r_len = mbrlen(cur_line + cur_pos, MB_CUR_MAX, &mb_st);
+                lw = wcwidth(wc);
+                r_len = mbrtowc(&wc, cur_line + cur_pos, MB_CUR_MAX, &mb_st);
+                rw = wcwidth(wc);
 #else
                 r_len = 1;
 #endif
@@ -1396,6 +1431,12 @@ for (;;)
                         cur_line[cur_pos + i - j - 1] = cur_char;
                     }
                 cur_pos += r_len - l_len;
+#ifdef SUPPORT_MBCS
+                /* what to do with cursor on double-width? */
+                wid = rw - lw;
+                if (wid)
+                    COLS += wid;
+#endif
             }
             break;
         default:
@@ -1532,12 +1573,13 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
         R_ShowMessage(msg);
         consolefn = FixedFont;
     }
-    if (!ghasfixedwidth(consolefn))
-    {
-        sprintf(msg, "Font %s-%d-%d has variable width.\nUsing system fixed font.", fontname, fontsty, pointsize);
-        R_ShowMessage(msg);
-        consolefn = FixedFont;
-    }
+    /*    if (!ghasfixedwidth(consolefn)) {
+           sprintf(msg,
+               "Font %s-%d-%d has variable width.\nUsing system fixed font.",
+                   fontname, fontsty, pointsize);
+           R_ShowMessage(msg);
+           consolefn = FixedFont;
+           } */
     consoler = rows;
     consolec = cols;
     consolex = consx;
