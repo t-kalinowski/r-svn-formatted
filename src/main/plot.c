@@ -3266,7 +3266,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset;
-    int i, imin, k, n, npts, plot, posi;
+    int i, imin, k, n, npts, plot, posi, warn;
     DevDesc *dd = CurrentDevice();
 
     /* If we are replaying the display list, then just redraw the
@@ -3359,10 +3359,19 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
                     dmin = d;
                 }
             }
+            /* can't use warning because we want to print immediately  */
+            /* might want to handle warn=2? */
+            warn = asInteger(GetOption(install("warn"), R_NilValue));
             if (dmin > THRESHOLD)
-                REprintf("warning: no point with %.2f inches\n", THRESHOLD);
+            {
+                if (warn >= 0)
+                    REprintf("warning: no point with %.2f inches\n", THRESHOLD);
+            }
             else if (LOGICAL(ind)[imin])
-                REprintf("warning: nearest point already identified\n");
+            {
+                if (warn >= 0)
+                    REprintf("warning: nearest point already identified\n");
+            }
             else
             {
                 k++;
