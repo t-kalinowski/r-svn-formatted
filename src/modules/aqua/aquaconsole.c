@@ -95,8 +95,7 @@ static const EventTypeSpec KeybEvents[] = {kEventClassKeyboard, kEventRawKeyUp};
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
-static const EventTypeSpec RWinEvents[] = {{kEventClassWindow, kEventWindowResizeCompleted},
-                                           {kEventClassMouse, kEventMouseDown}};
+static const EventTypeSpec RWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged}};
 
 void Raqua_StartConsole(void)
 {
@@ -126,17 +125,14 @@ void Raqua_StartConsole(void)
 */
 
     err = CreateNibReference(CFSTR("main"), &nibRef);
-    /*    fprintf(stderr,"\n CreateNibErr=%d",err); */
     if (err != noErr)
         goto fine;
 
     err = SetMenuBarFromNib(nibRef, CFSTR("MenuBar"));
-    /*    fprintf(stderr,"\n CreateMenuBarNibErr=%d",err); */
     if (err != noErr)
         goto fine;
 
     err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &ConsoleWindow);
-    /*   fprintf(stderr,"\n CreateWinFromNibErr=%d",err); */
     if (err != noErr)
         goto fine;
 
@@ -149,15 +145,12 @@ void Raqua_StartConsole(void)
 
     /* Check for availability of MLTE api */
     if (TXNVersionInformation == (void *)kUnresolvedCFragSymbolAddress)
-    {
-        /*	  fprintf(stderr,"\nTXNVersionInformation error\n"); */
         goto fine;
-    }
 
     /* default settings for MLTE */
     err = InitMLTE();
     if (err != noErr)
-    { // Check for availability of MLTE api
+    { /* Check for availability of MLTE api */
         fprintf(stderr, "\nNO MLTE error=%d\n", err);
         goto fine;
     }
@@ -171,7 +164,7 @@ void Raqua_StartConsole(void)
         SetRect(&OutFrame, 0, 0, WinFrame.right, WinFrame.bottom - 110);
         SetRect(&InFrame, 0, WinFrame.bottom - 100, WinFrame.right, WinFrame.bottom);
 
-        frameOptions = kTXNShowWindowMask;
+        frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask;
         frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNReadOnlyMask;
 
         err = TXNNewObject(NULL, ConsoleWindow, &OutFrame, frameOptions, kTXNTextEditStyleFrameType, kTXNTextensionFile,
@@ -206,6 +199,7 @@ void Raqua_StartConsole(void)
         {
             WeHaveConsole = true;
             RescaleInOut(0.8);
+
             InstallStandardEventHandler(GetApplicationEventTarget());
             err = InstallApplicationEventHandler(KeybHandler, GetEventTypeCount(KeybEvents), KeybEvents, 0, NULL);
             err = InstallApplicationEventHandler(NewEventHandlerUPP(RCmdHandler), GetEventTypeCount(RCmdEvents),
@@ -216,6 +210,7 @@ void Raqua_StartConsole(void)
             err = AEInstallEventHandler(kCoreEventClass, kAEQuitApplication,
                                         NewAEEventHandlerUPP(QuitAppleEventHandler), 0, false);
 
+            TXNFocus(RConsoleOutObject, true);
             //      err = CreateWindowFromNib(nibRef,CFSTR("AboutWindow"),&RAboutWindow);
             //      fprintf(stderr,"\n AboutWin err=%d",err);
 
@@ -366,10 +361,6 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
                 QuitApplicationEventLoop();
             }
             break;
-            //   case kEventRawKeyDown:
-            //    err = GetEventParameter (REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL,
-            //    &RKeyCode); fprintf(stderr,"\n key=%d",RKeyCode);
-            //   break;
 
         default:
             break;
@@ -444,6 +435,22 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 }
                 break;
 
+            /*
+               If selection occurs in both RConsole-Out and RConsole-In, only the
+               text selectied in the RConsole-Out is copied to the clipboard.
+               I'm not sure if it should be the contrary.
+            */
+            case kHICommandCopy:
+                if (!TXNIsSelectionEmpty(RConsoleOutObject))
+                {
+                    TXNCopy(RConsoleOutObject);
+                }
+                else if (!TXNIsSelectionEmpty(RConsoleInObject))
+                {
+                    TXNCopy(RConsoleInObject);
+                }
+                break;
+
             default:
                 break;
             }
@@ -482,20 +489,10 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     switch (GetEventClass(inEvent))
     {
     case kEventClassWindow:
-        if (eventKind == kEventWindowResizeCompleted)
+        if (eventKind == kEventWindowBoundsChanged)
         {
             RescaleInOut(0.8);
         }
-    case kEventMouseDown:
-        CursorRgn = NewRgn();
-        GetEventParameter(inEvent, kEventParamMouseLocation, typeQDPoint, NULL, sizeof(Point), NULL, &MouseLoc);
-        //    AdjustCursor(wheresMyMouse, CursorRgn);
-        fprintf(stderr, "\n v=%d, h=%d", MouseLoc.v, MouseLoc.h);
-        TXNGetViewRect(RConsoleOutObject, &ROutRect);
-        fprintf(stderr, "\n left=%d, rig=%d, top=%d, bot=%d", ROutRect.left, ROutRect.right, ROutRect.top,
-                ROutRect.bottom);
-
-        DisposeRgn(CursorRgn);
         break;
 
     default:
