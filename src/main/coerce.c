@@ -1790,6 +1790,8 @@ SEXP do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
         env = eval(CADR(args), rho);
     if (env == R_NilValue)
         env = R_GlobalEnv;
+    if (TYPEOF(env) == VECSXP)
+        env = VectorToPairList(env);
     if (TYPEOF(env) == LISTSXP)
     {
         PROTECT(s = duplicate(env));
