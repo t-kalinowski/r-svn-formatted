@@ -662,7 +662,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
     switch (TYPEOF(f))
     {
     case CLOSXP:
-#define IGNORE_LEXICAL_SCOPE
+#undef IGNORE_LEXICAL_SCOPE
 #ifdef IGNORE_LEXICAL_SCOPE
         PROTECT(val = BODY(f));
         nprotect++;
