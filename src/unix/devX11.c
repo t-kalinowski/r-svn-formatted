@@ -1511,7 +1511,7 @@ static void X11_Hold(DevDesc *dd)
 int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
     /* if need to bail out with some sort of "error" then */
-    /* must free(dd) */
+    /* must free(xd) */
 
     int ps;
     x11Desc *xd;
@@ -1637,4 +1637,9 @@ static int highbit(unsigned long ul)
     for (i = 31; ((ul & hb) == 0) && i >= 0; i--, ul <<= 1)
         ;
     return i;
+}
+
+int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
+{
+    return 0;
 }
