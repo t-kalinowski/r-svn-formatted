@@ -260,12 +260,12 @@ static R_CallMethodDef callMethods[] = {
 
     {NULL, NULL, 0}};
 
-#define EXTDEF(name)                                                                                                   \
+#define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
-#name, (DL_FUNC)&name, -1                                                                                      \
+#name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags), EXTDEF(call_dqagi), {NULL, NULL, 0}};
+static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags, 7), EXTDEF(call_dqagi, 7), {NULL, NULL, 0}};
 
 #define FDEF(name)                                                                                                     \
     {                                                                                                                  \
