@@ -48,19 +48,16 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(file = coerceVector(CAR(args), STRSXP));
     args = CDR(args);
-
     num = asInteger(CAR(args));
     args = CDR(args);
-
     PROTECT(text = coerceVector(CAR(args), STRSXP));
     args = CDR(args);
-
     prompt = CAR(args);
+    args = CDR(args);
     if (prompt == R_NilValue)
         PROTECT(prompt);
     else
         PROTECT(prompt = coerceVector(prompt, STRSXP));
-    args = CDR(args);
 
     if (length(text) > 0)
     {
@@ -69,11 +66,9 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         s = R_ParseVector(text, num, &status);
         if (status != PARSE_OK)
             errorcall(call, "parse error");
-        UNPROTECT(3);
-        return s;
     }
-    else if (isValidString(file))
-    {
+    else if (isValidStringF(file))
+    { /* file != "" */
         if (num == NA_INTEGER)
             num = -1;
         fp = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "r");
@@ -83,8 +78,6 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         fclose(fp);
         if (status != PARSE_OK)
             errorcall(call, "syntax error on line %d", R_ParseError);
-        UNPROTECT(3);
-        return s;
     }
     else
     {
@@ -93,7 +86,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         s = R_ParseBuffer(&R_ConsoleIob, num, &status, prompt);
         if (status != PARSE_OK)
             errorcall(call, "parse error");
-        UNPROTECT(3);
-        return s;
     }
+    UNPROTECT(3);
+    return s;
 }
