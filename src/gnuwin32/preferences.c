@@ -51,7 +51,7 @@ struct structGUI
     int tt_font;
     int pointsize;
     char style[20];
-    int crows, ccols, cx, cy, setWidthOnResize, prows, pcols, cbb, cbl;
+    int crows, ccols, cx, cy, setWidthOnResize, prows, pcols, cbb, cbl, grx, gry;
     rgb bg, fg, user, hlt;
 };
 typedef struct structGUI *Gui;
@@ -79,12 +79,12 @@ static char *FontsList[] = {"Courier", "Courier New", "FixedSys", "FixedFont", "
 
 static window wconfig;
 static button bApply, bSave, bFinish, bCancel;
-static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_cols, l_bgcol,
-    l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
+static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_grx, l_gry,
+    l_cols, l_bgcol, l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
 static radiobutton rb_mdi, rb_sdi, rb_mwin, rb_swin;
 static listbox f_font, f_style, d_point, bgcol, fgcol, usercol, highlightcol;
 static checkbox toolbar, statusbar, tt_font, c_resize;
-static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl;
+static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl, f_grx, f_gry;
 
 static void getGUIstate(Gui p)
 {
@@ -105,6 +105,8 @@ static void getGUIstate(Gui p)
     p->cbl = atoi(gettext(f_cbl));
     p->prows = atoi(gettext(f_prows));
     p->pcols = atoi(gettext(f_pcols));
+    p->grx = atoi(gettext(f_grx));
+    p->gry = atoi(gettext(f_gry));
     p->bg = nametorgb(gettext(bgcol));
     p->fg = nametorgb(gettext(fgcol));
     p->user = nametorgb(gettext(usercol));
@@ -119,7 +121,8 @@ static int has_changed()
            a->pointsize != b->pointsize || strcmp(a->style, b->style) || a->crows != b->crows || a->ccols != b->ccols ||
            a->cx != b->cx || a->cy != b->cy || a->cbb != b->cbb || a->cbl != b->cbl ||
            a->setWidthOnResize != b->setWidthOnResize || a->prows != b->prows || a->pcols != b->pcols ||
-           a->bg != b->bg || a->fg != b->fg || a->user != b->user || a->hlt != b->hlt;
+           a->grx != b->grx || a->gry != b->gry || a->bg != b->bg || a->fg != b->fg || a->user != b->user ||
+           a->hlt != b->hlt;
 }
 
 static void cleanup()
@@ -157,6 +160,10 @@ static void cleanup()
     delobj(f_prows);
     delobj(l_pcols);
     delobj(f_pcols);
+    delobj(l_grx);
+    delobj(f_grx);
+    delobj(l_gry);
+    delobj(f_gry);
     delobj(l_cols);
     delobj(l_bgcol);
     delobj(bgcol);
@@ -335,6 +342,8 @@ static void save(button b)
     fprintf(fp, "normaltext = %s\n", gettext(fgcol));
     fprintf(fp, "usertext = %s\n", gettext(usercol));
     fprintf(fp, "highlight = %s\n", gettext(highlightcol));
+    fprintf(fp, "\n\n%s\n%s\nxgraphics = %s\nygraphics = %s\n", "## Initial position of the graphics window",
+            "## (pixels, <0 values from opposite edge)", gettext(f_grx), gettext(f_gry));
     fclose(fp);
 }
 
@@ -374,7 +383,7 @@ void Rgui_configure()
     rect r;
     ConsoleData p = (ConsoleData)getdata(RConsole);
 
-    wconfig = newwindow("Rgui Configuration Editor", rect(0, 0, 550, 400), Titlebar | Centered | Modal);
+    wconfig = newwindow("Rgui Configuration Editor", rect(0, 0, 550, 450), Titlebar | Centered | Modal);
     setbackground(wconfig, dialog_bg());
     l_mdi = newlabel("Single or multiple windows", rect(10, 10, 150, 20), AlignLeft);
     rb_mdi = newradiobutton("MDI", rect(150, 10, 70, 20), cMDI);
@@ -383,7 +392,7 @@ void Rgui_configure()
     toolbar = newcheckbox("MDI toolbar", rect(300, 10, 100, 20), NULL);
     if (RguiMDI & RW_TOOLBAR)
         check(toolbar);
-    statusbar = newcheckbox("MDI statusbar", rect(420, 10, 100, 20), NULL);
+    statusbar = newcheckbox("MDI statusbar", rect(420, 10, 130, 20), NULL);
     if (RguiMDI & RW_STATUSBAR)
         check(statusbar);
     if (RguiMDI & RW_MDI)
@@ -439,56 +448,66 @@ void Rgui_configure()
     setlistitem(f_style, cmatch(style, StyleList));
 
     /* Console size, set widthonresize */
-    l_crows = newlabel("Console   rows", rect(10, 150, 70, 20), AlignLeft);
+    l_crows = newlabel("Console   rows", rect(10, 150, 100, 20), AlignLeft);
     sprintf(buf, "%d", ROWS);
-    f_crows = newfield(buf, rect(100, 150, 30, 20));
+    f_crows = newfield(buf, rect(110, 150, 30, 20));
     l_ccols = newlabel("columns", rect(150, 150, 60, 20), AlignLeft);
     sprintf(buf, "%d", COLS);
     f_ccols = newfield(buf, rect(220, 150, 30, 20));
-    l_cbb = newlabel("buffer bytes", rect(270, 150, 70, 20), AlignLeft);
-    sprintf(buf, "%ld", p->lbuf->dim);
-    f_cbb = newfield(buf, rect(350, 150, 60, 20));
-    l_cbl = newlabel("lines", rect(430, 150, 70, 20), AlignLeft);
-    sprintf(buf, "%d", p->lbuf->ms);
-    f_cbl = newfield(buf, rect(480, 150, 40, 20));
+    r = GetCurrentWinPos(RConsole);
+    l_cx = newlabel("Initial left", rect(270, 150, 70, 20), AlignLeft);
+    sprintf(buf, "%d", r.x);
+    f_cx = newfield(buf, rect(350, 150, 40, 20));
+    l_cy = newlabel("top", rect(430, 150, 30, 20), AlignLeft);
+    sprintf(buf, "%d", r.y);
+    f_cy = newfield(buf, rect(480, 150, 40, 20));
+
     c_resize = newcheckbox("set options(width) on resize?", rect(50, 175, 200, 20), NULL);
     if (setWidthOnResize)
         check(c_resize);
-    r = GetCurrentWinPos(RConsole);
-    l_cx = newlabel("Initial left", rect(270, 175, 70, 20), AlignLeft);
-    sprintf(buf, "%d", r.x);
-    f_cx = newfield(buf, rect(350, 175, 40, 20));
-    l_cy = newlabel("top", rect(430, 175, 30, 20), AlignLeft);
-    sprintf(buf, "%d", r.y);
-    f_cy = newfield(buf, rect(480, 175, 40, 20));
+
+    l_cbb = newlabel("buffer bytes", rect(270, 175, 70, 20), AlignLeft);
+    sprintf(buf, "%ld", p->lbuf->dim);
+    f_cbb = newfield(buf, rect(350, 175, 60, 20));
+    l_cbl = newlabel("lines", rect(430, 175, 70, 20), AlignLeft);
+    sprintf(buf, "%d", p->lbuf->ms);
+    f_cbl = newfield(buf, rect(480, 175, 40, 20));
 
     /* Pager size */
-    l_prows = newlabel("Pager   rows", rect(10, 210, 70, 20), AlignLeft);
+    l_prows = newlabel("Pager   rows", rect(10, 210, 100, 20), AlignLeft);
     sprintf(buf, "%d", pagerrow);
-    f_prows = newfield(buf, rect(100, 210, 30, 20));
+    f_prows = newfield(buf, rect(110, 210, 30, 20));
     l_pcols = newlabel("columns", rect(150, 210, 60, 20), AlignLeft);
     sprintf(buf, "%d", pagercol);
     f_pcols = newfield(buf, rect(220, 210, 30, 20));
 
+    /* Graphics window */
+    l_cx = newlabel("Graphics windows: initial left", rect(10, 250, 190, 20), AlignLeft);
+    sprintf(buf, "%d", graphicsx);
+    f_cx = newfield(buf, rect(200, 250, 40, 20));
+    l_cy = newlabel("top", rect(270, 250, 30, 20), AlignLeft);
+    sprintf(buf, "%d", graphicsy);
+    f_cy = newfield(buf, rect(300, 250, 40, 20));
+
     /* Font colours */
-    l_cols = newlabel("Console and Pager Colours", rect(10, 250, 520, 20), AlignCenter);
-    l_bgcol = newlabel("Background", rect(10, 280, 100, 20), AlignCenter);
-    bgcol = newlistbox(ColorName, rect(10, 300, 100, 50), NULL);
-    l_fgcol = newlabel("Output text", rect(150, 280, 100, 20), AlignCenter);
-    fgcol = newlistbox(ColorName, rect(150, 300, 100, 50), NULL);
-    l_usercol = newlabel("User input", rect(290, 280, 100, 20), AlignCenter);
-    usercol = newlistbox(ColorName, rect(290, 300, 100, 50), NULL);
-    l_highlightcol = newlabel("Titles in pager", rect(430, 280, 100, 20), AlignCenter);
-    highlightcol = newlistbox(ColorName, rect(430, 300, 100, 50), NULL);
+    l_cols = newlabel("Console and Pager Colours", rect(10, 300, 520, 20), AlignCenter);
+    l_bgcol = newlabel("Background", rect(10, 330, 100, 20), AlignCenter);
+    bgcol = newlistbox(ColorName, rect(10, 350, 100, 50), NULL);
+    l_fgcol = newlabel("Output text", rect(150, 330, 100, 20), AlignCenter);
+    fgcol = newlistbox(ColorName, rect(150, 350, 100, 50), NULL);
+    l_usercol = newlabel("User input", rect(290, 330, 100, 20), AlignCenter);
+    usercol = newlistbox(ColorName, rect(290, 350, 100, 50), NULL);
+    l_highlightcol = newlabel("Titles in pager", rect(430, 330, 100, 20), AlignCenter);
+    highlightcol = newlistbox(ColorName, rect(430, 350, 100, 50), NULL);
     setlistitem(bgcol, rgbtonum(consolebg));
     setlistitem(fgcol, rgbtonum(consolefg));
     setlistitem(usercol, rgbtonum(consoleuser));
     setlistitem(highlightcol, rgbtonum(pagerhighlight));
 
-    bApply = newbutton("Apply", rect(50, 360, 70, 25), apply);
-    bSave = newbutton("Save", rect(130, 360, 70, 25), save);
-    bFinish = newbutton("Finish", rect(350, 360, 70, 25), finish);
-    bCancel = newbutton("Cancel", rect(430, 360, 70, 25), cancel);
+    bApply = newbutton("Apply", rect(50, 410, 70, 25), apply);
+    bSave = newbutton("Save", rect(130, 410, 70, 25), save);
+    bFinish = newbutton("Finish", rect(350, 410, 70, 25), finish);
+    bCancel = newbutton("Cancel", rect(430, 410, 70, 25), cancel);
     show(wconfig);
     getGUIstate(&curGUI);
 }
