@@ -66,7 +66,7 @@ void GReset(DevDesc *);
 void GMapWin2Fig(DevDesc *);
 /* Set up the user coordinate transformations */
 
-void GNewPlot(DevDesc *, int);
+DevDesc *GNewPlot(int, int);
 /* Set up the device for a new plot by */
 /* Resetting graphics parameters and   */
 /* Resetting the regions and coordinate */
@@ -369,16 +369,16 @@ double Log10(double x)
     return (FINITE(x) && x > 0.0) ? log10(x) : NA_REAL;
 }
 
+/* In interpreted R, units are as follows:   */
+/* 	1 = "user"			     */
+/*	2 = "figure"			     */
+/*	3 = "inches"			     */
+/* the function GMapUnits provides a mapping */
+/* between interpreted units and internal    */
+/* units.				     */
+
 int GMapUnits(int Runits)
 {
-    /* within interpreted R, units are as follows:	*/
-    /* 	1 = "user"				*/
-    /*	2 = "figure"				*/
-    /*	3 = "inches"				*/
-    /* the function mapUnits provides a mapping	*/
-    /* between interpreted units and internal	*/
-    /* units.					*/
-
     switch (Runits)
     {
     case 1:
@@ -387,11 +387,12 @@ int GMapUnits(int Runits)
         return NFC;
     case 3:
         return INCHES;
+    default:
+        return 0;
     }
-    return 0; /* added to keep -Wall happy */
 }
 
-/* functions to convert from one set of units to another */
+/* Conversions Between Units*/
 
 /* forward declarations */
 
@@ -402,62 +403,77 @@ double xNDCtoDevUnits(double x, DevDesc *dd)
 {
     return x * fabs(dd->gp.ndc2dev.bx);
 }
+
 double yNDCtoDevUnits(double y, DevDesc *dd)
 {
     return y * fabs(dd->gp.ndc2dev.by);
 }
+
 double xNICtoDevUnits(double x, DevDesc *dd)
 {
     return x * fabs(dd->gp.inner2dev.bx);
 }
+
 double yNICtoDevUnits(double y, DevDesc *dd)
 {
     return y * fabs(dd->gp.inner2dev.by);
 }
+
 double xNFCtoDevUnits(double x, DevDesc *dd)
 {
     return x * fabs(dd->gp.fig2dev.bx);
 }
+
 double yNFCtoDevUnits(double y, DevDesc *dd)
 {
     return y * fabs(dd->gp.fig2dev.by);
 }
+
 double xNPCtoDevUnits(double x, DevDesc *dd)
 {
     return xNFCtoDevUnits(x * (dd->gp.plt[1] - dd->gp.plt[0]), dd);
 }
+
 double yNPCtoDevUnits(double y, DevDesc *dd)
 {
     return yNFCtoDevUnits(y * (dd->gp.plt[3] - dd->gp.plt[2]), dd);
 }
+
 double xUsrtoDevUnits(double x, DevDesc *dd)
 {
     return xNFCtoDevUnits(x * dd->gp.win2fig.bx, dd);
 }
+
 double yUsrtoDevUnits(double y, DevDesc *dd)
 {
     return yNFCtoDevUnits(y * dd->gp.win2fig.by, dd);
 }
+
 double xInchtoDevUnits(double x, DevDesc *dd)
 {
     return xNDCtoDevUnits(x * dd->gp.xNDCPerInch, dd);
 }
+
 double yInchtoDevUnits(double y, DevDesc *dd)
 {
     return yNDCtoDevUnits(y * dd->gp.yNDCPerInch, dd);
 }
+
 double xLinetoDevUnits(double x, DevDesc *dd)
 {
     return xNDCtoDevUnits(x * dd->gp.xNDCPerLine, dd);
 }
+
 double yLinetoDevUnits(double y, DevDesc *dd)
 {
     return yNDCtoDevUnits(y * dd->gp.yNDCPerLine, dd);
 }
+
 double xChartoDevUnits(double x, DevDesc *dd)
 {
     return xNDCtoDevUnits(x * dd->gp.cex * dd->gp.xNDCPerChar, dd);
 }
+
 double yChartoDevUnits(double y, DevDesc *dd)
 {
     return yNDCtoDevUnits(y * dd->gp.cex * dd->gp.yNDCPerChar, dd);
@@ -467,54 +483,67 @@ double xDevtoNDCUnits(double x, DevDesc *dd)
 {
     return x / fabs(dd->gp.ndc2dev.bx);
 }
+
 double yDevtoNDCUnits(double y, DevDesc *dd)
 {
     return y / fabs(dd->gp.ndc2dev.by);
 }
+
 double xDevtoNICUnits(double x, DevDesc *dd)
 {
     return x / fabs(dd->gp.inner2dev.bx);
 }
+
 double yDevtoNICUnits(double y, DevDesc *dd)
 {
     return y / fabs(dd->gp.inner2dev.by);
 }
+
 double xDevtoNFCUnits(double x, DevDesc *dd)
 {
     return x / fabs(dd->gp.fig2dev.bx);
 }
+
 double yDevtoNFCUnits(double y, DevDesc *dd)
 {
     return y / fabs(dd->gp.fig2dev.by);
 }
+
 double xDevtoNPCUnits(double x, DevDesc *dd)
 {
     return xDevtoNFCUnits(x, dd) / (dd->gp.plt[1] - dd->gp.plt[0]);
 }
+
 double yDevtoNPCUnits(double y, DevDesc *dd)
 {
     return yDevtoNFCUnits(y, dd) / (dd->gp.plt[3] - dd->gp.plt[2]);
 }
+
 double xDevtoUsrUnits(double x, DevDesc *dd)
 {
     return xDevtoNFCUnits(x, dd) / dd->gp.win2fig.bx;
 }
+
 double yDevtoUsrUnits(double y, DevDesc *dd)
 {
     return yDevtoNFCUnits(y, dd) / dd->gp.win2fig.by;
 }
+
 double xDevtoInchUnits(double x, DevDesc *dd)
 {
     return xDevtoNDCUnits(x, dd) / dd->gp.xNDCPerInch;
 }
+
 double yDevtoInchUnits(double y, DevDesc *dd)
 {
     return yDevtoNDCUnits(y, dd) / dd->gp.yNDCPerInch;
 }
+
 double xDevtoLineUnits(double x, DevDesc *dd)
 {
     return xDevtoNDCUnits(x, dd) / dd->gp.xNDCPerLine;
 }
+
 double yDevtoLineUnits(double y, DevDesc *dd)
 {
     return yDevtoNDCUnits(y, dd) / dd->gp.yNDCPerLine;
@@ -528,6 +557,7 @@ double xDevtoCharUnits(double x, DevDesc *dd)
 {
     return xDevtoNDCUnits(x, dd) / (dd->gp.cex * dd->gp.xNDCPerChar);
 }
+
 double yDevtoCharUnits(double y, DevDesc *dd)
 {
     return yDevtoNDCUnits(y, dd) / (dd->gp.cex * dd->gp.yNDCPerChar);
@@ -701,30 +731,37 @@ double xNDCtoDev(double x, DevDesc *dd)
 {
     return dd->gp.ndc2dev.ax + x * dd->gp.ndc2dev.bx;
 }
+
 double yNDCtoDev(double y, DevDesc *dd)
 {
     return dd->gp.ndc2dev.ay + y * dd->gp.ndc2dev.by;
 }
+
 double xInchtoDev(double x, DevDesc *dd)
 {
     return xNDCtoDev(x * dd->gp.xNDCPerInch, dd);
 }
+
 double yInchtoDev(double y, DevDesc *dd)
 {
     return yNDCtoDev(y * dd->gp.yNDCPerInch, dd);
 }
+
 double xLinetoDev(double x, DevDesc *dd)
 {
     return xNDCtoDev(x * dd->gp.xNDCPerLine, dd);
 }
+
 double yLinetoDev(double y, DevDesc *dd)
 {
     return yNDCtoDev(y * dd->gp.yNDCPerLine, dd);
 }
+
 double xNICtoDev(double x, DevDesc *dd)
 {
     return dd->gp.inner2dev.ax + x * dd->gp.inner2dev.bx;
 }
+
 double yNICtoDev(double y, DevDesc *dd)
 {
     return dd->gp.inner2dev.ay + y * dd->gp.inner2dev.by;
@@ -732,102 +769,125 @@ double yNICtoDev(double y, DevDesc *dd)
 /* NOTE that an x-coordinate in OMA2 or OMA4 converts to a */
 /* y-coordinate in Dev and a y-coordinate in OMA2 or OMA4 */
 /* converts to an x-coordinate in Dev */
+
 double xOMA1toDev(double x, DevDesc *dd)
 {
     return xNICtoDev(x, dd);
 }
+
 double yOMA1toDev(double y, DevDesc *dd)
 {
     return yLinetoDev((dd->gp.oma[0] - y - 1), dd);
 }
+
 double xOMA2toyDev(double x, DevDesc *dd)
 {
     return yNICtoDev(x, dd);
 }
+
 double yOMA2toxDev(double y, DevDesc *dd)
 {
     return xLinetoDev((dd->gp.oma[1] - y), dd);
 }
+
 double xOMA3toDev(double x, DevDesc *dd)
 {
     return xNICtoDev(x, dd);
 }
+
 double yOMA3toDev(double y, DevDesc *dd)
 {
     double ndc = 1.0 - yDevtoNDC(yLinetoDev((dd->gp.oma[2] - y), dd), dd);
     return yNDCtoDev(ndc, dd);
 }
+
 double xOMA4toyDev(double x, DevDesc *dd)
 {
     return yNICtoDev(x, dd);
 }
+
 double yOMA4toxDev(double y, DevDesc *dd)
 {
     double ndc = 1.0 - xDevtoNDC(xLinetoDev(dd->gp.oma[3] - y - 1, dd), dd);
     return xNDCtoDev(ndc, dd);
 }
+
 double xNFCtoDev(double x, DevDesc *dd)
 {
     return dd->gp.fig2dev.ax + x * dd->gp.fig2dev.bx;
 }
+
 double yNFCtoDev(double y, DevDesc *dd)
 {
     return dd->gp.fig2dev.ay + y * dd->gp.fig2dev.by;
 }
+
 double xNPCtoDev(double x, DevDesc *dd)
 {
     return xNFCtoDev(dd->gp.plt[0] + x * (dd->gp.plt[1] - dd->gp.plt[0]), dd);
 }
+
 double yNPCtoDev(double y, DevDesc *dd)
 {
     return yNFCtoDev(dd->gp.plt[2] + y * (dd->gp.plt[3] - dd->gp.plt[2]), dd);
 }
+
 double xUsrtoDev(double x, DevDesc *dd)
 {
     if (dd->gp.xlog)
         x = Log10(x);
     return xNFCtoDev(dd->gp.win2fig.ax + x * dd->gp.win2fig.bx, dd);
 }
+
 double yUsrtoDev(double y, DevDesc *dd)
 {
     if (dd->gp.ylog)
         y = Log10(y);
     return yNFCtoDev(dd->gp.win2fig.ay + y * dd->gp.win2fig.by, dd);
 }
+
 /* NOTE that an x-coordinate in MAR2 or MAR4 converts to a */
 /* y-coordinate in Dev and a y-coordinate in MAR2 or MAR4 */
 /* converts to an x-coordinate in Dev */
+
 double xMAR1toDev(double x, DevDesc *dd)
 {
     return xUsrtoDev(x, dd);
 }
+
 double yMAR1toDev(double y, DevDesc *dd)
 {
     double nfc = GConvertYUnits(y, LINES, NFC, dd);
     return yNFCtoDev(dd->gp.plt[2] - nfc, dd);
 }
+
 double xMAR2toyDev(double x, DevDesc *dd)
 {
     return yUsrtoDev(x, dd);
 }
+
 double yMAR2toxDev(double y, DevDesc *dd)
 {
     double nfc = GConvertXUnits(y, LINES, NFC, dd);
     return xNFCtoDev(dd->gp.plt[0] - nfc, dd);
 }
+
 double xMAR3toDev(double x, DevDesc *dd)
 {
     return xUsrtoDev(x, dd);
 }
+
 double yMAR3toDev(double y, DevDesc *dd)
 {
     double nfc = GConvertYUnits(y, LINES, NFC, dd);
     return yNFCtoDev(dd->gp.plt[3] + nfc, dd);
 }
+
 double xMAR4toyDev(double x, DevDesc *dd)
 {
     return yUsrtoDev(x, dd);
 }
+
 double yMAR4toxDev(double y, DevDesc *dd)
 {
     double nfc = GConvertXUnits(y, LINES, NFC, dd);
@@ -840,80 +900,99 @@ double xDevtoNDC(double x, DevDesc *dd)
 {
     return (x - dd->gp.ndc2dev.ax) / dd->gp.ndc2dev.bx;
 }
+
 double yDevtoNDC(double y, DevDesc *dd)
 {
     return (y - dd->gp.ndc2dev.ay) / dd->gp.ndc2dev.by;
 }
+
 double xDevtoInch(double x, DevDesc *dd)
 {
     return xDevtoNDC(x, dd) / dd->gp.xNDCPerInch;
 }
+
 double yDevtoInch(double y, DevDesc *dd)
 {
     return yDevtoNDC(y, dd) / dd->gp.yNDCPerInch;
 }
+
 double xDevtoLine(double x, DevDesc *dd)
 {
     return xDevtoNDC(x, dd) / dd->gp.xNDCPerLine;
 }
+
 double yDevtoLine(double y, DevDesc *dd)
 {
     return yDevtoNDC(y, dd) / dd->gp.yNDCPerLine;
 }
+
 double xDevtoNIC(double x, DevDesc *dd)
 {
     return (x - dd->gp.inner2dev.ax) / dd->gp.inner2dev.bx;
 }
+
 double yDevtoNIC(double y, DevDesc *dd)
 {
     return (y - dd->gp.inner2dev.ay) / dd->gp.inner2dev.by;
 }
+
 double xDevtoOMA1(double x, DevDesc *dd)
 {
     return xDevtoNIC(x, dd);
 }
+
 double yDevtoOMA1(double y, DevDesc *dd)
 {
     return dd->gp.oma[0] - yDevtoLine(y, dd);
 }
+
 double xDevtoyOMA2(double x, DevDesc *dd)
 {
     return dd->gp.oma[1] - xDevtoLine(x, dd);
 }
+
 double yDevtoxOMA2(double y, DevDesc *dd)
 {
     return yDevtoNIC(y, dd);
 }
+
 double xDevtoOMA3(double x, DevDesc *dd)
 {
     return xDevtoNIC(x, dd);
 }
+
 double yDevtoOMA3(double y, DevDesc *dd)
 {
     double line = (1.0 - yDevtoNDC(y, dd)) / dd->gp.yNDCPerLine;
     return dd->gp.oma[2] - line;
 }
+
 double xDevtoyOMA4(double x, DevDesc *dd)
 {
     double line = (1.0 - xDevtoNDC(x, dd)) / dd->gp.xNDCPerLine;
     return dd->gp.oma[3] - line;
 }
+
 double yDevtoxOMA4(double y, DevDesc *dd)
 {
     return yDevtoNIC(y, dd);
 }
+
 double xDevtoNFC(double x, DevDesc *dd)
 {
     return (x - dd->gp.fig2dev.ax) / dd->gp.fig2dev.bx;
 }
+
 double yDevtoNFC(double y, DevDesc *dd)
 {
     return (y - dd->gp.fig2dev.ay) / dd->gp.fig2dev.by;
 }
+
 double xDevtoNPC(double x, DevDesc *dd)
 {
     return (xDevtoNFC(x, dd) - dd->gp.plt[0]) / (dd->gp.plt[1] - dd->gp.plt[0]);
 }
+
 double yDevtoNPC(double y, DevDesc *dd)
 {
     return (yDevtoNFC(y, dd) - dd->gp.plt[2]) / (dd->gp.plt[3] - dd->gp.plt[2]);
@@ -928,6 +1007,7 @@ double xNPCtoUsr(double x, DevDesc *dd)
     else
         return dd->gp.usr[0] + x * (dd->gp.usr[1] - dd->gp.usr[0]);
 }
+
 double yNPCtoUsr(double y, DevDesc *dd)
 {
     if (dd->gp.ylog)
@@ -941,41 +1021,50 @@ double xDevtoUsr(double x, DevDesc *dd)
     double nfc = xDevtoNFC(x, dd);
     return (nfc - dd->gp.win2fig.ax) / dd->gp.win2fig.bx;
 }
+
 double yDevtoUsr(double y, DevDesc *dd)
 {
     double nfc = yDevtoNFC(y, dd);
     return (nfc - dd->gp.win2fig.ay) / dd->gp.win2fig.by;
 }
+
 double xDevtoMAR1(double x, DevDesc *dd)
 {
     return xDevtoUsr(x, dd);
 }
+
 double yDevtoMAR1(double y, DevDesc *dd)
 {
     return dd->gp.mar[0] - yDevtoLine(y, dd);
 }
+
 double xDevtoyMAR2(double x, DevDesc *dd)
 {
     return dd->gp.mar[1] - xDevtoLine(x, dd);
 }
+
 double yDevtoxMAR2(double y, DevDesc *dd)
 {
     return yDevtoUsr(y, dd);
 }
+
 double xDevtoMAR3(double x, DevDesc *dd)
 {
     return xDevtoUsr(x, dd);
 }
+
 double yDevtoMAR3(double y, DevDesc *dd)
 {
     double line = GConvertYUnits(1.0 - yDevtoNFC(y, dd), NFC, LINES, dd);
     return dd->gp.mar[2] - line;
 }
+
 double xDevtoyMAR4(double x, DevDesc *dd)
 {
     double line = GConvertXUnits(1.0 - xDevtoNFC(x, dd), NFC, LINES, dd);
     return dd->gp.mar[3] - line;
 }
+
 double yDevtoxMAR4(double y, DevDesc *dd)
 {
     return yDevtoUsr(y, dd);
@@ -1141,14 +1230,17 @@ static double sumWidths(DevDesc *dd)
 {
     return sum(dd->gp.widths, dd->gp.numcols, dd->gp.cmWidths, 0);
 }
+
 static double sumCmWidths(DevDesc *dd)
 {
     return sum(dd->gp.widths, dd->gp.numcols, dd->gp.cmWidths, 1);
 }
+
 static double sumHeights(DevDesc *dd)
 {
     return sum(dd->gp.heights, dd->gp.numrows, dd->gp.cmHeights, 0);
 }
+
 static double sumCmHeights(DevDesc *dd)
 {
     return sum(dd->gp.heights, dd->gp.numrows, dd->gp.cmHeights, 1);
@@ -1816,13 +1908,35 @@ static void invalidError(char *message, DevDesc *dd)
 
 /*  GNewPlot -- Begin a new plot (advance to new frame if needed)  */
 
-void GNewPlot(DevDesc *dd, int recording)
+DevDesc *GNewPlot(int recording, int ask)
 {
+    DevDesc *dd;
+    int asksave;
+
+    /* If there are no active devices */
+    /* check the options for a "default device".  */
+    /* If there is one, start it up. */
+
     if (NoDevices())
-        error("No graphics device is active\n");
+    {
+        SEXP defdev = GetOption(install("device"), R_NilValue);
+        if (isString(defdev) && length(defdev) > 0)
+        {
+            PROTECT(defdev = lang1(install(CHAR(STRING(defdev)[0]))));
+        }
+        else
+            error("No active or default device\n");
+        eval(defdev, R_GlobalEnv);
+        UNPROTECT(1);
+    }
 
     /* Restore Default Parameters */
+
+    dd = CurrentDevice();
     GRestore(dd);
+    if (ask == NA_LOGICAL)
+        ask = dd->dp.ask;
+    asksave = dd->gp.ask;
 
     dd->dp.currentFigure += 1;
     dd->gp.currentFigure = dd->dp.currentFigure;
@@ -1831,7 +1945,13 @@ void GNewPlot(DevDesc *dd, int recording)
         if (!dd->gp.new)
         {
             if (dd->gp.ask && recording)
+            {
                 NewFrameConfirm();
+                if (NoDevices())
+                    error("attempt to plot on null device\n");
+                else
+                    dd = CurrentDevice();
+            }
             if (recording)
                 initDisplayList(dd);
             dd->dp.newPage(dd);
@@ -1872,6 +1992,7 @@ void GNewPlot(DevDesc *dd, int recording)
             GText(0.5, 0.5, NFC, "Plot region too small / large", 0.5, 0.5, 0, dd);
     else
         dd->dp.valid = dd->gp.valid = 1;
+    return dd;
 }
 
 /* used to default axis information */
@@ -2565,7 +2686,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
             }
         }
         /*
-                x1 = x[i-1]; y1 = y[i-1];
+          x1 = x[i-1]; y1 = y[i-1];
         */
         x1 = x2;
         y1 = y2;
@@ -3461,9 +3582,9 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
 
 void hsv2rgb(double h, double s, double v, double *r, double *g, double *b)
 {
-    /*  hsv2rgb -- HSV to RGB conversion  */
-    /*  Based on HSV_TO_RGB from Foley and Van Dam First Ed. Page 616 */
-    /*  See Alvy Ray Smith, Color Gamut Transform Pairs, SIGGRAPH '78 */
+    /* hsv2rgb -- HSV to RGB conversion  */
+    /* Based on HSV_TO_RGB from Foley and Van Dam First Ed. Page 616 */
+    /* See Alvy Ray Smith, Color Gamut Transform Pairs, SIGGRAPH '78 */
 
     double f, p, q, t;
     double modf();
@@ -5081,23 +5202,26 @@ void playDisplayList(DevDesc *dd)
 {
     int ask, savedDevice;
     SEXP theList = dd->displayList;
-    ask = dd->gp.ask;
-    dd->gp.ask = 1;
-    restoredpSaved(dd);
-    copyGPar(&(dd->dp), &(dd->gp));
-    GReset(dd);
-    savedDevice = curDevice();
-    selectDevice(deviceNumber(dd));
-    while (theList != R_NilValue)
+    if (theList != R_NilValue)
     {
-        SEXP theOperation = CAR(theList);
-        SEXP op = CAR(theOperation);
-        SEXP args = CDR(theOperation);
-        PRIMFUN(op)(R_NilValue, op, args, R_NilValue);
-        theList = CDR(theList);
+        ask = dd->gp.ask;
+        dd->gp.ask = 1;
+        restoredpSaved(dd);
+        copyGPar(&(dd->dp), &(dd->gp));
+        GReset(dd);
+        savedDevice = curDevice();
+        selectDevice(deviceNumber(dd));
+        while (theList != R_NilValue)
+        {
+            SEXP theOperation = CAR(theList);
+            SEXP op = CAR(theOperation);
+            SEXP args = CDR(theOperation);
+            PRIMFUN(op)(R_NilValue, op, args, R_NilValue);
+            theList = CDR(theList);
+        }
+        dd->gp.ask = ask;
+        selectDevice(savedDevice);
     }
-    dd->gp.ask = ask;
-    selectDevice(savedDevice);
 }
 
 void copyDisplayList(int fromDevice)
