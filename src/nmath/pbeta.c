@@ -24,7 +24,7 @@
  *  DESCRIPTION
  *
  *    Returns distribution function of the beta distribution.
- *    (The incomplete beta ratio).
+ *    ( = The incomplete beta ratio I_x(p,q) ).
  *
  *  NOTES
  *
@@ -40,6 +40,8 @@
 
 #include "Mathlib.h"
 
+/* This is called from	qbeta(.) in a root-finding loop --- be FAST! */
+
 double pbeta_raw(double x, double pin, double qin)
 {
     double ans, c, finsum, p, ps, p1, q, term, xb, xi, y;
@@ -51,7 +53,7 @@ double pbeta_raw(double x, double pin, double qin)
     static double alnsml = 0;
 
     if (eps == 0)
-    {
+    { /* initialize machine constants ONCE */
         eps = d1mach(3);
         alneps = log(eps);
         sml = d1mach(1);
@@ -85,6 +87,9 @@ double pbeta_raw(double x, double pin, double qin)
     }
     else
     {
+        /*___ FIXME ___:  This takes forever (or ends wrongly)
+          when (one or) both p & q  are huge
+        */
 
         /* evaluate the infinite sum first.  term will equal */
         /* y^p / beta(ps, p) * (1 - ps)-sub-i * y^i / fac(i) */

@@ -226,7 +226,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
         REprintf("Error in %s : ", dcall);
     }
     else
-        REprintf("Error: ", dcall); /*-- dcall = ??? */
+        REprintf("Error: "); /* -- dcall = ??? */
     i = 0;
     while (ErrorDB[i].index != ERROR_UNKNOWN)
     {
@@ -262,7 +262,7 @@ void WarningMessage(SEXP call, int which_warn, ...)
         REprintf("Warning in %s : ", dcall);
     }
     else
-        REprintf("Warning: ", dcall); /*-- dcall = ??? */
+        REprintf("Warning: "); /* -- dcall = ??? */
     i = 0;
     while (WarningDB[i].index != WARNING_UNKNOWN)
     {

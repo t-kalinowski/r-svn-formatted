@@ -866,6 +866,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     PROTECT(pcall = call = allocList(nargs + 1));
     TYPEOF(call) = LANGSXP;
     CAR(pcall) = (SEXP)func;
+    s = R_NilValue; /* -Wall */
     for (i = 0; i < nargs; i++)
     {
         pcall = CDR(pcall);

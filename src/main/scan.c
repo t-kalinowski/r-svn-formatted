@@ -374,6 +374,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP str
     ii = 0;
     badline = 0;
     bch = 1;
+    c = 0; /* -Wall */
 
     if (ttyflag)
         sprintf(ConsolePrompt, "1: ");
@@ -539,9 +540,8 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "invalid strip.white length\n");
     if (TYPEOF(NAstrings) != STRSXP)
         errorcall(call, "invalid na.strings value\n");
-    if (isNull(file))
-        filename = NULL;
-    else if (isString(file))
+    filename = NULL;
+    if (!isNull(file) && isString(file))
     {
         filename = CHAR(*STRING(file));
         if (strlen(filename) == 0)
@@ -563,6 +563,7 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         ttyflag = 1;
 
+    ans = R_NilValue; /* -Wall */
     save = 0;
 
     switch (TYPEOF(what))

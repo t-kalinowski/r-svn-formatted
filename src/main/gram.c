@@ -2863,7 +2863,7 @@ int isValidName(char *name)
     {
         if (strlen(name) == 1)
             return 1;
-        while (c = *p++)
+        while ((c = *p++))
             if (!isdigit(c))
             {
                 if (!isalpha(c))

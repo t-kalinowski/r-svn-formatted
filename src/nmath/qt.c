@@ -60,6 +60,10 @@ double qt(double p, double ndf)
         return ML_NAN;
     }
 #endif
+    /* FIXME: This test should depend on  ndf  AND p  !!
+     * -----  and in fact should be replaced by
+     * something like Abramowitz & Stegun 26.7.5 (p.949)
+     */
     if (ndf > 1e20)
         return qnorm(p, 0.0, 1.0);
 
