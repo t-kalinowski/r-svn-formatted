@@ -757,7 +757,7 @@ if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) && (pc = (char *)G
     }
     else
     {
-        askok("Not enough memory");
+        R_ShowMessage("Not enough memory");
     }
     GlobalUnlock(hglb);
 }
@@ -790,12 +790,12 @@ while ((i < y1) || ((i == y1) && (j <= x1)))
 }
 if (!(hglb = GlobalAlloc(GHND, ll)))
 {
-    askok("Insufficient memory: text not moved to the clipboard");
+    R_ShowMessage("Insufficient memory: text not moved to the clipboard");
     FVOIDRETURN;
 }
 if (!(s = (char *)GlobalLock(hglb)))
 {
-    askok("Insufficient memory: text not moved to the clipboard");
+    R_ShowMessage("Insufficient memory: text not moved to the clipboard");
     FVOIDRETURN;
 }
 i = y0;
@@ -820,7 +820,7 @@ while ((i < y1) || ((i == y1) && (j <= x1)))
 GlobalUnlock(hglb);
 if (!OpenClipboard(NULL) || !EmptyClipboard())
 {
-    askok("Impossible to open the clipboard");
+    R_ShowMessage("Impossible to open the clipboard");
     GlobalFree(hglb);
     FVOIDRETURN;
 }
@@ -1314,7 +1314,7 @@ if (!fp)
 {
     char msg[256];
     sprintf(msg, "Impossible to open %s", s);
-    askok(s);
+    R_ShowMessage(s);
     FVOIDRETURN;
 }
 for (i = NHISTORY - 1; i >= 0; i--)
@@ -1351,6 +1351,9 @@ int consolecols(console c)
 
 static void consoleresize(console c, rect r) FBEGIN int rr, pcols = COLS;
 
+if (p->lbuf)
+    FVOIDRETURN; /* don't allow resize if no content
+    yet in pager */
 if (((WIDTH == r.width) && (HEIGHT == r.height)) || (r.width == 0) || (r.height == 0)) /* minimize */
     FVOIDRETURN;
 /*
@@ -1375,7 +1378,7 @@ del(BM);
 BM = newbitmap(r.width, r.height, 2);
 if (!BM)
 {
-    askok("Insufficient memory. Please close the console");
+    R_ShowMessage("Insufficient memory. Please close the console");
     return;
 }
 if (p->r >= 0)
@@ -1423,13 +1426,13 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
     if (!consolefn)
     {
         sprintf(msg, "Font %s-%d-%d  not found.\nUsing system fixed font.", fontname, fontsty | FixedWidth, pointsize);
-        askok(msg);
+        R_ShowMessage(msg);
         consolefn = FixedFont;
     }
     if (!ghasfixedwidth(consolefn))
     {
         sprintf(msg, "Font %s-%d-%d has variable width.\nUsing system fixed font.", fontname, fontsty, pointsize);
-        askok(msg);
+        R_ShowMessage(msg);
         consolefn = FixedFont;
     }
     consoler = rows;
@@ -1462,7 +1465,7 @@ if (!f)
     /* Should not happen but....*/
     sprintf(msg, "Font %s-%d-%d  not found.\nUsing system fixed font.",
             strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize);
-    askok(msg);
+    R_ShowMessage(msg);
     f = FixedFont;
 }
 top = devicepixelsy(lpr) / 5;
@@ -1648,7 +1651,7 @@ static void pagercopy(control m)
     if (consolecancopy(c))
         consolecopy(c);
     else
-        askok("No selection");
+        R_ShowMessage("No selection");
 }
 
 static void pagerpaste(control m)
@@ -1657,7 +1660,7 @@ static void pagerpaste(control m)
 
     if (!consolecancopy(c))
     {
-        askok("No selection");
+        R_ShowMessage("No selection");
         return;
     }
     else
@@ -1718,7 +1721,7 @@ static int pageraddfile(char *wtitle, char *filename, int deleteonexit)
 
     if (!nxbuf)
     {
-        /*	askok("File not found or memory insufficient"); */
+        /*	R_ShowMessage("File not found or memory insufficient"); */
         return 0;
     }
     if (pagerActualKept == PAGERMAXKEPT)
@@ -1902,7 +1905,7 @@ pager newpager1win(char *wtitle, char *filename, int deleteonexit)
 {
     if (!pagerInstance && !(pagerInstance = pagercreate()))
     {
-        askok("Impossible to create pager windows");
+        R_ShowMessage("Impossible to create pager windows");
         return NULL;
     }
     if (!pageraddfile(wtitle, filename, deleteonexit))

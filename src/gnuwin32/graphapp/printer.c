@@ -25,6 +25,7 @@
  */
 
 #include "internal.h"
+#include "rui.h"
 
 /*
  *  Internal printer deletion function.
@@ -92,12 +93,13 @@ printer newprinter(double width, double height)
     HDC hDC = chooseprinter();
     double dd, AL;
     int ww, hh, x0, y0;
+
     if (!hDC)
         return NULL;
     obj = new_object(PrinterObject, (HANDLE)hDC, get_printer_base());
     if (!obj)
     {
-        askok("Insufficient memory for new printer");
+        R_ShowMessage("Insufficient memory for new printer");
         DeleteDC(hDC);
         return NULL;
     }
@@ -135,7 +137,7 @@ printer newprinter(double width, double height)
 
     if (StartDoc(hDC, &docinfo) <= 0)
     {
-        askok("Impossible to start the print job");
+        R_ShowMessage("Unable to start the print job");
         del(obj);
         return NULL;
     }

@@ -189,9 +189,7 @@ static void (*R_CallBackHook)();
 static void R_DoNothing()
 {
 }
-void (*my_message)(char *s);
-int (*my_yesnocancel)(char *s);
-void (*my_R_Busy)(int);
+static void (*my_R_Busy)(int);
 
 void ProcessEvents(void)
 {
@@ -521,7 +519,7 @@ static void processRenviron()
     char *opt[2], optf[MAX_PATH], buf[80];
     int ok;
 
-    sprintf(optf, "%s/Renviron", getenv("R_USER"));
+    sprintf(optf, "%s/.Renviron", getenv("R_USER"));
     if (!optopenfile(optf))
         return;
     while ((ok = optread(opt, '=')))
@@ -562,8 +560,8 @@ int R_SetParams(Rstart Rp)
     TrueReadConsole = Rp->ReadConsole;
     TrueWriteConsole = Rp->WriteConsole;
     R_CallBackHook = Rp->CallBack;
-    my_message = Rp->message;
-    my_yesnocancel = Rp->yesnocancel;
+    R_ShowMessage = Rp->message;
+    R_yesnocancel = Rp->yesnocancel;
     my_R_Busy = Rp->busy;
     R_Quiet = Rp->R_Quiet;
     R_Slave = Rp->R_Slave;
@@ -578,6 +576,11 @@ int R_SetParams(Rstart Rp)
     R_VSize = Rp->vsize;
     R_NSize = Rp->nsize;
 
+    /* Process ~/.Renviron, if it exists. This may already have been done
+     * in case R_VSIZE and R_NSIZE are set there.
+     */
+    if (!Rp->NoRenviron)
+        processRenviron();
 #ifdef Win32
     /* in case caller uses getline */
     gl_events_hook = ProcessEvents;
@@ -647,7 +650,7 @@ int cmdlineoptions(int ac, char **av)
         Rp->busy = GuiBusy;
     }
 
-    my_message = Rp->message; /* used here */
+    R_ShowMessage = Rp->message; /* used here */
 
 #ifdef HAVE_TIMES
     StartTime = currenttime();
@@ -667,7 +670,7 @@ int cmdlineoptions(int ac, char **av)
                 strcat(s, "You are welcome to redistribute it under the terms of the\n");
                 strcat(s, "GNU General Public License.  For more information about\n");
                 strcat(s, "these matters, see http://www.gnu.org/copyleft/gpl.html.\n");
-                my_message(s);
+                R_ShowMessage(s);
                 exit(0);
             }
             else if (!strcmp(*av, "--save"))
@@ -729,12 +732,12 @@ int cmdlineoptions(int ac, char **av)
                      !strcmp(*av, "-V"))
             {
                 sprintf(s, "WARNING: option %s no longer supported", *av);
-                my_message(s);
+                R_ShowMessage(s);
             }
             else if ((value = (*av)[1] == 'v') || !strcmp(*av, "--vsize"))
             {
                 if (value)
-                    my_message("WARNING: option `-v' is deprecated. Use `--vsize' instead.\n");
+                    R_ShowMessage("WARNING: option `-v' is deprecated. Use `--vsize' instead.\n");
                 if (!value || (*av)[2] == '\0')
                 {
                     ac--;
@@ -745,7 +748,7 @@ int cmdlineoptions(int ac, char **av)
                     p = &(*av)[2];
                 if (p == NULL)
                 {
-                    my_message("WARNING: no vsize given");
+                    R_ShowMessage("WARNING: no vsize given");
                     break;
                 }
                 value = Decode2Long(p, &ierr);
@@ -754,11 +757,11 @@ int cmdlineoptions(int ac, char **av)
                     if (ierr < 0)
                         goto badargs; /* if(*p) goto badargs; */
                     sprintf(s, "--vsize %d'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
-                    my_message(s);
+                    R_ShowMessage(s);
                 }
                 if (value < 1000)
                 {
-                    my_message("WARNING: vsize ridiculously low, Megabytes assumed\n");
+                    R_ShowMessage("WARNING: vsize ridiculously low, Megabytes assumed\n");
                     value *= Mega;
                 }
                 if (value < Min_Vsize || value > Max_Vsize)
@@ -767,7 +770,7 @@ int cmdlineoptions(int ac, char **av)
                             "WARNING: invalid v(ector heap)size '%d' ignored;"
                             "using default = %gM\n",
                             value, R_VSize / Mega);
-                    my_message(s);
+                    R_ShowMessage(s);
                 }
                 else
                 {
@@ -778,8 +781,8 @@ int cmdlineoptions(int ac, char **av)
             else if ((value = (*av)[1] == 'n') || !strcmp(*av, "--nsize"))
             {
                 if (value)
-                    my_message("WARNING: option `-n' is deprecated.  "
-                               "Use `--nsize' instead.\n");
+                    R_ShowMessage("WARNING: option `-n' is deprecated.  "
+                                  "Use `--nsize' instead.\n");
                 if (!value || (*av)[2] == '\0')
                 {
                     ac--;
@@ -790,7 +793,7 @@ int cmdlineoptions(int ac, char **av)
                     p = &(*av)[2];
                 if (p == NULL)
                 {
-                    my_message("WARNING: no nsize given");
+                    R_ShowMessage("WARNING: no nsize given");
                     break;
                 }
                 value = Decode2Long(p, &ierr);
@@ -799,7 +802,7 @@ int cmdlineoptions(int ac, char **av)
                     if (ierr < 0)
                         goto badargs;
                     sprintf(s, "--nsize %d'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
-                    my_message(s);
+                    R_ShowMessage(s);
                 }
                 if (value < Min_Nsize || value > Max_Nsize)
                 {
@@ -807,7 +810,7 @@ int cmdlineoptions(int ac, char **av)
                             "WARNING: invalid language heap (n)size '%d' ignored,"
                             " using default = %d\n",
                             value, R_NSize);
-                    my_message(s);
+                    R_ShowMessage(s);
                 }
                 else
                 {
@@ -832,7 +835,7 @@ int cmdlineoptions(int ac, char **av)
             else
             {
                 sprintf(s, "WARNING: unknown option %s\n", *av);
-                my_message(s);
+                R_ShowMessage(s);
                 break;
             }
         }
@@ -847,7 +850,7 @@ int cmdlineoptions(int ac, char **av)
             else
             {
                 sprintf(s, "ARGUMENT '%s' __ignored__\n", *av);
-                my_message(s);
+                R_ShowMessage(s);
             }
         }
     }
@@ -878,9 +881,12 @@ int cmdlineoptions(int ac, char **av)
     }
     Rp->home = RUser;
 
-    /* Process ~/.Renviron, if it exists */
-    if (!NoRenviron)
+    /* Process ~/.Renviron, if it exists, for R_NSIZE and R_VSIZE */
+    if (!Rp->NoRenviron)
+    {
         processRenviron();
+        Rp->NoRenviron = 1;
+    }
 
     if (!vset && (p = getenv("R_VSIZE")))
     {
@@ -935,7 +941,7 @@ void R_CleanUp(int ask)
         if ((CharacterMode != RGui) && !R_Interactive && (ask == 1))
             ask = DefaultSaveAction;
         if (ask == 1)
-            ans = my_yesnocancel("Save workspace image?");
+            ans = R_yesnocancel("Save workspace image?");
         else if (ask == 2)
             ans = NO;
         else if (ask == 3)
@@ -1198,7 +1204,7 @@ void R_Suicide(char *s)
     char pp[1024];
 
     sprintf(pp, "Fatal error: %s\n", s);
-    my_message(pp);
+    R_ShowMessage(pp);
     R_CleanUp(2);
     /* 2 means don't save anything and it's an unrecoverable abort */
 }

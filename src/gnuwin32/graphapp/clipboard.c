@@ -28,6 +28,7 @@
  */
 
 #include "internal.h"
+#include "rui.h"
 
 void copytoclipboard(drawing sb)
 {
@@ -47,7 +48,7 @@ void copytoclipboard(drawing sb)
 
     if (!OpenClipboard(NULL) || !EmptyClipboard())
     {
-        askok("Impossible to open the clipboard");
+        R_ShowMessage("Unable to open the clipboard");
         DeleteObject(hbmpNew);
         return;
     }

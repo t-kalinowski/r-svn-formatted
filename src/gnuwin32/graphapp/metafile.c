@@ -26,6 +26,7 @@
  */
 
 #include "internal.h"
+#include "rui.h"
 
 /*
  *  Internal printer deletion function.
@@ -37,6 +38,7 @@ static HDC wHDC;
 static void private_delmetafile(metafile obj)
 {
     HENHMETAFILE hm;
+
     if (!obj || (obj->kind != MetafileObject))
         return;
     hm = (HENHMETAFILE)CloseEnhMetaFile((HDC)obj->handle);
@@ -54,7 +56,7 @@ static void private_delmetafile(metafile obj)
         return;
     else
     {
-        askok("Impossible to save metafile to the clipboard");
+        R_ShowMessage("Unable to save metafile to the clipboard");
         DeleteEnhMetaFile(hm);
         return;
     }
@@ -80,6 +82,7 @@ metafile newmetafile(char *name, rect r)
     metafile obj;
     HDC hDC;
     RECT wr;
+
     wr.left = r.x;
     wr.top = r.y;
     wr.right = r.x + r.width;
@@ -89,14 +92,14 @@ metafile newmetafile(char *name, rect r)
         wHDC = GetDC(NULL);
         if (!wHDC)
         {
-            askok("Inpossible to create reference DC for metafiles");
+            R_ShowMessage("Unable to create reference DC for metafiles");
             return NULL;
         }
     }
     hDC = CreateEnhMetaFile(wHDC, strlen(name) ? name : NULL, &wr, "GraphApp");
     if (!hDC)
     {
-        askok("Impossible to create metafile");
+        R_ShowMessage("Unable to create metafile");
         if (!nummeta)
             ReleaseDC(NULL, wHDC);
         return NULL;
@@ -104,7 +107,7 @@ metafile newmetafile(char *name, rect r)
     obj = new_object(MetafileObject, (HANDLE)hDC, get_metafile_base());
     if (!obj)
     {
-        askok("Insufficient memory for metafile");
+        R_ShowMessage("Insufficient memory to create metafile");
         DeleteEnhMetaFile(CloseEnhMetaFile(hDC));
         if (!nummeta)
             ReleaseDC(NULL, wHDC);
