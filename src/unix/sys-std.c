@@ -661,3 +661,74 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     errorcall(call, "no history available to save");
 #endif
 }
+
+#include <setjmp.h>
+static jmp_buf sleep_return;
+
+static int OldTimeout;
+static void (*OldHandler)(void);
+
+#ifdef HAVE_TIMES
+#include <sys/times.h>
+#ifndef CLK_TCK
+/* this is in ticks/second, generally 60 on BSD style Unix, 100? on SysV */
+#ifdef HZ
+#define CLK_TCK HZ
+#else
+#define CLK_TCK 60
+#endif
+#endif /* CLK_TCK */
+
+static struct tms timeinfo;
+static double timeint, start, elapsed;
+
+static void SleepHandler(void)
+{
+    elapsed = (times(&timeinfo) - start) / (double)CLK_TCK;
+    /*    Rprintf("elapsed %f,  R_wait_usec %d\n", elapsed, R_wait_usec); */
+    if (elapsed >= timeint)
+        longjmp(sleep_return, 100);
+    if (timeint - elapsed < 0.5)
+        R_wait_usec = 1e6 * (timeint - elapsed) + 10000;
+    OldHandler();
+}
+
+SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    checkArity(op, args);
+    timeint = asReal(CAR(args));
+    if (ISNAN(timeint) || timeint < 0)
+        errorcall(call, "invalid time value");
+    OldHandler = R_PolledEvents;
+    R_PolledEvents = SleepHandler;
+    OldTimeout = R_wait_usec;
+    if (OldTimeout == 0 || OldTimeout > 500000)
+        R_wait_usec = 500000;
+
+    start = times(&timeinfo);
+    if (setjmp(sleep_return) != 100)
+        for (;;)
+        {
+            InputHandler *what = waitForActivity();
+            if (what != NULL)
+            {
+                if (what->fileDescriptor != fileno(stdin))
+                    what->handler((void *)NULL);
+                else
+                    usleep(R_wait_usec / 2);
+                /* we can't handle console read events here,
+                   so just sleep for a while */
+            }
+        }
+
+    R_PolledEvents = OldHandler;
+    R_wait_usec = OldTimeout;
+    return R_NilValue;
+}
+
+#else
+SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    error("Sys.sleep is not implemented on this system")
+}
+#endif
