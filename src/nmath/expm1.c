@@ -49,17 +49,16 @@ double expm1(double x)
 
     if (a < DBL_EPSILON)
         return x;
+    if (a > 0.697)
+        return exp(x) - 1; /* negligible cancellation */
 
-    if (a > 1e-6)
-    {
+    if (a > 1e-8)
         y = exp(x) - 1;
-        if (y > 1.) /* no cancellation */
-            return y;
-    }
-    else /* Taylor expansion */
+    else /* Taylor expansion, more accurate in this range */
         y = (x / 2 + 1) * x;
 
     /* Newton step for solving   log(1 + y) = x   for y : */
+    /* WARNING: does not work for y ~ -1: bug in 1.5.0 */
     y -= (1 + y) * (log1p(y) - x);
     return y;
 }

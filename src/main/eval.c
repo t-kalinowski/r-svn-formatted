@@ -190,7 +190,8 @@ static void R_EndProfiling()
     setitimer(ITIMER_PROF, &itv, NULL);
     signal(SIGPROF, doprof_null);
 #endif /* not Win32 */
-    fclose(R_ProfileOutfile);
+    if (R_ProfileOutfile)
+        fclose(R_ProfileOutfile);
     R_ProfileOutfile = NULL;
     R_Profiling = 0;
 }

@@ -1,5 +1,5 @@
 /*
- *  $Id: nls.c,v 1.15 2002/04/30 18:01:17 hornik Exp $
+ *  $Id: nls.c,v 1.16 2002/05/15 13:37:43 maechler Exp $
  *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
@@ -186,7 +186,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     if (!hasConverged)
     {
         UNPROTECT(9);
-        error("number of iterations exceeded maximum of %g", maxIter);
+        error("number of iterations exceeded maximum of %d", maxIter);
     }
 
     UNPROTECT(9);
