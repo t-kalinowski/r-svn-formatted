@@ -20,6 +20,10 @@
 #include "Defn.h"
 #include "Graphics.h"
 
+/*--- The `real'  main() program is in	../<SYSTEM>/system.c,
+ *---		  ======	e.g.,	../unix/system.c
+ */
+
 /* Heap and Pointer Protection Stack Sizes. */
 /* These have moved to Defn.h and Platform.h */
 
@@ -125,7 +129,7 @@ void InitGlobalEnv()
     R_GlobalEnv = emptyEnv();
 }
 
-/* This is the R read-eval-print loop.  If R_Console */
+/* This is the R read-eval-print loop.	If R_Console */
 /* is zero, it is assumed that R_Inputfile contains */
 /* a file descriptor which is to be read to end of file */
 /* If R_Console is one, input is taken from the console. */
@@ -269,8 +273,8 @@ void mainloop()
     }
 
     /* This is where we try to load a user's */
-    /* saved data.  The right thing to do here */
-    /* is very platform dependent.  E.g. Under */
+    /* saved data.	The right thing to do here */
+    /* is very platform dependent.	E.g. Under */
     /* Unix we look in a special hidden file and */
     /* on the Mac we look in any documents which */
     /* might have been double clicked on or dropped */
