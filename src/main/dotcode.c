@@ -75,7 +75,8 @@ static SEXP pkgtrim(SEXP args, DllReference *dll);
   Checks whether the specified object correctly identifies a native routine.
   This can be
    a) a string,
-   b) an external pointer giving the address of the routine (e.g. getNativeSymbolInfo("foo")$address)
+   b) an external pointer giving the address of the routine
+      (e.g. getNativeSymbolInfo("foo")$address)
    c) or a NativeSymbolInfo itself  (e.g. getNativeSymbolInfo("foo"))
  */
 static int checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun)
@@ -101,11 +102,12 @@ static int checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun)
 }
 
 /*
-  This is the routine that is called by do_dotCode, do_dotcall and do_External
-  to find the DL_FUNC to invoke. It handles processing the arguments for the
-  PACKAGE argument, if present, and also takes care of the cases where we are given
-  a NativeSymbolInfo object, an address directly, and if the DLL is specified.
-  If no PACKAGE is provided, we check whether the calling function is in a namespace
+  This is the routine that is called by do_dotCode, do_dotcall and
+  do_External to find the DL_FUNC to invoke. It handles processing the
+  arguments for the PACKAGE argument, if present, and also takes care
+  of the cases where we are given a NativeSymbolInfo object, an
+  address directly, and if the DLL is specified. If no PACKAGE is
+  provided, we check whether the calling function is in a namespace
   and look there.
 */
 SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *symbol, char *buf, int *nargs, int *naok,
@@ -656,16 +658,18 @@ SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 
     args = resolveNativeRoutine(args, &fun, &symbol, buf, NULL, NULL, NULL, call);
 
-    /* Some external symbols that are registered may have 0 as the expected number of arguments.
-       We may want a warning here. However, the number of values may vary across calls
-       and that is why people use the .External() mechanism.  So perhaps we should just kill this
-       check. */
+    /* Some external symbols that are registered may have 0 as the
+       expected number of arguments.  We may want a warning
+       here. However, the number of values may vary across calls and
+       that is why people use the .External() mechanism.  So perhaps
+       we should just kill this check.
+    */
 #ifdef CHECK_EXTERNAL_ARG_COUNT /* Off by default. */
     if (symbol.symbol.external && symbol.symbol.external->numArgs > -1)
     {
         if (symbol.symbol.external->numArgs != length(args))
             error("Incorrect number of arguments (%d), expecting %d for %s", length(args),
-                  symbol.symbol.external->numArgs, CHAR(STRING_ELT(op, 0)));
+                  symbol.symbol.external->numArgs, CHAR(STRING_ELT(CAR(args), 0)));
     }
 #endif
 
@@ -684,7 +688,6 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     char *vmax = vmaxget();
     char buf[128];
 
-    op = CAR(args);
     args = resolveNativeRoutine(args, &fun, &symbol, buf, NULL, NULL, NULL, call);
     args = CDR(args);
 
@@ -699,7 +702,7 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (symbol.symbol.call->numArgs != nargs)
             error("Incorrect number of arguments (%d), expecting %d for %s", nargs, symbol.symbol.call->numArgs,
-                  CHAR(STRING_ELT(op, 0)));
+                  CHAR(STRING_ELT(CAR(args), 0)));
     }
 
     retval = R_NilValue; /* -Wall */
@@ -1224,7 +1227,8 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     int dup, havenames, naok, nargs, which;
     DL_FUNC fun = NULL;
     SEXP ans, pargs, s;
-    R_toCConverter *argConverters[65]; /* the post-call converters back to R objects. */
+    /* the post-call converters back to R objects. */
+    R_toCConverter *argConverters[65];
     R_RegisteredNativeSymbol symbol = {R_C_SYM, {NULL}, NULL};
     R_NativePrimitiveArgType *checkTypes = NULL;
     R_NativeArgStyle *argStyles = NULL;
@@ -1263,12 +1267,14 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef THROW_REGISTRATION_TYPE_ERROR
         if (checkTypes && !comparePrimitiveTypes(checkTypes[nargs], CAR(pargs), dup))
         {
-            /* We can loop over all the arguments and report all the erroneous ones,
-               but then we would also want to avoid the conversions.
-               Also, in the future, we may just attempt to coerce the value
-               to the appropriate type. This is why we pass the checkTypes[nargs]
-               value to RObjToCPtr(). We just have to sort out the ability to
-               return the correct value which is complicated by dup, etc. */
+            /* We can loop over all the arguments and report all the
+               erroneous ones, but then we would also want to avoid
+               the conversions.  Also, in the future, we may just
+               attempt to coerce the value to the appropriate
+               type. This is why we pass the checkTypes[nargs] value
+               to RObjToCPtr(). We just have to sort out the ability
+               to return the correct value which is complicated by
+               dup, etc. */
             error("Wrong type for argument %d in call to %s", nargs + 1, symName);
         }
 #endif
