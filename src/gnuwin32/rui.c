@@ -60,6 +60,7 @@ extern int ConsoleAcceptCmd, R_is_running;
 extern Rboolean DebugMenuitem;
 
 static menubar RMenuBar;
+static popup RConsolePopup;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
     mlazy, mconfig, mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart,
     mhelpsearch, mFAQ, mrwFAQ, mpkgl, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde, mCRAN;
@@ -1147,7 +1148,7 @@ int setupui()
     addto(RConsole);
     setclose(RConsole, closeconsole);
     setdrop(RConsole, dropconsole);
-    MCHECK(gpopup(popupact, ConsolePopup));
+    MCHECK(RConsolePopup = gpopup(popupact, ConsolePopup));
     MCHECK(RMenuBar = newmenubar(menuact));
     MCHECK(newmenu("File"));
     MCHECK(msource = newmenuitem("Source R code...", 0, menusource));
@@ -1346,14 +1347,35 @@ void freemenuitems(menuItems *items)
     free(items);
 }
 
-int winaddmenu(char *name, char *errmsg)
+extern menu getGraphMenu(char *); /* from devga.c */
+
+static menu getMenu(char *name)
 {
     int i;
-    char *p, *submenu = name, start[50];
+    for (i = 0; i < nmenus; i++)
+        if (strcmp(name, usermenunames[i]) == 0)
+            return (usermenus[i]);
+    if (strcmp(name, "$ConsolePopup") == 0)
+        return (RConsolePopup);
+    else if (strcmp(name, "$ConsoleMain") == 0)
+        return (RMenuBar);
+    else if (strncmp(name, "$Graph", 6) == 0)
+        return (getGraphMenu(name));
+    else
+        return (NULL);
+}
 
-    if (nmenus > 9)
+int winaddmenu(char *name, char *errmsg)
+{
+    char *p, *submenu = name, start[50];
+    menu parent;
+
+    if (getMenu(name))
+        return 0; /* Don't add repeats */
+
+    if (nmenus > 15)
     {
-        strcpy(errmsg, "Only 10 menus are allowed");
+        strcpy(errmsg, "Only 16 menus are allowed");
         return 2;
     }
     if (strlen(name) > 50)
@@ -1367,15 +1389,13 @@ int winaddmenu(char *name, char *errmsg)
         submenu = p + 1;
         strcpy(start, name);
         *strrchr(start, '/') = '\0';
-        for (i = 0; i < nmenus; i++)
-            if (strcmp(start, usermenunames[i]) == 0)
-                break;
-        if (i == nmenus)
+        parent = getMenu(start);
+        if (!parent)
         {
             strcpy(errmsg, "base menu does not exist");
             return 3;
         }
-        m = newsubmenu(usermenus[i], submenu);
+        m = newsubmenu(parent, submenu);
     }
     else
     {
@@ -1493,27 +1513,55 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
 
 int windelmenu(char *menu, char *errmsg)
 {
-    int i, j;
+    int i, j, count = 0, len = strlen(menu);
 
+    j = 0;
     for (i = 0; i < nmenus; i++)
     {
-        if (strcmp(menu, usermenunames[i]) == 0)
-            break;
+        if (strcmp(menu, usermenunames[i]) == 0 ||
+            (strncmp(menu, usermenunames[i], len) && usermenunames[i][len] == '/'))
+        {
+            remove_menu_item(usermenus[i]);
+            count++;
+        }
+        else
+        {
+            if (j < i)
+            {
+                strcpy(usermenunames[j], usermenunames[i]);
+                usermenus[j] = usermenus[i];
+            }
+            j++;
+        }
     }
-    if (i == nmenus)
+    nmenus -= count;
+    if (!count)
     {
         strcpy(errmsg, "menu does not exist");
         return 3;
     }
-    remove_menu_item(usermenus[i]);
-    nmenus--;
-    for (j = i; j < nmenus; j++)
+
+    /* Delete any menu items in this menu */
+
+    for (j = nitems - 1; j >= 0; j--)
     {
-        usermenus[j] = usermenus[j + 1];
-        strcpy(usermenunames[j], usermenunames[j + 1]);
+        if (strncmp(menu, umitems[j]->name, len) == 0 && umitems[j]->name[len] == '/')
+            windelmenuitem(umitems[j]->name + len + 1, menu, errmsg);
     }
+
     show(RConsole);
     return 0;
+}
+
+void windelmenus(char *prefix)
+{
+    int i, len = strlen(prefix);
+
+    for (i = nmenus - 1; i >= 0; i--)
+    {
+        if (strncmp(prefix, usermenunames[i], len) == 0)
+            windelmenu(usermenunames[i], "menu not found");
+    }
 }
 
 int windelmenuitem(char *item, char *menu, char *errmsg)
