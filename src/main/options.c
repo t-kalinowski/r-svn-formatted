@@ -204,7 +204,7 @@ void InitOptions(void)
 }
 
 /* FIXME : This functionality should be universal */
-/* See also in cbind.c. */
+/* See also in bind.c. */
 
 static SEXP EnsureString(SEXP s)
 {
