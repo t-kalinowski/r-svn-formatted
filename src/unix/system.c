@@ -194,6 +194,7 @@ int main(int ac, char **av)
         if (!usegnome)
         {
             R_load_X11_shlib();
+            R_GUIType = "X11";
         }
         else
         {
@@ -201,6 +202,7 @@ int main(int ac, char **av)
             R_Suicide("GNOME GUI is not available in this version");
 #endif
             R_load_gnome_shlib();
+            R_GUIType = "GNOME";
             gnome_start(ac, av, Rp);
             /* this will never return, but for safety */
             return 0;
