@@ -49,7 +49,7 @@ void fpu_setup(int); /* in sys-unix.c */
 #include <sys/time.h> /* for struct timeval */
 #endif
 
-extern int UsingReadline;
+extern Rboolean UsingReadline;
 
 /*
  *  1) FATAL MESSAGES AT STARTUP

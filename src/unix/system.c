@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997-2000   Robert Gentleman, Ross Ihaka
- *                            and the R Development Core Team
+ *			      and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,12 +49,12 @@
 
 void fpu_setup(int); /* in sys-unix.c */
 
-int UsingReadline = 1;
 int SaveAction = SA_SAVEASK;
 int RestoreAction = SA_RESTORE;
-int LoadSiteFile = TRUE;
-int LoadInitFile = TRUE;
-int DebugInitFile = FALSE;
+Rboolean UsingReadline = TRUE;
+Rboolean LoadSiteFile = TRUE;
+Rboolean LoadInitFile = TRUE;
+Rboolean DebugInitFile = FALSE;
 
 /* call pointers to allow interface switching */
 
@@ -121,7 +121,8 @@ int main(int ac, char **av)
 
 int Rf_initialize_R(int ac, char **av)
 {
-    int i, ioff = 1, j, value, ierr, useX11 = 1, usegnome = 0;
+    int i, ioff = 1, j, value, ierr;
+    Rboolean useX11 = TRUE, usegnome = FALSE;
     char *p, msg[1024], **avv;
     structRstart rstart;
     Rstart Rp = &rstart;
@@ -174,11 +175,11 @@ int Rf_initialize_R(int ac, char **av)
                 }
             }
             if (!strcmp(p, "none"))
-                useX11 = 0;
+                useX11 = FALSE;
             else if (!strcmp(p, "gnome") || !strcmp(p, "GNOME"))
-                usegnome = 1;
+                usegnome = TRUE;
             else if (!strcmp(p, "X11") || !strcmp(p, "x11"))
-                useX11 = 1;
+                useX11 = TRUE;
             else
             {
 #ifdef HAVE_X11
@@ -287,7 +288,7 @@ int Rf_initialize_R(int ac, char **av)
   It would be better to enclose this routine within a conditional
     #ifdef R_EMBEDDED
       Rf_initEmbeddedR() {
-        ...
+    ...
       }
     #endif
 
@@ -318,9 +319,9 @@ int Rf_initialize_R(int ac, char **av)
  initialization code so that will we never return here.)
 
  Example:
-         0) name of executable
-         1) don't load the X11 graphics library
-         2) don't show the banner at startup.
+     0) name of executable
+     1) don't load the X11 graphics library
+     2) don't show the banner at startup.
 
 
     char *argv[]= {"REmbeddedPostgres", "--gui=none", "--silent"};
