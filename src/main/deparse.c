@@ -468,6 +468,11 @@ static void deparse2buff(SEXP s)
                         break;
                     }
                 }
+                else if (fop == PP_BINARY2)
+                {
+                    if (length(s) != 2)
+                        fop = PP_FUNCALL;
+                }
                 switch (fop)
                 {
                 case PP_IF:
