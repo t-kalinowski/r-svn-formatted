@@ -968,6 +968,13 @@ SEXP R_isMethodsDispatchOn(SEXP onOff)
     return value;
 }
 
+/* simpler version for internal use */
+
+Rboolean isMethodsDispatchOn(void)
+{
+    return !NOT_METHODS_DISPATCH_PTR(R_standardGeneric_ptr);
+}
+
 static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
 {
     /* dispatch the non-generic definition of `name'.  Used to trap
@@ -1303,6 +1310,7 @@ void R_set_quick_method_check(R_stdGen_ptr_t value)
 {
     quick_method_check_ptr = value;
 }
+
 /* try to dispatch the formal method for this primitive op, by calling
    the stored generic function corresponding to the op.	 Requires that
    the methods be set up to return a special object rather than trying
@@ -1322,9 +1330,9 @@ SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (current == NEEDS_RESET)
     {
         /* get the methods and store them in the in-core primitive
-       method table.	The entries will be preserved via
-       R_preserveobject, so later we can just grab mlist from
-       prim_mlist */
+           method table.	The entries will be preserved via
+           R_preserveobject, so later we can just grab mlist from
+           prim_mlist */
         PROTECT(mlist = get_primitive_methods(op, rho));
         do_set_prim_method(op, "set", R_NilValue, mlist);
         UNPROTECT(1);
