@@ -89,6 +89,10 @@ TXNFrameID InframeID = 0;
 WindowRef RAboutWindow = NULL;
 pascal void RAboutHandler(WindowRef window);
 #define kRAppSignature '0FFF'
+int RFontSize = 12;
+
+void RSetTab(int tabsize);
+void RSetFontSize(int size);
 
 /* Items for the Tools menu */
 #define kRCmdShowWSpace 'dols'
@@ -128,6 +132,7 @@ void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
 
 void consolecmd(char *cmd);
+void RSetColors(void);
 
 #define kRVersionInfoID 132
 
@@ -246,6 +251,7 @@ void Raqua_StartConsole(void)
             TXNFocus(RConsoleOutObject, true);
             InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec,
                                       (void *)RAboutWindow, NULL);
+            RSetColors();
         }
         else
             WeHaveConsole = false;
@@ -289,7 +295,11 @@ noconsole:
 /* BEWARE: before quitting R via ExitToShell() call TXNTerminateTextension() */
 
 void Aqua_RWrite(char *buf);
-TXNOffset LastStartOffset = 0;
+
+RGBColor RFGOutColor = {0xffff, 0xffff, 0xffff};
+RGBColor RFGInColor = {0xffff, 0x2222, 0x2222};
+RGBColor RBGOutColor = {0x5555, 0x5555, 0x5555};
+RGBColor RBGInColor = {0xffff, 0xffff, 0xffff};
 
 void Raqua_WriteConsole(char *buf, int len)
 {
@@ -305,6 +315,26 @@ void Raqua_WriteConsole(char *buf, int len)
     {
         fprintf(stderr, "%s", buf);
     }
+}
+
+void RSetColors(void)
+{
+    TXNBackground RBGInfo;
+    TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGOutColor}};
+    TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &RFGInColor}};
+
+    /* setting FG colors */
+    TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, 100000);
+    TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, 100000);
+
+    // TXNDraw (RConsoleOutObject,NULL);
+    /* setting BG colors */
+    RBGInfo.bgType = kTXNBackgroundTypeRGB;
+    RBGInfo.bg.color = RBGOutColor;
+    TXNSetBackground(RConsoleOutObject, &RBGInfo);
+
+    RBGInfo.bg.color = RBGInColor;
+    TXNSetBackground(RConsoleInObject, &RBGInfo);
 }
 
 OSStatus InitMLTE(void)
@@ -373,14 +403,8 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
 
 void Aqua_RWrite(char *buf)
 {
-    OSStatus err;
-    TXNOffset oStartOffset;
-    TXNOffset oEndOffset;
-
     if (WeHaveConsole)
-    {
-        err = TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
-    }
+        TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
 }
 
 /* Indicate that input is coming from the console */
@@ -461,6 +485,37 @@ pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event,
 static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon)
 {
     consolecmd("q()\r");
+}
+
+/* Changes font size in both Console In and Out
+   default size is 12
+*/
+void RSetFontSize(int size)
+{
+    TXNTypeAttributes typeAttr;
+
+    typeAttr.tag = kTXNQDFontSizeAttribute;
+    typeAttr.size = kTXNFontSizeAttributeSize;
+    typeAttr.data.dataValue = size << 16;
+
+    TXNSetTypeAttributes(RConsoleOutObject, 1, &typeAttr, 0, 100000);
+    TXNSetTypeAttributes(RConsoleInObject, 1, &typeAttr, 0, 100000);
+}
+
+/* Sets tab space for Console In and Out
+   tabsize: number of chars
+ */
+
+void RSetTab(int tabsize)
+{
+    TXNControlTag tabtag = kTXNTabSettingsTag;
+    TXNControlData tabdata;
+
+    tabdata.tabValue.value = tabsize * RFontSize;
+    tabdata.tabValue.tabType = kTXNRightTab;
+
+    TXNSetTXNObjectControls(RConsoleOutObject, false, 1, &tabtag, &tabdata);
+    TXNSetTXNObjectControls(RConsoleInObject, false, 1, &tabtag, &tabdata);
 }
 
 static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
