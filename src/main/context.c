@@ -150,6 +150,7 @@ void R_restore_globals(RCNTXT *cptr)
     R_PPStackTop = cptr->cstacktop;
     R_EvalDepth = cptr->evaldepth;
     vmaxset(cptr->vmax);
+    R_interrupts_suspended = cptr->intsusp;
 }
 
 /* jumpfun - jump to the named context */
@@ -195,6 +196,7 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->promargs = promargs;
     cptr->callfun = callfun;
     cptr->vmax = vmaxget();
+    cptr->intsusp = R_interrupts_suspended;
     R_GlobalContext = cptr;
 }
 
