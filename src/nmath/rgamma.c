@@ -1,6 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
+ *  Copyright (C) 2000-2001 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,77 +38,83 @@
  *
  *    [2] Shape parameter 0 < a < 1. Algorithm GS in:
  *
- *        Ahrens, J.H. and Dieter, U. (1974).
+ *	  Ahrens, J.H. and Dieter, U. (1974).
  *	  Computer methods for sampling from gamma, beta,
  *	  poisson and binomial distributions.
  *	  Computing, 12, 223-246.
  *
  *    Input: a = parameter (mean) of the standard gamma distribution.
  *    Output: a variate from the gamma(a)-distribution
- *
- *    Coefficients q(k) - for q0 = sum(q(k)*a**(-k))
- *    Coefficients a(k) - for q = q0+(t*t/2)*sum(a(k)*v**k)
- *    Coefficients e(k) - for exp(q)-1 = sum(e(k)*q**k)
  */
 
 #include "nmath.h"
-
-static double a1 = 0.3333333;
-static double a2 = -0.250003;
-static double a3 = 0.2000062;
-static double a4 = -0.1662921;
-static double a5 = 0.1423657;
-static double a6 = -0.1367177;
-static double a7 = 0.1233795;
-static double e1 = 1.0;
-static double e2 = 0.4999897;
-static double e3 = 0.166829;
-static double e4 = 0.0407753;
-static double e5 = 0.010293;
-static double q1 = 0.04166669;
-static double q2 = 0.02083148;
-static double q3 = 0.00801191;
-static double q4 = 0.00144121;
-static double q5 = -7.388e-5;
-static double q6 = 2.4511e-4;
-static double q7 = 2.424e-4;
-static double sqrt32 = 5.656854;
-
-static double aa = 0.;
-static double aaa = 0.;
 
 #define repeat for (;;)
 
 double rgamma(double a, double scale)
 {
-    static double b, c, d, e, p, q, r, s, t, u, v, w, x;
-    static double q0, s2, si;
-    double ret_val;
+    /* Constants : */
+    const double sqrt32 = 5.656854;
+    const double exp_m1 = 0.36787944117144232159; /* exp(-1) = 1/e */
 
-    if (a < 1.0)
-    {
-        /* alternate method for parameters a below 1 */
-        /* 0.36787944117144232159 = exp(-1) */
-        aa = 0.0;
-        b = 1.0 + 0.36787944117144232159 * a;
+    /* Coefficients q[k] - for q0 = sum(q[k]*a^(-k))
+     * Coefficients a[k] - for q = q0+(t*t/2)*sum(a[k]*v^k)
+     * Coefficients e[k] - for exp(q)-1 = sum(e[k]*q^k)
+     */
+    const double q1 = 0.04166669;
+    const double q2 = 0.02083148;
+    const double q3 = 0.00801191;
+    const double q4 = 0.00144121;
+    const double q5 = -7.388e-5;
+    const double q6 = 2.4511e-4;
+    const double q7 = 2.424e-4;
+
+    const double a1 = 0.3333333;
+    const double a2 = -0.250003;
+    const double a3 = 0.2000062;
+    const double a4 = -0.1662921;
+    const double a5 = 0.1423657;
+    const double a6 = -0.1367177;
+    const double a7 = 0.1233795;
+
+    const double e1 = 1.0;
+    const double e2 = 0.4999897;
+    const double e3 = 0.166829;
+    const double e4 = 0.0407753;
+    const double e5 = 0.010293;
+
+    /* State variables [FIXME for threading!] :*/
+    static double aa = 0.;
+    static double aaa = 0.;
+    static double s, s2, d;     /* no. 1 (step 1) */
+    static double q0, b, si, c; /* no. 2 (step 4) */
+
+    double e, p, q, r, t, u, v, w, x, ret_val;
+
+    if (a < 1.)
+    { /* GS algorithm for parameters a < 1 */
+        e = 1.0 + exp_m1 * a;
         repeat
         {
-            p = b * unif_rand();
+            p = e * unif_rand();
             if (p >= 1.0)
             {
-                ret_val = -log((b - p) / a);
-                if (exp_rand() >= (1.0 - a) * log(ret_val))
+                x = -log((e - p) / a);
+                if (exp_rand() >= (1.0 - a) * log(x))
                     break;
             }
             else
             {
-                ret_val = exp(log(p) / a);
-                if (exp_rand() >= ret_val)
+                x = exp(log(p) / a);
+                if (exp_rand() >= x)
                     break;
             }
         }
-        return scale * ret_val;
+        return scale * x;
     }
+
+    /* --- a >= 1 : GD algorithm --- */
+
     /* Step 1: Recalculations of s2, s, d if a has changed */
     if (a != aa)
     {
@@ -116,10 +123,10 @@ double rgamma(double a, double scale)
         s = sqrt(s2);
         d = sqrt32 - s * 12.0;
     }
-    /* Step 2: t = standard normal deviate, */
-    /* x = (s,1/2)-normal deviate. */
-    /* immediate acceptance (i) */
+    /* Step 2: t = standard normal deviate,
+               x = (s,1/2) -normal deviate. */
 
+    /* immediate acceptance (i) */
     t = norm_rand();
     x = s + 0.5 * t;
     ret_val = x * x;
@@ -129,9 +136,8 @@ double rgamma(double a, double scale)
     /* Step 3: u = 0,1 - uniform sample. squeeze acceptance (s) */
     u = unif_rand();
     if (d * u <= t * t * t)
-    {
         return scale * ret_val;
-    }
+
     /* Step 4: recalculations of q0, b, si, c if necessary */
 
     if (a != aaa)
@@ -141,8 +147,8 @@ double rgamma(double a, double scale)
         q0 = ((((((q7 * r + q6) * r + q5) * r + q4) * r + q3) * r + q2) * r + q1) * r;
 
         /* Approximation depending on size of parameter a */
-        /* The constants in the expressions for b, si and */
-        /* c were established by numerical experiments */
+        /* The constants in the expressions for b, si and c */
+        /* were established by numerical experiments */
 
         if (a <= 3.686)
         {
@@ -175,16 +181,15 @@ double rgamma(double a, double scale)
             q = q0 - s * t + 0.25 * t * t + (s2 + s2) * log(1.0 + v);
 
         /* Step 7: quotient acceptance (q) */
-
         if (log(1.0 - u) <= q)
             return scale * ret_val;
     }
-    /* Step 8: e = standard exponential deviate */
-    /* u= 0,1 -uniform deviate */
-    /* t=(b,si)-double exponential (laplace) sample */
 
     repeat
     {
+        /* Step 8: e = standard exponential deviate
+         *	u =  0,1 -uniform deviate
+         *	t = (b,si)-double exponential (laplace) sample */
         e = exp_rand();
         u = unif_rand();
         u = u + u - 1.0;
@@ -192,16 +197,16 @@ double rgamma(double a, double scale)
             t = b - si * e;
         else
             t = b + si * e;
-        /* Step  9:  rejection if t < tau(1) = -0.71874483771719 */
+        /* Step	 9:  rejection if t < tau(1) = -0.71874483771719 */
         if (t >= -0.71874483771719)
         {
-            /* Step 10:  calculation of v and quotient q */
+            /* Step 10:	 calculation of v and quotient q */
             v = t / (s + s);
             if (fabs(v) <= 0.25)
                 q = q0 + 0.5 * t * t * ((((((a7 * v + a6) * v + a5) * v + a4) * v + a3) * v + a2) * v + a1) * v;
             else
                 q = q0 - s * t + 0.25 * t * t + (s2 + s2) * log(1.0 + v);
-            /* Step 11:  hat acceptance (h) */
+            /* Step 11:	 hat acceptance (h) */
             /* (if q not positive go to step 8) */
             if (q > 0.0)
             {
@@ -209,8 +214,7 @@ double rgamma(double a, double scale)
                     w = ((((e5 * q + e4) * q + e3) * q + e2) * q + e1) * q;
                 else
                     w = exp(q) - 1.0;
-                /* if t is rejected */
-                /* sample again at step 8 */
+                /* if t is rejected sample again at step 8 */
                 if (c * fabs(u) <= w * exp(e - 0.5 * t * t))
                     break;
             }
