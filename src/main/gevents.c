@@ -45,7 +45,7 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
     nd = dd->dev;
 
     if (!nd->newDevStruct || !nd->getEvent)
-        errorcall(call, _("Graphics device does not support graphics events"));
+        errorcall(call, _("graphics device does not support graphics events"));
 
     prompt = CAR(args);
     if (!isString(prompt))
@@ -56,36 +56,36 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(onMouseDown) == NILSXP)
         onMouseDown = NULL;
     else if (!nd->canGenMouseDown)
-        errorcall(call, _("onMouseDown not supported"));
+        errorcall(call, _("'onMouseDown' not supported"));
     else if (TYPEOF(onMouseDown) != CLOSXP)
-        errorcall(call, _("invalid onMouseDown callback"));
+        errorcall(call, _("invalid 'onMouseDow'n callback"));
     args = CDR(args);
 
     onMouseMove = CAR(args);
     if (TYPEOF(onMouseMove) == NILSXP)
         onMouseMove = NULL;
     else if (!nd->canGenMouseMove)
-        errorcall(call, _("onMouseMove not supported"));
+        errorcall(call, _("'onMouseMove' not supported"));
     else if (TYPEOF(onMouseMove) != CLOSXP)
-        errorcall(call, _("invalid onMouseMove callback"));
+        errorcall(call, _("invalid 'onMouseMove' callback"));
     args = CDR(args);
 
     onMouseUp = CAR(args);
     if (TYPEOF(onMouseUp) == NILSXP)
         onMouseUp = NULL;
     else if (!nd->canGenMouseUp)
-        errorcall(call, _("onMouseUp not supported"));
+        errorcall(call, _("'onMouseUp' not supported"));
     else if (TYPEOF(onMouseUp) != CLOSXP)
-        errorcall(call, _("invalid onMouseUp callback"));
+        errorcall(call, _("invalid 'onMouseUp' callback"));
     args = CDR(args);
 
     onKeybd = CAR(args);
     if (TYPEOF(onKeybd) == NILSXP)
         onKeybd = NULL;
     else if (!nd->canGenKeybd)
-        errorcall(call, _("onKeybd not supported"));
+        errorcall(call, _("'onKeybd' not supported"));
     else if (TYPEOF(onKeybd) != CLOSXP)
-        errorcall(call, _("invalid onKeybd callback"));
+        errorcall(call, _("invalid 'onKeybd' callback"));
 
     /* NB:  cleanup of event handlers must be done by driver in onExit handler */
 

@@ -260,14 +260,14 @@ void findcontext(int mask, SEXP env, SEXP val)
         for (cptr = R_GlobalContext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)
             if (cptr->callflag & CTXT_LOOP && cptr->cloenv == env)
                 jumpfun(cptr, mask, val);
-        error(_("No loop to break from, jumping to top level"));
+        error(_("no loop to break from, jumping to top level"));
     }
     else
     { /* return; or browser */
         for (cptr = R_GlobalContext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)
             if ((cptr->callflag & mask) && cptr->cloenv == env)
                 jumpfun(cptr, mask, val);
-        error(_("No function to return from, jumping to top level"));
+        error(_("no function to return from, jumping to top level"));
     }
 }
 
@@ -277,7 +277,7 @@ void R_JumpToContext(RCNTXT *target, int mask, SEXP val)
     for (cptr = R_GlobalContext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)
         if (cptr == target)
             jumpfun(cptr, mask, val);
-    error(_("Target context is not on the stack"));
+    error(_("target context is not on the stack"));
 }
 
 /* R_sysframe - look back up the context stack until the */

@@ -394,7 +394,7 @@ static SEXP R_HashResize(SEXP table)
     /* Do some checking */
     if (TYPEOF(table) != VECSXP)
     {
-        error(_("first arg (table) not of type VECSXP,  from R_HashResize"));
+        error(_("first argument ('table') not of type VECSXP,  from R_HashResize"));
     }
 
     /* This may have to change.	 The growth rate should
@@ -450,7 +450,7 @@ static int R_HashSizeCheck(SEXP table)
     /* Do some checking */
     if (TYPEOF(table) != VECSXP)
     {
-        error(_("first arg (table) not of type VECSXP, R_HashSizeCheck"));
+        error(_("first argument ('table') not of type VECSXP, R_HashSizeCheck"));
     }
     resize = 0;
     thresh_val = 0.85;
@@ -478,7 +478,7 @@ static SEXP R_HashFrame(SEXP rho)
     /* Do some checking */
     if (TYPEOF(rho) != ENVSXP)
     {
-        error(_("first arg (table) not of type ENVSXP, from R_HashVector2Hash"));
+        error(_("first argument ('table') not of type ENVSXP, from R_HashVector2Hash"));
     }
     table = HASHTAB(rho);
     frame = FRAME(rho);
@@ -1256,7 +1256,7 @@ SEXP findFun(SEXP symbol, SEXP rho)
             if (TYPEOF(vl) == CLOSXP || TYPEOF(vl) == BUILTINSXP || TYPEOF(vl) == SPECIALSXP)
                 return (vl);
             if (vl == R_MissingArg)
-                error(_("Argument \"%s\" is missing, with no default"), CHAR(PRINTNAME(symbol)));
+                error(_("argument \"%s\" is missing, with no default"), CHAR(PRINTNAME(symbol)));
         }
         rho = ENCLOS(rho);
     }
@@ -2650,7 +2650,7 @@ SEXP do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
     case INTSXP:
         return do_pos2env(call, op, args, rho);
     default:
-        errorcall(call, _("Invalid object for as.environment"));
+        errorcall(call, _("invalid object for as.environment"));
         return R_NilValue; /* -Wall */
     }
 }
@@ -2964,7 +2964,7 @@ SEXP R_FindPackageEnv(SEXP info)
     fun = install("findPackageEnv");
     if (findVar(fun, R_GlobalEnv) == R_UnboundValue)
     { /* not a perfect test */
-        warning(_("using .GlobalEnv instead of %s"), CHAR(STRING_ELT(info, 0)));
+        warning(_("using .GlobalEnv instead of '%s'"), CHAR(STRING_ELT(info, 0)));
         UNPROTECT(1);
         return R_GlobalEnv;
     }

@@ -530,7 +530,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
             }
             else
             {
-                snprintf(buf, 1024, _("file.show(): file %s does not exist\n"), file[i]);
+                snprintf(buf, 1024, _("file.show(): file '%s' does not exist\n"), file[i]);
                 warning(buf);
             }
         }
@@ -954,7 +954,7 @@ int cmdlineoptions(int ac, char **av)
             }
             else
             {
-                snprintf(s, 1024, _("WARNING: unknown option %s\n"), *av);
+                snprintf(s, 1024, _("WARNING: unknown option '%s'\n"), *av);
                 R_ShowMessage(s);
             }
         }

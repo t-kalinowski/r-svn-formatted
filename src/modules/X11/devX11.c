@@ -831,7 +831,7 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
             if (tmp)
                 return tmp;
             else
-                error(_("Could not find any X11 fonts\nCheck that the Font Path is correct."));
+                error(_("could not find any X11 fonts\nCheck that the Font Path is correct."));
         }
 
         if (pixelsize < 8)
@@ -987,7 +987,7 @@ static int gcToX11lend(R_GE_lineend lend)
         newend = CapProjecting;
         break;
     default:
-        error(_("Invalid line end"));
+        error(_("invalid line end"));
     }
     return newend;
 }
@@ -1007,7 +1007,7 @@ static int gcToX11ljoin(R_GE_linejoin ljoin)
         newjoin = JoinBevel;
         break;
     default:
-        error(_("Invalid line join"));
+        error(_("invalid line join"));
     }
     return newjoin;
 }
@@ -1119,7 +1119,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         char buf[PATH_MAX]; /* allow for pageno formats */
         FILE *fp;
 #ifndef HAVE_PNG
-        warning(_("No png support in this version of R"));
+        warning(_("no png support in this version of R"));
         return FALSE;
 #else
         if (strlen(dsp + 5) >= PATH_MAX)
@@ -1142,7 +1142,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         char buf[PATH_MAX]; /* allow for pageno formats */
         FILE *fp;
 #ifndef HAVE_JPEG
-        warning(_("No jpeg support in this version of R"));
+        warning(_("no jpeg support in this version of R"));
         return FALSE;
 #else
         p = strchr(dsp + 6, ':');
@@ -1311,7 +1311,7 @@ static char *SaveFontSpec(SEXP sxp, int offset)
 {
     char *s;
     if (!isString(sxp) || length(sxp) <= offset)
-        error(_("Invalid font specification"));
+        error(_("invalid font specification"));
     s = R_alloc(strlen(CHAR(STRING_ELT(sxp, offset))) + 1, sizeof(char));
     strcpy(s, CHAR(STRING_ELT(sxp, offset)));
     return s;
@@ -1354,7 +1354,7 @@ static char *translateFontFamily(char *family, newX11Desc *xd)
             }
         }
         if (!found)
-            warning(_("Font family not found in X11 font database"));
+            warning(_("font family not found in X11 font database"));
     }
     UNPROTECT(4);
     return result;
@@ -2439,7 +2439,7 @@ void R_init_R_X11(DllInfo *info)
     tmp = (R_X11Routines *)malloc(sizeof(R_X11Routines));
     if (!tmp)
     {
-        error(_("Cannot allocate memory for X11Routines structure"));
+        error(_("cannot allocate memory for X11Routines structure"));
         return;
     }
     tmp->X11 = in_do_X11;

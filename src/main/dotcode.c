@@ -100,7 +100,7 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun)
             errorcall(call, _("NULL value passed as symbol address"));
         return;
     }
-    else if (inherits(op, _("NativeSymbolInfo")))
+    else if (inherits(op, "NativeSymbolInfo"))
     {
         checkValidSymbolId(VECTOR_ELT(op, 1), call, fun);
         return;
@@ -178,7 +178,7 @@ SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *sym
         if (!*fun && !(*fun = R_FindSymbol(buf, dll.DLLname, symbol)))
         {
             if (strlen(dll.DLLname))
-                errorcall(call, _("%s function name not in DLL for package %s"),
+                errorcall(call, _("%s function name not in DLL for package '%s'"),
                           symbol->type == R_FORTRAN_SYM ? "Fortran" : "C", dll.DLLname);
             else
                 errorcall(call, _("%s function name not in load table"),
@@ -245,7 +245,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
     {
         if (!dup)
         {
-            error(_("explicit request not to duplicate arguments in call to %s, but argument %d is of the wrong type "
+            error(_("explicit request not to duplicate arguments in call to '%s', but argument %d is of the wrong type "
                     "(%d != %d)"),
                   name, narg + 1, targetType, TYPEOF(s));
         }
@@ -307,7 +307,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         for (i = 0; i < n; i++)
         {
             if (!naok && (!R_FINITE(zptr[i].r) || !R_FINITE(zptr[i].i)))
-                error(_("Complex NA/NaN/Inf in foreign function call (arg %d)"), narg);
+                error(_("complex NA/NaN/Inf in foreign function call (arg %d)"), narg);
         }
         if (dup)
         {
@@ -1987,7 +1987,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             }
             break; */
         default:
-            error(_("Mode '%s' is not supported in call_R"), modes[i]);
+            error(_("mode '%s' is not supported in call_R"), modes[i]);
         }
         if (names && names[i])
             SET_TAG(pcall, install(names[i]));

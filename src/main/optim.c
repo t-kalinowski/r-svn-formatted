@@ -232,13 +232,13 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
-        errorcall(call, _("fn is not a function"));
+        errorcall(call, _("'fn' is not a function"));
     args = CDR(args);
     gr = CAR(args);
     args = CDR(args);
     method = CAR(args);
     if (!isString(method) || LENGTH(method) != 1)
-        errorcall(call, _("invalid method argument"));
+        errorcall(call, _("invalid 'method' argument"));
     tn = CHAR(STRING_ELT(method, 0));
     args = CDR(args);
     options = CAR(args);
@@ -291,7 +291,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isNull(gr))
         {
             if (!isFunction(gr))
-                error(_("gr is not a function"));
+                error(_("'gr' is not a function"));
             PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
         }
         else
@@ -313,7 +313,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isNull(gr))
         {
             if (!isFunction(gr))
-                error(_("gr is not a function"));
+                error(_("'gr' is not a function"));
             PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
         }
         else
@@ -346,7 +346,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isNull(gr))
         {
             if (!isFunction(gr))
-                error(_("gr is not a function"));
+                error(_("'gr' is not a function"));
             PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
         }
         else
@@ -382,7 +382,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isNull(gr))
         {
             if (!isFunction(gr))
-                error(_("gr is not a function"));
+                error(_("'gr' is not a function"));
             PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
         }
         else
@@ -434,7 +434,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     else
-        errorcall(call, _("unknown method"));
+        errorcall(call, _("unknown 'method'"));
 
     REAL(value)[0] = val * (OS->fnscale);
     SET_VECTOR_ELT(res, 0, par);
@@ -468,7 +468,7 @@ SEXP do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
-        errorcall(call, _("fn is not a function"));
+        errorcall(call, _("'fn' is not a function"));
     args = CDR(args);
     gr = CAR(args);
     args = CDR(args);
@@ -487,7 +487,7 @@ SEXP do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isNull(gr))
     {
         if (!isFunction(gr))
-            error(_("gr is not a function"));
+            error(_("'gr' is not a function"));
         PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
     }
     else
@@ -765,13 +765,13 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
     f = fminfn(n, Bvec, ex);
     if (!R_FINITE(f))
     {
-        error(_("Function cannot be evaluated at initial parameters"));
+        error(_("function cannot be evaluated at initial parameters"));
         *fail = TRUE;
     }
     else
     {
         if (trace)
-            Rprintf("Function value for initial parameters = %f\n", f);
+            Rprintf("function value for initial parameters = %f\n", f);
         funcount = 1;
         convtol = intol * (fabs(f) + intol);
         if (trace)
@@ -999,7 +999,7 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
     }
     if (trace)
     {
-        Rprintf("  Conjugate gradients function minimiser\n");
+        Rprintf("  Conjugate gradients function minimizer\n");
         switch (type)
         {
         case 1:
@@ -1012,7 +1012,7 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
             Rprintf("Method: Beale Sorenson\n");
             break;
         default:
-            error(_("unknown type in CG method of optim"));
+            error(_("unknown 'type' in CG method of optim"));
         }
     }
     c = vect(n);

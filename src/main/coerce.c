@@ -437,7 +437,7 @@ static SEXP coerceToSymbol(SEXP v)
     SEXP ans = R_NilValue;
     int warn = 0;
     if (length(v) <= 0)
-        error(_("Invalid data of mode \"%s\" (too short)"), CHAR(type2str(TYPEOF(v))));
+        error(_("invalid data of mode \"%s\" (too short)"), CHAR(type2str(TYPEOF(v))));
     PROTECT(v);
     switch (TYPEOF(v))
     {
@@ -954,7 +954,7 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error(_("pairlist object cannot be coerced to %s"), CHAR(type2str(type)));
+        error(_("'pairlist' object cannot be coerced to '%s'"), CHAR(type2str(type)));
 
     /* If any tags are non-null then we */
     /* need to add a names attribute. */
@@ -1045,7 +1045,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error(_("(list) object cannot be coerced to %s"), CHAR(type2str(type)));
+        error(_("(list) object cannot be coerced to '%s'"), CHAR(type2str(type)));
 
     names = getAttrib(v, R_NamesSymbol);
     if (names != R_NilValue)
@@ -2018,7 +2018,7 @@ SEXP do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (cptr->cloenv == rho)
         call = eval(call, cptr->sysparent);
     else
-        error(_("do.call: couldn't find parent environment"));
+        error(_("do.call: could not find parent environment"));
     UNPROTECT(1);
     return call;
 }
@@ -2200,7 +2200,7 @@ SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     {
         UNPROTECT(nProtect);
         nProtect = 0;
-        error(_("Invalid replacement object to be a class string"));
+        error(_("invalid replacement object to be a class string"));
     }
     else
     {
@@ -2246,14 +2246,14 @@ SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
         else if (!strcmp("matrix", valueString))
         {
             if (length(getAttrib(obj, R_DimSymbol)) != 2)
-                error(_("Invalid to set the class to matrix unless the dimension attribute is of length 2 (was %d)"),
+                error(_("invalid to set the class to matrix unless the dimension attribute is of length 2 (was %d)"),
                       length(getAttrib(obj, R_DimSymbol)));
             setAttrib(obj, R_ClassSymbol, R_NilValue);
         }
         else if (!strcmp("array", valueString))
         {
             if (length(getAttrib(obj, R_DimSymbol)) <= 0)
-                error(_("Can't set class to \"array\" unless the dimension attribute has length > 0"));
+                error(_("cannot set class to \"array\" unless the dimension attribute has length > 0"));
             setAttrib(obj, R_ClassSymbol, R_NilValue);
         }
         else

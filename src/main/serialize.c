@@ -2267,7 +2267,7 @@ SEXP R_getVarsFromFrame(SEXP vars, SEXP env, SEXP forcesxp)
         else
             tmp = findVarInFrame(env, sym);
         if (tmp == R_UnboundValue)
-            error(_("Object '%s' not found"), CHAR(STRING_ELT(vars, i)));
+            error(_("object '%s' not found"), CHAR(STRING_ELT(vars, i)));
         if (force && TYPEOF(tmp) == PROMSXP)
         {
             PROTECT(tmp);

@@ -160,7 +160,7 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nfiles > 0)
     {
         if (!isString(fn))
-            errorcall(call, _("invalid file name argument"));
+            errorcall(call, _("invalid 'x' argument"));
         recursive = asLogical(CADR(args));
         if (recursive == NA_LOGICAL)
             errorcall(call, _("invalid 'recursive' argument"));
@@ -220,7 +220,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(CAR(args)))
-        errorcall(call, _("invalid topic argument"));
+        errorcall(call, _("invalid 'topic' argument"));
     item = CHAR(STRING_ELT(CAR(args), 0));
     type = asInteger(CADR(args));
     if (type == 1)
@@ -240,7 +240,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (type == 2)
     {
         if (!isString(CADDR(args)))
-            errorcall(call, _("invalid hlpfile argument"));
+            errorcall(call, _("invalid 'hlpfile' argument"));
         hfile = CHAR(STRING_ELT(CADDR(args), 0));
         if (!WinHelp((HWND)0, hfile, HELP_KEY, (DWORD)item))
             warning(_("WinHelp call failed"));
@@ -255,7 +255,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (type == 3)
     {
         if (!isString(CADDR(args)))
-            warningcall(call, _("invalid hlpfile argument"));
+            warningcall(call, _("invalid 'hlpfile' argument"));
         hfile = CHAR(STRING_ELT(CADDR(args), 0));
         if (!WinHelp((HWND)0, hfile, HELP_QUIT, (DWORD)0))
             error(_("WinHelp call failed"));
@@ -440,7 +440,7 @@ SEXP do_shellexec(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     file = CAR(args);
     if (!isString(file) || length(file) != 1)
-        errorcall(call, _("invalid file argument"));
+        errorcall(call, _("invalid 'file' argument"));
     internal_shellexec(CHAR(STRING_ELT(file, 0)));
     return R_NilValue;
 }
@@ -671,7 +671,7 @@ SEXP do_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, _("invalid file argument"));
+        errorcall(call, _("invalid 'file' argument"));
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
         gl_savehistory(CHAR(STRING_ELT(sfile, 0)));
     else
@@ -686,7 +686,7 @@ SEXP do_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, _("invalid file argument"));
+        errorcall(call, _("invalid 'file' argument"));
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
         gl_loadhistory(CHAR(STRING_ELT(sfile, 0)));
     else
@@ -1236,10 +1236,10 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     filters = CADDDR(args);
     filterindex = asInteger(CAD4R(args));
     if (length(def) != 1)
-        errorcall(call, _("default must be a character string"));
+        errorcall(call, _("'default' must be a character string"));
     p = CHAR(STRING_ELT(def, 0));
     if (strlen(p) >= MAX_PATH)
-        errorcall(call, _("default is overlong"));
+        errorcall(call, _("'default' is overlong"));
     strcpy(path, R_ExpandFileName(p));
     R_fixbackslash(path);
     /*    temp = Rf_strchr(path,'/');
@@ -1248,7 +1248,7 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         temp = strchr(temp,'/');
         }*/
     if (length(caption) != 1)
-        errorcall(call, _("caption must be a character string"));
+        errorcall(call, _("'caption' must be a character string"));
     if (multi == NA_LOGICAL)
         errorcall(call, _("'multi' must be a logical value"));
     if (filterindex == NA_INTEGER)
