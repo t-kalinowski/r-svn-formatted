@@ -69,8 +69,6 @@ static SEXP OutTextData;
 static int R_SinkNumber;
 static int SinkCons[NSINKS], SinkConsClose[NSINKS], R_SinkSplit[NSINKS];
 
-static void pushback(Rconnection con, int newLine, char *line);
-
 /* ------------- admin functions (see also at end) ----------------- */
 
 int NextConnection()
@@ -2633,7 +2631,7 @@ no_more_lines:
         else
         {
             /* push back the rest */
-            pushback(con, 0, buf);
+            con_pushback(con, 0, buf);
             con->incomplete = TRUE;
         }
     }
@@ -3412,7 +3410,8 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* ------------------- push back text  --------------------- */
 
-static void pushback(Rconnection con, int newLine, char *line)
+/* used in readLines and scan */
+void con_pushback(Rconnection con, Rboolean newLine, char *line)
 {
     int nexists = con->nPushBack;
     char **q;

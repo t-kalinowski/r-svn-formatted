@@ -650,7 +650,7 @@ static char *backquotify(char *s)
         mbstate_t mb_st;
         int j, used;
         mbs_init(&mb_st);
-        while (used = Mbrtowc(NULL, s, MB_CUR_MAX, &mb_st))
+        while ((used = Mbrtowc(NULL, s, MB_CUR_MAX, &mb_st)))
         {
             if (*s == '`' || *s == '\\')
                 *t++ = '\\';
