@@ -77,8 +77,8 @@ extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_
     ptr_R_StartConsole, ptr_R_ShowFiles, ptr_R_loadhistory, ptr_R_savehistory, ptr_R_ChooseFile, ptr_R_CleanUp,
     ptr_R_ShowMessage, ptr_R_Suicide, ptr_R_Busy;
 
-DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_Raqua_Edit, ptr_do_dataentry, ptr_do_browsepkgs,
-    ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_InitAquaIO,
+DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_FocusOnConsole, ptr_Raqua_Edit, ptr_do_dataentry,
+    ptr_do_browsepkgs, ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_InitAquaIO,
     ptr_RSetConsoleWidth;
 
 void R_ProcessEvents(void);
@@ -159,6 +159,9 @@ void R_load_aqua_shlib(void)
     ptr_GetQuartzParameters = Rdlsym(handle, "Raqua_GetQuartzParameters");
     if (!ptr_GetQuartzParameters)
         R_Suicide("Cannot load Raqua_GetQuartzParameters");
+    ptr_FocusOnConsole = Rdlsym(handle, "Raqua_FocusOnConsole");
+    if (!ptr_FocusOnConsole)
+        R_Suicide("Cannot load Raqua_FocusOnConsole");
     ptr_Raqua_Edit = Rdlsym(handle, "Raqua_Edit");
     if (!ptr_Raqua_Edit)
         R_Suicide("Cannot load Raqua_Edit");

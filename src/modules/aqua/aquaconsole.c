@@ -427,6 +427,13 @@ static const EventTypeSpec RGlobalWinEvents[] = {{kEventClassWindow, kEventWindo
 
 static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
 
+void Raqua_FocusOnConsole(void);
+void Raqua_FocusOnConsole(void)
+{
+    if (ConsoleWindow)
+        BringToFront(ConsoleWindow);
+}
+
 void InitAboutWindow(void);
 
 int GetTextFromWindow(char *msg, char *text, int len);
