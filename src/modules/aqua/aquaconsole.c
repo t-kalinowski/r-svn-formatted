@@ -101,12 +101,20 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 void RescaleInOut(double prop);
 
+OSErr DoSelectDirectory(void);
+OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory);
+OSStatus FSMakePath(SInt16 volRefNum, SInt32 dirID, ConstStr255Param name, UInt8 *path, UInt32 maxPathSize);
+OSErr FSMakeFSRef(FSVolumeRefNum volRefNum, SInt32 dirID, ConstStr255Param name, FSRef *ref);
+
+int RAqua_R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager);
+
 void Raqua_StartConsole(void);
 void Raqua_WriteConsole(char *buf, int len);
 int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory);
 void Raqua_ResetConsole(void);
 void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
+int NewHelpWindow(char *fileName, char *title, char *WinTitle);
 
 void consolecmd(char *cmd);
 void RSetColors(void);
@@ -145,6 +153,9 @@ TXNControlData ROutData[] = {kTXNReadWrite, kTXNReadOnly, kTXNNoAutoWrap};
 
 TXNControlTag RInTag[] = {kTXNWordWrapStateTag};
 TXNControlData RInData[] = {kTXNNoAutoWrap};
+
+TXNControlTag RHelpTag[] = {kTXNIOPrivilegesTag, kTXNNoUserIOTag, kTXNWordWrapStateTag};
+TXNControlData RHelpData[] = {kTXNReadWrite, kTXNReadOnly, kTXNNoAutoWrap};
 
 void Raqua_StartConsole(void)
 {
@@ -335,8 +346,11 @@ OSStatus InitMLTE(void)
     OSStatus status = noErr;
     TXNMacOSPreferredFontDescription defaults;
     TXNInitOptions options;
+    SInt16 fontID;
 
-    defaults.fontID = NULL;
+    GetFNum("\pMonaco", &fontID);
+
+    defaults.fontID = fontID;
     defaults.pointSize = kTXNDefaultFontSize;
     defaults.encoding =
         CreateTextEncoding(kTextEncodingMacRoman, kTextEncodingDefaultVariant, kTextEncodingDefaultFormat);
@@ -597,8 +611,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 break;
 
             case kRCmdChangeWorkDir:
-                Aqua_RWrite("Change Working Directory: not yet implemented");
-                consolecmd("\r");
+                DoSelectDirectory();
                 break;
 
             case kRCmdShowWorkDir:
@@ -689,37 +702,53 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     NewDevDesc *dd;
     WindowRef EventWindow;
     EventRef REvent;
+    TXNFrameID HlpFrameID = 0;
+    UInt32 eventClass;
+    TXNObject HlpObj = NULL;
+    HIPoint where;
+    WindowDefPartCode part;
+    EventRef hitTest;
 
-    if (GetEventClass(inEvent) != kEventClassWindow)
-        return (err);
-
-    GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
+    eventClass = GetEventClass(inEvent);
     GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL, &EventWindow);
-    switch (eventKind)
+
+    switch (eventClass)
     {
 
-    case kEventWindowBoundsChanged:
-        if (RWinCode != 9)
+    case kEventClassWindow:
+
+        GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
+        switch (eventKind)
         {
-            if (EventWindow == ConsoleWindow)
-                RescaleInOut(0.8);
-            else
+
+        case kEventWindowBoundsChanged:
+            if (RWinCode != 9)
             {
+                if (EventWindow == ConsoleWindow)
+                {
+                    RescaleInOut(0.8);
+                    err = noErr;
+                }
+
                 if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum) == noErr)
                     if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
                     {
                         dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
                         GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
+                        err = noErr;
                     }
             }
+            break;
+
+        default:
+            break;
         }
-        break;
 
     default:
         break;
     }
 
-    return noErr;
+    return err;
 }
 
 OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
@@ -731,6 +760,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
     char cmd[255];
     WindowRef EventWindow;
     EventRef REvent;
+    TXNObject RHlpObj = NULL;
 
     if (GetEventClass(inEvent) != kEventClassWindow)
         return (err);
@@ -752,6 +782,13 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
         {
             sprintf(cmd, "dev.off(%d)\r", 1 + devnum);
             consolecmd(cmd);
+            err = noErr;
+        }
+
+        if (GetWindowProperty(EventWindow, kRAppSignature, 'HLPO', sizeof(TXNObject), NULL, &RHlpObj) == noErr)
+        {
+            TXNDeleteObject(RHlpObj);
+            HideWindow(EventWindow);
             err = noErr;
         }
         break;
@@ -782,6 +819,231 @@ void consolecmd(char *cmd)
     SendEventToEventTarget(REvent, GetApplicationEventTarget());
 }
 
+/* DoSelectDirectory: allows the user to change R current working directory
+                    via dialog box
+*/
+pascal OSErr FSpGetFullPath(const FSSpec *spec, short *fullPathLength, Handle *fullPath);
+
+pascal OSErr FSMakeFSSpecCompat(short vRefNum, long dirID, ConstStr255Param fileName, FSSpec *spec);
+
+OSErr DoSelectDirectory(void)
+{
+    NavReplyRecord theReply;
+    NavDialogOptions dialogOptions;
+    OSErr theErr = noErr;
+    NavEventUPP eventUPP = nil;
+    SInt16 pathLen;
+    Handle pathName = NULL;
+    char path[300], buf[300];
+    OSErr anErr = noErr, err;
+
+    theErr = NavGetDefaultDialogOptions(&dialogOptions);
+
+    CopyCStringToPascal("Choose R Working Directory", dialogOptions.message);
+
+    theErr = NavChooseFolder(NULL, &theReply, &dialogOptions, eventUPP, NULL, nil);
+
+    if (theReply.validRecord && theErr == noErr)
+    {
+        FSSpec finalFSSpec, tempSpec;
+        AEKeyword keyWord;
+        DescType typeCode;
+        WDPBRec wdpb;
+        Size actualSize = 0;
+
+        //               err= FSMakeFSSpec(0, 0, NULL, &finalFSSpec);
+
+        if ((theErr = AEGetNthPtr(&(theReply.selection), 1, typeFSS, &keyWord, &typeCode, &finalFSSpec, sizeof(FSSpec),
+                                  &actualSize)) == noErr)
+        {
+            // 'finalFSSpec' is the selected directory…
+
+            err = FSMakePath(finalFSSpec.vRefNum, finalFSSpec.parID, finalFSSpec.name, buf, 300);
+
+            //     err = FSMakeFSSpec(finalFSSpec.vRefNum, finalFSSpec.parID, finalFSSpec.name, &tempSpec);
+            //    CopyCStringToPascal(tempSpec.name,path);
+            fprintf(stderr, "\n FSMakePath err =%d, name=%s", err, path);
+
+            chdir(buf);
+            fprintf(stderr, "\n newdir=%s", buf);
+        }
+
+        theErr = NavDisposeReply(&theReply);
+    }
+
+    return theErr;
+}
+
+int RAqua_R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager)
+{
+    int i;
+
+    if (nfile <= 0)
+        return 1;
+
+    for (i = 0; i < nfile; i++)
+    {
+        NewHelpWindow(fileName[i], title[i], WinTitle);
+    }
+
+    return 1;
+}
+
+int NewHelpWindow(char *fileName, char *title, char *WinTitle)
+{
+    Rect WinBounds;
+    OSStatus err = noErr;
+    WindowRef HelpWindow = NULL;
+    Str255 Title;
+    FSSpec fsspec;
+    TXNObject RHelpObject = NULL;
+    TXNFrameID HelpFrameID = 0;
+    SInt16 refNum = 0;
+    TXNFrameOptions frameOptions;
+    Boolean isDirectory;
+    char buf[300];
+    FInfo fileInfo;
+    TXNControlTag tabtag = kTXNTabSettingsTag;
+    TXNControlData tabdata;
+
+    frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask | kTXNDrawGrowIconMask;
+    frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNReadOnlyMask;
+
+    SetRect(&WinBounds, 400, 400, 400 + 400, 400 + 400);
+
+    if ((err =
+             CreateNewWindow(kDocumentWindowClass, kWindowStandardHandlerAttribute | kWindowStandardDocumentAttributes,
+                             &WinBounds, &HelpWindow) != noErr))
+        goto fail;
+
+    InstallStandardEventHandler(GetWindowEventTarget(HelpWindow));
+    CopyCStringToPascal(WinTitle, Title);
+    SetWTitle(HelpWindow, Title);
+
+    err = FSPathMakeFSSpec(fileName, &fsspec, &isDirectory);
+    if (err != noErr)
+        goto fail;
+
+    CopyPascalStringToC(fsspec.name, buf);
+
+    err = FSpGetFInfo(&fsspec, &fileInfo);
+    if (err != noErr)
+        goto fail;
+
+    if (fileInfo.fdType == NULL)
+    {
+        fileInfo.fdType = kTXNTextFile;
+        err = FSpSetFInfo(&fsspec, &fileInfo);
+        if (err != noErr)
+            goto fail;
+    }
+
+    err = TXNNewObject(&fsspec, HelpWindow, NULL, frameOptions, kTXNTextEditStyleFrameType, fileInfo.fdType,
+                       kTXNSystemDefaultEncoding, &RHelpObject, &HelpFrameID, 0);
+    if (err != noErr)
+        goto fail;
+
+    err = TXNSetTXNObjectControls(RHelpObject, false, 3, RHelpTag, RHelpData);
+
+    tabdata.tabValue.value = 10 * RFontSize;
+    tabdata.tabValue.tabType = kTXNRightTab;
+
+    TXNSetTXNObjectControls(RHelpObject, false, 1, &tabtag, &tabdata);
+
+    if (err != noErr)
+        goto fail;
+
+    err = SetWindowProperty(HelpWindow, kRAppSignature, 'HLPO', sizeof(TXNObject), &RHelpObject);
+    err = SetWindowProperty(HelpWindow, kRAppSignature, 'HLPO', sizeof(TXNFrameID), &HelpFrameID);
+    err = InstallWindowEventHandler(HelpWindow, NewEventHandlerUPP(DoCloseHandler), GetEventTypeCount(RCloseWinEvent),
+                                    RCloseWinEvent, (void *)HelpWindow, NULL);
+
+    TXNActivate(RHelpObject, HelpFrameID, kScrollBarsAlwaysActive);
+    ShowWindow(HelpWindow);
+    BeginUpdate(HelpWindow);
+    TXNForceUpdate(RHelpObject);
+    TXNDraw(RHelpObject, NULL);
+    EndUpdate(HelpWindow);
+
+    return 0;
+
+fail:
+
+    if (RHelpObject)
+        TXNDeleteObject(RHelpObject);
+
+    if (HelpWindow)
+        HideWindow(HelpWindow);
+
+    return 1;
+}
+
+OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory) /* can be NULL */
+{
+    OSStatus result;
+    FSRef ref;
+
+    /* check parameters */
+    require_action(NULL != spec, BadParameter, result = paramErr);
+
+    /* convert the POSIX path to an FSRef */
+    result = FSPathMakeRef(path, &ref, isDirectory);
+    require_noerr(result, FSPathMakeRef);
+
+    /* and then convert the FSRef to an FSSpec */
+    result = FSGetCatalogInfo(&ref, kFSCatInfoNone, NULL, NULL, spec, NULL);
+    require_noerr(result, FSGetCatalogInfo);
+
+FSGetCatalogInfo:
+FSPathMakeRef:
+BadParameter:
+
+    return (result);
+}
+
+OSStatus FSMakePath(SInt16 volRefNum, SInt32 dirID, ConstStr255Param name, UInt8 *path, UInt32 maxPathSize)
+{
+    OSStatus result;
+    FSRef ref;
+
+    /* check parameters */
+    require_action(NULL != path, BadParameter, result = paramErr);
+
+    /* convert the inputs to an FSRef */
+    result = FSMakeFSRef(volRefNum, dirID, name, &ref);
+    require_noerr(result, FSMakeFSRef);
+
+    /* and then convert the FSRef to a path */
+    result = FSRefMakePath(&ref, path, maxPathSize);
+    require_noerr(result, FSRefMakePath);
+
+FSRefMakePath:
+FSMakeFSRef:
+BadParameter:
+
+    return (result);
+}
+
+OSErr FSMakeFSRef(FSVolumeRefNum volRefNum, SInt32 dirID, ConstStr255Param name, FSRef *ref)
+{
+    OSErr result;
+    FSRefParam pb;
+
+    /* check parameters */
+    require_action(NULL != ref, BadParameter, result = paramErr);
+
+    pb.ioVRefNum = volRefNum;
+    pb.ioDirID = dirID;
+    pb.ioNamePtr = (StringPtr)name;
+    pb.newRef = ref;
+    result = PBMakeFSRefSync(&pb);
+    require_noerr(result, PBMakeFSRefSync);
+
+PBMakeFSRefSync:
+BadParameter:
+
+    return (result);
+}
 #endif /* HAVE_AQUA */
 
 #endif /* __AQUA_CONSOLE__ */
