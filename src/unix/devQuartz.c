@@ -410,7 +410,6 @@ static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd);
 static void Quartz_SetLineEnd(R_GE_lineend lend, NewDevDesc *dd);
 static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd);
 static void Quartz_SetLineMitre(double lmitre, NewDevDesc *dd);
-// static void Quartz_SetFont(int style,  double cex, double ps,  NewDevDesc *dd);
 static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDevDesc *dd);
 static CGContextRef GetContext(QuartzDesc *xd);
 
@@ -950,7 +949,6 @@ static double Quartz_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 
     CGContextSetTextDrawingMode(GetContext(xd), kCGTextInvisible);
 
-    //   Quartz_SetFont(gc->fontface, gc->cex,  gc->ps, dd);
     Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
 
     CGContextShowTextAtPoint(GetContext(xd), 0, 0, str, strlen(str));
@@ -1020,7 +1018,6 @@ static char *translateFontFamily(char *family, int face, QuartzDesc *xd)
    the Symbol font under Panther
  */
 
-// static void Quartz_SetFont(int style,  double cex, double ps, NewDevDesc *dd)
 static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
@@ -1033,16 +1030,23 @@ static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDe
 
     GetPort(&savePort);
     SetPortWindowPort(xd->window);
-    //    fprintf(stderr,"style=%d,family=%s\n",style,family);
+    fprintf(stderr, "style=%d,family=%s\n", style, family);
 
     fontFamily = translateFontFamily(family, style, xd);
     if (fontFamily)
-        strcpy(CurrFont, fontFamily); // xd->family);
+        strcpy(CurrFont, fontFamily);
     else
         strcpy(CurrFont, "Helvetica");
 
-    if (strcmp(fontFamily, "Symbol") == 0)
+    if (style == 5)
+        strcpy(CurrFont, "Symbol");
+
+    fprintf(stderr, "fontFamily=%s,CurrFont=%s\n", fontFamily, CurrFont);
+
+    if (strcmp(CurrFont, "Symbol") == 0)
     {
+        fprintf(stderr, "symbol font, ff=%s,cf=%s\n", fontFamily, CurrFont);
+
         if (WeAreOnPanther)
             CGContextSelectFont(GetContext(xd), CurrFont, size, kCGEncodingFontSpecific);
         else
@@ -1081,6 +1085,7 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
 {
     int len, i;
     char *buf = NULL;
+    char *ff;
     char symbuf;
     unsigned char tmp;
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
@@ -1096,11 +1101,12 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
 
     CGContextSetTextDrawingMode(GetContext(xd), kCGTextFill);
     Quartz_SetFill(gc->col, gc->gamma, dd);
-    // Quartz_SetFont(gc->fontface, gc->cex,  gc->ps, dd);
+
     Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
     len = strlen(str);
+    ff = translateFontFamily(gc->fontfamily, gc->fontface, xd);
 
-    if ((gc->fontface == 5) && (len == 1))
+    if (((gc->fontface == 5) || (strcmp(ff, "Symbol") == 0)) && (len == 1))
     {
         tmp = (unsigned char)str[0];
         if (tmp > 31)
@@ -1109,7 +1115,6 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
             symbuf = str[0];
         if (!IsThisASymbol(tmp))
         {
-            //	 Quartz_SetFont(-1, gc->cex,  gc->ps, dd);
             Quartz_SetFont(gc->fontfamily, -1, gc->cex, gc->ps, dd);
             symbuf = str[0];
         }
@@ -1122,13 +1127,28 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
     {
         if ((buf = malloc(len)) != NULL)
         {
-            for (i = 0; i < len; i++)
+
+            if (strcmp(ff, "Symbol") == 0)
             {
-                tmp = (unsigned char)str[i];
-                if (tmp > 127)
-                    buf[i] = (char)Lat2Mac[tmp - 127 - 1];
-                else
-                    buf[i] = str[i];
+                for (i = 0; i < len; i++)
+                {
+                    tmp = (unsigned char)str[i];
+                    if (tmp > 31)
+                        buf[i] = (char)Lat2Uni[tmp - 31 - 1];
+                    else
+                        buf[i] = str[i];
+                }
+            }
+            else
+            {
+                for (i = 0; i < len; i++)
+                {
+                    tmp = (unsigned char)str[i];
+                    if (tmp > 127)
+                        buf[i] = (char)Lat2Mac[tmp - 127 - 1];
+                    else
+                        buf[i] = str[i];
+                }
             }
             CGContextShowTextAtPoint(GetContext(xd), 0, 0, buf, len);
             free(buf);
@@ -1466,6 +1486,7 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
     FMetricRec myFMetric;
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     char testo[2];
+    char *ff;
     CGrafPtr savedPort;
     Rect bounds;
     CGPoint position;
@@ -1478,7 +1499,6 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
 
     SetPort(GetWindowPort(xd->window));
 
-    //    Quartz_SetFont(gc->fontface, gc->cex,  gc->ps, dd);
     Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
 
     if (c == 0)
@@ -1495,16 +1515,16 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
         CGContextScaleCTM(GetContext(xd), -1, 1);
         CGContextRotateCTM(GetContext(xd), -1.0 * 3.1416);
         CGContextSetTextDrawingMode(GetContext(xd), kCGTextInvisible);
-        // Quartz_SetFont(gc->fontface, gc->cex,  gc->ps, dd);
+
         Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
 
+        ff = translateFontFamily(gc->fontfamily, gc->fontface, xd);
         tmp = (unsigned char)c;
-        if ((gc->fontface == 5))
+        if ((gc->fontface == 5) || (strcmp(ff, "Symbol") == 0))
         {
             if ((tmp > 31) && IsThisASymbol(tmp))
                 testo[0] = (char)Lat2Uni[tmp - 31 - 1];
             else
-                //	Quartz_SetFont(-1, gc->cex,  gc->ps, dd);
                 Quartz_SetFont(gc->fontfamily, -1, gc->cex, gc->ps, dd);
         }
         else
