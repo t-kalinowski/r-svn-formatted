@@ -1729,9 +1729,9 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP sx, sy, sxy, txt, adj, cex, col, font;
+    SEXP sx, sy, sxy, txt, adj, pos, cex, col, font;
     int i, n, ncex, ncol, nfont, ntxt, xpd;
-    double adjx = 0, adjy = 0;
+    double adjx = 0, adjy = 0, offset = 0.5;
     double *x, *y;
     double xx, yy;
     SEXP originalArgs = args;
@@ -1791,6 +1791,15 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid adj value\n");
     args = CDR(args);
 
+    PROTECT(pos = coerceVector(CAR(args), INTSXP));
+    for (i = 0; i < length(pos); i++)
+        if (INTEGER(pos)[i] < 1 || INTEGER(pos)[i] > 4)
+            errorcall(call, "invalid pos value\n");
+    args = CDR(args);
+
+    offset = GConvertXUnits(asReal(CAR(args)), CHARS, INCHES, dd);
+    args = CDR(args);
+
     PROTECT(cex = FixupCex(GetPar("cex", args)));
     ncex = LENGTH(cex);
 
@@ -1818,7 +1827,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         xx = x[i % n];
         yy = y[i % n];
-        GConvert(&xx, &yy, USER, DEVICE, dd);
+        GConvert(&xx, &yy, USER, INCHES, dd);
         if (FINITE(xx) && FINITE(yy))
         {
             if (ncol && INTEGER(col)[i % ncol] != NA_INTEGER)
@@ -1833,16 +1842,42 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
                 dd->gp.font = INTEGER(font)[i % nfont];
             else
                 dd->gp.font = dd->dp.font;
+            if (length(pos) > 0)
+            {
+                switch (INTEGER(pos)[i % length(pos)])
+                {
+                case 1:
+                    yy = yy - offset;
+                    adjx = 0.5;
+                    adjy = 1 - (0.5 - dd->gp.yCharOffset);
+                    break;
+                case 2:
+                    xx = xx - offset;
+                    adjx = 1;
+                    adjy = dd->gp.yCharOffset;
+                    break;
+                case 3:
+                    yy = yy + offset;
+                    adjx = 0.5;
+                    adjy = 0;
+                    break;
+                case 4:
+                    xx = xx + offset;
+                    adjx = 0;
+                    adjy = dd->gp.yCharOffset;
+                    break;
+                }
+            }
             if (isExpression(txt))
-                GMathText(xx, yy, DEVICE, VECTOR(txt)[i % ntxt], adjx, adjy, dd->gp.srt, dd);
+                GMathText(xx, yy, INCHES, VECTOR(txt)[i % ntxt], adjx, adjy, dd->gp.srt, dd);
             else
-                GText(xx, yy, DEVICE, CHAR(STRING(txt)[i % ntxt]), adjx, adjy, dd->gp.srt, dd);
+                GText(xx, yy, INCHES, CHAR(STRING(txt)[i % ntxt]), adjx, adjy, dd->gp.srt, dd);
         }
     }
     GMode(0, dd);
 
     GRestorePars(dd);
-    UNPROTECT(4);
+    UNPROTECT(5);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
