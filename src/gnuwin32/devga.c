@@ -215,6 +215,9 @@ typedef struct
     int timeafter, timesince;
     SEXP psenv;
     double res_dpi;
+    R_GE_lineend lend;
+    R_GE_linejoin ljoin;
+    float lmitre;
 } gadesc;
 
 rect getregion(gadesc *xd)
@@ -302,7 +305,6 @@ static double pixelHeight(drawing d);
 static double pixelWidth(drawing d);
 static void SetColor(int, double, NewDevDesc *);
 static void SetFont(char *, int, int, double, NewDevDesc *);
-static void SetLinetype(int, double, NewDevDesc *);
 static int Load_Rbitmap_Dll();
 void UnLoad_Rbitmap_Dll();
 static void SaveAsPng(NewDevDesc *dd, char *fn);
@@ -757,16 +759,42 @@ static void SetColor(int color, double gamma, NewDevDesc *dd)
  *	spaced.
  */
 
-static void SetLinetype(int newlty, double nlwd, NewDevDesc *dd)
+static void SetLineStyle(R_GE_gcontext *gc, NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    int newlwd;
 
-    newlwd = nlwd;
-    if (newlwd < 1)
-        newlwd = 1;
-    xd->lty = newlty;
-    xd->lwd = newlwd;
+    xd->lty = gc->lty;
+    xd->lwd = gc->lwd < 1 ? 1 : gc->lwd;
+    switch (gc->lend)
+    {
+    case GE_ROUND_CAP:
+        xd->lend = PS_ENDCAP_ROUND;
+        break;
+    case GE_BUTT_CAP:
+        xd->lend = PS_ENDCAP_FLAT;
+        break;
+    case GE_SQUARE_CAP:
+        xd->lend = PS_ENDCAP_SQUARE;
+        break;
+    default:
+        error("Invalid line end");
+    }
+    switch (gc->ljoin)
+    {
+    case GE_ROUND_JOIN:
+        xd->ljoin = PS_JOIN_ROUND;
+        break;
+    case GE_MITRE_JOIN:
+        xd->ljoin = PS_JOIN_MITER;
+        break;
+    case GE_BEVEL_JOIN:
+        xd->ljoin = PS_JOIN_BEVEL;
+        break;
+    default:
+        error("Invalid line join");
+    }
+
+    xd->lmitre = gc->lmitre;
 }
 
 /* Callback functions */
@@ -2217,8 +2245,8 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
-        SetLinetype(gc->lty, gc->lwd, dd);
-        DRAW(gdrawrect(_d, xd->lwd, xd->lty, xd->fgcolor, r, 0));
+        SetLineStyle(gc, dd);
+        DRAW(gdrawrect(_d, xd->lwd, xd->lty, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre));
     }
     SH;
 }
@@ -2260,9 +2288,9 @@ static void GA_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
     }
     if (R_OPAQUE(gc->col))
     {
-        SetLinetype(gc->lty, gc->lwd, dd);
+        SetLineStyle(gc, dd);
         SetColor(gc->col, gc->gamma, dd);
-        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr, 0));
+        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre));
     }
     SH;
 }
@@ -2290,8 +2318,9 @@ static void GA_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *g
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
-        SetLinetype(gc->lty, gc->lwd, dd);
-        DRAW(gdrawline(_d, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0));
+        SetLineStyle(gc, dd);
+        DRAW(gdrawline(_d, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0, xd->lend, xd->ljoin,
+                       xd->lmitre));
         SH;
     }
 }
@@ -2324,8 +2353,8 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
-        SetLinetype(gc->lty, gc->lwd, dd);
-        DRAW(gdrawpolyline(_d, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0));
+        SetLineStyle(gc, dd);
+        DRAW(gdrawpolyline(_d, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre));
     }
     vmaxset(vmax);
     SH;
@@ -2370,8 +2399,8 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
-        SetLinetype(gc->lty, gc->lwd, dd);
-        DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, points, n, 0));
+        SetLineStyle(gc, dd);
+        DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre));
     }
     vmaxset(vmax);
     SH;
