@@ -146,11 +146,11 @@ static int scanchar(Rboolean inQuote)
     int next;
     if (save)
     {
-        int c = save;
+        next = save;
         save = 0;
-        return c;
     }
-    next = (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
+    else
+        next = (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
     if (next == comchar && !inQuote)
     {
         do
@@ -965,7 +965,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (;;)
     {
-        c = scanchar(FALSE);
+        c = scanchar(inquote);
         if (c == R_EOF)
         {
             if (nfields != 0)
@@ -1019,7 +1019,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (strchr(quoteset, c))
             {
                 quote = c;
-                while ((c = scanchar(FALSE)) != quote)
+                inquote = 1;
+                while ((c = scanchar(inquote)) != quote)
                 {
                     if (c == R_EOF || c == '\n')
                     {
@@ -1028,6 +1029,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
                         errorcall(call, "string terminated by newline or EOF");
                     }
                 }
+                inquote = 0;
             }
             else
             {
