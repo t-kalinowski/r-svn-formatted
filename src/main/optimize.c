@@ -18,6 +18,7 @@
  */
 
 #include "Defn.h"
+#include "Print.h" /*for printRealVector()*/
 #include "Mathlib.h"
 
 /* WARNING : As things stand, these routines should not be called */
