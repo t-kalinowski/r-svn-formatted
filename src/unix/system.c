@@ -52,9 +52,9 @@ void fpu_setup(int); /* in sys-unix.c */
 int UsingReadline = 1;
 int SaveAction = SA_SAVEASK;
 int RestoreAction = SA_RESTORE;
-int LoadSiteFile = True;
-int LoadInitFile = True;
-int DebugInitFile = False;
+int LoadSiteFile = TRUE;
+int LoadInitFile = TRUE;
+int DebugInitFile = FALSE;
 
 /* call pointers to allow interface switching */
 

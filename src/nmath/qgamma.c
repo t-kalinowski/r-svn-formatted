@@ -144,7 +144,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
     {
         q = ch;
         p1 = 0.5 * ch;
-        p2 = p_ - pgamma(p1, alpha, 1, /*lower_tail*/ LTRUE, /*log_p*/ LFALSE);
+        p2 = p_ - pgamma(p1, alpha, 1, /*lower_tail*/ TRUE, /*log_p*/ FALSE);
 #ifdef IEEE_754
         if (!R_FINITE(p2))
 #else

@@ -13,9 +13,7 @@
 #include <config.h>
 #endif
 
-typedef int logical;
-#define TRUE_ (1)
-#define FALSE_ (0)
+#include "R_ext/Constants.h" /* TRUE,... */
 
 static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *iabv, int *na, int *maxa, int *ibel,
                   int *nb, int *maxb)
@@ -71,7 +69,7 @@ static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *
     /* Local variables (=0 : -Wall) */
     double a = 0, b = 0, down, d1, up, xt, z;
     int i, is;
-    logical vert, neg_dir = 0;
+    Rboolean vert, neg_dir = 0;
 
     /* Parameter adjustments */
     --x;
@@ -184,7 +182,7 @@ void R_chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int 
  */
 #define y(k) x[k + x_dim1]
 
-    logical mine, maxe;
+    Rboolean mine, maxe;
     int i, j, ilinh, ma, mb, kn, mm, kx, mx, mp1, mbb, nia, nib, inh, min, mxa, mxb, mxbb;
     int x_dim1, x_offset;
     double d1;
@@ -215,8 +213,8 @@ void R_chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int 
     min = 1;
     mx = 1;
     kx = in[1];
-    maxe = FALSE_;
-    mine = FALSE_;
+    maxe = FALSE;
+    mine = FALSE;
     /* find two vertices of the convex hull for the initial partition */
     for (i = 2; i <= *m; ++i)
     {
@@ -226,23 +224,23 @@ void R_chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int 
         }
         else if (d1 == 0)
         {
-            maxe = TRUE_;
+            maxe = TRUE;
         }
         else
         {
-            maxe = FALSE_;
+            maxe = FALSE;
             mx = i;
             kx = j;
         }
         if ((d1 = x[j] - x[kn]) < 0.)
         {
-            mine = FALSE_;
+            mine = FALSE;
             min = i;
             kn = j;
         }
         else if (d1 == 0)
         {
-            mine = TRUE_;
+            mine = TRUE;
         }
     }
 
@@ -346,7 +344,7 @@ L8:
         /* convex polygon and hence the subset may be neglected. */
         split(*n, &x[x_offset], ia[ma], &ib[nib], ih[inh], ih[ilinh], 2, &ia[1], &mb, &mxa, &ib[nib], &mbb, &mxb);
         ia[ma] = mbb;
-    } while (TRUE_);
+    } while (TRUE);
 
     /*	 now traverse the RIGHT HALF of the tree */
 L12:
@@ -397,7 +395,7 @@ L13:
         /* triangle with vertices which are also vertices of the */
         /* convex polygon and hence the subset may be neglected. */
         split(*n, &x[x_offset], ia[ma], &ia[nia], ih[inh], ih[ilinh], -2, &ia[nia], &mbb, &mxa, &ib[nib], &mb, &mxb);
-    } while (TRUE_);
+    } while (TRUE);
 
     /* -------------------------------------------------------------- */
 

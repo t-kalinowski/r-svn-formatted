@@ -65,13 +65,13 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
 
     if (t >= 0.)
     {
-        negdel = LFALSE;
+        negdel = FALSE;
         tt = t;
         del = delta;
     }
     else
     {
-        negdel = LTRUE;
+        negdel = TRUE;
         tt = -t;
         del = -delta;
     }
@@ -121,7 +121,7 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
         b = .5 * df;
         rxb = pow(1. - x, b);
         albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(.5 + b);
-        xodd = pbeta(x, a, b, /*lower*/ LTRUE, /*log_p*/ LFALSE);
+        xodd = pbeta(x, a, b, /*lower*/ TRUE, /*log_p*/ FALSE);
         godd = 2. * rxb * exp(a * log(x) - albeta);
         xeven = 1. - rxb;
         geven = b * x * rxb;
@@ -163,7 +163,7 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
         tnc = 0.;
     }
 finis:
-    tnc += pnorm(-del, 0., 1., /*lower*/ LTRUE, /*log_p*/ LFALSE);
+    tnc += pnorm(-del, 0., 1., /*lower*/ TRUE, /*log_p*/ FALSE);
 
     lower_tail = lower_tail != negdel; /* xor */
     return R_DT_val(tnc);

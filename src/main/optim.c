@@ -20,8 +20,9 @@
 #include <math.h>
 
 #include "Defn.h"
-#include "Rdefines.h" /* for CREATE_STRING_VECTOR */
-#include "Random.h"   /* for the random number generation in samin() */
+#include "Rdefines.h"        /* for CREATE_STRING_VECTOR */
+#include "R_ext/Constants.h" /* Rboolean */
+#include "Random.h"          /* for the random number generation in samin() */
 
 static SEXP getListElement(SEXP list, char *str)
 {
@@ -53,13 +54,6 @@ typedef struct opt_struct
     int usebounds;
     double *lower, *upper;
 } opt_struct, *OptStruct;
-
-typedef unsigned char Boolean;
-
-#ifndef true
-#define true 1
-#define false 0
-#endif
 
 static void vmmin(int n, double *b, double *Fmin, int maxit, int trace, int *mask, double abstol, double reltol,
                   int nREPORT, OptStruct OS, int *fncount, int *grcount, int *fail);
@@ -505,7 +499,7 @@ converted by p2c then re-crafted by B.D. Ripley */
 static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *mask, double abstol, double reltol,
                   int nREPORT, OptStruct OS, int *fncount, int *grcount, int *fail)
 {
-    Boolean accpoint, enough;
+    Rboolean accpoint, enough;
     double *g, *t, *X, *c, **B;
     int count, funcount, gradcount;
     double f, gradproj;
@@ -569,7 +563,7 @@ static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *ma
         if (gradproj < 0.0)
         { /* search direction is downhill */
             steplength = 1.0;
-            accpoint = false;
+            accpoint = FALSE;
             do
             {
                 count = 0;
@@ -680,7 +674,7 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
 {
     char action[50];
     int C;
-    Boolean calcvert, shrinkfail = false;
+    Rboolean calcvert, shrinkfail = FALSE;
     double convtol, f;
     int funcount = 0, H, i, j, L = 0;
     int n1 = 0;
@@ -693,12 +687,12 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
     if (trace)
         Rprintf("  Nelder-Mead direct search function minimizer\n");
     P = matrix(n, n + 1);
-    *fail = false;
+    *fail = FALSE;
     f = fminfn(n, Bvec, OS);
     if (!R_FINITE(f))
     {
         error("Function cannot be evaluated at initial parameters");
-        *fail = true;
+        *fail = TRUE;
     }
     else
     {
@@ -742,8 +736,8 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
             size += trystep;
         }
         oldsize = size;
-        calcvert = true;
-        shrinkfail = false;
+        calcvert = TRUE;
+        shrinkfail = FALSE;
         do
         {
             if (calcvert)
@@ -761,7 +755,7 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                         P[n1 - 1][j] = f;
                     }
                 }
-                calcvert = false;
+                calcvert = FALSE;
             }
 
             VL = P[n1 - 1][L - 1];
@@ -864,7 +858,7 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                         if (VR >= VH)
                         {
                             strcpy(action, "SHRINK         ");
-                            calcvert = true;
+                            calcvert = TRUE;
                             size = 0.0;
                             for (j = 0; j < n1; j++)
                             {
@@ -879,14 +873,14 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                             }
                             if (size < oldsize)
                             {
-                                shrinkfail = false;
+                                shrinkfail = FALSE;
                                 oldsize = size;
                             }
                             else
                             {
                                 if (trace)
                                     Rprintf("Polytope size measure not decreased in shrink\n");
-                                shrinkfail = true;
+                                shrinkfail = TRUE;
                             }
                         }
                     }
@@ -914,7 +908,7 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
 static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
                   int type, int trace, int *fncount, int *grcount, int maxit)
 {
-    Boolean accpoint;
+    Rboolean accpoint;
     double *c, *g, *t;
     int count, cycle, cyclimit;
     double f;
@@ -1038,7 +1032,7 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                     }
                     steplength = oldstep;
 
-                    accpoint = false;
+                    accpoint = FALSE;
                     do
                     {
                         count = 0;

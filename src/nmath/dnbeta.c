@@ -79,7 +79,7 @@ double dnbeta(double x, double a, double b, double lambda, int give_log)
     if (lambda == 0)
         return dbeta(x, a, b, give_log);
 
-    term = dbeta(x, a, b, /* log = */ LFALSE);
+    term = dbeta(x, a, b, /* log = */ FALSE);
     lambda2 = 0.5 * lambda;
     weight = exp(-lambda2);
     sum = weight * term;

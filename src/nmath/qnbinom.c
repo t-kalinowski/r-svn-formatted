@@ -79,10 +79,10 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
         return ML_POSINF;
 
     /* y := approx.value (Cornish-Fisher expansion) :  */
-    z = qnorm(p, 0., 1., /*lower_tail*/ LTRUE, /*log_p*/ LFALSE);
+    z = qnorm(p, 0., 1., /*lower_tail*/ TRUE, /*log_p*/ FALSE);
     y = floor(mu + sigma * (z + gamma * (z * z - 1) / 6) + 0.5);
 
-    z = pnbinom(y, n, pr, /*lower_tail*/ LTRUE, /*log_p*/ LFALSE);
+    z = pnbinom(y, n, pr, /*lower_tail*/ TRUE, /*log_p*/ FALSE);
 
     /* fuzz to ensure left continuity: */
     p *= 1 - 64 * DBL_EPSILON;
@@ -100,7 +100,7 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
         /* search to the left */
         for (;;)
         {
-            if (y == 0 || (z = pnbinom(y - 1, n, pr, /*l._t.*/ LTRUE, /*log_p*/ LFALSE)) < p)
+            if (y == 0 || (z = pnbinom(y - 1, n, pr, /*l._t.*/ TRUE, /*log_p*/ FALSE)) < p)
                 return y;
             y = y - 1;
         }
@@ -111,7 +111,7 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
         for (;;)
         {
             y = y + 1;
-            if ((z = pnbinom(y, n, pr, /*l._t.*/ LTRUE, /*log_p*/ LFALSE)) >= p)
+            if ((z = pnbinom(y, n, pr, /*l._t.*/ TRUE, /*log_p*/ FALSE)) >= p)
                 return y;
         }
     }

@@ -127,7 +127,7 @@ void prho(int *n, int *is, double *pv, int *ifault, int *lower_tail)
             (c1 + b * (c2 + c3 * b) +
              y * (-c4 + b * (c5 + c6 * b) - y * b * (c7 + c8 * b - y * (c9 - c10 * b + y * b * (c11 - c12 * y)))));
         y = u / exp(y / 2.);
-        *pv = (*lower_tail ? -y : y) + pnorm(x, 0., 1., *lower_tail, /*log_p = */ LFALSE);
+        *pv = (*lower_tail ? -y : y) + pnorm(x, 0., 1., *lower_tail, /*log_p = */ FALSE);
         /* above was call to alnorm() [algorithm AS 66] */
         if (*pv < 0)
             *pv = 0.;

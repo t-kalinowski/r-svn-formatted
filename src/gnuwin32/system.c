@@ -39,9 +39,9 @@
 
 int SaveAction = SA_DEFAULT;
 int RestoreAction = SA_RESTORE;
-int LoadSiteFile = True;
-int LoadInitFile = True;
-int DebugInitFile = False;
+int LoadSiteFile = TRUE;
+int LoadInitFile = TRUE;
+int DebugInitFile = FALSE;
 
 UImode CharacterMode;
 int ConsoleAcceptCmd;
@@ -655,7 +655,7 @@ int cmdlineoptions(int ac, char **av)
     Rp->CharacterMode = CharacterMode;
     for (i = 1; i < ac; i++)
         if (!strcmp(av[i], "--no-environ") || !strcmp(av[i], "--vanilla"))
-            Rp->NoRenviron = True;
+            Rp->NoRenviron = TRUE;
 
     /* Here so that --ess and similar can change */
     Rp->CallBack = R_DoNothing;
@@ -664,13 +664,13 @@ int cmdlineoptions(int ac, char **av)
     {
         if (isatty(0))
         {
-            Rp->R_Interactive = True;
+            Rp->R_Interactive = TRUE;
             Rp->ReadConsole = ThreadedReadConsole;
             InThreadReadConsole = CharReadConsole;
         }
         else
         {
-            Rp->R_Interactive = False;
+            Rp->R_Interactive = FALSE;
             Rp->ReadConsole = FileReadConsole;
         }
         R_Consolefile = stdout; /* used for errors */
@@ -682,7 +682,7 @@ int cmdlineoptions(int ac, char **av)
     }
     else
     {
-        Rp->R_Interactive = True;
+        Rp->R_Interactive = TRUE;
         Rp->ReadConsole = GuiReadConsole;
         Rp->WriteConsole = GuiWriteConsole;
         Rp->message = askok;
@@ -700,7 +700,7 @@ int cmdlineoptions(int ac, char **av)
     if (!Rp->NoRenviron)
     {
         processRenviron();
-        Rp->NoRenviron = True;
+        Rp->NoRenviron = TRUE;
     }
     env_command_line(&ac, av);
     R_SizeFromEnv(Rp);
@@ -713,12 +713,12 @@ int cmdlineoptions(int ac, char **av)
         {
             if (!strcmp(*av, "--no-environ"))
             {
-                Rp->NoRenviron = True;
+                Rp->NoRenviron = TRUE;
             }
             else if (!strcmp(*av, "--ess"))
             {
                 /* Assert that we are interactive even if input is from a file */
-                Rp->R_Interactive = True;
+                Rp->R_Interactive = TRUE;
                 Rp->ReadConsole = ThreadedReadConsole;
                 InThreadReadConsole = FileReadConsole;
             }

@@ -122,17 +122,17 @@ double rhyper(double nn1in, double nn2in, double kkin)
         ML_ERR_return_NAN;
 
     /* if new parameter values, initialize */
-    reject = LTRUE;
-    setup1 = LFALSE;
-    setup2 = LFALSE;
+    reject = TRUE;
+    setup1 = FALSE;
+    setup2 = FALSE;
     if (nn1 != n1s || nn2 != n2s)
     {
-        setup1 = LTRUE;
-        setup2 = LTRUE;
+        setup1 = TRUE;
+        setup2 = TRUE;
     }
     else if (kk != ks)
     {
-        setup2 = LTRUE;
+        setup2 = TRUE;
     }
     if (setup1)
     {
@@ -287,7 +287,7 @@ double rhyper(double nn1in, double nn2in, double kkin)
             }
             if (v <= f)
             {
-                reject = LFALSE;
+                reject = FALSE;
             }
         }
         else
@@ -320,7 +320,7 @@ double rhyper(double nn1in, double nn2in, double kkin)
             alv = log(v);
             if (alv > ub)
             {
-                reject = LTRUE;
+                reject = TRUE;
             }
             else
             {
@@ -339,7 +339,7 @@ double rhyper(double nn1in, double nn2in, double kkin)
                     de = de / (1.0 + e);
                 if (alv < ub - 0.25 * (dr + ds + dt + de) + (y + m) * (gl - gu) - deltal)
                 {
-                    reject = LFALSE;
+                    reject = FALSE;
                 }
                 else
                 {
@@ -349,11 +349,11 @@ double rhyper(double nn1in, double nn2in, double kkin)
                      */
                     if (alv <= (a - afc(ix) - afc(n1 - ix) - afc(k - ix) - afc(n2 - k + ix)))
                     {
-                        reject = LFALSE;
+                        reject = FALSE;
                     }
                     else
                     {
-                        reject = LTRUE;
+                        reject = TRUE;
                     }
                 }
             }

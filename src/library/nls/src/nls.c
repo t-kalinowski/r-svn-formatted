@@ -1,5 +1,5 @@
 /*
- *  $Id: nls.c,v 1.5 2000/08/07 22:24:35 luke Exp $
+ *  $Id: nls.c,v 1.6 2000/08/30 16:45:16 maechler Exp $
  *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
@@ -28,14 +28,6 @@
 #include "R.h"
 #include "Rinternals.h"
 #include <stdlib.h>
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
 
 #ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
