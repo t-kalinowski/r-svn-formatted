@@ -2081,7 +2081,7 @@ static SEXP FakeCall2 = NULL;
 static SEXP R_TrueValue = NULL;
 static SEXP R_FalseValue = NULL;
 
-#if defined(__GNUC__) && !defined(BC_PROFILING)
+#if defined(__GNUC__) && !defined(BC_PROFILING) && (!defined(NO_THREADED_CODE))
 #define THREADED_CODE
 #endif
 
@@ -2509,7 +2509,7 @@ struct
 
 #define OP(name, n)                                                                                                    \
     case name##_OP:                                                                                                    \
-        opinfo[name##_OP].addr = &&op_##name;                                                                          \
+        opinfo[name##_OP].addr = (__extension__ && op_##name);                                                         \
         opinfo[name##_OP].argc = (n);                                                                                  \
         goto loop;                                                                                                     \
         op_##name
