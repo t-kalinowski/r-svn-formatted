@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -242,7 +242,7 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-static void iFind(int *x, int n, int k)
+void iFind(int *x, int n, int k)
 {
     int L, R, i, j;
     int v, w;
