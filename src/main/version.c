@@ -25,7 +25,8 @@ void PrintGreeting(void)
     Rprintf("Version %s.%s %s (%s %s, %s)\n\n", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
     Rprintf("R is free software and comes with ABSOLUTELY NO WARRANTY.\n");
     Rprintf("You are welcome to redistribute it under certain conditions.\n");
-    Rprintf("Type \"license()\" for details.\n\n");
+    Rprintf("Type\t\"license()\" for details."
+            "\n\nType\t\"demo()\" for some demos, or\n\t\"help.start()\" for a HTML browser with on-line help.\n\n");
 }
 
 SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -34,7 +35,7 @@ SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
     char buf[128];
     checkArity(op, args);
 
-    PROTECT(a = ans = allocList(10));
+    PROTECT(a = ans = allocList(12));
     TAG(a) = install("platform");
     CAR(a) = mkString(R_PLATFORM);
     a = CDR(a);
@@ -62,6 +63,12 @@ SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
     a = CDR(a);
     TAG(a) = install("year");
     CAR(a) = mkString(R_YEAR);
+    a = CDR(a);
+    TAG(a) = install("month");
+    CAR(a) = mkString(R_MONTH);
+    a = CDR(a);
+    TAG(a) = install("day");
+    CAR(a) = mkString(R_DAY);
     a = CDR(a);
     TAG(a) = install("language");
     CAR(a) = mkString("R");
