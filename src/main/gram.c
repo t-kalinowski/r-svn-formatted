@@ -2888,6 +2888,7 @@ static int SpecialValue(int c)
     return SPECIAL;
 }
 
+/* return 1 if name is a valid name 0 otherwise */
 int isValidName(char *name)
 {
     char *p;
@@ -2896,11 +2897,8 @@ int isValidName(char *name)
     p = name;
     c = *p++;
 
-    if (isdigit(c))
+    if (c != '.' && !isalpha(c))
         return 0;
-
-    if (c == '.' && strlen(name) == 1)
-        return 1;
 
     for (i = 0; keywords[i].name; i++)
         if (strcmp(keywords[i].name, name) == 0 && !(strcmp(name, "...") == 0))
@@ -2908,8 +2906,16 @@ int isValidName(char *name)
 
     if (c == '.')
     {
-        while (c = *p++, isdigit(c))
-            ;
+        if (strlen(name) == 1)
+            return 1;
+        while (c = *p++)
+            if (!isdigit(c))
+            {
+                if (!isalpha(c))
+                    return 0;
+                else
+                    break;
+            };
         if (c == '\0')
             return 0;
     }
