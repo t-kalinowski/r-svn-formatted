@@ -375,6 +375,8 @@ static void extractItem(char *buffer, SEXP ans, int i)
     char *endp;
     switch (TYPEOF(ans))
     {
+    case NILSXP:
+        break;
     case LGLSXP:
         if (isNAstring(buffer, 0))
             LOGICAL(ans)[i] = NA_INTEGER;
@@ -569,13 +571,16 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
     for (i = 0; i < nc; i++)
     {
         w = VECTOR_ELT(what, i);
-        if (!isVector(w))
+        if (!isNull(w))
         {
-            if (!ttyflag & !wasopen)
-                con->close(con);
-            error("invalid `what=' specified");
+            if (!isVector(w))
+            {
+                if (!ttyflag & !wasopen)
+                    con->close(con);
+                error("invalid `what=' specified");
+            }
+            SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(w), blksize));
         }
-        SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(w), blksize));
     }
     setAttrib(ans, R_NamesSymbol, getAttrib(what, R_NamesSymbol));
 
@@ -635,9 +640,12 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
             for (i = 0; i < nc; i++)
             {
                 old = VECTOR_ELT(ans, i);
-                new = allocVector(TYPEOF(old), blksize);
-                copyVector(new, old);
-                SET_VECTOR_ELT(ans, i, new);
+                if (!isNull(old))
+                {
+                    new = allocVector(TYPEOF(old), blksize);
+                    copyVector(new, old);
+                    SET_VECTOR_ELT(ans, i, new);
+                }
             }
         }
 
