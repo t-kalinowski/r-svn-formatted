@@ -1496,7 +1496,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
                     err = noErr;
                 }
 
-                if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), NULL, &devnum) == noErr)
+                if (GetWindowProperty(EventWindow, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) == noErr)
                     if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
                     {
                         dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
