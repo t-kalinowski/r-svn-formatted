@@ -1154,19 +1154,23 @@ SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifndef noSlotCheck
 
+/* This does not get used anymore (commented out in the code below).
+   Hence, comment out as well to make -Wall -pedantic happier.
+   KH 2003-06-07.
+
 static SEXP class_meta_data_env = NULL;
 
 static int make_class_meta_data_env()
 {
     class_meta_data_env = findVar(install("__ClassMetaData"), R_GlobalEnv);
-    if (class_meta_data_env == R_UnboundValue)
-    {
-        class_meta_data_env = NULL;
-        return 0;
+    if(class_meta_data_env == R_UnboundValue) {
+    class_meta_data_env = NULL;
+    return 0;
     }
     else
-        return 1;
+    return 1;
 }
+*/
 
 /* check for a class definition from the internal table -- will not get
  * classes whose definition has not been completed for this session,
