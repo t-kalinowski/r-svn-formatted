@@ -111,8 +111,8 @@ e		9			0
 */
 
 int NumOfRoots = 0;
-DataBrowserItemID *RootItems = NULL;
-DataBrowserItemID **SubItemsID;
+int *RootItems = NULL;
+int **SubItemsID;
 int CurrentID = 0;
 void InitContainers(void);
 void SetSubItems(int i);
@@ -283,8 +283,8 @@ void InitContainers(void)
     if (RootItems)
         free(RootItems);
 
-    RootItems = malloc(sizeof(DataBrowserItemID) * NumOfRoots);
-    SubItemsID = (DataBrowserItemID **)malloc(NumOfID * sizeof(DataBrowserItemID *));
+    RootItems = malloc(sizeof(int) * NumOfRoots);
+    SubItemsID = malloc(NumOfID * sizeof(int *));
 
     for (i = 0; i < NumOfID; i++)
     {
@@ -296,7 +296,7 @@ void InitContainers(void)
         if (IsContainer[i])
         {
             l = 0;
-            SubItemsID[i] = malloc(sizeof(DataBrowserItemID) * NumberOfItems[i]);
+            SubItemsID[i] = malloc(sizeof(int) * NumberOfItems[i]);
             for (j = 0; j < NumOfID; j++)
             {
                 if (ParentID[j] == IDNum[i])
@@ -347,7 +347,8 @@ void OpenDataBrowser(void)
             ConfigureDataBrowser(WSpaceBrowser);
         err = SetDataBrowserTarget(WSpaceBrowser, 1);
 
-        AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, RootItems, kDataBrowserItemNoProperty);
+        AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, (UInt32)NumOfRoots, (DataBrowserItemID *)RootItems,
+                            kDataBrowserItemNoProperty);
 
         /* Set the keyboard focus */
         SetKeyboardFocus(BrowserWindow, WSpaceBrowser, kControlDataBrowserPart);
@@ -693,7 +694,8 @@ static pascal void MyItemNotification(ControlRef browser, DataBrowserItemID item
     break;
 
     case kDataBrowserContainerOpened: {
-        AddDataBrowserItems(browser, itemID, NumberOfItems[itemID - 1], SubItemsID[itemID - 1], kObjectColumn);
+        AddDataBrowserItems(browser, itemID, (UInt32)NumberOfItems[itemID - 1],
+                            (DataBrowserItemID *)SubItemsID[itemID - 1], kObjectColumn);
         {
             Boolean variableHeightRows;
             GetDataBrowserTableViewGeometry(browser, NULL, &variableHeightRows);
