@@ -1457,14 +1457,14 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* readTableHead(file, nlines, comment.char, blank.lines.skip) */
+/* readTableHead(file, nlines, comment.char, blank.lines.skip, quote) */
 /* simplified version of readLines, with skip of blank lines and
    comment-only lines */
 #define BUF_SIZE 1000
 SEXP do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP file, comstr, ans = R_NilValue, ans2;
-    int nlines, i, c, nread, nbuf, buf_size = BUF_SIZE;
+    SEXP file, comstr, ans = R_NilValue, ans2, quotes;
+    int nlines, i, c, quote = 0, nread, nbuf, buf_size = BUF_SIZE, blskip;
     char *p, *buf;
     Rboolean empty, skip;
     LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, 0};
@@ -1477,8 +1477,34 @@ SEXP do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
     nlines = asInteger(CAR(args));
     args = CDR(args);
     comstr = CAR(args);
+    args = CDR(args);
+    blskip = asLogical(CAR(args));
+    args = CDR(args);
+    quotes = CAR(args);
+
     if (nlines <= 0 || nlines == NA_INTEGER)
         errorcall(call, "invalid nlines value");
+    if (blskip == NA_LOGICAL)
+        blskip = 1;
+    if (isString(quotes))
+    {
+        /* This appears to be necessary to protect quoteset against GC */
+        data.quoteset = CHAR(STRING_ELT(quotes, 0));
+        /* Protect against broken realloc */
+        if (data.quotesave)
+            data.quotesave = realloc(data.quotesave, strlen(data.quoteset) + 1);
+        else
+            data.quotesave = malloc(strlen(data.quoteset) + 1);
+        if (!data.quotesave)
+            errorcall(call, "out of memory");
+        strcpy(data.quotesave, data.quoteset);
+        data.quoteset = data.quotesave;
+    }
+    else if (isNull(quotes))
+        data.quoteset = "";
+    else
+        errorcall(call, "invalid quote symbol set");
+
     if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
         errorcall(call, "invalid comment.char value");
     p = CHAR(STRING_ELT(comstr, 0));
@@ -1526,12 +1552,16 @@ SEXP do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
                 if (!buf)
                     error("cannot allocate buffer in readTableHead");
             }
+            if (quote && c == quote)
+                quote = 0;
+            else if (!skip && strchr(data.quoteset, c))
+                quote = c;
             if (empty && !skip)
                 if (c != ' ' && c != '\t' && c != data.comchar)
                     empty = FALSE;
-            if (!skip && c == data.comchar)
+            if (!quote && !skip && c == data.comchar)
                 skip = TRUE;
-            if (c != '\n')
+            if (quote || c != '\n')
                 buf[nbuf++] = c;
             else
                 break;
