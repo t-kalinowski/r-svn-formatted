@@ -114,7 +114,7 @@ char *R_PromptString(int browselevel, int type)
 
 static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
 {
-    int c, status;
+    int c, status, browsevalue;
     char *bufp, buf[1024];
 
     R_IoBufferWriteReset(&R_ConsoleIob);
@@ -171,8 +171,17 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
 
             R_IoBufferReadReset(&R_ConsoleIob);
             R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status);
-            if (browselevel && ParseBrowser(R_CurrentExpr, rho))
-                return;
+            if (browselevel)
+            {
+                browsevalue = ParseBrowser(R_CurrentExpr, rho);
+                if (browsevalue == 1)
+                    return;
+                if (browsevalue == 2)
+                {
+                    R_IoBufferWriteReset(&R_ConsoleIob);
+                    break;
+                }
+            }
             R_Visible = 0;
             R_EvalDepth = 0;
             PROTECT(R_CurrentExpr);
@@ -488,7 +497,7 @@ void mainloop(void)
 static void printwhere(void)
 {
     RCNTXT *cptr;
-    int lct = 0;
+    int lct = 1;
 
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
@@ -530,7 +539,7 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
         {
             printwhere();
             DEBUG(rho) = 1;
-            rval = 1;
+            rval = 2;
         }
     }
     return rval;
