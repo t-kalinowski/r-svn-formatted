@@ -439,9 +439,16 @@ OSStatus SetUpGUI(void)
     CFURLRef bundleURL = NULL;
     CFBundleRef RBundle = NULL;
 
-    if ((err = CreateNibReference(CFSTR("main"), &nibRef)) != noErr)
+    RBundle = CFBundleGetMainBundle();
+    if (RBundle == NULL)
         goto guifailure;
 
+    if ((err = CreateNibReferenceWithCFBundle(RBundle, CFSTR("main"), &nibRef)) != noErr)
+        goto guifailure;
+
+    /*   if( (err = CreateNibReference(CFSTR("main"), &nibRef)) != noErr)
+           goto guifailure;
+    */
     if ((err = SetMenuBarFromNib(nibRef, CFSTR("MenuBar"))) != noErr)
         goto guifailure;
 
