@@ -105,6 +105,7 @@
 #include <Scrap.h>
 #include "Graphics.h"
 #include <Rdevices.h>
+#include "Fileio.h"
 
 /*         DEFINE CONSTANTS        */
 #define eNoSuchFile 9
@@ -134,6 +135,7 @@ static short RTopicHelpItem = -1;
 static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
 static short LinkHtmlHelpItem = -1;
+static short PreferencesItem = -1;
 
 //	user structure passed to the NavEventFilter callback
 
@@ -180,6 +182,7 @@ OSErr DoSource(void);
 OSErr SourceFile(FSSpec *myfss);
 int GetTextSize(void);
 int GetScreenRes(void);
+static Boolean RunningOnCarbonX(void);
 
 void consolecmd(char *cmd);
 static pascal void NavEventFilter(NavEventCallbackMessage, NavCBRec *, void *);
@@ -518,6 +521,9 @@ void PrepareMenus(void)
     EnableMenuItem(menu, SearchHelpItem);
     EnableMenuItem(menu, RunExampleItem);
     EnableMenuItem(menu, LinkHtmlHelpItem);
+
+    menu = GetMenuHandle(kMenuApple);
+    EnableMenuCommand(menu, kHICommandPreferences);
 }
 
 void DoDeskAcc(UInt16 menuItem)
@@ -655,7 +661,7 @@ OSStatus DoOpen(void)
     /*
        Routine now handles XDR object. Nov 2000 (Stefano M. Iacus)
     */
-    if (!(fp = fopen(InitFile, "rb")))
+    if (!(fp = R_fopen(InitFile, "rb")))
     { /* binary file */
         warning("File cannot be opened !");
         /* warning here perhaps */
@@ -1733,6 +1739,19 @@ OSErr InitializeMenus(void)
         LinkHtmlHelpItem = CountMenuItems(HelpMenu);
     }
 
+    /* Appends the Preferences menuitem to the Config menu */
+    /* This is not needed under OS X                       */
+
+    if (!RunningOnCarbonX())
+    {
+        if ((menu = GetMenuHandle(kMenuConfig)) == NULL)
+            goto cleanup;
+        AppendMenu(menu, "\pPreferences...");
+        PreferencesItem = CountMenuItems(menu);
+        if ((err = SetMenuItemCommandID(menu, PreferencesItem, kHICommandPreferences)) != noErr)
+            goto cleanup;
+    }
+
 #if TARGET_API_MAC_CARBON
     if ((Gestalt(gestaltMenuMgrAttr, &gestaltResponse) == noErr) && (gestaltResponse & gestaltMenuMgrAquaLayoutMask))
     {
@@ -1765,6 +1784,12 @@ cleanup:
     return err;
 }
 
+static Boolean RunningOnCarbonX(void)
+{
+    UInt32 response;
+
+    return (Gestalt(gestaltSystemVersion, (SInt32 *)&response) == noErr) && (response >= 0x01000);
+}
 /* do_Print
 
   This routine has been completely rewritten.
@@ -1973,48 +1998,6 @@ static pascal void NavEventFilter(NavEventCallbackMessage inSelector, NavCBRec *
                 DoWindowEvent(event);
             }
         }
-
-        //	intercept clicks in our custom items, if any
-        /*		else if ( cd && ( event -> what == mouseDown ) )
-                {
-                    switch ( inPB -> eventData . itemHit - cd -> numItems )
-                    {
-                        case kItemFormatPopup :
-                        {
-                            if ( cd -> formatPopup )
-                            {
-                                switch ( GetControlValue ( cd -> formatPopup ) )
-                                {
-                                    case kItemTextFormat :
-                                    {
-                                        cd -> fileType = kTypeText ;
-                                        break ;
-                                    }
-
-                                    case kItemUnicodeTextFormat :
-                                    {
-                                        cd -> fileType = kTypeUnicodeText ;
-                                        break ;
-                                    }
-                                }
-                            }
-                            break ;
-                        }
-
-                        case kItemStationeryCheckbox :
-                        {
-                            if ( cd -> stationeryCheckbox )
-                            {
-                                cd -> isStationery = 1 - cd -> isStationery ;
-                                SetControlValue ( cd -> stationeryCheckbox, cd -> isStationery ) ;
-                            }
-                            break ;
-                        }
-
-                    }
-                }
-                break ;
-                */
     }
 
     case kNavCBCustomize: {
