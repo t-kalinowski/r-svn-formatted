@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@
  *  This function prints the given prompt at the console and then
  *  does a gets(3)-like operation, transfering up to "buflen" characters
  *  into the buffer "buf".  The last two characters are set to "\n\0"
- *  to preserve sanity.  If "hist" is non-zero, then the line is added
+ *  to preserve sanity.	 If "hist" is non-zero, then the line is added
  *  to any command history which is being maintained.  Note that this
  *  is one natural place from which to run an event loop.
  *
@@ -113,6 +113,13 @@
 #endif
 #endif
 
+/*-- necessary for some (older, i.e., ~ <= 1997) Linuxen:*/
+#ifdef linux
+#ifndef FD_SET
+#include <sys/time.h>
+#endif
+#endif
+
 static int UsingReadline = 1;
 static int DefaultSaveAction = 0;
 static int DefaultRestoreAction = 1;
@@ -165,17 +172,21 @@ static int waitForActivity()
 static int readline_gotaline;
 static int readline_addtohistory;
 static int readline_len;
+static int readline_eof;
 static char *readline_buf;
 
-static void readline_handler()
+static void readline_handler(char *line)
 {
     int l;
-    if (rl_line_buffer[0])
+    rl_callback_handler_remove();
+    if ((readline_eof = !line)) /* Yes, I don't mean ==...*/
+        return;
+    if (line[0])
     {
-        if (strlen(rl_line_buffer) && readline_addtohistory)
-            add_history(rl_line_buffer);
-        l = (((readline_len - 2) > strlen(rl_line_buffer)) ? strlen(rl_line_buffer) : (readline_len - 2));
-        strncpy(readline_buf, rl_line_buffer, l);
+        if (strlen(line) && readline_addtohistory)
+            add_history(line);
+        l = (((readline_len - 2) > strlen(line)) ? strlen(line) : (readline_len - 2));
+        strncpy(readline_buf, line, l);
         readline_buf[l] = '\n';
         readline_buf[l + 1] = '\0';
     }
@@ -184,7 +195,6 @@ static void readline_handler()
         readline_buf[0] = '\n';
         readline_buf[1] = '\0';
     }
-    rl_callback_handler_remove();
     readline_gotaline = 1;
 }
 #endif
@@ -206,12 +216,22 @@ int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
     else
     {
 #ifdef HAVE_LIBREADLINE
-        readline_gotaline = 0;
-        readline_buf = buf;
-        readline_addtohistory = addtohistory;
-        readline_len = len;
-        rl_callback_handler_install(prompt, readline_handler);
+        if (UsingReadline)
+        {
+            readline_gotaline = 0;
+            readline_buf = buf;
+            readline_addtohistory = addtohistory;
+            readline_len = len;
+            readline_eof = 0;
+            rl_callback_handler_install(prompt, readline_handler);
+        }
+        else
 #endif
+        {
+            fputs(prompt, stdout);
+            fflush(stdout);
+        }
+
         for (;;)
         {
             int what = waitForActivity();
@@ -225,14 +245,14 @@ int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
                 if (UsingReadline)
                 {
                     rl_callback_read_char();
+                    if (readline_eof)
+                        return 0;
                     if (readline_gotaline)
                         return 1;
                 }
                 else
 #endif
                 {
-                    if (!R_Quiet)
-                        fputs(prompt, stdout);
                     if (fgets(buf, len, stdin) == NULL)
                         return 0;
                     else
