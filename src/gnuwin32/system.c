@@ -50,6 +50,7 @@ int ConsoleAcceptCmd;
 void closeAllHlpFiles();
 void UnLoad_Unzip_Dll();
 void UnLoad_Rbitmap_Dll();
+void set_workspace_name(char *fn);
 
 /* used to avoid some flashing during cleaning up */
 Rboolean AllDevicesKilled = FALSE;
@@ -634,6 +635,7 @@ int cmdlineoptions(int ac, char **av)
     structRstart rstart;
     Rstart Rp = &rstart;
     MEMORYSTATUS ms;
+    Rboolean usedRdata = FALSE;
 
 #ifdef HAVE_TIMES
     R_setStartTime();
@@ -775,8 +777,34 @@ int cmdlineoptions(int ac, char **av)
         }
         else
         {
-            sprintf(s, "ARGUMENT '%s' __ignored__\n", *av);
-            R_ShowMessage(s);
+            /* Look for *.RData, as given by drag-and-drop */
+            WIN32_FIND_DATA pp;
+            HANDLE res;
+            char *p, *fn = pp.cFileName, path[MAX_PATH];
+
+            res = FindFirstFile(*av, &pp); /* convert to long file name */
+            if (!usedRdata && res != INVALID_HANDLE_VALUE && strlen(fn) >= 6 &&
+                stricmp(fn + strlen(fn) - 6, ".RData") == 0)
+            {
+                set_workspace_name(fn);
+                strcpy(path, *av);
+                for (p = path; *p; p++)
+                    if (*p == '\\')
+                        *p = '/';
+                p = strrchr(path, '/');
+                if (p)
+                {
+                    *p = '\0';
+                    chdir(path);
+                }
+                usedRdata = TRUE;
+                Rp->RestoreAction = SA_RESTORE;
+            }
+            else
+            {
+                sprintf(s, "ARGUMENT '%s' __ignored__\n", *av);
+                R_ShowMessage(s);
+            }
         }
     }
     Rp->rhome = getRHOME();
