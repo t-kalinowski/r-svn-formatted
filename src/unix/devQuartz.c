@@ -85,7 +85,6 @@ typedef struct
 
 OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
-extern OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 static const EventTypeSpec QuartzEvents[] = {{kEventClassWindow, kEventWindowClose},
                                              {kEventClassWindow, kEventWindowBoundsChanged}};
 
@@ -139,28 +138,6 @@ static char *SaveString(SEXP sxp, int offset)
     s = R_alloc(strlen(CHAR(STRING_ELT(sxp, offset))) + 1, sizeof(char));
     strcpy(s, CHAR(STRING_ELT(sxp, offset)));
     return s;
-}
-
-/* int QuartzCount = 1; */
-
-void HaveFlush(CGContextRef c, Rboolean flush);
-
-void HaveFlush(CGContextRef c, Rboolean flush)
-{
-
-    if (flush)
-        CGContextFlush(c);
-
-    /*  Flushing graphics at every graphic call
-        is really slow. It should be something
-        like that...but there should be a
-        better way to do that!
-
-      if ((QuartzCount++ % 10) == 0) {
-        CGContextFlush(c);
-        QuartzCount = 1 ;
-        }
-    */
 }
 
 /*  Quartz Device Driver Parameters:
@@ -394,11 +371,7 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     SetWTitle(devWindow, Title);
 
     ShowWindow(devWindow);
-    /*
-        err = InstallWindowEventHandler( devWindow, NewEventHandlerUPP(DoCloseHandler),
-                                              GetEventTypeCount(RCloseWinEvent),
-                                              RCloseWinEvent, (void *)devWindow, NULL);
-    */
+
     err = InstallWindowEventHandler(devWindow, NewEventHandlerUPP(QuartzEventHandler), GetEventTypeCount(QuartzEvents),
                                     QuartzEvents, (void *)devWindow, NULL);
 
@@ -502,8 +475,6 @@ static void Quartz_NewPage(int fill, double gamma, NewDevDesc *dd)
     Quartz_SetFill(fill, gamma, dd);
 
     CGContextFillRect(xd->context, area);
-
-    HaveFlush(xd->context, xd->Autorefresh);
 }
 
 static void Quartz_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd)
@@ -578,8 +549,6 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
 
     CGContextShowTextAtPoint(xd->context, 0, 0, str, strlen(str));
 
-    HaveFlush(xd->context, xd->Autorefresh);
-
     CGContextRestoreGState(xd->context);
 }
 
@@ -611,7 +580,6 @@ static void Quartz_Rect(double x0, double y0, double x1, double y1, int col, int
     Quartz_SetStroke(col, gamma, dd);
     CGContextStrokeRect(xd->context, rect);
 
-    HaveFlush(xd->context, xd->Autorefresh);
     CGContextRestoreGState(xd->context);
 }
 
@@ -634,8 +602,6 @@ static void Quartz_Circle(double x, double y, double r, int col, int fill, doubl
     Quartz_SetStroke(col, gamma, dd);
     CGContextAddArc(xd->context, (float)x, (float)y, (float)r, 3.141592654 * 2.0, 0.0, 0);
     CGContextStrokePath(xd->context);
-
-    HaveFlush(xd->context, xd->Autorefresh);
 
     CGContextRestoreGState(xd->context);
 }
@@ -664,8 +630,6 @@ static void Quartz_Line(double x1, double y1, double x2, double y2, int col, dou
     Quartz_SetStroke(col, gamma, dd);
 
     CGContextStrokePath(xd->context);
-
-    HaveFlush(xd->context, xd->Autorefresh);
 
     CGContextRestoreGState(xd->context);
 }
@@ -698,7 +662,6 @@ static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, 
     Quartz_SetStroke(col, gamma, dd);
     CGContextStrokePath(xd->context);
 
-    HaveFlush(xd->context, xd->Autorefresh);
     CGContextRestoreGState(xd->context);
 }
 
@@ -806,8 +769,6 @@ static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, doubl
     Quartz_SetStroke(col, gamma, dd);
     CGContextStrokePath(xd->context);
 
-    HaveFlush(xd->context, xd->Autorefresh);
-
     CGContextRestoreGState(xd->context);
 }
 
@@ -818,7 +779,10 @@ static Rboolean Quartz_Locator(double *x, double *y, NewDevDesc *dd)
 
 static void Quartz_Mode(int mode, NewDevDesc *dd)
 {
-    return;
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+
+    if (mode == 0)
+        CGContextFlush(xd->context);
 }
 
 static void Quartz_Hold(NewDevDesc *dd)
