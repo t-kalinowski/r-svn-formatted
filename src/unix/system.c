@@ -276,6 +276,7 @@ void R_CleanUp(int saveact)
         saveact = SaveAction;
 
     if (saveact == SA_SAVEASK)
+    {
         if (R_Interactive)
         {
         qask:
@@ -302,7 +303,7 @@ void R_CleanUp(int saveact)
         }
         else
             saveact = SaveAction;
-
+    }
     switch (saveact)
     {
     case SA_SAVE:
@@ -524,9 +525,11 @@ int main(int ac, char **av)
     /*++++++  in ../main/main.c */
     return 0;
 
+#ifdef Old_usage
 badargs:
     REprintf("invalid argument passed to R\n");
     exit(1);
+#endif
 }
 
 /* Declarations to keep f77 happy */
