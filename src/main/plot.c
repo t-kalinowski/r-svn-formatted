@@ -849,6 +849,27 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     side = asInteger(CAR(args));
     if (side < 1 || side > 4)
         errorcall(call, "invalid axis number");
+
+    /* Check the axis type parameter, if it is 'n', */
+    /* there is nothing to do */
+
+    if (side == 1 || side == 3)
+    {
+        if (dd->gp.xaxt == 'n')
+        {
+            GRestorePars(dd);
+            return R_NilValue;
+        }
+    }
+    else if (side == 2 || side == 4)
+    {
+        if (dd->gp.yaxt == 'n')
+        {
+            GRestorePars(dd);
+            return R_NilValue;
+        }
+    }
+
     args = CDR(args);
 
     /* tick-label locations;  these are coerced lower down */
@@ -960,28 +981,6 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     dd->gp.cex = dd->gp.cexbase * dd->gp.cexaxis;
     col = dd->gp.col;
     fg = dd->gp.fg;
-
-    /* Check the axis type parameter, if it is 'n', */
-    /* there is nothing to do */
-
-    if (side == 1 || side == 3)
-    {
-        if (dd->gp.xaxt == 'n')
-        {
-            GRestorePars(dd);
-            return R_NilValue;
-        }
-    }
-    else if (side == 2 || side == 4)
-    {
-        if (dd->gp.yaxt == 'n')
-        {
-            GRestorePars(dd);
-            return R_NilValue;
-        }
-    }
-    else
-        errorcall(call, "invalid \"side\" value");
 
     x = dd->gp.usr[0];
     y = dd->gp.usr[2];
