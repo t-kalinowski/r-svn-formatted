@@ -31,6 +31,7 @@ R_CMethodDef CEntries[] = {{"acf", (DL_FUNC)&acf, 6},
                            {"filter1", (DL_FUNC)&filter1, 7},
                            {"filter2", (DL_FUNC)&filter2, 5},
                            {"R_pp_sum", (DL_FUNC)&R_pp_sum, 4},
+                           {"HoltWinter", (DL_FUNC)&HoltWinters, 13},
                            {NULL, NULL, 0}};
 
 R_CallMethodDef CallEntries[] = {{"setup_starma", (DL_FUNC)&setup_starma, 8},
