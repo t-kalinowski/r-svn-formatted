@@ -2350,7 +2350,6 @@ int xmlNanoHTTPReturnCode(void *ctx);
 void *xmlNanoFTPOpen(const char *URL);
 int xmlNanoFTPRead(void *ctx, void *dest, int len);
 void xmlNanoFTPClose(void *ctx);
-#endif
 
 static void url_open(Rconnection con)
 {
@@ -2364,7 +2363,6 @@ static void url_open(Rconnection con)
 
     switch (type)
     {
-#ifdef HAVE_LIBXML
     case HTTPsh:
         /* xmlNanoHTTPInit(); */
         ctxt = xmlNanoHTTPOpen(url, NULL);
@@ -2385,7 +2383,6 @@ static void url_open(Rconnection con)
             error("cannot open URL `%s'", url);
         ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
-#endif
     default:
         error("unknown URL scheme");
     }
@@ -2506,6 +2503,7 @@ static Rconnection newurl(char *description, char *mode)
     }
     return new;
 }
+#endif
 
 /* url(description, open, encoding) */
 SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
