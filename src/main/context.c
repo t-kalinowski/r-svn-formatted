@@ -309,7 +309,9 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
                     t = eval(s, cptr->sysparent);
                 else
                     t = R_NilValue;
-                return (t);
+                while (TYPEOF(t) == PROMSXP)
+                    t = eval(s, cptr->sysparent);
+                return t;
             }
             else
                 n--;
@@ -317,7 +319,12 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
         cptr = cptr->nextcontext;
     }
     if (n == 0 && cptr->nextcontext == NULL)
-        return (findVar(CAR(cptr->call), cptr->sysparent));
+    {
+        s = findVar(CAR(cptr->call), cptr->sysparent);
+        while (TYPEOF(s) == PROMSXP)
+            s = eval(s, cptr->sysparent);
+        return s;
+    }
     errorcall(R_GlobalContext->call, "not that many enclosing functions");
     return R_NilValue; /* just for -Wall */
 }
