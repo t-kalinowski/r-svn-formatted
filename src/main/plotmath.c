@@ -2997,6 +2997,7 @@ double GExpressionHeight(SEXP expr, GUnit units, DevDesc *dd)
 void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, double rot, DevDesc *dd)
 {
     GConvert(&x, &y, coords, DEVICE, dd);
+    GClip(dd);
     GEMathText(x, y, expr, xc, yc, rot, Rf_gpptr(dd)->col, Rf_gpptr(dd)->gamma, Rf_gpptr(dd)->font, Rf_gpptr(dd)->cex,
                Rf_gpptr(dd)->ps, (GEDevDesc *)dd);
 }
@@ -3135,6 +3136,13 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         break;
     }
     GConvert(&at, &line, coords, DEVICE, dd);
+    /* The graphics engine (unlike graphics.c code) knows nothing about
+     * xpd settings (that is a base graphics system concept), hence
+     * the graphics engine does not call GClip.  So we must call GClip
+     * here to make sure that the current xpd setting is enforced
+     * on the device.
+     */
+    GClip(dd);
     GEMathText(at, line, str, xadj, yadj, angle, Rf_gpptr(dd)->col, Rf_gpptr(dd)->gamma, Rf_gpptr(dd)->font,
                Rf_gpptr(dd)->cex, Rf_gpptr(dd)->ps, (GEDevDesc *)dd);
 } /* GMMathText */

@@ -2238,10 +2238,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else if (isExpression(txt))
             {
-                GEMathText(toDeviceX(xx, GE_INCHES, (GEDevDesc *)dd), toDeviceY(yy, GE_INCHES, (GEDevDesc *)dd),
-                           VECTOR_ELT(txt, i % ntxt), adjx, adjy, Rf_gpptr(dd)->srt, Rf_gpptr(dd)->col,
-                           Rf_gpptr(dd)->gamma, Rf_gpptr(dd)->font, Rf_gpptr(dd)->cex, Rf_gpptr(dd)->ps,
-                           (GEDevDesc *)dd);
+                GMathText(xx, yy, INCHES, VECTOR_ELT(txt, i % ntxt), adjx, adjy, Rf_gpptr(dd)->srt, dd);
             }
             else
             {
@@ -2693,9 +2690,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (isExpression(Main))
         {
-            GConvert(&hpos, &vpos, where, DEVICE, dd);
-            GEMathText(hpos, vpos, VECTOR_ELT(Main, 0), adj, 0.5, 0.0, Rf_gpptr(dd)->col, Rf_gpptr(dd)->gamma,
-                       Rf_gpptr(dd)->font, Rf_gpptr(dd)->cex, Rf_gpptr(dd)->ps, (GEDevDesc *)dd);
+            GMathText(hpos, vpos, where, VECTOR_ELT(Main, 0), adj, 0.5, 0.0, dd);
         }
         else
         {
