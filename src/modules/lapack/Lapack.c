@@ -690,7 +690,7 @@ static SEXP modLa_chol(SEXP A)
         if (i != 0)
         {
             if (i > 0)
-                error("error code %d from Lapack routine dpotrf", i);
+                error("the leading minor of order %d is not positive definite", i);
             error("argument no. %d to Lapack routine dpotrf is illegal", -i);
         }
         unprotect(1);
@@ -723,13 +723,13 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
         for (j = 0; j < sz; j++)
         {
             for (i = 0; i <= j; i++)
-                REAL(ans)[i + j * sz] = REAL(Amat)[i + j * sz];
+                REAL(ans)[i + j * sz] = REAL(Amat)[i + j * m];
         }
         F77_CALL(dpotri)("Upper", &sz, REAL(ans), &sz, &i);
         if (i != 0)
         {
             if (i > 0)
-                error("error code %d from Lapack routine dpotri", i);
+                error("element (%d, %d) is zero, so the inverse cannot be computed", i, i);
             error("argument no. %d to Lapack routine dpotri is illegal", -i);
         }
         for (j = 0; j < sz; j++)
