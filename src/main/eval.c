@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998-1999	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,13 +40,8 @@ void isintrpt()
 extern void ProcessEvents();
 #endif
 
-/* NEEDED: A fixup is needed in browser, because it */
-/* can trap errors, and currently does not reset the */
-/* limit to the right value. */
-
-/* These are not ifdef'ed to keep main etc happy. */
-extern int R_EvalDepth;
-extern int R_EvalCount;
+/* NEEDED: A fixup is needed in browser, because it can trap errors,
+ *	and currently does not reset the limit to the right value. */
 
 /* Return value of "e" evaluated in "rho". */
 
@@ -317,7 +313,7 @@ regdb:
     /* Set a longjmp target which will catch any */
     /* explicit returns from the function body. */
 
-    if (i = SETJMP(cntxt.cjmpbuf))
+    if ((i = SETJMP(cntxt.cjmpbuf)))
     {
         if (R_ReturnedValue == R_DollarSymbol)
         {
@@ -879,14 +875,14 @@ SEXP evalList(SEXP el, SEXP rho)
     while (el != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it is */
-        /* bound to.  If its binding is Null (i.e. zero length) */
-        /* we just ignore it and return the cdr with all its */
-        /* expressions evaluated; if it is bound to a ... list */
-        /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value.	*/
-        /* Anything else bound to a ... symbol is an error */
-
+        /* If we have a ... symbol, we look to see what it is bound to.
+         * If its binding is Null (i.e. zero length)
+         *	we just ignore it and return the cdr with all its expressions evaluated;
+         * if it is bound to a ... list of promises,
+         *	we force all the promises and then splice
+         *	the list of resulting values into the return value.
+         * Anything else bound to a ... symbol is an error
+         */
         if (CAR(el) == R_DotsSymbol)
         {
             h = findVar(CAR(el), rho);
@@ -913,7 +909,7 @@ SEXP evalList(SEXP el, SEXP rho)
     }
     UNPROTECT(1);
     return CDR(ans);
-}
+} /* evalList() */
 
 /* A slight variation of evaluating each expression in "el" in "rho". */
 /* This is a naturally recursive algorithm, but we use the iterative */
@@ -929,14 +925,14 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
     while (el != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it is */
-        /* bound to.  If its binding is Null (i.e. zero length) */
-        /* we just ignore it and return the cdr with all its */
-        /* expressions evaluated; if it is bound to a ... list */
-        /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value.	*/
-        /* Anything else bound to a ... symbol is an error */
-
+        /* If we have a ... symbol, we look to see what it is bound to.
+         * If its binding is Null (i.e. zero length)
+         *	we just ignore it and return the cdr with all its expressions evaluated;
+         * if it is bound to a ... list of promises,
+         *	we force all the promises and then splice
+         *	the list of resulting values into the return value.
+         * Anything else bound to a ... symbol is an error
+         */
         if (CAR(el) == R_DotsSymbol)
         {
             h = findVar(CAR(el), rho);
@@ -988,13 +984,14 @@ SEXP promiseArgs(SEXP el, SEXP rho)
     while (el != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it */
-        /* is bound to.	 If its binding is Null (i.e. zero length) */
-        /* we just ignore it and return the cdr with all its */
-        /* expressions promised; if it is bound to a ... list */
-        /* of promises, we repromise all the promises and then splice */
-        /* the list of resulting values into the return value. */
-        /* Anything else bound to a ... symbol is an error */
+        /* If we have a ... symbol, we look to see what it is bound to.
+         * If its binding is Null (i.e. zero length)
+         * we just ignore it and return the cdr with all its
+         * expressions promised; if it is bound to a ... list
+         * of promises, we repromise all the promises and then splice
+         * the list of resulting values into the return value.
+         * Anything else bound to a ... symbol is an error
+         */
 
         /* Is this double promise mechanism really needed? */
 
