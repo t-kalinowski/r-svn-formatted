@@ -589,6 +589,7 @@ OSStatus WriteTextFile(const FSSpec *pFileSpec, WEReference we)
     SInt16 tempVRef;  /* volume reference # for the temp file */
     SInt32 tempDirID; /* directory ID of the temp file */
     OSStatus err;
+    Handle tempTxt = nil;
 
     /*	will we be replacing an existing file?
      */
@@ -668,12 +669,17 @@ OSStatus WriteTextFile(const FSSpec *pFileSpec, WEReference we)
         WEGetText returns the original handle, not a copy, so don't dispose of it!!
     */
     hText = WEGetText(we);
-    textSize = GetHandleSize(hText);
+    textSize = WEGetTextLength(we);
 
-    /*	write the text
-     */
+    tempTxt = NewHandle((textSize + 1) * sizeof(char));
+
     HLock(hText);
-    err = FSWrite(dataForkRefNum, &textSize, *hText);
+    HLock(tempTxt);
+    strncpy(*tempTxt, *hText, textSize);
+    (*tempTxt)[textSize] = '\r';
+    textSize++;
+    err = FSWrite(dataForkRefNum, &textSize, *tempTxt);
+    HUnlock(tempTxt);
     HUnlock(hText);
 
     if (err != noErr)
@@ -729,7 +735,6 @@ OSStatus WriteTextFile(const FSSpec *pFileSpec, WEReference we)
         */
     }
 
-#if TARGET_API_MAC_CARBON
     /*	write the page format, if any
      */
     if ((WEGetUserInfo(kPageFormatTag, (SInt32 *)&hPageFormat, we) == noErr) && (hPageFormat != nil))
@@ -756,30 +761,6 @@ OSStatus WriteTextFile(const FSSpec *pFileSpec, WEReference we)
         */
         DetachResource(hPageFormat);
     }
-#else
-    /*	write the print record, if any
-     */
-    if ((WEGetUserInfo(kPrintRecordTag, (SInt32 *)&hPrintRecord, we) == noErr) && (hPrintRecord != nil))
-    {
-        /*	make the print record a resource handle
-         */
-        AddResource(hPrintRecord, kTypePrintRecord, 128, "\pprint record");
-        if ((err = ResError()) != noErr)
-        {
-            goto cleanup;
-        }
-
-        /*	mark it as changed and write it to the resource file
-         */
-        ChangedResource(hPrintRecord);
-        WriteResource(hPrintRecord);
-
-        /*	detach the handle from the resource file so it won't be disposed
-            when the resource file is closed
-        */
-        DetachResource(hPrintRecord);
-    }
-#endif
 
     /*	write the page margin record
      */
