@@ -1085,6 +1085,7 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (PRIMVAL(op))
     {
+        PROTECT(expr);
         PROTECT(env = allocVector(VECSXP, 2));
         PROTECT(encl = allocVector(STRSXP, 2));
         STRING(encl)[0] = mkChar("value");
@@ -1093,7 +1094,7 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         VECTOR(env)[1] = ScalarLogical(R_Visible);
         setAttrib(env, R_NamesSymbol, encl);
         expr = env;
-        UNPROTECT(2);
+        UNPROTECT(3);
     }
     UNPROTECT(1);
     return expr;
