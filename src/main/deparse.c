@@ -1114,7 +1114,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             print2buff("logical(0)", d);
             break;
         case INTSXP:
-            print2buff("numeric(0)", d);
+            print2buff("integer(0)", d);
             break;
         case REALSXP:
             print2buff("numeric(0)", d);
@@ -1129,10 +1129,16 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     }
     else if (tlen == 1)
     {
+        if (TYPEOF(vector) == INTSXP)
+            print2buff("as.integer(", d);
         scalar2buff(vector, d);
+        if (TYPEOF(vector) == INTSXP)
+            print2buff(")", d);
     }
     else
     {
+        if (TYPEOF(vector) == INTSXP)
+            print2buff("as.integer(", d);
         print2buff("c(", d);
         for (i = 0; i < tlen; i++)
         {
@@ -1144,6 +1150,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 writeline(d);
         }
         print2buff(")", d);
+        if (TYPEOF(vector) == INTSXP)
+            print2buff(")", d);
     }
 }
 
