@@ -251,7 +251,6 @@ static int AddDLL(char *path, int asLocal, int now)
 }
 
 /*
-
    Computes the flag to be passed as the second argument to dlopen(),
    controlling whether the local or global symbol integration
    and lazy or eager resolution of the undefined symbols.
@@ -266,27 +265,31 @@ static int AddDLL(char *path, int asLocal, int now)
  */
 static int computeDLOpenFlag(int asLocal, int now)
 {
+#if !defined(RTLD_LOCAL) || !defined(RTLD_GLOBAL) || !defined(RTLD_NOW) || !defined(RTLD_LAZY)
     static char *warningMessages[] = {
         "Explicit local dynamic loading not supported on this platform. Using default.",
         "Explicit global dynamic loading not supported on this platform. Using default.",
         "Explicit non-lazy dynamic loading not supported on this platform. Using default.",
         "Explicit lazy dynamic loading not supported on this platform. Using default."};
     /* Define a local macro for issuing the warnings.
-       This allows us to redefine it easily so that it only emits the warning
-       once as in
-           DL_WARN(i) if(warningMessages[i]) {\
-                       warning(warningMessages[i]); \
-                       warningMessages[i] = NULL; \
-                      }
-       or to control the emission via the options currently in effect at call time.
-     */
+       This allows us to redefine it easily so that it only emits the
+       warning once as in
+         DL_WARN(i) if(warningMessages[i]) {\
+                     warning(warningMessages[i]); \
+                     warningMessages[i] = NULL; \
+                    }
+       or to control the emission via the options currently in effect at
+       call time.
+       */
 #define DL_WARN(i)                                                                                                     \
     if (asInteger(GetOption(install("warn"), R_NilValue)) == 1 ||                                                      \
         asInteger(GetOption(install("verbose"), R_NilValue)) > 0)                                                      \
         warning(warningMessages[i]);
+#endif
 
-    int openFlag = 0; /* Default value so no-ops for undefined flags should do nothing
-                         in the resulting dlopen(). */
+    int openFlag = 0; /* Default value so no-ops for undefined
+             flags should do nothing in the
+             resulting dlopen(). */
 
     if (asLocal != 0)
     {
