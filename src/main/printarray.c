@@ -480,7 +480,7 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
             MatrixRowLabel(rl, i, rlabw, lbloff);
             for (j = jmin; j < jmax; j++)
             {
-                Rprintf("%*s%s", R_print.gap, "", EncodeString(CHAR(x[i + j * r]), w[j], quote, right));
+                Rprintf("%*s%s", R_print.gap, "", EncodeString(x[i + j * r], w[j], quote, right));
             }
         }
         Rprintf("\n");

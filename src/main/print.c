@@ -593,7 +593,7 @@ void PrintValueRec(SEXP s, SEXP env)
         break;
     case CHARSXP:
         Rprintf("<CHARSXP: ");
-        Rprintf(EncodeString(CHAR(s), 0, '"', Rprt_adj_left));
+        Rprintf(EncodeString(s, 0, '"', Rprt_adj_left));
         Rprintf(">\n");
         break;
     case EXPRSXP:
@@ -746,9 +746,9 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
             if (TAG(a) == R_CommentSymbol || TAG(a) == R_SourceSymbol)
                 goto nextattr;
             if (useSlots)
-                sprintf(ptag, "Slot \"%s\":", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, Rprt_adj_left));
+                sprintf(ptag, "Slot \"%s\":", EncodeString(PRINTNAME(TAG(a)), 0, 0, Rprt_adj_left));
             else
-                sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, Rprt_adj_left));
+                sprintf(ptag, "attr(,\"%s\")", EncodeString(PRINTNAME(TAG(a)), 0, 0, Rprt_adj_left));
             Rprintf("%s", tagbuf);
             Rprintf("\n");
             if (isObject(CAR(a)))

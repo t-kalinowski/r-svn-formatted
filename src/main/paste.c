@@ -249,7 +249,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(y = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            strp = EncodeString(CHAR(STRING_ELT(x, i)), w, 0, Rprt_adj_left);
+            strp = EncodeString(STRING_ELT(x, i), w, 0, Rprt_adj_left);
             SET_STRING_ELT(y, i, mkChar(strp));
         }
         UNPROTECT(1);
