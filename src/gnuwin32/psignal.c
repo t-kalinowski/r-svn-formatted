@@ -12,7 +12,6 @@
 #include "psignal.h"
 
 /* Define stuff ************************************************************ */
-
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -135,6 +134,7 @@ static BOOL CALLBACK hwIntrHandler(DWORD type)
         */
         raise(SIGBREAK);
         ret = TRUE;
+        break;
     default:
         ret = FALSE;
     }
