@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997, 1998  Robert Gentleman, Ross Ihaka and the R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,7 +27,6 @@
  *
  *	"The horror, the horror ..."
  *		Marlon Brando in Apocalypse Now.
- *
  */
 
 #include "Defn.h"
@@ -95,7 +95,7 @@ static void BoundsCheck(double x, double a, double b, char *s)
 static int Specify(char *what, SEXP value, DevDesc *dd)
 {
     double x;
-    int ix;
+    int ix = 0;
 
     if (streql(what, "adj"))
     {
@@ -290,7 +290,6 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     }
     else if (streql(what, "fin"))
     {
-        double x, y;
         value = coerceVector(value, REALSXP);
         lengthCheck(what, value, 2);
         dd->gp.defaultFigure = dd->dp.defaultFigure = 0;
@@ -439,7 +438,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     }
     else if (streql(what, "mfrow"))
     {
-        int i, j, nrow, ncol;
+        int nrow, ncol;
         value = coerceVector(value, INTSXP);
         lengthCheck(what, value, 2);
         posIntCheck(INTEGER(value)[0], what);
@@ -472,7 +471,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     }
     else if (streql(what, "mfcol"))
     {
-        int i, j, nrow, ncol;
+        int nrow, ncol;
         value = coerceVector(value, INTSXP);
         lengthCheck(what, value, 2);
         posIntCheck(INTEGER(value)[0], what);
@@ -505,7 +504,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     }
     else if (streql(what, "mfg"))
     {
-        int i, j, row, col, nrow, ncol;
+        int row, col, nrow, ncol;
         value = coerceVector(value, INTSXP);
         lengthCheck(what, value, 4);
         posIntCheck(INTEGER(value)[0], what);
@@ -884,13 +883,14 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->dp.ylog = dd->gp.ylog = (ix != 0);
     }
     /* else errorcall(gcall, "parameter \"%s\" is not setable\n", what); */
+    return 0; /* never used; to keep -Wall happy */
 }
 
 /* Specify2 -- parameters as arguments from higher-level graphics functions */
 void Specify2(char *what, SEXP value, DevDesc *dd)
 {
     double x;
-    int ix;
+    int ix = 0;
 
     if (streql(what, "adj"))
     {
@@ -1744,10 +1744,20 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ap, vp, value;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    DevDesc *dd;
 
     if (NoDevices())
-        errorcall(call, "No device is active\n");
+    {
+        SEXP defdev = GetOption(install("device"), R_NilValue);
+        if (isString(defdev) && length(defdev) > 0)
+        {
+            PROTECT(defdev = lang1(install(CHAR(STRING(defdev)[0]))));
+        }
+        else
+            errorcall(call, "No active or default device\n");
+        eval(defdev, R_GlobalEnv);
+        UNPROTECT(1);
+    }
 
     gcall = call;
     checkArity(op, args);
@@ -1755,6 +1765,7 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isList(CAR(args)))
         errorcall(call, "invalid parameter passed to \"par\"\n");
 
+    dd = CurrentDevice();
     args = CAR(args);
     PROTECT(value = allocList(length(args)));
     for (vp = value, ap = args; ap != R_NilValue; vp = CDR(vp), ap = CDR(ap))
