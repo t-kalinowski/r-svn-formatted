@@ -65,7 +65,7 @@ R_InternetRoutines *R_setInternetRoutines(R_InternetRoutines *routines)
 }
 
 #ifdef Win32
-extern UseInternet2;
+extern int UseInternet2;
 #endif
 
 static void internet_Init(void)
