@@ -226,6 +226,7 @@ static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level)
     case 1915: /* vector     <- complex    */
     case 1916: /* vector     <- character  */
     case 1920: /* vector     <- expression  */
+    case 1922: /* vector     <- eternal pointer */
     case 1903:
     case 1907:
     case 1908:
@@ -1562,6 +1563,7 @@ SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         case 1915: /* vector     <- complex    */
         case 1916: /* vector     <- character  */
         case 1920: /* vector     <- expression */
+        case 1922: /* vector     <- external pointer */
         case 1903:
         case 1907:
         case 1908:

@@ -1320,6 +1320,7 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         case DOTSXP:
         case ANYSXP:
         case EXPRSXP:
+        case EXTPTRSXP:
             LOGICAL(ans)[0] = 1;
             break;
         default:
