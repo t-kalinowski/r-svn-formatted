@@ -47,6 +47,12 @@ void GetQuartzParameters(double *width, double *height, double *ps, char *family
     ptr_GetQuartzParameters(width, height, ps, family, antialias, autorefresh);
 }
 
+#define kOnScreen 0
+#define kOnFilePDF 1
+#define kOnFilePICT 2
+#define kOnClipboard 3
+#define kOnPrinter 4
+
 /***************************************************************************/
 /* Each driver can have its own device-specic graphical                    */
 /* parameters and resources.  these should be wrapped                      */
@@ -78,9 +84,11 @@ typedef struct
     Boolean Antialias; /* Use Antialiasing */
     Boolean Autorefresh;
     char *family;
-    CGContextRef context; /* This is the Contetx used by Quartz */
+    CGContextRef context;    /* This is the context used by Quartz for OnScreen drawings */
+    CGContextRef auxcontext; /* Additional context used for: cliboard, printer, file     */
     double xscale;
     double yscale;
+    int where;
 } QuartzDesc;
 
 OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
@@ -302,6 +310,7 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
     else
         xd->family = NULL;
 
+    xd->where = kOnScreen;
     err = SetCGContext(xd);
 
     /* This scale factor is needed in MetricInfo */

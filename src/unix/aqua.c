@@ -74,10 +74,10 @@ static DL_FUNC Rdlsym(void *handle, char const *name)
 
 extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_FlushConsole, ptr_R_ClearerrConsole,
     ptr_R_StartConsole, ptr_R_ShowFiles, ptr_R_loadhistory, ptr_R_savehistory, ptr_R_ChooseFile, ptr_R_CleanUp,
-    ptr_R_ShowMessage, ptr_R_Suicide;
+    ptr_R_ShowMessage, ptr_R_Suicide, ptr_R_Busy;
 
 DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_Raqua_Edit, ptr_do_dataentry, ptr_do_browsepkgs,
-    ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser;
+    ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_showarrow, ptr_hidearrow;
 
 void R_ProcessEvents(void);
 
@@ -184,6 +184,15 @@ void R_load_aqua_shlib(void)
     ptr_do_hsbrowser = Rdlsym(handle, "Raqua_helpsearchbrowser");
     if (!ptr_do_hsbrowser)
         R_Suicide("Cannot load Raqua_helpsearchbrowser");
+    ptr_showarrow = Rdlsym(handle, "Raqua_showarrow");
+    if (!ptr_showarrow)
+        R_Suicide("Cannot load Raqua_showarrow");
+    ptr_hidearrow = Rdlsym(handle, "Raqua_hidearrow");
+    if (!ptr_hidearrow)
+        R_Suicide("Cannot load Raqua_hidearrow");
+    ptr_R_Busy = Rdlsym(handle, "Raqua_Busy");
+    if (!ptr_R_Busy)
+        R_Suicide("Cannot load Raqua_Busy");
 
 #ifdef AQUA_POLLED_EVENTS
     otherPolledEventHandler = R_PolledEvents;
@@ -228,8 +237,17 @@ SEXP do_flushconsole(SEXP call, SEXP op, SEXP args, SEXP env)
 
 void R_ProcessEvents(void)
 {
+    EventRef theEvent;
+    EventTargetRef theTarget = GetEventDispatcherTarget();
+
     if (CheckEventQueueForUserCancel())
         onintr();
+
+    if (ReceiveNextEvent(0, NULL, kEventDurationNoWait, true, &theEvent) == noErr)
+    {
+        SendEventToEventTarget(theEvent, theTarget);
+        ReleaseEvent(theEvent);
+    }
 }
 
 #ifdef AQUA_POLLED_EVENTS
