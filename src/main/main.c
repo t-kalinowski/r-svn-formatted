@@ -389,6 +389,8 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
     signal(SIGINT, onintr);
+    signal(SIGUSR1, onsigusr1);
+    signal(SIGUSR2, onsigusr2);
     if (!doneit)
     {
         doneit = 1;
@@ -409,6 +411,8 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
     signal(SIGINT, onintr);
+    signal(SIGUSR1, onsigusr1);
+    signal(SIGUSR2, onsigusr2);
     if (!doneit)
     {
         doneit = 1;
@@ -466,6 +470,8 @@ void run_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
     signal(SIGINT, onintr);
+    signal(SIGUSR1, onsigusr1);
+    signal(SIGUSR2, onsigusr2);
 
     R_ReplConsole(R_GlobalEnv, 0, 0);
 }

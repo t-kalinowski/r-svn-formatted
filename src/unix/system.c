@@ -512,15 +512,15 @@ int main(int ac, char **av)
 
 /* Declarations to keep f77 happy */
 
-int MAIN_()
+int MAIN_(int ac, char **av)
 {
     return 0;
 }
-int MAIN__()
+int MAIN__(int ac, char **av)
 {
     return 0;
 }
-int __main()
+int __main(int ac, char **av)
 {
     return 0;
 }
