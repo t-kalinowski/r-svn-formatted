@@ -1380,6 +1380,9 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
                 errorcall(call, "variable lengths differ");
         }
     }
+    else
+        nr = length(row_names);
+
     PROTECT(data);
     PROTECT(subset);
 
