@@ -1218,32 +1218,20 @@ void gl_histadd(char *buf)
         p++;
     if (*p)
     {
-#ifdef SKIP_DUPLICATES
-        int len;
-        len = strlen(buf);
-        if (strchr(p, '\n')) /* previously line already has NL stripped */
-            len--;
-        if ((prev == 0) || ((int)strlen(prev) != len) || strncmp(prev, buf, (size_t)len) != 0)
-        {
-            hist_buf[hist_last] = hist_save(buf);
-            prev = hist_buf[hist_last];
-            hist_last = (hist_last + 1) % HIST_SIZE;
-            if (hist_buf[hist_last] && *hist_buf[hist_last])
-            {
-                free(hist_buf[hist_last]);
-            }
-            hist_buf[hist_last] = "";
-        }
-#else
         hist_buf[hist_last] = hist_save(buf);
         prev = hist_buf[hist_last];
-        hist_last = (hist_last + 1) % HIST_SIZE;
-        if (hist_buf[hist_last] && *hist_buf[hist_last])
+        hist_last = hist_last + 1;
+        if (hist_last > HIST_SIZE - 1)
         {
-            free(hist_buf[hist_last]);
+            int i, size = HIST_SIZE + 512;
+            hist_buf = (char **)realloc(hist_buf, size * sizeof(char *));
+            if (!hist_buf)
+                gl_error("\n*** Error: gl_histadd() failed on realloc\n");
+            for (i = HIST_SIZE; i < size; i++)
+                hist_buf[i] = (char *)0;
+            HIST_SIZE = size;
         }
         hist_buf[hist_last] = "";
-#endif
     }
     hist_pos = hist_last;
 }
@@ -1252,9 +1240,9 @@ char *gl_hist_prev(void)
 /* loads previous hist entry into input buffer, sticks on first */
 {
     char *p = 0;
-    int next = (hist_pos - 1 + HIST_SIZE) % HIST_SIZE;
+    int next = hist_pos - 1;
 
-    if (hist_buf[hist_pos] != 0 && next != hist_last)
+    if (hist_buf[hist_pos] != 0 && next >= 0)
     {
         hist_pos = next;
         p = hist_buf[hist_pos];
@@ -1274,7 +1262,7 @@ char *gl_hist_next(void)
 
     if (hist_pos != hist_last)
     {
-        hist_pos = (hist_pos + 1) % HIST_SIZE;
+        hist_pos = hist_pos + 1;
         p = hist_buf[hist_pos];
     }
     if (p == 0)
@@ -1313,10 +1301,10 @@ static char *hist_save(char *p)
     return s;
 }
 
-void gl_savehistory(char *file)
+void gl_savehistory(char *file, int size)
 {
     FILE *fp;
-    int i;
+    int i, init;
 
     if (!file || !hist_last)
         return;
@@ -1328,16 +1316,10 @@ void gl_savehistory(char *file)
         R_ShowMessage(msg);
         return;
     }
-    /* It is a circular buffer */
-    for (i = hist_last; i < HIST_SIZE; i++)
-    {
-        if (!(hist_buf + i))
-            fprintf(fp, "%s\n", hist_buf[i]);
-    }
-    for (i = 0; i < hist_last; i++)
-    {
+    init = hist_last - size;
+    init = (init < 0) ? 0 : init;
+    for (i = init; i < hist_last; i++)
         fprintf(fp, "%s\n", hist_buf[i]);
-    }
     fclose(fp);
 }
 

@@ -433,7 +433,10 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
         if (R_DirtyImage)
             R_SaveGlobalEnv();
         if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
-            gl_savehistory(R_HistoryFile);
+        {
+            R_setupHistory(); /* re-read the history size and filename */
+            gl_savehistory(R_HistoryFile, R_HistorySize);
+        }
         break;
     case SA_NOSAVE:
         if (runLast)
@@ -761,6 +764,24 @@ char *PrintUsage(void)
     return msg;
 }
 
+void R_setupHistory()
+{
+    int value, ierr;
+    char *p;
+
+    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
+        R_HistoryFile = ".Rhistory";
+    R_HistorySize = 512;
+    if ((p = getenv("R_HISTSIZE")))
+    {
+        value = R_Decode2Long(p, &ierr);
+        if (ierr != 0 || value < 0)
+            R_ShowMessage("WARNING: invalid R_HISTSIZE ignored;");
+        else
+            R_HistorySize = value;
+    }
+}
+
 int cmdlineoptions(int ac, char **av)
 {
     int i, ierr;
@@ -1009,18 +1030,7 @@ int cmdlineoptions(int ac, char **av)
         (!(EhiWakeUp = CreateEvent(NULL, FALSE, FALSE, NULL)) || (_beginthread(ReaderThread, 0, NULL) == -1)))
         R_Suicide(_("impossible to create 'reader thread'; you must free some system resources"));
 
-    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
-        R_HistoryFile = ".Rhistory";
-    R_HistorySize = 512;
-    if ((p = getenv("R_HISTSIZE")))
-    {
-        int value, ierr;
-        value = R_Decode2Long(p, &ierr);
-        if (ierr != 0 || value < 0)
-            REprintf(_("WARNING: invalid R_HISTSIZE ignored;"));
-        else
-            R_HistorySize = value;
-    }
+    R_setupHistory();
     return 0;
 }
 

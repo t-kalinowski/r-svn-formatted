@@ -673,7 +673,10 @@ SEXP do_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(sfile) || LENGTH(sfile) < 1)
         errorcall(call, _("invalid 'file' argument"));
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
-        gl_savehistory(CHAR(STRING_ELT(sfile, 0)));
+    {
+        R_setupHistory(); /* re-read the history size */
+        gl_savehistory(CHAR(STRING_ELT(sfile, 0)), R_HistorySize);
+    }
     else
         errorcall(call, _("savehistory can only be used in Rgui and Rterm"));
     return R_NilValue;

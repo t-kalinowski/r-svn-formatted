@@ -185,7 +185,8 @@ static void menusavehistory(control m)
     if (fn)
     {
         fixslash(fn);
-        gl_savehistory(fn);
+        R_setupHistory(); /* re-read the history size */
+        gl_savehistory(fn, R_HistorySize);
     }
 }
 
