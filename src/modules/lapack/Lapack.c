@@ -390,7 +390,7 @@ static SEXP modLa_zgesv(SEXP A, SEXP Bin)
 static SEXP modLa_zgeqp3(SEXP Ain)
 {
 #ifdef HAVE_DOUBLE_COMPLEX
-    int m, n, *Adims, info, lwork;
+    int i, m, n, *Adims, info, lwork;
     Rcomplex *work, tmp;
     double *rwork;
     SEXP val, nm, jpvt, tau, rank, A;
@@ -404,6 +404,8 @@ static SEXP modLa_zgeqp3(SEXP Ain)
     rwork = (double *)R_alloc(2 * n, sizeof(double));
 
     jpvt = PROTECT(allocVector(INTSXP, n));
+    for (i = 0; i < n; i++)
+        INTEGER(jpvt)[i] = 0;
     tau = PROTECT(allocVector(CPLXSXP, m < n ? m : n));
     lwork = -1;
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), &tmp, &lwork, rwork, &info);
@@ -795,7 +797,7 @@ static SEXP modLa_dgesv(SEXP A, SEXP Bin)
 
 static SEXP modLa_dgeqp3(SEXP Ain)
 {
-    int m, n, *Adims, info, lwork;
+    int i, m, n, *Adims, info, lwork;
     double *work, tmp;
     double *rwork;
     SEXP val, nm, jpvt, tau, rank, A;
@@ -809,6 +811,8 @@ static SEXP modLa_dgeqp3(SEXP Ain)
     rwork = (double *)R_alloc(2 * n, sizeof(double));
 
     jpvt = PROTECT(allocVector(INTSXP, n));
+    for (i = 0; i < n; i++)
+        INTEGER(jpvt)[i] = 0;
     tau = PROTECT(allocVector(REALSXP, m < n ? m : n));
     lwork = -1;
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), &tmp, &lwork, rwork, &info);

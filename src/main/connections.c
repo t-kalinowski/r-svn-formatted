@@ -248,7 +248,7 @@ static Rboolean file_open(Rconnection con)
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
     if (mlen >= 2 && con->mode[1] == '+')
-        con->canread = TRUE;
+        con->canread = con->canwrite = TRUE;
     this->last_was_write = !con->canread;
     this->rpos = 0;
     if (con->canwrite)
