@@ -76,7 +76,7 @@ double rbinom(double nin, double pp)
     /* FIXING: Want this thread safe
        -- use as little (thread globals) as possible
     */
-    if (pp != psave)
+    if (pp != psave || n != nsave)
     {
         psave = pp;
         nsave = n;
