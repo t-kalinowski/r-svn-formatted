@@ -294,32 +294,24 @@ OSErr doSaveAsGraCommand(void)
  */
 OSErr doCopyAppNameResource(WindowPtr windowPtr)
 {
-
     OSType fileType;
     OSErr osError;
     SInt16 fileRefNum, WinIndex;
-
     WinIndex = isGraphicWindow(windowPtr);
     fileType = 'PICT';
-
     FSpCreateResFile(&(gGReference[WinIndex].fileFSSpec), 'ABFF', fileType, smSystemScript);
-
     osError = ResError();
     if (osError == noErr)
         fileRefNum = FSpOpenResFile(&gGReference[WinIndex].fileFSSpec, fsRdWrPerm);
-
     if (fileRefNum > 0)
         osError = doCopyGraResource('STR ', -16396, gAppResFileRefNum, fileRefNum);
     else
         osError = ResError();
-
     if (osError == noErr)
         CloseResFile(fileRefNum);
-
     osError = ResError();
     return (osError);
 }
-
 /* ××××××××××××××××××××× doCopyGraResource
  */
 OSErr doCopyGraResource(ResType resourceType, SInt16 resourceID, SInt16 sourceFileRefNum, SInt16 destFileRefNum)
@@ -328,11 +320,8 @@ OSErr doCopyGraResource(ResType resourceType, SInt16 resourceID, SInt16 sourceFi
     Str255 sourceResourceName;
     ResType ignoredType;
     SInt16 ignoredID;
-
     UseResFile(sourceFileRefNum);
-
     sourceResourceHdl = GetResource(resourceType, resourceID);
-
     if (sourceResourceHdl != NULL)
     {
         GetResInfo(sourceResourceHdl, &ignoredID, &ignoredType, sourceResourceName);
@@ -342,12 +331,9 @@ OSErr doCopyGraResource(ResType resourceType, SInt16 resourceID, SInt16 sourceFi
         if (ResError() == noErr)
             UpdateResFile(destFileRefNum);
     }
-
     ReleaseResource(sourceResourceHdl);
-
     return (ResError());
 }
-
 // *****************************************************************************
 // *
 // *	DoSelectDirectory( )
@@ -363,7 +349,6 @@ OSErr DoSelectDirectory(void)
     Handle pathName = NULL;
     char path[FILENAME_MAX];
     OSErr anErr = noErr;
-
     theErr = NavGetDefaultDialogOptions(&dialogOptions);
 
     GetIndString(dialogOptions.message, rAppStringsID, sChooseFolder);
@@ -373,7 +358,6 @@ OSErr DoSelectDirectory(void)
     theErr = NavChooseFolder(NULL, &theReply, &dialogOptions, eventUPP, NULL, nil);
 
     DisposeNavEventUPP(eventUPP);
-
     if (theReply.validRecord && theErr == noErr)
     {
         // grab the target FSSpec from the AEDescList:
@@ -381,7 +365,6 @@ OSErr DoSelectDirectory(void)
         AEKeyword keyWord;
         DescType typeCode;
         Size actualSize = 0;
-
         // there is only one selection here we get only the first AEDescList:
         if ((theErr = AEGetNthPtr(&(theReply.selection), 1, typeFSS, &keyWord, &typeCode, &finalFSSpec, sizeof(FSSpec),
                                   &actualSize)) == noErr)
