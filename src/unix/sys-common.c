@@ -237,6 +237,18 @@ SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
+static int Rputenv(char *str)
+{
+    char *buf;
+    buf = (char *)malloc((strlen(str) + 1) * sizeof(char));
+    if (!buf)
+        return 1;
+    strcpy(buf, str);
+    putenv(buf);
+    /* no free here: storage remains in use */
+    return 0;
+}
+
 SEXP do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
 #ifdef HAVE_PUTENV
@@ -252,7 +264,7 @@ SEXP do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
     {
-        LOGICAL(ans)[i] = putenv(CHAR(STRING_ELT(vars, i))) == 0;
+        LOGICAL(ans)[i] = Rputenv(CHAR(STRING_ELT(vars, i))) == 0;
     }
     UNPROTECT(1);
     return ans;
