@@ -5171,9 +5171,16 @@ typedef struct
     unsigned int pattern;
 } LineTYPE;
 
+/* LTY_... integer patterns are in ../include/Graphics.h ! */
 static LineTYPE linetype[] = {
-    {"blank", LTY_BLANK},     {"solid", LTY_SOLID},       {"dashed", LTY_DASHED},   {"dotted", LTY_DOTTED},
-    {"dotdash", LTY_DOTDASH}, {"longdash", LTY_LONGDASH}, {"twodash", LTY_TWODASH}, {NULL, 0},
+    {"blank", LTY_BLANK},       /* 0 */
+    {"solid", LTY_SOLID},       /* 1 */
+    {"dashed", LTY_DASHED},     /* 2 */
+    {"dotted", LTY_DOTTED},     /* 3 */
+    {"dotdash", LTY_DOTDASH},   /* 4 */
+    {"longdash", LTY_LONGDASH}, /* 5 */
+    {"twodash", LTY_TWODASH},   /* 6 */
+    {NULL, 0},
 };
 
 static int nlinetype = (sizeof(linetype) / sizeof(LineTYPE) - 2);
