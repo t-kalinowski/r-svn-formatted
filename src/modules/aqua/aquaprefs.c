@@ -82,6 +82,7 @@ void CallFontPanel(void);
 
 #define kCRANmirrorText 4501
 #define kBIOCmirrorText 4502
+#define kGlobalPackagesBox 4503
 
 #define kApplyPrefsButton 5000
 #define kCancelPrefsButton 5001
@@ -110,6 +111,7 @@ ControlID BufferingID = {kPrefControlsSig, kBufferingBox};
 ControlID BufferSizeID = {kPrefControlsSig, kBufferSizeSlider};
 ControlID CRANmirrorID = {kPrefControlsSig, kCRANmirrorText};
 ControlID BIOCmirrorID = {kPrefControlsSig, kBIOCmirrorText};
+ControlID GlobalPackagesID = {kPrefControlsSig, kGlobalPackagesBox};
 
 static char DefaultConsoleFontName[] = "Courier";
 static int DefaultConsoleFontSize = 14;
@@ -129,6 +131,7 @@ static int DefaultBuffering = 1;
 static int DefaultBufferSize = 10;
 static char DefaultCRANmirror[] = "http://cran.r-project.org";
 static char DefaultBIOCmirror[] = "http://www.bioconductor.org";
+static int DefaultGlobalPackages = 0;
 
 ControlRef GrabCRef(WindowRef theWindow, OSType theSig, SInt32 theNum);
 
@@ -162,7 +165,7 @@ CFStringRef appName, tabsizeKey, fontsizeKey, consolefontKey, devicefontKey;
 CFStringRef outfgKey, outbgKey, infgKey, inbgKey, bufferingKey, bufferSizeKey;
 CFStringRef devWidthKey, devHeightKey, devPSizeKey;
 CFStringRef devAutoRefreshKey, devAntialiasingKey, devOverrideRDefKey;
-CFStringRef CRANmirrorKey, BIOCmirrorKey;
+CFStringRef CRANmirrorKey, BIOCmirrorKey, GlobalPackagesKey;
 
 OSStatus InstallPrefsHandlers(void);
 void SetUpPrefSymbols(void);
@@ -189,6 +192,7 @@ void SetUpPrefSymbols(void)
     bufferSizeKey = CFSTR("Output Buffer Size");
     CRANmirrorKey = CFSTR("CRAN mirror");
     BIOCmirrorKey = CFSTR("BIOC mirror");
+    GlobalPackagesKey = CFSTR("Global Packages");
 }
 
 OSStatus InstallPrefsHandlers(void)
@@ -310,6 +314,7 @@ void SetDefaultPrefs(void)
     DefaultPrefs.BufferSize = DefaultBufferSize;
     strcpy(DefaultPrefs.CRANmirror, DefaultCRANmirror);
     strcpy(DefaultPrefs.BIOCmirror, DefaultBIOCmirror);
+    DefaultPrefs.GlobalPackages = DefaultGlobalPackages;
 }
 
 void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To)
@@ -333,6 +338,7 @@ void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To)
     To->BufferSize = From->BufferSize;
     strcpy(To->CRANmirror, From->CRANmirror);
     strcpy(To->BIOCmirror, From->BIOCmirror);
+    To->GlobalPackages = From->GlobalPackages;
 }
 
 void GetRPrefs(void)
@@ -345,7 +351,7 @@ void GetRPrefs(void)
     CFDataRef color;
     RGBColor fgout, bgout, fgin, bgin;
     char consolefont[255], devicefont[255], CRANmirror[255], BIOCmirror[255];
-    int autorefresh, antialiasing, overrideRdef, buffering, buffersize;
+    int autorefresh, antialiasing, overrideRdef, buffering, buffersize, globalpackages;
 
     SetUpPrefSymbols();
     SetDefaultPrefs();
@@ -600,6 +606,19 @@ void GetRPrefs(void)
 
     strcpy(CurrentPrefs.BIOCmirror, BIOCmirror);
 
+    /* new packages go in root */
+    value = CFPreferencesCopyAppValue(GlobalPackagesKey, appName);
+    if (value)
+    {
+        if (!CFNumberGetValue(value, kCFNumberIntType, &globalpackages))
+            globalpackages = DefaultPrefs.GlobalPackages;
+        CFRelease(value);
+    }
+    else
+        globalpackages = DefaultPrefs.GlobalPackages; /* set default value */
+
+    CurrentPrefs.GlobalPackages = globalpackages;
+
     SetUpPrefsWindow(&CurrentPrefs);
 }
 
@@ -684,6 +703,9 @@ void SetUpPrefsWindow(RAquaPrefsPointer Settings)
 
     GetControlByID(RPrefsWindow, &OverrideRDefBoxID, &myControl);
     SetControl32BitValue(myControl, Settings->OverrideRDefaults);
+
+    GetControlByID(RPrefsWindow, &GlobalPackagesID, &myControl);
+    SetControl32BitValue(myControl, Settings->GlobalPackages);
 }
 
 void SaveRPrefs(void)
@@ -695,7 +717,7 @@ void SaveRPrefs(void)
     CFDataRef color;
     RGBColor fgout, bgout, fgin, bgin;
     char consolefont[255], devicefont[255], cran[255], bioc[255];
-    int autorefresh, antialiasing, overrideRdef, buffering, buffersize;
+    int autorefresh, antialiasing, overrideRdef, buffering, buffersize, globalpackages;
 
     tabsize = CurrentPrefs.TabSize;
     fontsize = CurrentPrefs.ConsoleFontSize;
@@ -714,7 +736,7 @@ void SaveRPrefs(void)
     overrideRdef = CurrentPrefs.OverrideRDefaults;
     buffering = CurrentPrefs.Buffering;
     buffersize = CurrentPrefs.BufferSize;
-
+    globalpackages = CurrentPrefs.GlobalPackages;
     strcpy(bioc, CurrentPrefs.BIOCmirror);
     strcpy(cran, CurrentPrefs.CRANmirror);
 
@@ -786,6 +808,11 @@ void SaveRPrefs(void)
     text = CFStringCreateWithCString(NULL, bioc, kCFStringEncodingMacRoman);
     CFPreferencesSetAppValue(BIOCmirrorKey, text, appName);
     CFRelease(text);
+
+    /* global install of packages */
+    value = CFNumberCreate(NULL, kCFNumberIntType, &globalpackages);
+    CFPreferencesSetAppValue(GlobalPackagesKey, value, appName);
+    CFRelease(value);
 
     /* colors */
     color = CFDataCreate(NULL, (UInt8 *)&fgout, sizeof(fgout));
@@ -1119,6 +1146,9 @@ void GetDialogPrefs(void)
     GetControlData(controlField, 0, kControlEditTextCFStringTag, sizeof(CFStringRef), &text, &actualSize);
     CFStringGetCString(text, CurrentPrefs.BIOCmirror, 255, kCFStringEncodingMacRoman);
     CFRelease(text);
+
+    GetControlByID(RPrefsWindow, &GlobalPackagesID, &controlField);
+    CurrentPrefs.GlobalPackages = GetControl32BitValue(controlField);
 }
 
 void pickColor(RGBColor inColour, RGBColor *outColor)
