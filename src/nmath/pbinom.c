@@ -33,12 +33,13 @@ double pbinom(double x, double n, double p, int lower_tail, int log_p)
         ML_ERR_return_NAN;
 
 #endif
-    if (n != floor(n + 0.5))
+    if (R_D_nonint(n))
         ML_ERR_return_NAN;
+    n = R_D_forceint(n);
     if (n <= 0 || p < 0 || p > 1)
         ML_ERR_return_NAN;
 
-    x = floor(x);
+    x = floor(x + 1e-7);
     if (x < 0.0)
         return R_DT_0;
     if (n <= x)
