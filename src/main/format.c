@@ -386,9 +386,8 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
                     rneginf = 1;
             }
             else
-            {
 #endif
-
+            {
                 scientific(&(x[i].r), &sgn, &kpower, &nsig);
 
                 left = kpower + 1;
@@ -422,9 +421,8 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
                     iposinf = 1;
             }
             else
-            {
 #endif
-
+            {
                 scientific(&(x[i].i), &sgn, &kpower, &nsig);
 
                 left = kpower + 1;
