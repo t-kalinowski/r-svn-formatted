@@ -445,6 +445,7 @@ static int filbuf(char *buf, FILE *fp)
 
 SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    /* index.search(topic, path, file, .Platform$file.sep, type) */
     SEXP topic, path, indexname, sep, type;
     char linebuf[256], topicbuf[256], *p, ctype[256];
     int i, npath, ltopicbuf;
@@ -497,7 +498,7 @@ SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
                     else if (!strcmp(ctype, "latex"))
                         sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "latex",
                                 CHAR(STRING(sep)[0]), p, ".tex");
-                    else
+                    else /* type = "help" */
                         sprintf(topicbuf, "%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), ctype,
                                 CHAR(STRING(sep)[0]), p);
                     return mkString(topicbuf);
