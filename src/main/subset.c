@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2000   The R Development Core Team
+ *  Copyright (C) 1997-2003   The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -673,55 +673,66 @@ SEXP do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (nsubs > 1 && nsubs != ndims)
         errorcall(call, "incorrect number of subscripts");
 
-    if (isVector(x) || isList(x) || isLanguage(x))
-    {
+    if (!(isVector(x) || isList(x) || isLanguage(x)))
+        errorcall(call, R_MSG_ob_nonsub);
 
-        if (nsubs == 1)
+    if (nsubs == 1)
+    { /* vector indexing */
+        SEXP thesub = CAR(subs);
+        int i = -1, len = length(thesub);
+
+        /* new case in 1.7.0, one vector index for a list */
+        if (isVectorList(x) && length(CAR(subs)) > 1)
         {
-            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), length(x), /*partial ok*/ TRUE);
-            if (offset < 0 || offset >= length(x))
+            for (i = 0; i < len - 1; i++)
             {
-                /* a bold attempt to get the same */
-                /* behaviour for $ and [[ */
-                if (offset < 0 && (isNewList(x) || isExpression(x) || isList(x) || isLanguage(x)))
-                {
-                    UNPROTECT(1);
-                    return R_NilValue;
-                }
-                else
-                    errorcall(call, R_MSG_subs_o_b);
+                if (!isVectorList(x))
+                    error("recursive indexing failed at level %d\n", i + 1);
+                offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), length(x), /*partial ok*/ TRUE, i);
+                x = VECTOR_ELT(x, offset);
             }
         }
-        else
+        offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), length(x), /*partial ok*/ TRUE, i);
+        if (offset < 0 || offset >= length(x))
         {
-            /* Here we use the fact that: */
-            /* CAR(R_NilValue) = R_NilValue */
-            /* CDR(R_NilValue) = R_NilValue */
-
-            int ndn; /* Number of dimnames. Unlikely to be anything but
-                            0 or nsubs, but just in case... */
-
-            PROTECT(indx = allocVector(INTSXP, nsubs));
-            dimnames = getAttrib(x, R_DimNamesSymbol);
-            ndn = length(dimnames);
-            for (i = 0; i < nsubs; i++)
+            /* a bold attempt to get the same */
+            /* behaviour for $ and [[ */
+            if (offset < 0 && (isNewList(x) || isExpression(x) || isList(x) || isLanguage(x)))
             {
-                INTEGER(indx)
-                [i] = get1index(CAR(subs), (i < ndn) ? VECTOR_ELT(dimnames, i) : R_NilValue, INTEGER(indx)[i],
-                                /*partial ok*/ TRUE);
-                subs = CDR(subs);
-                if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
-                    errorcall(call, R_MSG_subs_o_b);
+                UNPROTECT(1);
+                return R_NilValue;
             }
-            offset = 0;
-            for (i = (nsubs - 1); i > 0; i--)
-                offset = (offset + INTEGER(indx)[i]) * INTEGER(dims)[i - 1];
-            offset += INTEGER(indx)[0];
-            UNPROTECT(1);
+            else
+                errorcall(call, R_MSG_subs_o_b);
         }
     }
     else
-        errorcall(call, R_MSG_ob_nonsub);
+    { /* matrix indexing */
+        /* Here we use the fact that: */
+        /* CAR(R_NilValue) = R_NilValue */
+        /* CDR(R_NilValue) = R_NilValue */
+
+        int ndn; /* Number of dimnames. Unlikely to be anything but
+                0 or nsubs, but just in case... */
+
+        PROTECT(indx = allocVector(INTSXP, nsubs));
+        dimnames = getAttrib(x, R_DimNamesSymbol);
+        ndn = length(dimnames);
+        for (i = 0; i < nsubs; i++)
+        {
+            INTEGER(indx)
+            [i] = get1index(CAR(subs), (i < ndn) ? VECTOR_ELT(dimnames, i) : R_NilValue, INTEGER(indx)[i],
+                            /*partial ok*/ TRUE, -1);
+            subs = CDR(subs);
+            if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
+                errorcall(call, R_MSG_subs_o_b);
+        }
+        offset = 0;
+        for (i = (nsubs - 1); i > 0; i--)
+            offset = (offset + INTEGER(indx)[i]) * INTEGER(dims)[i - 1];
+        offset += INTEGER(indx)[0];
+        UNPROTECT(1);
+    }
 
     if (isPairList(x))
     {
