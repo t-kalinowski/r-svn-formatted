@@ -1980,8 +1980,8 @@ Rboolean R_GetX11Image(int d, XImage **pximage, int *pwidth, int *pheight)
         return FALSE;
     else
     {
-        NewDevDesc *dd = (NewDevDesc *)(GetDevice(d));
-        newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
+        NewDevDesc *dd = ((GEDevDesc *)GetDevice(d))->dev;
+        newX11Desc *xd = dd->deviceSpecific;
 
         *pximage = XGetImage(display, xd->window, 0, 0, xd->windowWidth, xd->windowHeight, AllPlanes, ZPixmap);
         *pwidth = xd->windowWidth;
