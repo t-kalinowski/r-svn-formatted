@@ -27,13 +27,21 @@
  *
  *	"The horror, the horror ..."
  *		Marlon Brando in Apocalypse Now.
+ *
+ * Main functions:
+ *	do_par(.)	and
+ *	do_layout(.)	implement R's  par(.), layout()rely on
+ *
+ *	Specify(.)	[ par(what = value) ]
+ *	Specify2(.)	[ <highlevelplot>(what = value) ]
+ *	Query(.)	[ par(what) ]
  */
 
 #include "Defn.h"
 #include "Mathlib.h"
-#include "Graphics.h"
+#include "Graphics.h" /* ../include/Graphics.h :	 "GPar" structure + COMMENTS */
 
-static SEXP gcall;
+static SEXP gcall; /* par(.)'s call */
 
 SEXP LTYget(int);
 char *col2name(unsigned int);
@@ -85,12 +93,14 @@ static void BoundsCheck(double x, double a, double b, char *s)
         par_error(s);
 }
 
-/* when any one of the layout parameters (which can only be set */
-/* via par(...)) is modified, must call GReset() to update the */
-/* layout and the transformations between coordinate systems */
+/* when any one of the layout parameters (which can only be set via par(...))
+ * is modified, must call GReset()
+ * to update the layout and the transformations between coordinate systems
+ */
 
-/* If you ADD a NEW par then do NOT forget to update */
-/* the code in ../library/base/R/par.R */
+/* If you ADD a NEW par then do NOT forget to update
+ * the code in ../library/base/R/par.R
+ */
 
 static int Specify(char *what, SEXP value, DevDesc *dd)
 {
@@ -700,10 +710,12 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         else
             par_error(what);
     }
-    /* NOTE: tck and tcl must be treated in parallel. */
-    /* If one is NA the other must be non NA.  If tcl */
-    /* is NA then setting tck to NA will reset tck to */
-    /* its initial default value.  See also graphics.c */
+    /* NOTE: tck and tcl must be treated in parallel.
+     * If one is NA, the other must be non NA.
+     * If tcl is NA then setting tck to NA will reset tck to
+     * its initial default value.
+     * See also graphics.c
+     */
     else if (streql(what, "tck"))
     {
         lengthCheck(what, value, 1);
@@ -882,7 +894,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
             par_error(what);
         dd->dp.ylog = dd->gp.ylog = (ix != 0);
     }
-    /* else errorcall(gcall, "parameter \"%s\" is not setable\n", what); */
+    else
+        warningcall(gcall, "parameter \"%s\" can't be set\n", what);
     return 0; /* never used; to keep -Wall happy */
 }
 
@@ -1295,10 +1308,11 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
         else
             par_error(what);
     }
-    /* else errorcall(gcall, "parameter \"%s\" is not setable\n", what); */
-}
+    else
+        warning("parameter \"%s\" couldn't be set in high-level plot() function\n", what);
+} /* end Specify2(.) */
 
-/* Do NOT forget to update  ../library/base/R/par if you  ADD a NEW  par !! */
+/* Do NOT forget to update  ../library/base/R/par.R if you  ADD a NEW  par !! */
 
 static SEXP Query(char *what, DevDesc *dd)
 {
