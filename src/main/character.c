@@ -20,18 +20,17 @@
  */
 
 /* <UTF8-FIXME>
-   Semantics of nchar() need to be fixed.
-   substr() should work at char not byte level.
-   Optimized cases of strsplit() need revising.
    abbreviate needs to be fixed.
-   make.names works at byte not char level.
-   Internal fgrep works at byte not char level.
+   regexpr returns match length in bytes not chars.
    chartr/tolower/toupper work at byte not char level.
-   charToRaw/rawToChar should work at byte level, so is OK.
 
    Changes already made:
    Regex code should be OK, substitution does ASCII comparisons only.
+   charToRaw/rawToChar should work at byte level, so is OK.
    agrep needed to test for non-ASCII input.
+   make.names worked at byte not char level.
+   substr() should work at char not byte level.
+   Semantics of nchar() have been fixed.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -41,6 +40,12 @@
 #include <sys/types.h>
 
 #include "Defn.h"
+
+#ifdef SUPPORT_UTF8
+#include <wchar.h>
+#include <wctype.h>
+#include <R_ext/RS.h>
+#endif
 
 /* The next must come after other header files to redefine RE_DUP_MAX */
 #ifdef USE_SYSTEM_REGEX
@@ -68,22 +73,60 @@
 
 SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP d, s, x;
+    SEXP d, s, x, stype;
     int i, len;
+    char *type;
 
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), STRSXP));
     if (!isString(x))
         errorcall(call, "nchar() requires a character vector");
     len = LENGTH(x);
+    stype = CADR(args);
+    if (!isString(stype) || LENGTH(stype) != 1)
+        errorcall(call, "invalid 'type' arg");
+    type = CHAR(STRING_ELT(stype, 0));
     PROTECT(s = allocVector(INTSXP, len));
     for (i = 0; i < len; i++)
     {
-        /* NA_STRINGS are treated the same way, for now
-        ch = STRING_ELT(x, i);
-        give print width for an NA_STRING
-        INTEGER(s)[i] = (ch == NA_STRING) ? R_print.na_width : length(ch); */
-        INTEGER(s)[i] = length(STRING_ELT(x, i));
+        if (strcmp(type, "bytes") == 0)
+        {
+            /* NA_STRINGS are treated the same way, for now
+            ch = STRING_ELT(x, i);
+            give print width for an NA_STRING
+            INTEGER(s)[i] = (ch == NA_STRING) ? R_print.na_width : length(ch); */
+            INTEGER(s)[i] = length(STRING_ELT(x, i));
+        }
+        else if (strcmp(type, "chars") == 0)
+        {
+            if (STRING_ELT(x, i) == NA_STRING)
+            {
+                INTEGER(s)[i] = NA_INTEGER;
+            }
+            else
+            {
+#ifdef SUPPORT_UTF8
+                INTEGER(s)[i] = mbstowcs(NULL, CHAR(STRING_ELT(x, i)), 0);
+#else
+                INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
+#endif
+            }
+        }
+        else
+        {
+            if (STRING_ELT(x, i) == NA_STRING)
+            {
+                INTEGER(s)[i] = NA_INTEGER;
+            }
+            else
+            {
+#ifdef HAVE_WCSWIDTH
+                INTEGER(s)[i] = wcswidth(CHAR(STRING_ELT(x, i)), 2147483647);
+#else
+                INTEGER(s)[i] = NA_INTEGER;
+#endif
+            }
+        }
     }
     if ((d = getAttrib(x, R_DimSymbol)) != R_NilValue)
         setAttrib(s, R_DimSymbol, d);
@@ -132,9 +175,23 @@ static void substr(char *buf, char *str, int sa, int so)
 {
     /* Store the substring	str [sa:so]  into buf[] */
     int i;
-    str += (sa - 1);
-    for (i = 0; i <= (so - sa); i++)
-        *buf++ = *str++;
+#ifdef SUPPORT_UTF8
+    if (utf8locale && !utf8strIsASCII(buf))
+    {
+        int j, used;
+        for (i = 1; i < sa; i++)
+            str += mbrtowc(NULL, str, MB_CUR_MAX, NULL);
+        for (i = sa; i <= so; i++)
+        {
+            used = mbrtowc(NULL, str, MB_CUR_MAX, NULL);
+            for (j = 0; j < used; j++)
+                *buf++ = *str++;
+        }
+    }
+    else
+#endif
+        for (str += (sa - 1), i = sa; i <= so; i++)
+            *buf++ = *str++;
     *buf = '\0';
 }
 
@@ -194,11 +251,27 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void substrset(char *buf, char *str, int sa, int so)
 {
-    /* Replace the substring str [sa:so] in buf[] */
-    int i;
-    buf += (sa - 1);
-    for (i = 0; i <= (so - sa); i++)
-        *buf++ = *str++;
+/* Replace the substring str [sa:so] in buf[] */
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+    { /* probably not worth optimizing for non-utf8 strings */
+        int i, in = 0, out = 0;
+
+        for (i = 1; i < sa; i++)
+            buf += mbrtowc(NULL, buf, MB_CUR_MAX, NULL);
+        /* now work out how many bytes to replace by how many */
+        for (i = sa; i <= so; i++)
+        {
+            in += mbrtowc(NULL, str + in, MB_CUR_MAX, NULL);
+            out += mbrtowc(NULL, buf + out, MB_CUR_MAX, NULL);
+        }
+        if (in != out)
+            memmove(buf + in, buf + out, strlen(buf + out) + 1);
+        memcpy(buf, str, in);
+    }
+    else
+#endif
+        memcpy(buf + sa - 1, str, so - sa + 1);
 }
 
 SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -249,9 +322,13 @@ SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
-                AllocBuffer(slen);
-                strcpy(buff, CHAR(STRING_ELT(x, i)));
                 vlen = strlen(CHAR(STRING_ELT(value, i % v)));
+#ifdef SUPPORT_UTF8
+                AllocBuffer(slen + vlen); /* might expand under UTF-8 */
+#else
+                AllocBuffer(slen);
+#endif
+                strcpy(buff, CHAR(STRING_ELT(x, i)));
                 if (stop > start + vlen - 1)
                     stop = start + vlen - 1;
                 substrset(buff, CHAR(STRING_ELT(value, i % v)), start, stop);
@@ -347,6 +424,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             ntok = 0;
             if (fixed)
             {
+                /* This is UTF-8 safe since it compares whole strings */
                 laststart = buf;
                 for (bufp = buf; bufp - buf < strlen(buf); bufp++)
                 {
@@ -371,8 +449,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     while (pcre_exec(re_pcre, re_pe, bufp, strlen(bufp), 0, 0, ovector, 30) >= 0)
                     {
-                        /* Empty matches get the next char, so move by
-                           one. */
+                        /* Empty matches get the next char, so move by one. */
                         bufp += MAX(ovector[1], 1);
                         ntok++;
                         if (*bufp == '\0')
@@ -416,6 +493,9 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (fixed)
                 {
+                    /* This is UTF-8 safe since it compares whole strings,
+                       but it would be more efficient to skip along by chars.
+                     */
                     for (; bufp - buf < strlen(buf); bufp++)
                     {
                         if ((slen == 1 && *bufp != *split) || (slen > 1 && strncmp(bufp, split, slen)))
@@ -694,13 +774,38 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
         /* need to prefix names not beginning with alpha or ., as
            well as . followed by a number */
         need_prefix = FALSE;
-        if (this[0] == '.')
+#ifdef SUPPORT_UTF8
+        if (utf8locale)
         {
-            if (l >= 1 && isdigit((int)this[1]))
+            int nc = l, used;
+            wchar_t wc;
+            p = this;
+            used = mbrtowc(&wc, p, nc, NULL);
+            p += used;
+            nc -= used;
+            if (wc == L'.')
+            {
+                if (nc > 0)
+                {
+                    mbrtowc(&wc, p, nc, NULL);
+                    if (!iswalpha(wc))
+                        need_prefix = TRUE;
+                }
+            }
+            else if (!iswalpha(wc))
                 need_prefix = TRUE;
         }
-        else if (!isalpha((int)this[0]))
-            need_prefix = TRUE;
+        else
+#endif
+        {
+            if (this[0] == '.')
+            {
+                if (l >= 1 && isdigit((int)this[1]))
+                    need_prefix = TRUE;
+            }
+            else if (!isalpha((int)this[0]))
+                need_prefix = TRUE;
+        }
         if (need_prefix)
         {
             SET_STRING_ELT(ans, i, allocString(l + 1));
@@ -712,12 +817,26 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(ans, i, allocString(l));
             strcpy(CHAR(STRING_ELT(ans, i)), CHAR(STRING_ELT(arg, i)));
         }
-        this = p = CHAR(STRING_ELT(ans, i));
-        while (*p)
+        this = CHAR(STRING_ELT(ans, i));
+#ifdef SUPPORT_UTF8
+        if (utf8locale)
         {
-            if (!isalnum((int)*p) && *p != '.' && (allow_ && *p != '_'))
-                *p = '.';
-            p++;
+            /* This cannot lengthen the string, so safe to overwrite it */
+            int nc = mbstowcs(NULL, this, 0);
+            wchar_t *wstr = Calloc(nc + 1, wchar_t), *wc;
+            mbstowcs(wstr, this, nc + 1);
+            for (wc = wstr; *wc; wc++)
+                if (!iswalnum(*wc) && *wc != L'.' && (allow_ && *wc != L'_'))
+                    *wc = L'.';
+            wcstombs(this, wstr, strlen(this) + 1);
+            Free(wstr);
+        }
+        else
+#endif
+        {
+            for (p = this; *p; p++)
+                if (!isalnum((int)*p) && *p != '.' && (allow_ && *p != '_'))
+                    *p = '.';
         }
         /* do we have a reserved word?  If so the name is invalid */
         if (!isValidName(this))
@@ -747,6 +866,9 @@ static int fgrep_one(char *pat, char *target)
                 return i;
         return -1;
     }
+    /* This is UTF-8 safe since it compares whole strings,
+       but it would be more efficient to skip along by chars.
+    */
     for (i = 0; i <= len - plen; i++)
         if (strncmp(pat, target + i, plen) == 0)
             return i;
@@ -1063,6 +1185,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+/* <UTF8-FIXME> match length is in bytes not chars */
 SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ans, matchlen;
@@ -1468,17 +1591,10 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     /* test for non-ASCII strings */
     if (utf8locale)
     {
-        Rboolean warn = FALSE;
-        char *p;
-        for (p = CHAR(STRING_ELT(pat, 0)); *p; p++)
-            if ((unsigned int)*p > 0x7F)
-            {
-                warn = TRUE;
-                break;
-            }
-        for (i = 0; i < length(vec); i++)
-            for (p = CHAR(STRING_ELT(vec, i)); *p; p++)
-                if ((unsigned int)*p > 0x7F)
+        Rboolean warn = !utf8strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        if (!warn)
+            for (i = 0; i < length(vec); i++)
+                if (!utf8strIsASCII(CHAR(STRING_ELT(vec, i))))
                 {
                     warn = TRUE;
                     break;

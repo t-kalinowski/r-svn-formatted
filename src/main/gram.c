@@ -3289,9 +3289,11 @@ int isValidName(char *name)
     {
         /* the only way to establish which chars are alpha etc is to
            use the wchar variants */
-        int n = strlen(name);
+        int n = strlen(name), used;
         wchar_t wc;
-        p += mbrtowc(&wc, p, n, NULL);
+        used = mbrtowc(&wc, p, n, NULL);
+        p += used;
+        n -= used;
         if (wc != '.' && !iswalpha(wc))
             return 0;
         if (wc == '.')
@@ -3300,15 +3302,14 @@ int isValidName(char *name)
             if (iswdigit(wc))
                 return 0;
         }
-        while (1)
+        while ((used = mbrtowc(&wc, p, n, NULL)))
         {
-            p += mbrtowc(&wc, p, n, NULL);
-            if (wc == L'\0')
-                break;
             if (!(iswalnum(wc) || wc == L'.' || wc == L'_'))
                 break;
+            p += used;
+            n -= used;
         }
-        if (wc != L'\0')
+        if (*p != '\0')
             return 0;
     }
     else
