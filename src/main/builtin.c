@@ -69,10 +69,10 @@ SEXP do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (addit && (oldcode = ctxt->conexit) != R_NilValue)
         {
-            if (CAR(oldcode) != install("{"))
+            if (CAR(oldcode) != R_BraceSymbol)
             {
                 PROTECT(tmp = allocList(3));
-                CAR(tmp) = install("{");
+                CAR(tmp) = R_BraceSymbol;
                 CADR(tmp) = oldcode;
                 CADDR(tmp) = code;
                 TYPEOF(tmp) = LANGSXP;
