@@ -3102,17 +3102,15 @@ static void XF_WriteString(FILE *fp, char *str)
 static int XF_SetColor(int color, XFigDesc *pd)
 {
     int i;
-    if (color < 0 || color > 0xffffff)
+    unsigned int alpha = color & 0xff000000;
+    if (alpha < 0xff)
         return -1;
+    color = color & 0xffffff;
     for (i = 0; i < pd->nXFigColors; i++)
-    {
         if (color == pd->XFigColors[i])
             return i;
-    }
     if (pd->nXFigColors == 534)
-    {
         error("run out of colors in xfig()");
-    }
     /* new colour */
     fprintf(pd->psfp, "0 %d #%02x%02x%02x\n", pd->nXFigColors, R_RED(color), R_GREEN(color), R_BLUE(color));
     pd->XFigColors[pd->nXFigColors] = color;
@@ -3443,7 +3441,6 @@ static void XFig_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char buf[PATH_MAX];
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
-    FILE *fp = pd->tmpfp;
 
     pd->pageno++;
     if (pd->onefile)
@@ -3480,6 +3477,7 @@ static void XFig_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
     }
     if (R_OPAQUE(gc->fill))
     {
+        FILE *fp = pd->tmpfp;
         int cbg = XF_SetColor(gc->fill, pd);
         int ix0, iy0, ix1, iy1;
         double x0 = 0.0, y0 = 0.0, x1 = 72.0 * pd->pagewidth, y1 = 72.0 * pd->pageheight;
