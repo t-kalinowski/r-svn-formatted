@@ -766,7 +766,7 @@ int Rstd_ChooseFile(int new, char *buf, int len)
 
 void Rstd_ShowMessage(char *s)
 {
-    REprintf(s);
+    REprintf("%s", s);
 }
 
 void Rstd_read_history(char *s)

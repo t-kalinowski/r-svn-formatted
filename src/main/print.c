@@ -738,7 +738,7 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
                 sprintf(ptag, "Slot \"%s\":", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, Rprt_adj_left));
             else
                 sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, Rprt_adj_left));
-            Rprintf(tagbuf);
+            Rprintf("%s", tagbuf);
             Rprintf("\n");
             if (isObject(CAR(a)))
             {
