@@ -264,7 +264,7 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
             }
         }
     }
-    if (nrs > 0 && ncs > 0)
+    if (nrs >= 0 && ncs >= 0)
     {
         PROTECT(attr = allocVector(INTSXP, 2));
         INTEGER(attr)[0] = nrs;
@@ -283,7 +283,7 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
     {
         if (TAG(a) == R_DimNamesSymbol)
         {
-            if (nrs > 0 && ncs > 0)
+            if (nrs >= 0 && ncs >= 0)
             {
                 PROTECT(attr = allocList(2));
                 CAR(attr) = allocVector(STRSXP, nrs);
