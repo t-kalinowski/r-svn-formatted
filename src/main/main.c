@@ -596,6 +596,14 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
     return rval;
 }
 
+/* registering this as a cend exit procedure makes sure R_BrowseLevel
+   is maintained across LONGJMP's */
+static void browser_cend(void *data)
+{
+    int *psaved = data;
+    R_BrowseLevel = *psaved - 1;
+}
+
 SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *saveToplevelContext;
@@ -632,6 +640,8 @@ SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* acts as a target for error returns. */
 
     begincontext(&returncontext, CTXT_BROWSER, call, rho, R_NilValue, R_NilValue);
+    returncontext.cend = browser_cend;
+    returncontext.cenddata = &savebrowselevel;
     if (!SETJMP(returncontext.cjmpbuf))
     {
         begincontext(&thiscontext, CTXT_RESTART, R_NilValue, rho, R_NilValue, R_NilValue);
