@@ -1543,6 +1543,8 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
     Rboolean OK;
 
     checkArity(op, args);
+    if (!isString(paths))
+        errorcall(call, "'path' must be a character vector");
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
