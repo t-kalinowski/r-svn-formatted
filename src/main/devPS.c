@@ -1676,8 +1676,12 @@ static double PS_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 static void PS_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
 
-    PostScriptMetricInfo(c, ascent, descent, width, &(pd->metrics[gc->fontface - 1]));
+    if (face < 1 || face > 5)
+        face = 1;
+
+    PostScriptMetricInfo(c, ascent, descent, width, &(pd->metrics[face - 1]));
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
     *width = floor(gc->cex * gc->ps + 0.5) * *width;
