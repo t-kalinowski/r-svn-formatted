@@ -1232,6 +1232,9 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp)
         R_SetExternalPtrTag(s, NewReadItem(sym_table, env_table, fp));
         /*UNPROTECT(1);*/
         break;
+    case WEAKREFSXP:
+        PROTECT(s = R_MakeWeakRef(R_NilValue, R_NilValue, R_NilValue, FALSE));
+        break;
     case SPECIALSXP:
     case BUILTINSXP:
         AllocBuffer(MAXELTSIZE - 1);
