@@ -182,11 +182,10 @@ enum
 };
 /* == 1,2,..., defined by order in the R function dist */
 
-static double (*distfun)(double *, int, int, int, int);
-
 void R_distance(double *x, int *nr, int *nc, double *d, int *diag, int *method)
 {
     int dc, i, j, ij;
+    double (*distfun)(double *, int, int, int, int) = NULL;
 
     switch (*method)
     {
