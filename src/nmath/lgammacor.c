@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000 The R Development Core Team
+ *  Copyright (C) 2000-2001 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,25 +38,25 @@
  *  SEE ALSO
  *
  *    Loader(1999)'s stirlerr() {in ./stirlerr.c} is *very* similar in spirit,
- *    is faster and cleaner, but is only defined for integers.
+ *    is faster and cleaner, but is only defined for half integers.
  */
 
 #include "nmath.h"
 
 double lgammacor(double x)
 {
-    static /* const */ double algmcs[15] = {
-        +.1666389480451863247205729650822e+0,  -.1384948176067563840732986059135e-4,
-        +.9810825646924729426157171547487e-8,  -.1809129475572494194263306266719e-10,
-        +.6221098041892605227126015543416e-13, -.3399615005417721944303330599666e-15,
-        +.2683181998482698748957538846666e-17, -.2868042435334643284144622399999e-19,
-        +.3962837061046434803679306666666e-21, -.6831888753985766870111999999999e-23,
-        +.1429227355942498147573333333333e-24, -.3547598158101070547199999999999e-26,
-        +.1025680058010470912000000000000e-27, -.3401102254316748799999999999999e-29,
-        +.1276642195630062933333333333333e-30};
+    const double algmcs[15] = {+.1666389480451863247205729650822e+0,  -.1384948176067563840732986059135e-4,
+                               +.9810825646924729426157171547487e-8,  -.1809129475572494194263306266719e-10,
+                               +.6221098041892605227126015543416e-13, -.3399615005417721944303330599666e-15,
+                               +.2683181998482698748957538846666e-17, -.2868042435334643284144622399999e-19,
+                               +.3962837061046434803679306666666e-21, -.6831888753985766870111999999999e-23,
+                               +.1429227355942498147573333333333e-24, -.3547598158101070547199999999999e-26,
+                               +.1025680058010470912000000000000e-27, -.3401102254316748799999999999999e-29,
+                               +.1276642195630062933333333333333e-30};
 
     double tmp;
 
+#ifdef NOMORE_FOR_THREADS
     static int nalgm = 0;
     static double xbig = 0, xmax = 0;
 
@@ -70,6 +70,15 @@ double lgammacor(double x)
         xmax = exp(fmin2(log(DBL_MAX / 12), -log(12 * DBL_MIN)));
         /*   = DBL_MAX / 48 ~= 3.745e306 for IEEE double */
     }
+#else
+/* For IEEE double precision DBL_EPSILON = 2^-52 = 2.220446049250313e-16 :
+ *   xbig = 2 ^ 26.5
+ *   xmax = DBL_MAX / 48 =  2^1020 / 3 */
+#define nalgm 5
+#define xbig 94906265.62425156
+#define xmax 3.745194030963158e306
+#endif
+
     if (x < 10)
         ML_ERR_return_NAN else if (x >= xmax)
         {
