@@ -2474,7 +2474,6 @@ static Rboolean in_R_X11readclp(Rclpconn this, char *type)
     XFree(buffer);
     if (pty_format != 8)
     { /* bytes */
-        Rprintf("pty_format = %d\n", pty_format);
         warning(_("clipboard cannot be opened or contains no text"));
         res = FALSE;
     }
@@ -2486,7 +2485,7 @@ static Rboolean in_R_X11readclp(Rclpconn this, char *type)
         this->last = this->len = pty_items;
         if (this->buff)
         {
-            /* property always ends in zero byte */
+            /* property always ends in 'extra' zero byte */
             memcpy(this->buff, buffer, pty_items + 1);
         }
         else
