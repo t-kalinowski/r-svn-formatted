@@ -149,11 +149,8 @@ DL_FUNC ptr_R_ProcessEvents, ptr_CocoaInnerQuartzDevice, ptr_CocoaGetQuartzParam
 Rboolean CocoaInnerQuartzDevice(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg)
 {
-    Rboolean x;
-    x = (Rboolean)ptr_CocoaInnerQuartzDevice(dd, display, width, height, pointsize, family, antialias, autorefresh,
-                                             quartzpos, bg);
-    fprintf(stderr, "cocoainner=%d", x);
-    return x;
+    return (Rboolean)ptr_CocoaInnerQuartzDevice(dd, display, width, height, pointsize, family, antialias, autorefresh,
+                                                quartzpos, bg);
 }
 
 void CocoaGetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,

@@ -980,12 +980,16 @@ static char *SaveFontSpec(SEXP sxp, int offset)
  * OR IF can't find gcontext fontfamily in font database
  * THEN return xd->family (the family set up when the
  *   device was created)
+ * This function is used on embedding Cocoa GUIs, must be declared
+ * as char * and not static char *. The third argument is different from
+ * devices as well.
  */
-static char *translateFontFamily(char *family, int face, QuartzDesc *xd)
+
+char *Quartz_TranslateFontFamily(char *family, int face, char *devfamily)
 {
     SEXP graphicsNS, quartzenv, fontdb, fontnames;
     int i, nfonts;
-    char *result = xd->family;
+    char *result = devfamily;
     PROTECT_INDEX xpi;
 
     PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices"))));
@@ -1030,9 +1034,8 @@ static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDe
 
     GetPort(&savePort);
     SetPortWindowPort(xd->window);
-    fprintf(stderr, "style=%d,family=%s\n", style, family);
 
-    fontFamily = translateFontFamily(family, style, xd);
+    fontFamily = Quartz_TranslateFontFamily(family, style, xd->family);
     if (fontFamily)
         strcpy(CurrFont, fontFamily);
     else
@@ -1041,12 +1044,8 @@ static void Quartz_SetFont(char *family, int style, double cex, double ps, NewDe
     if (style == 5)
         strcpy(CurrFont, "Symbol");
 
-    fprintf(stderr, "fontFamily=%s,CurrFont=%s\n", fontFamily, CurrFont);
-
     if (strcmp(CurrFont, "Symbol") == 0)
     {
-        fprintf(stderr, "symbol font, ff=%s,cf=%s\n", fontFamily, CurrFont);
-
         if (WeAreOnPanther)
             CGContextSelectFont(GetContext(xd), CurrFont, size, kCGEncodingFontSpecific);
         else
@@ -1104,7 +1103,7 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
 
     Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
     len = strlen(str);
-    ff = translateFontFamily(gc->fontfamily, gc->fontface, xd);
+    ff = Quartz_TranslateFontFamily(gc->fontfamily, gc->fontface, xd->family);
 
     if (((gc->fontface == 5) || (strcmp(ff, "Symbol") == 0)) && (len == 1))
     {
@@ -1518,7 +1517,7 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
 
         Quartz_SetFont(gc->fontfamily, gc->fontface, gc->cex, gc->ps, dd);
 
-        ff = translateFontFamily(gc->fontfamily, gc->fontface, xd);
+        ff = Quartz_TranslateFontFamily(gc->fontfamily, gc->fontface, xd->family);
         tmp = (unsigned char)c;
         if ((gc->fontface == 5) || (strcmp(ff, "Symbol") == 0))
         {
