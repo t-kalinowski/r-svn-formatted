@@ -19,6 +19,7 @@
 
 #include <R.h>
 #include "ctest.h"
+#include "eda.h"
 #include "modreg.h"
 #include <R_ext/Rdynload.h>
 
@@ -47,7 +48,7 @@ static R_NativePrimitiveArgType Srunmed_t[6] = {REALSXP, REALSXP, INTSXP, INTSXP
 static R_NativePrimitiveArgType Trunmed_t[9] = {INTSXP, INTSXP,  REALSXP, REALSXP, INTSXP,
                                                 INTSXP, REALSXP, INTSXP,  INTSXP};
 
-static const R_CMethodDef cMethods[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chisqsim_t},
+static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chisqsim_t},
                                         {"d2x2xk", (DL_FUNC)&d2x2xk, 5, d2_t},
                                         {"dansari", (DL_FUNC)&dansari, 4, dansari_t},
                                         {"fexact", (DL_FUNC)&fexact, 10, fexact_t},
@@ -66,6 +67,13 @@ static const R_CMethodDef cMethods[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         {"loess_ise", (DL_FUNC)&loess_ise, 15},
                                         {"Srunmed", (DL_FUNC)&Srunmed, 6, Srunmed_t},
                                         {"Trunmed", (DL_FUNC)&Trunmed, 9, Trunmed_t},
+                                        {"Rsm_3RSR", (DL_FUNC)&Rsm_3RSR, 5},
+                                        {"Rsm_3RSS", (DL_FUNC)&Rsm_3RSS, 5},
+                                        {"Rsm_3RS3R", (DL_FUNC)&Rsm_3RS3R, 5},
+                                        {"Rsm_3R", (DL_FUNC)&Rsm_3R, 5},
+                                        {"Rsm_3", (DL_FUNC)&Rsm_3, 5},
+                                        {"Rsm_S", (DL_FUNC)&Rsm_S, 5},
+                                        {"tukeyline", (DL_FUNC)&tukeyline, 6},
                                         {NULL, NULL, 0}};
 
 static R_CallMethodDef CallEntries[] = {{"R_isoreg", (DL_FUNC)&R_isoreg, 1}, {NULL, NULL, 0}};
@@ -83,6 +91,6 @@ static R_FortranMethodDef FortEntries[] = {{"lowesw", (DL_FUNC)&F77_SUB(lowesw),
 void R_init_stats(DllInfo *dll)
 {
     R_useDynamicSymbols(dll, FALSE);
-    R_registerRoutines(dll, cMethods, CallEntries, FortEntries, NULL);
+    R_registerRoutines(dll, CEntries, CallEntries, FortEntries, NULL);
 }
 */
