@@ -1679,7 +1679,7 @@ static void DepthOrder(double *z, double *x, double *y, int nx, int ny, double *
                             d = v[3];
                     }
                 }
-            depth[i + j * nx1] = d;
+            depth[i + j * nx1] = -d;
         }
     /* Determine the depth ordering of the facets to ensure
        that they are drawn in an occlusion compatible order. */
