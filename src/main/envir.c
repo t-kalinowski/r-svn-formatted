@@ -52,11 +52,104 @@
 
 #define ENVIRONMENT_LOCKING
 #ifdef ENVIRONMENT_LOCKING
-/* Environment locking: */
+/* Environment locking: Locking an environment prevents new bindings
+   from being created and existing bindings from being removed. */
 #define FRAME_LOCK_MASK (1 << 14)
 #define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
 #define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
 /*#define UNLOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) & (~ FRAME_LOCK_MASK))*/
+#endif
+
+#define FANCY_BINDINGS
+#ifdef FANCY_BINDINGS
+/* The FANCY_BINDINGS enables binding locking and "active bindings".
+   When a binding is locked, its value cannot be changed.  It may
+   still be removed from the environment if the environment is not
+   locked.
+
+   Active bindings contain a function in their value cell.  Getting
+   the value of an active binding calls this function with no
+   arguments and returns the result.  Assigning to an active bining
+   calls this function with one argument, the new value.  Active
+   bindings may be useful for mapping external variables, such as C
+   variables or data base entries, to R variables.  They may also be
+   useful for making some globals thread-safe.
+
+   Bindings are marked as locked or active using bits 14 and 15 in
+   their gp bields.  Since the saveload code writes out this field it
+   means the value will be preserved across save/load.  But older
+   versins of R will interpret the entire gp field as the MISSING
+   field, which may cause confusion.  If we keep this code, then we
+   will need to make sure that there are no locked/active bindings in
+   workspaces written for older versins of R to read.
+
+   This code is experimental; if it doesn't seem useful it can be
+   removed.  LT
+*/
+#ifndef NEW_BINDING_FLAGS
+#error need NEW_BINDING_FLAGS to be defined
+#endif
+#ifndef NEW_SYMBOL_FLAGS
+#error need NEW_SYMBOL_FLAGS to be defined
+#endif
+
+/* use the same bits (15 and 14) in symbols and bindings */
+#define ACTIVE_BINDING_MASK (1 << 15)
+#define BINDING_LOCK_MASK (1 << 14)
+#define SPECIAL_BINDING_MASK (ACTIVE_BINDING_MASK | BINDING_LOCK_MASK)
+#define IS_ACTIVE_BINDING(b) ((b)->sxpinfo.gp & ACTIVE_BINDING_MASK)
+#define BINDING_IS_LOCKED(b) ((b)->sxpinfo.gp & BINDING_LOCK_MASK)
+#define SET_ACTIVE_BINDING_BIT(b) ((b)->sxpinfo.gp |= ACTIVE_BINDING_MASK)
+#define LOCK_BINDING(b) ((b)->sxpinfo.gp |= BINDING_LOCK_MASK)
+
+#define BINDING_VALUE(b) ((IS_ACTIVE_BINDING(b) ? getActiveValue(CAR(b)) : CAR(b)))
+
+#define SYMBOL_BINDING_VALUE(s) ((IS_ACTIVE_BINDING(s) ? getActiveValue(SYMVALUE(s)) : SYMVALUE(s)))
+
+#define SET_BINDING_VALUE(b, val)                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __b__ = (b);                                                                                              \
+        SEXP __val__ = (val);                                                                                          \
+        if (BINDING_IS_LOCKED(__b__))                                                                                  \
+            error("can't change value of a locked binding");                                                           \
+        if (IS_ACTIVE_BINDING(__b__))                                                                                  \
+            setActiveValue(CAR(__b__), __val__);                                                                       \
+        else                                                                                                           \
+            SETCAR(__b__, __val__);                                                                                    \
+    } while (0)
+
+#define SET_SYMBOL_BINDING_VALUE(sym, val)                                                                             \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __sym__ = (sym);                                                                                          \
+        SEXP __val__ = (val);                                                                                          \
+        if (BINDING_IS_LOCKED(__sym__))                                                                                \
+            error("can't change value of a locked binding");                                                           \
+        if (IS_ACTIVE_BINDING(__sym__))                                                                                \
+            setActiveValue(SYMVALUE(__sym__), __val__);                                                                \
+        else                                                                                                           \
+            SET_SYMVALUE(__sym__, __val__);                                                                            \
+    } while (0)
+
+static void setActiveValue(SEXP fun, SEXP val)
+{
+    SEXP s_quote = install("quote");
+    SEXP arg = LCONS(s_quote, LCONS(val, R_NilValue));
+    SEXP expr = LCONS(fun, LCONS(arg, R_NilValue));
+    PROTECT(expr);
+    eval(expr, R_GlobalEnv);
+    UNPROTECT(1);
+}
+
+static SEXP getActiveValue(SEXP fun)
+{
+    SEXP expr = LCONS(fun, R_NilValue);
+    PROTECT(expr);
+    expr = eval(expr, R_GlobalEnv);
+    UNPROTECT(1);
+    return expr;
+}
 #endif
 
 /*----------------------------------------------------------------------
@@ -149,7 +242,11 @@ static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
     {
         if (TAG(chain) == symbol)
         {
+#ifdef FANCY_BINDINGS
+            SET_BINDING_VALUE(chain, value);
+#else
             SETCAR(chain, value);
+#endif
             return;
         }
     }
@@ -580,10 +677,19 @@ static SEXP R_GetGlobalCache(SEXP symbol)
     case SYMSXP:
         if (vl == R_UnboundValue) /* avoid test?? */
             return R_UnboundValue;
+#ifdef FANCY_BINDINGS
+        else
+            return SYMBOL_BINDING_VALUE(vl);
+#else
         else
             return SYMVALUE(vl);
+#endif
     case LISTSXP:
+#ifdef FANCY_BINDINGS
+        return BINDING_VALUE(vl);
+#else
         return CAR(vl);
+#endif
     default:
         error("illegal cached value");
         return R_NilValue;
@@ -726,7 +832,11 @@ R_varloc_t R_findVarLocInFrame(SEXP rho, SEXP symbol)
 
 SEXP R_GetVarLocValue(R_varloc_t vl)
 {
+#ifdef FANCY_BINDINGS
+    return BINDING_VALUE((SEXP)vl);
+#else
     return CAR((SEXP)vl);
+#endif
 }
 
 SEXP R_GetVarLocSymbol(R_varloc_t vl)
@@ -736,7 +846,11 @@ SEXP R_GetVarLocSymbol(R_varloc_t vl)
 
 void R_SetVarLocValue(R_varloc_t vl, SEXP value)
 {
+#ifdef FANCY_BINDINGS
+    SET_BINDING_VALUE((SEXP)vl, value);
+#else
     SETCAR((SEXP)vl, value);
+#endif
 }
 
 /*----------------------------------------------------------------------
@@ -760,7 +874,11 @@ SEXP findVarInFrame(SEXP rho, SEXP symbol)
         while (frame != R_NilValue)
         {
             if (TAG(frame) == symbol)
+#ifdef FANCY_BINDINGS
+                return BINDING_VALUE(frame);
+#else
                 return CAR(frame);
+#endif
             frame = CDR(frame);
         }
     }
@@ -774,7 +892,17 @@ SEXP findVarInFrame(SEXP rho, SEXP symbol)
         }
         hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         /* Will return 'R_UnboundValue' if not found */
+#ifdef FANCY_BINDINGS
+        {
+            SEXP binding = R_HashGetLoc(hashcode, symbol, HASHTAB(rho));
+            if (binding == R_NilValue)
+                return R_UnboundValue;
+            else
+                return BINDING_VALUE(binding);
+        }
+#else
         return (R_HashGet(hashcode, symbol, HASHTAB(rho)));
+#endif
     }
     return R_UnboundValue;
 }
@@ -806,10 +934,18 @@ static SEXP findGlobalVar(SEXP symbol)
         if (vl != R_NilValue)
         {
             R_AddGlobalCache(symbol, vl);
+#ifdef FANCY_BINDINGS
+            return BINDING_VALUE(vl);
+#else
             return CAR(vl);
+#endif
         }
     }
+#ifdef FANCY_BINDINGS
+    vl = SYMBOL_BINDING_VALUE(symbol);
+#else
     vl = SYMVALUE(symbol);
+#endif
     if (vl != R_UnboundValue)
         R_AddGlobalCache(symbol, symbol);
     return vl;
@@ -833,7 +969,11 @@ SEXP findVar(SEXP symbol, SEXP rho)
     if (rho == R_GlobalEnv)
         return findGlobalVar(symbol);
     else
+#ifdef FANCY_BINDINGS
+        return SYMBOL_BINDING_VALUE(symbol);
+#else
         return SYMVALUE(symbol);
+#endif
 #else
     while (rho != R_NilValue)
     {
@@ -885,7 +1025,11 @@ SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
         else
             return (R_UnboundValue);
     }
+#ifdef FANCY_BINDINGS
+    return SYMBOL_BINDING_VALUE(symbol);
+#else
     return (SYMVALUE(symbol));
+#endif
 }
 
 /*
@@ -927,7 +1071,11 @@ SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
         else
             return (R_UnboundValue);
     }
+#ifdef FANCY_BINDINGS
+    return SYMBOL_BINDING_VALUE(symbol);
+#else
     return (SYMVALUE(symbol));
+#endif
 }
 
 /*
@@ -1079,7 +1227,11 @@ SEXP findFun(SEXP symbol, SEXP rho)
     }
     if (SYMVALUE(symbol) == R_UnboundValue)
         error("couldn't find function \"%s\"", CHAR(PRINTNAME(symbol)));
+#ifdef FANCY_BINDINGS
+    return SYMBOL_BINDING_VALUE(symbol);
+#else
     return SYMVALUE(symbol);
+#endif
 }
 
 /*----------------------------------------------------------------------
@@ -1109,7 +1261,11 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
             {
                 if (TAG(frame) == symbol)
                 {
+#ifdef FANCY_BINDINGS
+                    SET_BINDING_VALUE(frame, value);
+#else
                     SETCAR(frame, value);
+#endif
                     SET_MISSING(frame, 0); /* Over-ride */
                     return;
                 }
@@ -1145,7 +1301,11 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 #ifdef USE_GLOBAL_CACHE
         R_FlushGlobalCache(symbol);
 #endif
+#ifdef FANCY_BINDINGS
+        SET_SYMBOL_BINDING_VALUE(symbol, value);
+#else
         SET_SYMVALUE(symbol, value);
+#endif
     }
 }
 
@@ -1169,7 +1329,11 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
         {
             if (TAG(frame) == symbol)
             {
+#ifdef FANCY_BINDINGS
+                SET_BINDING_VALUE(frame, value);
+#else
                 SETCAR(frame, value);
+#endif
                 return symbol;
             }
             frame = CDR(frame);
@@ -1188,7 +1352,11 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
         frame = R_HashGetLoc(hashcode, symbol, HASHTAB(rho));
         if (frame != R_NilValue)
         {
+#ifdef FANCY_BINDINGS
+            SET_BINDING_VALUE(frame, value);
+#else
             SETCAR(frame, value);
+#endif
             return symbol;
         }
         else
@@ -1239,7 +1407,11 @@ void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 #ifdef USE_GLOBAL_CACHE
     R_FlushGlobalCache(symbol);
 #endif
+#ifdef FANCY_BINDINGS
+    SET_SYMBOL_BINDING_VALUE(symbol, value);
+#else
     SET_SYMVALUE(symbol, value);
+#endif
 }
 
 /*----------------------------------------------------------------------
@@ -2074,5 +2246,59 @@ void R_LockEnvironment(SEXP env, Rboolean bindings)
     if (TYPEOF(env) != ENVSXP)
         error("not an environment");
     LOCK_FRAME(env);
+}
+#endif
+#ifdef FANCY_BINDINGS
+void R_LockBinding(SEXP sym, SEXP env)
+{
+    if (TYPEOF(sym) != SYMSXP)
+        error("not a symbol");
+    if (env != R_NilValue && TYPEOF(env) != ENVSXP)
+        error("not an environment");
+    if (env == R_NilValue)
+        LOCK_BINDING(sym);
+    else
+    {
+        SEXP binding = findVarLocInFrame(env, sym);
+        if (binding == R_NilValue)
+            error("no binding for \"%s\"", CHAR(PRINTNAME(sym)));
+        warning("saved workspaces with locked bindings may not work"
+                " properly when loaded into older versions of R");
+        LOCK_BINDING(binding);
+    }
+}
+void R_MakeActiveBinding(SEXP sym, SEXP fun, SEXP env)
+{
+    if (TYPEOF(sym) != SYMSXP)
+        error("not a symbol");
+    if (!isFunction(fun))
+        error("not a function");
+    if (env != R_NilValue && TYPEOF(env) != ENVSXP)
+        error("not an environment");
+    if (env == R_NilValue)
+    {
+        if (SYMVALUE(sym) != R_UnboundValue && !IS_ACTIVE_BINDING(sym))
+            error("symbol already has a regular binding");
+        SET_SYMVALUE(sym, fun);
+        SET_ACTIVE_BINDING_BIT(sym);
+    }
+    else
+    {
+        SEXP binding = findVarLocInFrame(env, sym);
+        if (binding == R_NilValue)
+        {
+            warning("saved workspaces with active bindings may not work"
+                    " properly when loaded into older versions of R");
+            defineVar(sym, fun, env); /* fails if env is locked */
+            binding = findVarLocInFrame(env, sym);
+            SET_ACTIVE_BINDING_BIT(binding);
+        }
+        else if (!IS_ACTIVE_BINDING(binding))
+            error("symbol already has a regular binding");
+        else if (BINDING_IS_LOCKED(binding))
+            error("can't change active binding if binding is locked");
+        else
+            SETCAR(binding, fun);
+    }
 }
 #endif
