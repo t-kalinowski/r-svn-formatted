@@ -1731,7 +1731,10 @@ alldone:;
     for (j = 0; j < nterms; j++)
     {
         if (j == rhs_response)
+        {
+            INTEGER(count)[j] = 0; /* need this initialised */
             continue;
+        }
         k = 1;
         for (i = 0; i < nvar; i++)
         {
