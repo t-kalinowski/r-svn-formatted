@@ -448,7 +448,7 @@ SEXP do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int tmp, dbg, depthsave;
+    int tmp, dbg;
     volatile int i, n, bgn;
     SEXP sym, body;
     volatile SEXP ans, v, val;
@@ -492,16 +492,12 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
             do_browser(call, op, args, rho);
         }
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        depthsave = R_EvalDepth;
         if ((tmp = SETJMP(cntxt.cjmpbuf)))
         {
             if (tmp == CTXT_BREAK)
                 break; /* break */
             else
-            { /* next  */
-                R_EvalDepth = depthsave;
-                continue;
-            }
+                continue; /* next  */
         }
         else
         {
@@ -558,7 +554,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int cond, dbg, depthsave;
+    int cond, dbg;
     volatile int bgn;
     volatile SEXP s, t;
     RCNTXT cntxt;
@@ -584,16 +580,12 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
             do_browser(call, op, args, rho);
         }
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        depthsave = R_EvalDepth;
         if ((cond = SETJMP(cntxt.cjmpbuf)))
         {
             if (cond == CTXT_BREAK)
                 break; /* break */
             else
-            { /* next  */
-                R_EvalDepth = depthsave;
-                continue;
-            }
+                continue; /* next  */
         }
         else
         {
@@ -610,7 +602,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int cond, dbg, depthsave;
+    int cond, dbg;
     volatile int bgn;
     volatile SEXP t;
     RCNTXT cntxt;
@@ -631,16 +623,12 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
             do_browser(call, op, args, rho);
         }
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        depthsave = R_EvalDepth;
         if ((cond = SETJMP(cntxt.cjmpbuf)))
         {
             if (cond == CTXT_BREAK)
                 break; /*break */
             else
-            { /* next  */
-                R_EvalDepth = depthsave;
-                continue;
-            }
+                continue; /* next  */
         }
         else
         {
