@@ -424,7 +424,7 @@ static void menupkgrepos(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "utils:::menuRepositories()");
+    consolecmd(RConsole, "utils::setRepositories()");
 }
 
 static void menupkginstallcran(control m)
