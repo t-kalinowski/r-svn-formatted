@@ -2706,7 +2706,7 @@ void GMetricInfo(int c, double *ascent, double *descent, double *width, int unit
     if (dd->dp.metricInfo)
         dd->dp.metricInfo(c, ascent, descent, width, dd);
     else
-        error("detailed character metric information unavailable\n");
+        error("detailed character metric information unavailable");
 #else
     dd->dp.metricInfo(c & 0xFF, ascent, descent, width, dd);
 #endif
@@ -5024,7 +5024,7 @@ unsigned int number2col(char *nm)
     char *ptr;
     index = strtod(nm, &ptr);
     if (*ptr)
-        error("invalid color specification\n");
+        error("invalid color specification");
     if (index == 0)
         return CurrentDevice()->dp.bg;
     else

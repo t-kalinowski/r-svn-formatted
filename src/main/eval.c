@@ -464,7 +464,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     body = CADDR(args);
 
     if (!isSymbol(sym))
-        errorcall(call, "non-symbol loop variable\n");
+        errorcall(call, "non-symbol loop variable");
 
     PROTECT(args);
     PROTECT(rho);
@@ -1212,7 +1212,7 @@ SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
         cptr = cptr->nextcontext;
     }
     if (cptr == NULL)
-        error("Recall called from outside a closure\n");
+        error("Recall called from outside a closure");
     if (TYPEOF(CAR(cptr->call)) == SYMSXP)
         PROTECT(s = findFun(CAR(cptr->call), cptr->sysparent));
     else

@@ -197,20 +197,20 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         R_print.digits = asInteger(CAR(args));
         if (R_print.digits == NA_INTEGER || R_print.digits < 1 || R_print.digits > 22)
-            errorcall(call, "invalid digits parameter\n");
+            errorcall(call, "invalid digits parameter");
     }
     args = CDR(args);
 
     R_print.quote = asLogical(CAR(args));
     if (R_print.quote == NA_LOGICAL)
-        errorcall(call, "invalid quote parameter\n");
+        errorcall(call, "invalid quote parameter");
     args = CDR(args);
 
     naprint = CAR(args);
     if (!isNull(naprint))
     {
         if (!isString(naprint) || LENGTH(naprint) < 1)
-            errorcall(call, "invalid na.print specification\n");
+            errorcall(call, "invalid na.print specification");
         R_print.na_string = STRING(naprint)[0];
         R_print.na_width = strlen(CHAR(R_print.na_string));
     }
@@ -220,13 +220,13 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         R_print.gap = asInteger(CAR(args));
         if (R_print.gap == NA_INTEGER || R_print.gap < 1 || R_print.gap > 10)
-            errorcall(call, "invalid gap parameter\n");
+            errorcall(call, "invalid gap parameter");
     }
     args = CDR(args);
 
     R_print.right = asLogical(CAR(args));
     if (R_print.right == NA_LOGICAL)
-        errorcall(call, "invalid right parameter\n");
+        errorcall(call, "invalid right parameter");
     args = CDR(args);
 
     CustomPrintValue(x, rho);

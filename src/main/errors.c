@@ -82,7 +82,7 @@ void warningcall(SEXP call, char *format, ...)
     if (s != R_NilValue)
     {
         if (!isLanguage(s) && !isExpression(s))
-            error("invalid option \"warning.expression\"\n");
+            error("invalid option \"warning.expression\"");
         cptr = R_GlobalContext;
         while (!(cptr->callflag & CTXT_FUNCTION) && cptr->callflag)
             cptr = cptr->nextcontext;

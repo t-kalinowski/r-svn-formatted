@@ -515,7 +515,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < nx; i++)
     {
         if (!R_FINITE(REAL(x)[i]))
-            errorcall(call, "missing x values\n");
+            errorcall(call, "missing x values");
         if (i > 0 && REAL(x)[i] < REAL(x)[i - 1])
             errorcall(call, "increasing x values expected");
     }
@@ -523,7 +523,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < ny; i++)
     {
         if (!R_FINITE(REAL(y)[i]))
-            errorcall(call, "missing y values\n");
+            errorcall(call, "missing y values");
         if (i > 0 && REAL(y)[i] < REAL(y)[i - 1])
             errorcall(call, "increasing y values expected");
     }
@@ -533,7 +533,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < nc; i++)
         if (!R_FINITE(REAL(c)[i]))
-            errorcall(call, "illegal NA contour values\n");
+            errorcall(call, "illegal NA contour values");
 
     zmin = DBL_MAX;
     zmax = DBL_MIN;
@@ -822,9 +822,9 @@ SEXP do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 
 badxy:
-    errorcall(call, "invalid x / y values or limits\n");
+    errorcall(call, "invalid x / y values or limits");
 badlev:
-    errorcall(call, "invalid contour levels\n");
+    errorcall(call, "invalid contour levels");
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
@@ -864,7 +864,7 @@ SEXP do_image(SEXP call, SEXP op, SEXP args, SEXP env)
     internalTypeCheck(call, szlim, REALSXP);
     if (length(szlim) != 2 || !R_FINITE(REAL(szlim)[0]) || !R_FINITE(REAL(szlim)[1]) ||
         (zmin = REAL(szlim)[0]) > (zmax = REAL(szlim)[1]))
-        errorcall(call, "invalid z limits\n");
+        errorcall(call, "invalid z limits");
     if (zmin == zmax)
     { /* fix them up, as in graphics.c's GScale(): */
         if (zmin == 0)
@@ -955,7 +955,7 @@ SEXP do_image(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 
 badxy:
-    errorcall(call, "invalid x / y values or limits\n");
+    errorcall(call, "invalid x / y values or limits");
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
@@ -1585,9 +1585,9 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Parameter Checks */
 
     if (!R_FINITE(theta) || !R_FINITE(phi) || !R_FINITE(r) || !R_FINITE(d) || d < 0 || r < 0)
-        errorcall(call, "invalid viewing parameters\n");
+        errorcall(call, "invalid viewing parameters");
     if (!R_FINITE(expand) || expand < 0)
-        errorcall(call, "invalid expand value\n");
+        errorcall(call, "invalid expand value");
     if (scale == NA_LOGICAL)
         scale = 0;
 
@@ -1596,10 +1596,10 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(col = FixupCol(col, dd->gp.bg));
     ncol = LENGTH(col);
     if (ncol < 1)
-        errorcall(call, "invalid col specification\n");
+        errorcall(call, "invalid col specification");
     PROTECT(border = FixupCol(border, dd->gp.fg));
     if (length(border) < 1)
-        errorcall(call, "invalid border specification\n");
+        errorcall(call, "invalid border specification");
 
     GSetState(1, dd);
     GSavePars(dd);

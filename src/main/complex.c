@@ -64,7 +64,7 @@ SEXP complex_unary(int code, SEXP s1)
         }
         return ans;
     default:
-        error("illegal complex unary operator\n");
+        error("illegal complex unary operator");
         return R_NilValue; /* -Wall*/
     }
 }
@@ -796,7 +796,7 @@ SEXP complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
     case 0:
         return cmath2(op, CAR(args), CADR(args), z_atan2);
     default:
-        errorcall(call, "unimplemented complex function\n");
+        errorcall(call, "unimplemented complex function");
         return call; /* just for -Wall */
     }
 }
@@ -875,7 +875,7 @@ SEXP do_polyroot(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             if (!R_FINITE(COMPLEX(z)[i].r) || !R_FINITE(COMPLEX(z)[i].i))
-                errorcall(call, "invalid polynomial coefficient\n");
+                errorcall(call, "invalid polynomial coefficient");
             REAL(zr)[degree - i] = COMPLEX(z)[i].r;
             REAL(zi)[degree - i] = COMPLEX(z)[i].i;
         }

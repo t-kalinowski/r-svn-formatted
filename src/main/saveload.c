@@ -1162,7 +1162,7 @@ static SEXP DataLoad(FILE *fp)
     else
     {
         if ((VECREC *)vmaxget() - R_VTop < NVSize)
-            error("vector heap is too small to restore data\n");
+            error("vector heap is too small to restore data");
 
         if (R_Collected < NSave)
             error("cons heap is too small to restore data");
@@ -2554,12 +2554,12 @@ SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_hdf5save(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    errorcall(call, "HDF5 support unavailable\n");
+    errorcall(call, "HDF5 support unavailable");
     return (R_NilValue); /* -Wall */
 }
 SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    errorcall(call, "HDF5 support unavailable\n");
+    errorcall(call, "HDF5 support unavailable");
     return (R_NilValue); /* -Wall */
 }
 #endif

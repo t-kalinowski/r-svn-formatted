@@ -2920,7 +2920,7 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
     double ascent, descent, width;
     GMetricInfo(0, &ascent, &descent, &width, DEVICE, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
-        error("Metric information not yet available for this device\n");
+        error("Metric information not yet available for this device");
 #endif
 
     MathDevice = dd;
@@ -2960,7 +2960,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
     double ascent, descent, width;
     GMetricInfo(0, &ascent, &descent, &width, DEVICE, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
-        error("Metric information not yet available for this device\n");
+        error("Metric information not yet available for this device");
 #endif
 
     MathDevice = dd;

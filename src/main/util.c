@@ -775,10 +775,10 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     path = R_ExpandFileName(CHAR(STRING(s)[0]));
     if (chdir(path) < 0)
-        errorcall(call, "cannot change working directory\n");
+        errorcall(call, "cannot change working directory");
     return (R_NilValue);
 }
 
@@ -790,7 +790,7 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)
@@ -816,7 +816,7 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)

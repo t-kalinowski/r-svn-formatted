@@ -58,7 +58,7 @@ SEXP do_trace(SEXP call, SEXP op, SEXP args, SEXP rho)
     find_char_fun
 
         if (TYPEOF(CAR(args)) != CLOSXP && TYPEOF(CAR(args)) != BUILTINSXP && TYPEOF(CAR(args)) != SPECIALSXP)
-            errorcall(call, "argument must be a function\n");
+            errorcall(call, "argument must be a function");
 
     switch (PRIMVAL(op))
     {

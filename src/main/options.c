@@ -353,42 +353,42 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 k = asInteger(argi);
                 if (k < MIN_WIDTH || k > MAX_WIDTH)
-                    errorcall(call, "invalid width parameter\n");
+                    errorcall(call, "invalid width parameter");
                 VECTOR(value)[i] = SetOption(tag, ScalarInteger(k));
             }
             else if (streql(CHAR(namei), "digits"))
             {
                 k = asInteger(argi);
                 if (k < MIN_DIGITS || k > MAX_DIGITS)
-                    errorcall(call, "invalid digits parameter\n");
+                    errorcall(call, "invalid digits parameter");
                 VECTOR(value)[i] = SetOption(tag, ScalarInteger(k));
             }
             else if (streql(CHAR(namei), "expressions"))
             {
                 k = asInteger(argi);
                 if (k < 25 || k > MAX_EXPRESSIONS)
-                    errorcall(call, "expressions parameter invalid\n");
+                    errorcall(call, "expressions parameter invalid");
                 VECTOR(value)[i] = SetOption(tag, ScalarInteger(k));
             }
             else if (streql(CHAR(namei), "editor"))
             {
                 s = asChar(argi);
                 if (s == NA_STRING || length(s) == 0)
-                    errorcall(call, "invalid editor parameter\n");
+                    errorcall(call, "invalid editor parameter");
                 VECTOR(value)[i] = SetOption(tag, ScalarString(s));
             }
             else if (streql(CHAR(namei), "continue"))
             {
                 s = asChar(argi);
                 if (s == NA_STRING || length(s) == 0)
-                    errorcall(call, "invalid continue parameter\n");
+                    errorcall(call, "invalid continue parameter");
                 VECTOR(value)[i] = SetOption(tag, ScalarString(s));
             }
             else if (streql(CHAR(namei), "prompt"))
             {
                 s = asChar(argi);
                 if (s == NA_STRING || length(s) == 0)
-                    errorcall(call, "prompt parameter invalid\n");
+                    errorcall(call, "prompt parameter invalid");
                 VECTOR(value)[i] = SetOption(tag, ScalarString(s));
             }
             else if (streql(CHAR(namei), "contrasts"))
@@ -400,7 +400,7 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
             else if (streql(CHAR(namei), "warn"))
             {
                 if (!isNumeric(argi) || length(argi) != 1)
-                    errorcall(call, "warn parameter invalid\n");
+                    errorcall(call, "warn parameter invalid");
                 VECTOR(value)[i] = SetOption(tag, argi);
             }
             else if (streql(CHAR(namei), "echo"))
@@ -417,7 +417,7 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
             else if (streql(CHAR(namei), "error.halt"))
             {
                 if (TYPEOF(argi) != LGLSXP || LENGTH(argi) != 1)
-                    errorcall(call, "error.halt parameter invalid\n");
+                    errorcall(call, "error.halt parameter invalid");
                 R_Error_Halt = asLogical(argi);
                 VECTOR(value)[i] = SetOption(tag, ScalarLogical(R_Error_Halt));
             }
