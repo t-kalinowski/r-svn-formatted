@@ -1017,10 +1017,10 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return MATH1(digamma);
     case 43:
         return MATH1(trigamma);
-    case 44:
-        return MATH1(tetragamma);
-    case 45:
-        return MATH1(pentagamma);
+        /* case 44: return MATH1(tetragamma);
+           case 45: return MATH1(pentagamma);
+           removed in 2.0.0
+        */
 
     case 46:
         return MATH1(gamma_cody);
