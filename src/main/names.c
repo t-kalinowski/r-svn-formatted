@@ -310,6 +310,10 @@ FUNTAB R_FunTab[] = {
     {"pnf", do_math4, 8, 11, 4, PP_FUNCALL, 0},
     {"qnf", do_math4, 9, 11, 4, PP_FUNCALL, 0},
 
+    {"dtukey", do_math4, 10, 11, 4, PP_FUNCALL, 0},
+    {"ptukey", do_math4, 11, 11, 4, PP_FUNCALL, 0},
+    {"qtukey", do_math4, 12, 11, 4, PP_FUNCALL, 0},
+
     /* Random Numbers */
 
     {"rchisq", do_random1, 0, 11, 2, PP_FUNCALL, 0},

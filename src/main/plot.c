@@ -753,10 +753,8 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (type == 'b' || type == 'c')
     {
-        double d, f, xtemp[2], ytemp[2], yc;
+        double d, f;
         d = GConvertYUnits(0.5, CHARS, INCHES, dd);
-        xc = GConvertXUnits(1, NPC, INCHES, dd);
-        yc = GConvertYUnits(1, NPC, INCHES, dd);
         dd->gp.col = INTEGER(col)[0];
         xold = NA_REAL;
         yold = NA_REAL;
@@ -764,13 +762,13 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             xx = x[i];
             yy = y[i];
-            GConvert(&xx, &yy, USER, DEVICE, dd);
+            GConvert(&xx, &yy, USER, INCHES, dd);
             if (FINITE(xold) && FINITE(yold) && FINITE(xx) && FINITE(yy))
             {
-                if ((f = d / hypot(xc * (xx - xold), yc * (yy - yold))) < 0.5)
+                if ((f = d / hypot(xx - xold, yy - yold)) < 0.5)
                 {
                     GLine(xold + f * (xx - xold), yold + f * (yy - yold), xx + f * (xold - xx), yy + f * (yold - yy),
-                          DEVICE, dd);
+                          INCHES, dd);
                 }
             }
             xold = xx;
