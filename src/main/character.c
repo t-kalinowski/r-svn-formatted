@@ -583,15 +583,43 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            /* split into individual characters */
-            char bf[2];
-            ntok = strlen(buf);
-            PROTECT(t = allocVector(STRSXP, ntok));
-            bf[1] = '\0';
-            for (j = 0; j < ntok; j++)
+            /* split into individual characters (not bytes) */
+#ifdef SUPPORT_UTF8
+            if (utf8locale && !utf8strIsASCII(buf))
             {
-                bf[0] = buf[j];
-                SET_STRING_ELT(t, j, mkChar(bf));
+                char bf[MB_CUR_MAX], *p = buf;
+                int used;
+
+                ntok = mbstowcs(NULL, buf, 0);
+                if (ntok < 0)
+                {
+                    PROTECT(t = allocVector(STRSXP, 1));
+                    SET_STRING_ELT(t, 0, NA_STRING);
+                }
+                else
+                {
+                    PROTECT(t = allocVector(STRSXP, ntok));
+                    for (j = 0; j < ntok; j++, p += used)
+                    {
+                        used = mbrtowc(NULL, p, MB_CUR_MAX, NULL);
+                        memcpy(bf, p, used);
+                        bf[used] = '\0';
+                        SET_STRING_ELT(t, j, mkChar(bf));
+                    }
+                }
+            }
+            else
+#endif
+            {
+                char bf[2];
+                ntok = strlen(buf);
+                PROTECT(t = allocVector(STRSXP, ntok));
+                bf[1] = '\0';
+                for (j = 0; j < ntok; j++)
+                {
+                    bf[0] = buf[j];
+                    SET_STRING_ELT(t, j, mkChar(bf));
+                }
             }
         }
         UNPROTECT(1);
