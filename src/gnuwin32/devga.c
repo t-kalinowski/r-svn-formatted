@@ -543,8 +543,11 @@ static void menugif(control m)
     if (!fn)
         return;
     fixslash(fn);
+    gsetcursor(xd->gawin, WatchCursor);
     show(xd->gawin);
     SaveX11DeviceAsGif(fn);
+    gsetcursor(xd->gawin, ArrowCursor);
+    show(xd->gawin);
 }
 
 SEXP R_ParseVector(SEXP, int, int *);
@@ -751,7 +754,7 @@ static void AddtoPlotHistory(SEXP dl, GPar *gp, int replace)
     GETDL;
     if (dl == R_NilValue)
     {
-        R_ShowMessage("Display list is void!!");
+        R_ShowMessage("Display list is void!");
         return;
     }
     if (!pEXIST)
