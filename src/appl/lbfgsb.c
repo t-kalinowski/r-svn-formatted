@@ -25,7 +25,7 @@
 
 #include <math.h>
 #include <string.h>
-#include "R.h" /* for F77_CALL */
+#include <R.h> /* for F77_CALL */
 #include "R_ext/Linpack.h"
 #include "R_ext/PrtUtil.h" /* for Rprintf */
 #include "R_ext/Applic.h"

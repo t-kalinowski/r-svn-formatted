@@ -19,7 +19,7 @@
  */
 
 #define MATHLIB_STANDALONE 1
-#include "Rmath.h"
+#include <Rmath.h>
 
 int main()
 {
