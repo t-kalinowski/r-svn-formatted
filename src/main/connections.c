@@ -2547,11 +2547,13 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         con = newfile(url + 7, strlen(open) ? open : "r");
         class2 = "file";
+#ifdef HAVE_LIBXML
     }
     else if (strncmp(url, "http://", 7) == 0 || strncmp(url, "ftp://", 6) == 0)
     {
         con = newurl(url, strlen(open) ? open : "r");
         ((Rurlconn)con->private)->type = type;
+#endif
     }
     else
         error("unsupported URL schema");
