@@ -133,9 +133,15 @@ static int R_unlink_one(char *dir, char *name, int recursive)
         return 0;
     if (strcmp(name, "..") == 0)
         return 0;
-    strcpy(tmp, dir);
-    strcat(tmp, "\\");
-    strcat(tmp, name);
+    if (strlen(dir))
+    {
+        strcpy(tmp, dir);
+        if (*(dir + strlen(dir) - 1) != '\\')
+            strcat(tmp, "\\");
+        strcat(tmp, name);
+    }
+    else
+        strcpy(tmp, name);
     return (recursive ? R_unlink(tmp, 1) : unlink(tmp)) != 0;
 }
 
