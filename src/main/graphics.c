@@ -2733,6 +2733,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
     double *xx, *yy, temp;
     double x1, y1, x2, y2;
     cliprect cr;
+    char *vmax = vmaxget();
 
     setClipRect(&cr.xl, &cr.yb, &cr.xr, &cr.yt, coords, dd);
     if (cr.xr < cr.xl)
@@ -2748,8 +2749,8 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
         cr.yt = temp;
     }
 
-    xx = (double *)C_alloc(n, sizeof(double));
-    yy = (double *)C_alloc(n, sizeof(double));
+    xx = (double *)R_alloc(n, sizeof(double));
+    yy = (double *)R_alloc(n, sizeof(double));
     if (xx == NULL || yy == NULL)
         error("out of memory while clipping polyline");
 
@@ -2802,8 +2803,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
         y1 = y[i];
     }
 
-    C_free((char *)xx);
-    C_free((char *)yy);
+    vmaxset(vmax);
 }
 
 /* Clip the line

@@ -59,7 +59,6 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 
     for (;;)
     {
-        Reset_C_alloc();
         R_PPStackTop = savestack;
         R_CurrentExpr = R_Parse1File(fp, 1, &status);
         switch (status)
@@ -157,8 +156,6 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
             if (c == ';' || c == '\n')
                 break;
         }
-        if (browselevel)
-            Reset_C_alloc();
 
         R_PPStackTop = savestack;
         R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status);
@@ -396,7 +393,6 @@ void setup_Rmainloop(void)
     InitArithmetic();
     InitColors();
     InitGraphics();
-    Init_C_alloc();
     R_Is_Running = 1;
 
     /* gc_inhibit_torture = 0; */
