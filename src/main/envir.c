@@ -1817,7 +1817,12 @@ SEXP do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, "invalid mode argument");
 
         if (nifnfnd == 1)
-            PROTECT(ifnfnd = ifnotfound);
+        {
+            if (TYPEOF(ifnotfound) == VECSXP)
+                PROTECT(ifnfnd = VECTOR_ELT(ifnotfound, 0));
+            else
+                PROTECT(ifnfnd = ifnotfound);
+        }
         else
             PROTECT(ifnfnd = getOneVal(ifnotfound, i));
 
