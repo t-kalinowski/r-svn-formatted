@@ -14,17 +14,23 @@
 
 /*
  *  Altered by B.D. Ripley to use  F77_SYMBOL, declare routines before use.
+ *
+ *  'protoize'd to ANSI C headers; indented: M.Maechler
  */
-#include <stdio.h>
-#include <math.h>
-#include <S.h>
+
+#include <string.h>
+#include "S.h"
 
 #define F77_SUB(x) F77_SYMBOL(x)
 
-void loess_workspace();
-void loess_prune();
-void loess_grow();
-void loess_free();
+/* Much cleaner would be a  loess.h !! */
+void loess_workspace(long *d, long *n, double *span, long *degree, long *nonparametric, long *drop_square,
+                     long *sum_drop_sqr, long *setLf);
+void loess_prune(long *parameter, long *a, double *xi, double *vert, double *vval);
+void loess_grow(long *parameter, long *a, double *xi, double *vert, double *vval);
+void loess_free(void);
+
+/* These (and many more) are in ./loessf.f : */
 void F77_SUB(lowesa)();
 void F77_SUB(lowesb)();
 void F77_SUB(lowesc)();
@@ -51,11 +57,10 @@ static void warnmsg(char *string)
 static long *iv, liv, lv, tau;
 static double *v;
 
-void loess_raw(y, x, weights, robust, d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, surf_stat,
-               surface, parameter, a, xi, vert, vval, diagonal, trL, one_delta, two_delta, setLf) double *y,
-    *x, *weights, *robust, *span, *cell, *surface, *xi, *vert, *vval, *diagonal, *trL, *one_delta, *two_delta;
-long *d, *n, *parameter, *a, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *setLf;
-char **surf_stat;
+void loess_raw(double *y, double *x, double *weights, double *robust, long *d, long *n, double *span, long *degree,
+               long *nonparametric, long *drop_square, long *sum_drop_sqr, double *cell, char **surf_stat,
+               double *surface, long *parameter, long *a, double *xi, double *vert, double *vval, double *diagonal,
+               double *trL, double *one_delta, double *two_delta, long *setLf)
 {
     long zero = 0, one = 1, two = 2, nsing, i, k;
     double *hat_matrix, *LL;
@@ -128,10 +133,8 @@ char **surf_stat;
     loess_free();
 }
 
-void loess_dfit(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, d, n, m,
-                fit) double *y,
-    *x, *x_evaluate, *weights, *span, *fit;
-long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
+void loess_dfit(double *y, double *x, double *x_evaluate, double *weights, double *span, long *degree,
+                long *nonparametric, long *drop_square, long *sum_drop_sqr, long *d, long *n, long *m, double *fit)
 {
     long zero = 0;
 
@@ -140,10 +143,9 @@ long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
     loess_free();
 }
 
-void loess_dfitse(y, x, x_evaluate, weights, robust, family, span, degree, nonparametric, drop_square, sum_drop_sqr, d,
-                  n, m, fit, L) double *y,
-    *x, *x_evaluate, *weights, *robust, *span, *fit, *L;
-long *family, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
+void loess_dfitse(double *y, double *x, double *x_evaluate, double *weights, double *robust, long *family, double *span,
+                  long *degree, long *nonparametric, long *drop_square, long *sum_drop_sqr, long *d, long *n, long *m,
+                  double *fit, double *L)
 {
     long zero = 0, two = 2;
 
@@ -157,18 +159,17 @@ long *family, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
     }
     loess_free();
 }
-void loess_ifit(parameter, a, xi, vert, vval, m, x_evaluate, fit) double *xi, *vert, *vval, *x_evaluate, *fit;
-long *parameter, *a, *m;
+void loess_ifit(long *parameter, long *a, double *xi, double *vert, double *vval, long *m, double *x_evaluate,
+                double *fit)
 {
     loess_grow(parameter, a, xi, vert, vval);
     F77_SUB(lowese)(iv, &liv, &lv, v, m, x_evaluate, fit);
     loess_free();
 }
 
-void loess_ise(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, d, n, m, fit,
-               L) double *y,
-    *x, *x_evaluate, *weights, *span, *cell, *fit, *L;
-long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
+void loess_ise(double *y, double *x, double *x_evaluate, double *weights, double *span, long *degree,
+               long *nonparametric, long *drop_square, long *sum_drop_sqr, double *cell, long *d, long *n, long *m,
+               double *fit, double *L)
 {
     long zero = 0, one = 1;
 
@@ -179,9 +180,8 @@ long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
     loess_free();
 }
 
-void loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, setLf) long *d, *n, *degree,
-    *nonparametric, *drop_square, *sum_drop_sqr, *setLf;
-double *span;
+void loess_workspace(long *d, long *n, double *span, long *degree, long *nonparametric, long *drop_square,
+                     long *sum_drop_sqr, long *setLf)
 {
     long D, N, tau0, nvmax, nf, version = 106, i;
 
@@ -207,8 +207,7 @@ double *span;
         iv[i + 40] = drop_square[i];
 }
 
-void loess_prune(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
-long *parameter, *a;
+void loess_prune(long *parameter, long *a, double *xi, double *vert, double *vval)
 {
     long d, vc, a1, v1, xi1, vv1, nc, nv, nvmax, i, k;
 
@@ -243,8 +242,7 @@ long *parameter, *a;
         vval[i] = v[vv1 + i];
 }
 
-void loess_grow(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
-long *parameter, *a;
+void loess_grow(long *parameter, long *a, double *xi, double *vert, double *vval)
 {
     long d, vc, nc, nv, a1, v1, xi1, vv1, i, k;
 
@@ -295,7 +293,7 @@ long *parameter, *a;
     (&d, &vc, &nc, &nc, &nv, &nv, v + v1, iv + a1, v + xi1, iv + iv[7] - 1, iv + iv[8] - 1, iv + iv[9] - 1);
 }
 
-void loess_free()
+void loess_free(void)
 {
     Free(v);
     Free(iv);
@@ -303,129 +301,126 @@ void loess_free()
 
 /* begin ehg's FORTRAN-callable C-codes */
 
-void F77_SUB(ehg182)(i) int *i;
+void F77_SUB(ehg182)(int *i)
 {
-    char *mess, mess2[50];
+    char *msg, msg2[50];
     switch (*i)
     {
     case 100:
-        mess = "wrong version number in lowesd.  Probably typo in caller.";
+        msg = "wrong version number in lowesd.   Probably typo in caller.";
         break;
     case 101:
-        mess = "d>dMAX in ehg131.  Need to recompile with increased dimensions.";
+        msg = "d>dMAX in ehg131.  Need to recompile with increased dimensions.";
         break;
     case 102:
-        mess = "liv too small.   (Discovered by lowesd)";
+        msg = "liv too small.    (Discovered by lowesd)";
         break;
     case 103:
-        mess = "lv too small.    (Discovered by lowesd)";
+        msg = "lv too small.     (Discovered by lowesd)";
         break;
     case 104:
-        mess = "span too small.  fewer data values than degrees of freedom.";
+        msg = "span too small.   fewer data values than degrees of freedom.";
         break;
     case 105:
-        mess = "k>d2MAX in ehg136.  Need to recompile with increased dimensions.";
+        msg = "k>d2MAX in ehg136.  Need to recompile with increased dimensions.";
         break;
     case 106:
-        mess = "lwork too small";
+        msg = "lwork too small";
         break;
     case 107:
-        mess = "invalid value for kernel";
+        msg = "invalid value for kernel";
         break;
     case 108:
-        mess = "invalid value for ideg";
+        msg = "invalid value for ideg";
         break;
     case 109:
-        mess = "lowstt only applies when kernel=1.";
+        msg = "lowstt only applies when kernel=1.";
         break;
     case 110:
-        mess = "not enough extra workspace for robustness calculation";
+        msg = "not enough extra workspace for robustness calculation";
         break;
     case 120:
-        mess = "zero-width neighborhood. make span bigger";
+        msg = "zero-width neighborhood. make span bigger";
         break;
     case 121:
-        mess = "all data on boundary of neighborhood. make span bigger";
+        msg = "all data on boundary of neighborhood. make span bigger";
         break;
     case 122:
-        mess = "extrapolation not allowed with blending";
+        msg = "extrapolation not allowed with blending";
         break;
     case 123:
-        mess = "ihat=1 (diag L) in l2fit only makes sense if z=x (eval=data).";
+        msg = "ihat=1 (diag L) in l2fit only makes sense if z=x (eval=data).";
         break;
     case 171:
-        mess = "lowesd must be called first.";
+        msg = "lowesd must be called first.";
         break;
     case 172:
-        mess = "lowesf must not come between lowesb and lowese, lowesr, or lowesl.";
+        msg = "lowesf must not come between lowesb and lowese, lowesr, or lowesl.";
         break;
     case 173:
-        mess = "lowesb must come before lowese, lowesr, or lowesl.";
+        msg = "lowesb must come before lowese, lowesr, or lowesl.";
         break;
     case 174:
-        mess = "lowesb need not be called twice.";
+        msg = "lowesb need not be called twice.";
         break;
     case 175:
-        mess = "need setLf=.true. for lowesl.";
+        msg = "need setLf=.true. for lowesl.";
         break;
     case 180:
-        mess = "nv>nvmax in cpvert.";
+        msg = "nv>nvmax in cpvert.";
         break;
     case 181:
-        mess = "nt>20 in eval.";
+        msg = "nt>20 in eval.";
         break;
     case 182:
-        mess = "svddc failed in l2fit.";
+        msg = "svddc failed in l2fit.";
         break;
     case 183:
-        mess = "didnt find edge in vleaf.";
+        msg = "didnt find edge in vleaf.";
         break;
     case 184:
-        mess = "zero-width cell found in vleaf.";
+        msg = "zero-width cell found in vleaf.";
         break;
     case 185:
-        mess = "trouble descending to leaf in vleaf.";
+        msg = "trouble descending to leaf in vleaf.";
         break;
     case 186:
-        mess = "insufficient workspace for lowesf.";
+        msg = "insufficient workspace for lowesf.";
         break;
     case 187:
-        mess = "insufficient stack space";
+        msg = "insufficient stack space";
         break;
     case 188:
-        mess = "lv too small for computing explicit L";
+        msg = "lv too small for computing explicit L";
         break;
     case 191:
-        mess = "computed trace L was negative; something is wrong!";
+        msg = "computed trace L was negative; something is wrong!";
         break;
     case 192:
-        mess = "computed delta was negative; something is wrong!";
+        msg = "computed delta was negative; something is wrong!";
         break;
     case 193:
-        mess = "workspace in loread appears to be corrupted";
+        msg = "workspace in loread appears to be corrupted";
         break;
     case 194:
-        mess = "trouble in l2fit/l2tr";
+        msg = "trouble in l2fit/l2tr";
         break;
     case 195:
-        mess = "only constant, linear, or quadratic local models allowed";
+        msg = "only constant, linear, or quadratic local models allowed";
         break;
     case 196:
-        mess = "degree must be at least 1 for vertex influence matrix";
+        msg = "degree must be at least 1 for vertex influence matrix";
         break;
     case 999:
-        mess = "not yet implemented";
+        msg = "not yet implemented";
         break;
     default:
-        sprintf(mess = mess2, "Assert failed; error code %d\n", *i);
-        break;
+        sprintf(msg = msg2, "Assert failed; error code %d\n", *i);
     }
-    warnmsg(mess);
+    warnmsg(msg);
 }
 
-#include <string.h>
-void F77_SUB(ehg183)(s, i, n, inc) char *s;
-int *i, *n, *inc;
+void F77_SUB(ehg183)(char *s, int *i, int *n, int *inc)
 {
     char mess[4000], num[20];
     int j;
@@ -439,9 +434,7 @@ int *i, *n, *inc;
     warnmsg(mess);
 }
 
-void F77_SUB(ehg184)(s, x, n, inc) char *s;
-double *x;
-int *n, *inc;
+void F77_SUB(ehg184)(char *s, double *x, int *n, int *inc)
 {
     char mess[4000], num[30];
     int j;
