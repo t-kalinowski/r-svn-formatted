@@ -29,7 +29,7 @@
 #define RNG_DEFAULT MARSAGLIA_MULTICARRY
 
 static RNGtype RNG_kind = RNG_DEFAULT;
-extern N01type N01_kind; /* from .../nmath/snorm.c */
+extern N01type N01_kind; /* from ../nmath/snorm.c */
 
 #if (SIZEOF_LONG == 4)
 typedef unsigned long Int32;
