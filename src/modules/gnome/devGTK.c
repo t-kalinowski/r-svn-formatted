@@ -356,7 +356,7 @@ static gint expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
     gdk_draw_pixmap(gtkd->drawing->window, gtkd->wgc, gtkd->pixmap, event->area.x, event->area.y, event->area.x,
                     event->area.y, event->area.width, event->area.height);
 
-    GEHandleEvent(GE_Redraw, dd, R_NilValue);
+    GEplayDisplayList((GEDevDesc *)GetDevice(devNumber((DevDesc *)dd)));
 
     return FALSE;
 }
