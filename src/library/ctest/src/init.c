@@ -58,5 +58,6 @@ static const R_CMethodDef cMethods[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
 
 void R_init_ctest(DllInfo *dll)
 {
+    R_useDynamicSymbols(dll, FALSE);
     R_registerRoutines(dll, cMethods, NULL, NULL, NULL);
 }

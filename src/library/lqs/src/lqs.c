@@ -492,7 +492,8 @@ static R_CMethodDef R_CDef[] = {
     {NULL, NULL, 0},
 };
 
-void R_init_lqs(DllInfo *info)
+void R_init_lqs(DllInfo *dll)
 {
-    R_registerRoutines(info, R_CDef, NULL, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+    R_registerRoutines(dll, R_CDef, NULL, NULL, NULL);
 }

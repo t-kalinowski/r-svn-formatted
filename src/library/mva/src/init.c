@@ -33,5 +33,6 @@ static const R_FortranMethodDef FortEntries[] = {{"hclust", (DL_FUNC)&F77_SUB(hc
 
 void R_init_mva(DllInfo *dll)
 {
+    R_useDynamicSymbols(dll, FALSE);
     R_registerRoutines(dll, CEntries, NULL, FortEntries, NULL);
 }

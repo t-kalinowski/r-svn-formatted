@@ -59,9 +59,10 @@ static const R_CallMethodDef callMethods[] = {{"L_initGrid", (DL_FUNC)&L_initGri
                                               {"L_layoutRegion", (DL_FUNC)&L_layoutRegion, 2},
                                               {NULL, NULL, 0}};
 
-void R_init_grid(DllInfo *info)
+void R_init_grid(DllInfo *dll)
 {
+    R_useDynamicSymbols(dll, FALSE);
     /* No .C, .Fortran, or .External routines => NULL
      */
-    R_registerRoutines(info, NULL, callMethods, NULL, NULL);
+    R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
 }
