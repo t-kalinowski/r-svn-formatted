@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -85,12 +85,13 @@ static void BoundsCheck(double x, double a, double b, char *s)
         par_error(s);
 }
 
-/* Do NOT forget to update  ../library/base/R/par  if you  ADD a NEW  par !! */
+/* Specify -- parameters as arguments of  par(what = value) */
 
 static int Specify(char *what, SEXP value)
 {
     double x;
     int ix;
+    /* Do NOT forget to update  ../library/base/R/par  if you  ADD a NEW  par !! */
 
     if (streql(what, "adj"))
     {
@@ -1286,7 +1287,8 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(1);
     return value;
 }
-
+/* Specify2 --	parameters as arguments from higher-level graphics functions,
+        incl.  par2(..) :*/
 void Specify2(char *what, SEXP value)
 {
     double x;
@@ -1500,7 +1502,7 @@ void Specify2(char *what, SEXP value)
         nonnegIntCheck(INTEGER(value)[0], what);
         GP->lab[0] = INTEGER(value)[0];
         GP->lab[1] = INTEGER(value)[1];
-        GP->lab[2] = INTEGER(value)[1];
+        GP->lab[2] = INTEGER(value)[2];
     }
     else if (streql(what, "las"))
     {
