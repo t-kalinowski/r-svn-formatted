@@ -426,6 +426,9 @@ SEXP R_data_class(SEXP obj, int singleString)
             case REALSXP:
                 class = mkChar("numeric");
                 break;
+            case SYMSXP:
+                class = mkChar("name");
+                break;
             case LANGSXP:
                 class = lang2str(obj, t);
                 break;
