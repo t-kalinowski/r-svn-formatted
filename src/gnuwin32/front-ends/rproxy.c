@@ -17,7 +17,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy.c,v 1.11 2002/03/22 17:56:07 ripley Exp $
+ *  $Id: rproxy.c,v 1.12 2002/04/05 04:04:18 murrell Exp $
  */
 
 #define NONAMELESSUNION
@@ -443,6 +443,10 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
 
         /* Do this for early redraw attempts */
         lDev->displayList = R_NilValue;
+        /* Make sure that this is initialised before a GC can occur.
+         * This (and displayList) get protected during GC
+         */
+        lDev->savedSnapshot = R_NilValue;
         R_Proxy_Graphics_Driver(lDev, "ActiveXDevice 1", 100.0, 100.0, 10.0, 0, 0, device);
         gsetVar(install(".Device"), mkString("ActiveXDevice 1"), R_NilValue);
         lDD = GEcreateDevDesc(lDev);
