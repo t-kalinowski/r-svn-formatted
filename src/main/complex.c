@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -384,7 +384,7 @@ static void z_rround(complex *r, complex *x, complex *p)
 }
 
 /* Question:  This treats real and imaginary parts */
-/* separately.  Should it do them jointly? */
+/* separately.	Should it do them jointly? */
 
 static void z_prec(complex *r, complex *x, complex *p)
 {
@@ -622,6 +622,9 @@ SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         cmath1(z_log, COMPLEX(x), COMPLEX(y), n);
         break;
 
+    case 0:
+        errorcall(call, "'abs' unimplemented for complex; use Mod(.)\n");
+        break;
     case 3:
         cmath1(z_sqrt, COMPLEX(x), COMPLEX(y), n);
         break;
