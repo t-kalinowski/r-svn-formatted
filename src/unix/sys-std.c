@@ -523,7 +523,11 @@ static void handleInterrupt(void)
     popReadline();
     onintr();
 }
-
+#else
+static void handleInterrupt(void)
+{
+    onintr();
+}
 #endif /* HAVE_LIBREADLINE */
 
 /* Fill a text buffer from stdin or with user typed console input. */
