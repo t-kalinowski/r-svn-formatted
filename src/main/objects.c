@@ -1179,9 +1179,10 @@ argument to standardGeneric.
 */
 static SEXP get_this_generic(SEXP args)
 {
-    SEXP rval = NULL, t;
+    SEXP rval = NULL;
     int i;
     RCNTXT *cptr;
+
     /* a second argument to the call, if any, is taken as the function */
     if (CDR(args) != R_NilValue)
         return CAR(CDR(args));
