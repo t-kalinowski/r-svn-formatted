@@ -348,48 +348,92 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
 
 typedef SEXP (*StringEltGetter)(SEXP x, int i);
 
-static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter strg, int *stretch)
+/* This uses a couple of horrible hacks in conjunction with
+ * VectorAssign (in subassign.c).  If subscripting is used for
+ * assignment, it is possible to extend a vector by supplying new
+ * names, and we want to give the extended vector those names, so they
+ * are returned as the attribute. Also, unset elements of the vector
+ * of new names (places where a match was found) are indicated by
+ * setting the element of the newnames vector to NULL, even though it
+ * is a character vector.
+ */
+
+/* The original code (pre 2.0.0) used a ns x nx loop that was too
+ * slow.  So now we hash.  Hashing is expensive on memory (up to 32nx
+ * bytes) so it is only worth doing if ns * nx is large.  If nx is
+ * large, then it will be too slow unless ns is very small.
+ */
+
+#define USE_HASHING 1
+static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter strg, int *stretch, Rboolean in)
 {
     SEXP indx, indexnames;
     int i, j, nnames, sub, extra;
     int canstretch = *stretch;
+#ifdef USE_HASHING
+    Rboolean usehashing = in && (ns * nx > 1000);
+#else
+    Rboolean usehashing = FALSE;
+#endif
+
     PROTECT(s);
     PROTECT(names);
-    PROTECT(indx = allocVector(INTSXP, ns));
     PROTECT(indexnames = allocVector(STRSXP, ns));
     nnames = nx;
     extra = nnames;
 
-    /* Process each of the subscripts */
-    /* First we compare with the names on the vector */
-    /* and then (if there is no match) with each of */
-    /* the previous subscripts. */
+    /* Process each of the subscripts. First we compare with the names
+     * on the vector and then (if there is no match) with each of the
+     * previous subscripts, since (if assigning) we may have already
+     * added an element of that name. (If we are not assigning, any
+     * nonmatch will have given an error.)
+     */
+
+#ifdef USE_HASHING
+    if (usehashing)
+    {
+        /* must be internal, so names contains a character vector */
+        PROTECT(indx = match(names, s, 0));
+        for (i = 0; i < ns; i++)
+            SET_STRING_ELT(indexnames, i, R_NilValue);
+    }
+    else
+    {
+#endif
+        PROTECT(indx = allocVector(INTSXP, ns));
+        for (i = 0; i < ns; i++)
+        {
+            sub = 0;
+            if (names != R_NilValue)
+            {
+                for (j = 0; j < nnames; j++)
+                {
+                    SEXP names_j = strg(names, j);
+                    if (!in && TYPEOF(names_j) != CHARSXP)
+                        error("character vector element does not have type CHARSXP");
+                    if (NonNullStringMatch(STRING_ELT(s, i), names_j))
+                    {
+                        sub = j + 1;
+                        SET_STRING_ELT(indexnames, i, R_NilValue);
+                        break;
+                    }
+                }
+            }
+            INTEGER(indx)[i] = sub;
+        }
+#ifdef USE_HASHING
+    }
+#endif
 
     for (i = 0; i < ns; i++)
     {
-        sub = 0;
-        if (names != R_NilValue)
-        {
-            for (j = 0; j < nnames; j++)
-            {
-                SEXP names_j = strg(names, j);
-                if (TYPEOF(names_j) != CHARSXP)
-                    error("character vector element does not have type CHARSXP");
-                if (NonNullStringMatch(STRING_ELT(s, i), names_j))
-                {
-                    sub = j + 1;
-                    SET_STRING_ELT(indexnames, i, R_NilValue);
-                    break;
-                }
-            }
-        }
+        sub = INTEGER(indx)[i];
         if (sub == 0)
         {
             for (j = 0; j < i; j++)
                 if (NonNullStringMatch(STRING_ELT(s, i), STRING_ELT(s, j)))
                 {
                     sub = INTEGER(indx)[j];
-                    /*		    SET_STRING_ELT(indexnames, i, STRING_ELT(indexnames, sub - 1));*/
                     SET_STRING_ELT(indexnames, i, STRING_ELT(s, j));
                     break;
                 }
@@ -407,9 +451,7 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
     /* Ghastly hack!  We attach the new names to the attribute */
     /* slot on the returned subscript vector. */
     if (extra != nnames)
-    {
         SET_ATTRIB(indx, indexnames);
-    }
     if (canstretch)
         *stretch = extra;
     UNPROTECT(4);
@@ -426,7 +468,7 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
 
 typedef SEXP AttrGetter(SEXP x, SEXP data);
 
-SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
+static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x, Rboolean in)
 {
     int nd, ns, stretch = 0;
     SEXP dnames, tmp;
@@ -451,7 +493,7 @@ SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter 
         if (dnames == R_NilValue)
             error("no dimnames attribute for array");
         dnames = VECTOR_ELT(dnames, dim);
-        return stringSubscript(s, ns, nd, dnames, strg, &stretch);
+        return stringSubscript(s, ns, nd, dnames, strg, &stretch, in);
     case SYMSXP:
         if (s == R_MissingArg)
             return nullSubscript(nd);
@@ -459,6 +501,11 @@ SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter 
         error("invalid subscript");
     }
     return R_NilValue;
+}
+
+SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
+{
+    return int_arraySubscript(dim, s, dims, dng, strg, x, TRUE);
 }
 
 /* Subscript creation.  The first thing we do is check to see */
@@ -492,7 +539,7 @@ SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
    subsetting,
 */
 
-SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)
+static SEXP int_vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x, Rboolean in)
 {
     int ns;
     SEXP ans = R_NilValue, tmp;
@@ -531,7 +578,7 @@ SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGett
     case STRSXP: {
         SEXP names = dng(x, R_NamesSymbol);
         /* *stretch = 0; */
-        ans = stringSubscript(s, ns, nx, names, strg, stretch);
+        ans = stringSubscript(s, ns, nx, names, strg, stretch, in);
     }
     break;
     case SYMSXP:
@@ -546,4 +593,9 @@ SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGett
     }
     UNPROTECT(1);
     return ans;
+}
+
+SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)
+{
+    return int_vectorSubscript(nx, s, stretch, dng, strg, x, TRUE);
 }
