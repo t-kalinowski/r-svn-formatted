@@ -114,11 +114,11 @@ fail:
 /* Returns the first partially matching tag found. */
 /* Pattern is a C string. */
 
-SEXP matchPar(char *tag, SEXP *list)
+static SEXP matchPar_int(char *tag, SEXP *list, Rboolean exact)
 {
     if (*list == R_NilValue)
         return R_MissingArg;
-    else if (TAG(*list) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(*list))), 0))
+    else if (TAG(*list) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(*list))), exact))
     {
         SEXP s = *list;
         *list = CDR(*list);
@@ -130,7 +130,7 @@ SEXP matchPar(char *tag, SEXP *list)
         SEXP next = CDR(*list);
         while (next != R_NilValue)
         {
-            if (TAG(next) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(next))), 0))
+            if (TAG(next) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(next))), exact))
             {
                 SETCDR(last, CDR(next));
                 return CAR(next);
@@ -145,6 +145,11 @@ SEXP matchPar(char *tag, SEXP *list)
     }
 }
 
+SEXP matchPar(char *tag, SEXP *list)
+{
+    return matchPar_int(tag, list, FALSE);
+}
+
 /* Destructively Extract A Named List Element. */
 /* Returns the first partially matching tag found. */
 /* Pattern is a symbol. */
@@ -152,6 +157,15 @@ SEXP matchPar(char *tag, SEXP *list)
 SEXP matchArg(SEXP tag, SEXP *list)
 {
     return matchPar(CHAR(PRINTNAME(tag)), list);
+}
+
+/* Destructively Extract A Named List Element. */
+/* Returns the first exactly matching tag found. */
+/* Pattern is a symbol. */
+
+SEXP matchArgExact(SEXP tag, SEXP *list)
+{
+    return matchPar_int(CHAR(PRINTNAME(tag)), list, TRUE);
 }
 
 /* Match the supplied arguments with the formals and */
