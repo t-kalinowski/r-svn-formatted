@@ -62,6 +62,10 @@
 
 #include "Raqua.h"
 
+/* Cocoa bundle stuff */
+static OSStatus appCommandHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *userData);
+EventTypeSpec cmdEvent = {kEventClassCommand, kEventCommandProcess};
+
 unsigned char Lat2Mac[] = {
     32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  245, 96,  171, 246, 247, 248,
     249, 250, 172, 32,  251, 252, 32,  253, 254, 255, 32,  193, 162, 163, 32,  180, 32,  164, 172, 169, 187, 199,
@@ -87,7 +91,7 @@ extern SA_TYPE RestoreAction;
 void GraphicCopy(WindowPtr window);
 
 /* Items for the Edit menu */
-#define kRCmdEdirObject 'edbj'
+#define kRCmdEditObject 'edbj'
 /* Items for the Tools menu */
 #define kRCmdFileShow 'fshw'
 #define kRCmdEditFile 'edtf'
@@ -317,8 +321,6 @@ void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
 int NewHelpWindow(char *fileName, char *title, char *WinTitle);
 
-extern Boolean isConsoleFont;
-
 extern OSStatus MySetFontSelection(void);
 extern OSStatus MyGetFontSelection(EventRef event);
 
@@ -329,7 +331,9 @@ static const EventTypeSpec REvents[] = {{kEventClassTextInput, kEventTextInputUn
 
 static const EventTypeSpec aboutSpec = {kEventClassWindow, kEventWindowClose};
 
-static const EventTypeSpec inputSpec = {kEventClassControl, kEventControlHit};
+static const EventTypeSpec inputSpec[] = {
+    {kEventClassControl, kEventControlHit} /* , {kEventClassWindow, kEventWindowClose} */
+};
 
 static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon);
 static pascal OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
@@ -394,7 +398,7 @@ extern void GetRPrefs(void);
 extern void SaveRPrefs(void);
 
 void Raqua_GetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,
-                               Rboolean *autorefresh);
+                               Rboolean *autorefresh, int *quartzpos);
 
 TXNControlTag ROutTag[] = {kTXNIOPrivilegesTag, kTXNNoUserIOTag, kTXNWordWrapStateTag};
 TXNControlData ROutData[] = {kTXNReadWrite, kTXNReadOnly, kTXNNoAutoWrap};
@@ -428,16 +432,19 @@ EventLoopTimerRef Inst_OtherEventLoops;
 EventLoopTimerRef Inst_ReadStdoutTimer;
 EventLoopTimerRef Inst_FlushConsoleTimer;
 
+extern void SaveConsolePosToPrefs(void);
+extern Rect ConsoleWindowBounds;
+
 void SetUpRAquaMenu(void);
 OSStatus InstallAppHandlers(void);
 OSStatus SetUpGUI(void);
+CFBundleRef RBundle = NULL;
+CFURLRef RbundleURL = NULL;
 
 OSStatus SetUpGUI(void)
 {
     IBNibRef nibRef = NULL;
     OSErr err = noErr;
-    CFURLRef bundleURL = NULL;
-    CFBundleRef RBundle = NULL;
 
     RBundle = CFBundleGetMainBundle();
     if (RBundle == NULL)
@@ -455,13 +462,14 @@ OSStatus SetUpGUI(void)
     if ((err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &ConsoleWindow)) != noErr)
         goto guifailure;
 
-    RepositionWindow(ConsoleWindow, NULL, kWindowCascadeOnMainScreen);
-
     if ((err = CreateWindowFromNib(nibRef, CFSTR("AboutWindow"), &RAboutWindow)) != noErr)
         goto guifailure;
 
+    RepositionWindow(RAboutWindow, NULL, kWindowCenterOnMainScreen);
+
     if ((err = CreateWindowFromNib(nibRef, CFSTR("PrefsWindow"), &RPrefsWindow)) != noErr)
         goto guifailure;
+    RepositionWindow(RPrefsWindow, NULL, kWindowCenterOnMainScreen);
 
     if ((err = CreateWindowFromNib(nibRef, CFSTR("InputDialog"), &RInputDialog)) != noErr)
         goto guifailure;
@@ -540,6 +548,8 @@ OSStatus SetUPConsole(void)
 
     TXNFocus(RConsoleOutObject, true);
 
+    InstallApplicationEventHandler(NewEventHandlerUPP(appCommandHandler), 1, &cmdEvent, 0, NULL);
+
     return err;
 }
 
@@ -579,8 +589,6 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 {
     IBNibRef nibRef = NULL;
     OSErr err = noErr, result;
-    CFURLRef bundleURL = NULL;
-    CFBundleRef RBundle = NULL;
 
     char buf[300];
     FSRef ref;
@@ -595,7 +603,14 @@ void Raqua_StartConsole(Rboolean OpenConsole)
         GetRPrefs();
         RSetPipes();
 
-        InitCursor();
+        RepositionWindow(ConsoleWindow, NULL, kWindowCascadeOnMainScreen);
+        if (CurrentPrefs.SaveConsolePos == 1)
+        {
+            if (ConsoleWindowBounds.bottom != 0)
+                SetWindowBounds(ConsoleWindow, kWindowStructureRgn, &ConsoleWindowBounds);
+        }
+        //     InitCursor();
+        //    SetThemeCursor(kThemeIBeamCursor);
 
         if (TXNVersionInformation == (void *)kUnresolvedCFragSymbolAddress)
             goto noconsole;
@@ -645,16 +660,11 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 
     if (ConsoleWindow != NULL)
         SelectWindow(ConsoleWindow);
-    //    otherPolledEventHandler = R_PolledEvents;
-    //   R_PolledEvents = Raqua_ProcessEvents;
+    InitCursor();
 
     return;
 
 noconsole:
-    if (bundleURL)
-        CFRelease(bundleURL);
-    if (RBundle)
-        CFRelease(RBundle);
     CloseRAquaConsole();
 }
 
@@ -679,13 +689,13 @@ OSStatus InstallAppHandlers(void)
     err = InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec,
                                     (void *)RAboutWindow, NULL);
 
-    err = InstallWindowEventHandler(RInputDialog, NewEventHandlerUPP(RInputDialogHandler), 1, &inputSpec,
+    err = InstallWindowEventHandler(RInputDialog, NewEventHandlerUPP(RInputDialogHandler), 1, inputSpec,
                                     (void *)RInputDialog, NULL);
 
-    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogProc), RInputDialogHandler, 1, &inputSpec,
+    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogProc), RInputDialogHandler, 1, inputSpec,
                                      RInputDialog, NULL);
 
-    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogCanc), RInputDialogHandler, 1, &inputSpec,
+    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogCanc), RInputDialogHandler, 1, inputSpec,
                                      RInputDialog, NULL);
 
     return err;
@@ -747,13 +757,14 @@ static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData)
 
 void CloseRAquaConsole(void)
 {
-
     DisposeWindow(RInputDialog);
     DisposeWindow(RAboutWindow);
     DisposeWindow(RPrefsWindow);
 
     TXNDeleteObject(RConsoleOutObject);
     TXNDeleteObject(RConsoleInObject);
+    GetWindowBounds(ConsoleWindow, kWindowStructureRgn, &ConsoleWindowBounds);
+    SaveConsolePosToPrefs();
     DisposeWindow(ConsoleWindow);
 
     TXNTerminateTextension();
@@ -765,14 +776,16 @@ void CloseRAquaConsole(void)
     RemoveEventLoopTimer(Inst_FlushConsoleTimer);
 
     CloseAquaIO();
+    if (RbundleURL)
+        CFRelease(RbundleURL);
+    if (RBundle)
+        CFRelease(RBundle);
 }
 
 void OpenStdoutPipe(void)
 {
-    //  fprintf(stderr,"\nstdout=%x, aquaout=%x",stdout,RAquaStdout);
     RAquaStdout = freopen(StdoutFName, "w", stdout);
     RAquaStdoutBack = fopen(StdoutFName, "r");
-    //  fprintf(stderr,"\nstdout=%x, aquaout=%x",stdout,RAquaStdout);
 }
 
 void OpenStderrPipe(void)
@@ -800,10 +813,8 @@ void CloseStdoutPipe(void)
 void CloseStderrPipe(void)
 {
     if (RAquaStderr)
-    {
-        //    freopen ("/dev/null", "w", stderr);
         fclose(RAquaStderr);
-    }
+
     RAquaStderr = (FILE *)NULL;
     if (RAquaStderrBack)
         fclose(RAquaStderrBack);
@@ -901,6 +912,7 @@ void Raqua_WriteConsole(char *str, int len)
 
 static void Aqua_FlushBuffer(void)
 {
+    Rect bounds;
     if (WeHaveConsole)
     {
         if (WeAreBuffering)
@@ -945,11 +957,11 @@ OSStatus InitMLTE(void)
     SInt16 fontID;
     Str255 fontname;
 
-    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    CopyCStringToPascal(RFontFaces[CurrentPrefs.RFontFace - 1], fontname);
     GetFNum(fontname, &fontID);
 
     defaults.fontID = fontID;
-    defaults.pointSize = Long2Fix(CurrentPrefs.ConsoleFontSize);
+    defaults.pointSize = Long2Fix(RFontSizes[CurrentPrefs.RFontSize - 1]);
     defaults.encoding =
         CreateTextEncoding(kTextEncodingMacRoman, kTextEncodingDefaultVariant, kTextEncodingDefaultFormat);
     defaults.fontStyle = 0;
@@ -1421,7 +1433,7 @@ void RSetFont(void)
     SInt16 fontID;
     Str255 fontname;
 
-    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    CopyCStringToPascal(RFontFaces[CurrentPrefs.RFontFace - 1], fontname);
     GetFNum(fontname, &fontID);
 
     typeAttr.tag = kTXNQDFontFamilyIDAttribute;
@@ -1441,7 +1453,7 @@ void RSetFontSize(void)
 
     typeAttr.tag = kTXNQDFontSizeAttribute;
     typeAttr.size = kTXNFontSizeAttributeSize;
-    typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
+    typeAttr.data.dataValue = Long2Fix(RFontSizes[CurrentPrefs.RFontSize - 1]);
 
     TXNSetTypeAttributes(RConsoleOutObject, 1, &typeAttr, 0, kTXNEndOffset);
     TXNSetTypeAttributes(RConsoleInObject, 1, &typeAttr, 0, kTXNEndOffset);
@@ -1456,7 +1468,7 @@ void RSetTab(void)
     TXNControlTag tabtag = kTXNTabSettingsTag;
     TXNControlData tabdata;
 
-    tabdata.tabValue.value = (SInt16)(CurrentPrefs.TabSize * CurrentPrefs.ConsoleFontSize);
+    tabdata.tabValue.value = (SInt16)(CurrentPrefs.RTabSize * RFontSizes[CurrentPrefs.RFontSize - 1]);
     tabdata.tabValue.tabType = kTXNRightTab;
     tabdata.tabValue.filler = 0;
 
@@ -1674,7 +1686,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 }
                 break;
 
-            case kRCmdEdirObject:
+            case kRCmdEditObject:
                 if (GetTextFromWindow("Type the name of the object you want to edit", buf, 255) == kRDlogProc)
                 {
                     sprintf(cmd, "%s <- edit(%s)", buf, buf);
@@ -2234,16 +2246,8 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
         {
         case kEventFontPanelClosed:
             GetFontName(instance.fontFamily, fontname);
-            if (isConsoleFont)
-            {
-                CopyPascalStringToC(fontname, TempPrefs.ConsoleFontName);
-                TempPrefs.ConsoleFontSize = fontSize;
-            }
-            else
-            {
-                CopyPascalStringToC(fontname, TempPrefs.DeviceFontName);
-                TempPrefs.DevicePointSize = fontSize;
-            }
+            CopyPascalStringToC(fontname, TempPrefs.DeviceFontName);
+            TempPrefs.DevicePointSize = fontSize;
             SetUpPrefsWindow(&TempPrefs);
             ActivatePrefsWindow();
             break;
@@ -2272,12 +2276,6 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
                     RescaleInOut(0.8);
                     err = noErr;
                 }
-
-                /*                if( GetWindowProperty(EventWindow, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum)
-                   == noErr) if( (dd = ((GEDevDesc*) GetDevice(devnum))->dev) ){ dd->size(&(dd->left), &(dd->right),
-                   &(dd->bottom), &(dd->top), dd); GEplayDisplayList((GEDevDesc*) GetDevice(devnum)); err = noErr;
-                                    }
-                  */
             }
             break;
 
@@ -2338,13 +2336,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
             err = noErr;
         }
 
-        /* Are we closing any quartz device window ? */
-        /*            if( GetWindowProperty(EventWindow, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) == noErr){
-                            sprintf(cmd,"dev.off(%d)",1+devnum);
-                            consolecmd(cmd);
-                            err= noErr;
-                    }
-          */
         if (GetWindowProperty(EventWindow, 'RHLP', 'robj', sizeof(TXNObject), NULL, &RHlpObj) == noErr)
         {
             DestroyHelpWindow(EventWindow);
@@ -2501,7 +2492,7 @@ int Raqua_Edit(char *filename)
 
 int NewEditWindow(char *fileName)
 {
-    Rect WinBounds;
+    Rect WinBounds, mainRect;
     OSStatus err = noErr;
     WindowRef EditWindow = NULL;
     Str255 Title;
@@ -2527,12 +2518,19 @@ int NewEditWindow(char *fileName)
     frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask | kTXNDrawGrowIconMask;
     frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNMonostyledTextMask;
 
-    SetRect(&WinBounds, 400, 400, 400 + 400, 400 + 400);
+    SetRect(&WinBounds, 0, 0, 400, 400);
 
     if ((err =
              CreateNewWindow(kDocumentWindowClass, kWindowStandardHandlerAttribute | kWindowStandardDocumentAttributes,
                              &WinBounds, &EditWindow) != noErr))
         goto fail;
+
+    mainRect = (*GetMainDevice())->gdRect;
+    RepositionWindow(EditWindow, NULL, kWindowCascadeOnMainScreen);
+    GetWindowBounds(EditWindow, kWindowStructureRgn, &WinBounds);
+    WinBounds.left = mainRect.right - WinBounds.right + 1;
+    WinBounds.right = mainRect.right;
+    SetWindowBounds(EditWindow, kWindowStructureRgn, &WinBounds);
 
     InstallStandardEventHandler(GetWindowEventTarget(EditWindow));
 
@@ -2569,7 +2567,7 @@ int NewEditWindow(char *fileName)
     err = TXNSetTXNObjectControls(REdirObject, false, 1, REditTag, REditData);
     TXNSetTXNObjectControls(REdirObject, false, 1, txnControlTag, txnControlData);
 
-    tabdata.tabValue.value = (SInt16)(CurrentPrefs.TabSize * CurrentPrefs.ConsoleFontSize);
+    tabdata.tabValue.value = (SInt16)(CurrentPrefs.RTabSize * RFontSizes[CurrentPrefs.RFontSize - 1]);
     tabdata.tabValue.tabType = kTXNRightTab;
     tabdata.tabValue.filler = 0;
 
@@ -2585,11 +2583,11 @@ int NewEditWindow(char *fileName)
 
     typeAttr.tag = kTXNQDFontSizeAttribute;
     typeAttr.size = kTXNFontSizeAttributeSize;
-    typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
+    typeAttr.data.dataValue = Long2Fix(RFontSizes[CurrentPrefs.RFontSize - 1]);
 
     TXNSetTypeAttributes(REdirObject, 1, &typeAttr, 0, kTXNEndOffset);
 
-    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    CopyCStringToPascal(RFontFaces[CurrentPrefs.RFontFace - 1], fontname);
     GetFNum(fontname, &fontID);
 
     typeAttr.tag = kTXNQDFontFamilyIDAttribute;
@@ -2700,7 +2698,7 @@ int Raqua_ChooseFile(int new, char *buf, int len)
 
 int NewHelpWindow(char *fileName, char *title, char *WinTitle)
 {
-    Rect WinBounds;
+    Rect WinBounds, mainRect;
     OSStatus err = noErr;
     WindowRef HelpWindow = NULL;
     Str255 Title;
@@ -2724,12 +2722,19 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
     frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask | kTXNDrawGrowIconMask;
     frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNReadOnlyMask | kTXNMonostyledTextMask;
 
-    SetRect(&WinBounds, 400, 400, 400 + 400, 400 + 400);
+    SetRect(&WinBounds, 0, 0, 400, 400);
 
     if ((err =
              CreateNewWindow(kDocumentWindowClass, kWindowStandardHandlerAttribute | kWindowStandardDocumentAttributes,
                              &WinBounds, &HelpWindow) != noErr))
         goto fail;
+
+    mainRect = (*GetMainDevice())->gdRect;
+    RepositionWindow(HelpWindow, NULL, kWindowCascadeOnMainScreen);
+    GetWindowBounds(HelpWindow, kWindowStructureRgn, &WinBounds);
+    WinBounds.left = mainRect.right - WinBounds.right + 1;
+    WinBounds.right = mainRect.right;
+    SetWindowBounds(HelpWindow, kWindowStructureRgn, &WinBounds);
 
     InstallStandardEventHandler(GetWindowEventTarget(HelpWindow));
     CopyCStringToPascal(WinTitle, Title);
@@ -2755,7 +2760,7 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
 
     err = TXNSetTXNObjectControls(RHelpObject, false, 3, RHelpTag, RHelpData);
 
-    tabdata.tabValue.value = (SInt16)(CurrentPrefs.TabSize * CurrentPrefs.ConsoleFontSize);
+    tabdata.tabValue.value = (SInt16)(CurrentPrefs.RTabSize * RFontSizes[CurrentPrefs.RFontSize - 1]);
     tabdata.tabValue.tabType = kTXNRightTab;
     tabdata.tabValue.filler = 0;
 
@@ -2772,11 +2777,11 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
 
     typeAttr.tag = kTXNQDFontSizeAttribute;
     typeAttr.size = kTXNFontSizeAttributeSize;
-    typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
+    typeAttr.data.dataValue = Long2Fix(RFontSizes[CurrentPrefs.RFontSize - 1]);
 
     TXNSetTypeAttributes(RHelpObject, 1, &typeAttr, 0, kTXNEndOffset);
 
-    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    CopyCStringToPascal(RFontFaces[CurrentPrefs.RFontFace - 1], fontname);
     GetFNum(fontname, &fontID);
 
     typeAttr.tag = kTXNQDFontFamilyIDAttribute;
@@ -3217,7 +3222,7 @@ void Raqua_read_history(char *file)
 }
 
 void Raqua_GetQuartzParameters(double *width, double *height, double *ps, char *family, Rboolean *antialias,
-                               Rboolean *autorefresh)
+                               Rboolean *autorefresh, int *quartzpos)
 {
 
     if (CurrentPrefs.OverrideRDefaults == 0)
@@ -3229,6 +3234,7 @@ void Raqua_GetQuartzParameters(double *width, double *height, double *ps, char *
     strcpy(family, CurrentPrefs.DeviceFontName);
     *antialias = CurrentPrefs.AntiAlias;
     *autorefresh = CurrentPrefs.AutoRefresh;
+    *quartzpos = CurrentPrefs.QuartzPos;
 }
 
 void Raqua_CleanUp(SA_TYPE saveact, int status, int runLast)
@@ -3370,14 +3376,14 @@ void Raqua_ShowMessage(char *msg)
     short itemHit = 0;
     Str255 title;
 
-    alertParamRec.movable = false;    // Make alert movable modal
-    alertParamRec.helpButton = false; // Is there a help button?
-    alertParamRec.filterProc = NULL;  // event filter
-    alertParamRec.defaultText = NULL; // Text for button in OK position
-    alertParamRec.cancelText = NULL;  // Text for button in cancel position
-    alertParamRec.otherText = NULL;   // Text for button in left position
-    alertParamRec.defaultButton = 1;  // Which button behaves as the default
-    alertParamRec.cancelButton = 0;   // Which one behaves as cancel (can be 0)
+    alertParamRec.movable = false;    /* Make alert movable modal */
+    alertParamRec.helpButton = false; /* Is there a help button? */
+    alertParamRec.filterProc = NULL;  /* event filter */
+    alertParamRec.defaultText = NULL; /* Text for button in OK position */
+    alertParamRec.cancelText = NULL;  /* Text for button in cancel position */
+    alertParamRec.otherText = NULL;   /* Text for button in left position */
+    alertParamRec.defaultButton = 1;  /* Which button behaves as the default */
+    alertParamRec.cancelButton = 0;   /* Which one behaves as cancel (can be 0) */
     alertParamRec.position = kWindowAlertPositionParentWindow;
 
     SysBeep(5);
@@ -3445,7 +3451,6 @@ void Raqua_ProcessEvents(void)
         SendEventToEventTarget(theEvent, theTarget);
         ReleaseEvent(theEvent);
     }
-    //    fprintf(stderr,"\n process events");
 }
 
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
@@ -3502,6 +3507,134 @@ static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
             }
         }
     }
+}
+
+/* Code for accessing external cocoa bundle */
+
+enum
+{
+    kEventButtonPressed = 1 /* Button pressed in Cocoa window */
+};
+
+enum
+{
+    kOpenCocoaWindow = 'COCO'
+};
+
+CFBundleRef MybundleRef = NULL;
+
+static OSStatus handleBundleCommand(int commandID)
+{
+    OSStatus osStatus = noErr;
+    if (commandID == kEventButtonPressed)
+    {
+        OSStatus (*funcPtr)(CFStringRef message);
+
+        funcPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("changeText"));
+        if (funcPtr == NULL)
+        {
+            fprintf(stderr, "\n CantFindFunction");
+            goto CantFindFunction;
+        }
+        osStatus = (*funcPtr)(CFSTR("button pressed!"));
+        if (osStatus != noErr)
+        {
+            fprintf(stderr, "\n CantCallFunction");
+            goto CantCallFunction;
+        }
+    }
+CantFindFunction:
+CantCallFunction:
+    return osStatus;
+}
+
+static void myLoadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundlePtr)
+{
+    CFURLRef baseURL = NULL;
+    CFURLRef CocoabundleURL = NULL;
+
+    baseURL = CFBundleCopyPrivateFrameworksURL(RBundle);
+
+    if (baseURL == NULL)
+    {
+        fprintf(stderr, "\n CantCopyURL");
+        goto CantCopyURL;
+    }
+    CocoabundleURL =
+        CFURLCreateCopyAppendingPathComponent(kCFAllocatorSystemDefault, baseURL, CFSTR("RCocoaBundle.bundle"), false);
+    if (CocoabundleURL == NULL)
+    {
+        fprintf(stderr, "\n CantCreateCocoaBundleURL");
+        goto CantCreateBundleURL;
+    }
+    MybundleRef = CFBundleCreate(NULL, CocoabundleURL);
+
+    CFRelease(CocoabundleURL);
+CantCreateBundleURL:
+    CFRelease(baseURL);
+CantCopyURL:
+CantFindMainBundle:
+    return;
+}
+
+static OSStatus appCommandHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *userData)
+{
+    HICommand command;
+    OSStatus (*funcPtr)(void *);
+    OSStatus (*showPtr)(void);
+    OSStatus err = eventNotHandledErr;
+
+    if (GetEventKind(inEvent) == kEventCommandProcess)
+    {
+        GetEventParameter(inEvent, kEventParamDirectObject, typeHICommand, NULL, sizeof(HICommand), NULL, &command);
+        switch (command.commandID)
+        {
+        case kOpenCocoaWindow:
+
+            myLoadPrivateFrameworkBundle(CFSTR("CocoaBundle.bundle"), &MybundleRef);
+            if (MybundleRef == NULL)
+            {
+                fprintf(stderr, "\n CantCreateBundle");
+                goto CantCreateBundle;
+            }
+
+            /* call function to initialize bundle */
+            funcPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("initializeBundle"));
+            if (funcPtr == NULL)
+            {
+                fprintf(stderr, "\n CantFindFunction (funcPtr)");
+                goto CantFindFunction;
+            }
+            err = (*funcPtr)(handleBundleCommand);
+            if (err != 0)
+            {
+                fprintf(stderr, "\n err=%d, CantInitializeBundle", err);
+                goto CantInitializeBundle;
+            }
+            /* call function to show window */
+            showPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("orderWindowFront"));
+            if (showPtr == NULL)
+            {
+                fprintf(stderr, "\n CantFindFunction (showPtr)");
+                goto CantFindFunction;
+            }
+            err = (*showPtr)();
+            if (err != 0)
+            {
+                fprintf(stderr, "\n err=%d, CantCallFunction", err);
+                goto CantCallFunction;
+            }
+        CantCreateBundle:
+        CantCallFunction:
+        CantInitializeBundle:
+        CantFindFunction:
+            break;
+        default:
+            break;
+        }
+    }
+
+    return err;
 }
 
 #endif /* HAVE_AQUA */
