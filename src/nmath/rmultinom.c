@@ -103,9 +103,16 @@ void rmultinom(int n, double *prob, int K, int *rN)
 
     for (k = 0; k < K - 1; k++)
     { /* (p_tot, n) are for "remaining binomial" */
-        pp = prob[k] / p_tot;
-        rN[k] = (int)rbinom((double)n, pp);
-        n -= rN[k];
+        if (prob[k])
+        {
+            pp = prob[k] / p_tot;
+            rN[k] = ((pp < 1.) ? (int)rbinom((double)n, pp) :
+                               /*>= 1; > 1 happens because of rounding */
+                         n);
+            n -= rN[k];
+        }
+        else
+            rN[k] = 0;
         if (n <= 0) /* we have all*/
             return;
         p_tot -= prob[k]; /* i.e. = sum(prob[(k+1):K]) */
