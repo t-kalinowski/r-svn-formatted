@@ -634,7 +634,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         if (nsubs == 1)
         {
-            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), length(x), 1);
+            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), length(x), /*partial ok*/ TRUE);
             if (offset < 0 || offset >= length(x))
             {
                 /* a bold attempt to get the same */
@@ -657,7 +657,8 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
             dimnames = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < nsubs; i++)
             {
-                INTEGER(index)[i] = get1index(CAR(subs), VECTOR_ELT(dimnames, i), INTEGER(index)[i], 1);
+                INTEGER(index)
+                [i] = get1index(CAR(subs), VECTOR_ELT(dimnames, i), INTEGER(index)[i], /*partial ok*/ TRUE);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
                     errorcall(call, R_MSG_subs_o_b);
@@ -709,17 +710,12 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* A helper to partially match tags against a candidate. */
 /* Returns: */
-#define NO_MATCH -1     /* for no match */
-#define EXACT_MATCH 0   /* for a perfect match */
-#define PARTIAL_MATCH 1 /* for a partial match */
-
-static int pstrmatch(SEXP target, SEXP input, int slen)
+static enum pmatch { NO_MATCH, EXACT_MATCH, PARTIAL_MATCH } pstrmatch(SEXP target, SEXP input, int slen)
 {
     char *st = "";
-    int k;
 
     if (target == R_NilValue)
-        return -1;
+        return NO_MATCH;
 
     switch (TYPEOF(target))
     {
@@ -730,8 +726,7 @@ static int pstrmatch(SEXP target, SEXP input, int slen)
         st = CHAR(target);
         break;
     }
-    k = strncmp(st, CHAR(input), slen);
-    if (k == 0)
+    if (strncmp(st, CHAR(input), slen) == 0)
     {
         if (strlen(st) == slen)
             return EXACT_MATCH;
@@ -807,11 +802,11 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 y = CAR(y);
                 SET_NAMED(y, NAMED(x));
                 return y;
-                break;
             case PARTIAL_MATCH:
                 havematch++;
                 xmatch = y;
                 break;
+            case NO_MATCH:
             }
         }
         if (havematch == 1)
@@ -837,11 +832,11 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 y = VECTOR_ELT(x, i);
                 SET_NAMED(y, NAMED(x));
                 return y;
-                break;
             case PARTIAL_MATCH:
                 havematch++;
                 imatch = i;
                 break;
+            case NO_MATCH:
             }
         }
         if (havematch == 1)

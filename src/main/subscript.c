@@ -115,35 +115,34 @@ int OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newname)
     return index;
 }
 
-/* Get a single index for the [[ operator.
-   Check that only one index is being selected. */
-
-int get1index(SEXP s, SEXP names, int len, int pok)
+int get1index(SEXP s, SEXP names, int len, Rboolean pok)
 {
+    /* Get a single index for the [[ operator.
+       Check that only one index is being selected.
+       pok : is "partial ok" ?
+    */
     int index, i;
     double dblind;
 
-    if (length(s) > 1)
-        error("attempt to select more than one element");
-    if (length(s) < 1)
-        error("attempt to select less than one element");
-
+    if (length(s) != 1)
+    {
+        if (length(s) > 1)
+            error("attempt to select more than one element");
+        else
+            error("attempt to select less than one element");
+    }
     index = -1;
     switch (TYPEOF(s))
     {
     case LGLSXP:
     case INTSXP:
         i = INTEGER(s)[0];
-        if (i == NA_INTEGER)
-            index = -1;
-        else
+        if (i != NA_INTEGER)
             index = integerOneIndex(i, len);
         break;
     case REALSXP:
         dblind = REAL(s)[0];
-        if (ISNAN(dblind))
-            index = -1;
-        else
+        if (!ISNAN(dblind))
             index = integerOneIndex((int)dblind, len);
         break;
     case STRSXP:
@@ -162,10 +161,10 @@ int get1index(SEXP s, SEXP names, int len, int pok)
             {
                 if (!strncmp(CHAR(STRING_ELT(names, i)), CHAR(STRING_ELT(s, 0)), len))
                 {
-                    if (index == -1)
+                    if (index == -1) /* first one */
                         index = i;
                     else
-                        index = -2;
+                        index = -2; /* more than one partial match */
                 }
             }
         }

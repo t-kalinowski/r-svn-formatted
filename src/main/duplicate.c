@@ -196,7 +196,7 @@ void copyVector(SEXP s, SEXP t)
     }
 }
 
-void copyListMatrix(SEXP s, SEXP t, int byrow)
+void copyListMatrix(SEXP s, SEXP t, Rboolean byrow)
 {
     SEXP pt, tmp;
     int i, j, nr, nc, ns;
@@ -236,7 +236,7 @@ void copyListMatrix(SEXP s, SEXP t, int byrow)
     }
 }
 
-void copyMatrix(SEXP s, SEXP t, int byrow)
+void copyMatrix(SEXP s, SEXP t, Rboolean byrow)
 {
     int i, j, k, nr, nc, nt;
 

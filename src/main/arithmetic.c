@@ -390,10 +390,10 @@ static double logbase(double x, double base)
 
 static SEXP unary(SEXP, SEXP);
 static SEXP binary(SEXP, SEXP);
-static SEXP integer_unary(int, SEXP);
-static SEXP real_unary(int, SEXP);
-static SEXP real_binary(int, SEXP, SEXP);
-static SEXP integer_binary(int, SEXP, SEXP);
+static SEXP integer_unary(ARITHOP_TYPE, SEXP);
+static SEXP real_unary(ARITHOP_TYPE, SEXP);
+static SEXP real_binary(ARITHOP_TYPE, SEXP, SEXP);
+static SEXP integer_binary(ARITHOP_TYPE, SEXP, SEXP);
 
 static int naflag;
 static SEXP lcall;
@@ -603,7 +603,7 @@ static SEXP unary(SEXP op, SEXP s1)
     return s1; /* never used; to keep -Wall happy */
 }
 
-static SEXP integer_unary(int code, SEXP s1)
+static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1)
 {
     int i, n, x;
     SEXP ans;
@@ -627,7 +627,7 @@ static SEXP integer_unary(int code, SEXP s1)
     return s1; /* never used; to keep -Wall happy */
 }
 
-static SEXP real_unary(int code, SEXP s1)
+static SEXP real_unary(ARITHOP_TYPE code, SEXP s1)
 {
     int i, n;
     SEXP ans;
@@ -663,7 +663,7 @@ static SEXP real_unary(int code, SEXP s1)
 #define mod_iterate(n1, n2, i1, i2)                                                                                    \
     for (i = i1 = i2 = 0; i < n; i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2, ++i)
 
-static SEXP integer_binary(int code, SEXP s1, SEXP s2)
+static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 {
     int i, i1, i2, n, n1, n2;
     int x1, x2;
@@ -793,7 +793,7 @@ static SEXP integer_binary(int code, SEXP s1, SEXP s2)
     return ans;
 }
 
-static SEXP real_binary(int code, SEXP s1, SEXP s2)
+static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 {
     int i, i1, i2, n, n1, n2;
     SEXP ans;

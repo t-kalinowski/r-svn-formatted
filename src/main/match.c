@@ -16,8 +16,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *
+
+
  *  Matching and Partial Matching for Strings
  *
  *  In theory all string matching code should be placed in this file
@@ -44,40 +44,36 @@
 
 #include "Defn.h"
 
-int NonNullStringMatch(SEXP s, SEXP t)
+Rboolean NonNullStringMatch(SEXP s, SEXP t)
 {
     if (CHAR(s)[0] && CHAR(t)[0] && strcmp(CHAR(s), CHAR(t)) == 0)
-        return 1;
+        return TRUE;
     else
-        return 0;
+        return FALSE;
 }
 
-static int psmatch(char *f, char *t, int exact)
+Rboolean psmatch(char *f, char *t, Rboolean exact)
 {
     if (exact)
+        return (Rboolean)!strcmp(f, t);
+    /* else */
+    while (*f || *t)
     {
-        return !strcmp(f, t);
+        if (*t == '\0')
+            return TRUE;
+        if (*f == '\0')
+            return FALSE;
+        if (*t != *f)
+            return FALSE;
+        t++;
+        f++;
     }
-    else
-    {
-        while (*f || *t)
-        {
-            if (*t == '\0')
-                return 1;
-            if (*f == '\0')
-                return 0;
-            if (*t != *f)
-                return 0;
-            t++;
-            f++;
-        }
-        return 1;
-    }
+    return TRUE;
 }
 
 /* Matching formals and arguments */
 
-int pmatch(SEXP formal, SEXP tag, int exact)
+Rboolean pmatch(SEXP formal, SEXP tag, Rboolean exact)
 {
     char *f, *t;
     switch (TYPEOF(formal))
@@ -111,7 +107,7 @@ int pmatch(SEXP formal, SEXP tag, int exact)
     return psmatch(f, t, exact);
 fail:
     error("invalid partial string match");
-    return 0; /* for -Wall */
+    return FALSE; /* for -Wall */
 }
 
 /* Destructively Extract A Named List Element. */
