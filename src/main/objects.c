@@ -259,7 +259,9 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (usemethod(buf, obj, call, CDR(args), env, &ans) == 1)
     {
         UNPROTECT(1);
+        PROTECT(ans);
         findcontext(CTXT_RETURN, env, ans);
+        UNPROTECT(1);
     }
     else
         error("no applicable method for \"%s\"\n", buf);
