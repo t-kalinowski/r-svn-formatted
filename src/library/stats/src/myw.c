@@ -16,6 +16,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
  */
 
+/* <UTF8> chars are handled as whole strings. */
+
 /* Whittle's algorithm for autoregression estimation
 
    multi_yw  is the interface to R. It also handles model selection using AIC
@@ -153,7 +155,7 @@ static void whittle2(Array acf, Array Aold, Array Bold, int lag, char *direction
     char *vmax;
     Array beta, tmp, id;
 
-    d = direction == "forward";
+    d = strcmp(direction, "forward") == 0;
 
     vmax = vmaxget();
 
