@@ -42,7 +42,7 @@ static char copycontents[30] = "";
 #ifndef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
-#define BOXW(x) ((x < 100 && nboxchars == 0) ? boxw[x] : box_w)
+#define BOXW(x) (min(((x < 100 && nboxchars == 0) ? boxw[x] : box_w), fullwindowWidth - boxw[0] - 2 * bwidth - 2))
 
 /*
    The spreadsheet function returns a list of vectors. The types of
@@ -319,7 +319,7 @@ void drawwindow()
     Rsync();
 }
 
-void doHscroll(int oldcol)
+static void doHscroll(int oldcol)
 {
     int i, dw;
     int oldnwide = nwide, oldwindowWidth = windowWidth;
@@ -493,6 +493,8 @@ static int get_col_width(int col)
             w = 0.5 * box_w;
         if (w < 0.8 * box_w)
             w += 0.1 * box_w;
+        if (w > 600)
+            w = 600;
         return w + 8;
     }
     return box_w;
@@ -843,10 +845,12 @@ static void closerect()
    the print area and print it, left adjusted if necessary; clear the
    area of previous text; */
 
+/* This version will only display 200 chars, but the maximum col width
+   will not allow that many */
 static void printstring(char *ibuf, int buflen, int row, int col, int left)
 {
-    int i, x_pos, y_pos, bw;
-    char buf[45], *pc = buf;
+    int i, x_pos, y_pos, bw, bufw;
+    char buf[201], *pc = buf;
 
     find_coords(row, col, &x_pos, &y_pos);
     if (col == 0)
@@ -854,10 +858,11 @@ static void printstring(char *ibuf, int buflen, int row, int col, int left)
     else
         bw = BOXW(col + colmin - 1);
     cleararea(x_pos + 2, y_pos + 2, bw - 3, box_h - 3);
-    strncpy(buf, ibuf, buflen);
+    bufw = (buflen > 200) ? 200 : buflen;
+    strncpy(buf, ibuf, bufw);
     if (left)
     {
-        for (i = buflen; i > 1; i--)
+        for (i = bufw; i > 1; i--)
         {
             if (textwidth(pc, i) < (bw - text_offset))
                 break;
@@ -866,11 +871,11 @@ static void printstring(char *ibuf, int buflen, int row, int col, int left)
     }
     else
     {
-        for (i = buflen; i > 1; i--)
+        for (i = bufw; i > 1; i--)
         {
             if (textwidth(buf, i) < (bw - text_offset))
                 break;
-            *(pc + i - 2) = '>';
+            *(buf + i - 2) = '>';
         }
     }
     drawtext(x_pos + text_offset, y_pos + box_h - text_offset, pc, i);
@@ -1282,6 +1287,7 @@ static void doControl(DEEvent *event)
         jumpwin(colmin, rowmax);
         break;
     case 'l':
+        closerect();
         for (i = 1; i <= min(100, xmaxused); i++)
             boxw[i] = get_col_width(i);
         drawwindow();

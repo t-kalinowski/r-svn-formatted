@@ -1355,8 +1355,12 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
         type = 'p';
     else
     {
-        if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
-            type = CHAR(STRING(CAR(args))[0])[0];
+        if (isString(CAR(args)) && LENGTH(CAR(args)) == 1 && LENGTH(pch = STRING(CAR(args))[0]) >= 1)
+        {
+            if (LENGTH(pch) > 1)
+                warningcall(call, "plot type '%s' truncated to first character", CHAR(pch));
+            type = CHAR(pch)[0];
+        }
         else
             errorcall(call, "invalid plot type");
     }
@@ -1406,8 +1410,10 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
      * GClip(dd);
      */
 
-    if (type == 'l' || type == 'o')
+    switch (type)
     {
+    case 'l':
+    case 'o':
         /* lines and overplotted lines and points */
         dd->gp.col = INTEGER(col)[0];
         xold = NA_REAL;
@@ -1430,10 +1436,11 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
             xold = xx;
             yold = yy;
         }
-    }
-    else if (type == 'b' || type == 'c')
+        break;
+
+    case 'b':
+    case 'c': /* broken lines (with points in between if 'b') */
     {
-        /* broken lines (with points in between if 'b') */
         double d, f;
         d = GConvertYUnits(0.5, CHARS, INCHES, dd);
         dd->gp.col = INTEGER(col)[0];
@@ -1456,8 +1463,10 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
             yold = yy;
         }
     }
-    else if (type == 's')
-    { /* step function  I */
+    break;
+
+    case 's': /* step function  I */
+    {
         double xtemp[3], ytemp[3];
         dd->gp.col = INTEGER(col)[0];
         xold = x[0];
@@ -1482,8 +1491,10 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
             yold = yy;
         }
     }
-    else if (type == 'S')
-    { /* step function  II */
+    break;
+
+    case 'S': /* step function  II */
+    {
         double xtemp[3], ytemp[3];
         dd->gp.col = INTEGER(col)[0];
         xold = x[0];
@@ -1508,8 +1519,9 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
             yold = yy;
         }
     }
-    else if (type == 'h')
-    { /* h[istogram] (bar plot) */
+    break;
+
+    case 'h': /* h[istogram] (bar plot) */
         dd->gp.col = INTEGER(col)[0];
         if (dd->gp.ylog)
             yold = dd->gp.usr[2]; /* DBL_MIN fails.. why ???? */
@@ -1526,7 +1538,17 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
                 GLine(xx, yold, xx, yy, DEVICE, dd);
             }
         }
-    }
+        break;
+
+    case 'p':
+    case 'n': /* nothing here */
+        break;
+
+    default: /* OTHERWISE */
+        errorcall(call, "invalid plot type '%c'", type);
+
+    } /* switch(type) */
+
     if (type == 'p' || type == 'b' || type == 'o')
     {
         for (i = 0; i < n; i++)
@@ -3587,6 +3609,7 @@ SEXP do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     if (!isList(theList = CAR(args)))
         errorcall(call, "invalid argument");
+    dd->displayList = theList;
     if (theList != R_NilValue)
     {
         ask = dd->gp.ask;
