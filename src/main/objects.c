@@ -896,6 +896,8 @@ SEXP do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 
 */
 static R_stdGen_ptr_t R_standardGeneric_ptr = 0;
+static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef);
+#define NOT_METHODS_DISPATCH_PTR(ptr) (ptr == 0 || ptr == dispatchNonGeneric)
 
 R_stdGen_ptr_t R_get_standardGeneric_ptr()
 {
@@ -907,6 +909,29 @@ R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t val)
     R_stdGen_ptr_t old = R_standardGeneric_ptr;
     R_standardGeneric_ptr = val;
     return old;
+}
+
+SEXP R_isMethodsDispatchOn(SEXP onOff)
+{
+    SEXP value = allocVector(LGLSXP, 1);
+    Rboolean onOffValue;
+    R_stdGen_ptr_t old = R_get_standardGeneric_ptr();
+    LOGICAL(value)[0] = !NOT_METHODS_DISPATCH_PTR(old);
+    if (length(onOff) > 0)
+    {
+        onOffValue = asLogical(onOff);
+        if (onOffValue == FALSE)
+            R_set_standardGeneric_ptr(0);
+        else if (NOT_METHODS_DISPATCH_PTR(old))
+        {
+            SEXP call;
+            PROTECT(call = allocList(2));
+            SETCAR(call, install("initMethodsDispatch"));
+            eval(call, R_GlobalEnv); /* only works with
+                        methods  attached */
+        }
+    }
+    return value;
 }
 
 static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
@@ -979,13 +1004,9 @@ SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
     R_stdGen_ptr_t ptr = R_get_standardGeneric_ptr();
     if (!ptr)
     {
-        warning("standardGeneric called before the methods package has been attached (will be ignored)");
+        warning("standardGeneric called without methods dispatch enabled (will be ignored)");
         R_set_standardGeneric_ptr(dispatchNonGeneric);
-        /*    load_methods_package(); */
         ptr = R_get_standardGeneric_ptr();
-        /* if(!ptr || ptr == dispatchNonGeneric)
-           error("Something went wrong:  the internal pointer for
-           standardGeneric was not set"); */
     }
     PROTECT(args);
     PROTECT(arg = CAR(args));
@@ -1214,7 +1235,7 @@ Rboolean R_has_methods(SEXP op)
 {
     R_stdGen_ptr_t ptr = R_get_standardGeneric_ptr();
     int offset;
-    if (!ptr || ptr == dispatchNonGeneric)
+    if (NOT_METHODS_DISPATCH_PTR(ptr))
         return (FALSE);
     if (!op) /* just testing for the package */
         return (TRUE);
