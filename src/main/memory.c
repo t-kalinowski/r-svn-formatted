@@ -65,6 +65,8 @@ int gc_inhibit_torture = 1; /* gets set to zero after initialisations */
 #define FORCE_GC 0
 #endif
 
+extern SEXP framenames;
+
 #define GC_PROT(X)                                                                                                     \
     {                                                                                                                  \
         int __t = gc_inhibit_torture;                                                                                  \
@@ -212,6 +214,12 @@ void InitMemory()
         CDR(&R_NHeap[i]) = &R_NHeap[i + 1];
     CDR(&R_NHeap[R_NSize - 1]) = NULL;
     R_FreeSEXP = &R_NHeap[0];
+
+    /* This is not making the mess smaller, but it has to be done
+       somewhere between the creation of R_NilValue and the first
+       garbage collection... -pd */
+
+    framenames = R_NilValue;
 }
 
 char *vmaxget(void)
@@ -484,6 +492,9 @@ void markPhase(void)
         if (dd)
             markSExp(dd->displayList);
     }
+
+    markSExp(framenames); /* used for interprocedure
+               communication in model.c */
 
     for (i = 0; i < R_PPStackTop; i++) /* Protected pointers */
         markSExp(R_PPStack[i]);

@@ -40,14 +40,16 @@ static SEXP parenSymbol = NULL;
 static SEXP inSymbol = NULL;
 static SEXP identSymbol = NULL;
 
-static int intercept;   /* intercept term in the model */
-static int parity;      /* +/- parity */
-static int response;    /* response term in the model */
-static int nvar;        /* Number of variables in the formula */
-static int nwords;      /* # of words (ints) to code a term */
-static int nterm;       /* # of model terms */
-static SEXP varlist;    /* variables in the model */
-static SEXP framenames; /* variables names for specified frame */
+static int intercept; /* intercept term in the model */
+static int parity;    /* +/- parity */
+static int response;  /* response term in the model */
+static int nvar;      /* Number of variables in the formula */
+static int nwords;    /* # of words (ints) to code a term */
+static int nterm;     /* # of model terms */
+static SEXP varlist;  /* variables in the model */
+SEXP framenames;      /* variables names for specified frame */
+/* NOTE: framenames can't be static because it must be protected from
+   garbage collection. */
 
 static int isZeroOne(SEXP x)
 {
