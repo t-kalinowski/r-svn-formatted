@@ -497,7 +497,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
     fsym = fname;
     if (!isSymbol(fsym))
         fsym = install(CHAR(asChar(fsym)));
-    fdef = R_get_from_method_metadata(fsym);
+    PROTECT(fdef = R_get_from_method_metadata(fsym));
+    nprotect++;
     if (!initialized)
         R_initMethodDispatch();
     switch (TYPEOF(fdef))
@@ -524,7 +525,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
         /* else, continue to the default case */
     }
     default:
-        f_env = R_get_function_env(fdef, fsym);
+        PROTECT(f_env = R_get_function_env(fdef, fsym));
+        nprotect++;
         mlist = R_get_from_f_env(f_env, s_dot_Methods, fsym);
         PROTECT(mlist);
         nprotect++;
