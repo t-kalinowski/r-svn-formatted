@@ -873,6 +873,7 @@ SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
 {
     SEXP ref, klass;
 
+    /* The (void *) here is illegal C */
     PROTECT(ref = R_MakeExternalPtr((void *)f, Rf_install("native symbol"), R_NilValue));
 
     PROTECT(klass = allocVector(STRSXP, 1));
