@@ -27,9 +27,11 @@
  */
 
 #include "Mathlib.h"
+#define log_p give_log
 
-double dpois(double x, double lambda)
+double dpois(double x, double lambda, int give_log)
 {
+
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(lambda))
         return x + lambda;
@@ -37,7 +39,7 @@ double dpois(double x, double lambda)
     if (fabs(x - floor(x + 0.5)) > 1e-7)
     {
         warning("non-integer x = %f", x);
-        return 0;
+        return R_D__0;
     }
     if (lambda <= 0.0)
     {
@@ -45,10 +47,10 @@ double dpois(double x, double lambda)
         return ML_NAN;
     }
     if (x < 0)
-        return 0;
+        return R_D__0;
 #ifdef IEEE_754
     if (!R_FINITE(x))
-        return 0;
+        return R_D__0;
 #endif
-    return exp(x * log(lambda) - lambda - lgammafn(x + 1));
+    return R_D_exp(x * log(lambda) - lambda - lgammafn(x + 1));
 }
