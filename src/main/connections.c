@@ -60,7 +60,7 @@ static Rconnection Connections[NCONNECTIONS];
 static SEXP OutTextData;
 
 static int R_SinkNumber;
-static int SinkCons[NSINKS], SinkConsClose[NSINKS];
+static int SinkCons[NSINKS], SinkConsClose[NSINKS], R_SinkSplit[NSINKS];
 
 static void pushback(Rconnection con, int newLine, char *line);
 
@@ -96,6 +96,16 @@ Rconnection getConnection(int n)
     if (n < 0 || n >= NCONNECTIONS || n == NA_INTEGER || !(con = Connections[n]))
         error("invalid connection");
     return con;
+}
+
+int getActiveSink(int n)
+{
+    if (n >= R_SinkNumber || n < 0)
+        return 0;
+    if (R_SinkSplit[R_SinkNumber - n])
+        return SinkCons[R_SinkNumber - n - 1];
+    else
+        return 0;
 }
 
 /* for use in REvprintf */
@@ -3227,7 +3237,8 @@ SEXP do_pushbacklength(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* Switch output to connection number icon, or popd stack if icon < 0
  */
-Rboolean switch_stdout(int icon, int closeOnExit)
+
+Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
 {
     int toclose;
 
@@ -3242,6 +3253,7 @@ Rboolean switch_stdout(int icon, int closeOnExit)
     else if (icon == 1 || icon == 2)
     {
         R_OutputCon = SinkCons[++R_SinkNumber] = icon;
+        R_SinkSplit[R_SinkNumber] = tee;
         SinkConsClose[R_SinkNumber] = 0;
     }
     else if (icon >= 3)
@@ -3256,6 +3268,7 @@ Rboolean switch_stdout(int icon, int closeOnExit)
         }
         R_OutputCon = SinkCons[++R_SinkNumber] = icon;
         SinkConsClose[R_SinkNumber] = toclose;
+        R_SinkSplit[R_SinkNumber] = tee;
     }
     else
     { /* removing a sink */
@@ -3280,9 +3293,17 @@ Rboolean switch_stdout(int icon, int closeOnExit)
     return TRUE;
 }
 
+/* This is not only used by cat(), but is in a public
+   header, so we need a wrapper */
+
+Rboolean switch_stdout(int icon, int closeOnExit)
+{
+    return switch_or_tee_stdout(icon, closeOnExit, 0);
+}
+
 SEXP do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int icon, closeOnExit, errcon;
+    int icon, closeOnExit, errcon, tee;
 
     checkArity(op, args);
     icon = asInteger(CAR(args));
@@ -3292,13 +3313,16 @@ SEXP do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
     errcon = asLogical(CADDR(args));
     if (errcon == NA_LOGICAL)
         error("invalid value for type");
+    tee = asLogical(CADDDR(args));
+    if (tee == NA_LOGICAL)
+        error("invalid value for split");
 
     if (!errcon)
     {
         /* allow space for cat() to use sink() */
         if (icon >= 0 && R_SinkNumber >= NSINKS - 2)
             error("sink stack is full");
-        switch_stdout(icon, closeOnExit);
+        switch_or_tee_stdout(icon, closeOnExit, tee);
     }
     else
     {
