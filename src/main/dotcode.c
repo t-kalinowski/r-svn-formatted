@@ -254,8 +254,8 @@ SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         *q++ = '_';
         *q = '\0';
-#endif
     }
+#endif
 
     return mkString(buf);
 }
