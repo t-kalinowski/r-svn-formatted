@@ -23,7 +23,15 @@
  *  See ./printutils.c for general remarks on Printing and the Encode.. utils.
  *  See ./print.c  for do_printdefault, do_printmatrix, etc.
  *
- *  These  formatFOO() functions determine the proper width, digits, etc.
+ * Exports
+ *	formatString
+ *	formatLogical
+ *	formatFactor
+ *	formatInteger
+ *	formatReal
+ *	formatComplex
+ *
+ * These  formatFOO() functions determine the proper width, digits, etc.
  */
 
 #include "Defn.h"
@@ -49,8 +57,8 @@ void formatString(SEXP *x, int n, int *fieldwidth, int quote)
     *fieldwidth = xmax;
     if (quote)
         *fieldwidth += 2;
-    if (naflag && *fieldwidth < print_na_width)
-        *fieldwidth = print_na_width;
+    if (naflag && *fieldwidth < R_print.na_width)
+        *fieldwidth = R_print.na_width;
 }
 
 void formatLogical(int *x, int n, int *fieldwidth)
@@ -68,8 +76,8 @@ void formatLogical(int *x, int n, int *fieldwidth)
             break;
             /* this is the widest it can be so stop */
         }
-        if (x[i] == NA_LOGICAL && *fieldwidth < print_na_width)
-            *fieldwidth = print_na_width;
+        if (x[i] == NA_LOGICAL && *fieldwidth < R_print.na_width)
+            *fieldwidth = R_print.na_width;
     }
 }
 
@@ -106,7 +114,7 @@ void formatFactor(int *x, int n, int *fieldwidth, SEXP levels, int nlevs)
         }
     }
     if (naflag)
-        *fieldwidth = print_na_width;
+        *fieldwidth = R_print.na_width;
     else
         *fieldwidth = 1;
     if (l > *fieldwidth)
@@ -132,7 +140,7 @@ void formatInteger(int *x, int n, int *fieldwidth)
     }
 
     if (naflag)
-        *fieldwidth = print_na_width;
+        *fieldwidth = R_print.na_width;
     else
         *fieldwidth = 1;
 
@@ -157,13 +165,13 @@ void formatInteger(int *x, int n, int *fieldwidth)
  *    nsig		digits altogether
  *    kpower+1		digits to the left of "."
  *    kpower+1+sgn	including sign
+ *
+ * Using GLOBAL  R_print.digits  -- had  #define MAXDIG R_print.digits
  */
-
-/*old #define MAXDIG print_digits */
 
 static double tbl[] = {0.e0, 1.e0, 1.e1, 1.e2, 1.e3, 1.e4, 1.e5, 1.e6, 1.e7, 1.e8, 1.e9};
 
-static double eps; /* = 10^{- print_digits};
+static double eps; /* = 10^{- R_print.digits};
              set in formatReal/Complex,  used in scientific() */
 
 static void scientific(double *x, int *sgn, int *kpower, int *nsig)
@@ -171,7 +179,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
     /* for 1 number	 x , return
      *	sgn    = 1_{x < 0}  {0/1}
      *	kpower = Exponent of 10;
-     *	nsig   = min(print_digits, #{significant digits of alpha}
+     *	nsig   = min(R_print.digits, #{significant digits of alpha}
      *
      * where  |x| = alpha * 10^kpower	and	 1 <= alpha < 10
      */
@@ -220,7 +228,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
 
         /* compute number of digits */
 
-        *nsig = print_digits;
+        *nsig = R_print.digits;
         for (j = 1; j <= *nsig; j++)
         {
             if (fabs(alpha - floor(alpha + 0.5)) < eps * alpha)
@@ -240,7 +248,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     int neg, sgn, kpower, nsig;
     int i, naflag, nanflag, posinf, neginf;
 
-    eps = pow(10.0, -(double)print_digits);
+    eps = pow(10.0, -(double)R_print.digits);
 
     nanflag = 0;
     naflag = 0;
@@ -292,7 +300,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     }
     /* F Format (NEW):	use "F" format
      *	    WHENEVER we use not more space than 'E'
-     *		and still satisfy 'print_digits'
+     *		and still satisfy 'R_print.digits'
      *
      * E Format has the form   [S]X[.XXX]E+XX[X]
      *
@@ -304,10 +312,10 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
      *	 AND in the	 ____ if(.) "F" else "E" ___   below: */
     if (mxl < 0)
         mxsl = 1 + neg;
-    /* old?? if (mxl != mnl && mxl + rt > MAXDIG) rt = MAXDIG - mxl; */
+    /*old: if (mxl != mnl && mxl + rt > R_print.digits) rt = R_print.digits - mxl;*/
     if (rt < 0)
         rt = 0;
-    /* NO! else if (rt > MAXDIG)	rt = MAXDIG; */
+    /* NO! else if (rt > R_print.digits)	rt = R_print.digits; */
     mF = mxsl + rt + (rt != 0); /* width m for F  format */
 
     /*-- 'see' how	"E" Exponential format would be like : */
@@ -324,8 +332,8 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
         *n = rt;
         *m = mF;
     } /* else : "E" Exponential format -- all done above */
-    if (naflag && *m < print_na_width)
-        *m = print_na_width;
+    if (naflag && *m < R_print.na_width)
+        *m = R_print.na_width;
 #ifdef IEEE_754
     if (nanflag && *m < 3)
         *m = 3;
@@ -348,7 +356,7 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     int rnanflag, rposinf, rneginf, inanflag, iposinf, ineginf;
 #endif
 
-    eps = pow(10.0, -(double)print_digits);
+    eps = pow(10.0, -(double)R_print.digits);
 
     naflag = 0;
 #ifdef IEEE_754
@@ -530,6 +538,6 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
 
     /* finally, ensure that there is space for NA */
 
-    if (naflag && *mr + *mi + 2 < print_na_width)
-        *mr += (print_na_width - (*mr + *mi + 2));
+    if (naflag && *mr + *mi + 2 < R_print.na_width)
+        *mr += (R_print.na_width - (*mr + *mi + 2));
 }

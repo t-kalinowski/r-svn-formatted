@@ -53,7 +53,7 @@ static void printLogicalMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
             clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
-        w[j] += PRINT_GAP;
+        w[j] += R_print.gap;
     }
     jmin = 0;
     jmax = 0;
@@ -64,7 +64,7 @@ static void printLogicalMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         {
             width += w[jmax];
             jmax++;
-        } while (jmax < c && width + w[jmax] < PRINT_WIDTH);
+        } while (jmax < c && width + w[jmax] < R_print.width);
         Rprintf("%*s", rlabw, " ");
         for (j = jmin; j < jmax; j++)
             MatrixColumnLabel(cl, j, w[j]);
@@ -104,7 +104,7 @@ static void printIntegerMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
             clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
-        w[j] += PRINT_GAP;
+        w[j] += R_print.gap;
     }
     jmin = 0;
     jmax = 0;
@@ -115,7 +115,7 @@ static void printIntegerMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         {
             width += w[jmax];
             jmax++;
-        } while (jmax < c && width + w[jmax] < PRINT_WIDTH);
+        } while (jmax < c && width + w[jmax] < R_print.width);
         Rprintf("%*s", rlabw, " ");
         for (j = jmin; j < jmax; j++)
             MatrixColumnLabel(cl, j, w[j]);
@@ -162,7 +162,7 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl)
             clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
-        w[j] += PRINT_GAP;
+        w[j] += R_print.gap;
     }
     jmin = 0;
     jmax = 0;
@@ -173,7 +173,7 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl)
         {
             width += w[jmax];
             jmax++;
-        } while (jmax < c && width + w[jmax] < PRINT_WIDTH);
+        } while (jmax < c && width + w[jmax] < R_print.width);
         Rprintf("%*s", rlabw, " ");
         for (j = jmin; j < jmax; j++)
             MatrixColumnLabel(cl, j, w[j]);
@@ -231,7 +231,7 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         w[j] = wr[j] + wi[j] + 2;
         if (w[j] < clabw)
             w[j] = clabw;
-        w[j] += PRINT_GAP;
+        w[j] += R_print.gap;
     }
 
     jmin = 0;
@@ -243,7 +243,7 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         {
             width += w[jmax];
             jmax++;
-        } while (jmax < c && width + w[jmax] < PRINT_WIDTH);
+        } while (jmax < c && width + w[jmax] < R_print.width);
         Rprintf("%*s", rlabw, " ");
         for (j = jmin; j < jmax; j++)
             MatrixColumnLabel(cl, j, w[j]);
@@ -255,7 +255,7 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
                 if (ISNA(x[i + j * r].r) || ISNA(x[i + j * r].i))
                     Rprintf("%s", EncodeReal(NA_REAL, w[j], 0, 0));
                 else
-                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + PRINT_GAP, dr[j], er[j], wi[j], dr[j], er[j]));
+                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + R_print.gap, dr[j], er[j], wi[j], dr[j], er[j]));
             }
         }
         Rprintf("\n");
@@ -295,9 +295,9 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
         width = rlabw;
         do
         {
-            width += w[jmax] + PRINT_GAP;
+            width += w[jmax] + R_print.gap;
             jmax++;
-        } while (jmax < c && width + w[jmax] + PRINT_GAP < PRINT_WIDTH);
+        } while (jmax < c && width + w[jmax] + R_print.gap < R_print.width);
         Rprintf("%*s", rlabw, " ");
         if (right)
         {
@@ -314,7 +314,7 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
             MatrixRowLabel(rl, i, rlabw);
             for (j = jmin; j < jmax; j++)
             {
-                Rprintf("%*s%s", PRINT_GAP, "", EncodeString(CHAR(x[i + j * r]), w[j], quote, right));
+                Rprintf("%*s%s", R_print.gap, "", EncodeString(CHAR(x[i + j * r]), w[j], quote, right));
             }
         }
         Rprintf("\n");
