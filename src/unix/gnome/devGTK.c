@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-1999   Lyndon Drake
+ *  Copyright (C) 1998-2000   Lyndon Drake
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -36,8 +36,8 @@
 typedef struct
 {
     /* R Graphics Parameters */
-    /* local device copy so that we can detect */
-    /* when parameter changes */
+    /* Local device copy so that we can detect */
+    /* when parameter changes. */
 
     double cex; /* Character expansion */
     double srt; /* String rotation */
@@ -68,8 +68,6 @@ typedef struct
     GdkFont *font;
 
 } gtkDesc;
-
-static int numGTKDevices = 0;
 
 /* Device driver actions */
 static void GTK_Activate(DevDesc *);
@@ -229,12 +227,13 @@ static void SetColor(GdkColor *gcol, int color)
 }
 
 /* set the line type */
-static void SetLineType(DevDesc *dd, int newlty, int newlwd)
+static void SetLineType(DevDesc *dd, int newlty, double nlwd)
 {
     static gchar dashlist[8];
-    gint i, j;
+    gint i, j, newlwd;
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
 
+    newlwd = nlwd;
     if (newlty != gtkd->lty || newlwd != gtkd->lwd)
     {
         gtkd->lty = newlty;
@@ -255,15 +254,11 @@ static void SetLineType(DevDesc *dd, int newlty, int newlwd)
             for (i = 0; (i < 8) && (newlty != 0); i++)
             {
                 j = newlty & 15;
-
                 if (j == 0)
                     j = 1;
-
                 j = j * newlwd;
-
                 if (j > 255)
                     j = 255;
-
                 dashlist[i] = j;
                 newlty = newlty >> 4;
             }
@@ -351,7 +346,7 @@ static gint expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
                     event->area.y, event->area.width, event->area.height);
 
 #if 0
-  playDisplayList(dd);
+    playDisplayList(dd);
 #endif
 
     return FALSE;
@@ -595,8 +590,6 @@ static void GTK_Close(DevDesc *dd)
 
     gdk_pixmap_unref(gtkd->pixmap);
 
-    numGTKDevices--;
-
     free(gtkd);
 }
 
@@ -612,8 +605,7 @@ static void GTK_Activate(DevDesc *dd)
     gtkd = (gtkDesc *)dd->deviceSpecific;
     g_return_if_fail(gtkd != NULL);
 
-    devnum = deviceNumber(dd);
-    devnum++;
+    devnum = deviceNumber(dd) + 1;
 
     title_text = g_strdup_printf(title_text_active, devnum);
 
@@ -631,8 +623,7 @@ static void GTK_Deactivate(DevDesc *dd)
     gtkd = (gtkDesc *)dd->deviceSpecific;
     g_return_if_fail(gtkd != NULL);
 
-    devnum = deviceNumber(dd);
-    devnum++;
+    devnum = deviceNumber(dd) + 1;
 
     title_text = g_strdup_printf(title_text_inactive, devnum);
 

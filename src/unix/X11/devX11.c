@@ -47,9 +47,7 @@
 
 #include "eventloop.h" /* For the input handlers of the event loop mechanism. */
 
-/* external routines from here */
-int X11ConnectionNumber();
-void R_ProcessEvents(void *data);
+/* routines from here */
 int X11DeviceDriver(DevDesc *, char *, double, double, double, double, int, int);
 
 /* These are the currently supported device "models" */
@@ -660,7 +658,7 @@ static void handleEvent(XEvent event)
         }
 }
 
-void R_ProcessEvents(void *data)
+static void R_ProcessEvents(void *data)
 {
     XEvent event;
     while (displayOpen && XPending(display))
@@ -1050,7 +1048,7 @@ static void SetLinetype(int newlty, double nlwd, DevDesc *dd)
         else
         {
             ndash = 0;
-            for (i = 0; i < 8 && newlty != 0; i++)
+            for (i = 0; i < 8 && (newlty != 0); i++)
             {
                 int j = newlty & 15;
                 if (j == 0)
@@ -1920,12 +1918,4 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     R_ProcessEvents((void *)NULL);
 
     return 1;
-}
-
-int X11ConnectionNumber()
-{
-    if (displayOpen)
-        return ConnectionNumber(display);
-    else
-        return 0;
 }

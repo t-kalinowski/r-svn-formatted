@@ -25,31 +25,22 @@
 #include "Graphics.h"
 #include "devX11.h"
 
-void stub_R_ProcessEvents(void)
-{
-}
-
-int stub_X11ConnectionNumber()
-{
-    return 0;
-}
-
 int stub_X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, double gamma,
                          int colormodel, int maxcube)
 {
-    error("no x11 device in this version of R");
+    error("the x11 device has not been loaded");
     return 0;
 }
 
 int stub_GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
-    error("no gnome device in this version of R");
+    error("the gnome device is not loaded in this version of R");
     return 0;
 }
 
 int stub_GTKDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
-    error("no gtk device in this version of R");
+    error("the gtk device is only available with --gui=GNOME");
     return 0;
 }
 
@@ -60,6 +51,6 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP stub_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error("no data entry editor in this version of R");
+    error("the data entry editor has not been loaded");
     return R_NilValue;
 }
