@@ -275,7 +275,7 @@ SEXP asChar(SEXP x)
             sprintf(buf, "%d", INTEGER(x)[0]);
             return mkChar(buf);
         case REALSXP:
-            formatReal(REAL(x), 1, &w, &d, &e);
+            formatReal(REAL(x), 1, &w, &d, &e, 0);
 #ifdef OLD
             if (e)
                 sprintf(buf, "%*.*e", w, d, REAL(x)[0]);
@@ -286,7 +286,7 @@ SEXP asChar(SEXP x)
             return mkChar(EncodeReal(REAL(x)[0], w, d, e));
 #endif
         case CPLXSXP:
-            formatComplex(COMPLEX(x), 1, &w, &d, &e, &wi, &di, &ei);
+            formatComplex(COMPLEX(x), 1, &w, &d, &e, &wi, &di, &ei, 0);
             return mkChar(EncodeComplex(COMPLEX(x)[0], w, d, e, wi, di, ei));
         case STRSXP:
             return STRING_ELT(x, 0);

@@ -485,7 +485,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
             EncodeInteger(INTEGER(x)[indx], w);
             break;
         case REALSXP:
-            formatReal(&REAL(x)[indx], 1, &w, &d, &e);
+            formatReal(&REAL(x)[indx], 1, &w, &d, &e, 0);
             EncodeReal(REAL(x)[indx], w, d, e);
             break;
         case STRSXP:
@@ -493,7 +493,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
             EncodeString(CHAR(STRING_ELT(x, indx)), w, quote, Rprt_adj_left);
             break;
         case CPLXSXP:
-            formatComplex(&COMPLEX(x)[indx], 1, &w, &d, &e, &wi, &di, &ei);
+            formatComplex(&COMPLEX(x)[indx], 1, &w, &d, &e, &wi, &di, &ei, 0);
             EncodeComplex(COMPLEX(x)[indx], w, d, e, wi, di, ei);
             break;
         }

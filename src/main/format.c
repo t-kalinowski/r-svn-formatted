@@ -245,7 +245,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
     }
 }
 
-void formatReal(double *x, int l, int *m, int *n, int *e)
+void formatReal(double *x, int l, int *m, int *n, int *e, int nsmall)
 {
     int left, right, sleft;
     int mnl, mxl, rgt, mxsl, mxns, mF;
@@ -313,8 +313,8 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     if (mxl < 0)
         mxsl = 1 + neg;
     /*old: if (mxl != mnl && mxl + rgt > R_print.digits) rgt = R_print.digits - mxl;*/
-    if (rgt < 0)
-        rgt = 0;
+    if (rgt < nsmall)
+        rgt = nsmall;
     /* NO! else if (rgt > R_print.digits) rgt = R_print.digits; */
     mF = mxsl + rgt + (rgt != 0); /* width m for F  format */
 
@@ -342,7 +342,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
         *m = 4;
 }
 
-void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei)
+void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei, int nsmall)
 {
     /* format.info() or  x[1..l] for both Re & Im */
     int left, right, sleft;
@@ -452,8 +452,8 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
     {
         if (mxl < 0)
             mxsl = 1 + neg;
-        if (rt < 0)
-            rt = 0;
+        if (rt < nsmall)
+            rt = nsmall;
         mF = mxsl + rt + (rt != 0);
 
         if (mxl > 100 || mnl < -99)
@@ -488,8 +488,8 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
     {
         if (i_mxl < 0)
             i_mxsl = 1;
-        if (i_rt < 0)
-            i_rt = 0;
+        if (i_rt < nsmall)
+            i_rt = nsmall;
         mF = i_mxsl + i_rt + (i_rt != 0);
 
         if (i_mxl > 100 || i_mnl < -99)
