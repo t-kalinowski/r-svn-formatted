@@ -78,7 +78,7 @@ extern double F77_SYMBOL(fmin)();
 
 SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    double ans, xmin, xmax, tol;
+    double xmin, xmax, tol;
     SEXP v;
 
     checkArity(op, args);
@@ -171,7 +171,7 @@ extern double F77_SYMBOL(zeroin)();
 
 SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    double ans, xmin, xmax, tol;
+    double xmin, xmax, tol;
     SEXP v;
 
     checkArity(op, args);
@@ -219,7 +219,7 @@ SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* General Nonlinear Optimization */
 
 /* These are unevaluated calls to R functions supplied */
-/* by the user.  When the optimizer needs a value the */
+/* by the user.	 When the optimizer needs a value the */
 /* functions below insert the function argument and then */
 /* evaluate the call. */
 
@@ -365,7 +365,7 @@ static int opterror(int nerr)
 
 /* Warnings - we return a value, but print a warning */
 
-static optcode(int code)
+static void optcode(int code)
 {
     switch (code)
     {
@@ -406,6 +406,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     int iagflg, iahflg;
     int want_hessian;
     char *vmax;
+    int itncnt;
 
     checkArity(op, args);
     PrintDefaults(rho);
@@ -493,9 +494,9 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
      *   Dennis + Schnabel Minimizer
      *
      *    SUBROUTINE OPTIF9(NR,N,X,FCN,D1FCN,D2FCN,TYPSIZ,FSCALE,
-     *   +     METHOD,IEXP,MSG,NDIGIT,ITNLIM,IAGFLG,IAHFLG,IPR,
-     *   +     DLT,GRADTL,STEPMX,STEPTL,
-     *   +     XPLS,FPLS,GPLS,ITRMCD,A,WRK)
+     *   +	   METHOD,IEXP,MSG,NDIGIT,ITNLIM,IAGFLG,IAHFLG,IPR,
+     *   +	   DLT,GRADTL,STEPMX,STEPTL,
+     *   +	   XPLS,FPLS,GPLS,ITRMCD,A,WRK)
      */
 
     /* Note: I have figured out what msg does. */
@@ -510,7 +511,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     F77_SYMBOL(optif9)
     (&n, &n, x, F77_SYMBOL(fcn), F77_SYMBOL(d1fcn), F77_SYMBOL(d2fcn), typsiz, &fscale, &method, &iexp, &msg, &ndigit,
-     &itnlim, &iagflg, &iahflg, &ipr, &dlt, &gradtl, &stepmx, &steptl, xpls, &fpls, gpls, &code, a, wrk);
+     &itnlim, &iagflg, &iahflg, &ipr, &dlt, &gradtl, &stepmx, &steptl, xpls, &fpls, gpls, &code, a, wrk, &itncnt);
 
     if (msg < 0)
         opterror(msg);
@@ -519,7 +520,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (want_hessian)
     {
-        PROTECT(v = value = allocList(5));
+        PROTECT(v = value = allocList(6));
         F77_SYMBOL(fdhess)(&n, xpls, &fpls, F77_SYMBOL(fcn), a, &n, &wrk[0], &wrk[n], &ndigit, typsiz);
         for (i = 0; i < n; i++)
             for (j = 0; j < i; j++)
@@ -527,7 +528,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        PROTECT(v = value = allocList(4));
+        PROTECT(v = value = allocList(5));
     }
 
     CAR(v) = allocVector(REALSXP, 1);
@@ -561,6 +562,12 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     TAG(v) = install("code");
     v = CDR(v);
 
+    /* added by Jim K Lindsey */
+    CAR(v) = allocVector(INTSXP, 1);
+    INTEGER(CAR(v))[0] = itncnt;
+    TAG(v) = install("iterations");
+    v = CDR(v);
+
     vmaxset(vmax);
     UNPROTECT(2);
     return value;
@@ -579,9 +586,9 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
  *	x(n)	 --> iterate x[k]
  *	f	    --> function value at x[k]
  *	g(n)	 --> gradient at x[k]
- *	a(n,n)       --> hessian at x[k]
+ *	a(n,n)	     --> hessian at x[k]
  *	p(n)	 --> step taken
- *	itncnt       --> iteration number k
+ *	itncnt	     --> iteration number k
  *	iflg	 --> flag controlling info to print
  *	ipr	  --> device to which to send output
  */
@@ -589,8 +596,6 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 int F77_SYMBOL(result)(int *nr, int *n, double *x, double *f, double *g, double *a, double *p, int *itncnt, int *iflg,
                        int *ipr)
 {
-    static int i, j;
-
     /* Print iteration number */
 
     Rprintf("iteration = %d\n", *itncnt);
