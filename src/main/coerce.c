@@ -732,7 +732,7 @@ SEXP coerceList(SEXP v, SEXPTYPE type)
 
 static SEXP coerceToLogical(SEXP v)
 {
-    SEXP ans, levs;
+    SEXP ans;
     int i, n;
 
     ans = allocVector(LGLSXP, n = length(v));
@@ -882,7 +882,7 @@ static SEXP coerceToOrdered(SEXP v)
 
 static SEXP coerceToInteger(SEXP v)
 {
-    SEXP ans, lv;
+    SEXP ans;
     int i, li, n, warn;
     double out;
     char *endp;
@@ -979,7 +979,7 @@ static SEXP coerceToInteger(SEXP v)
 
 static SEXP coerceToReal(SEXP v)
 {
-    SEXP ans, lv;
+    SEXP ans;
     int i, li, n;
     double out;
     char *endp;
@@ -1038,7 +1038,7 @@ static SEXP coerceToReal(SEXP v)
 
 static SEXP coerceToComplex(SEXP v)
 {
-    SEXP ans, lv;
+    SEXP ans;
     double outr, outi;
     char *endp;
     int i, li, n;
