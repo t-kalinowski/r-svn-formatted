@@ -100,6 +100,8 @@ char *R_ExpandFileName(char *s)
 
     if (s[0] != '~')
         return s;
+    if (isalpha(s[1]))
+        return s;
     if (HaveHOME < 0)
     {
         p = getenv("HOME");
