@@ -1620,7 +1620,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             Rf_gpptr(dd)->col = INTEGER(col)[i % ncol];
         Rf_gpptr(dd)->lwd = REAL(lwd)[i % nlwd];
-        if (Rf_gpptr(dd)->lwd == NA_REAL)
+        if (!R_FINITE(Rf_gpptr(dd)->lwd))
             Rf_gpptr(dd)->lwd = lwdsave;
         Rf_gpptr(dd)->cex = labcex;
         contour(x, nx, y, ny, z, REAL(c)[i], labels, i, drawLabels, method - 1, vectorFonts, typeface, fontindex, atom,
