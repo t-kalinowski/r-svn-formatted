@@ -227,11 +227,13 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 }
 
-static char *Runix_tmpnam(char *prefix)
+char *Runix_tmpnam(char *prefix)
 {
     char *tmp, tm[PATH_MAX], tmp1[PATH_MAX], *res;
     unsigned int n, done = 0, pid;
 
+    if (!prefix)
+        prefix = ""; /* NULL */
     tmp = getenv("TMP");
     if (!tmp)
         tmp = getenv("TEMP");

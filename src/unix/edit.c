@@ -27,6 +27,9 @@
 #include "Fileio.h"
 #include "IOStuff.h"
 #include "Parse.h"
+
+#include "Runix.h"
+
 #include <stdio.h>
 #ifdef Win32
 #include "run.h"
@@ -62,7 +65,7 @@ void InitEd()
     char *Rwin32_tmpnam(char *);
     DefaultFileName = Rwin32_tmpnam("Redit");
 #else
-    DefaultFileName = tmpnam(NULL);
+    DefaultFileName = Runix_tmpnam(NULL);
 #endif
 }
 

@@ -31,8 +31,12 @@
 #include "Runix.h"
 #include "Startup.h"
 
+#include "Runix.h"
+
 #ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_READLINE_H
 #include <readline/readline.h>
+#endif
 #ifdef HAVE_READLINE_HISTORY_H
 #include <readline/history.h>
 #endif
@@ -548,7 +552,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
     {
         if (pager == NULL || strlen(pager) == 0)
             pager = "more";
-        filename = tmpnam(NULL);
+        filename = Runix_tmpnam(NULL);
         if ((tfp = fopen(filename, "w")) != NULL)
         {
             for (i = 0; i < nfile; i++)
