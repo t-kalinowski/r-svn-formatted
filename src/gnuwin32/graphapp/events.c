@@ -336,9 +336,16 @@ static void handle_scroll(object obj, HWND hwnd, UINT message, WPARAM wParam, LP
         prev = where = GetScrollPos(hwnd, SB_CTL);
     }
     else if (message == WM_VSCROLL)
+    {
         prev = where = GetScrollPos(hwnd, SB_VERT);
+    }
     else if (message == WM_HSCROLL)
+    {
         prev = where = GetScrollPos(hwnd, SB_HORZ);
+        max_value = obj->xmax;
+        size_shown = obj->xsize;
+    }
+
     /* next we look at wParam to see what happened */
     switch (LOWORD(wParam))
     {

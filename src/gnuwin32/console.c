@@ -422,14 +422,14 @@ static ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, r
 static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, int j, int len, char *s)
 {
     rect r;
-    char chf, chl, ch, buf[500], *s1, *s2;
+    char chf, chl, ch, buf[1000], *s1, *s2;
     int last;
 
     r = rect(BORDERX + fch * FW, BORDERY + j * FH, (lch - fch + 1) * FW, FH);
     gfillrect(p->bm, bgr, r);
     if (s[0] == '_' && s[1] == '\b')
         fgr = DarkRed;
-    for (s1 = s, s2 = buf; *s1 != '\0'; s1++)
+    for (s1 = s, s2 = buf; *s1 != '\0' && s1 < s + 1000; s1++)
         if (*s1 != '_' || *(s1 + 1) != '\b')
             *s2++ = *s1;
         else

@@ -24,17 +24,21 @@ void gchangescrollbar(scrollbar obj, int which, int where, int max, int pagesize
     if (!obj)
         return;
     hwnd = obj->handle;
-    obj->max = max;
-    obj->size = pagesize;
     switch (which)
     {
     case HWINSB:
+        obj->xmax = max;
+        obj->xsize = pagesize;
         which = SB_HORZ;
         break;
     case VWINSB:
+        obj->max = max;
+        obj->size = pagesize;
         which = SB_VERT;
         break;
     default:
+        obj->max = max;
+        obj->size = pagesize;
         which = SB_CTL;
         break;
     }
