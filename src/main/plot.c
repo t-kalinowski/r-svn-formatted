@@ -989,6 +989,28 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     col = dd->gp.col;
     fg = dd->gp.fg;
 
+    /* Check the axis type parameter, if it is 'n', */
+    /* there is nothing to do */
+
+    if (side == 1 || side == 3)
+    {
+        if (dd->gp.xaxt == 'n')
+        {
+            GRestorePars(dd);
+            return R_NilValue;
+        }
+    }
+    else if (side == 2 || side == 4)
+    {
+        if (dd->gp.yaxt == 'n')
+        {
+            GRestorePars(dd);
+            return R_NilValue;
+        }
+    }
+    else
+        errorcall(call, "invalid \"side\" value");
+
     x = dd->gp.usr[0];
     y = dd->gp.usr[2];
     xtckCoords = MAR1;
@@ -1084,19 +1106,23 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             GConvert(&tempx, &tempy, USER, NFC, dd);
             if (dolabels)
             {
-                if (isExpression(lab))
+                /* clip tick labels to user coordinates */
+                if (x > low && x < high)
                 {
-                    GMMathText(VECTOR(lab)[ind[i]], side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
-                }
-                else
-                {
-                    labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), NFC, dd);
-                    tnew = tempx - 0.5 * labw;
-                    /* Check room for perpendicular labels: */
-                    if (dd->gp.las == 2 || dd->gp.las == 3 || tnew - tlast >= gap)
+                    if (isExpression(lab))
                     {
-                        GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
-                        tlast = tempx + 0.5 * labw;
+                        GMMathText(VECTOR(lab)[ind[i]], side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
+                    }
+                    else
+                    {
+                        labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), NFC, dd);
+                        tnew = tempx - 0.5 * labw;
+                        /* Check room for perpendicular labels: */
+                        if (dd->gp.las == 2 || dd->gp.las == 3 || tnew - tlast >= gap)
+                        {
+                            GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
+                            tlast = tempx + 0.5 * labw;
+                        }
                     }
                 }
             }
@@ -1112,6 +1138,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             ytckCoords = MAR4;
         }
         dd->gp.col = fg;
+        /* clip axis major line to user coordinates */
         GLine(x, fmax2(low, REAL(at)[0]), x, fmin2(high, REAL(at)[n - 1]), USER, dd);
         if (R_FINITE(dd->gp.tck))
         {
@@ -1190,20 +1217,24 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             GConvert(&tempx, &tempy, USER, NFC, dd);
             if (dolabels)
             {
-                if (isExpression(lab))
+                /* clip tick labels to user coordinates */
+                if (y > low && y < high)
                 {
-                    GMMathText(VECTOR(lab)[ind[i]], side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
-                }
-                else
-                {
-                    labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), INCHES, dd);
-                    labw = GConvertYUnits(labw, INCHES, NFC, dd);
-                    tnew = tempy - 0.5 * labw;
-                    /* Check room for perpendicular labels: */
-                    if (dd->gp.las == 1 || dd->gp.las == 2 || tnew - tlast >= gap)
+                    if (isExpression(lab))
                     {
-                        GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
-                        tlast = tempy + 0.5 * labw;
+                        GMMathText(VECTOR(lab)[ind[i]], side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
+                    }
+                    else
+                    {
+                        labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), INCHES, dd);
+                        labw = GConvertYUnits(labw, INCHES, NFC, dd);
+                        tnew = tempy - 0.5 * labw;
+                        /* Check room for perpendicular labels: */
+                        if (dd->gp.las == 1 || dd->gp.las == 2 || tnew - tlast >= gap)
+                        {
+                            GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
+                            tlast = tempy + 0.5 * labw;
+                        }
                     }
                 }
             }
