@@ -379,10 +379,8 @@ FILE *R_OpenInitFile(void);
 
 static void handleInterrupt(int dummy)
 {
-    if (R_interrupts_suspended)
-        R_interrupts_pending = 0;
-    else
-        onintr();
+    R_interrupts_pending = 1;
+    signal(SIGINT, handleInterrupt);
 }
 
 static void R_LoadProfile(FILE *fparg, SEXP env)
