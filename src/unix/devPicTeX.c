@@ -1,6 +1,6 @@
 /*
  *  A PicTeX device, (C) 1996 Valerio Aimale, for
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -18,14 +18,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*
- *
- */
-
 #include "Graphics.h"
 #include "Fileio.h"
-
-int ValidColor(unsigned int);
 
 /* device-specific information per picTeX device */
 
@@ -109,10 +103,6 @@ static double charwidth[4][128] = {
      0.5000030, 0.5000030, 0.4763920, 0.5500030, 1.1000060, 0.5500030, 0.5500030, 0.550003}};
 
 static char *fontname[] = {"cmss10", "cmssbx10", "cmssi10", "cmssxi10"};
-
-/* Device driver entry point */
-
-int PicTeXDeviceDriver(DevDesc *, char *, char *, char *, double, double, int);
 
 /* Device driver actions */
 
@@ -513,8 +503,6 @@ static void textext(char *str, picTeXDesc *ptd)
 }
 
 /* Rotated Text */
-
-/*unused: static double deg2rad = 0.01745329251994329576;*/
 
 static void PicTeX_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
 {
