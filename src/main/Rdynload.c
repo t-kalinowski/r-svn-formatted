@@ -1009,6 +1009,7 @@ SEXP R_getDllTable()
     {
         SET_VECTOR_ELT(ans, i, Rf_MakeDLLInfo(&(LoadedDLL[i])));
     }
+    setAttrib(ans, R_ClassSymbol, mkString("DLLInfoList"));
     UNPROTECT(1);
     return (ans);
 }
@@ -1133,6 +1134,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
         SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, NULL, &sym));
     }
 
+    setAttrib(ans, R_ClassSymbol, mkString("NativeRoutineList"));
     UNPROTECT(1);
     return (ans);
 }
