@@ -153,6 +153,7 @@ static Rcomplex strtoc(const char *nptr, char **endptr)
         {
             z.r = 0;
             z.i = 0;
+            endp = (char *)nptr; /* -Wall */
         }
     }
     *endptr = endp;
