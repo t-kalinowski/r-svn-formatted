@@ -34,7 +34,7 @@ double qlnorm(double p, double logmean, double logsd, int lower_tail, int log_p)
 
     if (p == R_DT_1)
         return ML_POSINF;
-    if (R_DT_qIv(p) > 0)
-        return exp(qnorm(p, logmean, logsd, lower_tail, log_p));
-    return 0;
+    if (p == R_DT_0)
+        return 0;
+    return exp(qnorm(p, logmean, logsd, lower_tail, log_p));
 }
