@@ -2138,7 +2138,6 @@ static void GA_Text(double x, double y, char *str, double rot, double hadj, int 
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     size = cex * ps + 0.5;
-    //    SetFont(font, size, 0.0, dd);
     pixs = -1;
     xl = 0.0;
     yl = -pixs;

@@ -252,7 +252,8 @@ extern "C"
 {
 #endif
 
-#include <stdio.h> /* needed for malloc_stats */
+#include <stdio.h>  /* needed for malloc_stats */
+#include <stdlib.h> /* for exit */
 
     /*
       Compile-time options
@@ -365,8 +366,8 @@ extern "C"
     void *memcpy(void *, const void *, size_t);
 #else
 #ifdef WIN32
-// On Win32 platforms, 'memset()' and 'memcpy()' are already declared in
-// 'windows.h'
+/* On Win32 platforms, 'memset()' and 'memcpy()' are already declared in
+   'windows.h' */
 #else
     Void_t *memset();
     Void_t *memcpy();
