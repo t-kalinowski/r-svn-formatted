@@ -135,7 +135,7 @@ int cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi, i
 
     /* scale the polynomial with factor 'bnd'. */
 
-    scale(&nn, shr, &eta, &infin, &smalno, &base, &bnd);
+    cpoly_scale(&nn, shr, &eta, &infin, &smalno, &base, &bnd);
 
     if (bnd != 1.0)
     {
@@ -154,9 +154,9 @@ int cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi, i
         /* calculate bnd, a lower bound on the modulus of the zeros. */
 
         for (i = 0; i < nn; i++)
-            shr[i] = cmod(&pr[i], &pi[i]);
+            shr[i] = cpoly_cmod(&pr[i], &pi[i]);
 
-        bnd = cauchy(&nn, shr, shi);
+        bnd = cpoly_cauchy(&nn, shr, shi);
 
         /* outer loop to control 2 major passes */
         /* with different sequences of shifts */
@@ -246,7 +246,7 @@ static void noshft(int l1)
     for (jj = 1; jj <= l1; jj++)
     {
 
-        if (cmod(&hr[n - 1], &hi[n - 1]) <= eta * 10.0 * cmod(&pr[n - 1], &pi[n - 1]))
+        if (cpoly_cmod(&hr[n - 1], &hi[n - 1]) <= eta * 10.0 * cpoly_cmod(&pr[n - 1], &pi[n - 1]))
         {
 
             /*	If the constant term is essentially zero, */
@@ -331,7 +331,7 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
         {
             d__1 = tr - otr;
             d__2 = ti - oti;
-            if (cmod(&d__1, &d__2) >= cmod(zr, zi) * 0.5)
+            if (cpoly_cmod(&d__1, &d__2) >= cpoly_cmod(zr, zi) * 0.5)
             {
                 pasd = FALSE;
             }
@@ -411,8 +411,8 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
         /* evaluate p at s and test for convergence. */
 
         polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
-        mp = cmod(&pvr, &pvi);
-        ms = cmod(&sr, &si);
+        mp = cpoly_cmod(&pvr, &pvi);
+        ms = cpoly_cmod(&sr, &si);
         if (mp <= 20. * errev(&nn, qpr, qpi, &ms, &mp, &are, &mre))
         {
             goto L_conv;
@@ -470,7 +470,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
         calct(&bool);
         if (!bool)
         {
-            relstp = cmod(&tr, &ti) / cmod(&sr, &si);
+            relstp = cpoly_cmod(&tr, &ti) / cpoly_cmod(&sr, &si);
             sr += tr;
             si += ti;
         }
@@ -497,7 +497,7 @@ static void calct(int *bool)
     /* evaluate h(s). */
 
     polyev(&n, &sr, &si, hr, hi, qhr, qhi, &hvr, &hvi);
-    *bool = cmod(&hvr, &hvi) <= are * 10. * cmod(&hr[n - 1], &hi[n - 1]);
+    *bool = cpoly_cmod(&hvr, &hvi) <= are * 10. * cpoly_cmod(&hr[n - 1], &hi[n - 1]);
     if (!*bool)
     {
         d__1 = -pvr;
@@ -584,15 +584,15 @@ double errev(int *nn, double *qr, double *qi, double *ms, double *mp, double *ar
     double e;
     int i;
 
-    e = cmod(&qr[0], &qi[0]) * *mre / (*are + *mre);
+    e = cpoly_cmod(&qr[0], &qi[0]) * *mre / (*are + *mre);
     for (i = 0; i < *nn; i++)
     {
-        e *= (*ms + cmod(&qr[i], &qi[i]));
+        e *= (*ms + cpoly_cmod(&qr[i], &qi[i]));
     }
     return e * (*are + *mre) - *mp * *mre;
 }
 
-double cauchy(int *nn, double *pt, double *q)
+double cpoly_cauchy(int *nn, double *pt, double *q)
 {
     /* Computes a lower bound on the moduli of the zeros of a polynomial
      * pt[1:nn] is the modulus of the coefficients.
@@ -633,7 +633,7 @@ double cauchy(int *nn, double *pt, double *q)
 
     dx = x;
 
-    /* do newton iteration until x converges to two decimal places. */
+    /* do Newton iteration until x converges to two decimal places. */
 
     while (fabs(dx / x) > 0.005)
     {
@@ -654,7 +654,7 @@ double cauchy(int *nn, double *pt, double *q)
     return x;
 }
 
-void scale(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base, double *fact)
+void cpoly_scale(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base, double *fact)
 {
     /* Returns a scale factor to multiply the coefficients of the polynomial.
      * The scaling is done to avoid overflow and to avoid
@@ -732,7 +732,7 @@ void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, double *
     }
 }
 
-double cmod(double *r, double *i)
+double cpoly_cmod(double *r, double *i)
 {
     /* modulus of a complex number avoiding overflow. */
     double ai, ar, d1;

@@ -134,7 +134,7 @@ static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *
     }
 }
 
-void chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int *nh, int *il)
+void R_chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int *nh, int *il)
 {
 /* this subroutine determines which of the m points of array
  x whose subscripts are in array in are vertices of the

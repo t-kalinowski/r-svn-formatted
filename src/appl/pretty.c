@@ -52,8 +52,8 @@
 #include "PrtUtil.h"
 #endif
 
-double pretty0(double *lo, double *up, int *ndiv, int min_n, double shrink_sml, double high_u_fact[],
-               int eps_correction, int return_bounds)
+double R_pretty0(double *lo, double *up, int *ndiv, int min_n, double shrink_sml, double high_u_fact[],
+                 int eps_correction, int return_bounds)
 {
 #define h high_u_fact[0]
 #define h5 high_u_fact[1]
@@ -205,7 +205,8 @@ double pretty0(double *lo, double *up, int *ndiv, int min_n, double shrink_sml, 
 #undef h5
 }
 
-void pretty(double *lo, double *up, int *ndiv, int *min_n, double *shrink_sml, double *high_u_fact, int *eps_correction)
+void R_pretty(double *lo, double *up, int *ndiv, int *min_n, double *shrink_sml, double *high_u_fact,
+              int *eps_correction)
 {
-    pretty0(lo, up, ndiv, *min_n, *shrink_sml, high_u_fact, *eps_correction, 1);
+    R_pretty0(lo, up, ndiv, *min_n, *shrink_sml, high_u_fact, *eps_correction, 1);
 }
