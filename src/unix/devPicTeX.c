@@ -23,6 +23,7 @@
  */
 
 #include "Graphics.h"
+#include "Fileio.h"
 
 /*void error(char*);*/
 int ValidColor(unsigned int);
@@ -147,7 +148,7 @@ static int PicTeX_Open(void)
     int i;
     fontsize = 0;
     fontface = 0;
-    if (!(texfp = fopen(filename, "w")))
+    if (!(texfp = R_fopen(filename, "w")))
         return 0;
     fprintf(texfp, "\\hbox{\\beginpicture\n");
     fprintf(texfp, "\\setcoordinatesystem units <1pt,1pt>\n");

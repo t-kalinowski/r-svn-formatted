@@ -18,6 +18,7 @@
  */
 
 #include "Defn.h"
+#include "Fileio.h"
 
 /*--- I / O -- S u p p o r t -- C o d e ---*/
 
@@ -149,7 +150,7 @@ FILE *R_OpenLibraryFile(char *file)
     if ((home = getenv("RHOME")) == NULL)
         return NULL;
     sprintf(buf, "%s/library/base/R/%s", home, file);
-    fp = fopen(buf, "r");
+    fp = R_fopen(buf, "r");
     return fp;
 }
 
@@ -159,7 +160,7 @@ FILE *R_OpenSysInitFile(void)
     FILE *fp;
 
     sprintf(buf, "%s/library/base/R/Rprofile", getenv("RHOME"));
-    fp = fopen(buf, "r");
+    fp = R_fopen(buf, "r");
     return fp;
 }
 
@@ -170,11 +171,11 @@ FILE *R_OpenInitFile(void)
 
     fp = NULL;
 
-    if (fp = fopen(".Rprofile", "r"))
+    if (fp = R_fopen(".Rprofile", "r"))
         return fp;
 
     sprintf(buf, "%s/.Rprofile", getenv("HOME"));
-    if (fp = fopen(buf, "r"))
+    if (fp = R_fopen(buf, "r"))
         return fp;
 
     return fp;
@@ -358,7 +359,7 @@ void RBusy(int which)
 
 void R_SaveGlobalEnv(void)
 {
-    FILE *fp = fopen(".RData", "w");
+    FILE *fp = R_fopen(".RData", "w");
     if (!fp)
         error("can't save data -- unable to open ./.RData\n");
     R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
@@ -368,7 +369,7 @@ void R_SaveGlobalEnv(void)
 void R_RestoreGlobalEnv(void)
 {
     FILE *fp;
-    if (!(fp = fopen(".RData", "r")))
+    if (!(fp = R_fopen(".RData", "r")))
     {
         /* warning here perhaps */
         return;
