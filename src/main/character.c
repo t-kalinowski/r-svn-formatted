@@ -626,6 +626,8 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     n = length(vec);
     nmatches = 0;
     PROTECT(ind = allocVector(LGLSXP, n));
+    /* NAs are removed in R code so this isn't used */
+    /* it's left in case we change our minds again */
     /* special case: NA pattern matches only NAs in vector */
     if (STRING_ELT(pat, 0) == NA_STRING)
     {
@@ -811,6 +813,8 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
+        /* NA `pat' are removed in R code */
+        /* the C code is left in case we change our minds again */
         /* NA matches only itself */
         if (STRING_ELT(vec, i) == NA_STRING)
         {
@@ -825,7 +829,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
             continue;
         }
-
+        /* end NA handling */
         offset = 0;
         nmatch = 0;
         s = CHAR(STRING_ELT(vec, i));
@@ -1237,6 +1241,8 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(pat) || length(pat) < 1 || !isString(vec))
         errorcall(call, R_MSG_IA);
 
+    /* NAs are removed in R code so this isn't used */
+    /* it's left in case we change our minds again */
     /* special case: NA pattern matches only NAs in vector */
     if (STRING_ELT(pat, 0) == NA_STRING)
     {
