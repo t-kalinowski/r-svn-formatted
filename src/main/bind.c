@@ -412,8 +412,13 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
     }
     else if (*CHAR(tag))
     {
-        ans = allocString(strlen(CHAR(tag)));
-        sprintf(CHAR(ans), "%s", CHAR(tag));
+        if (tag == NA_STRING)
+            ans = NA_STRING;
+        else
+        {
+            ans = allocString(strlen(CHAR(tag)));
+            sprintf(CHAR(ans), "%s", CHAR(tag));
+        }
     }
     else
         ans = R_BlankString;
@@ -422,7 +427,7 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
 
 SEXP ItemName(SEXP names, int i)
 {
-    /* return  names[i]  if it is a character (>= 1 cgar), or NULL otherwise */
+    /* return  names[i]  if it is a character (>= 1 char), or NULL otherwise */
     if (names != R_NilValue && STRING_ELT(names, i) != R_NilValue && CHAR(STRING_ELT(names, i))[0] != '\0')
         return STRING_ELT(names, i);
     else

@@ -252,6 +252,7 @@ static void SaveAsBitmap(NewDevDesc *dd);
 static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, char *name)
 {
     GEDevDesc *gdd;
+    int saveDev = curDevice();
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     gsetcursor(xd->gawin, WatchCursor);
     gsetVar(install(".Device"), mkString(name), R_NilValue);
@@ -259,6 +260,7 @@ static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, char *name)
     addDevice((DevDesc *)gdd);
     GEcopyDisplayList(devNumber((DevDesc *)dd));
     KillDevice((DevDesc *)gdd);
+    selectDevice(saveDev);
     /*    KillDevice(GetDevice(devNumber((DevDesc*) ndd))); */
     gsetcursor(xd->gawin, ArrowCursor);
     show(xd->gawin);
