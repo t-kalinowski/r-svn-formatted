@@ -47,8 +47,6 @@
  *	setvmax.
  */
 
-/* File processed for NEWLIST */
-
 #include "Defn.h"
 #include "Graphics.h"
 

@@ -24,8 +24,6 @@
  *  These  formatFOO() functions determine the proper width, digits, etc.
  */
 
-/* File processed for NEWLIST */
-
 #include "Defn.h"
 #include "Mathlib.h"
 #include "Print.h"

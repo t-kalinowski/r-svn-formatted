@@ -17,8 +17,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* The fileprocessed for NEWLIST */
-
 #include "Defn.h"
 #include "Mathlib.h"
 
@@ -224,6 +222,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
 {
     double sum, xxm, yym, *xx, *yy;
     int i, j, k, nobs;
+
     /* total number of complete observations */
     nobs = 0;
     for (k = 0; k < n; k++)
@@ -238,6 +237,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                 ans[i + j * ncx] = NA_REAL;
         return;
     }
+
     /* variable means */
     for (j = 0; j < ncx; j++)
     {
@@ -313,7 +313,8 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
 }
 
 /* This might look slightly inefficient, but it is designed to */
-/* optimise paging in virtual memory systems ... */
+/* optimise paging in virtual memory systems ... (or at least that's */
+/* my story, and I'm sticking tot it. */
 
 static void complete1(int n, int ncx, double *x, int *ind)
 {
@@ -372,7 +373,11 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP x, y, ans, xm, ym, ind;
     int ansmat, cor, method, n, ncx, ncy, pair;
     checkArity(op, args);
-    cor = PRIMVAL(op); /* cor(...) if non-0,  cov(...) otherwise */
+
+    /* compute correlations if PRIMVAL(op) == 0 */
+    /* compute covariances  if PRIMVAL(op) != 0 */
+    cor = PRIMVAL(op);
+
     /* Argument-1: x */
     x = CAR(args) = coerceVector(CAR(args), REALSXP);
     if ((ansmat = isMatrix(x)))
@@ -472,7 +477,6 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (isNull(y))
         {
-#ifdef NEWLIST
             x = getAttrib(x, R_DimNamesSymbol);
             if (!isNull(x) && !isNull(VECTOR(x)[1]))
             {
@@ -482,21 +486,9 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
                 setAttrib(ans, R_DimNamesSymbol, ind);
                 UNPROTECT(1);
             }
-#else
-            x = getAttrib(x, R_DimNamesSymbol);
-            if (!isNull(x) && !isNull(CADR(x)))
-            {
-                PROTECT(ind = allocList(2));
-                CAR(ind) = CADR(x);
-                CADR(ind) = CADR(x);
-                setAttrib(ans, R_DimNamesSymbol, ind);
-                UNPROTECT(1);
-            }
-#endif
         }
         else
         {
-#ifdef NEWLIST
             x = getAttrib(x, R_DimNamesSymbol);
             y = getAttrib(y, R_DimNamesSymbol);
             if ((!isNull(x) && !isNull(VECTOR(x)[1])) || (!isNull(y) && !isNull(VECTOR(y)[1])))
@@ -509,18 +501,6 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
                 setAttrib(ans, R_DimNamesSymbol, ind);
                 UNPROTECT(1);
             }
-#else
-            x = getAttrib(x, R_DimNamesSymbol);
-            y = getAttrib(y, R_DimNamesSymbol);
-            if ((!isNull(x) && !isNull(CADR(x))) || (!isNull(y) && !isNull(CADR(y))))
-            {
-                PROTECT(ind = allocList(2));
-                CAR(ind) = CADR(x);
-                CADR(ind) = CADR(y);
-                setAttrib(ans, R_DimNamesSymbol, ind);
-                UNPROTECT(1);
-            }
-#endif
         }
     }
     UNPROTECT(1);

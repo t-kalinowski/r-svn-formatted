@@ -89,11 +89,20 @@
  *  occurs.
  */
 
-/* File processed for NEWLIST */
-
 #include "Defn.h"
 
-static void jumpfun(RCNTXT *, int, SEXP);
+/* jumpfun - jump to the named context */
+
+static void jumpfun(RCNTXT *cptr, int mask, SEXP val)
+{
+    R_PPStackTop = cptr->cstacktop;
+    R_ReturnedValue = val;
+    if (cptr != R_ToplevelContext)
+        R_GlobalContext = cptr->nextcontext;
+    else
+        R_GlobalContext = R_ToplevelContext;
+    siglongjmp(cptr->cjmpbuf, mask);
+}
 
 /* begincontext - begin an execution context */
 
@@ -142,19 +151,6 @@ void findcontext(int mask, SEXP env, SEXP val)
                 jumpfun(cptr, mask, val);
         error("No function to return from, jumping to top level\n");
     }
-}
-
-/* jumpfun - jump to the named context */
-
-static void jumpfun(RCNTXT *cptr, int mask, SEXP val)
-{
-    R_PPStackTop = cptr->cstacktop;
-    R_ReturnedValue = val;
-    if (cptr != R_ToplevelContext)
-        R_GlobalContext = cptr->nextcontext;
-    else
-        R_GlobalContext = R_ToplevelContext;
-    siglongjmp(cptr->cjmpbuf, mask);
 }
 
 /* R_sysframe - look back up the context stack until the */

@@ -394,7 +394,6 @@ static void deparse2buff(SEXP s)
     case ENVSXP:
         print2buff("<environment>");
         break;
-#ifdef NEWLIST
     case VECSXP:
         if (length(s) <= 0)
             print2buff("NULL");
@@ -405,7 +404,6 @@ static void deparse2buff(SEXP s)
             print2buff(")");
         }
         break;
-#endif
     case EXPRSXP:
         if (length(s) <= 0)
             print2buff("expression()");

@@ -17,8 +17,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* File processed for NEWLIST */
-
 #include "Defn.h"
 
 static SEXP lunary(SEXP, SEXP, SEXP);

@@ -36,7 +36,6 @@ void PrintGreeting(void)
             " for a HTML browser interface to help.\n\n");
 }
 
-#ifdef NEWLIST
 SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP value, names;
@@ -74,51 +73,3 @@ SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(2);
     return value;
 }
-#else
-SEXP do_version(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP a, ans;
-    char buf[128];
-    checkArity(op, args);
-
-    PROTECT(a = ans = allocList(12));
-    TAG(a) = install("platform");
-    CAR(a) = mkString(R_PLATFORM);
-    a = CDR(a);
-    TAG(a) = install("arch");
-    CAR(a) = mkString(R_CPU);
-    a = CDR(a);
-    TAG(a) = install("os");
-    CAR(a) = mkString(R_OS);
-    a = CDR(a);
-    sprintf(buf, "%s, %s", R_CPU, R_OS);
-    TAG(a) = install("system");
-    CAR(a) = mkString(buf);
-    a = CDR(a);
-    TAG(a) = install("status");
-    CAR(a) = mkString(R_STATUS);
-    a = CDR(a);
-    TAG(a) = install("status.rev");
-    CAR(a) = mkString(R_STATUS_REV);
-    a = CDR(a);
-    TAG(a) = install("major");
-    CAR(a) = mkString(R_MAJOR);
-    a = CDR(a);
-    TAG(a) = install("minor");
-    CAR(a) = mkString(R_MINOR);
-    a = CDR(a);
-    TAG(a) = install("year");
-    CAR(a) = mkString(R_YEAR);
-    a = CDR(a);
-    TAG(a) = install("month");
-    CAR(a) = mkString(R_MONTH);
-    a = CDR(a);
-    TAG(a) = install("day");
-    CAR(a) = mkString(R_DAY);
-    a = CDR(a);
-    TAG(a) = install("language");
-    CAR(a) = mkString("R");
-    UNPROTECT(1);
-    return ans;
-}
-#endif

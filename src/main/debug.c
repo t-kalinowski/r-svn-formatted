@@ -17,8 +17,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* This file processed for NEWLIST */
-
 #include "Defn.h"
 
 SEXP do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -50,6 +48,7 @@ SEXP do_trace(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     if (TYPEOF(CAR(args)) != CLOSXP && TYPEOF(CAR(args)) != BUILTINSXP && TYPEOF(CAR(args)) != SPECIALSXP)
         errorcall(call, "argument must be a function\n");
+
     switch (PRIMVAL(op))
     {
     case 0:

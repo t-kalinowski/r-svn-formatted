@@ -15,14 +15,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-/*>>> print.default() -> do_printdefault & its sub-functions.
- * ---	do_printmatrix, do_sink, do_invisible
  *
- *== see ./printutils.c for general remarks on Printing and the Encode.. utils.
  *
- *== also ./printvector.c,  ./printarray.c
+ *  print.default()  ->  do_printdefault & its sub-functions.
+ *                       do_printmatrix, do_sink, do_invisible
+ *
+ *  See ./printutils.c   for general remarks on Printing
+ *                       and the Encode.. utils.
+ *
+ *  Also ./printvector.c,  ./printarray.c
  */
 
 #include "Defn.h"
@@ -181,8 +182,6 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     return x;
 }
 
-#ifdef NEWLIST
-
 /* FIXME : We need a general mechanism for "rendering" symbols. */
 /* It should make sure that it quotes when there are special */
 /* characters and also take care of ansi escapes properly. */
@@ -290,7 +289,6 @@ static void PrintGenericVector(SEXP s, SEXP env)
         UNPROTECT(1);
     }
 }
-#endif
 
 static void printList(SEXP s, SEXP env)
 {
@@ -307,28 +305,36 @@ static void printList(SEXP s, SEXP env)
         {
             switch (TYPEOF(CAR(s)))
             {
+
             case NILSXP:
                 pbuf = Rsprintf("NULL");
                 break;
+
             case LGLSXP:
                 pbuf = Rsprintf("Logical,%d", LENGTH(CAR(s)));
                 break;
+
             case INTSXP:
             case REALSXP:
                 pbuf = Rsprintf("Numeric,%d", LENGTH(CAR(s)));
                 break;
+
             case CPLXSXP:
                 pbuf = Rsprintf("Complex,%d", LENGTH(CAR(s)));
                 break;
+
             case STRSXP:
                 pbuf = Rsprintf("Character,%d", LENGTH(CAR(s)));
                 break;
+
             case LISTSXP:
                 pbuf = Rsprintf("List,%d", length(CAR(s)));
                 break;
+
             case LANGSXP:
                 pbuf = Rsprintf("Expression");
                 break;
+
             default:
                 pbuf = Rsprintf("?");
                 break;
@@ -403,30 +409,10 @@ static void PrintExpression(SEXP s)
     SEXP u;
     int i, n;
 
-#ifdef OLD
-    PROTECT(u = v = allocList(LENGTH(s) + 1));
-    TYPEOF(u) = LANGSXP;
-    CAR(u) = install("expression");
-    u = CDR(u);
-    nms = getAttrib(s, R_NamesSymbol);
-    n = LENGTH(s);
-    for (i = 0; i < n; i++)
-    {
-        CAR(u) = VECTOR(s)[i];
-        if (nms != R_NilValue && length(STRING(nms)[i]) != 0)
-            TAG(u) = install(CHAR(STRING(nms)[i]));
-        u = CDR(u);
-    }
-    u = deparse1(v, 0);
-#else
     u = deparse1(s, 0);
-#endif
     n = LENGTH(u);
     for (i = 0; i < n; i++)
         Rprintf("%s\n", CHAR(STRING(u)[i]));
-#ifdef OLD
-    UNPROTECT(1);
-#endif
 }
 
 /* PrintValueRec - recursively print an SEXP */
@@ -479,11 +465,9 @@ void PrintValueRec(SEXP s, SEXP env)
     case DOTSXP:
         Rprintf("<...>\n");
         break;
-#ifdef NEWLIST
     case VECSXP:
         PrintGenericVector(s, env);
         break;
-#endif
     case LISTSXP:
         printList(s, env);
         break;
@@ -498,13 +482,8 @@ void PrintValueRec(SEXP s, SEXP env)
             if (LENGTH(t) == 1)
             {
                 PROTECT(t = getAttrib(s, R_DimNamesSymbol));
-#ifdef NEWLIST
                 if (t != R_NilValue && VECTOR(t)[0] != R_NilValue)
                     printNamedVector(s, VECTOR(t)[0], print_quote);
-#else
-                if (t != R_NilValue && CAR(t) != R_NilValue)
-                    printNamedVector(s, CAR(t), print_quote);
-#endif
                 else
                     printVector(s, 1, print_quote);
                 UNPROTECT(1);
@@ -597,11 +576,8 @@ void PrintValueEnv(SEXP s, SEXP env)
     SEXP call;
 
     PrintDefaults(env);
-
     tagbuf[0] = '\0';
-
     PROTECT(s);
-
     if (isObject(s))
     {
         PROTECT(call = lang2(install("print"), s));
@@ -628,8 +604,8 @@ void CustomPrintValue(SEXP s, SEXP env)
     PrintValueRec(s, env);
 }
 
-/* dblepr and intpr are mostly for S compatibility
-   (as mentioned in V&R) */
+/* dblepr and intpr are mostly for S compatibility */
+/* (as mentioned in V&R) */
 
 int F77_SYMBOL(dblepr)(char *label, int *nchar, double *data, int *ndata)
 {
@@ -639,7 +615,6 @@ int F77_SYMBOL(dblepr)(char *label, int *nchar, double *data, int *ndata)
         Rprintf("%c", label[k]);
     }
     Rprintf("\n");
-
     printRealVector(data, *ndata, 1);
     return (0);
 }
@@ -652,7 +627,6 @@ int F77_SYMBOL(intpr)(char *label, int *nchar, int *data, int *ndata)
         Rprintf("%c", label[k]);
     }
     Rprintf("\n");
-
     printIntegerVector(data, *ndata, 1);
     return (0);
 }

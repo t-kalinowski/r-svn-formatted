@@ -66,29 +66,6 @@
 
 static SEXP gcall;
 
-#ifdef UNUSED
-static void SetArgsforUseMethod(SEXP x)
-{
-    char buf[4];
-    int i = 1;
-
-    if (TAG(x) == R_NilValue)
-        TAG(x) = install("x");
-    for (x = CDR(x); x != R_NilValue; x = CDR(x))
-    {
-        if (TAG(x) == R_NilValue)
-        {
-            if (i < 10)
-                sprintf(buf, "..%d", i);
-            else
-                sprintf(buf, ".%d", i);
-            TAG(x) = install(buf);
-            i++;
-        }
-    }
-}
-#endif
-
 static int R_BoundChecking = 0;
 
 SEXP do_checkbounds(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1733,12 +1710,7 @@ SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
             TAG(x) = nlist;
         }
     }
-    else if
-#ifdef NEWLIST
-        (isNewList(x) || isExpression(x))
-#else
-        (isExpression(x))
-#endif
+    else if (isNewList(x) || isExpression(x))
     {
         int i, imatch, nx;
         SEXP names = getAttrib(x, R_NamesSymbol);

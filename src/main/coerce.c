@@ -1035,9 +1035,7 @@ SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     case CPLXSXP:
     case STRSXP:
     case EXPRSXP:
-#ifdef NEWLIST
     case VECSXP:
-#endif
     case LISTSXP:
     case CLOSXP:
     case ANYSXP:
@@ -1101,7 +1099,6 @@ SEXP do_asfunction(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef NEWLIST
     SEXP ap, ans, names;
     int i, n;
     checkArity(op, args);
@@ -1135,18 +1132,6 @@ SEXP do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
     TYPEOF(ans) = LANGSXP;
     TAG(ans) = R_NilValue;
     return ans;
-#else
-    SEXP s;
-    checkArity(op, args);
-    if (isLanguage(CAR(args)))
-        return CAR(args);
-    if (!isList(CAR(args)) || length(CAR(args)) < 1)
-        errorcall(call, "invalid argument list\n");
-    s = duplicate(args);
-    TYPEOF(CAR(s)) = LANGSXP;
-    TAG(CAR(s)) = R_NilValue;
-    return CAR(s);
-#endif
 }
 
 /* return the type of the SEXP */
@@ -1168,11 +1153,7 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
     switch (PRIMVAL(op))
     {
     case NILSXP: /* is.null */
-#ifdef NEWLIST
         LOGICAL(ans)[0] = isNull(CAR(args));
-#else
-        LOGICAL(ans)[0] = (CAR(args) == R_NilValue);
-#endif
         break;
     case LGLSXP: /* is.logical */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == LGLSXP);
@@ -1195,13 +1176,8 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
     case ENVSXP: /* is.environment */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == ENVSXP);
         break;
-#ifdef NEWLIST
     case LISTSXP: /* is.list */
         LOGICAL(ans)[0] = ((TYPEOF(CAR(args)) == VECSXP) || TYPEOF(CAR(args)) == NILSXP);
-#else
-    case LISTSXP: /* is.list */
-        LOGICAL(ans)[0] = ((TYPEOF(CAR(args)) == LISTSXP) || TYPEOF(CAR(args)) == NILSXP);
-#endif
         break;
     case EXPRSXP: /* is.expression */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == EXPRSXP);

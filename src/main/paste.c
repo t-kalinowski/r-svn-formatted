@@ -15,29 +15,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  See ./printutils.c	 for general remarks on Printing
+ *                       and the Encode.. utils.
+ *
+ *  See ./format.c	 for the  format_Foo_  functions.
  */
 
-/*== see ./printutils.c	 for general remarks on Printing and the Encode.. utils.
- *   see ./format.c	 for the  format_Foo_  functions.
- */
 #include "Defn.h"
 #include "Print.h"
 
 SEXP mkChar(char *);
 
-/*  .Internal(paste(args, sep, collapse)) */
-
-/* do_paste uses two passes to paste the arguments (in CAR(args)) together.
+/*  .Internal(paste(args, sep, collapse))
+ *
+ * do_paste uses two passes to paste the arguments (in CAR(args)) together.
  * The first pass calculates the width of the paste buffer,
  * then it is alloc-ed and the second pass stuffs the information in.
  */
+
 SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, collapse, sep, px, x, tmpchar;
-#ifdef NEWLIST
-    int j;
-#endif
-    int i, k, maxlen, nx, pwidth, sepw;
+    int i, j, k, maxlen, nx, pwidth, sepw;
     char *s, *buf;
 
     checkArity(op, args);
@@ -50,11 +51,7 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Check the arguments */
 
     x = CAR(args);
-#ifdef NEWLIST
     if (!isVectorList(x))
-#else
-    if (!isList(x))
-#endif
         errorcall(call, "invalid first argument\n");
 
     sep = CADR(args);
@@ -73,7 +70,6 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
 
     nx = length(x);
     maxlen = 0;
-#ifdef NEWLIST
     for (j = 0; j < nx; j++)
     {
         if (!isString(VECTOR(x)[j]))
@@ -81,15 +77,6 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         if (length(VECTOR(x)[j]) > maxlen)
             maxlen = length(VECTOR(x)[j]);
     }
-#else
-    for (px = x; px != R_NilValue; px = CDR(px))
-    {
-        if (!isString(CAR(px)))
-            error("non-string argument to Internal paste\n");
-        if (length(CAR(px)) > maxlen)
-            maxlen = length(CAR(px));
-    }
-#endif
     if (maxlen == 0)
         return mkString("");
 
@@ -98,25 +85,15 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < maxlen; i++)
     {
         pwidth = 0;
-#ifdef NEWLIST
         for (j = 0; j < nx; j++)
         {
             k = length(VECTOR(x)[j]);
             if (k > 0)
                 pwidth += LENGTH(STRING(VECTOR(x)[j])[i % k]);
         }
-#else
-        for (px = x; px != R_NilValue; px = CDR(px))
-        {
-            k = length(CAR(px));
-            if (k > 0)
-                pwidth += LENGTH(STRING(CAR(px))[i % k]);
-        }
-#endif
         pwidth += (nx - 1) * sepw;
         tmpchar = allocString(pwidth);
         buf = CHAR(tmpchar);
-#ifdef NEWLIST
         for (j = 0; j < nx; j++)
         {
             k = length(VECTOR(x)[j]);
@@ -132,23 +109,6 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                 buf += sepw;
             }
         }
-#else
-        for (px = x; px != R_NilValue; px = CDR(px))
-        {
-            k = length(CAR(px));
-            if (k > 0)
-            {
-                s = CHAR(STRING(CAR(px))[i % k]);
-                sprintf(buf, "%s", s);
-                buf += LENGTH(STRING(CAR(px))[i % k]);
-            }
-            if (CDR(px) != R_NilValue && sepw != 0)
-            {
-                sprintf(buf, "%s", CHAR(sep));
-                buf += sepw;
-            }
-        }
-#endif
         STRING(ans)[i] = tmpchar;
     }
 
@@ -216,6 +176,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
 
     switch (TYPEOF(x))
     {
+
     case LGLSXP:
         PROTECT(y = allocVector(STRSXP, n));
         if (trim)
@@ -229,6 +190,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         UNPROTECT(1);
         break;
+
     case INTSXP:
         PROTECT(y = allocVector(STRSXP, n));
         if (trim)
@@ -242,6 +204,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         UNPROTECT(1);
         break;
+
     case REALSXP:
         formatReal(REAL(x), n, &w, &d, &e);
         if (trim)
@@ -254,6 +217,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         UNPROTECT(1);
         break;
+
     case CPLXSXP:
         formatComplex(COMPLEX(x), n, &w, &d, &e, &wi, &di, &ei);
         if (trim)
@@ -266,6 +230,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         UNPROTECT(1);
         break;
+
     case STRSXP:
         formatString(STRING(x), n, &w, 0);
         if (trim)
@@ -294,6 +259,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
  *			e = {0:2}.   0: Fixpoint;
  *				   1,2: exponential with 2/3 digit expon.
  */
+
 SEXP do_formatinfo(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x;
@@ -307,23 +273,29 @@ SEXP do_formatinfo(SEXP call, SEXP op, SEXP args, SEXP env)
     e = 0;
     switch (TYPEOF(x))
     {
+
     case LGLSXP:
         formatLogical(LOGICAL(x), n, &w);
         break;
+
     case INTSXP:
         formatInteger(INTEGER(x), n, &w);
         break;
+
     case REALSXP:
         formatReal(REAL(x), n, &w, &d, &e);
         break;
+
     case CPLXSXP:
         wi = di = ei = 0;
         formatComplex(COMPLEX(x), n, &w, &d, &e, &wi, &di, &ei);
         n = -1; /* complex 'code' */
         break;
+
     case STRSXP:
         formatString(STRING(x), n, &w, 0);
         break;
+
     default:
         errorcall(call, "vector arguments only\n");
     }

@@ -16,20 +16,20 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-/*
- *	GRZ-like state information.
  *
- *	This is a quick knock-off of the GRZ library to provide a basic
- *	S-like graphics capability for R.  Basically this bit of code
- *	provides the functionality of the "par" function in S.
  *
- *	"The horror, the horror ..."
- *		Marlon Brando in Apocalypse Now.
  *
- * Main functions:
- *	do_par(.)	and
+ *  GRZ-like state information.
+ *
+ *  This is a quick knock-off of the GRZ library to provide a basic
+ *  S-like graphics capability for R.  Basically this bit of code
+ *  provides the functionality of the "par" function in S.
+ *
+ *  "The horror, the horror ..."
+ *      Marlon Brando in Apocalypse Now.
+ *
+ *  Main functions:
+ *      do_par(.)	and
  *	do_layout(.)	implement R's  par(.), layout()rely on
  *
  *	Specify(.)	[ par(what = value) ]
@@ -39,9 +39,11 @@
 
 #include "Defn.h"
 #include "Mathlib.h"
-#include "Graphics.h" /* ../include/Graphics.h :	 "GPar" structure + COMMENTS */
+#include "Graphics.h" /* ../include/Graphics.h : "GPar" structure + COMMENTS */
 
-static SEXP gcall; /* par(.)'s call */
+/* par(.)'s call */
+
+static SEXP gcall;
 
 SEXP LTYget(int);
 char *col2name(unsigned int);
@@ -1779,7 +1781,6 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     new_spec = 0;
     args = CAR(args);
     nargs = length(args);
-#ifdef NEWLIST
     if (isNewList(args))
     {
         SEXP oldnames, newnames, tag, val;
@@ -1821,27 +1822,6 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         errorcall(call, "invalid parameter passed to \"par\"\n");
-#else
-    if (!isList(args))
-        errorcall(call, "invalid parameter passed to \"par\"\n");
-    PROTECT(value = allocList(length(args)));
-    for (vp = value, ap = args; ap != R_NilValue; vp = CDR(vp), ap = CDR(ap))
-    {
-        if (TAG(ap) != R_NilValue)
-        {
-            new_spec = 1;
-            CAR(vp) = Query(CHAR(PRINTNAME(TAG(ap))), dd);
-            TAG(vp) = TAG(ap);
-            Specify(CHAR(PRINTNAME(TAG(ap))), CAR(ap), dd);
-        }
-        else if (TYPEOF(CAR(ap)) == STRSXP)
-        {
-            CAR(vp) = Query(CHAR(STRING(CAR(ap))[0]), dd);
-            TAG(vp) = install(CHAR(STRING(CAR(ap))[0]));
-        }
-    }
-    UNPROTECT(1);
-#endif
     /* should really only do this if specifying new pars ?
      * yes! [MM] */
     if (new_spec && call != R_NilValue)
@@ -1849,15 +1829,27 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     return value;
 }
 
+/*
+ *  Layout was written by Paul Murrell during 1997-1998 as a partial
+ *  implementation of ideas in his PhD thesis.  The orginal was
+ *  written in common lisp provides rather more general capabilities.
+ *
+ *  layout(
+ *      num.rows,
+ *      num.cols,
+ *      mat,
+ *      num.figures,
+ *      col.widths,
+ *      row.heights,
+ *      cm.widths,
+ *      cm.heights,
+ *      respect,
+ *      respect.mat
+ *  )
+ */
+
 SEXP do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* layout(num.rows, num.cols, mat,
-          num.figures,
-          col.widths,	row.heights,
-          cm.widths,	 cm.heights,
-          respect,	respect.mat)
-     */
-
     int i, j, nrow, ncol, ncmrow, ncmcol;
     SEXP originalArgs = args;
     DevDesc *dd;
@@ -1906,14 +1898,18 @@ SEXP do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
     for (j = 0; j < ncol; j++)
         dd->dp.cmWidths[j] = dd->gp.cmWidths[j] = 0;
     for (j = 0; j < ncmcol; j++)
+    {
         dd->dp.cmWidths[INTEGER(CAR(args))[j] - 1] = dd->gp.cmWidths[INTEGER(CAR(args))[j] - 1] = 1;
+    }
     args = CDR(args);
     /* cm.heights: */
     ncmrow = length(CAR(args));
     for (i = 0; i < nrow; i++)
         dd->dp.cmHeights[i] = dd->gp.cmHeights[i] = 0;
     for (i = 0; i < ncmrow; i++)
+    {
         dd->dp.cmHeights[INTEGER(CAR(args))[i] - 1] = dd->gp.cmHeights[INTEGER(CAR(args))[i] - 1] = 1;
+    }
     args = CDR(args);
     /* respect =  0 (FALSE), 1 (TRUE), or 2 (matrix) : */
     dd->dp.rspct = dd->gp.rspct = INTEGER(CAR(args))[0];
@@ -1922,6 +1918,7 @@ SEXP do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < nrow; i++)
         for (j = 0; j < ncol; j++)
             dd->dp.respect[i][j] = dd->gp.respect[i][j] = INTEGER(CAR(args))[i + j * nrow];
+
     /*------------------------------------------------------*/
 
     if (nrow > 2 || ncol > 2)

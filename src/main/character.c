@@ -19,8 +19,8 @@
 
 #include "Defn.h"
 
-/* functions to perform analogues of the standard C string library */
-/* most will be vectorized */
+/* Functions to perform analogues of the standard C string library. */
+/* Most are vectorized */
 
 SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -107,10 +107,7 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP s, t, x, tok;
-#ifndef NEWLIST
-    SEXP w;
-#endif
+    SEXP s, t, tok, w, x;
     int i, j, len, tlen, ntok;
     char buff[MAXELTSIZE], *pt, *split = "";
 
@@ -121,11 +118,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         error("invalid type to strsplit\n");
     len = LENGTH(x);
     tlen = LENGTH(tok);
-#ifdef NEWLIST
     PROTECT(s = allocVector(VECSXP, len));
-#else
-    PROTECT(w = s = allocList(len));
-#endif
     for (i = 0; i < len; i++)
     {
         /* find out how many splits there will be */
@@ -166,12 +159,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         UNPROTECT(1);
-#ifdef NEWLIST
         VECTOR(s)[i] = t;
-#else
-        CAR(w) = t;
-        w = CDR(w);
-#endif
     }
     UNPROTECT(1);
     return s;

@@ -23,8 +23,6 @@
  *  Maybe it is time for us to introduce mode "expression".
  */
 
-/* This file processed for NEWLIST */
-
 #include "Defn.h"
 
 static SEXP ParenSymbol;
