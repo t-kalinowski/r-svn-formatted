@@ -272,7 +272,7 @@ typedef struct dialog_data_class
     int hit;
     char *result;
     label question;
-    field text;
+    field text, pass;
     button yes, no, cancel;
 } dialog_data;
 
@@ -539,4 +539,65 @@ char *askpassword(char *question, char *default_str)
     handle_message_dialog(win);
     current_window = prev;
     return get_dialog_string(win);
+}
+
+char *askUserPass(char *title)
+{
+    static window win = NULL;
+    dialog_data *d;
+    window prev = current_window;
+
+    if (!win)
+    {
+        int tw, bw, h, middle;
+
+        tw = strwidth(SystemFont, CANCEL_STRING) * 8;
+        h = getheight(SystemFont);
+        if (tw < 150)
+            tw = 150;
+        win = newwindow(title, rect(0, 0, tw + 30, h * 9 + 12), Titlebar | Centered | Modal);
+        setbackground(win, dialog_bg());
+        add_data(win);
+        d = data(win);
+        d->question = newlabel("User", rect(10, h, tw + 4, h * 2 + 2), AlignLeft);
+        bw = strwidth(SystemFont, "Password");
+        d->text = newfield("", rect(20 + bw, h, tw - 6 - bw, h * 3 / 2));
+        newlabel("Password", rect(10, h * 4, tw + 4, h * 2 + 2), AlignLeft);
+        d->pass = newpassword("", rect(20 + bw, h * 4, tw - 6 - bw, h * 3 / 2));
+        middle = (tw + 30) / 2;
+        bw = strwidth(SystemFont, CANCEL_STRING) * 3 / 2;
+
+        d->yes = newbutton(OKAY_STRING, rect(middle - bw - 10, h * 7, bw, h + 10), hit_button);
+        setvalue(d->yes, YES);
+
+        d->cancel = newbutton(CANCEL_STRING, rect(middle + 10, h * 7, bw, h + 10), hit_button);
+        setvalue(d->cancel, CANCEL);
+
+        setkeydown(win, hit_key);
+    }
+    else
+    {
+        d = data(win);
+        settext(d->text, "");
+        settext(d->pass, "");
+    }
+    handle_message_dialog(win);
+    current_window = prev;
+    {
+        char *user, *pass;
+        static char buf[1000];
+        if (d->hit < YES) /* cancelled */
+            return "";
+        if (d->text)
+            user = new_string(gettext(d->text));
+        else
+            return "";
+        if (d->pass)
+            pass = new_string(gettext(d->pass));
+        else
+            return "";
+        sprintf(buf, "%s:%s", user, pass);
+        return buf;
+    }
+    return ""; /* -Wall */
 }
