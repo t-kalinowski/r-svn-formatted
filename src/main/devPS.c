@@ -723,8 +723,6 @@ typedef struct
 
     int fontfamily; /* font family */
     int encoding;   /* font encoding */
-    int fontstyle;  /* font style, R, B, I, BI, S */
-    int fontsize;   /* font size in points */
     int maxpointsize;
 
     double width;      /* plot width in inches */
@@ -735,15 +733,22 @@ typedef struct
     int printit;       /* print page at close? */
     char command[PATH_MAX];
 
-    double lwd;  /* current line width */
-    int lty;     /* current line type */
-    rcolor col;  /* current color */
-    rcolor fill; /* current fill color */
-    rcolor bg;   /* background color */
-
     FILE *psfp; /* output file */
 
     int onefile; /* EPSF header etc*/
+
+    /* This group of variables track the current device status.
+     * They should only be set by routines that emit PostScript code. */
+    struct
+    {
+        double lwd;    /* line width */
+        int lty;       /* line type */
+        int fontstyle; /* font style, R, B, I, BI, S */
+        int fontsize;  /* font size in points */
+        rcolor col;    /* color */
+        rcolor fill;   /* fill color */
+        rcolor bg;     /* color */
+    } current;
 } PostScriptDesc;
 
 static FontMetricInfo metrics[5]; /* font metrics */
@@ -769,7 +774,7 @@ static double PS_StrWidth(char *, DevDesc *);
 static void PS_MetricInfo(int, double *, double *, double *, DevDesc *);
 static void PS_Text(double, double, int, char *, double, double, DevDesc *);
 
-/* PostScript Support (formally in PostScript.c) */
+/* PostScript Support (formerly in PostScript.c) */
 
 static void PostScriptSetCol(FILE *fp, double r, double g, double b)
 {
@@ -787,6 +792,7 @@ static void SetColor(int, DevDesc *);
 static void SetFill(int, DevDesc *);
 static void SetFont(int, int, DevDesc *);
 static void SetLineStyle(int newlty, double newlwd, DevDesc *dd);
+static void Invalidate(DevDesc *);
 static int MatchFamily(char *name);
 
 int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg, double width, double height,
@@ -796,6 +802,8 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     /* then we must free(dd) */
 
     double xoff, yoff, pointsize;
+    rcolor setbg, setfg, setfill;
+
     PostScriptDesc *pd;
 
     /* Check and extract the device parameters */
@@ -818,14 +826,16 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     strcpy(pd->papername, paper);
     pd->fontfamily = MatchFamily(family);
     pd->encoding = 1;
-    pd->bg = str2col(bg);
-    pd->col = str2col(fg);
-    pd->fill = NA_INTEGER;
+
+    setbg = str2col(bg);
+    setfg = str2col(fg);
+    setfill = NA_INTEGER;
+
     pd->width = width;
     pd->height = height;
     pd->landscape = horizontal;
     pointsize = floor(ps);
-    if (pd->bg == NA_INTEGER && pd->col == NA_INTEGER)
+    if (setbg == NA_INTEGER && setfg == NA_INTEGER)
     {
         free(dd);
         free(pd);
@@ -915,13 +925,13 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     }
     pd->maxpointsize = 72.0 * ((pd->pageheight > pd->pagewidth) ? pd->pageheight : pd->pagewidth);
     pd->pageno = 0;
-    pd->lty = 1;
+    dd->dp.lty = 0;
 
     /* Set graphics parameters that must be set by device driver. */
     /* Page dimensions in points. */
 
-    dd->dp.bg = pd->bg;
-    dd->dp.fg = dd->dp.col = pd->col;
+    dd->dp.bg = setbg;
+    dd->dp.fg = dd->dp.col = setfg;
     dd->dp.left = 72 * xoff;                /* left */
     dd->dp.right = 72 * (xoff + pd->width); /* right */
     dd->dp.bottom = 72 * yoff;              /* bottom */
@@ -937,6 +947,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     if (pointsize > pd->maxpointsize)
         pointsize = pd->maxpointsize;
     dd->dp.ps = pointsize;
+    dd->dp.font = 1;
     dd->dp.cra[0] = 0.9 * pointsize;
     dd->dp.cra[1] = 1.2 * pointsize;
 
@@ -1009,20 +1020,20 @@ static int MatchFamily(char *name)
 static void SetColor(int color, DevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
-    if (color != pd->col)
+    if (color != pd->current.col)
     {
         PostScriptSetCol(pd->psfp, R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
-        pd->col = color;
+        pd->current.col = color;
     }
 }
 
 static void SetFill(int color, DevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
-    if (color != pd->fill)
+    if (color != pd->current.fill)
     {
         PostScriptSetFill(pd->psfp, R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
-        pd->fill = color;
+        pd->current.fill = color;
     }
 }
 
@@ -1033,18 +1044,18 @@ static void SetLineStyle(int newlty, double newlwd, DevDesc *dd)
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
     int i, ltyarray[8];
 
-    if (pd->lty != newlty || pd->lwd != newlwd)
+    if (pd->current.lty != newlty || pd->current.lwd != newlwd)
     {
-        pd->lwd = newlwd;
-        pd->lty = newlty;
-        PostScriptSetLineWidth(pd->psfp, dd->gp.lwd * 0.75);
+        pd->current.lwd = newlwd;
+        pd->current.lty = newlty;
+        PostScriptSetLineWidth(pd->psfp, newlwd * 0.75);
         /* process lty : */
         for (i = 0; i < 8 && newlty & 15; i++)
         {
             ltyarray[i] = newlty & 15;
             newlty = newlty >> 4;
         }
-        PostScriptSetLineTexture(pd->psfp, ltyarray, i, dd->gp.lwd * 0.75);
+        PostScriptSetLineTexture(pd->psfp, ltyarray, i, newlwd * 0.75);
     }
 }
 
@@ -1055,11 +1066,11 @@ static void SetFont(int style, int size, DevDesc *dd)
         style = 1;
     if (size < 1 || size > pd->maxpointsize)
         size = 10;
-    if (size != pd->fontsize || style != pd->fontstyle)
+    if (size != pd->current.fontsize || style != pd->current.fontstyle)
     {
         PostScriptSetFont(pd->psfp, style - 1, size);
-        pd->fontsize = size;
-        pd->fontstyle = style;
+        pd->current.fontsize = size;
+        pd->current.fontstyle = style;
     }
 }
 
@@ -1125,9 +1136,27 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
         PSFileHeader(pd->psfp, pd->fontfamily, pd->encoding, pd->papername, pd->paperwidth, pd->paperheight,
                      pd->landscape, !(pd->onefile), dd->dp.left, dd->dp.bottom, dd->dp.right, dd->dp.top);
 
-    pd->fontstyle = 1;
-    pd->fontsize = 10;
     return 1;
+}
+
+/* The driver keeps track of the current values of colors, fonts and
+   line parameters, to save emitting some PostScript. In some cases,
+   the state becomes unknown, notably after changing the clipping and
+   at the start of a new page, so we have the following routine to
+   invalidate the saved values, which in turn causes the parameters to
+   be set before usage. */
+
+static void Invalidate(DevDesc *dd)
+{
+    PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
+
+    pd->current.fontsize = -1;
+    pd->current.fontstyle = -1;
+    pd->current.lwd = -1;
+    pd->current.lty = -1;
+    pd->current.col = 0xffffffff;
+    pd->current.fill = 0xffffffff;
+    pd->current.bg = 0xffffffff;
 }
 
 static void PS_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
@@ -1135,9 +1164,8 @@ static void PS_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
     PostScriptSetClipRect(pd->psfp, x0, x1, y0, y1);
-    /* clipping does grestore so invalidate current font, color, fill,
-       and linewidth parameters */
-    pd->fontsize = pd->col = pd->fill = pd->lwd = -1;
+    /* clipping does grestore so invalidate monitor variables */
+    Invalidate(dd);
 }
 
 static void PS_Resize(DevDesc *dd)
@@ -1160,20 +1188,28 @@ static void PS_NewPage(DevDesc *dd)
         PostScriptClose(dd);
         PS_Open(dd, pd);
         pd->pageno++;
-        pd->fill = NA_INTEGER;
     }
     else
         pd->pageno++;
     PostScriptStartPage(pd->psfp, pd->pageno);
-    PostScriptSetFont(pd->psfp, pd->fontstyle - 1, pd->fontsize);
-    PostScriptSetLineWidth(pd->psfp, 0.75);
-    PostScriptSetCol(pd->psfp, R_RED(pd->col) / 255.0, R_GREEN(pd->col) / 255.0, R_BLUE(pd->col) / 255.0);
+    Invalidate(dd);
+
+    /* FIXME: I'm not really sure these settings are necessary or even
+       desirable. Possibly, they should be removed and the background
+       color code call PS_Rect rather than PostScriptRectangle */
+
+    SetFont(dd->dp.font, dd->dp.ps, dd);
+    SetLineStyle(0, 1.0, dd);
+    SetColor(dd->dp.col, dd);
+
     if (dd->dp.bg != R_RGB(255, 255, 255))
     {
         SetFill(dd->dp.bg, dd);
         PostScriptRectangle(pd->psfp, 0, 0, 72.0 * pd->pagewidth, 72.0 * pd->pageheight);
         fprintf(pd->psfp, "p2\n");
     }
+    else
+        pd->current.fill = NA_INTEGER;
 }
 
 #ifdef Win32
