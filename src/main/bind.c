@@ -2,21 +2,23 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *			      R Development Core Team
+ *  Copyright (C) 2002	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  A copy of the GNU General Public License is available via WWW at
+ *  http://www.gnu.org/copyleft/gpl.html.  You can also obtain it by
+ *  writing to the Free Software Foundation, Inc., 59 Temple Place,
+ *  Suite 330, Boston, MA  02111-1307  USA.
  */
 
 /* Code to handle list / vector switch */
@@ -947,13 +949,13 @@ SEXP FetchMethod(char *generic, char *classname, SEXP env)
     return method;
 }
 
+/* cbind(...) and rbind(...) : */
 SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP a, t, obj, class, classlist, classname, method, classmethod;
+    SEXP a, t, obj, class, classlist, classname, method, classmethod, rho;
     char *generic;
-    int mode = ANYSXP;
+    int mode;
     struct BindData data;
-    SEXP rho;
     data.deparse_level = 1;
 
     /* Lazy evaluation and method dispatch based on argument types are
@@ -968,19 +970,18 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
      * The dispatch rule here is as follows:
      *
      * 1) For each argument we get the list of possible class
-     *    memberships from the class attribute.
+     *	  memberships from the class attribute.
      *
      * 2) We inspect each class in turn to see if there is an
-     *    an applicable method.
+     *	  an applicable method.
      *
      * 3) If we find an applicable method we make sure that it is
-     *    identical to any method determined for prior arguments.
-     *    If it is identical, we proceed, otherwise we immediately
-     *    drop through to the default code.
+     *	  identical to any method determined for prior arguments.
+     *	  If it is identical, we proceed, otherwise we immediately
+     *	  drop through to the default code.
      */
 
     PROTECT(args = promiseArgs(args, env));
-    mode = 0;
     generic = (PRIMVAL(op) == 1) ? "cbind" : "rbind";
     class = R_NilValue;
     method = R_NilValue;
@@ -1036,18 +1037,21 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
         CAR(a) = PRVALUE(CAR(a));
 #endif
 
-    rho = env; /* GLOBAL */
+    rho = env;
     data.ans_flags = 0;
     data.ans_length = 0;
     data.ans_nnames = 0;
-
     for (t = args; t != R_NilValue; t = CDR(t))
         AnswerType(PRVALUE(CAR(t)), 0, 0, &data);
 
-    /* zero-extent matrices shouldn't give NULL, anymore :
-       if (ans_length == 0)
-       return R_NilValue;
-    */
+    /* zero-extent matrices shouldn't give NULL, but cbind(NULL) should: */
+    if (!data.ans_flags && !data.ans_length)
+    {
+        UNPROTECT(1);
+        return R_NilValue;
+    }
+
+    mode = NILSXP;
     if (data.ans_flags >= 128)
     {
         if (data.ans_flags & 128)
