@@ -302,8 +302,11 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
     const double amiss = -12345.;
 
     /* TOL is chosen as the square root of the smallest relative spacing. */
+#ifndef Macintosh
     const static double tol = 3.45254e-7;
-
+#else
+    static double tol = 3.45254e-7;
+#endif
     /* EMX is a large positive value used in comparing expected values. */
     const static double emx = 1e30;
 
