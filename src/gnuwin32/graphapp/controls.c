@@ -227,6 +227,8 @@ void resize(control obj, rect r)
         if (!equalr(r, obj->rect))
         {
             GetWindowPlacement(obj->handle, &W);
+            if (!isvisible(obj))
+                W.showCmd = SW_HIDE; /* stops the resize from revealing the window */
             dx = r.x - obj->rect.x;
             dy = r.y - obj->rect.y;
             /* don't believe current sizes!

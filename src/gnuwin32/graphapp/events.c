@@ -975,7 +975,7 @@ int doevent(void)
         DispatchMessage(&msg);
     }
     deletion_traversal();
-    if ((active_windows == 0) || (msg.message == WM_QUIT))
+    if ((active_windows <= 0) || (msg.message == WM_QUIT))
         return 0;
     else
         return 1;

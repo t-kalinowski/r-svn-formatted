@@ -72,8 +72,10 @@ static void check_max_mem(int argc, char **argv)
                     return;
                 v = 1000 * v;
             }
+#ifdef LEA_MALLOC
             if (v > R_reserved_size)
                 R_reserved_size = v;
+#endif
             return;
         }
     }
