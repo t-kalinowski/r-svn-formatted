@@ -854,9 +854,8 @@ static void dogstp(int nr, int n, double *g, double *a, double *p, double *sx, d
 
      *	cln		 length of cauchy step */
 
-    double alam, beta;
     int i, j, one = 1;
-    double alpha, tmp, dot1, dot2;
+    double alam, bet, alpha, tmp, dot1, dot2;
 
     /*	can we take newton step */
 
@@ -883,7 +882,7 @@ static void dogstp(int nr, int n, double *g, double *a, double *p, double *sx, d
         {
             alpha += g[i] * g[i] / (sx[i] * sx[i]);
         }
-        beta = 0.;
+        bet = 0.;
         for (i = 0; i < n; ++i)
         {
             tmp = 0.;
@@ -891,14 +890,14 @@ static void dogstp(int nr, int n, double *g, double *a, double *p, double *sx, d
             {
                 tmp += a[j + i * nr] * g[j] / (sx[j] * sx[j]);
             }
-            beta += tmp * tmp;
+            bet += tmp * tmp;
         }
         for (i = 0; i < n; ++i)
         {
-            ssd[i] = -(alpha / beta) * g[i] / sx[i];
+            ssd[i] = -(alpha / bet) * g[i] / sx[i];
         }
-        *cln = alpha * sqrt(alpha) / beta;
-        *eta = (alpha * .8 * alpha / (-beta * F77_CALL(ddot)(&n, g, &one, p, &one))) + .2;
+        *cln = alpha * sqrt(alpha) / bet;
+        *eta = (alpha * .8 * alpha / (-bet * F77_CALL(ddot)(&n, g, &one, p, &one))) + .2;
         for (i = 0; i < n; ++i)
         {
             v[i] = *eta * sx[i] * p[i] - ssd[i];
@@ -982,10 +981,8 @@ static void dogdrv(int nr, int n, double *x, double f, double *g, double *a, dou
      *	wrk3(n)	     --> workspace
      *	ipr	     --> device to which to send output */
 
-    int i;
-    double fplsp;
-    int fstdog, nwtake;
-    double rnwtln, eta, cln, tmp;
+    int i, fstdog, nwtake;
+    double fplsp, rnwtln, eta, cln, tmp;
 
     *iretcd = 4;
     fstdog = 1;
@@ -1215,11 +1212,8 @@ static void hookdr(int nr, int n, double *x, double f, double *g, double *a, dou
      *	ipr	     --> device to which to send output
     */
 
-    double beta;
-    int i, j;
-    double alpha, fplsp;
-    int fstime, nwtake;
-    double rnwtln, tmp;
+    int i, j, fstime, nwtake;
+    double bet, alpha, fplsp, rnwtln, tmp;
 
     *iretcd = 4;
     fstime = 1;
@@ -1245,7 +1239,7 @@ static void hookdr(int nr, int n, double *x, double f, double *g, double *a, dou
             {
                 alpha += g[i] * g[i] / (sx[i] * sx[i]);
             }
-            beta = 0.;
+            bet = 0.;
             for (i = 0; i < n; ++i)
             {
                 tmp = 0.;
@@ -1253,9 +1247,9 @@ static void hookdr(int nr, int n, double *x, double f, double *g, double *a, dou
                 {
                     tmp += a[j + i * nr] * g[j] / (sx[j] * sx[j]);
                 }
-                beta += tmp * tmp;
+                bet += tmp * tmp;
             }
-            *dlt = alpha * sqrt(alpha) / beta;
+            *dlt = alpha * sqrt(alpha) / bet;
             *dlt = fmin2(*dlt, stepmx);
         }
     }
