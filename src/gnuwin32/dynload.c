@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2000 The R Development Core Team
+ *  Copyright (C) 1997-2001 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -143,8 +143,8 @@ static void R_deleteCachedSymbols(DllInfo *dll)
 HINSTANCE R_loadLibrary(const char *path, int asLocal, int now)
 {
     HINSTANCE tdlh;
-    tdlh = LoadLibrary(path);
 
+    tdlh = LoadLibrary(path);
     return (tdlh);
 }
 

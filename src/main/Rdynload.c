@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2000 The R Development Core Team
+ *  Copyright (C) 1997-2001 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -423,7 +423,7 @@ static int AddDLL(char *path, int asLocal, int now)
     /* Now look for an initializing routine named R_init_<library name>.
        If it is present, we invoke it. It should take a reference to the
        DllInfo object currently being initialized.
-     */
+    */
     {
         char *tmp;
         DL_FUNC f;
@@ -466,6 +466,7 @@ Rf_DotFortranSymbol *Rf_lookupRegisteredFortranSymbol(DllInfo *info, const char 
 Rf_DotCallSymbol *Rf_lookupRegisteredCallSymbol(DllInfo *info, const char *name)
 {
     int i;
+
     for (i = 0; i < info->numCallSymbols; i++)
     {
         if (strcmp(name, info->CallSymbols[i].name) == 0)
@@ -477,6 +478,7 @@ Rf_DotCallSymbol *Rf_lookupRegisteredCallSymbol(DllInfo *info, const char *name)
 static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name)
 {
     int fail = 0;
+
     if (info->numCSymbols > 0)
     {
         Rf_DotCSymbol *sym;
@@ -511,6 +513,7 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name)
 {
     char buf[MAXIDSIZE + 1];
     DL_FUNC f;
+
     f = R_getDLLRegisteredSymbol(info, name);
     if (f)
         return (f);
@@ -608,6 +611,7 @@ static void GetFullDLLPath(SEXP call, char *buf, char *path)
 SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[2 * PATH_MAX];
+
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
         errorcall(call, "character argument expected");
@@ -621,6 +625,7 @@ SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[2 * PATH_MAX];
+
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
         errorcall(call, "character argument expected");

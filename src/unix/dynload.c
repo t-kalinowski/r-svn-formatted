@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2000 The R Development Core Team
+ *  Copyright (C) 1997-2001 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ static void deleteCachedSymbols(DllInfo *dll)
     int i;
     /* Wouldn't a linked list be easier here?
        Potentially ruin the contiguity of the memory.
-     */
+    */
     for (i = nCPFun - 1; i >= 0; i--)
         if (!strcmp(CPFun[i].pkg, dll->name))
         {
@@ -136,17 +136,18 @@ static void deleteCachedSymbols(DllInfo *dll)
 
 static DL_FUNC getBaseSymbol(const char *name)
 {
-    DL_FUNC fcnptr;
 #ifdef DL_SEARCH_PROG
+    DL_FUNC fcnptr;
+
     fcnptr = R_osDynSymbol->dlsym(&baseDll, name);
+    return (fcnptr);
 #else
     int i;
+
     for (i = 0; R_osDynSymbol->CFunTab[i].name; i++)
         if (!strcmp(name, R_osDynSymbol->CFunTab[i].name))
             return R_osDynSymbol->CFunTab[i].func;
 #endif
-
-    return (fcnptr);
 }
 
 /*
@@ -173,13 +174,13 @@ static int computeDLOpenFlag(int asLocal, int now)
     /* Define a local macro for issuing the warnings.
        This allows us to redefine it easily so that it only emits the
        warning once as in
-         DL_WARN(i) if(warningMessages[i]) {\
-                     warning(warningMessages[i]); \
-                     warningMessages[i] = NULL; \
-                    }
+       DL_WARN(i) if(warningMessages[i]) {\
+       warning(warningMessages[i]); \
+       warningMessages[i] = NULL; \
+       }
        or to control the emission via the options currently in effect at
        call time.
-       */
+    */
 #define DL_WARN(i)                                                                                                     \
     if (asInteger(GetOption(install("warn"), R_NilValue)) == 1 ||                                                      \
         asInteger(GetOption(install("verbose"), R_NilValue)) > 0)                                                      \
@@ -235,10 +236,6 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name)
 {
     return (DL_FUNC)dlsym(info->handle, name);
 }
-
-/* R_FindSymbol checks whether one of the libraries */
-/* that have been loaded contains the symbol name and */
-/* returns a pointer to that symbol upon success. */
 
 /*
   In the future, this will receive an additional argument
