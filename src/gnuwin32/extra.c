@@ -1175,7 +1175,7 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     p = CHAR(STRING_ELT(def, 0));
     if (strlen(p) >= MAX_PATH)
         errorcall(call, "default is overlong");
-    strcpy(path, p);
+    strcpy(path, R_ExpandFileName(p));
     temp = strchr(path, '/');
     while (temp)
     {

@@ -1392,7 +1392,7 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     for (p = dir; *p != '\0'; p++)
         if (*p == '/')
             *p = '\\';
-    res = mkdir(dir);
+    res = mkdir(R_ExpandFileName(dir));
     if (show && res && errno == EEXIST)
         warning("'%s' already exists", dir);
     PROTECT(ans = allocVector(LGLSXP, 1));
