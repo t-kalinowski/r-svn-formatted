@@ -296,9 +296,13 @@ static SEXP binary(SEXP op, SEXP args)
     xts = isTs(x);
     yts = isTs(y);
 
-    /*if either x or y is a matrix with length 1 and the other
-      is a vector we want to coerce the matrix to be a vector
-      */
+    /* if either x or y is a matrix with length 1 and the other */
+    /* is a vector we want to coerce the matrix to be a vector */
+
+    /* FIXME: danger will robinson.  We might be trashing */
+    /* arguments here.  If we have NAMED(x) or NAMED(y) */
+    /* we should duplicate! */
+
     if (xarray || (yarray && !(xarray * yarray)))
     {
         if (xarray && length(x) == 1)
@@ -324,134 +328,96 @@ static SEXP binary(SEXP op, SEXP args)
         else if (xarray)
         {
             PROTECT(dims = getAttrib(x, R_DimSymbol));
-
-#if 0
-<<<<<<< arithmetic.c
-    mismatch = 0;
-    xarray = isArray(x);
-    yarray = isArray(y);
-    xts = isTs(x);
-    yts = isTs(y);
-    if (xarray || yarray) {
-	if (xarray && yarray) {
-	    if (!conformable(x, y))
-		errorcall(lcall, "non-conformable arrays\n");
-	    PROTECT(dims = getAttrib(x, R_DimSymbol));
-	}
-	else if (xarray) {
-	    PROTECT(dims = getAttrib(x, R_DimSymbol));
-=======
-	mismatch = 0;
-	xarray = isArray(x);
-	yarray = isArray(y);
-
-	/*if either x or y is a matrix with length 1 and the other
-	  is a vector we want to coerce the matrix to be a vector
-	*/
-	if( xarray || yarray && !(xarray*yarray) ) {
-		if(xarray && length(x)==1) {
-			x = CAR(args)=duplicate(x);
-			setAttrib(x,R_DimSymbol,R_NilValue);
-		}
-		if(yarray && length(y)==1) {
-			y = CADR(args) = duplicate(y);
-			setAttrib(y, R_DimSymbol, R_NilValue);
-		}
-	}
-
-	xts = isTs(x);
-	yts = isTs(y);
-	if (xarray || yarray) {
-		if (xarray && yarray) {
-			if (!conformable(x, y))
-				errorcall(lcall, "non-conformable arrays\n");
-			PROTECT(dims = getAttrib(x, R_DimSymbol));
-		}
-		else if (xarray) {
-			PROTECT(dims = getAttrib(x, R_DimSymbol));
-		}
-		else if (yarray) {
-			PROTECT(dims = getAttrib(y, R_DimSymbol));
-		}
-		PROTECT(xnames = getAttrib(x, R_DimNamesSymbol));
-		PROTECT(ynames = getAttrib(y, R_DimNamesSymbol));
->>>>>>> 1.3.4.1
-#endif
-	}
-	else if (yarray) {
-	    PROTECT(dims = getAttrib(y, R_DimSymbol));
-	}
-	PROTECT(xnames = getAttrib(x, R_DimNamesSymbol));
-	PROTECT(ynames = getAttrib(y, R_DimNamesSymbol));
-    }
-    else {
-	nx = length(x);
-	ny = length(y);
-	if(nx > 0 && ny > 0) {
-	    if(nx > ny) mismatch = nx % ny;
-	    else mismatch = ny % nx;
-	}
-	PROTECT(dims = R_NilValue);
-	PROTECT(xnames = getAttrib(x, R_NamesSymbol));
-	PROTECT(ynames = getAttrib(y, R_NamesSymbol));
-    }
-
-    if (xts || yts) {
-	if (xts && yts) {
-	    if (!tsConform(x, y))
-		errorcall(lcall, "Non-conformable time-series\n");
-	    PROTECT(tsp = getAttrib(x, R_TspSymbol));
-	    PROTECT(class = getAttrib(x, R_ClassSymbol));
-	}
-	else if (xts) {
-	    if (length(x) < length(y))
-		ErrorMessage(lcall, ERROR_TSVEC_MISMATCH);
-	    PROTECT(tsp = getAttrib(x, R_TspSymbol));
-	    PROTECT(class = getAttrib(x, R_ClassSymbol));
-	}
-	else if (yts) {
-	    if (length(y) < length(x))
-		ErrorMessage(lcall, ERROR_TSVEC_MISMATCH);
-	    PROTECT(tsp = getAttrib(y, R_TspSymbol));
-	    PROTECT(class = getAttrib(y, R_ClassSymbol));
-	}
-    }
-    if(mismatch) warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length\n");
-
-    if (TYPEOF(x) == CPLXSXP || TYPEOF(y) == CPLXSXP) {
-	x = CAR(args) = coerceVector(x, CPLXSXP);
-	y = CADR(args) = coerceVector(y, CPLXSXP);
-	x = complex_binary(PRIMVAL(op), x, y);
+        }
+        else if (yarray)
+        {
+            PROTECT(dims = getAttrib(y, R_DimSymbol));
+        }
+        PROTECT(xnames = getAttrib(x, R_DimNamesSymbol));
+        PROTECT(ynames = getAttrib(y, R_DimNamesSymbol));
     }
     else
-	if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP) {
-	    x = CAR(args) = coerceVector(x, REALSXP);
-	    y = CADR(args) = coerceVector(y, REALSXP);
-	    x = real_binary(PRIMVAL(op), x, y);
-	}
-	else {
-	    x = integer_binary(PRIMVAL(op), x, y);
-	}
+    {
+        nx = length(x);
+        ny = length(y);
+        if (nx > 0 && ny > 0)
+        {
+            if (nx > ny)
+                mismatch = nx % ny;
+            else
+                mismatch = ny % nx;
+        }
+        PROTECT(dims = R_NilValue);
+        PROTECT(xnames = getAttrib(x, R_NamesSymbol));
+        PROTECT(ynames = getAttrib(y, R_NamesSymbol));
+    }
+
+    if (xts || yts)
+    {
+        if (xts && yts)
+        {
+            if (!tsConform(x, y))
+                errorcall(lcall, "Non-conformable time-series\n");
+            PROTECT(tsp = getAttrib(x, R_TspSymbol));
+            PROTECT(class = getAttrib(x, R_ClassSymbol));
+        }
+        else if (xts)
+        {
+            if (length(x) < length(y))
+                ErrorMessage(lcall, ERROR_TSVEC_MISMATCH);
+            PROTECT(tsp = getAttrib(x, R_TspSymbol));
+            PROTECT(class = getAttrib(x, R_ClassSymbol));
+        }
+        else if (yts)
+        {
+            if (length(y) < length(x))
+                ErrorMessage(lcall, ERROR_TSVEC_MISMATCH);
+            PROTECT(tsp = getAttrib(y, R_TspSymbol));
+            PROTECT(class = getAttrib(y, R_ClassSymbol));
+        }
+    }
+    if (mismatch)
+        warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length\n");
+
+    if (TYPEOF(x) == CPLXSXP || TYPEOF(y) == CPLXSXP)
+    {
+        x = CAR(args) = coerceVector(x, CPLXSXP);
+        y = CADR(args) = coerceVector(y, CPLXSXP);
+        x = complex_binary(PRIMVAL(op), x, y);
+    }
+    else if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
+    {
+        x = CAR(args) = coerceVector(x, REALSXP);
+        y = CADR(args) = coerceVector(y, REALSXP);
+        x = real_binary(PRIMVAL(op), x, y);
+    }
+    else
+    {
+        x = integer_binary(PRIMVAL(op), x, y);
+    }
 
     PROTECT(x);
-    if (xts || yts) {
-	setAttrib(x, R_TspSymbol, tsp);
-	setAttrib(x, R_ClassSymbol, class);
-	UNPROTECT(2);
+    if (xts || yts)
+    {
+        setAttrib(x, R_TspSymbol, tsp);
+        setAttrib(x, R_ClassSymbol, class);
+        UNPROTECT(2);
     }
 
-    if (dims != R_NilValue) {
-	setAttrib(x, R_DimSymbol, dims);
-	if(xnames != R_NilValue)
-	    setAttrib(x, R_DimNamesSymbol, xnames);
-	else if(ynames != R_NilValue)
-	    setAttrib(x, R_DimNamesSymbol, ynames);
+    if (dims != R_NilValue)
+    {
+        setAttrib(x, R_DimSymbol, dims);
+        if (xnames != R_NilValue)
+            setAttrib(x, R_DimNamesSymbol, xnames);
+        else if (ynames != R_NilValue)
+            setAttrib(x, R_DimNamesSymbol, ynames);
     }
-    else {
-	if(length(x) == length(xnames))
-	    setAttrib(x, R_NamesSymbol, xnames);
-	else if(length(x) == length(ynames))
-	    setAttrib(x, R_NamesSymbol, ynames);
+    else
+    {
+        if (length(x) == length(xnames))
+            setAttrib(x, R_NamesSymbol, xnames);
+        else if (length(x) == length(ynames))
+            setAttrib(x, R_NamesSymbol, ynames);
     }
 
     UNPROTECT(4);
@@ -460,18 +426,19 @@ static SEXP binary(SEXP op, SEXP args)
 
 static SEXP unary(SEXP op, SEXP s1)
 {
-    switch (TYPEOF(s1)) {
+    switch (TYPEOF(s1))
+    {
     case LGLSXP:
     case INTSXP:
-	return integer_unary(PRIMVAL(op), s1);
+        return integer_unary(PRIMVAL(op), s1);
     case REALSXP:
-	return real_unary(PRIMVAL(op), s1);
+        return real_unary(PRIMVAL(op), s1);
     case CPLXSXP:
-	return complex_unary(PRIMVAL(op), s1);
+        return complex_unary(PRIMVAL(op), s1);
     default:
-	errorcall(lcall, "Invalid argument to unary operator\n");
+        errorcall(lcall, "Invalid argument to unary operator\n");
     }
-    return s1;/* never used; to keep -Wall happy */
+    return s1; /* never used; to keep -Wall happy */
 }
 
 static SEXP integer_unary(int code, SEXP s1)
@@ -479,22 +446,23 @@ static SEXP integer_unary(int code, SEXP s1)
     int i, n, x;
     SEXP ans;
 
-    switch(code) {
+    switch (code)
+    {
     case PLUSOP:
-	return s1;
+        return s1;
     case MINUSOP:
-	ans = duplicate(s1);
-	n = LENGTH(s1);
-	for (i = 0; i < n; i++) {
-	    x = INTEGER(s1)[i];
-	    INTEGER(ans)[i] = (x == NA_INTEGER) ?
-		NA_INTEGER : ((x == 0.0) ? 0 : -x);
-	}
-	return ans;
+        ans = duplicate(s1);
+        n = LENGTH(s1);
+        for (i = 0; i < n; i++)
+        {
+            x = INTEGER(s1)[i];
+            INTEGER(ans)[i] = (x == NA_INTEGER) ? NA_INTEGER : ((x == 0.0) ? 0 : -x);
+        }
+        return ans;
     default:
-	error("illegal unary operator\n");
+        error("illegal unary operator\n");
     }
-    return s1;/* never used; to keep -Wall happy */
+    return s1; /* never used; to keep -Wall happy */
 }
 
 static SEXP real_unary(int code, SEXP s1)
@@ -502,25 +470,27 @@ static SEXP real_unary(int code, SEXP s1)
     int i, n;
     SEXP ans;
 
-    switch(code) {
-    case PLUSOP: return s1;
+    switch (code)
+    {
+    case PLUSOP:
+        return s1;
     case MINUSOP:
-	ans = duplicate(s1);
-	n = LENGTH(s1);
-	for (i = 0; i < n; i++) {
+        ans = duplicate(s1);
+        n = LENGTH(s1);
+        for (i = 0; i < n; i++)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = -REAL(s1)[i];
+            REAL(ans)[i] = -REAL(s1)[i];
 #else
-	    x = REAL(s1)[i];
-	    REAL(ans)[i] = ISNA(x) ? NA_REAL :
-		((x == 0.0) ? 0.0 : -x);
+            x = REAL(s1)[i];
+            REAL(ans)[i] = ISNA(x) ? NA_REAL : ((x == 0.0) ? 0.0 : -x);
 #endif
-	}
-	return ans;
+        }
+        return ans;
     default:
-	errorcall(lcall, "illegal unary operator\n");
+        errorcall(lcall, "illegal unary operator\n");
     }
-    return s1;/* never used; to keep -Wall happy */
+    return s1; /* never used; to keep -Wall happy */
 }
 
 /* i1 = i % n1; i2 = i % n2;
@@ -541,103 +511,127 @@ static SEXP integer_binary(int code, SEXP s1, SEXP s2)
     n = (n1 > n2) ? n1 : n2;
 
     if (code == DIVOP || code == POWOP)
-	ans = allocVector(REALSXP, n);
+        ans = allocVector(REALSXP, n);
     else
-	ans = allocVector(INTSXP, n);
+        ans = allocVector(INTSXP, n);
 
-    if (n1 < 1 || n2 < 1) {
-	for (i = 0; i < n; i++)
-	    INTEGER(ans)[i] = NA_INTEGER;
-	return ans;
+    if (n1 < 1 || n2 < 1)
+    {
+        for (i = 0; i < n; i++)
+            INTEGER(ans)[i] = NA_INTEGER;
+        return ans;
     }
 
-    switch (code) {
+    switch (code)
+    {
     case PLUSOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
-		INTEGER(ans)[i] = NA_INTEGER;
-	    else
-		INTEGER(ans)[i] = x1 + x2;
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else
+                INTEGER(ans)[i] = x1 + x2;
+        }
+        break;
     case MINUSOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
-		INTEGER(ans)[i] = NA_INTEGER;
-	    else
-		INTEGER(ans)[i] = x1 - x2;
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else
+                INTEGER(ans)[i] = x1 - x2;
+        }
+        break;
     case TIMESOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
-		INTEGER(ans)[i] = NA_INTEGER;
-	    else
-		INTEGER(ans)[i] = x1 * x2;
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else
+                INTEGER(ans)[i] = x1 * x2;
+        }
+        break;
     case DIVOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
 #ifdef IEEE_754
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
 #else
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER || x2 == 0)
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER || x2 == 0)
 #endif
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = (double) x1 / (double) x2;
-	}
-	break;
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = (double)x1 / (double)x2;
+        }
+        break;
     case POWOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
-		REAL(ans)[i] = NA_REAL;
-	    else {
-		REAL(ans)[i] = MATH_CHECK(pow((double) x1, (double) x2));
-	    }
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+                REAL(ans)[i] = NA_REAL;
+            else
+            {
+                REAL(ans)[i] = MATH_CHECK(pow((double)x1, (double)x2));
+            }
+        }
+        break;
     case MODOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER || x2 == 0)
-		INTEGER(ans)[i] = NA_INTEGER;
-	    else {
-		INTEGER(ans)[i] = x1 % x2;
-	    }
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER || x2 == 0)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else
+            {
+                INTEGER(ans)[i] = x1 % x2;
+            }
+        }
+        break;
     case IDIVOP:
-	mod_iterate(n1, n2, i1, i2) {
-	    x1 = INTEGER(s1)[i1];
-	    x2 = INTEGER(s2)[i2];
-	    if (x1 == NA_INTEGER || x2 == NA_INTEGER)
-		INTEGER(ans)[i] = NA_INTEGER;
-	    else if(x2 == 0)
-		INTEGER(ans)[i] = 0;
-	    else
-		INTEGER(ans)[i] = floor((double)x1 / (double)x2);
-	}
-	break;
+        mod_iterate(n1, n2, i1, i2)
+        {
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
+            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else if (x2 == 0)
+                INTEGER(ans)[i] = 0;
+            else
+                INTEGER(ans)[i] = floor((double)x1 / (double)x2);
+        }
+        break;
     }
+
+    /* Copy attributes from longest argument. */
+
+    if (n1 > n2)
+        copyMostAttrib(s1, ans);
+    else if (n1 == n2)
+    {
+        copyMostAttrib(s2, ans);
+        copyMostAttrib(s1, ans);
+    }
+    else
+        copyMostAttrib(s2, ans);
+
     return ans;
 }
 
 static double myfmod(double x1, double x2)
 {
     double q = x1 / x2;
-    return x1 - ((x1 < 0.0) ?  ceil(q) : floor(q)) * x2;
+    return x1 - ((x1 < 0.0) ? ceil(q) : floor(q)) * x2;
 }
 
 static SEXP real_binary(int code, SEXP s1, SEXP s2)
@@ -645,133 +639,155 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
     int i, i1, i2, n, n1, n2;
     SEXP ans;
 
+    /* Note: "s1" and "s2" are protected above. */
+
     n1 = LENGTH(s1);
     n2 = LENGTH(s2);
     n = (n1 > n2) ? n1 : n2;
-    PROTECT(s1);
-    PROTECT(s2);
     ans = allocVector(REALSXP, n);
-    UNPROTECT(2);
 
-    if (n1 < 1 || n2 < 1) {
-	for (i = 0; i < n; i++)
-	    REAL(ans)[i] = NA_REAL;
-	return ans;
+    if (n1 < 1 || n2 < 1)
+    {
+        for (i = 0; i < n; i++)
+            REAL(ans)[i] = NA_REAL;
+        return ans;
     }
 
-    switch (code) {
+    switch (code)
+    {
     case PLUSOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
+            REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2))
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(x1 + x2);
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 + x2);
 #endif
-	}
-	break;
+        }
+        break;
     case MINUSOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
+            REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2))
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(x1 - x2);
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 - x2);
 #endif
-	}
-	break;
+        }
+        break;
     case TIMESOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
+            REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) && ISNA(x2))
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(x1 * x2);
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) && ISNA(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 * x2);
 #endif
-	}
-	break;
+        }
+        break;
     case DIVOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
+            REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2) || x2 == 0)
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(x1 / x2);
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2) || x2 == 0)
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(x1 / x2);
 #endif
-	}
-	break;
+        }
+        break;
     case POWOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = pow(REAL(s1)[i1], REAL(s2)[i2]);
+            REAL(ans)[i] = pow(REAL(s1)[i1], REAL(s2)[i2]);
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2))
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(pow(x1, x2));
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(pow(x1, x2));
 #endif
-	}
-	break;
+        }
+        break;
     case MODOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
+            REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2) || x2 == 0)
-		REAL(ans)[i] = NA_REAL;
-	    else
-		REAL(ans)[i] = MATH_CHECK(myfmod(x1, x2));
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2) || x2 == 0)
+                REAL(ans)[i] = NA_REAL;
+            else
+                REAL(ans)[i] = MATH_CHECK(myfmod(x1, x2));
 #endif
-	}
-	break;
+        }
+        break;
     case IDIVOP:
-	mod_iterate(n1, n2, i1, i2) {
+        mod_iterate(n1, n2, i1, i2)
+        {
 #ifdef IEEE_754
-	    REAL(ans)[i] = floor(REAL(s1)[i1] / REAL(s2)[i2]);
+            REAL(ans)[i] = floor(REAL(s1)[i1] / REAL(s2)[i2]);
 #else
-	    x1 = REAL(s1)[i1];
-	    x2 = REAL(s2)[i2];
-	    if (ISNA(x1) || ISNA(x2))
-		REAL(ans)[i] = NA_REAL;
-	    else {
-		if(x2 == 0)
-		    REAL(ans)[i] = 0;
-		else
-		    REAL(ans)[i] = MATH_CHECK(floor(x1 / x2));
-	    }
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
+            if (ISNA(x1) || ISNA(x2))
+                REAL(ans)[i] = NA_REAL;
+            else
+            {
+                if (x2 == 0)
+                    REAL(ans)[i] = 0;
+                else
+                    REAL(ans)[i] = MATH_CHECK(floor(x1 / x2));
+            }
 #endif
-	}
-	break;
+        }
+        break;
     }
+
+    /* Copy attributes from longest argument. */
+
+    if (n1 > n2)
+        copyMostAttrib(s1, ans);
+    else if (n1 == n2)
+    {
+        copyMostAttrib(s2, ans);
+        copyMostAttrib(s1, ans);
+    }
+    else
+        copyMostAttrib(s2, ans);
+
     return ans;
 }
 
-	/* Mathematical Functions of One Argument */
+/* Mathematical Functions of One Argument */
 
 static double unavailable(double x)
 {
     errorcall(lcall, "function unavailable in this R\n");
-    return 0.;/* never used; to keep -Wall happy */
+    return 0.; /* never used; to keep -Wall happy */
 }
 
 #ifndef HAVE_ASINH
@@ -784,45 +800,50 @@ static double unavailable(double x)
 #define atanh unavailable
 #endif
 
-static SEXP math1(SEXP op, SEXP sa, double(*f)())
+static SEXP math1(SEXP op, SEXP sa, double (*f)())
 {
     SEXP sy;
     double *y, *a;
     int i, n;
 
-    if (isNumeric(sa)) {
-	n = length(sa);
-	PROTECT(sa = coerceVector(sa, REALSXP));
-	PROTECT(sy = allocVector(REALSXP, n));
-	a = REAL(sa);
-	y = REAL(sy);
-	naflag = 0;
-	for (i = 0; i < n; i++) {
-	    if (ISNAN(a[i]))
-		y[i] = a[i];
-	    else {
-		y[i] = MATH_CHECK(f(a[i]));
-		if(ISNAN(y[i])) {
+    if (isNumeric(sa))
+    {
+        n = length(sa);
+        PROTECT(sa = coerceVector(sa, REALSXP));
+        PROTECT(sy = allocVector(REALSXP, n));
+        a = REAL(sa);
+        y = REAL(sy);
+        naflag = 0;
+        for (i = 0; i < n; i++)
+        {
+            if (ISNAN(a[i]))
+                y[i] = a[i];
+            else
+            {
+                y[i] = MATH_CHECK(f(a[i]));
+                if (ISNAN(y[i]))
+                {
 #ifdef OLD
-		    y[i] = NA_REAL;
+                    y[i] = NA_REAL;
 #endif
-		    naflag = 1;
-		}
-	    }
-	}
-	if (naflag)
+                    naflag = 1;
+                }
+            }
+        }
+        if (naflag)
 #ifdef IEEE_754
-	    warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+            warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
 #else
-	    warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+            warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
 #endif
-	ATTRIB(sy) = duplicate(ATTRIB(sa));
-	OBJECT(sy) = OBJECT(sa);
-	UNPROTECT(2);
-	return sy;
+        ATTRIB(sy) = duplicate(ATTRIB(sa));
+        OBJECT(sy) = OBJECT(sa);
+        UNPROTECT(2);
+        return sy;
     }
-    else errorcall(lcall, "Non-numeric argument to mathematical function\n");
-    return sa;/* never used; to keep -Wall happy */
+    else
+        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+    return sa; /* never used; to keep -Wall happy */
 }
 
 SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -831,47 +852,72 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
 
-    if( DispatchGroup("Math", call, op, args, env, &s) )
-	return s;
+    if (DispatchGroup("Math", call, op, args, env, &s))
+        return s;
 
     if (isComplex(CAR(args)))
-	return complex_math1(call, op, args, env);
+        return complex_math1(call, op, args, env);
     lcall = call;
 
-    switch (PRIMVAL(op)) {
-    case 0: return math1(op, CAR(args), fabs);
-    case 1: return math1(op, CAR(args), floor);
-    case 2: return math1(op, CAR(args), ceil);
-    case 3: return math1(op, CAR(args), sqrt);
-    case 4: return math1(op, CAR(args), sign);
-    case 5: return math1(op, CAR(args), trunc);
+    switch (PRIMVAL(op))
+    {
+    case 0:
+        return math1(op, CAR(args), fabs);
+    case 1:
+        return math1(op, CAR(args), floor);
+    case 2:
+        return math1(op, CAR(args), ceil);
+    case 3:
+        return math1(op, CAR(args), sqrt);
+    case 4:
+        return math1(op, CAR(args), sign);
+    case 5:
+        return math1(op, CAR(args), trunc);
 
-    case 10: return math1(op, CAR(args), exp);
-    case 20: return math1(op, CAR(args), cos);
-    case 21: return math1(op, CAR(args), sin);
-    case 22: return math1(op, CAR(args), tan);
-    case 23: return math1(op, CAR(args), acos);
-    case 24: return math1(op, CAR(args), asin);
+    case 10:
+        return math1(op, CAR(args), exp);
+    case 20:
+        return math1(op, CAR(args), cos);
+    case 21:
+        return math1(op, CAR(args), sin);
+    case 22:
+        return math1(op, CAR(args), tan);
+    case 23:
+        return math1(op, CAR(args), acos);
+    case 24:
+        return math1(op, CAR(args), asin);
 
-    case 30: return math1(op, CAR(args), cosh);
-    case 31: return math1(op, CAR(args), sinh);
-    case 32: return math1(op, CAR(args), tanh);
-    case 33: return math1(op, CAR(args), acosh);
-    case 34: return math1(op, CAR(args), asinh);
-    case 35: return math1(op, CAR(args), atanh);
+    case 30:
+        return math1(op, CAR(args), cosh);
+    case 31:
+        return math1(op, CAR(args), sinh);
+    case 32:
+        return math1(op, CAR(args), tanh);
+    case 33:
+        return math1(op, CAR(args), acosh);
+    case 34:
+        return math1(op, CAR(args), asinh);
+    case 35:
+        return math1(op, CAR(args), atanh);
 
-    case 40: return math1(op, CAR(args), lgamma);
-    case 41: return math1(op, CAR(args), gamma);
+    case 40:
+        return math1(op, CAR(args), lgamma);
+    case 41:
+        return math1(op, CAR(args), gamma);
 
-    case 42: return math1(op, CAR(args), digamma);
-    case 43: return math1(op, CAR(args), trigamma);
-    case 44: return math1(op, CAR(args), tetragamma);
-    case 45: return math1(op, CAR(args), pentagamma);
+    case 42:
+        return math1(op, CAR(args), digamma);
+    case 43:
+        return math1(op, CAR(args), trigamma);
+    case 44:
+        return math1(op, CAR(args), tetragamma);
+    case 45:
+        return math1(op, CAR(args), pentagamma);
 
     default:
-	errorcall(lcall, "unimplemented real function\n");
+        errorcall(lcall, "unimplemented real function\n");
     }
-    return s;/* never used; to keep -Wall happy */
+    return s; /* never used; to keep -Wall happy */
 }
 
 static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
@@ -881,7 +927,7 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
     double ai, bi, *a, *b, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb))
-	errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function\n");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
@@ -892,199 +938,234 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
     a = REAL(sa);
     b = REAL(sb);
     y = REAL(sy);
-    if (na < 1 || nb < 1) {
-	for (i = 0; i < n; i++)
-	    y[i] = NA_REAL;
+    if (na < 1 || nb < 1)
+    {
+        for (i = 0; i < n; i++)
+            y[i] = NA_REAL;
     }
-    else {
-	naflag = 0;
-	mod_iterate(na, nb, ia, ib) {
-	    ai = a[ia];
-	    bi = b[ib];
-	    if(ISNAN(ai) || ISNAN(bi)) {
+    else
+    {
+        naflag = 0;
+        mod_iterate(na, nb, ia, ib)
+        {
+            ai = a[ia];
+            bi = b[ib];
+            if (ISNAN(ai) || ISNAN(bi))
+            {
 #ifdef IEEE_754
-		y[i] = ai + bi;
+                y[i] = ai + bi;
 #else
 
-		y[i] = NA_REAL;
+                y[i] = NA_REAL;
 #endif
-	    }
-	    else {
-		y[i] = MATH_CHECK(f(ai, bi));
-		if(ISNAN(y[i])) {
+            }
+            else
+            {
+                y[i] = MATH_CHECK(f(ai, bi));
+                if (ISNAN(y[i]))
+                {
 #ifdef OLD
-		    y[i] = NA_REAL;
+                    y[i] = NA_REAL;
 #endif
-		    naflag = 1;
-		}
-	    }
-	}
+                    naflag = 1;
+                }
+            }
+        }
     }
     if (naflag)
 #ifdef IEEE_754
-	warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
 #else
-	warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
 #endif
-    if(n == na) {
-	ATTRIB(sy) = duplicate(ATTRIB(sa));
-	OBJECT(sy) = OBJECT(sa);
+    if (n == na)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sa));
+        OBJECT(sy) = OBJECT(sa);
     }
-    else if(n == nb) {
-	ATTRIB(sy) = duplicate(ATTRIB(sb));
-	OBJECT(sy) = OBJECT(sb);
+    else if (n == nb)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sb));
+        OBJECT(sy) = OBJECT(sb);
     }
     UNPROTECT(3);
     return sy;
 }
 
-	/* Mathematical Functions of Two Arguments */
+/* Mathematical Functions of Two Arguments */
 
 SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
     if (isComplex(CAR(args)))
-	return complex_math2(call, op, args, env);
+        return complex_math2(call, op, args, env);
 
-    switch (PRIMVAL(op)) {
-    case 0: return math2(op, CAR(args), CADR(args), atan2);
-    /* case 1: return math2(op, CAR(args), CADR(args), prec); */
+    switch (PRIMVAL(op))
+    {
+    case 0:
+        return math2(op, CAR(args), CADR(args), atan2);
+        /* case 1: return math2(op, CAR(args), CADR(args), prec); */
 
-    case 2: return math2(op, CAR(args), CADR(args), lbeta);
-    case 3: return math2(op, CAR(args), CADR(args), beta);
-    case 4: return math2(op, CAR(args), CADR(args), lchoose);
-    case 5: return math2(op, CAR(args), CADR(args), choose);
+    case 2:
+        return math2(op, CAR(args), CADR(args), lbeta);
+    case 3:
+        return math2(op, CAR(args), CADR(args), beta);
+    case 4:
+        return math2(op, CAR(args), CADR(args), lchoose);
+    case 5:
+        return math2(op, CAR(args), CADR(args), choose);
 
-    case 6: return math2(op, CAR(args), CADR(args), dchisq);
-    case 7: return math2(op, CAR(args), CADR(args), pchisq);
-    case 8: return math2(op, CAR(args), CADR(args), qchisq);
+    case 6:
+        return math2(op, CAR(args), CADR(args), dchisq);
+    case 7:
+        return math2(op, CAR(args), CADR(args), pchisq);
+    case 8:
+        return math2(op, CAR(args), CADR(args), qchisq);
 
-    case 9: return math2(op, CAR(args), CADR(args), dexp);
-    case 10: return math2(op, CAR(args), CADR(args), pexp);
-    case 11: return math2(op, CAR(args), CADR(args), qexp);
+    case 9:
+        return math2(op, CAR(args), CADR(args), dexp);
+    case 10:
+        return math2(op, CAR(args), CADR(args), pexp);
+    case 11:
+        return math2(op, CAR(args), CADR(args), qexp);
 
-    case 12: return math2(op, CAR(args), CADR(args), dgeom);
-    case 13: return math2(op, CAR(args), CADR(args), pgeom);
-    case 14: return math2(op, CAR(args), CADR(args), qgeom);
+    case 12:
+        return math2(op, CAR(args), CADR(args), dgeom);
+    case 13:
+        return math2(op, CAR(args), CADR(args), pgeom);
+    case 14:
+        return math2(op, CAR(args), CADR(args), qgeom);
 
-    case 15: return math2(op, CAR(args), CADR(args), dpois);
-    case 16: return math2(op, CAR(args), CADR(args), ppois);
-    case 17: return math2(op, CAR(args), CADR(args), qpois);
+    case 15:
+        return math2(op, CAR(args), CADR(args), dpois);
+    case 16:
+        return math2(op, CAR(args), CADR(args), ppois);
+    case 17:
+        return math2(op, CAR(args), CADR(args), qpois);
 
-    case 18: return math2(op, CAR(args), CADR(args), dt);
-    case 19: return math2(op, CAR(args), CADR(args), pt);
-    case 20: return math2(op, CAR(args), CADR(args), qt);
+    case 18:
+        return math2(op, CAR(args), CADR(args), dt);
+    case 19:
+        return math2(op, CAR(args), CADR(args), pt);
+    case 20:
+        return math2(op, CAR(args), CADR(args), qt);
 
     default:
-	errorcall(lcall, "unimplemented real function\n");
+        errorcall(lcall, "unimplemented real function\n");
     }
-    return op;/* never used; to keep -Wall happy */
+    return op; /* never used; to keep -Wall happy */
 }
 
 SEXP do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
     int n;
-    if( DispatchGroup("Math", call, op, args, env, &s) )
-	return s;
-    switch(n = length(args)) {
+    if (DispatchGroup("Math", call, op, args, env, &s))
+        return s;
+    switch (n = length(args))
+    {
     case 1:
-	if (isComplex(CAR(args)))
-	    return complex_math1(call, op, args, env);
-	else
-	    return math1(op, CAR(args), atan);
+        if (isComplex(CAR(args)))
+            return complex_math1(call, op, args, env);
+        else
+            return math1(op, CAR(args), atan);
     case 2:
-	if (isComplex(CAR(args)) || isComplex(CDR(args)))
-	    return complex_math2(call, op, args, env);
-	else
-	    return math2(op, CAR(args), CADR(args), atan2);
+        if (isComplex(CAR(args)) || isComplex(CDR(args)))
+            return complex_math2(call, op, args, env);
+        else
+            return math2(op, CAR(args), CADR(args), atan2);
     default:
-	error("%d arguments passed to \"atan\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"atan\" which requires 1 or 2\n", n);
     }
-    return s;/* never used; to keep -Wall happy */
+    return s; /* never used; to keep -Wall happy */
 }
 
 SEXP do_round(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-  SEXP a, b;
-  int n;
-  if (DispatchGroup("Math", call, op, args, env, &a))
+    SEXP a, b;
+    int n;
+    if (DispatchGroup("Math", call, op, args, env, &a))
+        return a;
+    lcall = call;
+    switch (n = length(args))
+    {
+    case 1:
+        PROTECT(a = CAR(args));
+        PROTECT(b = allocVector(REALSXP, 1));
+        REAL(b)[0] = 0;
+        break;
+    case 2:
+        PROTECT(a = CAR(args));
+        PROTECT(b = CADR(args));
+        break;
+    default:
+        error("%d arguments passed to \"round\" which requires 1 or 2\n", n);
+    }
+    if (isComplex(CAR(args)))
+    {
+        args = list2(a, b);
+        a = complex_math2(call, op, args, env);
+    }
+    else
+        a = math2(op, a, b, rround);
+    UNPROTECT(2);
     return a;
-  lcall = call;
-  switch(n = length(args)) {
-  case 1:
-    PROTECT(a = CAR(args));
-    PROTECT(b = allocVector(REALSXP, 1));
-    REAL(b)[0] = 0;
-    break;
-  case 2:
-    PROTECT(a = CAR(args));
-    PROTECT(b = CADR(args));
-    break;
-  default:
-    error("%d arguments passed to \"round\" which requires 1 or 2\n", n);
-  }
-  if (isComplex(CAR(args))) {
-    args = list2(a, b);
-    a = complex_math2(call, op, args, env);
-  }
-  else
-    a = math2(op, a, b, rround);
-  UNPROTECT(2);
-  return a;
 }
 
 SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
     int n;
-    if( DispatchGroup("Math", call, op, args, env, &s) )
-	return s;
-    switch(n = length(args)) {
+    if (DispatchGroup("Math", call, op, args, env, &s))
+        return s;
+    switch (n = length(args))
+    {
     case 1:
-	if (isComplex(CAR(args)))
-	    return complex_math1(call, op, args, env);
-	else
-	    return math1(op, CAR(args), log);
+        if (isComplex(CAR(args)))
+            return complex_math1(call, op, args, env);
+        else
+            return math1(op, CAR(args), log);
     case 2:
-	if (isComplex(CAR(args)) || isComplex(CDR(args)))
-	    return complex_math2(call, op, args, env);
-	else
-	    return math2(op, CAR(args), CADR(args), logbase);
+        if (isComplex(CAR(args)) || isComplex(CDR(args)))
+            return complex_math2(call, op, args, env);
+        else
+            return math2(op, CAR(args), CADR(args), logbase);
     default:
-	error("%d arguments passed to \"log\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"log\" which requires 1 or 2\n", n);
     }
-    return s;/* never used; to keep -Wall happy */
+    return s; /* never used; to keep -Wall happy */
 }
 
 SEXP do_signif(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-  SEXP a, b;
-  int n;
-  if (DispatchGroup("Math", call, op, args, env, &a))
+    SEXP a, b;
+    int n;
+    if (DispatchGroup("Math", call, op, args, env, &a))
+        return a;
+    switch (n = length(args))
+    {
+    case 1:
+        PROTECT(a = CAR(args));
+        PROTECT(b = allocVector(REALSXP, 1));
+        REAL(b)[0] = 6;
+        break;
+    case 2:
+        PROTECT(a = CAR(args));
+        PROTECT(b = CADR(args));
+        break;
+    default:
+        error("%d arguments passed to \"signif\" which requires 1 or 2\n", n);
+    }
+    if (isComplex(CAR(args)))
+    {
+        args = list2(a, b);
+        a = complex_math2(call, op, args, env);
+    }
+    else
+        a = math2(op, a, b, prec);
+    UNPROTECT(2);
     return a;
-  switch(n = length(args)) {
-  case 1:
-    PROTECT(a = CAR(args));
-    PROTECT(b = allocVector(REALSXP, 1));
-    REAL(b)[0] = 6;
-    break;
-  case 2:
-    PROTECT(a = CAR(args));
-    PROTECT(b = CADR(args));
-    break;
-  default:
-    error("%d arguments passed to \"signif\" which requires 1 or 2\n", n);
-  }
-  if (isComplex(CAR(args))) {
-    args = list2(a, b);
-    a = complex_math2(call, op, args, env);
-  }
-  else
-    a = math2(op, a, b, prec);
-  UNPROTECT(2);
-  return a;
 }
 
 #define mod_iterate3(n1, n2, n3, i1, i2, i3)                                                                           \
@@ -1098,14 +1179,16 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     double ai, bi, ci, *a, *b, *c, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc))
-	errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function\n");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
     nc = LENGTH(sc);
     n = na;
-    if(n < nb) n = nb;
-    if(n < nc) n = nc;
+    if (n < nb)
+        n = nb;
+    if (n < nc)
+        n = nc;
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sb = coerceVector(sb, REALSXP));
     PROTECT(sc = coerceVector(sc, REALSXP));
@@ -1114,126 +1197,175 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     b = REAL(sb);
     c = REAL(sc);
     y = REAL(sy);
-    if (na < 1 || nb < 1 || nc < 1) {
-	for (i = 0; i < n; i++)
-	    y[i] = NA_REAL;
+    if (na < 1 || nb < 1 || nc < 1)
+    {
+        for (i = 0; i < n; i++)
+            y[i] = NA_REAL;
     }
-    else {
-	naflag = 0;
-	mod_iterate3 (na, nb, nc, ia, ib, ic) {
-	    ai = a[ia];
-	    bi = b[ib];
-	    ci = c[ic];
-	    if(ISNAN(ai) || ISNAN(bi) || ISNAN(ci)) {
+    else
+    {
+        naflag = 0;
+        mod_iterate3(na, nb, nc, ia, ib, ic)
+        {
+            ai = a[ia];
+            bi = b[ib];
+            ci = c[ic];
+            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci))
+            {
 #ifdef IEEE_754
-		y[i] = ai + bi + ci;
+                y[i] = ai + bi + ci;
 #else
-		y[i] = NA_REAL;
+                y[i] = NA_REAL;
 #endif
-	    }
-	    else {
-		y[i] = MATH_CHECK(f(ai, bi, ci));
-		if(ISNAN(y[i])) {
+            }
+            else
+            {
+                y[i] = MATH_CHECK(f(ai, bi, ci));
+                if (ISNAN(y[i]))
+                {
 #ifdef OLD
-		    y[i] = NA_REAL;
+                    y[i] = NA_REAL;
 #endif
-		    naflag = 1;
-		}
-	    }
-	}
+                    naflag = 1;
+                }
+            }
+        }
     }
     if (naflag)
 #ifdef IEEE_754
-	warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
 #else
-	warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
 #endif
-    if(n == na) {
-	ATTRIB(sy) = duplicate(ATTRIB(sa));
-	OBJECT(sy) = OBJECT(sa);
+    if (n == na)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sa));
+        OBJECT(sy) = OBJECT(sa);
     }
-    else if(n == nb) {
-	ATTRIB(sy) = duplicate(ATTRIB(sb));
-	OBJECT(sy) = OBJECT(sb);
+    else if (n == nb)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sb));
+        OBJECT(sy) = OBJECT(sb);
     }
-    else if(n == nc) {
-	ATTRIB(sy) = duplicate(ATTRIB(sc));
-	OBJECT(sy) = OBJECT(sc);
+    else if (n == nc)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sc));
+        OBJECT(sy) = OBJECT(sc);
     }
     UNPROTECT(4);
     return sy;
 }
 
-	/* Mathematical Functions of Three (Real) Arguments */
+/* Mathematical Functions of Three (Real) Arguments */
 
 SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
-    switch (PRIMVAL(op)) {
+    switch (PRIMVAL(op))
+    {
 
-    case 1:  return math3(op, CAR(args), CADR(args), CADDR(args), dbeta);
-    case 2:  return math3(op, CAR(args), CADR(args), CADDR(args), pbeta);
-    case 3:  return math3(op, CAR(args), CADR(args), CADDR(args), qbeta);
+    case 1:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dbeta);
+    case 2:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pbeta);
+    case 3:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qbeta);
 
-    case 4:  return math3(op, CAR(args), CADR(args), CADDR(args), dbinom);
-    case 5:  return math3(op, CAR(args), CADR(args), CADDR(args), pbinom);
-    case 6:  return math3(op, CAR(args), CADR(args), CADDR(args), qbinom);
+    case 4:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dbinom);
+    case 5:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pbinom);
+    case 6:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qbinom);
 
-    case 7:  return math3(op, CAR(args), CADR(args), CADDR(args), dcauchy);
-    case 8:  return math3(op, CAR(args), CADR(args), CADDR(args), pcauchy);
-    case 9:  return math3(op, CAR(args), CADR(args), CADDR(args), qcauchy);
+    case 7:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dcauchy);
+    case 8:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pcauchy);
+    case 9:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qcauchy);
 
-    case 10:  return math3(op, CAR(args), CADR(args), CADDR(args), df);
-    case 11:  return math3(op, CAR(args), CADR(args), CADDR(args), pf);
-    case 12:  return math3(op, CAR(args), CADR(args), CADDR(args), qf);
+    case 10:
+        return math3(op, CAR(args), CADR(args), CADDR(args), df);
+    case 11:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pf);
+    case 12:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qf);
 
-    case 13:  return math3(op, CAR(args), CADR(args), CADDR(args), dgamma);
-    case 14:  return math3(op, CAR(args), CADR(args), CADDR(args), pgamma);
-    case 15:  return math3(op, CAR(args), CADR(args), CADDR(args), qgamma);
+    case 13:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dgamma);
+    case 14:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pgamma);
+    case 15:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qgamma);
 
-    case 16:  return math3(op, CAR(args), CADR(args), CADDR(args), dlnorm);
-    case 17:  return math3(op, CAR(args), CADR(args), CADDR(args), plnorm);
-    case 18:  return math3(op, CAR(args), CADR(args), CADDR(args), qlnorm);
+    case 16:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dlnorm);
+    case 17:
+        return math3(op, CAR(args), CADR(args), CADDR(args), plnorm);
+    case 18:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qlnorm);
 
-    case 19:  return math3(op, CAR(args), CADR(args), CADDR(args), dlogis);
-    case 20:  return math3(op, CAR(args), CADR(args), CADDR(args), plogis);
-    case 21:  return math3(op, CAR(args), CADR(args), CADDR(args), qlogis);
+    case 19:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dlogis);
+    case 20:
+        return math3(op, CAR(args), CADR(args), CADDR(args), plogis);
+    case 21:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qlogis);
 
-    case 22:  return math3(op, CAR(args), CADR(args), CADDR(args), dnbinom);
-    case 23:  return math3(op, CAR(args), CADR(args), CADDR(args), pnbinom);
-    case 24:  return math3(op, CAR(args), CADR(args), CADDR(args), qnbinom);
+    case 22:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dnbinom);
+    case 23:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pnbinom);
+    case 24:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qnbinom);
 
-    case 25:  return math3(op, CAR(args), CADR(args), CADDR(args), dnorm);
-    case 26:  return math3(op, CAR(args), CADR(args), CADDR(args), pnorm);
-    case 27:  return math3(op, CAR(args), CADR(args), CADDR(args), qnorm);
+    case 25:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dnorm);
+    case 26:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pnorm);
+    case 27:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qnorm);
 
-    case 28:  return math3(op, CAR(args), CADR(args), CADDR(args), dunif);
-    case 29:  return math3(op, CAR(args), CADR(args), CADDR(args), punif);
-    case 30:  return math3(op, CAR(args), CADR(args), CADDR(args), qunif);
+    case 28:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dunif);
+    case 29:
+        return math3(op, CAR(args), CADR(args), CADDR(args), punif);
+    case 30:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qunif);
 
-    case 31:  return math3(op, CAR(args), CADR(args), CADDR(args), dweibull);
-    case 32:  return math3(op, CAR(args), CADR(args), CADDR(args), pweibull);
-    case 33:  return math3(op, CAR(args), CADR(args), CADDR(args), qweibull);
+    case 31:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dweibull);
+    case 32:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pweibull);
+    case 33:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qweibull);
 
-    case 34:  return math3(op, CAR(args), CADR(args), CADDR(args), dnchisq);
-    case 35:  return math3(op, CAR(args), CADR(args), CADDR(args), pnchisq);
+    case 34:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dnchisq);
+    case 35:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pnchisq);
 #ifdef UNIMP
-    case 36:  return math3(op, CAR(args), CADR(args), CADDR(args), qnchisq);
+    case 36:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qnchisq);
 #endif
 
 #ifdef UNIMP
-    case 37:  return math3(op, CAR(args), CADR(args), CADDR(args), dnt);
+    case 37:
+        return math3(op, CAR(args), CADR(args), CADDR(args), dnt);
 #endif
-    case 38:  return math3(op, CAR(args), CADR(args), CADDR(args), pnt);
+    case 38:
+        return math3(op, CAR(args), CADR(args), CADDR(args), pnt);
 #ifdef UNIMP
-    case 39:  return math3(op, CAR(args), CADR(args), CADDR(args), qnt);
+    case 39:
+        return math3(op, CAR(args), CADR(args), CADDR(args), qnt);
 #endif
 
     default:
-	errorcall(lcall, "unimplemented real function\n");
+        errorcall(lcall, "unimplemented real function\n");
     }
-    return op;/* never used; to keep -Wall happy */
+    return op; /* never used; to keep -Wall happy */
 }
 
 #define mod_iterate4(n1, n2, n3, n4, i1, i2, i3, i4)                                                                   \
@@ -1247,16 +1379,19 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     double ai, bi, ci, di, *a, *b, *c, *d, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd))
-	errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function\n");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
     nc = LENGTH(sc);
     nd = LENGTH(sd);
     n = na;
-    if(n < nb) n = nb;
-    if(n < nc) n = nc;
-    if(n < nd) n = nd;
+    if (n < nb)
+        n = nb;
+    if (n < nc)
+        n = nc;
+    if (n < nd)
+        n = nd;
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sb = coerceVector(sb, REALSXP));
     PROTECT(sc = coerceVector(sc, REALSXP));
@@ -1267,90 +1402,113 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     c = REAL(sc);
     d = REAL(sd);
     y = REAL(sy);
-    if (na < 1 || nb < 1 || nc < 1 || nd < 1) {
-	for (i = 0; i < n; i++)
-	    y[i] = NA_REAL;
+    if (na < 1 || nb < 1 || nc < 1 || nd < 1)
+    {
+        for (i = 0; i < n; i++)
+            y[i] = NA_REAL;
     }
-    else {
-	naflag = 0;
-	mod_iterate4 (na, nb, nc, nd, ia, ib, ic, id) {
-	    ai = a[ia];
-	    bi = b[ib];
-	    ci = c[ic];
-	    di = d[id];
-	    if(ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di)) {
+    else
+    {
+        naflag = 0;
+        mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
+        {
+            ai = a[ia];
+            bi = b[ib];
+            ci = c[ic];
+            di = d[id];
+            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di))
+            {
 #ifdef IEEE_754
-		y[i] = ai + bi + ci + di;
+                y[i] = ai + bi + ci + di;
 #else
-		y[i] = NA_REAL;
+                y[i] = NA_REAL;
 #endif
-	    }
-	    else {
-		y[i] = MATH_CHECK(f(ai, bi, ci, di));
-		if(ISNAN(y[i])) {
+            }
+            else
+            {
+                y[i] = MATH_CHECK(f(ai, bi, ci, di));
+                if (ISNAN(y[i]))
+                {
 #ifdef OLD
-		    y[i] = NA_REAL;
+                    y[i] = NA_REAL;
 #endif
-		    naflag = 1;
-		}
-	    }
-	}
+                    naflag = 1;
+                }
+            }
+        }
     }
     if (naflag)
 #ifdef IEEE_754
-	warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NaNs produced in function \"%s\"\n", PRIMNAME(op));
 #else
-	warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
+        warning("NAs produced in function \"%s\"\n", PRIMNAME(op));
 #endif
-    if(n == na) {
-	ATTRIB(sy) = duplicate(ATTRIB(sa));
-	OBJECT(sy) = OBJECT(sa);
+    if (n == na)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sa));
+        OBJECT(sy) = OBJECT(sa);
     }
-    else if(n == nb) {
-	ATTRIB(sy) = duplicate(ATTRIB(sb));
-	OBJECT(sy) = OBJECT(sb);
+    else if (n == nb)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sb));
+        OBJECT(sy) = OBJECT(sb);
     }
-    else if(n == nc) {
-	ATTRIB(sy) = duplicate(ATTRIB(sc));
-	OBJECT(sy) = OBJECT(sc);
+    else if (n == nc)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sc));
+        OBJECT(sy) = OBJECT(sc);
     }
-    else if(n == nd) {
-	ATTRIB(sy) = duplicate(ATTRIB(sd));
-	OBJECT(sy) = OBJECT(sd);
+    else if (n == nd)
+    {
+        ATTRIB(sy) = duplicate(ATTRIB(sd));
+        OBJECT(sy) = OBJECT(sd);
     }
     UNPROTECT(5);
     return sy;
 }
 
-	/* Mathematical Functions of Four (Real) Arguments */
+/* Mathematical Functions of Four (Real) Arguments */
 
 SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
-    switch (PRIMVAL(op)) {
-    case 1: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dhyper);
-    case 2: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), phyper);
-    case 3: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qhyper);
-    case 4: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dnbeta);
-    case 5: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), pnbeta);
+    switch (PRIMVAL(op))
+    {
+    case 1:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dhyper);
+    case 2:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), phyper);
+    case 3:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qhyper);
+    case 4:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dnbeta);
+    case 5:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), pnbeta);
 #ifdef UNIMP
-    case 6: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qnbeta);
+    case 6:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qnbeta);
 #endif
 #ifdef UNIMP
-    case 7: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dnf);
+    case 7:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dnf);
 #endif
-    case 8: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), pnf);
+    case 8:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), pnf);
 #ifdef UNIMP
-    case 9: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qnf);
+    case 9:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qnf);
 #endif
 #ifdef UNIMP
-    case 10: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dtukey);
-    case 11: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), ptukey);
-    case 12: return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qtukey);
+    case 10:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dtukey);
+    case 11:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), ptukey);
+    case 12:
+        return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qtukey);
 #endif
     default:
-	errorcall(lcall, "unimplemented real function\n");
+        errorcall(lcall, "unimplemented real function\n");
     }
-    return op;/* never used; to keep -Wall happy */
+    return op; /* never used; to keep -Wall happy */
 }
