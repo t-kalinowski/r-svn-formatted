@@ -43,7 +43,7 @@ static void X11_Init(void)
     int res;
 
     initialized = -1;
-    if (strcmp(R_GUIType, "X11") && strcmp(R_GUIType, "GNOME") && strcmp(R_GUIType, "Tk"))
+    if (strcmp(R_GUIType, "X11") && strcmp(R_GUIType, "GNOME") && strcmp(R_GUIType, "Tk") && strcmp(R_GUIType, "AQUA"))
     {
         warning("X11 module is not available under this GUI");
         return;
