@@ -301,7 +301,6 @@ void R_DefParams(Rstart Rp)
     Rp->LoadSiteFile = TRUE;
     Rp->LoadInitFile = TRUE;
     Rp->DebugInitFile = FALSE;
-    Rp->LoadDotFirst = TRUE;
     Rp->vsize = R_VSIZE;
     Rp->nsize = R_NSIZE;
     Rp->max_vsize = R_SIZE_T_MAX;
@@ -384,7 +383,6 @@ void R_SetParams(Rstart Rp)
     LoadSiteFile = Rp->LoadSiteFile;
     LoadInitFile = Rp->LoadInitFile;
     DebugInitFile = Rp->DebugInitFile;
-    R_LoadDotFirst = Rp->LoadDotFirst;
     SetSize(Rp->vsize, Rp->nsize);
     R_SetMaxNSize(Rp->max_nsize);
     R_SetMaxVSize(Rp->max_vsize);
@@ -525,10 +523,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             else if (!strcmp(*av, "--no-init-file"))
             {
                 Rp->LoadInitFile = FALSE;
-            }
-            else if (!strcmp(*av, "--no-dotFirst"))
-            {
-                Rp->LoadDotFirst = FALSE;
             }
             else if (!strcmp(*av, "--debug-init"))
             {
