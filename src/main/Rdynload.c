@@ -517,7 +517,7 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     dpath = malloc(strlen(path) + 1);
     if (dpath == NULL)
     {
-        strcpy(DLLerror, _("Couldn't allocate space for 'path'"));
+        strcpy(DLLerror, _("could not allocate space for 'path'"));
         R_osDynSymbol->closeLibrary(handle);
         return 0;
     }
@@ -558,7 +558,7 @@ int addDLL(char *dpath, char *DLLname, HINSTANCE handle)
     char *name = malloc(strlen(DLLname) + 1);
     if (name == NULL)
     {
-        strcpy(DLLerror, _("Couldn't allocate space for 'name'"));
+        strcpy(DLLerror, _("could not allocate space for 'name'"));
         if (handle)
             R_osDynSymbol->closeLibrary(handle);
         free(dpath);
@@ -834,7 +834,7 @@ SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
     /* AddDLL does this DeleteDLL(buf); */
     info = AddDLL(buf, LOGICAL(CADR(args))[0], LOGICAL(CADDR(args))[0]);
     if (!info)
-        errorcall(call, _("unable to load shared library \"%s\":\n  %s"), buf, DLLerror);
+        errorcall(call, _("unable to load shared library '%s':\n  %s"), buf, DLLerror);
     return (Rf_MakeDLLInfo(info));
 }
 
@@ -847,7 +847,7 @@ SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("character argument expected"));
     GetFullDLLPath(call, buf, CHAR(STRING_ELT(CAR(args), 0)));
     if (!DeleteDLL(buf))
-        errorcall(call, _("dynamic/shared library \"%s\" was not loaded"), buf);
+        errorcall(call, _("dynamic/shared library '%s\' was not loaded"), buf);
     return R_NilValue;
 }
 
@@ -861,7 +861,7 @@ int moduleCdynload(char *module, int local, int now)
     snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
     res = AddDLL(dllpath, local, now);
     if (!res)
-        warning(_("unable to load shared library \"%s\":\n  %s"), dllpath, DLLerror);
+        warning(_("unable to load shared library '%s':\n  %s"), dllpath, DLLerror);
     return res != NULL ? 1 : 0;
 }
 

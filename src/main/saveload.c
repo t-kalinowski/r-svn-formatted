@@ -717,7 +717,7 @@ static SEXP DataLoad(FILE *fp, int startup, InputRoutines *m, int version, SaveL
 
     /* save the file position */
     if (fgetpos(fp, &savepos))
-        RestoreError(_("can't save file position while restoring data"), startup);
+        RestoreError(_("cannot save file position while restoring data"), startup);
 
     /* first pass: allocate nodes */
 
@@ -728,7 +728,7 @@ static SEXP DataLoad(FILE *fp, int startup, InputRoutines *m, int version, SaveL
 
     /* restore the file position */
     if (fsetpos(fp, &savepos))
-        RestoreError(_("can't restore file position while restoring data"), startup);
+        RestoreError(_("cannot restore file position while restoring data"), startup);
 
     /* second pass: restore the contents of the nodes */
 

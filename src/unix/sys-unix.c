@@ -287,7 +287,7 @@ void InitTempDir()
         sprintf(tmp1, "%s/Rtmp%u", tm, (unsigned int)getpid());
         res = mkdir(tmp1, 0755);
         if (res)
-            R_Suicide(_("Can't mkdir R_TempDir"));
+            R_Suicide(_("cannot mkdir R_TempDir"));
         tmp = tmp1;
         buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
         if (buf)
@@ -301,7 +301,7 @@ void InitTempDir()
     len = strlen(tmp) + 1;
     p = (char *)malloc(len);
     if (!p)
-        R_Suicide(_("Can't allocate R_TempDir"));
+        R_Suicide(_("cannot allocate R_TempDir"));
     else
     {
         R_TempDir = p;

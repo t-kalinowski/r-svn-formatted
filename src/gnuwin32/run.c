@@ -50,7 +50,7 @@ static char *expandcmd(char *cmd)
             d = d ? 0 : 1;
     if (d)
     {
-        strcpy(RunError, _("A \" is missing(expandcmd)"));
+        strcpy(RunError, _("A \" is missing (expandcmd)"));
         return NULL;
     }
     c = *q;

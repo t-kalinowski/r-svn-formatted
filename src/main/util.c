@@ -1208,7 +1208,7 @@ void mbcsToLatin1(char *in, char *out)
 
     if (res == (size_t)(-1))
     {
-        warning(_("invalid text in mbcsToLatin1"));
+        warning(_("invalid input in mbcsToLatin1"));
         *out = '\0';
         return;
     }
