@@ -36,7 +36,7 @@ double dlnorm(double x, double logmean, double logsd, int give_log)
     if (logsd <= 0)
         ML_ERR_return_NAN;
 
-    if (x == 0)
+    if (x <= 0)
         return R_D__0;
 
     y = (log(x) - logmean) / logsd;
