@@ -313,7 +313,7 @@ void GetOrGeneratePrefs(appPrefs *thePrefsTypePtr, long minVers)
     }
 }
 
-/* Only resolutions 72, 144, 300 and 600 are allowable */
+/* Only resolutions from 72 to 600 are allowed */
 int GetScreenRes(void)
 {
     appPrefs StartupPrefs;
@@ -613,6 +613,7 @@ void SetTextSize(Boolean newsize)
     WESetSelection(0, WEGetTextLength(we), we);
     if (!newsize)
         gTextSize = GetTextSize();
+
     changeSize(Console_Window, gTextSize);
     WESetSelection(selStart, selEnd, we);
     GetWindowPortBounds(Console_Window, &portRect);

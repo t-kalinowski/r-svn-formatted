@@ -1112,11 +1112,6 @@ OSErr CreateWindow(const FSSpec *pFileSpec, Boolean editable)
     OSErr err;
     WindowPtr outWindow = nil;
 
-    /*   *outWindow = *Working_Window;
-       err = newWindow (pFileSpec, &Working_Window, 0, editable);
-       if (err)
-        *Working_Window = *outWindow;
-   */
     outWindow = Working_Window;
     err = newWindow(pFileSpec, &Working_Window, 0, editable);
     if (err)
@@ -1157,7 +1152,8 @@ OSStatus newWindow(const FSSpec *pFileSpec, WindowRef *outWindow, int graphic, B
     Rect theWholeScreen, portRect;
     FMFontFamily fontFamily = 0;
 
-    GetTextSize();
+    if (graphic == 0)
+        GetTextSize();
 
     initialWindowBounds.right = (int)(28 + EIGHTY);
 
