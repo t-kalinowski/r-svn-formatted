@@ -44,6 +44,7 @@ R_CallMethodDef CallEntries[] = {{"setup_starma", (DL_FUNC)&setup_starma, 8},
                                  {"Starma_method", (DL_FUNC)&Starma_method, 2},
                                  {"Invtrans", (DL_FUNC)&Invtrans, 2},
                                  {"Gradtrans", (DL_FUNC)&Gradtrans, 2},
+                                 {"ARMAtoMA", (DL_FUNC)&ARMAtoMA, 3},
                                  {NULL, NULL, 0}};
 
 R_FortranMethodDef FortEntries[] = {
