@@ -1603,7 +1603,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GCheckState(dd);
 
-    if (length(args) < 2)
+    if (length(args) < 3)
         errorcall(call, "too few arguments\n");
 
     sxy = CAR(args);
@@ -1621,16 +1621,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "zero length \"text\" specified\n");
     args = CDR(args);
 
-    PROTECT(cex = FixupCex(GetPar("cex", args)));
-    ncex = LENGTH(cex);
-
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
-    ncol = LENGTH(col);
-
-    PROTECT(font = FixupFont(GetPar("font", args)));
-    nfont = LENGTH(font);
-
-    PROTECT(adj = GetPar("adj", args));
+    PROTECT(adj = CAR(args));
     if (isNull(adj) || (isNumeric(adj) && length(adj) == 0))
     {
         adjx = dd->gp.adj;
@@ -1651,6 +1642,16 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         errorcall(call, "invalid adj value\n");
+    args = CDR(args);
+
+    PROTECT(cex = FixupCex(GetPar("cex", args)));
+    ncex = LENGTH(cex);
+
+    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    ncol = LENGTH(col);
+
+    PROTECT(font = FixupFont(GetPar("font", args)));
+    nfont = LENGTH(font);
 
     xpd = asLogical(GetPar("xpd", args));
     if (xpd == NA_LOGICAL)
@@ -1662,7 +1663,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     ntxt = LENGTH(txt);
 
     GSavePars(dd);
-
+    ProcessInlinePars(args, dd);
     dd->gp.xpd = xpd;
 
     GMode(dd, 1);
@@ -1686,9 +1687,9 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 dd->gp.font = dd->dp.font;
             if (isExpression(txt))
-                GMathText(xx, yy, DEVICE, VECTOR(txt)[i % ntxt], adjx, adjy, 0.0, dd);
+                GMathText(xx, yy, DEVICE, VECTOR(txt)[i % ntxt], adjx, adjy, dd->gp.srt, dd);
             else
-                GText(xx, yy, DEVICE, CHAR(STRING(txt)[i % ntxt]), adjx, adjy, 0.0, dd);
+                GText(xx, yy, DEVICE, CHAR(STRING(txt)[i % ntxt]), adjx, adjy, dd->gp.srt, dd);
         }
     }
     GMode(dd, 0);
