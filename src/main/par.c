@@ -655,8 +655,12 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         lengthCheck(what, value, 4);
         nonnegRealCheck(REAL(value)[0], what);
         nonnegRealCheck(REAL(value)[1], what);
+        nonnegRealCheck(REAL(value)[2], what);
+        nonnegRealCheck(REAL(value)[3], what);
         dd->dp.plt[0] = dd->gp.plt[0] = REAL(value)[0];
-        dd->dp.plt[1] = dd->gp.plt[1] = REAL(value)[0];
+        dd->dp.plt[1] = dd->gp.plt[1] = REAL(value)[1];
+        dd->dp.plt[2] = dd->gp.plt[2] = REAL(value)[2];
+        dd->dp.plt[3] = dd->gp.plt[3] = REAL(value)[3];
         dd->dp.pUnits = dd->gp.pUnits = NFC;
         dd->dp.defaultPlot = dd->gp.defaultPlot = 0;
         GReset(dd);
