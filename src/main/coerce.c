@@ -1716,7 +1716,7 @@ SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
             LOGICAL(ans)[i] = 0;
         break;
     default:
-        warningcall(call, "is.na" R_MSG_list_vec2);
+        warningcall(call, _("%s() applied to non-(list or vector)"), "is.na");
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
     }
@@ -1820,7 +1820,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        warningcall(call, "is.nan" R_MSG_list_vec2);
+        warningcall(call, _("%s() applied to non-(list or vector)"), "is.nan");
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
     }
