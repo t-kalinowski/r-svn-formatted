@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@ static SEXP rcall;
 
 SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, y, class, dims, tsp, xnames, ynames, ans;
+    SEXP x, y, class = R_NilValue, dims, tsp = R_NilValue, xnames, ynames, ans;
     int mismatch, nx, ny, xarray, yarray, xts, yts;
 
     if (DispatchGroup("Ops", call, op, args, env, &ans))
@@ -79,7 +79,7 @@ SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
-        else if (yarray)
+        else /*(yarray)*/
         {
             PROTECT(dims = getAttrib(y, R_DimSymbol));
         }
@@ -117,7 +117,7 @@ SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(class = getAttrib(x, R_ClassSymbol));
         }
-        else if (yts)
+        else /*(yts)*/
         {
             if (length(y) < length(x))
                 ErrorMessage(call, ERROR_TSVEC_MISMATCH);
