@@ -601,6 +601,7 @@ void R_SetWin32(Rstart Rp)
     if (!Rp->NoRenviron)
         process_user_Renviron();
     _controlfp(_MCW_EM, _MCW_EM);
+    _controlfp(_PC_64, _MCW_PC);
 }
 
 /* Remove and process NAME=VALUE command line arguments */
