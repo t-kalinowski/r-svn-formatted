@@ -3024,10 +3024,7 @@ void Raqua_read_history(char *file)
         return;
     fp = R_fopen(file, "r");
     if (!fp)
-    {
-        REprintf("\nUnable to open history file \"%s\" for reading\n", file);
         return;
-    }
 
     for (i = 0;; i++)
     {
