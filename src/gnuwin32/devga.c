@@ -2365,6 +2365,7 @@ Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double heig
     dd->canResizeText = TRUE;
     dd->canClip = TRUE;
     dd->canHAdj = 1; /* 0, 0.5, 1 */
+    dd->canChangeGamma = TRUE;
 
     /* initialise device description (most of the work */
     /* has been done in GA_Open) */
