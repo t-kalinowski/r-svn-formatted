@@ -76,31 +76,29 @@ void findRelHeights(SEXP layout, int *relativeHeights)
 }
 
 void allocateKnownWidths(SEXP layout, int *relativeWidths, double parentWidthCM, double parentHeightCM,
-                         LViewportContext parentContext, GEDevDesc *dd, double *npcWidths, double *widthLeftCM)
+                         LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd, double *npcWidths,
+                         double *widthLeftCM)
 {
     int i;
     SEXP widths = layoutWidths(layout);
     for (i = 0; i < layoutNCol(layout); i++)
         if (!relativeWidths[i])
         {
-            npcWidths[i] =
-                transformWidth(widths, i, parentContext, parentContext.fontfamily, parentContext.font,
-                               parentContext.fontsize, parentContext.lineheight, parentWidthCM, parentHeightCM, dd);
+            npcWidths[i] = transformWidth(widths, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd);
             *widthLeftCM -= npcWidths[i] * parentWidthCM;
         }
 }
 
 void allocateKnownHeights(SEXP layout, int *relativeHeights, double parentWidthCM, double parentHeightCM,
-                          LViewportContext parentContext, GEDevDesc *dd, double *npcHeights, double *heightLeftCM)
+                          LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd, double *npcHeights,
+                          double *heightLeftCM)
 {
     int i;
     SEXP heights = layoutHeights(layout);
     for (i = 0; i < layoutNRow(layout); i++)
         if (!relativeHeights[i])
         {
-            npcHeights[i] =
-                transformHeight(heights, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                parentContext.fontsize, parentContext.lineheight, parentWidthCM, parentHeightCM, dd);
+            npcHeights[i] = transformHeight(heights, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd);
             *heightLeftCM -= npcHeights[i] * parentHeightCM;
         }
 }
@@ -140,7 +138,7 @@ int rowRespected(int row, SEXP layout)
  * Some effort is made to find all truly null units
  * (e.g., including a grobwidth unit where the grob's width is null)
  */
-double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, GEDevDesc *dd)
+double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd)
 {
     int i;
     SEXP widths = layoutWidths(layout);
@@ -149,8 +147,7 @@ double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentConte
     L_nullLayoutMode = 1;
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
-            totalWidth += transformWidth(widths, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                         parentContext.fontsize, parentContext.lineheight,
+            totalWidth += transformWidth(widths, i, parentContext, parentgc,
                                          /*
                                           * NOTE: 0, 0, here is ok
                                           * because we are only
@@ -161,7 +158,8 @@ double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentConte
     return totalWidth;
 }
 
-double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, GEDevDesc *dd)
+double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, LGContext *parentgc,
+                   GEDevDesc *dd)
 {
     int i;
     SEXP heights = layoutHeights(layout);
@@ -170,8 +168,7 @@ double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentCon
     L_nullLayoutMode = 1;
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
-            totalHeight += transformHeight(heights, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                           parentContext.fontsize, parentContext.lineheight,
+            totalHeight += transformHeight(heights, i, parentContext, parentgc,
                                            /*
                                             * NOTE: 0, 0, here is ok
                                             * because we are only
@@ -183,15 +180,15 @@ double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentCon
 }
 
 void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, double hmult, double vmult,
-                       double *reducedWidthCM, double *reducedHeightCM, LViewportContext parentContext, GEDevDesc *dd,
-                       double *npcWidths, double *npcHeights)
+                       double *reducedWidthCM, double *reducedHeightCM, LViewportContext parentContext,
+                       LGContext *parentgc, GEDevDesc *dd, double *npcWidths, double *npcHeights)
 {
     int i;
     SEXP widths = layoutWidths(layout);
     SEXP heights = layoutHeights(layout);
     int respect = layoutRespect(layout);
-    double sumWidth = totalWidth(layout, relativeWidths, parentContext, dd);
-    double sumHeight = totalHeight(layout, relativeHeights, parentContext, dd);
+    double sumWidth = totalWidth(layout, relativeWidths, parentContext, parentgc, dd);
+    double sumHeight = totalHeight(layout, relativeHeights, parentContext, parentgc, dd);
     double denom, mult;
     double tempWidthCM = *reducedWidthCM;
     double tempHeightCM = *reducedHeightCM;
@@ -220,9 +217,7 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                      */
                     SEXP width;
                     PROTECT(width = unit(pureNullUnitValue(widths, i) / denom * mult, L_CM));
-                    npcWidths[i] =
-                        transformWidth(width, 0, parentContext, parentContext.fontfamily, parentContext.font,
-                                       parentContext.fontsize, parentContext.lineheight, tempWidthCM, tempHeightCM, dd);
+                    npcWidths[i] = transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd);
                     *reducedWidthCM -= npcWidths[i] * tempWidthCM;
                     npcWidths[i] = npcWidths[i] * hmult;
                     UNPROTECT(1);
@@ -235,9 +230,7 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                 {
                     SEXP height;
                     PROTECT(height = unit(pureNullUnitValue(heights, i) / denom * mult, L_CM));
-                    npcHeights[i] = transformHeight(height, 0, parentContext, parentContext.fontfamily,
-                                                    parentContext.font, parentContext.fontsize,
-                                                    parentContext.lineheight, tempWidthCM, tempHeightCM, dd);
+                    npcHeights[i] = transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd);
                     *reducedHeightCM -= npcHeights[i] * tempHeightCM;
                     npcHeights[i] = npcHeights[i] * vmult;
                     UNPROTECT(1);
@@ -247,7 +240,8 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
 
 /* These sum up unrespected relative widths and heights (unit = "null")
  */
-double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, GEDevDesc *dd)
+double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, LGContext *parentgc,
+                             GEDevDesc *dd)
 {
     int i;
     SEXP widths = layoutWidths(layout);
@@ -257,8 +251,7 @@ double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext 
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
             if (!colRespected(i, layout))
-                totalWidth += transformWidth(widths, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                             parentContext.fontsize, parentContext.lineheight,
+                totalWidth += transformWidth(widths, i, parentContext, parentgc,
                                              /*
                                               * NOTE: 0, 0, here is ok
                                               * because we are only
@@ -269,7 +262,8 @@ double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext 
     return totalWidth;
 }
 
-double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, GEDevDesc *dd)
+double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, LGContext *parentgc,
+                              GEDevDesc *dd)
 {
     int i;
     SEXP heights = layoutHeights(layout);
@@ -279,8 +273,7 @@ double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContex
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
             if (!rowRespected(i, layout))
-                totalHeight += transformHeight(heights, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                               parentContext.fontsize, parentContext.lineheight,
+                totalHeight += transformHeight(heights, i, parentContext, parentgc,
                                                /*
                                                 * NOTE: 0, 0, here is ok
                                                 * because we are only
@@ -292,19 +285,18 @@ double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContex
 }
 
 void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier, LViewportContext parentContext,
-                            GEDevDesc *dd, double *npcWidths)
+                            LGContext *parentgc, GEDevDesc *dd, double *npcWidths)
 {
     int i;
     SEXP widths = layoutWidths(layout);
-    double sumWidth = totalUnrespectedWidth(layout, relativeWidths, parentContext, dd);
+    double sumWidth = totalUnrespectedWidth(layout, relativeWidths, parentContext, parentgc, dd);
     /* We are calculating "null" units for a layout */
     L_nullLayoutMode = 1;
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
             if (!colRespected(i, layout))
                 npcWidths[i] = multiplier *
-                               transformWidth(widths, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                              parentContext.fontsize, parentContext.lineheight,
+                               transformWidth(widths, i, parentContext, parentgc,
                                               /*
                                                * NOTE: 0, 0, here is ok
                                                * because we are only
@@ -316,19 +308,18 @@ void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier,
 }
 
 void allocateRemainingHeight(SEXP layout, int *relativeHeights, double multiplier, LViewportContext parentContext,
-                             GEDevDesc *dd, double *npcHeights)
+                             LGContext *parentgc, GEDevDesc *dd, double *npcHeights)
 {
     int i;
     SEXP heights = layoutHeights(layout);
-    double sumHeight = totalUnrespectedHeight(layout, relativeHeights, parentContext, dd);
+    double sumHeight = totalUnrespectedHeight(layout, relativeHeights, parentContext, parentgc, dd);
     /* We are calculating "null" units for a layout */
     L_nullLayoutMode = 1;
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
             if (!rowRespected(i, layout))
                 npcHeights[i] = multiplier *
-                                transformHeight(heights, i, parentContext, parentContext.fontfamily, parentContext.font,
-                                                parentContext.fontsize, parentContext.lineheight,
+                                transformHeight(heights, i, parentContext, parentgc,
                                                 /*
                                                  * NOTE: 0, 0, here is ok
                                                  * because we are only
@@ -360,7 +351,7 @@ static void subRegion(SEXP layout, int minrow, int maxrow, int mincol, int maxco
 }
 
 void calcViewportLayout(SEXP viewport, double parentWidthCM, double parentHeightCM, LViewportContext parentContext,
-                        GEDevDesc *dd)
+                        LGContext *parentgc, GEDevDesc *dd)
 {
     int i;
     SEXP currentWidths, currentHeights;
@@ -380,21 +371,23 @@ void calcViewportLayout(SEXP viewport, double parentWidthCM, double parentHeight
      * "npc" units.  We do this and return the widthCM and heightCM
      * remaining after these widths and heights have been allocated
      */
-    allocateKnownWidths(layout, relativeWidths, parentWidthCM, parentHeightCM, parentContext, dd, npcWidths,
+    allocateKnownWidths(layout, relativeWidths, parentWidthCM, parentHeightCM, parentContext, parentgc, dd, npcWidths,
                         &reducedWidthCM);
-    allocateKnownHeights(layout, relativeHeights, parentWidthCM, parentHeightCM, parentContext, dd, npcHeights,
-                         &reducedHeightCM);
+    allocateKnownHeights(layout, relativeHeights, parentWidthCM, parentHeightCM, parentContext, parentgc, dd,
+                         npcHeights, &reducedHeightCM);
     /* Now allocate respected widths and heights and return
      * widthCM and heightCM remaining
      */
     allocateRespected(layout, relativeWidths, relativeHeights, reducedWidthCM / parentWidthCM,
-                      reducedHeightCM / parentHeightCM, &reducedWidthCM, &reducedHeightCM, parentContext, dd, npcWidths,
-                      npcHeights);
+                      reducedHeightCM / parentHeightCM, &reducedWidthCM, &reducedHeightCM, parentContext, parentgc, dd,
+                      npcWidths, npcHeights);
     /* Now allocate relative widths and heights (unit = "null")
      * in the remaining space
      */
-    allocateRemainingWidth(layout, relativeWidths, reducedWidthCM / parentWidthCM, parentContext, dd, npcWidths);
-    allocateRemainingHeight(layout, relativeHeights, reducedHeightCM / parentHeightCM, parentContext, dd, npcHeights);
+    allocateRemainingWidth(layout, relativeWidths, reducedWidthCM / parentWidthCM, parentContext, parentgc, dd,
+                           npcWidths);
+    allocateRemainingHeight(layout, relativeHeights, reducedHeightCM / parentHeightCM, parentContext, parentgc, dd,
+                            npcHeights);
     /* Record the widths and heights in the viewport
      */
     PROTECT(currentWidths = allocVector(REALSXP, layoutNCol(layout)));

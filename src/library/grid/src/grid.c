@@ -242,6 +242,7 @@ SEXP doSetViewport(SEXP vp,
             LViewportContext vpc;
             double vpWidthCM = REAL(viewportWidthCM(vp))[0];
             double vpHeightCM = REAL(viewportHeightCM(vp))[0];
+            LGContext gc;
             LTransform transform;
             for (i = 0; i < 3; i++)
                 for (j = 0; j < 3; j++)
@@ -268,10 +269,9 @@ SEXP doSetViewport(SEXP vp,
                 PROTECT(y2 = unit(1.5, L_NPC));
             }
             getViewportContext(vp, &vpc);
-            transformLocn(x1, y1, 0, vpc, viewportFontFamily(vp), viewportFont(vp), viewportFontSize(vp),
-                          viewportLineHeight(vp), vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
-            transformLocn(x2, y2, 0, vpc, viewportFontFamily(vp), viewportFont(vp), viewportFontSize(vp),
-                          viewportLineHeight(vp), vpWidthCM, vpHeightCM, dd, transform, &xx2, &yy2);
+            gcontextFromViewport(vp, &gc);
+            transformLocn(x1, y1, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
+            transformLocn(x2, y2, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx2, &yy2);
             UNPROTECT(4); /* unprotect x1, y1, x2, y2 */
             /* The graphics engine only takes device coordinates
              */
@@ -943,6 +943,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /*
@@ -968,29 +969,31 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     {
     case 0:
         for (i = 0; i < nx; i++)
-            REAL(answer)
-            [i] = transformXtoINCHES(x, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                     gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        {
+            gcontextFromgpar(currentgp, i, &gc);
+            REAL(answer)[i] = transformXtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     case 1:
         for (i = 0; i < nx; i++)
-            REAL(answer)
-            [i] = transformYtoINCHES(x, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                     gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        {
+            gcontextFromgpar(currentgp, i, &gc);
+            REAL(answer)[i] = transformYtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     case 2:
         for (i = 0; i < nx; i++)
-            REAL(answer)
-            [i] =
-                transformWidthtoINCHES(x, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                       gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        {
+            gcontextFromgpar(currentgp, i, &gc);
+            REAL(answer)[i] = transformWidthtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     case 3:
         for (i = 0; i < nx; i++)
-            REAL(answer)
-            [i] = transformHeighttoINCHES(x, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                          gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM,
-                                          dd);
+        {
+            gcontextFromgpar(currentgp, i, &gc);
+            REAL(answer)[i] = transformHeighttoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     }
     /*
@@ -1002,35 +1005,39 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     {
     case 0:
         for (i = 0; i < nx; i++)
+        {
+            gcontextFromgpar(currentgp, i, &gc);
             REAL(answer)
-            [i] =
-                transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.xscalemin,
-                                      vpc.xscalemax, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                      gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+            [i] = transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.xscalemin,
+                                        vpc.xscalemax, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     case 1:
         for (i = 0; i < nx; i++)
+        {
+            gcontextFromgpar(currentgp, i, &gc);
             REAL(answer)
-            [i] =
-                transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.yscalemin,
-                                      vpc.yscalemax, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                      gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpHeightCM, vpWidthCM, dd);
+            [i] = transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.yscalemin,
+                                        vpc.yscalemax, &gc, vpHeightCM, vpWidthCM, dd);
+        }
         break;
     case 2:
         for (i = 0; i < nx; i++)
+        {
+            gcontextFromgpar(currentgp, i, &gc);
             REAL(answer)
             [i] = transformWidthHeightFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.xscalemin,
-                                                 vpc.xscalemax, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                                 gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM,
-                                                 vpHeightCM, dd);
+                                                 vpc.xscalemax, &gc, vpWidthCM, vpHeightCM, dd);
+        }
         break;
     case 3:
         for (i = 0; i < nx; i++)
+        {
+            gcontextFromgpar(currentgp, i, &gc);
             REAL(answer)
             [i] = transformWidthHeightFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.yscalemin,
-                                                 vpc.yscalemax, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                                 gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpHeightCM,
-                                                 vpWidthCM, dd);
+                                                 vpc.yscalemax, &gc, vpHeightCM, vpWidthCM, dd);
+        }
         break;
     }
     UNPROTECT(1);
@@ -1105,6 +1112,7 @@ SEXP L_moveTo(SEXP x, SEXP y)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP devloc, prevloc;
     SEXP currentvp, currentgp;
@@ -1117,9 +1125,9 @@ SEXP L_moveTo(SEXP x, SEXP y)
     PROTECT(devloc = gridStateElement(dd, GSS_CURRLOC));
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
+    gcontextFromgpar(currentgp, 0, &gc);
     /* Convert the x and y values to CM locations */
-    transformLocn(x, y, 0, vpc, gpFontFamily(currentgp, 0), gpFont(currentgp, 0), gpFontSize(currentgp, 0),
-                  gpLineHeight(currentgp, 0), vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
+    transformLocn(x, y, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
     REAL(prevloc)[0] = REAL(devloc)[0];
     REAL(prevloc)[1] = REAL(devloc)[1];
     REAL(devloc)[0] = xx;
@@ -1134,6 +1142,7 @@ SEXP L_lineTo(SEXP x, SEXP y)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP devloc, prevloc;
     SEXP currentvp, currentgp;
@@ -1146,9 +1155,9 @@ SEXP L_lineTo(SEXP x, SEXP y)
     PROTECT(devloc = gridStateElement(dd, GSS_CURRLOC));
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
+    gcontextFromgpar(currentgp, 0, &gc);
     /* Convert the x and y values to CM locations */
-    transformLocn(x, y, 0, vpc, gpFontFamily(currentgp, 0), gpFont(currentgp, 0), gpFontSize(currentgp, 0),
-                  gpLineHeight(currentgp, 0), vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
+    transformLocn(x, y, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
     REAL(prevloc)[0] = REAL(devloc)[0];
     REAL(prevloc)[1] = REAL(devloc)[1];
     REAL(devloc)[0] = xx;
@@ -1175,6 +1184,7 @@ SEXP L_lines(SEXP x, SEXP y)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1184,6 +1194,7 @@ SEXP L_lines(SEXP x, SEXP y)
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
+    gcontextFromgpar(currentgp, 0, &gc);
     nx = unitLength(x);
     ny = unitLength(y);
     if (ny > nx)
@@ -1193,8 +1204,7 @@ SEXP L_lines(SEXP x, SEXP y)
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
     {
-        transformLocn(x, y, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, 0), gpFontSize(currentgp, 0),
-                      gpLineHeight(currentgp, 0), vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
+        transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
         /* The graphics engine only takes device coordinates
          */
         xx[i] = toDeviceX(xx[i], GE_INCHES, dd);
@@ -1215,6 +1225,7 @@ SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1241,10 +1252,9 @@ SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1)
     for (i = 0; i < maxn; i++)
     {
         double xx0, yy0, xx1, yy1;
-        transformLocn(x0, y0, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xx0, &yy0);
-        transformLocn(x1, y1, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
+        gcontextFromgpar(currentgp, i, &gc);
+        transformLocn(x0, y0, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx0, &yy0);
+        transformLocn(x1, y1, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
         /* The graphics engine only takes device coordinates
          */
         xx0 = toDeviceX(xx0, GE_INCHES, dd);
@@ -1327,6 +1337,7 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
     double rotationAngle;
     Rboolean first, last;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     SEXP devloc = R_NilValue; /* -Wall */
@@ -1353,10 +1364,9 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
         double vertx[3];
         double verty[3];
         double l1, l2, l, a, t;
-        l1 = transformWidthtoINCHES(length, i % nl, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                    gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
-        l2 = transformHeighttoINCHES(length, i % nl, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                     gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        gcontextFromgpar(currentgp, i, &gc);
+        l1 = transformWidthtoINCHES(length, i % nl, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        l2 = transformHeighttoINCHES(length, i % nl, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         l = fmin2(l1, l2);
         a = DEG2RAD * REAL(angle)[i % na];
         first = TRUE;
@@ -1385,11 +1395,8 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
                 yy1 = REAL(devloc)[1];
             }
             else
-                transformLocn(x1, y1, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                              gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd,
-                              transform, &xx1, &yy1);
-            transformLocn(x2, y2, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xx2, &yy2);
+                transformLocn(x1, y1, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
+            transformLocn(x2, y2, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx2, &yy2);
             xc = xx2 - xx1;
             yc = yy2 - yy1;
             rot = atan2(yc, xc);
@@ -1409,11 +1416,8 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
                 yynm1 = REAL(devloc)[1];
             }
             else
-                transformLocn(xnm1, ynm1, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                              gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd,
-                              transform, &xxnm1, &yynm1);
-            transformLocn(xn, yn, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xxn, &yyn);
+                transformLocn(xnm1, ynm1, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xxnm1, &yynm1);
+            transformLocn(xn, yn, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xxn, &yyn);
             xc = xxnm1 - xxn;
             yc = yynm1 - yyn;
             rot = atan2(yc, xc);
@@ -1439,6 +1443,7 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1457,6 +1462,7 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
     {
         char *vmax;
         SEXP indices = VECTOR_ELT(index, i);
+        gcontextFromgpar(currentgp, i, &gc);
         /*
          * Number of vertices
          *
@@ -1469,9 +1475,8 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
         yy = (double *)R_alloc(nx + 1, sizeof(double));
         for (j = 0; j < nx; j++)
         {
-            transformLocn(x, y, INTEGER(indices)[j] - 1, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                          gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform,
-                          &(xx[j]), &(yy[j]));
+            transformLocn(x, y, INTEGER(indices)[j] - 1, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[j]),
+                          &(yy[j]));
             /* The graphics engine only takes device coordinates
              */
             xx[j] = toDeviceX(xx[j], GE_INCHES, dd);
@@ -1494,6 +1499,7 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1510,16 +1516,14 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
     GEMode(1, dd);
     for (i = 0; i < nx; i++)
     {
-        transformLocn(x, y, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
+        gcontextFromgpar(currentgp, i, &gc);
+        transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
         /* These two will give the same answer unless r is in "native",
          * "npc", or some other relative units;  in those cases, just
          * take the smaller of the two values.
          */
-        rr1 = transformWidthtoINCHES(r, i % nr, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                     gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
-        rr2 = transformHeighttoINCHES(r, i % nr, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                      gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        rr1 = transformWidthtoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        rr2 = transformHeighttoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         rr = fmin2(rr1, rr2);
         rr = toDeviceWidth(rr, GE_INCHES, dd);
         /* The graphics engine only takes device coordinates
@@ -1543,6 +1547,7 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
     double rotationAngle;
     int i, nx;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1558,12 +1563,10 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
     GEMode(1, dd);
     for (i = 0; i < nx; i++)
     {
-        transformLocn(x, y, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
-        ww = transformWidthtoINCHES(w, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                    gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
-        hh = transformHeighttoINCHES(h, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                     gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+        gcontextFromgpar(currentgp, i, &gc);
+        transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
+        ww = transformWidthtoINCHES(w, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
+        hh = transformHeighttoINCHES(h, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         /* FIXME:  Need to check for NaN's and NA's
          */
         /* If the total rotation angle is zero then we can draw a
@@ -1596,29 +1599,25 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
             justification(ww, hh, INTEGER(just)[0], INTEGER(just)[1], &xadj, &yadj);
             www = unit(xadj, L_INCHES);
             hhh = unit(yadj, L_INCHES);
-            transformDimn(www, hhh, 0, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
+            transformDimn(www, hhh, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
             xxx[0] = xx + dw;
             yyy[0] = yy + dh;
             /* Find top-left location */
             www = temp;
             hhh = unit(hh, L_INCHES);
-            transformDimn(www, hhh, 0, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
+            transformDimn(www, hhh, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
             xxx[1] = xxx[0] + dw;
             yyy[1] = yyy[0] + dh;
             /* Find top-right location */
             www = unit(ww, L_INCHES);
             hhh = unit(hh, L_INCHES);
-            transformDimn(www, hhh, 0, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
+            transformDimn(www, hhh, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
             xxx[2] = xxx[0] + dw;
             yyy[2] = yyy[0] + dh;
             /* Find bottom-right location */
             www = unit(ww, L_INCHES);
             hhh = temp;
-            transformDimn(www, hhh, 0, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                          gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
+            transformDimn(www, hhh, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, rotationAngle, &dw, &dh);
             xxx[3] = xxx[0] + dw;
             yyy[3] = yyy[0] + dh;
             /* The graphics engine only takes device coordinates
@@ -1655,6 +1654,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP txt;
     /*
@@ -1682,8 +1682,8 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
     {
-        transformLocn(x, y, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
+        gcontextFromgpar(currentgp, i, &gc);
+        transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
     }
     /* The label can be a string or an expression
      */
@@ -1710,7 +1710,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
                 int j = 0;
                 LRect trect;
                 textRect(xx[i], yy[i], txt, i, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                         gpLineHeight(currentgp, i), 1, gpFontSize(currentgp, i), hjust, vjust,
+                         gpLineHeight(currentgp, i), gpCex(currentgp, i), gpFontSize(currentgp, i), hjust, vjust,
                          numeric(rot, i % LENGTH(rot)) + rotationAngle, dd, &trect);
                 while (doDrawing && (j < numBounds))
                     if (intersect(trect, bounds[j++]))
@@ -1756,6 +1756,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     double rotationAngle;
     double symbolSize;
     LViewportContext vpc;
+    LGContext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
     /* Get the current device
@@ -1772,8 +1773,8 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
     {
-        transformLocn(x, y, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i), gpFontSize(currentgp, i),
-                      gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
+        gcontextFromgpar(currentgp, i, &gc);
+        transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
         /* The graphics engine only takes device coordinates
          */
         xx[i] = toDeviceX(xx[i], GE_INCHES, dd);
@@ -1787,9 +1788,8 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
              * rotations !!!
              */
             int ipch;
-            symbolSize =
-                transformWidthtoINCHES(size, i, vpc, gpFontFamily(currentgp, i), gpFont(currentgp, i),
-                                       gpFontSize(currentgp, i), gpLineHeight(currentgp, i), vpWidthCM, vpHeightCM, dd);
+            gcontextFromgpar(currentgp, i, &gc);
+            symbolSize = transformWidthtoINCHES(size, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
             /* The graphics engine only takes device coordinates
              */
             symbolSize = toDeviceWidth(symbolSize, GE_INCHES, dd);
