@@ -10,7 +10,7 @@
  *
  * These functions are distributed in the hope that they will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
  * GNU General Public License for more details.
  *
  * The text of the GNU General Public License, version 2, is available
@@ -49,8 +49,9 @@ SEXP spline_value(SEXP knots, SEXP coeff, SEXP order, SEXP x, SEXP deriv);
 static int set_cursor(splPTR sp, double x)
 {
     int i;
+    /* don't assume x's are sorted */
 
-    sp->curs = 0; /* don't assume x's are sorted */
+    sp->curs = -1; /* Wall */
     sp->boundary = 0;
     for (i = 0; i < sp->nknots; i++)
     {
@@ -74,7 +75,6 @@ static int set_cursor(splPTR sp, double x)
 static void diff_table(splPTR sp, double x, int ndiff)
 {
     int i;
-
     for (i = 0; i < ndiff; i++)
     {
         sp->rdel[i] = sp->knots[sp->curs + i] - x;
@@ -82,6 +82,7 @@ static void diff_table(splPTR sp, double x, int ndiff)
     }
 }
 
+/* fast evaluation of basis functions */
 static void basis_funcs(splPTR sp, double x, double *b)
 {
     int j, r;
@@ -102,6 +103,7 @@ static void basis_funcs(splPTR sp, double x, double *b)
     }
 }
 
+/* "slow" evaluation of (derivative of) basis functions */
 static double evaluate(splPTR sp, double x, int nder)
 {
     register double *lpt, *rpt, *apt, *ti = sp->knots + sp->curs;
@@ -124,6 +126,7 @@ static double evaluate(splPTR sp, double x, int nder)
     return sp->a[0];
 }
 
+/* called from	predict.bSpline() and predict.pbSpline() : */
 SEXP spline_value(SEXP knots, SEXP coeff, SEXP order, SEXP x, SEXP deriv)
 {
     SEXP val;
@@ -142,7 +145,9 @@ SEXP spline_value(SEXP knots, SEXP coeff, SEXP order, SEXP x, SEXP deriv)
     PROTECT(deriv = coerceVector(deriv, INTSXP));
     der = INTEGER(deriv)[0];
     PROTECT(val = allocVector(REALSXP, n));
+
     /* populate the spl_struct */
+
     sp = (struct spl_struct *)R_alloc(1, sizeof(struct spl_struct));
     sp->order = INTEGER(order)[0];
     if (sp->order <= 0)
@@ -174,10 +179,11 @@ SEXP spline_value(SEXP knots, SEXP coeff, SEXP order, SEXP x, SEXP deriv)
     return val;
 }
 
+/* called from	splineDesign() : */
 SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
-{ /* evaluate the non-zero B-spline basis */
-    /* functions (or their derivatives) at */
-    /* xvals.  */
+{
+    /* evaluate the non-zero B-spline basis functions (or their derivatives)
+     * at xvals.  */
     int nd, nk, nx, i, j, *ders;
     double *kk, *xx;
     SEXP val, offsets;
@@ -186,13 +192,15 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
     PROTECT(knots = coerceVector(knots, REALSXP));
     kk = REAL(knots);
     nk = length(knots);
+    PROTECT(order = coerceVector(order, INTSXP));
     PROTECT(xvals = coerceVector(xvals, REALSXP));
     xx = REAL(xvals);
     nx = length(xvals);
     PROTECT(derivs = coerceVector(derivs, INTSXP));
     ders = INTEGER(derivs);
     nd = length(derivs);
-    PROTECT(order = coerceVector(order, INTSXP));
+
+    /* fill sp : */
     sp->order = INTEGER(order)[0];
     sp->ordm1 = sp->order - 1;
     sp->rdel = (double *)R_alloc(sp->ordm1, sizeof(double));
@@ -206,8 +214,8 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
     for (i = 0; i < nx; i++)
     {
         set_cursor(sp, xx[i]);
-        INTEGER(offsets)[i] = sp->curs - sp->order;
-        if (sp->curs < sp->order || sp->curs > (nk - sp->order))
+        INTEGER(offsets)[i] = j = sp->curs - sp->order;
+        if (j < 0 || j > nk)
         {
             for (j = 0; j < sp->order; j++)
             {
