@@ -41,5 +41,5 @@ R_FortranMethodDef FortEntries[] = {{"lowesw", (DL_FUNC)&F77_SUB(lowesw), 4},
 
 void R_init_modreg(DllInfo *dll)
 {
-    R_registerRoutines(dll, CEntries, NULL, FortEntries);
+    R_registerRoutines(dll, CEntries, NULL, FortEntries, NULL);
 }

@@ -31,5 +31,7 @@ R_CMethodDef CEntries[] = {{"Rsm_3RSR", (DL_FUNC)&Rsm_3RSR, 5},
 
 void R_init_eda(DllInfo *dll)
 {
-    R_registerRoutines(dll, CEntries, NULL, NULL);
+    /*
+        R_registerRoutines(dll, CEntries, NULL, NULL, NULL);
+    */
 }

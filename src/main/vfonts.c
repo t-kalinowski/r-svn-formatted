@@ -51,11 +51,11 @@ static void vfonts_Init(void)
     if (!res)
         return;
 
-    if (!(ptr_GVStrWidth = (dblDL_FUNC)R_FindSymbol("Rf_GVStrWidth", "vfonts")))
+    if (!(ptr_GVStrWidth = (dblDL_FUNC)R_FindSymbol("Rf_GVStrWidth", "vfonts", NULL)))
         return;
-    if (!(ptr_GVStrHeight = (dblDL_FUNC)R_FindSymbol("Rf_GVStrHeight", "vfonts")))
+    if (!(ptr_GVStrHeight = (dblDL_FUNC)R_FindSymbol("Rf_GVStrHeight", "vfonts", NULL)))
         return;
-    if (!(ptr_GVText = R_FindSymbol("Rf_GVText", "vfonts")))
+    if (!(ptr_GVText = R_FindSymbol("Rf_GVText", "vfonts", NULL)))
         return;
     initialized = 1;
     return;

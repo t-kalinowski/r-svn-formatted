@@ -508,12 +508,12 @@ void mve_fitlots(double *x, int *n, int *p, int *qn, int *mcd, int *sample, int 
 #include "R_ext/Rdynload.h"
 
 static R_CMethodDef R_CDef[] = {
-    {"lqs_fitlots", (DL_FUNC)&lqs_fitlots, 17},
+    {"lqs_fitlots", (DL_FUNC)&lqs_fitlots, 16},
     {"mve_fitlots", (DL_FUNC)&mve_fitlots, 11},
     {NULL, NULL, 0},
 };
 
 void R_init_lqs(DllInfo *info)
 {
-    R_registerRoutines(info, R_CDef, NULL, NULL);
+    R_registerRoutines(info, R_CDef, NULL, NULL, NULL);
 }

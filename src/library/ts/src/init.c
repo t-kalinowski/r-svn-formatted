@@ -31,12 +31,15 @@ R_CMethodDef CEntries[] = {{"acf", (DL_FUNC)&acf, 6},
                            {"Dotrans", (DL_FUNC)&Dotrans, 2},
                            {"get_s2", (DL_FUNC)&get_s2, 1},
                            {"get_resid", (DL_FUNC)&get_resid, 1},
-                           {"arma0fa", (DL_FUNC)&arma0fa, 3},
+                           {"arma0fa", (DL_FUNC)&arma0fa, 2},
                            {"arma0_kfore", (DL_FUNC)&arma0_kfore, 5},
                            {"free_starma", (DL_FUNC)&free_starma, 0},
                            {"R_intgrt_vec", (DL_FUNC)&R_intgrt_vec, 4},
-                           {"filter1", (DL_FUNC)&filter1, 7},
-                           {"filter2", (DL_FUNC)&filter2, 5},
+                           /*
+                            Called with NAOK in filter()
+                               {"filter1", (DL_FUNC) &filter1, 7},
+                               {"filter2", (DL_FUNC) &filter2, 5},
+                           */
                            {"R_pp_sum", (DL_FUNC)&R_pp_sum, 4},
                            {NULL, NULL, 0}};
 
@@ -45,5 +48,5 @@ R_FortranMethodDef FortEntries[] = {
 
 void R_init_ts(DllInfo *dll)
 {
-    R_registerRoutines(dll, CEntries, NULL, FortEntries);
+    R_registerRoutines(dll, CEntries, NULL, FortEntries, NULL);
 }

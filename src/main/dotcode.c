@@ -44,7 +44,7 @@ static SEXP PkgSymbol = NULL;
 static char DLLname[PATH_MAX];
 
 /* This looks up entry points in DLLs in a platform specific way. */
-DL_FUNC R_FindSymbol(char const *, char const *);
+#include "R_ext/Rdynpriv.h"
 
 /* Convert an R object to a non-moveable C/Fortran object and return
    a pointer to it.  This leaves pointers for anything other
@@ -338,45 +338,44 @@ static SEXP naoktrim(SEXP s, int *len, int *naok, int *dup)
 /* find NAOK and DUP, find and remove PACKAGE */
 static SEXP naokfind(SEXP args, int *len, int *naok, int *dup)
 {
-    SEXP s, ss;
+    SEXP s, prev;
     int nargs = 0, naokused = 0, dupused = 0, pkgused = 0;
 
     *naok = 0;
     *dup = 1;
     *len = 0;
-    for (s = args; s != R_NilValue;)
+    for (s = args, prev = args; s != R_NilValue;)
     {
         if (TAG(s) == NaokSymbol)
         {
             *naok = asLogical(CAR(s));
+            /* SETCDR(prev, s = CDR(s)); */
             if (naokused++ == 1)
                 warning("NAOK used more than once");
         }
         else if (TAG(s) == DupSymbol)
         {
             *dup = asLogical(CAR(s));
+            /* SETCDR(prev, s = CDR(s)); */
             if (dupused++ == 1)
                 warning("DUP used more than once");
         }
-        /* Now look for PACKAGE=. We look at the next arg, unless
-           this is the last one (which will only happen for one arg),
-           and remove it */
-        ss = CDR(s);
-        if (ss == R_NilValue && TAG(s) == PkgSymbol)
+        else if (TAG(s) == PkgSymbol)
         {
             if (pkgused++ == 1)
                 warning("PACKAGE used more than once");
             strcpy(DLLname, CHAR(STRING_ELT(CAR(s), 0)));
-            return R_NilValue;
+            if (s == args)
+                args = CDR(s);
+            else
+                SETCDR(prev, s = CDR(s)); /* delete this arg, which is the next one */
+            continue;
         }
-        if (TAG(ss) == PkgSymbol)
+        else
         {
-            if (pkgused++ == 1)
-                warning("PACKAGE used more than once");
-            strcpy(DLLname, CHAR(STRING_ELT(CAR(ss), 0)));
-            SETCDR(s, CDR(ss)); /* delete this arg, which is the next one */
         }
         nargs++;
+        prev = s;
         s = CDR(s);
     }
     *len = nargs;
@@ -454,14 +453,17 @@ SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
-    char *sym;
+    char *sym, *pkg;
     int val;
     checkArity(op, args);
     if (!isValidString(CAR(args)))
         errorcall(call, R_MSG_IA);
     sym = CHAR(STRING_ELT(CAR(args), 0));
+    if (!isValidString(CADR(args)))
+        errorcall(call, R_MSG_IA);
+    pkg = CHAR(STRING_ELT(CADR(args), 0));
     val = 1;
-    if (!(R_FindSymbol(sym, "")))
+    if (!(R_FindSymbol(sym, pkg, NULL)))
         val = 0;
     ans = allocVector(LGLSXP, 1);
     LOGICAL(ans)[0] = val;
@@ -475,6 +477,7 @@ SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC fun;
     SEXP retval;
+    R_RegisteredNativeSymbol symbol = {R_EXTERNAL_SYM, NULL};
     /* I don't like this messing with vmax <TSL> */
     /* But it is needed for clearing R_alloc and to be like .Call <BDR>*/
     char *vmax = vmaxget();
@@ -487,9 +490,15 @@ SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     strcpy(DLLname, "");
     args = pkgtrim(args);
 
-    if (!(fun = R_FindSymbol(CHAR(STRING_ELT(op, 0)), DLLname)))
+    if (!(fun = R_FindSymbol(CHAR(STRING_ELT(op, 0)), DLLname, NULL)))
         errorcall(call, "C function name not in load table");
 
+    if (symbol.symbol.external && symbol.symbol.external->numArgs > -1)
+    {
+        if (symbol.symbol.external->numArgs != length(args))
+            error("Incorrect number of arguments (%d), expecting %d for %s", length(args),
+                  symbol.symbol.external->numArgs, CHAR(STRING_ELT(op, 0)));
+    }
     retval = (SEXP)fun(args);
     vmaxset(vmax);
     return retval;
@@ -500,6 +509,7 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC fun;
     SEXP retval, cargs[MAX_ARGS], pargs;
+    R_RegisteredNativeSymbol symbol = {R_CALL_SYM, NULL};
     int nargs;
     char *vmax = vmaxget();
     op = CAR(args);
@@ -511,8 +521,8 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     strcpy(DLLname, "");
     args = pkgtrim(args);
 
-    if (!(fun = R_FindSymbol(CHAR(STRING_ELT(op, 0)), DLLname)))
-        errorcall(call, "C function name not in load table");
+    if (!(fun = R_FindSymbol(CHAR(STRING_ELT(op, 0)), DLLname, &symbol)))
+        errorcall(call, ".Call function name not in load table");
     args = CDR(args);
 
     for (nargs = 0, pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
@@ -521,6 +531,12 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
             errorcall(call, "too many arguments in foreign function call");
         cargs[nargs] = CAR(pargs);
         nargs++;
+    }
+    if (symbol.symbol.call && symbol.symbol.call->numArgs > -1)
+    {
+        if (symbol.symbol.call->numArgs != nargs)
+            error("Incorrect number of arguments (%d), expecting %d for %s", nargs, symbol.symbol.call->numArgs,
+                  CHAR(STRING_ELT(op, 0)));
     }
 
     retval = R_NilValue; /* -Wall */
@@ -990,6 +1006,8 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     DL_FUNC fun;
     SEXP ans, pargs, s;
     R_toCConverter *argConverters[65];
+    R_RegisteredNativeSymbol symbol = {R_C_SYM, NULL};
+
     char buf[128], *p, *q, *vmax;
     if (NaokSymbol == NULL || DupSymbol == NULL || PkgSymbol == NULL)
     {
@@ -999,6 +1017,8 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     vmax = vmaxget();
     which = PRIMVAL(op);
+    if (which)
+        symbol.type = R_FORTRAN_SYM;
     op = CAR(args);
     if (!isValidString(op))
         errorcall(call, "function name must be a string (of length 1)");
@@ -1013,7 +1033,6 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid naok value");
     if (nargs > MAX_ARGS)
         errorcall(call, "too many arguments in foreign function call");
-    cargs = (void **)R_alloc(nargs, sizeof(void *));
 
     /* Make up the load symbol and look it up. */
 
@@ -1030,17 +1049,24 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     *q = '\0';
 #endif
 #ifdef Macintosh
-    if (!(fun = R_FindSymbol(buf, "")))
+    if (!(fun = R_FindSymbol(buf, "", &symbol)))
 #else
-    if (!(fun = R_FindSymbol(buf, DLLname)))
+    if (!(fun = R_FindSymbol(buf, DLLname, &symbol)))
 #endif /* Macintosh */
         errorcall(call, "C/Fortran function name not in load table");
+
+    if (symbol.symbol.c && symbol.symbol.c->numArgs > -1)
+    {
+        if (symbol.symbol.c->numArgs != nargs)
+            error("Incorrect number of arguments (%d), expecting %d for %s", nargs, symbol.symbol.c->numArgs, buf);
+    }
 
     /* Convert the arguments for use in foreign */
     /* function calls.  Note that we copy twice */
     /* once here, on the way into the call, and */
     /* once below on the way out. */
 
+    cargs = (void **)R_alloc(nargs, sizeof(void *));
     nargs = 0;
     for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
     {
