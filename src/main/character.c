@@ -119,34 +119,39 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
     k = LENGTH(sa);
     l = LENGTH(so);
 
-    if (!isString(x) || !isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-        errorcall(call, "invalid argument in substr()");
-
+    if (!isString(x))
+        errorcall(call, "extracting substrings from a non-character object");
     len = LENGTH(x);
     PROTECT(s = allocVector(STRSXP, len));
-    for (i = 0; i < len; i++)
+    if (len > 0)
     {
-        start = INTEGER(sa)[i % k];
-        stop = INTEGER(so)[i % l];
-        slen = strlen(CHAR(STRING_ELT(x, i)));
-        if (start < 1)
-            start = 1;
-        if (start > stop || start > slen)
+        if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
+            errorcall(call, "invalid substring argument(s) in substr()");
+
+        for (i = 0; i < len; i++)
         {
-            AllocBuffer(1);
-            buff[0] = '\0';
+            start = INTEGER(sa)[i % k];
+            stop = INTEGER(so)[i % l];
+            slen = strlen(CHAR(STRING_ELT(x, i)));
+            if (start < 1)
+                start = 1;
+            if (start > stop || start > slen)
+            {
+                AllocBuffer(1);
+                buff[0] = '\0';
+            }
+            else
+            {
+                AllocBuffer(slen);
+                if (stop > slen)
+                    stop = slen;
+                substr(buff, CHAR(STRING_ELT(x, i)), start, stop);
+            }
+            SET_STRING_ELT(s, i, mkChar(buff));
         }
-        else
-        {
-            AllocBuffer(slen);
-            if (stop > slen)
-                stop = slen;
-            substr(buff, CHAR(STRING_ELT(x, i)), start, stop);
-        }
-        SET_STRING_ELT(s, i, mkChar(buff));
+        AllocBuffer(-1);
     }
     UNPROTECT(1);
-    AllocBuffer(-1);
     return s;
 }
 
@@ -172,43 +177,48 @@ SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     k = LENGTH(sa);
     l = LENGTH(so);
 
-    if (!isString(x) || !isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-        errorcall(call, "invalid argument in substr<-()");
-
-    v = LENGTH(value);
-    if (!isString(value) || v == 0)
-        errorcall(call, "invalid rhs in substr<-()");
-
+    if (!isString(x))
+        errorcall(call, "replacing substrings in a non-character object");
     len = LENGTH(x);
     PROTECT(s = allocVector(STRSXP, len));
-    for (i = 0; i < len; i++)
+    if (len > 0)
     {
-        start = INTEGER(sa)[i % k];
-        stop = INTEGER(so)[i % l];
-        slen = strlen(CHAR(STRING_ELT(x, i)));
-        if (start < 1)
-            start = 1;
-        if (stop > slen)
-            stop = slen;
-        if (start > stop)
+        if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
+            errorcall(call, "invalid substring argument(s) in substr<-()");
+
+        v = LENGTH(value);
+        if (!isString(value) || v == 0)
+            errorcall(call, "invalid rhs in substr<-()");
+
+        for (i = 0; i < len; i++)
         {
-            AllocBuffer(0); /* since we reset later */
-            /* just copy element across */
-            SET_STRING_ELT(s, i, STRING_ELT(x, i));
+            start = INTEGER(sa)[i % k];
+            stop = INTEGER(so)[i % l];
+            slen = strlen(CHAR(STRING_ELT(x, i)));
+            if (start < 1)
+                start = 1;
+            if (stop > slen)
+                stop = slen;
+            if (start > stop)
+            {
+                AllocBuffer(0); /* since we reset later */
+                /* just copy element across */
+                SET_STRING_ELT(s, i, STRING_ELT(x, i));
+            }
+            else
+            {
+                AllocBuffer(slen);
+                strcpy(buff, CHAR(STRING_ELT(x, i)));
+                vlen = strlen(CHAR(STRING_ELT(value, i % v)));
+                if (stop > start + vlen - 1)
+                    stop = start + vlen - 1;
+                substrset(buff, CHAR(STRING_ELT(value, i % v)), start, stop);
+                SET_STRING_ELT(s, i, mkChar(buff));
+            }
         }
-        else
-        {
-            AllocBuffer(slen);
-            strcpy(buff, CHAR(STRING_ELT(x, i)));
-            vlen = strlen(CHAR(STRING_ELT(value, i % v)));
-            if (stop > start + vlen - 1)
-                stop = start + vlen - 1;
-            substrset(buff, CHAR(STRING_ELT(value, i % v)), start, stop);
-            SET_STRING_ELT(s, i, mkChar(buff));
-        }
+        AllocBuffer(-1);
     }
     UNPROTECT(1);
-    AllocBuffer(-1);
     return s;
 }
 
