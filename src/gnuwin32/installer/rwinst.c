@@ -40,7 +40,7 @@ HINSTANCE hUnzipDll;
 window w;
 button bBack, bNext, bFinish, bCancel, bSrc, bDest;
 radiobutton sys, pkg;
-checkbox basepkg, texthelp, htmlhelp, ltxhelp, chmhelp, winhelp, srcsp, overwrite;
+checkbox basepkg, texthelp, htmlhelp, ltxhelp, chmhelp, winhelp, srcsp, pdf, overwrite;
 listbox packages;
 textbox unzout;
 label lVer, lsrc, ldest, lwhat1, lwhat2, lwarn2, lwarn3, lwarn4, lwarn5, lres3, lresp2, lwhat3;
@@ -53,7 +53,7 @@ field fRver, fSrc, fDest;
 int FullInstall = 1, over;
 char Rver[20] = RVER, src[MAX_PATH], dest[MAX_PATH];
 char selpkg[80], *pkglist[100], *selpkglist[100];
-int npkgs, nspkgs, ispkgs, rwb = 1, rwh = 1, rwch = 1, rww = 1, rwl = 1, rwwh = 0, rwsp = 0;
+int npkgs, nspkgs, ispkgs, rwb = 1, rwh = 1, rwch = 1, rww = 0, rwl = 0, rwwh = 0, rwsp = 0, rwd = 0;
 int prwb = 1, prww = 1, prwl = 1, prwch = 1, prwwh = 0;
 
 /* SHELLsort -- corrected from R. Sedgewick `Algorithms in C' */
@@ -212,6 +212,7 @@ void cleanpage2()
     delobj(chmhelp);
     delobj(winhelp);
     delobj(srcsp);
+    delobj(pdf);
     delobj(lwhat2);
     delobj(lwarn2);
     delobj(overwrite);
@@ -275,6 +276,7 @@ void next2(button b)
     rwch = ischecked(chmhelp);
     rwwh = ischecked(winhelp);
     rwsp = ischecked(srcsp);
+    rwd = ischecked(pdf);
     if (!rwb)
     {
         strcpy(str, dest);
@@ -289,7 +291,7 @@ void next2(button b)
             return;
         }
     }
-    if (!rwb & !rwh & !rww & !rwl & !rwch & !rwwh & !rwsp)
+    if (!rwb & !rwh & !rww & !rwl & !rwch & !rwwh & !rwsp & !rwd)
         return;
     over = ischecked(overwrite);
     cleanpage2();
@@ -586,7 +588,7 @@ void page1()
 void page2()
 {
     int xpos = 80, ypos = 70, zips = 0;
-    char str[MAX_PATH];
+    char str[MAX_PATH], str2[MAX_PATH];
 
     clear(w);
     redraw(w);
@@ -596,8 +598,10 @@ void page2()
 
     basepkg = newcheckbox("base package", rect(xpos, ypos, 150, 20), NULL);
     strcpy(str, Rver);
-    strcat(str, "b.zip");
-    if (!fexists(str))
+    strcat(str, "b1.zip");
+    strcpy(str2, Rver);
+    strcat(str2, "b2.zip");
+    if (!fexists(str) || !fexists(str2))
     {
         uncheck(basepkg);
         disable(basepkg);
@@ -630,6 +634,24 @@ void page2()
     }
 
     ypos += 17;
+    chmhelp = newcheckbox("Compiled HTML help", rect(xpos, ypos, 150, 20), NULL);
+    strcpy(str, Rver);
+    strcat(str, "ch.zip");
+    if (!fexists(str))
+    {
+        uncheck(chmhelp);
+        disable(chmhelp);
+    }
+    else
+    {
+        if (rwch)
+            check(chmhelp);
+        else
+            uncheck(chmhelp);
+        zips++;
+    }
+
+    ypos += 17;
     htmlhelp = newcheckbox("HTML help", rect(xpos, ypos, 150, 20), NULL);
     strcpy(str, Rver);
     strcat(str, "w.zip");
@@ -652,7 +674,10 @@ void page2()
     strcpy(str, Rver);
     strcat(str, "l.zip");
     if (!fexists(str))
+    {
+        uncheck(ltxhelp);
         disable(ltxhelp);
+    }
     else
     {
         if (rwl)
@@ -663,33 +688,13 @@ void page2()
     }
 
     ypos += 17;
-    chmhelp = newcheckbox("Compiled HTML help", rect(xpos, ypos, 150, 20), NULL);
-    strcpy(str, Rver);
-    strcat(str, "ch.zip");
-    if (!fexists(str))
-    {
-        uncheck(chmhelp);
-        disable(chmhelp);
-        hide(chmhelp);
-    }
-    else
-    {
-        if (rwch)
-            check(chmhelp);
-        else
-            uncheck(chmhelp);
-        zips++;
-    }
-
-    ypos += 17;
     winhelp = newcheckbox("Windows help", rect(xpos, ypos, 150, 20), NULL);
     strcpy(str, Rver);
     strcat(str, "wh.zip");
     if (!fexists(str))
     {
         uncheck(winhelp);
-        disable(winhelp);
-        hide(winhelp);
+        disable(winhelp); /* hide(winhelp);*/
     }
     else
     {
@@ -707,7 +712,7 @@ void page2()
     if (!fexists(str))
     {
         uncheck(srcsp);
-        disable(srcsp);
+        disable(srcsp); /* hide(srcsp);*/
     }
     else
     {
@@ -718,7 +723,25 @@ void page2()
         zips++;
     }
 
-    ypos += 30;
+    ypos += 17;
+    pdf = newcheckbox("PDF manuals", rect(xpos, ypos, 300, 20), NULL);
+    strcpy(str, Rver);
+    strcat(str, "d.zip");
+    if (!fexists(str))
+    {
+        uncheck(pdf);
+        disable(pdf); /* hide(pdf);*/
+    }
+    else
+    {
+        if (rwd)
+            check(pdf);
+        else
+            uncheck(pdf);
+        zips++;
+    }
+
+    ypos += 25;
     lwarn2 = newlabel("Components that are not found will be greyed out", rect(10, ypos, 390, 20), AlignLeft);
 
     enable(bBack);
@@ -750,7 +773,7 @@ void page2()
             disable(bNext);
         }
     }
-    overwrite = newcheckbox("overwrite existing files?", rect(30, 230, 150, 20), NULL);
+    overwrite = newcheckbox("overwrite existing files?", rect(30, 235, 150, 20), NULL);
     check(overwrite);
     setkeydown(w, key2);
     show(w);
@@ -798,8 +821,17 @@ void page3()
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
-        strcat(str, "b.zip");
+        strcat(str, "b1.zip");
         rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
+        if (!rc)
+        {
+            strcpy(dest1, dest);
+            strcpy(str, src);
+            strcat(str, "/");
+            strcat(str, Rver);
+            strcat(str, "b2.zip");
+            rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
+        }
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -925,6 +957,26 @@ void page3()
             strcpy(lab, lab2);
             delobj(lres3);
             strcat(lab, "source ");
+            lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        }
+    }
+    if (rwd)
+    {
+        strcpy(lab2, lab);
+        delobj(lres3);
+        strcat(lab, "PDF manuals . . .");
+        lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(str, src);
+        strcat(str, "/");
+        strcat(str, Rver);
+        strcat(str, "d.zip");
+        strcpy(dest1, dest);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
+        if (rc)
+        {
+            strcpy(lab, lab2);
+            delobj(lres3);
+            strcat(lab, "docs ");
             lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
         }
     }
