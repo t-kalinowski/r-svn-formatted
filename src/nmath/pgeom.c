@@ -39,6 +39,8 @@ double pgeom(double x, double p, int lower_tail, int log_p)
         return R_DT_0;
     if (!R_FINITE(x))
         return R_DT_1;
+    if (lower_tail && !log_p)
+        return -expm1((x + 1) * log1p(-p));
     if (log_p && !lower_tail)
         return log1p(-p) * (x + 1);
     return R_DT_Cval(pow(1 - p, x + 1));
