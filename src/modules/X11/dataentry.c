@@ -222,6 +222,11 @@ static SEXP ssNewVector(SEXPTYPE type, int vlen)
     return (tvec);
 }
 
+static void closewin_cend(void *data)
+{
+    closewin();
+}
+
 SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP tvec2, tvec, colmodes, indata;
@@ -313,7 +318,8 @@ SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* set up a context which will close the window if there is an error */
     begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-    cntxt.cend = &closewin;
+    cntxt.cend = &closewin_cend;
+    cntxt.cenddata = NULL;
 
     highlightrect();
 
