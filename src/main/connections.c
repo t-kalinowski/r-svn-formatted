@@ -40,6 +40,12 @@ int R_OutputCon; /* used in printutils.c */
 #include <fcntl.h>
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 2
+__extension__ typedef long long int _lli_t;
+#else
+typedef long long int _lli_t;
+#endif
+
 /* Win32 does have popen, but it does not work in GUI applications,
    so test that later */
 #ifdef Win32
@@ -2642,7 +2648,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 #if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
-            case sizeof(long long):
+            case sizeof(_lli_t):
 #endif
                 break;
             default:
@@ -2665,7 +2671,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 #if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
-            case sizeof(long long):
+            case sizeof(_lli_t):
 #endif
                 break;
             default:
@@ -2735,8 +2741,8 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                         INTEGER(ans)[i] = (int)*((long *)buf);
                         break;
 #elif SIZEOF_LONG_LONG == 8
-                    case sizeof(long long):
-                        INTEGER(ans)[i] = (int)*((long long *)buf);
+                    case sizeof(_lli_t):
+                        INTEGER(ans)[i] = (int)*((_lli_t *)buf);
                         break;
 #endif
                     }
@@ -2842,7 +2848,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 #if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
-            case sizeof(long long):
+            case sizeof(_lli_t):
 #endif
                 break;
             default:
@@ -2894,11 +2900,11 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
             }
 #elif SIZEOF_LONG_LONG == 8
-            case sizeof(long long): {
-                long long ll1;
+            case sizeof(_lli_t): {
+                _lli_t ll1;
                 for (i = 0, j = 0; i < len; i++, j += size)
                 {
-                    ll1 = (long long)INTEGER(object)[i];
+                    ll1 = (_lli_t)INTEGER(object)[i];
                     memcpy(buf + j, &ll1, size);
                 }
                 break;
