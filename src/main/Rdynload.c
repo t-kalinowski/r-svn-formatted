@@ -785,11 +785,17 @@ int moduleCdynload(char *module, int local, int now)
     return AddDLL(dllpath, local, now);
 }
 
+/**
+  Creates an R object representing the value of the
+  function pointer given by `f'. This object has class
+  NativeSymbol and can be used to relay symbols from
+  one library to another.
+ */
 SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
 {
     SEXP ref, klass;
 
-    PROTECT(ref = R_MakeExternalPtr(f, Rf_install("native symbol"), NULL));
+    PROTECT(ref = R_MakeExternalPtr((void *)f, Rf_install("native symbol"), NULL));
 
     PROTECT(klass = allocVector(STRSXP, 1));
     SET_STRING_ELT(klass, 0, mkChar("NativeSymbol"));
@@ -799,9 +805,15 @@ SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
     return (ref);
 }
 
+/**
+ Creates an R object representing the public DLL information stored in
+ info. Currently this is only the short and the long, fully qualified
+ name of the DLL and whether we only look for symbols that have been
+ registered in this DLL or do we also use dynamic lookup.
+ */
 SEXP Rf_MakeDLLInfo(DllInfo *info)
 {
-    SEXP ref, klass, elNames, tmp;
+    SEXP ref, elNames, tmp;
     int i, n;
     const char *const names[] = {"name", "path", "dynamicLookup"};
 
@@ -825,6 +837,20 @@ SEXP Rf_MakeDLLInfo(DllInfo *info)
     return (ref);
 }
 
+/**
+  This is the routine associated with the getNativeSymbolInfo()
+  function and it takes the name of a symbol and optionally a
+  library identifier (package usually) in which to restrict the search
+  for this symbol. It resolves the symbol and returns it to the caller
+  giving the symbol address, the package information (i.e. name and
+  fully qualified shared library name). If the symbol was explicitly
+  registered (rather than dynamically resolved by R), then we pass
+  back that information also, giving the number of arguments it
+  expects and the interface by which it should be called.
+  The returned object has class NativeSymbol. If the symbol was
+  registered, we add a class identifying the interface type
+  for which it is intended (i.e. .C(), .Call(), etc.)
+ */
 SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
 {
     char *package, *name;
@@ -855,8 +881,8 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
         if (n > 3)
         {
             /* Add the registration information: the number of arguments and the classname. */
-            int nargs;
-            char *className;
+            int nargs = -1;
+            char *className = "";
             switch (symbol.type)
             {
             case R_C_SYM:
@@ -874,6 +900,9 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
             case R_EXTERNAL_SYM:
                 nargs = symbol.symbol.external->numArgs;
                 className = "ExternalRoutine";
+                break;
+            default:
+                /* Something unintended has happened if we get here. */
                 break;
             }
             SET_VECTOR_ELT(sym, 3, tmp = ScalarInteger(nargs));
@@ -915,5 +944,10 @@ SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error("no dyn.load support in this R version");
     return (R_NilValue);
+}
+
+SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
+{
+    error("no dyn.load support in this R version");
 }
 #endif
