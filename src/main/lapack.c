@@ -55,7 +55,8 @@ static void La_Init(void)
     initialized = -1;
     if (!res)
         return;
-
+    if (!ptr->svd)
+        error("lapack routines cannot be accessed in module");
     initialized = 1;
     return;
 }

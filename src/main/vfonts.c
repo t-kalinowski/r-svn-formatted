@@ -64,6 +64,8 @@ static void vfonts_Init(void)
     initialized = -1;
     if (!res)
         return;
+    if (!ptr->GEVStrWidth)
+        error("vfont routines cannot be accessed in module");
     initialized = 1;
     return;
 }
