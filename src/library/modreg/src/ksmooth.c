@@ -14,12 +14,13 @@ static double dokern(double x, int kern)
         return (1.0);
     if (kern == 2)
         return (exp(-0.5 * x * x));
+    return (0.0); /* -Wall */
 }
 
 void BDRksmooth(double *x, double *y, int *n, double *xp, double *yp, long *np, long *kern, double *bandwidth)
 {
     int i, imin = 0, j;
-    double cutoff, num, den, x0, w, bw = *bandwidth;
+    double cutoff = 0.0, num, den, x0, w, bw = *bandwidth;
 
     /* bandwidth is in units of half inter-quartile range. */
     if (*kern == 1)
