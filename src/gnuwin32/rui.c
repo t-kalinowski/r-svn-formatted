@@ -585,8 +585,6 @@ static void popupact(control m)
         disable(ConsolePopup[1].m);
 }
 
-RECT RframeRect; /* for use by pagercreate */
-
 int setupui()
 {
     initapp(0, 0);
@@ -597,7 +595,6 @@ int setupui()
         RFrame = newwindow("RGui", rect(0, 0, 0, 0), StandardWindow | Menubar | Workspace);
         setclose(RFrame, closeconsole);
         show(RFrame);
-        GetClientRect(RFrame->handle, &RframeRect);
         TRACERUI("Rgui done");
     }
     TRACERUI("Console");
@@ -720,6 +717,13 @@ int setupui()
     readhistory(RConsole, ".Rhistory");
     show(RConsole);
     return 1;
+}
+
+static RECT RframeRect; /* for use by pagercreate */
+RECT *RgetMDIsize()
+{
+    GetClientRect(hwndClient, &RframeRect);
+    return &RframeRect;
 }
 
 extern int CharacterMode;
