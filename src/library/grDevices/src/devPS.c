@@ -420,7 +420,7 @@ static int GetNextItem(FILE *fp, char *dest, int c, EncodingInputState *state)
     return 0;
 }
 
-/* Load encoding array from a file: defaults to the R_HOME/afm directory */
+/* Load encoding array from a file: defaults to the R_HOME/library/grDevices/afm directory */
 
 /*
  * encpath gives the file to read from
@@ -439,7 +439,7 @@ static int LoadEncoding(char *encpath, char *encname, CNAME *encnames, char *enc
     if (strchr(encpath, FILESEP[0]))
         strcpy(buf, encpath);
     else
-        snprintf(buf, BUFSIZE, "%s%safm%s%s", R_Home, FILESEP, FILESEP, encpath);
+        snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%safm%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP, encpath);
 #ifdef DEBUG_PS
     Rprintf("encoding path is %s\n", buf);
 #endif
@@ -497,7 +497,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
     if (strchr(fontpath, FILESEP[0]))
         strcpy(buf, fontpath);
     else
-        snprintf(buf, BUFSIZE, "%s%safm%s%s", R_Home, FILESEP, FILESEP, fontpath);
+        snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%safm%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP, fontpath);
 #ifdef DEBUG_PS
     Rprintf("afmpath is %s\n", buf);
     Rprintf("reencode is %d\n", reencode);
