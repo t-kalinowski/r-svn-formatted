@@ -21,7 +21,7 @@
 /* extra commands for R */
 
 #ifdef HAVE_CONFIG_H
-#include <Rconfig.h>
+#include <config.h>
 #endif
 
 #include <stdio.h>
