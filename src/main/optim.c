@@ -17,14 +17,10 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <math.h>
 
 #include "Defn.h"
-#include "Rdefines.h"
-
-#include <math.h>
+#include "Rdefines.h" /* for CREATE_STRING_VECTOR */
 
 static SEXP getListElement(SEXP list, char *str)
 {
@@ -1037,8 +1033,6 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
     *fncount = funcount;
     *grcount = gradcount;
 }
-
-#include "S.h"
 
 void setulb(int n, int m, double *x, double *l, double *u, int *nbd, double *f, double *g, double factr, double *pgtol,
             double *wa, int *iwa, char *task, int iprint, int *lsave, int *isave, double *dsave);

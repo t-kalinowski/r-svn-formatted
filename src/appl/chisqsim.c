@@ -4,12 +4,8 @@
    Generate random two-way table with given marginal totals.
    */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <math.h>
-#include "S.h"
+#include "Random.h"
 
 static void rcont2(int *nrow, int *ncol, int *nrowt, int *ncolt, int *ntotal, double *fact, int *jwork, int *matrix)
 {
@@ -176,7 +172,7 @@ void chisqsim(int *nrow, int *ncol, int *nrowt, int *ncolt, int *n, int *b, doub
         fact[i] = x;
     }
 
-    seed_in((long *)NULL);
+    GetRNGstate();
 
     for (iter = 0; iter < *b; ++iter)
     {
@@ -195,7 +191,7 @@ void chisqsim(int *nrow, int *ncol, int *nrowt, int *ncolt, int *n, int *b, doub
         results[iter] = chi;
     }
 
-    seed_out((long *)NULL);
+    PutRNGstate();
 
     return;
 }
