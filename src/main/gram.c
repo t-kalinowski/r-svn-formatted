@@ -3662,7 +3662,7 @@ int isValidName(char *name)
         if (wc == L'.')
         {
             /* We don't care about other than ASCII digits */
-            if (isdigit(*p))
+            if (isdigit((int)*p))
                 return 0;
             /* Mbrtowc(&wc, p, n, NULL); if(iswdigit(wc)) return 0; */
         }
