@@ -228,7 +228,7 @@ typedef union PAGE_HEADER {
 } PAGE_HEADER;
 
 #define BASE_PAGE_SIZE 2000
-#define PAGE_SIZE (((BASE_PAGE_SIZE - sizeof(PAGE_HEADER)) / sizeof(SEXPREC)) * sizeof(SEXPREC) + sizeof(PAGE_HEADER))
+#define R_PAGE_SIZE (((BASE_PAGE_SIZE - sizeof(PAGE_HEADER)) / sizeof(SEXPREC)) * sizeof(SEXPREC) + sizeof(PAGE_HEADER))
 #define NODE_SIZE(c) ((c) == 0 ? sizeof(SEXPREC) : sizeof(SEXPREC_ALIGN) + NodeClassSize[c] * sizeof(VECREC))
 
 #define PAGE_DATA(p) ((void *)(p + 1))
@@ -485,7 +485,7 @@ static void DEBUG_ADJUST_HEAP_PRINT(double node_occup, double vect_occup)
     REprintf("Node occupancy: %.0f%%\nVector occupancy: %.0f%%\n", 100.0 * node_occup, 100.0 * vect_occup);
     alloc = R_LargeVallocSize + sizeof(SEXPREC_ALIGN) * R_GenHeap[LARGE_NODE_CLASS].AllocCount;
     for (i = 0; i < NUM_SMALL_NODE_CLASSES; i++)
-        alloc += PAGE_SIZE * R_GenHeap[i].PageCount;
+        alloc += R_PAGE_SIZE * R_GenHeap[i].PageCount;
     REprintf("Total allocation: %d\n", alloc);
     REprintf("Ncells %d\nVcells %d\n", R_NSize, R_VSize);
 }
@@ -520,9 +520,9 @@ static void GetNewPage(int node_class)
     int node_size, page_count, i;
 
     node_size = NODE_SIZE(node_class);
-    page_count = (PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
+    page_count = (R_PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
 
-    page = malloc(PAGE_SIZE);
+    page = malloc(R_PAGE_SIZE);
     if (page == NULL)
         mem_err_heap(NodeClassSize[node_class]);
     page->next = R_GenHeap[node_class].pages;
@@ -550,7 +550,7 @@ static void ReleasePage(PAGE_HEADER *page, int node_class)
     int node_size, page_count, i;
 
     node_size = NODE_SIZE(node_class);
-    page_count = (PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
+    page_count = (R_PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
     data = PAGE_DATA(page);
 
     for (i = 0; i < page_count; i++, data += node_size)
@@ -577,7 +577,7 @@ static void TryToReleasePages(void)
             int pages_free = 0;
             PAGE_HEADER *page, *last, *next;
             int node_size = NODE_SIZE(i);
-            int page_count = (PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
+            int page_count = (R_PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
             int maxrel, maxrel_pages, rel_pages, gen;
 
             maxrel = R_GenHeap[i].AllocCount;
@@ -771,7 +771,7 @@ static void SortNodes(void)
         int pages_free = 0;
         PAGE_HEADER *page;
         int node_size = NODE_SIZE(i);
-        int page_count = (PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
+        int page_count = (R_PAGE_SIZE - sizeof(PAGE_HEADER)) / node_size;
 
         SET_NEXT_NODE(R_GenHeap[i].New, R_GenHeap[i].New);
         SET_PREV_NODE(R_GenHeap[i].New, R_GenHeap[i].New);
