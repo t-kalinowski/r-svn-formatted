@@ -49,136 +49,64 @@ void InitEd()
 
 SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    /*	int i, status;
-      SEXP x, fn, envir, ed;
-      char *filename, *editcmd, *vmaxsave;
-      FILE *fp;
-      //begin new stuff
-      int fd;
-      pid_t fork_pid;
-      int wait_status, open_max;
-      char *argv[3];
+    int i, status;
+    SEXP x, fn, envir, ed;
+    char *filename, *editcmd, *vmaxsave;
+    FILE *fp;
 
-      struct stat sb;
-      R_gtk_edititem *edititem;
+    checkArity(op, args);
 
-      edititem = (R_gtk_edititem *) g_malloc(sizeof(R_gtk_edititem));
-      //end new stuff
+    vmaxsave = vmaxget();
 
-      checkArity(op, args);
+    x = CAR(args);
+    if (TYPEOF(x) == CLOSXP)
+        envir = CLOENV(x);
+    else
+        envir = R_NilValue;
+    PROTECT(envir);
 
-      vmaxsave = vmaxget();
+    fn = CADR(args);
+    if (!isString(fn))
+        error("invalid argument to edit()\n");
 
-      x = CAR(args);
-      if (TYPEOF(x) == CLOSXP) envir = CLOENV(x);
-      else envir = R_NilValue;
-      PROTECT(envir);
+    if (LENGTH(STRING(fn)[0]) > 0)
+    {
+        filename = R_alloc(strlen(CHAR(STRING(fn)[0])), sizeof(char));
+        strcpy(filename, CHAR(STRING(fn)[0]));
+    }
+    else
+        filename = DefaultFileName;
 
-      fn = CADR(args);
-      if (!isString(fn))
-          error("invalid argument to edit()\n");
+    if (x != R_NilValue)
+    {
+        if ((fp = R_fopen(filename, "w")) == NULL)
+            errorcall(call, "unable to open file\n");
+        x = deparse1(x, 0);
+        for (i = 0; i < LENGTH(x); i++)
+            fprintf(fp, "%s\n", CHAR(STRING(x)[i]));
+        fclose(fp);
+    }
 
-      if (LENGTH(STRING(fn)[0]) > 0) {
-          filename = R_alloc(strlen(CHAR(STRING(fn)[0])), sizeof(char));
-          strcpy(filename, CHAR(STRING(fn)[0]));
-      }
-      //	else filename = DefaultFileName;
-      //begin new stuff
-      else {
-        // it would be nice to put the function name in the file name
-        filename = g_strdup("/tmp/R.XXXXXX");
-      }
-      //end new stuff
+    ed = CAR(CDDR(args));
+    if (!isString(ed))
+        error("editor type not valid\n");
+    editcmd = R_alloc(strlen(CHAR(STRING(ed)[0])) + strlen(filename) + 2, sizeof(char));
+    sprintf(editcmd, "%s %s", CHAR(STRING(ed)[0]), filename);
+    system(editcmd);
 
-      if (x != R_NilValue) {
-        //	        if((fp=R_fopen(filename, "w")) == NULL)
-              fd = mkstemp(filename);
-          if((fp = fdopen(fd, "w")) == NULL)
-                  errorcall(call, "unable to open file\n");
-
-              x = deparse1(x, 0);
-          for (i=0; i<LENGTH(x); i++)
-              fprintf(fp, "%s\n", CHAR(STRING(x)[i]));
-          fclose(fp);
-      }
-
-      ed = CAR(CDDR(args));
-      if (!isString(ed))
-          error("editor type not valid\n");
-      editcmd = R_alloc(strlen(CHAR(STRING(ed)[0]))+strlen(filename)+2, sizeof(char));
-      sprintf(editcmd, "%s %s", CHAR(STRING(ed)[0]), filename);
-
-      //begin new stuff
-
-      fork_pid = fork();
-
-      switch(fork_pid) {
-      case 0:
-        // in child
-        fork_pid = fork();
-        switch(fork_pid) {
-        case 0:
-          // in child
-
-          // close all fd's except std(in|out|err), so that xlib
-          // doesn't barf everywhere
-          open_max = sysconf(_SC_OPEN_MAX);
-          for(i = 3; i < open_max; i++)
-            close(i);
-
-          // setup argv
-          argv[0] = CHAR(STRING(ed)[0]);
-          argv[1] = filename;
-          argv[2] = NULL;
-
-          // run the editor
-          execvp(CHAR(STRING(ed)[0]), argv);
-
-          // if we get here, execvp failed
-          g_message("Could not start editor: execvp failed");
-          break;
-        case -1:
-          _exit(1);
-          break;
-        default:
-          // in parent
-          _exit(0);
-          break;
-        }
-        break;
-      case -1:
-        // error
-        break;
-      default:
-        // in parent
-        waitpid(fork_pid, &wait_status, 0);
-
-        edititem->filename = g_strdup(filename);
-        stat(filename, &sb);
-        edititem->filetime = sb.st_mtime;
-        R_gtk_editfiles = g_list_append(R_gtk_editfiles, edititem);
-        break;
-        }*/
-
-    // end new stuff
-
-    // old stuff
-    //	system(editcmd);
-
-    /*	if((fp=R_fopen(filename, "r")) == NULL)
-      errorcall(call, "unable to open file to read\n");
+    if ((fp = R_fopen(filename, "r")) == NULL)
+        errorcall(call, "unable to open file to read\n");
     R_ParseCnt = 0;
     x = R_ParseFile(fp, -1, &status);
     if (status != PARSE_OK)
-      errorcall(call, "An error occurred on line %d\n use a command like\n x <- vi()\n to recover\n", R_ParseError);
+        errorcall(call, "An error occurred on line %d\n use a command like\n x <- vi()\n to recover\n", R_ParseError);
     else
-    fclose(fp);
+        fclose(fp);
     R_ResetConsole();
     x = eval(x, R_GlobalEnv);
     if (TYPEOF(x) == CLOSXP && envir != R_NilValue)
-    CLOENV(x) = envir;*/
-    /*	UNPROTECT(1);
-      vmaxset(vmaxsave);
-      //	return (x);
-      return R_NilValue;*/
+        CLOENV(x) = envir;
+    UNPROTECT(1);
+    vmaxset(vmaxsave);
+    return (x);
 }
