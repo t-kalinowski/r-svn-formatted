@@ -252,7 +252,7 @@ static int accentAtom(SEXP expr)
 
 static int fractionAtom(SEXP expr)
 {
-    return symbolAtom(expr) && symbolMatch(expr, "over");
+    return symbolAtom(expr) && (symbolMatch(expr, "over") || symbolMatch(expr, "frac"));
 }
 
 static int groupAtom(SEXP expr)
