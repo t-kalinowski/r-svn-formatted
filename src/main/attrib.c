@@ -126,7 +126,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
         return installAttrib(vec, name, val);
 }
 
-SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
+static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
 {
     SEXP s, t;
 
@@ -157,7 +157,7 @@ SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
     return val;
 }
 
-SEXP removeAttrib(SEXP vec, SEXP name)
+static SEXP removeAttrib(SEXP vec, SEXP name)
 {
     SEXP t;
 
@@ -178,7 +178,7 @@ SEXP removeAttrib(SEXP vec, SEXP name)
     return R_NilValue;
 }
 
-void checkNames(SEXP x, SEXP s)
+static void checkNames(SEXP x, SEXP s)
 {
     if (isVector(x) || isList(x) || isLanguage(x))
     {

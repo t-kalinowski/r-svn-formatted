@@ -15,60 +15,41 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *  Modified by Heiner Schwarte to allow growth of vector heap
- *  Copyright (C) 1997, Heiner Schwarte
  */
 
 #include "Defn.h"
 
+/*      MEMORY MANAGEMENT
+ *
+ *	Separate areas are maintained for fixed and variable sized
+ *	objects.  The first of these is allocated as an array of
+ *	SEXPRECs and the second as an array of VECRECs.  The fixed
+ *	sized objects are assembled into a free list and cons cells
+ *	are allocated from it.  When the list is exhausted, a
+ *	mark-sweep garbarge collection takes place and the free list
+ *	is rebuilt.  Variable size objects are allocated in the VECREC
+ *	area.  During a garbage collection, these are compacted to the
+ *	beginning of the VECREC array.
+ *
+ *	The top end of the VECREC array is also used by R_alloc to
+ *	maintain a stack of non-relocatable memory blocks.  These are
+ *	used in calls to .Fortran and .C (and for other temporary
+ *	purposes).  They are freed using a stack discipline.
+ *
+ *	+---------------------------------------------------+
+ *	| allocated vectors |	free	| R-alloc'ed blocks |
+ *	+---------------------------------------------------+
+ *	                    ^           ^
+ *	                    |           |
+ *	                    R_VTop      R_VMax
+ *
+ *	If a piece of code R-allocs some blocks, it is required to
+ *	reset the R_VMax pointer back to its original value before it
+ *	exits.  This can be done with the functions getvmax and
+ *	setvmax.
+ */
+
 static int gc_reporting = 0;
-
-#define HS_NUMS 100
-VECREC *HS_Stacks[HS_NUMS];
-VECREC *HS_StackPtr;
-
-VECREC *HS_Heaps[HS_NUMS];
-VECREC *HS_HeapPtrs[HS_NUMS];
-int HS_HeapActive;
-
-static int HS_StackActive(VECREC *StackPtr)
-{
-    int i;
-    for (i = 0; HS_Stacks[i] != NULL; i++)
-        if (&HS_Stacks[i][0] <= HS_StackPtr && HS_StackPtr <= &HS_Stacks[i][R_VSize - 1])
-            return i;
-    return -1;
-}
-
-static void HS_expandStack()
-{
-    int i = 0;
-    while (HS_Stacks[i] != NULL)
-        i++;
-    HS_Stacks[i] = (VECREC *)malloc(R_VSize * sizeof(VECREC));
-    if (HS_Stacks[i] == NULL)
-        if (i == 0)
-            suicide("couldn't allocate memory for stack");
-        else
-            error(" couldn't expand stack");
-    return;
-}
-
-void HS_expandHeap()
-{
-    int i = 0;
-    while (HS_Heaps[i] != NULL)
-        i++;
-    HS_Heaps[i] = (VECREC *)malloc(R_VSize * sizeof(VECREC));
-    if (HS_Heaps[i] == NULL)
-        if (i == 0)
-            suicide("couldn't allocate memory for stack");
-        else
-            error(" couldn't expand heap");
-    HS_HeapPtrs[i] = &HS_Heaps[i][0];
-    return;
-}
 
 void installIntVector(SEXP, int, FILE *);
 
@@ -84,14 +65,43 @@ SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int reporting = gc_reporting;
-    gc();
     checkArity(op, args);
     gc_reporting = 1;
     gc();
-    gc_reporting = reporting;
+    gc_reporting = 0;
     return R_NilValue;
 }
+
+#ifdef Macintosh
+Handle gStackH;
+Handle gNHeapH;
+Handle gVHeapH;
+
+/*
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    CleanUpRMemory
+
+    This routine releases the memory that R has allocated.
+    This is only needed for the Mac because the memory
+    is in system memory so not naturally cleaned up at the
+    end of the application execution.
+
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+*/
+
+void CleanUpMemory(void)
+{
+    OSErr result;
+
+    if (gStackH != nil)
+        TempDisposeHandle(gStackH, &result);
+    if (gNHeapH != nil)
+        TempDisposeHandle(gNHeapH, &result);
+    if (gVHeapH != nil)
+        TempDisposeHandle(gVHeapH, &result);
+}
+
+#endif
 
 /*
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -110,28 +120,50 @@ void InitMemory()
 {
     int i;
 
+#ifdef Macintosh
+    OSErr result;
+
+    gStackH = TempNewHandle(R_PPStackSize * sizeof(SEXP), &result);
+    if ((gStackH == NULL) || (result != noErr))
+        suicide("couldn't allocate system memory for pointer stack");
+    TempHLock(gStackH, &result);
+    R_PPStack = (SEXP *)*gStackH;
+#else
     if (!(R_PPStack = (SEXP *)malloc(R_PPStackSize * sizeof(SEXP))))
         suicide("couldn't allocate memory for pointer stack");
+#endif
 
     R_PPStackTop = 0;
 
+#ifdef Macintosh
+    gNHeapH = TempNewHandle(R_NSize * sizeof(SEXPREC), &result);
+    if ((gNHeapH == NULL) || (result != noErr))
+        suicide("couldn't allocate system memory for node heap");
+    TempHLock(gNHeapH, &result);
+    R_NHeap = (SEXPREC *)*gNHeapH;
+#else
     if (!(R_NHeap = (SEXPREC *)malloc(R_NSize * sizeof(SEXPREC))))
         suicide("couldn't allocate memory for node heap");
+#endif
 
     R_VSize = (((R_VSize + 1) / sizeof(VECREC)));
 
-    for (i = 0; i < HS_NUMS; i++)
-        HS_Stacks[i] = NULL;
-    HS_expandStack();
-    HS_StackPtr = &HS_Stacks[0][0];
+#ifdef Macintosh
+    gVHeapH = TempNewHandle(R_VSize * sizeof(VECREC), &result);
+    if ((gVHeapH == NULL) || (result != noErr))
+        suicide("couldn't allocate system memory for vector heap");
+    TempHLock(gVHeapH, &result);
+    R_VHeap = (VECREC *)*gVHeapH;
+#else
+#ifdef DEBUGGING
+    printf("R_VSize = %d malloc-ed\n", R_VSize * sizeof(VECREC));
+#endif
+    if (!(R_VHeap = (VECREC *)malloc(R_VSize * sizeof(VECREC))))
+        suicide("couldn't allocate memory for vector heap");
+#endif
 
-    for (i = 0; i < HS_NUMS; i++)
-    {
-        HS_Heaps[i] = NULL;
-        HS_HeapPtrs[i] = NULL;
-    }
-    HS_expandHeap();
-    HS_HeapActive = 0;
+    R_VTop = &R_VHeap[0];
+    R_VMax = &R_VHeap[R_VSize - 1];
 
     for (i = 0; i < R_NSize - 1; i++)
         CDR(&R_NHeap[i]) = &R_NHeap[i + 1];
@@ -141,40 +173,31 @@ void InitMemory()
 
 char *vmaxget(void)
 {
-    return (char *)HS_StackPtr;
+    return (char *)R_VMax;
 }
 
 void vmaxset(char *ovmax)
 {
     if (ovmax)
-        HS_StackPtr = (VECREC *)ovmax;
+        R_VMax = (VECREC *)ovmax;
     else
-        HS_StackPtr = &HS_Stacks[0][0];
+        R_VMax = &R_VHeap[R_VSize - 1];
 }
 
 char *R_alloc(long nelem, int eltsize)
 {
-    int stacknum;
-    VECREC *res = HS_StackPtr;
     unsigned int size = INT2VEC(nelem * eltsize);
     if (size != 0)
     {
-        stacknum = HS_StackActive(HS_StackPtr);
-        if (&HS_Stacks[stacknum][R_VSize - 1] - HS_StackPtr < size)
+        if (R_VMax - R_VTop < size)
         {
-            if (HS_Stacks[stacknum + 1] == NULL)
-            {
-                HS_expandStack();
-            }
-            stacknum++;
-            HS_StackPtr = &HS_Stacks[stacknum][0];
-            if (&HS_Stacks[stacknum][R_VSize - 1] - HS_StackPtr < size)
-                error("memory exhausted in R_alloc");
-            res = HS_StackPtr;
+            gc();
+            if (R_VMax - R_VTop < size)
+                error("memory exhausted\n");
         }
-        HS_StackPtr += size;
+        R_VMax -= size;
     }
-    return (char *)res;
+    return (char *)R_VMax;
 }
 
 /* S COMPATIBILITY */
@@ -248,21 +271,13 @@ SEXP allocString(int length)
     size = 1 + BYTE2VEC(length + 1);
 
     /* we need to do the gc here so allocSExp doesn't! */
-
-    if (R_FreeSEXP == NULL || &HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
+    if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
         gc();
-        if (R_FreeSEXP == NULL)
+        if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
             error("memory exhausted\n");
-        if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-        {
-            if (HS_Heaps[HS_HeapActive + 1] == NULL)
-                HS_expandHeap();
-            HS_HeapActive++;
-        }
-        if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-            error("could not allocate memory 1: size %d", size);
     }
+
 #ifdef oldmem
     s = R_FreeSEXP;
     R_FreeSEXP = CDR(s);
@@ -274,10 +289,10 @@ SEXP allocString(int length)
 #else
     s = allocSExp(CHARSXP);
 #endif
-    CHAR(s) = (char *)(HS_HeapPtrs[HS_HeapActive] + 1);
+    CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
-    BACKPOINTER(*HS_HeapPtrs[HS_HeapActive]) = s;
-    HS_HeapPtrs[HS_HeapActive] += size;
+    BACKPOINTER(*R_VTop) = s;
+    R_VTop += size;
     return s;
 }
 
@@ -338,20 +353,11 @@ SEXP allocVector(SEXPTYPE type, int length)
     }
 
     /* we need to do the gc here so allocSExp doesn't! */
-
-    if (R_FreeSEXP == NULL || &HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
+    if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
         gc();
-        if (R_FreeSEXP == NULL)
+        if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
             error("memory exhausted\n");
-        if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-        {
-            if (HS_Heaps[HS_HeapActive + 1] == NULL)
-                HS_expandHeap();
-            HS_HeapActive++;
-        }
-        if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-            error("could not allocate memory 2 size: %d", size);
     }
 
 #ifdef oldmem
@@ -367,9 +373,9 @@ SEXP allocVector(SEXPTYPE type, int length)
     ATTRIB(s) = R_NilValue;
     if (size > 0)
     {
-        CHAR(s) = (char *)(HS_HeapPtrs[HS_HeapActive] + 1);
-        BACKPOINTER(*HS_HeapPtrs[HS_HeapActive]) = s;
-        HS_HeapPtrs[HS_HeapActive] += size;
+        CHAR(s) = (char *)(R_VTop + 1);
+        BACKPOINTER(*R_VTop) = s;
+        R_VTop += size;
     }
     else
         CHAR(s) = (char *)0;
@@ -405,9 +411,7 @@ SEXP allocList(int n)
 
 void gc(void)
 {
-    int heapchunks;
-    int i;
-    int freecells;
+    int vcells, vfrac;
     if (gc_reporting)
         REprintf("Garbage collection ...");
     unmarkPhase();
@@ -417,13 +421,9 @@ void gc(void)
     if (gc_reporting)
     {
         REprintf("\n%ld cons cells free (%ld%%)\n", R_Collected, (100 * R_Collected / R_NSize));
-        heapchunks = 0;
-        for (i = 0; HS_Heaps[i] != NULL; i++)
-            heapchunks++;
-        freecells = &HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive];
-        freecells = freecells + R_VSize * (heapchunks - 1 - HS_HeapActive);
-        REprintf("%ldk bytes of heap free (%ld%%)\n", freecells * sizeof(VECREC) / 1024,
-                 (100 * freecells) / (heapchunks * R_VSize));
+        vcells = R_VSize - (R_VTop - R_VHeap);
+        vfrac = 100 * vcells / R_VSize;
+        REprintf("%ldk bytes of heap free (%ld%%)\n", vcells * sizeof(VECREC) / 1024, vfrac);
     }
 }
 
@@ -517,71 +517,57 @@ void compactPhase(void)
     VECREC *vto, *vfrom;
     SEXP s;
     int i, size;
-    int chunkfrom;
-    int chunkto = 0;
 
-    vto = &HS_Heaps[0][0];
-    for (chunkfrom = 0; chunkfrom <= HS_HeapActive; chunkfrom++)
+    vto = vfrom = R_VHeap;
+
+    while (vfrom < R_VTop)
     {
-        vfrom = &HS_Heaps[chunkfrom][0];
-        while (vfrom < HS_HeapPtrs[chunkfrom])
-        {
-            s = BACKPOINTER(*vfrom);
-            switch (TYPEOF(s))
-            { /* get size in bytes */
-            case CHARSXP:
-                size = LENGTH(s) + 1;
-                break;
-            case LGLSXP:
-            case FACTSXP:
-            case ORDSXP:
-            case INTSXP:
-                size = LENGTH(s) * sizeof(int);
-                break;
-            case REALSXP:
-                size = LENGTH(s) * sizeof(double);
-                break;
+        s = BACKPOINTER(*vfrom);
+        switch (TYPEOF(s))
+        { /* get size in bytes */
+        case CHARSXP:
+            size = LENGTH(s) + 1;
+            break;
+        case LGLSXP:
+        case FACTSXP:
+        case ORDSXP:
+        case INTSXP:
+            size = LENGTH(s) * sizeof(int);
+            break;
+        case REALSXP:
+            size = LENGTH(s) * sizeof(double);
+            break;
 #ifdef COMPLEX_DATA
-            case CPLXSXP:
-                size = LENGTH(s) * sizeof(complex);
-                break;
+        case CPLXSXP:
+            size = LENGTH(s) * sizeof(complex);
+            break;
 #endif
-            case STRSXP:
-            case EXPRSXP:
-            case VECSXP:
-                size = LENGTH(s) * sizeof(SEXP);
-                break;
-            default:
-                abort();
-            }
-            size = 1 + BYTE2VEC(size);
-            if (MARK(s))
+        case STRSXP:
+        case EXPRSXP:
+        case VECSXP:
+            size = LENGTH(s) * sizeof(SEXP);
+            break;
+        default:
+            abort();
+        }
+        size = 1 + BYTE2VEC(size);
+        if (MARK(s))
+        {
+            if (vfrom != vto)
             {
-                if (vfrom != vto)
-                {
-                    if (vto + size > &HS_Heaps[chunkto][R_VSize - 1])
-                    {
-                        HS_HeapPtrs[chunkto] = vto;
-                        chunkto++;
-                        vto = &HS_Heaps[chunkto][0];
-                    }
-                    for (i = 0; i < size; i++)
-                        vto[i] = vfrom[i];
-                }
-                CHAR(BACKPOINTER(*vto)) = (char *)(vto + 1);
-                vto += size;
-                vfrom += size;
+                for (i = 0; i < size; i++)
+                    vto[i] = vfrom[i];
             }
-            else
-            {
-                vfrom += size;
-            }
+            CHAR(BACKPOINTER(*vto)) = (char *)(vto + 1);
+            vto += size;
+            vfrom += size;
+        }
+        else
+        {
+            vfrom += size;
         }
     }
-    HS_HeapPtrs[chunkto] = vto;
-    HS_HeapActive = chunkto;
-    for (i = HS_HeapActive + 1; HS_Heaps[i] != NULL; i++)
-        HS_HeapPtrs[i] = &HS_Heaps[i][0];
+    R_VTop = vto;
 }
 
 /* scanPhase - reconstruct free list from cells not marked */

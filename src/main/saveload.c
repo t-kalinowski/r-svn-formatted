@@ -15,24 +15,11 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- *  Modified by Heiner Schwarte to allow growth of vector heap
- *  Copyright (C) 1997, Heiner Schwarte
  */
 
 #include "Defn.h"
 #include "Mathlib.h"
 #include "Fileio.h"
-
-extern VECREC *HS_Stacks[];
-extern VECREC *HS_StackPtr;
-
-extern VECREC *HS_Heaps[];
-extern VECREC *HS_HeapPtrs[];
-extern int HS_HeapActive;
-
-extern void HS_expandHeap();
 
 /* Static Globals */
 
@@ -456,7 +443,6 @@ static SEXP XdrLoad(FILE *fp)
     InTerm = XdrInTerm;
     return DataLoad(fp);
 }
-
 #endif
 
 /*************************************/
@@ -632,20 +618,15 @@ static void ReallocVector(SEXP s, int length)
     default:
         error("invalid type in ReallocVector\n");
     }
-    if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-    {
-        if (HS_Heaps[HS_HeapActive + 1] == NULL)
-            HS_expandHeap();
-        HS_HeapActive++;
-    }
-    if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-        error("could not allocate memory 3");
+    if (R_VMax - R_VTop < size)
+        error("restore memory exhausted (should not happen)\n");
+
     LENGTH(s) = length;
     if (size > 0)
     {
-        CHAR(s) = (char *)(HS_HeapPtrs[HS_HeapActive] + 1);
-        BACKPOINTER(*HS_HeapPtrs[HS_HeapActive]) = s;
-        HS_HeapPtrs[HS_HeapActive] += size;
+        CHAR(s) = (char *)(R_VTop + 1);
+        BACKPOINTER(*R_VTop) = s;
+        R_VTop += size;
     }
     else
         CHAR(s) = (char *)0;
@@ -654,23 +635,17 @@ static void ReallocVector(SEXP s, int length)
 static void ReallocString(SEXP s, int length)
 {
     long size = 1 + BYTE2VEC(length + 1);
-    if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-    {
-        if (HS_Heaps[HS_HeapActive + 1] == NULL)
-            HS_expandHeap();
-        HS_HeapActive++;
-    }
-    if (&HS_Heaps[HS_HeapActive][R_VSize - 1] - HS_HeapPtrs[HS_HeapActive] < size)
-        error("could not allocate memory 4");
+    if (R_VMax - R_VTop < size)
+        error("restore memory exhausted (should not happen)\n");
     if (TYPEOF(s) != CHARSXP)
         error("ReallocString: type conflict\n");
-    CHAR(s) = (char *)(HS_HeapPtrs[HS_HeapActive] + 1);
+    CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
     TAG(s) = R_NilValue;
     NAMED(s) = 0;
     ATTRIB(s) = R_NilValue;
-    BACKPOINTER(*HS_HeapPtrs[HS_HeapActive]) = s;
-    HS_HeapPtrs[HS_HeapActive] += size;
+    BACKPOINTER(*R_VTop) = s;
+    R_VTop += size;
 }
 
 static void MarkSave(SEXP s)
@@ -1112,8 +1087,8 @@ static SEXP DataLoad(FILE *fp)
     /* a gc after this point will be a disaster */
     /* because nothing will have been protected */
 
-    /*   if ((VECREC *)vmaxget() - R_VTop < NVSize) */
-    /*     error("vector heap is too small to restore data\n"); */
+    if ((VECREC *)vmaxget() - R_VTop < NVSize)
+        error("vector heap is too small to restore data\n");
 
     if (R_Collected < NSave)
         error("cons heap is too small to restore data\n");
