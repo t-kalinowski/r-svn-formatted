@@ -69,6 +69,8 @@ void R_RunExitFinalizers(void); /* in memory.c */
 extern SA_TYPE SaveAction;
 extern SA_TYPE RestoreAction;
 
+void GraphicCopy(WindowPtr window);
+
 /* Items for the Edit menu */
 #define kRCmdEditObject 'edbj'
 /* Items for the Tools menu */
@@ -1274,7 +1276,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
     FSSpec tempfss;
     char buf[300], cmd[2500];
     WindowRef window = NULL;
-    int len;
+    int len, devnum;
     TXNObject tmpObj;
     NavUserAction userAction;
 
@@ -1364,20 +1366,26 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                         TXNCopy(RConsoleOutObject);
                     else if (!TXNIsSelectionEmpty(RConsoleInObject))
                         TXNCopy(RConsoleInObject);
+                    break;
                 }
-                else
+
+                if (GetWindowProperty(window, 'REDT', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
                 {
-                    if (GetWindowProperty(window, 'REDT', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
-                    {
-                        if (!TXNIsSelectionEmpty(tmpObj))
-                            TXNCopy(tmpObj);
-                    }
-                    else if (GetWindowProperty(window, 'RHLP', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
-                    {
-                        if (!TXNIsSelectionEmpty(tmpObj))
-                            TXNCopy(tmpObj);
-                    }
+                    if (!TXNIsSelectionEmpty(tmpObj))
+                        TXNCopy(tmpObj);
+                    break;
                 }
+
+                if (GetWindowProperty(window, 'RHLP', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
+                {
+                    if (!TXNIsSelectionEmpty(tmpObj))
+                        TXNCopy(tmpObj);
+                    break;
+                }
+
+                if (GetWindowProperty(window, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) == noErr)
+                    GraphicCopy(window);
+
                 break;
 
             case kHICommandCut:
@@ -1658,6 +1666,25 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
     return err;
 }
 
+CGContextRef CreatePDFContext(const CGRect *inMediaBox, CFURLRef url);
+CGContextRef CreatePDFContext(const CGRect *inMediaBox, CFURLRef url)
+{
+    CGContextRef outContext = NULL;
+    CGDataConsumerRef dataConsumer;
+
+    dataConsumer = CGDataConsumerCreateWithURL(url);
+    if (dataConsumer != NULL)
+    {
+        outContext = CGPDFContextCreate(dataConsumer, inMediaBox, NULL);
+        CGDataConsumerRelease(dataConsumer);
+    }
+    return outContext;
+}
+
+#define kSavingConsoleWin 1
+#define kSavingEditWin 2
+#define kSavingQuartzWin 3
+
 OSStatus SaveWindow(WindowRef window, Boolean ForceNewFName)
 {
     OSStatus err = noErr;
@@ -1670,12 +1697,20 @@ OSStatus SaveWindow(WindowRef window, Boolean ForceNewFName)
     Handle DataHandle;
     FILE *fp;
     ItemCount changes;
-
+    int SavingWhat = -1;
+    int devnum;
+    NewDevDesc *dd;
+    CGDataConsumerRef ConsData;
+    CFURLRef saveURL;
+    FSRef fsRef;
+    Rect rect;
+    CGRect mediaBox;
     if (window == NULL)
         return (-1);
 
     if (window == ConsoleWindow)
     {
+        SavingWhat = kSavingConsoleWin;
         if (GetWindowProperty(window, 'RCON', 'fssp', sizeof(FSSpec), NULL, &tempfss) != noErr)
         {
             ForceNewFName = true;
@@ -1683,45 +1718,95 @@ OSStatus SaveWindow(WindowRef window, Boolean ForceNewFName)
         }
         if (ForceNewFName)
             err = SelectFile(&tempfss, "Choose Where to Save File", true, ForceNewFName);
+        goto step2;
     }
-    else
+
+    if (GetWindowProperty(window, 'REDT', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
     {
-        if (GetWindowProperty(window, 'REDT', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
+        SavingWhat = kSavingEditWin;
+        if ((err = GetWindowProperty(window, 'REDT', 'fssp', sizeof(FSSpec), NULL, &tempfss)) != noErr)
         {
-            if ((err = GetWindowProperty(window, 'REDT', 'fssp', sizeof(FSSpec), NULL, &tempfss)) != noErr)
-            {
-                ForceNewFName = true;
-                GetWTitle(window, tempfss.name);
-            }
-
-            if (ForceNewFName)
-                err = SelectFile(&tempfss, "Choose Where to Save File", true, ForceNewFName);
+            ForceNewFName = true;
+            GetWTitle(window, tempfss.name);
         }
-        else
-            err = -1;
+
+        if (ForceNewFName)
+            err = SelectFile(&tempfss, "Choose Where to Save File", true, ForceNewFName);
+        goto step2;
     }
 
+    if (GetWindowProperty(window, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) == noErr)
+    {
+        SavingWhat = kSavingQuartzWin;
+        ForceNewFName = true;
+        CopyCStringToPascal("RQuartzPlot.pdf", tempfss.name);
+        if (ForceNewFName)
+            err = SelectFile(&tempfss, "Choose Where to Save PDF File", true, ForceNewFName);
+        goto step2;
+    }
+
+    err = -1; /* Don't know what to save */
+
+step2:
     if (err != noErr)
         return err;
 
     err = FSMakePath(tempfss.vRefNum, tempfss.parID, tempfss.name, filename, 300);
 
-    if (window == ConsoleWindow)
+    if (SavingWhat == kSavingConsoleWin)
     {
-        txtlen = TXNDataSize(RConsoleOutObject) / 2;
-        err = TXNGetDataEncoded(RConsoleOutObject, 0, txtlen, &DataHandle, kTXNTextData);
+        if (window == ConsoleWindow)
+        {
+            txtlen = TXNDataSize(RConsoleOutObject) / 2;
+            err = TXNGetDataEncoded(RConsoleOutObject, 0, txtlen, &DataHandle, kTXNTextData);
+        }
+        goto step3;
     }
-    else
+
+    if (SavingWhat == kSavingEditWin)
     {
         if (GetWindowProperty(window, 'REDT', 'robj', sizeof(TXNObject), NULL, &tmpObj) == noErr)
         {
             txtlen = TXNDataSize(tmpObj) / 2;
             err = TXNGetDataEncoded(tmpObj, 0, txtlen, &DataHandle, kTXNTextData);
         }
-        else
-            err = -1;
+        goto step3;
     }
 
+    if (SavingWhat == kSavingQuartzWin)
+    {
+        if ((err = FSpMakeFSRef(&tempfss, &fsRef)) != noErr)
+            goto step3;
+        if ((saveURL = CFURLCreateFromFSRef(NULL, &fsRef)) == NULL)
+        {
+            err = -1;
+            goto step3;
+        }
+
+        if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
+        {
+            QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+            mediaBox = CGRectMake(0, 0, xd->windowWidth, xd->windowHeight);
+            if ((xd->auxcontext = CreatePDFContext(&mediaBox, saveURL)) == NULL)
+            {
+                err = -1;
+                goto step3;
+            }
+
+            xd->where = kOnFilePDF;
+            CGContextBeginPage(xd->auxcontext, &mediaBox);
+            CGContextTranslateCTM(xd->auxcontext, 0, xd->windowHeight);
+            CGContextScaleCTM(xd->auxcontext, 1, -1);
+            GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
+            CGContextEndPage(xd->auxcontext);
+            if (xd->auxcontext != NULL)
+                CGContextRelease(xd->auxcontext);
+            xd->where = kOnScreen;
+            return (noErr);
+        }
+    }
+
+step3:
     if (err != noErr)
         return err;
 
@@ -1774,6 +1859,61 @@ nomem:
         err = SetWindowProperty(window, 'REDT', 'chgs', sizeof(ItemCount), &changes);
         return err;
     }
+}
+
+void GraphicCopy(WindowPtr window)
+{
+    Size dataLength;
+    SInt32 errorCode;
+    SInt16 WinIndex;
+    NewDevDesc *dd;
+    PicHandle picHandle = nil;
+    ScrapRef scrap;
+    Rect tempRect1;
+    Rect resizeRect;
+    CGrafPtr savePort, tempPort;
+    RGBColor oldColor, newColor;
+
+    GetPort(&savePort);
+
+    GetPortBounds(GetWindowPort(window), &tempRect1);
+
+    SetPortWindowPort(window);
+
+    GetForeColor(&oldColor);
+    GetCPixel(tempRect1.right - 16, tempRect1.bottom - 16, &newColor);
+
+    tempPort = CreateNewPort();
+
+    SetPort(tempPort);
+
+    picHandle = OpenPicture(&tempRect1);
+
+    CopyBits(GetPortBitMapForCopyBits(GetWindowPort(window)), GetPortBitMapForCopyBits(tempPort), &tempRect1,
+             &tempRect1, srcCopy, 0L);
+
+    SetRect(&resizeRect, tempRect1.right - 15, tempRect1.bottom - 15, tempRect1.right, tempRect1.bottom);
+
+    RGBForeColor(&newColor);
+    PaintRect(&resizeRect);
+    RGBForeColor(&oldColor);
+
+    ClosePicture();
+
+    DisposePort(tempPort);
+
+    if (ClearCurrentScrap() == noErr)
+    {
+        dataLength = GetHandleSize((Handle)picHandle);
+        HLock((Handle)picHandle);
+        errorCode = GetCurrentScrap(&scrap);
+        errorCode = PutScrapFlavor(scrap, 'PICT', 0, GetHandleSize((Handle)picHandle), *picHandle);
+        HUnlock((Handle)picHandle);
+    }
+
+    KillPicture(picHandle);
+
+    SetPort(savePort);
 }
 
 ControlID RGUISep = {kRGUI, kRGUISep};
