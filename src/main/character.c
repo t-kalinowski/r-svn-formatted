@@ -994,8 +994,16 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
 
-    if (!isString(pat) || length(pat) < 1 || !isString(vec))
+    if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
+    if (!isString(pat))
+        PROTECT(pat = coerceVector(pat, STRSXP));
+    else
+        PROTECT(pat);
+    if (!isString(vec))
+        PROTECT(vec = coerceVector(vec, STRSXP));
+    else
+        PROTECT(vec);
 
 #ifdef SUPPORT_MBCS
     if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(pat, 0))))
@@ -1081,7 +1089,7 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             if (LOGICAL(ind)[i])
                 INTEGER(ans)[j++] = i + 1;
     }
-    UNPROTECT(1);
+    UNPROTECT(3);
     return ans;
 }
 
