@@ -36,8 +36,6 @@
 #include "Runix.h"
 #include "Startup.h"
 
-#include "Runix.h"
-
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/readline.h>
