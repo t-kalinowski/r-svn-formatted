@@ -527,7 +527,7 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP xlim, ylim, log;
+    SEXP xlim, ylim, logarg;
     double asp, xmin, xmax, ymin, ymax;
     Rboolean logscale;
     char *p;
@@ -548,10 +548,10 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     logscale = FALSE;
-    log = CAR(args);
-    if (!isString(log))
+    logarg = CAR(args);
+    if (!isString(logarg))
         errorcall(call, "\"log=\" specification must be character");
-    p = CHAR(STRING_ELT(log, 0));
+    p = CHAR(STRING_ELT(logarg, 0));
     while (*p)
     {
         switch (*p)
@@ -731,7 +731,7 @@ SEXP labelformat(SEXP labels)
     return ans;
 }
 
-SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean log)
+SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
 {
     /*	Create an  'at = ...' vector for  axis(.) / do_axis,
      *	i.e., the vector of tick mark locations,
@@ -744,7 +744,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean log)
     SEXP at = R_NilValue; /* -Wall*/
     double umin, umax, dn, rng, small;
     int i, n, ne;
-    if (!log || axp[2] < 0)
+    if (!logflag || axp[2] < 0)
     {                            /* ---- linear axis ---- Only use	axp[]  arg. */
         n = fabs(axp[2]) + 0.25; /* >= 0 */
         dn = imax2(1, n);
@@ -932,7 +932,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 
     side = asInteger(CAR(args));
     if (side < 1 || side > 4)
-        errorcall(call, "invalid axis number");
+        errorcall(call, "invalid axis number %d", side);
     args = CDR(args);
 
     /* Required argument: "at" */
@@ -1068,7 +1068,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (!isExpression(lab))
             lab = labelformat(lab);
         if (length(at) != length(lab))
-            errorcall(call, "location and label lengths differ");
+            errorcall(call, "location and label lengths differ, %d != %d", length(at), length(lab));
     }
     PROTECT(lab);
 
