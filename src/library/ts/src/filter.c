@@ -18,7 +18,12 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include "Arith.h"
+#include "Memory.h"
 #include <math.h>
 
 #ifndef min
@@ -55,11 +60,10 @@ void filter1(double *x, int *n, double *filter, int *nfilt, int *sides, int *cir
                 else
                 {
                     out[i] = NA_REAL;
-                    goto bad;
+                    continue;
                 }
             }
             out[i] = z;
-        bad:
         }
     }
     else
@@ -80,11 +84,10 @@ void filter1(double *x, int *n, double *filter, int *nfilt, int *sides, int *cir
                 else
                 {
                     out[i] = NA_REAL;
-                    goto bad2;
+                    continue;
                 }
             }
             out[i] = z;
-        bad2:
         }
     }
 }
@@ -105,18 +108,19 @@ void filter2(double *x, int *n, double *filter, int *nfilt, double *out)
             else
             {
                 out[i] = NA_REAL;
-                goto bad3;
+                continue;
             }
         }
         out[nf + i] = sum;
-    bad3:
     }
 }
 
 void acf(double *x, int *n, int *nser, int *nlag, int *correlation, double *acf)
 {
     int i, u, v, lag, nl = *nlag, nn = *n, ns = *nser, d1 = nl + 1, d2 = ns * d1;
-    double sum, se[nn];
+    double sum, *se;
+
+    se = (double *)R_alloc(nn, sizeof(double));
 
     for (u = 0; u < ns; u++)
         for (v = 0; v < ns; v++)
