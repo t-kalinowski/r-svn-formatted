@@ -2385,6 +2385,7 @@ static BBOX RenderRadical(SEXP expr, int draw)
     SetPrimeStyle(style);
     orderBBox = CombineBBoxes(orderBBox, RenderElement(body, draw));
     orderBBox = CombineBBoxes(orderBBox, RenderGap(2 * radTrail, draw));
+    orderBBox = EnlargeBBox(orderBBox, radGap, 0, 0); /* << fixes PR#1101 */
     SetStyle(style);
     return orderBBox;
 }
