@@ -79,14 +79,14 @@ SEXP viewportLayout(SEXP vp)
     return VECTOR_ELT(vp, VP_LAYOUT);
 }
 
-int viewportHJust(SEXP vp)
+double viewportHJust(SEXP vp)
 {
-    return INTEGER(VECTOR_ELT(vp, VP_VALIDJUST))[0];
+    return REAL(VECTOR_ELT(vp, VP_VALIDJUST))[0];
 }
 
-int viewportVJust(SEXP vp)
+double viewportVJust(SEXP vp)
 {
-    return INTEGER(VECTOR_ELT(vp, VP_VALIDJUST))[1];
+    return REAL(VECTOR_ELT(vp, VP_VALIDJUST))[1];
 }
 
 SEXP viewportLayoutPosRow(SEXP vp)

@@ -54,14 +54,14 @@ int *layoutRespectMat(SEXP l)
     return INTEGER(VECTOR_ELT(l, LAYOUT_MRESPECT));
 }
 
-int layoutHJust(SEXP l)
+double layoutHJust(SEXP l)
 {
-    return INTEGER(VECTOR_ELT(l, LAYOUT_VJUST))[0];
+    return REAL(VECTOR_ELT(l, LAYOUT_VJUST))[0];
 }
 
-int layoutVJust(SEXP l)
+double layoutVJust(SEXP l)
 {
-    return INTEGER(VECTOR_ELT(l, LAYOUT_VJUST))[1];
+    return REAL(VECTOR_ELT(l, LAYOUT_VJUST))[1];
 }
 
 Rboolean relativeUnit(SEXP unit, int index, GEDevDesc *dd)
@@ -366,35 +366,42 @@ static double sumDims(double dims[], int from, int to)
 static void subRegion(SEXP layout, int minrow, int maxrow, int mincol, int maxcol, double widths[], double heights[],
                       double *left, double *bottom, double *width, double *height)
 {
+    double hjust = layoutHJust(layout);
+    double vjust = layoutVJust(layout);
     double totalWidth = sumDims(widths, 0, layoutNCol(layout) - 1);
     double totalHeight = sumDims(heights, 0, layoutNRow(layout) - 1);
     *width = sumDims(widths, mincol, maxcol);
     *height = sumDims(heights, minrow, maxrow);
-    switch (layoutHJust(layout))
-    {
+    *left = hjust - totalWidth * hjust + sumDims(widths, 0, mincol - 1);
+    *bottom = vjust + (1 - vjust) * totalHeight - sumDims(heights, 0, maxrow);
+    /*
+     * From when hjust and vjust were enums
+     *
+    switch (layoutHJust(layout)) {
     case L_LEFT:
-        *left = sumDims(widths, 0, mincol - 1);
-        break;
+    *left = sumDims(widths, 0, mincol - 1);
+    break;
     case L_RIGHT:
-        *left = 1 - sumDims(widths, mincol, layoutNCol(layout) - 1);
-        break;
+    *left = 1 - sumDims(widths, mincol, layoutNCol(layout) - 1);
+    break;
     case L_CENTRE:
     case L_CENTER:
-        *left = (0.5 - totalWidth / 2) + sumDims(widths, 0, mincol - 1);
-        break;
+    *left = (0.5 - totalWidth/2) + sumDims(widths, 0, mincol - 1);
+    break;
     }
-    switch (layoutVJust(layout))
-    {
+    switch (layoutVJust(layout)) {
     case L_BOTTOM:
-        *bottom = totalHeight - sumDims(heights, 0, maxrow);
-        break;
+    *bottom = totalHeight - sumDims(heights, 0, maxrow);
+    break;
     case L_TOP:
-        *bottom = 1 - sumDims(heights, 0, maxrow);
-        break;
+    *bottom = 1 - sumDims(heights, 0, maxrow);
+    break;
     case L_CENTRE:
     case L_CENTER:
-        *bottom = (0.5 - totalHeight / 2) + totalHeight - sumDims(heights, 0, maxrow);
+    *bottom = (0.5 - totalHeight/2) + totalHeight
+        - sumDims(heights, 0, maxrow);
     }
+    */
 }
 
 void calcViewportLayout(SEXP viewport, double parentWidthCM, double parentHeightCM, LViewportContext parentContext,
@@ -493,8 +500,8 @@ void calcViewportLocationFromLayout(SEXP layoutPosRow, SEXP layoutPosCol, SEXP p
     vpl->width = vpwidth;
     PROTECT(vpheight = unit(height, L_NPC));
     vpl->height = vpheight;
-    vpl->hjust = L_LEFT;
-    vpl->vjust = L_BOTTOM;
+    vpl->hjust = 0;
+    vpl->vjust = 0;
     /* Question:  Is there any chance that these newly-allocated
      * unit SEXPs will get corrupted after this unprotect ??
      */
