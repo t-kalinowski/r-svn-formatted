@@ -89,7 +89,8 @@ static void de_paste(control c);
 static void de_delete(control c);
 static menuitem de_mvw;
 
-static SEXP inputlist; /* each element is a vector for that row */
+static SEXP work, names, lens;
+static PROTECT_INDEX wpi, npi, lpi;
 static SEXP ssNA_STRING;
 static double ssNA_REAL;
 
@@ -128,13 +129,13 @@ static char *bufp;
 static int bwidth; /* width of the border */
 static int hwidth; /* width of header  */
 static int text_xoffset, text_yoffset;
-static int CellModified;
-static int CellEditable;
 static field celledit;
-static int newcol;
+static Rboolean newcol, CellModified, CellEditable;
 static int xmaxused, ymaxused;
 static int oldWIDTH = 0, oldHEIGHT = 0;
 static int nboxchars = 0;
+static int labdigs = 4;
+static char labform[6];
 static int xScrollbarScale = 1, yScrollbarScale = 1;
 
 #include <windows.h> /* for Sleep */
@@ -154,20 +155,38 @@ static void de_closewin_cend(void *data)
     de_closewin();
 }
 
+/*
+  Underlying assumptions (for this version R >= 1.8.0)
+
+  The data are stored in a list `work', with unused columns having
+  NULL entries.  The names for the list are in `names', which should
+  have a name for all displayable columns (up to xmaxused).
+  The *used* lengths of the columns are in `lens': this needs only be
+  set for non-NULL columns.
+
+  If the list was originally length(0), that should work with
+  0 pre-defined rows.  (It used to have 1 pre-defined numeric column.)
+
+  All row and col numbers are 1-based.
+
+  BDR May 2003
+ */
+
 SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP tvec2, tvec, colmodes, indata;
+    SEXP colmodes, tnames, tvec, tvec2, work2;
     SEXPTYPE type;
-    int i, j, len, nprotect, tmp;
+    int i, j, cnt, len, nprotect;
     RCNTXT cntxt;
+    char clab[25];
 
     nprotect = 0; /* count the PROTECT()s */
-    PROTECT(indata = VectorToPairList(CAR(args)));
+    PROTECT_WITH_INDEX(work = duplicate(CAR(args)), &wpi);
     nprotect++;
-    PROTECT(colmodes = VectorToPairList(CADR(args)));
-    nprotect++;
+    colmodes = CADR(args);
+    tnames = getAttrib(work, R_NamesSymbol);
 
-    if (!isList(indata) || !isList(colmodes))
+    if (TYPEOF(work) != VECSXP || TYPEOF(colmodes) != VECSXP)
         errorcall(call, "invalid argument");
 
     /* initialize the constants */
@@ -190,55 +209,47 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     bwidth = 0;
     hwidth = 5;
 
-    /* setup inputlist  */
+    /* setup work, names, lens  */
+    xmaxused = length(work);
+    ymaxused = 0;
+    PROTECT_WITH_INDEX(lens = allocVector(INTSXP, xmaxused), &lpi);
+    nprotect++;
 
-    if (indata != R_NilValue)
+    if (isNull(tnames))
     {
-        xmaxused = 0;
-        ymaxused = 0;
-        PROTECT(inputlist = duplicate(indata));
-        nprotect++;
-        for (tvec = inputlist, tvec2 = colmodes; tvec != R_NilValue; tvec = CDR(tvec), tvec2 = CDR(tvec2))
+        PROTECT_WITH_INDEX(names = allocVector(STRSXP, xmaxused), &npi);
+        for (i = 0; i < xmaxused; i++)
         {
-            type = TYPEOF(CAR(tvec));
-            xmaxused++;
-            if (CAR(tvec2) != R_NilValue)
-                type = str2type(CHAR(STRING_ELT(CAR(tvec2), 0)));
-            if (type != STRSXP)
-                type = REALSXP;
-            if (CAR(tvec) == R_NilValue)
-            {
-                if (type == NILSXP)
-                    type = REALSXP;
-                SETCAR(tvec, ssNewVector(type, 100));
-                SET_TAG(tvec, install("var1"));
-                SETLEVELS(CAR(tvec), 0);
-            }
-            else if (!isVector(CAR(tvec)))
-                errorcall(call, "invalid type for value");
-            else
-            {
-                int len = LENGTH(CAR(tvec));
-                if (TYPEOF(CAR(tvec)) != type)
-                    SETCAR(tvec, coerceVector(CAR(tvec), type));
-                if (len > 65535)
-                    error("data editor column limit is length 65535");
-                tmp = SETLEVELS(CAR(tvec), len);
-                ymaxused = max(tmp, ymaxused);
-            }
+            sprintf(clab, "var%d", i);
+            SET_STRING_ELT(names, i, mkChar(clab));
         }
     }
-    else if (colmodes == R_NilValue)
-    {
-        PROTECT(inputlist = allocList(1));
-        nprotect++;
-        SETCAR(inputlist, ssNewVector(REALSXP, 100));
-        SET_TAG(inputlist, install("var1"));
-        SETLEVELS(CAR(inputlist), 0);
-    }
     else
+        PROTECT_WITH_INDEX(names = duplicate(tnames), &npi);
+    nprotect++;
+    for (i = 0; i < xmaxused; i++)
     {
-        errorcall(call, "invalid parameter(s) ");
+        int len = LENGTH(VECTOR_ELT(work, i));
+        INTEGER(lens)[i] = len;
+        ymaxused = max(len, ymaxused);
+        type = TYPEOF(VECTOR_ELT(work, i));
+        if (!isNull(VECTOR_ELT(colmodes, i)))
+            type = str2type(CHAR(STRING_ELT(VECTOR_ELT(colmodes, i), 0)));
+        if (type != STRSXP)
+            type = REALSXP;
+        if (isNull(VECTOR_ELT(work, i)))
+        {
+            if (type == NILSXP)
+                type = REALSXP;
+            SET_VECTOR_ELT(work, i, ssNewVector(type, 100));
+        }
+        else if (!isVector(VECTOR_ELT(work, i)))
+            errorcall(call, "invalid type for value");
+        else
+        {
+            if (TYPEOF(VECTOR_ELT(work, i)) != type)
+                SET_VECTOR_ELT(work, i, coerceVector(VECTOR_ELT(work, i), type));
+        }
     }
 
     /* scale scrollbars as needed */
@@ -263,52 +274,61 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     endcontext(&cntxt);
 
     /* drop out unused columns */
-    i = 0;
-    for (tvec = inputlist; tvec != R_NilValue; tvec = CDR(tvec))
-        if (CAR(tvec) == R_NilValue)
+    for (i = 0, cnt = 0; i < xmaxused; i++)
+        if (!isNull(VECTOR_ELT(work, i)))
+            cnt++;
+    if (cnt < xmaxused)
+    {
+        PROTECT(work2 = allocVector(VECSXP, cnt));
+        nprotect++;
+        for (i = 0, j = 0; i < xmaxused; i++)
         {
-            if (i == 0)
-                inputlist = CDR(inputlist);
-            else
+            if (!isNull(VECTOR_ELT(work, i)))
             {
-                tvec2 = nthcdr(inputlist, (i - 1));
-                SETCDR(tvec2, CDR(tvec));
+                SET_VECTOR_ELT(work2, j, VECTOR_ELT(work, i));
+                INTEGER(lens)[j] = INTEGER(lens)[i];
+                SET_STRING_ELT(names, j, STRING_ELT(names, i));
+                j++;
             }
         }
-        else
-            i++;
+        REPROTECT(names = lengthgets(names, cnt), npi);
+    }
+    else
+        work2 = work;
 
-    for (tvec = inputlist; tvec != R_NilValue; tvec = CDR(tvec))
+    for (i = 0; i < LENGTH(work2); i++)
     {
-        len = LEVELS(CAR(tvec));
-        if (LENGTH(CAR(tvec)) != len)
+        len = INTEGER(lens)[i];
+        tvec = VECTOR_ELT(work2, i);
+        if (LENGTH(tvec) != len)
         {
-            tvec2 = ssNewVector(TYPEOF(CAR(tvec)), len);
-            PROTECT(tvec);
+            tvec2 = ssNewVector(TYPEOF(tvec), len);
             for (j = 0; j < len; j++)
-                if (TYPEOF(CAR(tvec)) == REALSXP)
+            {
+                if (TYPEOF(tvec) == REALSXP)
                 {
-                    if (REAL(CAR(tvec))[j] != ssNA_REAL)
-                        REAL(tvec2)[j] = REAL(CAR(tvec))[j];
+                    if (REAL(tvec)[j] != ssNA_REAL)
+                        REAL(tvec2)[j] = REAL(tvec)[j];
                     else
                         REAL(tvec2)[j] = NA_REAL;
                 }
-                else if (TYPEOF(CAR(tvec)) == STRSXP)
+                else if (TYPEOF(tvec) == STRSXP)
                 {
-                    if (!streql(CHAR(STRING_ELT(CAR(tvec), j)), CHAR(STRING_ELT(ssNA_STRING, 0))))
-                        SET_STRING_ELT(tvec2, j, STRING_ELT(CAR(tvec), j));
+                    if (!streql(CHAR(STRING_ELT(tvec, j)), CHAR(STRING_ELT(ssNA_STRING, 0))))
+                        SET_STRING_ELT(tvec2, j, STRING_ELT(tvec, j));
                     else
                         SET_STRING_ELT(tvec2, j, NA_STRING);
                 }
                 else
                     error("dataentry: internal memory problem");
-            SETCAR(tvec, tvec2);
-            UNPROTECT(1);
+            }
+            SET_VECTOR_ELT(work2, i, tvec2);
         }
     }
 
+    setAttrib(work2, R_NamesSymbol, names);
     UNPROTECT(nprotect);
-    return PairToVectorList(inputlist);
+    return work2;
 }
 
 /* Window Drawing Routines */
@@ -360,7 +380,7 @@ static void doHscroll(int oldcol)
     setcellwidths();
     colmax = colmin + (nwide - 2);
     if (oldcol < colmin)
-    { /* drop oldcol...colmin-1 */
+    { /* drop oldcol...colmin - 1 */
         dw = boxw[0];
         for (i = oldcol; i < colmin; i++)
             dw += BOXW(i);
@@ -478,13 +498,13 @@ static void advancerect(int which)
 
 static char *get_col_name(int col)
 {
-    SEXP tmp;
-    static char clab[15];
-    if (col <= length(inputlist))
+    static char clab[25];
+    if (col <= xmaxused)
     {
-        tmp = nthcdr(inputlist, col - 1);
-        if (TAG(tmp) != R_NilValue)
-            return CHAR(PRINTNAME(TAG(tmp)));
+        /* don't use NA labels */
+        SEXP tmp = STRING_ELT(names, col - 1);
+        if (tmp != NA_STRING)
+            return (CHAR(tmp));
     }
     sprintf(clab, "var%d", col);
     return clab;
@@ -494,23 +514,23 @@ static int get_col_width(int col)
 {
     int i, w = 0, w1, fw = FIELDWIDTH;
     char *strp;
-    SEXP tmp;
+    SEXP tmp, lab;
 
     if (nboxchars > 0)
         return nboxchars;
-    if (col <= length(inputlist))
+    if (col <= xmaxused)
     {
-        tmp = nthcdr(inputlist, col - 1);
-        if (tmp == R_NilValue)
+        tmp = VECTOR_ELT(work, col - 1);
+        if (isNull(tmp))
             return fw;
-        PrintDefaults(R_NilValue);
-        if (TAG(tmp) != R_NilValue)
-            w = strlen(CHAR(PRINTNAME(TAG(tmp))));
+        /* don't use NA labels */
+        lab = STRING_ELT(names, col - 1);
+        if (lab != NA_STRING)
+            w = strlen(CHAR(lab));
         else
             w = fw;
-        tmp = CAR(tmp);
         PrintDefaults(R_NilValue);
-        for (i = 0; i < (int)LEVELS(tmp); i++)
+        for (i = 0; i < INTEGER(lens)[col - 1]; i++)
         {
             strp = EncodeElement(tmp, i, 0);
             w1 = strlen(strp);
@@ -540,9 +560,9 @@ static CellType get_col_type(int col)
     SEXP tmp;
     CellType res = UNKNOWNN;
 
-    if (col <= length(inputlist))
+    if (col <= xmaxused)
     {
-        tmp = CAR(nthcdr(inputlist, col - 1));
+        tmp = VECTOR_ELT(work, col - 1);
         if (TYPEOF(tmp) == REALSXP)
             res = NUMERIC;
         if (TYPEOF(tmp) == STRSXP)
@@ -568,14 +588,14 @@ static void drawcol(int whichcol)
     clab = get_col_name(whichcol);
     printstring(clab, strlen(clab), 0, col, 0);
 
-    if (length(inputlist) >= whichcol)
+    if (xmaxused >= whichcol)
     {
-        tmp = nthcdr(inputlist, whichcol - 1);
-        if (CAR(tmp) != R_NilValue)
+        tmp = VECTOR_ELT(work, whichcol - 1);
+        if (!isNull(tmp))
         {
-            len = min(rowmax, LEVELS(CAR(tmp)));
+            len = min(rowmax, INTEGER(lens)[whichcol - 1]);
             for (i = (rowmin - 1); i < len; i++)
-                printelt(CAR(tmp), i, i - rowmin + 2, col);
+                printelt(tmp, i, i - rowmin + 2, col);
         }
     }
 }
@@ -583,7 +603,7 @@ static void drawcol(int whichcol)
 /* whichrow is absolute row no */
 static void drawrow(int whichrow)
 {
-    int i, src_x, src_y, lenip, row = whichrow - rowmin + 1, w;
+    int i, src_x, src_y, row = whichrow - rowmin + 1, w;
     char rlab[15];
     SEXP tvec;
 
@@ -591,7 +611,7 @@ static void drawrow(int whichrow)
     cleararea(src_x, src_y, windowWidth, box_h, (whichrow > 0) ? p->bg : bbg);
     drawrectangle(src_x, src_y, boxw[0], box_h, 1, 1);
 
-    sprintf(rlab, "%4d", whichrow);
+    sprintf(rlab, labform, whichrow);
     printstring(rlab, strlen(rlab), row, 0, 0);
 
     w = bwidth + boxw[0];
@@ -601,14 +621,12 @@ static void drawrow(int whichrow)
         w += BOXW(i);
     }
 
-    lenip = length(inputlist);
     for (i = colmin; i <= colmax; i++)
     {
-        if (i > lenip)
+        if (i > xmaxused)
             break;
-        tvec = CAR(nthcdr(inputlist, i - 1));
-        if (tvec != R_NilValue)
-            if (whichrow <= (int)LEVELS(tvec))
+        if (!isNull(tvec = VECTOR_ELT(work, i - 1)))
+            if (whichrow <= INTEGER(lens)[i - 1])
                 printelt(tvec, whichrow - 1, row, i - colmin + 1);
     }
 }
@@ -656,11 +674,11 @@ static void drawelt(int whichrow, int whichcol)
     }
     else
     {
-        if (length(inputlist) >= whichcol + colmin - 1)
+        if (xmaxused >= whichcol + colmin - 1)
         {
-            tmp = nthcdr(inputlist, whichcol + colmin - 2);
-            if (CAR(tmp) != R_NilValue && (i = rowmin + whichrow - 2) < (int)LEVELS(CAR(tmp)))
-                printelt(CAR(tmp), i, whichrow, whichcol);
+            tmp = VECTOR_ELT(work, whichcol + colmin - 2);
+            if (!isNull(tmp) && (i = rowmin + whichrow - 2) < INTEGER(lens)[whichcol + colmin - 2])
+                printelt(tmp, i, whichrow, whichcol);
         }
         else
             printstring("", 0, whichrow, whichcol, 0);
@@ -734,35 +752,39 @@ static void highlightrect()
     printrect(2, 1);
 }
 
-static SEXP getccol()
+static void getccol()
 {
     SEXP tmp, tmp2;
     int i, len, newlen, wcol, wrow;
     SEXPTYPE type;
-    char cname[10];
+    char clab[25];
 
     wcol = ccol + colmin - 1;
     wrow = crow + rowmin - 1;
-    if (length(inputlist) < wcol)
-        inputlist = listAppend(inputlist, allocList(wcol - length(inputlist)));
-    tmp = nthcdr(inputlist, wcol - 1);
-    newcol = 0;
-    if (CAR(tmp) == R_NilValue)
+    if (wcol > xmaxused)
     {
-        newcol = 1;
-        xmaxused = wcol;
-        len = max(100, wrow);
-        SETCAR(tmp, ssNewVector(REALSXP, len));
-        if (TAG(tmp) == R_NilValue)
+        /* extend work, names and lens */
+        REPROTECT(work = lengthgets(work, wcol), wpi);
+        REPROTECT(names = lengthgets(names, wcol), npi);
+        for (i = xmaxused; i < wcol; i++)
         {
-            sprintf(cname, "var%d", wcol);
-            SET_TAG(tmp, install(cname));
+            sprintf(clab, "var%d", i + 1);
+            SET_STRING_ELT(names, i, mkChar(clab));
         }
+        REPROTECT(lens = lengthgets(lens, wcol), lpi);
+        xmaxused = wcol;
     }
-    if (!isVector(CAR(tmp)))
+    newcol = FALSE;
+    if (isNull(VECTOR_ELT(work, wcol - 1)))
+    {
+        newcol = TRUE;
+        SET_VECTOR_ELT(work, wcol - 1, ssNewVector(REALSXP, max(100, wrow)));
+        INTEGER(lens)[wcol - 1] = 0;
+    }
+    if (!isVector(tmp = VECTOR_ELT(work, wcol - 1)))
         error("internal type error in dataentry");
-    len = LENGTH(CAR(tmp));
-    type = TYPEOF(CAR(tmp));
+    len = INTEGER(lens)[wcol - 1];
+    type = TYPEOF(tmp);
     if (len < wrow)
     {
         for (newlen = max(len * 2, 10); newlen < wrow; newlen *= 2)
@@ -770,15 +792,13 @@ static SEXP getccol()
         tmp2 = ssNewVector(type, newlen);
         for (i = 0; i < len; i++)
             if (type == REALSXP)
-                REAL(tmp2)[i] = REAL(CAR(tmp))[i];
+                REAL(tmp2)[i] = REAL(tmp)[i];
             else if (type == STRSXP)
-                SET_STRING_ELT(tmp2, i, STRING_ELT(CAR(tmp), i));
+                SET_STRING_ELT(tmp2, i, STRING_ELT(tmp, i));
             else
                 error("internal type error in dataentry");
-        SETLEVELS(tmp2, LEVELS(CAR(tmp)));
-        SETCAR(tmp, tmp2);
+        SET_VECTOR_ELT(work, wcol - 1, tmp2);
     }
-    return (tmp);
 }
 
 /* close up the entry to a cell, put the value that has been entered
@@ -786,7 +806,7 @@ static SEXP getccol()
 
 static void closerect()
 {
-    SEXP cvec, c0vec, tvec;
+    SEXP cvec;
     int wcol = ccol + colmin - 1, wrow = rowmin + crow - 1, wrow0;
 
     *bufp = '\0';
@@ -800,20 +820,11 @@ static void closerect()
             hide(celledit);
             del(celledit);
         }
-        c0vec = getccol();
-        cvec = CAR(c0vec);
-        wrow0 = (int)LEVELS(cvec);
+        getccol();
+        cvec = VECTOR_ELT(work, wcol - 1);
+        wrow0 = INTEGER(lens)[wcol - 1];
         if (wrow > wrow0)
-        {
-            if (wrow > 65535)
-            {
-                /* This should not be possible, but check anyway */
-                REprintf("%s\n", "column truncated to length 65535");
-                R_FlushConsole();
-                wrow = 65535;
-            }
-            SETLEVELS(cvec, wrow);
-        }
+            INTEGER(lens)[wcol - 1] = wrow;
         ymaxused = max(ymaxused, wrow);
         if (clength != 0)
         {
@@ -822,22 +833,14 @@ static void closerect()
             double new = R_strtod(buf, &endp);
             int warn = !isBlankString(endp);
             if (TYPEOF(cvec) == STRSXP)
-            {
-                tvec = allocString(strlen(buf));
-                strcpy(CHAR(tvec), buf);
-                SET_STRING_ELT(cvec, wrow - 1, tvec);
-            }
+                SET_STRING_ELT(cvec, wrow - 1, mkChar(buf));
             else
                 REAL(cvec)[wrow - 1] = new;
             if (newcol & warn)
             {
                 /* change mode to character */
-                int levs = LEVELS(cvec);
-                cvec = SETCAR(c0vec, coerceVector(cvec, STRSXP));
-                SETLEVELS(cvec, levs);
-                tvec = allocString(strlen(buf));
-                strcpy(CHAR(tvec), buf);
-                SET_STRING_ELT(cvec, wrow - 1, tvec);
+                SET_VECTOR_ELT(work, wcol - 1, coerceVector(cvec, STRSXP));
+                SET_STRING_ELT(VECTOR_ELT(work, wcol - 1), wrow - 1, mkChar(buf));
             }
         }
         else
@@ -851,7 +854,7 @@ static void closerect()
         if (wrow > wrow0)
             drawcol(wcol); /* to fill in NAs */
     }
-    CellEditable = CellModified = 0;
+    CellEditable = CellModified = FALSE;
 
     downlightrect();
     gsetcursor(de, ArrowCursor);
@@ -919,7 +922,7 @@ static void handlechar(char *text)
 
     if (c == '\033')
     {
-        CellModified = 0;
+        CellModified = FALSE;
         clength = 0;
         drawelt(crow, ccol);
         gsetcursor(de, ArrowCursor);
@@ -927,7 +930,7 @@ static void handlechar(char *text)
     }
     else
     {
-        CellModified = 1;
+        CellModified = TRUE;
         gsetcursor(de, TextCursor);
     }
 
@@ -993,7 +996,7 @@ donehc:
 
 static void printlabs()
 {
-    char clab[10], *p;
+    char clab[15], *p;
     int i;
 
     for (i = colmin; i <= colmax; i++)
@@ -1003,7 +1006,7 @@ static void printlabs()
     }
     for (i = rowmin; i <= rowmax; i++)
     {
-        sprintf(clab, "%4d", i);
+        sprintf(clab, labform, i);
         printstring(clab, strlen(clab), i - rowmin + 1, 0, 0);
     }
 }
@@ -1202,10 +1205,10 @@ static char *get_cell_text()
     char *prev = "";
     SEXP tvec;
 
-    if (wcol <= length(inputlist))
+    if (wcol <= xmaxused)
     {
-        tvec = CAR(nthcdr(inputlist, wcol - 1));
-        if (tvec != R_NilValue && wrow < (int)LEVELS(tvec))
+        tvec = VECTOR_ELT(work, wcol - 1);
+        if (!isNull(tvec) && wrow < INTEGER(lens)[wcol - 1])
         {
             PrintDefaults(R_NilValue);
             if (TYPEOF(tvec) == REALSXP)
@@ -1328,7 +1331,7 @@ static void de_mousedown(control c, int buttons, point xy)
             setforeground(celledit, p->ufg);
             settextfont(celledit, p->f);
             show(celledit);
-            CellEditable = 1;
+            CellEditable = TRUE;
         }
         else if (buttons & LeftButton)
         {
@@ -1384,15 +1387,10 @@ static void deredraw()
         drawrectangle(0, hwidth + i * box_h, boxw[0], box_h, 1, 1);
     colmax = colmin + (nwide - 2);
     rowmax = rowmin + (nhigh - 2);
-    if (rowmax > 65535)
-    {
-        rowmax = 65535;
-        rowmin = rowmax - (nhigh - 2);
-    }
     printlabs();
-    if (inputlist != R_NilValue)
-        for (i = colmin; i <= colmax; i++)
-            drawcol(i);
+    /* if (!isNull(work) I don't think it can be null */
+    for (i = colmin; i <= colmax; i++)
+        drawcol(i);
     gfillrect(de, p->bg, rect(windowWidth + 1, hwidth, WIDTH - windowWidth - 1, HEIGHT - hwidth));
     highlightrect();
 }
@@ -1431,7 +1429,10 @@ static int initwin()
     if (nboxchars > 0)
         check(de_mvw);
     box_w = ((nboxchars > 0) ? nboxchars : FIELDWIDTH) * FW + 8;
-    boxw[0] = 5 * FW + 8;
+    /* this used to presume 4 chars sufficed for row numbering */
+    labdigs = max(3, 1 + floor(log10((double)ymaxused)));
+    boxw[0] = (1 + labdigs) * FW + 8;
+    sprintf(labform, "%%%dd", labdigs);
     for (i = 1; i < 100; i++)
         boxw[i] = get_col_width(i) * FW + 8;
     box_h = FH + 4;
@@ -1445,7 +1446,7 @@ static int initwin()
     r.height = windowHeight + 3;
     resize(de, r);
 
-    CellModified = CellEditable = 0;
+    CellModified = CellEditable = FALSE;
     bbg = dialog_bg();
     /* set the active cell to be the upper left one */
     crow = 1;
@@ -1474,8 +1475,8 @@ static int isnumeric, popupcol;
 static void popupclose(control c)
 {
     SEXP tvec;
-    int levs;
-    char buf[30];
+    char buf[30], clab[25];
+    int i;
 
     strcpy(buf, gettext(varname));
     if (!strlen(buf))
@@ -1483,28 +1484,36 @@ static void popupclose(control c)
         askok("column names cannot be blank");
         return;
     }
-    if (length(inputlist) < popupcol)
+    if (popupcol > xmaxused)
     {
-        inputlist = listAppend(inputlist, allocList((popupcol - length(inputlist))));
+        /* extend work, names and lens */
+        REPROTECT(work = lengthgets(work, popupcol), wpi);
+        REPROTECT(names = lengthgets(names, popupcol), npi);
+        /* Last col name is set later */
+        for (i = xmaxused + 1; i < popupcol - 1; i++)
+        {
+            sprintf(clab, "var%d", i + 1);
+            SET_STRING_ELT(names, i, mkChar(clab));
+        }
+        REPROTECT(lens = lengthgets(lens, popupcol), lpi);
+        xmaxused = popupcol;
     }
-    tvec = nthcdr(inputlist, popupcol - 1);
+    tvec = VECTOR_ELT(work, popupcol - 1);
     if (ischecked(rb_num) && !isnumeric)
     {
-        if (CAR(tvec) == R_NilValue)
-            SETCAR(tvec, ssNewVector(REALSXP, 100));
-        levs = LEVELS(CAR(tvec));
-        SETCAR(tvec, coerceVector(CAR(tvec), REALSXP));
-        SETLEVELS(CAR(tvec), levs);
+        if (isNull(tvec))
+            SET_VECTOR_ELT(tvec, popupcol - 1, ssNewVector(REALSXP, 100));
+        else
+            SET_VECTOR_ELT(work, popupcol - 1, coerceVector(tvec, REALSXP));
     }
     else if (ischecked(rb_char) && isnumeric)
     {
-        if (CAR(tvec) == R_NilValue)
-            SETCAR(tvec, ssNewVector(STRSXP, 100));
-        levs = LEVELS(CAR(tvec));
-        SETCAR(tvec, coerceVector(CAR(tvec), STRSXP));
-        SETLEVELS(CAR(tvec), levs);
+        if (isNull(tvec))
+            SET_VECTOR_ELT(tvec, popupcol - 1, ssNewVector(STRSXP, 100));
+        else
+            SET_VECTOR_ELT(work, popupcol - 1, coerceVector(tvec, STRSXP));
     }
-    SET_TAG(tvec, install(buf));
+    SET_STRING_ELT(names, popupcol - 1, mkChar(buf));
     hide(wconf);
     del(wconf);
 }
@@ -1553,7 +1562,7 @@ static void de_paste(control c)
     if (clipboardhastext() && !getstringfromclipboard(buf, 29))
     {
         /* set current cell to first line of clipboard */
-        CellModified = 1;
+        CellModified = TRUE;
         if ((p = strchr(buf, '\n')))
             *p = '\0';
         clength = strlen(buf);
@@ -1565,7 +1574,7 @@ static void de_paste(control c)
 
 static void de_delete(control c)
 {
-    CellModified = 1;
+    CellModified = TRUE;
     buf[0] = '\0';
     clength = -1;
     bufp = buf + clength;
