@@ -223,6 +223,14 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
         }
         break;
 
+    case 1019: /* logical    <- vector     */
+    case 1319: /* integer    <- vector     */
+    case 1419: /* real       <- vector     */
+    case 1519: /* complex    <- vector     */
+    case 1619: /* character  <- vector     */
+        *x = coerceVector(*x, VECSXP);
+        break;
+
     case 2001: /* expression <- symbol	    */
     case 2006: /* expression <- language   */
     case 2010: /* expression <- logical    */
@@ -1430,7 +1438,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     PROTECT(CDR(args) = EvalSubassignArgs(CDR(args), rho));
     SubAssignArgs(args, &x, &subs, &y);
-
+#ifdef JUNKING_FOR_DOUG
     if (length(x) == 0)
     {
         if (length(y) > 1)
@@ -1443,6 +1451,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             return (x);
         }
     }
+#endif
     if (NAMED(x) == 2)
     {
         CAR(args) = x = duplicate(x);
@@ -1570,6 +1579,12 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
             STRING(x)[offset] = STRING(y)[0];
             break;
+
+        case 1019: /* logical    <- vector     */
+        case 1319: /* integer    <- vector     */
+        case 1419: /* real       <- vector     */
+        case 1519: /* complex    <- vector     */
+        case 1619: /* character  <- vector     */
 
         case 1901: /* vector     <- symbol	    */
         case 1906: /* vector     <- language   */
