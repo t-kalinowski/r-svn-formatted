@@ -580,7 +580,7 @@ void SetUpRAquaMenu(void)
 
     if (HelpMenu != nil)
     {
-        CopyCStringToPascal("R Help (HTML)", menuStr);
+        CopyCStringToPascal("R Help", menuStr);
         AppendMenu(HelpMenu, menuStr);
         RHelpMenuItem = CountMenuItems(HelpMenu);
         SetMenuItemCommandID(HelpMenu, RHelpMenuItem, kRHelpStart);
