@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2003  Robert Gentleman, Ross Ihaka
+ *  Copyright (C) 1997--2004  Robert Gentleman, Ross Ihaka
  *			      and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -144,6 +144,8 @@ int Rf_initialize_R(int ac, char **av)
     ptr_R_ChooseFile = Rstd_ChooseFile;
     ptr_R_loadhistory = Rstd_loadhistory;
     ptr_R_savehistory = Rstd_savehistory;
+    ptr_GnomeDeviceDriver = stub_GnomeDeviceDriver;
+    ptr_R_GetX11Image = R_GetX11Image;
     R_timeout_handler = NULL;
     R_timeout_val = 0;
 
@@ -158,7 +160,6 @@ int Rf_initialize_R(int ac, char **av)
     R_setStartTime();
 #endif
     R_DefParams(Rp);
-    /*    R_SizeFromEnv(Rp); */
     /* Store the command line arguments before they are processed
        by the R option handler. These are stored in Rp and then moved
        to the global variable CommandLineArgs in R_SetParams.
@@ -218,8 +219,6 @@ int Rf_initialize_R(int ac, char **av)
         }
     }
 
-    ptr_GnomeDeviceDriver = stub_GnomeDeviceDriver;
-    ptr_R_GetX11Image = R_GetX11Image;
 #ifdef HAVE_X11
     if (useX11)
     {
@@ -270,9 +269,7 @@ int Rf_initialize_R(int ac, char **av)
             {
 #ifdef HAVE_AQUA
                 if (!strncmp(*av, "-psn", 4))
-                {
                     break;
-                }
                 else
 #endif
                     snprintf(msg, 1024, "WARNING: unknown option %s\n", *av);
