@@ -1684,7 +1684,7 @@ SEXP mkPROMISE(SEXP expr, SEXP rho)
     GET_FREE_NODE(s);
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     TYPEOF(s) = PROMSXP;
-    PREXPR(s) = expr;
+    PRCODE(s) = expr;
     PRENV(s) = rho;
     PRVALUE(s) = R_UnboundValue;
     PRSEEN(s) = 0;
@@ -2621,9 +2621,9 @@ void(SET_ENVFLAGS)(SEXP x, int v)
 }
 
 /* Promise Accessors */
-SEXP(PREXPR)(SEXP x)
+SEXP(PRCODE)(SEXP x)
 {
-    return PREXPR(x);
+    return PRCODE(x);
 }
 SEXP(PRENV)(SEXP x)
 {
@@ -2638,11 +2638,6 @@ int(PRSEEN)(SEXP x)
     return PRSEEN(x);
 }
 
-void(SET_PREXPR)(SEXP x, SEXP v)
-{
-    CHECK_OLD_TO_NEW(x, v);
-    PREXPR(x) = v;
-}
 void(SET_PRENV)(SEXP x, SEXP v)
 {
     CHECK_OLD_TO_NEW(x, v);

@@ -281,7 +281,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist, SEXP fdef)
         {
             if (PRVALUE(object) == R_UnboundValue)
             {
-                SEXP tmp = eval(PREXPR(object), PRENV(object));
+                SEXP tmp = eval(PRCODE(object), PRENV(object));
                 PROTECT(tmp);
                 nprotect++;
                 SET_PRVALUE(object, tmp);
