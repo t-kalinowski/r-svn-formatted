@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
+ *  it under the terms of the GNU General Pulic License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
@@ -46,7 +46,6 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 static void substr(char *buf, char *str, int sa, int so)
 {
     int i;
-
     str += (sa - 1);
     for (i = 0; i <= (so - sa); i++)
         *buf++ = *str++;
@@ -276,14 +275,14 @@ SEXP do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(CAR(args)))
         errorcall(call, "the first argument must be a string\n");
-
     len = length(CAR(args));
+
     PROTECT(ans = allocVector(STRSXP, len));
     minlen = asInteger(CADR(args));
     uclass = asLogical(CAR(CDDR(args)));
-
     for (i = 0; i < len; i++)
         STRING(ans)[i] = stripchars(STRING(CAR(args))[i], minlen);
+
     UNPROTECT(1);
     return (ans);
 }

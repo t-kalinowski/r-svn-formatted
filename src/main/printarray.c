@@ -410,8 +410,16 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
         for (i = 2; i < ndim; i++)
             nb *= INTEGER(dim)[i];
 #ifdef NEWLIST
-        dn0 = VECTOR(dimnames)[0];
-        dn1 = VECTOR(dimnames)[1];
+        if (dimnames == R_NilValue)
+        {
+            dn0 = R_NilValue;
+            dn1 = R_NilValue;
+        }
+        else
+        {
+            dn0 = VECTOR(dimnames)[0];
+            dn1 = VECTOR(dimnames)[1];
+        }
         for (i = 0; i < nb; i++)
         {
             Rprintf(", ");
@@ -450,7 +458,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
             switch (TYPEOF(x))
             {
             case LGLSXP:
-                printLogicalMatrix(x, i * b, nr, nc, CAR(dimnames), CADR(dimnames));
+                printLogicalMatrix(x, i * b, nr, nc, dn0, dn1);
                 break;
             case INTSXP:
                 printIntegerMatrix(x, i * b, nr, nc, dn0, dn1);

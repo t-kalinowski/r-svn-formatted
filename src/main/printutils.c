@@ -363,6 +363,7 @@ void Rprintf(char *format, ...)
     if (R_Outputfile)
     {
         vfprintf(R_Outputfile, format, ap);
+        fflush(R_Outputfile);
     }
     else
     {
@@ -399,6 +400,7 @@ void Rvprintf(const char *format, va_list arg)
     if (R_Outputfile)
     {
         vfprintf(R_Outputfile, format, arg);
+        fflush(R_Outputfile);
     }
     else
     {

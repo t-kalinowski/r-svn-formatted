@@ -156,14 +156,12 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
         filled = c;
     }
 donefill:
-
     if (strip)
     {
         while (isspace(*--bufp))
             ;
         bufp++;
     }
-
     *bufp = '\0';
     return filled;
 }
@@ -171,7 +169,6 @@ donefill:
 static int isNAstring(char *buf)
 {
     int i;
-
     for (i = 0; i < length(NAstrings); i++)
         if (!strcmp(CHAR(STRING(NAstrings)[i]), buf))
             return 1;
@@ -181,7 +178,6 @@ static int isNAstring(char *buf)
 static void expected(char *what, char *got)
 {
     int c;
-
     if (ttyflag)
     {
         while ((c = scanchar()) != R_EOF && c != '\n')
@@ -195,7 +191,6 @@ static void expected(char *what, char *got)
 static void extractItem(char *buffer, SEXP ans, int i)
 {
     char *endp;
-
     switch (TYPEOF(ans))
     {
     case LGLSXP:
@@ -905,15 +900,12 @@ donecf:
     return bns;
 }
 
-/*
- *	frame.convert(char, na.strings, as.is)
- *
- *	This is a horrible hack which is used in read.table to
- *	take a character variable, if possible to convert it
- *	to a numeric variable.  If this is not possible, the
- *	result is a character string if as.is==TRUE or a factor
- *	if as.is==FALSE.
- */
+/* frame.convert(char, na.strings, as.is) */
+
+/* This is a horrible hack which is used in read.table to take a */
+/* character variable, if possible to convert it to a numeric */
+/* variable.  If this is not possible, the result is a character */
+/* string if as.is == TRUE or a factor if as.is == FALSE. */
 
 SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
