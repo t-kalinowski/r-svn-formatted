@@ -144,7 +144,7 @@ SEXP mkSYMSXP(SEXP name, SEXP value)
 
 /*  length - length of objects  */
 
-int length(SEXP s)
+R_len_t length(SEXP s)
 {
     int i;
     switch (TYPEOF(s))
