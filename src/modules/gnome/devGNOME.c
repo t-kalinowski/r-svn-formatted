@@ -373,7 +373,7 @@ static void toolbar_print_cb(GtkWidget *widget, gpointer data)
     NewDevDesc *dd = (NewDevDesc *)data;
     gchar *cmd;
 
-    cmd = g_strdup_printf("dev.cur(%d)\ndev.print()", RDeviceNumber(dd));
+    cmd = g_strdup_printf("dev.set(%d)\ndev.print()\n", RDeviceNumber(dd));
     R_gtk_terminal_run(cmd);
     g_free(cmd);
 }
