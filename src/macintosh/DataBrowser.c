@@ -607,7 +607,7 @@ static pascal Boolean MyItemComparison(ControlRef browser, DataBrowserItemID ite
         else if (compareResult > 0)
             return false;
         else
-            return Compare(itemOneID, itemTwoID, '????');
+            return Compare(itemOneID, itemTwoID, kDontKnow);
     }
     break;
 
