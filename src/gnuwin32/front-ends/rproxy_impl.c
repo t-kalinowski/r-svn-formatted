@@ -2,7 +2,7 @@
  *  RProxy: Connector implementation between application and R language
  *  Copyright (C) 1999 Thomas Baier
  *
- *  R_Proxy_init based on rtest.c,  Copyright (C) 1998--1999
+ *  R_Proxy_init based on rtest.c,  Copyright (C) 1998--2000
  *                                  R Development Core Team
  *
  *
@@ -21,7 +21,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy_impl.c,v 1.10 2000/08/07 03:20:38 luke Exp $
+ *  $Id: rproxy_impl.c,v 1.11 2000/09/22 14:28:57 maechler Exp $
  */
 
 #define NONAMELESSUNION
@@ -57,7 +57,7 @@ extern void R_DefParams(Rstart);
 extern void R_SetParams(Rstart);
 extern void setup_term_ui(void);
 extern char *getRHOME();
-extern void setup_Rmainloop(), end_Rmainloop(), R_ReplDLLinit();
+extern void end_Rmainloop(), R_ReplDLLinit();
 extern void askok(char *);
 
 extern SC_CharacterDevice *__output_device;
