@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -106,7 +107,7 @@
 #include "Defn.h"
 #include "Fileio.h"
 #include "Graphics.h" /* KillAllDevices() [nothing else?] */
-#include "devX11.h"   /* 'Public' routines from devX11.c (event loop) */
+#include "devX11.h"
 
 #ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
@@ -131,11 +132,12 @@ static int DebugInitFile = 0;
 
 /*--- I/O Support Code ---*/
 
-/* These routines provide hooks for supporting console */
-/* I/O.	 Under raw Unix these routines simply provide a */
-/* connection to the stdio library.  Under a Motif */
-/* interface the routines would be considerably more */
-/* complex. */
+/* These routines provide hooks for supporting console I/O.
+ * Under raw Unix these routines simply provide a
+ * connection to the stdio library.
+ * Under a Motif interface the routines would be
+ * considerably more complex.
+ */
 
 /* block on select until either stdin or X11 connection is */
 /* ready to read (return 1 if X11 connection ready to read, */
