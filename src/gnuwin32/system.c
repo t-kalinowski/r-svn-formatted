@@ -797,7 +797,7 @@ int cmdlineoptions(int ac, char **av)
     {
         if (processing && **++av == '-')
         {
-            if (!strcmp(*av, "--help"))
+            if (!strcmp(*av, "--help") || !strcmp(*av, "-h"))
             {
                 R_ShowMessage(PrintUsage());
                 exit(0);
