@@ -52,8 +52,8 @@ static window RFrame;
 extern int ConsoleAcceptCmd;
 static menubar RMenuBar;
 static menuitem msource, mdisplay, mload, msave, msavehistory, mpaste, mcopy, mcopypaste, mlazy, mconfig, mls, mrm,
-    msearch, mhelp, mmanintro, mmanref, mmanext, mapropos, mhelpstart;
-static int lhelpstart, lmanintro, lmanref, lmanext;
+    msearch, mhelp, mmanintro, mmanref, mmanext, mapropos, mhelpstart, mFAQ, mrwFAQ;
+static int lmanintro, lmanref, lmanext;
 static menu m, mman;
 static char cmd[1024];
 
@@ -324,6 +324,16 @@ static void menuhelpstart(control m)
         consolecmd(RConsole, "help.start()");
         show(RConsole);*/
     internal_shellexec("doc/html/rwin.html");
+}
+
+static void menuFAQ(control m)
+{
+    internal_shellexec("doc/html/faq.html");
+}
+
+static void menurwFAQ(control m)
+{
+    internal_shellexec("doc/html/rw-faq.html");
 }
 
 static void menuabout(control m)
@@ -728,10 +738,17 @@ int setupui()
 #endif
     MCHECK(m = newmenu("Help"));
     MCHECK(newmenuitem("Console", 0, menuconsolehelp));
+    MCHECK(newmenuitem("-", 0, NULL));
+    MCHECK(mFAQ = newmenuitem("FAQ on R", 0, menuFAQ));
+    if (!check_doc_file("doc/html/faq.html"))
+        disable(mFAQ);
+    MCHECK(mrwFAQ = newmenuitem("FAQ on R for &Windows", 0, menurwFAQ));
+    if (!check_doc_file("doc/html/rw-faq.html"))
+        disable(mrwFAQ);
+    MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mhelp = newmenuitem("R language (standard)", 0, menuhelp));
     MCHECK(mhelpstart = newmenuitem("R language (&html)", 0, menuhelpstart));
-    lhelpstart = check_doc_file("doc/html/rwin.html");
-    if (!lhelpstart)
+    if (!check_doc_file("doc/html/rwin.html"))
         disable(mhelpstart);
     MCHECK(mman = newsubmenu(m, "Manuals"));
     MCHECK(mmanintro = newmenuitem("An &Introduction to R", 0, menumainman));
@@ -750,7 +767,9 @@ int setupui()
         disable(mman);
     addto(m);
 
+    MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mapropos = newmenuitem("Apropos", 0, menuapropos));
+    MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(newmenuitem("About", 0, menuabout));
     consolesetbrk(RConsole, menukill, ESC, 0);
     readhistory(RConsole, ".Rhistory");
