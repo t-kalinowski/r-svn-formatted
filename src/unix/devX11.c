@@ -99,7 +99,8 @@ typedef struct
 
 static Display *display;                /* Display */
 static int screen;                      /* Screen */
-static Window rootWindow;               /* Root Window */
+static Window rootwin;                  /* Root Window */
+static Visual *visual;                  /* Visual */
 static int depth;                       /* Pixmap depth */
 static XSetWindowAttributes attributes; /* Window attributes */
 static Colormap cmap;                   /* Default color map */
@@ -603,11 +604,17 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
 
         /* Default Screen and Root Window */
 
-        screen = XDefaultScreen(display);
-        rootWindow = XDefaultRootWindow(display);
-        depth = XDefaultDepth(display, screen);
-        if (DefaultVisual(display, screen)->class == TrueColor)
+        screen = DefaultScreen(display);
+        rootwin = DefaultRootWindow(display);
+        depth = DefaultDepth(display, screen);
+        visual = DefaultVisual(display, screen);
+
+        if (visual->class == TrueColor)
+#ifdef FAILED
             LimitedColors = 0;
+#else
+            LimitedColors = 1;
+#endif
         else
             LimitedColors = 1;
         cmap = DefaultColormap(display, screen);
@@ -659,7 +666,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
     xd->windowWidth = iw = w / pixelWidth();
     xd->windowHeight = ih = h / pixelHeight();
 
-    if ((xd->window = XCreateWindow(display, rootWindow, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
+    if ((xd->window = XCreateWindow(display, rootwin, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
                                     DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
                                     CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) == 0)
         return 0;
@@ -1419,4 +1426,19 @@ int X11ConnectionNumber()
         return ConnectionNumber(display);
     else
         return 0;
+}
+
+/* X11 Color Allocation code */
+
+/* return the position of the highest set bit in ul */
+/* as an integer (0-31), or -1 if none */
+static int highbit(unsigned long ul)
+{
+    int i;
+    unsigned long hb;
+    hb = 0x8000;
+    hb = (hb << 16); /* hb = 0x80000000UL */
+    for (i = 31; ((ul & hb) == 0) && i >= 0; i--, ul <<= 1)
+        ;
+    return i;
 }
