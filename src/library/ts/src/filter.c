@@ -124,7 +124,7 @@ void acf(double *x, int *n, int *nser, int *nlag, int *correlation, double *acf)
             {
                 sum = 0.0;
                 for (i = 0; i < nn - lag; i++)
-                    sum += x[i + nn * u] * x[i + lag + nn * v];
+                    sum += x[i + lag + nn * u] * x[i + nn * v];
                 acf[lag + d1 * u + d2 * v] = sum / nn;
             }
     if (*correlation)
