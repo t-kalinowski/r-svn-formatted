@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2002   Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997-2004   Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -94,7 +94,7 @@ static Rboolean rsum(double *x, int n, double *value, Rboolean narm)
             s += x[i];
 #else
             *value = NA_REAL;
-            return;
+            return (updated);
 #endif
         }
     }
@@ -129,7 +129,7 @@ static Rboolean csum(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
             if (!updated)
                 updated = 1;
             value->r = value->i = NA_REAL;
-            return;
+            return (updated);
 #endif
         }
     }
@@ -215,7 +215,7 @@ static Rboolean rmin(double *x, int n, double *value, Rboolean narm)
             if (!updated)
                 updated = 1;
             *value = NA_REAL;
-            return;
+            return (updated);
         }
     }
     *value = s;
@@ -296,7 +296,7 @@ static Rboolean rmax(double *x, int n, double *value, Rboolean narm)
             if (!updated)
                 updated = 1;
             *value = NA_REAL;
-            return;
+            return (updated);
         }
     }
     *value = s;
@@ -359,7 +359,7 @@ static Rboolean rprod(double *x, int n, double *value, Rboolean narm)
             s *= x[i]; /* Na(N) */
 #else
             *value = NA_REAL;
-            return;
+            return (updated);
 #endif
         }
     }
@@ -396,12 +396,12 @@ static Rboolean cprod(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
             if (!updated)
                 updated = 1;
             value->r = value->i = NA_REAL;
-            return;
+            return (updated);
         }
         if (ISNAN(s.r) || ISNAN(s.i))
         {
             value->r = value->i = NA_REAL;
-            return;
+            return (updated);
         }
 #endif
     }
