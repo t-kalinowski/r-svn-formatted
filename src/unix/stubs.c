@@ -41,8 +41,9 @@ int stub_X11DeviceDriver(DevDesc *dd, char *display, double width, double height
     return 0;
 }
 
-int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
+int stub_GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
+    error("no Gnome device in this version of R");
     return 0;
 }
 

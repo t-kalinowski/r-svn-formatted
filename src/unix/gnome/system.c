@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-1999   Robert Gentleman, Ross Ihaka
+ *  Copyright (C) 1997--2000  Robert Gentleman, Ross Ihaka
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -30,9 +30,9 @@
 #include "Graphics.h" /* KillAllDevices() [nothing else?] */
 #include "Rversion.h"
 
+#include "../Runix.h"
+
 #include "devGNOME.h"
-int (*X11DeviceDriver)(DevDesc *, char *, double, double, double, double, int, int);
-int stub_X11DeviceDriver(DevDesc *, char *, double, double, double, double, int, int);
 
 #include "Startup.h"
 
@@ -47,23 +47,10 @@ int stub_X11DeviceDriver(DevDesc *, char *, double, double, double, double, int,
 #include <sys/types.h>
 #include <sys/stat.h>
 
-/*-- necessary for some (older, i.e., ~ <= 1997) Linuxen:*/
-#ifndef FD_SET
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#endif
-
-void fpu_setup(int); /* in sys-unix.c */
-
 /*--- Initialization Code ---*/
 
-int UsingReadline = 1;
-int SaveAction = SA_SAVEASK;
-int RestoreAction = SA_RESTORE;
-int LoadSiteFile = True;
-int LoadInitFile = True;
-int DebugInitFile = False;
+int SaveAction;
+int RestoreAction;
 
 static gboolean R_gnome_initialised = FALSE; /* true once gnome_init has been called */
 
@@ -73,7 +60,7 @@ static GList *messages_list = NULL;
  *  1) FATAL MESSAGES AT STARTUP
  */
 
-void R_Suicide(char *s)
+void Rgnome_Suicide(char *s)
 {
     GtkWidget *dialog;
     gchar *message;
@@ -90,14 +77,14 @@ void R_Suicide(char *s)
 
     gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
 
-    R_CleanUp(SA_SUICIDE, 2, 0);
+    Rgnome_CleanUp(SA_SUICIDE, 2, 0);
 }
 
 /*
  *  3) ACTIONS DURING (LONG) COMPUTATIONS
  */
 
-void R_Busy(int which)
+void Rgnome_Busy(int which)
 {
     if (which == 1)
     {
@@ -128,7 +115,7 @@ void R_Busy(int which)
 
 void R_dot_Last(void); /* in main.c */
 
-void R_CleanUp(int saveact, int status, int runLast)
+void Rgnome_CleanUp(int saveact, int status, int runLast)
 {
     GtkWidget *dialog;
     gint which; /* yes = 0, no = 1, cancel = 2 || -1 */
@@ -210,7 +197,7 @@ void R_CleanUp(int saveact, int status, int runLast)
     exit(status);
 }
 
-void R_ShowMessage(char *s)
+void Rgnome_ShowMessage(char *s)
 {
     GtkWidget *dialog;
     gchar *s_copy;
@@ -263,23 +250,11 @@ void R_set_SaveAction(int sa)
     SaveAction = sa;
 }
 
-void R_setStartTime(); /* in sys-unix.c */
-
-int main(int ac, char **av)
+void gnome_start(int ac, char **av, Rstart Rp)
 {
     char *p;
     int value, ierr;
-    structRstart rstart;
-    Rstart Rp = &rstart;
     struct stat sb;
-
-    gc_inhibit_torture = 1;
-#ifdef HAVE_TIMES
-    R_setStartTime();
-#endif
-
-    R_DefParams(Rp);
-    R_SizeFromEnv(Rp);
 
     /* Gnome startup preferences */
     gnomelib_init("R", g_strdup_printf("%s.%s %s (%s %s %s)", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR));
@@ -342,26 +317,7 @@ int main(int ac, char **av)
 
     fpu_setup(1);
 
-    X11DeviceDriver = stub_X11DeviceDriver;
-
     /* start main loop */
     mainloop();
     /*++++++  in ../main/main.c */
-
-    return 0;
-}
-
-/* Declarations to keep f77 happy */
-
-int MAIN_()
-{
-    return 0;
-}
-int MAIN__()
-{
-    return 0;
-}
-int __main()
-{
-    return 0;
 }
