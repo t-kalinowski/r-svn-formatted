@@ -374,8 +374,12 @@ static void dotrans(Starma G, double *raw, double *new, int trans)
     if (trans)
     {
         partrans(G->mp, raw, new);
-        v = G->mp + G->mq;
+        v = G->mp;
+        partrans(G->mq, raw + v, new + v);
+        v += G->mq;
         partrans(G->msp, raw + v, new + v);
+        v += G->msp;
+        partrans(G->msq, raw + v, new + v);
     }
 }
 
@@ -419,11 +423,12 @@ SEXP Invtrans(SEXP pG, SEXP x)
     v = 0;
     invpartrans(G->mp, raw + v, new + v);
     v += G->mp;
-    for (i = v; i < v + G->mq; i++)
-        new[i] = raw[i];
+    invpartrans(G->mq, raw + v, new + v);
     v += G->mq;
     invpartrans(G->msp, raw + v, new + v);
-    for (i = v; i < n + G->m; i++)
+    v += G->msp;
+    invpartrans(G->msq, raw + v, new + v);
+    for (i = n; i < n + G->m; i++)
         new[i] = raw[i];
     return y;
 }
@@ -454,6 +459,21 @@ SEXP Gradtrans(SEXP pG, SEXP x)
             w1[i] -= eps;
         }
     }
+    if (G->mq > 0)
+    {
+        v = G->mp;
+        for (i = 0; i < G->mq; i++)
+            w1[i] = raw[i + v];
+        partrans(G->mq, w1, w2);
+        for (i = 0; i < G->mq; i++)
+        {
+            w1[i] += eps;
+            partrans(G->mq, w1, w3);
+            for (j = 0; j < G->mq; j++)
+                A[i + v + j * n] = (w3[j] - w2[j]) / eps;
+            w1[i] -= eps;
+        }
+    }
     if (G->msp > 0)
     {
         v = G->mp + G->mq;
@@ -465,6 +485,21 @@ SEXP Gradtrans(SEXP pG, SEXP x)
             w1[i] += eps;
             partrans(G->msp, w1, w3);
             for (j = 0; j < G->msp; j++)
+                A[i + v + (j + v) * n] = (w3[j] - w2[j]) / eps;
+            w1[i] -= eps;
+        }
+    }
+    if (G->msq > 0)
+    {
+        v = G->mp + G->mq + G->msp;
+        for (i = 0; i < G->msq; i++)
+            w1[i] = raw[i + v];
+        partrans(G->msq, w1, w2);
+        for (i = 0; i < G->msq; i++)
+        {
+            w1[i] += eps;
+            partrans(G->msq, w1, w3);
+            for (j = 0; j < G->msq; j++)
                 A[i + v + (j + v) * n] = (w3[j] - w2[j]) / eps;
             w1[i] -= eps;
         }
