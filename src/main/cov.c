@@ -368,7 +368,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
         if (ISNAN(z[i]))                                                                                               \
         {                                                                                                              \
             if (na_fail)                                                                                               \
-                error("missing observations in cov/cor");                                                              \
+                error(_("missing observations in cov/cor"));                                                           \
             else                                                                                                       \
                 ind[i] = 0;                                                                                            \
         }
@@ -419,7 +419,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Arg.1: x */
     if (isNull(CAR(args)) || !LENGTH(CAR(args)))
-        error("`x' is empty");
+        error(_("'x' is empty"));
     x = SETCAR(args, coerceVector(CAR(args), REALSXP));
     if ((ansmat = isMatrix(x)))
     {
@@ -444,14 +444,14 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isMatrix(y))
         {
             if (nrows(y) != n)
-                errorcall(call, "incompatible dimensions");
+                errorcall(call, _("incompatible dimensions"));
             ncy = ncols(y);
             ansmat = (1);
         }
         else
         {
             if (length(y) != n)
-                errorcall(call, "incompatible dimensions");
+                errorcall(call, _("incompatible dimensions"));
             ncy = 1;
         }
     }
@@ -477,7 +477,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         pair = TRUE;
         break;
     default:
-        errorcall(call, "invalid `use' (computational method)");
+        errorcall(call, _("invalid 'use' (computational method)"));
     }
     if (ansmat)
         PROTECT(ans = allocMatrix(REALSXP, ncx, ncy));
@@ -547,7 +547,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     if (sd_0) /* only in cor() */
-        warningcall(call, "The standard deviation is zero");
+        warningcall(call, _("The standard deviation is zero"));
     UNPROTECT(1);
     return ans;
 }

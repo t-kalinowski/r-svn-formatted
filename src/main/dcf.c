@@ -52,11 +52,11 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     file = CAR(args);
     con = getConnection(asInteger(file));
     if (!con->canread)
-        error("cannot read from this connection");
+        error(_("cannot read from this connection"));
     wasopen = con->isopen;
     if (!wasopen)
         if (!con->open(con))
-            error("cannot open the connection");
+            error(_("cannot open the connection"));
 
     PROTECT(what = coerceVector(CADR(args), STRSXP));
     nwhat = LENGTH(what);
@@ -64,11 +64,11 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 
     line = (char *)malloc(MAXELTSIZE);
     if (!line)
-        error("Could not allocate memory for read.dcf");
+        error(_("Could not allocate memory for read.dcf"));
     buflen = 100;
     buf = (char *)malloc(buflen);
     if (!buf)
-        error("Could not allocate memory for read.dcf");
+        error(_("Could not allocate memory for read.dcf"));
     nret = 20;
     /* it is easier if we first have a record per column */
     PROTECT(retval = allocMatrixNA(STRSXP, LENGTH(what), nret));
@@ -115,7 +115,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     buf = (char *)realloc(buf, need);
                     if (!buf)
-                        error("Could not allocate memory for read.dcf");
+                        error(_("Could not allocate memory for read.dcf"));
                     buflen = need;
                 }
                 strcpy(buf, CHAR(STRING_ELT(retval, lastm + nwhat * k)));
@@ -166,7 +166,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         {
                             buf = (char *)realloc(buf, need);
                             if (!buf)
-                                error("Could not allocate memory for read.dcf");
+                                error(_("Could not allocate memory for read.dcf"));
                             buflen = need;
                         }
                         strncpy(buf, line, Rf_strchr(line, ':') - line);
