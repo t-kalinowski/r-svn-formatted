@@ -441,7 +441,7 @@ static void menuhelp(control m)
     if (s)
     {
         snprintf(cmd, 1024, "help(\"%s\")", s);
-        if (strlen(s) > 256)
+        if (strlen(s) > 255)
             s[255] = '\0';
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
@@ -484,7 +484,7 @@ static void menuhelpsearch(control m)
     if (s && strlen(s))
     {
         snprintf(cmd, 1024, "help.search(\"%s\")", s);
-        if (strlen(s) > 256)
+        if (strlen(s) > 255)
             s[255] = '\0';
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
@@ -503,7 +503,7 @@ static void menuapropos(control m)
     if (s)
     {
         snprintf(cmd, 1024, "apropos(\"%s\")", s);
-        if (strlen(s) > 256)
+        if (strlen(s) > 255)
             s[255] = '\0';
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
@@ -687,6 +687,8 @@ void readconsolecfg()
         {
             if (!strcmp(opt[0], "font"))
             {
+                if (strlen(opt[1]) > 127)
+                    opt[1][127] = '\0';
                 strcpy(fn, opt[1]);
                 fnchanged = 1;
                 done = 1;
@@ -1261,6 +1263,8 @@ menuItems *wingetmenuitems(char *mname, char *errmsg)
     if (strlen(mname) > 100)
     {
         strcpy(errmsg, "mname is limited to 100 chars");
+        free(items->mItems);
+        free(items);
         return NULL;
     }
 

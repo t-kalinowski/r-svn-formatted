@@ -43,6 +43,8 @@ char *R_tmpnam(const char *prefix, const char *tempdir)
 
     if (!prefix)
         prefix = ""; /* NULL */
+    if (strlen(tempdir) >= MAX_PATH)
+        error("invalid 'tempdir' in R_tmpnam");
     strcpy(tmp1, tempdir);
     for (n = 0; n < 100; n++)
     {
@@ -91,11 +93,13 @@ static int R_unlink_one(char *dir, char *name, int recursive)
 static int R_unlink(char *names, int recursive)
 {
     int failures = 0;
-    char *p, tmp[MAX_PATH], dir[MAX_PATH];
+    char *p, tmp[MAX_PATH], dir[MAX_PATH + 2];
     WIN32_FIND_DATA find_data;
     HANDLE fh;
     struct stat sb;
 
+    if (strlen(names) >= MAX_PATH)
+        error("invalid 'names' in R_unlink");
     strcpy(tmp, names);
     for (p = tmp; *p != '\0'; p++)
         if (*p == '/')
@@ -448,6 +452,8 @@ int check_doc_file(char *file)
     home = getenv("R_HOME");
     if (home == NULL)
         error("R_HOME not set");
+    if (strlen(home) + strlen(file) + 1 >= MAX_PATH)
+        return (1); /* cannot exist */
     strcpy(path, home);
     strcat(path, "/");
     strcat(path, file);
@@ -1036,7 +1042,7 @@ void InitTempDir()
     if (hasspace)
         GetShortPathName(tmp, tmp1, MAX_PATH);
     else
-        strcpy(tmp1, tmp);
+        strcpy(tmp1, tmp); /* length must be valid as access has been checked */
     /* now try a random addition */
     srand((unsigned)time(NULL));
     for (n = 0; n < 100; n++)
@@ -1153,7 +1159,7 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, def, caption, filters;
-    char *temp, *cfilters, list[65520];
+    char *temp, *cfilters, list[65520], *p;
     char path[MAX_PATH], filename[MAX_PATH];
     int multi, filterindex, i, count, lfilters, pathlen;
     checkArity(op, args);
@@ -1164,7 +1170,10 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     filterindex = asInteger(CAD4R(args));
     if (length(def) != 1)
         errorcall(call, "default must be a character string");
-    strcpy(path, CHAR(STRING_ELT(def, 0)));
+    p = CHAR(STRING_ELT(def, 0));
+    if (strlen(p) >= MAX_PATH)
+        errorcall(call, "default is overlong");
+    strcpy(path, p);
     temp = strchr(path, '/');
     while (temp)
     {
