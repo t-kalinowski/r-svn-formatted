@@ -24,6 +24,7 @@
 
 #include "Fortran.h" /*-> incl "Platform.h"*/
 #include "Linpack.h" /*-> incl.  Blas.h  */
+#include "Applic.h"
 
 void bakslv(double *t, int *ldt, int *n, double *b, int *ldb, int *nb, double *x, int *job, int *info)
 {
@@ -98,5 +99,4 @@ void bakslv(double *t, int *ldt, int *n, double *b, int *ldb, int *nb, double *x
             return;
         }
     }
-    return;
-} /* bakslv */
+}
