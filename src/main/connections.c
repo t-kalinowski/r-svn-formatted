@@ -21,10 +21,10 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
-#include "Fileio.h"
-#include "Rconnections.h"
-#include <fcntl.h>
+#include <Defn.h>
+#include <Fileio.h>
+#include <Rconnections.h>
+/* #include <fcntl.h> not yet */
 
 #define NCONNECTIONS 50
 
@@ -112,7 +112,14 @@ static void file_open(Rconnection con)
     if (!fp)
         error("cannot open file `%s'", R_ExpandFileName(con->description));
     ((Rfileconn)(con->private))->fp = fp;
-    con->isopen = 1;
+    con->isopen = TRUE;
+    con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
+    con->canread = !con->canwrite;
+    if (strlen(con->mode) >= 2 && con->mode[2] == 'b')
+        con->text = FALSE;
+    else
+        con->text = TRUE;
+
     /*    if(!con->blocking) {
         fd = fileno(fp);
         flags = fcntl(fd, F_GETFL);
@@ -124,7 +131,7 @@ static void file_open(Rconnection con)
 static void file_close(Rconnection con)
 {
     fclose(((Rfileconn)(con->private))->fp);
-    con->isopen = 0;
+    con->isopen = con->canread = con->canwrite = FALSE;
 }
 
 static void file_destroy(Rconnection con)
@@ -187,19 +194,25 @@ static Rconnection newfile(char *description, char *mode)
         error("allocation of file connection failed");
     new->class = (char *)malloc(strlen("file") + 1);
     if (!new->class)
+    {
+        free(new);
         error("allocation of file connection failed");
+    }
     strcpy(new->class, "file");
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
+    {
+        free(new->class);
+        free(new);
         error("allocation of file connection failed");
+    }
     strcpy(new->description, description);
-    strcpy(new->mode, mode);
-    new->isopen = new->incomplete = 0;
-    new->canwrite = (mode[0] == 'w' || mode[0] == 'a');
-    new->canread = !new->canwrite;
-    new->text = 1;
-    if (strlen(mode) >= 2 && mode[2] == 'b')
-        new->text = 0;
+    strncpy(new->mode, mode, 4);
+    new->mode[4] = '\0';
+    new->isopen = new->incomplete = FALSE;
+    new->canread = new->canwrite = FALSE;
+    new->canseek = TRUE;
+    new->text = TRUE;
     new->open = &file_open;
     new->close = &file_close;
     new->destroy = &file_destroy;
@@ -213,7 +226,12 @@ static Rconnection newfile(char *description, char *mode)
     new->nPushBack = 0;
     new->private = (void *)malloc(sizeof(struct fileconn));
     if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
         error("allocation of file connection failed");
+    }
     return new;
 }
 
@@ -264,24 +282,24 @@ static void pipe_open(Rconnection con)
     if (!fp)
         error("cannot open cmd `%s'", con->description);
     ((Rfileconn)(con->private))->fp = fp;
-    con->isopen = 1;
+    con->isopen = TRUE;
+    con->canwrite = (con->mode[0] == 'w');
+    con->canread = !con->canwrite;
+    if (strlen(con->mode) >= 2 && con->mode[2] == 'b')
+        con->text = FALSE;
+    else
+        con->text = TRUE;
 }
 
 static void pipe_close(Rconnection con)
 {
     pclose(((Rfileconn)(con->private))->fp);
-    con->isopen = 0;
+    con->isopen = con->canread = con->canwrite = FALSE;
 }
 
 static void pipe_destroy(Rconnection con)
 {
     free(con->private);
-}
-
-static long pipe_seek(Rconnection con, int where)
-{
-    warning("seek is not implemented for pipes");
-    return 0;
 }
 
 static Rconnection newpipe(char *description, char *mode)
@@ -292,33 +310,44 @@ static Rconnection newpipe(char *description, char *mode)
         error("allocation of pipe connection failed");
     new->class = (char *)malloc(strlen("pipe") + 1);
     if (!new->class)
+    {
+        free(new);
         error("allocation of pipe connection failed");
+    }
     strcpy(new->class, "pipe");
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
+    {
+        free(new->class);
+        free(new);
         error("allocation of pipe connection failed");
+    }
     strcpy(new->description, description);
-    strcpy(new->mode, mode);
-    new->isopen = new->incomplete = 0;
-    new->canwrite = (mode[0] == 'w');
-    new->canread = !new->canwrite;
-    new->text = 1;
-    if (strlen(mode) >= 2 && mode[2] == 'b')
-        new->text = 0;
+    strncpy(new->mode, mode, 4);
+    new->mode[4] = '\0';
+    new->isopen = new->incomplete = FALSE;
+    new->canread = new->canwrite = FALSE;
+    new->canseek = FALSE;
+    new->text = TRUE;
     new->open = &pipe_open;
     new->close = &pipe_close;
     new->destroy = &pipe_destroy;
     new->vfprintf = &file_vfprintf;
     new->fgetc = &file_fgetc;
     new->ungetc = &file_ungetc;
-    new->seek = &pipe_seek;
+    new->seek = &null_seek;
     new->fflush = &file_fflush;
     new->read = &file_read;
     new->write = &file_write;
     new->nPushBack = 0;
     new->private = (void *)malloc(sizeof(struct fileconn));
     if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
         error("allocation of pipe connection failed");
+    }
     return new;
 }
 
@@ -409,9 +438,7 @@ static int stdin_ungetc(int c, Rconnection con)
 static int stdout_vfprintf(Rconnection con, const char *format, va_list ap)
 {
     if (R_Outputfile)
-    {
         vfprintf(R_Outputfile, format, ap);
-    }
     else
         Rcons_vprintf(format, ap);
     return 0;
@@ -445,18 +472,27 @@ static Rconnection newterminal(char *description, char *mode)
         error("allocation of terminal connection failed");
     new->class = (char *)malloc(strlen("terminal") + 1);
     if (!new->class)
+    {
+        free(new);
         error("allocation of terminal connection failed");
+    }
     strcpy(new->class, "terminal");
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
+    {
+        free(new->class);
+        free(new);
         error("allocation of terminal connection failed");
+    }
     strcpy(new->description, description);
-    strcpy(new->mode, mode);
-    new->isopen = 1;
-    new->incomplete = 0;
-    new->text = 1;
+    strncpy(new->mode, mode, 4);
+    new->mode[4] = '\0';
+    new->isopen = TRUE;
+    new->incomplete = FALSE;
+    new->text = TRUE;
     new->canread = (strcmp(mode, "r") == 0);
     new->canwrite = (strcmp(mode, "w") == 0);
+    new->canseek = FALSE;
     new->open = &null_open;
     new->close = &null_open;
     new->destroy = &null_open;
@@ -553,12 +589,16 @@ static void text_init(Rconnection con, SEXP text)
     Rtextconn this = (Rtextconn)con->private;
 
     for (i = 0; i < nlines; i++)
-    {
         nchars += strlen(CHAR(STRING_ELT(text, i))) + 1;
-    }
     this->data = (char *)malloc(nchars + 1);
     if (!this->data)
+    {
+        free(this);
+        free(con->description);
+        free(con->class);
+        free(con);
         error("cannot allocate memory for text connection");
+    }
     *(this->data) = '\0';
     for (i = 0; i < nlines; i++)
     {
@@ -623,16 +663,25 @@ static Rconnection newtext(char *description, SEXP text)
         error("allocation of text connection failed");
     new->class = (char *)malloc(strlen("textConnection") + 1);
     if (!new->class)
+    {
+        free(new);
         error("allocation of text connection failed");
+    }
     strcpy(new->class, "textConnection");
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
+    {
+        free(new->class);
+        free(new);
         error("allocation of text connection failed");
+    }
     strcpy(new->description, description);
     strcpy(new->mode, "r");
-    new->isopen = new->text = new->canread = 1;
-    new->incomplete = 0;
-    new->canwrite = 0;
+    new->isopen = new->text = TRUE;
+    new->incomplete = FALSE;
+    new->canread = TRUE;
+    new->canwrite = FALSE;
+    new->canseek = FALSE;
     new->open = &text_open;
     new->close = &text_close;
     new->destroy = &text_destroy;
@@ -643,10 +692,15 @@ static Rconnection newtext(char *description, SEXP text)
     new->fflush = &null_fflush;
     new->read = &null_read;
     new->write = &null_write;
+    new->nPushBack = 0;
     new->private = (void *)malloc(sizeof(struct textconn));
     if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
         error("allocation of text connection failed");
-    new->nPushBack = 0;
+    }
     text_init(new, text);
     return new;
 }
@@ -724,7 +778,7 @@ SEXP do_isopen(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
     PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = con->isopen != 0;
+    LOGICAL(ans)[0] = con->isopen != FALSE;
     UNPROTECT(1);
     return ans;
 }
@@ -737,7 +791,20 @@ SEXP do_isincomplete(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
     PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = con->incomplete != 0;
+    LOGICAL(ans)[0] = con->incomplete != FALSE;
+    UNPROTECT(1);
+    return ans;
+}
+
+SEXP do_isseekable(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    Rconnection con;
+    SEXP ans;
+
+    checkArity(op, args);
+    con = getConnection(asInteger(CAR(args)));
+    PROTECT(ans = allocVector(LGLSXP, 1));
+    LOGICAL(ans)[0] = con->canseek != FALSE;
     UNPROTECT(1);
     return ans;
 }
@@ -826,8 +893,9 @@ int Rconn_printf(Rconnection con, const char *format, ...)
 SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans = R_NilValue, ans2;
-    int i, n, nn, nnn, ok, wasopen, nread, c, nbuf, buf_size = BUF_SIZE;
+    int i, n, nn, nnn, ok, nread, c, nbuf, buf_size = BUF_SIZE;
     Rconnection con = NULL;
+    Rboolean wasopen;
     char *buf;
 
     checkArity(op, args);
@@ -914,7 +982,8 @@ static void writecon(Rconnection con, char *format, ...)
 /* writelines(text, con = stdout(), sep = "\n") */
 SEXP do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int i, wasopen;
+    int i;
+    Rboolean wasopen;
     Rconnection con = NULL;
     SEXP text, sep;
 
@@ -975,8 +1044,8 @@ SEXP do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
     newLine = asLogical(CADDR(args));
     if (newLine == NA_LOGICAL)
         error("invalid `newLine' argument");
-    if (!con->canread)
-        error("can only push back on readable connections");
+    if (!con->canread && !con->isopen)
+        error("can only push back on open readable connections");
     if (!con->text)
         error("can only push back on text-mode connections");
     nexists = con->nPushBack;
