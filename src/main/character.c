@@ -733,7 +733,6 @@ SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             *p = tolower(*p);
         }
-        p = CHAR(STRING(y)[i]);
     }
     return (y);
 }
@@ -756,7 +755,6 @@ SEXP do_toupper(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             *p = toupper(*p);
         }
-        p = CHAR(STRING(y)[i]);
     }
     return (y);
 }
