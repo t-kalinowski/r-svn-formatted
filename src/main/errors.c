@@ -23,6 +23,9 @@
 #endif
 
 #include "Defn.h"
+/* limit on call length at which errorcall/warningcall is split over
+   two lines */
+#define LONGCALL 30
 
 static void jump_now();
 
@@ -120,6 +123,8 @@ void warningcall(SEXP call, char *format, ...)
         {
             dcall = CHAR(STRING(deparse1(call, 0))[0]);
             REprintf("Warning in %s : ", dcall);
+            if (strlen(dcall) > LONGCALL)
+                REprintf("\n   ");
         }
         else
             REprintf("Warning: ");
@@ -213,6 +218,8 @@ void errorcall(SEXP call, char *format, ...)
     {
         dcall = CHAR(STRING(deparse1(call, 0))[0]);
         sprintf(buf, "Error in %s : ", dcall);
+        if (strlen(dcall) > LONGCALL)
+            strcat(buf, "\n   ");
     }
     else
         sprintf(buf, "Error: ");
@@ -446,6 +453,8 @@ void ErrorMessage(SEXP call, int which_error, ...)
     {
         dcall = CHAR(STRING(deparse1(call, 0))[0]);
         REprintf("Error in %s : ", dcall);
+        if (strlen(dcall) > LONGCALL)
+            REprintf("\n   ");
     }
     else
         REprintf("Error: "); /* -- dcall = ??? */
