@@ -88,7 +88,7 @@ SEXP do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/*  P A R A M E T E R    U T I L I T I E S  */
+/*	P A R A M E T E R    U T I L I T I E S	*/
 
 int Specify2(char *, SEXP, DevDesc *);
 
@@ -113,7 +113,7 @@ SEXP GetPar(char *which, SEXP parlist)
 {
     /* GetPar is intended for looking through a list */
     /* typically that bound to ... for a particular */
-    /* parameter value.  This is easier than trying */
+    /* parameter value.	 This is easier than trying */
     /* to match every graphics parameter in argument */
     /* lists and passing them explicitly. */
     SEXP w, p;
@@ -481,7 +481,7 @@ static void GetAxisLimits(double left, double right, double *low, double *high)
 /*
  *  SYNOPSIS
  *
- *    axis(which, at, labels, ...)
+ *    axis(side, at, labels, ...)
  *
  *  DESCRIPTION
  *
@@ -703,7 +703,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
 
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* axis(which, at, labels, ...) - draw an axis */
+    /* axis(side, at, labels, ...) - draw an axis */
     SEXP at, lab;
     int dolabels, logflag;
     int col, fg;
@@ -1718,7 +1718,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* mtext(text, side, line, outer, at = NULL, ...) */
-    /* where ... supports  adj, cex, col, font  */
+    /* where ... supports  adj, cex, col, font	*/
     SEXP adj, cex, col, font, text;
     double line, at, adjx, adjy;
     int side, outer;
@@ -2711,7 +2711,7 @@ static int ctr_segdir(double xend, double yend, double *x, double *y, int *i, in
 
 /* Search seglist for a segment with endpoint (xend, yend). */
 /* The cell entry direction is dir, and if tail=1/0 we are */
-/* building the tail/head of a contour.  The matching segment */
+/* building the tail/head of a contour.	 The matching segment */
 /* is pointed to by seg and the updated segment list (with */
 /* the matched segment stripped is returned by the funtion. */
 
