@@ -339,7 +339,7 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
                 if (ISNA(x[i + j * r].r) || ISNA(x[i + j * r].i))
                     Rprintf("%s", EncodeReal(NA_REAL, w[j], 0, 0));
                 else
-                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + R_print.gap, dr[j], er[j], wi[j], dr[j], er[j]));
+                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + R_print.gap, dr[j], er[j], wi[j], di[j], ei[j]));
             }
         }
         Rprintf("\n");
