@@ -27,6 +27,8 @@
 #include <R_ext/GraphicsDevice.h>
 #include <R_ext/GraphicsEngine.h>
 
+#include "grDevices.h"
+
 static Rboolean nullDeviceDriver(NewDevDesc *dev);
 
 void GEnullDevice()
@@ -36,12 +38,12 @@ void GEnullDevice()
 
     R_CheckDeviceAvailable();
     if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
-        error("unable to start NULL device");
+        error(_("unable to start NULL device"));
     dev->displayList = R_NilValue;
     if (!nullDeviceDriver(dev))
     {
         free(dev);
-        error("unable to start NULL device");
+        error(_("unable to start NULL device"));
     }
     gsetVar(install(".Device"), mkString("NULL"), R_NilValue);
     dd = GEcreateDevDesc(dev);

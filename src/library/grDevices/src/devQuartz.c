@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  file devQuartz.c
- *  Copyright (C) 2002-2003  Stefano M. Iacus and the R core team
+ *  Copyright (C) 2002-2005  Stefano M. Iacus and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -420,7 +420,7 @@ static char *SaveString(SEXP sxp, int offset)
 {
     char *s;
     if (!isString(sxp) || length(sxp) <= offset)
-        error("invalid string argument");
+        error(_("invalid string argument"));
 
     s = R_alloc(strlen(CHAR(STRING_ELT(sxp, offset))) + 1, sizeof(char));
     strcpy(s, CHAR(STRING_ELT(sxp, offset)));
@@ -459,7 +459,7 @@ SEXP Quartz(SEXP args)
     height = asReal(CAR(args));
     args = CDR(args);
     if (width <= 0 || height <= 0)
-        error("invalid width or height in quartz");
+        error(_("invalid width or height in quartz"));
     ps = asReal(CAR(args));
     args = CDR(args);
     family = CHAR(STRING_ELT(CAR(args), 0));
@@ -497,7 +497,7 @@ SEXP Quartz(SEXP args)
                                 quartzpos, 0xffffffff))
         {
             free(dev);
-            error("unable to start device Quartz");
+            error(_("unable to start device Quartz"));
         }
         gsetVar(install(".Device"), mkString("quartz"), R_NilValue);
         dd = GEcreateDevDesc(dev);
@@ -964,7 +964,7 @@ static char *SaveFontSpec(SEXP sxp, int offset)
 {
     char *s;
     if (!isString(sxp) || length(sxp) <= offset)
-        error("Invalid font specification");
+        error(_("Invalid font specification"));
     s = R_alloc(strlen(CHAR(STRING_ELT(sxp, offset))) + 1, sizeof(char));
     strcpy(s, CHAR(STRING_ELT(sxp, offset)));
     return s;
@@ -1011,7 +1011,7 @@ char *Quartz_TranslateFontFamily(char *family, int face, char *devfamily)
             }
         }
         if (!found)
-            warning("Font family not found in Quartz font database");
+            warning(_("Font family not found in Quartz font database"));
     }
     UNPROTECT(4);
     return result;
@@ -1315,7 +1315,7 @@ static void Quartz_SetLineEnd(R_GE_lineend lend, NewDevDesc *dd)
         linecap = kCGLineCapSquare;
         break;
     default:
-        error("Invalid line end");
+        error(_("Invalid line end"));
     }
     CGContextSetLineCap(GetContext(xd), linecap);
 }
@@ -1336,7 +1336,7 @@ static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd)
         linejoin = kCGLineJoinBevel;
         break;
     default:
-        error("Invalid line join");
+        error(_("Invalid line join"));
     }
 
     CGContextSetLineJoin(GetContext(xd), linejoin);
@@ -1346,7 +1346,7 @@ static void Quartz_SetLineMitre(double lmitre, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     if (lmitre < 1)
-        error("Invalid line mitre");
+        error(_("Invalid line mitre"));
     CGContextSetMiterLimit(GetContext(xd), lmitre);
 }
 
@@ -1602,7 +1602,7 @@ OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, voi
 #else
 SEXP Quartz(SEXP args)
 {
-    warning("Quartz device not available on this platform\n");
+    warning(_("Quartz device not available on this platform"));
     return R_NilValue;
 }
 #endif /* __APPLE_CC__  && HAVE_AQUA*/

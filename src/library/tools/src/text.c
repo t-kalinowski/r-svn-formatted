@@ -44,7 +44,7 @@ SEXP delim_match(SEXP x, SEXP delims)
     int used;
 #endif
     if (!isString(x) || !isString(delims) || (length(delims) != 2))
-        error("invalid argument type");
+        error(_("invalid argument type"));
 
     delim_start = CHAR(STRING_ELT(delims, 0));
     delim_end = CHAR(STRING_ELT(delims, 1));

@@ -661,7 +661,7 @@ SEXP PicTeX(SEXP args)
         if (!PicTeXDeviceDriver(dev, file, bg, fg, width, height, debug))
         {
             free(dev);
-            error("unable to start device PicTeX");
+            error(_("unable to start device PicTeX"));
         }
         gsetVar(install(".Device"), mkString("pictex"), R_NilValue);
         dd = GEcreateDevDesc(dev);
