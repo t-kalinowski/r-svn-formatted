@@ -249,33 +249,41 @@ static SEXP logicalSubscript(SEXP s, int ns, int nx, int *stretch)
         return (allocVector(INTSXP, 0));
     count = 0;
     for (i = 0; i < nmax; i++)
-        if (LOGICAL(s)[i % ns])
+        if (LOGICAL(s)[i % ns] != FALSE)
             count++;
     indx = allocVector(INTSXP, count);
     count = 0;
     for (i = 0; i < nmax; i++)
-        if (LOGICAL(s)[i % ns])
-        {
-            if (LOGICAL(s)[i % ns] == NA_LOGICAL)
-                INTEGER(indx)[count++] = NA_INTEGER;
-            else
-                INTEGER(indx)[count++] = i + 1;
-        }
+    {
+        int tmp = LOGICAL(s)[i % ns];
+        if (tmp == NA_LOGICAL)
+            INTEGER(indx)[count++] = NA_INTEGER;
+        else if (tmp == TRUE)
+            INTEGER(indx)[count++] = i + 1;
+    }
     return indx;
 }
 
 static SEXP negativeSubscript(SEXP s, int ns, int nx)
 {
-    SEXP indx;
-    int stretch = 0;
-    int i;
-    PROTECT(indx = allocVector(INTSXP, nx));
+    int count, i;
+    SEXP indx = PROTECT(allocVector(LGLSXP, nx));
+
     for (i = 0; i < nx; i++)
-        INTEGER(indx)[i] = 1;
+        LOGICAL(indx)[i] = TRUE;
+    count = nx;
     for (i = 0; i < ns; i++)
         if (INTEGER(s)[i] != 0)
-            INTEGER(indx)[-INTEGER(s)[i] - 1] = 0;
-    s = logicalSubscript(indx, nx, nx, &stretch);
+        {
+            LOGICAL(indx)[-INTEGER(s)[i] - 1] = FALSE;
+            count--;
+        }
+    s = allocVector(INTSXP, count);
+    count = 0;
+    for (i = 0; i < nx; i++)
+        if (LOGICAL(indx)[i])
+            INTEGER(s)[count++] = i + 1;
+
     UNPROTECT(1);
     return s;
 }
@@ -304,14 +312,19 @@ static SEXP positiveSubscript(SEXP s, int ns, int nx)
 static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
 {
     int i, ii, min, max, canstretch;
+    int have_na = 0;
     canstretch = *stretch;
     *stretch = 0;
-    min = 0;
+    min = 1;
     max = 0;
     for (i = 0; i < ns; i++)
     {
         ii = INTEGER(s)[i];
-        if (ii != NA_INTEGER)
+        if (ii == NA_INTEGER)
+        {
+            have_na = 1;
+        }
+        else
         {
             if (ii < min)
                 min = ii;
@@ -330,17 +343,19 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
     }
     if (min < 0)
     {
-        if (max == 0)
-            return negativeSubscript(s, ns, nx);
-        else
+        if (max != 0 || have_na)
             error("only 0's may mix with negative subscripts");
+        return negativeSubscript(s, ns, nx);
     }
-    else
+    if (have_na || min == 0)
         return positiveSubscript(s, ns, nx);
-    return R_NilValue;
+    else
+        return s;
 }
 
-static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, int *stretch)
+typedef SEXP (*StringEltGetter)(SEXP x, int i);
+
+static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter strg, int *stretch)
 {
     SEXP indx, indexnames;
     int i, j, nnames, sub, extra;
@@ -363,12 +378,17 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, int *stretch)
         if (names != R_NilValue)
         {
             for (j = 0; j < nnames; j++)
-                if (NonNullStringMatch(STRING_ELT(s, i), STRING_ELT(names, j)))
+            {
+                SEXP name_j = strg(names, j);
+                if (TYPEOF(name_j) != CHARSXP)
+                    error("character vector element does not have type CHARSXP");
+                if (NonNullStringMatch(STRING_ELT(s, i), name_j))
                 {
                     sub = j + 1;
                     SET_STRING_ELT(indexnames, i, R_NilValue);
                     break;
                 }
+            }
         }
         if (sub == 0)
         {
@@ -409,11 +429,14 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, int *stretch)
     dims is the dimensions of x
     dng is a function (usually getAttrib) that obtains the dimnames
     x is the array to be subscripted.
+   strg extracts elements of a string vector, either obtained by using
+   dng(x, R_NamesSymbol) or from one of the elements of an VECSXP
+   obtained from dng(x, R_DimNamesSymbol).
 */
 
-typedef SEXP AttrGetter(SEXP x, SEXP data);
+typedef SEXP (*AttrGetter)(SEXP x, SEXP data);
 
-SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, SEXP x)
+SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
     int nd, ns, stretch = 0;
     SEXP dnames, tmp;
@@ -438,7 +461,7 @@ SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, SEXP x)
         if (dnames == R_NilValue)
             error("no dimnames attribute for array");
         dnames = VECTOR_ELT(dnames, dim);
-        return stringSubscript(s, ns, nd, dnames, &stretch);
+        return stringSubscript(s, ns, nd, dnames, strg, &stretch);
     case SYMSXP:
         if (s == R_MissingArg)
             return nullSubscript(nd);
@@ -466,7 +489,7 @@ SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
     {
         nx = length(x);
 
-        ans = vectorSubscript(nx, s, stretch, getAttrib, x);
+        ans = vectorSubscript(nx, s, stretch, getAttrib, (STRING_ELT), x);
     }
     else
         error("subscripting on non-vector");
@@ -477,9 +500,12 @@ SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
    s is the R subscript value,
    dng gets a given attrib for x, which is the object we are
    subsetting,
+   strg extracts elements of a string vector, either obtained by using
+   dng(x, R_NamesSymbol) or from one of the elements of an VECSXP
+   obtained from dng(x, R_DimNamesSymbol).
 */
 
-SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, SEXP x)
+SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
     int ns;
     SEXP ans = R_NilValue, tmp;
@@ -518,7 +544,7 @@ SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, SEXP x)
     case STRSXP: {
         SEXP names = dng(x, R_NamesSymbol);
         /* *stretch = 0; */
-        ans = stringSubscript(s, ns, nx, names, stretch);
+        ans = stringSubscript(s, ns, nx, names, strg, stretch);
     }
     break;
     case SYMSXP:
