@@ -593,7 +593,11 @@ int PicTeXDeviceDriver(DevDesc *dd, char *filename, char *bg, char *fg, double w
     dd->dp.locator = PicTeX_Locator;
     dd->dp.mode = PicTeX_Mode;
     dd->dp.hold = PicTeX_Hold;
-    dd->dp.metricInfo = PicTeX_MetricInfo;
+
+    /*	dd->dp.metricInfo = PicTeX_MetricInfo;
+     */
+
+    dd->dp.metricInfo = NULL;
 
     /* Screen Dimensions in Pixels */
 
