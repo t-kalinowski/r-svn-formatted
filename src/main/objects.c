@@ -1055,8 +1055,7 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     }
     if (errorcase)
     {
-        error("Invalid primitive methods code (\"%s\"): should be
- \"clear\", \"reset\", or \"set\"", code_string);
+        error("Invalid primitive methods code (\"%s\"): should be \"clear\", \"reset\", or \"set\"", code_string);
         return R_NilValue;
     }
     switch (TYPEOF(op))
