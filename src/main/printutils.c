@@ -351,6 +351,14 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         int b, i;
         char *p, *q;
 
+        if (s == CHAR(NA_STRING))
+        {
+            p = quote ? CHAR(R_print.na_string) : CHAR(R_print.na_string_noquote);
+            quote = 0;
+        }
+        else
+            p = s;
+
         i = Rstrlen(s, quote);
         AllocBuffer((i + 2 >= w) ? (i + 2) : w); /* +2 allows for quotes */
         q = Encodebuf;
@@ -362,10 +370,6 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         }
         if (quote)
             *q++ = quote;
-        if (s == CHAR(NA_STRING))
-            p = CHAR(R_print.na_string);
-        else
-            p = s;
         while (*p)
         {
 
