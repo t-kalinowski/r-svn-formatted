@@ -30,7 +30,7 @@
 #include <stdlib.h>
 static Atom _XA_WM_PROTOCOLS, protocol;
 
-static int newcol;
+static int newcol, nboxchars;
 static int xmaxused, ymaxused;
 static int CellModified;
 static int box_coords[6];
@@ -42,7 +42,7 @@ static char copycontents[30] = "";
 #ifndef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
-#define BOXW(x) (x < 100 ? boxw[x] : box_w)
+#define BOXW(x) ((x < 100 && nboxchars == 0) ? boxw[x] : box_w)
 
 /*
    The spreadsheet function returns a list of vectors. The types of
@@ -468,6 +468,9 @@ static int get_col_width(int col)
     int i, w = 0, w1;
     char *strp;
     SEXP tmp;
+
+    if (nboxchars > 0)
+        return box_w;
     if (col <= length(inputlist))
     {
         tmp = nthcdr(inputlist, col - 1);
@@ -1346,7 +1349,13 @@ int initwin()
     /* find out how wide the input boxes should be and set up the
        window size defaults */
 
+    nboxchars = asInteger(GetOption(install("de.cellwidth"), R_GlobalEnv));
+    if (nboxchars == NA_INTEGER || nboxchars < 0)
+        nboxchars = 0;
+
     twidth = textwidth(digits, strlen(digits));
+    if (nboxchars > 0)
+        twidth = (twidth * nboxchars) / 10;
     box_w = twidth + 4;
     box_h = font_info->max_bounds.ascent + font_info->max_bounds.descent + 4;
     text_offset = 2 + font_info->max_bounds.descent;
