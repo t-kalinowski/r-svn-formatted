@@ -1,10 +1,11 @@
 /* uncompr.c -- decompress a memory buffer
- * Copyright (C) 1995-2002 Jean-loup Gailly.
+ * Copyright (C) 1995-2003 Jean-loup Gailly.
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* @(#) $Id: uncompr.c,v 1.2 2002/03/12 20:50:50 ripley Exp $ */
+/* @(#) $Id: uncompr.c,v 1.3 2004/03/15 09:15:23 ripley Exp $ */
 
+#define ZLIB_INTERNAL
 #include "zlib.h"
 
 /* ===========================================================================
@@ -52,7 +53,9 @@ uLong sourceLen;
     if (err != Z_STREAM_END)
     {
         inflateEnd(&stream);
-        return err == Z_OK ? Z_BUF_ERROR : err;
+        if (err == Z_NEED_DICT || (err == Z_BUF_ERROR && stream.avail_in == 0))
+            return Z_DATA_ERROR;
+        return err;
     }
     *destLen = stream.total_out;
 
