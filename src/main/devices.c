@@ -112,20 +112,25 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     cmd = SaveString(CAR(args), 0);
 
-    if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
-        return 0;
-    /* Do this for early redraw attempts */
-    dd->displayList = R_NilValue;
-    GInit(&dd->dp);
-    if (!PSDeviceDriver(dd, file, paper, family, afms, bg, fg, width, height, (double)horizontal, ps, onefile,
-                        pagecentre, printit, cmd))
+    R_CheckDeviceAvailable();
+    BEGIN_SUSPEND_INTERRUPTS
     {
-        free(dd);
-        errorcall(call, "unable to start device PostScript");
+        if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
+            return 0;
+        /* Do this for early redraw attempts */
+        dd->displayList = R_NilValue;
+        GInit(&dd->dp);
+        if (!PSDeviceDriver(dd, file, paper, family, afms, bg, fg, width, height, (double)horizontal, ps, onefile,
+                            pagecentre, printit, cmd))
+        {
+            free(dd);
+            errorcall(call, "unable to start device PostScript");
+        }
+        gsetVar(install(".Device"), mkString("postscript"), R_NilValue);
+        addDevice(dd);
+        initDisplayList(dd);
     }
-    gsetVar(install(".Device"), mkString("postscript"), R_NilValue);
-    addDevice(dd);
-    initDisplayList(dd);
+    END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
     return R_NilValue;
 }
@@ -165,19 +170,24 @@ SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
     if (debug == NA_LOGICAL)
         debug = FALSE;
 
-    if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
-        return 0;
-    /* Do this for early redraw attempts */
-    dd->displayList = R_NilValue;
-    GInit(&dd->dp);
-    if (!PicTeXDeviceDriver(dd, file, bg, fg, width, height, debug))
+    R_CheckDeviceAvailable();
+    BEGIN_SUSPEND_INTERRUPTS
     {
-        free(dd);
-        errorcall(call, "unable to start device PicTeX");
+        if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
+            return 0;
+        /* Do this for early redraw attempts */
+        dd->displayList = R_NilValue;
+        GInit(&dd->dp);
+        if (!PicTeXDeviceDriver(dd, file, bg, fg, width, height, debug))
+        {
+            free(dd);
+            errorcall(call, "unable to start device PicTeX");
+        }
+        gsetVar(install(".Device"), mkString("pictex"), R_NilValue);
+        addDevice(dd);
+        initDisplayList(dd);
     }
-    gsetVar(install(".Device"), mkString("pictex"), R_NilValue);
-    addDevice(dd);
-    initDisplayList(dd);
+    END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
     return R_NilValue;
 }
@@ -230,19 +240,25 @@ SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     pagecentre = asLogical(CAR(args));
 
-    if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
-        return 0;
-    /* Do this for early redraw attempts */
-    dd->displayList = R_NilValue;
-    GInit(&dd->dp);
-    if (!XFigDeviceDriver(dd, file, paper, face, bg, fg, width, height, (double)horizontal, ps, onefile, pagecentre))
+    R_CheckDeviceAvailable();
+    BEGIN_SUSPEND_INTERRUPTS
     {
-        free(dd);
-        errorcall(call, "unable to start device xfig");
+        if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
+            return 0;
+        /* Do this for early redraw attempts */
+        dd->displayList = R_NilValue;
+        GInit(&dd->dp);
+        if (!XFigDeviceDriver(dd, file, paper, face, bg, fg, width, height, (double)horizontal, ps, onefile,
+                              pagecentre))
+        {
+            free(dd);
+            errorcall(call, "unable to start device xfig");
+        }
+        gsetVar(install(".Device"), mkString("xfig"), R_NilValue);
+        addDevice(dd);
+        initDisplayList(dd);
     }
-    gsetVar(install(".Device"), mkString("xfig"), R_NilValue);
-    addDevice(dd);
-    initDisplayList(dd);
+    END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
     return R_NilValue;
 }
