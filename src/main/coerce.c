@@ -1504,6 +1504,7 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         case REALSXP:
         case CPLXSXP:
         case STRSXP:
+        case RAWSXP:
             LOGICAL(ans)[0] = 1;
             break;
         default:
@@ -1690,6 +1691,11 @@ SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
             LIST_VEC_NA(s);
         }
         break;
+    case RAWSXP:
+        /* no such thing as a raw NA */
+        for (i = 0; i < n; i++)
+            LOGICAL(ans)[i] = 0;
+        break;
     default:
         warningcall(call, "is.na" R_MSG_list_vec2);
         for (i = 0; i < n; i++)
@@ -1744,6 +1750,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     case LGLSXP:
     case INTSXP:
     case STRSXP:
+    case RAWSXP:
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
         break;
