@@ -1187,7 +1187,6 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
-    int n;
     if (DispatchGroup("Math", call, op, args, env, &s))
         return s;
     return do_cmathfuns(call, op, args, env);
