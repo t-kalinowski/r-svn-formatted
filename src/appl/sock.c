@@ -43,7 +43,10 @@ if defined(__MWERKS__) && defined(Macintosh)
 #include <types.h>
 #endif
 #include <signal.h>
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
+
 #if defined(Win32)
 #include <winsock.h>
 #include <io.h>
@@ -60,7 +63,8 @@ if defined(__MWERKS__) && defined(Macintosh)
 #include <netinet/tcp.h>
 #endif
 #endif
-#include "R_ext/Error.h"
+
+#include <R_ext/Error.h>
 #include "sock.h"
 
 #if defined(__hpux) || defined(MACINTOSH)
@@ -118,10 +122,7 @@ int Sock_init()
 
 int Sock_open(Sock_port_t port, Sock_error_t perr)
 {
-#if !(defined(Unix) || defined(Macintosh)) || defined(HAVE_BSD_NETWORKING)
-    /* Jago :was
-                  #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
-    */
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
     int sock;
     struct sockaddr_in server;
 
@@ -143,10 +144,7 @@ int Sock_open(Sock_port_t port, Sock_error_t perr)
 
 int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
 {
-#if !(defined(Unix) || defined(Macintosh)) || defined(HAVE_BSD_NETWORKING)
-    /* Jago: was
-                  #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
-    */
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
     struct sockaddr_in net_client;
     SOCKLEN_T len = sizeof(struct sockaddr);
     int retval;
@@ -180,10 +178,7 @@ int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
 
 int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
 {
-#if !(defined(Unix) || defined(Macintosh)) || defined(HAVE_BSD_NETWORKING)
-    /* Jago: was
-         #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
-    */
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
     struct sockaddr_in server;
     struct hostent *hp;
     int sock;
@@ -231,10 +226,7 @@ int Sock_close(int fd, Sock_error_t perr)
 
 ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
 {
-#if !(defined(Unix) || defined(Macintosh)) || defined(HAVE_BSD_NETWORKING)
-    /* Jago: was
-     #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
-    */
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
     ssize_t retval;
     do
         retval = recv(fd, buf, size, 0);
@@ -251,10 +243,7 @@ ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
 
 ssize_t Sock_write(int fd, void *buf, size_t size, Sock_error_t perr)
 {
-#if !(defined(Unix) || defined(Macintosh)) || defined(HAVE_BSD_NETWORKING)
-    /* Jago: was
-     #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
-    */
+#if defined(Win32) || defined(HAVE_BSD_NETWORKING)
     ssize_t retval;
     do
         retval = send(fd, buf, size, 0);
