@@ -27,6 +27,8 @@
 
 double pcauchy(double x, double location, double scale, int lower_tail, int log_p)
 {
+    const double x_big = pow(5 * DBL_EPSILON, -0.25); /* = 5478.3 for IEEE */
+
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
         return x + location + scale;
@@ -46,5 +48,25 @@ double pcauchy(double x, double location, double scale, int lower_tail, int log_
             return R_DT_1;
     }
 #endif
+    /* for large (negative || "upper tail & positive")  x,
+       the standard formula suffers from cancellation */
+    if (x < 0 && lower_tail && (-x) > x_big)
+    {
+        /* P = 1/(pi*(-x)) *(1 - 1/(3* x^2)) */
+        if (log_p)
+            return -log(-M_PI * x) + log1p(-1. / (3 * x * x));
+        /* else */
+        return (1 - 1. / (3 * x * x)) / (-M_PI * x);
+    }
+    /* else */
+    if (x > 0 && !lower_tail && x > x_big)
+    {
+        /* P = 1 - 1/(pi*x) *(1 - 1/(3* x^2))  */
+        if (log_p)
+            return -log(M_PI * x) + log1p(-1. / (3 * x * x));
+        /* else */
+        return (1 - 1. / (3 * x * x)) / (M_PI * x);
+    }
+    /* else */
     return R_DT_val(0.5 + atan(x) / M_PI);
 }

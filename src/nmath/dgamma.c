@@ -5,6 +5,7 @@
  *
  *  Merge in to R:
  *	Copyright (C) 2000 The R Core Development Team
+ *	Copyright (C) 2004 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,7 +53,7 @@ double dgamma(double x, double shape, double scale, int give_log)
     if (x == 0)
     {
         if (shape < 1)
-            ML_ERR_return_NAN;
+            return ML_POSINF;
         if (shape > 1)
             return R_D__0;
         /* else */
