@@ -807,6 +807,7 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 xmatch = y;
                 break;
             case NO_MATCH:
+                break;
             }
         }
         if (havematch == 1)
@@ -837,6 +838,7 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 imatch = i;
                 break;
             case NO_MATCH:
+                break;
             }
         }
         if (havematch == 1)
