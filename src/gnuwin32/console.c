@@ -541,7 +541,7 @@ FVOIDEND
 #define KILLLINE 21
 #define CHARTRANS 20
 #define OVERWRITE 15
-/* free ^G ^L ^Q ^R ^S */
+/* free ^G ^Q ^R ^S */
 
 static void storekey(control c, int k) FBEGIN if (p->kind == PAGER) return;
 if (k == BKSP)
@@ -780,8 +780,7 @@ if (st == CtrlKey)
         st = -1;
         break;
     case 'L':
-        p->needredraw = 1;
-        REDRAW;
+        consoleclear(c);
         st = -1;
         break;
     case 'O':
@@ -989,6 +988,7 @@ FVOIDEND
 int consolereads(control c, char *prompt, char *buf, int len, int addtohistory) FBEGIN char cur_char;
 char *cur_line;
 char *aLine;
+int ns0 = p->lbuf->ns;
 
 /* print the prompt */
 xbufadds(p->lbuf, prompt, 1);
@@ -1018,6 +1018,10 @@ for (;;)
     char chtype;
     cur_char = consolegetc(c);
     chtype = isprint(cur_char) || ((unsigned char)cur_char > 0x7f);
+    if (p->lbuf->ns != ns0)
+    { /* we scrolled, e.g. cleared screen */
+        cur_line = p->lbuf->s[p->lbuf->ns - 1] + prompt_len;
+    }
     if (chtype && (max_pos < len - 2))
     {
         int i;
@@ -1253,11 +1257,15 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
     setWidthOnResize = widthonresize;
 }
 
-void consoleprint(console c) FBEGIN printer lpr;
+void consoleprint(console c) FBEGIN
+
+    printer lpr;
 int cc, rr, fh, cl, cp, clinp, i;
 int top, left;
+int x0, y0, x1, y1;
 font f;
 char *s = "", lc = '\0', msg[LF_FACESIZE + 128], title[60];
+char buf[1024];
 cursor cur;
 if (!(lpr = newprinter(0.0, 0.0)))
     FVOIDRETURN;
@@ -1280,29 +1288,86 @@ left = devicepixelsx(lpr) / 5;
 fh = fontheight(f);
 rr = getheight(lpr) - top;
 cc = getwidth(lpr) - 2 * left;
-cl = 0;
-clinp = rr;
-cp = 1;
 strncpy(title, gettext(c), 59);
 if (strlen(gettext(c)) > 59)
-    strcpy(&title[57], "...");
+    strcpy(&title[56], "...");
 cur = currentcursor();
 setcursor(WatchCursor);
-while ((cl < NUMLINES) || (*s))
+
+/* Look for a selection */
+if (p->sel)
+{
+    int len, c1, c2, c3;
+    if (p->my0 >= NUMLINES)
+        p->my0 = NUMLINES - 1;
+    if (p->my0 < 0)
+        p->my0 = 0;
+    len = strlen(LINE(p->my0));
+    if (p->mx0 >= len)
+        p->mx0 = len - 1;
+    if (p->mx0 < 0)
+        p->mx0 = 0;
+    if (p->my1 >= NUMLINES)
+        p->my1 = NUMLINES - 1;
+    if (p->my1 < 0)
+        p->my1 = 0;
+    len = strlen(LINE(p->my1));
+    if (p->mx1 >= len)
+        p->mx1 = len - 1;
+    if (p->mx1 < 0)
+        p->mx1 = 0;
+    c1 = (p->my0 < p->my1);
+    c2 = (p->my0 == p->my1);
+    c3 = (p->mx0 < p->mx1);
+    if (c1 || (c2 && c3))
+    {
+        x0 = p->mx0;
+        y0 = p->my0;
+        x1 = p->mx1;
+        y1 = p->my1;
+    }
+    else
+    {
+        x0 = p->mx1;
+        y0 = p->my1;
+        x1 = p->mx0;
+        y1 = p->my0;
+    }
+}
+else
+{
+    x0 = y0 = 0;
+    y1 = NUMLINES - 1;
+    x1 = strlen(LINE(y1));
+}
+
+cl = y0; /* current line */
+clinp = rr;
+cp = 1; /* current page */
+
+/* s is possible continuation line */
+while ((cl <= y1) || (*s))
 {
     if (clinp + fh >= rr)
     {
         if (cp > 1)
             nextpage(lpr);
         gdrawstr(lpr, f, Black, pt(left, top), title);
-        sprintf(msg, "Pag.%d", cp++);
+        sprintf(msg, "Page %d", cp++);
         gdrawstr(lpr, f, Black, pt(cc - gstrwidth(lpr, f, msg) - 1, top), msg);
         clinp = top + 2 * fh;
     }
     if (!*s)
     {
-        if (cl < NUMLINES)
+        if (cl == y0)
+            s = LINE(cl++) + x0;
+        else if (cl < y1)
             s = LINE(cl++);
+        else if (cl == y1)
+        {
+            s = strncpy(buf, LINE(cl++), 1023);
+            s[min(x0, 1023) + 1] = '\0';
+        }
         else
             break;
     }
@@ -1323,9 +1388,10 @@ while ((cl < NUMLINES) || (*s))
         gdrawstr(lpr, f, Black, pt(left, clinp), s);
         clinp += fh;
         s[i] = lc;
-        s = &s[i];
+        s = s + i;
     }
 }
+
 if (f != FixedFont)
     del(f);
 del(lpr);
@@ -1397,7 +1463,7 @@ void consolehelp()
     strcat(s, "     Shift+Ins (or Ctrl+V or Ctrl+Y) to paste the content of the clipboard (if any)  \n");
     strcat(s, "     to the console, Ctrl+X first copy then paste\n");
     strcat(s, "  Misc:\n");
-    strcat(s, "     Ctrl+L: Redraw console.\n");
+    strcat(s, "     Ctrl+L: Clear the console.\n");
     strcat(s, "     Ctrl+O: Toggle overwrite mode: initially off.\n");
     strcat(s, "     Ctrl+T: Interchange current char with one to the left.\n");
     strcat(s, "\nNote: Console is updated only when some input is required.\n");
@@ -1407,3 +1473,13 @@ void consolehelp()
     strcat(s, "graphics device (Ctrl+Tab or Ctrl+F6 in MDI, Alt+Tab in SDI)");
     askok(s);
 }
+
+void consoleclear(control c) FBEGIN xbuf l = p->lbuf;
+int oldshift = l->shift;
+l->shift = (l->ns - 1);
+xbufshift(l);
+l->shift = oldshift;
+NEWFV = 0;
+p->r = 0;
+REDRAW;
+FVOIDEND
