@@ -8,6 +8,8 @@
 
 int baseRegisterIndex = -1;
 
+void restoredpSaved(DevDesc *dd);
+
 SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
 {
     GEDevDesc *curdd;
@@ -15,6 +17,7 @@ SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
     NewDevDesc *dev;
     GPar *ddp;
     SEXP state;
+    SEXP valid;
     SEXP result = R_NilValue;
     switch (task)
     {
@@ -65,9 +68,20 @@ SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
         curdd = GEcurrentDevice();
         copyGPar(&(((baseSystemState *)sd->systemSpecific)->dpSaved),
                  &(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->dpSaved));
+        restoredpSaved((DevDesc *)dd);
+        copyGPar(&(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->dp),
+                 &(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->gp));
+        GReset((DevDesc *)curdd);
         break;
-    case GE_Redraw:
-        playDisplayList((DevDesc *)dd);
+    case GE_SaveState:
+        sd = dd->gesd[baseRegisterIndex];
+        copyGPar(&(((baseSystemState *)sd->systemSpecific)->dp), &(((baseSystemState *)sd->systemSpecific)->dpSaved));
+        break;
+    case GE_RestoreState:
+        sd = dd->gesd[baseRegisterIndex];
+        restoredpSaved((DevDesc *)dd);
+        copyGPar(&(((baseSystemState *)sd->systemSpecific)->dp), &(((baseSystemState *)sd->systemSpecific)->gp));
+        GReset((DevDesc *)dd);
         break;
     case GE_SaveSnapshotState:
         sd = dd->gesd[baseRegisterIndex];
@@ -84,7 +98,18 @@ SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
     case GE_RestoreSnapshotState:
         sd = dd->gesd[baseRegisterIndex];
         copyGPar((GPar *)INTEGER(data), &(((baseSystemState *)sd->systemSpecific)->dpSaved));
+        restoredpSaved((DevDesc *)dd);
+        copyGPar(&(((baseSystemState *)sd->systemSpecific)->dp), &(((baseSystemState *)sd->systemSpecific)->gp));
+        GReset((DevDesc *)dd);
         break;
+    case GE_CheckPlot:
+        /* Check that the current plotting state is "valid"
+         */
+        sd = dd->gesd[baseRegisterIndex];
+        PROTECT(valid = allocVector(LGLSXP, 1));
+        LOGICAL(valid)[0] = ((baseSystemState *)sd->systemSpecific)->gp.valid;
+        UNPROTECT(1);
+        result = valid;
     }
     return result;
 }

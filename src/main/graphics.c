@@ -1928,7 +1928,7 @@ DevDesc *GNewPlot(Rboolean recording)
                     PROTECT(savedDisplayList = dd->displayList);
                 copyGPar(dpSavedptr(dd), &(savedGPar));
 #endif
-                initDisplayList(dd);
+                GEinitDisplayList((GEDevDesc *)dd);
             }
             if (dd->newDevStruct)
                 GENewPage(dpptr(dd)->bg, (GEDevDesc *)dd);
@@ -6214,7 +6214,12 @@ void recordGraphicOperation(SEXP op, SEXP args, DevDesc *dd)
     }
 }
 
-static void restoredpSaved(DevDesc *dd)
+/* NOTE this is not declared static because it is also used in
+ * base.c
+ * Once graphics.c gets hacked to pieces and split into engine.c and base.c
+ * then this can be made static again.
+ */
+void restoredpSaved(DevDesc *dd)
 {
     /* NOTE that not all params should be restored before playing */
     /* the display list (e.g., don't restore the device size) */
@@ -6464,7 +6469,7 @@ void copyDisplayList(int fromDevice)
 
 void inhibitDisplayList(DevDesc *dd)
 {
-    initDisplayList(dd);
+    GEinitDisplayList((GEDevDesc *)dd);
     if (dd->newDevStruct)
         ((GEDevDesc *)dd)->dev->displayListOn = FALSE;
     else
