@@ -85,6 +85,10 @@ static pascal Boolean deItemComparison(ControlRef browser, DataBrowserItemID ite
 static pascal void deCustomDrawProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
                                     DataBrowserItemState itemState, const Rect *theRect, SInt16 gdDepth,
                                     Boolean colorDevice);
+static pascal Boolean deCustomHitTestProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
+                                          const Rect *theRect, const Rect *mouseRect);
+static pascal Boolean deCustomEditTextProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
+                                           CFStringRef theString, Rect *maxEditTextRect, Boolean *shrinkToFit);
 
 pascal OSStatus deEventHandler(EventHandlerCallRef, EventRef, void *);
 
@@ -203,11 +207,12 @@ Boolean OpenDataEntry(void)
 {
     OSStatus err = noErr;
     int i, j, k;
-    EventTypeSpec deEvents[] = {{kEventClassCommand, kEventCommandProcess},
-                                {kEventClassCommand, kEventCommandUpdateStatus},
-                                {kEventClassWindow, kEventWindowGetIdealSize},
-                                {kEventClassWindow, kEventWindowBoundsChanged},
-                                {kEventClassWindow, kEventWindowGetClickActivation}};
+    EventTypeSpec deEvents[] = {
+        {kEventClassCommand, kEventCommandProcess},          {kEventClassCommand, kEventCommandUpdateStatus},
+        {kEventClassWindow, kEventWindowGetIdealSize},       {kEventClassWindow, kEventWindowBoundsChanged},
+        {kEventClassWindow, kEventWindowGetClickActivation},
+        /*                { kEventClassMouse,	kEventMouseDown} */
+    };
 
     CreateNewWindow(kDocumentWindowClass, kWindowStandardHandlerAttribute | kWindowStandardDocumentAttributes,
                     &deBounds, &DataEntryWindow);
@@ -253,7 +258,7 @@ Boolean OpenDataEntry(void)
 
     AddDataBrowserItems(DataEntryControl, kDataBrowserNoItem, NumOfRows, RowID, kDataBrowserItemNoProperty);
 
-    SetDataBrowserSelectionFlags(DataEntryControl, kDataBrowserCmdTogglesSelection);
+    SetDataBrowserSelectionFlags(DataEntryControl, kDataBrowserSelectOnlyOne);
     // SetAutomaticControlDragTrackingEnabledForWindow( DataEntryWindow, true );
     ShowWindow(DataEntryWindow);
 }
@@ -336,13 +341,14 @@ static void ConfigureDataEntry(ControlRef browser)
         columnDesc.headerBtnDesc.btnFontStyle.font = kControlFontViewSystemFont;
         columnDesc.headerBtnDesc.btnFontStyle.style = normal;
 
-        columnDesc.propertyDesc.propertyType = kDataBrowserTextType;
+        columnDesc.propertyDesc.propertyType = kDataBrowserCustomType;
         columnDesc.propertyDesc.propertyFlags = kDataBrowserPropertyIsMutable | kDataBrowserListViewDefaultColumnFlags;
         for (i = 0; i <= xmaxused; i++)
         {
 
-            columnDesc.propertyDesc.propertyID = i + 1000;
-
+            columnDesc.propertyDesc.propertyID = i + 2000;
+            if (i >= 0)
+                columnDesc.propertyDesc.propertyType = kDataBrowserTextType;
             // columnDesc.headerBtnDesc.btnContentInfo.contentType = kControlContentIconRef;
 
             if (i == 0)
@@ -392,7 +398,10 @@ void InstallDataEntryCallbacks(ControlRef browser)
     dbCustomCallbacks.version = kDataBrowserLatestCallbacks;
     InitDataBrowserCustomCallbacks(&dbCustomCallbacks);
     dbCustomCallbacks.u.v1.drawItemCallback = NewDataBrowserDrawItemUPP(deCustomDrawProc);
-    fprintf(stderr, "\n custom err=%d", SetDataBrowserCustomCallbacks(browser, &dbCustomCallbacks));
+    dbCustomCallbacks.u.v1.hitTestCallback = NewDataBrowserHitTestUPP(deCustomHitTestProc);
+    dbCustomCallbacks.u.v1.editTextCallback = NewDataBrowserEditItemUPP(deCustomEditTextProc);
+
+    SetDataBrowserCustomCallbacks(browser, &dbCustomCallbacks);
 }
 
 void printelt(SEXP invec, int vrow, char *str);
@@ -408,16 +417,16 @@ static pascal OSStatus deGetSetItemData(ControlRef browser, DataBrowserItemID it
     int i, col, row = -1;
     char buf[1000];
 
-    if (property >= 1000 & property < 10000)
+    if (property >= 2000 & property < 10000)
     {
-        col = property - 1000;
+        col = property - 2000;
         row = itemID;
     }
 
     if (!changeValue)
     {
 
-        if (property == 1000)
+        if (property == 2000)
         {
             sprintf(buf, "%d", row);
             CopyCStringToPascal(buf, pascalString);
@@ -426,7 +435,7 @@ static pascal OSStatus deGetSetItemData(ControlRef browser, DataBrowserItemID it
             CFRelease(text);
         }
 
-        if (property > 1000 & row > 0 & row <= ymaxused)
+        if (property > 2000 & row > 0 & row <= ymaxused)
         {
             tmp = VECTOR_ELT(work, col - 1);
             if (!isNull(tmp))
@@ -456,7 +465,7 @@ static pascal OSStatus deGetSetItemData(ControlRef browser, DataBrowserItemID it
     else
     {
 
-        if (property > 1000 & row > 0 & row <= ymaxused)
+        if (property > 2000 & row > 0 & row <= ymaxused)
         {
             err = GetDataBrowserItemDataText(itemData, &text);
             CFStringGetCString(text, buf, 1000, kCFStringEncodingMacRoman);
@@ -534,14 +543,18 @@ static pascal void deItemNotification(ControlRef browser, DataBrowserItemID item
         Handle handle = NewHandle(0);
         GetDataBrowserItems(browser, kDataBrowserNoItem, true, kDataBrowserItemIsSelected, handle);
         numSelectedItems = GetHandleSize(handle) / sizeof(DataBrowserItemID);
+        // fprintf(stderr,"\n notif. id=%d",itemID);
     }
     break;
     }
 }
 
+Boolean MouseClicked = false;
+
 pascal OSStatus deEventHandler(EventHandlerCallRef a, EventRef inEvent, void *b)
 {
     OSStatus result = noErr;
+    EventRef REvent;
 
     switch (GetEventClass(inEvent))
     {
@@ -549,6 +562,17 @@ pascal OSStatus deEventHandler(EventHandlerCallRef a, EventRef inEvent, void *b)
         result = eventNotHandledErr;
     }
     break;
+
+    case kEventClassMouse:
+        if (GetEventKind(inEvent) == kEventMouseDown)
+        {
+            if (!MouseClicked)
+            {
+                MouseClicked = true;
+                result = eventNotHandledErr;
+            }
+        }
+        break;
 
     case kEventClassWindow: {
         WindowRef window = NULL;
@@ -752,9 +776,9 @@ static pascal Boolean deItemComparison(ControlRef browser, DataBrowserItemID ite
 
     row = max(itemOneID, itemTwoID);
 #define Compare(i1, i2, p) deItemComparison(browser, i1, i2, p)
-    if (property > 1000 & property<2000 & row> 0 & row <= ymaxused)
+    if (property > 2000 & property<3000 & row> 0 & row <= ymaxused)
     {
-        tmp = VECTOR_ELT(work, property - 1000 - 1);
+        tmp = VECTOR_ELT(work, property - 2000 - 1);
         if (!isNull(tmp))
         {
             strcpy(buf1, " ");
@@ -764,7 +788,7 @@ static pascal Boolean deItemComparison(ControlRef browser, DataBrowserItemID ite
             if (LENGTH(tmp) > itemTwoID - 1)
                 printelt(tmp, itemTwoID - 1, buf2);
 
-            if (get_col_type(property - 1000) == CHARACTER)
+            if (get_col_type(property - 2000) == CHARACTER)
                 compareResult = strcmp(buf1, buf2);
             else
             {
@@ -797,27 +821,99 @@ struct WindowinfoStruct
 };
 typedef struct WindowinfoStruct WindowinfoStruct;
 
+DataBrowserItemID LastSelItem = 0;
+DataBrowserPropertyID LastSelProp = 0;
+
 static pascal void deCustomDrawProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
                                     DataBrowserItemState itemState, const Rect *theRect, SInt16 gdDepth,
                                     Boolean colorDevice)
 {
-    CFStringRef cfString;
+    CFStringRef text;
+    RGBColor fg = CurrentPrefs.FGOutputColor;
+    RGBColor bg = CurrentPrefs.BGOutputColor;
+    Str255 pascalString;
+    SEXP tmp;
+    int i, col, row = -1;
+    char buf[1000];
 
-    cfString = CFStringCreateWithFormat(NULL, NULL, CFSTR("Row %d"), item);
-
-    if (itemState == kDataBrowserItemIsSelected)
+    if (property >= 2000 & property < 10000)
     {
-        RGBForeColor(&CurrentPrefs.BGInputColor);
-        PaintRect(theRect); //	First paint the hilite rect, then the text on top
+        col = property - 2000;
+        row = item;
     }
 
-    RGBForeColor(&CurrentPrefs.FGInputColor);
-    DrawThemeTextBox(cfString, kThemeApplicationFont, kThemeStateActive, true, theRect, teFlushDefault, NULL); //
+    if (property == 2000)
+        text = CFStringCreateWithFormat(NULL, NULL, CFSTR("%d"), row);
 
-    if (cfString != NULL)
-        CFRelease(cfString);
-    fprintf(stderr, "\ncustom prop=%d, top=%d, left=%d, bottom=%d, right=%d", property, theRect->top, theRect->left,
-            theRect->bottom, theRect->right);
+    // fprintf(stderr,"\n prop=%d, id=%d",property, item);
+    if (property > 2000 & row > 0 & row <= ymaxused)
+    {
+        tmp = VECTOR_ELT(work, col - 1);
+        if (!isNull(tmp))
+        {
+            strcpy(buf, "     ");
+            if (LENGTH(tmp) > row - 1)
+                printelt(tmp, row - 1, buf);
+        }
+        CopyCStringToPascal(buf, pascalString);
+        text = CFStringCreateWithPascalString(CFAllocatorGetDefault(), pascalString, kCFStringEncodingMacRoman);
+    }
+    //         fprintf(stderr,"\n it=%d, lastit=%d, pro=%d, lastpro=%d",item, LastSelItem, property, LastSelProp);
+    if ((property == LastSelProp) && (item == LastSelItem))
+    {
+        //	if( (itemState == kDataBrowserItemIsSelected)  ){
+        bg = CurrentPrefs.BGInputColor;
+        fg = CurrentPrefs.FGInputColor;
+    }
+
+    RGBForeColor(&bg);
+    PaintRect(theRect); //	First paint the hilite rect, then the text on top
+
+    RGBForeColor(&fg);
+    DrawThemeTextBox(text, kThemeApplicationFont, kThemeStateActive, true, theRect, teFlushRight, NULL);
+    if (text)
+        CFRelease(text);
+
+    if ((property == LastSelProp) && (item == LastSelItem))
+        SetDataBrowserEditItem(browser, item, property);
+
+    //     if(property!=1000)
+    //       fprintf(stderr,"\nbuf=%s prop=%d, id=%d, top=%d, left=%d, bottom=%d, right=%d", buf, property, item,
+    //       theRect->top, theRect->left, theRect->bottom, theRect->right);
+}
+
+static pascal Boolean deCustomHitTestProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
+                                          const Rect *theRect, const Rect *mouseRect)
+{
+
+    if (!MouseClicked)
+        return (false);
+    if ((theRect->top <= mouseRect->top) && (theRect->left <= mouseRect->left) &&
+        (theRect->bottom >= mouseRect->bottom) && (theRect->right >= mouseRect->right))
+    {
+        // fprintf(stderr,"\n (dentro) prop=%d item=%d, moouse=%d",property,item,MouseClicked);
+        SetDataBrowserSelectedItems(browser, 1, &item, kDataBrowserItemsAssign);
+        LastSelItem = item;
+        LastSelProp = property;
+        MouseClicked = false;
+        return (true);
+    }
+    else
+        return (false);
+}
+
+static pascal Boolean deCustomEditTextProc(ControlRef browser, DataBrowserItemID item, DataBrowserPropertyID property,
+                                           CFStringRef theString, Rect *maxEditTextRect, Boolean *shrinkToFit)
+{
+    char buf[200];
+
+    theString = CFStringCreateWithFormat(NULL, NULL, CFSTR("%s"), "ciao");
+    // if( CFStringGetCString (theString, buf, 150,  kCFStringEncodingMacRoman) == noErr)
+    // fprintf(stderr,"\n string=%s",buf);
+    // else
+    fprintf(stderr, "\n no string");
+
+    return (true);
 }
 
 #endif /* HAVE_AQUA */
