@@ -578,6 +578,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
         break;
     }
 
+    R_RunExitFinalizers();
     KillAllDevices();
     if (saveact != SA_SUICIDE && R_CollectWarnings)
         PrintWarnings(); /* from device close and .Last */

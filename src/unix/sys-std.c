@@ -469,7 +469,8 @@ void Rstd_Busy(int which)
    If ask = SA_SUICIDE, no save, no .Last, possibly other things.
  */
 
-void R_dot_Last(void); /* in main.c */
+void R_dot_Last(void);          /* in main.c */
+void R_RunExitFinalizers(void); /* in memory.c */
 
 void Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
@@ -532,6 +533,7 @@ void Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
     default:
         break;
     }
+    R_RunExitFinalizers();
     CleanEd();
     KillAllDevices();
     if (saveact != SA_SUICIDE && R_CollectWarnings)
