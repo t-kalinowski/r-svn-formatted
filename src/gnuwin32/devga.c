@@ -157,7 +157,7 @@ static void GA_Line(double, double, double, double, int, DevDesc *);
 static int GA_Locator(double *, double *, DevDesc *);
 static void GA_Mode(int);
 static void GA_NewPage(DevDesc *);
-static int GA_Open(DevDesc *, gadesc *, char *, double, double);
+static int GA_Open(DevDesc *, gadesc *, char *, double, double, int);
 static void GA_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void GA_Polyline(int, double *, double *, int, DevDesc *);
 static void GA_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -211,7 +211,7 @@ static void SaveAsWin(DevDesc *dd, char *display)
     ndd->displayList = R_NilValue;
     GInit(&ndd->dp);
     if (GADeviceDriver(ndd, display, GConvertXUnits(1.0, NDC, INCHES, dd), GConvertYUnits(1.0, NDC, INCHES, dd),
-                       dd->gp.ps))
+                       dd->gp.ps, 0))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -1053,7 +1053,7 @@ static void mbarf(control m)
         }                                                                                                              \
     }
 
-static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h)
+static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, int recording)
 {
     menu m;
     int iw, ih;
@@ -1154,6 +1154,8 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h)
     MCHECK(xd->mclose = newmenuitem("close Device", 0, menuclose));
     MCHECK(newmenu("History"));
     MCHECK(xd->mrec = newmenuitem("Recording", 0, menurec));
+    if (recording)
+        check(xd->mrec);
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(xd->madd = newmenuitem("Add\tINS", 0, menuadd));
     MCHECK(xd->mreplace = newmenuitem("Replace", 0, menureplace));
@@ -1213,13 +1215,13 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h)
     setkeydown(xd->gawin, NHelpKeyIn);
     setkeyaction(xd->gawin, CHelpKeyIn);
     setclose(xd->gawin, HelpClose);
-    xd->recording = 0;
+    xd->recording = recording;
     xd->replaying = 0;
 
     return 1;
 }
 
-static int GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h)
+static int GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, int recording)
 {
     rect rr;
 
@@ -1236,7 +1238,7 @@ static int GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h)
 
     if (!dsp[0])
     {
-        if (!setupScreenDevice(dd, xd, w, h))
+        if (!setupScreenDevice(dd, xd, w, h, recording))
             return 0;
     }
     else if (!strcmp(dsp, "win.print"))
@@ -1896,7 +1898,7 @@ static void GA_Hold(DevDesc *dd)
 /* the clean-up itself					*/
 /********************************************************/
 
-int GADeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
+int GADeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, int recording)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -1927,7 +1929,7 @@ int GADeviceDriver(DevDesc *dd, char *display, double width, double height, doub
 
     /* Start the Device Driver and Hardcopy.  */
 
-    if (!GA_Open(dd, xd, display, width, height))
+    if (!GA_Open(dd, xd, display, width, height, recording))
     {
         free(xd);
         return 0;
