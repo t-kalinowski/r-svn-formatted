@@ -1750,7 +1750,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* rect(xl, yb, xr, yt, col, border, lty, lwd, xpd) */
+    /* rect(xl, yb, xr, yt, col, border, lty, lwd, xpd, ...) */
     SEXP sxl, sxr, syb, syt, sxpd, col, lty, lwd, border;
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt, ncol, nlty, nlwd, nborder, xpd;
@@ -1799,6 +1799,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
+    ProcessInlinePars(args, dd, call);
 
     if (xpd == NA_INTEGER)
         Rf_gpptr(dd)->xpd = 2;
