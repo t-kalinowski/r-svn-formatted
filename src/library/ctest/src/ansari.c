@@ -29,9 +29,13 @@ static void w_init(Sint m, Sint n)
 
 static void w_free(Sint m, Sint n)
 {
-    Sint i;
+    Sint i, j;
     for (i = m; i >= 0; i--)
     {
+        for (j = n; j >= 0; j--)
+        {
+            Free(w[i][j]);
+        }
         Free(w[i]);
     }
     Free(w);
