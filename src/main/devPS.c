@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2001  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2002  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1096,6 +1096,12 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
     strcpy(pd->filename, file);
     strcpy(pd->papername, paper);
     pd->fontfamily = strcmp(family, "User") ? MatchFamily(family) : USERAFM;
+    if (strlen(encoding) > PATH_MAX - 1)
+    {
+        free(dd);
+        free(pd);
+        error("encoding path is too long");
+    }
     strcpy(pd->encpath, encoding);
     pd->afmpaths = afmpaths;
 
@@ -1113,6 +1119,12 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
         error("invalid foreground/background color (postscript)");
     }
     pd->printit = printit;
+    if (strlen(cmd) > PATH_MAX - 1)
+    {
+        free(dd);
+        free(pd);
+        error("`command' is too long");
+    }
     strcpy(pd->command, cmd);
     if (printit && strlen(cmd) == 0)
         error("postscript(print.it=T) used with an empty print command");
@@ -2163,6 +2175,7 @@ static Rboolean XFig_Open(NewDevDesc *dd, XFigDesc *pd)
     }
     if (!pd->psfp)
         return FALSE;
+        /* assume tmpname is less than PATH_MAX */
 #ifdef Unix
     strcpy(pd->tmpname, Runix_tmpnam("Rxfig"));
 #endif
@@ -2603,6 +2616,12 @@ static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, c
     /* initialize PDF device description */
     strcpy(pd->filename, file);
     pd->fontfamily = MatchFamily(family);
+    if (strlen(encoding) > PATH_MAX - 1)
+    {
+        free(dd);
+        free(pd);
+        error("encoding path is too long");
+    }
     strcpy(pd->encpath, encoding);
     setbg = str2col(bg);
     setfg = str2col(fg);

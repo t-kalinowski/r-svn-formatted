@@ -53,7 +53,7 @@ static int R_mkdir(char *path)
     return mkdir(path, 0777);
 #endif
 #ifdef Macintosh
-    char *p, local[PATH_MAX];
+    char *p, local[PATH_MAX]; /* is this safe? */
     strcpy(local, path);
     for (p = local; *p; p++)
         if (*p == '/')
@@ -72,6 +72,8 @@ static int extract_one(unzFile uf, char *dest, char *filename)
     err = unzOpenCurrentFile(uf);
     if (err != UNZ_OK)
         return err;
+    if (strlen(dest) + strlen(filename) > PATH_MAX > 2)
+        return 1;
     strcpy(outname, dest);
     strcat(outname, FILESEP);
     if (filename)
@@ -190,12 +192,15 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files)
 SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn, ans;
-    char zipname[PATH_MAX], *topics[500], dest[PATH_MAX];
+    char zipname[PATH_MAX], *topics[500], dest[PATH_MAX], *p;
     int i, ntopics, rc;
 
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         errorcall(call, "invalid zip name argument");
-    strcpy(zipname, CHAR(STRING_ELT(CAR(args), 0)));
+    p = CHAR(STRING_ELT(CAR(args), 0));
+    if (strlen(p) > PATH_MAX - 1)
+        errorcall(call, "zip path is too long");
+    strcpy(zipname, p);
     args = CDR(args);
     fn = CAR(args);
     ntopics = length(fn);
@@ -209,7 +214,10 @@ SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         errorcall(call, "invalid destination argument");
-    strcpy(dest, R_ExpandFileName(CHAR(STRING_ELT(CAR(args), 0))));
+    p = R_ExpandFileName(CHAR(STRING_ELT(CAR(args), 0)));
+    if (strlen(p) > PATH_MAX - 1)
+        errorcall(call, "destination is too long");
+    strcpy(dest, p);
     if (!R_FileExists(dest))
         errorcall(call, "destination does not exist");
 
@@ -253,7 +261,10 @@ static void unz_open(Rconnection con)
 
     if (con->mode[0] != 'r')
         error("unz connections can only be opened for reading");
-    strcpy(path, R_ExpandFileName(con->description));
+    p = R_ExpandFileName(con->description);
+    if (strlen(p) > PATH_MAX - 1)
+        error("zip path is too long");
+    strcpy(path, p);
     p = strrchr(path, ':');
     if (!p)
         error("invalid description of unz connection");

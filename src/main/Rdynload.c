@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2001 The R Development Core Team
+ *  Copyright (C) 1997-2002 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -466,7 +466,10 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
         p = dpath;
     else
         p++;
-    strcpy(DLLname, p);
+    if (strlen(p) < PATH_MAX)
+        strcpy(DLLname, p);
+    else
+        error("DLLname %s is too long", p);
 
     /* FIXME: didn't work on Mac, unsafe
     p = strchr(DLLname, '.');

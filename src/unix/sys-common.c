@@ -1,7 +1,7 @@
 /*
   R : A Computer Language for Statistical Data Analysis
   Copyright (C) 1995-1996   Robert Gentleman and Ross Ihaka
-  Copyright (C) 1997-2000   Robert Gentleman, Ross Ihaka
+  Copyright (C) 1997-2002   Robert Gentleman, Ross Ihaka
                             and the R Development Core Team
 
   This program is free software; you can redistribute it and/or modify
@@ -771,6 +771,11 @@ void process_system_Renviron()
 {
     char buf[PATH_MAX];
 
+    if (strlen(R_Home) + strlen("/etc/Renviron") > PATH_MAX - 1)
+    {
+        R_ShowMessage("path to system Renviron is too long: skipping");
+        return;
+    }
     strcpy(buf, R_Home);
     strcat(buf, "/etc/Renviron");
     if (!process_Renviron(buf))
@@ -784,6 +789,11 @@ void process_site_Renviron()
 
     if (process_Renviron(getenv("R_ENVIRON")))
         return;
+    if (strlen(R_Home) + strlen("/etc/Renviron.site") > PATH_MAX - 1)
+    {
+        R_ShowMessage("path to Renviron.site is too long: skipping");
+        return;
+    }
     sprintf(buf, "%s/etc/Renviron.site", R_Home);
     process_Renviron(buf);
 }
