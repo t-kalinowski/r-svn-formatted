@@ -361,7 +361,11 @@ static void fcn(int n, const double x[], double *f, function_info *state)
     /* calculate for a new value of x */
     s = CADR(R_fcall);
     for (i = 0; i < n; i++)
+    {
+        if (!R_FINITE(x[i]))
+            error("non-finite value supplied by nlm");
         REAL(s)[i] = x[i];
+    }
     s = eval(state->R_fcall, state->R_env);
     switch (TYPEOF(s))
     {
