@@ -522,7 +522,7 @@ SEXP do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP arg, ans;
+    SEXP arg, ans, this;
     int i, l, n;
     char *p;
 
@@ -535,7 +535,8 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         l = strlen(CHAR(STRING_ELT(arg, i)));
-        if (isalpha((int)CHAR(STRING_ELT(arg, i))[0]))
+        this = CHAR(STRING_ELT(arg, i))[0];
+        if (isalpha((int)this) || this == '.')
         {
             SET_STRING_ELT(ans, i, allocString(l));
             strcpy(CHAR(STRING_ELT(ans, i)), CHAR(STRING_ELT(arg, i)));
