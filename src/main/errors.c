@@ -149,7 +149,12 @@ void warning(const char *format, ...)
 
     va_list(ap);
     va_start(ap, format);
+#ifdef HAVE_VSNPRINTF
+    vsnprintf(buf, BUFSIZE, format, ap);
+    buf[BUFSIZE - 1] = '\0';
+#else
     vsprintf(buf, format, ap);
+#endif
     va_end(ap);
     p = buf + strlen(buf) - 1;
     if (strlen(buf) > 0 && *p == '\n')
@@ -191,7 +196,12 @@ void warningcall(SEXP call, char *format, ...)
     { /* make it an error */
         va_list(ap);
         va_start(ap, format);
+#ifdef HAVE_VSNPRINTF
+        vsnprintf(buf, BUFSIZE, format, ap);
+        buf[BUFSIZE - 1] = '\0';
+#else
         vsprintf(buf, format, ap);
+#endif
         va_end(ap);
         errorcall(call, "(converted from warning) %s", buf);
     }
@@ -221,7 +231,12 @@ void warningcall(SEXP call, char *format, ...)
         if (R_CollectWarnings > 49)
             return;
         SET_VECTOR_ELT(R_Warnings, R_CollectWarnings, call);
+#ifdef HAVE_VSNPRINTF
+        vsnprintf(buf, BUFSIZE, format, ap);
+        buf[BUFSIZE - 1] = '\0';
+#else
         vsprintf(buf, format, ap);
+#endif
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
         SET_STRING_ELT(names, R_CollectWarnings++, mkChar(buf));
@@ -339,7 +354,12 @@ void error(const char *format, ...)
 
     va_list(ap);
     va_start(ap, format);
+#ifdef HAVE_VSNPRINTF
+    vsnprintf(buf, BUFSIZE, format, ap);
+    buf[BUFSIZE - 1] = '\0';
+#else
     vsprintf(buf, format, ap);
+#endif
     va_end(ap);
     p = buf + strlen(buf) - 1;
     if (*p != '\n')
