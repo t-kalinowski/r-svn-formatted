@@ -1081,7 +1081,7 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
 
     for (i = 0; i < 5; i++)
     {
-        sprintf(buf, "%s/afm/%s.%s", R_Home, Family[pd->fontfamily].font[i].abbr,
+        sprintf(buf, "%s%safm%s%s.%s", R_Home, FILESEP, FILESEP, Family[pd->fontfamily].font[i].abbr,
                 (i == 4) ? "afm" : Extension[pd->encoding]);
         if (!PostScriptLoadFontMetrics(buf, &(metrics[i])))
         {
@@ -1829,7 +1829,7 @@ static int XFig_Open(DevDesc *dd, XFigDesc *pd)
 
     for (i = 0; i < 5; i++)
     {
-        sprintf(buf, "%s/afm/%s.%s", R_Home, Family[pd->fontfamily].font[i].abbr,
+        sprintf(buf, "%s%safm%s%s.%s", R_Home, FILESEP, FILESEP, Family[pd->fontfamily].font[i].abbr,
                 (i == 4) ? "afm" : Extension[pd->encoding]);
         if (!PostScriptLoadFontMetrics(buf, &(metrics[i])))
             return 0;
