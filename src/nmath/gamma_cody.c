@@ -129,7 +129,7 @@ double gamma_cody(double x)
     /* Local variables */
     long i, n;
     long int parity; /*logical*/
-    double fact, xden, xnum, y, z, y1, res, sum, ysq;
+    double fact, xden, xnum, y, z, yi, res, sum, ysq;
 
     parity = (0);
     fact = 1.;
@@ -141,19 +141,18 @@ double gamma_cody(double x)
            Argument is negative
            ------------------------------------------------------------- */
         y = -x;
-        y1 = ftrunc(y);
-        res = y - y1;
+        yi = ftrunc(y);
+        res = y - yi;
         if (res != 0.)
         {
-            if (y1 != ftrunc(y1 * .5) * 2.)
+            if (yi != ftrunc(yi * .5) * 2.)
                 parity = (1);
             fact = -M_PI / sin(M_PI * res);
             y += 1.;
         }
         else
         {
-            res = ML_POSINF;
-            goto L_end;
+            return (ML_POSINF);
         }
     }
     /* -----------------------------------------------------------------
@@ -170,13 +169,12 @@ double gamma_cody(double x)
         }
         else
         {
-            res = ML_POSINF;
-            goto L_end;
+            return (ML_POSINF);
         }
     }
     else if (y < 12.)
     {
-        y1 = y;
+        yi = y;
         if (y < 1.)
         {
             /* ---------------------------------------------------------
@@ -195,7 +193,7 @@ double gamma_cody(double x)
             z = y - 1.;
         }
         /* ---------------------------------------------------------
-           Evaluate approximation for 1.0 < argument < 2.0
+           Evaluate approximation for 1. < argument < 2.
            ---------------------------------------------------------*/
         xnum = 0.;
         xden = 1.;
@@ -205,17 +203,17 @@ double gamma_cody(double x)
             xden = xden * z + q[i];
         }
         res = xnum / xden + 1.;
-        if (y1 < y)
+        if (yi < y)
         {
             /* --------------------------------------------------------
-               Adjust result for case  0.0 < argument < 1.0
+               Adjust result for case  0. < argument < 1.
                -------------------------------------------------------- */
-            res /= y1;
+            res /= yi;
         }
-        else if (y1 > y)
+        else if (yi > y)
         {
             /* ----------------------------------------------------------
-               Adjust result for case  2.0 < argument < 12.0
+               Adjust result for case  2. < argument < 12.
                ---------------------------------------------------------- */
             for (i = 0; i < n; ++i)
             {
@@ -227,7 +225,7 @@ double gamma_cody(double x)
     else
     {
         /* -------------------------------------------------------------
-           Evaluate for argument >= 12.0,
+           Evaluate for argument >= 12.,
            ------------------------------------------------------------- */
         if (y <= xbig)
         {
@@ -243,8 +241,7 @@ double gamma_cody(double x)
         }
         else
         {
-            res = ML_POSINF;
-            goto L_end;
+            return (ML_POSINF);
         }
     }
     /* ----------------------------------------------------------------------
@@ -254,7 +251,5 @@ double gamma_cody(double x)
         res = -res;
     if (fact != 1.)
         res = fact / res;
-
-L_end:
     return res;
 }
