@@ -48,9 +48,11 @@ typedef struct
     double pagewidth;  /* page width in points */
     double pageheight; /* page height in points */
 
-    int lty;    /* current line type */
-    rcolor col; /* current color */
-    rcolor bg;  /* background color */
+    double lwd;  /* current line width */
+    int lty;     /* current line type */
+    rcolor col;  /* current color */
+    rcolor fill; /* current fill color */
+    rcolor bg;   /* background color */
 
     FILE *psfp; /* output file */
 } postscriptDesc;
@@ -86,12 +88,24 @@ static double PS_StrWidth(char *, DevDesc *);
 static void PS_MetricInfo(int, double *, double *, double *, DevDesc *);
 static void PS_Text(double, double, int, char *, double, double, double, DevDesc *);
 
-/* Support Routines */
+/* PostScript Support (formally in PostScript.c) */
+
+static void PostScriptSetCol(FILE *fp, double r, double g, double b)
+{
+    fprintf(fp, "/fg { %.4f %.4f %.4f } def fg rgb\n", r, g, b);
+}
+
+static void PostScriptSetFill(FILE *fp, double r, double g, double b)
+{
+    fprintf(fp, "/bg { %.4f %.4f %.4f } def\n", r, g, b);
+}
+
+/* Driver Support Routines */
 
 static void SetColor(int, DevDesc *);
+static void SetFill(int, DevDesc *);
 static void SetFont(int, int, DevDesc *);
-static void SetLinetype(int, DevDesc *);
-static void SetLinewidth(DevDesc *);
+static void SetLineStyle(int newlty, double newlwd, DevDesc *dd);
 static int matchfamily(char *name);
 
 /*  PostScript Device Driver Parameters	 */
@@ -135,6 +149,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     pd->fontfamily = matchfamily(family);
     pd->bg = str2col(bg);
     pd->col = str2col(fg);
+    pd->fill = NA_INTEGER;
     pd->width = width;
     pd->height = height;
     pd->landscape = horizontal;
@@ -518,31 +533,41 @@ static void SetColor(int color, DevDesc *dd)
 
     if (color != pd->col)
     {
-        PostScriptSetColor(pd->psfp, R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
+        PostScriptSetCol(pd->psfp, R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
         pd->col = color;
     }
 }
 
-static void SetLinetype(int newlty, DevDesc *dd)
+static void SetFill(int color, DevDesc *dd)
 {
     postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
-    int i, ltyarray[8];
 
-    pd->lty = newlty;
-    for (i = 0; i < 8 && newlty & 15; i++)
+    if (color != pd->fill)
     {
-        ltyarray[i] = newlty & 15;
-        newlty = newlty >> 4;
+        PostScriptSetFill(pd->psfp, R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
+        pd->fill = color;
     }
-    /* the line texture is scaled by the line width */
-    PostScriptSetLineTexture(pd->psfp, ltyarray, i, dd->gp.lwd * 0.75);
 }
 
-static void SetLinewidth(DevDesc *dd)
+/* Note that the line texture is scaled by the line width */
+
+static void SetLineStyle(int newlty, double newlwd, DevDesc *dd)
 {
     postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
-    PostScriptSetLineWidth(pd->psfp, dd->gp.lwd * 0.75);
+    int i, ltyarray[8];
+    if (pd->lty != newlty || pd->lwd != newlwd)
+    {
+        pd->lwd = newlwd;
+        pd->lty = newlty;
+        PostScriptSetLineWidth(pd->psfp, dd->gp.lwd * 0.75);
+        for (i = 0; i < 8 && newlty & 15; i++)
+        {
+            ltyarray[i] = newlty & 15;
+            newlty = newlty >> 4;
+        }
+        PostScriptSetLineTexture(pd->psfp, ltyarray, i, dd->gp.lwd * 0.75);
+    }
 }
 
 static void SetFont(int style, int size, DevDesc *dd)
@@ -618,14 +643,16 @@ static void PS_NewPage(DevDesc *dd)
     PostScriptStartPage(pd->psfp, pd->pageno);
     PostScriptSetFont(pd->psfp, pd->fontstyle - 1, pd->fontsize);
     PostScriptSetLineWidth(pd->psfp, 0.75);
-    PostScriptSetColor(pd->psfp, R_RED(pd->col) / 255.0, R_GREEN(pd->col) / 255.0, R_BLUE(pd->col) / 255.0);
+    PostScriptSetCol(pd->psfp, R_RED(pd->col) / 255.0, R_GREEN(pd->col) / 255.0, R_BLUE(pd->col) / 255.0);
     if (dd->dp.bg != R_RGB(255, 255, 255))
     {
         SetColor(dd->dp.bg, dd);
 #ifdef OLD
-        PostScriptFilledRectangle(psfp, 0, 0, 72.0 * pagewidth, 72.0 * pageheight);
+        PostScriptRectangle(psfp, 0, 0, 72.0 * pagewidth, 72.0 * pageheight);
+        fprintf(pd->psfp, "p2\n");
 #else
-        PostScriptFilledRectangle(pd->psfp, dd->gp.left, dd->gp.bottom, dd->gp.right, dd->gp.top);
+        PostScriptRectangle(pd->psfp, dd->gp.left, dd->gp.bottom, dd->gp.right, dd->gp.top);
+        fprintf(pd->psfp, "p2\n");
 #endif
     }
 }
@@ -674,8 +701,7 @@ static void PS_StartPath(DevDesc *dd)
     postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
     SetColor(dd->gp.col, dd);
-    SetLinetype(dd->gp.lty, dd);
-    SetLineWidth(dd);
+    SetLineStyle(dd->gp.lty, dd->lwd, dd);
     PostScriptStartPath(pd->psfp);
 }
 
@@ -689,10 +715,32 @@ static void PS_EndPath(DevDesc *dd)
 
 static void PS_Rect(double x0, double y0, double x1, double y1, int coords, int bg, int fg, DevDesc *dd)
 {
+    int code;
     postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
-    GConvert(&x0, &y0, coords, DEVICE, dd);
-    GConvert(&x1, &y1, coords, DEVICE, dd);
+    /* code is set as follows */
+    /* code == 0, nothing to draw */
+    /* code == 1, outline only */
+    /* code == 2, fill only */
+    /* code == 3, outine and fill */
+
+    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+
+    if (code)
+    {
+        if (code & 2)
+            SetFill(bg, dd);
+        if (code & 1)
+        {
+            SetColor(fg, dd);
+            SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        }
+        GConvert(&x0, &y0, coords, DEVICE, dd);
+        GConvert(&x1, &y1, coords, DEVICE, dd);
+        PostScriptRectangle(pd->psfp, x0, y0, x1, y1);
+        fprintf(pd->psfp, "p%d\n", code);
+    }
+#ifdef OLD
     if (bg != NA_INTEGER)
     {
         SetColor(bg, dd);
@@ -701,17 +749,39 @@ static void PS_Rect(double x0, double y0, double x1, double y1, int coords, int 
     if (fg != NA_INTEGER)
     {
         SetColor(fg, dd);
-        SetLinetype(dd->gp.lty, dd);
-        SetLinewidth(dd);
+        SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
         PostScriptOpenRectangle(pd->psfp, x0, y0, x1, y1);
     }
+#endif
 }
 
 static void PS_Circle(double x, double y, int coords, double r, int bg, int fg, DevDesc *dd)
 {
+    int code;
     postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
-    GConvert(&x, &y, coords, DEVICE, dd);
+    /* code is set as follows */
+    /* code == 0, nothing to draw */
+    /* code == 1, outline only */
+    /* code == 2, fill only */
+    /* code == 3, outine and fill */
+
+    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+
+    if (code)
+    {
+        if (code & 2)
+            SetFill(bg, dd);
+        if (code & 1)
+        {
+            SetColor(fg, dd);
+            SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        }
+        GConvert(&x, &y, coords, DEVICE, dd);
+        PostScriptCircle(pd->psfp, x, y, r);
+        fprintf(pd->psfp, "p%d\n", code);
+    }
+#ifdef OLD
     if (bg != NA_INTEGER)
     {
         SetColor(bg, dd);
@@ -720,10 +790,10 @@ static void PS_Circle(double x, double y, int coords, double r, int bg, int fg, 
     if (fg != NA_INTEGER)
     {
         SetColor(fg, dd);
-        SetLinetype(dd->gp.lty, dd);
-        SetLinewidth(dd);
+        SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
         PostScriptOpenCircle(pd->psfp, x, y, r);
     }
+#endif
 }
 
 static void PS_Line(double x1, double y1, double x2, double y2, int coords, DevDesc *dd)
@@ -734,8 +804,7 @@ static void PS_Line(double x1, double y1, double x2, double y2, int coords, DevD
     GConvert(&x2, &y2, coords, DEVICE, dd);
     /* FIXME : clip to the device extents here */
     SetColor(dd->gp.col, dd);
-    SetLinetype(dd->gp.lty, dd);
-    SetLinewidth(dd);
+    SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
     PostScriptStartPath(pd->psfp);
     PostScriptMoveTo(pd->psfp, x1, y1);
     PostScriptLineTo(pd->psfp, x2, y2);
@@ -746,12 +815,27 @@ static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
 {
     postscriptDesc *pd;
     double xx, yy;
-    int i;
+    int i, code;
 
     pd = (postscriptDesc *)dd->deviceSpecific;
-    if (bg != NA_INTEGER)
+
+    /* code is set as follows */
+    /* code == 0, nothing to draw */
+    /* code == 1, outline only */
+    /* code == 2, fill only */
+    /* code == 3, outine and fill */
+
+    code = 2 * (bg != NA_INTEGER) + (fg != NA_INTEGER);
+
+    if (code)
     {
-        SetColor(bg, dd);
+        if (code & 2)
+            SetFill(bg, dd);
+        if (code & 1)
+        {
+            SetColor(fg, dd);
+            SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
+        }
         fprintf(pd->psfp, "np\n");
         xx = x[0];
         yy = y[0];
@@ -764,27 +848,7 @@ static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
             GConvert(&xx, &yy, coords, DEVICE, dd);
             fprintf(pd->psfp, "  %.2f %.2f l\n", xx, yy);
         }
-        fprintf(pd->psfp, "cp f\n");
-    }
-
-    if (fg != NA_INTEGER)
-    {
-        SetColor(fg, dd);
-        SetLinetype(dd->gp.lty, dd);
-        SetLinewidth(dd);
-        fprintf(pd->psfp, "np\n");
-        xx = x[0];
-        yy = y[0];
-        GConvert(&xx, &yy, coords, DEVICE, dd);
-        fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
-        for (i = 1; i < n; i++)
-        {
-            xx = x[i];
-            yy = y[i];
-            GConvert(&xx, &yy, coords, DEVICE, dd);
-            fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
-        }
-        fprintf(pd->psfp, "cp o\n");
+        fprintf(pd->psfp, "cp p%d\n", code);
     }
 }
 
@@ -796,8 +860,7 @@ static void PS_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
 
     pd = (postscriptDesc *)dd->deviceSpecific;
     SetColor(dd->gp.col, dd);
-    SetLinetype(dd->gp.lty, dd);
-    SetLinewidth(dd);
+    SetLineStyle(dd->gp.lty, dd->gp.lwd, dd);
     fprintf(pd->psfp, "np\n");
     xx = x[0];
     yy = y[0];
