@@ -13,15 +13,15 @@ typedef int logical;
 #define TRUE_ (1)
 #define FALSE_ (0)
 
-static void split(long n, double *x, long m, long *in, long ii, long jj, long s, long *iabv, long *na, long *maxa,
-                  long *ibel, long *nb, long *maxb)
+static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *iabv, int *na, int *maxa, int *ibel,
+                  int *nb, int *maxb)
 {
     /* System generated locals */
-    long x_dim1, x_offset;
+    int x_dim1, x_offset;
 
     /* Local variables */
     double a, b, dir, down, d1, up, xt, z;
-    long i, is;
+    int i, is;
     logical t;
 
     /* THIS SUBROUTINE TAKES THE M POINTS OF ARRAY X WHOSE */
@@ -136,11 +136,11 @@ static void split(long n, double *x, long m, long *in, long ii, long jj, long s,
     }
 }
 
-void chull(long *n, double *x, long *m, long *in, long *ia, long *ib, long *ih, long *nh, long *il)
+void chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int *nh, int *il)
 {
     /* Local variables */
     logical mine, maxe;
-    long i, j, ilinh, ma, mb, kn, mm, kx, mx, mp1, mbb, nia, nib, inh, min, mxa, mxb, mxbb;
+    int i, j, ilinh, ma, mb, kn, mm, kx, mx, mp1, mbb, nia, nib, inh, min, mxa, mxb, mxbb;
     int x_dim1, x_offset;
     double d1;
 
@@ -259,7 +259,7 @@ void chull(long *n, double *x, long *m, long *in, long *ia, long *ib, long *ih, 
     {
         goto L23;
     }
-L7:
+    /* L7:*/
     ih[1] = kx;
     ih[2] = kn;
     *nh = 3;

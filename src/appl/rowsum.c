@@ -14,7 +14,7 @@
 **      x    : rows 1 to dd[0] contain the sums.
 */
 
-void rowsum(dim, na_x, x, group) long *dim;
+void rowsum(dim, na_x, x, group) int *dim;
 double *na_x;
 double *x, *group;
 {

@@ -68,7 +68,7 @@ static void next_set(longint *x, int n, int k)
         x[i] = ++tmp;
 }
 
-static void lqs_setup(long *n, long *p, longint *nwhich)
+static void lqs_setup(longint *n, longint *p, longint *nwhich)
 {
     coef = Calloc(*p, double);
     qraux = Calloc(*p, double);
@@ -168,11 +168,12 @@ static double chi(double x, double a)
    For lots of subsets of size *nwhich, compute the exact fit to those
    data points and the residuals from all the data points.
  */
-void lqs_fitlots(double *x, double *y, long *n, long *p, long *qn, long *lts, long *adj, long *sample, longint *nwhich,
-                 longint *ntrials, double *crit, long *sing, long *bestone, double *bestcoef, long *pk0, double *beta)
+void lqs_fitlots(double *x, double *y, longint *n, longint *p, longint *qn, longint *lts, longint *adj, longint *sample,
+                 longint *nwhich, longint *ntrials, double *crit, longint *sing, longint *bestone, double *bestcoef,
+                 longint *pk0, double *beta)
 {
     longint nnew = *nwhich, pp = *p;
-    long i, iter, j, k, k0 = *pk0, nn = *n, this, trial;
+    longint i, iter, j, k, k0 = *pk0, nn = *n, this, trial;
     longint rank, info, n100 = 100;
     long ignored;
     double a = 0.0, tol = 1.0e-7, sum, thiscrit, best = R_PosInf, target, old, new, dummy;
@@ -312,7 +313,7 @@ void lqs_fitlots(double *x, double *y, long *n, long *p, long *qn, long *lts, lo
     lqs_free();
 }
 
-static void mve_setup(long *n, long *p, long *ps)
+static void mve_setup(longint *n, longint *p, longint *ps)
 {
     xr = Calloc((*ps) * (*p), double);
     qraux = Calloc(*p, double);
@@ -401,11 +402,12 @@ static int do_one(double *x, longint *which, int n, longint nnew, longint p, dou
     return (0);
 }
 
-void mve_fitlots(double *x, long *n, long *p, long *qn, long *mcd, long *sample, long *nwhich, long *ntrials,
-                 double *crit, long *sing, long *bestone)
+void mve_fitlots(double *x, longint *n, longint *p, longint *qn, longint *mcd, longint *sample, longint *nwhich,
+                 longint *ntrials, double *crit, longint *sing, longint *bestone)
 {
     int i, iter, j, nn = *n, quan = *qn, trial, this_sing;
-    long nnew = *nwhich, ignored;
+    longint nnew = *nwhich;
+    long ignored;
     double det, best = R_PosInf, thiscrit, lim;
 
     if (*mcd != 1)
