@@ -320,7 +320,7 @@ static double TeX(TEXPAR which, R_GE_gcontext *gc, GEDevDesc *dd)
     case xi13: /* big_op_spacing5 */
         return 0.15 * XHeight(gc, dd);
     default: /* never happens (enum type) */
-        error("invalid `which' in TeX()!");
+        error(_("invalid `which' in TeX"));
         return 0; /*-Wall*/
     }
 }
@@ -349,7 +349,7 @@ static void SetStyle(STYLE newstyle, mathContext *mc, R_GE_gcontext *gc)
         gc->cex = 0.5 * mc->BaseCex;
         break;
     default:
-        error("invalid math style encountered");
+        error(_("invalid math style encountered"));
     }
     mc->CurrentStyle = newstyle;
 }
@@ -1243,7 +1243,7 @@ static BBOX RenderSpace(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc,
         return opBBox;
     }
     else
-        error("invalid mathematical annotation");
+        error(_("invalid mathematical annotation"));
 
     return NullBBox(); /* -Wall */
 }
@@ -1379,7 +1379,7 @@ static BBOX RenderBin(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc, G
         return CombineBBoxes(bbox, RenderElement(CADR(expr), draw, mc, gc, dd));
     }
     else
-        error("invalid mathematical annotation");
+        error(_("invalid mathematical annotation"));
 
     return NullBBox(); /* -Wall */
 }
@@ -1680,7 +1680,7 @@ static int AccentAtom(SEXP expr)
 
 static void InvalidAccent(SEXP expr)
 {
-    errorcall(expr, "invalid accent");
+    errorcall(expr, _("invalid accent"));
 }
 
 static BBOX RenderAccent(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc, GEDevDesc *dd)
@@ -1955,7 +1955,7 @@ static int DelimCode(SEXP expr, SEXP head)
             code = '.';
     }
     if (code == 0)
-        errorcall(expr, "invalid group delimiter");
+        errorcall(expr, _("invalid group delimiter"));
     return code;
 }
 
@@ -1980,7 +1980,7 @@ static BBOX RenderGroup(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc,
     BBOX bbox;
     int code;
     if (length(expr) != 4)
-        errorcall(expr, "invalid group specification");
+        errorcall(expr, _("invalid group specification"));
     bbox = NullBBox();
     code = DelimCode(expr, CADR(expr));
     gc->cex = DelimSymbolMag * gc->cex;
@@ -2074,7 +2074,7 @@ static BBOX RenderDelim(int which, double dist, int draw, mathContext *mc, R_GE_
         mid = 253;
         break;
     default:
-        error("group is incomplete");
+        error(_("group is incomplete"));
         return ansBBox; /*never reached*/
     }
     topBBox = GlyphBBox(top, gc, dd);
@@ -2151,7 +2151,7 @@ static BBOX RenderBGroup(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc
     double extra = 0.2 * xHeight(gc, dd);
     int delim1, delim2;
     if (length(expr) != 4)
-        errorcall(expr, "invalid group specification");
+        errorcall(expr, _("invalid group specification"));
     bbox = NullBBox();
     delim1 = DelimCode(expr, CADR(expr));
     delim2 = DelimCode(expr, CADDDR(expr));
@@ -2640,7 +2640,7 @@ static BBOX RenderRel(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc, G
         return CombineBBoxes(bbox, RenderElement(CADDR(expr), draw, mc, gc, dd));
     }
     else
-        error("invalid mathematical annotation");
+        error(_("invalid mathematical annotation"));
 
     return NullBBox(); /* -Wall */
 }
@@ -3069,7 +3069,7 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
     double ascent, descent, width;
     GEMetricInfo(0, gc, &ascent, &descent, &width, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
-        error("Metric information not yet available for this device");
+        error(_("Metric information not available for this device"));
 #endif
 
     /*
@@ -3175,7 +3175,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
     double ascent, descent, width;
     GMetricInfo(0, &ascent, &descent, &width, DEVICE, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
-        error("Metric information not yet available for this device");
+        error(_("Metric information not available for this device"));
 #endif
 
     xadj = Rf_gpptr(dd)->adj;

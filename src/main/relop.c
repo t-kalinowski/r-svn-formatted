@@ -67,8 +67,8 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         if (nx > 0 && ny > 0)
             mismatch = ((nx > ny) ? nx % ny : ny % nx) != 0;
         if (mismatch)
-            warningcall(call, "longer object length\n"
-                              "\tis not a multiple of shorter object length");
+            warningcall(call, _("longer object length\n\
+ \tis not a multiple of shorter object length"));
         UNPROTECT(2);
         return ans;
     }
@@ -97,11 +97,11 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
             UNPROTECT(2);
             return allocVector(LGLSXP, 0);
         }
-        errorcall(call, "comparison (%d) is possible only for atomic and list types", PRIMVAL(op));
+        errorcall(call, _("comparison (%d) is possible only for atomic and list types"), PRIMVAL(op));
     }
 
     if (TYPEOF(x) == EXPRSXP || TYPEOF(y) == EXPRSXP)
-        errorcall(call, "comparison is not allowed for expressions");
+        errorcall(call, _("comparison is not allowed for expressions"));
 
     /* ELSE :  x and y are both atomic or list */
 
@@ -124,7 +124,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         if (xarray && yarray)
         {
             if (!conformable(x, y))
-                errorcall(call, "non-conformable arrays");
+                errorcall(call, _("non-conformable arrays"));
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
         else if (xarray)
@@ -149,7 +149,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         if (xts && yts)
         {
             if (!tsConform(x, y))
-                errorcall(call, "Non-conformable time-series");
+                errorcall(call, _("Non-conformable time series"));
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(class = getAttrib(x, R_ClassSymbol));
         }
@@ -169,8 +169,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         }
     }
     if (mismatch)
-        warningcall(call, "longer object length\n"
-                          "\tis not a multiple of shorter object length");
+        warningcall(call, _("longer object length\n\tis not a multiple of shorter object length"));
 
     if (isString(x) || isString(y))
     {
@@ -209,7 +208,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         x = raw_relop(PRIMVAL(op), x, y);
     }
     else
-        errorcall(call, "comparison of these types is not implemented");
+        errorcall(call, _("comparison of these types is not implemented"));
 
     PROTECT(x);
     if (dims != R_NilValue)
@@ -425,7 +424,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
 
     if (code != EQOP && code != NEOP)
     {
-        errorcall(call, "illegal comparison with complex values");
+        errorcall(call, _("illegal comparison with complex values"));
     }
 
     n1 = LENGTH(s1);
