@@ -214,6 +214,7 @@ static Rboolean Mac_Open(NewDevDesc *dd, MacDesc *xd, char *dsp, double wid, dou
     //    dd->col = R_RGB(0, 0, 0);
     xd->resize = false;
     xd->lineType = 0;
+    xd->lineWidth = 1;
     return TRUE;
 }
 
@@ -513,7 +514,7 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int col, int fi
 
     SetPort(port);
 
-    SetLinetype(lty, round(lwd), dd);
+    SetLinetype(lty, lwd, dd);
 
     if (fill != NA_INTEGER)
     {
@@ -643,7 +644,7 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int col, double
     SetPort(port);
 
     Mac_SetFill(col, dd);
-    SetLinetype(lty, round(lwd), dd);
+    SetLinetype(lty, lwd, dd);
 
     /* FIXME: lwd and lty are not set correctly */
 
@@ -1452,36 +1453,35 @@ static void SetLinetype(int newlty, double nlwd, NewDevDesc *dd)
        sNumDashes:	the number of segments in the current line type.
     */
 
-    if (newlty != xd->lineType)
+    xd->lineType = newlty;
+    xd->numDashes = 0;
+    xd->currentDash = 0;
+    if (newlty != 0)
     {
         xd->lineType = newlty;
-        xd->numDashes = 0;
-        xd->currentDash = 0;
-        if (newlty != 0)
+        for (i = 0; i < 8 && newlty & 15; i++)
         {
-            xd->lineType = newlty;
-            for (i = 0; i < 8 && newlty & 15; i++)
-            {
-                xd->dashList[xd->numDashes++] = newlty & 15;
-                newlty = newlty >> 4;
-            }
+            xd->dashList[xd->numDashes++] = newlty & 15;
+            newlty = newlty >> 4;
+        }
 
-            /* Deal with odd length dash patterns by doubling the length of
-               the sequence. */
+        /* Deal with odd length dash patterns by doubling the length of
+           the sequence. */
 
-            numDashes = xd->numDashes;
-            if (numDashes & 1 == 1)
-            {
-                for (i = 0; i < numDashes; i++)
-                    xd->dashList[numDashes + i] = xd->dashList[i];
-                xd->numDashes = numDashes * 2;
-            }
+        numDashes = xd->numDashes;
+        if (numDashes & 1 == 1)
+        {
+            for (i = 0; i < numDashes; i++)
+                xd->dashList[numDashes + i] = xd->dashList[i];
+            xd->numDashes = numDashes * 2;
         }
     }
+
     if (nlwd < 1)
         lwd = 1;
     else
-        lwd = (int)nlwd;
+        lwd = (int)round(nlwd);
+    xd->lineWidth = lwd;
 
     PenSize(lwd, lwd);
 }
@@ -1502,6 +1502,13 @@ void DrawLineType(int xx1, int yy1, int xx2, int yy2, NewDevDesc *dd)
     double newx2, newy2;
     Boolean notFirst = false;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
+
+    if (xd->lineType == 0)
+    {
+        MoveTo(xx1, yy1);
+        LineTo(xx2, yy2);
+        return;
+    }
 
     xd->dashStart_x = xx1;
     xd->dashStart_y = yy1;
