@@ -810,11 +810,13 @@ static void eventloop(editor c)
    file. If calling from fix() or edit(), then don't send events to
    the console until editor is closed.  */
 
+#include <unistd.h>
+
 int Rgui_Edit(char *filename, char *title, int stealconsole)
 {
-    WIN32_FIND_DATA fd;
     editor c;
     EditorData p;
+
     if (neditors == MAXNEDITORS)
     {
         R_ShowMessage("Maximum number of editors reached");
@@ -828,7 +830,7 @@ int Rgui_Edit(char *filename, char *title, int stealconsole)
     }
     if (strlen(filename) > 0)
     {
-        if (FindFirstFile(filename, &fd) != INVALID_HANDLE_VALUE)
+        if (!access(filename, R_OK))
             editor_load_file(c, filename);
         editor_set_title(c, title);
     }
