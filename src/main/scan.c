@@ -346,6 +346,155 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
     return bns;
 }
 
+#ifdef NEWLIST
+static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP stripwhite)
+{
+    SEXP ans, new, old;
+    char buffer[MAXELTSIZE];
+    int blksize, c, i, ii, j, n, nc, linesread, colsread, strip, bch;
+    int badline;
+
+    nc = length(what);
+
+    if (maxlines > 0)
+        blksize = maxlines;
+    else
+        blksize = SCAN_BLOCKSIZE;
+
+    PROTECT(ans = allocVector(VECSXP, nc));
+    for (i = 0; i < nc; i++)
+    {
+        if (!isVector(VECTOR(what)[i]))
+        {
+            if (!ttyflag)
+                fclose(fp);
+            error("\"scan\" invalid \"what=\" specified\n");
+        }
+        VECTOR(ans)[i] = allocVector(TYPEOF(VECTOR(what)[i]), blksize);
+    }
+    setAttrib(ans, R_NamesSymbol, getAttrib(what, R_NamesSymbol));
+
+    n = 0;
+    linesread = 0;
+    colsread = 0;
+    ii = 0;
+    badline = 0;
+    bch = 1;
+
+    if (ttyflag)
+        sprintf(ConsolePrompt, "1: ");
+
+    strip = asLogical(stripwhite);
+
+    for (;;)
+    {
+
+        if (bch == R_EOF)
+        {
+            if (ttyflag)
+                R_ClearerrConsole();
+            goto done;
+        }
+        else if (bch == '\n')
+        {
+            linesread++;
+            if (colsread != 0 && !badline)
+                badline = linesread;
+            if (maxitems > 0 && nc * linesread >= maxitems)
+                goto done;
+            if (maxlines > 0 && linesread == maxlines)
+                goto done;
+            if (ttyflag)
+                sprintf(ConsolePrompt, "%d: ", n + 1);
+        }
+        if (n == blksize && colsread == 0)
+        {
+            blksize = 2 * blksize;
+            for (i = 0; i < nc; i++)
+            {
+                old = VECTOR(ans)[i];
+                new = allocVector(TYPEOF(old), blksize);
+                copyVector(new, old);
+                VECTOR(ans)[i] = new;
+            }
+        }
+
+        bch = fillBuffer(buffer, TYPEOF(VECTOR(ans)[ii]), strip);
+        if (colsread == 0 && strlen(buffer) == 0 && (bch == '\n' || bch == R_EOF))
+        {
+            if (ttyflag || bch == R_EOF)
+                break;
+        }
+        else
+        {
+            extractItem(buffer, VECTOR(ans)[ii], n);
+            ii++;
+            colsread++;
+            if (length(stripwhite) == length(what))
+                strip = LOGICAL(stripwhite)[colsread];
+            /* increment n and reset i after filling a row */
+            if (colsread == nc)
+            {
+                n++;
+                ii = 0;
+                colsread = 0;
+                if (flush)
+                {
+                    while (c != '\n' && c != R_EOF)
+                        c = scanchar();
+                    unscanchar(c);
+                }
+                if (length(stripwhite) == length(what))
+                    strip = LOGICAL(stripwhite)[0];
+            }
+        }
+    }
+
+done:
+    if (badline)
+        warning("line %d did not have %d elements\n", badline, nc);
+
+    if (colsread != 0)
+    {
+        warning("number of items read is not a multiple of the number of columns\n");
+        buffer[0] = '\0'; /* this is an NA */
+        for (ii = colsread; ii < nc; ii++)
+        {
+            extractItem(buffer, VECTOR(ans)[ii], n);
+        }
+        n++;
+    }
+    if (!quiet)
+        REprintf("Read %d lines\n", n);
+
+    for (i = 0; i < nc; i++)
+    {
+        old = VECTOR(ans)[i];
+        new = allocVector(TYPEOF(old), n);
+        switch (TYPEOF(old))
+        {
+        case LGLSXP:
+        case INTSXP:
+            for (j = 0; j < n; j++)
+                INTEGER(new)[j] = INTEGER(old)[j];
+            break;
+        case REALSXP:
+            for (j = 0; j < n; j++)
+                REAL(new)[j] = REAL(old)[j];
+            break;
+        case STRSXP:
+            for (j = 0; j < n; j++)
+                STRING(new)[j] = STRING(old)[j];
+            break;
+        }
+        VECTOR(ans)[i] = new;
+    }
+    UNPROTECT(1);
+    return ans;
+}
+
+#else
+
 static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP stripwhite)
 {
     SEXP a, ans, b, new, old, w;
@@ -474,13 +623,6 @@ done:
     if (!quiet)
         REprintf("Read %d lines\n", n);
 
-    /*
-      if (n == maxitems) {
-      UNPROTECT(1);
-      return ans;
-      }
-    */
-
     a = ans;
     for (i = 0; i < nc; i++)
     {
@@ -508,6 +650,7 @@ done:
     UNPROTECT(1);
     return ans;
 }
+#endif
 
 SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -518,22 +661,31 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     file = CAR(args);
     args = CDR(args);
+
     what = CAR(args);
     args = CDR(args);
+
     nmax = asInteger(CAR(args));
     args = CDR(args);
+
     sep = CAR(args);
     args = CDR(args);
+
     nskip = asInteger(CAR(args));
     args = CDR(args);
+
     nlines = asInteger(CAR(args));
     args = CDR(args);
+
     NAstrings = CAR(args);
     args = CDR(args);
+
     flush = asLogical(CAR(args));
     args = CDR(args);
+
     stripwhite = CAR(args);
     args = CDR(args);
+
     quiet = asLogical(CAR(args));
     if (quiet == NA_LOGICAL)
         quiet = 0;
@@ -597,7 +749,11 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     case STRSXP:
         ans = scanVector(TYPEOF(what), nmax, nlines, flush, stripwhite);
         break;
+#ifdef NEWLIST
+    case VECSXP:
+#else
     case LISTSXP:
+#endif
         ans = scanFrame(what, nmax, nlines, flush, stripwhite);
         break;
     default:
