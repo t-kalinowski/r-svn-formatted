@@ -35,6 +35,7 @@ extern Graphic_Ref gGReference[MAX_NUM_G_WIN + 1];
 extern SInt16 Help_Window;
 extern WindowPtr Help_Windows[MAX_NUM_H_WIN + 1];
 extern WindowPtr Edit_Windows[MAX_NUM_E_WIN + 1];
+extern char wTitle[265], mTitle[265];
 
 void doWindowsMenu(SInt16 menuItem);
 void doActivate(EventRecord *);
@@ -63,9 +64,8 @@ int isGraphicWindow(WindowPtr window)
  */
 void changeGWinPtr(WindowPtr window, Str255 Cur_Title)
 {
-    MenuHandle windowMenu;
+    MenuHandle windowMenu = NULL;
     Str255 Menu_Title;
-    Boolean EqString;
     int j, i = isGraphicWindow(window);
 
     Kill_G_History(i);
@@ -75,18 +75,18 @@ void changeGWinPtr(WindowPtr window, Str255 Cur_Title)
         gGReference[j] = gGReference[j + 1];
     }
     Current_Window--;
-    windowMenu = GetMenu(mWindows);
+    /*    windowMenu = GetMenuHandle(kMenuWindows);
 
-    for (i = 1; i <= CountMenuItems(windowMenu); i++)
-    {
-        GetMenuItemText(windowMenu, i, (unsigned char *)&Menu_Title);
-        EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
-        if (EqString)
-        {
+        for(i = 1; i <= CountMenuItems(windowMenu); i++){
+        GetMenuItemText(windowMenu, i , (unsigned char*)&Menu_Title);
+        CopyPascalStringToC(Menu_Title,mTitle);
+        CopyPascalStringToC(Menu_Title,wTitle);
+        if (strcmp(mTitle,wTitle) == 0) {
             DeleteMenuItem(windowMenu, i);
             break;
         }
-    }
+        }
+    */
 }
 
 /* GWdoConcatPStrings :
@@ -124,7 +124,7 @@ void doActivateWindow(WindowPtr windowPtr, Boolean becomingActive)
     MenuHandle windowsMenu;
     SInt16 menuItem, a = 1;
 
-    windowsMenu = GetMenuHandle(mWindows);
+    windowsMenu = GetMenuHandle(kMenuWindows);
 
     while (Graphic_Window[a] != windowPtr)
         a++;
@@ -137,6 +137,7 @@ void doActivateWindow(WindowPtr windowPtr, Boolean becomingActive)
 #endif
 }
 
+#define max(a, b) ((a) < (b) ? (b) : (a))
 /* doWindowsMenu
  */
 void doWindowsMenu(SInt16 menuItem)
@@ -147,14 +148,16 @@ void doWindowsMenu(SInt16 menuItem)
     MenuHandle windowsMenu;
     Boolean EqString = FALSE;
 
-    windowsMenu = GetMenu(mWindows);
-    GetMenuItemText(windowsMenu, menuItem, (unsigned char *)&Menu_Title);
+    windowsMenu = GetMenuHandle(kMenuWindows);
+    GetMenuItemText(windowsMenu, menuItem, Menu_Title);
+
+    CopyPascalStringToC(Menu_Title, mTitle);
 
     /* First we check for the "R Console" Window */
 
     GetWTitle(Console_Window, (unsigned char *)&Cur_Title);
-    EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
-    if (EqString)
+    CopyPascalStringToC("\pR Console", wTitle);
+    if (strcmp(wTitle, mTitle) == 0)
     {
         SelectWindow(Console_Window);
         return;
@@ -164,8 +167,8 @@ void doWindowsMenu(SInt16 menuItem)
     for (i = 1; i < Current_Window; i++)
     {
         GetWTitle(Graphic_Window[i], (unsigned char *)&Cur_Title);
-        EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
-        if (EqString)
+        CopyPascalStringToC(Cur_Title, wTitle);
+        if (strcmp(wTitle, mTitle) == 0)
         {
             SelectWindow(Graphic_Window[i]);
             return;
@@ -177,8 +180,8 @@ void doWindowsMenu(SInt16 menuItem)
     for (i = 1; i < Edit_Window; i++)
     {
         GetWTitle(Edit_Windows[i], (unsigned char *)&Cur_Title);
-        EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
-        if (EqString)
+        CopyPascalStringToC(Cur_Title, wTitle);
+        if (strcmp(wTitle, mTitle) == 0)
         {
             SelectWindow(Edit_Windows[i]);
             return;
@@ -187,9 +190,9 @@ void doWindowsMenu(SInt16 menuItem)
 
     for (i = 1; i < Help_Window; i++)
     {
-        GetWTitle(Help_Windows[i], (unsigned char *)&Cur_Title);
-        EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
-        if (EqString)
+        GetWTitle(Help_Windows[i], Cur_Title);
+        CopyPascalStringToC(Cur_Title, wTitle);
+        if (strcmp(wTitle, mTitle) == 0)
         {
             SelectWindow(Help_Windows[i]);
             return;

@@ -73,6 +73,8 @@
 #include <Aliases.h>
 #endif
 
+#include <Controls.h>
+
 #ifndef __ERRORS__
 #include <Errors.h>
 #endif
@@ -98,6 +100,10 @@
 #include "RIntf.h"
 #endif
 
+#ifndef __QUICKDRAW__
+#include <Quickdraw.h>
+#endif
+
 #ifndef __SMARTSCROLLAPI__
 #include "SmartScroll.h"
 #endif
@@ -110,11 +116,17 @@
 #endif
 #include "Defn.h"
 #include "Graphics.h"
+#include <Rdevices.h>
 
 #include <R_ext/Boolean.h>
 
 /*   Define Constant    */
 #define eGWin 11
+extern Str255 PostFont, UserFont;
+extern char *mac_getenv(const char *name);
+
+void UniqueWinTitle(void);
+void RemWinMenuItem(void);
 
 /* Constant, Global variables and prototype */
 Ptr gPreAllocatePointer;
@@ -127,6 +139,8 @@ WindowPtr Edit_Windows[MAX_NUM_E_WIN + 1];
 SInt16 Current_Window = 1;
 SInt32 Num_Of_Window = 1;
 SInt16 Edit_Number = 0;
+extern SInt16 gExpose;
+extern int EIGHTY, F_HEIGHT;
 
 extern Graphic_Ref gGReference[MAX_NUM_G_WIN + 1];
 extern gtabSize;
@@ -146,11 +160,18 @@ enum
     kMinWindowHeight = 80
 };
 
+enum
+{
+    kScrollStepTag = 'STEP' //	user tag used to save scroll step information in scrollbars
+};
+
 /* CalcGrowIconRect
  */
 static void CalcGrowIconRect(WindowPtr window, Rect *iconRect)
 {
-    Rect portRect = window->portRect;
+    Rect portRect;
+
+    GetWindowPortBounds(window, &portRect);
 
     iconRect->top = portRect.bottom - (kBarWidth - 2);
     iconRect->left = portRect.right - (kBarWidth - 2);
@@ -162,8 +183,9 @@ static void CalcGrowIconRect(WindowPtr window, Rect *iconRect)
  */
 static void CalcTextRect(WindowPtr window, Rect *textRect)
 {
-    Rect portRect = window->portRect;
+    Rect portRect;
 
+    GetWindowPortBounds(window, &portRect);
     textRect->top = 0;
     textRect->left = 0;
     textRect->bottom = portRect.bottom - (kBarWidth - 1);
@@ -175,8 +197,9 @@ static void CalcTextRect(WindowPtr window, Rect *textRect)
  */
 static void CalcBigTextRect(WindowPtr window, Rect *textRect)
 {
-    Rect portRect = window->portRect;
+    Rect portRect;
 
+    GetWindowPortBounds(window, &portRect);
     textRect->top = 0;
     textRect->left = 0;
     textRect->bottom = portRect.bottom - (kBarWidth - 1);
@@ -188,7 +211,9 @@ static void CalcBigTextRect(WindowPtr window, Rect *textRect)
  */
 static void CalcScrollBarRect(WindowPtr window, Orientation orientation, Rect *barRect)
 {
-    Rect portRect = window->portRect;
+    Rect portRect;
+
+    GetWindowPortBounds(window, &portRect);
 
     switch (orientation)
     {
@@ -227,7 +252,7 @@ static void MyDrawGrowIcon(WindowPtr window, Boolean validate)
     // save port and set thePort to wind
 
     GetPort(&savePort);
-    SetPort(window);
+    SetPortWindowPort(window);
 
     // save the clip region
 
@@ -249,7 +274,8 @@ static void MyDrawGrowIcon(WindowPtr window, Boolean validate)
     // if validate is true, remove the grow icon rect from the update region
 
     if (validate)
-        ValidRect(&r);
+        //	ValidRect( &r );
+        ValidWindowRect(window, &r);
 
     // restore old clip region
 
@@ -263,37 +289,33 @@ static void MyDrawGrowIcon(WindowPtr window, Boolean validate)
 
 /* ScrollBarChanged
  */
-static void ScrollBarChanged(WindowPtr window)
+static void ScrollBarChanged(WindowRef window)
 {
     // scroll text to reflect new scroll bar setting
 
     DocumentHandle hDocument = GetWindowDocument(window);
-    WEReference we;
-    LongRect viewRect, destRect;
+    WEReference we = (*hDocument)->we;
+    LongRect viewRect;
+    LongRect destRect;
 
-    we = (*hDocument)->we;
     WEGetViewRect(&viewRect, we);
     WEGetDestRect(&destRect, we);
-    WEScroll(viewRect.left - destRect.left - LCGetValue((*hDocument)->scrollBars[kHorizontal]),
-             viewRect.top - destRect.top - LCGetValue((*hDocument)->scrollBars[kVertical]), we);
+
+    WEScroll(viewRect.left - destRect.left - GetControl32BitValue((*hDocument)->scrollBars[kHorizontal]),
+             viewRect.top - destRect.top - GetControl32BitValue((*hDocument)->scrollBars[kVertical]), we);
 }
 
-/* AdjustBars
- */
-static void AdjustBars(WindowPtr window)
+static void AdjustBars(WindowRef window)
 {
-    DocumentHandle hDocument;
-    WEReference we;
-    GrafPtr savePort;
-    LongRect viewRect, destRect;
-    SInt32 visible, total, value, max;
-    ControlHandle bar;
-
-    GetPort(&savePort);
-    SetPort(window);
-
-    hDocument = GetWindowDocument(window);
-    we = (*hDocument)->we;
+    DocumentHandle hDocument = GetWindowDocument(window);
+    WEReference we = (*hDocument)->we;
+    LongRect viewRect;
+    LongRect destRect;
+    SInt32 visible;
+    SInt32 total;
+    SInt32 value;
+    SInt32 max;
+    ControlRef bar;
 
     // get the view and destination rectangle
     WEGetViewRect(&viewRect, we);
@@ -318,12 +340,12 @@ static void AdjustBars(WindowPtr window)
     if (max <= 0)
         max = 0;
 
-    //	notify SmartScroll
-    SetSmartScrollInfo(bar, visible, total);
+    //	set visible size
+    SetControlViewSize(bar, visible);
 
     //	reset the scroll bar
-    LCSetMax(bar, max);
-    LCSetValue(bar, value);
+    SetControl32BitMaximum(bar, max);
+    SetControl32BitValue(bar, value);
 
     //	if value exceeds max then the bottom of the destRect is above
     //	the bottom of the view rectangle:  we need to scroll the text downward
@@ -347,29 +369,21 @@ static void AdjustBars(WindowPtr window)
     if (max <= 0)
         max = 0;
 
-    //	notify SmartScroll
-    SetSmartScrollInfo(bar, visible, total);
+    //	set visible size
+    SetControlViewSize(bar, visible);
 
     //	reset the scroll bar
-    LCSetMax(bar, max);
-    LCSetValue(bar, value);
-
-    SetPort(savePort);
+    SetControl32BitMaximum(bar, max);
+    SetControl32BitValue(bar, value);
 }
 
-/* ViewChanged
- */
-static void ViewChanged(WindowPtr window)
+static void ViewChanged(WindowRef window)
 {
     DocumentHandle hDocument;
-    GrafPtr savePort;
-    ControlHandle bar;
+    ControlRef bar;
     Rect r;
     LongRect viewRect;
-    Orientation orientation;
-
-    GetPort(&savePort);
-    SetPort(window);
+    int orientation;
 
     hDocument = GetWindowDocument(window);
 
@@ -384,113 +398,51 @@ static void ViewChanged(WindowPtr window)
     for (orientation = kVertical; orientation <= kHorizontal; orientation++)
     {
         bar = (*hDocument)->scrollBars[orientation];
+        HideControl(bar);
         CalcScrollBarRect(window, orientation, &r);
-        MoveControl(bar, r.left, r.top);
-        SizeControl(bar, r.right - r.left, r.bottom - r.top);
-        ValidRect(&r);
+#if TARGET_API_MAC_CARBON
+        SetControlBounds(bar, &r);
+#else
+        (*bar)->contrlRect = r;
+#endif
+        ShowControl(bar);
+        ValidWindowRect(window, &r);
     }
 
     //	reset the thumb positions and the max values of the control bars
     AdjustBars(window);
-
-    //	redraw the control bars
-
-    ShowControl((*hDocument)->scrollBars[kVertical]);
-    ShowControl((*hDocument)->scrollBars[kHorizontal]);
-
-    SetPort(savePort);
 }
 
-/*
-   This is a deviation from the original Pascal WASTE Demo App code.
-
-   This "morally correct" code for window dragging is per an article
-   in MacTech Magazine (July 1994, Vol 10, No. 7). by Eric Shapiro (of
-   Rock Ridge Enterprises) called "Multiple Monitors vs. Your
-   Application"
-
-   Eric addressed numerous things to allow your app to deal nicely
-   with multiple monitor setups, one of them is dragging.
-
-   According to Eric, many apps don't let you drag windows to second
-   monitors, and though holding down the cmd/opt keys often overrides
-   this problem, it should still be updated.  And the only reason
-   qd.screenBits.bounds works to allow you to drag to second monitors
-   is because of a kludge Apple put in the Window Manager
-
-   So, this is some code from Eric to make our app be "morally correct" :)
- */
-void DoDrag(Point thePoint, WindowPtr window)
+DocumentHandle GetWindowDocument(WindowRef window)
 {
-    Rect desktopBounds;
-
-    if (gHasColorQD)
+    //	make sure window is not nil and is one of our windows
+    if ((window == nil) || (GetWindowKind(window) != userKind))
     {
-        desktopBounds = (*GetGrayRgn())->rgnBBox;
+        return nil;
+    }
+
+    // a handle to the document structure is kept in the window refCon
+    return (DocumentHandle)GetWRefCon(window);
+}
+
+WEReference GetWindowWE(WindowRef window)
+{
+    DocumentHandle document;
+
+    if ((document = GetWindowDocument(window)) != nil)
+    {
+        return (*document)->we;
     }
     else
     {
-        desktopBounds = qd.screenBits.bounds;
+        return nil;
     }
-
-    DragWindow(window, thePoint, &desktopBounds);
 }
 
-/* Resize :
-   when you resize a graphic window, you need to redraw the content.
- */
-void Resize(Point newSize, WindowPtr window)
+void DoDrag(Point thePoint, WindowRef window)
 {
-    DocumentHandle hDocument;
-    GrafPtr savePort;
-    Rect r;
-    RgnHandle tempRgn, dirtyRgn;
-
-    //	set up the port
-    GetPort(&savePort);
-    SetPort(window);
-
-    hDocument = GetWindowDocument(window);
-
-    //	create temporary regions for calculations
-    tempRgn = NewRgn();
-    dirtyRgn = NewRgn();
-    GraResize(window);
-    //	save old text region
-    CalcTextRect(window, &r);
-    RectRgn(tempRgn, &r);
-
-    //	erase the old grow icon rect
-    CalcGrowIconRect(window, &r);
-    EraseRect(&r);
-
-    //	hide the scroll bars
-    HideControl((*hDocument)->scrollBars[kVertical]);
-    HideControl((*hDocument)->scrollBars[kHorizontal]);
-
-    //	perform the actual resizing of the window, redraw scroll bars and grow icon
-    SizeWindow(window, newSize.h, newSize.v, false);
-    if ((window == Console_Window) || (isEditWindow(window) != 0) || (isHelpWindow(window) != 0))
-        ViewChanged(window);
-    MyDrawGrowIcon(window, true);
-
-    //	calculate the dirty region (to be updated)
-    CalcTextRect(window, &r);
-    RectRgn(dirtyRgn, &r);
-    XorRgn(dirtyRgn, tempRgn, dirtyRgn);
-    InsetRect(&r, -kTextMargin, -kTextMargin);
-    RectRgn(tempRgn, &r);
-    SectRgn(dirtyRgn, tempRgn, dirtyRgn);
-
-    //	mark the dirty region as invalid
-    InvalRgn(dirtyRgn);
-
-    //	throw away temporary regions
-    DisposeRgn(tempRgn);
-    DisposeRgn(dirtyRgn);
-
-    //	restore the port
-    SetPort(savePort);
+    Rect desktopBounds;
+    DragWindow(window, thePoint, GetRegionBounds(GetGrayRgn(), &desktopBounds));
 }
 
 /* DoGrow:
@@ -499,229 +451,230 @@ void Resize(Point newSize, WindowPtr window)
    expected. We need to multiple a constant 0.75 (by experiment) to get
    the best effect.
  */
-void DoGrow(Point hitPt, WindowPtr window)
+
+void DoGrow(Point hitPt, WindowRef window)
 {
-    Rect sizeRect;
+    const Rect sizeConstraints = {kMinWindowHeight, kMinWindowWidth, 0x7FFF, 0x7FFF};
+    Rect newContentRect;
+    Rect oldTextRect;
     SInt32 newSize;
-    WEReference we;
-    SInt16 Console_Width, NumofChar;
-    GrafPtr savePort;
-    WEStyleMode mode;
-    TextStyle ts;
+    Rect sizeRect;
 
-    SetRect(&sizeRect, kMinWindowWidth, kMinWindowHeight, SHRT_MAX, SHRT_MAX);
-    if ((newSize = GrowWindow(window, hitPt, &sizeRect)) != 0L)
-    {
-        //	for some reason, GrowWindow( ) returns a long value,
-        //	but it's really a Point
+    //	remember original text rectangle
 
-        Resize(*(Point *)&newSize, window);
-        if (window == Console_Window)
-        {
-            Console_Width = (Console_Window->portRect).right - (Console_Window->portRect).left;
-            GetPort(&savePort);
-            SetPort(Console_Window);
-            TextFont(4);
-            TextSize(gTextSize);
-            NumofChar = (int)(((Console_Width - 15) / CharWidth('M')) - 0.5);
-            R_SetOptionWidth(NumofChar);
-            SetPort(savePort);
-        }
-    }
+    /* if(isGraphicWindow(window))
+      hideTextRect(&oldTextRect);
+     else
+     */
+    CalcTextRect(window, &oldTextRect);
+
+    //	resize the window
+    if (!ResizeWindow(window, hitPt, &sizeConstraints, &newContentRect))
+        return;
+
+    if (isGraphicWindow(window))
+        GraResize(window);
+    else //	resize the text area
+        WindowResized(&oldTextRect, window);
 }
 
 /* DoZoom
  */
-void DoZoom(SInt16 partCode, WindowPtr window)
+void DoZoom(SInt16 partCode, WindowRef window)
 {
-    DocumentHandle hDocument;
-    GrafPtr savePort;
-    Rect r;
+    WEReference we = GetWindowWE(window);
+    Rect portBounds;
+    Rect oldTextRect;
+    LongRect destRect;
+    SInt32 idealHeight;
+    Point idealSize;
 
-    GetPort(&savePort);
-    SetPort(window);
+    //	determine the ideal size for this window
+    //	the ideal height is the number of pixels needed to see the whole text
+    WEGetDestRect(&destRect, we);
+    idealHeight = (destRect.bottom - destRect.top) + (2 * kTextMargin + (kBarWidth - 1));
 
-    hDocument = GetWindowDocument(window);
+    //	the ideal height should always be at least kMinWindowHeight
+    if (idealHeight < kMinWindowHeight)
+    {
+        idealHeight = kMinWindowHeight;
+    }
+    else if (idealHeight > 0x7FFF)
+    {
+        //	and must fit in a SInt16
+        idealHeight = 0x7FFF;
+    }
+    idealSize.v = idealHeight;
 
-    r = window->portRect;
-    EraseRect(&r);
-    HideControl((*hDocument)->scrollBars[kVertical]);
-    HideControl((*hDocument)->scrollBars[kHorizontal]);
+    //	since the text is automatically soft-wrapped to the window width,
+    //	there's no "ideal" window width
+    idealSize.h = GetWindowPortBounds(window, &portBounds)->right;
 
-    ZoomWindow(window, partCode, false);
-    if ((window == Console_Window) || (isEditWindow(window) != 0))
-        ViewChanged(window);
-    CalcTextRect(window, &r);
-    InvalRect(&r);
+    //	determine whether the window is currently in "standard" state or in "user" state
+    partCode = IsWindowInStandardState(window, &idealSize, nil) ? inZoomIn : inZoomOut;
 
-    SetPort(savePort);
+    //	remember original text rectangle
+    /*	if(isGraphicWindow(window))
+         hideTextRect(&oldTextRect);
+        else
+      */
+    CalcTextRect(window, &oldTextRect);
+    // CalcTextRect ( window, & oldTextRect ) ;
+
+    //	zoom the window
+    ZoomWindowIdeal(window, partCode, &idealSize);
+
+    if (isGraphicWindow(window))
+        GraResize(window);
+    else //	resize the text area
+        WindowResized(&oldTextRect, window);
 }
 
 /* ScrollProc:
    this is a callback routine called by the Toolbox Control Manager move
    the scroll bar thumb and scroll the text accordingly
  */
-static pascal void ScrollProc(ControlHandle bar, ControlPartCode partCode)
+static pascal void ScrollProc(ControlRef bar, ControlPartCode partCode)
 {
-    SInt32 value, step;
-
-    if (partCode == kControlNoPart)
+    switch (partCode)
     {
-        return;
-    }
+    case kControlUpButtonPart:
+    case kControlDownButtonPart:
+    case kControlPageUpPart:
+    case kControlPageDownPart: {
+        SInt32 value = GetControl32BitValue(bar);
+        SInt32 max = GetControl32BitMaximum(bar);
+        SInt32 step = 0;
+        UInt32 actualSize;
 
-    value = LCGetValue(bar);
-    step = sScrollStep;
-
-    if (((value < LCGetMax(bar)) && (step > 0)) || ((value > 0) && (step < 0)))
-    {
-        LCSetValue(bar, value + step);
-        ScrollBarChanged(FrontWindow());
-    }
-}
-
-/* MySendControlMessage
- */
-static SInt32 MySendControlMessage(ControlHandle inControl, SInt16 inMessage, SInt32 inParam)
-{
-    GrafPtr savePort;
-    Handle cdef;
-    SInt32 result;
-    SInt8 saveState;
-
-    //	get a handle to the control definition procedure
-    cdef = (*inControl)->contrlDefProc;
-
-    //	make sure the CDEF is loaded
-    if (*cdef == nil)
-    {
-        LoadResource(cdef);
-        if (*cdef == nil)
+        //	retrieve precalculated step value from scroll bar
+        if (GetControlProperty(bar, R_ID, kScrollStepTag, sizeof(step), &actualSize, &step) != noErr)
         {
-            return 0; //	emergency exit (couldn't load CDEF)
+            return;
         }
+
+        //	move the scroll bar thumb by the precalculated step
+        //	and scroll the text accordingly
+        if (((value < max) && (step > 0)) || ((value > 0) && (step < 0)))
+        {
+            SetControl32BitValue(bar, value + step);
+            ScrollBarChanged(GetControlOwner(bar));
+        }
+        break;
     }
 
-    //	lock it down
-    saveState = HGetState(cdef);
-    HLock(cdef);
-
-    //	set up the port
-    GetPort(&savePort);
-    SetPort((*inControl)->contrlOwner);
-
-    //	call the CDEF
-    result = CallControlDefProc((ControlDefUPP)StripAddress(*cdef), GetControlVariant(inControl), inControl, inMessage,
-                                inParam);
-
-    //	unlock the CDEF
-    HSetState(cdef, saveState);
-
-    //	restore the port
-    SetPort(savePort);
-
-    //	return result code
-    return result;
+    case kControlIndicatorPart: {
+        ScrollBarChanged(GetControlOwner(bar));
+        break;
+    }
+    }
 }
 
-/* LiveScroll
- */
-static void LiveScroll(ControlHandle inControl, Point inHitPt, WindowPtr inWindow)
+static void WindowResized(const Rect *oldTextRect, WindowRef window)
 {
-    IndicatorDragConstraint constraint;
-    Point mouseLoc;
-    SInt32 initialValue, oldValue, curValue, max;
-    SInt16 scrollRange, delta;
-    Orientation orientation;
+    WEReference we = GetWindowWE(window);
+    RgnHandle tempRgn;
+    RgnHandle dirtyRgn;
+    Rect r;
+    LongRect lr;
+    SInt16 oldTextWidth;
+    SInt16 newTextWidth;
+    SInt32 topCharOffset;
+    LongPt topCharPosition;
+    Boolean rewrapText = true;
+    SInt16 NumofChar;
 
-    //	hilite the control thumb
-    //	this does nothing with the standard System 7.x scroll bar, but is required for
-    //	correct visual feedback with the Apple Grayscale Appearance (as implemented by
-    //	the Appearance control panel in MacOS 8, or by Aaron/Kaleidoscope)
-    HiliteControl(inControl, kControlIndicatorPart);
+    //	create temporary regions for calculations
+    tempRgn = NewRgn();
+    dirtyRgn = NewRgn();
 
-    //	get limit & slop rects that should be used for dragging the indicator
-    //	(see IM: Mac Toolbox Essentials, page 5-114)
-    *(Point *)&constraint.limitRect = inHitPt;
-    MySendControlMessage(inControl, thumbCntl, (SInt32)&constraint);
+    //	calculate original text width
+    oldTextWidth = (oldTextRect->right - oldTextRect->left);
+    RectRgn(tempRgn, oldTextRect);
 
-    //	determine the orientation of the scroll bar
-    orientation = (constraint.axis == kVerticalConstraint) ? kHorizontal : kVertical;
+    //	get new text rect
+    CalcTextRect(window, &r);
+    newTextWidth = (r.right - r.left);
 
-    //	calculate the area in which the thumb can travel
-    if (orientation == kVertical)
+    gTextSize = GetTextSize();
+
+    if (window == Console_Window)
     {
-        scrollRange = (constraint.limitRect.bottom - constraint.limitRect.top);
+        TextFont(4);
+        TextSize(gTextSize);
+        NumofChar = (int)(((newTextWidth - 15) / CharWidth('M')) - 0.5);
+        R_SetOptionWidth(NumofChar);
+    }
+
+    RectRgn(dirtyRgn, &r);
+
+    //	width changed?
+    if (newTextWidth == oldTextWidth)
+    {
+        //	nope: no need to rewrap text
+        rewrapText = false;
+    }
+
+    if (rewrapText)
+    {
+        //	remember offset of first visible character
+        WEGetViewRect(&lr, we);
+        topCharPosition = *(LongPt *)&lr;
+        topCharOffset = WEGetOffset(&topCharPosition, nil, we);
+
+        //	reset destination rectangle and recalculate line breaks
+        WEGetDestRect(&lr, we);
+        lr.right = lr.left + newTextWidth;
+        WESetDestRect(&lr, we);
+        WECalText(we); //	should check for errors!
+
+        //	scroll the destination rectangle to keep the previous
+        //	first visible character at the top of the view rectangle
+        WEGetPoint(topCharOffset, kHilite, &topCharPosition, nil, we);
+        WEGetDestRect(&lr, we);
+        WEOffsetLongRect(&lr, 0, kTextMargin - topCharPosition.v);
+        WESetDestRect(&lr, we);
+    }
+
+    ViewChanged(window);
+
+    //	calculate the dirty region (to be updated)
+    if (rewrapText)
+    {
+        InsetRgn(dirtyRgn, -kTextMargin, -kTextMargin);
     }
     else
     {
-        scrollRange = (constraint.limitRect.right - constraint.limitRect.left);
+        XorRgn(dirtyRgn, tempRgn, dirtyRgn);
+        InsetRect(&r, -kTextMargin, -kTextMargin);
+        RectRgn(tempRgn, &r);
+        SectRgn(dirtyRgn, tempRgn, dirtyRgn);
     }
 
-    //	get current value & max
-    initialValue = oldValue = curValue = LCGetValue(inControl);
-    max = LCGetMax(inControl);
+    //	mark the dirty region as invalid
+    InvalWindowRgn(window, dirtyRgn);
 
-    //	mouse tracking loop
-    while (StillDown())
-    {
-        //	get current mouse location
-        GetMouse(&mouseLoc);
-
-        //	do nothing if the mouse is outside the slop rectangle
-        if (PtInRect(mouseLoc, &constraint.slopRect))
-        {
-            //	calculate pixel offset relative to initial hit point
-            if (orientation == kVertical)
-            {
-                delta = mouseLoc.v - inHitPt.v;
-            }
-            else
-            {
-                delta = mouseLoc.h - inHitPt.h;
-            }
-
-            //	calculate new control value
-            curValue = initialValue + FixMul(max, FixRatio(delta, scrollRange));
-            if (curValue < 0)
-                curValue = 0;
-            if (curValue > max)
-                curValue = max;
-        }
-
-        if (curValue != oldValue)
-        {
-            //	set new control value
-            LCSetValue(inControl, curValue);
-            ScrollBarChanged(inWindow);
-            oldValue = curValue;
-        }
-    }
-
-    //	unhighlight the thumb
-    HiliteControl(inControl, kControlNoPart);
+    //	throw away temporary regions
+    DisposeRgn(tempRgn);
+    DisposeRgn(dirtyRgn);
 }
 
 /* DoScrollBar
  */
-static void DoScrollBar(Point hitPt, EventModifiers modifiers, WindowPtr window)
+static void DoScrollBar(Point hitPt, EventModifiers modifiers, WindowRef window)
 {
     DocumentHandle hDocument;
-    ControlHandle bar = nil;
+    ControlRef bar = nil;
     LongRect viewRect;
     ControlPartCode partCode;
     SInt32 pageSize;
     SInt32 step = 0;
-
-#ifdef __cplusplus
-    static ControlActionUPP sScrollerUPP = NewControlActionProc(ScrollProc);
-#else
     static ControlActionUPP sScrollerUPP = nil;
+
     if (sScrollerUPP == nil)
     {
-        sScrollerUPP = NewControlActionProc(ScrollProc);
+        sScrollerUPP = NewControlActionUPP(ScrollProc);
     }
-#endif
 
     hDocument = GetWindowDocument(window);
     WEGetViewRect(&viewRect, (*hDocument)->we);
@@ -741,29 +694,12 @@ static void DoScrollBar(Point hitPt, EventModifiers modifiers, WindowPtr window)
     }
     else
     {
-        return;
-        // return immediately if none of our scrollbars was hit
+        return; // return immediately if none of our scrollbars was hit
     }
 
-    //	dispatch on partCode
+    //	calculate the "scroll step" according to the part hit
     switch (partCode)
     {
-    case kControlIndicatorPart: {
-        // click in thumb
-        if (modifiers & optionKey)
-        {
-            // call TrackControl with no actionProc and adjust text
-            TrackControl(bar, hitPt, nil);
-            LCSynch(bar);
-            ScrollBarChanged(window);
-        }
-        else
-        {
-            LiveScroll(bar, hitPt, window);
-        }
-        return;
-    }
-
     case kControlUpButtonPart: {
         step = -((modifiers & optionKey) ? 1 : kScrollDelta);
         break;
@@ -783,11 +719,10 @@ static void DoScrollBar(Point hitPt, EventModifiers modifiers, WindowPtr window)
         step = +(pageSize - kScrollDelta);
         break;
     }
-
     } // switch
 
-    //	save step in a static variable for our ScrollProc callback
-    sScrollStep = step;
+    //	save scroll step as a control property
+    SetControlProperty(bar, R_ID, kScrollStepTag, sizeof(step), &step);
 
     //	track the mouse
     TrackControl(bar, hitPt, sScrollerUPP);
@@ -802,10 +737,10 @@ static void DoScrollBar(Point hitPt, EventModifiers modifiers, WindowPtr window)
  */
 static pascal void TextScrolled(WEReference we)
 {
-    WindowPtr window = nil;
+    WindowRef window = nil;
 
-    //	retrieve the window pointer stored in the WE instance as a "reference constant"
-    if (WEGetInfo(weRefCon, &window, we) != noErr)
+    //	get window reference associated with WE instance
+    if (WEGetUserInfo(kWindowTag, (SInt32 *)&window, we) != noErr)
     {
         return;
     }
@@ -821,11 +756,11 @@ static pascal OSErr AddClippingName(DragReference drag, WEReference we)
     //	add a 'clnm' flavor containing the name of the document originating the drag
     //	this flavor is used by the Finder (version 8.0 and later) to determine the
     //	name of the clipping file
-    WindowPtr window = nil;
+    WindowRef window = nil;
     Str255 windowTitle;
 
-    //	retrieve the window pointer stored in the WE instance as a "reference constant"
-    if (WEGetInfo(weRefCon, &window, we) != noErr)
+    //	get window reference associated with WE instance
+    if (WEGetUserInfo(kWindowTag, (SInt32 *)&window, we) != noErr)
     {
         return paramErr;
     }
@@ -836,13 +771,14 @@ static pascal OSErr AddClippingName(DragReference drag, WEReference we)
     //	put the window title into the drag, as a 'clnm' flavor
     //	we add this flavor to the same drag item used by WASTE to add the TEXT
     //	(note that the reference number of this drag item = the WEReference )
-    return AddDragItemFlavor(drag, (ItemReference)we, 'clnm', windowTitle, StrLength(windowTitle) + 1, flavorNotSaved);
+    return AddDragItemFlavor(drag, (ItemReference)we, kFlavorTypeClippingName, windowTitle, StrLength(windowTitle) + 1,
+                             flavorNotSaved);
 }
 
 /* DoContent:
    This function will be called when you click inside the window
  */
-Boolean DoContent(Point hitPt, const EventRecord *event, WindowPtr window)
+Boolean DoContent(Point hitPt, const EventRecord *event, WindowRef window)
 {
     WEReference we = GetWindowWE(window);
     Rect textRect;
@@ -851,7 +787,7 @@ Boolean DoContent(Point hitPt, const EventRecord *event, WindowPtr window)
 
     //	set up the port
     GetPort(&savePort);
-    SetPort(window);
+    SetPortWindowPort(window);
 
     //	convert the point to local coordinates
     GlobalToLocal(&hitPt);
@@ -865,13 +801,9 @@ Boolean DoContent(Point hitPt, const EventRecord *event, WindowPtr window)
     {
         isMyClick = true; //	active window -> always handle click
     }
-    else if (gHasDragAndDrop)
+    else
     {
-        SInt32 selStart, selEnd;
-        RgnHandle selRgn;
-
-        WEGetSelection(&selStart, &selEnd, we);
-        selRgn = WEGetHiliteRgn(selStart, selEnd, we);
+        RgnHandle selRgn = WEGetHiliteRgn(kCurrentSelection, kCurrentSelection, we);
         isMyClick = PtInRgn(hitPt, selRgn) && WaitMouseMoved(event->where);
         DisposeRgn(selRgn);
     }
@@ -900,10 +832,11 @@ Boolean DoContent(Point hitPt, const EventRecord *event, WindowPtr window)
 /* DoScrollKey:
    Handle Scroll key
  */
-static void DoScrollKey(SInt16 keyCode, WindowPtr window)
+
+static void DoScrollKey(SInt16 keyCode, WindowRef window)
 {
     DocumentHandle hDocument;
-    ControlHandle bar;
+    ControlRef bar;
     SInt32 value;
     LongRect viewRect;
 
@@ -911,7 +844,7 @@ static void DoScrollKey(SInt16 keyCode, WindowPtr window)
     bar = (*hDocument)->scrollBars[kVertical];
 
     //	get current scroll bar value
-    value = LCGetValue(bar);
+    value = GetControl32BitValue(bar);
 
     //	get text view rect
     WEGetViewRect(&viewRect, (*hDocument)->we);
@@ -935,14 +868,14 @@ static void DoScrollKey(SInt16 keyCode, WindowPtr window)
     }
 
     case keyEnd: {
-        value = LONG_MAX;
+        value = 0x7FFFFFFF;
         break;
     }
     } // switch
 
     //	set the new scroll bar value and scroll the text pane accordingly
 
-    LCSetValue(bar, value);
+    SetControl32BitValue(bar, value);
     ScrollBarChanged(window);
 }
 
@@ -951,7 +884,7 @@ static void DoScrollKey(SInt16 keyCode, WindowPtr window)
  */
 void DoKey(SInt16 key, const EventRecord *event)
 {
-    WindowPtr window;
+    WindowRef window;
     SInt16 keyCode;
 
     //	do nothing if no window is active
@@ -984,10 +917,17 @@ void DoKey(SInt16 key, const EventRecord *event)
    Based on WASTE DEMO. However, when you update a graphic window,
    you need to do something more than Text window.
  */
-void DoUpdate(WindowPtr window)
+
+void DoUpdate(WindowRef window)
 {
     GrafPtr savePort;
     RgnHandle updateRgn;
+    SInt16 WinIndex;
+    DevDesc *dd;
+
+#if TARGET_API_MAC_CARBON
+    Rect portRect;
+#endif
 
     // if we have no windows, there's nothing to update!
     if (window == nil)
@@ -997,35 +937,50 @@ void DoUpdate(WindowPtr window)
 
     // save the old drawing port
     GetPort(&savePort);
-    SetPort(window);
+    SetPortWindowPort(window);
 
     // notify everything that we're doing an update.
     BeginUpdate(window);
 
-    // BeginUpdate sets the window port visRgn to the region to update
-    updateRgn = window->visRgn;
+    updateRgn = NewRgn();
 
-    if (!EmptyRgn(updateRgn)) // if it's not an empty region, let's update it!
-    {
-        // erase the update region
+#if TARGET_API_MAC_CARBON
+    //	set updateRgn to the whole window rectangle
+    //	in the future, when Carbon gives us an API to get the "drawable" region
+    //	of a window, use that!
+    RectRgn(updateRgn, GetWindowPortBounds(window, &portRect));
+#else
+    //	in a classic, non-Carbon environment, the visRgn of the window
+    //	is set to the region to redraw between BeginUpdate and EndUpdate
+    MacCopyRgn(window->visRgn, updateRgn);
+#endif
+
+    // erase the update region
+    if (!isGraphicWindow(window))
         EraseRgn(updateRgn);
 
-        //	draw scroll bars
+    //	draw scroll bars
+    if (!isGraphicWindow(window))
         UpdateControls(window, updateRgn);
 
-        //	draw grow icon
-        MyDrawGrowIcon(window, false);
-
-        //	draw text
+    //	draw text
+    if (!isGraphicWindow(window))
         WEUpdate(updateRgn, GetWindowWE(window));
+    else
+    {
+        //    if (QDIsPortBuffered(GetWindowPort(window)))
+        //    QDFlushPortBuffer(GetWindowPort(window), NULL);
+        /* This way of refreshing windows is rather slow */
+        WinIndex = isGraphicWindow(window);
+        dd = (DevDesc *)gGReference[WinIndex].devdesc;
+
+        playDisplayList(dd);
     }
 
     // tell everything we're done updating
     EndUpdate(window);
-    if (isGraphicWindow(window))
-    {
-        GraUpdate(window);
-    }
+    DisposeRgn(updateRgn);
+
     // restore the old graphics port
     SetPort(savePort);
 }
@@ -1034,7 +989,7 @@ void DoUpdate(WindowPtr window)
    Based on WASTE DEMO. However, when you activate a graphic window,
    you need to do something more than Text window.
  */
-void DoActivate(Boolean isActivating, WindowPtr window)
+void DoActivate(Boolean isActivating, WindowRef window)
 {
     DocumentHandle hDocument;
     WEReference we;
@@ -1042,7 +997,7 @@ void DoActivate(Boolean isActivating, WindowPtr window)
     Rect barRect;
     ControlPartCode barHilite;
     SInt16 menuID;
-    Orientation orientation;
+    int orientation;
 
     // if this is not one of our document windows, nothing to do here...
     if ((hDocument = GetWindowDocument(window)) == nil)
@@ -1060,7 +1015,7 @@ void DoActivate(Boolean isActivating, WindowPtr window)
 
     //	 set up the port
     GetPort(&savePort);
-    SetPort(window);
+    SetPortWindowPort(window);
 
     // activate or deactivate the text (and any other relevant stuff) depending on just
     // what we're doing here...
@@ -1075,23 +1030,20 @@ void DoActivate(Boolean isActivating, WindowPtr window)
         barHilite = kControlDisabledPart;
     }
 
-    //	redraw the grow icon (and validate its rect)
-    MyDrawGrowIcon(window, true);
-
     //	redraw the scroll bars with the new highlighting (and validate their rects)
     for (orientation = kVertical; orientation <= kHorizontal; orientation++)
     {
         HiliteControl((*hDocument)->scrollBars[orientation], barHilite);
         CalcScrollBarRect(window, orientation, &barRect);
-        ValidRect(&barRect);
+        ValidWindowRect(window, &barRect);
     }
 
     //	if activating, undim text-related menus
     if (isActivating)
     {
-        for (menuID = kMenuEdit; menuID <= kMenuFeatures; menuID++)
+        for (menuID = kMenuEdit; menuID <= kMenuWindows; menuID++)
         {
-            EnableItem(GetMenuHandle(menuID), 0);
+            EnableMenuItem(GetMenuHandle(menuID), 0);
         }
     }
 
@@ -1100,6 +1052,20 @@ void DoActivate(Boolean isActivating, WindowPtr window)
 
     // restore the old graphics port..
     SetPort(savePort);
+}
+
+void DoIdle(UInt32 *sleepTime, WindowRef window)
+{
+    WEReference we = GetWindowWE(window);
+    FSSpec spec;
+
+    //	blink the caret if necessary
+    WEIdle(sleepTime, we);
+
+    //	update the window modification state according to the text modification count
+    //	(if this window has not been saved before, the proxy icon should remain dimmed
+    //	at all times)
+    SetWindowModified(window, (WEGetModCount(we) > 0) || (GetWindowProxyFSSpec(window, &spec) != noErr));
 }
 
 /* CreateGraphicWindow
@@ -1111,75 +1077,113 @@ WindowPtr CreateGraphicWindow(int wid, int h)
     OSErr err;
     SInt16 WinIndex;
     Rect theWholeScreen;
-    err = newWindow(nil, 1);
+    BitMap screenBits;
+    err = newWindow(nil, nil, 1, false);
 
     if (!err)
     {
         SizeWindow(Working_Window, wid, h, false);
 
-        SetRect(&theWholeScreen, (qd.screenBits).bounds.left + 4, qd.screenBits.bounds.top + 24,
-                qd.screenBits.bounds.right - 4, qd.screenBits.bounds.bottom - 4);
+        GetQDGlobalsScreenBits(&screenBits);
+
+        SetRect(&theWholeScreen, screenBits.bounds.left + 4, screenBits.bounds.top + 24, screenBits.bounds.right - 4,
+                screenBits.bounds.bottom - 4);
         MoveWindow(Working_Window, theWholeScreen.right - wid - 5, theWholeScreen.top + 20, true);
         ShowWindow(Working_Window);
+        if (Current_Window > 2)
+            RepositionWindow(FrontWindow(), Graphic_Window[Current_Window - 2], kWindowCascadeOnParentWindow);
     }
     else
     {
         GWdoErrorAlert(eGWin);
     }
+
     return Working_Window;
 }
 
 /* CreateWindow:
    Create Text Window
  */
-OSErr CreateWindow(const FSSpec *pFileSpec)
+OSErr CreateWindow(const FSSpec *pFileSpec, Boolean editable)
 {
     OSErr err;
-    err = newWindow(pFileSpec, 0);
-    if (!err)
-        ShowWindow(Working_Window);
+    WindowRef outWindow = nil;
+
+    *outWindow = *Working_Window;
+    err = newWindow(pFileSpec, &Working_Window, 0, editable);
+    if (err)
+        *Working_Window = *outWindow;
+
     return err;
 }
 
-/* newWindow :
-   General Procedure , which used to create a new window
-   (all kind of windows)
- */
-OSErr newWindow(const FSSpec *pFileSpec, int graphic)
+OSStatus newWindow(const FSSpec *pFileSpec, WindowRef *outWindow, int graphic, Boolean editable)
 {
+    static WEScrollUPP sScroller = nil;
+    static WEPreTrackDragUPP sPreTracker = nil;
+    Rect initialWindowBounds = {48, 12, 48 + 280, 12 + 440};
+    const SInt32 translucencyThreshold = kStandardTranslucencyThreshold;
+    Str255 initialWindowTitle;
+    Cursor arrow;
     DocumentHandle hDocument = nil;
-    WindowPtr window = nil;
+    WindowRef window = nil;
     AliasHandle alias = nil;
     WEReference we = nil;
-    ControlHandle bar = nil;
-    FInfo fileInfo;
-    Rect textRect, theWholeScreen;
+    ControlRef bar = nil;
+    Handle hPageMargins = nil;
+    PageMarginRec pageMargins;
+    FInfo finderInfo;
+    Rect textRect;
+    Rect fileRect;
+    const Rect *transitionSrcRect = nil;
     LongRect lr;
-    Orientation orientation;
-    OSErr err;
+    int orientation;
+    OSStatus err;
     Str255 titledString = "\pUntitled ";
     Str255 numberAsString;
     MenuHandle windowsMenu;
     WEStyleMode mode;
     TextStyle ts;
-#if TARGET_API_MAC_CARBON
+    OptionBits winOptions;
+    BitMap screenBits;
+    Rect theWholeScreen, portRect;
     FMFontFamily fontFamily = 0;
-#else
-    SInt16 fontFamily = 0;
-#endif
 
-#ifdef __cplusplus
-    static WEScrollUPP sScrollerUPP = NewWEScrollProc(TextScrolled);
-    static WEPreTrackDragUPP sPreTrackerUPP = NewWEPreTrackDragProc(AddClippingName);
-#else
-    static WEScrollUPP sScrollerUPP = nil;
-    static WEPreTrackDragUPP sPreTrackerUPP = nil;
-    if (sScrollerUPP == nil)
+    GetTextSize();
+
+    initialWindowBounds.right = (int)(28 + EIGHTY);
+
+    if (!Have_Console)
+        initialWindowBounds.bottom = (int)(48 + 18 * F_HEIGHT);
+
+    switch (graphic)
     {
-        sScrollerUPP = NewWEScrollProc(TextScrolled);
-        sPreTrackerUPP = NewWEPreTrackDragProc(AddClippingName);
+
+    case 0:
+        if (Edit_Window == MAX_NUM_E_WIN - 1)
+        {
+            R_ShowMessage("Too may edit/help windows");
+            err = -1;
+            return;
+        }
+        break;
+
+    default:
+        if (Current_Window == MAX_NUM_G_WIN - 1)
+        {
+            R_ShowMessage("Too many graphic windows");
+            err = -1;
+            return;
+        }
+        break;
     }
-#endif
+
+    //	allocate UPPs first time thru
+    if (sScroller == nil)
+    {
+        sScroller = NewWEScrollUPP(TextScrolled);
+        sPreTracker = NewWEPreTrackDragUPP(AddClippingName);
+    }
 
     //	allocate a relocateable block to hold a document record
     hDocument = (DocumentHandle)NewHandleClear(sizeof(DocumentRecord));
@@ -1188,51 +1192,72 @@ OSErr newWindow(const FSSpec *pFileSpec, int graphic)
         goto cleanup;
     }
 
-    //	create the window from a 'WIND' template: the window is initially invisible
-    //	if ColorQuickDraw is available, create a color window
-    if (gHasColorQD)
+    //	create the window
+    switch (graphic)
     {
+
+    case 0:
+        (*hDocument)->docType = kTypeText;
+
+        err = CreateNewWindow(kDocumentWindowClass,
+                              kWindowCloseBoxAttribute | kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute |
+                                  kWindowResizableAttribute,
+                              &initialWindowBounds, &window);
+        break;
+
+    default:
         window = GetNewCWindow(kWindowTemplateID, nil, (WindowPtr)-1L);
-    }
-    else
-    {
-        window = GetNewWindow(kWindowTemplateID, nil, (WindowPtr)-1L);
+        if (window == nil)
+        {
+            err = memFullErr;
+            goto cleanup;
+        }
+        /*
+          err = CreateNewWindow ( kDocumentWindowClass,
+              kWindowCloseBoxAttribute | kWindowResizableAttribute, & initialWindowBounds, & window );
+          */
+        break;
     }
 
-    //	make sure we got a window
-    if (window == nil)
-    {
-        err = memFullErr;
+    if (err != noErr)
         goto cleanup;
-    }
+
+    GetIndString(initialWindowTitle, kMiscStringsID, 3);
+    SetWTitle(window, initialWindowTitle);
 
     // link the document record to the window and the other way around
     SetWRefCon(window, (SInt32)hDocument);
     (*hDocument)->owner = window;
 
     // we got a window, so tell QuickDraw where to draw...
-    SetPort(window);
+    SetPortWindowPort(window);
 
     //	calculate the text rectangle
     if (graphic)
-    {
         hideTextRect(&textRect);
-    }
     else
-        CalcBigTextRect(window, &textRect);
+        CalcTextRect(window, &textRect);
+
     WERectToLongRect(&textRect, &lr);
 
+    if (!Have_Console)
+        winOptions = weDoAutoScroll | weDoOutlineHilite | weDoUndo | weDoMultipleUndo | weDoIntCutAndPaste |
+                     /* weDoDragAndDrop | */ weDoUseTempMem | weDoDrawOffscreen;
+    else
+        winOptions = weDoAutoScroll | weDoOutlineHilite | weDoUndo | weDoMultipleUndo | weDoIntCutAndPaste |
+                     /*weDoDragAndDrop | */ weDoUseTempMem | weDoDrawOffscreen | weDoReadOnly;
+    if (Have_Console && editable)
+        winOptions ^= weDoReadOnly; /* in case a window is editable, we remove the 'readonly' tag */
+
     //	create a new WASTE instance
-    if ((err = WENew(&lr, &lr,
-                     weDoAutoScroll + weDoOutlineHilite + weDoUndo + weDoIntCutAndPaste + weDoDragAndDrop +
-                         weDoUseTempMem + weDoDrawOffscreen,
-                     &we)) != noErr)
+
+    if ((err = WENew(&lr, &lr, winOptions, &we)) != noErr)
     {
         goto cleanup;
     }
 
     //	save a reference to the window in the WE instance
-    if ((err = WESetInfo(weRefCon, &window, we)) != noErr)
+    if ((err = WESetUserInfo(kWindowTag, (SInt32)window, we)) != noErr)
     {
         goto cleanup;
     }
@@ -1241,106 +1266,153 @@ OSErr newWindow(const FSSpec *pFileSpec, int graphic)
     (*hDocument)->we = we;
 
     //	set up our scroll callback
-    if ((err = WESetInfo(weScrollProc, &sScrollerUPP, we)) != noErr)
+    if ((err = WESetInfo(weScrollProc, &sScroller, we)) != noErr)
     {
         goto cleanup;
     }
 
     //	set up our pre-TrackDrag callback
-    if ((err = WESetInfo(wePreTrackDragHook, &sPreTrackerUPP, we)) != noErr)
+    if ((err = WESetInfo(wePreTrackDragHook, &sPreTracker, we)) != noErr)
     {
         goto cleanup;
     }
 
-    //	create the scroll bars from a control template
-    for (orientation = kVertical; orientation <= kHorizontal; orientation++)
+    //	enable translucent text dragging
+    WESetInfo(weTranslucencyThreshold, &translucencyThreshold, we);
+
+    //	associate a default page margins record with the WE reference
+    pageMargins.top = 72 << 16; //	one inch
+    pageMargins.bottom = 72 << 16;
+    pageMargins.left = 72 << 16;
+    pageMargins.right = 72 << 16;
+
+    if ((err = PtrToHand(&pageMargins, &hPageMargins, sizeof(pageMargins))) != noErr)
     {
-        if ((bar = GetNewControl(kScrollBarTemplateID, window)) == nil)
+        goto cleanup;
+    }
+    if ((err = WESetUserInfo(kPageMarginsTag, (SInt32)hPageMargins, we)) != noErr)
+    {
+        goto cleanup;
+    }
+    hPageMargins = nil;
+
+    if (graphic == 0)
+    {
+
+        //	create the scroll bars from a control template
+        for (orientation = kVertical; orientation <= kHorizontal; orientation++)
         {
-            err = memFullErr;
-            goto cleanup;
-        }
-        HiliteControl(bar, kControlDisabledPart);
+            Rect scrollBarRect;
 
-        //	attach a LongControl record to the scroll bar:  this allows us to use long
-        //	settings and thus scroll text taller than 32,767 pixels
-        if ((err = LCAttach(bar)) != noErr)
-        {
-            goto cleanup;
-        }
+            CalcScrollBarRect(window, orientation, &scrollBarRect);
 
-        //	save control handle in the document record
-        (*hDocument)->scrollBars[orientation] = bar;
+            if ((bar = NewControl(window, &scrollBarRect, "\p", false, 0, 0, 0, kControlScrollBarLiveProc, 0)) == nil)
+            {
+                err = memFullErr;
+                goto cleanup;
+            }
 
-    } // for
+            HiliteControl(bar, kControlDisabledPart);
+            ShowControl(bar);
 
-    //	ViewChanged adjusts the scroll bars rectangles to the window frame
+            //	save control handle in the document record
+            (*hDocument)->scrollBars[orientation] = bar;
+
+        } // for
+    }     // graphic ==0
+          //	ViewChanged adjusts the scroll bars rectangles to the window frame
     if (graphic == 0)
         ViewChanged(window);
-
     //	if pFileSpec is not nil, it points to a file to read, so let's read it!
-    if (pFileSpec != nil)
+    if (pFileSpec)
     {
         // turn the cursor into a wristwatch because this can be a lengthy operation
         SetCursor(*GetCursor(watchCursor));
 
-        //	retrieve file infomation
-        if ((err = FSpGetFInfo(pFileSpec, &fileInfo)) != noErr)
+        //	retrieve finder information
+        if ((err = FSpGetFInfo(pFileSpec, &finderInfo)) != noErr)
         {
-            goto cleanup;
-        }
-
-        //	make sure we recognize the file type
-        if ((fileInfo.fdType != kTypeText) && (fileInfo.fdType != ftSimpleTextDocument))
-        {
-            err = badFileFormat;
             goto cleanup;
         }
 
         //	read in the file
-        if ((err = ReadTextFile(pFileSpec, we)) != noErr)
+        switch (finderInfo.fdType)
         {
+        case kTypeText: {
+            if ((err = ReadTextFile(pFileSpec, we)) != noErr)
+            {
+                goto cleanup;
+            }
+            break;
+        }
+
+        case kTypeUnicodeText: {
+            //	read in the file
+            if ((err = ReadUnicodeTextFile(pFileSpec, we)) != noErr)
+            {
+                goto cleanup;
+            }
+            break;
+        }
+
+        default: {
+            err = badFileFormat;
             goto cleanup;
         }
-
-        //	set the window title to the file name
-        SetWTitle(window, pFileSpec->name);
-
-        //	create an alias to keep track of the file
-        if ((err = NewAlias(nil, pFileSpec, &alias)) != noErr)
-        {
-            goto cleanup;
-        }
-        (*hDocument)->fileAlias = (Handle)alias;
-
-        //	if the file is a read-only file, go ahead and enable those flags
-        if (fileInfo.fdType == ftSimpleTextDocument)
-        {
-            WEFeatureFlag(weFReadOnly, weBitSet, we);
         }
 
-        //	let's make sure the cursor is happy...
-        SetCursor(&qd.arrow);
+        if (finderInfo.fdFlags & kIsStationery)
+        {
+            //	the file we just read was a stationery pad, so don't associate it with the window
+            SetWindowProxyCreatorAndType(window, finderInfo.fdCreator, finderInfo.fdType, pFileSpec->vRefNum);
+        }
+        else
+        {
+            //	set the window title
+            SetWTitle(window, pFileSpec->name);
+
+            //	set the window icon
+            SetWindowProxyFSSpec(window, pFileSpec);
+            SetWindowModified(window, false);
+        }
+
+        (*hDocument)->docType = finderInfo.fdType;
+
+        //	get icon rect
+        if (GetFileRect(pFileSpec, &fileRect) == noErr)
+        {
+            transitionSrcRect = &fileRect;
+        }
+
+        //	make the cursor happy
+        SetCursor(GetQDGlobalsArrow(&arrow));
+    }
+    else
+    {
+        SetWindowProxyCreatorAndType(window, R_ID, kTypeText, kOnSystemDisk);
     }
 
     //	adjust scroll bar settings based on the total text height
     if (!graphic)
         AdjustBars(window);
 
+    //	position the window
+    RepositionWindow(window, FrontWindow(), kWindowCascadeOnParentWindow);
+
+    //	finally!  show the document window
+    TransitionWindow(window, kWindowZoomTransitionEffect, kWindowShowTransitionAction, transitionSrcRect);
+
+    //	copy window ref for caller
+    if (outWindow)
+    {
+        *outWindow = window;
+    }
+
     if (!Have_Console)
     {
         SetWTitle(window, "\pR Console");
         Console_Window = window;
-        // If you think that the console window didn't need to have tab function.
-        // You can simply delete these two lines.
-        // Also, if you think that different windows ought to have different tab space.
-        // what you need to do is replicate the following two lines.
-        // and use it into another space.
-        // I use char M to represent the char width of each character.
         Have_Console = true;
-        /*	MenuHandle windowsMenu; */
-        if (windowsMenu = GetMenu(mWindows))
-            AppendMenu(windowsMenu, "\pR Console");
     }
     else
     {
@@ -1353,14 +1425,15 @@ OSErr newWindow(const FSSpec *pFileSpec, int graphic)
             GWdoConcatPStrings(titledString, numberAsString);
             SetWTitle(window, titledString);
 
-            if (windowsMenu = GetMenu(mWindows))
+            if (windowsMenu = GetMenuHandle(kMenuWindows))
                 AppendMenu(windowsMenu, titledString);
 
             SetTab();
-            SetRect(&theWholeScreen, (qd.screenBits).bounds.left + 4, qd.screenBits.bounds.top + 24,
-                    qd.screenBits.bounds.right - 4, qd.screenBits.bounds.bottom - 4);
-
-            MoveWindow(window, theWholeScreen.right - (window->portRect.right + 5), theWholeScreen.top + 20, true);
+            GetQDGlobalsScreenBits(&screenBits);
+            SetRect(&theWholeScreen, screenBits.bounds.left + 4, screenBits.bounds.top + 24,
+                    screenBits.bounds.right - 4, screenBits.bounds.bottom - 4);
+            GetWindowPortBounds(window, &portRect);
+            MoveWindow(window, theWholeScreen.right - (portRect.right + 5), theWholeScreen.top + 20, true);
         }
     }
     if (graphic)
@@ -1379,19 +1452,7 @@ OSErr newWindow(const FSSpec *pFileSpec, int graphic)
     Working_Window = window;
     //	finally!  show the document window
 
-    GetFNum("\pmonaco", &ts.tsFont);
-
-    // use script-preserving mode by default (see WASTE docs)
-    // force font change across the whole selection if the option key was held down
-
-    /* mod Jago 08/29/00
-       mode =  weDoFont ;
-
-       // set the font of the selection
-       WESetStyle ( mode, & ts, GetWindowWE ( window ) ) ;
-    */
-
-    GetFNum("\pmonaco", &fontFamily);
+    fontFamily = FMGetFontFamilyFromName(UserFont);
 
     WESetOneAttribute(kCurrentSelection, kCurrentSelection, weTagFontFamily, &fontFamily, sizeof(fontFamily),
                       GetWindowWE(window));
@@ -1403,27 +1464,65 @@ cleanup:
     {
         ErrorAlert(err);
     }
+    ForgetHandle(&hPageMargins);
     return err;
 }
 
 /* DestroyWindow
  */
-void DestroyWindow(WindowPtr window)
+
+void DestroyWindow(WindowRef window)
 {
     DocumentHandle hDocument;
+    WEReference we;
+#if TARGET_API_MAC_CARBON
+    Handle hPageFormat = nil;
+#else
+    Handle hPrintRecord = nil;
+#endif
+    Handle hPageMargins = nil;
+    FSSpec fileSpec;
+    Rect fileRect;
+    const Rect *transitionDstRect = nil;
     SInt16 menuID;
 
     hDocument = GetWindowDocument(window);
+    we = (*hDocument)->we;
+
+#if TARGET_API_MAC_CARBON
+    //	get rid of the page format, if any
+    if (WEGetUserInfo(kPageFormatTag, (SInt32 *)&hPageFormat, we) == noErr)
+    {
+        ForgetHandle(&hPageFormat);
+        WERemoveUserInfo(kPageFormatTag, we);
+    }
+#else
+    //	get rid of the print record, if any
+    if (WEGetUserInfo(kPrintRecordTag, (SInt32 *)&hPrintRecord, we) == noErr)
+    {
+        ForgetHandle(&hPrintRecord);
+        WERemoveUserInfo(kPrintRecordTag, we);
+    }
+#endif
+
+    //	get rid of the page margin record, if any
+    if (WEGetUserInfo(kPageMarginsTag, (SInt32 *)&hPageMargins, we) == noErr)
+    {
+        ForgetHandle(&hPageMargins);
+        WERemoveUserInfo(kPageMarginsTag, we);
+    }
 
     //	destroy the WASTE instance
-    WEDispose((*hDocument)->we);
+    WEDispose(we);
 
-    //	destory the LongControl records attached to the scroll bars
-    LCDetach((*hDocument)->scrollBars[kVertical]);
-    LCDetach((*hDocument)->scrollBars[kHorizontal]);
+    //	if this document has an associated file, get its icon rectangle
+    if ((GetWindowProxyFSSpec(window, &fileSpec) == noErr) && (GetFileRect(&fileSpec, &fileRect) == noErr))
+    {
+        transitionDstRect = &fileRect;
+    }
 
-    //	dispose of the file alias, if any
-    ForgetHandle(&((*hDocument)->fileAlias));
+    //	hide the window
+    TransitionWindow(window, kWindowZoomTransitionEffect, kWindowHideTransitionAction, transitionDstRect);
 
     //	destroy the window record and all associated data structures
     DisposeWindow(window);
@@ -1431,11 +1530,6 @@ void DestroyWindow(WindowPtr window)
     //	finally, dispose of the document record
     DisposeHandle((Handle)hDocument);
 
-    // adjust the menus to suit
-    for (menuID = kMenuFont; menuID <= kMenuFeatures; menuID++)
-    {
-        DisableItem(GetMenuHandle(menuID), 0);
-    }
     InvalMenuBar();
 }
 
@@ -1455,13 +1549,6 @@ static void hideTextRect(Rect *textRect)
     InsetRect(textRect, kTextMargin, kTextMargin);
 }
 
-/* hideTextRect:
-   Used in Graphic window, which hide the corresponding TextEdit
-   Field. We hide the TextField instead of creating another kind of
-   window, because the event processing procedure is based on the WASTE
-   DEMO. Thus, if we have two different kind of window structure. You
-   need to rewrite the event handling procedure too.
- */
 int isEditWindow(WindowPtr window)
 {
     SInt16 i;
@@ -1501,40 +1588,23 @@ int R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboole
     OSErr readErr;
     SInt16 i;
     WEReference we;
-    MenuHandle windowsMenu;
+    MenuHandle windowsMenu = NULL;
     Boolean EqString = FALSE;
+
     if (nfile <= 0)
         return 1;
-    readErr = DoNew();
+    readErr = DoNew(false);
 
     // Handle error for opening a new window
     if (readErr != noErr)
         return 1;
-    PWTitle[0] = strlen(WinTitle);
-    strncpy((char *)(&PWTitle[1]), WinTitle, PWTitle[0]);
 
-    GetWTitle(Edit_Windows[Edit_Window - 1], Cur_Title);
-    windowsMenu = GetMenu(mWindows);
-    for (i = 1; i <= CountMenuItems(windowsMenu); i++)
-    {
-        GetMenuItemText(windowsMenu, i, curString);
-        EqString = EqualNumString(Cur_Title, curString, curString[0]);
-        if (EqString)
-        {
-            DeleteMenuItem(windowsMenu, i);
-            break;
-        }
-    }
+    RemWinMenuItem();
 
     Help_Windows[Help_Window] = Edit_Windows[Edit_Window - 1];
 
-    NumToString(Help_Window, numberAsString);
-    GWdoConcatPStrings(PWTitle, "\p ");
-    GWdoConcatPStrings(PWTitle, numberAsString);
-    if (windowsMenu = GetMenu(mWindows))
-        AppendMenu(windowsMenu, PWTitle);
-
-    SetWTitle(Help_Windows[Help_Window], PWTitle);
+    if (Help_Window > 1)
+        RepositionWindow(Help_Windows[Help_Window], Help_Windows[Help_Window - 1], kWindowCascadeOnParentWindow);
 
     Edit_Window--;
     Edit_Number--;
@@ -1560,13 +1630,87 @@ int R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboole
             if (readErr == -43)
                 warning("File not found");
         }
+
+        UniqueWinTitle();
     }
     // Handle Error about reading
     return 1;
 }
 
-int R_ShowFile(char *fileName, char *title)
+/*  This routine determines a unique title for any text window
+    based on the name of the file just opened
+    Jago April 2001, Stefano M. Iacus
+*/
+
+void UniqueWinTitle(void)
 {
+    Str255 pWTitle, ptestString, pcurString;
+    char cWTitle[265], ctestString[265];
+    MenuHandle windowsMenu;
+    Boolean unique = false, EqString;
+    int w_number = 1, i;
+
+    GetWTitle(FrontWindow(), pWTitle);
+    windowsMenu = GetMenuHandle(kMenuWindows);
+
+    CopyPascalStringToC(pWTitle, cWTitle);
+    CopyPascalStringToC(pWTitle, ctestString);
+    CopyCStringToPascal(ctestString, ptestString);
+
+    while (!unique)
+    {
+        if (w_number > 1)
+            sprintf(ctestString, "%s [%d]", cWTitle, w_number);
+
+        CopyCStringToPascal(ctestString, ptestString);
+
+        for (i = 1; i <= CountMenuItems(windowsMenu); i++)
+        {
+            GetMenuItemText(windowsMenu, i, pcurString);
+            EqString = EqualNumString(ptestString, pcurString, ptestString[0]);
+            if (EqString)
+            {
+                w_number++;
+                unique = false;
+                break;
+            }
+            else
+                unique = true;
+        }
+    }
+
+    CopyPascalStringToC(ptestString, ctestString);
+    AppendMenu(windowsMenu, ptestString);
+    SetWTitle(FrontWindow(), ptestString);
+}
+
+/* This routine remove the menu item corresponding to
+   the title of the current FrontWindow()
+   Jago April 2001, Stefano M. Iacus
+*/
+
+void RemWinMenuItem(void)
+{
+    Str255 pWTitle, pcurString;
+    int i;
+    MenuHandle windowsMenu = NULL;
+    Boolean EqString;
+    char cWTitle[260], ccurString[260];
+    GetWTitle(FrontWindow(), pWTitle);
+    CopyPascalStringToC(pWTitle, cWTitle);
+
+    windowsMenu = GetMenuHandle(kMenuWindows);
+
+    for (i = 1; i <= CountMenuItems(windowsMenu); i++)
+    {
+        GetMenuItemText(windowsMenu, i, pcurString);
+        CopyPascalStringToC(pcurString, ccurString);
+        if (strcmp(ccurString, cWTitle) == 0)
+        {
+            DeleteMenuItem(windowsMenu, i);
+            break;
+        }
+    }
 }
 
 void RnWWin(char *buf, SInt16 len, WEReference we)

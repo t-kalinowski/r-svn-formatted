@@ -54,10 +54,6 @@
 #include <OSUtils.h>
 #endif
 
-#if PRAGMA_ALIGN_SUPPORTED
-#pragma options align = mac68k
-#endif
-
 #if PRAGMA_IMPORT_SUPPORTED
 #pragma import on
 #endif
@@ -87,11 +83,11 @@ enum
                              STACK_ROUTINE_PARAMETER(5, SIZE_CODE(sizeof(SInt32)))
 };
 
-#if GENERATINGCFM
-typedef UniversalProcPtr SmartScrollUPP;
-#else
+//#if GENERATINGCFM
+// typedef UniversalProcPtr SmartScrollUPP ;
+//#else
 typedef SmartScrollProcPtr SmartScrollUPP;
-#endif
+//#endif
 
 typedef struct
 {
@@ -106,9 +102,9 @@ pascal void InitSmartScrollAwareApplication(void)
 {
     const SmartScrollGestaltRec *rec;
 
-#if !(GENERATINGCFM || SystemSevenOrLater)
-    if (GetOSTrapAddress(_Gestalt) != GetToolTrapAddress(_Unimplemented))
-#endif
+    //#if ! ( GENERATINGCFM || SystemSevenOrLater )
+    //    if ( GetOSTrapAddress ( _Gestalt ) != GetToolTrapAddress ( _Unimplemented ) )
+    //#endif
     {
         if ((Gestalt(gestaltSmartScroll, (SInt32 *)&rec) == noErr) && (rec != nil) &&
             (rec->ssSignature == gestaltSmartScroll))
@@ -124,12 +120,12 @@ inline SInt32 __SmartScrollDispatch(SInt32 inSelector, ControlHandle inControl, 
 
     if (sSmartScrollDispatch != nil)
     {
-#if GENERATINGCFM
-        CallUniversalProc(sSmartScrollDispatch, uppSmartScrollProcInfo, inSelector, &result, inControl, inParam1,
-                          inParam2);
-#else
+        //#if GENERATINGCFM
+        //		CallUniversalProc ( sSmartScrollDispatch, uppSmartScrollProcInfo, inSelector,
+        //						& result, inControl, inParam1, inParam2 ) ;
+        //#else
         sSmartScrollDispatch(inSelector, &result, inControl, inParam1, inParam2);
-#endif
+        //#endif
     }
 
     return result;

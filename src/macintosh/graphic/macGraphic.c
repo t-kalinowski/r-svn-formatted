@@ -24,11 +24,15 @@
 #include <fp.h> /* Jago */
 #include <Quickdraw.h>
 #include <ToolUtils.h>
+#include <Menus.h>
+#include <Scrap.h>
 #include "Defn.h"
 #include "Graphics.h"
 #include "RIntf.h"
-#include "PicComments.h"
 #include <Rdevices.h>
+
+#include <ATSUnicode.h>
+#include <TextEncodingConverter.h>
 
 /* #define MAC_TEXT */
 #define SETFONT
@@ -40,59 +44,11 @@
 
 static int BuildingPict = 0;
 
-/***************************************************************************/
-/* Each driver can have its own device-specic graphical                    */
-/* parameters and resources.  these should be wrapped                      */
-/* in a structure (like the x11Desc structure below)                       */
-/* and attached to the overall device description via                      */
-/* the dd->deviceSpecific pointer                                          */
-/* NOTE that there are generic graphical parameters                        */
-/* which must be set by the device driver, but are                         */
-/* common to all device types (see Graphics.h)                             */
-/* so go in the GPar structure rather than this device-                    */
-/* specific structure                                                      */
-/***************************************************************************/
+#define FixedToFloat(a) ((float)(a) / fixed1)
+#define FloatToFixed(a) ((Fixed)((float)(a)*fixed1))
 
-typedef struct
-{
-    int cex;
-    int windowWidth;
-    int windowHeight;
-    Boolean resize;
-    int Text_Font; /* 0 is system font and 4 is monaco */
-    int fontface;  /* Typeface */
-    int fontsize;  /* Size in points */
-    int usefixed;
-    RGBColor rgb[2]; /* Window-Pict/Pixmap Port ForeColors */
-    int col[2];
-    WindowPtr window;
-    int lineType;
-    SInt16 currentDash;
-    SInt16 numDashes;
-    short dashList[14];
-    short dashStart_x;
-    short dashStart_y;
-} MacDesc;
-
-/****************************************************************************/
-/* There must be an entry point for the device driver                       */
-/* which will create device-specific resources,                             */
-/* initialise the device-specific parameters structure                      */
-/* and return whether the setup succeeded                                   */
-/* This is called by the graphics engine when the user                      */
-/* creates a new device of this type                                        */
-/****************************************************************************/
-
-/****************************************************************************/
-/* There are a number of actions that every device						   */
-/* driver is expected to perform (even if, in some                          */
-/* cases it does nothing - just so long as it doesn't                       */
-/* crash !).  this is how the graphics engine interacts                     */
-/* with each device. ecah action will be documented                         */
-/* individually.                                                            */
-/* hooks for these actions must be set up when the                          */
-/* device is first created                                                  */
-/****************************************************************************/
+extern char *mac_getenv(const char *name);
+extern int GetScreenRes(void);
 
 /* Device Driver Actions */
 
@@ -114,6 +70,10 @@ static void Mac_Text(double, double, int, char *, double, double, DevDesc *);
 static void Mac_MetricInfo(int, double *, double *, double *, DevDesc *);
 static void Mac_Resize(DevDesc *dd);
 
+extern CGrafPtr printerPort;
+extern Boolean WeArePrinting, WeArePasting;
+extern SInt32 systemVersion;
+
 /*****************************************************************************/
 /* end of list of required device driver actions                             */
 /*****************************************************************************/
@@ -127,12 +87,10 @@ static int SetColor(int, int, DevDesc *);
 static void SetFont(int, int, DevDesc *);
 static void SetLinetype(int, double, DevDesc *);
 static int SetBaseFont(MacDesc *xd);
-extern void RasterTextRotation(char *str, int nstr, int just, int rot);
+OSErr NewRasterTextRotation(char *str, int face, int size, int color, int xx, int yy, double rot, WindowPtr window);
 void startRecord(WindowPtr window);
 void stopRecord(WindowPtr window);
 void CleanUpWindow(WindowPtr window);
-extern void NewBitMap(BitMap *theBitMap);
-extern void DisposeBitMap(BitMap *theBitMap);
 extern void doActivate(EventRecord *);
 void DrawLineType(int xx1, int yy1, int xx2, int yy2, DevDesc *dd);
 
@@ -147,8 +105,9 @@ Boolean gWrite = false;
 PicHandle TempPicture;
 Boolean defaultPort = true;
 static GrafPtr storeport;
-static Str255 PostFont;
-static Str255 MacSymbolFont;
+Str255 PostFont;
+Str255 UserFont;
+Str255 MacSymbolFont;
 extern WindowPtr Console_Window;
 extern WindowPtr Working_Window;
 extern SInt16 Current_Window;
@@ -164,18 +123,26 @@ static void Mac_Resize(DevDesc *dd)
 {
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
-    Rect offRect;
+    Rect offRect, portRect;
 
-    WinIndex = isGraphicWindow(xd->window);
-    SetRect(&offRect, 0, 0, xd->window->portRect.right, xd->window->portRect.bottom);
+    if (WeArePrinting || WeArePasting)
+    {
+        GetPortBounds(gGReference[isGraphicWindow(xd->window)].activePort, &portRect);
+        SetRect(&offRect, 0, 0, portRect.right, portRect.bottom);
+    }
+    else
+    {
+        GetWindowPortBounds(xd->window, &portRect);
+        SetRect(&offRect, 0, 0, portRect.right, portRect.bottom);
+    }
+
     if (xd->resize)
     {
         dd->dp.left = dd->gp.left = 0.0;
-        dd->dp.right = dd->gp.right = xd->window->portRect.right;
-        dd->dp.bottom = dd->gp.bottom = xd->window->portRect.bottom;
+        dd->dp.right = dd->gp.right = portRect.right;
+        dd->dp.bottom = dd->gp.bottom = portRect.bottom;
         dd->dp.top = dd->gp.top = 0.0;
         xd->resize = 0;
-        UpdateOffScreen(&offRect, nil, nil, gGReference[WinIndex].colorPort, gGReference[WinIndex].colorDevice);
     }
 }
 
@@ -191,6 +158,9 @@ static int Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double hgt)
         Rprintf("can't find Macintosh font\n");
         return 0;
     }
+
+    gScreenRes = GetScreenRes();
+
     xd->windowWidth = wid;
     xd->windowHeight = hgt;
     dd->dp.bg = R_RGB(255, 255, 255);
@@ -198,11 +168,15 @@ static int Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double hgt)
     /* Create a new window with the specified size */
     CreateGraphicWindow(gScreenRes * wid, gScreenRes * hgt);
     xd->window = Working_Window;
-    SetPort(xd->window);
+
+    SetPortWindowPort(xd->window);
+
     WinIndex = isGraphicWindow(Working_Window);
     gGReference[WinIndex].devdesc = (Ptr)dd;
     gGReference[WinIndex].colorPort = nil;
     gGReference[WinIndex].colorDevice = nil;
+    gGReference[WinIndex].printPort = nil;
+    gGReference[WinIndex].activePort = nil;
     gGReference[WinIndex].MenuIndex = 0;
     xd->col[1] = xd->col[0] = NA_INTEGER;
     dd->dp.col = R_RGB(0, 0, 0);
@@ -215,15 +189,18 @@ void Mac_Dev_Kill(WindowPtr window)
 {
     SInt16 WinIndex;
     WinIndex = isGraphicWindow(window);
+
     if ((WinIndex) && (gGReference[WinIndex].devdesc != nil))
     {
         if ((gGReference[WinIndex].colorDevice != nil) && (gGReference[WinIndex].colorPort != nil))
         {
-            DisposeOffScreen(gGReference[WinIndex].colorPort, gGReference[WinIndex].colorDevice);
+
             gGReference[WinIndex].colorPort = nil;
             gGReference[WinIndex].colorDevice = nil;
             gGReference[WinIndex].savedPort = nil;
             gGReference[WinIndex].savedDevice = nil;
+            gGReference[WinIndex].printPort = nil;
+            gGReference[WinIndex].activePort = nil;
         }
         KillDevice((DevDesc *)gGReference[WinIndex].devdesc);
     }
@@ -240,15 +217,25 @@ void Mac_Dev_Kill(WindowPtr window)
 
 static double Mac_StrWidth(char *str, DevDesc *dd)
 {
-    GrafPtr savedPort;
+    CGrafPtr savedPort, port;
     int width;
     int Stringlen = strlen(str);
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     int size = dd->gp.cex * dd->gp.ps + 0.5;
+
     GetPort(&savedPort);
-    SetPort(xd->window);
+
+    if (WeArePrinting || WeArePasting)
+    {
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    }
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPortWindowPort(port);
     SetFont(dd->gp.font, size, dd);
     width = TextWidth(str, 0, Stringlen);
+
     SetPort(savedPort);
     return width;
 }
@@ -265,19 +252,22 @@ static double Mac_StrWidth(char *str, DevDesc *dd)
 /* selected graphic port                                              */
 /**********************************************************************/
 
-#define FixedToFloat(a) ((float)(a) / fixed1)
-#define FloatToFixed(a) ((Fixed)((float)(a)*fixed1))
-
 static void Mac_MetricInfo(int c, double *ascent, double *descent, double *width, DevDesc *dd)
 {
     FMetricRec myFMetric;
-    char mychar = (char)c;
+    MacDesc *xd = (MacDesc *)dd->deviceSpecific;
+    char testo[2];
+
+    // if(c==0) return;
+
+    testo[0] = c;
+    testo[1] = '\0';
 
     FontMetrics(&myFMetric);
 
     *ascent = FixedToFloat(myFMetric.ascent);
     *descent = FixedToFloat(myFMetric.descent);
-    *width = (double)TextWidth(&mychar, 0, 1);
+    *width = (double)CharWidth(c); //, 0,1) ;
 }
 
 /**********************************************************************/
@@ -291,57 +281,28 @@ static void Mac_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
 {
 }
 
-/**********************************************************************/
-/* device_NewPage is called whenever a new plot requires              */
-/* a new page. a new page might mean just clearing the                */
-/* device (as in this case) or moving to a new page                   */
-/* (e.g., postscript)                                                 */
-/**********************************************************************/
-
 static void Mac_NewPage(DevDesc *dd)
 {
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
-    SInt16 WinIndex;
-    OSErr error;          /* Error return from off-screen creation */
-    CTabHandle offColors; /* Colors for off-screen environments */
-    Rect offRect;         /* Rectangle of off-screen environments */
-    GrafPtr savedPort;    /* Pointer to the saved graphics environment */
-    GDHandle savedDevice;
+    Rect portRect;            /* Window bounds */
+    CGrafPtr savedPort, port; /* Pointer to save current graphic port */
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
-    /* Check for off-screen backing store. */
-    /* If there is none, allocate it. */
-    SetRect(&offRect, 0, 0, xd->window->portRect.right, xd->window->portRect.bottom);
-    offColors = GetCTable(rColorClut);
-    WinIndex = isGraphicWindow(xd->window);
-    if ((gGReference[WinIndex].colorDevice == nil) || (gGReference[WinIndex].colorPort == nil))
-    {
-        error = CreateOffScreen(&offRect, kOffDepth, offColors, &(gGReference[WinIndex].colorPort),
-                                &(gGReference[WinIndex].colorDevice));
-        GetPort(&gGReference[WinIndex].savedPort);
-        gGReference[WinIndex].savedDevice = GetGDevice();
-        if (error != noErr)
-        {
-            GWdoErrorAlert(eMemoryPro);
-            ExitToShell();
-        }
-    }
-    /* Paint the offscreen pixmap the background color */
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
-    SetColor(dd->dp.bg, 1, dd);
-    PaintRect(&((gGReference[WinIndex].colorPort)->portRect));
+
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPort(port);
+
+    GetPortBounds(port, &portRect);
+
+    SetColor(dd->dp.bg, 0, dd);
+    PaintRect(&portRect);
+
     SetColor(dd->dp.fg, 1, dd);
 
-    /* Paint the onscreen window the background color */
-    SetGDevice(gGReference[WinIndex].savedDevice);
-    SetPort(gGReference[WinIndex].savedPort);
-    SetColor(dd->dp.bg, 0, dd);
-    PaintRect(&((xd->window)->portRect));
-    SetColor(dd->dp.fg, 0, dd);
-
-    SetGDevice(savedDevice);
     SetPort(savedPort);
 }
 
@@ -360,11 +321,14 @@ static void Mac_Close(DevDesc *dd)
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
     Str255 Cur_Title;
-    WinIndex = isGraphicWindow(xd->window);
-    GetWTitle(xd->window, (unsigned char *)&Cur_Title);
+
+    if ((WinIndex = isGraphicWindow(xd->window)) == 0)
+        return;
+
+    RemWinMenuItem();
+    changeGWinPtr(xd->window, Cur_Title);
     DestroyWindow(xd->window);
     free(xd);
-    changeGWinPtr(xd->window, Cur_Title);
 }
 
 /**********************************************************************/
@@ -373,12 +337,14 @@ static void Mac_Close(DevDesc *dd)
 /* title of a window to indicate the active status of                 */
 /* the device to the user.  not all device types will                 */
 /* do anything                                                        */
+/* Routine also adjust menus items in the Windows menu of R           */
+/* Updated, Stefano M.Iacus Jan, 2001                                 */
 /**********************************************************************/
 
 static void Mac_Activate(DevDesc *dd)
 {
     unsigned char titledString[256], curString[256];
-    MenuHandle windowsMenu;
+    MenuHandle windowsMenu, my_menu;
     int i;
     Boolean EqString = FALSE;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
@@ -388,7 +354,7 @@ static void Mac_Activate(DevDesc *dd)
     sprintf((char *)&titledString[1], "Graphics Window %d [Inactive]", devNum + 1);
     titledString[0] = strlen((char *)&titledString[1]);
 
-    windowsMenu = GetMenu(mWindows);
+    windowsMenu = GetMenuHandle(kMenuWindows);
     for (i = 1; i <= CountMenuItems(windowsMenu); i++)
     {
         GetMenuItemText(windowsMenu, i, curString);
@@ -409,14 +375,6 @@ static void Mac_Activate(DevDesc *dd)
         titledString[0] = strlen((char *)&titledString[1]);
         AppendMenu(windowsMenu, titledString);
     }
-
-    /*	if (gGReference[WinIndex].MenuIndex == 0) {
-        windowsMenu = GetMenu(mWindows);
-        InsertMenuItem(windowsMenu, titledString, 2);
-        gGReference[WinIndex].MenuIndex = 1;
-        }
-    */
-
     SetWTitle(xd->window, titledString);
 }
 
@@ -426,6 +384,8 @@ static void Mac_Activate(DevDesc *dd)
 /* title of a window to indicate the inactive status of               */
 /* the device to the user.  not all device types will                 */
 /* do anything                                                        */
+/* Routine also adjust menus items in the Windows menu of R           */
+/* Updated, Stefano M.Iacus Jan, 2001                                 */
 /**********************************************************************/
 
 static void Mac_Deactivate(DevDesc *dd)
@@ -439,7 +399,7 @@ static void Mac_Deactivate(DevDesc *dd)
     sprintf((char *)&titledString[1], "Graphics Window %d [Active]", devNum + 1);
     titledString[0] = strlen((char *)&titledString[1]);
 
-    windowsMenu = GetMenu(mWindows);
+    windowsMenu = GetMenuHandle(kMenuWindows);
 
     for (i = 1; i <= CountMenuItems(windowsMenu); i++)
     {
@@ -480,11 +440,9 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int coords, int
     Rect myRect;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
-    GrafPtr savedPort;
-    GDHandle savedDevice;
+    CGrafPtr savedPort, port;
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
 
     GConvert(&x0, &y0, coords, DEVICE, dd);
     GConvert(&x1, &y1, coords, DEVICE, dd);
@@ -507,8 +465,13 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int coords, int
     myRect.right = (short)x1 + 1;
     myRect.bottom = (short)y1 + 1;
 
-    WinIndex = isGraphicWindow(xd->window);
-    SetPort(xd->window);
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPort(port);
+
     if (bg != NA_INTEGER)
     {
         SetColor(bg, 0, dd);
@@ -520,8 +483,6 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int coords, int
         FrameRect(&myRect);
     }
     /* (2) Draw the rectangle into the backing pixmap */
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
     if (bg != NA_INTEGER)
     {
         SetColor(bg, 1, dd);
@@ -532,7 +493,6 @@ static void Mac_Rect(double x0, double y0, double x1, double y1, int coords, int
         SetColor(fg, 1, dd);
         FrameRect(&myRect);
     }
-    SetGDevice(savedDevice);
     SetPort(savedPort);
 }
 
@@ -557,11 +517,10 @@ static void Mac_Circle(double x, double y, int coords, double r, int col, int bo
     Rect myRect;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
-    GrafPtr savedPort;
+    CGrafPtr savedPort, port;
     GDHandle savedDevice;
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
 
     ir = floor(r + 0.5);
     if (ir < 2)
@@ -574,8 +533,13 @@ static void Mac_Circle(double x, double y, int coords, double r, int col, int bo
     myRect.right = ix + ir;
     myRect.bottom = iy + ir;
 
-    WinIndex = isGraphicWindow(xd->window);
-    SetPort(xd->window);
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPort(port);
+
     if (col != NA_INTEGER)
     {
         SetColor(col, 0, dd);
@@ -590,8 +554,6 @@ static void Mac_Circle(double x, double y, int coords, double r, int col, int bo
     /* Update the backing pixmap */
     /* Only do this if it makes sense */
 
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
     if (col != NA_INTEGER)
     {
         SetColor(col, 1, dd);
@@ -602,7 +564,6 @@ static void Mac_Circle(double x, double y, int coords, double r, int col, int bo
         SetColor(border, 1, dd);
         FrameArc(&myRect, 0, 360);
     }
-    SetGDevice(savedDevice);
     SetPort(savedPort);
 }
 
@@ -632,11 +593,9 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int coords, Dev
     Boolean notFirst = false;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
-    GrafPtr savedPort;
-    GDHandle savedDevice;
+    CGrafPtr savedPort, port;
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
 
     GConvert(&x1, &y1, coords, DEVICE, dd);
     GConvert(&x2, &y2, coords, DEVICE, dd);
@@ -646,9 +605,21 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int coords, Dev
     yy2 = (int)y2;
 
     WinIndex = isGraphicWindow(xd->window);
-    SetPort(xd->window);
+
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPort(port);
+
     SetColor(dd->gp.col, 0, dd);
-    SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
+    SetLinetype(dd->gp.lty, 1, dd);
+    /* For some reason SetLineType does not work ! */
+    /* so we have fixed dd->gp.lwd to 1            */
+    /* It was:                                     */
+    /*  SetLinetype(dd->gp.lty, dd->gp.lwd, dd);   */
+
     if (xd->lineType == 0)
     {
         MoveTo(xx1, yy1);
@@ -658,8 +629,9 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int coords, Dev
     {
         DrawLineType(xx1, yy1, xx2, yy2, dd);
     }
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
+
+    SetPort(port);
+
     SetColor(dd->gp.col, 1, dd);
     if (xd->lineType == 0)
     {
@@ -670,7 +642,7 @@ static void Mac_Line(double x1, double y1, double x2, double y2, int coords, Dev
     {
         DrawLineType(xx1, yy1, xx2, yy2, dd);
     }
-    SetGDevice(savedDevice);
+
     SetPort(savedPort);
 }
 
@@ -689,32 +661,21 @@ static void Mac_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
     double startX, startY;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex;
-    GrafPtr savedPort;    /* Pointer to the saved graphics environment */
-    GDHandle savedDevice; /* Handle to the saved color environment */
+    CGrafPtr savedPort, port; /* Pointer to the saved graphics environment */
     RGBColor aColor;
 
-#ifdef OLD
-    WinIndex = isGraphicWindow(xd->window);
-    SetPort(xd->window);
-    SetColor(dd->gp.col, dd);
-    startX = x[0];
-    startY = y[0];
-    GConvert(&startX, &startY, coords, DEVICE, dd);
-    startXX = (int)(startX);
-    startYY = (int)startY;
-    MoveTo(startXX, startYY);
-#endif
+    GetPort(&savedPort);
+
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    port = GetWindowPort(xd->window);
+
+    SetPort(port);
+
     for (i = 1; i < n; i++)
-    {
-#ifdef OLD
-        startX = x[i];
-        startY = y[i];
-        GConvert(&startX, &startY, coords, DEVICE, dd);
-        startXX = (int)startX;
-        startYY = (int)startY;
-#endif
         Mac_Line(x[i - 1], y[i - 1], x[i], y[i], coords, dd);
-    }
+
+    SetPort(savedPort);
 }
 
 /**********************************************************************/
@@ -736,14 +697,17 @@ static void Mac_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
     PolyHandle myPolygon;
     SInt16 WinIndex;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
-    GrafPtr savedPort;
+    CGrafPtr savedPort, port;
     GDHandle savedDevice;
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
 
-    WinIndex = isGraphicWindow(xd->window);
-    SetPort(xd->window);
+    if (WeArePrinting || WeArePasting)
+        port = gGReference[isGraphicWindow(xd->window)].activePort;
+    else
+        port = GetWindowPort(xd->window);
+
+    SetPort(port);
 
     myPolygon = OpenPoly();
     startX = x[0];
@@ -779,8 +743,6 @@ static void Mac_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         SetColor(fg, 0, dd);
         FramePoly(myPolygon);
     }
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
     if (bg != NA_INTEGER)
     {
         SetColor(bg, 1, dd);
@@ -792,7 +754,6 @@ static void Mac_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         FramePoly(myPolygon);
     }
     KillPoly(myPolygon);
-    SetGDevice(savedDevice);
     SetPort(savedPort);
 }
 
@@ -809,49 +770,44 @@ static void Mac_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
 
 double deg2rad = 0.01745329251994329576;
 
+/* 	Updated version of previous Mac_Text. A bug of double writing of text
+    has been removed. Text is rotated as needed taking into accounts the
+    different rotation rules used by CarbonLib (clockwise/counter-clockwise)
+    on different versions of OSes.
+    Jago, April 2001, Stefano M. Iacus
+*/
+
 static void Mac_Text(double x, double y, int coords, char *str, double rot, double hadj, DevDesc *dd)
 {
     int Stringlen;
     int xx, yy, x1, y1;
     int size;
     int realFace, face;
-    short postFontId;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     RGBColor aColor;
-    Rect zeroRect;
+    Rect zeroRect, rgnRect;
     SInt16 WinIndex;
-    TTxtPicHdl hT;
-    TCenterHdl cT;
     RgnHandle oldClip;
-    GrafPtr savedPort;
+    CGrafPtr savedPort;
     GDHandle savedDevice;
     double xc, yc;
+    FMFontFamily postFontId;
 
     xc = 0;
     yc = 0;
 
     GetPort(&savedPort);
-    savedDevice = GetGDevice();
 
-    hT = (TTxtPicHdl)NewHandle(sizeof(TTxtPicRec));
-    cT = (TCenterHdl)NewHandle(sizeof(TCenterRec));
+    if (WeArePrinting || WeArePasting)
+    {
+        SetPort(gGReference[isGraphicWindow(xd->window)].activePort);
 
-    /*  It is somewhere different with the previous version, cause
-    we are not represent Text angle in 1,2,3,4 only.
-    */
-    (**hT).tJus = tJustLeft;
-    (**hT).tFlip = tFlipNone;
-    (**hT).tAngle = -rot; /* -ve because it is rotated counterclockwise */
-    (**hT).tLine = 0;
-    (**hT).tCmnt = 0;
-    (**hT).tAngleFixed = Long2Fix(-rot);
+        if (WeArePrinting && systemVersion >= 0x10008000)
+            rot = -rot; /* On System X for some reason rotation has reverse clockwising */
+    }
+    else
+        SetPortWindowPort(xd->window);
 
-    (**cT).y = 0;
-    (**cT).x = 0;
-
-    WinIndex = isGraphicWindow(xd->window);
-
-    SetPort(xd->window);
     size = dd->gp.cex * dd->gp.ps + 0.5;
     SetFont(dd->gp.font, size, dd);
     Stringlen = strlen(str);
@@ -866,72 +822,19 @@ static void Mac_Text(double x, double y, int coords, char *str, double rot, doub
     xx = (int)x;
     yy = (int)y;
 
-    PicComment(picDwgBeg, 0, NULL);
-    PicComment(TextBegin, sizeof(TTxtPicRec), (Handle)hT);
-    PicComment(TextCenter, sizeof(TCenterRec), (Handle)cT);
+    MoveTo(xx, yy);
 
     SetColor(dd->gp.col, 0, dd);
-    MoveTo(xx, yy);
-    oldClip = NewRgn();
-    GetClip(oldClip);
-    SetRect(&zeroRect, 0, 0, 0, 0);
-    ClipRect(&zeroRect);
-    DrawText(str, 0, strlen(str));
-    ClipRect(&(**oldClip).rgnBBox);
-
-    SetFont(dd->gp.font, size, dd);
-    MoveTo(xx, yy);
-    /* This Method is implemented in RText.c */
-    RasterTextRotation(str, Stringlen, 0, rot);
-
-    PicComment(TextEnd, 0, NULL);
-    PicComment(picDwgEnd, 0, NULL);
-    DisposeHandle((Handle)hT);
-    DisposeHandle((Handle)cT);
-
-    SetGDevice(gGReference[WinIndex].colorDevice);
-    SetPort((GrafPtr)(gGReference[WinIndex].colorPort));
 
     size = dd->gp.cex * dd->gp.ps + 0.5;
     SetFont(dd->gp.font, size, dd);
 
     face = dd->gp.font; /* Typeface */
 
-    realFace = 0;
-    if (face == 1)
-        realFace = 0; /* normal */
-    if (face == 2)
-        realFace = 1; /* bold */
-    if (face == 3)
-        realFace = 2; /* italic */
-    if (face == 4)
-        realFace = 3; /* bold & italic */
-    GetFNum(PostFont, &postFontId);
-
-    if (face == 5)
-    {
-        realFace = 0; /* plain symbol */
-        GetFNum(MacSymbolFont, &postFontId);
-    }
-
-    TextFont(postFontId);
-    TextFace(realFace);
-    TextSize(size);
-
-    xx = (int)x;
-    yy = (int)y;
-    MoveTo(xx, yy);
-
-    /* I am not sure what is the value cex and ps. But it shows that those values
-       are not make too many sense in Mac.
-       size = dd->gp.cex * dd ->gp.ps + 0.5;
-       SetFont(dd->gp.font, size, dd);
-    */
+    NewRasterTextRotation(str, face, size, dd->gp.col, xx, yy, rot, xd->window);
 
     SetColor(dd->gp.col, 1, dd);
-    /* This Method is implemented in RText.c */
-    RasterTextRotation(str, Stringlen, 0, rot);
-    SetGDevice(savedDevice);
+
     SetPort(savedPort);
 }
 
@@ -952,18 +855,23 @@ static int Mac_Locator(double *x, double *y, DevDesc *dd)
     WindowPtr window;
     SInt16 partCode;
     GrafPtr savePort;
+    Cursor arrow;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
 
     GetPort(&savePort);
+
+#if TARGET_API_MAC_CARBON
+    SetPortWindowPort(xd->window);
+    SetCursor(GetQDGlobalsArrow(&arrow));
+#else
     SetPort(xd->window);
     SetCursor(&qd.arrow);
+#endif
+
     while (!mouseClick)
     {
         gotEvent = WaitNextEvent(everyEvent, &event, 0, nil);
-        /*	if(gotEvent)
-            SIOUXDidEvent = SIOUXHandleOneEvent(&event);
-            if(!SIOUXDidEvent){
-        */
+
         if (event.what == mouseDown)
         {
             partCode = FindWindow(event.where, &window);
@@ -1007,7 +915,6 @@ static int Mac_Locator(double *x, double *y, DevDesc *dd)
                 return 0;
             }
         }
-        /* } */
     }
 
     SetPort(savePort);
@@ -1027,7 +934,11 @@ static void Mac_Mode(int mode, DevDesc *dd)
     if (mode)
     {
         GetPort(&storeport);
+#if TARGET_API_MAC_CARBON
+        SetPortWindowPort(xd->window);
+#else
         SetPort(xd->window);
+#endif
     }
     else
     {
@@ -1093,10 +1004,13 @@ Rboolean MacDeviceDriver(DevDesc *dd, char *display, double width, double height
 {
     MacDesc *xd;
     int ps;
+
     if (!(xd = (MacDesc *)malloc(sizeof(MacDesc))))
         return 0;
 
     Mac_Open(dd, xd, display, width, height);
+
+    gScreenRes = GetScreenRes();
 
     ps = pointsize;
     if (ps < 6 || ps > 24)
@@ -1138,20 +1052,16 @@ Rboolean MacDeviceDriver(DevDesc *dd, char *display, double width, double height
     dd->dp.ipr[0] = 1.0 / gScreenRes;
     dd->dp.ipr[1] = 1.0 / gScreenRes;
 
-    /*   dd->dp.ipr[0] = 1.0/72.0;
-         dd->dp.ipr[1] = 1.0/72.0;
-    */
     dd->dp.canResizePlot = 1;
     dd->dp.canChangeFont = 0;
     dd->dp.canRotateText = 1;
     dd->dp.canResizeText = 1;
-    dd->dp.canClip = 0;
+    dd->dp.canClip = FALSE;
 
     /* It is used to set the font that you will be used on the postscript and
        drawing.
     */
-    doCopyPString("\phelvetica", PostFont);
-    doCopyPString("\psymbol", MacSymbolFont); /* Jago */
+
     /* There is the place for you to set the default value of the MAC Devices */
     xd->cex = 1.0;
     xd->resize = 0;
@@ -1195,35 +1105,6 @@ void New_G_History(SInt16 WinIndex)
 
 void Kill_G_History(SInt16 WinIndex)
 {
-#ifdef XXX
-    DisposeHandle(gGReference[WinIndex].History);
-    gGReference[WinIndex].cur_size = 0;
-    gGReference[WinIndex].History = nil;
-#endif
-}
-
-void GraUpdate(WindowPtr window)
-{
-    SInt16 WinIndex;
-    GrafPtr savedPort;
-    RGBColor Rwhite;
-    RGBColor Rblack;
-
-    GetPort(&savedPort);
-    SetPort(window);
-    Rblack.red = 0;
-    Rblack.blue = 0;
-    Rblack.green = 0;
-    Rwhite.red = 65535;
-    Rwhite.blue = 65535;
-    Rwhite.green = 65535;
-    RGBForeColor(&Rblack);
-    RGBBackColor(&Rwhite);
-    WinIndex = isGraphicWindow(window);
-    CopyBits(&((GrafPtr)(gGReference[WinIndex].colorPort))->portBits, &((gGReference[WinIndex].savedPort)->portBits),
-             &(gGReference[WinIndex].colorPort)->portRect, &((gGReference[WinIndex].savedPort)->portRect), srcCopy,
-             nil);
-    SetPort(savedPort);
 }
 
 /* GraResize :
@@ -1237,26 +1118,31 @@ void GraUpdate(WindowPtr window)
 void GraResize(WindowPtr window)
 {
     SInt16 WinIndex;
+    Rect portRect;
     GrafPtr savePort;
     DevDesc *dd;
     MacDesc *xd; /* = (MacDesc *) dd-> deviceSpecific; */
+
     WinIndex = isGraphicWindow(window);
+
     if (WinIndex && (gGReference[WinIndex].devdesc != nil))
     {
 
         GetPort(&savePort);
+
+#if TARGET_API_MAC_CARBON
+        SetPortWindowPort(window);
+        GetWindowPortBounds(window, &portRect);
+#else
         SetPort(window);
-        /* EraseRect(&(window->portRect)); */
+#endif
+
         SetPort(savePort);
         dd = (DevDesc *)gGReference[WinIndex].devdesc;
         xd = (MacDesc *)dd->deviceSpecific;
         xd->resize = true;
         gExpose = WinIndex;
     }
-    /* Mac_Resize((DevDesc*)gGReference[WinIndex].devdesc); */
-#ifdef HaveMethod
-    CleanUpWindow(window);
-#endif
 }
 
 /* toRadian : Transfer angle in degree to Radian
@@ -1278,22 +1164,6 @@ double toRadian(int angle)
  */
 void startRecord(WindowPtr window)
 {
-#ifdef XXX
-    SInt16 WinIndex;
-    WinIndex = isGraphicWindow(window);
-    HLock((char **)gGReference[WinIndex].WPicHandle);
-    if (!gGReference[WinIndex].HavePic)
-    {
-        /*  EraseRect(&(window->portRect)); */
-        if (gGReference[WinIndex].WPicHandle != nil)
-            KillPicture(gGReference[WinIndex].WPicHandle);
-    }
-    gGReference[WinIndex].WPicHandle = OpenPicture(&(window->portRect));
-    if (gGReference[WinIndex].HavePic)
-    {
-        DrawPicture(TempPicture, &(window->portRect));
-    }
-#endif
 }
 
 /* stopRecord :
@@ -1302,21 +1172,6 @@ void startRecord(WindowPtr window)
  */
 void stopRecord(WindowPtr window)
 {
-#ifdef XXX
-    SInt16 WinIndex;
-    ClosePicture();
-    WinIndex = isGraphicWindow(window);
-    if (WinIndex)
-    {
-        DrawPicture(gGReference[WinIndex].WPicHandle, &(window->portRect));
-        /* gGReference[WinIndex].WPicHandle = TempPicture; */
-        gGReference[WinIndex].HavePic = true;
-    }
-    TempPicture = OpenPicture(&(window->portRect));
-    DrawPicture(gGReference[WinIndex].WPicHandle, &(window->portRect));
-    ClosePicture();
-    HUnlock((char **)gGReference[WinIndex].WPicHandle);
-#endif
 }
 
 /* CleanUpWindow :
@@ -1324,22 +1179,13 @@ void stopRecord(WindowPtr window)
  */
 void CleanUpWindow(WindowPtr window)
 {
-#ifdef XXX
-    SInt16 WinIndex;
-    GrafPtr savePort;
-    GetPort(&savePort);
-    WinIndex = isGraphicWindow(window);
-    if (WinIndex)
-    {
-        SetPort(window);
-        EraseRect(&(window->portRect));
-        gGReference[WinIndex].HavePic = false;
-        KillPicture(gGReference[WinIndex].WPicHandle);
-        gGReference[WinIndex].WPicHandle = nil;
-    }
-    SetPort(savePort);
-#endif
 }
+
+/* GraphicCopy makes a copy of the current device window into
+   the clipboard. This is a very quick and clean routine
+   completely rewritten wrt the original one.
+   Jago, April 2001, Stefano M. Iacus
+*/
 
 void GraphicCopy(WindowPtr window)
 {
@@ -1347,35 +1193,41 @@ void GraphicCopy(WindowPtr window)
     SInt32 errorCode;
     SInt16 WinIndex;
     DevDesc *dd;
-    PicHandle WPicHandle;
-    GrafPtr savePort, picPort;
+    PicHandle WPicHandle = NULL;
+    CGrafPtr savePort, tempPort;
+    Rect portRect;
+    ScrapRef scrap;
 
     WinIndex = isGraphicWindow(window);
     dd = (DevDesc *)gGReference[WinIndex].devdesc;
     GetPort(&savePort);
-    SetPort(window);
-    WPicHandle = OpenPicture(&(window->portRect));
-    /* ShowPen();
-       GetPort(&picPort);
-    */
+
+    GetWindowPortBounds(window, &portRect);
+    tempPort = CreateNewPort();
+
+    WPicHandle = OpenPicture(&portRect);
+    ClipRect(&portRect);
+
+    gGReference[WinIndex].activePort = tempPort;
+    WeArePasting = true;
     playDisplayList(dd);
-    /* SetPort(picPort);
-     */
+    WeArePasting = false;
+
     ClosePicture();
-    if (ZeroScrap() == noErr)
+
+    DisposePort(tempPort);
+
+    if (ClearCurrentScrap() == noErr)
     {
         dataLength = GetHandleSize((Handle)WPicHandle);
         HLock((Handle)WPicHandle);
-        errorCode = PutScrap((SInt32)dataLength, 'PICT', *((Handle)WPicHandle));
-        /* if(errorCode != noErr)
-           doErrorAlert(ePutScrap);
-        */
+        errorCode = GetCurrentScrap(&scrap);
+        errorCode = PutScrapFlavor(scrap, 'PICT', 0, GetHandleSize((Handle)WPicHandle), *WPicHandle);
         HUnlock((Handle)WPicHandle);
     }
+
     KillPicture(WPicHandle);
-    /* else
-       doErrorAlert(eZeroScrap);
-    */
+
     SetPort(savePort);
 }
 
@@ -1385,10 +1237,10 @@ void GraphicCopy(WindowPtr window)
 /* ( not sure where R use this function)                                       */
 static int SetBaseFont(MacDesc *xd)
 {
-    xd->fontface = 4; /* if you want monaco to be the default font.      */
-    /* for system font, it is 0 instead of 4 */
+    xd->fontface = 4; /* if you want monaco to be the default font.   */
+                      /* for system font, it is 0 instead of 4        */
     xd->fontsize = 12;
-    /* We can use a fix font in graphic window? */
+    /* We can use a fix font in graphic window?     */
     xd->usefixed = 1;
     return 1;
 }
@@ -1417,14 +1269,18 @@ static double pixelHeight(void)
 static void SetFont(int face, int size, DevDesc *dd)
 {
     int realFace;
+#if TARGET_API_MAC_CARBON
+    FMFontFamily postFontId;
+#else
     short postFontId;
+#endif
     GrafPtr savePort;
     /* you can not chnage the picture which is drawed directly, you can only */
     /* see the effect for the next call */
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
 
     GetPort(&savePort);
-    SetPort(xd->window);
+    SetPortWindowPort(xd->window);
     xd->Text_Font = 4;   /* Initial font is monaco (default) */
     xd->fontface = face; /* Typeface */
     if (size < 6)
@@ -1439,12 +1295,19 @@ static void SetFont(int face, int size, DevDesc *dd)
         realFace = 2; /* italic */
     if (face == 4)
         realFace = 3; /* bold & italic */
+#if TARGET_API_MAC_CARBON
+    postFontId = FMGetFontFamilyFromName(PostFont);
+#else
     GetFNum(PostFont, &postFontId);
-
+#endif
     if (face == 5)
     {
         realFace = 0; /* plain symbol */
+#if TARGET_API_MAC_CARBON
+        postFontId = FMGetFontFamilyFromName(MacSymbolFont);
+#else
         GetFNum(MacSymbolFont, &postFontId);
+#endif
     }
     TextFont(postFontId);
     TextFace(realFace);
@@ -1458,11 +1321,10 @@ static int SetColor(int color, int which, DevDesc *dd)
 
     if (color != xd->col[which])
     {
-        xd->rgb[which].red = R_RED(color) * 257;
-        xd->rgb[which].green = R_GREEN(color) * 257;
-        xd->rgb[which].blue = R_BLUE(color) * 257;
+        xd->rgb[which].red = R_RED(color) * 255;
+        xd->rgb[which].green = R_GREEN(color) * 255;
+        xd->rgb[which].blue = R_BLUE(color) * 255;
         RGBForeColor(&(xd->rgb[which]));
-        xd->col[which] = color;
         return 1;
     }
     return 0;
