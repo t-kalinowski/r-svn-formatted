@@ -353,8 +353,12 @@ static pascal OSStatus pmGetSetItemData(ControlRef browser, DataBrowserItemID it
             }
             CopyCStringToPascal(buf, pascalString);
             text = CFStringCreateWithPascalString(CFAllocatorGetDefault(), pascalString, kCFStringEncodingMacRoman);
-            err = SetDataBrowserItemDataText(itemData, text);
-            CFRelease(text);
+            if (text)
+            {
+                err = SetDataBrowserItemDataText(itemData, text);
+                CFRelease(text);
+                text = NULL;
+            }
         }
 
         if (property == 10000)
