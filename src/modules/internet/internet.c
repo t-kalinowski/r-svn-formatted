@@ -275,6 +275,9 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
         R_Busy(1);
         if (!quiet)
             REprintf("trying URL `%s'\n", url);
+#ifdef Win32
+        R_FlushConsole();
+#endif
         ctxt = R_HTTPOpen(url);
         if (ctxt == NULL)
             status = 1;
@@ -286,6 +289,7 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             if (guess <= 0)
                 guess = 100 * 1024;
 #ifdef Win32
+            R_FlushConsole();
             wprog = newwindow("Download progress", rect(0, 0, 540, 100), Titlebar | Centered);
             setbackground(wprog, LightGrey);
             strcpy(buf, "URL: ");
@@ -321,12 +325,16 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             fclose(out);
             if (!quiet)
             {
+#ifndef Win32
+                REprintf("\n");
+#endif
                 if (nbytes > 10240)
-                    REprintf("\ndownloaded %dKb\n\n", nbytes / 1024, url);
+                    REprintf("downloaded %dKb\n\n", nbytes / 1024, url);
                 else
-                    REprintf("\ndownloaded %d bytes\n\n", nbytes, url);
+                    REprintf("downloaded %d bytes\n\n", nbytes, url);
             }
 #ifdef Win32
+            R_FlushConsole();
             hide(wprog);
             del(l_url);
             del(pb);
@@ -357,6 +365,9 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
         R_Busy(1);
         if (!quiet)
             REprintf("trying URL `%s'\n", url);
+#ifdef Win32
+        R_FlushConsole();
+#endif
         ctxt = R_FTPOpen(url);
         if (ctxt == NULL)
             status = 1;
@@ -368,6 +379,7 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             if (guess <= 0)
                 guess = 100 * 1024;
 #ifdef Win32
+            R_FlushConsole();
             wprog = newwindow("Download progress", rect(0, 0, 540, 100), Titlebar | Centered);
             setbackground(wprog, LightGrey);
             strcpy(buf, "URL: ");
@@ -403,12 +415,16 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             fclose(out);
             if (!quiet)
             {
+#ifndef Win32
+                REprintf("\n");
+#endif
                 if (nbytes > 10240)
-                    REprintf("\ndownloaded %dKb\n\n", nbytes / 1024, url);
+                    REprintf("downloaded %dKb\n\n", nbytes / 1024, url);
                 else
-                    REprintf("\ndownloaded %d bytes\n\n", nbytes, url);
+                    REprintf("downloaded %d bytes\n\n", nbytes, url);
             }
 #ifdef Win32
+            R_FlushConsole();
             hide(wprog);
             del(l_url);
             del(pb);
