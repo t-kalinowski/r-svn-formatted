@@ -130,6 +130,7 @@ SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         t = CAR(args);
         s = allocVector(CPLXSXP, LENGTH(t));
+        setAttrib(s, R_NamesSymbol, getAttrib(t, R_NamesSymbol));
         for (i = 0; i < length(t); i++)
         {
             COMPLEX(s)[i].r = NA_REAL;
@@ -155,6 +156,7 @@ SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
     { /* Non-Complex:  here, (sh|c)ould differentiate  real / int */
         PROTECT(t = coerceVector(CAR(args), REALSXP));
         s = allocVector(REALSXP, LENGTH(t));
+        setAttrib(s, R_NamesSymbol, getAttrib(t, R_NamesSymbol));
         for (i = 0; i < length(t); i++)
             REAL(s)[i] = NA_REAL;
         UNPROTECT(1);
