@@ -954,7 +954,7 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
         for (i = 0; i < n; i++)
         {
             double dii = REAL(A)[i * (n + 1)]; /* ith diagonal element */
-            modulus += log(abs(dii));
+            modulus += log(dii < 0 ? -dii : dii);
             if (dii < 0)
                 sign = -sign;
         }
