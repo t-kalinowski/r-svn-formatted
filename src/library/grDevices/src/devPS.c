@@ -627,7 +627,14 @@ static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics, i
         wchar_t wc, wc2;
         while (*p)
         {
-            p += mbrtowc(&wc, (char *)p, MB_CUR_MAX, NULL);
+            int res = mbrtowc(&wc, (char *)p, MB_CUR_MAX, NULL);
+            if (res > 0)
+                p += res;
+            else
+            {
+                warning("invalid character in PostScriptStringWidth");
+                return 0.001 * sum;
+            }
             if (*p)
                 mbrtowc(&wc2, (char *)p, MB_CUR_MAX, NULL);
             else
