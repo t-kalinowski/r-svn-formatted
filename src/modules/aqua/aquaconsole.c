@@ -135,7 +135,6 @@ Boolean HaveContent = false;
 Boolean HaveBigBuffer = false;
 
 void Raqua_helpsearchbrowser(void);
-void Raqua_helpsearchbrowser(void){};
 
 TXNFrameID OutframeID = 0;
 TXNFrameID InframeID = 0;
@@ -306,7 +305,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 extern void CloseDataEntry(void);
 extern void CloseBrowsePkg(void);
 extern void CloseDataManager(void);
-// extern void CloseHelpSearchBrowser(void);
+extern void CloseHelpSearchBrowser(void);
 extern void ClosePackageManager(void);
 
 static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
@@ -1924,7 +1923,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 
         if (GetWindowProperty(EventWindow, 'RMAC', 'HSBR', sizeof(browser), NULL, &browser) == noErr)
         {
-            // CloseHelpSearchBrowser();
+            CloseHelpSearchBrowser();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
             HelpSearchBrowserFinished = true;
             err = noErr;
