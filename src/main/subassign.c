@@ -343,7 +343,7 @@ static SEXP DeleteListElements(SEXP x, SEXP which)
 
 static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
-    SEXP dim, index;
+    SEXP dim, indx;
     int i, ii, iy, n, nx, ny, stretch, which;
     double ry;
 
@@ -363,8 +363,8 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     PROTECT(s);
 
     stretch = 1;
-    PROTECT(index = makeSubscript(x, s, &stretch));
-    n = length(index);
+    PROTECT(indx = makeSubscript(x, s, &stretch));
+    n = length(indx);
 
     /* Here we make sure that the LHS has */
     /* been coerced into a form which can */
@@ -408,7 +408,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -421,7 +421,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -439,7 +439,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -452,7 +452,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -474,7 +474,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -499,7 +499,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -519,7 +519,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -543,7 +543,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -562,7 +562,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(index)[i];
+            ii = INTEGER(indx)[i];
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -573,7 +573,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     case 1900: /* vector     <- null       */
     case 2000: /* expression <- null       */
 
-        x = DeleteListElements(x, index);
+        x = DeleteListElements(x, indx);
         UNPROTECT(4);
         return x;
 
@@ -584,9 +584,9 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     /* Note we are using a horrible hack in makeSubscript */
     /* Which passes the additional names back in the attribute */
     /* slot of the generated subscript vector.  (Shudder!) */
-    if (ATTRIB(index) != R_NilValue)
+    if (ATTRIB(indx) != R_NilValue)
     {
-        SEXP newnames = ATTRIB(index);
+        SEXP newnames = ATTRIB(indx);
         SEXP oldnames = getAttrib(x, R_NamesSymbol);
         if (oldnames != R_NilValue)
         {
@@ -594,7 +594,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
             {
                 if (STRING_ELT(newnames, i) != R_NilValue)
                 {
-                    ii = INTEGER(index)[i];
+                    ii = INTEGER(indx)[i];
                     if (ii == NA_INTEGER)
                         continue;
                     ii = ii - 1;
@@ -611,7 +611,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
             {
                 if (STRING_ELT(newnames, i) != R_NilValue)
                 {
-                    ii = INTEGER(index)[i];
+                    ii = INTEGER(indx)[i];
                     if (ii == NA_INTEGER)
                         continue;
                     ii = ii - 1;
@@ -880,7 +880,7 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     int i, j, ii, iy, jj, k = 0, n, ny, which;
-    int **subs, *index, *bound, *offset;
+    int **subs, *indx, *bound, *offset;
     SEXP dims, tmp;
     double ry;
     char *vmax = vmaxget();
@@ -890,7 +890,7 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         error("incorrect number of subscripts");
 
     subs = (int **)R_alloc(k, sizeof(int *));
-    index = (int *)R_alloc(k, sizeof(int));
+    indx = (int *)R_alloc(k, sizeof(int));
     bound = (int *)R_alloc(k, sizeof(int));
     offset = (int *)R_alloc(k, sizeof(int));
 
@@ -910,7 +910,7 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     tmp = s;
     for (i = 0; i < k; i++)
     {
-        index[i] = 0;
+        indx[i] = 0;
         subs[i] = INTEGER(CAR(tmp));
         bound[i] = LENGTH(CAR(tmp));
         n *= bound[i];
@@ -958,7 +958,7 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         ii = 0;
         for (j = 0; j < k; j++)
         {
-            jj = subs[j][index[j]];
+            jj = subs[j][indx[j]];
             if (jj == NA_INTEGER)
                 goto next_i;
             ii += (jj - 1) * offset[j];
@@ -1047,9 +1047,9 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         if (n > 1)
         {
             j = 0;
-            while (++index[j] >= bound[j])
+            while (++indx[j] >= bound[j])
             {
-                index[j] = 0;
+                indx[j] = 0;
                 j = (j + 1) % k;
             }
         }
@@ -1062,14 +1062,14 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
 static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
-    SEXP index, xi, yi, yp;
+    SEXP indx, xi, yi, yp;
     int i, ii, n, nx, ny, stretch = 1;
 
     if (length(s) > 1)
         error("invalid number of subscripts to list assign");
 
-    PROTECT(index = makeSubscript(x, CAR(s), &stretch));
-    n = length(index);
+    PROTECT(indx = makeSubscript(x, CAR(s), &stretch));
+    n = length(indx);
 
     /* The shallow copy here is so that */
     /* permuting a list's elements will work */
@@ -1110,7 +1110,7 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
     for (i = 0; i < n; i++)
     {
-        ii = INTEGER(index)[i];
+        ii = INTEGER(indx)[i];
         if (ii == NA_INTEGER)
             continue;
         ii = ii - 1;
@@ -1390,7 +1390,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP dims, index, names, newname, subs, x, y;
+    SEXP dims, indx, names, newname, subs, x, y;
     int i, ndims, nsubs, offset, stretch, which;
 
     gcall = call;
@@ -1451,21 +1451,21 @@ SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (ndims != nsubs)
                 error("[[]] improper number of subscripts");
-            PROTECT(index = allocVector(INTSXP, ndims));
+            PROTECT(indx = allocVector(INTSXP, ndims));
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
             {
-                INTEGER(index)
+                INTEGER(indx)
                 [i] = get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR_ELT(names, i), INTEGER(dims)[i],
                                 /*partial ok*/ FALSE);
                 subs = CDR(subs);
-                if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
+                if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
                     error("[[]] subscript out of bounds");
             }
             offset = 0;
             for (i = (ndims - 1); i > 0; i--)
-                offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
-            offset += INTEGER(index)[0];
+                offset = (offset + INTEGER(indx)[i]) * INTEGER(dims)[i - 1];
+            offset += INTEGER(indx)[0];
             UNPROTECT(1);
         }
 
@@ -1632,21 +1632,21 @@ SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (ndims != nsubs)
                 error("[[]] improper number of subscripts");
-            PROTECT(index = allocVector(INTSXP, ndims));
+            PROTECT(indx = allocVector(INTSXP, ndims));
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
             {
-                INTEGER(index)
+                INTEGER(indx)
                 [i] = get1index(CAR(subs), CAR(names), INTEGER(dims)[i],
                                 /*partial ok*/ FALSE);
                 subs = CDR(subs);
-                if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
+                if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
                     error("[[]] subscript (%d) out of bounds", i + 1);
             }
             offset = 0;
             for (i = (ndims - 1); i > 0; i--)
-                offset = (offset + INTEGER(index)[i]) * INTEGER(dims)[i - 1];
-            offset += INTEGER(index)[0];
+                offset = (offset + INTEGER(indx)[i]) * INTEGER(dims)[i - 1];
+            offset += INTEGER(indx)[0];
             SETCAR(nthcdr(x, offset), duplicate(y));
             UNPROTECT(1);
         }
