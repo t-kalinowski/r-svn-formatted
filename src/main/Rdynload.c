@@ -217,7 +217,7 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
     int i, num;
 
     if (info == NULL)
-        error("R_RegisterRoutines called with invalid DllInfo object.");
+        error(_("R_RegisterRoutines called with invalid DllInfo object."));
 
     info->useDynamicLookup = TRUE; /* Default is to look in registered and then dynamic.
                                       Potentially change in the future to be only registered
@@ -465,7 +465,7 @@ static DllInfo *AddDLL(char *path, int asLocal, int now)
     DeleteDLL(path);
     if (CountDLL == MAX_NUM_DLLS)
     {
-        strcpy(DLLerror, "Maximal number of DLLs reached...");
+        strcpy(DLLerror, _("Maximal number of DLLs reached..."));
         return NULL;
     }
 
@@ -517,7 +517,7 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     dpath = malloc(strlen(path) + 1);
     if (dpath == NULL)
     {
-        strcpy(DLLerror, "Couldn't allocate space for 'path'");
+        strcpy(DLLerror, _("Couldn't allocate space for 'path'"));
         R_osDynSymbol->closeLibrary(handle);
         return 0;
     }
@@ -535,7 +535,7 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     if (strlen(p) < PATH_MAX)
         strcpy(DLLname, p);
     else
-        error("DLLname %s is too long", p);
+        error(_("DLLname %s is too long"), p);
 
     /* remove SHLIB_EXT if present */
     p = DLLname + strlen(DLLname) - strlen(SHLIB_EXT);
@@ -558,7 +558,7 @@ int addDLL(char *dpath, char *DLLname, HINSTANCE handle)
     char *name = malloc(strlen(DLLname) + 1);
     if (name == NULL)
     {
-        strcpy(DLLerror, "Couldn't allocate space for 'name'");
+        strcpy(DLLerror, _("Couldn't allocate space for 'name'"));
         if (handle)
             R_osDynSymbol->closeLibrary(handle);
         free(dpath);
@@ -829,12 +829,12 @@ SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
-        errorcall(call, "character argument expected");
+        errorcall(call, _("character argument expected"));
     GetFullDLLPath(call, buf, CHAR(STRING_ELT(CAR(args), 0)));
     /* AddDLL does this DeleteDLL(buf); */
     info = AddDLL(buf, LOGICAL(CADR(args))[0], LOGICAL(CADDR(args))[0]);
     if (!info)
-        errorcall(call, "unable to load shared library \"%s\":\n  %s", buf, DLLerror);
+        errorcall(call, _("unable to load shared library \"%s\":\n  %s"), buf, DLLerror);
     return (Rf_MakeDLLInfo(info));
 }
 
@@ -844,10 +844,10 @@ SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
-        errorcall(call, "character argument expected");
+        errorcall(call, _("character argument expected"));
     GetFullDLLPath(call, buf, CHAR(STRING_ELT(CAR(args), 0)));
     if (!DeleteDLL(buf))
-        errorcall(call, "dynamic/shared library \"%s\" was not loaded", buf);
+        errorcall(call, _("dynamic/shared library \"%s\" was not loaded"), buf);
     return R_NilValue;
 }
 
@@ -861,7 +861,7 @@ int moduleCdynload(char *module, int local, int now)
     snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
     res = AddDLL(dllpath, local, now);
     if (!res)
-        warning("unable to load shared library \"%s\":\n  %s", dllpath, DLLerror);
+        warning(_("unable to load shared library \"%s\":\n  %s"), dllpath, DLLerror);
     return res != NULL ? 1 : 0;
 }
 
@@ -985,7 +985,7 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
         }
         else
         {
-            error("must pass package name or DllInfo reference");
+            error(_("must pass package name or DllInfo reference"));
         }
     }
 
@@ -1070,7 +1070,7 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
             break;
         default:
             /* Something unintended has happened if we get here. */
-            error("Unimplemented type %d in createRSymbolObject", symbol->type);
+            error(_("Unimplemented type %d in createRSymbolObject"), symbol->type);
             break;
         }
         SET_VECTOR_ELT(sym, 3, tmp = ScalarInteger(nargs));
@@ -1151,13 +1151,13 @@ SEXP R_getRegisteredRoutines(SEXP dll)
 
     if (TYPEOF(dll) != EXTPTRSXP && R_ExternalPtrTag(dll) != Rf_install("DLLInfo"))
     {
-        error("R_getRegisteredRoutines() expects a DllInfo reference");
+        error(_("R_getRegisteredRoutines() expects a DllInfo reference"));
     }
 
     info = (DllInfo *)R_ExternalPtrAddr(dll);
     if (!info)
     {
-        error("NULL value passed for DllInfo");
+        error(_("NULL value passed for DllInfo"));
     }
 
     PROTECT(ans = allocVector(VECSXP, 4));
@@ -1194,29 +1194,29 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
 
 SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("no dyn.load support in this R version");
+    error(_("no dyn.load support in this R version"));
     return (R_NilValue);
 }
 
 SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("no dyn.load support in this R version");
+    error(_("no dyn.load support in this R version"));
     return (R_NilValue);
 }
 
 SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
 {
-    error("no dyn.load support in this R version");
+    error(_("no dyn.load support in this R version"));
 }
 
 SEXP R_getDllTable()
 {
-    error("no dyn.load support in this R version");
+    error(_("no dyn.load support in this R version"));
 }
 
 SEXP R_getRegisteredRoutines(SEXP dll)
 {
-    error("no dyn.load support in this R version");
+    error(_("no dyn.load support in this R version"));
 }
 
 #endif

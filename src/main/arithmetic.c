@@ -179,7 +179,7 @@ static double myfmod(double x1, double x2)
         return R_NaN;
     tmp = x1 - floor(q) * x2;
     if (R_FINITE(q) && (fabs(q) > 1 / R_AccuracyInfo.eps))
-        warning("probable complete loss of accuracy in modulus");
+        warning(_("probable complete loss of accuracy in modulus"));
     q = floor(tmp / x2);
     return tmp - q * x2;
 }
@@ -309,7 +309,7 @@ SEXP do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         return R_binary(call, op, CAR(args), CADR(args));
     default:
-        error("operator needs one or two arguments");
+        error(_("operator needs one or two arguments"));
     }
     return ans; /* never used; to keep -Wall happy */
 }
@@ -340,7 +340,7 @@ SEXP do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
         case LGLSXP:                                                                                                   \
             break;                                                                                                     \
         default:                                                                                                       \
-            errorcall(lcall, "non-numeric argument to binary operator");                                               \
+            errorcall(lcall, _("non-numeric argument to binary operator"));                                            \
         }                                                                                                              \
     } while (0)
 
@@ -406,7 +406,7 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         if (xarray && yarray)
         {
             if (!conformable(x, y))
-                errorcall(lcall, "non-conformable arrays");
+                errorcall(lcall, _("non-conformable arrays"));
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
         else if (xarray)
@@ -466,7 +466,7 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         if (xts && yts)
         {
             if (!tsConform(x, y))
-                errorcall(lcall, "Non-conformable time-series");
+                errorcall(lcall, _("Non-conformable time-series"));
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(class = getAttrib(x, R_ClassSymbol));
         }
@@ -490,7 +490,7 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         class = tsp = NULL; /* -Wall */
 
     if (mismatch)
-        warningcall(lcall, "longer object length\n\tis not a multiple of shorter object length");
+        warningcall(lcall, _("longer object length\n\tis not a multiple of shorter object length"));
 
     /* need to preserve object here, as *_binary copies class attributes */
     if (TYPEOF(x) == CPLXSXP || TYPEOF(y) == CPLXSXP)
@@ -562,7 +562,7 @@ SEXP R_unary(SEXP call, SEXP op, SEXP s1)
     case CPLXSXP:
         return complex_unary(PRIMVAL(op), s1);
     default:
-        errorcall(call, "Invalid argument to unary operator");
+        errorcall(call, _("Invalid argument to unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -587,7 +587,7 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1)
         }
         return ans;
     default:
-        error("illegal unary operator");
+        error(_("illegal unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -608,7 +608,7 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
             REAL(ans)[i] = -REAL(s1)[i];
         return ans;
     default:
-        errorcall(lcall, "illegal unary operator");
+        errorcall(lcall, _("illegal unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -651,7 +651,7 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
 #define GOODIDIFF(x, y, z) ((double)(x) - (double)(y) == (z))
 #endif
 #define GOODIPROD(x, y, z) ((double)(x) * (double)(y) == (z))
-#define INTEGER_OVERFLOW_WARNING "NAs produced by integer overflow"
+#define INTEGER_OVERFLOW_WARNING _("NAs produced by integer overflow")
 #endif
 
 static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
@@ -1026,7 +1026,7 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return MATH1(gamma_cody);
 
     default:
-        errorcall(call, "unimplemented real function (of 1 arg.)");
+        errorcall(call, _("unimplemented real function (of 1 arg.)"));
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -1255,7 +1255,7 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math2(args, psigamma);
 
     default:
-        errorcall(call, "unimplemented real function of 2 numeric arg.s");
+        errorcall(call, _("unimplemented real function of 2 numeric args"));
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -1280,7 +1280,7 @@ SEXP do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             return math2(CAR(args), CADR(args), atan2, call);
     default:
-        error("%d arguments passed to \"atan\" which requires 1 or 2", n);
+        error(_("%d arguments passed to \"atan\" which requires 1 or 2"), n);
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -1294,7 +1294,7 @@ SEXP do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (length(CADR(args)) == 0)
-        errorcall(call, "illegal 2nd arg of length 0");
+        errorcall(call, _("illegal 2nd arg of length 0"));
     return do_math2(call, op, args, env);
 }
 
@@ -1314,13 +1314,13 @@ SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
             return math1(CAR(args), R_log, call);
     case 2:
         if (length(CADR(args)) == 0)
-            errorcall(call, "illegal 2nd arg of length 0");
+            errorcall(call, _("illegal 2nd arg of length 0"));
         if (isComplex(CAR(args)) || isComplex(CDR(args)))
             return complex_math2(call, op, args, env);
         else
             return math2(CAR(args), CADR(args), logbase, call);
     default:
-        error("%d arguments passed to \"log\" which requires 1 or 2", n);
+        error(_("%d arguments passed to \"log\" which requires 1 or 2"), n);
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -1583,7 +1583,7 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3(args, bessel_k);
 
     default:
-        errorcall(call, "unimplemented real function of 3 numeric arg.s");
+        errorcall(call, _("unimplemented real function of 3 numeric args"));
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math3() */
@@ -1793,7 +1793,7 @@ SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
     case 12:
         return Math4_2(args, qtukey);
     default:
-        errorcall(call, "unimplemented real function of 4 numeric arg.s");
+        errorcall(call, _("unimplemented real function of 4 numeric args"));
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -1926,7 +1926,7 @@ SEXP do_math5(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math5(args, q...);
 #endif
     default:
-        errorcall(call, "unimplemented real function of 5 numeric arg.s");
+        errorcall(call, _("unimplemented real function of 5 numeric args"));
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math5() */

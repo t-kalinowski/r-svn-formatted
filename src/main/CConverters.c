@@ -307,7 +307,7 @@ SEXP do_setToCConverterActiveStatus(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (el == NULL)
     {
-        error("no R-to-C converter found corresponding to identifier");
+        error(_("no R-to-C converter found corresponding to identifier"));
     }
 
     PROTECT(status = allocVector(LGLSXP, 1));
