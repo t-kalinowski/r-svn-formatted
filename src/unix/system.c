@@ -338,10 +338,10 @@ FILE *R_OpenSiteFile(void)
 
     if (LoadSiteFile)
     {
-        if (fp = R_fopen(getenv("RPROFILE"), "r"))
+        if ((fp = R_fopen(getenv("RPROFILE"), "r")))
             return fp;
         sprintf(buf, "%s/etc/Rprofile", getenv("RHOME"));
-        if (fp = R_fopen(buf, "r"))
+        if ((fp = R_fopen(buf, "r")))
             return fp;
     }
 
@@ -357,10 +357,10 @@ FILE *R_OpenInitFile(void)
 
     if (LoadInitFile)
     {
-        if (fp = R_fopen(".Rprofile", "r"))
+        if ((fp = R_fopen(".Rprofile", "r")))
             return fp;
         sprintf(buf, "%s/.Rprofile", getenv("HOME"));
-        if (fp = R_fopen(buf, "r"))
+        if ((fp = R_fopen(buf, "r")))
             return fp;
     }
 
