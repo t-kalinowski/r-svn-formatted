@@ -350,6 +350,7 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, int *stretch)
 {
     SEXP index, indexnames;
     int i, j, nnames, sub, extra;
+    int canstretch = *stretch;
     PROTECT(s);
     PROTECT(names);
     PROTECT(index = allocVector(INTSXP, ns));
@@ -388,6 +389,8 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, int *stretch)
         }
         if (sub == 0)
         {
+            if (!canstretch)
+                error("subscript out of bounds");
             extra += 1;
             sub = extra;
             STRING(indexnames)[i] = STRING(s)[i];
