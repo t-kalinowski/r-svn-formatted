@@ -589,7 +589,7 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (R_BrowseLevel)
     {
-        warning("can't quit from browser\n");
+        warning("can't quit from browser");
         return R_NilValue;
     }
     if (!isString(CAR(args)))

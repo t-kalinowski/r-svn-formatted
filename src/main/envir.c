@@ -27,7 +27,7 @@
  *
  *	FRAME(envir) = environment frame
  *	ENCLOS(envir) = parent environment
- *      HASHTAB(envir) = (optional) hash table
+ *	HASHTAB(envir) = (optional) hash table
  *
  *  In addition, environments which are created by binding a
  *  function's (=closure's) formals to its actuals have a value
@@ -62,7 +62,7 @@
 
   Hash Tables
 
-  We use a basic se[parate chaining algorithm.  A hash table consists
+  We use a basic se[parate chaining algorithm.	A hash table consists
   of SEXP (vector) which contains a number of SEXPs (lists).
 
 */
@@ -104,7 +104,7 @@ static int newhashpjw(char *s)
   R_HashSet
 
   Hashtable set function.  Sets 'symbol' in 'table' to be 'value'.
-  'hashcode' must be provided by user.  Allocates some memory for list
+  'hashcode' must be provided by user.	Allocates some memory for list
   entries.
 
   At some point we need to remove the sanity checks here.  This
@@ -281,7 +281,7 @@ void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
   R_HashResize
 
   Hash table resizing function Increase the size of the hash table by
-  the growth_rate of the table.  The vector is reallocated, however
+  the growth_rate of the table.	 The vector is reallocated, however
   the lists with in the hash table have their pointers shuffled around
   so that they are not reallocated.
 
@@ -298,7 +298,7 @@ SEXP R_HashResize(SEXP table)
         error("1st arg (table) not of type VECSXP,  from R_HashResize");
     }
 
-    /* This may have to change.  The growth rate should
+    /* This may have to change.	 The growth rate should
        be independent of the size (not implemented yet) */
     /* hash_grow = HASHSIZE(table); */
 
@@ -337,7 +337,7 @@ SEXP R_HashResize(SEXP table)
 
   R_HashSizeCheck
 
-  Hash table size rechecking function.  Compares the load factor
+  Hash table size rechecking function.	Compares the load factor
   (size/# of primary slots used).  to a praticular threshhold value.
   Returns true if the table needs to be resized.
 
@@ -365,7 +365,7 @@ int R_HashSizeCheck(SEXP table)
   R_HashFrame
 
   Hashing for environment frames.  This function ensures that the
-  first frame in the given environment has been hashed.  Ultimately
+  first frame in the given environment has been hashed.	 Ultimately
   all enironments should be created in hashed form.  At that point
   this function will be redundant.
 
@@ -532,7 +532,7 @@ SEXP findVarLocInFrame(SEXP rho, SEXP symbol)
 
   findVarInFrame
 
-  Look up the value of a symbol in a single environment frame.  This
+  Look up the value of a symbol in a single environment frame.	This
   is the basic building block of all variable lookups.
 
   It is important that this be as efficient as possible.
@@ -668,10 +668,10 @@ SEXP ddfindVar(SEXP symbol, SEXP rho)
             return (CAR(vl));
         }
         else
-            error("The ... list does not contain %d elements\n", i);
+            error("The ... list does not contain %d elements", i);
     }
     else
-        error("..%d used in an incorrect context, no ... to look in\n", i);
+        error("..%d used in an incorrect context, no ... to look in", i);
     return R_NilValue;
 }
 
@@ -742,7 +742,7 @@ SEXP findFun(SEXP symbol, SEXP rho)
         rho = ENCLOS(rho);
     }
     if (SYMVALUE(symbol) == R_UnboundValue)
-        error("couldn't find function \"%s\"\n", CHAR(PRINTNAME(symbol)));
+        error("couldn't find function \"%s\"", CHAR(PRINTNAME(symbol)));
     return SYMVALUE(symbol);
 }
 
@@ -828,7 +828,7 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 
     setVar
 
-    Assign a new value to bound symbol.  Note this does the "inherits"
+    Assign a new value to bound symbol.	 Note this does the "inherits"
     case.  I.e. it searches frame-by-frame for an symbol and binds the
     given value to the first symbol encountered.  If no symbol is
     found then a binding is created in the global environment.
@@ -855,7 +855,7 @@ void setVar(SEXP symbol, SEXP value, SEXP rho)
 
   gsetVar
 
-  Assignment in the system environment.  Here we assign directly into
+  Assignment in the system environment.	 Here we assign directly into
   the system environment.
 
 */
@@ -1010,7 +1010,7 @@ SEXP do_remove(SEXP call, SEXP op, SEXP args, SEXP rho)
             tenv = CDR(tenv);
         }
         if (!done)
-            warning("remove: variable \"%s\" was not found\n", CHAR(PRINTNAME(tsym)));
+            warning("remove: variable \"%s\" was not found", CHAR(PRINTNAME(tsym)));
     }
     return R_NilValue;
 }
@@ -1103,7 +1103,7 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (PRIMVAL(op))
     { /* have get(.) */
         if (rval == R_UnboundValue)
-            errorcall(call, "variable \"%s\" was not found\n", CHAR(PRINTNAME(t1)));
+            errorcall(call, "variable \"%s\" was not found", CHAR(PRINTNAME(t1)));
         /* We need to evaluate if it is a promise */
         if (TYPEOF(rval) == PROMSXP)
             rval = eval(rval, genv);
@@ -1598,7 +1598,7 @@ SEXP do_libfixup(SEXP call, SEXP op, SEXP args, SEXP rho)
   do_pos2env
 
   This function returns the environment at a specified position in the
-  search path.  It will does soon.
+  search path.	It will does soon.
 
  */
 static SEXP pos2env(int pos, SEXP call)

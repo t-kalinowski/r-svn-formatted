@@ -3644,7 +3644,7 @@ void GPretty(double *lo, double *up, int *ndiv)
         error("invalid axis extents [GPretty(.,.,n=%d)", *ndiv);
     if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(dx = *up - *lo))
     {
-        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
+        error("Infinite axis extents [GPretty(%g,%g,%d)]", *lo, *up, *ndiv);
         return; /*-Wall*/
     }
 
@@ -3727,7 +3727,7 @@ void GPretty(double *lo, double *up, int *ndiv)
         error("invalid axis extents [GPretty(.,.,n=%d)", *ndiv);
     if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(*up - *lo))
     {
-        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
+        error("Infinite axis extents [GPretty(%g,%g,%d)]", *lo, *up, *ndiv);
         return; /*-Wall*/
     }
 

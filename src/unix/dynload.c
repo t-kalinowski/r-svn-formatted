@@ -406,7 +406,7 @@ SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
     GetFullDLLPath(call, buf, CHAR(STRING(CAR(args))[0]));
     DeleteDLL(buf);
     if (!AddDLL(buf, LOGICAL(CADR(args))[0], LOGICAL(CADDR(args))[0]))
-        errorcall(call, "unable to load shared library \"%s\":\n  %s\n", buf, DLLerror);
+        errorcall(call, "unable to load shared library \"%s\":\n  %s", buf, DLLerror);
     return R_NilValue;
 }
 
