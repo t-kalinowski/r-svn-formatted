@@ -71,6 +71,8 @@ SEXP do_palette(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else if (n > 1)
     {
+        if (n > COLOR_TABLE_SIZE)
+            errorcall(call, "maximum number of colors exceeded");
         for (i = 0; i < n; i++)
             ncols[i] = char2col(CHAR(STRING(val)[i]));
         for (i = 0; i < n; i++)
