@@ -78,7 +78,7 @@ void R_gtk_terminal_find(GnomeFindDialog *find_dialog)
         switch (find_result)
         {
         case GNOME_FIND_NOMATCH:
-            notfound_dialog = gnome_message_box_new("Find text not found in console output.", GNOME_MESSAGE_BOX_WARNING,
+            notfound_dialog = gnome_message_box_new("Could not find text in console output.", GNOME_MESSAGE_BOX_WARNING,
                                                     GNOME_STOCK_BUTTON_OK, NULL);
             gnome_dialog_run_and_close(GNOME_DIALOG(notfound_dialog));
             if (find_dialog != NULL)
