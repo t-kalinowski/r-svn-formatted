@@ -183,6 +183,7 @@ void gdrawpolyline(drawing d, int width, int style, rgb c, point p[], int n, int
     HDC dc = GETHDC(d);
     COLORREF winrgb = getwinrgb(d, c);
     int i;
+
     if (n < 2)
         return;
     if (!style)
@@ -427,6 +428,7 @@ void gfillpolygon(drawing d, rgb fill, point *p, int n)
     DeleteObject(br);
 }
 
+/* For ordinary text, e.g. in console */
 int gdrawstr(drawing d, font f, rgb c, point p, char *s)
 {
     POINT curr_pos;
@@ -438,7 +440,7 @@ int gdrawstr(drawing d, font f, rgb c, point p, char *s)
     old = SelectObject(dc, f->handle);
     MoveToEx(dc, p.x, p.y, NULL);
     SetBkMode(dc, TRANSPARENT);
-    SetTextAlign(dc, TA_LEFT | TA_TOP | TA_UPDATECP);
+    SetTextAlign(dc, TA_TOP | TA_LEFT | TA_UPDATECP);
 
     TextOut(dc, p.x, p.y, s, strlen(s));
 
@@ -447,6 +449,32 @@ int gdrawstr(drawing d, font f, rgb c, point p, char *s)
     SelectObject(dc, old);
 
     return width;
+}
+
+/* This version aligns on baseline, and allows hadj = 0, 0.5, 1 */
+void gdrawstr1(drawing d, font f, rgb c, point p, char *s, double hadj)
+{
+    POINT curr_pos;
+    int width, h = floor(2 * hadj + 0.5);
+    HFONT old;
+    HDC dc = GETHDC(d);
+    UINT flags = TA_BASELINE | TA_UPDATECP;
+
+    SetTextColor(dc, getwinrgb(d, c));
+    old = SelectObject(dc, f->handle);
+    MoveToEx(dc, p.x, p.y, NULL);
+    SetBkMode(dc, TRANSPARENT);
+    if (h == 0)
+        flags |= TA_LEFT;
+    else if (h == 1)
+        flags |= TA_CENTER;
+    else
+        flags |= TA_RIGHT;
+    SetTextAlign(dc, flags);
+
+    TextOut(dc, p.x, p.y, s, strlen(s));
+
+    SelectObject(dc, old);
 }
 
 rect gstrrect(drawing d, font f, char *s)
