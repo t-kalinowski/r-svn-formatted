@@ -1556,7 +1556,7 @@ SEXP do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (quote && c == quote)
                 quote = 0;
-            else if (!skip && strchr(data.quoteset, c))
+            else if (!quote && !skip && strchr(data.quoteset, c))
                 quote = c;
             if (empty && !skip)
                 if (c != ' ' && c != '\t' && c != data.comchar)
