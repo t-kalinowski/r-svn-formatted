@@ -2563,11 +2563,7 @@ void GClip(DevDesc *dd)
     {
         double x1, y1, x2, y2;
         setClipRect(&x1, &y1, &x2, &y2, DEVICE, dd);
-        if (dd->newDevStruct)
-            ((GEDevDesc *)dd)->dev->clip(x1, x2, y1, y2, ((GEDevDesc *)dd)->dev);
-        else
-            Rf_dpptr(dd)->clip(x1, x2, y1, y2, dd);
-        Rf_gpptr(dd)->oldxpd = Rf_gpptr(dd)->xpd;
+        GESetClip(x1, y1, x2, y2, (GEDevDesc *)dd);
     }
 }
 
@@ -2578,10 +2574,7 @@ void GForceClip(DevDesc *dd)
     if (Rf_gpptr(dd)->state == 0)
         return;
     setClipRect(&x1, &y1, &x2, &y2, DEVICE, dd);
-    if (dd->newDevStruct)
-        GESetClip(x1, x2, y1, y2, (GEDevDesc *)dd);
-    else
-        Rf_dpptr(dd)->clip(x1, x2, y1, y2, dd);
+    GESetClip(x1, y1, x2, y2, (GEDevDesc *)dd);
 }
 
 /* Draw Line Segments, Clipping to the Viewport */
