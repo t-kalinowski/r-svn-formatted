@@ -447,6 +447,16 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 R_ShowMessage(msg);
                 exit(0);
             }
+            else if (!strcmp(*av, "--print-nsize"))
+            {
+                Rprintf("%d\n", R_NSize);
+                exit(0);
+            }
+            else if (!strcmp(*av, "--print-vsize"))
+            {
+                Rprintf("%d\n", R_VSize);
+                exit(0);
+            }
             else if (!strcmp(*av, "--save"))
             {
                 Rp->SaveAction = SA_SAVE;
@@ -512,7 +522,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 if (strlen(*av) < 9)
                 {
-                    R_ShowMessage("WARNING: use `--vsize=V' rather than `--vsize V'.\n");
                     ac--;
                     av++;
                     p = *av;
@@ -546,7 +555,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 if (strlen(*av) < 9)
                 {
-                    R_ShowMessage("WARNING: use `--nsize=V' rather than `--nsize V'.\n");
                     ac--;
                     av++;
                     p = *av;
