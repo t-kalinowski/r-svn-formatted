@@ -87,6 +87,7 @@
 #include "R_ext/Rdynpriv.h"
 
 #ifdef Macintosh
+extern char *strdup();
 #define R_DIR_SEPARATOR ':'
 #define HAVE_NO_SYMBOL_UNDERSCORE
 /* No "_" before function names under MacOS */
