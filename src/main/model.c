@@ -1045,11 +1045,11 @@ SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (haveDot && LENGTH(framenames))
     {
-        PROTECT(rhs = install(CHAR(STRING_ELT(framenames, 0))));
+        PROTECT_INDEX ind;
+        PROTECT_WITH_INDEX(rhs = install(CHAR(STRING_ELT(framenames, 0))), &ind);
         for (i = 1; i < LENGTH(framenames); i++)
         {
-            UNPROTECT(1);
-            PROTECT(rhs = lang3(plusSymbol, rhs, install(CHAR(STRING_ELT(framenames, i)))));
+            REPROTECT(rhs = lang3(plusSymbol, rhs, install(CHAR(STRING_ELT(framenames, i)))), ind);
         }
         if (!isNull(CADDR(ans)))
             SETCADDR(ans, ExpandDots(CADDR(ans), rhs));
