@@ -162,7 +162,8 @@ static Rboolean Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double
         return FALSE;
     }
 
-    gScreenRes = GetScreenRes();
+    if (gScreenRes < 72 || gScreenRes > 600)
+        gScreenRes = GetScreenRes();
 
     xd->windowWidth = wid;
     xd->windowHeight = hgt;
@@ -1013,7 +1014,8 @@ Rboolean MacDeviceDriver(DevDesc *dd, char *display, double width, double height
 
     Mac_Open(dd, xd, display, width, height);
 
-    gScreenRes = GetScreenRes();
+    if (gScreenRes < 72 || gScreenRes > 600)
+        gScreenRes = GetScreenRes();
 
     ps = pointsize;
     if (ps < 6 || ps > 24)
