@@ -70,7 +70,8 @@ static Rboolean compute_identical(SEXP x, SEXP y)
         if (length(x) != length(y))
             return FALSE;
         /* Use memcmp (which is ISO C) to speed up the comparison */
-        return memcmp((void *)DATAPTR(x), (void *)DATAPTR(y), length(x) * sizeof(int)) == 0 ? TRUE : FALSE;
+        /* Using INTEGER as data accessor works for both INTSXP and LGLSXP */
+        return memcmp((void *)INTEGER(x), (void *)INTEGER(y), length(x) * sizeof(int)) == 0 ? TRUE : FALSE;
     case REALSXP: {
         double *xp = REAL(x), *yp = REAL(y);
         int i, n = length(x);
