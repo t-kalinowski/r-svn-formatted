@@ -1948,7 +1948,8 @@ SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
         SEXP cur_class;
         SEXPTYPE valueType;
         valueString = CHAR(asChar(value));
-        cur_class = R_data_class(obj, FALSE);
+        PROTECT(cur_class = R_data_class(obj, FALSE));
+        nProtect++;
         classString = CHAR(asChar(cur_class));
         /* If equal to cur. class; leave alone.  This is important in
        preserving several implicit basic classes. However, it will
