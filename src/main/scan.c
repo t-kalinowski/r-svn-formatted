@@ -47,6 +47,8 @@ static Rboolean wasopen;
 static int ttyflag;
 static int quiet;
 static SEXP NAstrings;
+static int comchar;
+#define NO_COMCHAR 100000 /* won't occur even in unicode */
 
 static char convbuf[100];
 
@@ -139,15 +141,23 @@ static Rcomplex strtoc(const char *nptr, char **endptr)
     return (z);
 }
 
-static int scanchar(void)
+static int scanchar(Rboolean inQuote)
 {
+    int next;
     if (save)
     {
         int c = save;
         save = 0;
         return c;
     }
-    return (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
+    next = (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
+    if (next == comchar && !inQuote)
+    {
+        do
+            next = (ttyflag) ? ConsoleGetchar() : Rconn_fgetc(con);
+        while (next != '\n' && next != R_EOF);
+    }
+    return next;
 }
 
 static void unscanchar(int c)
@@ -190,6 +200,8 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
 {
     /* The basic reader function, called from scanVector() and scanFrame().
        Reads into _buffer_	which later will be read out by extractItem().
+
+       bch is used to distinguish \n and EOF from more input available.
     */
     char *bufp;
     int c, quote, filled, nbuf = MAXELTSIZE, m;
@@ -200,7 +212,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
     if (sepchar == 0)
     {
         /* skip all white space */
-        while ((c = scanchar()) == ' ' || c == '\t')
+        while ((c = scanchar(FALSE)) == ' ' || c == '\t')
             ;
         if (c == '\n' || c == '\r' || c == R_EOF)
         {
@@ -210,7 +222,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
         if (type == STRSXP && strchr(quoteset, c))
         {
             quote = c;
-            while ((c = scanchar()) != R_EOF && c != quote)
+            while ((c = scanchar(TRUE)) != R_EOF && c != quote)
             {
                 if (m >= nbuf - 2)
                 {
@@ -219,7 +231,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
                 }
                 if (c == '\\')
                 {
-                    c = scanchar();
+                    c = scanchar(TRUE);
                     if (c == R_EOF)
                         break;
                     else if (c == 'n')
@@ -229,9 +241,9 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
                 }
                 buffer[m++] = c;
             }
-            c = scanchar();
+            c = scanchar(FALSE);
             while (c == ' ' || c == '\t')
-                c = scanchar();
+                c = scanchar(FALSE);
             if (c == '\n' || c == '\r' || c == R_EOF)
                 filled = c;
             else
@@ -247,9 +259,9 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
                     AllocBuffer(nbuf);
                 }
                 buffer[m++] = c;
-            } while (!isspace(c = scanchar()) && c != R_EOF);
+            } while (!isspace(c = scanchar(FALSE)) && c != R_EOF);
             while (c == ' ' || c == '\t')
-                c = scanchar();
+                c = scanchar(FALSE);
             if (c == '\n' || c == '\r' || c == R_EOF)
                 filled = c;
             else
@@ -258,12 +270,12 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
     }
     else
     { /* have separator */
-        while ((c = scanchar()) != sepchar && c != '\n' && c != '\r' && c != R_EOF)
+        while ((c = scanchar(FALSE)) != sepchar && c != '\n' && c != '\r' && c != R_EOF)
         {
             /* eat white space */
             if (type != STRSXP)
                 while (c == ' ' || c == '\t')
-                    if ((c = scanchar()) == sepchar || c == '\n' || c == '\r' || c == R_EOF)
+                    if ((c = scanchar(FALSE)) == sepchar || c == '\n' || c == '\r' || c == R_EOF)
                     {
                         filled = c;
                         goto donefill;
@@ -273,7 +285,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
             {
                 quote = c;
             inquote:
-                while ((c = scanchar()) != R_EOF && c != quote)
+                while ((c = scanchar(TRUE)) != R_EOF && c != quote)
                 {
                     if (m >= nbuf - 2)
                     {
@@ -282,7 +294,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch)
                     }
                     buffer[m++] = c;
                 }
-                c = scanchar();
+                c = scanchar(TRUE);
                 if (c == quote)
                 {
                     if (m >= nbuf - 2)
@@ -350,7 +362,7 @@ static void expected(char *what, char *got)
     int c;
     if (ttyflag)
     {
-        while ((c = scanchar()) != R_EOF && c != '\n')
+        while ((c = scanchar(FALSE)) != R_EOF && c != '\n')
             ;
     }
     else if (!wasopen)
@@ -474,7 +486,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
             {
                 if (ttyflag && bch != '\n')
                 {
-                    while ((c = scanchar()) != '\n')
+                    while ((c = scanchar(FALSE)) != '\n')
                         ;
                 }
                 break;
@@ -482,7 +494,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         }
         if (flush && (bch != '\n') && (bch != R_EOF))
         {
-            while ((c = scanchar()) != '\n' && (c != R_EOF))
+            while ((c = scanchar(FALSE)) != '\n' && (c != R_EOF))
                 ;
             bch = c;
         }
@@ -648,7 +660,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
                 colsread = 0;
                 if (flush && (bch != '\n') && (bch != R_EOF))
                 {
-                    while ((c = scanchar()) != '\n' && c != R_EOF)
+                    while ((c = scanchar(FALSE)) != '\n' && c != R_EOF)
                         ;
                     bch = c;
                 }
@@ -716,8 +728,9 @@ done:
 
 SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, file, sep, what, stripwhite, dec, quotes;
+    SEXP ans, file, sep, what, stripwhite, dec, quotes, comstr;
     int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline;
+    char *p;
 
     checkArity(op, args);
 
@@ -750,6 +763,9 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     blskip = asLogical(CAR(args));
     args = CDR(args);
     multiline = asLogical(CAR(args));
+    args = CDR(args);
+    comstr = CAR(args);
+
     if (quiet == NA_LOGICAL)
         quiet = 0;
     if (blskip == NA_LOGICAL)
@@ -769,6 +785,8 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "invalid strip.white length");
     if (TYPEOF(NAstrings) != STRSXP)
         errorcall(call, "invalid na.strings value");
+    if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
+        errorcall(call, "invalid comment.char value");
 
     if (isString(sep) || isNull(sep))
     {
@@ -805,6 +823,13 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         errorcall(call, "invalid quote symbol set");
 
+    p = CHAR(STRING_ELT(comstr, 0));
+    comchar = NO_COMCHAR; /*  here for -Wall */
+    if (strlen(p) > 1)
+        errorcall(call, "invalid comment.char value");
+    else if (strlen(p) == 1)
+        comchar = (int)*p;
+
     i = asInteger(file);
     if (i == 0)
     {
@@ -821,7 +846,7 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
             con->open(con);
         }
         for (i = 0; i < nskip; i++)
-            while ((c = scanchar()) != '\n' && c != R_EOF)
+            while ((c = scanchar(FALSE)) != '\n' && c != R_EOF)
                 ;
     }
 
@@ -853,9 +878,10 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, file, sep, bns, quotes;
+    SEXP ans, file, sep, bns, quotes, comstr;
     int nfields, nskip, i, c, inquote, quote = 0;
     int blocksize, nlines, blskip;
+    char *p;
 
     checkArity(op, args);
 
@@ -868,6 +894,16 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     nskip = asInteger(CAR(args));
     args = CDR(args);
     blskip = asLogical(CAR(args));
+    args = CDR(args);
+    comstr = CAR(args);
+    if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
+        errorcall(call, "invalid comment.char value");
+    p = CHAR(STRING_ELT(comstr, 0));
+    comchar = NO_COMCHAR; /*  here for -Wall */
+    if (strlen(p) > 1)
+        errorcall(call, "invalid comment.char value");
+    else if (strlen(p) == 1)
+        comchar = (int)*p;
 
     if (nskip < 0 || nskip == NA_INTEGER)
         nskip = 0;
@@ -915,7 +951,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             con->open(con);
         }
         for (i = 0; i < nskip; i++)
-            while ((c = scanchar()) != '\n' && c != R_EOF)
+            while ((c = scanchar(FALSE)) != '\n' && c != R_EOF)
                 ;
     }
 
@@ -929,7 +965,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (;;)
     {
-        c = scanchar();
+        c = scanchar(FALSE);
         if (c == R_EOF)
         {
             if (nfields != 0)
@@ -983,7 +1019,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (strchr(quoteset, c))
             {
                 quote = c;
-                while ((c = scanchar()) != quote)
+                while ((c = scanchar(FALSE)) != quote)
                 {
                     if (c == R_EOF || c == '\n')
                     {
@@ -995,7 +1031,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             else
             {
-                while (!isspace(c = scanchar()) && c != R_EOF)
+                while (!isspace(c = scanchar(FALSE)) && c != R_EOF)
                     ;
                 if (c == R_EOF)
                     c = '\n';
