@@ -1367,7 +1367,7 @@ static void PS_Text(double x, double y, int coords, char *str, double rot, doubl
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
     GConvert(&x, &y, coords, DEVICE, dd);
-    SetFont(dd->gp.font, floor(dd->gp.cex * dd->gp.ps + 0.5), dd);
+    SetFont(dd->gp.font, (int)floor(dd->gp.cex * dd->gp.ps + 0.5), dd);
     SetColor(dd->gp.col, dd);
     PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot);
 }
@@ -1643,8 +1643,6 @@ int XFigDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *b
     pd->pagecentre = pagecentre;
     pd->paperwidth = 72 * pd->pagewidth;
     pd->paperheight = 72 * pd->pageheight;
-    pd->ymax = (int)(1200.0 * pd->pageheight);
-    pd->onefile = onefile;
     if (!onefile)
     {
         char *p = strrchr(pd->filename, '%');
@@ -1671,6 +1669,11 @@ int XFigDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *b
     {
         xoff = yoff = 0.0;
     }
+    if (pagecentre)
+        pd->ymax = (int)(1200.0 * pd->pageheight);
+    else
+        pd->ymax = (int)(1200.0 * pd->height);
+    pd->onefile = onefile;
     pd->maxpointsize = 72.0 * ((pd->pageheight > pd->pagewidth) ? pd->pageheight : pd->pagewidth);
     pd->pageno = 0;
     pd->lty = 1;
@@ -1932,11 +1935,11 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, int coords, in
     fprintf(fp, "100 0 %d ", dofill);              /* depth, pen style, area fill */
     fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd);    /* style value, join .... */
     fprintf(fp, "%d\n", 5);                        /* number of points */
-    fprintf(fp, "%d %d ", ix0, iy0);
-    fprintf(fp, "%d %d ", ix0, iy1);
-    fprintf(fp, "%d %d ", ix1, iy1);
-    fprintf(fp, "%d %d ", ix1, iy0);
-    fprintf(fp, "%d %d\n", ix0, iy0);
+    fprintf(fp, "  %d %d ", ix0, iy0);
+    fprintf(fp, "  %d %d ", ix0, iy1);
+    fprintf(fp, "  %d %d ", ix1, iy1);
+    fprintf(fp, "  %d %d ", ix1, iy0);
+    fprintf(fp, "  %d %d\n", ix0, iy0);
 }
 
 static void XFig_Circle(double x, double y, int coords, double r, int bg, int fg, DevDesc *dd)
@@ -1961,7 +1964,7 @@ static void XFig_Circle(double x, double y, int coords, double r, int bg, int fg
     fprintf(fp, "%d %d ", cpen, cbg);              /* pen colour fill colour */
     fprintf(fp, "100 0 %d ", dofill);              /* depth, pen style, area fill */
     fprintf(fp, "%.2f 1 0 ", 4.0 * lwd);           /* style value, direction, x, angle */
-    fprintf(fp, "%d %d %d %d %d %d %d %d \n", ix, iy, ir, ir, ix, iy, ix + ir, iy);
+    fprintf(fp, "  %d %d %d %d %d %d %d %d \n", ix, iy, ir, ir, ix, iy, ix + ir, iy);
 }
 
 static void XFig_Line(double x1, double y1, double x2, double y2, int coords, DevDesc *dd)
@@ -2008,7 +2011,7 @@ static void XFig_Polygon(int n, double *x, double *y, int coords, int bg, int fg
         yy = y[i];
         GConvert(&xx, &yy, coords, DEVICE, dd);
         XFconvert(&xx, &yy, pd);
-        fprintf(fp, "%d %d\n", (int)xx, (int)yy);
+        fprintf(fp, "  %d %d\n", (int)xx, (int)yy);
     }
 }
 
@@ -2031,7 +2034,7 @@ static void XFig_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
         yy = y[i];
         GConvert(&xx, &yy, coords, DEVICE, dd);
         XFconvert(&xx, &yy, pd);
-        fprintf(fp, "%d %d\n", (int)xx, (int)yy);
+        fprintf(fp, "  %d %d\n", (int)xx, (int)yy);
     }
 }
 
@@ -2042,7 +2045,7 @@ static void XFig_Text(double x, double y, int coords, char *str, double rot, dou
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
     FILE *fp = pd->tmpfp;
     int fontnum, style = dd->gp.font;
-    double size = floor(dd->gp.cex * dd->gp.ps);
+    double size = floor(dd->gp.cex * dd->gp.ps + 0.5);
 
     if (style < 1 || style > 5)
         style = 1;
@@ -2058,10 +2061,10 @@ static void XFig_Text(double x, double y, int coords, char *str, double rot, dou
     fprintf(fp, "4 %d ", (int)floor(2 * hadj)); /* Text, how justified */
     fprintf(fp, "%d 100 0 ", XF_SetColor(dd->gp.col, pd));
     /* color, depth, pen_style */
-    fprintf(fp, "%d %.2f %.5f 4 ", fontnum, size, rot * DEG2RAD);
+    fprintf(fp, "%d %d %.4f 4 ", fontnum, (int)size, rot * DEG2RAD);
     /* font pointsize angle flags (Postscript font) */
-    fprintf(fp, "%.2f %.2f ", 16.667 * GStrHeight(str, DEVICE, dd),
-            16.667 * GStrWidth(str, DEVICE, dd)); /* height length */
+    fprintf(fp, "%d %d ", (int)(16.667 * GStrHeight(str, DEVICE, dd) + 0.5),
+            (int)(16.667 * GStrWidth(str, DEVICE, dd) + 0.5));
     fprintf(fp, "%d %d ", (int)x, (int)y);
     XF_WriteString(fp, str);
     fprintf(fp, "\\001\n");
