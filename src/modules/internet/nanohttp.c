@@ -1218,6 +1218,7 @@ void *RxmlNanoHTTPMethod(const char *URL, const char *method, const char *input,
     int head;
     int nbRedirects = 0;
     char *redirURL = NULL;
+    char buf[1000];
 
     if (URL == NULL)
         return (NULL);
@@ -1277,6 +1278,11 @@ retry:
         blen += strlen(headers);
     if (contentType && *contentType)
         blen += strlen(*contentType) + 16;
+    if (proxyUser && proxyPwd)
+    {
+        base64_encode(proxyUser, proxyPwd, buf);
+        blen += strlen(buf) + 50;
+    }
     blen += strlen(method) + strlen(ctxt->path) + 23;
     bp = xmlMalloc(blen);
     if (proxy)
@@ -1300,9 +1306,7 @@ retry:
     }
     if (proxyUser && proxyPwd)
     {
-        char buf[1000];
-        base64_encode(proxyUser, proxyPwd, buf);
-        sprintf(p, "Authorization: Basic %s\r\n", buf);
+        sprintf(p, "Proxy-Authorization: Basic %s\r\n", buf);
         p += strlen(p);
     }
     if (contentType != NULL && *contentType)
