@@ -134,15 +134,12 @@ double qbeta(double alpha, double p, double q)
     yprev = zero;
     adj = 1;
     if (xinbta < lower)
-    {
         xinbta = lower;
-    }
-    if (xinbta > upper)
-    {
+    else if (xinbta > upper)
         xinbta = upper;
-    }
+
     /* Desired accuracy should depend on  (a,p)
-     * This is from Remark .. on AS 109, adapated.
+     * This is from Remark .. on AS 109, adapted.
      * However, it's not clear if this is "optimal" for IEEE double prec.
 
      * acu = fmax2(acu_min, pow(10., -25. - 5./(pp * pp) - 1./(a * a)));
@@ -159,7 +156,7 @@ double qbeta(double alpha, double p, double q)
         y = pbeta_raw(xinbta, pp, qq);
         /* y = pbeta_raw2(xinbta, pp, qq, logbeta); */
 #ifdef IEEE_754
-        if (!finite(y))
+        if (!FINITE(y))
 #else
         if (errno)
 #endif
@@ -197,6 +194,8 @@ double qbeta(double alpha, double p, double q)
         yprev = y;
     }
     /*-- NOT converged: Iteration count --*/
+    ML_ERROR(ME_PRECISION);
+
 L_converged:
     if (swap_tail)
         xinbta = 1 - xinbta;
