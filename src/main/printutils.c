@@ -571,6 +571,11 @@ void REvprintf(const char *format, va_list arg)
         buf[BUFSIZE - 1] = '\0';
         slen = strlen(buf);
         R_WriteConsole(buf, slen);
+#ifdef HAVE_AQUA
+        /* the function doesn't access or  manipulate its arguments,
+           so this is safe, if ugly */
+        do_flushconsole(NULL, NULL, NULL, NULL);
+#endif
     }
 }
 

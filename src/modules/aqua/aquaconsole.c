@@ -106,6 +106,9 @@ extern SA_TYPE RestoreAction;
 #define kRCmdBioCBundleAffy 'biaf'
 #define kRCmdBioCBundleCDNA 'bicd'
 
+/* item in the Window menu */
+#define kRNewQuartz 'nwqz'
+
 /* items in the Help Menu */
 #define kRHelpStart 'rhlp'
 #define kRHelpOnTopic 'rhot'
@@ -577,7 +580,7 @@ void SetUpRAquaMenu(void)
 
     if (HelpMenu != nil)
     {
-        CopyCStringToPascal("R Help", menuStr);
+        CopyCStringToPascal("R Help (HTML)", menuStr);
         AppendMenu(HelpMenu, menuStr);
         RHelpMenuItem = CountMenuItems(HelpMenu);
         SetMenuItemCommandID(HelpMenu, RHelpMenuItem, kRHelpStart);
@@ -1567,6 +1570,11 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                     sprintf(cmd, "install.from.file(pkg=\"%s\")\r", buf);
                     consolecmd(cmd);
                 }
+                break;
+
+                /* Window Menu */
+            case kRNewQuartz:
+                consolecmd("quartz()");
                 break;
 
                 /* Help Menu */
