@@ -102,15 +102,6 @@ void R_load_X11_shlib(void)
        if not, as in the semantics before switching to self-registering modules. */
 }
 
-#else
-
-void R_load_X11_shlib()
-{
-    R_Suicide("no support to load X11 shared library in this R version");
-}
-
-#endif
-
 #include "R_ext/RX11.h"
 
 void R_setX11Routines(R_X11DeviceDriverRoutine dev, R_X11DataEntryRoutine dataEntry, R_GetX11ImageRoutine image)
@@ -119,3 +110,12 @@ void R_setX11Routines(R_X11DeviceDriverRoutine dev, R_X11DataEntryRoutine dataEn
     ptr_dataentry = dataEntry;
     ptr_R_GetX11Image = image;
 }
+
+#else
+
+void R_load_X11_shlib()
+{
+    R_Suicide("no support to load X11 shared library in this R version");
+}
+
+#endif
