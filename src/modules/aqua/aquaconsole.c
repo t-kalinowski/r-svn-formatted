@@ -2623,7 +2623,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     UInt32 eventClass;
     TXNObject HlpObj = NULL;
     HIPoint where;
-    WindowDefPartCode part;
+    WindowPartCode partCode;
     EventRecord outEvent;
     Str255 fontname;
 
