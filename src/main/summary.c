@@ -36,10 +36,9 @@
 
 /* These GLOBALS are set/initialized in do_summary: */
 static int narm;
-
 static int updated;
-/* updates is assigned 1 as soon as (i)tmp (do_summary), */
-/* or *value ([ir]min / max) is assigned */
+/* updated := 1 , as soon as (i)tmp (do_summary),
+   or *value ([ir]min / max) is assigned */
 
 static void isum(int *x, int n, int *value)
 {
@@ -388,13 +387,14 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     complex z, ztmp, zcum;
     int itmp, icum = 0, int_a, empty;
     short iop;
-    SEXPTYPE ans_type = INTSXP; /* only INTEGER, REAL, or COMPLEX here */
+    SEXPTYPE ans_type; /* only INTEGER, REAL, or COMPLEX here */
 
     if (DispatchGroup("Summary", call, op, args, env, &ans))
         return ans;
 
     ans = matchArg(R_NaRmSymbol, &args);
     narm = asLogical(ans);
+    updated = 0;
     empty = 1; /*- =1: only zero-length arguments, or NA with na.rm=T */
 
     iop = PRIMVAL(op);
@@ -402,7 +402,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     {
     case 0:                /* sum */
         ans_type = INTSXP; /* try to keep if possible.. */
-        zcum.r = zcum.i = 0.0;
+        zcum.r = zcum.i = 0.;
         icum = 0;
         break;
 
@@ -431,12 +431,13 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
     case 4: /* prod */
         ans_type = REALSXP;
-        zcum.r = 1;
-        zcum.i = 0;
+        zcum.r = 1.;
+        zcum.i = 0.;
         break;
 
     default:
         errorcall(call, "internal error ('op' in do_summary).\t Call a Guru\n");
+        return R_NilValue; /*-Wall */
     }
 
     /*-- now loop over all arguments.  Do the 'op' switch INSIDE : */
@@ -481,7 +482,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
 
                 if (updated)
-                { /* a  had non-NA elements; --> "add" tmp or itmp*/
+                { /* 'a' had non-NA elements; --> "add" tmp or itmp*/
                     DbgP1(" updated:");
                     if (ans_type == INTSXP)
                     {
@@ -640,8 +641,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /*-------------------------------------------------------*/
     if (empty && (iop == 2 || iop == 3))
-        warningcall(call, "only non-finite arguments to min/max; "
-                          "returning extreme.\n");
+        warningcall(call, "no finite arguments to min/max; returning extreme.\n");
 
     ans = allocVector(ans_type, 1);
     switch (ans_type)
@@ -675,7 +675,7 @@ na_answer: /* even for IEEE, for INT : */
 
 badmode:
     errorcall(call, "invalid \"mode\" of argument\n");
-    return R_NilValue; /* for -Wall */
+    return R_NilValue; /*-Wall */
 } /* do_summary */
 
 SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
