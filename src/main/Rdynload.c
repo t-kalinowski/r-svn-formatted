@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2003 The R Development Core Team
+ *  Copyright (C) 1997-2004 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,8 +70,8 @@
  *  Note that the base routines registered are listed in
  *               ../main/registration.c
  *  and are registered during the initialization of the R engine.
- *  (This replaces the previous mechanism that built a table from ../appl/ROUTINES
- *  using Perl/sed).
+ *  (This replaces the previous mechanism that built a table
+ *  from ../appl/ROUTINES using Perl/sed).
  *
  *
  *  If speed is ever an issue in the lookup of registered symbols, we can
@@ -534,10 +534,6 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
         strcpy(DLLname, p);
     else
         error("DLLname %s is too long", p);
-
-    /* FIXME: didn't work on Mac, unsafe
-    p = strchr(DLLname, '.');
-    if(p) *p = '\0'; */
 
     /* remove SHLIB_EXT if present */
     p = DLLname + strlen(DLLname) - strlen(SHLIB_EXT);
@@ -1046,7 +1042,9 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
 
     if (n > 3)
     {
-        /* Add the registration information: the number of arguments and the classname. */
+        /* Add the registration information:
+           the number of arguments and the classname.
+        */
         int nargs = -1;
         char *className = "";
         switch (symbol->type)
@@ -1171,7 +1169,6 @@ SEXP R_getRegisteredRoutines(SEXP dll)
         SET_STRING_ELT(snames, i, mkChar(names[i]));
     }
     setAttrib(ans, R_NamesSymbol, snames);
-
     UNPROTECT(2);
     return (ans);
 }
