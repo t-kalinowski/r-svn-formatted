@@ -496,7 +496,8 @@ int main(int ac, char **av)
                 if (*p)
                     goto badargs;
                 if (value < 1 || value > 1000)
-                    REprintf("WARNING: invalid vector heap size ignored\n");
+                    REprintf("WARNING: invalid vector heap size '%d' ignored, using default = %g\n", value,
+                             R_VSize / 1048576.0);
                 else
                     R_VSize = value * 1048576; /* 1 MByte := 2^20 Bytes*/
             }
@@ -529,7 +530,7 @@ int main(int ac, char **av)
                 if (*p)
                     goto badargs;
                 if (value < R_NSize || value > 1000000)
-                    REprintf("WARNING: invalid language heap size ignored\n");
+                    REprintf("WARNING: invalid language heap size '%d' ignored, using default = %d\n", value, R_NSize);
                 else
                     R_NSize = value;
             }
