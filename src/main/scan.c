@@ -517,6 +517,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         {
             linesread++;
             if (colsread != 0)
+            {
                 if (fill)
                 {
                     buffer[0] = '\0';
@@ -530,6 +531,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
                 }
                 else if (!badline)
                     badline = linesread;
+            }
             if (maxitems > 0 && linesread >= maxitems)
                 goto done;
             if (maxlines > 0 && linesread == maxlines)
