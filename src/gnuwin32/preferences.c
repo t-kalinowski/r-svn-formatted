@@ -359,7 +359,7 @@ void Rgui_configure()
     ConsoleData p = (ConsoleData)getdata(RConsole);
 
     wconfig = newwindow("Rgui Configuration Editor", rect(0, 0, 550, 400), Titlebar | Centered | Modal);
-    setbackground(wconfig, LightGrey);
+    setbackground(wconfig, myGetSysColor(COLOR_MENU));
     l_mdi = newlabel("Single or multiple windows", rect(10, 10, 150, 20), AlignLeft);
     rb_mdi = newradiobutton("MDI", rect(150, 10, 70, 20), cMDI);
     rb_sdi = newradiobutton("SDI", rect(220, 10, 70, 20), cSDI);
