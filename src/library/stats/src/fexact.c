@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; kept-new-versions: 25; kept-old-versions: 20 -*-
+
    Fisher's exact test for contingency tables -- usage see below
 
    fexact.f -- translated by f2c (version 19971204).
@@ -10,44 +11,39 @@
 
 #include "ctest.h"
 
-#undef min
-#undef max
-#define max(a, b) ((a) < (b) ? (b) : (a))
-#define min(a, b) ((a) > (b) ? (b) : (a))
-
-static void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect, double *percnt, double *emin,
-                   double *prt, double *pre, double *fact, Sint *ico, Sint *iro, Sint *kyy, Sint *idif, Sint *irn,
-                   Sint *key, Sint *ldkey, Sint *ipoin, double *stp, Sint *ldstp, Sint *ifrq, double *dlp, double *dsp,
-                   double *tm, Sint *key2, Sint *iwk, double *rwk);
-static void f3xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dlp, Sint *mm, double *fact, Sint *ico,
-                   Sint *iro, Sint *it, Sint *lb, Sint *nr, Sint *nt, Sint *nu, Sint *itc, Sint *ist, double *stv,
-                   double *alen, const double *tol);
-static void f4xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dsp, double *fact, Sint *icstk, Sint *ncstk,
-                   Sint *lstk, Sint *mstk, Sint *nstk, Sint *nrstk, Sint *irstk, double *ystk, const double *tol);
-static void f5xact(double *pastp, const double *tol, Sint *kval, Sint *key, Sint *ldkey, Sint *ipoin, double *stp,
-                   Sint *ldstp, Sint *ifrq, Sint *npoin, Sint *nr, Sint *nl, Sint *ifreq, Sint *itop, Sint *ipsh);
-static void f6xact(Sint *nrow, Sint *irow, Sint *iflag, Sint *kyy, Sint *key, Sint *ldkey, Sint *last, Sint *ipn);
-static void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag);
-static void f8xact(Sint *irow, Sint *is, Sint *i1, Sint *izero, Sint *new);
-static double f9xact(Sint *n, Sint *mm, Sint *ir, double *fact);
-static void f10act(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *val, Sint *xmin, double *fact, Sint *nd,
-                   Sint *ne, Sint *m);
-static void f11act(Sint *irow, Sint *i1, Sint *i2, Sint *new);
-static void prterr(int icode, char *mes);
-static Sint iwork(Sint iwkmax, Sint *iwkpt, Sint number, Sint itype);
+static void f2xact(int nrow, int ncol, int *table, int ldtabl, double *expect, double *percnt, double *emin,
+                   double *prt, double *pre, double *fact, int *ico, int *iro, int *kyy, int *idif, int *irn, int *key,
+                   int *ldkey, int *ipoin, double *stp, int *ldstp, int *ifrq, double *LP, double *SP, double *tm,
+                   int *key2, int *iwk, double *rwk);
+static double f3xact(int nrow, int *irow, int ncol, int *icol, int ntot, double *fact, int *ico, int *iro, int *it,
+                     int *lb, int *nr, int *nt, int *nu, int *itc, int *ist, double *stv, double *alen,
+                     const double *tol);
+static double f4xact(int nrow, int *irow, int ncol, int *icol, double dspt, double *fact, int *icstk, int *ncstk,
+                     int *lstk, int *mstk, int *nstk, int *nrstk, int *irstk, double *ystk, const double *tol);
+static void f5xact(double *pastp, const double *tol, int *kval, int *key, int *ldkey, int *ipoin, double *stp,
+                   int *ldstp, int *ifrq, int *npoin, int *nr, int *nl, int *ifreq, int *itop, Rboolean psh);
+static Rboolean f6xact(int nrow, int *irow, int *kyy, int *key, int *ldkey, int *last, int *ipn);
+static void f7xact(int nrow, int *imax, int *idif, int *k, int *ks, int *iflag);
+static void f8xact(int *irow, int is, int i1, int izero, int *new);
+static double f9xact(int n, int ntot, int *ir, double *fact);
+static Rboolean f10act(int nrow, int *irow, int ncol, int *icol, double *val, double *fact, int *nd, int *ne, int *m);
+static void f11act(int *irow, int i1, int i2, int *new);
+static void prterr(int icode, const char *mes);
+static int iwork(int iwkmax, int *iwkpt, int number, int itype);
 
 #ifdef USING_R
 #define isort(n, ix) R_isort(ix, *n)
 #include <Rmath.h> /* -> pgamma() */
 #else
-static void isort(Sint *n, Sint *ix);
-static double gammds(double *y, double *p, Sint *ifault);
-static double alogam(double *x, Sint *ifault);
+static void isort(int *n, int *ix);
+static double gammds(double *y, double *p, int *ifault);
+static double alogam(double *x, int *ifault);
 #endif
 
 /* The only public function : */
-void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect, double *percnt, double *emin,
-            double *prt, double *pre, /* new in C : */ Sint *workspace)
+void fexact(int *nrow, int *ncol, int *table, int *ldtabl, double *expect, double *percnt, double *emin, double *prt,
+            double *pre, /* new in C : */ int *workspace,
+            /* new arg, was const = 30*/ int *mult)
 {
 
     /*
@@ -59,8 +55,7 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
       Purpose:    Computes Fisher's exact test probabilities and a hybrid
               approximation to Fisher exact test probabilities for a
               contingency table using the network algorithm.
-      Usage:      CALL FEXACT (NROW, NCOL, TABLE, LDTABL, EXPECT, PERCNT,
-                               EMIN, PRT, PRE)
+
       Arguments:
         NROW    - The number of rows in the table.			(Input)
         NCOL    - The number of columns in the table.		(Input)
@@ -106,9 +101,9 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
       1. For many problems one megabyte or more of workspace can be
          required.	If the environment supports it, the user should begin
          by increasing the workspace used to 200,000 units.
-      2. In FEXACT, LDSTP = 30*LDKEY.  The proportion of table space used
+      2. In FEXACT, LDSTP = MULT*LDKEY.  The proportion of table space used
          by STP may be changed by changing the line MULT = 30 below to
-         another value.
+         another value. --> MULT is now an __argument__ of the function
       3. FEXACT may be converted to single precision by setting IREAL = 3,
          and converting all DOUBLE PRECISION specifications (except the
          specifications for RWRK, IWRK, and DWRK) to REAL.	This will
@@ -134,10 +129,10 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
 
     /* CONSTANT Parameters : */
 
-    /* To increase the length of the table of paste path lengths relative
+    /* To increase the length of the table of past path lengths relative
        to the length of the hash table, increase MULT.
     */
-    const Sint mult = 30;
+
     /* AMISS is a missing value indicator which is returned when the
        probability is not defined.
     */
@@ -150,29 +145,20 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
 #define i_int 2
 
     /* System generated locals */
-    Sint ikh;
+    int ikh;
     /* Local variables */
-    Sint nco, nro, ntot, numb, iiwk, irwk;
-    Sint i, j, k, kk, ldkey, ldstp, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10;
-    Sint i3a, i3b, i3c, i9a, iwkmax, iwkpt;
+    int nco, nro, ntot, numb, iiwk, irwk;
+    int i, j, k, kk, ldkey, ldstp, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10;
+    int i3a, i3b, i3c, i9a, iwkmax, iwkpt;
 
-    /* Workspace Allocation (freed at end) */
+    /* Workspace Allocation (freed when returning to R) */
     double *equiv;
-    iwkmax = 2 * (Sint)(*workspace / 2);
+    iwkmax = 2 * (int)(*workspace / 2);
     equiv = (double *)R_alloc(iwkmax / 2, sizeof(double));
 
-    /* The check could never happen with Calloc!
-    equiv = Calloc(iwkmax / 2, double);
-    if (!equiv) {
-    prterr(0, "Can not allocate specified workspace");
-    } */
-
 #define dwrk (equiv)
-#define iwrk ((Sint *)equiv)
+#define iwrk ((int *)equiv)
 #define rwrk ((float *)equiv)
-
-    /* Parameter adjustments */
-    table -= *ldtabl + 1;
 
     /* Function Body */
     iwkpt = 0;
@@ -181,26 +167,35 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
         prterr(1, "NROW must be less than or equal to LDTABL.");
 
     ntot = 0;
-    for (i = 1; i <= *nrow; ++i)
+    for (i = 0; i < *nrow; ++i)
     {
-        for (j = 1; j <= *ncol; ++j)
+        for (j = 0; j < *ncol; ++j)
         {
-            if (table[i + j * *ldtabl] < 0.)
-                prterr(2, "All elements of TABLE must be positive.");
-            ntot = (Sint)(ntot + table[i + j * *ldtabl]);
+            if (table[i + j * *ldtabl] < 0)
+                prterr(2, "All elements of TABLE may not be negative.");
+            ntot += table[i + j * *ldtabl];
         }
     }
     if (ntot == 0)
     {
         prterr(3, "All elements of TABLE are zero.\n"
                   "PRT and PRE are set to missing values.");
-        *prt = amiss;
-        *pre = amiss;
-        goto L_End;
+        *pre = *prt = amiss;
+        return;
     }
 
-    nco = max(*nrow, *ncol);
-    nro = *nrow + *ncol - nco; /* = min(*nrow, *ncol) */
+    /* nco := max(*nrow, *ncol)
+     * nro := min(*nrow, *ncol) */
+    if (*ncol > *nrow)
+    {
+        nco = *ncol;
+        nro = *nrow;
+    }
+    else
+    {
+        nco = *nrow;
+        nro = *ncol;
+    }
     k = *nrow + *ncol + 1;
     kk = k * nco;
 
@@ -211,9 +206,9 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
     i3a = iwork(iwkmax, &iwkpt, nco, i_int);
     i3b = iwork(iwkmax, &iwkpt, nro, i_int);
     i3c = iwork(iwkmax, &iwkpt, nro, i_int);
-    ikh = max(k * 5 + (kk << 1), nco * 7 + 800);
+    ikh = imax2(k * 5 + (kk << 1), nco * 7 + 800);
     iiwk = iwork(iwkmax, &iwkpt, ikh, i_int);
-    ikh = max(nco + 401, k);
+    ikh = imax2(nco + 401, k);
     irwk = iwork(iwkmax, &iwkpt, ikh, i_real);
 
     /* NOTE:
@@ -241,14 +236,14 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
 
     if (i_real == 4)
     { /* Double precision reals */
-        numb = 18 + 10 * mult;
+        numb = 18 + 10 * *mult;
     }
     else
     { /* Single precision reals */
-        numb = (mult << 3) + 12;
+        numb = (*mult << 3) + 12;
     }
     ldkey = (iwkmax - iwkpt) / numb - 1;
-    ldstp = mult * ldkey;
+    ldstp = *mult * ldkey;
     ikh = ldkey << 1;
     i4 = iwork(iwkmax, &iwkpt, ikh, i_int);
     ikh = ldkey << 1;
@@ -268,12 +263,10 @@ void fexact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
 
     /* To convert to double precision, change RWRK to DWRK in the next CALL.
      */
-    f2xact(nrow, ncol, &table[*ldtabl + 1], ldtabl, expect, percnt, emin, prt, pre, dwrk + i1, iwrk + i2, iwrk + i3,
-           iwrk + i3a, iwrk + i3b, iwrk + i3c, iwrk + i4, &ldkey, iwrk + i5, dwrk + i6, &ldstp, iwrk + i7, dwrk + i8,
-           dwrk + i9, dwrk + i9a, iwrk + i10, iwrk + iiwk, dwrk + irwk);
+    f2xact(*nrow, *ncol, table, *ldtabl, expect, percnt, emin, prt, pre, dwrk + i1, iwrk + i2, iwrk + i3, iwrk + i3a,
+           iwrk + i3b, iwrk + i3c, iwrk + i4, &ldkey, iwrk + i5, dwrk + i6, &ldstp, iwrk + i7, dwrk + i8, dwrk + i9,
+           dwrk + i9a, iwrk + i10, iwrk + iiwk, dwrk + irwk);
 
-L_End:
-    /* Free(equiv); */
     return;
 }
 
@@ -281,24 +274,19 @@ L_End:
 #undef iwrk
 #undef dwrk
 
-/*
-  -----------------------------------------------------------------------
-  Name:		F2XACT
-  Purpose:	Computes Fisher's exact test for a contingency table,
-        routine with workspace variables specified.
-  Usage:	F2XACT (NROW, NCOL, TABLE, LDTABL, EXPECT, PERCNT,
-            EMIN, PRT, PRE, FACT, ICO, IRO, KYY, IDIF,
-            IRN, KEY, LDKEY, IPOIN, STP, LDSTP, IFRQ,
-            DLP, DSP, TM, KEY2, IWK, RWK)
-  -----------------------------------------------------------------------
-  */
-void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect, double *percnt, double *emin,
-            double *prt, double *pre, double *fact, Sint *ico, Sint *iro, Sint *kyy, Sint *idif, Sint *irn, Sint *key,
-            Sint *ldkey, Sint *ipoin, double *stp, Sint *ldstp, Sint *ifrq, double *dlp, double *dsp, double *tm,
-            Sint *key2, Sint *iwk, double *rwk)
+void f2xact(int nrow, int ncol, int *table, int ldtabl, double *expect, double *percnt, double *emin, double *prt,
+            double *pre, double *fact, int *ico, int *iro, int *kyy, int *idif, int *irn, int *key, int *ldkey,
+            int *ipoin, double *stp, int *ldstp, int *ifrq, double *LP, double *SP, double *tm, int *key2, int *iwk,
+            double *rwk)
 {
-    /* IMAX is the largest representable Sint on the machine. */
-    const Sint imax = SINT_MAX;
+    /*
+      -----------------------------------------------------------------------
+      Name:		F2XACT
+      Purpose:	Computes Fisher's exact test for a contingency table,
+            routine with workspace variables specified.
+      -----------------------------------------------------------------------
+      */
+    const int imax = INT_MAX; /* the largest representable int on the machine.*/
 
     /* AMISS is a missing value indicator which is returned when the
        probability is not defined. */
@@ -306,43 +294,49 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
 
     /* TOL is chosen as the square root of the smallest relative spacing. */
     const static double tol = 3.45254e-7;
-    /* EMX is a large positive value used in comparing expected values. */
-    const static double emx = 1e30;
 
-    /* Local variables {{any really need to be static ???}} */
-    static Sint kval, kmax, jkey, last, ipsh, itmp, itop, jstp, ntot, jstp2, jstp3, jstp4, i, ii, j, k, n, iflag, ncell,
-        ifreq, chisq, ikkey, ikstp, ikstp2, k1, kb, kd, ks, i31, i32, i33, i34, i35, i36, i37, i38, i39, i41, i42, i43,
-        i44, i45, i46, i47, i48, i310, i311, nco, nrb, ipn, ipo, itp, nro, nro2;
-    static double dspt, dd, df, ddf, drn, dro, emn, obs, obs2, obs3, pastp, pv, tmp;
-    double d1;
+    const char *ch_err_5 = "The hash table key cannot be computed because the largest key\n"
+                           "is larger than the largest representable int.\n"
+                           "The algorithm cannot proceed.\n"
+                           "Reduce the workspace size or use another algorithm.";
+
+    /* Local variables -- changed from "static"
+     *  (*does* change results very slightly on i386 linux) */
+    int i, ii, j, k, n, iflag, ifreq, ikkey, ikstp, ikstp2, ipn, ipo, itop,
+        itp = 0, jkey, jstp, jstp2, jstp3, jstp4, k1, kb, kd, ks, kval, kmax, last, ncell, ntot, nco, nro, nro2, nrb,
+        i31, i32, i33, i34, i35, i36, i37, i38, i39, i41, i42, i43, i44, i45, i46, i47, i48, i310, i311;
+
+    double dspt, d1, dd, df, ddf, drn, dro, obs, obs2, obs3, pastp, pv, tmp = 0.;
+
 #ifndef USING_R
     double d2;
-    static Sint ifault;
+    int ifault;
 #endif
-    Rboolean nr_gt_nc;
+    Rboolean nr_gt_nc, maybe_chisq, chisq = FALSE /* -Wall */, psh;
 
     /* Parameter adjustments */
-    table -= *ldtabl + 1;
+    table -= ldtabl + 1;
     --ico;
     --iro;
     --kyy;
     --idif;
     --irn;
+
     --key;
     --ipoin;
     --stp;
     --ifrq;
-    --dlp;
-    --dsp;
+    --LP;
+    --SP;
     --tm;
     --key2;
     --iwk;
     --rwk;
 
     /* Check table dimensions */
-    if (*nrow > *ldtabl)
+    if (nrow > ldtabl)
         prterr(1, "NROW must be less than or equal to LDTABL.");
-    if (*ncol <= 1)
+    if (ncol <= 1)
         prterr(4, "NCOL must be at least 2");
 
     /* Initialize KEY array */
@@ -351,54 +345,23 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
         key[i] = -9999;
         key2[i] = -9999;
     }
-    /* Initialize parameters */
-    *pre = 0.;
-    itop = 0;
-    if (*expect > 0.)
-        emn = *emin;
-    else
-        emn = emx;
 
-    nr_gt_nc = *nrow > *ncol;
+    nr_gt_nc = nrow > ncol;
     /* nco := max(nrow, ncol) : */
     if (nr_gt_nc)
-        nco = *nrow;
+        nco = nrow;
     else
-        nco = *ncol;
-    /* Initialize pointers for workspace */
-    /* f3xact */
-    i31 = 1;
-    i32 = i31 + nco;
-    i33 = i32 + nco;
-    i34 = i33 + nco;
-    i35 = i34 + nco;
-    i36 = i35 + nco;
-    i37 = i36 + nco;
-    i38 = i37 + nco;
-    i39 = i38 + 400;
-    i310 = 1;
-    i311 = 401;
-    /* f4xact */
-    k = *nrow + *ncol + 1;
-    i41 = 1;
-    i42 = i41 + k;
-    i43 = i42 + k;
-    i44 = i43 + k;
-    i45 = i44 + k;
-    i46 = i45 + k;
-    i47 = i46 + k * nco;
-    i48 = 1;
-
+        nco = ncol;
     /* Compute row marginals and total */
     ntot = 0;
-    for (i = 1; i <= *nrow; ++i)
+    for (i = 1; i <= nrow; ++i)
     {
         iro[i] = 0;
-        for (j = 1; j <= *ncol; ++j)
+        for (j = 1; j <= ncol; ++j)
         {
-            if (table[i + j * *ldtabl] < -1e-4)
-                prterr(2, "All elements of TABLE must be positive.");
-            iro[i] += (Sint)table[i + j * *ldtabl];
+            if (table[i + j * ldtabl] < 0.)
+                prterr(2, "All elements of TABLE may not be negative.");
+            iro[i] += table[i + j * ldtabl];
         }
         ntot += iro[i];
     }
@@ -412,16 +375,16 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
     }
 
     /* Column marginals */
-    for (i = 1; i <= *ncol; ++i)
+    for (i = 1; i <= ncol; ++i)
     {
         ico[i] = 0;
-        for (j = 1; j <= *nrow; ++j)
-            ico[i] += (Sint)table[j + i * *ldtabl];
+        for (j = 1; j <= nrow; ++j)
+            ico[i] += table[j + i * ldtabl];
     }
 
     /* sort marginals */
-    isort(nrow, &iro[1]);
-    isort(ncol, &ico[1]);
+    isort(&nrow, &iro[1]);
+    isort(&ncol, &ico[1]);
 
     /*	Determine row and column marginals.
     Define max(nrow,ncol) =: nco >= nro := min(nrow,ncol)
@@ -431,45 +394,42 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
      */
     if (nr_gt_nc)
     {
-        nro = *ncol;
+        nro = ncol;
         /* Swap marginals */
         for (i = 1; i <= nco; ++i)
         {
-            itmp = iro[i];
+            ii = iro[i];
             if (i <= nro)
                 iro[i] = ico[i];
-            ico[i] = itmp;
+            ico[i] = ii;
         }
     }
     else
-        nro = *nrow;
+        nro = nrow;
 
     /* Get multiplers for stack */
     kyy[1] = 1;
-    for (i = 2; i <= nro; ++i)
+    for (i = 1; i < nro; ++i)
     {
         /* Hash table multipliers */
-        if (iro[i - 1] + 1 <= imax / kyy[i - 1])
+        if (iro[i] + 1 <= imax / kyy[i])
         {
-            kyy[i] = kyy[i - 1] * (iro[i - 1] + 1);
-            j /= kyy[i - 1];
+            kyy[i + 1] = kyy[i] * (iro[i] + 1);
+            j /= kyy[i];
         }
         else
-            goto L_ERR_5;
+        {
+            prterr(5, ch_err_5);
+            return;
+        }
     }
-    /* Maximum product */
-    if (iro[nro - 1] + 1 <= imax / kyy[nro - 1])
+
+    /* Check for Maximum product : */
+    /* original code: if (iro[nro - 1] + 1 > imax / kyy[nro - 1]) */
+    if (iro[nro] + 1 > imax / kyy[nro])
     {
-        kmax = (iro[nro] + 1) * kyy[nro - 1];
-    }
-    else
-    {
-    L_ERR_5:
-        prterr(5, "The hash table key cannot be computed because "
-                  "the largest key\n"
-                  "is larger than the largest representable Sint.\n"
-                  "The algorithm cannot proceed.\n"
-                  "Reduce the workspace size, or use `exact = FALSE'.");
+        /* L_ERR_5: */
+        prterr(501, ch_err_5);
         return;
     }
 
@@ -492,24 +452,57 @@ void f2xact(Sint *nrow, Sint *ncol, double *table, Sint *ldtabl, double *expect,
     for (j = 1; j <= nco; ++j)
     {
         dd = 0.;
-        for (i = 1; i <= nro; ++i)
+        if (nr_gt_nc)
         {
-            if (nr_gt_nc)
+            for (i = 1; i <= nro; ++i)
             {
-                dd += fact[(Sint)table[j + i * *ldtabl]];
-                ntot += (Sint)table[j + i * *ldtabl];
+                dd += fact[table[j + i * ldtabl]];
+                ntot += table[j + i * ldtabl];
             }
-            else
+        }
+        else
+        {
+            for (i = 1, ii = j * ldtabl + 1; i <= nro; i++, ii++)
             {
-                dd += fact[(Sint)table[i + j * *ldtabl]];
-                ntot += (Sint)table[i + j * *ldtabl];
+                dd += fact[table[ii]];
+                ntot += table[ii];
             }
         }
         obs += fact[ico[j]] - dd;
     }
+
     /* Denominator of observed table: DRO */
-    dro = f9xact(&nro, &ntot, &iro[1], fact);
+    dro = f9xact(nro, ntot, &iro[1], fact);
+    /* improve: the following "easily" underflows to zero -- return "log()" */
     *prt = exp(obs - dro);
+    *pre = 0.;
+    itop = 0;
+    maybe_chisq = (*expect > 0.);
+
+    /* Initialize pointers for workspace */
+    /* f3xact */
+    i31 = 1;
+    i32 = i31 + nco;
+    i33 = i32 + nco;
+    i34 = i33 + nco;
+    i35 = i34 + nco;
+    i36 = i35 + nco;
+    i37 = i36 + nco;
+    i38 = i37 + nco;
+    i39 = i38 + 400;
+    i310 = 1;
+    i311 = 1 + 400;
+    /* f4xact */
+    i = nrow + ncol + 1;
+    i41 = 1;
+    i42 = i41 + i;
+    i43 = i42 + i;
+    i44 = i43 + i;
+    i45 = i44 + i;
+    i46 = i45 + i;
+    i47 = i46 + i * nco;
+    i48 = 1;
+
     /* Initialize pointers */
     k = nco;
     last = *ldkey + 1;
@@ -541,17 +534,16 @@ Outer_Loop:
     do
     {
         --kd;
-        ntot = min(n, iro[kd]);
+        ntot = imin2(n, iro[kd]);
         idif[kd] = ntot;
         if (idif[kmax] == 0)
             --kmax;
         n -= ntot;
+
     } while (n > 0 && kd != 1);
 
-    if (n != 0)
-    {
+    if (n != 0) /* i.e. kd == 1 */
         goto L310;
-    }
 
     k1 = k - 1;
     n = ico[kb];
@@ -560,13 +552,13 @@ Outer_Loop:
         ntot += ico[i];
 
 L150:
-    /* Arc to daughter length=ICO(KB) */
+    /* Arc to daughter length=ICO[KB] */
     for (i = 1; i <= nro; ++i)
         irn[i] = iro[i] - idif[i];
 
-    /* Sort irn */
     if (k1 > 1)
     {
+        /* Sort irn */
         if (nro == 2)
         {
             if (irn[1] > irn[2])
@@ -576,87 +568,35 @@ L150:
                 irn[2] = ii;
             }
         }
-        else if (nro == 3)
-        {
-            ii = irn[1];
-            if (ii > irn[3])
-            {
-                if (ii > irn[2])
-                {
-                    if (irn[2] > irn[3])
-                    {
-                        irn[1] = irn[3];
-                        irn[3] = ii;
-                    }
-                    else
-                    {
-                        irn[1] = irn[2];
-                        irn[2] = irn[3];
-                        irn[3] = ii;
-                    }
-                }
-                else
-                {
-                    irn[1] = irn[3];
-                    irn[3] = irn[2];
-                    irn[2] = ii;
-                }
-            }
-            else if (ii > irn[2])
-            {
-                irn[1] = irn[2];
-                irn[2] = ii;
-            }
-            else if (irn[2] > irn[3])
-            {
-                ii = irn[2];
-                irn[2] = irn[3];
-                irn[3] = ii;
-            }
-        }
         else
-        {
-            for (j = 2; j <= nro; ++j)
-            {
-                i = j - 1;
-                ii = irn[j];
+            isort(&nro, &irn[1]);
 
-                while (ii < irn[i])
-                {
-                    irn[i + 1] = irn[i];
-                    --i;
-                    if (i == 0)
-                        break;
-                }
-                irn[i + 1] = ii;
-            }
-        }
         /* Adjust start for zero */
         for (i = 1; i <= nro; ++i)
         {
             if (irn[i] != 0)
                 break;
         }
-
         nrb = i;
-        nro2 = nro - i + 1;
     }
     else
     {
         nrb = 1;
-        nro2 = nro;
     }
+    nro2 = nro - nrb + 1;
+
     /* Some table values */
-    ddf = f9xact(&nro, &n, &idif[1], fact);
-    drn = f9xact(&nro2, &ntot, &irn[nrb], fact) - dro + ddf;
+    ddf = f9xact(nro, n, &idif[1], fact);
+    drn = f9xact(nro2, ntot, &irn[nrb], fact) - dro + ddf;
     /* Get hash value */
     if (k1 > 1)
     {
-        kval = irn[1] + irn[2] * kyy[2];
-        for (i = 3; i <= nro; ++i)
-        {
+        kval = irn[1];
+        /* Note that with the corrected check at error "502",
+         * we won't have overflow in  kval  below : */
+        for (i = 2; i <= nro; ++i)
             kval += irn[i] * kyy[i];
-        }
+
         /* Get hash table entry */
         i = kval % (*ldkey << 1) + 1;
         /* Search for unused location */
@@ -670,8 +610,8 @@ L150:
             else if (ii < 0)
             {
                 key2[itp] = kval;
-                dlp[itp] = 1.;
-                dsp[itp] = 1.;
+                LP[itp] = 1.;
+                SP[itp] = 1.;
                 goto L240;
             }
         }
@@ -686,7 +626,7 @@ L150:
             else if (ii < 0)
             {
                 key2[itp] = kval;
-                dlp[itp] = 1.;
+                LP[itp] = 1.;
                 goto L240;
             }
         }
@@ -701,7 +641,7 @@ L150:
     }
 
 L240:
-    ipsh = (1);
+    psh = TRUE;
     /* Recover pastp */
     ipn = ipoin[ipo + ikkey];
     pastp = stp[ipn + ikstp];
@@ -711,24 +651,32 @@ L240:
     {
         obs2 = obs - fact[ico[kb + 1]] - fact[ico[kb + 2]] - ddf;
         for (i = 3; i <= k1; ++i)
-        {
             obs2 -= fact[ico[kb + i]];
-        }
-        if (dlp[itp] > 0.)
+
+        if (LP[itp] > 0.)
         {
             dspt = obs - obs2 - ddf;
             /* Compute longest path */
-            dlp[itp] = 0.;
-            f3xact(&nro2, &irn[nrb], &k1, &ico[kb + 1], &dlp[itp], &ntot, fact, &iwk[i31], &iwk[i32], &iwk[i33],
-                   &iwk[i34], &iwk[i35], &iwk[i36], &iwk[i37], &iwk[i38], &iwk[i39], &rwk[i310], &rwk[i311], &tol);
-            dlp[itp] = min(0., dlp[itp]);
-            /* Compute shortest path */
-            dsp[itp] = dspt;
-            f4xact(&nro2, &irn[nrb], &k1, &ico[kb + 1], &dsp[itp], fact, &iwk[i47], &iwk[i41], &iwk[i42], &iwk[i43],
-                   &iwk[i44], &iwk[i45], &iwk[i46], &rwk[i48], &tol);
-            dsp[itp] = min(0., dsp[itp] - dspt);
+            LP[itp] = f3xact(nro2, &irn[nrb], k1, &ico[kb + 1], ntot, fact, &iwk[i31], &iwk[i32], &iwk[i33], &iwk[i34],
+                             &iwk[i35], &iwk[i36], &iwk[i37], &iwk[i38], &iwk[i39], &rwk[i310], &rwk[i311], &tol);
+            if (LP[itp] > 0.)
+            { /* can this happen? */
+                REprintf("___ LP[itp=%d] = %g > 0\n", itp, LP[itp]);
+                LP[itp] = 0.;
+            }
+
+            /* Compute shortest path -- using  dspt  as offset */
+            SP[itp] = f4xact(nro2, &irn[nrb], k1, &ico[kb + 1], dspt, fact, &iwk[i47], &iwk[i41], &iwk[i42], &iwk[i43],
+                             &iwk[i44], &iwk[i45], &iwk[i46], &rwk[i48], &tol);
+            /* SP[itp] = fmin2(0., SP[itp] - dspt);*/
+            if (SP[itp] > 0.)
+            { /* can this happen? */
+                REprintf("___ SP[itp=%d] = %g > 0\n", itp, SP[itp]);
+                SP[itp] = 0.;
+            }
+
             /* Use chi-squared approximation? */
-            if ((irn[nrb] * ico[kb + 1]) > ntot * emn)
+            if (maybe_chisq && (irn[nrb] * ico[kb + 1]) > ntot * *emin)
             {
                 ncell = 0.;
                 for (i = 0; i < nro2; ++i)
@@ -751,7 +699,7 @@ L240:
                 }
                 else
                 {
-                    /* tm(itp) set to a flag value */
+                    /* tm[itp] set to a flag value */
                     tm[itp] = -9876.;
                 }
             }
@@ -760,15 +708,15 @@ L240:
                 tm[itp] = -9876.;
             }
         }
-        obs3 = obs2 - dlp[itp];
-        obs2 -= dsp[itp];
+        obs3 = obs2 - LP[itp];
+        obs2 -= SP[itp];
         if (tm[itp] == -9876.)
         {
-            chisq = (0);
+            chisq = FALSE;
         }
         else
         {
-            chisq = (1);
+            chisq = TRUE;
             tmp = tm[itp];
         }
     }
@@ -794,7 +742,7 @@ L300:
             pv = pgamma(fmax2(0., tmp + (pastp + drn) * 2.) / 2., df / 2., /*scale = */ 1.,
                         /*lower_tail = */ FALSE, /*log_p = */ FALSE);
 #else
-            d1 = max(0., tmp + (pastp + drn) * 2.) / 2.;
+            d1 = fmax2(0., tmp + (pastp + drn) * 2.) / 2.;
             d2 = df / 2.;
             pv = 1. - gammds(&d1, &d2, &ifault);
 #endif
@@ -805,8 +753,8 @@ L300:
             /* Put daughter on queue */
             d1 = pastp + ddf;
             f5xact(&d1, &tol, &kval, &key[jkey], ldkey, &ipoin[jkey], &stp[jstp], ldstp, &ifrq[jstp], &ifrq[jstp2],
-                   &ifrq[jstp3], &ifrq[jstp4], &ifreq, &itop, &ipsh);
-            ipsh = (0);
+                   &ifrq[jstp3], &ifrq[jstp4], &ifreq, &itop, psh);
+            psh = FALSE;
         }
     }
     /* Get next PASTP on chain */
@@ -818,22 +766,19 @@ L300:
         goto L300;
     }
     /* Generate a new daughter node */
-    f7xact(&kmax, &iro[1], &idif[1], &kd, &ks, &iflag);
+    f7xact(kmax, &iro[1], &idif[1], &kd, &ks, &iflag);
     if (iflag != 1)
-    {
         goto L150;
-    }
 
 L310:
     /* Go get a new mother from stage K */
     do
     {
-        iflag = 1;
-        f6xact(&nro, &iro[1], &iflag, &kyy[1], &key[ikkey + 1], ldkey, &last, &ipo);
-        /* Update pointers */
-        if (iflag != 3)
+        if (!f6xact(nro, &iro[1], &kyy[1], &key[ikkey + 1], ldkey, &last, &ipo))
+            /* Update pointers */
             goto Outer_Loop;
-        /* else  iflag == 3 : no additional nodes to process */
+
+        /* else : no additional nodes to process */
         --k;
         itop = 0;
         ikkey = jkey - 1;
@@ -846,58 +791,56 @@ L310:
             key2[i] = -9999;
 
     } while (k >= 2);
-}
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F3XACT
-  Purpose:    Computes the shortest path length for a given table.
-  Usage:      F3XACT (NROW, IROW, NCOL, ICOL, DLP, MM, FACT, ICO, IRO,
-              IT, LB, NR, NT, NU, ITC, IST, STV, ALEN, TOL)
-  Arguments:
-    NROW    - The number of rows in the table.			(Input)
-    IROW    - Vector of length NROW containing the row sums
-              for the table.					(Input)
-    NCOL    - The number of columns in the table.		(Input)
-    ICOL    - Vector of length K containing the column sums
-              for the table.					(Input)
-    DLP     - The longest path for the table.			(Output)
-    MM	    - The total count in the table.			(Output)
-    FACT    - Vector containing the logarithms of factorials.	(Input)
-    ICO     - Work vector of length MAX(NROW,NCOL).
-    IRO     - Work vector of length MAX(NROW,NCOL).
-    IT	    - Work vector of length MAX(NROW,NCOL).
-    LB	    - Work vector of length MAX(NROW,NCOL).
-    NR	    - Work vector of length MAX(NROW,NCOL).
-    NT	    - Work vector of length MAX(NROW,NCOL).
-    NU	    - Work vector of length MAX(NROW,NCOL).
-    ITC     - Work vector of length 400.
-    IST     - Work vector of length 400.
-    STV     - Work vector of length 400.
-    ALEN    - Work vector of length MAX(NROW,NCOL).
-    TOL     - Tolerance.					(Input)
-  -----------------------------------------------------------------------
-  */
+} /* f2xact() */
 
-void f3xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dlp, Sint *mm, double *fact, Sint *ico, Sint *iro,
-            Sint *it, Sint *lb, Sint *nr, Sint *nt, Sint *nu, Sint *itc, Sint *ist, double *stv, double *alen,
-            const double *tol)
+double f3xact(int nrow, int *irow, int ncol, int *icol, int ntot, double *fact, int *ico, int *iro, int *it, int *lb,
+              int *nr, int *nt, int *nu, int *itc, int *ist, double *stv, double *alen, const double *tol)
 {
+    /*
+     -----------------------------------------------------------------------
+      Name:	      F3XACT
+      Purpose:    Computes the longest path length for a given table.
+
+      Arguments:
+        NROW    - The number of rows in the table.			(Input)
+        IROW    - Vector of length NROW containing the row sums
+                  for the table.					(Input)
+        NCOL    - The number of columns in the table.		(Input)
+        ICOL    - Vector of length K containing the column sums
+                  for the table.					(Input)
+        NTOT    - The total count in the table.			(Input)
+        FACT    - Vector containing the logarithms of factorials.	(Input)
+        ICO     - Work vector of length MAX(NROW,NCOL).
+        IRO     - Work vector of length MAX(NROW,NCOL).
+        IT	    - Work vector of length MAX(NROW,NCOL).
+        LB	    - Work vector of length MAX(NROW,NCOL).
+        NR	    - Work vector of length MAX(NROW,NCOL).
+        NT	    - Work vector of length MAX(NROW,NCOL).
+        NU	    - Work vector of length MAX(NROW,NCOL).
+        ITC     - Work vector of length 400.
+        IST     - Work vector of length 400.
+        STV     - Work vector of length 400.
+        ALEN    - Work vector of length MAX(NROW,NCOL).
+        TOL     - Tolerance.					(Input)
+
+      Return Value :
+        LP     - The longest path for the table.			(Output)
+
+      -----------------------------------------------------------------------
+      */
+
+    const int ldst = 200; /* half stack size */
     /* Initialized data */
-    static Sint ldst = 200;
-    static Sint nst = 0;
-    static Sint nitc = 0;
+    static int nst = 0;
+    static int nitc = 0;
 
     /* Local variables */
-    static Sint xmin;
-    static Sint i, k;
-    static double v;
-    static Sint n11, n12, ii, nn, ks, ic1, ic2, nc1, nn1;
-    static Sint nr1, nco;
-    static double val;
-    static Sint nct, ipn, irl, key, lev, itp, nro;
-    static double vmn;
-    static Sint nrt, kyy, nc1s;
+    int i, k;
+    int n11, n12, ii, nn, ks, ic1, ic2, nc1, nn1;
+    int nr1, nco, nct, ipn, irl, key, lev, itp, nro, nrt, kyy, nc1s;
+    double LP, v, val, vmn;
+    Rboolean xmin;
 
     /* Parameter adjustments */
     --stv;
@@ -913,109 +856,98 @@ void f3xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dlp, Sint *m
     --icol;
     --irow;
 
-    /* Function Body */
-    for (i = 0; i <= *ncol; ++i)
-    {
-        alen[i] = 0.;
-    }
-    for (i = 1; i <= 400; ++i)
-    {
-        ist[i] = -1;
-    }
-    /* nrow is 1 */
-    if (*nrow <= 1)
-    {
-        if (*nrow > 0)
+    if (nrow <= 1)
+    { /* nrow is 1 */
+        LP = 0.;
+        if (nrow > 0)
         {
-            *dlp -= fact[icol[1]];
-            for (i = 2; i <= *ncol; ++i)
-            {
-                *dlp -= fact[icol[i]];
-            }
+            for (i = 1; i <= ncol; ++i)
+                LP -= fact[icol[i]];
         }
-        return;
-    }
-    /* ncol is 1 */
-    if (*ncol <= 1)
-    {
-        if (*ncol > 0)
-        {
-            *dlp = *dlp - fact[irow[1]] - fact[irow[2]];
-            for (i = 3; i <= *nrow; ++i)
-            {
-                *dlp -= fact[irow[i]];
-            }
-        }
-        return;
-    }
-    /* 2 by 2 table */
-    if (*nrow * *ncol == 4)
-    {
-        n11 = (irow[1] + 1) * (icol[1] + 1) / (*mm + 2);
-        n12 = irow[1] - n11;
-        *dlp = *dlp - fact[n11] - fact[n12] - fact[icol[1] - n11] - fact[icol[2] - n12];
-        return;
-    }
-    /* Test for optimal table */
-    val = 0.;
-    xmin = (0);
-    if (irow[*nrow] <= irow[1] + *ncol)
-    {
-        f10act(nrow, &irow[1], ncol, &icol[1], &val, &xmin, fact, &lb[1], &nu[1], &nr[1]);
-    }
-    if (!xmin)
-    {
-        if (icol[*ncol] <= icol[1] + *nrow)
-        {
-            f10act(ncol, &icol[1], nrow, &irow[1], &val, &xmin, fact, &lb[1], &nu[1], &nr[1]);
-        }
+        return LP;
     }
 
-    if (xmin)
-    {
-        *dlp -= val;
-        return;
-    }
-    /* Setup for dynamic programming */
-    nn = *mm;
-    /* Minimize ncol */
-    if (*nrow >= *ncol)
-    {
-        nro = *nrow;
-        nco = *ncol;
-        for (i = 1; i <= *nrow; ++i)
+    if (ncol <= 1)
+    { /* ncol is 1 */
+        LP = 0.;
+        if (ncol > 0)
         {
-            iro[i] = irow[i];
+            for (i = 1; i <= nrow; ++i)
+                LP -= fact[irow[i]];
         }
+        return LP;
+    }
+
+    /* 2 by 2 table */
+    if (nrow * ncol == 4)
+    {
+        n11 = (irow[1] + 1) * (icol[1] + 1) / (ntot + 2);
+        n12 = irow[1] - n11;
+        return -(fact[n11] + fact[n12] + fact[icol[1] - n11] + fact[icol[2] - n12]);
+    }
+
+    /* ELSE:  larger than 2 x 2 : */
+
+    /* Test for optimal table */
+    val = 0.;
+    if (irow[nrow] <= irow[1] + ncol)
+    {
+        xmin = f10act(nrow, &irow[1], ncol, &icol[1], &val, fact, &lb[1], &nu[1], &nr[1]);
+    }
+    else
+        xmin = FALSE;
+    if (!xmin && icol[ncol] <= icol[1] + nrow)
+    {
+        xmin = f10act(ncol, &icol[1], nrow, &irow[1], &val, fact, &lb[1], &nu[1], &nr[1]);
+    }
+    if (xmin)
+        return -val;
+
+    /* Setup for dynamic programming */
+
+    for (i = 0; i <= ncol; ++i)
+        alen[i] = 0.;
+    for (i = 1; i <= 2 * ldst; ++i)
+        ist[i] = -1;
+
+    nn = ntot;
+    /* Minimize ncol */
+    if (nrow >= ncol)
+    {
+        nro = nrow;
+        nco = ncol;
         ico[1] = icol[1];
         nt[1] = nn - ico[1];
-        for (i = 2; i <= *ncol; ++i)
+        for (i = 2; i <= ncol; ++i)
         {
             ico[i] = icol[i];
             nt[i] = nt[i - 1] - ico[i];
         }
+        for (i = 1; i <= nrow; ++i)
+            iro[i] = irow[i];
     }
     else
     {
-        nro = *ncol;
-        nco = *nrow;
+        nro = ncol;
+        nco = nrow;
         ico[1] = irow[1];
         nt[1] = nn - ico[1];
-        for (i = 2; i <= *nrow; ++i)
+        for (i = 2; i <= nrow; ++i)
         {
             ico[i] = irow[i];
             nt[i] = nt[i - 1] - ico[i];
         }
-        for (i = 1; i <= *ncol; ++i)
+        for (i = 1; i <= ncol; ++i)
             iro[i] = icol[i];
     }
-    /* Initialize pointers */
-    vmn = 1e10;
+
     nc1s = nco - 1;
+    kyy = ico[nco] + 1;
+    /* Initialize pointers */
+    vmn = 1e100; /* to contain min(v..) */
     irl = 1;
     ks = 0;
     k = ldst;
-    kyy = ico[nco] + 1;
 
 LnewNode: /* Setup to generate new node */
 
@@ -1023,8 +955,8 @@ LnewNode: /* Setup to generate new node */
     nr1 = nro - 1;
     nrt = iro[irl];
     nct = ico[1];
-    lb[1] = (Sint)((double)((nrt + 1) * (nct + 1)) / (double)(nn + nr1 * nc1s + 1) - *tol) - 1;
-    nu[1] = (Sint)((double)((nrt + nc1s) * (nct + nr1)) / (double)(nn + nr1 + nc1s)) - lb[1] + 1;
+    lb[1] = (int)((((double)nrt + 1) * (nct + 1)) / (double)(nn + nr1 * nc1s + 1) - *tol) - 1;
+    nu[1] = (int)((((double)nrt + nc1s) * (nct + nr1)) / (double)(nn + nr1 + nc1s)) - lb[1] + 1;
     nr[1] = nrt - lb[1];
 
 LoopNode: /* Generate a node */
@@ -1039,110 +971,66 @@ LoopNode: /* Generate a node */
     }
     ++lb[lev];
     --nr[lev];
-L120:
-    alen[lev] = alen[lev - 1] + fact[lb[lev]];
-    if (lev < nc1s)
+
+    while (1)
     {
+        alen[lev] = alen[lev - 1] + fact[lb[lev]];
+        if (lev >= nc1s)
+            break;
+
         nn1 = nt[lev];
         nrt = nr[lev];
         ++lev;
         nc1 = nco - lev;
         nct = ico[lev];
-        lb[lev] = (Sint)((double)((nrt + 1) * (nct + 1)) / (double)(nn1 + nr1 * nc1 + 1) - *tol);
-        nu[lev] = (Sint)((double)((nrt + nc1) * (nct + nr1)) / (double)(nn1 + nr1 + nc1) - lb[lev] + 1);
+        lb[lev] = (int)((((double)nrt + 1) * (nct + 1)) / (double)(nn1 + nr1 * nc1 + 1) - *tol);
+        nu[lev] = (int)((((double)nrt + nc1) * (nct + nr1)) / (double)(nn1 + nr1 + nc1) - lb[lev] + 1);
         nr[lev] = nrt - lb[lev];
-        goto L120;
     }
     alen[nco] = alen[lev] + fact[nr[lev]];
     lb[nco] = nr[lev];
 
     v = val + alen[nco];
+
     if (nro == 2)
-    {
-        /* Only 1 row left */
-        v = v + fact[ico[1] - lb[1]] + fact[ico[2] - lb[2]];
+    { /* Only 1 row left */
+        v += fact[ico[1] - lb[1]] + fact[ico[2] - lb[2]];
         for (i = 3; i <= nco; ++i)
-        {
             v += fact[ico[i] - lb[i]];
-        }
+
         if (v < vmn)
-        {
             vmn = v;
-        }
     }
     else if (nro == 3 && nco == 2)
-    {
-        /* 3 rows and 2 columns */
+    { /* 3 rows and 2 columns */
         nn1 = nn - iro[irl] + 2;
         ic1 = ico[1] - lb[1];
         ic2 = ico[2] - lb[2];
         n11 = (iro[irl + 1] + 1) * (ic1 + 1) / nn1;
         n12 = iro[irl + 1] - n11;
-        v = v + fact[n11] + fact[n12] + fact[ic1 - n11] + fact[ic2 - n12];
+        v += fact[n11] + fact[n12] + fact[ic1 - n11] + fact[ic2 - n12];
         if (v < vmn)
-        {
             vmn = v;
-        }
     }
     else
-    {
-        /* Column marginals are new node */
+    { /* Column marginals are new node */
+
         for (i = 1; i <= nco; ++i)
-        {
             it[i] = ico[i] - lb[i];
-        }
-        /* Sort column marginals */
+
+        /* Sort column marginals it[] : */
         if (nco == 2)
         {
             if (it[1] > it[2])
-            {
+            { /* swap */
                 ii = it[1];
                 it[1] = it[2];
                 it[2] = ii;
             }
         }
-        else if (nco == 3)
-        {
-            ii = it[1];
-            if (ii > it[3])
-            {
-                if (ii > it[2])
-                {
-                    if (it[2] > it[3])
-                    {
-                        it[1] = it[3];
-                        it[3] = ii;
-                    }
-                    else
-                    {
-                        it[1] = it[2];
-                        it[2] = it[3];
-                        it[3] = ii;
-                    }
-                }
-                else
-                {
-                    it[1] = it[3];
-                    it[3] = it[2];
-                    it[2] = ii;
-                }
-            }
-            else if (ii > it[2])
-            {
-                it[1] = it[2];
-                it[2] = ii;
-            }
-            else if (it[2] > it[3])
-            {
-                ii = it[2];
-                it[2] = it[3];
-                it[3] = ii;
-            }
-        }
         else
-        {
             isort(&nco, &it[1]);
-        }
+
         /* Compute hash value */
         key = it[1] * kyy + it[2];
         for (i = 3; i <= nco; ++i)
@@ -1178,6 +1066,7 @@ L120:
             }
         }
 
+        /* this happens less, now that we check for negative key above: */
         prterr(30, "Stack length exceeded in f3xact.\n"
                    "This problem should not occur.");
 
@@ -1190,7 +1079,7 @@ L120:
         goto LoopNode;
 
     L190: /* Marginals already on stack */
-        stv[ii] = min(v, stv[ii]);
+        stv[ii] = fmin2(v, stv[ii]);
     }
     goto LoopNode;
 
@@ -1216,13 +1105,15 @@ L200: /* Pop item from stack */
             nt[i] = nt[i - 1] - ico[i];
 
         /* Test for optimality (L90) */
-        xmin = (0);
         if (iro[nro] <= iro[irl] + nco)
         {
-            f10act(&nro, &iro[irl], &nco, &ico[1], &val, &xmin, fact, &lb[1], &nu[1], &nr[1]);
+            xmin = f10act(nro, &iro[irl], nco, &ico[1], &val, fact, &lb[1], &nu[1], &nr[1]);
         }
+        else
+            xmin = FALSE;
+
         if (!xmin && ico[nco] <= ico[1] + nro)
-            f10act(&nco, &ico[1], &nro, &iro[irl], &val, &xmin, fact, &lb[1], &nu[1], &nr[1]);
+            xmin = f10act(nco, &ico[1], nro, &iro[irl], &val, fact, &lb[1], &nu[1], &nr[1]);
         if (xmin)
         {
             if (vmn > val)
@@ -1245,101 +1136,89 @@ L200: /* Pop item from stack */
         goto L200;
     }
 
-    *dlp -= vmn;
+    return -vmn;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F4XACT
-  Purpose:    Computes the longest path length for a given table.
-  Usage:      CALL F4XACT (NROW, IROW, NCOL, ICOL, DSP, FACT, ICSTK,
-              NCSTK, LSTK, MSTK, NSTK, NRSTK, IRSTK, YSTK,
-              TOL)
-  Arguments:
-     NROW   - The number of rows in the table.	(Input)
-     IROW   - Vector of length NROW containing the row sums for the
-          table.  (Input)
-     NCOL   - The number of columns in the table.  (Input)
-     ICOL   - Vector of length K containing the column sums for the
-          table.  (Input)
-     DSP    - The shortest path for the table.	(Output)
-     FACT   - Vector containing the logarithms of factorials.  (Input)
-     ICSTK  - NCOL by NROW+NCOL+1 work array.
-     NCSTK  - Work vector of length NROW+NCOL+1.
-     LSTK   - Work vector of length NROW+NCOL+1.
-     MSTK   - Work vector of length NROW+NCOL+1.
-     NSTK   - Work vector of length NROW+NCOL+1.
-     NRSTK  - Work vector of length NROW+NCOL+1.
-     IRSTK  - NROW by MAX(NROW,NCOL) work array.
-     YSTK   - Work vector of length NROW+NCOL+1.
-     TOL    - Tolerance.  (Input)
-  -----------------------------------------------------------------------
-  */
-
-void f4xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dsp, double *fact, Sint *icstk, Sint *ncstk,
-            Sint *lstk, Sint *mstk, Sint *nstk, Sint *nrstk, Sint *irstk, double *ystk, const double *tol)
+double f4xact(int nrow, int *irow, int ncol, int *icol, double dspt, double *fact, int *icstk, int *ncstk, int *lstk,
+              int *mstk, int *nstk, int *nrstk, int *irstk, double *ystk, const double *tol)
 {
-    /* System generated locals */
-    Sint ikh;
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F4XACT
+      Purpose:    Computes the shortest path length for a given table.
+
+      Arguments:
+         NROW   - The number of rows in the table.	(Input)
+         IROW   - Vector of length NROW containing the row sums for the
+              table.  (Input)
+         NCOL   - The number of columns in the table.  (Input)
+         ICOL   - Vector of length K containing the column sums for the
+              table.  (Input)
+         DSPT   - "offset"  for SP computation
+         FACT   - Vector containing the logarithms of factorials.  (Input)
+         ICSTK  - NCOL by NROW+NCOL+1 work array.
+         NCSTK  - Work vector of length NROW+NCOL+1.
+         LSTK   - Work vector of length NROW+NCOL+1.
+         MSTK   - Work vector of length NROW+NCOL+1.
+         NSTK   - Work vector of length NROW+NCOL+1.
+         NRSTK  - Work vector of length NROW+NCOL+1.
+         IRSTK  - NROW by MAX(NROW,NCOL) work array.
+         YSTK   - Work vector of length NROW+NCOL+1.
+         TOL    - Tolerance.					(Input)
+
+      Return Value :
+
+        SP	    - The shortest path for the table.			(Output)
+      -----------------------------------------------------------------------
+      */
 
     /* Local variables */
-    Sint i, j, k, l, m, n, mn, ic1, ir1, ict, irt, istk, nco, nro;
-    double y, amx;
+    int i, j, k, l, m, n, ic1, ir1, ict, irt, istk, nco, nro;
+    double y, amx, SP;
+
+    /* Take care of the easy cases first */
+    if (nrow == 1)
+    {
+        SP = 0.;
+        for (i = 0; i < ncol; ++i)
+            SP -= fact[icol[i]];
+        return SP;
+    }
+    if (ncol == 1)
+    {
+        SP = 0.;
+        for (i = 0; i < nrow; ++i)
+            SP -= fact[irow[i]];
+        return SP;
+    }
+    if (nrow * ncol == 4)
+    {
+        if (irow[1] <= icol[1])
+            return -(fact[irow[1]] + fact[icol[1]] + fact[icol[1] - irow[1]]);
+        else
+            return -(fact[icol[1]] + fact[irow[1]] + fact[irow[1] - icol[1]]);
+    }
 
     /* Parameter adjustments */
-    irstk -= *nrow + 1;
-    --irow;
-    icstk -= *ncol + 1;
-    --icol;
+    irstk -= nrow + 1;
+    icstk -= ncol + 1;
+
+    --nrstk;
     --ncstk;
     --lstk;
     --mstk;
     --nstk;
-    --nrstk;
     --ystk;
 
-    /* Function Body */
-    /* Take care of the easy cases first */
-    if (*nrow == 1)
-    {
-        for (i = 1; i <= *ncol; ++i)
-        {
-            *dsp -= fact[icol[i]];
-        }
-        return;
-    }
-    if (*ncol == 1)
-    {
-        for (i = 1; i <= *nrow; ++i)
-        {
-            *dsp -= fact[irow[i]];
-        }
-        return;
-    }
-    if (*nrow * *ncol == 4)
-    {
-        if (irow[2] <= icol[2])
-        {
-            *dsp = *dsp - fact[irow[2]] - fact[icol[1]] - fact[icol[2] - irow[2]];
-        }
-        else
-        {
-            *dsp = *dsp - fact[icol[2]] - fact[irow[1]] - fact[irow[2] - icol[2]];
-        }
-        return;
-    }
     /* initialization before loop */
-    for (i = 1; i <= *nrow; ++i)
-    {
-        irstk[i + *nrow] = irow[*nrow - i + 1];
-    }
-    for (j = 1; j <= *ncol; ++j)
-    {
-        icstk[j + *ncol] = icol[*ncol - j + 1];
-    }
+    for (i = 1; i <= nrow; ++i)
+        irstk[i + nrow] = irow[nrow - i];
 
-    nro = *nrow;
-    nco = *ncol;
+    for (j = 1; j <= ncol; ++j)
+        icstk[j + ncol] = icol[ncol - j];
+
+    nro = nrow;
+    nco = ncol;
     nrstk[1] = nro;
     ncstk[1] = nco;
     ystk[1] = 0.;
@@ -1347,12 +1226,13 @@ void f4xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dsp, double 
     istk = 1;
     l = 1;
     amx = 0.;
+    SP = dspt;
 
     /* First LOOP */
     do
     {
-        ir1 = irstk[istk * *nrow + 1];
-        ic1 = icstk[istk * *ncol + 1];
+        ir1 = irstk[istk * nrow + 1];
+        ic1 = icstk[istk * ncol + 1];
         if (ir1 > ic1)
         {
             if (nro >= nco)
@@ -1405,50 +1285,39 @@ void f4xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dsp, double 
             j = l;
         }
 
-        irt = irstk[i + istk * *nrow];
-        ict = icstk[j + istk * *ncol];
-        mn = irt;
-        if (mn > ict)
-        {
-            mn = ict;
-        }
-        y += fact[mn];
+        irt = irstk[i + istk * nrow];
+        ict = icstk[j + istk * ncol];
+        y += fact[imin2(irt, ict)];
         if (irt == ict)
         {
             --nro;
             --nco;
-            f11act(&irstk[istk * *nrow + 1], &i, &nro, &irstk[(istk + 1) * *nrow + 1]);
-            f11act(&icstk[istk * *ncol + 1], &j, &nco, &icstk[(istk + 1) * *ncol + 1]);
+            f11act(&irstk[istk * nrow + 1], i, nro, &irstk[(istk + 1) * nrow + 1]);
+            f11act(&icstk[istk * ncol + 1], j, nco, &icstk[(istk + 1) * ncol + 1]);
         }
         else if (irt > ict)
         {
             --nco;
-            f11act(&icstk[istk * *ncol + 1], &j, &nco, &icstk[(istk + 1) * *ncol + 1]);
-            ikh = irt - ict;
-            f8xact(&irstk[istk * *nrow + 1], &ikh, &i, &nro, &irstk[(istk + 1) * *nrow + 1]);
+            f11act(&icstk[istk * ncol + 1], j, nco, &icstk[(istk + 1) * ncol + 1]);
+            f8xact(&irstk[istk * nrow + 1], irt - ict, i, nro, &irstk[(istk + 1) * nrow + 1]);
         }
         else
         {
             --nro;
-            f11act(&irstk[istk * *nrow + 1], &i, &nro, &irstk[(istk + 1) * *nrow + 1]);
-            ikh = ict - irt;
-            f8xact(&icstk[istk * *ncol + 1], &ikh, &j, &nco, &icstk[(istk + 1) * *ncol + 1]);
+            f11act(&irstk[istk * nrow + 1], i, nro, &irstk[(istk + 1) * nrow + 1]);
+            f8xact(&icstk[istk * ncol + 1], ict - irt, j, nco, &icstk[(istk + 1) * ncol + 1]);
         }
 
         if (nro == 1)
         {
             for (k = 1; k <= nco; ++k)
-            {
-                y += fact[icstk[k + (istk + 1) * *ncol]];
-            }
+                y += fact[icstk[k + (istk + 1) * ncol]];
             break;
         }
         if (nco == 1)
         {
             for (k = 1; k <= nro; ++k)
-            {
-                y += fact[irstk[k + (istk + 1) * *nrow]];
-            }
+                y += fact[irstk[k + (istk + 1) * nrow]];
             break;
         }
 
@@ -1466,90 +1335,87 @@ void f4xact(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *dsp, double 
     if (y > amx)
     {
         amx = y;
-        if (*dsp - amx <= *tol)
-        {
-            *dsp = 0.;
-            return;
-        }
+        if (SP - amx <= *tol)
+            return -dspt;
     }
 
-L100:
-    --istk;
-    if (istk == 0)
+    /* L100: */
+    do
     {
-        *dsp -= amx;
-        if (*dsp - amx <= *tol)
+        --istk;
+        if (istk == 0)
         {
-            *dsp = 0.;
+            SP -= amx;
+            if (SP - amx <= *tol)
+                return -dspt;
+            else
+                return SP - dspt;
         }
-        return;
-    }
-    l = lstk[istk] + 1;
+        l = lstk[istk] + 1;
 
-    /* L110: */
-    for (;; ++l)
-    {
-        if (l > mstk[istk])
-            goto L100;
+        /* L110: */
+        for (;; ++l)
+        {
+            if (l > mstk[istk])
+                break;
 
-        n = nstk[istk];
-        nro = nrstk[istk];
-        nco = ncstk[istk];
-        y = ystk[istk];
-        if (n == 1)
-        {
-            if (irstk[l + istk * *nrow] < irstk[l - 1 + istk * *nrow])
-                goto L60;
+            n = nstk[istk];
+            nro = nrstk[istk];
+            nco = ncstk[istk];
+            y = ystk[istk];
+            if (n == 1)
+            {
+                if (irstk[l + istk * nrow] < irstk[l - 1 + istk * nrow])
+                    goto L60;
+            }
+            else if (n == 2)
+            {
+                if (icstk[l + istk * ncol] < icstk[l - 1 + istk * ncol])
+                    goto L60;
+            }
         }
-        else if (n == 2)
-        {
-            if (icstk[l + istk * *ncol] < icstk[l - 1 + istk * *ncol])
-                goto L60;
-        }
-    }
+    } while (1);
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F5XACT
-  Purpose:    Put node on stack in network algorithm.
-  Usage:      CALL F5XACT (PASTP, TOL, KVAL, KEY, LDKEY, IPOIN, STP,
-              LDSTP, IFRQ, NPOIN, NR, NL, IFREQ, ITOP,
-              IPSH)
-  Arguments:
-     PASTP  - The past path length.				(Input)
-     TOL    - Tolerance for equivalence of past path lengths.  	(Input)
-     KVAL   - Key value.  					(Input)
-     KEY    - Vector of length LDKEY containing the key values.	(in/out)
-     LDKEY  - Length of vector KEY.  				(Input)
-     IPOIN  - Vector of length LDKEY pointing to the
-          linked list of past path lengths.  		(in/out)
-     STP    - Vector of length LSDTP containing the
-          linked lists of past path lengths.  		(in/out)
-     LDSTP  - Length of vector STP.  				(Input)
-     IFRQ   - Vector of length LDSTP containing the past path
-          frequencies.  					(in/out)
-     NPOIN  - Vector of length LDSTP containing the pointers to
-          the next past path length.  			(in/out)
-     NR	    - Vector of length LDSTP containing the right object
-          pointers in the tree of past path lengths.        (in/out)
-     NL	    - Vector of length LDSTP containing the left object
-          pointers in the tree of past path lengths.        (in/out)
-     IFREQ  - Frequency of the current path length.             (Input)
-     ITOP   - Pointer to the top of STP.  			(Input)
-     IPSH   - Option parameter.	 				(Input)
-          If IPSH is true, the past path length is found in the
-          table KEY.  Otherwise the location of the past path
-          length is assumed known and to have been found in
-          a previous call. ==>>>>> USING "static" variables
-  -----------------------------------------------------------------------
-  */
-
-void f5xact(double *pastp, const double *tol, Sint *kval, Sint *key, Sint *ldkey, Sint *ipoin, double *stp, Sint *ldstp,
-            Sint *ifrq, Sint *npoin, Sint *nr, Sint *nl, Sint *ifreq, Sint *itop, Sint *ipsh)
+void f5xact(double *pastp, const double *tol, int *kval, int *key, int *ldkey, int *ipoin, double *stp, int *ldstp,
+            int *ifrq, int *npoin, int *nr, int *nl, int *ifreq, int *itop, Rboolean psh)
 {
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F5XACT aka "PUT"
+      Purpose:    Put node on stack in network algorithm.
+
+      Arguments:
+         PASTP  - The past path length.				(Input)
+         TOL    - Tolerance for equivalence of past path lengths.  	(Input)
+         KVAL   - Key value.  					(Input)
+         KEY    - Vector of length LDKEY containing the key values.	(in/out)
+         LDKEY  - Length of vector KEY.  				(Input)
+         IPOIN  - Vector of length LDKEY pointing to the
+              linked list of past path lengths.  		(in/out)
+         STP    - Vector of length LSDTP containing the
+              linked lists of past path lengths.  		(in/out)
+         LDSTP  - Length of vector STP.  				(Input)
+         IFRQ   - Vector of length LDSTP containing the past path
+              frequencies.  					(in/out)
+         NPOIN  - Vector of length LDSTP containing the pointers to
+              the next past path length.  			(in/out)
+         NR	    - Vector of length LDSTP containing the right object
+              pointers in the tree of past path lengths.        (in/out)
+         NL	    - Vector of length LDSTP containing the left object
+              pointers in the tree of past path lengths.        (in/out)
+         IFREQ  - Frequency of the current path length.             (Input)
+         ITOP   - Pointer to the top of STP.  			(Input)
+         PSH    - Logical.		 				(Input)
+              If PSH is true, the past path length is found in the
+              table KEY.  Otherwise the location of the past path
+              length is assumed known and to have been found in
+              a previous call. ==>>>>> USING "static" variables
+      -----------------------------------------------------------------------
+      */
+
     /* Local variables */
-    static Sint itmp, ird, ipn, itp;
+    static int itmp, ird, ipn, itp; /* << *need* static, see PSH above */
     double test1, test2;
 
     /* Parameter adjustments */
@@ -1558,36 +1424,28 @@ void f5xact(double *pastp, const double *tol, Sint *kval, Sint *key, Sint *ldkey
     --npoin;
     --ifrq;
     --stp;
-    --ipoin;
-    --key;
 
     /* Function Body */
-    if (*ipsh)
+    if (psh)
     {
-        /* Convert KVAL to Sint in range 1, ..., LDKEY. */
-        ird = *kval % *ldkey + 1;
+        /* Convert KVAL to int in range 1, ..., LDKEY. */
+        ird = *kval % *ldkey;
         /* Search for an unused location */
-        for (itp = ird; itp <= *ldkey; ++itp)
+        for (itp = ird; itp < *ldkey; ++itp)
         {
             if (key[itp] == *kval)
-            {
                 goto L40;
-            }
+
             if (key[itp] < 0)
-            {
                 goto L30;
-            }
         }
-        for (itp = 1; itp <= ird - 1; ++itp)
+        for (itp = 0; itp < ird; ++itp)
         {
             if (key[itp] == *kval)
-            {
                 goto L40;
-            }
+
             if (key[itp] < 0)
-            {
                 goto L30;
-            }
         }
         /* Return if KEY array is full */
         /* KH
@@ -1599,8 +1457,8 @@ void f5xact(double *pastp, const double *tol, Sint *kval, Sint *key, Sint *ldkey
         prterr(6, "LDKEY is too small for this problem.\n"
                   "Try increasing the size of the workspace.");
 
-        /* Update KEY */
-    L30:
+    L30: /* Update KEY */
+
         key[itp] = *kval;
         ++(*itop);
         ipoin[itp] = *itop;
@@ -1625,34 +1483,25 @@ void f5xact(double *pastp, const double *tol, Sint *kval, Sint *key, Sint *ldkey
         return;
     }
 
-    /* Find location, if any, of pastp */
-L40:
+L40: /* Find location, if any, of pastp */
+
     ipn = ipoin[itp];
     test1 = *pastp - *tol;
     test2 = *pastp + *tol;
 
-L50:
-    if (stp[ipn] < test1)
+    do
     {
-        ipn = nl[ipn];
-        if (ipn > 0)
+        if (stp[ipn] < test1)
+            ipn = nl[ipn];
+        else if (stp[ipn] > test2)
+            ipn = nr[ipn];
+        else
         {
-            goto L50;
+            ifrq[ipn] += *ifreq;
+            return;
         }
-    }
-    else if (stp[ipn] > test2)
-    {
-        ipn = nr[ipn];
-        if (ipn > 0)
-        {
-            goto L50;
-        }
-    }
-    else
-    {
-        ifrq[ipn] += *ifreq;
-        return;
-    }
+    } while (ipn > 0);
+
     /* Return if STP array full */
     ++(*itop);
     if (*itop > *ldstp)
@@ -1667,6 +1516,7 @@ L50:
                   "Try increasing the size of the workspace.");
         return;
     }
+
     /* Find location to add value */
     ipn = ipoin[itp];
     itmp = ipn;
@@ -1677,26 +1527,18 @@ L60:
         itmp = ipn;
         ipn = nl[ipn];
         if (ipn > 0)
-        {
             goto L60;
-        }
-        else
-        {
-            nl[itmp] = *itop;
-        }
+        /* else */
+        nl[itmp] = *itop;
     }
     else if (stp[ipn] > test2)
     {
         itmp = ipn;
         ipn = nr[ipn];
         if (ipn > 0)
-        {
             goto L60;
-        }
-        else
-        {
-            nr[itmp] = *itop;
-        }
+        /* else */
+        nr[itmp] = *itop;
     }
     /* Update STP, etc. */
     npoin[*itop] = npoin[itmp];
@@ -1707,84 +1549,78 @@ L60:
     nr[*itop] = -1;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F6XACT
-  Purpose:    Pop a node off the stack.
-  Usage:      CALL F6XACT (NROW, IROW, IFLAG, KYY, KEY, LDKEY, LAST, IPN)
-  Arguments:
-    NROW    - The number of rows in the table.			(Input)
-    IROW    - Vector of length nrow containing the row sums on
-              output.						(Output)
-    IFLAG   - Set to 3 if there are no additional nodes to process.
-                                (Output)
-    KYY     - Constant mutlipliers used in forming the hash
-              table key.					(Input)
-    KEY     - Vector of length LDKEY containing the hash table
-              keys.						(In/out)
-    LDKEY   - Length of vector KEY.				(Input)
-    LAST    - Index of the last key popped off the stack.	(In/out)
-    IPN     - Pointer to the linked list of past path lengths.	(Output)
-  -----------------------------------------------------------------------
-  */
-void f6xact(Sint *nrow, Sint *irow, Sint *iflag, Sint *kyy, Sint *key, Sint *ldkey, Sint *last, Sint *ipn)
+Rboolean f6xact(int nrow, int *irow, int *kyy, int *key, int *ldkey, int *last, int *ipn)
 {
-    Sint kval, j;
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F6XACT  aka "GET"
+      Purpose:    Pop a node off the stack.
 
-    /* Parameter adjustments */
+      Arguments:
+        NROW    - The number of rows in the table.			(Input)
+        IROW    - Vector of length nrow containing the row sums on
+                  output.						(Output)
+        KYY     - Constant mutlipliers used in forming the hash
+                  table key.					(Input)
+        KEY     - Vector of length LDKEY containing the hash table
+                  keys.						(In/out)
+        LDKEY   - Length of vector KEY.				(Input)
+        LAST    - Index of the last key popped off the stack.	(In/out)
+        IPN     - Pointer to the linked list of past path lengths.	(Output)
+
+      Return value :
+        TRUE if there are no additional nodes to process.           (Output)
+      -----------------------------------------------------------------------
+      */
+    int kval, j;
+
     --key;
-    --kyy;
-    --irow;
 
-    /* Function Body */
 L10:
     ++(*last);
     if (*last <= *ldkey)
     {
         if (key[*last] < 0)
-        {
             goto L10;
-        }
+
         /* Get KVAL from the stack */
         kval = key[*last];
         key[*last] = -9999;
-        for (j = *nrow; j >= 2; --j)
+        for (j = nrow - 1; j > 0; j--)
         {
             irow[j] = kval / kyy[j];
             kval -= irow[j] * kyy[j];
         }
-        irow[1] = kval;
+        irow[0] = kval;
         *ipn = *last;
+        return FALSE;
     }
     else
     {
         *last = 0;
-        *iflag = 3;
+        return TRUE;
     }
-    return;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F7XACT
-  Purpose:    Generate the new nodes for given marinal totals.
-  Usage:      CALL F7XACT (NROW, IMAX, IDIF, K, KS, IFLAG)
-  Arguments:
-    NROW    - The number of rows in the table.			(Input)
-    IMAX    - The row marginal totals.				(Input)
-    IDIF    - The column counts for the new column.		(in/out)
-    K	    - Indicator for the row to decrement.		(in/out)
-    KS	    - Indicator for the row to increment.		(in/out)
-    IFLAG   - Status indicator.					(Output)
-          If IFLAG is zero, a new table was generated.  For
-          IFLAG = 1, no additional tables could be generated.
-  -----------------------------------------------------------------------
-  */
-
-void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag)
-
+void f7xact(int nrow, int *imax, int *idif, int *k, int *ks, int *iflag)
 {
-    Sint i, m, k1, mm;
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F7XACT
+      Purpose:    Generate the new nodes for given marginal totals.
+
+      Arguments:
+        NROW    - The number of rows in the table.			(Input)
+        IMAX    - The row marginal totals.				(Input)
+        IDIF    - The column counts for the new column.		(in/out)
+        K	    - Indicator for the row to decrement.		(in/out)
+        KS	    - Indicator for the row to increment.		(in/out)
+        IFLAG   - Status indicator.					(Output)
+              If IFLAG is zero, a new table was generated.  For
+              IFLAG = 1, no additional tables could be generated.
+      -----------------------------------------------------------------------
+      */
+    int i, m, kk, mm;
 
     /* Parameter adjustments */
     --idif;
@@ -1817,21 +1653,16 @@ void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag)
         }
         ++idif[m];
         /* Change ks */
-        if (m == *ks)
-        {
-            if (idif[m] == imax[m])
-            {
-                *ks = *k;
-            }
-        }
+        if (m == *ks && idif[m] == imax[m])
+            *ks = *k;
     }
     else
     {
     Loop:
         /* Check for finish */
-        for (k1 = *k + 1; k1 <= *nrow; ++k1)
+        for (kk = *k + 1; kk <= nrow; ++kk)
         {
-            if (idif[k1] > 0)
+            if (idif[kk] > 0)
             {
                 goto L70;
             }
@@ -1847,12 +1678,12 @@ void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag)
             mm += idif[i];
             idif[i] = 0;
         }
-        *k = k1;
+        *k = kk;
 
         do
         {
             --(*k);
-            m = min(mm, imax[*k]);
+            m = imin2(mm, imax[*k]);
             idif[*k] = m;
             mm -= m;
         } while (mm > 0 && *k != 1);
@@ -1860,16 +1691,16 @@ void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag)
         /* Check that all counts reallocated */
         if (mm > 0)
         {
-            if (k1 != *nrow)
+            if (kk != nrow)
             {
-                *k = k1;
+                *k = kk;
                 goto Loop;
             }
             *iflag = 1;
             return;
         }
         /* Get ks */
-        --idif[k1];
+        --idif[kk];
         *ks = 0;
         do
         {
@@ -1882,23 +1713,22 @@ void f7xact(Sint *nrow, Sint *imax, Sint *idif, Sint *k, Sint *ks, Sint *iflag)
     }
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F8XACT
-  Purpose:    Routine for reducing a vector when there is a zero
-          element.
-  Usage:      CALL F8XACT (IROW, IS, I1, IZERO, NEW)
-  Arguments:
-     IROW   - Vector containing the row counts.			(Input)
-     IS	    - Indicator.					(Input)
-     I1	    - Indicator.					(Input)
-     IZERO  - Position of the zero.				(Input)
-     NEW    - Vector of new row counts.				(Output)
-  -----------------------------------------------------------------------
-  */
-
-void f8xact(Sint *irow, Sint *is, Sint *i1, Sint *izero, Sint *new)
+void f8xact(int *irow, int is, int i1, int izero, int *new)
 {
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F8XACT
+      Purpose:    Routine for reducing a vector when there is a zero
+              element.
+      Arguments:
+         IROW   - Vector containing the row counts.			(Input)
+         IS	    - Indicator.					(Input)
+         I1	    - Indicator.					(Input)
+         IZERO  - Position of the zero.				(Input)
+         NEW    - Vector of new row counts.				(Output)
+      -----------------------------------------------------------------------
+      */
+
     int i;
 
     /* Parameter adjustments */
@@ -1906,197 +1736,181 @@ void f8xact(Sint *irow, Sint *is, Sint *i1, Sint *izero, Sint *new)
     --irow;
 
     /* Function Body */
-    for (i = 1; i < *i1; ++i)
+    for (i = 1; i < i1; ++i)
         new[i] = irow[i];
 
-    for (i = *i1; i <= *izero - 1; ++i)
+    for (i = i1; i <= izero - 1; ++i)
     {
-        if (*is >= irow[i + 1])
+        if (is >= irow[i + 1])
             break;
         new[i] = irow[i + 1];
     }
 
-    new[i] = *is;
+    new[i] = is;
 
     for (;;)
     {
         ++i;
-        if (i > *izero)
+        if (i > izero)
             return;
         new[i] = irow[i];
     }
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F9XACT
-  Purpose:    Computes the log of a multinomial coefficient.
-  Usage:      F9XACT(N, MM, IR, FACT)
-  Arguments:
-     N	    - Length of IR.					(Input)
-     MM	    - Number for factorial in numerator.		(Input)
-     IR	    - Vector of length N containing the numbers for
-              the denominator of the factorial.			(Input)
-     FACT   - Table of log factorials.				(Input)
-     F9XACT - The log of the multinomal coefficient.		(Output)
-  -----------------------------------------------------------------------
-  */
-
-double f9xact(Sint *n, Sint *mm, Sint *ir, double *fact)
+double f9xact(int n, int ntot, int *ir, double *fact)
 {
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F9XACT
+      Purpose:    Computes the log of a multinomial coefficient.
+
+      Arguments:
+         N	    - Length of IR.					(Input)
+         NTOT   - Number for factorial in numerator.		(Input)
+         IR	    - Vector of length N containing the numbers for
+                  the denominator of the factorial.			(Input)
+         FACT   - Table of log factorials.				(Input)
+      Returns:
+                - The log of the multinomal coefficient.		(Output)
+      -----------------------------------------------------------------------
+      */
     double d;
     int k;
 
-    d = fact[*mm];
-    for (k = 0; k < *n; k++)
+    d = fact[ntot];
+    for (k = 0; k < n; k++)
         d -= fact[ir[k]];
     return d;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	    F10ACT
-  Purpose:  Computes the shortest path length for special tables.
-  Usage:    F10ACT (NROW, IROW, NCOL, ICOL, VAL, XMIN, FACT, ND, NE, M)
-  Arguments:
-     NROW   - The number of rows in the table.			(Input)
-     IROW   - Vector of length NROW containing the row totals.	(Input)
-     NCOL   - The number of columns in the table.  		(Input)
-     ICO    - Vector of length NCOL containing the column totals.(Input)
-     VAL    - The shortest path.  				(Output)
-     XMIN   - Set to true if shortest path obtained.  		(Output)
-     FACT   - Vector containing the logarithms of factorials.   (Input)
-     ND	    - Workspace vector of length NROW.			(Input)
-     NE	    - Workspace vector of length NCOL.			(Input)
-     M	    - Workspace vector of length NCOL.			(Input)
-
-  Chapter:    STAT/LIBRARY Categorical and Discrete Data Analysis
-  -----------------------------------------------------------------------
-  */
-
-void f10act(Sint *nrow, Sint *irow, Sint *ncol, Sint *icol, double *val, Sint *xmin, double *fact, Sint *nd, Sint *ne,
-            Sint *m)
+Rboolean f10act(int nrow, int *irow, int ncol, int *icol, double *val, double *fact, int *nd, int *ne, int *m)
 {
-    /* Local variables */
-    Sint i, is, ix, nrw1;
+    /*
+      -----------------------------------------------------------------------
+      Name:	    F10ACT
+      Purpose:  Computes the shortest path length for special tables.
 
-    /* Parameter adjustments */
-    --m;
-    --ne;
-    --nd;
-    --icol;
-    --irow;
+      Arguments:
+         NROW   - The number of rows in the table.			(Input)
+         IROW   - Vector of length NROW containing the row totals.	(Input)
+         NCOL   - The number of columns in the table.  		(Input)
+         ICO    - Vector of length NCOL containing the column totals.(Input)
+         VAL    - The shortest path.  				(Input/Output)
+         FACT   - Vector containing the logarithms of factorials.   (Input)
+         ND	    - Workspace vector of length NROW.			(Input)
+         NE	    - Workspace vector of length NCOL.			(Input)
+         M	    - Workspace vector of length NCOL.			(Input)
+
+      Returns (VAL and):
+         XMIN   - Set to true if shortest path obtained.  		(Output)
+      -----------------------------------------------------------------------
+      */
+    /* Local variables */
+    int i, is, ix;
 
     /* Function Body */
-    for (i = 1; i <= *nrow - 1; ++i)
+    for (i = 0; i < nrow - 1; ++i)
         nd[i] = 0;
 
-    is = icol[1] / *nrow;
-    ix = icol[1] - *nrow * is;
-    ne[1] = is;
-    m[1] = ix;
+    is = icol[0] / nrow;
+    ix = icol[0] - nrow * is;
+    ne[0] = is;
+    m[0] = ix;
     if (ix != 0)
-        ++nd[ix];
+        ++nd[ix - 1];
 
-    for (i = 2; i <= *ncol; ++i)
+    for (i = 1; i < ncol; ++i)
     {
-        ix = icol[i] / *nrow;
+        ix = icol[i] / nrow;
         ne[i] = ix;
         is += ix;
-        ix = icol[i] - *nrow * ix;
+        ix = icol[i] - nrow * ix;
         m[i] = ix;
         if (ix != 0)
-            ++nd[ix];
+            ++nd[ix - 1];
     }
 
-    for (i = *nrow - 2; i >= 1; --i)
+    for (i = nrow - 3; i >= 0; --i)
         nd[i] += nd[i + 1];
 
     ix = 0;
-    nrw1 = *nrow + 1;
-    for (i = *nrow; i >= 2; --i)
+    for (i = nrow; i >= 2; --i)
     {
-        ix = ix + is + nd[nrw1 - i] - irow[i];
+        ix += is + nd[nrow - i] - irow[i - 1];
         if (ix < 0)
-            return;
+            return FALSE;
     }
 
-    for (i = 1; i <= *ncol; ++i)
+    for (i = 0; i < ncol; ++i)
     {
         ix = ne[i];
         is = m[i];
-        *val = *val + is * fact[ix + 1] + (*nrow - is) * fact[ix];
+        *val += is * fact[ix + 1] + (nrow - is) * fact[ix];
     }
-    *xmin = (1);
-
-    return;
+    return TRUE;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      F11ACT
-  Purpose:    Routine for revising row totals.
-  Usage:      CALL F11ACT (IROW, I1, I2, NEW)
-  Arguments:
-     IROW   - Vector containing the row totals.	(Input)
-     I1	    - Indicator.			(Input)
-     I2	    - Indicator.  			(Input)
-     NEW    - Vector containing the row totals.	(Output)
-  -----------------------------------------------------------------------
-  */
-void f11act(Sint *irow, Sint *i1, Sint *i2, Sint *new)
+void f11act(int *irow, int i1, int i2, int *new)
 {
-    Sint i;
+    /*
+      -----------------------------------------------------------------------
+      Name:	      F11ACT
+      Purpose:    Routine for revising row totals.
 
-    /* Parameter adjustments */
-    --new;
-    --irow;
+      Arguments:
+         IROW   - Vector containing the row totals.	(Input)
+         I1	    - Indicator.			(Input)
+         I2	    - Indicator.  			(Input)
+         NEW    - Vector containing the row totals.	(Output)
+      -----------------------------------------------------------------------
+      */
+    int i;
 
-    for (i = 1; i <= (*i1 - 1); ++i)
+    for (i = 0; i < (i1 - 1); ++i)
         new[i] = irow[i];
-    for (i = *i1; i <= *i2; ++i)
-        new[i] = irow[i + 1];
+    for (i = i1; i <= i2; ++i)
+        new[i - 1] = irow[i];
 
     return;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      prterr
-  Purpose:    Print an error message and stop.
-  Usage:      prterr(icode, mes)
-  Arguments:
-     icode  - Integer code for the error message.		(Input)
-     mes    - Character string containing the error message.	(Input)
-  -----------------------------------------------------------------------
-  */
-void prterr(int icode, char *mes)
+void prterr(int icode, const char *mes)
 {
+    /*
+      -----------------------------------------------------------------------
+      Name:	      prterr
+      Purpose:    Print an error message and stop.
+
+      Arguments:
+         icode  - Integer code for the error message.		(Input)
+         mes    - Character string containing the error message.	(Input)
+      -----------------------------------------------------------------------
+      */
     PROBLEM "FEXACT error %d.\n%s", icode, mes RECOVER(NULL_ENTRY);
     return;
 }
 
-/*
-  -----------------------------------------------------------------------
-  Name:	      iwork
-  Purpose:    Routine for allocating workspace.
-  Usage:      iwork (iwkmax, iwkpt, number, itype)
-  Arguments:
-     iwkmax - Maximum (int) amount of workspace.		(Input)
-     iwkpt  - Amount of (int) workspace currently allocated.	(in/out)
-     number - Number of elements of workspace desired.		(Input)
-     itype  - Workspace type.					(Input)
-          ITYPE  TYPE
-        2    integer
-        3    float
-        4    double
-     iwork(): Index in rwrk, dwrk, or iwrk of the beginning of
-              the first free element in the workspace array.	(Output)
-  -----------------------------------------------------------------------
-  */
-Sint iwork(Sint iwkmax, Sint *iwkpt, Sint number, Sint itype)
+int iwork(int iwkmax, int *iwkpt, int number, int itype)
 {
-    Sint i;
+    /*
+      -----------------------------------------------------------------------
+      Name:	      iwork
+      Purpose:    Routine for allocating workspace.
+
+      Arguments:
+         iwkmax - Maximum (int) amount of workspace.		(Input)
+         iwkpt  - Amount of (int) workspace currently allocated.	(in/out)
+         number - Number of elements of workspace desired.		(Input)
+         itype  - Workspace type.					(Input)
+              ITYPE  TYPE
+            2    integer
+            3    float
+            4    double
+         iwork(): Index in rwrk, dwrk, or iwrk of the beginning of
+                  the first free element in the workspace array.	(Output)
+      -----------------------------------------------------------------------
+      */
+    int i;
 
     i = *iwkpt;
     if (itype == 2 || itype == 3)
@@ -2116,19 +1930,19 @@ Sint iwork(Sint iwkmax, Sint *iwkpt, Sint number, Sint itype)
 
 #ifndef USING_R
 
-void isort(Sint *n, Sint *ix)
+void isort(int *n, int *ix)
 {
     /*
       -----------------------------------------------------------------------
       Name:	      ISORT
-      Purpose:    Shell sort for an Sint vector.
-      Usage:      CALL ISORT (N, IX)
+      Purpose:    Shell sort for an int vector.
+
       Arguments:
          N	    - Lenth of vector IX.	(Input)
          IX	    - Vector to be sorted.	(in/out)
       -----------------------------------------------------------------------
       */
-    static Sint ikey, i, j, m, il[10], kl, it, iu[10], ku;
+    static int ikey, i, j, m, il[10], kl, it, iu[10], ku;
 
     /* Parameter adjustments */
     --ix;
@@ -2211,7 +2025,7 @@ L40:
     goto L10;
 }
 
-double gammds(double *y, double *p, Sint *ifault)
+double gammds(double *y, double *p, int *ifault)
 {
     /*
       -----------------------------------------------------------------------
@@ -2237,7 +2051,7 @@ double gammds(double *y, double *p, Sint *ifault)
       */
 
     static double a, c, f, g;
-    static Sint ifail;
+    static int ifail;
 
     /* Checks for the admissibility of arguments and value of F */
     *ifault = 1;
@@ -2266,13 +2080,13 @@ double gammds(double *y, double *p, Sint *ifault)
     g = 1.;
     a = *p;
 L10:
-    a += 1.;
-    c = c * *y / a;
-    g += c;
-    if (c / g > 1e-6)
+    do
     {
-        goto L10;
-    }
+        a += 1.;
+        c *= (*y / a);
+        g += c;
+    } while (c > 1e-6 * g);
+
     g *= f;
     return g;
 }
@@ -2297,7 +2111,7 @@ L10:
   Evaluates natural logarithm of gamma(x) for X greater than zero.
   */
 
-double alogam(double *x, Sint *ifault)
+double alogam(double *x, int *ifault)
 {
     /* Initialized data */
 
