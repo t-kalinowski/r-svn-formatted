@@ -1700,6 +1700,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(vars) == 0)
         errorcall(call, "don't know how many cases\n");
     n = nrows(VECTOR(vars)[0]);
+    rnames = getAttrib(vars, R_RowNamesSymbol);
 #else
     vars = CADR(args);
     if (!(isList(vars) || isFrame(vars)) || length(vars) < nvar)
@@ -1878,6 +1879,7 @@ alldone:;
     /* Create column labels for the matrix columns. */
 
     PROTECT(xnames = allocVector(STRSXP, nc));
+#ifdef TNAMES
     tnames = getAttrib(factors, R_DimNamesSymbol);
     if (nterms > 0)
     {
@@ -1887,6 +1889,7 @@ alldone:;
     }
     else
         tnames = R_NilValue;
+#endif
 
     k = 0;
     if (intercept)
