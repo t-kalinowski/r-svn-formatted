@@ -1639,6 +1639,8 @@ static Rconnection newclp(char *url, char *mode)
         free(new);
         error(_("allocation of clipboard connection failed"));
     }
+    this->buff = NULL;
+    this->last = this->len = 0;
     if (strncmp(url, "clipboard-", 10) == 0)
     {
         sizeKB = atoi(url + 10);
