@@ -1458,10 +1458,10 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(ans = eval(tmp, rho));
         if (!isNewList(ans) || length(ans) != length(data))
             errorcall(call, "invalid result from na.action");
-        /* need to transfer _all but dim_ attributes, possibly lost
+        /* need to transfer _all but tsp and dim_ attributes, possibly lost
            by subsetting in na.action.  */
         for (i = length(ans); i--;)
-            copyMostAttrib(VECTOR_ELT(data, i), VECTOR_ELT(ans, i));
+            copyMostAttribNoTs(VECTOR_ELT(data, i), VECTOR_ELT(ans, i));
 
         UNPROTECT(3);
     }
