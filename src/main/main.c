@@ -214,6 +214,16 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
                 return;
             bufp = buf;
         }
+        if (*bufp == '!')
+        {
+#ifdef HAVE_SYSTEM
+            system(&buf[1]);
+#else
+            Rprintf("error: system commands are not supported in this version of R.\n");
+#endif
+            buf[0] = '\0';
+            continue;
+        }
         while ((c = *bufp++))
         {
             R_IoBufferPutc(c, &R_ConsoleIob);
