@@ -307,16 +307,7 @@ static void menulazy(control m)
 
 static void menuconsolestayontop(control m)
 {
-    if (ischecked(m))
-    {
-        uncheck(m);
-        BringToTop(RConsole, 0);
-    }
-    else
-    {
-        check(m);
-        BringToTop(RConsole, 1);
-    }
+    BringToTop(RConsole, 2);
 }
 
 static void menukill(control m)
@@ -946,7 +937,12 @@ static void popupact(control m)
     if (ismdi())
         disable(ConsolePopup[9].m);
     else
-        enable(ConsolePopup[9].m);
+    {
+        if (isTopmost(RConsole))
+            check(ConsolePopup[9].m);
+        else
+            uncheck(ConsolePopup[9].m);
+    }
 }
 
 int setupui()

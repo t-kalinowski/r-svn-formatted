@@ -1606,16 +1606,7 @@ static void de_autosize(control c)
 
 static void de_stayontop(control c)
 {
-    if (ischecked(c))
-    {
-        uncheck(c);
-        BringToTop(de, 0);
-    }
-    else
-    {
-        check(c);
-        BringToTop(de, 1);
-    }
+    BringToTop(de, 2);
 }
 
 static void de_sbf(control c, int pos)
@@ -1750,7 +1741,12 @@ static void depopupact(control m)
     if (ismdi())
         disable(DePopup[6].m);
     else
-        enable(DePopup[6].m);
+    {
+        if (isTopmost(de))
+            check(DePopup[6].m);
+        else
+            uncheck(DePopup[6].m);
+    }
 }
 
 #define MCHECK(a)                                                                                                      \

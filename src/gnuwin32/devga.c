@@ -181,7 +181,7 @@ typedef struct
     menuitem mpng, mbmp, mjpeg50, mjpeg75, mjpeg100;
     menuitem mps, mpdf, mwm, mclpbm, mclpwm, mprint, mclose;
     menuitem mrec, madd, mreplace, mprev, mnext, mclear, msvar, mgvar;
-    menuitem mR, mfit, mfix;
+    menuitem mR, mfit, mfix, grmenustayontop;
     Rboolean recording, replaying, needsave;
     bitmap bm;
     /* PNG and JPEG section */
@@ -883,16 +883,7 @@ static void menustayontop(control m)
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
-    if (ischecked(m))
-    {
-        uncheck(m);
-        BringToTop(xd->gawin, 0);
-    }
-    else
-    {
-        check(m);
-        BringToTop(xd->gawin, 1);
-    }
+    BringToTop(xd->gawin, 2);
 }
 
 static void menuprint(control m)
@@ -907,6 +898,22 @@ static void menuclose(control m)
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     HelpClose(xd->gawin);
+}
+
+static void grpopupact(control m)
+{
+    NewDevDesc *dd = (NewDevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    if (ismdi())
+        disable(xd->grmenustayontop);
+    else
+    {
+        if (isTopmost(xd->gawin))
+            check(xd->grmenustayontop);
+        else
+            uncheck(xd->grmenustayontop);
+    }
 }
 
 /* plot history */
@@ -1521,7 +1528,8 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     newmdimenu();
 
     /* Normal popup */
-    MCHECK(xd->grpopup = newpopup(NULL));
+    MCHECK(xd->grpopup = newpopup(grpopupact));
+    setdata(xd->grpopup, (void *)dd);
     MCHECK(m = newmenuitem("Copy as metafile", 0, menuclpwm));
     setdata(m, (void *)dd);
     MCHECK(m = newmenuitem("Copy as bitmap", 0, menuclpbm));
@@ -1531,12 +1539,9 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     setdata(m, (void *)dd);
     MCHECK(m = newmenuitem("Save as postscript...", 0, menups));
     setdata(m, (void *)dd);
-    if (!ismdi())
-    {
-        MCHECK(newmenuitem("-", 0, NULL));
-        MCHECK(m = newmenuitem("Stay on top", 0, menustayontop));
-        setdata(m, (void *)dd);
-    }
+    MCHECK(newmenuitem("-", 0, NULL));
+    MCHECK(xd->grmenustayontop = newmenuitem("Stay on top", 0, menustayontop));
+    setdata(xd->grmenustayontop, (void *)dd);
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(m = newmenuitem("Print...", 0, menuprint));
     setdata(m, (void *)dd);
