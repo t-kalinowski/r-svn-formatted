@@ -170,7 +170,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
             filled = c;
             goto donefill;
         }
-        if (type == STRSXP && index(quoteset, c))
+        if (type == STRSXP && strchr(quoteset, c))
         {
             quote = c;
             while ((c = scanchar()) != R_EOF && c != quote)
@@ -226,7 +226,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
                         goto donefill;
                     }
             /* CSV style quoted string handling */
-            if (type == STRSXP && index(quoteset, c))
+            if (type == STRSXP && strchr(quoteset, c))
             {
                 quote = c;
             inquote:
@@ -831,7 +831,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (inquote && c == quote)
                 inquote = 0;
-            else if (index(quoteset, c))
+            else if (strchr(quoteset, c))
             {
                 inquote = 1;
                 quote = c;
@@ -841,7 +841,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else if (!isspace(c))
         {
-            if (index(quoteset, c))
+            if (strchr(quoteset, c))
             {
                 quote = c;
                 while ((c = scanchar()) != quote)
