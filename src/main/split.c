@@ -88,6 +88,14 @@ SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
             case STRSXP:
                 SET_STRING_ELT(VECTOR_ELT(vec, j - 1), k, STRING_ELT(x, i));
                 break;
+            case VECSXP:
+                SET_VECTOR_ELT(VECTOR_ELT(vec, j - 1), k, VECTOR_ELT(x, i));
+                break;
+            case RAWSXP:
+                RAW(VECTOR_ELT(vec, j - 1))[k] = RAW(x)[i];
+                break;
+            default:
+                errorcall(call, "split for this type (%d) is not implemented", TYPEOF(x));
             }
             INTEGER(counts)[j - 1] += 1;
         }
