@@ -372,7 +372,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
             {
                 s = CAR(cptr->call);
                 if (isSymbol(s))
-                    t = findVar(s, cptr->sysparent);
+                    t = findVar1(s, cptr->sysparent, FUNSXP, 1);
                 else if (isLanguage(s))
                     t = eval(s, cptr->sysparent);
                 else if (isFunction(s))
