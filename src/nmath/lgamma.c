@@ -72,6 +72,9 @@ double lgammafn(double x)
         return x;
 #endif
 
+    if (x < 0 && fmod(floor(-x), 2.) == 0)
+        signgam = -1;
+
     if (x <= 0 && x == trunc(x))
     { /* Negative integer argument */
         ML_ERROR(ME_RANGE);
@@ -123,7 +126,5 @@ Now UNNECESSARY: caught above */
         ML_ERROR(ME_PRECISION);
     }
 
-    if (x < 0 && fmod(floor(-x), 2.) == 0)
-        signgam = -1;
     return ans;
 }
