@@ -309,6 +309,7 @@ static Rboolean unz_open(Rconnection con)
         con->text = FALSE;
     else
         con->text = TRUE;
+    /* set_iconv(); not yet */
     con->save = -1000;
     return TRUE;
 }
@@ -329,10 +330,7 @@ static int unz_fgetc(Rconnection con)
 
     err = unzReadCurrentFile(uf, buf, 1);
     p = buf[0] % 256;
-    if (err < 1)
-        return R_EOF;
-    else
-        return con->encoding[p];
+    return (err < 1) ? R_EOF : p;
 }
 
 static size_t unz_read(void *ptr, size_t size, size_t nitems, Rconnection con)
