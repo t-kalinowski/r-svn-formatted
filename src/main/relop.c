@@ -208,9 +208,16 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
     return x;
 }
 
+/* i1 = i % n1; i2 = i % n2;
+ * this macro is quite a bit faster than having real modulo calls
+ * in the loop (tested on Intel and Sparc)
+ */
+#define mod_iterate(n1, n2, i1, i2)                                                                                    \
+    for (i = i1 = i2 = 0; i < n; i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2, ++i)
+
 static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
-    int i, n, n1, n2;
+    int i, i1, i2, n, n1, n2;
     int x1, x2;
     SEXP ans;
 
@@ -224,10 +231,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -235,10 +242,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case NEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -246,10 +253,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case LTOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -257,10 +264,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case GTOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -268,10 +275,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case LEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -279,10 +286,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case GEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i % n1];
-            x2 = INTEGER(s2)[i % n2];
+            x1 = INTEGER(s1)[i1];
+            x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -296,7 +303,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 
 static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
-    int i, n, n1, n2;
+    int i, i1, i2, n, n1, n2;
     double x1, x2;
     SEXP ans;
 
@@ -310,10 +317,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -321,10 +328,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case NEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -332,10 +339,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case LTOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -343,10 +350,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case GTOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -354,10 +361,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case LEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -365,10 +372,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         }
         break;
     case GEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = REAL(s1)[i % n1];
-            x2 = REAL(s2)[i % n2];
+            x1 = REAL(s1)[i1];
+            x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -382,7 +389,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 
 static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
 {
-    int i, n, n1, n2;
+    int i, i1, i2, n, n1, n2;
     Rcomplex x1, x2;
     SEXP ans;
 
@@ -401,10 +408,10 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
     switch (code)
     {
     case EQOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = COMPLEX(s1)[i % n1];
-            x2 = COMPLEX(s2)[i % n2];
+            x1 = COMPLEX(s1)[i1];
+            x2 = COMPLEX(s2)[i2];
             if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
@@ -412,10 +419,10 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
         }
         break;
     case NEOP:
-        for (i = 0; i < n; i++)
+        mod_iterate(n1, n2, i1, i2)
         {
-            x1 = COMPLEX(s1)[i % n1];
-            x2 = COMPLEX(s2)[i % n2];
+            x1 = COMPLEX(s1)[i1];
+            x2 = COMPLEX(s2)[i2];
             if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
