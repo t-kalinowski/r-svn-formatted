@@ -622,11 +622,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void MatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
+        SEXP tmp = STRING_ELT(cl, j);
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
-            Rprintf("%*s%s", w - l, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left));
+            if (tmp == NA_STRING)
+                l = R_print.na_width_noquote;
+            else
+                l = Rstrlen(CHAR(tmp), 0);
+            Rprintf("%*s%s", w - l, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left));
         }
         else
         {
@@ -637,11 +641,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void RightMatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
+        SEXP tmp = STRING_ELT(cl, j);
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
-            Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_right));
+            if (tmp == NA_STRING)
+                l = R_print.na_width_noquote;
+            else
+                l = Rstrlen(CHAR(tmp), 0);
+            Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(tmp), l, 0, Rprt_adj_right));
         }
         else
         {
@@ -652,11 +660,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void LeftMatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
+        SEXP tmp = STRING_ELT(cl, j);
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
-            Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left), w - l, "");
+            if (tmp == NA_STRING)
+                l = R_print.na_width_noquote;
+            else
+                l = Rstrlen(CHAR(tmp), 0);
+            Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), w - l, "");
         }
         else
         {
@@ -667,12 +679,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
     {
         int l;
+        SEXP tmp = STRING_ELT(rl, i);
 
         if (!isNull(rl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(rl, i)), 0);
-            Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(STRING_ELT(rl, i)), l, 0, Rprt_adj_left),
-                    rlabw - l - lbloff, "");
+            if (tmp == NA_STRING)
+                l = R_print.na_width_noquote;
+            else
+                l = Rstrlen(CHAR(tmp), 0);
+            Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), rlabw - l - lbloff, "");
         }
         else
         {
