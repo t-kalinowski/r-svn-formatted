@@ -3825,6 +3825,8 @@ void GArrow(double xfrom, double yfrom, double xto, double yto, int coords, doub
     GConvert(&xtoInch, &ytoInch, coords, INCHES, dd);
     if ((code & 3) == 0)
         return; /* no arrows specified */
+    if (length == 0)
+        return; /* zero-length arrow heads */
 
 #ifdef HAVE_HYPOT
     if (hypot(xfromInch - xtoInch, yfromInch - ytoInch) < eps)
