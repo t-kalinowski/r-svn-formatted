@@ -282,6 +282,8 @@ SEXP do_fileedit(SEXP call, SEXP op, SEXP args, SEXP rho)
         n = 1;
         f = (char **)R_alloc(1, sizeof(char *));
         f[0] = CHAR(R_BlankString);
+        title = (char **)R_alloc(1, sizeof(char *));
+        title[0] = CHAR(R_BlankString);
     }
     if (length(ed) >= 1 || !isNull(STRING_ELT(ed, 0)))
         editor = CHAR(STRING_ELT(ed, 0));
