@@ -1471,7 +1471,7 @@ SEXP EvalArgs(SEXP el, SEXP rho, int dropmissing)
  * To call this an ugly hack would be to insult all existing ugly hacks
  * at large in the world.
  */
-int DispatchOrEval(SEXP call, char *generic, SEXP args, SEXP rho, SEXP *ans, int dropmissing)
+int DispatchOrEval(SEXP call, char *generic, SEXP args, SEXP rho, SEXP *ans, int dropmissing, int argsevald)
 {
 #define AVOID_PROMISES_IN_DISPATCH_OR_EVAL
 #ifdef AVOID_PROMISES_IN_DISPATCH_OR_EVAL
@@ -1487,35 +1487,39 @@ int DispatchOrEval(SEXP call, char *generic, SEXP args, SEXP rho, SEXP *ans, int
     SEXP x = R_NilValue;
     int dots = FALSE;
 
-    /* Find the object to dispatch on, dropping any leading
-       ... arguments with missing or empty values.  If there are no
-       arguments, R_NilValue is used. */
-    for (; args != R_NilValue; args = CDR(args))
+    if (argsevald)
+        PROTECT(x = CAR(args));
+    else
     {
-        if (CAR(args) == R_DotsSymbol)
+        /* Find the object to dispatch on, dropping any leading
+           ... arguments with missing or empty values.  If there are no
+           arguments, R_NilValue is used. */
+        for (; args != R_NilValue; args = CDR(args))
         {
-            SEXP h = findVar(R_DotsSymbol, rho);
-            if (TYPEOF(h) == DOTSXP)
+            if (CAR(args) == R_DotsSymbol)
             {
-                /* just a consistency check */
-                if (TYPEOF(CAR(h)) != PROMSXP)
-                    error("value in ... is not a promise");
-                dots = TRUE;
-                x = eval(CAR(h), rho);
+                SEXP h = findVar(R_DotsSymbol, rho);
+                if (TYPEOF(h) == DOTSXP)
+                {
+                    /* just a consistency check */
+                    if (TYPEOF(CAR(h)) != PROMSXP)
+                        error("value in ... is not a promise");
+                    dots = TRUE;
+                    x = eval(CAR(h), rho);
+                    break;
+                }
+                else if (h != R_NilValue && h != R_MissingArg)
+                    error("... used in an incorrect context");
+            }
+            else
+            {
+                dots = FALSE;
+                x = eval(CAR(args), rho);
                 break;
             }
-            else if (h != R_NilValue && h != R_MissingArg)
-                error("... used in an incorrect context");
         }
-        else
-        {
-            dots = FALSE;
-            x = eval(CAR(args), rho);
-            break;
-        }
+        PROTECT(x);
     }
-    PROTECT(x);
-
     /* try to dispatch on the object */
     if (isObject(x))
     {
