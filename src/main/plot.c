@@ -909,6 +909,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP at, lab;
     int col, fg, dolabels, doticks, logflag = 0;
     int i, n, nint = 0, ntmp, side, *ind, outer;
+    int istart, iend, incr;
     double x, y, temp, tnew, tlast;
     double axp[3], usr[2];
     double gap, labw, low, high, line, pos;
@@ -1181,7 +1182,25 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             axis_lab = axis_base + GConvertYUnits(dd->gp.mgp[1], LINES, NFC, dd) - GConvertY(1.0, NPC, NFC, dd);
         }
         axis_lab = GConvertYUnits(axis_lab, NFC, LINES, dd);
-        for (i = 0; i < n; i++)
+
+        /* The order of processing is important here. */
+        /* We must ensure that the labels are drawn left-to-right. */
+        /* The logic here is getting way too convoluted. */
+        /* This needs a serious rewrite. */
+
+        if (dd->gp.usr[0] > dd->gp.usr[1])
+        {
+            istart = n - 1;
+            iend = -1;
+            incr = -1;
+        }
+        else
+        {
+            istart = 0;
+            iend = n;
+            incr = 1;
+        }
+        for (i = istart; i != iend; i += incr)
         {
             x = REAL(at)[i];
             if (!R_FINITE(x))
@@ -1273,7 +1292,25 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             axis_lab = axis_base + GConvertXUnits(dd->gp.mgp[1], LINES, NFC, dd) - GConvertX(1.0, NPC, NFC, dd);
         }
         axis_lab = GConvertXUnits(axis_lab, NFC, LINES, dd);
-        for (i = 0; i < n; i++)
+
+        /* The order of processing is important here. */
+        /* We must ensure that the labels are drawn left-to-right. */
+        /* The logic here is getting way too convoluted. */
+        /* This needs a serious rewrite. */
+
+        if (dd->gp.usr[2] > dd->gp.usr[3])
+        {
+            istart = n - 1;
+            iend = -1;
+            incr = -1;
+        }
+        else
+        {
+            istart = 0;
+            iend = n;
+            incr = 1;
+        }
+        for (i = istart; i != iend; i += incr)
         {
             y = REAL(at)[i];
             if (!R_FINITE(y))
