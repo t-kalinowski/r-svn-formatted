@@ -97,7 +97,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
             summ2 = zero;
             for (i = 1; i <= *n2; ++i)
             {
-                a[i] = (float)qnorm((i - .375f) / an25, 0., 1.);
+                a[i] = (float)qnorm((i - .375f) / an25, 0., 1., 1, 0);
                 r__1 = a[i];
                 summ2 += r__1 * r__1;
             }
@@ -270,7 +270,7 @@ L70:
         m += zbar * s;
         s *= zsd;
     }
-    *pw = 1. - pnorm((double)y, (double)m, (double)s);
+    *pw = pnorm((double)y, (double)m, (double)s, 0 /* upper tail */, 0);
     /*  = alnorm_(dble((Y - M)/S), 1); */
 
     return;
