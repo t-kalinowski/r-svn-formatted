@@ -24,6 +24,7 @@
 /* <UTF8-FIXME>
    byte-level access and use of ctype functions
    byte-level charmetric information.
+   Has encoding of symbol font hard-coded.
 */
 
 #ifdef HAVE_CONFIG_H
