@@ -353,7 +353,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         if (s == CHAR(NA_STRING))
         {
             p = quote ? CHAR(R_print.na_string) : CHAR(R_print.na_string_noquote);
-            i = quote ? 2 : 4;
+            i = quote ? strlen(CHAR(R_print.na_string)) : strlen(CHAR(R_print.na_string_noquote));
             quote = 0;
         }
         else
