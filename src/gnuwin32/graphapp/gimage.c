@@ -130,9 +130,7 @@ static image copy2image8(drawing dw)
                 delimage(new_img);
                 return NULL;
             }
-
-            *pixel8 = mid;
-            pixel8 += 1;
+            *(pixel8++) = mid;
         }
     }
     return new_img;
@@ -161,8 +159,7 @@ static image copy2image32(drawing dw)
         for (x = 0; x < w; x++)
         {
             p.x = x;
-            *pixel32 = ggetpixel(dw, p);
-            pixel32 += 1;
+            *(pixel32++) = ggetpixel(dw, p);
         }
     }
     return new_img;
@@ -176,6 +173,7 @@ image bitmaptoimage(drawing dw)
 {
     image new_img;
     rect r = ggetcliprect(dw);
+
     gsetcliprect(dw, getrect(dw));
     new_img = copy2image8(dw);
     if (!new_img)
