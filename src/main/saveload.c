@@ -1376,7 +1376,7 @@ void R_LoadSavedData(FILE *fp, SEXP aenv)
         CAR(e) = ConvertPairToVector(CAR(e)); /* PAIRLIST conv */
     NextItem:;
 #else
-        setVarInFrame(aenv, TAG(a), ConvertPairToVector(CAR(a)));
+        defineVar(TAG(a), ConvertPairToVector(CAR(a)), aenv);
         a = CDR(a);
 #endif
     }
