@@ -532,7 +532,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         else
         {
             char buf[BUFSIZE], *p = buf, *vmax = vmaxget();
-            int slen, res;
+            int res;
 
 #ifdef HAVE_VSNPRINTF
             res = vsnprintf(p, BUFSIZE, format, arg);
