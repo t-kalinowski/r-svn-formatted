@@ -685,6 +685,7 @@ SEXP do_primitive(SEXP call, SEXP op, SEXP args, SEXP env)
                 return mkPRIMSXP(i, R_FunTab[i].eval % 10);
         }
     errorcall(call, "no such primitive function\n");
+    return (R_NilValue); /* -Wall */
 }
 
 int StrToInternal(char *s)
@@ -715,7 +716,6 @@ int hashpjw(char *s)
 
 extern void installFunTab(int i)
 {
-
     if ((R_FunTab[i].eval % 100) / 10)
         INTERNAL(install(R_FunTab[i].name)) = mkPRIMSXP(i, R_FunTab[i].eval % 10);
     else

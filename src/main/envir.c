@@ -318,7 +318,7 @@ int R_HashSizeCheck(SEXP table)
 
 SEXP R_HashEnv2Hash(SEXP rho)
 {
-    int hashcode, counter;
+    int hashcode;
     SEXP frame, chain, tmp_chain, table;
 
     /* Do some checking */
@@ -453,8 +453,7 @@ void unbindVar(SEXP symbol, SEXP rho)
 
 SEXP findVarInFrame(SEXP rho, SEXP symbol)
 {
-    int hashcode, strrep, size;
-    char *s;
+    int hashcode;
     SEXP frame;
     if (HASHTAB(rho) == R_NilValue)
     {
@@ -1127,7 +1126,7 @@ static int BuiltinSize(int all, int intern)
     return count;
 }
 
-static int BuiltinNames(int all, int intern, SEXP names, int *index)
+static void BuiltinNames(int all, int intern, SEXP names, int *index)
 {
     SEXP s;
     int j;
@@ -1151,8 +1150,8 @@ static int BuiltinNames(int all, int intern, SEXP names, int *index)
 
 SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, env, envp, s;
-    int all, i, j, k, n;
+    SEXP ans, env, envp;
+    int all, i, k, n;
     checkArity(op, args);
     envp = CAR(args);
     if (isNull(envp) || !isNewList(envp))
