@@ -1745,7 +1745,12 @@ static Rboolean initwin(void) /* TRUE = Error */
         ioim = XOpenIM(iodisplay, NULL, NULL, NULL);
 
         if (!ioim)
+        {
+            XFreeGC(iodisplay, iogc);
+            XDestroyWindow(iodisplay, iowindow);
+            XCloseDisplay(iodisplay);
             error("unable to open X Input Method");
+        }
         ioic = XCreateIC(ioim, XNInputStyle, XIMPreeditNone | XIMStatusNothing, XNClientWindow, iowindow, NULL);
         if (!ioic)
         {
