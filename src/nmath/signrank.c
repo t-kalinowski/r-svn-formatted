@@ -133,9 +133,9 @@ double psignrank(double x, double n, int lower_tail, int log_p)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
         return (x + n);
+#endif
     if (!R_FINITE(n))
         ML_ERR_return_NAN;
-#endif
     n = floor(n + 0.5);
     if (n <= 0)
         ML_ERR_return_NAN;
@@ -173,9 +173,9 @@ double qsignrank(double x, double n, int lower_tail, int log_p)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
         return (x + n);
+#endif
     if (!R_FINITE(x) || !R_FINITE(n))
         ML_ERR_return_NAN;
-#endif
     R_Q_P01_check(x);
 
     n = floor(n + 0.5);
@@ -244,7 +244,7 @@ double rsignrank(double n)
     k = (int)n;
     for (i = 0; i < k;)
     {
-        r += (++i) * floor(sunif() + 0.5);
+        r += (++i) * floor(unif_rand() + 0.5);
     }
     return (r);
 }

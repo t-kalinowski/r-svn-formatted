@@ -72,8 +72,8 @@ double rbeta(double aa, double bb)
         }
         repeat
         {
-            u1 = sunif();
-            u2 = sunif();
+            u1 = unif_rand();
+            u2 = unif_rand();
             if (u1 < 0.5)
             {
                 y = u1 * u2;
@@ -116,8 +116,8 @@ double rbeta(double aa, double bb)
         }
         do
         {
-            u1 = sunif();
-            u2 = sunif();
+            u1 = unif_rand();
+            u2 = unif_rand();
             v = beta * log(u1 / (1.0 - u1));
             if (v <= expmax)
                 w = a * exp(v);
