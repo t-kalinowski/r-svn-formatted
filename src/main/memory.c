@@ -55,9 +55,9 @@ static int gc_reporting = 0;
 static int gc_count = 0;
 int gc_inhibit_torture = 1; /* gets set to zero after initialisations */
 
-/*
 #define GC_TORTURE
-*/
+/*
+ */
 
 #ifdef GC_TORTURE
 #define FORCE_GC !gc_inhibit_torture
@@ -74,6 +74,19 @@ int gc_inhibit_torture = 1; /* gets set to zero after initialisations */
     }
 
 void installIntVector(SEXP, int, FILE *);
+
+SEXP do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    int i;
+    SEXP old = allocVector(LGLSXP, 1);
+
+    checkArity(op, args);
+    i = asLogical(CAR(args));
+    LOGICAL(old)[0] = gc_reporting;
+    if (i != NA_LOGICAL)
+        gc_inhibit_torture = !i;
+    return old;
+}
 
 SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {

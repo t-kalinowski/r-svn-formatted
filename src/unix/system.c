@@ -701,8 +701,6 @@ void R_RestoreGlobalEnv(void)
 
 #endif
 
-extern char **environ;
-
 SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
@@ -717,6 +715,7 @@ SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 #endif
+extern char **environ;
 
 SEXP do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
