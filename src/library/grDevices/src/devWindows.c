@@ -20,7 +20,7 @@
  */
 
 /*--- Device Driver for Windows; this file started from
- *  ../unix/X11/devX11.c --
+ *  src/unix/X11/devX11.c
  */
 
 #ifdef HAVE_CONFIG_H
@@ -37,8 +37,8 @@
 #include "console.h"
 #include "rui.h"
 #include "windows.h"
-
-/* Drivers used by devga.c */
+#include "devga.h"
+#include "grDevices.h"
 
 Rboolean PSDeviceDriver(NewDevDesc *, char *, char *, char *, char **, char *, char *, char *, double, double, Rboolean,
                         double, Rboolean, Rboolean, Rboolean, char *, char *, SEXP);
@@ -144,8 +144,6 @@ static drawing _d;
 /* so go in the GPar structure rather than this device- */
 /* specific structure					*/
 /********************************************************/
-
-#include "devga.h"
 
 static rect getregion(gadesc *xd)
 {
@@ -3016,7 +3014,7 @@ static void SaveAsBmp(NewDevDesc *dd, char *fn)
     fclose(fp);
 }
 
-/* This is Guido's devga device. */
+/* This is Guido's devga device, ga for GraphApp. */
 
 SEXP devga(SEXP args)
 {

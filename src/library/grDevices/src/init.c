@@ -37,7 +37,11 @@ static R_CallMethodDef CallEntries[] = {
     }
 
 static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX), EXTDEF(PostScript), EXTDEF(XFig),
-                                           EXTDEF(PDF),    EXTDEF(Quartz),     {NULL, NULL, 0}};
+                                           EXTDEF(PDF),    EXTDEF(Quartz),
+#ifdef WIN32
+                                           EXTDEF(devga),  EXTDEF(savePlot),
+#endif
+                                           {NULL, NULL, 0}};
 
 void R_init_grDevices(DllInfo *dll)
 {
