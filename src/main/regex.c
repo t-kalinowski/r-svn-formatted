@@ -5693,9 +5693,9 @@ static void free_charset(re_charset_t *cset)
 #ifdef _LIBC
     re_free(cset->coll_syms);
     re_free(cset->equiv_classes);
+#endif
     re_free(cset->range_starts);
     re_free(cset->range_ends);
-#endif
     re_free(cset->char_classes);
     re_free(cset);
 }
