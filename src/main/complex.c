@@ -784,6 +784,7 @@ SEXP complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_complex(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    /* complex(length, real, imaginary) */
     SEXP ans, re, im;
     int i, na, nr, ni;
     na = asInteger(CAR(args));
@@ -793,11 +794,10 @@ SEXP do_complex(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(im = coerceVector(CADDR(args), REALSXP));
     nr = length(re);
     ni = length(im);
-    if (na >= 0)
-    {
-        na = (nr > na) ? nr : na;
-        na = (ni > na) ? ni : na;
-    }
+    /*is always true: if(na >= 0) {*/
+    na = (nr > na) ? nr : na;
+    na = (ni > na) ? ni : na;
+    /*}*/
     ans = allocVector(CPLXSXP, na);
     for (i = 0; i < na; i++)
     {
