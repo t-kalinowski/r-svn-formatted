@@ -1102,11 +1102,7 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         q++;
     }
 
-#ifdef Macintosh
-    if (!(fun = R_FindSymbol(buf, "", &symbol)))
-#else
     if (!(fun = R_FindSymbol(buf, DLLname, &symbol)))
-#endif /* Macintosh */
         errorcall(call, "C/Fortran function name not in load table");
 
     if (symbol.symbol.c && symbol.symbol.c->numArgs > -1)

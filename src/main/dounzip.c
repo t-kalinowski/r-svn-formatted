@@ -27,15 +27,7 @@
 #include "Fileio.h" /* for R_fopen */
 #include "unzip.h"
 #ifdef HAVE_SYS_STAT_H
-#ifndef Macintosh
 #include <sys/stat.h>
-#else
-#ifndef __MRC__
-#include <stat.h>
-#else
-#include <mpw_stat.h>
-#endif
-#endif
 #endif
 
 static int R_mkdir(char *path)
@@ -51,14 +43,6 @@ static int R_mkdir(char *path)
 #endif
 #ifdef Unix
     return mkdir(path, 0777);
-#endif
-#ifdef Macintosh
-    char *p, local[PATH_MAX]; /* is this safe? */
-    strcpy(local, path);
-    for (p = local; *p; p++)
-        if (*p == '/')
-            *p = ':';
-    return mkdir_mac(path);
 #endif
 }
 
@@ -94,11 +78,6 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
         if (*p == '\\')
             *p = '/';
 #endif
-#ifdef Macintosh
-    for (p = outname; *p; p++)
-        if (*p == '\\')
-            *p = ':';
-#endif
     p = outname + strlen(outname) - 1;
     if (*p == '/')
     { /* Don't know how these are stored in Mac zip files */
@@ -112,9 +91,6 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
         pp = outname + strlen(dest) + 1;
         while ((p = strrchr(pp, '/')))
         {
-#ifdef Macintosh
-            *p = ':';
-#endif
             strcpy(dirs, outname);
             dirs[p - outname] = '\0';
             /* Rprintf("dirs is %s\n", dirs); */
@@ -122,10 +98,6 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
                 R_mkdir(dirs);
             pp = p + 1;
         }
-#ifdef Macintosh
-        if (strncmp("::", outname, 2) == 0)
-            strcpy(outname, &outname[1]);
-#endif
         /* Rprintf("extracting %s\n", outname); */
         fout = R_fopen(outname, "wb");
         if (!fout)

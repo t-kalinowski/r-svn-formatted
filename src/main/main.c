@@ -445,7 +445,7 @@ void setup_Rmainloop(void)
                                /* setlocale(LC_MESSAGES,""); */
 #endif
 #endif
-#if defined(Unix) || defined(Win32) || defined(Macintosh)
+#if defined(Unix) || defined(Win32)
     InitTempDir(); /* must be before InitEd */
 #endif
     InitMemory();
