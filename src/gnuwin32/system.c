@@ -399,7 +399,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     {
         if (R_Interactive)
         {
-            switch (R_YesNoCancel("Save workspace image?"))
+            switch (R_YesNoCancel(G_("Save workspace image?")))
             {
             case YES:
                 saveact = SA_SAVE;
@@ -976,7 +976,7 @@ int cmdlineoptions(int ac, char **av)
             }
             else
             {
-                snprintf(s, 1024, "ARGUMENT '%s' __ignored__\n", *av);
+                snprintf(s, 1024, _("ARGUMENT '%s' __ignored__\n"), *av);
                 R_ShowMessage(s);
             }
             if (res != INVALID_HANDLE_VALUE)
