@@ -171,10 +171,10 @@ typedef struct RxmlNanoHTTPCtxt
 } RxmlNanoHTTPCtxt, *RxmlNanoHTTPCtxtPtr;
 
 static int initialized = 0;
-static char *proxy = NULL;         /* the proxy name if any */
-static int proxyPort;              /* the proxy port if any */
-static char *proxyUser, *proxyPwd; /* the proxy user and pwd if any */
-static unsigned int timeout = 60;  /* the select() timeout in seconds */
+static char *proxy = NULL;        /* the proxy name if any */
+static int proxyPort;             /* the proxy port if any */
+static char *proxyUser;           /* the proxy user:pwd if any */
+static unsigned int timeout = 60; /* the select() timeout in seconds */
 
 /**
  * A portability function
@@ -237,21 +237,6 @@ static void RxmlNanoHTTPInit(void)
                 proxyUser = NULL;
             }
             proxyUser = xmlMemStrdup(env);
-            if ((env = getenv("http_proxy_password")) == NULL)
-            {
-                xmlFree(proxyUser);
-                proxyUser = NULL;
-                RxmlMessage(0, "http_proxy_password must be set if http_proxy_user is\n");
-            }
-            else
-            {
-                if (proxyPwd != NULL)
-                {
-                    xmlFree(proxyPwd);
-                    proxyPwd = NULL;
-                }
-                proxyPwd = xmlMemStrdup(env);
-            }
         }
     }
 done:
@@ -270,8 +255,6 @@ void RxmlNanoHTTPCleanup(void)
         xmlFree(proxy);
     if (proxyUser != NULL)
         xmlFree(proxyUser);
-    if (proxyPwd != NULL)
-        xmlFree(proxyPwd);
 #ifdef _WINSOCKAPI_
     if (initialized)
         WSACleanup();
@@ -431,6 +414,15 @@ void RxmlNanoHTTPScanProxy(const char *URL)
     if (*cur == 0)
         return;
 
+    if (strchr(cur, '@'))
+    {
+        strcpy(buf, cur);
+        *(strchr(buf, '@')) = '\0';
+        if (proxyUser)
+            xmlFree(proxyUser);
+        proxyUser = xmlMemStrdup(buf);
+        cur += strlen(buf) + 1;
+    }
     buf[indx] = 0;
     while (1)
     {
@@ -1085,10 +1077,13 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
 
         s = RxmlNanoHTTPConnectAttempt(addr);
         if (s != -1)
+        {
+            RxmlMessage(2, "connected to '%s' on port %d.", host, port);
             return (s);
+        }
     }
 
-    RxmlMessage(2, "unable to connect to '%s'.", host);
+    RxmlMessage(2, "unable to connect to '%s' on port %d.", host, port);
     return (-1);
 }
 
@@ -1147,18 +1142,17 @@ int RxmlNanoHTTPRead(void *ctx, void *dest, int len)
     return (len);
 }
 
-static void base64_encode(char *proxyUser, char *proxyPwd, char *out)
+static void base64_encode(char *proxyUser, char *out)
 {
     /* Conversion table.  */
     static char tbl[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
                            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
                            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
                            'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
-    char s[1000];
+    char *s = proxyUser;
     int i, length;
     unsigned char *p = (unsigned char *)out;
 
-    sprintf(s, "%s:%s", proxyUser, proxyPwd);
     length = strlen(s);
     for (i = 0; i < length; i += 3)
     {
@@ -1278,9 +1272,9 @@ retry:
         blen += strlen(headers);
     if (contentType && *contentType)
         blen += strlen(*contentType) + 16;
-    if (proxyUser && proxyPwd)
+    if (proxy && proxyUser)
     {
-        base64_encode(proxyUser, proxyPwd, buf);
+        base64_encode(proxyUser, buf);
         blen += strlen(buf) + 50;
     }
     blen += strlen(method) + strlen(ctxt->path) + 23;
@@ -1304,7 +1298,7 @@ retry:
         sprintf(p, "Pragma: no-cache\r\n");
         p += strlen(p);
     }
-    if (proxyUser && proxyPwd)
+    if (proxy && proxyUser)
     {
         sprintf(p, "Proxy-Authorization: Basic %s\r\n", buf);
         p += strlen(p);
