@@ -251,8 +251,6 @@ int main(int ac, char **av)
     R_SetParams(Rp);
 
     R_Interactive = isatty(0);
-    R_Consolefile = stdout;
-    R_Outputfile = stdout;
     R_Sinkfile = NULL;
     if ((R_Home = R_HomeDir()) == NULL)
     {
