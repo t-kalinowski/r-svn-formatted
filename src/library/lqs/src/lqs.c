@@ -34,6 +34,10 @@
 #include "R_ext/Utils.h"  /* for the *sort() routines */
 #define BIG DBL_MAX
 
+#ifdef WIN32
+extern void R_ProcessEvents(void);
+#endif
+
 /* GLOBAL Variables, explicitly allocated and freed: */
 static double *coef, *qraux, *work, *res, *yr, *xr, *means, *d2, *d2copy;
 static int *pivot, *which, *which2;
@@ -188,7 +192,7 @@ void lqs_fitlots(double *x, double *y, int *n, int *p, int *qn, int *lts, int *a
         if (trial % 10)
             isintrpt();
 #endif
-#ifdef Win32
+#ifdef WIN32
         if (trial % 10)
             R_ProcessEvents();
 #endif
@@ -421,7 +425,7 @@ void mve_fitlots(double *x, int *n, int *p, int *qn, int *mcd, int *sample, int 
         if (trial % 10)
             isintrpt();
 #endif
-#ifdef Win32
+#ifdef WIN32
         if (trial % 10)
             R_ProcessEvents();
 #endif
