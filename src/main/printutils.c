@@ -333,7 +333,7 @@ int Rstrlen(SEXP s, int quote)
             res = mbrtowc(&wc, p, MB_CUR_MAX, NULL);
             if (res > 0)
             {
-                len += iswprint((int)wc) ? 1 : 8;
+                len += iswprint((int)wc) ? 1 : (wc > 0xffff ? 10 : 6);
                 i += (res - 1);
                 p += res;
             }
@@ -361,7 +361,7 @@ int Rstrlen(SEXP s, int quote)
 char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
     int b, b0, i, j, cnt;
-    char *p, *q, buf[9];
+    char *p, *q, buf[11];
 
     if (s == NA_STRING)
     {
@@ -474,7 +474,12 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                 }
                 else
                 {
-                    snprintf(buf, 9, "\\u%06x", (unsigned int)wc);
+#ifndef Win32
+                    if (wc > 0xfff)
+                        snprintf(buf, 11, "\\U%08x", (unsigned int)wc);
+                    else
+#endif
+                        snprintf(buf, 11, "\\u%04x", (unsigned int)wc);
                     for (j = 0; j < strlen(buf); j++)
                         *q++ = buf[j];
                     p += res;
