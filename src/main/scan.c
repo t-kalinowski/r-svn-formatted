@@ -464,7 +464,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
     return bns;
 }
 
-static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP stripwhite)
+static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill, SEXP stripwhite)
 {
     SEXP ans, new, old;
     char buffer[MAXELTSIZE];
@@ -516,8 +516,20 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP str
         else if (bch == '\n')
         {
             linesread++;
-            if (colsread != 0 && !badline)
-                badline = linesread;
+            if (colsread != 0)
+                if (fill)
+                {
+                    buffer[0] = '\0';
+                    for (ii = colsread; ii < nc; ii++)
+                    {
+                        extractItem(buffer, VECTOR_ELT(ans, ii), n);
+                    }
+                    n++;
+                    ii = 0;
+                    colsread = 0;
+                }
+                else if (!badline)
+                    badline = linesread;
             if (maxitems > 0 && linesread >= maxitems)
                 goto done;
             if (maxlines > 0 && linesread == maxlines)
@@ -574,7 +586,8 @@ done:
 
     if (colsread != 0)
     {
-        warning("number of items read is not a multiple of the number of columns");
+        if (!fill)
+            warning("number of items read is not a multiple of the number of columns");
         buffer[0] = '\0'; /* this is an NA */
         for (ii = colsread; ii < nc; ii++)
         {
@@ -642,7 +655,7 @@ done:
 SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes;
-    int i, c, nlines, nmax, nskip, flush;
+    int i, c, nlines, nmax, nskip, flush, fill;
     char *filename;
 
     checkArity(op, args);
@@ -666,6 +679,8 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     NAstrings = CAR(args);
     args = CDR(args);
     flush = asLogical(CAR(args));
+    args = CDR(args);
+    fill = asLogical(CAR(args));
     args = CDR(args);
     stripwhite = CAR(args);
     args = CDR(args);
@@ -743,7 +758,7 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
 
     case VECSXP:
-        ans = scanFrame(what, nmax, nlines, flush, stripwhite);
+        ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite);
         break;
     default:
         if (!ttyflag)

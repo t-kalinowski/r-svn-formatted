@@ -71,6 +71,7 @@ static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
     fun = (SEXP)strtoul(argv[1], NULL, 16);
 
     expr = LCONS(fun, alist);
+    expr = LCONS(install("try"), LCONS(expr, R_NilValue));
 
     ans = eval(expr, R_GlobalEnv);
 
