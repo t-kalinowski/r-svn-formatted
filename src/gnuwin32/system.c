@@ -322,7 +322,10 @@ static void GuiWriteConsole(char *buf, int len)
     for (p = buf; *p; p++)
         if (*p == '\001')
             *p = EOF;
-    consolewrites(RConsole, buf);
+    if (RConsole)
+        consolewrites(RConsole, buf);
+    else
+        MessageBox(NULL, buf, "Console not found", MB_OK | MB_ICONEXCLAMATION);
 }
 
 /* Rterm write */
@@ -343,7 +346,7 @@ void R_FlushConsole()
 {
     if (CharacterMode == RTerm && R_Interactive)
         fflush(stdin);
-    else if (CharacterMode == RGui)
+    else if (CharacterMode == RGui && RConsole)
         consoleflush(RConsole);
 }
 
@@ -448,6 +451,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     if (R_CollectWarnings && saveact != SA_SUICIDE && CharacterMode == RTerm)
         PrintWarnings();
     app_cleanup();
+    RConsole = NULL;
     exit(status);
 }
 
