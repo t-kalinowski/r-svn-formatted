@@ -124,7 +124,7 @@ static int numX11Devices = 0;
 
 /* Device Driver Entry Point */
 
-int X11DeviceDriver(DevDesc *, SEXP, int, SEXP, int);
+int X11DeviceDriver(DevDesc *, char *, double, double, double);
 
 /********************************************************/
 /* There are a number of actions that every device 	*/
@@ -1249,23 +1249,13 @@ static void X11_Hold(DevDesc *dd)
 /*	       2 - landscape                  */
 /*	       3 - flexible                   */
 
-int X11DeviceDriver(DevDesc *dd, SEXP rcpars, int ncpars, SEXP rnpars, int nnpars)
+int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
 
-    int i, ps;
-    char *cpars[20];
-    double *npars;
+    int ps;
     x11Desc *xd;
-
-    if (ncpars != 2 || nnpars != 4)
-        error("invalid device parameters (x11)\n");
-
-    /* get C pointers for R parameter values */
-    for (i = 0; i < ncpars; i++)
-        cpars[i] = CHAR(STRING(rcpars)[i]);
-    npars = REAL(rnpars);
 
     /* allocate new device description */
     if (!(xd = (x11Desc *)malloc(sizeof(x11Desc))))
@@ -1276,7 +1266,7 @@ int X11DeviceDriver(DevDesc *dd, SEXP rcpars, int ncpars, SEXP rnpars, int nnpar
 
     /*  Font will load at first use  */
 
-    ps = npars[2];
+    ps = pointsize;
     if (ps < 6 || ps > 24)
         ps = 12;
     ps = 2 * (ps / 2);
@@ -1287,7 +1277,7 @@ int X11DeviceDriver(DevDesc *dd, SEXP rcpars, int ncpars, SEXP rnpars, int nnpar
 
     /*  Start the Device Driver and Hardcopy.  */
 
-    if (!X11_Open(dd, xd, cpars[0], npars[0], npars[1]))
+    if (!X11_Open(dd, xd, display, width, height))
     {
         free(xd);
         return 0;

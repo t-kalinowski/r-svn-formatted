@@ -27,42 +27,8 @@ void NewFrameConfirm()
     R_ReadConsole("Hit <Return> to see next plot: ", buf, 16, 0);
 }
 
-/* Device Startup */
-
-SEXP do_device(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP s, name, cpars, npars;
-    int i, ncpars, nnpars;
-
-    checkArity(op, args);
-
-    name = CAR(args);
-    if (!isString(name) || length(name) <= 0)
-        errorcall(call, "device name must be a character string\n");
-
-    cpars = CADR(args);
-    if (!isString(cpars) || length(cpars) > 20)
-        errorcall(call, "invalid device driver parameters\n");
-    ncpars = LENGTH(cpars);
-
-    npars = CADDR(args);
-    if (!isReal(CADDR(args)))
-        errorcall(call, "width and height must be numeric\n");
-    nnpars = LENGTH(npars);
-
-    if (!strcmp(CHAR(STRING(name)[0]), "X11"))
-        for (i = 0; i < nnpars; i++)
-            if (!FINITE(REAL(npars)[i]) || REAL(npars)[i] <= 0)
-                errorcall(call, "invalid device driver parameter\n");
-
-    if (!SetDevice(name, cpars, ncpars, npars, nnpars))
-        errorcall(call, "unable to start device %s\n", CHAR(STRING(name)[0]));
-
-    return CAR(args);
-}
-
-/* +1 and/or -1 because C arrays are zero-based and R-vectors */
-/* are one-based */
+/* Remember: +1 and/or -1 because C arrays are */
+/* zero-based and R-vectors are one-based. */
 
 SEXP do_devcontrol(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -121,14 +87,14 @@ SEXP do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/* ProcessInLinePars handles inline par specifications */
-/* in graphics functions.  It does this by calling */
-/* Specify2 which is in par.c */
+/*  P A R A M E T E R    U T I L I T I E S  */
 
 int Specify2(char *, SEXP, DevDesc *);
 
 void ProcessInlinePars(SEXP s, DevDesc *dd)
 {
+    /* ProcessInLinePars handles inline par specifications in graphics */
+    /* functions.  It does this by calling Specify2 which is in par.c */
     if (isList(s))
     {
         while (s != R_NilValue)
@@ -142,14 +108,13 @@ void ProcessInlinePars(SEXP s, DevDesc *dd)
     }
 }
 
-/* GetPar is intended for looking through a list */
-/* typically that bound to ... for a particular */
-/* parameter value.  This is easier than trying */
-/* to match every graphics parameter in argument */
-/* lists and passing them explicitly. */
-
 SEXP GetPar(char *which, SEXP parlist)
 {
+    /* GetPar is intended for looking through a list */
+    /* typically that bound to ... for a particular */
+    /* parameter value.  This is easier than trying */
+    /* to match every graphics parameter in argument */
+    /* lists and passing them explicitly. */
     SEXP w, p;
     w = install(which);
     for (p = parlist; p != R_NilValue; p = CDR(p))
@@ -323,10 +288,11 @@ SEXP FixupCex(SEXP cex)
     return ans;
 }
 
-/*  plot.new(ask)  --  create a new plot  */
+/*  G R A P H I C S    F U N C T I O N    E N T R Y    P O I N T S  */
 
 SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* plot.new(ask) - create a new plot */
     int ask, asksave;
     DevDesc *dd = CurrentDevice();
 
@@ -349,23 +315,21 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GSetState(1, dd);
 
     dd->gp.ask = asksave;
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: during replays, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
 
-/*  plot.window(xlim, ylim, log, ...) --  define world coordinates  */
-
 SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* plot.window(xlim, ylim, log, ...) - define world coordinates */
     SEXP xlim, ylim, log;
     double xmin, xmax, ymin, ymax;
     char *p;
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
 
-    /* checkArity(op, args); */
     if (length(args) < 3)
         errorcall(call, "at least 3 arguments required\n");
 
@@ -463,10 +427,9 @@ static void GetAxisLimits(double left, double right, double *low, double *high)
     }
 }
 
-/* axis(which, at, labels, ...) -- draw an axis */
-
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* axis(which, at, labels, ...) - draw an axis */
     SEXP at, lab;
     int col, fg, i, n, which, xtckCoords, ytckCoords;
     double x, y, tempx, tempy, tnew, tlast;
@@ -475,14 +438,12 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
 
-    /*  Initial checks  */
-
+    /* Initial checks */
     GCheckState(dd);
     if (length(args) < 3)
         errorcall(call, "too few arguments\n");
 
-    /*  Required arguments	*/
-
+    /* Required arguments */
     which = asInteger(CAR(args));
     if (which < 1 || which > 4)
         errorcall(call, "invalid axis number\n");
@@ -508,9 +469,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     col = dd->gp.col;
     fg = dd->gp.fg;
 
-    /*  Check the axis type parameter  */
-    /*  If it is 'n', there is nothing to do  */
-
+    /* Check the axis type parameter */
+    /* If it is 'n', there is nothing to do */
     if (which == 1 || which == 3)
     {
         if (dd->gp.xaxt == 'n')
@@ -535,8 +495,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     xtckCoords = MAR1;
     ytckCoords = MAR2;
 
-    /*  Draw the axis  */
-
+    /* Draw the axis */
     GMode(dd, 1);
     switch (which)
     {
@@ -637,18 +596,17 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GMode(dd, 0);
     GRestorePars(dd);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: during replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/*  plot.xy(xy, type, pch, lty, col, cex, ...)	*/
-/*  plot points or lines of various types  */
-
 SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* plot.xy(xy, type, pch, lty, col, cex, ...) */
+    /* plot points or lines of various types */
     SEXP sxy, sx, sy, pch, cex, col, bg, lty;
     double *x, *y, xold, yold, xx, yy, xc, yc;
     int i, n, npch, ncex, ncol, nbg, nlty, type, start;
@@ -656,13 +614,11 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd = CurrentDevice();
 
     /* Basic Checks */
-
     GCheckState(dd);
     if (length(args) < 6)
         errorcall(call, "too few arguments\n");
 
     /* Required Arguments */
-
     sxy = CAR(args);
     if (!isList(sxy) || length(sxy) < 2)
         errorcall(call, "invalid plotting structure\n");
@@ -705,7 +661,6 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     /* Miscellaneous Graphical Parameters */
-
     GSavePars(dd);
 
     x = REAL(sx);
@@ -723,7 +678,6 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     GClip(dd);
 
     /* lines and overplotted lines and points */
-
     if (type == 'l' || type == 'o')
     {
         dd->gp.col = INTEGER(col)[0];
@@ -750,7 +704,6 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* points connected with broken lines */
-
     if (type == 'b' || type == 'c')
     {
         double d, f;
@@ -866,19 +819,11 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(dd, 0);
     GRestorePars(dd);
     UNPROTECT(5);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: during replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-}
-
-SEXP do_saveplot(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-}
-
-SEXP do_printplot(SEXP call, SEXP op, SEXP args, SEXP env)
-{
 }
 
 static void xypoints(SEXP call, SEXP args, int *n)
@@ -913,10 +858,9 @@ static void xypoints(SEXP call, SEXP args, int *n)
     args = CDR(args);
 }
 
-/* segments(x0, y0, x1, y1, col, lty) */
-
 SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* segments(x0, y0, x1, y1, col, lty) */
     SEXP sx0, sy0, sx1, sy1, col, lty;
     double *x0, *x1, *y0, *y1;
     double xx[2], yy[2];
@@ -980,17 +924,16 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
 
     UNPROTECT(2);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/* rect(xl, yb, xr, yt, col, border) */
-
 SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* rect(xl, yb, xr, yt, col, border) */
     SEXP sxl, sxr, syb, syt, col, lty, border;
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt;
@@ -1054,17 +997,16 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(3);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/* do_arrows(x0, y0, x1, y1, length, angle, code, col) */
-
 SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* do_arrows(x0, y0, x1, y1, length, angle, code, col) */
     SEXP sx0, sx1, sy0, sy1, col, lty;
     double *x0, *x1, *y0, *y1;
     double xx0, yy0, xx1, yy1, hlength, angle;
@@ -1146,17 +1088,16 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(2);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/* polygon(x, y, col, border) */
-
 SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* polygon(x, y, col, border) */
     SEXP sx, sy, col, border, lty;
     int nx, ny, ncol, nborder, nlty, xpd;
     double *work;
@@ -1209,8 +1150,8 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(3);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
@@ -1241,11 +1182,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(sx);
     args = CDR(args);
 
-#ifdef OLD
-    internalTypeCheck(call, txt = CAR(args), STRSXP);
-#else
     txt = CAR(args);
-#endif
     if (LENGTH(txt) <= 0)
         errorcall(call, "zero length \"text\" specified\n");
     args = CDR(args);
@@ -1324,19 +1261,17 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(4);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/* mtext(text, side, line, outer, at = NULL, ...)
- *
- * where ... supports  adj, cex, col, font  */
-
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* mtext(text, side, line, outer, at = NULL, ...) */
+    /* where ... supports  adj, cex, col, font  */
     SEXP adj, cex, col, font, text;
     double line, at, adjx, adjy;
     int side, outer;
@@ -1446,17 +1381,16 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     if (outer)
         dd->gp.new = dd->dp.new = newsave;
     UNPROTECT(4);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-/* Title(main=NULL, sub=NULL, xlab=NULL, ylab=NULL, ...) */
-
 SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* title(main=NULL, sub=NULL, xlab=NULL, ylab=NULL, ...) */
     SEXP main, xlab, ylab, sub;
     double adj;
     SEXP originalArgs = args;
@@ -1486,6 +1420,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
+    ProcessInlinePars(args, dd);
 
     /* Always work in expanded mode */
     dd->gp.xpd = 1;
@@ -1535,8 +1470,8 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     GMode(dd, 0);
     GRestorePars(dd);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
@@ -1693,8 +1628,8 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     UNPROTECT(2);
     GRestorePars(dd);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
@@ -1725,8 +1660,8 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     GBox(which, dd);
     GMode(dd, 0);
     GRestorePars(dd);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
@@ -1772,14 +1707,14 @@ SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-#define THRESHOLD 0.25
-
 #ifdef Macintosh
 double hypot(double x, double y)
 {
     return sqrt(x * x + y * y);
 }
 #endif
+
+#define THRESHOLD 0.25
 
 SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1883,10 +1818,9 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* strwidth(str, units) */
-
 SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* strheight(str, units) */
     SEXP ans, str;
     int i, n, units;
     double cex, cexsave;
@@ -1922,6 +1856,7 @@ SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* strwidth(str, units) */
     SEXP ans, str;
     int i, n, units;
     double cex, cexsave;
@@ -1955,48 +1890,45 @@ SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-static int n;
-static int *lptr;
-static int *rptr;
-static double *hght;
-static double *xpos;
-static double hang;
-static double offset;
-static SEXP *llabels;
+static int dnd_n;
+static int *dnd_lptr;
+static int *dnd_rptr;
+static double *dnd_hght;
+static double *dnd_xpos;
+static double dnd_hang;
+static double dnd_offset;
+static SEXP *dnd_llabels;
 
 static void drawdend(int node, double *x, double *y, DevDesc *dd)
 {
     double xl, xr, yl, yr;
     double xx[4], yy[4];
     int k;
-
-    *y = hght[node - 1];
-
-    k = lptr[node - 1];
+    *y = dnd_hght[node - 1];
+    k = dnd_lptr[node - 1];
     if (k > 0)
         drawdend(k, &xl, &yl, dd);
     else
     {
-        xl = xpos[-k - 1];
-        if (hang >= 0)
-            yl = *y - hang;
+        xl = dnd_xpos[-k - 1];
+        if (dnd_hang >= 0)
+            yl = *y - dnd_hang;
         else
             yl = 0;
-        GText(xl, yl - offset, USER, CHAR(llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
+        GText(xl, yl - dnd_offset, USER, CHAR(dnd_llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
     }
-    k = rptr[node - 1];
+    k = dnd_rptr[node - 1];
     if (k > 0)
         drawdend(k, &xr, &yr, dd);
     else
     {
-        xr = xpos[-k - 1];
-        if (hang >= 0)
-            yr = *y - hang;
+        xr = dnd_xpos[-k - 1];
+        if (dnd_hang >= 0)
+            yr = *y - dnd_hang;
         else
             yr = 0;
-        GText(xr, yr - offset, USER, CHAR(llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
+        GText(xr, yr - dnd_offset, USER, CHAR(dnd_llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
     }
-
     xx[0] = xl;
     yy[0] = yl;
     xx[1] = xl;
@@ -2011,14 +1943,82 @@ static void drawdend(int node, double *x, double *y, DevDesc *dd)
 
 SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int xpdsave;
-    double x, y, ypin;
-    SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    double x, y;
+    SEXP originalArgs;
+    DevDesc *dd;
 
-    checkArity(op, args);
-
+    dd = CurrentDevice();
     GCheckState(dd);
+
+    originalArgs = args;
+    if (length(args) < 6)
+        errorcall(call, "too few arguments\n");
+
+    dnd_n = asInteger(CAR(args));
+    if (dnd_n == NA_INTEGER || dnd_n < 2)
+        goto badargs;
+    args = CDR(args);
+
+    if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * dnd_n)
+        goto badargs;
+    dnd_lptr = &(INTEGER(CAR(args))[0]);
+    dnd_rptr = &(INTEGER(CAR(args))[dnd_n]);
+    args = CDR(args);
+
+    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != dnd_n)
+        goto badargs;
+    dnd_hght = REAL(CAR(args));
+    args = CDR(args);
+
+    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != dnd_n + 1)
+        goto badargs;
+    dnd_xpos = REAL(CAR(args));
+    args = CDR(args);
+
+    dnd_hang = asReal(CAR(args));
+    if (!FINITE(dnd_hang))
+        goto badargs;
+    dnd_hang = dnd_hang * (dnd_hght[dnd_n - 1] - dnd_hght[0]);
+    args = CDR(args);
+
+    if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != dnd_n + 1)
+        goto badargs;
+    dnd_llabels = STRING(CAR(args));
+    args = CDR(args);
+
+    GSavePars(dd);
+    ProcessInlinePars(args, dd);
+    dnd_offset = GConvertYUnits(GStrWidth("m", INCHES, dd), INCHES, USER, dd);
+
+    dd->gp.xpd = 1;
+    GMode(dd, 1);
+    drawdend(dnd_n, &x, &y, dd);
+    GMode(dd, 0);
+    GRestorePars(dd);
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
+    if (call != R_NilValue)
+        recordGraphicOperation(op, originalArgs, dd);
+    return R_NilValue;
+
+badargs:
+    error("invalid dendrogram input\n");
+}
+
+SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    int i, imax, n, n2;
+    double pin, *ll, tmp, yval, *y, ymin, ymax, yrange;
+    SEXP originalArgs, merge, height, xpos, llabels;
+    char *vmax;
+    DevDesc *dd;
+
+    dd = CurrentDevice();
+    GCheckState(dd);
+
+    originalArgs = args;
+    if (length(args) < 6)
+        errorcall(call, "too few arguments\n");
 
     n = asInteger(CAR(args));
     if (n == NA_INTEGER || n < 2)
@@ -2027,47 +2027,100 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * n)
         goto badargs;
-    lptr = &(INTEGER(CAR(args))[0]);
-    rptr = &(INTEGER(CAR(args))[n]);
+    merge = CAR(args);
     args = CDR(args);
 
     if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n)
         goto badargs;
-    hght = REAL(CAR(args));
+    height = CAR(args);
     args = CDR(args);
 
     if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n + 1)
         goto badargs;
-    xpos = REAL(CAR(args));
+    dnd_xpos = REAL(CAR(args));
     args = CDR(args);
 
-    hang = asReal(CAR(args));
-    if (!FINITE(hang))
+    dnd_hang = asReal(CAR(args));
+    if (!FINITE(dnd_hang))
         goto badargs;
     args = CDR(args);
 
     if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != n + 1)
         goto badargs;
-    llabels = STRING(CAR(args));
-
-    offset = GConvertYUnits(GStrWidth("m", INCHES, dd), INCHES, USER, dd);
+    llabels = CAR(args);
+    args = CDR(args);
 
     GSavePars(dd);
+    ProcessInlinePars(args, dd);
+    dnd_offset = GStrWidth("m", INCHES, dd);
 
-    xpdsave = dd->gp.xpd;
-    dd->gp.xpd = 1;
-    GMode(dd, 1);
-    drawdend(n, &x, &y, dd);
-    GMode(dd, 0);
-    dd->gp.xpd = xpdsave;
+    vmax = vmaxget();
+    y = (double *)R_alloc(n, sizeof(double));
+    ll = (double *)R_alloc(n, sizeof(double));
+    dnd_lptr = &(INTEGER(merge)[0]);
+    dnd_rptr = &(INTEGER(merge)[n]);
 
+    ymin = REAL(height)[0];
+    ymax = REAL(height)[n - 1];
+    pin = dd->gp.pin[1];
+
+    for (i = 0; i < n; i++)
+        ll[i] = GStrWidth(CHAR(STRING(llabels)[i]), INCHES, dd) + dnd_offset;
+
+    if (dnd_hang >= 0)
+    {
+        ymin = ymax - (1 + dnd_hang) * (ymax - ymin);
+        yrange = ymax - ymin;
+        /* determine leaf heights */
+        for (i = 0; i < n; i++)
+        {
+            if (dnd_lptr[i] < 0)
+                y[-dnd_lptr[i] - 1] = REAL(height)[i];
+            if (dnd_rptr[i] < 0)
+                y[-dnd_rptr[i] - 1] = REAL(height)[i];
+        }
+        /* determine the most extreme label depth */
+        /* assuming that we are using the full plot */
+        /* window for the tree itself */
+        imax = -1;
+        yval = -DBL_MAX;
+        for (i = 0; i < n; i++)
+        {
+            tmp = ((ymax - y[i]) / yrange) * pin + ll[i];
+            if (tmp > yval)
+            {
+                yval = tmp;
+                imax = i;
+            }
+        }
+    }
+    else
+    {
+        ymin = 0;
+        yrange = ymax;
+        imax = -1;
+        yval = -DBL_MAX;
+        for (i = 0; i < n; i++)
+        {
+            tmp = pin + ll[i];
+            if (tmp > yval)
+            {
+                yval = tmp;
+                imax = i;
+            }
+        }
+    }
+    /* now determine how much to scale */
+    ymin = ymax - (pin / (pin - ll[imax])) * (ymax - ymin);
+    GScale(1.0, n + 1.0, 1, dd);
+    GScale(ymin, ymax, 2, dd);
+    GMapWin2Fig(dd);
     GRestorePars(dd);
-
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
-
+    vmaxset(vmax);
     return R_NilValue;
 
 badargs:
@@ -2108,9 +2161,7 @@ SEXP do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/* CONTOUR PLOTTING */
-
-/**** stuff for contour plots ****/
+/* CONTOUR PLOTTING CODE */
 
 typedef struct SEG
 {
@@ -2121,9 +2172,9 @@ typedef struct SEG
     double y1;
 } SEG, *SEGP;
 
-static SEGP *SegDB;
+static SEGP *ctr_SegDB;
 
-static int intersect(double z0, double z1, double zc, double *f)
+static int ctr_intersect(double z0, double z1, double zc, double *f)
 {
     if ((z0 - zc) * (z1 - zc) < 0.0)
     {
@@ -2133,7 +2184,7 @@ static int intersect(double z0, double z1, double zc, double *f)
     return 0;
 }
 
-static SEGP NewSeg(double x0, double y0, double x1, double y1, SEGP prev)
+static SEGP ctr_newseg(double x0, double y0, double x1, double y1, SEGP prev)
 {
     SEGP seg = (SEGP)R_alloc(1, sizeof(SEG));
     seg->x0 = x0;
@@ -2144,7 +2195,7 @@ static SEGP NewSeg(double x0, double y0, double x1, double y1, SEGP prev)
     return seg;
 }
 
-static void SwapSeg(SEGP seg)
+static void ctr_swapseg(SEGP seg)
 {
     double x, y;
     x = seg->x0;
@@ -2159,17 +2210,17 @@ static void SwapSeg(SEGP seg)
 /* and update the cell indices */
 
 #ifdef OLD
-#define XMATCH(x0, x1) (fabs(x0 - x1) < xtol)
-#define YMATCH(y0, y1) (fabs(y0 - y1) < ytol)
+#define XMATCH(x0, x1) (fabs(x0 - x1) < ctr_xtol)
+#define YMATCH(y0, y1) (fabs(y0 - y1) < ctr_ytol)
 #else
 #define XMATCH(x0, x1) (fabs(x0 - x1) == 0)
 #define YMATCH(y0, y1) (fabs(y0 - y1) == 0)
 #endif
 
-static double xtol;
-static double ytol;
+static double ctr_xtol;
+static double ctr_ytol;
 
-static int SegDir(double xend, double yend, double *x, double *y, int *i, int *j, int nx, int ny)
+static int ctr_segdir(double xend, double yend, double *x, double *y, int *i, int *j, int nx, int ny)
 {
     if (YMATCH(yend, y[*j]))
     {
@@ -2205,10 +2256,10 @@ static int SegDir(double xend, double yend, double *x, double *y, int *i, int *j
 /* Search seglist for a segment with endpoint (xend, yend). */
 /* The cell entry direction is dir, and if tail=1/0 we are */
 /* building the tail/head of a contour.  The matching segment */
-/* is pointed to by seg and the updated segment list (with
+/* is pointed to by seg and the updated segment list (with */
 /* the matched segment stripped is returned by the funtion. */
 
-static SEGP SegUpdate(double xend, double yend, int dir, int tail, SEGP seglist, SEGP *seg)
+static SEGP ctr_segupdate(double xend, double yend, int dir, int tail, SEGP seglist, SEGP *seg)
 {
     if (seglist == NULL)
     {
@@ -2222,14 +2273,14 @@ static SEGP SegUpdate(double xend, double yend, int dir, int tail, SEGP seglist,
         if (YMATCH(yend, seglist->y0))
         {
             if (!tail)
-                SwapSeg(seglist);
+                ctr_swapseg(seglist);
             *seg = seglist;
             return seglist->next;
         }
         if (YMATCH(yend, seglist->y1))
         {
             if (tail)
-                SwapSeg(seglist);
+                ctr_swapseg(seglist);
             *seg = seglist;
             return seglist->next;
         }
@@ -2239,20 +2290,20 @@ static SEGP SegUpdate(double xend, double yend, int dir, int tail, SEGP seglist,
         if (XMATCH(xend, seglist->x0))
         {
             if (!tail)
-                SwapSeg(seglist);
+                ctr_swapseg(seglist);
             *seg = seglist;
             return seglist->next;
         }
         if (XMATCH(xend, seglist->x1))
         {
             if (tail)
-                SwapSeg(seglist);
+                ctr_swapseg(seglist);
             *seg = seglist;
             return seglist->next;
         }
         break;
     }
-    seglist->next = SegUpdate(xend, yend, dir, tail, seglist->next, seg);
+    seglist->next = ctr_segupdate(xend, yend, dir, tail, seglist->next, seg);
     return seglist;
 }
 
@@ -2308,25 +2359,25 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
             switch (nacode)
             {
             case 15:
-                if (intersect(zll, zhl, zc, &f))
+                if (ctr_intersect(zll, zhl, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yl;
                     k++;
                 }
-                if (intersect(zll, zlh, zc, &f))
+                if (ctr_intersect(zll, zlh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xl;
                     k++;
                 }
-                if (intersect(zhl, zhh, zc, &f))
+                if (ctr_intersect(zhl, zhh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xh;
                     k++;
                 }
-                if (intersect(zlh, zhh, zc, &f))
+                if (ctr_intersect(zlh, zhh, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yh;
@@ -2334,19 +2385,19 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                 }
                 break;
             case 14:
-                if (intersect(zhl, zhh, zc, &f))
+                if (ctr_intersect(zhl, zhh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xh;
                     k++;
                 }
-                if (intersect(zlh, zhh, zc, &f))
+                if (ctr_intersect(zlh, zhh, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yh;
                     k++;
                 }
-                if (intersect(zlh, zhl, zc, &f))
+                if (ctr_intersect(zlh, zhl, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yh + f * (yl - yh);
@@ -2354,19 +2405,19 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                 }
                 break;
             case 13:
-                if (intersect(zll, zlh, zc, &f))
+                if (ctr_intersect(zll, zlh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xl;
                     k++;
                 }
-                if (intersect(zlh, zhh, zc, &f))
+                if (ctr_intersect(zlh, zhh, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yh;
                     k++;
                 }
-                if (intersect(zll, zhh, zc, &f))
+                if (ctr_intersect(zll, zhh, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yl + f * (yh - yl);
@@ -2374,19 +2425,19 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                 }
                 break;
             case 11:
-                if (intersect(zhl, zhh, zc, &f))
+                if (ctr_intersect(zhl, zhh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xh;
                     k++;
                 }
-                if (intersect(zll, zhl, zc, &f))
+                if (ctr_intersect(zll, zhl, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yl;
                     k++;
                 }
-                if (intersect(zll, zhh, zc, &f))
+                if (ctr_intersect(zll, zhh, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yl + f * (yh - yl);
@@ -2394,19 +2445,19 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                 }
                 break;
             case 7:
-                if (intersect(zll, zlh, zc, &f))
+                if (ctr_intersect(zll, zlh, zc, &f))
                 {
                     yy[k] = yl + f * (yh - yl);
                     xx[k] = xl;
                     k++;
                 }
-                if (intersect(zll, zhl, zc, &f))
+                if (ctr_intersect(zll, zhl, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yl;
                     k++;
                 }
-                if (intersect(zlh, zhl, zc, &f))
+                if (ctr_intersect(zlh, zhl, zc, &f))
                 {
                     xx[k] = xl + f * (xh - xl);
                     yy[k] = yh + f * (yl - yh);
@@ -2424,7 +2475,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
             {
                 if (k == 2)
                 {
-                    seglist = NewSeg(xx[0], yy[0], xx[1], yy[1], seglist);
+                    seglist = ctr_newseg(xx[0], yy[0], xx[1], yy[1], seglist);
                 }
                 else if (k == 4)
                 {
@@ -2450,13 +2501,13 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                             yy[m] = yl;
                         }
                     }
-                    seglist = NewSeg(xx[0], yy[0], xx[1], yy[1], seglist);
-                    seglist = NewSeg(xx[2], yy[2], xx[3], yy[3], seglist);
+                    seglist = ctr_newseg(xx[0], yy[0], xx[1], yy[1], seglist);
+                    seglist = ctr_newseg(xx[2], yy[2], xx[3], yy[3], seglist);
                 }
                 else
                     error("k != 2 or 4\n");
             }
-            SegDB[i + j * nx] = seglist;
+            ctr_SegDB[i + j * nx] = seglist;
         }
     }
 
@@ -2470,17 +2521,17 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
     for (i = 0; i < nx - 1; i++)
         for (j = 0; j < ny - 1; j++)
         {
-            while (seglist = SegDB[i + j * nx])
+            while (seglist = ctr_SegDB[i + j * nx])
             {
                 ii = i;
                 jj = j;
                 start = end = seglist;
-                SegDB[i + j * nx] = seglist->next;
+                ctr_SegDB[i + j * nx] = seglist->next;
                 xend = seglist->x1;
                 yend = seglist->y1;
-                while (dir = SegDir(xend, yend, REAL(x), REAL(y), &ii, &jj, nx, ny))
+                while (dir = ctr_segdir(xend, yend, REAL(x), REAL(y), &ii, &jj, nx, ny))
                 {
-                    SegDB[ii + jj * nx] = SegUpdate(xend, yend, dir, 1, SegDB[ii + jj * nx], &seg);
+                    ctr_SegDB[ii + jj * nx] = ctr_segupdate(xend, yend, dir, 1, ctr_SegDB[ii + jj * nx], &seg);
                     if (!seg)
                         break;
                     end->next = seg;
@@ -2492,9 +2543,9 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, double at
                 jj = j;
                 xend = seglist->x0;
                 yend = seglist->y0;
-                while (dir = SegDir(xend, yend, REAL(x), REAL(y), &ii, &jj, nx, ny))
+                while (dir = ctr_segdir(xend, yend, REAL(x), REAL(y), &ii, &jj, nx, ny))
                 {
-                    SegDB[ii + jj * nx] = SegUpdate(xend, yend, dir, 0, SegDB[ii + jj * nx], &seg);
+                    ctr_SegDB[ii + jj * nx] = ctr_segupdate(xend, yend, dir, 0, ctr_SegDB[ii + jj * nx], &seg);
                     if (!seg)
                         break;
                     seg->next = start;
@@ -2609,8 +2660,8 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
             errorcall(call, "increasing y values expected\n");
     }
 
-    xtol = 1e-3 * fabs(REAL(x)[nx - 1] - REAL(x)[0]);
-    ytol = 1e-3 * fabs(REAL(y)[ny - 1] - REAL(y)[0]);
+    ctr_xtol = 1e-3 * fabs(REAL(x)[nx - 1] - REAL(x)[0]);
+    ctr_ytol = 1e-3 * fabs(REAL(y)[ny - 1] - REAL(y)[0]);
 
     for (i = 0; i < nc; i++)
         if (!FINITE(REAL(c)[i]))
@@ -2636,9 +2687,8 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
         return R_NilValue;
     }
 
-    /*
-    atom = DBL_EPSILON * (zmax - zmin);
-    */
+    /* PREVIOUSLY: atom = DBL_EPSILON * (zmax - zmin); */
+
     atom = 1e-3 * (zmax - zmin);
 
     /* Initialize the segment data base */
@@ -2647,11 +2697,11 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     /* memory after a sequence of displaylist replays */
 
     vmax0 = vmaxget();
-    SegDB = (SEGP *)R_alloc(nx * ny, sizeof(SEGP));
+    ctr_SegDB = (SEGP *)R_alloc(nx * ny, sizeof(SEGP));
 
     for (i = 0; i < nx; i++)
         for (j = 0; j < ny; j++)
-            SegDB[i + j * nx] = NULL;
+            ctr_SegDB[i + j * nx] = NULL;
 
     /* Draw the contours -- note the heap release */
 
@@ -2673,8 +2723,8 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     dd->gp.lty = ltysave;
     dd->gp.col = colsave;
     UNPROTECT(2);
-    /* NOTE that i only record operation if no "error"  */
-    /* NOTE that if we're replaying then call == R_NilValue */
+    /* NOTE: only record operation if no "error"  */
+    /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)
         recordGraphicOperation(op, oargs, dd);
     return R_NilValue;

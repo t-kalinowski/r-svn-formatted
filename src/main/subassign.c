@@ -1012,7 +1012,8 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         else
             NAMED(CAR(yi)) = 1;
         CAR(xi) = CAR(yi);
-        TAG(xi) = TAG(yi);
+        if (TAG(yi) != R_NilValue)
+            TAG(xi) = TAG(yi);
 #endif
     }
     UNPROTECT(3);
