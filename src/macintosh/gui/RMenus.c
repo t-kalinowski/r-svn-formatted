@@ -1486,6 +1486,8 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
     Boolean EqString = FALSE;
     Cursor arrow;
     static ModalFilterUPP sFilterProc = nil;
+    char cmd[40];
+    SInt16 WinIndex;
 
     SelectWindow(window);
 
@@ -1594,7 +1596,10 @@ furtherstep:
      */
     if (isGraphicWindow(window))
     {
-        Mac_Dev_Kill(window); /* Mac_Dev_Kill provides menu deletion */
+        WinIndex = isGraphicWindow(window);
+        sprintf(cmd, "dev.off(%d)", 1 + deviceNumber((DevDesc *)gGReference[WinIndex].gedevdesc));
+        consolecmd(cmd);
+        // Mac_Dev_Kill(window); /* Mac_Dev_Kill provides menu deletion */
         return noErr;
     }
     else
