@@ -466,26 +466,27 @@ SEXP do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         sprintf(linebuf, "%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "help", CHAR(STRING(sep)[0]),
                 CHAR(STRING(indexname)[0]));
-        if ((fp = fopen(linebuf, "rt")) == NULL)
-            error("unable to open index file %s\n", linebuf);
-        while (filbuf(linebuf, fp))
+        if ((fp = fopen(linebuf, "rt")) != NULL)
         {
-            if (strncmp(linebuf, topicbuf, ltopicbuf) == 0)
+            while (filbuf(linebuf, fp))
             {
-                p = &linebuf[ltopicbuf - 1];
-                while (isspace(*p))
-                    p++;
-                fclose(fp);
-                if (html)
-                    sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "html",
-                            CHAR(STRING(sep)[0]), p, ".html");
-                else
-                    sprintf(topicbuf, "%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "help",
-                            CHAR(STRING(sep)[0]), p);
-                return mkString(topicbuf);
+                if (strncmp(linebuf, topicbuf, ltopicbuf) == 0)
+                {
+                    p = &linebuf[ltopicbuf - 1];
+                    while (isspace(*p))
+                        p++;
+                    fclose(fp);
+                    if (html)
+                        sprintf(topicbuf, "%s%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "html",
+                                CHAR(STRING(sep)[0]), p, ".html");
+                    else
+                        sprintf(topicbuf, "%s%s%s%s%s", CHAR(STRING(path)[i]), CHAR(STRING(sep)[0]), "help",
+                                CHAR(STRING(sep)[0]), p);
+                    return mkString(topicbuf);
+                }
             }
+            fclose(fp);
         }
-        fclose(fp);
     }
     return mkString("");
 }
