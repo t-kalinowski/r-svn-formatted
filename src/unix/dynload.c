@@ -68,7 +68,7 @@
 #include "Defn.h"
 #include "Mathlib.h"
 
-typedef int (*DL_FUNC)();
+/* DL_FUNC is in Defn.h */
 typedef struct
 {
     char *name;
@@ -106,6 +106,18 @@ static CFunTabEntry CFunTab[] = {
 #define RTLD_NOW 2
 #endif
 
+#undef CACHE_DLL_SYM
+#ifdef CACHE_DLL_SYM
+/* keep a record of symbols that have been found */
+static struct
+{
+    char pkg[21];
+    char name[21];
+    DL_FUNC func;
+} CPFun[100];
+static int nCPFun = 0;
+#endif
+
 #ifdef DL_SEARCH_PROG
 static void *dlhandle;
 #endif
@@ -135,6 +147,7 @@ static struct
 static int DeleteDLL(char *path)
 {
     int i, loc;
+
     for (i = 0; i < CountDLL; i++)
     {
         if (!strcmp(path, LoadedDLL[i].path))
@@ -145,9 +158,18 @@ static int DeleteDLL(char *path)
     }
     return 0;
 found:
-    free(LoadedDLL[i].name);
-    free(LoadedDLL[i].path);
-    dlclose(LoadedDLL[i].handle);
+#ifdef CACHE_DLL_SYM
+    for (i = 0; i < nCPFun; i++)
+        if (!strcmp(CPFun[i].pkg, LoadedDLL[loc].name))
+        {
+            strcpy(CPFun[i].pkg, CPFun[nCPFun].pkg);
+            strcpy(CPFun[i].name, CPFun[nCPFun].name);
+            CPFun[i].func = CPFun[nCPFun--].func;
+        }
+#endif
+    free(LoadedDLL[loc].name);
+    free(LoadedDLL[loc].path);
+    dlclose(LoadedDLL[loc].handle);
     for (i = loc + 1; i < CountDLL; i++)
     {
         LoadedDLL[i - 1].path = LoadedDLL[i].path;
@@ -160,12 +182,12 @@ found:
 
 #define DLLerrBUFSIZE 1000
 static char DLLerror[DLLerrBUFSIZE] = "";
+
 /* the error message; length taken from ERRBUFSIZE in ./hpdlfcn.c  */
 
-/* Inserts the specified DLL at the start of the DLL list */
-/* All the other entries are "moved down" by one. */
+/* Inserts the specified DLL at the head of the DLL list */
 /* Returns 1 if the library was successfully added */
-/* and returns 0 if there library table is full or */
+/* and returns 0 if the library table is full or */
 /* or if dlopen fails for some reason. */
 
 static int computeDLOpenFlag(int asLocal, int now); /* Defined below. */
@@ -219,15 +241,6 @@ static int AddDLL(char *path, int asLocal, int now)
         return 0;
     }
     strcpy(name, DLLname);
-
-    /*    for(i=CountDLL ; i>0 ; i--) {
-        LoadedDLL[i].path = LoadedDLL[i-1].path;
-        LoadedDLL[i].name = LoadedDLL[i-1].name;
-        LoadedDLL[i].handle = LoadedDLL[i-1].handle;
-        }
-        LoadedDLL[0].path = dpath;
-        LoadedDLL[0].name = name;
-        LoadedDLL[0].handle = handle;*/
 
     LoadedDLL[CountDLL].path = dpath;
     LoadedDLL[CountDLL].name = name;
@@ -324,6 +337,12 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
     DL_FUNC fcnptr;
     int i, all = (strlen(pkg) == 0), doit;
 
+#ifdef CACHE_DLL_SYM
+    for (i = 0; i < nCPFun; i++)
+        if (!strcmp(pkg, CPFun[i].pkg) && !strcmp(name, CPFun[i].name))
+            return CPFun[i].func;
+#endif
+
 #ifdef HAVE_NO_SYMBOL_UNDERSCORE
     sprintf(buf, "%s", name);
 #else
@@ -336,7 +355,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
     /* function pointers _are_ the same size and _can_   */
     /* be cast without loss of information.		     */
 
-    for (i = 0; i < CountDLL; i++)
+    for (i = CountDLL - 1; i >= 0; i--)
     {
         doit = all;
         if (!doit && !strcmp(pkg, LoadedDLL[i].name))
@@ -344,11 +363,21 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
         if (doit)
         {
             fcnptr = (DL_FUNC)dlsym(LoadedDLL[i].handle, buf);
-            if (fcnptr != (DL_FUNC)0)
+            if (fcnptr != (DL_FUNC)NULL)
+            {
+#ifdef CACHE_DLL_SYM
+                if (strlen(pkg) <= 20 && strlen(name) <= 20 && nCPFun < 100)
+                {
+                    strcpy(CPFun[nCPFun].pkg, pkg);
+                    strcpy(CPFun[nCPFun].name, name);
+                    CPFun[nCPFun++].func = fcnptr;
+                }
+#endif
                 return fcnptr;
+            }
         }
         if (doit > 1)
-            return (DL_FUNC)0; /* Only look in the first-matching DLL */
+            return (DL_FUNC)NULL; /* Only look in the first-matching DLL */
     }
     if (all || !strcmp(pkg, "base"))
     {
@@ -360,7 +389,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
                 return CFunTab[i].func;
 #endif
     }
-    return (DL_FUNC)0;
+    return (DL_FUNC)NULL;
 }
 
 static void GetFullDLLPath(SEXP call, char *buf, char *path)
