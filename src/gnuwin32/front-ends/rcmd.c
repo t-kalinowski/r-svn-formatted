@@ -33,7 +33,7 @@ int main(int argc, char **argv)
        launch perl -S $*
      */
     int i, res, status = 0;
-    char *RHome, PERL5LIB[MAX_PATH], PATH[MAX_PATH], RHOME[MAX_PATH], *p, cmd[256];
+    char *RHome, PERL5LIB[MAX_PATH], PATH[MAX_PATH], RHOME[MAX_PATH], *p, cmd[10000];
 
     RHome = getRHOME();
     strcpy(RHOME, "R_HOME=");
