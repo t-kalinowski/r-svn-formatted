@@ -457,8 +457,9 @@ void run_Rmainloop(void)
 void end_Rmainloop(void)
 {
     Rprintf("\n");
-    /* Run the .Last function. */
-    R_CleanUp(SA_SAVEASK); /* query save */
+    /* run the .Last function. If it gives an error, will drop back to main
+       loop. */
+    R_CleanUp(SA_DEFAULT);
 }
 
 void mainloop(void)
@@ -583,7 +584,7 @@ void R_dot_Last(void)
 SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *tmp;
-    int ask = 0;
+    int ask = SA_DEFAULT;
 
     if (R_BrowseLevel)
     {
@@ -591,7 +592,7 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue;
     }
     if (!isString(CAR(args)))
-        errorcall(call, "one of \"yes\", \"no\" or \"ask\" expected.\n");
+        errorcall(call, "one of \"yes\", \"no\", \"ask\" or \"default\" expected.\n");
     tmp = CHAR(STRING(CAR(args))[0]);
     if (!strcmp(tmp, "ask"))
         ask = SA_SAVEASK;
@@ -599,9 +600,11 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
         ask = SA_NOSAVE;
     else if (!strcmp(tmp, "yes"))
         ask = SA_SAVE;
+    else if (!strcmp(tmp, "default"))
+        ask = SA_DEFAULT;
     else
         errorcall(call, "unrecognized value of ask\n");
-    /* run the .Last function. If if gives an error, will drop back to main
+    /* run the .Last function. If it gives an error, will drop back to main
        loop. */
     R_CleanUp(ask);
     exit(0);

@@ -98,7 +98,7 @@
  *  These functions save and restore the user's global environment.
  *  The system specific aspect of this is what files are used.
  *
- *    void  R_CleanUp(int ask)
+ *    void  R_CleanUp(int saveact)
 
  *  This function invokes any actions which occur at system termination.
  *
@@ -161,7 +161,6 @@
 #include "Defn.h"
 #include "Fileio.h"
 #include "Graphics.h" /* KillAllDevices() [nothing else?] */
-#include "Rversion.h"
 
 #include "devX11.h"
 
@@ -186,8 +185,8 @@
 #endif
 
 static int UsingReadline = 1;
-static int DefaultSaveAction = 0;
-static int DefaultRestoreAction = 1;
+static int SaveAction = SA_DEFAULT;
+static int RestoreAction = SA_RESTORE;
 static int LoadSiteFile = 1;
 static int LoadInitFile = 1;
 static int DebugInitFile = 0;
@@ -273,7 +272,7 @@ static void readline_handler(unsigned char *line)
 
 int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 {
-    if (!isatty(0))
+    if (!R_Interactive)
     {
         if (!R_Slave)
             fputs(prompt, stdout);
@@ -371,9 +370,33 @@ char *R_ExpandFileName(char *s)
     return (tilde_expand(s));
 }
 #else
-char *R_ExpandFileName(char *s)
+static HaveHOME = -1;
+static UserHOME[PATH_MAX] static newFileName[PATH_MAX] char *R_ExpandFileName(char *s)
 {
-    return s;
+    char *p;
+
+    if (s[0] != '~')
+        return s;
+    if (HaveHOME < 0)
+    {
+        p = getenv("HOME");
+        if (p && strlen(p))
+        {
+            strcpy(UserHOME, p);
+            strcat(UserHOME, FILESEP);
+            HaveHOME = 1;
+        }
+        else
+            HaveHOME = 0;
+    }
+    if (HaveHOME > 0)
+    {
+        strcpy(newFileName, UserHOME);
+        strcat(newFileName, s);
+        return newFileName;
+    }
+    else
+        return s;
 }
 #endif
 
@@ -461,7 +484,9 @@ static struct tms timeinfo;
 #include <fpu_control.h>
 #endif
 
-#define Max_Nsize 20000000      /* must be < LONG_MAX (= 2^32 - 1 =) 2147483647 = 2.1e9 */
+#define Max_Nsize                                                                                                      \
+    20000000                    /* must be < LONG_MAX (= 2^32 - 1 =)                                                   \
+                       2147483647 = 2.1e9 */
 #define Max_Vsize (2048 * Mega) /* must be < LONG_MAX */
 
 #define Min_Nsize 200000
@@ -470,7 +495,7 @@ static struct tms timeinfo;
 int main(int ac, char **av)
 {
     int value, ierr;
-    char *p;
+    char *p, msg[1024];
 
     gc_inhibit_torture = 1;
 #ifdef HAVE_TIMES
@@ -501,29 +526,25 @@ int main(int ac, char **av)
         {
             if (!strcmp(*av, "--version"))
             {
-                Rprintf("Version %s.%s %s (%s %s, %s)\n", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
-                Rprintf("Copyright (C) %s R Development Core Team\n\n", R_YEAR);
-                Rprintf("R is free software and comes with ABSOLUTELY NO WARRANTY.\n");
-                Rprintf("You are welcome to redistribute it under the terms of the\n");
-                Rprintf("GNU General Public License.  For more information about\n");
-                Rprintf("these matters, see http://www.gnu.org/copyleft/gpl.html.\n");
+                PrintVersion(msg);
+                Rprintf(msg);
                 exit(0);
             }
             else if (!strcmp(*av, "--save"))
             {
-                DefaultSaveAction = 3;
+                SaveAction = SA_SAVE;
             }
             else if (!strcmp(*av, "--no-save"))
             {
-                DefaultSaveAction = 2;
+                SaveAction = SA_NOSAVE;
             }
             else if (!strcmp(*av, "--restore"))
             {
-                DefaultRestoreAction = 1;
+                RestoreAction = SA_RESTORE;
             }
             else if (!strcmp(*av, "--no-restore"))
             {
-                DefaultRestoreAction = 0;
+                RestoreAction = SA_NORESTORE;
             }
             else if (!strcmp(*av, "--no-readline"))
             {
@@ -535,10 +556,10 @@ int main(int ac, char **av)
             }
             else if (!strcmp(*av, "--vanilla"))
             {
-                DefaultSaveAction = 2;    /* --no-save */
-                DefaultRestoreAction = 0; /* --no-restore */
-                LoadSiteFile = 0;         /* --no-site-file */
-                LoadInitFile = 0;         /* --no-init-file */
+                SaveAction = SA_NOSAVE;       /* --no-save */
+                RestoreAction = SA_NORESTORE; /* --no-restore */
+                LoadSiteFile = 0;             /* --no-site-file */
+                LoadInitFile = 0;             /* --no-init-file */
             }
             else if (!strcmp(*av, "--verbose"))
             {
@@ -548,7 +569,7 @@ int main(int ac, char **av)
             {
                 R_Quiet = 1;
                 R_Slave = 1;
-                DefaultSaveAction = 2;
+                SaveAction = SA_NOSAVE;
             }
             else if (!strcmp(*av, "--no-site-file"))
             {
@@ -659,8 +680,11 @@ int main(int ac, char **av)
     {
         R_Suicide("R home directory is not defined");
     }
-
-    if (!R_Interactive && DefaultSaveAction == 0)
+    /*
+     *  Since users' expectations for save/no-save will differ, we decided
+     *  that they should be forced to specify in the non-interactive case.
+     */
+    if (!R_Interactive && SaveAction != SA_SAVE && SaveAction != SA_NOSAVE)
         R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
 
 #ifdef __FreeBSD__
@@ -685,7 +709,7 @@ int main(int ac, char **av)
 
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-    if (isatty(0) && UsingReadline)
+    if (R_Interactive && UsingReadline)
     {
         read_history(R_HistoryFile);
     }
@@ -705,65 +729,71 @@ void R_InitialData(void)
     R_RestoreGlobalEnv();
 }
 
-/* R_CleanUp is invoked at the end of the session to give the user the
-   option of saving their data.  If ask=1 the user is asked their
-   preference, if ask=2 the answer is assumed to be "no" and if ask=3
-   the answer is assumed to be "yes".  When R is being used
-   non-interactively, and ask=1, the value is changed to
-   DefaultSaveAction, usually 3.
-
-   The philosophy is that saving unwanted data is less bad than non
-   saving data that is wanted.
-   */
+/*
+   R_CleanUp is invoked at the end of the session to give the user the
+   option of saving their data.
+   If ask == SA_SAVEASK the user should be asked if possible (and this
+   option should not occur in non-interactive use).
+   If ask = SA_SAVE or SA_NOSAVE the decision is known.
+   If ask = SA_DEFAULT use the SaveAction set at startup.
+   In all these cases run .Last() unless quitting is cancelled.
+   If ask = SA_SUICIDE, no save, no .Last, possibly other things.
+ */
 
 void R_dot_Last(void); /* in main.c */
 
-void R_CleanUp(int ask)
+void R_CleanUp(int saveact)
 {
     char buf[128];
 
-    if (R_DirtyImage)
-    {
-    qask:
-        R_ClearerrConsole();
-        R_FlushConsole();
-        if (!isatty(0) && ask == 1)
-            ask = DefaultSaveAction;
+    if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
+        saveact = SaveAction;
 
-        if (ask == 1)
+    if (saveact == SA_SAVEASK)
+        if (R_Interactive)
         {
+        qask:
+            R_ClearerrConsole();
+            R_FlushConsole();
             R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
+            switch (buf[0])
+            {
+            case 'y':
+            case 'Y':
+                saveact = SA_SAVE;
+                break;
+            case 'n':
+            case 'N':
+                saveact = SA_NOSAVE;
+                break;
+            case 'c':
+            case 'C':
+                jump_to_toplevel();
+                break;
+            default:
+                goto qask;
+            }
         }
-        else if (ask == 2)
-            buf[0] = 'n';
-        else if (ask == 3)
-            buf[0] = 'y';
 
-        switch (buf[0])
-        {
-        case 'y':
-        case 'Y':
-            R_dot_Last();
+    switch (saveact)
+    {
+    case SA_SAVE:
+        R_dot_Last();
+        if (R_DirtyImage)
             R_SaveGlobalEnv();
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-            if (isatty(0) && UsingReadline)
-                stifle_history(R_HistorySize);
-            write_history(R_HistoryFile);
+        if (R_Interactive && UsingReadline)
+            stifle_history(R_HistorySize);
+        write_history(R_HistoryFile);
 #endif
 #endif
-            break;
-        case 'n':
-        case 'N':
-            R_dot_Last();
-            break;
-        case 'c':
-        case 'C':
-            jump_to_toplevel();
-            break;
-        default:
-            goto qask;
-        }
+        break;
+    case SA_NOSAVE:
+        R_dot_Last();
+        break;
+    case SA_SUICIDE:
+    default:
     }
     CleanEd();
     KillAllDevices();
@@ -787,7 +817,7 @@ void R_Busy(int which)
 
 void R_SaveGlobalEnv(void)
 {
-    FILE *fp = R_fopen(".RData", "w");
+    FILE *fp = R_fopen(".RData", "wb"); /* binary file */
     if (!fp)
         error("can't save data -- unable to open ./.RData\n");
     R_SaveToFile(FRAME(R_GlobalEnv), fp, 0);
@@ -797,10 +827,10 @@ void R_SaveGlobalEnv(void)
 void R_RestoreGlobalEnv(void)
 {
     FILE *fp;
-    if (DefaultRestoreAction)
+    if (RestoreAction == SA_RESTORE)
     {
-        if (!(fp = R_fopen(".RData", "r")))
-        {
+        if (!(fp = R_fopen(".RData", "rb")))
+        { /* binary file */
             /* warning here perhaps */
             return;
         }
@@ -932,7 +962,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP rval;
 
     rval = allocVector(LGLSXP, 1);
-    if (isatty(0))
+    if (R_Interactive)
         LOGICAL(rval)[0] = 1;
     else
         LOGICAL(rval)[0] = 0;
@@ -942,8 +972,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
 void R_Suicide(char *s)
 {
     REprintf("Fatal error: %s\n", s);
-    R_CleanUp(2);
-    /*	 2 means don't save anything and it's an unrecoverable abort */
+    R_CleanUp(SA_SUICIDE);
 }
 
 /* Declarations to keep f77 happy */
@@ -960,26 +989,6 @@ int __main()
 {
     return 0;
 }
-
-/* New / Experimental API elements */
-
-#ifdef DEFUNCT
-int R_ShowFile(char *file, char *title)
-{
-    FILE *fp;
-    char buf[1024];
-    char *pager;
-    int c;
-    pager = getenv("PAGER");
-    if (pager == NULL)
-        pager = "more";
-    sprintf(buf, "%s %s", pager, file);
-    if (system(buf) != 0)
-        return 0;
-    else
-        return 1;
-}
-#endif
 
 /* This function can be used to display the named files with the */
 /* given titles and overall title.  On GUI platforms we could */
