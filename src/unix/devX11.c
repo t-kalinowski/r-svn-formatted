@@ -78,11 +78,13 @@ typedef struct
     double srt; /* String rotation */
     int lty;    /* Line type */
     double lwd;
-    int col;      /* Color */
-    int fg;       /* Foreground */
-    int bg;       /* Background */
-    int fontface; /* Typeface */
-    int fontsize; /* Size in points */
+    int col;          /* Color */
+    int fg;           /* Foreground */
+    int bg;           /* Background */
+    int fontface;     /* Typeface */
+    int fontsize;     /* Size in points */
+    int basefontface; /* Typeface */
+    int basefontsize; /* Size in points */
 
     /* X11 Driver Specific */
     /* Parameters with copy per X11 device. */
@@ -940,8 +942,8 @@ static XFontStruct *RLoadFont(int face, int size)
 }
 static int SetBaseFont(x11Desc *xd)
 {
-    xd->fontface = 1;
-    xd->fontsize = 12; /* Shouldn't one get this from the device parms??? */
+    xd->fontface = xd->basefontface;
+    xd->fontsize = xd->basefontsize;
     xd->usefixed = 0;
     xd->font = RLoadFont(xd->fontface, xd->fontsize);
     if (!xd->font)
@@ -1794,6 +1796,8 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     ps = 2 * (ps / 2);
     xd->fontface = -1;
     xd->fontsize = -1;
+    xd->basefontface = 1;
+    xd->basefontsize = ps;
     dd->dp.font = 1;
     dd->dp.ps = ps;
 
@@ -1837,6 +1841,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
 
     /* Nominal Character Sizes in Pixels */
 
+    SetBaseFont(xd);
     dd->dp.cra[0] = xd->font->max_bounds.rbearing - xd->font->min_bounds.lbearing;
     dd->dp.cra[1] = xd->font->max_bounds.ascent + xd->font->max_bounds.descent;
 
