@@ -254,7 +254,7 @@ static rect fix_win_rect(rect r, long flags)
 
     win_rect = r;
 
-    if ((flags & Workspace) || (r.width == 0) || (r.height == 0))
+    if ((r.width == 0) || (r.height == 0))
         return rect(CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT);
     /* Find out the maximum rectangle we are allowed. */
     if ((flags & Document) && (hwndClient))
@@ -417,6 +417,7 @@ static object new_window_object(HWND hwnd, char *name, rect r, long flags, long 
 /*
  *  Create and return a new window.
  */
+static int MDIsizeSet = 0;
 window newwindow(char *name, rect r, long flags)
 {
     object obj;
@@ -430,6 +431,8 @@ window newwindow(char *name, rect r, long flags)
         flags &= ~Document;
     if ((flags & Menubar) && (flags & Document))
         flags &= ~Menubar;
+    if (flags & Workspace && r.width != 0)
+        MDIsizeSet = 1;
     fix_win_style(&flags, &state, &win_style);
     r = fix_win_rect(r, flags);
     ex_style = 0L; /* extended style */
@@ -615,7 +618,7 @@ void show_window(object obj)
     obj->state |= Visible;
     if (hwndClient && (hwnd == hwndFrame) && (MDIFrameFirstTime))
     {
-        ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+        ShowWindow(hwnd, MDIsizeSet ? SW_SHOWNORMAL : SW_SHOWMAXIMIZED);
         MDIFrameFirstTime = 0;
     }
     else
