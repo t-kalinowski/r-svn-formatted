@@ -1,30 +1,12 @@
 #ifndef lint
-static char const yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
+static char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 #endif
 #define YYBYACC 1
 #define YYMAJOR 1
 #define YYMINOR 9
-#define YYLEX yylex()
-#define YYEMPTY -1
-#define yyclearin (yychar = (YYEMPTY))
+#define yyclearin (yychar = (-1))
 #define yyerrok (yyerrflag = 0)
 #define YYRECOVERING (yyerrflag != 0)
-/* cfront 1.2 defines "c_plusplus" instead of "__cplusplus" */
-#ifdef c_plusplus
-#ifndef __cplusplus
-#define __cplusplus
-#endif
-#endif
-#ifdef __cplusplus
-extern "C"
-{
-    char *getenv(const char *);
-}
-#else
-extern char *getenv();
-extern int yylex();
-extern int yyparse();
-#endif
 #define YYPREFIX "yy"
 #line 2 "gram.y"
 /*
@@ -70,7 +52,7 @@ extern SEXP R_CommentSxp;
     }
 #endif
 
-#line 63 "y.tab.c"
+#line 48 "y.tab.c"
 #define STR_CONST 257
 #define NUM_CONST 258
 #define NULL_CONST 259
@@ -105,24 +87,24 @@ extern SEXP R_CommentSxp;
 #define UMINUS 288
 #define UPLUS 289
 #define YYERRCODE 256
-const short yylhs[] = {
+short yylhs[] = {
     -1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 8, 6, 7, 2, 2, 2, 2, 2, 2, 5, 5, 9, 9, 9, 9, 9, 9, 9, 9, 3, 3, 3, 3, 3, 4,
 };
-const short yylen[] = {
+short yylen[] = {
     2, 0, 2, 3, 3, 2, 1, 1, 1, 1, 3, 3, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 6,
     4, 3, 5, 3, 3, 2, 5, 4, 3, 3, 1, 1, 3, 3, 5, 0, 1, 3, 2, 3, 2, 1, 4, 0, 1, 3, 2, 3, 2, 3, 2, 0, 1, 3, 3, 5, 0,
 };
-const short yydefred[] = {
+short yydefred[] = {
     1,  0, 5, 7, 6,  8, 9, 0,  0, 0,  0, 47, 48, 0,  0, 0, 0, 0,  0,  2, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0,  0,
     0,  0, 0, 0, 0,  0, 0, 0,  0, 0,  0, 0,  0,  0,  0, 0, 0, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  3, 4, 0, 0,  0,  0,
     0,  0, 0, 0, 11, 0, 0, 10, 0, 0,  0, 0,  0,  58, 0, 0, 0, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0,  0,  46,
     45, 0, 0, 0, 73, 0, 0, 50, 0, 49, 0, 0,  0,  0,  0, 0, 0, 37, 44, 0, 0, 0, 0, 0, 0, 0, 0, 43, 0, 0, 0, 51, 59, 0,
 };
-const short yydgoto[] = {
+short yydgoto[] = {
     1, 79, 37, 65, 118, 80, 27, 25, 29, 81,
 };
-const short yysindex[] = {
+short yysindex[] = {
     0,    564,  0,    0,    0,    0,    0,    -29,  -26,  -24,  -18,  0,    0,    1247, 1247, 1247, 1247,
     1247, 1247, 0,    1247, 1247, -10,  -236, -229, 1247, 1247, 1247, 1247, 1247, 1266, 1266, 1309, -31,
     -31,  920,  1266, 15,   1329, 1365, 1247, 1247, 1247, 1247, 1247, 1247, 1247, 1247, 1247, 1247, 1247,
@@ -132,7 +114,7 @@ const short yysindex[] = {
     0,    57,   6,    1247, 0,    -160, 1247, 0,    1247, 0,    1266, 1266, 1247, 1247, 1247, 8,    59,
     0,    0,    1266, 1247, 44,   1197, 1266, 1266, 1266, 1266, 0,    1365, 1266, 1247, 0,    0,    1266,
 };
-const short yyrindex[] = {
+short yyrindex[] = {
     0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   19,  0,   0,
     -21, 0,   0,   0,   0,   0,   0,  414, 439, 127, 9,   28,  0,   84,  0,   435, -36, 0,   0,   0,   0,   0,   0,
     0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   -1,  -36, 0,   0,   1,   0,   0,   724, 0,
@@ -140,11 +122,11 @@ const short yyrindex[] = {
     705, 397, 416, 105, 359, 378, 86, 48,  67,  0,   0,   73,  73,  0,   0,   0,   0,   0,   0,   0,   129, 148, 39,
     122, 126, 0,   0,   0,   0,   3,  0,   18,  0,   760, 131, 136, 199, 0,   219, 767, 0,   0,   0,   35,
 };
-const short yygindex[] = {
+short yygindex[] = {
     0, 1627, 0, 0, 12, -58, 0, 0, 0, -11,
 };
 #define YYTABLESIZE 1759
-const short yytable[] = {
+short yytable[] = {
     62, 101, 103, 104, 102, 59,  59, 55,  60, 60,  60,  23, 53, 51,  24,  52,  26, 54,  106, 13, 68,  107, 28,  68,
     64, 73,  59,  55,  57,  52,  60, 66,  53, 51,  105, 52, 61, 54,  12,  61,  60, 108, 69,  60, 70,  69,  13,  70,
     57, 63,  13,  13,  13,  13,  13, 114, 13, 60,  17,  71, 61, 61,  71,  58,  58, 12,  115, 13, 13,  12,  12,  12,
@@ -220,7 +202,7 @@ const short yytable[] = {
     0,  0,   0,   0,   121, 0,   0,  124, 0,  125, 0,   0,  0,  126, 127, 128, 0,  0,   0,   0,  0,   131, 0,   0,
     0,  0,   0,   0,   0,   0,   0,  135,
 };
-const short yycheck[] = {
+short yycheck[] = {
     10,  257, 60,  61,  260, 36,  36,  37,  44,  40,  40,  40,  42,  43,  40,  45,  40,  47,  41,  10,  41,  44,  40,
     44,  260, 10,  36,  37,  58,  10,  40,  260, 42,  43,  61,  45,  41,  47,  10,  44,  41,  268, 41,  44,  41,  44,
     37,  44,  58,  59,  41,  42,  43,  44,  45,  61,  47,  93,  10,  41,  91,  91,  44,  94,  94,  37,  61,  58,  59,
@@ -597,7 +579,7 @@ char *yyname[] = {
     "UMINUS",
     "UPLUS",
 };
-const char *const yyrule[] = {
+char *yyrule[] = {
     "$accept : prog",
     "prog :",
     "prog : prog '\\n'",
@@ -1682,19 +1664,19 @@ symbol:
         return c;
     }
 }
-#line 1575 "y.tab.c"
+#line 1560 "y.tab.c"
 #define YYABORT goto yyabort
 #define YYREJECT goto yyabort
 #define YYACCEPT goto yyaccept
 #define YYERROR goto yyerrlab
-
 int yyparse()
 {
     register int yym, yyn, yystate;
 #if YYDEBUG
     register char *yys;
+    extern char *getenv();
 
-    if ((yys = getenv("YYDEBUG")))
+    if (yys = getenv("YYDEBUG"))
     {
         yyn = *yys;
         if (yyn >= '0' && yyn <= '9')
@@ -1711,7 +1693,7 @@ int yyparse()
     *yyssp = yystate = 0;
 
 yyloop:
-    if ((yyn = yydefred[yystate]))
+    if (yyn = yydefred[yystate])
         goto yyreduce;
     if (yychar < 0)
     {
@@ -1753,12 +1735,12 @@ yyloop:
     }
     if (yyerrflag)
         goto yyinrecovery;
-#if defined(lint) || defined(__GNUC__)
+#ifdef lint
     goto yynewerror;
 #endif
 yynewerror:
     yyerror("syntax error");
-#if defined(lint) || defined(__GNUC__)
+#ifdef lint
     goto yyerrlab;
 #endif
 yyerrlab:
@@ -2401,7 +2383,7 @@ yyreduce:
         eatln = 1;
     }
     break;
-#line 2012 "y.tab.c"
+#line 1997 "y.tab.c"
     }
     yyssp -= yym;
     yystate = *yyssp;
