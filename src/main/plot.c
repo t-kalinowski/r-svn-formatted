@@ -2076,6 +2076,9 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = nfont;
     args = CDR(args);
 
+    GSavePars(dd);
+    ProcessInlinePars(args, dd);
+
     /* If we only scribble in the outer margins, */
     /* we don't want to mark the plot as dirty. */
 
