@@ -175,11 +175,10 @@ double rhyper(double nn1in, double nn2in, double kkin)
         minjx = imax2(0, k - n2);
         maxjx = imin2(n1, k);
     }
-    /* generate random variate */
+    /* generate random variate --- Three basic cases */
 
     if (minjx == maxjx)
-    {
-        /* degenerate distribution */
+    { /* I: degenerate distribution ---------------- */
         ix = maxjx;
         /* return ix;
            No, need to unmangle <TSL>*/
@@ -204,8 +203,7 @@ double rhyper(double nn1in, double nn2in, double kkin)
         return ix;
     }
     else if (m - minjx < 10)
-    {
-        /* inverse transformation */
+    { /* II: inverse transformation ---------- */
         if (setup1 || setup2)
         {
             if (k < n2)
@@ -234,8 +232,7 @@ double rhyper(double nn1in, double nn2in, double kkin)
         }
     }
     else
-    {
-        /* h2pe */
+    { /* III : h2pe --------------------------------------------- */
 
         if (setup1 || setup2)
         {
@@ -261,21 +258,18 @@ double rhyper(double nn1in, double nn2in, double kkin)
         u = sunif() * p3;
         v = sunif();
         if (u < p1)
-        {
-            /* rectangular region */
+        { /* rectangular region */
             ix = xl + u;
         }
         else if (u <= p2)
-        {
-            /* left tail */
+        { /* left tail */
             ix = xl + log(v) / lamdl;
             if (ix < minjx)
                 goto L30;
             v = v * (u - p1) * lamdl;
         }
         else
-        {
-            /* right tail */
+        { /* right tail */
             ix = xr - log(v) / lamdr;
             if (ix > maxjx)
                 goto L30;

@@ -45,6 +45,7 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void substr(char *buf, char *str, int sa, int so)
 {
+    /* Store the substring	str [sa:so]  into buf[] */
     int i;
     str += (sa - 1);
     for (i = 0; i <= (so - sa); i++)
@@ -80,7 +81,6 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
         if (start > stop || start > slen)
         {
             buff[0] = '\0';
-            STRING(s)[i] = mkChar(buff);
         }
         else
         {
@@ -92,8 +92,8 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
                 warningcall(call, "a string was truncated in substr()");
             }
             substr(buff, CHAR(STRING(x)[i]), start, stop);
-            STRING(s)[i] = mkChar(buff);
         }
+        STRING(s)[i] = mkChar(buff);
     }
     UNPROTECT(1);
     return s;
@@ -105,11 +105,29 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 /* returned of length equal to the input vector x, each element of the */
 /* list is the collection of splits for the corresponding element of x. */
 
+static char *buff = NULL; /* Buffer for character strings */
+
+static void AllocBuffer(int len)
+{
+    static int bufsize = 0; /* Current buffer size */
+    if (len < bufsize)
+        return;
+    len = (len + 1) * sizeof(char);
+    if (len < MAXELTSIZE)
+        len = MAXELTSIZE;
+    buff = (char *)realloc(buff, len);
+    if (!buff)
+    {
+        bufsize = 0;
+        error("Could not allocate memory for strsplit");
+    }
+}
+
 SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tok, x;
     int i, j, len, tlen, ntok;
-    char buff[MAXELTSIZE], *pt, *split = "";
+    char *pt, *split = "";
 
     checkArity(op, args);
     x = CAR(args);
@@ -122,6 +140,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < len; i++)
     {
         /* find out how many splits there will be */
+        AllocBuffer(strlen(CHAR(STRING(x)[i])));
         strcpy(buff, CHAR(STRING(x)[i]));
         if (tlen > 0)
         {
@@ -417,7 +436,7 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 STRING(ans)[j++] = STRING(vec)[i];
                 /* FIXME: Want to inherit 'names(vec)': [the following is wrong]
-                   TAG   (ans)[j]   = TAG(vec)[i]; */
+                   TAG	 (ans)[j]   = TAG(vec)[i]; */
             }
     }
     else

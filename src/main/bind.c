@@ -433,7 +433,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse)
 
     if (tag != R_NilValue)
     {
-        base = NewBase(base, tag);
+        PROTECT(base = NewBase(base, tag));
         savefirstpos = firstpos;
         saveseqno = seqno;
         savecount = count;
@@ -517,6 +517,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse)
             STRING(ans_names)[firstpos] = base;
         firstpos = savefirstpos;
         count = savecount;
+        UNPROTECT(1);
     }
     seqno = seqno + saveseqno;
 }

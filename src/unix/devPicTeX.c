@@ -185,7 +185,7 @@ static int PicTeX_Open(DevDesc *dd, picTeXDesc *ptd)
     ptd->fontsize = 0;
     ptd->fontface = 0;
     ptd->debug = 0;
-    if (!(ptd->texfp = R_fopen(ptd->filename, "w")))
+    if (!(ptd->texfp = R_fopen(R_ExpandFileName(ptd->filename), "w")))
         return 0;
     fprintf(ptd->texfp, "\\hbox{\\beginpicture\n");
     fprintf(ptd->texfp, "\\setcoordinatesystem units <1pt,1pt>\n");
@@ -428,7 +428,7 @@ static void PicTeX_Rect(double x0, double y0, double x1, double y1, int coords, 
     y[2] = y1;
     x[3] = x1;
     y[3] = y0;
-    PicTeX_Polygon(4, x, y, bg, fg, coords, dd);
+    PicTeX_Polygon(4, x, y, coords, bg, fg, dd);
 }
 
 static void PicTeX_Circle(double x, double y, int coords, double r, int col, int border, DevDesc *dd)

@@ -1,7 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R Core team.
+ *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the
+ *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,9 +31,8 @@
 static void GetRNGstate()
 {
     /* Get  .Random.seed  into proper variables */
-    int len_seed, j, seed_off;
+    int len_seed, j, seed_off = 0;
     SEXP seeds;
-    len_seed = RNG_Table[RNG_kind].n_seed;
 
     seeds = findVar(R_SeedsSymbol, R_GlobalEnv);
     if (seeds == R_UnboundValue)
@@ -41,12 +41,14 @@ static void GetRNGstate()
     }
     else
     {
+        seeds = coerceVector(seeds, INTSXP);
         if (seeds == R_MissingArg)
             error(".Random.seed is a missing argument with no default\n");
         if (!isVector(seeds))
             error(".Random.seed is not a vector\n");
-        seed_off = 0;
-        if (LENGTH(seeds) != 1 && LENGTH(seeds) < len_seed + 1)
+        RNG_kind = INTEGER(seeds)[0];
+        len_seed = RNG_Table[RNG_kind].n_seed;
+        if (LENGTH(seeds) > 1 && LENGTH(seeds) < len_seed + 1)
         {
             if (LENGTH(seeds) == RNG_Table[WICHMANN_HILL].n_seed)
             {
@@ -61,9 +63,6 @@ static void GetRNGstate()
                 error(".Random.seed has wrong length.\n");
             }
         }
-        seeds = coerceVector(seeds, INTSXP);
-        if (!seed_off)
-            RNG_kind = INTEGER(seeds)[0];
 
         switch (RNG_kind)
         {

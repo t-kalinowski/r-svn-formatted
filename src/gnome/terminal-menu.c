@@ -253,7 +253,8 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
     gchar *copyright;
 
     gchar *authors[] = {"Ross Ihaka <ihaka@stat.auckland.ac.nz>", "Robert Gentleman",
-                        "The R Core Team (see ?contributors)", "Lyndon Drake <lyndon@stat.auckland.ac.nz>", NULL};
+                        "The R Development Core Team (see ?contributors)", "Lyndon Drake <lyndon@stat.auckland.ac.nz>",
+                        NULL};
 
     version = g_strdup_printf("%s.%s %s (%s %s, %s)", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
     copyright = g_strdup_printf("Copyright (C) %s R Core Team", R_YEAR);

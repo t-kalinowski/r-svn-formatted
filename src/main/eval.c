@@ -735,7 +735,7 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, SEXP tmploc)
         return CONS(nval, val);
     }
     else
-        error("invalid (Non-language) left side of assignment\n");
+        error("Target of assignment expands to non-language object\n");
     return R_NilValue; /*NOTREACHED*/
 }
 
