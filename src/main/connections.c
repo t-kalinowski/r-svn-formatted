@@ -2376,17 +2376,18 @@ static void url_open(Rconnection con)
             xmlNanoHTTPClose(ctxt);
             error("cannot open URL `%s'", url);
         }
+        ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     case FTPsh:
         xmlNanoFTPInit();
         ctxt = xmlNanoFTPOpen(url);
         if (ctxt == NULL)
             error("cannot open URL `%s'", url);
+        ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     default:
         error("unknown URL scheme");
     }
-    ((Rurlconn)(con->private))->ctxt = ctxt;
 
     con->isopen = TRUE;
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
@@ -2423,7 +2424,7 @@ static int url_fgetc(Rconnection con)
     UrlScheme type = ((Rurlconn)(con->private))->type;
     void *ctxt = ((Rurlconn)(con->private))->ctxt;
     unsigned char c;
-    size_t n;
+    size_t n = 0; /* -Wall */
 
     switch (type)
     {
@@ -2441,7 +2442,7 @@ static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
 {
     UrlScheme type = ((Rurlconn)(con->private))->type;
     void *ctxt = ((Rurlconn)(con->private))->ctxt;
-    size_t n;
+    size_t n = 0; /* -Wall */
 
     switch (type)
     {
@@ -2512,7 +2513,7 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     char *url, *open, *class2 = "url";
     int i, ncon;
     Rconnection con = NULL;
-    UrlScheme type;
+    UrlScheme type = HTTPsh; /* -Wall */
 
     checkArity(op, args);
     scmd = CAR(args);
@@ -2631,7 +2632,7 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
         FILE *out;
         void *ctxt;
-        int len, nreads = 0, nbytes = 0, rc;
+        int len, nreads = 0, nbytes = 0;
         char buf[IBUFSIZE];
 
         out = R_fopen(R_ExpandFileName(file), mode);
