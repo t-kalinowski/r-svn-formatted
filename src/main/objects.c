@@ -25,7 +25,7 @@
 #endif
 
 #include "Defn.h"
-#include "R.h"
+#include <R_ext/RS.h> /* for Calloc, Realloc */
 
 static SEXP GetObject(RCNTXT *cptr)
 {
