@@ -961,6 +961,7 @@ static SEXP dispatchNonGeneric(SEXP name, SEXP env)
     return value;
 }
 
+#ifdef UNUSED
 static void load_methods_package()
 {
     SEXP e;
@@ -971,6 +972,7 @@ static void load_methods_package()
     eval(e, R_GlobalEnv);
     UNPROTECT(1);
 }
+#endif
 
 SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
 {
