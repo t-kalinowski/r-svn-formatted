@@ -1127,6 +1127,10 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
 {
     SEXP input = name;
     int nprotect = 0;
+    PROTECT(obj);
+    nprotect++;
+    PROTECT(value);
+    nprotect++;
     if (isSymbol(name))
     {
         input = PROTECT(allocVector(STRSXP, 1));
@@ -1149,8 +1153,6 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
         /* slots, but not attributes, can be NULL.  Store a special symbol
            instead. */
         value = pseudo_NULL;
-    PROTECT(obj);
-    nprotect++;
     setAttrib(obj, input, value);
     UNPROTECT(nprotect);
     return obj;
