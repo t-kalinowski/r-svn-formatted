@@ -184,7 +184,7 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
                               NULL};
 
     version = g_strdup_printf("%s.%s %s", R_MAJOR, R_MINOR, R_STATUS);
-    copyright = g_strdup_printf("Copyright (C) %s R Core Team", R_YEAR);
+    copyright = g_strdup_printf("Copyright (C) %s R Development Core Team", R_YEAR);
 
     g_assert(version != NULL);
     g_assert(copyright != NULL);
@@ -198,7 +198,7 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
         "R-logo-sm.xpm");
 
     hbox = gtk_hbox_new(TRUE, 0);
-    home_href = gnome_href_new("http://lib.stat.cmu.edu/R/CRAN/", "R home page");
+    home_href = gnome_href_new("http://www.r-project.org/", "R home page");
     FAQ_href = gnome_href_new("http://www.ci.tuwien.ac.at/~hornik/R/R-FAQ.html", "R FAQ");
     gtk_box_pack_start(GTK_BOX(hbox), home_href, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), FAQ_href, FALSE, FALSE, 0);
