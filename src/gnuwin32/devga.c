@@ -1698,10 +1698,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
     else if (!strncmp(dsp, "png:", 4) || !strncmp(dsp, "bmp:", 4))
     {
         xd->res_dpi = (xpos == NA_INTEGER) ? 0 : xpos;
-        if (R_OPAQUE(canvascolor))
-            xd->bg = dd->startfill = GArgb(canvascolor, 1.0);
-        else
-            xd->bg = dd->startfill = canvascolor;
+        xd->bg = dd->startfill = canvascolor;
         /* was R_RGB(255, 255, 255); white */
         xd->kind = (dsp[0] == 'p') ? PNG : BMP;
         if (strlen(dsp + 4) >= 512)
@@ -1734,7 +1731,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
     {
         char *p = strchr(&dsp[5], ':');
         xd->res_dpi = (xpos == NA_INTEGER) ? 0 : xpos;
-        xd->bg = dd->startfill = GArgb(canvascolor, 1.0);
+        xd->bg = dd->startfill = canvascolor;
         xd->kind = JPEG;
         if (!p)
             return FALSE;
@@ -2844,7 +2841,6 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
     }
     else
         warning("processing of the plot ran out of memory");
-    /* R_OPAQUE(xd->bg) ? 0 : xd->canvascolor) ; */
     gsetcliprect(xd->bm, r);
     fclose(fp);
 }
