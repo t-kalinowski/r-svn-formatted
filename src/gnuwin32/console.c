@@ -1234,15 +1234,13 @@ fp = fopen(s, "w");
 if (!fp)
 {
     char msg[256];
-    sprintf(msg, "Unable to open %s", s);
-    R_ShowMessage(s);
+    sprintf(msg, "Unable to open `%s'", s);
+    R_ShowMessage(msg);
     FVOIDRETURN;
 }
 for (i = NHISTORY - 1; i >= 0; i--)
 {
-    fprintf(fp, "%s", HISTORY(i));
-    if (i > 0)
-        fprintf(fp, "\n");
+    fprintf(fp, "%s\n", HISTORY(i));
 }
 fclose(fp);
 FVOIDEND
@@ -2419,7 +2417,6 @@ dataeditor newdataeditor()
     {
         /* blank toolbar to stop windows jumping around */
         int btsize = 24;
-        rect r = rect(2, 2, btsize, btsize);
         control tb;
         addto(c);
         MCHECK(tb = newtoolbar(btsize + 4));

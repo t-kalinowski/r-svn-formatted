@@ -1131,6 +1131,7 @@ static void hist_init()
     hist_buf[0] = "";
     for (i = 1; i < HIST_SIZE; i++)
         hist_buf[i] = (char *)0;
+    hist_pos = hist_last = 0;
 }
 
 void gl_histadd(buf) char *buf;
@@ -1229,6 +1230,56 @@ static char *hist_save(p) char *p;
     if (s == 0)
         gl_error("\n*** Error: hist_save() failed on malloc\n");
     return s;
+}
+
+void gl_savehistory(char *file)
+{
+    FILE *fp;
+    int i;
+
+    if (!file || !hist_last)
+        return;
+    fp = fopen(file, "w");
+    if (!fp)
+    {
+        char msg[256];
+        sprintf(msg, "Unable to open %s", file);
+        R_ShowMessage(msg);
+        return;
+    }
+    /* It is a circular buffer */
+    for (i = hist_last; i < HIST_SIZE; i++)
+    {
+        if (!(hist_buf + i))
+            fprintf(fp, "%s\n", hist_buf[i]);
+    }
+    for (i = 0; i < hist_last; i++)
+    {
+        fprintf(fp, "%s\n", hist_buf[i]);
+    }
+    fclose(fp);
+}
+
+void gl_loadhistory(char *file)
+{
+    FILE *fp;
+    int i;
+    char buf[250];
+
+    if (!file)
+        return;
+    fp = fopen(file, "r");
+    if (!fp)
+    {
+        return;
+    }
+    for (i = 0;; i++)
+    {
+        if (!fgets(buf, 250, fp))
+            break;
+        gl_histadd(buf);
+    }
+    fclose(fp);
 }
 
 /******************* Search stuff **************************************/
