@@ -9,7 +9,7 @@
 static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
 {
     int *xdims, n, p, lwork, info;
-    double *work, tmp;
+    double *work, *xvals, tmp;
     SEXP val, nm;
 
     if (!(isString(jobu) && isString(jobv)))
@@ -17,17 +17,20 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     p = xdims[1];
+    xvals = (double *)R_alloc(n * p, sizeof(double));
+    /* work on a copy of x */
+    Memcpy(xvals, REAL(x), (size_t)(n * p));
 
     /* ask for optimal size of work array */
     lwork = -1;
     F77_CALL(dgesvd)
-    (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, REAL(x), &n, REAL(s), REAL(u),
+    (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
      INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), &tmp, &lwork, &info);
     lwork = (int)tmp;
 
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dgesvd)
-    (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, REAL(x), &n, REAL(s), REAL(u),
+    (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
      INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), work, &lwork, &info);
     if (info != 0)
         error("error code %d from Lapack routine dgesvd", info);
@@ -45,13 +48,15 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
     return val;
 }
 
-static SEXP modLa_rs(SEXP x, SEXP only_values)
+static SEXP modLa_rs(SEXP xin, SEXP only_values)
 {
     int *xdims, n, lwork, info, ov;
     char jobv[1], uplo[1];
-    SEXP values, ret, nm;
-    double *work, *rx = REAL(x), *rvalues, tmp;
+    SEXP values, ret, nm, x;
+    double *work, *rx, *rvalues, tmp;
 
+    PROTECT(x = duplicate(xin));
+    rx = REAL(x);
     uplo[0] = 'L';
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
@@ -93,7 +98,7 @@ static SEXP modLa_rs(SEXP x, SEXP only_values)
     SET_STRING_ELT(nm, 0, mkChar("values"));
     setAttrib(ret, R_NamesSymbol, nm);
     SET_VECTOR_ELT(ret, 0, values);
-    UNPROTECT(3);
+    UNPROTECT(4);
     return ret;
 }
 
@@ -206,6 +211,7 @@ static SEXP modLa_zgesv(SEXP A, SEXP B)
 {
 #ifdef HAVE_DOUBLE_COMPLEX
     int n, p, info, *ipiv, *Adims, *Bdims;
+    Rcomplex *avals;
 
     if (!(isMatrix(A) && isComplex(A)))
         error("A must be a complex matrix");
@@ -225,7 +231,10 @@ static SEXP modLa_zgesv(SEXP A, SEXP B)
         error("B (%d x %d) must be square", Bdims[0], p);
     ipiv = (int *)R_alloc(n, sizeof(int));
 
-    F77_CALL(zgesv)(&n, &p, COMPLEX(A), &n, ipiv, COMPLEX(B), &n, &info);
+    avals = (Rcomplex *)R_alloc(n * n, sizeof(Rcomplex));
+    /* work on a copy of x */
+    Memcpy(avals, COMPLEX(A), (size_t)(n * n));
+    F77_CALL(zgesv)(&n, &p, avals, &n, ipiv, COMPLEX(B), &n, &info);
     if (info != 0)
         error("error code %d from Lapack routine zgesv", info);
     return B;
@@ -355,16 +364,17 @@ static SEXP modqr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
 #endif
 }
 
-static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
+static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP xin, SEXP s, SEXP u, SEXP v)
 {
 #ifdef HAVE_DOUBLE_COMPLEX
     int *xdims, n, p, lwork, info;
     double *rwork;
     Rcomplex *work, tmp;
-    SEXP val, nm;
+    SEXP x, val, nm;
 
     if (!(isString(jobu) && isString(jobv)))
         error("jobu and jobv must be character objects");
+    PROTECT(x = duplicate(xin));
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     p = xdims[1];
@@ -390,7 +400,7 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v
     SET_VECTOR_ELT(val, 0, s);
     SET_VECTOR_ELT(val, 1, u);
     SET_VECTOR_ELT(val, 2, v);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return val;
 #else
     error("Fortran complex functions are not available on this platform");
@@ -398,15 +408,17 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v
 #endif
 }
 
-static SEXP modLa_rs_cmplx(SEXP x, SEXP only_values)
+static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
 {
 #ifdef HAVE_DOUBLE_COMPLEX
     int *xdims, n, lwork, info, ov;
     char jobv[1], uplo[1];
-    SEXP values, ret, nm;
-    Rcomplex *work, *rx = COMPLEX(x), tmp;
+    SEXP values, ret, nm, x;
+    Rcomplex *work, *rx, tmp;
     double *rwork, *rvalues;
 
+    PROTECT(x = duplicate(xin));
+    rx = COMPLEX(x);
     uplo[0] = 'L';
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
@@ -446,7 +458,7 @@ static SEXP modLa_rs_cmplx(SEXP x, SEXP only_values)
     SET_STRING_ELT(nm, 0, mkChar("values"));
     setAttrib(ret, R_NamesSymbol, nm);
     SET_VECTOR_ELT(ret, 0, values);
-    UNPROTECT(3);
+    UNPROTECT(4);
     return ret;
 #else
     error("Fortran complex functions are not available on this platform");
