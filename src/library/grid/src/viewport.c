@@ -328,6 +328,10 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
         transformWidthtoINCHES(vpl.width, 0, parentContext, &parentgc, parentWidthCM, parentHeightCM, dd) * 2.54;
     vpHeightCM =
         transformHeighttoINCHES(vpl.height, 0, parentContext, &parentgc, parentWidthCM, parentHeightCM, dd) * 2.54;
+    /* Fall out if location or size are non-finite
+     */
+    if (!R_FINITE(xINCHES) || !R_FINITE(yINCHES) || !R_FINITE(vpWidthCM) || !R_FINITE(vpHeightCM))
+        error("Non-finite location and/or size for viewport");
     /* Determine justification required
      */
     justification(vpWidthCM, vpHeightCM, vpl.hjust, vpl.vjust, &xadj, &yadj);
