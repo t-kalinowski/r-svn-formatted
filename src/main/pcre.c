@@ -441,47 +441,48 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
 #ifdef SUPPORT_UTF8
         if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(text, i))))
-            warningcall(call, _("input string %d is invalid in this locale"), i + 1);
-        INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
-        continue;
-    }
-#endif
-    rc = pcre_exec(re_pcre, NULL, s, strlen(s), 0, 0, ovector, 3);
-    if (rc >= 0)
-    {
-        st = ovector[0];
-        INTEGER(ans)[i] = st + 1; /* index from one */
-        INTEGER(matchlen)[i] = ovector[1] - st;
-        if (!useBytes && mbcslocale)
         {
-            char *buff;
-            int mlen = ovector[1] - st;
-            /* Unfortunately these are in bytes, so we need to
-               use chars instead */
-            buff = alloca(imax2(st, mlen + 1));
-            if (st > 0)
+            warningcall(call, _("input string %d is invalid in this locale"), i + 1);
+            INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
+            continue;
+        }
+#endif
+        rc = pcre_exec(re_pcre, NULL, s, strlen(s), 0, 0, ovector, 3);
+        if (rc >= 0)
+        {
+            st = ovector[0];
+            INTEGER(ans)[i] = st + 1; /* index from one */
+            INTEGER(matchlen)[i] = ovector[1] - st;
+            if (!useBytes && mbcslocale)
             {
-                memcpy(buff, CHAR(STRING_ELT(text, i)), st);
-                buff[st] = '\0';
-                INTEGER(ans)[i] = 1 + mbstowcs(NULL, buff, 0);
-                if (INTEGER(ans)[i] <= 0) /* an invalid string */
-                    INTEGER(ans)[i] = NA_INTEGER;
+                char *buff;
+                int mlen = ovector[1] - st;
+                /* Unfortunately these are in bytes, so we need to
+                   use chars instead */
+                buff = alloca(imax2(st, mlen + 1));
+                if (st > 0)
+                {
+                    memcpy(buff, CHAR(STRING_ELT(text, i)), st);
+                    buff[st] = '\0';
+                    INTEGER(ans)[i] = 1 + mbstowcs(NULL, buff, 0);
+                    if (INTEGER(ans)[i] <= 0) /* an invalid string */
+                        INTEGER(ans)[i] = NA_INTEGER;
+                }
+                memcpy(buff, CHAR(STRING_ELT(text, i)) + st, mlen);
+                buff[mlen] = '\0';
+                INTEGER(matchlen)[i] = mbstowcs(NULL, buff, 0);
+                if (INTEGER(matchlen)[i] < 0) /* an invalid string */
+                    INTEGER(matchlen)[i] = NA_INTEGER;
             }
-            memcpy(buff, CHAR(STRING_ELT(text, i)) + st, mlen);
-            buff[mlen] = '\0';
-            INTEGER(matchlen)[i] = mbstowcs(NULL, buff, 0);
-            if (INTEGER(matchlen)[i] < 0) /* an invalid string */
-                INTEGER(matchlen)[i] = NA_INTEGER;
+        }
+        else
+        {
+            INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
         }
     }
-    else
-    {
-        INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
-    }
-}
-(pcre_free)(re_pcre);
-pcre_free((void *)tables);
-setAttrib(ans, install("match.length"), matchlen);
-UNPROTECT(2);
-return ans;
+    (pcre_free)(re_pcre);
+    pcre_free((void *)tables);
+    setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(2);
+    return ans;
 }
