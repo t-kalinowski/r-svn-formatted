@@ -861,7 +861,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(b) != CLOSXP)
     {
         b = deparse1(b, 1, SIMPLEDEPARSE);
-        errorcall(call, _("%s is not a function"), CHAR(STRING_ELT(b, 0)));
+        errorcall(call, _("'%s' is not a function"), CHAR(STRING_ELT(b, 0)));
     }
 
     /* Do we expand ... ? */
@@ -870,7 +870,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (expdots == NA_LOGICAL)
     {
         b = deparse1(CADDR(args), 1, SIMPLEDEPARSE);
-        errorcall(call, _("%s is not a logical"), CHAR(STRING_ELT(b, 0)));
+        errorcall(call, _("'%s' is not a logical"), CHAR(STRING_ELT(b, 0)));
     }
 
     /* Get the formals and match the actual args */

@@ -178,10 +178,10 @@ SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *sym
         if (!*fun && !(*fun = R_FindSymbol(buf, dll.DLLname, symbol)))
         {
             if (strlen(dll.DLLname))
-                errorcall(call, _("%s function name not in DLL for package '%s'"),
+                errorcall(call, _("\"%s\" function name not in DLL for package '%s'"),
                           symbol->type == R_FORTRAN_SYM ? "Fortran" : "C", dll.DLLname);
             else
-                errorcall(call, _("%s function name not in load table"),
+                errorcall(call, _("\"%s\" function name not in load table"),
                           symbol->type == R_FORTRAN_SYM ? "Fortran" : "C");
         }
     }

@@ -66,7 +66,7 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
          INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), &tmp, &lwork, &info);
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dgesvd");
+            error(_("error code %d from Lapack routine '%s'"), info, "dgesvd");
         lwork = (int)tmp;
 
         work = (double *)R_alloc(lwork, sizeof(double));
@@ -74,7 +74,7 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
          INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), work, &lwork, &info);
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dgesvd");
+            error(_("error code %d from Lapack routine '%s'"), info, "dgesvd");
     }
     else
     {
@@ -87,14 +87,14 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, &tmp, &lwork, iwork,
          &info);
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dgesdd");
+            error(_("error code %d from Lapack routine '%s'"), info, "dgesdd");
         lwork = (int)tmp;
         work = (double *)R_alloc(lwork, sizeof(double));
         F77_CALL(dgesdd)
         (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, work, &lwork, iwork,
          &info);
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dgesdd");
+            error(_("error code %d from Lapack routine '%s'"), info, "dgesdd");
     }
 
     val = PROTECT(allocVector(VECSXP, 3));
@@ -154,7 +154,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
         F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, &info);
 #endif
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dsyev");
+            error(_("error code %d from Lapack routine '%s'"), info, "dsyev");
         lwork = (int)tmp;
         if (lwork < 3 * n - 1)
             lwork = 3 * n - 1; /* Sanity check */
@@ -165,7 +165,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
         F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, &info);
 #endif
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dsyev");
+            error(_("error code %d from Lapack routine '%s'"), info, "dsyev");
     }
     else
     {
@@ -192,7 +192,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
          &itmp, &liwork, &info);
 #endif
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dsyevr");
+            error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
         lwork = (int)tmp;
         liwork = itmp;
 
@@ -208,7 +208,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
          iwork, &liwork, &info);
 #endif
         if (info != 0)
-            error(_("error code %d from Lapack routine %s"), info, "dsyevr");
+            error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
     }
 
     if (!ov)
@@ -304,7 +304,7 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     F77_CALL(rgeev)(jobVL, jobVR, &n, xvals, &n, wR, wI, left, &n, right, &n, &tmp, &lwork, &info);
 #endif
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dgeev");
+        error(_("error code %d from Lapack routine '%s'"), info, "dgeev");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
 #ifdef HAVE_LAPACK
@@ -313,7 +313,7 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     F77_CALL(rgeev)(jobVL, jobVR, &n, xvals, &n, wR, wI, left, &n, right, &n, work, &lwork, &info);
 #endif
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dgeev");
+        error(_("error code %d from Lapack routine '%s'"), info, "dgeev");
 
     complexValues = FALSE;
     for (i = 0; i < n; i++)
@@ -426,12 +426,12 @@ static SEXP modLa_zgeqp3(SEXP Ain)
     lwork = -1;
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgeqp3");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgeqp3");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), work, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgeqp3");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
     rank = PROTECT(allocVector(INTSXP, 1));
@@ -474,15 +474,15 @@ static SEXP modqr_coef_cmplx(SEXP Q, SEXP Bin)
     lwork = -1;
     F77_CALL(zunmqr)("L", "C", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "zunmqr");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zunmqr)("L", "C", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, work, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "zunmqr");
     F77_CALL(ztrtrs)("U", "N", "N", &k, &nrhs, COMPLEX(qr), &n, COMPLEX(B), &n, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "ztrtrs");
+        error(_("error code %d from Lapack routine '%s'"), info, "ztrtrs");
     UNPROTECT(1);
     return B;
 #else
@@ -516,13 +516,13 @@ static SEXP modqr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
     F77_CALL(zunmqr)
     ("L", tr ? "C" : "N", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "zunmqr");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zunmqr)
     ("L", tr ? "C" : "N", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, work, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "zunmqr");
     UNPROTECT(1);
     return B;
 #else
@@ -552,14 +552,14 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP xin, SEXP s, SEXP u, SEXP
     (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, COMPLEX(x), &n, REAL(s), COMPLEX(u),
      INTEGER(getAttrib(u, R_DimSymbol)), COMPLEX(v), INTEGER(getAttrib(v, R_DimSymbol)), &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgesvd");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgesvd");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgesvd)
     (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, COMPLEX(x), &n, REAL(s), COMPLEX(u),
      INTEGER(getAttrib(u, R_DimSymbol)), COMPLEX(v), INTEGER(getAttrib(v, R_DimSymbol)), work, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgesvd");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgesvd");
     val = PROTECT(allocVector(VECSXP, 3));
     nm = PROTECT(allocVector(STRSXP, 3));
     SET_STRING_ELT(nm, 0, mkChar("d"));
@@ -608,12 +608,12 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
     lwork = -1;
     F77_CALL(zheev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zheev");
+        error(_("error code %d from Lapack routine '%s'"), info, "zheev");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zheev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zheev");
+        error(_("error code %d from Lapack routine '%s'"), info, "zheev");
     if (!ov)
     {
         ret = PROTECT(allocVector(VECSXP, 2));
@@ -671,12 +671,12 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
     lwork = -1;
     F77_CALL(zgeev)(jobVL, jobVR, &n, xvals, &n, COMPLEX(values), left, &n, right, &n, &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgeev");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgeev");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgeev)(jobVL, jobVR, &n, xvals, &n, COMPLEX(values), left, &n, right, &n, work, &lwork, rwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "zgeev");
+        error(_("error code %d from Lapack routine '%s'"), info, "zgeev");
 
     if (!ov)
     {
@@ -848,12 +848,12 @@ static SEXP modLa_dgeqp3(SEXP Ain)
     lwork = -1;
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), &tmp, &lwork, &info);
     if (info < 0)
-        error(_("error code %d from Lapack routine %s"), info, "dgeqp3");
+        error(_("error code %d from Lapack routine '%s'"), info, "dgeqp3");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), work, &lwork, &info);
     if (info < 0)
-        error(_("error code %d from Lapack routine %s"), info, "dgeqp3");
+        error(_("error code %d from Lapack routine '%s'"), info, "dgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
     rank = PROTECT(allocVector(INTSXP, 1));
@@ -891,15 +891,15 @@ static SEXP modqr_coef_real(SEXP Q, SEXP Bin)
     lwork = -1;
     F77_CALL(dormqr)("L", "T", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dormqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "dormqr");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dormqr)("L", "T", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, work, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dormqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "dormqr");
     F77_CALL(dtrtrs)("U", "N", "N", &k, &nrhs, REAL(qr), &n, REAL(B), &n, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dtrtrs");
+        error(_("error code %d from Lapack routine '%s'"), info, "dtrtrs");
     UNPROTECT(1);
     return B;
 }
@@ -927,12 +927,12 @@ static SEXP modqr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
     lwork = -1;
     F77_CALL(dormqr)("L", tr ? "T" : "N", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dormqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "dormqr");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dormqr)("L", tr ? "T" : "N", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, work, &lwork, &info);
     if (info != 0)
-        error(_("error code %d from Lapack routine %s"), info, "dormqr");
+        error(_("error code %d from Lapack routine '%s'"), info, "dormqr");
     UNPROTECT(1);
     return B;
 }
@@ -957,7 +957,7 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
     F77_CALL(dgetrf)(&n, &n, REAL(A), &n, jpvt, &info);
     sign = 1;
     if (info < 0)
-        error(_("error code %d from Lapack routine %s"), info, "dgetrf");
+        error(_("error code %d from Lapack routine '%s'"), info, "dgetrf");
     else if (info > 0)
     { /* Singular matrix:  U[i,i] (i := info) is 0 */
         /*warning("Lapack dgetrf(): singular matrix: U[%d,%d]=0", info,info);*/

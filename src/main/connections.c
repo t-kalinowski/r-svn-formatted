@@ -494,7 +494,7 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
     if (rw == 2)
     {
         if (!con->canwrite)
-            error(_("connection is not open for writiing"));
+            error(_("connection is not open for writing"));
         pos = this->wpos;
         this->last_was_write = TRUE;
     }
