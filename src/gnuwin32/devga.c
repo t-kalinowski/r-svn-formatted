@@ -905,6 +905,7 @@ static SEXP GrowthPlotHistory(SEXP vDL)
 static void AddtoPlotHistory(SEXP snapshot, int replace)
 {
     int where;
+    SEXP class;
 
     GETDL;
     /*    if (dl == R_NilValue) {
@@ -922,12 +923,15 @@ static void AddtoPlotHistory(SEXP snapshot, int replace)
     else
         where = pNUMPLOTS;
     PROTECT(snapshot);
+    PROTECT(class = allocVector(STRSXP, 1));
+    SET_STRING_ELT(class, 0, mkChar("recordedplot"));
+    classgets(snapshot, class);
     SET_VECTOR_ELT(pHISTORY, where, snapshot);
     pCURRENTPOS = where;
     if (!replace)
         pNUMPLOTS += 1;
     SETDL;
-    UNPROTECT(2);
+    UNPROTECT(3);
 }
 
 static void Replay(NewDevDesc *dd, SEXP vDL)
