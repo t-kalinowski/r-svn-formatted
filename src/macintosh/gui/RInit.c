@@ -110,6 +110,7 @@ PMPrintSession printSession;
 
 SInt32 systemVersion;
 SInt32 carbonVersion;
+extern void GetSysVersion(void);
 
 OSErr Initialize(void)
 {
@@ -119,37 +120,12 @@ OSErr Initialize(void)
 
     /* expand the zone to its maximum size */
 
+#ifndef __MRC__
     if ((fileno(stdin) == 0) || (fileno(stdout) == 1))
     {
-
-#if !TARGET_API_MAC_CARBON
-
-        /* allocate some extra master pointer blocks */
-        for (i = 0; i < 30; i++)
-        {
-            MoreMasters();
-        }
-
-        MaxApplZone();
-
-        /* initialize the Toolbox */
-        InitGraf(&qd.thePort);
-        InitFonts();
-        InitWindows();
-        InitMenus();
-        TEInit(); /* tho we use WASTE for text stuff, dialogs, etc all use TextEdit so don't remove this! */
-        InitDialogs(nil);
-        InitCursor();
-        FlushEvents(everyEvent, 0);
-
-        /* if desk scrap is too large, unload it */
-        if (InfoScrap()->scrapSize > kScrapThreshold)
-        {
-            UnloadScrap();
-        }
-#else
-        MoreMasterPointers(30);
 #endif
+
+        MoreMasterPointers(30);
 
         // We need CarbonLib v 1.2.5 or Higher
         Gestalt(gestaltCarbonVersion, &carbonVersion);
@@ -162,10 +138,13 @@ OSErr Initialize(void)
         }
 
         //	make sure we're using a recent version of the system software
-        Gestalt(gestaltSystemVersion, &systemVersion);
-        systemVersion = (systemVersion << 16) | 0x8000;
+        //	GetSysVersion();
+        //	Gestalt ( gestaltSystemVersion, & systemVersion ) ;
+        //	systemVersion = ( systemVersion << 16 ) | 0x8000 ;
+
         if (CheckVersion(1, systemVersion, kMinSystemVersion))
         {
+            R_ShowMessage("R needs System 8.6 or later to run");
             return -1;
         }
 
@@ -183,19 +162,10 @@ OSErr Initialize(void)
         /* determine whether the Text Services Manager is available*/
         gHasTextServices = (Gestalt(gestaltTSMgrVersion, &response) == noErr);
 
-        /* register this application with the TSM*/
-#if !TARGET_API_MAC_CARBON
-
-        if (gHasTextServices)
-        {
-            if ((err = InitTSMAwareApplication()) != noErr)
-                goto cleanup;
-        }
-#endif /* ! TARGET_API_MAC_CARBON */
-
         /* install default drag handlers */
         if (gHasDragAndDrop)
         {
+
             if ((err = InstallDragHandlers()) != noErr)
                 goto cleanup;
         }
@@ -223,9 +193,11 @@ OSErr Initialize(void)
     cleanup:
         if (err != noErr)
             ErrorAlert(err);
+#ifndef __MRC__
     }
     else
         err = noErr;
+#endif
 
     return err;
 }
