@@ -27,6 +27,10 @@
 #include <Startup.h> /* rather cleanup ..*/
 #include <Rconnections.h>
 
+#ifndef min
+#define min(a, b) (a < b ? a : b)
+#endif
+
 /* limit on call length at which errorcall/warningcall is split over
    two lines */
 #define LONGCALL 30
@@ -150,7 +154,7 @@ void warning(const char *format, ...)
 
     va_list(ap);
     va_start(ap, format);
-    Rvsnprintf(buf, BUFSIZE, format, ap);
+    Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
     va_end(ap);
     p = buf + strlen(buf) - 1;
     if (strlen(buf) > 0 && *p == '\n')
@@ -172,7 +176,7 @@ void warningcall(SEXP call, const char *format, ...)
     {
         va_list(ap);
         va_start(ap, format);
-        Rvsnprintf(buf, BUFSIZE, format, ap);
+        Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
         va_end(ap);
         R_WarningHook(call, buf);
         return;
@@ -205,7 +209,7 @@ void warningcall(SEXP call, const char *format, ...)
     { /* make it an error */
         va_list(ap);
         va_start(ap, format);
-        Rvsnprintf(buf, BUFSIZE, format, ap);
+        Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
         va_end(ap);
         inWarning = 0; /* PR#1570 */
         errorcall(call, "(converted from warning) %s", buf);
@@ -223,9 +227,9 @@ void warningcall(SEXP call, const char *format, ...)
         else
             REprintf("Warning: ");
         va_start(ap, format);
-        REvprintf(format, ap);
+        Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
         va_end(ap);
-        REprintf("\n");
+        REprintf("%s\n", buf);
     }
     else if (w == 0)
     { /* collect them */
@@ -236,7 +240,7 @@ void warningcall(SEXP call, const char *format, ...)
         if (R_CollectWarnings > 49)
             return;
         SET_VECTOR_ELT(R_Warnings, R_CollectWarnings, call);
-        Rvsnprintf(buf, BUFSIZE, format, ap);
+        Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
         SET_STRING_ELT(names, R_CollectWarnings++, mkChar(buf));
@@ -316,7 +320,7 @@ void errorcall(SEXP call, const char *format, ...)
         void (*hook)(SEXP, char *) = R_ErrorHook;
         R_ErrorHook = NULL; /* to avoid recursion */
         va_start(ap, format);
-        Rvsnprintf(buf, BUFSIZE, format, ap);
+        Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
         va_end(ap);
         hook(call, buf);
     }
@@ -360,7 +364,7 @@ void errorcall(SEXP call, const char *format, ...)
 
     p = errbuf + strlen(errbuf);
     va_start(ap, format);
-    Rvsnprintf(p, BUFSIZE - strlen(errbuf), format, ap);
+    Rvsnprintf(p, min(BUFSIZE, R_WarnLength) - strlen(errbuf), format, ap);
     va_end(ap);
     p = errbuf + strlen(errbuf) - 1;
     if (*p != '\n')
@@ -387,7 +391,7 @@ void error(const char *format, ...)
 
     va_list(ap);
     va_start(ap, format);
-    Rvsnprintf(buf, BUFSIZE, format, ap);
+    Rvsnprintf(buf, min(BUFSIZE, R_WarnLength), format, ap);
     va_end(ap);
     /* This can be called before R_GlobalContext is defined, so... */
     errorcall(R_GlobalContext ? R_GlobalContext->call : R_NilValue, "%s", buf);
