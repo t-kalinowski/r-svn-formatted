@@ -1,6 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998	      Robert Gentleman, Ross Ihaka and the R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -90,16 +91,16 @@ static void SetFont(int, int, DevDesc *);
 static void SetLinetype(int, DevDesc *);
 static int matchfamily(char *name);
 
-/*  PostScript Device Driver Parameters  */
-/*  cpars[0] = output filename           */
-/*  cpars[1] = paper type                */
-/*  cpars[2] = typeface                  */
-/*  cpars[3] = background color          */
-/*  cpars[4] = foreground color          */
-/*  npars[0] = width in inches           */
-/*  npars[1] = height in inches          */
-/*  npars[2] = landscape                 */
-/*  npars[3] = pointsize                 */
+/*  PostScript Device Driver Parameters	 */
+/*  cpars[0] = output filename		 */
+/*  cpars[1] = paper type		 */
+/*  cpars[2] = typeface			 */
+/*  cpars[3] = background color		 */
+/*  cpars[4] = foreground color		 */
+/*  npars[0] = width in inches		 */
+/*  npars[1] = height in inches		 */
+/*  npars[2] = landscape		 */
+/*  npars[3] = pointsize		 */
 
 int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg, double width, double height,
                    double horizontal, double ps)
@@ -235,6 +236,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
 
     dd->dp.ipr[0] = 1.0 / 72.0;
     dd->dp.ipr[1] = 1.0 / 72.0;
+    /* GREset(.)  dd->gp.mkh = dd->gp.cra[0] * dd->gp.ipr[0]; */
 
     dd->dp.canResizePlot = 0;
     dd->dp.canChangeFont = 1;
