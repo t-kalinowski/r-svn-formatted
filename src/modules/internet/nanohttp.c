@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-2   The R Development Core Team.
+ *  Copyright (C) 2001-3   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -164,6 +164,7 @@ typedef struct RxmlNanoHTTPCtxt
     int inlen;         /* len of the input buffer */
     int last;          /* return code for last operation */
     int returnValue;   /* the protocol return value */
+    char *statusMsg;   /* the protocol status message */
     char *contentType; /* the MIME type for the input */
     int contentLength; /* the reported length */
     char *location;    /* the new URL in case of redirect */
@@ -475,6 +476,7 @@ static RxmlNanoHTTPCtxtPtr RxmlNanoHTTPNewCtxt(const char *URL)
     memset(ret, 0, sizeof(RxmlNanoHTTPCtxt));
     ret->port = 80;
     ret->returnValue = 0;
+    ret->statusMsg = NULL;
     ret->contentLength = -1;
     ret->fd = -1;
 
@@ -794,6 +796,11 @@ static void RxmlNanoHTTPScanAnswer(RxmlNanoHTTPCtxtPtr ctxt, const char *line)
         if ((*cur != 0) && (*cur != ' ') && (*cur != '\t'))
             return;
         ctxt->returnValue = ret;
+        if ((*cur == ' ') || (*cur == '\t'))
+            cur++;
+        if (ctxt->statusMsg)
+            xmlFree(ctxt->statusMsg);
+        ctxt->statusMsg = xmlMemStrdup(cur);
     }
     else if (!xmlStrncasecmp(BAD_CAST line, BAD_CAST "Content-Type:", 13))
     {
@@ -1388,6 +1395,12 @@ int RxmlNanoHTTPReturnCode(void *ctx)
         return (-1);
 
     return (ctxt->returnValue);
+}
+
+char *RxmlNanoHTTPStatusMsg(void *ctx)
+{
+    RxmlNanoHTTPCtxtPtr ctxt = (RxmlNanoHTTPCtxtPtr)ctx;
+    return (ctxt->statusMsg);
 }
 
 int RxmlNanoHTTPContentLength(void *ctx)
