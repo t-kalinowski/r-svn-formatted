@@ -206,7 +206,7 @@ SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
         for (i = 0; i < len; i++)
         {
-            if (STRING_ELT(x, i) == NA_STRING)
+            if (STRING_ELT(x, i) == NA_STRING || STRING_ELT(value, i % v) == NA_STRING)
             {
                 SET_STRING_ELT(s, i, NA_STRING);
                 continue;
@@ -287,6 +287,16 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         strcpy(buff, CHAR(STRING_ELT(x, i)));
         if (tlen > 0)
         {
+            /* NA token doesn't split*/
+            if (STRING_ELT(tok, i % tlen) == NA_STRING)
+            {
+                PROTECT(t = allocVector(STRSXP, 1));
+                bufp = buff;
+                SET_STRING_ELT(t, 0, mkChar(bufp));
+                SET_VECTOR_ELT(s, i, t);
+                UNPROTECT(1);
+                continue;
+            }
             /* find out how many splits there will be */
             split = CHAR(STRING_ELT(tok, i % tlen));
             ntok = 0;
@@ -576,6 +586,47 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(pat) || length(pat) < 1 || !isString(vec))
         errorcall(call, R_MSG_IA);
 
+    /* special case: NA pattern matches only NAs in vector */
+    if (STRING_ELT(pat, 0) == NA_STRING)
+    {
+        n = length(vec);
+        nmatches = 0;
+        PROTECT(ind = allocVector(LGLSXP, n));
+        for (i = 0; i < n; i++)
+        {
+            if (STRING_ELT(vec, i) == NA_STRING)
+            {
+                INTEGER(ind)[i] = 1;
+                nmatches++;
+            }
+            else
+                INTEGER(ind)[i] = 0;
+        }
+        if (value_opt)
+        {
+            ans = allocVector(STRSXP, nmatches);
+            j = 0;
+            for (i = 0; i < n; i++)
+                if (INTEGER(ind)[i])
+                {
+                    SET_STRING_ELT(ans, j++, STRING_ELT(vec, i));
+                    /* FIXME: Want to inherit 'names(vec)': [the following is wrong]
+                       TAG	 (ans)[j]   = TAG(vec)[i]; */
+                }
+        }
+        else
+        {
+            ans = allocVector(INTSXP, nmatches);
+            j = 0;
+            for (i = 0; i < n; i++)
+                if (INTEGER(ind)[i])
+                    INTEGER(ans)[j++] = i + 1;
+        }
+        UNPROTECT(1);
+        return ans;
+    }
+    /* end NA pattern handling */
+
     eflags = 0;
 
     if (extended_opt)
@@ -738,11 +789,21 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
+        /* NA matches only itself */
         if (STRING_ELT(vec, i) == NA_STRING)
         {
-            SET_STRING_ELT(ans, i, NA_STRING);
+            if (STRING_ELT(pat, 0) == NA_STRING)
+                SET_STRING_ELT(ans, i, STRING_ELT(rep, 0));
+            else
+                SET_STRING_ELT(ans, i, NA_STRING);
             continue;
         }
+        if (STRING_ELT(pat, 0) == NA_STRING)
+        {
+            SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
+            continue;
+        }
+
         offset = 0;
         nmatch = 0;
         s = CHAR(STRING_ELT(vec, i));
@@ -763,6 +824,8 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (nmatch == 0)
             SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
+        else if (STRING_ELT(rep, 0) == NA_STRING)
+            SET_STRING_ELT(ans, i, NA_STRING);
         else
         {
             SET_STRING_ELT(ans, i, allocString(ns));
@@ -815,7 +878,7 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (extended_opt == NA_INTEGER)
         extended_opt = 1;
 
-    if (!isString(pat) || length(pat) < 1 || !isString(text) || length(text) < 1)
+    if (!isString(pat) || length(pat) < 1 || !isString(text) || length(text) < 1 || STRING_ELT(pat, 0) == NA_STRING)
         errorcall(call, R_MSG_IA);
 
     eflags = extended_opt ? REG_EXTENDED : 0;
@@ -1037,6 +1100,11 @@ SEXP do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(old) || (length(old) < 1) || !isString(new) || (length(new) < 1) || !isString(x))
         errorcall(call, R_MSG_IA);
 
+    if (STRING_ELT(old, 0) == NA_STRING || STRING_ELT(new, 0) == NA_STRING)
+    {
+        errorcall(call, "invalid (NA) arguments.");
+    }
+
     for (i = 0; i <= UCHAR_MAX; i++)
         xtable[i] = i;
 
@@ -1128,6 +1196,45 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(pat) || length(pat) < 1 || !isString(vec))
         errorcall(call, R_MSG_IA);
+
+    /* special case: NA pattern matches only NAs in vector */
+    if (STRING_ELT(pat, 0) == NA_STRING)
+    {
+        n = length(vec);
+        nmatches = 0;
+        PROTECT(ind = allocVector(LGLSXP, n));
+        for (i = 0; i < n; i++)
+        {
+            if (STRING_ELT(vec, i) == NA_STRING)
+            {
+                INTEGER(ind)[i] = 1;
+                nmatches++;
+            }
+            else
+                INTEGER(ind)[i] = 0;
+        }
+        if (value_opt)
+        {
+            ans = allocVector(STRSXP, nmatches);
+            j = 0;
+            for (i = 0; i < n; i++)
+                if (INTEGER(ind)[i])
+                {
+                    SET_STRING_ELT(ans, j++, STRING_ELT(vec, i));
+                }
+        }
+        else
+        {
+            ans = allocVector(INTSXP, nmatches);
+            j = 0;
+            for (i = 0; i < n; i++)
+                if (INTEGER(ind)[i])
+                    INTEGER(ans)[j++] = i + 1;
+        }
+        UNPROTECT(1);
+        return ans;
+    }
+    /* end NA pattern handling */
 
     /* Create search pattern object. */
     str = CHAR(STRING_ELT(pat, 0));
