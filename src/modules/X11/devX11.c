@@ -676,7 +676,13 @@ static R_XFont *R_XLoadQueryFont(Display *display, char *name)
     tmp = (R_XFont *)malloc(sizeof(R_XFont));
     tmp->type = One_Font;
     tmp->font = XLoadQueryFont(display, name);
-    return tmp;
+    if (tmp->font)
+        return tmp;
+    else
+    {
+        free(tmp);
+        return NULL;
+    }
 }
 
 static void R_XFreeFont(Display *display, R_XFont *font)
@@ -702,6 +708,11 @@ static R_XFont *R_XLoadQueryFontSet(Display *display, const char *fontset_name)
 
     snprintf(fs_name, 1000, "%s,*", fontset_name);
     fontset = XCreateFontSet(display, fs_name, &missing_charset_list, &missing_charset_count, &def_string);
+    if (!fontset)
+    {
+        free(tmp);
+        return NULL;
+    }
     if (missing_charset_count)
     {
         /* for(i = 0; i < missing_charset_count; i++)
@@ -723,6 +734,10 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
     char buf1[BUFSIZ];
 #endif
     R_XFont *tmp;
+
+#ifdef DEBUG_X11
+    printf("trying face %d size %d\n", face, size);
+#endif
 
     if (size < SMALLEST)
         size = SMALLEST;
@@ -750,9 +765,9 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
 
     /*
      * The symbol font face is a historical oddity
-     * Always use a standard font for font face 4
+     * Always use a standard font for font face 5
      */
-    if (face == SYMBOL_FONTFACE - 1)
+    if (face == SYMBOL_FONTFACE - 1) /* NB: face-- above */
         sprintf(buf, xd->symbolfamily, pixelsize);
     else
 #ifdef USE_FONTSET
@@ -820,7 +835,7 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
         else
             pixelsize = 34;
 
-        if (face == 4)
+        if (face == SYMBOL_FONTFACE - 1)
             sprintf(buf, symbolname, pixelsize);
         else
             sprintf(buf, fontname, weight[face & 1], slant[(face & 2) >> 1], pixelsize);
