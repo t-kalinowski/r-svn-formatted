@@ -391,7 +391,11 @@ static void R_csort2(Rcomplex *x, int n, Rboolean decreasing)
                 }
             else
                 while (j >= h && (x[j - h].r > v.r || (x[j - h].r == v.r && x[j - h].i > v.i)))
-                    x[j] = v;
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            x[j] = v;
         }
 }
 
