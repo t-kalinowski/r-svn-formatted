@@ -471,7 +471,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                 cc = bb;
                 bb = aa;
                 aa = en * bb / *x - cc;
-                m = 2 - m;
+                m = m ? 0 : 2; /* m = 2 - m failed on gcc4-20041019 */
                 if (m != 0)
                 {
                     em -= 1.;
@@ -510,7 +510,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                     if (n == 1)
                         goto L240;
 
-                    m = 2 - m;
+                    m = m ? 0 : 2; /* m = 2 - m failed on gcc4-20041019 */
                     if (m != 0)
                     {
                         em -= 1.;
@@ -532,7 +532,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
             {
                 en -= 2.;
                 b[n] = en * b[n + 1] / *x - b[n + 2];
-                m = 2 - m;
+                m = m ? 0 : 2; /* m = 2 - m failed on gcc4-20041019 */
                 if (m != 0)
                 {
                     em -= 1.;
