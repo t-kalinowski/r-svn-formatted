@@ -922,7 +922,7 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* This could be faster for plen > 1, but uses in R are for small strings */
-static int fgrep_one(char *pat, char *target)
+static int fgrep_one(char *pat, char *target, int useBytes)
 {
     int i = -1, plen = strlen(pat), len = strlen(target);
     char *p;
@@ -937,12 +937,27 @@ static int fgrep_one(char *pat, char *target)
                 return i;
         return -1;
     }
-    /* This is UTF-8 safe since it compares whole strings,
-       but it would be more efficient to skip along by chars.
-    */
-    for (i = 0; i <= len - plen; i++)
-        if (strncmp(pat, target + i, plen) == 0)
-            return i;
+#ifdef SUPPORT_MBCS
+    if (!useBytes && mbcslocale)
+    { /* skip along by chars */
+        mbstate_t mb_st;
+        int ib, used;
+        mbs_init(&mb_st);
+        for (ib = 0, i = 0; ib <= len - plen; i++)
+        {
+            if (strncmp(pat, target + ib, plen) == 0)
+                return i;
+            used = Mbrtowc(NULL, target + ib, MB_CUR_MAX, &mb_st);
+            if (used <= 0)
+                break;
+            ib += used;
+        }
+    }
+    else
+#endif
+        for (i = 0; i <= len - plen; i++)
+            if (strncmp(pat, target + i, plen) == 0)
+                return i;
     return -1;
 }
 
@@ -965,6 +980,7 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     value_opt = asLogical(CAR(args));
     args = CDR(args);
     fixed_opt = asLogical(CAR(args));
+    args = CDR(args);
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
     if (extended_opt == NA_INTEGER)
@@ -1029,7 +1045,7 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
 #endif
                 if (fixed_opt)
-                    LOGICAL(ind)[i] = fgrep_one(CHAR(STRING_ELT(pat, 0)), CHAR(STRING_ELT(vec, i))) >= 0;
+                    LOGICAL(ind)[i] = fgrep_one(CHAR(STRING_ELT(pat, 0)), CHAR(STRING_ELT(vec, i)), useBytes) >= 0;
                 else if (regexec(&reg, CHAR(STRING_ELT(vec, i)), 0, NULL, 0) == 0)
                     LOGICAL(ind)[i] = 1;
             }
@@ -1244,7 +1260,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
         if (fixed_opt)
         {
-            st = fgrep_one(spat, s);
+            st = fgrep_one(spat, s, 0);
             if (st < 0)
                 SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
             else if (STRING_ELT(rep, 0) == NA_STRING)
@@ -1258,10 +1274,10 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     {
                         nr++;
                         s += st + patlen;
-                    } while ((st = fgrep_one(spat, s)) >= 0);
+                    } while ((st = fgrep_one(spat, s, 0)) >= 0);
                     /* and reset */
                     s = CHAR(STRING_ELT(vec, i));
-                    st = fgrep_one(spat, s);
+                    st = fgrep_one(spat, s, 0);
                 }
                 SET_STRING_ELT(ans, i, allocString(ns + nr * (replen - patlen)));
                 u = CHAR(STRING_ELT(ans, i));
@@ -1273,7 +1289,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     u[nr + st] = '\0';
                     s += st + patlen;
                     strcat(u, t);
-                } while (global && (st = fgrep_one(spat, s)) >= 0);
+                } while (global && (st = fgrep_one(spat, s, 0)) >= 0);
                 strcat(u, s);
             }
         }
@@ -1353,6 +1369,7 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (extended_opt == NA_INTEGER)
         extended_opt = 1;
     fixed_opt = asLogical(CAR(args));
+    args = CDR(args);
     if (fixed_opt == NA_INTEGER)
         fixed_opt = 0;
     useBytes = asLogical(CAR(args));
@@ -1404,22 +1421,12 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
             if (fixed_opt)
             {
-                st = fgrep_one(spat, CHAR(STRING_ELT(text, i)));
+                st = fgrep_one(spat, CHAR(STRING_ELT(text, i)), useBytes);
                 INTEGER(ans)[i] = (st > -1) ? (st + 1) : -1;
 #ifdef SUPPORT_MBCS
                 if (!useBytes && mbcslocale)
                 {
                     INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? mbstowcs(NULL, spat, 0) : -1;
-                    /* We need the match position in chars not bytes */
-                    if (st > 0)
-                    {
-                        AllocBuffer(st);
-                        memcpy(cbuff.data, CHAR(STRING_ELT(text, i)), st);
-                        cbuff.data[st] = '\0';
-                        INTEGER(ans)[i] = 1 + mbstowcs(NULL, cbuff.data, 0);
-                        if (INTEGER(ans)[i] <= 0) /* an invalid string */
-                            INTEGER(ans)[i] = NA_INTEGER;
-                    }
                 }
                 else
 #endif
