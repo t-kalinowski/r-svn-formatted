@@ -1722,6 +1722,7 @@ int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP 
             if (!argsevald)
             {
                 argValue = promiseArgs(args, rho);
+                SET_PRVALUE(CAR(argValue), x);
             }
             else
                 argValue = args;
