@@ -64,6 +64,8 @@ static void onpipe(int);
 
 extern void InitDynload();
 
+AccuracyInfo R_AccuracyInfo; /* This is declared here and delcared extern in Defn.h */
+
 /* Read-Eval-Print Loop [ =: REPL = repl ] with input from a file */
 
 static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
