@@ -49,6 +49,8 @@ void InitEd()
 
 SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    errorcall(call, "edit() is unavailable\n");
+    /*
     int i, status;
     SEXP x, fn, envir, ed;
     char *filename, *editcmd, *vmaxsave;
@@ -59,30 +61,25 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     vmaxsave = vmaxget();
 
     x = CAR(args);
-    if (TYPEOF(x) == CLOSXP)
-        envir = CLOENV(x);
-    else
-        envir = R_NilValue;
+    if (TYPEOF(x) == CLOSXP) envir = CLOENV(x);
+    else envir = R_NilValue;
     PROTECT(envir);
 
     fn = CADR(args);
     if (!isString(fn))
         error("invalid argument to edit()\n");
 
-    if (LENGTH(STRING(fn)[0]) > 0)
-    {
+    if (LENGTH(STRING(fn)[0]) > 0) {
         filename = R_alloc(strlen(CHAR(STRING(fn)[0])), sizeof(char));
         strcpy(filename, CHAR(STRING(fn)[0]));
     }
-    else
-        filename = DefaultFileName;
+    else filename = DefaultFileName;
 
-    if (x != R_NilValue)
-    {
-        if ((fp = R_fopen(filename, "w")) == NULL)
+    if (x != R_NilValue) {
+        if((fp=R_fopen(filename, "w")) == NULL)
             errorcall(call, "unable to open file\n");
         x = deparse1(x, 0);
-        for (i = 0; i < LENGTH(x); i++)
+        for (i=0; i<LENGTH(x); i++)
             fprintf(fp, "%s\n", CHAR(STRING(x)[i]));
         fclose(fp);
     }
@@ -90,11 +87,11 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     ed = CAR(CDDR(args));
     if (!isString(ed))
         error("editor type not valid\n");
-    editcmd = R_alloc(strlen(CHAR(STRING(ed)[0])) + strlen(filename) + 2, sizeof(char));
+    editcmd = R_alloc(strlen(CHAR(STRING(ed)[0]))+strlen(filename)+2, sizeof(char));
     sprintf(editcmd, "%s %s", CHAR(STRING(ed)[0]), filename);
     system(editcmd);
 
-    if ((fp = R_fopen(filename, "r")) == NULL)
+    if((fp=R_fopen(filename, "r")) == NULL)
         errorcall(call, "unable to open file to read\n");
     R_ParseCnt = 0;
     x = R_ParseFile(fp, -1, &status);
@@ -108,5 +105,5 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
         CLOENV(x) = envir;
     UNPROTECT(1);
     vmaxset(vmaxsave);
-    return (x);
+    return (x);*/
 }
