@@ -232,7 +232,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
 
     cptr = R_GlobalContext;
     if (!(cptr->callflag & CTXT_FUNCTION) || cptr->cloenv != rho)
-        error(_("UseMethod used in an inappropriate fashion"));
+        error(_("'UseMethod' used in an inappropriate fashion"));
 
     /* Create a new environment without any */
     /* of the formals to the generic in it. */
@@ -376,7 +376,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
        defenv = environment where the generic was defined */
     cptr = R_GlobalContext;
     if (!(cptr->callflag & CTXT_FUNCTION) || cptr->cloenv != env)
-        error(_("UseMethod used in an inappropriate fashion"));
+        error(_("'UseMethod' used in an inappropriate fashion"));
     callenv = cptr->sysparent;
     defenv = TYPEOF(env) == ENVSXP ? ENCLOS(env) : R_NilValue;
 
@@ -399,7 +399,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
             cptr = cptr->nextcontext;
         }
         if (cptr == NULL)
-            error(_("UseMethod called from outside a closure"));
+            error(_("'UseMethod' called from outside a closure"));
         /* if (generic == R_MissingArg)
            PROTECT(generic = mkString(CHAR(PRINTNAME(CAR(cptr->call))))); */
         PROTECT(obj = GetObject(cptr));
