@@ -348,7 +348,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
 #endif
 }
 
-void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei)
+void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei)
 {
     /* format.info() or  x[1..l] for both Re & Im */
     int left, right, sleft;

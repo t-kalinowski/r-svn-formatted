@@ -58,7 +58,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort)
     float *sptr;
     double *rptr;
     char **cptr, *fptr;
-    complex *zptr;
+    Rcomplex *zptr;
     SEXP *lptr, CSingSymbol = install("Csingle");
     int i, l, n;
 
@@ -119,7 +119,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort)
         }
         if (dup)
         {
-            zptr = (complex *)R_alloc(n, sizeof(complex));
+            zptr = (Rcomplex *)R_alloc(n, sizeof(Rcomplex));
             for (i = 0; i < n; i++)
                 zptr[i] = COMPLEX(s)[i];
         }
@@ -189,7 +189,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort)
     float *sptr;
     double *rptr;
     char **cptr, buf[256];
-    complex *zptr;
+    Rcomplex *zptr;
     SEXP *lptr, CSingSymbol = install("Csingle");
     int i;
     SEXP s, t;
@@ -223,7 +223,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort)
         break;
     case CPLXSXP:
         s = allocVector(type, n);
-        zptr = (complex *)p;
+        zptr = (Rcomplex *)p;
         for (i = 0; i < n; i++)
         {
             COMPLEX(s)[i] = zptr[i];
@@ -1497,7 +1497,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             break;
         case CPLXSXP:
             CAR(pcall) = allocSExp(CPLXSXP);
-            COMPLEX(CAR(pcall)) = (complex *)(arguments[i]);
+            COMPLEX(CAR(pcall)) = (Rcomplex *)(arguments[i]);
             LENGTH(CAR(pcall)) = lengths[i];
             break;
         case STRSXP:

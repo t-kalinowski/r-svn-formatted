@@ -43,7 +43,9 @@
 #elif defined(MACINTOSH)
 #include <GUSI.h>
 #else
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

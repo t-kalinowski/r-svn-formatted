@@ -736,8 +736,8 @@ SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(obj);
 
     PROTECT(name = eval(CADR(args), env));
-    if (!isString(name))
-        error("attr<- : name must be of mode character");
+    if (!isValidString(name))
+        errorcall(call, "name must be non-null character");
 
     /* no eval(.), RHS is already evaluated: */
     /* now it's a promise so we should eval it -RG- */

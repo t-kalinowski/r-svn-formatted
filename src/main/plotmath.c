@@ -609,6 +609,8 @@ typedef struct
 
 static int NameMatch(SEXP expr, char *aString)
 {
+    if (!isSymbol(expr))
+        return 0;
     return !strcmp(CHAR(PRINTNAME(expr)), aString);
 }
 
@@ -1234,6 +1236,7 @@ static SymTab BinTable[] = {{"*", 052}, /* Binary Operators */
 static int BinAtom(SEXP expr)
 {
     int i;
+
     for (i = 0; BinTable[i].code; i++)
         if (NameMatch(expr, BinTable[i].name))
             return BinTable[i].code;

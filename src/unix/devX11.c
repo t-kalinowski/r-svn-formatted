@@ -61,6 +61,8 @@
 #define CURSOR XC_crosshair /* Default cursor */
 #define MM_PER_INCH 25.4    /* mm -> inch conversion */
 
+#define IS_100DPI ((int)(1. / pixelHeight() + 0.5) == 100)
+
 /********************************************************/
 /* Each driver can have its own device-specic graphical */
 /* parameters and resources.  these should be wrapped	*/
@@ -835,10 +837,9 @@ static char *symbolname = "-*-symbol-*-*-*-*-%d-*-*-*-*-*-*-*";
 static char *slant[] = {"r", "o"};
 static char *weight[] = {"medium", "bold"};
 
-/* That number is sum(2^(x-1)) with x the Adobe design sizes (see
-   below). I suppose I should get it converted to hex... --pd */
+/* Bitmap of the Adobe design sizes */
 
-static unsigned int adobe_sizes = 8600544;
+static unsigned int adobe_sizes = 0x0403175D;
 
 #define MAXFONTS 64
 #define CLRFONTS 16 /* Number to free when cache runs full */
@@ -853,7 +854,7 @@ static cacheentry fontcache[MAXFONTS];
 static int nfonts = 0;
 static int force_nonscalable = 0; /* for testing */
 
-#define ADOBE_SIZE(I) (adobe_sizes & (1 << ((I)-1)))
+#define ADOBE_SIZE(I) ((I) > 7 && (I) < 35 && (adobe_sizes & (1 << ((I)-8))))
 #define SMALLEST 2
 
 static XFontStruct *RLoadFont(int face, int size)
@@ -877,11 +878,11 @@ static XFontStruct *RLoadFont(int face, int size)
 
     /* Here's a 1st class fudge: make sure that the Adobe design sizes
        8, 10, 11, 12, 14, 17, 18, 20, 24, 25, 34 can be obtained via
-       an integer "size", namely 6, 7, 8, 9, 10, 12, 13, 14, 17, 18,
-       24 points. It's almost y = x * 100/72, but not quite. The
-       constants were found using lm(). --pd */
+       an integer "size" at 100 dpi, namely 6, 7, 8, 9, 10, 12, 13,
+       14, 17, 18, 24 points. It's almost y = x * 100/72, but not
+       quite. The constants were found using lm(). --pd */
 
-    pixelsize = R_rint(size * 1.43 - 0.4);
+    pixelsize = IS_100DPI ? R_rint(size * 1.43 - 0.4) : size;
 
     if (face == 4)
         sprintf(buf, symbolname, pixelsize);
@@ -899,17 +900,17 @@ static XFontStruct *RLoadFont(int face, int size)
 #endif
     if (!tmp || (force_nonscalable && !ADOBE_SIZE(size)))
     {
-        static int near[] = {20, 24, 24, 25, 25, 25, 34, 34, 34};
-        /* 15 16 17 18 19 20 21 22 23 */
-        if (ADOBE_SIZE(size))
+        static int near[] = {14, 14, 14, 17, 17, 18, 20, 20, 20, 20, 24, 24, 24, 25, 25, 25, 25};
+        /* 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29  */
+        if (ADOBE_SIZE(pixelsize))
             return NULL; /* tried it */
 
-        if (size <= 5)
+        if (pixelsize < 8)
             pixelsize = 8;
-        else if (size == 11)
-            pixelsize = 14;
-        else if (size < 24) /* must be at least 15 */
-            pixelsize = near[size - 15];
+        else if (pixelsize == 9)
+            pixelsize = 8;
+        else if (pixelsize < 30) /* must be at least 13 */
+            pixelsize = near[size - 13];
         else
             pixelsize = 34;
 
@@ -1186,6 +1187,9 @@ static double X11_StrWidth(char *str, DevDesc *dd)
 /* width information for the given character in DEVICE	*/
 /* units (GMetricInfo does the necessary conversions)	*/
 /* This is used for formatting mathematical expressions	*/
+/* and for exact centering of text (see GText)          */
+/* If the device cannot provide metric information then */
+/* it MUST return 0.0 for ascent, descent, and width    */
 /********************************************************/
 
 /* Character Metric Information */
@@ -1648,6 +1652,7 @@ static void X11_Text(double x, double y, int coords, char *str, double xc, doubl
     SetColor(dd->gp.col, dd);
     len = strlen(str);
     GConvert(&x, &y, coords, DEVICE, dd);
+#ifdef BUG61
     if (xc != 0.0 || yc != 0)
     {
         rot1 = DEG2RAD * rot;
@@ -1657,6 +1662,7 @@ static void X11_Text(double x, double y, int coords, char *str, double xc, doubl
         x += -xc * xl * cos(rot1) + yc * yl * sin(rot1);
         y -= -xc * xl * sin(rot1) - yc * yl * cos(rot1);
     }
+#endif
     XRotDrawString(display, xd->font, rot, xd->window, xd->wgc, (int)x, (int)y, str);
 #ifdef XSYNC
     XSync(display, 0);
@@ -1800,7 +1806,6 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     ps = pointsize;
     if (ps < 6 || ps > 24)
         ps = 12;
-    ps = 2 * (ps / 2);
     xd->fontface = -1;
     xd->fontsize = -1;
     xd->basefontface = 1;

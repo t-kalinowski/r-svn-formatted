@@ -55,9 +55,9 @@ int PASCAL WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 #endif                /* end arg declarations */
 
     startgraphapp(Instance, PrevInstance, CmdShow);
-/*
- *  Call the main function now.
- */
+    /*
+     *  Call the main function now.
+     */
 #if (PASS_ARGS > 1) /* pass argc, argv, environ */
     AppMain(_argc, _argv, environ);
 #elif (PASS_ARGS > 0) /* only pass argc and argv */

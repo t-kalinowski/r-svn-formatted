@@ -817,7 +817,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     if (pointsize > pd->maxpointsize)
         pointsize = pd->maxpointsize;
     dd->dp.ps = pointsize;
-    dd->dp.cra[0] = (6.0 / 12.0) * pointsize;
+    dd->dp.cra[0] = 0.9 * pointsize;
     dd->dp.cra[1] = 1.2 * pointsize;
 
     /* Character Addressing Offsets */

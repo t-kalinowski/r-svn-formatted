@@ -1,6 +1,8 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1999  Robert Gentleman, Ross Ihaka and the
+ *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,7 +71,7 @@ static int rhash(SEXP x, int index)
 
 static int chash(SEXP x, int index)
 {
-    complex tmp;
+    Rcomplex tmp;
     tmp.r = (COMPLEX(x)[index].r == 0.0) ? 0.0 : COMPLEX(x)[index].r;
     tmp.i = (COMPLEX(x)[index].i == 0.0) ? 0.0 : COMPLEX(x)[index].i;
     return scatter((*((unsigned int *)(&tmp.r)) | (*((unsigned int *)(&tmp.r)))));
@@ -211,6 +213,9 @@ SEXP duplicated(SEXP x)
     return ans;
 }
 
+/* .Internal(duplicated(x)) [op=0]  and
+   .Internal(unique(x))	    [op=1] :
+*/
 SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, dup, ans;
@@ -218,24 +223,18 @@ SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     x = CAR(args);
-    if (!(isVector(x) || isNull(x)))
-        error("duplicated applies only to vectors");
-
     /* handle zero length vectors */
     if (length(x) == 0)
-    {
-        if (PRIMVAL(op) == 0)
-            return (allocVector(LGLSXP, 0));
-        else
-            return (allocVector(TYPEOF(x), 0));
-    }
+        return (allocVector(PRIMVAL(op) == 0 ? LGLSXP : TYPEOF(x), 0));
 
-    /* code for "duplicated" */
+    if (!(isVectorAtomic(x)))
+        error("%s() applies only to vectors", (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
+
     dup = duplicated(x);
-    if (PRIMVAL(op) == 0)
+    if (PRIMVAL(op) == 0) /* "duplicated()" : */
         return dup;
-
-    /* use the results of "duplicated" to get "unique" */
+    /*	ELSE
+    use the results of "duplicated" to get "unique" */
     n = LENGTH(x);
 
     /* count unique entries */

@@ -67,9 +67,9 @@ static int ttyflag;
 static int quiet;
 static SEXP NAstrings;
 
-static complex strtoc(const char *nptr, char **endptr)
+static Rcomplex strtoc(const char *nptr, char **endptr)
 {
-    complex z;
+    Rcomplex z;
     double x, y;
     char *s, *endp;
 
@@ -457,7 +457,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, SEXP str
             linesread++;
             if (colsread != 0 && !badline)
                 badline = linesread;
-            if (maxitems > 0 && nc * linesread >= maxitems)
+            if (maxitems > 0 && linesread >= maxitems)
                 goto done;
             if (maxlines > 0 && linesread == maxlines)
                 goto done;
@@ -670,7 +670,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans, file, sep, bns;
     int nfields, nskip, i, c;
     int blocksize, nlines;
-    char *filename;
+    char *filename = ""; /* -Wall */
 
     checkArity(op, args);
 
@@ -700,6 +700,8 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(INTSXP, blocksize));
     nlines = 0;
     nfields = 0;
+
+    save = 0;
 
     for (;;)
     {
