@@ -1558,7 +1558,7 @@ err:
 
 SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP encl;
+    SEXP encl, x, xptr;
     volatile SEXP expr, env, tmp;
 
     int frame;
@@ -1581,7 +1581,10 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(env);
         break;
     case VECSXP:
-        env = NewEnvironment(R_NilValue, VectorToPairList(CADR(args)), encl);
+        x = VectorToPairList(CADR(args));
+        for (xptr = x; xptr != R_NilValue; xptr = CDR(xptr))
+            SET_NAMED(CAR(xptr), 2);
+        env = NewEnvironment(R_NilValue, x, encl);
         PROTECT(env);
         break;
     case INTSXP:
