@@ -166,7 +166,7 @@ void formatInteger(int *x, int n, int *fieldwidth)
  *    kpower+1		digits to the left of "."
  *    kpower+1+sgn	including sign
  *
- * Using GLOBAL  R_print.digits  -- had  #define MAXDIG R_print.digits
+ * Using GLOBAL	 R_print.digits	 -- had	 #define MAXDIG R_print.digits
  */
 
 static double tbl[] = {0.e0, 1.e0, 1.e1, 1.e2, 1.e3, 1.e4, 1.e5, 1.e6, 1.e7, 1.e8, 1.e9};
@@ -353,7 +353,7 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     int i, kpower, nsig;
     int naflag;
 #ifdef IEEE_754
-    int rnanflag, rposinf, rneginf, inanflag, iposinf, ineginf;
+    int rnanflag, rposinf, rneginf, inanflag, iposinf;
 #endif
 
     eps = pow(10.0, -(double)R_print.digits);
@@ -365,7 +365,6 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     rneginf = 0;
     inanflag = 0;
     iposinf = 0;
-    ineginf = 0;
 #endif
     neg = 0;
 
@@ -524,12 +523,10 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
         *ni = 0;
     }
 #ifdef IEEE_754
-    if (inanflag && *mr < 3)
+    if (inanflag && *mi < 3)
         *mi = 3;
-    if (iposinf && *mr < 3)
+    if (iposinf && *mi < 3)
         *mi = 3;
-    if (ineginf && *mr < 4)
-        *mi = 4;
 #endif
     if (*mr < 0)
         *mr = 0;
