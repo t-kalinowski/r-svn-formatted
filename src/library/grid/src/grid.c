@@ -1651,6 +1651,11 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
         rr2 = transformHeighttoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         rr = fmin2(rr1, rr2);
         rr = toDeviceWidth(rr, GE_INCHES, dd);
+        /*
+         * A negative radius is invalid
+         */
+        if (rr < 0)
+            error("Invalid circle radius (must be non-negative)");
         /* The graphics engine only takes device coordinates
          */
         xx = toDeviceX(xx, GE_INCHES, dd);
