@@ -1999,12 +1999,13 @@ alldone:;
                 switch (fik)
                 {
                 case 1:
-                    contrast = VECTOR_ELT(contr1, i);
+                    contrast = coerceVector(VECTOR_ELT(contr1, i), REALSXP);
                     break;
                 case 2:
-                    contrast = VECTOR_ELT(contr2, i);
+                    contrast = coerceVector(VECTOR_ELT(contr2, i), REALSXP);
                     break;
                 }
+                PROTECT(contrast);
                 if (jnext == jstart)
                 {
                     if (INTEGER(nlevs)[i] > 0)
@@ -2035,6 +2036,7 @@ alldone:;
                         jnext = jnext + (jnext - jstart) * (ncols(var_i) - 1);
                     }
                 }
+                UNPROTECT(1);
             }
         }
         jstart = jnext;
