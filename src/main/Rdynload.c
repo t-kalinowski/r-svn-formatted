@@ -357,7 +357,7 @@ static DL_FUNC R_dlsym(DllInfo *dll, char const *name);
 static int AddDLL(char *path, int asLocal, int now)
 {
     HINSTANCE handle;
-    char *dpath, *name, DLLname[PATH_MAX], *p;
+    DllInfo *info;
 
     DeleteDLL(path);
     if (CountDLL == MAX_NUM_DLLS)
@@ -374,6 +374,33 @@ static int AddDLL(char *path, int asLocal, int now)
         return 0;
     }
 
+    info = R_RegisterDLL(handle, path);
+
+    /* Now look for an initializing routine named R_init_<library name>.
+       If it is present, we invoke it. It should take a reference to the
+       DllInfo object currently being initialized.
+    */
+    if (info)
+    {
+        char *tmp;
+        DL_FUNC f;
+        tmp = (char *)malloc(sizeof(char) * (strlen("R_init_") + strlen(info->name) + 1));
+        sprintf(tmp, "%s%s", "R_init_", info->name);
+        f = (DL_FUNC)R_osDynSymbol->dlsym(info, tmp);
+        free(tmp);
+        if (f)
+            f(info);
+    }
+
+    return 1;
+}
+
+DllInfo *R_RegisterDLL(HINSTANCE *handle, const char *path)
+{
+    char *dpath, DLLname[PATH_MAX], *p, *name;
+    DllInfo *info;
+
+    info = &LoadedDLL[CountDLL];
     dpath = malloc(strlen(path) + 1);
     if (dpath == NULL)
     {
@@ -415,24 +442,9 @@ static int AddDLL(char *path, int asLocal, int now)
     LoadedDLL[CountDLL].CSymbols = NULL;
     LoadedDLL[CountDLL].CallSymbols = NULL;
     LoadedDLL[CountDLL].FortranSymbols = NULL;
-
-    /* Now look for an initializing routine named R_init_<library name>.
-       If it is present, we invoke it. It should take a reference to the
-       DllInfo object currently being initialized.
-    */
-    {
-        char *tmp;
-        DL_FUNC f;
-        tmp = (char *)malloc(sizeof(char) * (strlen("R_init_") + strlen(name) + 1));
-        sprintf(tmp, "%s%s", "R_init_", name);
-        f = (DL_FUNC)R_osDynSymbol->dlsym(&LoadedDLL[CountDLL], tmp);
-        free(tmp);
-        if (f)
-            f(LoadedDLL + CountDLL);
-    }
     CountDLL++;
 
-    return 1;
+    return (info);
 }
 
 Rf_DotCSymbol *Rf_lookupRegisteredCSymbol(DllInfo *info, const char *name)
