@@ -283,7 +283,8 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < nobjs; i++)
         {
             Rprintf("\"%s\" <-\n", CHAR(STRING(names)[i]));
-            tval = deparse1(CAR(o), 0);
+            if (TYPEOF(CAR(o)) != CLOSXP || isNull(tval = getAttrib(CAR(o), R_SourceSymbol)))
+                tval = deparse1(CAR(o), 0);
             for (j = 0; j < LENGTH(tval); j++)
             {
                 Rprintf("%s\n", CHAR(STRING(tval)[j]));
@@ -298,7 +299,8 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < nobjs; i++)
         {
             fprintf(fp, "\"%s\" <-\n", CHAR(STRING(names)[i]));
-            tval = deparse1(CAR(o), 0);
+            if (TYPEOF(CAR(o)) != CLOSXP || isNull(tval = getAttrib(CAR(o), R_SourceSymbol)))
+                tval = deparse1(CAR(o), 0);
             for (j = 0; j < LENGTH(tval); j++)
             {
                 fprintf(fp, "%s\n", CHAR(STRING(tval)[j]));
