@@ -232,8 +232,9 @@ static void file_open(Rconnection con)
     Rfileconn this = con->private;
     Rboolean temp = FALSE;
 #ifdef HAVE_FCNTL_H
-    int fd, flags, mlen = strlen(con->mode);
+    int fd, flags;
 #endif
+    int mlen = strlen(con->mode);
 
     if (strlen(con->description) == 0)
     {
@@ -3025,8 +3026,11 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, ndots = 0, nnew, nbytes = 0;
+        int len, total, guess, nnew, nbytes = 0;
         char buf[IBUFSIZE];
+#ifndef Win32
+        int ndots = 0;
+#endif
 
         out = R_fopen(R_ExpandFileName(file), mode);
         if (!out)
@@ -3104,8 +3108,11 @@ SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, ndots = 0, nnew, nbytes = 0;
+        int len, total, guess, nnew, nbytes = 0;
         char buf[IBUFSIZE];
+#ifndef Win32
+        int ndots = 0;
+#endif
 
         out = R_fopen(R_ExpandFileName(file), mode);
         if (!out)
