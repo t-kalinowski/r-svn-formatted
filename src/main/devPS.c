@@ -543,9 +543,13 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
                 goto pserror;
             p = SkipToNextItem(buf);
             sscanf(p, "%d", &nKPX);
-            metrics->KernPairs = (KP *)malloc(nKPX * sizeof(KP));
-            if (!metrics->KernPairs)
-                goto pserror;
+            if (nKPX > 0)
+            {
+                /* nPKX == 0 should not happen, but has */
+                metrics->KernPairs = (KP *)malloc(nKPX * sizeof(KP));
+                if (!metrics->KernPairs)
+                    goto pserror;
+            }
             break;
 
         case KPX:
