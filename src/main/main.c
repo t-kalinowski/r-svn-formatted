@@ -517,6 +517,12 @@ void end_Rmainloop(void)
     R_CleanUp(SA_DEFAULT, 0, 1);
 }
 
+static void onpipe()
+{
+    /* do nothing */
+    signal(SIGPIPE, onpipe);
+}
+
 void run_Rmainloop(void)
 {
     /* Here is the real R read-eval-loop. */
@@ -528,6 +534,9 @@ void run_Rmainloop(void)
     signal(SIGINT, onintr);
     signal(SIGUSR1, onsigusr1);
     signal(SIGUSR2, onsigusr2);
+#ifdef Unix
+    signal(SIGPIPE, onpipe);
+#endif
     R_ReplConsole(R_GlobalEnv, 0, 0);
     end_Rmainloop(); /* must go here */
 }
