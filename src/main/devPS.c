@@ -476,14 +476,14 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
 
         case FontBBox:
             if (!GetFontBBox(buf, metrics))
-                goto error;
+                goto pserror;
             break;
 
         case C:
             if (mode != StartFontMetrics)
-                goto error;
+                goto pserror;
             if (!GetCharInfo(buf, metrics, reencode))
-                goto error;
+                goto pserror;
             break;
 
         case StartKernData:
@@ -492,17 +492,17 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
 
         case StartKernPairs:
             if (mode != StartKernData)
-                goto error;
+                goto pserror;
             p = SkipToNextItem(buf);
             sscanf(p, "%d", &nKPX);
             metrics->KernPairs = (KP *)malloc(nKPX * sizeof(KP));
             if (!metrics->KernPairs)
-                goto error;
+                goto pserror;
             break;
 
         case KPX:
             if (mode != StartKernData || i >= nKPX)
-                goto error;
+                goto pserror;
             if (GetKPX(buf, i, metrics))
                 i++;
             break;
@@ -548,7 +548,7 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
         }
     }
     return 1;
-error:
+pserror:
     fclose(fp);
     return 0;
 }
