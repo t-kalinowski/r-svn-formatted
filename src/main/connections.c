@@ -131,7 +131,7 @@ static void file_open(Rconnection con)
 static void file_close(Rconnection con)
 {
     fclose(((Rfileconn)(con->private))->fp);
-    con->isopen = con->canread = con->canwrite = FALSE;
+    con->isopen = FALSE;
 }
 
 static void file_destroy(Rconnection con)
@@ -210,7 +210,7 @@ static Rconnection newfile(char *description, char *mode)
     strncpy(new->mode, mode, 4);
     new->mode[4] = '\0';
     new->isopen = new->incomplete = FALSE;
-    new->canread = new->canwrite = FALSE;
+    new->canread = new->canwrite = TRUE; /* in principle */
     new->canseek = TRUE;
     new->text = TRUE;
     new->open = &file_open;
@@ -294,7 +294,7 @@ static void pipe_open(Rconnection con)
 static void pipe_close(Rconnection con)
 {
     pclose(((Rfileconn)(con->private))->fp);
-    con->isopen = con->canread = con->canwrite = FALSE;
+    con->isopen = FALSE;
 }
 
 static void pipe_destroy(Rconnection con)
@@ -326,7 +326,7 @@ static Rconnection newpipe(char *description, char *mode)
     strncpy(new->mode, mode, 4);
     new->mode[4] = '\0';
     new->isopen = new->incomplete = FALSE;
-    new->canread = new->canwrite = FALSE;
+    new->canread = new->canwrite = TRUE; /* in principle */
     new->canseek = FALSE;
     new->text = TRUE;
     new->open = &pipe_open;
@@ -948,10 +948,10 @@ SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
         if (c == EOF)
             goto no_more_lines;
     }
-    if (!wasopen)
-        con->close(con);
     UNPROTECT(1);
     free(buf);
+    if (!wasopen)
+        con->close(con);
     return ans;
 no_more_lines:
     free(buf);
