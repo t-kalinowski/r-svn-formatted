@@ -94,7 +94,8 @@ void allocateKnownWidths(SEXP layout, int *relativeWidths, double parentWidthCM,
     for (i = 0; i < layoutNCol(layout); i++)
         if (!relativeWidths[i])
         {
-            npcWidths[i] = transformWidth(widths, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd);
+            npcWidths[i] = transformWidth(widths, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd) /
+                           (parentWidthCM / 2.54);
             *widthLeftCM -= npcWidths[i] * parentWidthCM;
         }
 }
@@ -108,7 +109,8 @@ void allocateKnownHeights(SEXP layout, int *relativeHeights, double parentWidthC
     for (i = 0; i < layoutNRow(layout); i++)
         if (!relativeHeights[i])
         {
-            npcHeights[i] = transformHeight(heights, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd);
+            npcHeights[i] = transformHeight(heights, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd) /
+                            (parentHeightCM / 2.54);
             *heightLeftCM -= npcHeights[i] * parentHeightCM;
         }
 }
@@ -228,7 +230,8 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                      */
                     SEXP width;
                     PROTECT(width = unit(pureNullUnitValue(widths, i) / denom * mult, L_CM));
-                    npcWidths[i] = transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd);
+                    npcWidths[i] = transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
+                                   (tempWidthCM / 2.54);
                     *reducedWidthCM -= npcWidths[i] * tempWidthCM;
                     npcWidths[i] = npcWidths[i] * hmult;
                     UNPROTECT(1);
@@ -241,7 +244,8 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                 {
                     SEXP height;
                     PROTECT(height = unit(pureNullUnitValue(heights, i) / denom * mult, L_CM));
-                    npcHeights[i] = transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd);
+                    npcHeights[i] = transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
+                                    (tempHeightCM / 2.54);
                     *reducedHeightCM -= npcHeights[i] * tempHeightCM;
                     npcHeights[i] = npcHeights[i] * vmult;
                     UNPROTECT(1);

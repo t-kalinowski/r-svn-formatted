@@ -197,7 +197,7 @@ int L_nullArithmeticMode;
 /*
  * Evaluate a "null" _value_ dependent on the evaluation context
  */
-static double evaluateNullUnit(double value)
+static double evaluateNullUnit(double value, double thisCM)
 {
     double result = value;
     if (!L_nullLayoutMode)
@@ -210,13 +210,13 @@ static double evaluateNullUnit(double value)
             result = 0;
             break;
         case L_multiplying:
-            result = 1;
+            result = 0;
             break;
         case L_maximising:
             result = 0;
             break;
         case L_minimising:
-            result = 1;
+            result = thisCM;
             break;
         }
     return result;
@@ -458,7 +458,7 @@ double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, GED
     SEXP R_fcall0, R_fcall1, R_fcall2, R_fcall3;
     SEXP savedgpar, savedgrob;
     SEXP width;
-    double resultINCHES, result;
+    double result;
     /*
      * Save the current gpar state and restore it at the end
      */
@@ -536,13 +536,12 @@ double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, GED
      */
     if (pureNullUnit(width, 0, dd))
     {
-        result = evaluateNullUnit(pureNullUnitValue(width, 0));
+        result = evaluateNullUnit(pureNullUnitValue(width, 0), vpWidthCM);
     }
     else
     {
         gcontextFromgpar(currentgp, 0, &gc);
-        resultINCHES = transformWidthtoINCHES(width, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
-        result = resultINCHES / (vpwidthCM / 2.54);
+        result = transformWidthtoINCHES(width, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
     }
     /* Call postDraw(grob)
      */
@@ -573,7 +572,7 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GE
     SEXP R_fcall0, R_fcall1, R_fcall2, R_fcall3;
     SEXP savedgpar, savedgrob;
     SEXP height;
-    double resultINCHES, result;
+    double result;
     /*
      * Save the current gpar state and restore it at the end
      */
@@ -648,13 +647,12 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GE
      */
     if (pureNullUnit(height, 0, dd))
     {
-        result = evaluateNullUnit(pureNullUnitValue(height, 0));
+        result = evaluateNullUnit(pureNullUnitValue(height, 0), vpHeightCM);
     }
     else
     {
         gcontextFromgpar(currentgp, 0, &gc);
-        resultINCHES = transformHeighttoINCHES(height, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
-        result = resultINCHES / (vpheightCM / 2.54);
+        result = transformHeighttoINCHES(height, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
     }
     /* Call postDraw(grob)
      */
@@ -676,8 +674,13 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GE
  **************************
  */
 
-/* Map a value from arbitrary units to Normalised Parent Coordinates */
+/* Map a value from arbitrary units to INCHES */
 
+/*
+ * NULL units are a special case
+ * If L_nullLayoutMode = 1 then the value returned is a NULL unit value
+ * Otherwise it is an INCHES value
+ */
 double transform(double value, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc, double thisCM,
                  double otherCM, GEDevDesc *dd)
 {
@@ -685,12 +688,12 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
     switch (unit)
     {
     case L_NPC:
+        result = (result * thisCM) / 2.54; /* 2.54 cm per inch */
         break;
     case L_CM:
-        result = result / thisCM;
+        result = result / 2.54;
         break;
     case L_INCHES:
-        result = result / (thisCM / 2.54);
         break;
     /* FIXME:  The following two assume that the pointsize specified
      * by the user is actually the pointsize provided by the
@@ -701,59 +704,55 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
      * or somesuch.
      */
     case L_CHAR:
-    case L_MYCHAR: /* FIXME: Remove this when I can */
-        result = result * gc->ps * gc->cex / (72 * thisCM / 2.54);
+    case L_MYCHAR:                                 /* FIXME: Remove this when I can */
+        result = (result * gc->ps * gc->cex) / 72; /* 72 points per inch */
         break;
     case L_LINES:
     case L_MYLINES: /* FIXME: Remove this when I can */
-        result = result * gc->ps * gc->cex * gc->lineheight / (72 * thisCM / 2.54);
+        result = (result * gc->ps * gc->cex * gc->lineheight) / 72;
         break;
     case L_SNPC:
         if (thisCM <= otherCM)
-            result = result;
+            result = (result * thisCM) / 2.54;
         else
-            result = result * (otherCM / thisCM);
+            result = (result * otherCM) / 2.54;
         break;
     case L_MM:
-        result = result / 10 / thisCM;
+        result = (result / 10) / 2.54;
         break;
     /* Maybe an opportunity for some constants below here (!)
      */
     case L_POINTS:
-        result = result / 72.27 * 2.54 / thisCM;
+        result = result / 72.27;
         break;
     case L_PICAS:
-        result = result * 12 / 72.27 * 2.54 / thisCM;
+        result = (result * 12) / 72.27;
         break;
     case L_BIGPOINTS:
-        result = result / 72 * 2.54 / thisCM;
+        result = result / 72;
         break;
     case L_DIDA:
-        result = result / 1157 * 1238 / 72.27 * 2.54 / thisCM;
+        result = result / 1157 * 1238 / 72.27;
         break;
     case L_CICERO:
-        result = result * 12 / 1157 * 1238 / 72.27 * 2.54 / thisCM;
+        result = result * 12 / 1157 * 1238 / 72.27;
         break;
     case L_SCALEDPOINTS:
-        result = result / 65536 / 72.27 * 2.54 / thisCM;
+        result = result / 65536 / 72.27;
         break;
     case L_STRINGWIDTH:
     case L_MYSTRINGWIDTH: /* FIXME: Remove this when I can */
         if (isExpression(data))
-            result =
-                result * fromDeviceWidth(GEExpressionWidth(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd) * 2.54 / thisCM;
+            result = result * fromDeviceWidth(GEExpressionWidth(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd);
         else
-            result =
-                result * fromDeviceWidth(GEStrWidth(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd) * 2.54 / thisCM;
+            result = result * fromDeviceWidth(GEStrWidth(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd);
         break;
     case L_STRINGHEIGHT:
     case L_MYSTRINGHEIGHT: /* FIXME: Remove this when I can */
         if (isExpression(data))
-            result = result * fromDeviceHeight(GEExpressionHeight(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd) * 2.54 /
-                     thisCM;
+            result = result * fromDeviceHeight(GEExpressionHeight(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd);
         else
-            result = result * fromDeviceHeight(GEStrHeight(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd) * 2.54 /
-                     thisCM;
+            result = result * fromDeviceHeight(GEStrHeight(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd);
         break;
     case L_GROBWIDTH:
         result = value * evaluateGrobWidthUnit(data, otherCM, thisCM, dd);
@@ -762,7 +761,7 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
         result = value * evaluateGrobHeightUnit(data, thisCM, otherCM, dd);
         break;
     case L_NULL:
-        result = evaluateNullUnit(result);
+        result = evaluateNullUnit(result, thisCM);
         break;
     default:
         error("Illegal unit or unit not yet implemented");
@@ -778,7 +777,7 @@ double transformLocation(double location, int unit, SEXP data, double scalemin, 
     switch (unit)
     {
     case L_NATIVE:
-        result = (result - scalemin) / (scalemax - scalemin);
+        result = ((result - scalemin) / (scalemax - scalemin)) * thisCM / 2.54;
         break;
     default:
         result = transform(location, unit, data, scalemin, scalemax, gc, thisCM, otherCM, dd);
@@ -847,7 +846,7 @@ double transformDimension(double dim, int unit, SEXP data, double scalemin, doub
     switch (unit)
     {
     case L_NATIVE:
-        result = (dim) / (scalemax - scalemin);
+        result = ((dim) / (scalemax - scalemin)) * thisCM / 2.54;
         break;
     default:
         result = transform(dim, unit, data, scalemin, scalemax, gc, thisCM, otherCM, dd);
@@ -1177,6 +1176,12 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
  * is historical.
  */
 
+/* It is even more inefficient-looking now because I ended up mucking
+ * with transform() to return INCHES (to fix bug if width/heightCM == 0)
+ * and by then there was too much code that called transformXtoINCHES
+ * to be bothered changing calls to it
+ */
+
 /* The difference between transform*toINCHES and transformLocn/Dimn
  * is that the former are just converting from one coordinate system
  * to INCHES;  the latter are converting from INCHES relative to
@@ -1185,13 +1190,13 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
 double transformXtoINCHES(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
                           GEDevDesc *dd)
 {
-    return transformX(x, index, vpc, gc, widthCM, heightCM, dd) * widthCM / 2.54;
+    return transformX(x, index, vpc, gc, widthCM, heightCM, dd);
 }
 
 double transformYtoINCHES(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
                           GEDevDesc *dd)
 {
-    return transformY(y, index, vpc, gc, widthCM, heightCM, dd) * heightCM / 2.54;
+    return transformY(y, index, vpc, gc, widthCM, heightCM, dd);
 }
 
 void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
@@ -1212,13 +1217,13 @@ void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontex
 double transformWidthtoINCHES(SEXP w, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
                               double heightCM, GEDevDesc *dd)
 {
-    return transformWidth(w, index, vpc, gc, widthCM, heightCM, dd) * widthCM / 2.54;
+    return transformWidth(w, index, vpc, gc, widthCM, heightCM, dd);
 }
 
 double transformHeighttoINCHES(SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
                                double heightCM, GEDevDesc *dd)
 {
-    return transformHeight(h, index, vpc, gc, widthCM, heightCM, dd) * heightCM / 2.54;
+    return transformHeight(h, index, vpc, gc, widthCM, heightCM, dd);
 }
 
 void transformDimn(SEXP w, SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
