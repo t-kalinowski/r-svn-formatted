@@ -36,6 +36,7 @@
 #include "console.h"
 #include "consolestructs.h"
 #include "rui.h"
+#include "getline/getline.h"
 
 /* xbuf */
 
@@ -196,6 +197,8 @@ static void xbuffixl(xbuf p)
 
 rgb consolebg = White, consolefg = Black, consoleuser = Red, pagerhighlight = Red;
 
+extern int R_HistorySize; /* from Defn.h */
+
 ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, int kind)
 {
     ConsoleData p;
@@ -213,18 +216,10 @@ ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, 
             winfree(p);
             return NULL;
         }
-        p->history = newxbuf(DIMHIST, MHIST, SHIST);
-        if (!p->history)
-        {
-            xbufdel(p->lbuf);
-            winfree(p);
-            return NULL;
-        }
         p->kbuf = winmalloc(NKEYS * sizeof(char));
         if (!p->kbuf)
         {
             xbufdel(p->lbuf);
-            xbufdel(p->history);
             winfree(p);
             return NULL;
         }
@@ -232,7 +227,6 @@ ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, 
     else
     {
         p->lbuf = NULL;
-        p->history = NULL;
         p->kbuf = NULL;
     }
     p->bm = NULL;
@@ -914,8 +908,6 @@ void freeConsoleData(ConsoleData p)
     {
         if (p->lbuf)
             xbufdel(p->lbuf);
-        if (p->history)
-            xbufdel(p->history);
         if (p->kbuf)
             winfree(p->kbuf);
     }
@@ -1002,7 +994,6 @@ FVOIDEND
 
 int consolereads(control c, char *prompt, char *buf, int len, int addtohistory) FBEGIN char cur_char;
 char *cur_line;
-int hentry;
 char *aLine;
 
 /* print the prompt */
@@ -1027,7 +1018,6 @@ cur_pos = 0;
 max_pos = 0;
 cur_line = &aLine[prompt_len];
 cur_line[0] = '\0';
-hentry = -1;
 REDRAW;
 for (;;)
 {
@@ -1080,28 +1070,11 @@ for (;;)
             cur_line[max_pos] = '\0';
             break;
         case PREVHISTORY:
-            hentry += 1;
-            if (hentry < NHISTORY)
-            {
-                if (hentry == 0)
-                    strcpy(buf, cur_line);
-                strcpy(cur_line, HISTORY(hentry));
-                cur_pos = max_pos = strlen(cur_line);
-            }
-            else
-                hentry -= 1;
+            strcpy(cur_line, gl_hist_prev());
+            cur_pos = max_pos = strlen(cur_line);
             break;
         case NEXTHISTORY:
-            if (hentry > 0)
-            {
-                hentry -= 1;
-                strcpy(cur_line, HISTORY(hentry));
-            }
-            else if (hentry == 0)
-            {
-                hentry = -1;
-                strcpy(cur_line, buf);
-            }
+            strcpy(cur_line, gl_hist_next());
             cur_pos = max_pos = strlen(cur_line);
             break;
         case BACKCHAR:
@@ -1144,10 +1117,7 @@ for (;;)
                 p->r = -1;
                 cur_line[max_pos] = '\0';
                 if (max_pos && addtohistory)
-                {
-                    xbufadds(p->history, "\n", 0);
-                    xbufadds(p->history, cur_line, 0);
-                }
+                    gl_histadd(cur_line);
                 xbuffixl(p->lbuf);
                 consolewrites(c, "\n");
                 REDRAW;
@@ -1158,38 +1128,6 @@ for (;;)
         draweditline(c);
     }
 }
-FVOIDEND
-
-void savehistory(control c, char *s) FBEGIN FILE *fp;
-int i;
-
-if (!s || !NHISTORY)
-    return;
-fp = fopen(s, "w");
-if (!fp)
-{
-    char msg[256];
-    sprintf(msg, "Unable to open `%s'", s);
-    R_ShowMessage(msg);
-    FVOIDRETURN;
-}
-for (i = NHISTORY - 1; i >= 0; i--)
-{
-    fprintf(fp, "%s\n", HISTORY(i));
-}
-fclose(fp);
-FVOIDEND
-
-void readhistory(control c, char *s) FBEGIN FILE *fp;
-int c;
-
-if (!s || !(fp = fopen(s, "r")))
-    FVOIDRETURN;
-while ((c = getc(fp)) != EOF)
-    xbufaddc(p->history, c);
-/* remove blank line started by final \n */
-p->history->ns--;
-fclose(fp);
 FVOIDEND
 
 void console_sbf(control c, int pos) FBEGIN if (pos < 0)
