@@ -444,7 +444,6 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
 {
     int i;
     char buf[1024];
-    WIN32_FIND_DATA fd;
 
     if (nfile > 0)
     {
@@ -452,7 +451,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
             pager = "internal";
         for (i = 0; i < nfile; i++)
         {
-            if (FindFirstFile(file[i], &fd) != INVALID_HANDLE_VALUE)
+            if (!access(file[i], R_OK))
             {
                 if (!strcmp(pager, "internal"))
                 {
@@ -460,17 +459,6 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
                 }
                 else if (!strcmp(pager, "console"))
                 {
-                    /*		    DWORD len = 1;
-                                HANDLE f = CreateFile(file[i], GENERIC_READ,
-                                          FILE_SHARE_WRITE,
-                                          NULL, OPEN_EXISTING, 0, NULL);
-                                if (f != INVALID_HANDLE_VALUE) {
-                                while (ReadFile(f, buf, 1023, &len, NULL) && len) {
-                                    buf[len] = '\0';
-                                    R_WriteConsole(buf,strlen(buf));
-                                }
-                                CloseHandle(f);*/
-                    /* The above causes problems with lack of CRLF translations */
                     size_t len;
                     FILE *f = fopen(file[i], "rt");
                     if (f)
