@@ -1203,7 +1203,7 @@ static void NewDataSave(SEXP s, FILE *fp, OutputRoutines *m, SaveLoadData *d)
 
     m->OutInit(fp, d);
     /* set up a context which will call OutTerm if there is an error */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
     cntxt.cend = &newdatasave_cleanup;
     cntxt.cenddata = &cinfo;
 
@@ -1395,7 +1395,7 @@ static SEXP NewDataLoad(FILE *fp, InputRoutines *m, SaveLoadData *d)
     m->InInit(fp, d);
 
     /* set up a context which will call InTerm if there is an error */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
     cntxt.cend = &newdataload_cleanup;
     cntxt.cenddata = &cinfo;
 
@@ -2119,7 +2119,7 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "unable to open file");
 
     /* set up a context which will close the file if there is an error */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
     cntxt.cend = &saveload_cleanup;
     cntxt.cenddata = fp;
 
@@ -2222,7 +2222,7 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "unable to open file");
 
     /* set up a context which will close the file if there is an error */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
     cntxt.cend = &saveload_cleanup;
     cntxt.cenddata = fp;
 
