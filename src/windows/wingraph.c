@@ -22,6 +22,7 @@
 #include "WINcons.h"
 #include "Graphics.h"
 #include "wingdi.h"
+#include "winuser.h"
 
 #define STRICT
 
@@ -128,8 +129,8 @@ static void Win_RGSetFont(int face, int size, double rot)
         size = LARGEST;
     trot = (double)RGraphLF.lfEscapement / 10;
 
-    if (size != fontsize || face != (fontface - 1) || rot != trot)
-    {
+    if (size != fontsize || face != fontface || rot != trot)
+    { /*we create a new font */
         if (rot >= 0)
             RGraphLF.lfEscapement = (LONG)rot * 10;
 
@@ -139,7 +140,7 @@ static void Win_RGSetFont(int face, int size, double rot)
         else
             sprintf(fname, "%s", Rfontname[fontindex]);
 
-        RGraphLF.lfHeight = -fontsize * GetDeviceCaps(Ihdc, LOGPIXELSY) / 72;
+        RGraphLF.lfHeight = -size * GetDeviceCaps(Ihdc, LOGPIXELSY) / 72;
         strcpy(RGraphLF.lfFaceName, fname);
         cFont = CreateFontIndirect(&RGraphLF);
 
@@ -418,7 +419,7 @@ cannot be scaled properly */
             {
                 graphicsRect = r1;
                 if (IsWindow(RGraphWnd))
-                    Win_NewPlot();
+                    Win_Resize();
             }
         }
         break;
@@ -585,6 +586,7 @@ static double ylast = 0;
 static int Win_Open()
 {
     MDICREATESTRUCT mdicreate;
+    HDC Nhdc;
     RECT r;
     int i;
 
@@ -607,7 +609,7 @@ static int Win_Open()
 
     /* initialize the Graphics Logfont */
     fontindex = 2; /* Arial */
-    fontface = 0;
+    fontface = 1;  /* Normal Text */
 
     /* a magic incantation to make angles rotate the same on printers and the screen */
     RGraphLF.lfClipPrecision = CLIP_LH_ANGLES;
@@ -615,8 +617,26 @@ static int Win_Open()
     Win_RGSetFont(fontface, 8, -1);
 
     ShowWindow(RGraphWnd, SW_SHOW);
-    Win_NewPlot();
 
+    /* set up the bitmap and get ready to use it for the graphics */
+
+    Nhdc = GetDC(RGraphWnd);
+    RGBhdc = CreateCompatibleDC(Nhdc);
+    SetMapMode(RGBhdc, GetMapMode(Nhdc));
+    RGBitMap =
+        CreateCompatibleBitmap(Nhdc, graphicsRect.right - graphicsRect.left, graphicsRect.bottom - graphicsRect.top);
+    if (RGBitMap == NULL)
+    {
+        MessageBox(RFrame, "couldn't alloc bitmap", "R Graphics", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    SelectObject(RGBhdc, RGBitMap);
+    FillRect(RGBhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
+    BitBlt(Nhdc, 0, 0, graphicsRect.right, graphicsRect.bottom, RGBhdc, 0, 0, SRCCOPY);
+
+    ReleaseDC(RGraphWnd, Nhdc);
+    SetFocus(RConsoleFrame);
     DevInit = 1;
     return 1;
 }
@@ -671,8 +691,31 @@ static void Win_Clip(double x0, double x1, double y0, double y1)
 /* Actions on Window Resize */
 static void Win_Resize()
 {
-    DP->right = graphicsRect.right;
-    DP->bottom = graphicsRect.bottom;
+    HDC Nhdc;
+
+    if (DP->right != graphicsRect.right || DP->bottom != graphicsRect.bottom)
+    {
+
+        DP->right = graphicsRect.right;
+        DP->bottom = graphicsRect.bottom;
+
+        Nhdc = GetDC(RGraphWnd);
+        if (RGBitMap != NULL)
+            DeleteObject(RGBitMap);
+        RGBitMap = CreateCompatibleBitmap(Nhdc, graphicsRect.right - graphicsRect.left,
+                                          graphicsRect.bottom - graphicsRect.top);
+        if (RGBitMap == NULL)
+        {
+            MessageBox(RFrame, "couldn't alloc bitmap", "R Graphics", MB_ICONEXCLAMATION | MB_OK);
+            Win_Close();
+        }
+
+        SelectObject(RGBhdc, RGBitMap);
+        FillRect(RGBhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
+        BitBlt(Nhdc, 0, 0, graphicsRect.right, graphicsRect.bottom, RGBhdc, 0, 0, SRCCOPY);
+
+        ReleaseDC(RGraphWnd, Nhdc);
+    }
 }
 
 /* Begin a New Plot; under Win32 just clear the graphics rectangle. */
@@ -680,14 +723,16 @@ static void Win_Resize()
 void Win_NewPlot()
 {
     HDC Nhdc;
-
-    if (RGBhdc != NULL)
-        DeleteDC(RGBhdc);
-    if (RGBitMap != NULL)
-        DeleteObject(RGBitMap);
+    int i;
+    DWORD err;
 
     Nhdc = GetDC(RGraphWnd);
-    FillRect(Nhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
+    SelectClipRgn(Nhdc, NULL);
+    SelectClipRgn(RGBhdc, NULL);
+
+    i = FillRect(RGBhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
+    err = GetLastError();
+    i = BitBlt(Nhdc, 0, 0, graphicsRect.right, graphicsRect.bottom, RGBhdc, 0, 0, SRCCOPY);
 
     if (R_WinVersion >= 4.0)
     {
@@ -698,17 +743,7 @@ void Win_NewPlot()
         Win_SetMetaDC(Nhdc);
         FillRect(RGMhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
     }
-    RGBhdc = CreateCompatibleDC(Nhdc);
-    SetMapMode(RGBhdc, GetMapMode(Nhdc));
-    RGBitMap =
-        CreateCompatibleBitmap(Nhdc, graphicsRect.right - graphicsRect.left, graphicsRect.bottom - graphicsRect.top);
-    if (RGBitMap == NULL)
-        MessageBox(RFrame, "couldn't alloc bitmap", "R Graphics", MB_ICONEXCLAMATION | MB_OK);
 
-    SelectObject(RGBhdc, RGBitMap);
-    FillRect(RGBhdc, &graphicsRect, GetStockObject(WHITE_BRUSH));
-
-    Win_RGSetFont(fontface, fontsize, -1);
     ReleaseDC(RGraphWnd, Nhdc);
 }
 
@@ -723,9 +758,11 @@ static void Win_Close()
     hdc = GetDC(RGraphWnd);
     DeleteObject(SelectObject(hdc, GetStockObject(BLACK_PEN)));
     DeleteObject(SelectObject(hdc, GetStockObject(WHITE_BRUSH)));
+    ReleaseDC(RGraphWnd, hdc);
 
     DevInit = 0;
     SendMessage(RClient, WM_MDIDESTROY, (WPARAM)(HWND)RGraphWnd, 0);
+    RGraphWnd = NULL;
     if (R_WinVersion > 4.0)
     {
         if (RGMhdc != NULL)
@@ -743,6 +780,7 @@ static void Win_Close()
         DeleteObject(RGBitMap);
         RGBitMap = NULL;
     }
+    SetFocus(RConsoleFrame);
 }
 
 /* MoveTo */
@@ -1036,6 +1074,7 @@ int WinDeviceDriver()
 
     GP->xCharOffset = 0.5;
     GP->yCharOffset = 0.5;
+    GP->yLineBias = 0.1;
 
     /* inches per raster */
 
@@ -1045,7 +1084,7 @@ int WinDeviceDriver()
     GP->canResizePlot = 1;
     GP->canChangeFont = 1;
     GP->canRotateText = 1;
-    GP->canResizeText = 0;
+    GP->canResizeText = 1;
     GP->canClip = 1;
 
     LocatorDone = -1;
