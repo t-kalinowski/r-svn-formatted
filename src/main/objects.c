@@ -392,7 +392,15 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (CAR(m) == R_MissingArg)
                 {
-                    tmp = findVarInFrame(FRAME(cptr->cloenv), TAG(m));
+
+                    /*#ifdef USE_HASHTABLE */
+                    tmp = findVarInFrame(cptr->cloenv, TAG(m));
+
+                    /* Old */
+                    /* tmp = findVarInFrame(FRAME(cptr->cloenv), TAG(m)); */
+
+                    /*#endif  USE_HASHTABLE */
+
                     if (tmp == R_MissingArg)
                         break;
                 }
@@ -410,7 +418,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     s = CADDR(args); /* this is ... and we need to see if it's bound */
     if (s == R_DotsSymbol)
     {
-        t = findVarInFrame(FRAME(env), s);
+        t = findVarInFrame(env, s);
         if (t != R_NilValue && t != R_MissingArg)
         {
             TYPEOF(t) = LISTSXP; /* a safe mutation */
