@@ -33,6 +33,12 @@
 #include <Defn.h>
 #include <Rdynpriv.h>
 
+#ifdef __APPLE_CC__
+/* # ifdef HAVE_DL_H */
+#include "dlfcn-darwin.h"
+#define HAVE_DYNAMIC_LOADING
+/* # endif */
+#else
 /* HP-UX 11.0 has dlfcn.h, but according to libtool as of Dec 2001
    this support is broken. So we force use of shlib even when dlfcn.h
    is available */
@@ -47,6 +53,8 @@
 #define HAVE_DYNAMIC_LOADING
 #endif
 #endif
+
+#endif /* __APPLE_CC__ */
 
 #ifdef HAVE_DYNAMIC_LOADING
 

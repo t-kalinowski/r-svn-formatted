@@ -393,7 +393,7 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     ShowWindow(devWindow);
     err = InstallWindowEventHandler(devWindow, NewEventHandlerUPP(DoCloseHandler), GetEventTypeCount(RCloseWinEvent),
                                     RCloseWinEvent, (void *)devWindow, NULL);
-    printf(stderr, "\n qtz err=%d", err);
+
     if (err != noErr)
         return (0);
 
