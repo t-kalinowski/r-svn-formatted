@@ -32,9 +32,6 @@
 
 #ifdef SUPPORT_UTF8
 #define USE_FONTSET 1
-#define HAVE_XUTF8DRAWIMAGESTRING 1
-#define HAVE_XUTF8DRAWSTRING 1
-#define HAVE_XUTF8TEXTEXTENTS 1
 extern int utf8locale;
 #endif
 
@@ -1419,7 +1416,6 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
 static RotatedTextItem *XmbRotRetrieveFromCache(Display *dpy, XFontSet font, double angle, char *text, int align);
 static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double angle, char *text, int align);
 
-void RXSetFontSet(Display *display, GC gc, XFontSet font);
 XFontStruct *RXFontStructOfFontSet(XFontSet font);
 
 static int XRfTextExtents(XFontSet font_set, char *string, int num_bytes, XRectangle *overall_ink_return,
@@ -1720,7 +1716,6 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
             GCForeground | GCBackground | GCFunction | GCStipple | GCFillStyle | GCTileStipXOrigin | GCTileStipYOrigin |
                 GCPlaneMask | GCClipMask,
             my_gc);
-    RXSetFontSet(dpy, my_gc, font);
 
     /* count number of sections in string */
     if (align != NONE)
@@ -2027,7 +2022,6 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
     /* create a GC for the bitmap */
     font_gc = XCreateGC(dpy, canvas, (unsigned long)0, 0);
     XSetBackground(dpy, font_gc, 0);
-    RXSetFontSet(dpy, font_gc, font);
 
     /* make sure the bitmap is blank */
     XSetForeground(dpy, font_gc, 0);
@@ -2348,19 +2342,6 @@ XPoint *XmbRotTextExtents(Display *dpy, XFontSet font, double angle, int x, int 
     free((char *)xp_in);
 
     return xp_out;
-}
-
-void RXSetFontSet(Display *display, GC gc, XFontSet font)
-{
-#if 0
-    /* FIXME: PD says all the fonts have fid=0 */
-    char **ml;
-    XFontStruct **fs_list;
-    int i, cnt;
-
-    cnt = XFontsOfFontSet(font, &fs_list, &ml);
-    for(i = 0; i < cnt; i++) XSetFont(display, gc, fs_list[i]->fid);
-#endif
 }
 
 XFontStruct *RXFontStructOfFontSet(XFontSet font)
