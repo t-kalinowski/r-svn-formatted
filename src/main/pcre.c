@@ -27,7 +27,8 @@
 
 #include "Defn.h"
 
-#if defined(HAVE_PCRE) || defined(Unix) || defined(Win32)
+#if 1 /* we always have PCRE */
+
 #ifdef HAVE_PCRE_PCRE_H
 #include <pcre/pcre.h>
 #else
