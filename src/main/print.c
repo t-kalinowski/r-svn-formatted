@@ -685,6 +685,14 @@ void PrintValue(SEXP s)
     PrintValueEnv(s, R_NilValue);
 }
 
+/* Ditto, but only for objects, for use in debugging */
+
+void R_PV(SEXP s)
+{
+    if (isObject(s))
+        PrintValueEnv(s, R_NilValue);
+}
+
 void CustomPrintValue(SEXP s, SEXP env)
 {
     tagbuf[0] = '\0';
