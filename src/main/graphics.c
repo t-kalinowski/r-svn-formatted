@@ -3464,10 +3464,11 @@ void hsv2rgb(double h, double s, double v, double *r, double *g, double *b)
  *	this implementation is adapted from code by Nicholas Lewin-Koh.
  */
 void rgb2hsv(double r, double g, double b, double *h, double *s, double *v)
+/* all (r,g,b, h,s,v) values in [0,1] */
 {
     double min, max, delta;
-
-    /* Compute  min(r,g,b) and max(r,g,b): */
+    Rboolean r_max = TRUE, b_max = FALSE;
+    /* Compute  min(r,g,b) and max(r,g,b) and remember where max is: */
     min = max = r;
     if (min > g)
     { /* g < r */
@@ -3477,16 +3478,26 @@ void rgb2hsv(double r, double g, double b, double *h, double *s, double *v)
         { /* g <= b, g < r */
             min = g;
             if (b > r)
-                max = g; /* else : g <= b <=r */
+            {
+                max = b;
+                b_max = TRUE;
+                r_max = FALSE;
+            }
+            /* else : g <= b <=r */
         }
     }
     else
     { /* r <= g */
         if (b > g)
-            max = b; /* &  min = r */
+        {
+            max = b;
+            b_max = TRUE;
+            r_max = FALSE; /* &  min = r */
+        }
         else
         { /* b,r <= g */
             max = g;
+            r_max = FALSE; /* &  min = r */
             if (b < r)
                 min = b; /* else : r <= b <= g */
         }
@@ -3495,25 +3506,23 @@ void rgb2hsv(double r, double g, double b, double *h, double *s, double *v)
     *v = max;
     if (max == 0 || (delta = max - min) == 0)
     {
-        /*   r = g = b : "gray" : s = 0, h is undefined */
-        *s = 0;
-        *h = NA_REAL;
+        /*   r = g = b : "gray" : s = h = 0 */
+        *s = *h = 0;
         return;
     }
     /* else : */
     *s = delta / max;
 
-    if (r == max)
+    if (r_max)
         *h = (g - b) / delta; /* between yellow & magenta */
-    else if (g == max)
-        *h = 2 + (b - r) / delta; /* between cyan & yellow*/
-    else
+    else if (b_max)
         *h = 4 + (r - g) / delta; /* between magenta & cyan */
+    else                          /* g == max */
+        *h = 2 + (b - r) / delta; /* between cyan & yellow*/
 
-    *h *= 60; /* degrees */
+    *h /= 6;
     if (*h < 0)
-        *h += 360;
-    *h /= 360;
+        *h += 1.;
     return;
 }
 
