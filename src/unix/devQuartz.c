@@ -616,8 +616,9 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
 
     SetRect(&devBounds, 400, 400, 400 + xd->windowWidth, 400 + xd->windowHeight);
 
-    err = CreateNewWindow(kDocumentWindowClass, kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute, &devBounds,
-                          &devWindow);
+    err = CreateNewWindow(kDocumentWindowClass,
+                          kWindowStandardHandlerAttribute | kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute,
+                          &devBounds, &devWindow);
 
     sprintf(buffer, "Quartz (%d) - Active", devnum + 1);
     CopyCStringToPascal(buffer, Title);
