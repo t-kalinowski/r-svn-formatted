@@ -518,7 +518,13 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
             INTEGER(s)[i] = 0;
     else if (mode == REALSXP)
         for (i = 0; i < len; i++)
-            REAL(s)[i] = 0.0;
+            REAL(s)[i] = 0.;
+    else if (mode == CPLXSXP)
+        for (i = 0; i < len; i++)
+        {
+            COMPLEX(s)[i].r = 0.;
+            COMPLEX(s)[i].i = 0.;
+        }
 #ifdef OLD
     else if (mode == STRSXP)
     {
@@ -526,6 +532,7 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
             SET_STRING_ELT(s, i, R_BlankString);
     }
 #endif
+    /* other cases: list/expression have "NULL", ok */
     return s;
 }
 
