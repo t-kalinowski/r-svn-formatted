@@ -376,7 +376,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
 SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[128];
-    SEXP ans, meth, obj;
+    SEXP ans, generic, obj;
 #ifdef EXPERIMENTAL_NAMESPACES
     SEXP callenv, defenv;
 #endif
@@ -400,9 +400,9 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
     if (nargs)
-        PROTECT(meth = eval(CAR(args), env));
+        PROTECT(generic = eval(CAR(args), env));
     else
-        meth = R_MissingArg;
+        generic = R_MissingArg;
 
     if (nargs > 2) /* R-lang says there should be a warning */
         warningcall(call, "Arguments after the first two are ignored");
@@ -419,15 +419,15 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (cptr == NULL)
             error("UseMethod called from outside a closure");
-        if (meth == R_MissingArg)
-            PROTECT(meth = mkString(CHAR(PRINTNAME(CAR(cptr->call)))));
+        if (generic == R_MissingArg)
+            PROTECT(generic = mkString(CHAR(PRINTNAME(CAR(cptr->call)))));
         PROTECT(obj = GetObject(cptr));
     }
 
-    if (TYPEOF(meth) != STRSXP || LENGTH(meth) < 1 || strlen(CHAR(STRING_ELT(meth, 0))) == 0)
-        errorcall(call, "first argument must be a method name");
+    if (TYPEOF(generic) != STRSXP || LENGTH(generic) < 1 || strlen(CHAR(STRING_ELT(generic, 0))) == 0)
+        errorcall(call, "first argument must be a generic name");
 
-    strcpy(buf, CHAR(STRING_ELT(meth, 0)));
+    strcpy(buf, CHAR(STRING_ELT(generic, 0)));
 
 #ifdef EXPERIMENTAL_NAMESPACES
     if (usemethod(buf, obj, call, CDR(args), env, callenv, defenv, &ans) == 1)
