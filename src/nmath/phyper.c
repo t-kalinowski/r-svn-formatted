@@ -30,7 +30,7 @@
 
 double phyper(double x, double NR, double NB, double n)
 {
-    double N, xstart, xend, xr, xb, sum, term;
+    double N, xstart, xend, xr, xb, sum, ltrm;
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(NR) || ISNAN(NB) || ISNAN(n))
@@ -60,16 +60,16 @@ double phyper(double x, double NR, double NB, double n)
         return 1.0;
     xr = xstart;
     xb = n - xr;
-    term = exp(lfastchoose(NR, xr) + lfastchoose(NB, xb) - lfastchoose(N, n));
+    ltrm = lfastchoose(NR, xr) + lfastchoose(NB, xb) - lfastchoose(N, n);
     NR = NR - xr;
     NB = NB - xb;
     sum = 0.0;
     while (xr <= x)
     {
-        sum += term;
+        sum += exp(ltrm);
         xr++;
         NB++;
-        term *= (NR / xr) * (xb / NB);
+        ltrm += log((NR / xr) * (xb / NB));
         xb--;
         NR--;
     }

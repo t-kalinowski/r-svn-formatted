@@ -25,7 +25,9 @@
  *
  *    Compute the log gamma correction factor for x >= 10 so that
  *
- *    log(gamma(x)) = log(sqrt(2*pi))+(x-.5)*log(x)-x+lgammacor(x)
+ *    log(gamma(x)) = .5*log(2*pi) + (x-.5)*log(x) -x + lgammacor(x)
+ *
+ *    [ lgammacor(x) is called	Del(x)	in other contexts (e.g. dcdflib)]
  *
  *  NOTES
  *
