@@ -752,12 +752,12 @@ void readconsolecfg()
             }
             if (!strcmp(opt[0], "xgraphics"))
             {
-                graphicsx = atoi(opt[1]);
+                Rwin_graphicsx = atoi(opt[1]);
                 done = 1;
             }
             if (!strcmp(opt[0], "ygraphics"))
             {
-                graphicsy = atoi(opt[1]);
+                Rwin_graphicsy = atoi(opt[1]);
                 done = 1;
             }
             if (!strcmp(opt[0], "pgrows"))

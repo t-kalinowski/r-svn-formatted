@@ -222,6 +222,7 @@ static void GA_Resize(NewDevDesc *dd);
 static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
 static Rboolean GA_Open(NewDevDesc *, gadesc *, char *, double, double, Rboolean, int, int, double, int, int, int);
+static Rboolean GA_NewFrameConfirm();
 
 /********************************************************/
 /* end of list of required device driver actions 	*/
@@ -1559,8 +1560,8 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
         xd->rescale_factor = dw / dw0;
     {
         int grx, gry;
-        grx = (xpos == NA_INTEGER) ? graphicsx : xpos;
-        gry = (ypos == NA_INTEGER) ? graphicsy : ypos;
+        grx = (xpos == NA_INTEGER) ? Rwin_graphicsx : xpos;
+        gry = (ypos == NA_INTEGER) ? Rwin_graphicsy : ypos;
         if (grx < 0)
             grx = cw - iw + grx;
         if (gry < 0)
@@ -2687,6 +2688,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, doub
     dd->mode = GA_Mode;
     dd->hold = GA_Hold;
     dd->metricInfo = GA_MetricInfo;
+    xd->newFrameConfirm = GA_NewFrameConfirm;
 
     /* set graphics parameters that must be set by device driver */
     /* Window Dimensions in Pixels */
@@ -2762,6 +2764,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, doub
             xd->timesince = 500;
         }
     }
+    xd->newFrameConfirm = GA_NewFrameConfirm;
     dd->displayListOn = (xd->kind == SCREEN);
     if (RConsole && (xd->kind != SCREEN))
         show(RConsole);
@@ -3116,20 +3119,14 @@ static void GA_onExit(NewDevDesc *dd)
     GA_Activate(dd);
 }
 
-#if 0
-Rboolean winNewFrameConfirm()
+static Rboolean GA_NewFrameConfirm()
 {
     char msg[] = "Waiting to confirm page change...";
-    gadesc *xd;
     GEDevDesc *dd = GEcurrentDevice();
-
-    /* FIXME: Many of these checks would not be necessary if this were a standard device function */
-
-    if (!dd || dd->newDevStruct != 1 || !(dd->dev) || dd->dev->open != GA_Open) return FALSE;
-    xd = dd->dev->deviceSpecific;
+    gadesc *xd = dd->dev->deviceSpecific;
 
     if (!xd || xd->kind != SCREEN)
-	return FALSE;
+        return FALSE;
 
     xd->confirmation = TRUE;
     xd->clicked = 0;
@@ -3143,17 +3140,18 @@ Rboolean winNewFrameConfirm()
     R_WriteConsole("\n", 1);
     R_FlushConsole();
     settext(xd->gawin, "Click or hit ENTER for next page");
-    dd->dev->onExit = GA_onExit;  /* install callback for cleanup */
-    while (!xd->clicked && !xd->enterkey) {
-	if(xd->buffered) SHOW;
+    dd->dev->onExit = GA_onExit; /* install callback for cleanup */
+    while (!xd->clicked && !xd->enterkey)
+    {
+        if (xd->buffered)
+            SHOW;
         WaitMessage();
-	R_ProcessEvents(); /* May not return if user interrupts */
+        R_ProcessEvents(); /* May not return if user interrupts */
     }
     dd->dev->onExit(dd->dev);
 
     return TRUE;
 }
-#endif
 
 static SEXP GA_getEvent(SEXP eventRho, char *prompt)
 {
