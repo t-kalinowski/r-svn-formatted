@@ -693,7 +693,9 @@ static void HelpMouseClick(window w, int button, point pt)
             return;
         if (button & LeftButton)
         {
-            gabeep();
+            int useBeep = asLogical(GetOption(install("locatorBell"), R_NilValue));
+            if (useBeep)
+                gabeep();
             xd->clicked = 1;
             xd->px = pt.x;
             xd->py = pt.y;
