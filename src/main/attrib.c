@@ -526,6 +526,7 @@ SEXP R_data_class2(SEXP obj)
         else
             class0 = mkChar("array");
     }
+    PROTECT(class0);
     switch (t = TYPEOF(obj))
     {
     case CLOSXP:
@@ -562,7 +563,6 @@ SEXP R_data_class2(SEXP obj)
     default:
         class = type2str(t);
     }
-    PROTECT(class0);
     PROTECT(class);
     if (isNull(class0))
     {
