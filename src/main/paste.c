@@ -131,7 +131,8 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             s = CHAR(STRING(ans)[i]);
             sprintf(buf, "%s", s);
-            buf += LENGTH(STRING(ans)[i]);
+            while (*buf)
+                buf++;
         }
         PROTECT(tmpchar);
         ans = allocVector(STRSXP, 1);
