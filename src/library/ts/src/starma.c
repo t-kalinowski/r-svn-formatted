@@ -89,7 +89,7 @@ void starma(int *p, int *q, int *r, int *np, double *phi, double *theta, double 
 
     /*     Check if ar(1) */
 
-    if (*q == 0 && *p == 1)
+    if (!(*q > 0 || *p > 1))
     {
         V[0] = 1.0;
         a[0] = 0.0;
@@ -429,7 +429,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
     nt = *n - *id;
     if (*id > 0)
     {
-        for (j = 1; j <= *id; ++j)
+        for (j = 1; j <= *id; j++)
             store[j] = w[*n - j];
         for (i = 1; i <= nt; i++)
         {
@@ -456,7 +456,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
     /*     Calculate m.l.e. of sigma squared */
 
     sigma = 0.0;
-    for (j = 1; j <= nt; ++j)
+    for (j = 1; j <= nt; j++)
     {
         tmp = resid[j - 1];
         sigma += tmp * tmp;
@@ -472,13 +472,13 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
         for (i = 1; i <= *irz; i++)
             p[i] = 0.0;
         ind = 0;
-        for (j = 1; j <= *ir; ++j)
+        for (j = 1; j <= *ir; j++)
         {
             k = (j - 1) * (*id + *ir + 1) - (j - 1) * j / 2;
             for (i = j; i <= *ir; i++)
                 p[++k] = xrow[ind++];
         }
-        for (j = 1; j <= *id; ++j)
+        for (j = 1; j <= *id; j++)
             a[*ir + j] = store[j];
     }
 
@@ -507,11 +507,11 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
         for (i = 1; i <= ir1; i++)
             a[i] = a[i + 1];
         a[*ir] = 0.0;
-        for (j = 1; j <= *ip; ++j)
+        for (j = 1; j <= *ip; j++)
             a[j] += phi[j] * a1;
         if (*id > 0)
         {
-            for (j = 1; j <= *id; ++j)
+            for (j = 1; j <= *id; j++)
                 a1 += delta[j] * a[*ir + j];
             for (i = 1; i <= id1; i++)
             {
@@ -528,7 +528,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
             for (i = 1; i <= *id; i++)
             {
                 store[i] = 0.0;
-                for (j = 1; j <= *id; ++j)
+                for (j = 1; j <= *id; j++)
                 {
                     ll = max(i, j);
                     k = min(i, j);
@@ -538,7 +538,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
             }
             if (*id > 1)
             {
-                for (j = 1; j <= id1; ++j)
+                for (j = 1; j <= id1; j++)
                 {
                     jj = *id - j;
                     lk = (jj - 1) * (idd2 - jj) / 2 + jkl;
@@ -546,7 +546,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
                     for (i = 1; i <= j; i++)
                         p[++lk1] = p[++lk];
                 }
-                for (j = 1; j <= id1; ++j)
+                for (j = 1; j <= id1; j++)
                     p[jkl1 + j] = store[j] + p[*ir + j];
             }
             p[jkl1] = p[1];
@@ -554,7 +554,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
                 p[jkl1] += delta[i] * (store[i] + 2.0 * p[*ir + i]);
             for (i = 1; i <= *id; i++)
                 store[i] = p[*ir + i];
-            for (j = 1; j <= *ir; ++j)
+            for (j = 1; j <= *ir; j++)
             {
                 kk1 = j * (id2r1 - j) / 2 + *ir;
                 k1 = (j - 1) * (id2r - j) / 2 + *ir;
@@ -570,7 +570,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
                 }
             }
 
-            for (j = 1; j <= *ir; ++j)
+            for (j = 1; j <= *ir; j++)
             {
                 store[j] = 0.0;
                 kkk = j * (i45 - j) / 2 - *id;
@@ -580,7 +580,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
                     store[j] += delta[i] * p[kkk];
                 }
             }
-            for (j = 1; j <= *ir; ++j)
+            for (j = 1; j <= *ir; j++)
             {
                 k = j * idrr1 - j * (j + 1) / 2 + 1;
                 for (i = 1; i <= id1; i++)
@@ -589,7 +589,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
                     p[k] = p[k - 1];
                 }
             }
-            for (j = 1; j <= *ir; ++j)
+            for (j = 1; j <= *ir; j++)
             {
                 k = (j - 1) * (id2r - j) / 2 + *ir + 1;
                 p[k] = store[j] + phi[j] * p[1];
@@ -604,7 +604,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
 
         ind = 0;
         dt = p[1];
-        for (j = 1; j <= *ir; ++j)
+        for (j = 1; j <= *ir; j++)
         {
             phij = phi[j];
             phijdt = phij * dt;
@@ -626,7 +626,7 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
         /*     predict y */
 
         y[l] = a[1];
-        for (j = 1; j <= *id; ++j)
+        for (j = 1; j <= *id; j++)
             y[l] += a[*ir + j] * delta[j];
 
         /*     calculate m.s.e. of y */
@@ -634,13 +634,13 @@ void forkal(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, int *id, int
         ams = p[1];
         if (*id > 0)
         {
-            for (j = 1; j <= *id; ++j)
+            for (j = 1; j <= *id; j++)
             {
                 jrj = ibc + (j - 1) * (idd2 - j) / 2;
                 tmp = delta[j];
                 ams = ams + 2.0 * delta[j] * p[*ir + j] + p[jrj + 1] * tmp * tmp;
             }
-            for (j = 1; j <= id1; ++j)
+            for (j = 1; j <= id1; j++)
             {
                 j1 = j + 1;
                 jrk = ibc + 1 + (j - 1) * (idd2 - j) / 2;
