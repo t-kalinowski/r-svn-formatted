@@ -235,7 +235,7 @@ static void xbuffixl(xbuf p)
 
 /* console */
 
-rgb consolebg = White, consolefg = Black, consoleuser = Red, pagerhighlight = Red;
+rgb consolebg = White, consolefg = Black, consoleuser = gaRed, pagerhighlight = gaRed;
 
 extern int R_HistorySize; /* from Defn.h */
 

@@ -538,7 +538,7 @@ void readconsolecfg()
     consolec = 90;
     consolebg = White;
     consolefg = Black;
-    consoleuser = Red;
+    consoleuser = gaRed;
     highlight = DarkRed;
     pagerrow = 25;
     pagercol = 80;
