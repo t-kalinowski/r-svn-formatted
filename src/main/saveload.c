@@ -888,6 +888,16 @@ static void HashAdd(SEXP obj, SEXP ht)
     SET_TAG(HASH_TABLE_KEYS_LIST(ht), val);
 }
 
+static int HashGet(SEXP item, SEXP ht)
+{
+    int pos = PTRHASH(item) % HASH_TABLE_SIZE(ht);
+    SEXP cell;
+    for (cell = HASH_BUCKET(ht, pos); cell != R_NilValue; cell = CDR(cell))
+        if (item == TAG(cell))
+            return INTEGER(CAR(cell))[0];
+    return 0;
+}
+
 static int NewLookup(SEXP item, SEXP ht)
 {
     int count = NewSaveSpecialHook(item);
@@ -895,14 +905,7 @@ static int NewLookup(SEXP item, SEXP ht)
     if (count != 0)
         return count;
     else
-    {
-        int pos = PTRHASH(item) % HASH_TABLE_SIZE(ht);
-        SEXP cell;
-        for (cell = HASH_BUCKET(ht, pos); cell != R_NilValue; cell = CDR(cell))
-            if (item == TAG(cell))
-                return INTEGER(CAR(cell))[0];
-        return 0;
-    }
+        return HashGet(item, ht);
 }
 
 /*  This code carries out the basic inspection of an object, building
@@ -933,8 +936,12 @@ static void NewMakeLists(SEXP obj, SEXP sym_list, SEXP env_list)
     case ENVSXP:
         if (NewLookup(obj, env_list))
             return;
+#ifdef EXPERIMENTAL_NAMESPACES
         if (obj == R_BaseNamespace)
-            warning("base namespace is not preserved in version 1");
+            warning("base namespace is not preserved in version 1 workspaces");
+        if (R_IsNamespaceEnv(obj))
+            error("cannot save namespace in version 1 workspaces");
+#endif
 #ifdef FANCY_BINDINGS
         if (R_HasFancyBindings(obj))
             error("cannot save environment with locked/active bindings");
