@@ -1820,6 +1820,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
 {
     SEXP t;
     PROTECT_INDEX pvalidx, pxidx;
+    Rboolean maybe_duplicate = FALSE;
 
     PROTECT_WITH_INDEX(x, &pxidx);
     PROTECT_WITH_INDEX(val, &pvalidx);
@@ -1827,7 +1828,14 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
     if (NAMED(x) == 2)
         REPROTECT(x = duplicate(x), pxidx);
 
-    if (NAMED(val))
+    /* If we aren't creating a new entry and NAMED>0
+       we need to duplicate to prevent cycles.
+       If we are creating a new entry we could duplicate
+       or increase NAMED. We duplicate if NAMED==1, but
+       not if NAMED==2 */
+    if (NAMED(val) == 2)
+        maybe_duplicate = TRUE;
+    else if (NAMED(val) == 1)
         REPROTECT(val = duplicate(val), pvalidx);
 
     if ((isList(x) || isLanguage(x)) && !isNull(x))
@@ -1941,6 +1949,8 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
             if (imatch >= 0)
             {
                 /* We are just replacing an element */
+                if (maybe_duplicate)
+                    REPROTECT(val = duplicate(val), pvalidx);
                 SET_VECTOR_ELT(x, imatch, val);
             }
             else
