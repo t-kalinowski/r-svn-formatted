@@ -3107,6 +3107,7 @@ void GCircle(double x, double y, int coords, double radius, int col, int border,
     ir = radius / (72.0 * dd->gp.ipr[0]);
 #endif
     ir = radius / dd->gp.ipr[0];
+    ir = (ir > 0) ? ir : 1;
     if (dd->dp.canClip)
     {
         GClip(dd);
