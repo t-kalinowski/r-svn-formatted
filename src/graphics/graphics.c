@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997 Robert Gentleman, Ross Ihaka and the R Core Team
  *
@@ -616,7 +616,7 @@ void GSavePars(void)
     yaxtsave = GP->yaxt;
 }
 
-/*  GSavePars -- Restore temorarily saved inline parameter values  */
+/*  GRestorePars -- Restore temorarily saved inline parameter values  */
 
 void GRestorePars(void)
 {
@@ -696,15 +696,8 @@ void GForceClip()
     clipstate = GP->xpd;
 }
 
-#ifdef OUT
-void GLPretty(double *, double *, int *);
-void GPretty(double *, double *, int *);
-void GLScale(double, double, int);
-void GScale(double, double, int);
-#endif
-
-/*  GLPretty -- Set scale and ticks for logarithmic scales  */
-/*  Note: 1 2 5 10 looks good on logarithmic scales  */
+/* GLPretty -- Set scale and ticks for logarithmic scales */
+/*	  Note: 1 2 5 10 looks good on logarithmic scales */
 
 void GLPretty(double *xmin, double *xmax, int *n)
 {
@@ -750,6 +743,7 @@ void GLPretty(double *xmin, double *xmax, int *n)
     }
 }
 
+/*   GPretty(&xmin, &xmax, &n) */
 void GPretty(double *s, double *u, int *ndiv)
 {
     double base, cell, unit, tmp;
@@ -783,6 +777,8 @@ void GPretty(double *s, double *u, int *ndiv)
     *ndiv = (*u - *s) / unit + 0.5;
 }
 
+/*  GScale -- setup proper plotting range (pretty), define
+        GP & DP  "usr" &  "xaxp" or "yaxp" */
 void GScale(double xmin, double xmax, int axis)
 {
     int log, n, style, swap;
@@ -820,22 +816,27 @@ void GScale(double xmin, double xmax, int axis)
             xmin = -1;
             xmax = 1;
         }
-        else
+        else if (xmin > 0)
         {
             xmin = 0.6 * xmin;
             xmax = 1.4 * xmax;
+        }
+        else
+        { /* < 0 */
+            xmin = 1.4 * xmin;
+            xmax = 0.6 * xmax;
         }
     }
 
     switch (style)
     {
-    case 'r':
+    case 'r': /* add  4%  on both sides */
         temp = 0.04 * (xmax - xmin);
         xmin = xmin - temp;
         xmax = xmax + temp;
     case 'i':
         break;
-    case 's':
+    case 's': /* TODO */
     case 'e':
     default:
         error("axis style \"%c\" unimplemented\n", style);
@@ -890,7 +891,9 @@ void GScale(double xmin, double xmax, int axis)
     }
 }
 
-/*  GSetupAxis -- Set up the default axis information  */
+/*  GSetupAxis -- Set up the default axis information:
+                from  lab & usr,
+        set    (x/y)axp  */
 
 void GSetupAxis(int axis)
 {
