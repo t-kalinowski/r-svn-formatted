@@ -283,8 +283,8 @@ static void SaveAsPostscript(DevDesc *dd, char *fn)
         }
     }
     if (PSDeviceDriver(ndd, fn, paper, family, bg, fg, GConvertXUnits(1.0, NDC, INCHES, dd),
-                       GConvertYUnits(1.0, NDC, INCHES, dd), (double)0, dd->gp.ps, 0, 1))
-        /* horizontal=F, onefile=F, pagecentre=T */
+                       GConvertYUnits(1.0, NDC, INCHES, dd), (double)0, dd->gp.ps, 0, 1, 0, ""))
+        /* horizontal=F, onefile=F, pagecentre=T, print.it=F */
         PrivateCopyDevice(dd, ndd, "postscript");
 }
 
