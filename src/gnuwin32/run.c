@@ -21,6 +21,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "win-nls.h"
 
 #include <windows.h>
 #include <string.h>
@@ -39,7 +40,7 @@ static char *expandcmd(char *cmd)
 
     if (!(s = (char *)malloc(MAX_PATH + strlen(cmd))))
     {
-        strcpy(RunError, "Insufficient memory (expandcmd)");
+        strcpy(RunError, _("Insufficient memory (expandcmd)"));
         return NULL;
     }
     for (p = cmd; *p && isspace(*p); p++)
@@ -49,7 +50,7 @@ static char *expandcmd(char *cmd)
             d = d ? 0 : 1;
     if (d)
     {
-        strcpy(RunError, "A \" is missing(expandcmd)");
+        strcpy(RunError, _("A \" is missing(expandcmd)"));
         return NULL;
     }
     c = *q;
@@ -97,7 +98,7 @@ static char *expandcmd(char *cmd)
     {
         free(s);
         strncpy(RunError, p, 200);
-        strcat(RunError, " not found");
+        strcat(RunError, _(" not found"));
         *q = c;
         return NULL;
     }
@@ -145,7 +146,7 @@ static HANDLE pcreate(char *cmd, char *finput, int newconsole, int visible, int 
         if (hIN == INVALID_HANDLE_VALUE)
         {
             free(ecmd);
-            strcpy(RunError, "Impossible to redirect input");
+            strcpy(RunError, _("Impossible to redirect input"));
             return NULL;
         }
         SetStdHandle(STD_INPUT_HANDLE, hIN);
@@ -193,7 +194,7 @@ static HANDLE pcreate(char *cmd, char *finput, int newconsole, int visible, int 
     }
     if (!ret)
     {
-        strcpy(RunError, "Impossible to run '");
+        strcpy(RunError, _("Impossible to run "));
         strncat(RunError, ecmd, 200);
         free(ecmd);
         return NULL;
@@ -267,7 +268,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
 
     if (!(r = (rpipe *)malloc(sizeof(struct structRPIPE))))
     {
-        strcpy(RunError, "Insufficient memory (rpipeOpen)");
+        strcpy(RunError, _("Insufficient memory (rpipeOpen)"));
         return NULL;
     }
     r->process = NULL;
@@ -277,7 +278,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
         if (res == FALSE)
         {
             rpipeClose(r);
-            strcpy(RunError, "Impossible to create pipe");
+            strcpy(RunError, _("Impossible to create pipe"));
             return NULL;
         }
         hTHIS = GetCurrentProcess();
@@ -298,7 +299,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
     if (res == FALSE)
     {
         rpipeClose(r);
-        strcpy(RunError, "Impossible to create pipe");
+        strcpy(RunError, _("Impossible to create pipe"));
         return NULL;
     }
     hTHIS = GetCurrentProcess();
@@ -318,7 +319,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
     if (!(hThread = CreateThread(NULL, 0, threadedwait, r, 0, &id)))
     {
         rpipeClose(r);
-        strcpy(RunError, "Impossible to create thread/pipe");
+        strcpy(RunError, _("Impossible to create thread/pipe"));
         return NULL;
     }
     CloseHandle(hThread);
@@ -462,13 +463,13 @@ static int Wpipe_fgetc(Rconnection con)
 
 static double null_seek(Rconnection con, double where, int origin, int rw)
 {
-    error("seek not enabled for this connection");
+    error(_("seek not enabled for this connection"));
     return 0; /* -Wall */
 }
 
 static void null_truncate(Rconnection con)
 {
-    error("truncate not enabled for this connection");
+    error(_("truncate not enabled for this connection"));
 }
 
 static int Wpipe_fflush(Rconnection con)
@@ -555,12 +556,12 @@ Rconnection newWpipe(char *description, char *mode)
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
-        error("allocation of pipe connection failed");
+        error(_("allocation of pipe connection failed"));
     new->class = (char *)malloc(strlen("pipe") + 1);
     if (!new->class)
     {
         free(new);
-        error("allocation of pipe connection failed");
+        error(_("allocation of pipe connection failed"));
     }
     strcpy(new->class, "pipe");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -568,7 +569,7 @@ Rconnection newWpipe(char *description, char *mode)
     {
         free(new->class);
         free(new);
-        error("allocation of pipe connection failed");
+        error(_("allocation of pipe connection failed"));
     }
     init_con(new, description, mode);
     new->open = &Wpipe_open;
@@ -587,7 +588,7 @@ Rconnection newWpipe(char *description, char *mode)
         free(new->description);
         free(new->class);
         free(new);
-        error("allocation of pipe connection failed");
+        error(_("allocation of pipe connection failed"));
     }
     return new;
 }
