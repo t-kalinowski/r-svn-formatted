@@ -45,6 +45,7 @@
     nobs = 0;                                                                                                          \
     if (!kendall)                                                                                                      \
     {                                                                                                                  \
+        xmean = ymean = 0.;                                                                                            \
         for (k = 0; k < n; k++)                                                                                        \
         {                                                                                                              \
             if (!(ISNAN(xx[k]) || ISNAN(yy[k])))                                                                       \
@@ -163,7 +164,7 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
 
 #define COV_init(_ny_)                                                                                                 \
     double sum, xxm, yym, *xx, *yy;                                                                                    \
-    int i, j, k, nobs, n1;                                                                                             \
+    int i, j, k, nobs, n1 = -1; /* -Wall */                                                                            \
                                                                                                                        \
     /* total number of complete observations */                                                                        \
     nobs = 0;                                                                                                          \
