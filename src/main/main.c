@@ -525,7 +525,7 @@ void setup_Rmainloop(void)
 
     R_LoadProfile(R_OpenSysInitFile(), baseEnv);
 
-    if (R_GUIType == "Tk")
+    if (strcmp(R_GUIType, "Tk") == 0)
     {
         char buf[256];
 
