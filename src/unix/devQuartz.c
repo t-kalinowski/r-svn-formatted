@@ -30,9 +30,8 @@
 
 #if (defined(Macintosh) || defined(__APPLE_CC__))
 
-#define DEBUG 0
-
 #ifdef Macintosh
+#define DEBUG 0
 #include <RCarbon.h>
 #include "RIntf.h"
 #endif

@@ -24,17 +24,28 @@
  *  Today, Aug 6 2002, S.M. Iacus
  */
 
+#ifndef __R_DATA_BROWSER__
+#define __R_DATA_BROWSER__
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <Defn.h>
+
+#if (defined(Macintosh) || defined(__APPLE_CC__))
+
 #ifdef __APPLE_CC__
 #include <Carbon/Carbon.h>
+#include "DataBrowser.h"
 #else
+#define DEBUG 0
 #ifndef __CARBON__
 #include <Carbon.h>
 #endif
+#include <RIntf.h>
 #endif
 
 #include <limits.h>
-
-#include <RIntf.h>
 
 #include <R.h>
 #include <R_ext/Mathlib.h>
@@ -143,6 +154,7 @@ int NumOfID = 0;       /* length of the vectors    */
                        /* We do not check for this */
 
 SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env);
+void EmptyDataBrowser(void);
 
 SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -151,14 +163,11 @@ SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP name, type, objsize;
     char *vm;
 
-    NumOfID = 0;
-
     if (isBrowserOpen)
-        CloseDataBrowser(); /* This is not good   */
-                            /* If it is open we   */
-                            /* have to update     */
-                            /* instead of closing */
-                            /* and reopening      */
+    {
+        EmptyDataBrowser();
+    }
+
     FreeBrowserStuff();
 
     checkArity(op, args);
@@ -340,6 +349,18 @@ void OpenDataBrowser(void)
     if (WSpaceBrowser == NULL)
     {
         CreateDataBrowser(BrowserWindow, &WSpaceBrowser);
+        /* Configure the DataBrowser */
+        if (!isBrowserOpen)
+            ConfigureDataBrowser(WSpaceBrowser);
+        err = SetDataBrowserTarget(WSpaceBrowser, 1);
+
+        /* Set the keyboard focus */
+        SetKeyboardFocus(BrowserWindow, WSpaceBrowser, kControlDataBrowserPart);
+
+        /* Store DB as a window property */
+        SetWindowProperty(BrowserWindow, kMyCreator, kMyDataBrowser, sizeof(WSpaceBrowser), &WSpaceBrowser);
+
+        InstallDataBrowserCallbacks(WSpaceBrowser);
     }
 
     if (WSpaceBrowser == NULL)
@@ -348,20 +369,7 @@ void OpenDataBrowser(void)
         return;
     }
 
-    /* Configure the DataBrowser */
-    if (!isBrowserOpen)
-        ConfigureDataBrowser(WSpaceBrowser);
-    err = SetDataBrowserTarget(WSpaceBrowser, 1);
-
-    /* Set the keyboard focus */
-    SetKeyboardFocus(BrowserWindow, WSpaceBrowser, kControlDataBrowserPart);
-
-    /* Store DB as a window property */
-    SetWindowProperty(BrowserWindow, kMyCreator, kMyDataBrowser, sizeof(WSpaceBrowser), &WSpaceBrowser);
-
-    AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, NULL, kDataBrowserItemNoProperty);
-
-    InstallDataBrowserCallbacks(WSpaceBrowser);
+    AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, RootItems, kDataBrowserItemNoProperty);
 
     ShowWindow(BrowserWindow);
 
@@ -370,8 +378,6 @@ void OpenDataBrowser(void)
 
 void FreeBrowserStuff(void)
 {
-    int i;
-
     if (SubItemsID)
     {
         free(SubItemsID);
@@ -426,6 +432,11 @@ void FreeBrowserStuff(void)
         free(ParentID);
         ParentID = NULL;
     }
+}
+
+void EmptyDataBrowser(void)
+{
+    RemoveDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, 0, NULL, kDataBrowserItemNoProperty);
 }
 
 void CloseDataBrowser(void)
@@ -513,7 +524,7 @@ static void ConfigureDataBrowser(ControlRef browser)
         columnDesc.headerBtnDesc.btnFontStyle.style = normal;
 
         columnDesc.headerBtnDesc.titleString =
-            CFStringCreateWithPascalString(CFAllocatorGetDefault(), "\pObject", kCFStringEncodingMacRoman);
+            CFStringCreateWithCString(CFAllocatorGetDefault(), "Object", kCFStringEncodingMacRoman);
 
         AddDataBrowserListViewColumn(browser, &columnDesc, kDataBrowserListViewAppendColumn),
 
@@ -526,7 +537,7 @@ static void ConfigureDataBrowser(ControlRef browser)
         columnDesc.propertyDesc.propertyFlags = kDataBrowserPropertyIsMutable | kDataBrowserListViewDefaultColumnFlags;
 
         columnDesc.headerBtnDesc.titleString =
-            CFStringCreateWithPascalString(CFAllocatorGetDefault(), "\pType", kCFStringEncodingMacRoman);
+            CFStringCreateWithCString(CFAllocatorGetDefault(), "Type", kCFStringEncodingMacRoman);
 
         AddDataBrowserListViewColumn(browser, &columnDesc, kDataBrowserListViewAppendColumn);
 
@@ -541,7 +552,7 @@ static void ConfigureDataBrowser(ControlRef browser)
         columnDesc.headerBtnDesc.btnFontStyle.just = teFlushLeft;
 
         columnDesc.headerBtnDesc.titleString =
-            CFStringCreateWithPascalString(CFAllocatorGetDefault(), "\pProperty", kCFStringEncodingMacRoman);
+            CFStringCreateWithCString(CFAllocatorGetDefault(), "Property", kCFStringEncodingMacRoman);
 
         AddDataBrowserListViewColumn(browser, &columnDesc, kDataBrowserListViewAppendColumn);
 
@@ -744,3 +755,12 @@ pascal OSStatus BrowserEventHandler(EventHandlerCallRef a, EventRef inEvent, voi
 
     return result;
 }
+#else
+SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    warning("object browser not available on this platform\n");
+    return R_NilValue;
+}
+#endif /* !(defined(Macintosh) && !defined(__APPLE_CC__)) */
+
+#endif /* __R_DATA_BROWSER__ */
