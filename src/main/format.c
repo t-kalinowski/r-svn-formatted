@@ -111,7 +111,7 @@ void formatFactor(int *x, int n, int *fieldwidth, SEXP levels, int nlevs)
                 naflag = 1;
             else
             {
-                xmax = strlen(CHAR(STRING(levels)[x[i] - 1]));
+                xmax = strlen(CHAR(STRING_ELT(levels, x[i] - 1)));
                 if (xmax > l)
                     l = xmax;
             }

@@ -71,7 +71,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
     { /* file != "" */
         if (num == NA_INTEGER)
             num = -1;
-        fp = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "r");
+        fp = R_fopen(R_ExpandFileName(CHAR(STRING_ELT(file, 0))), "r");
         if (!fp)
             errorcall(call, "unable to open file for parsing");
         s = R_ParseFile(fp, num, &status);

@@ -185,7 +185,7 @@ void warningcall(SEXP call, char *format, ...)
         va_list(ap);
         if (call != R_NilValue)
         {
-            dcall = CHAR(STRING(deparse1(call, 0))[0]);
+            dcall = CHAR(STRING_ELT(deparse1(call, 0), 0));
             REprintf("Warning in %s : ", dcall);
             if (strlen(dcall) > LONGCALL)
                 REprintf("\n	 ");
@@ -205,11 +205,11 @@ void warningcall(SEXP call, char *format, ...)
             setupwarnings();
         if (R_CollectWarnings > 49)
             return;
-        VECTOR(R_Warnings)[R_CollectWarnings] = call;
+        SET_VECTOR_ELT(R_Warnings, R_CollectWarnings, call);
         slen = vsprintf(buf, format, ap);
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
-        STRING(names)[R_CollectWarnings++] = mkChar(buf);
+        SET_STRING_ELT(names, R_CollectWarnings++, mkChar(buf));
     }
     /* else:  w <= -1 */
     inWarning = 0;
@@ -225,10 +225,11 @@ void PrintWarnings(void)
     {
         REprintf("Warning message: \n");
         names = CAR(ATTRIB(R_Warnings));
-        if (VECTOR(R_Warnings)[0] == R_NilValue)
-            REprintf("%s \n", CHAR(STRING(names)[0]));
+        if (VECTOR_ELT(R_Warnings, 0) == R_NilValue)
+            REprintf("%s \n", CHAR(STRING_ELT(names, 0)));
         else
-            REprintf("%s in: %s \n", CHAR(STRING(names)[0]), CHAR(STRING(deparse1(VECTOR(R_Warnings)[0], 0))[0]));
+            REprintf("%s in: %s \n", CHAR(STRING_ELT(names, 0)),
+                     CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, 0), 0), 0)));
     }
     else if (R_CollectWarnings <= 10)
     {
@@ -236,11 +237,11 @@ void PrintWarnings(void)
         names = CAR(ATTRIB(R_Warnings));
         for (i = 0; i < R_CollectWarnings; i++)
         {
-            if (STRING(R_Warnings)[i] == R_NilValue)
-                REprintf("%d: %s \n", i + 1, CHAR(STRING(names)[i]));
+            if (STRING_ELT(R_Warnings, i) == R_NilValue)
+                REprintf("%d: %s \n", i + 1, CHAR(STRING_ELT(names, i)));
             else
-                REprintf("%d: %s in: %s \n", i + 1, CHAR(STRING(names)[i]),
-                         CHAR(STRING(deparse1(VECTOR(R_Warnings)[i], 0))[0]));
+                REprintf("%d: %s in: %s \n", i + 1, CHAR(STRING_ELT(names, i)),
+                         CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, i), 0), 0)));
         }
     }
     else
@@ -256,8 +257,8 @@ void PrintWarnings(void)
     names = CAR(ATTRIB(R_Warnings));
     for (i = 0; i < R_CollectWarnings; i++)
     {
-        VECTOR(s)[i] = VECTOR(R_Warnings)[i];
-        VECTOR(t)[i] = VECTOR(names)[i];
+        SET_VECTOR_ELT(s, i, VECTOR_ELT(R_Warnings, i));
+        SET_VECTOR_ELT(t, i, VECTOR_ELT(names, i));
     }
     setAttrib(s, R_NamesSymbol, t);
     defineVar(install("last.warning"), s, R_GlobalEnv);
@@ -286,7 +287,7 @@ void errorcall(SEXP call, char *format, ...)
     if (call != R_NilValue)
     {
         inError = 1;
-        dcall = CHAR(STRING(deparse1(call, 0))[0]);
+        dcall = CHAR(STRING_ELT(deparse1(call, 0), 0));
         sprintf(errbuf, "Error in %s : ", dcall);
         if (strlen(dcall) > LONGCALL)
             strcat(errbuf, "\n	"); /* <- TAB */
@@ -312,7 +313,7 @@ SEXP do_geterrmessage(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     PROTECT(res = allocVector(STRSXP, 1));
-    STRING(res)[0] = mkChar(errbuf);
+    SET_STRING_ELT(res, 0, mkChar(errbuf));
     UNPROTECT(1);
     return res;
 }
@@ -371,7 +372,7 @@ void jump_to_toplevel()
             {
                 int i, n = LENGTH(s);
                 for (i = 0; i < n; i++)
-                    eval(VECTOR(s)[i], c->cloenv);
+                    eval(VECTOR_ELT(s, i), c->cloenv);
             }
             inError = 1;
         }
@@ -412,7 +413,7 @@ void jump_to_toplevel()
     for (c = R_GlobalContext; c; c = c->nextcontext)
         if (c->callflag & CTXT_FUNCTION)
         {
-            CAR(t) = deparse1(c->call, 0);
+            SETCAR(t, deparse1(c->call, 0));
             t = CDR(t);
         }
     setVar(install(".Traceback"), s, R_GlobalEnv);
@@ -478,10 +479,10 @@ void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (CAR(args) != R_NilValue)
     { /* message */
-        CAR(args) = coerceVector(CAR(args), STRSXP);
+        SETCAR(args, coerceVector(CAR(args), STRSXP));
         if (!isValidString(CAR(args)))
             errorcall(c_call, " [invalid string in stop(.)]");
-        errorcall(c_call, "%s", CHAR(STRING(CAR(args))[0]));
+        errorcall(c_call, "%s", CHAR(STRING_ELT(CAR(args), 0)));
     }
     else
         errorcall(c_call, "");
@@ -496,11 +497,11 @@ SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
         cptr = cptr->nextcontext;
     if (CAR(args) != R_NilValue)
     {
-        CAR(args) = coerceVector(CAR(args), STRSXP);
+        SETCAR(args, coerceVector(CAR(args), STRSXP));
         if (!isValidString(CAR(args)))
             warningcall(cptr->call, " [invalid string in warning(.)]");
         else
-            warningcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
+            warningcall(cptr->call, "%s", CHAR(STRING_ELT(CAR(args), 0)));
     }
     else
         warningcall(cptr->call, "");
@@ -546,7 +547,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
         jump_now();
     if (call != R_NilValue)
     {
-        dcall = CHAR(STRING(deparse1(call, 0))[0]);
+        dcall = CHAR(STRING_ELT(deparse1(call, 0), 0));
         REprintf("Error in %s : ", dcall);
         if (strlen(dcall) > LONGCALL)
             REprintf("\n   ");
@@ -584,7 +585,7 @@ void WarningMessage(SEXP call, int which_warn, ...)
         jump_now();
     if (call != R_NilValue)
     {
-        dcall = CHAR(STRING(deparse1(call, 0))[0]);
+        dcall = CHAR(STRING_ELT(deparse1(call, 0), 0));
         REprintf("Warning in %s : ", dcall);
     }
     else

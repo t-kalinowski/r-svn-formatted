@@ -64,7 +64,7 @@ SEXP ScalarString(SEXP x)
     SEXP ans;
     PROTECT(x);
     ans = allocVector(STRSXP, 1);
-    STRING(ans)[0] = x;
+    SET_STRING_ELT(ans, 0, x);
     UNPROTECT(1);
     return ans;
 }
@@ -203,7 +203,7 @@ SEXP asChar(SEXP x)
             formatComplex(COMPLEX(x), 1, &w, &d, &e, &wi, &di, &ei);
             return mkChar(EncodeComplex(COMPLEX(x)[0], w, d, e, wi, di, ei));
         case STRSXP:
-            return STRING(x)[0];
+            return STRING_ELT(x, 0);
         default:
             return NA_STRING;
         }
@@ -226,13 +226,13 @@ void internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
 
 int isValidString(SEXP x)
 {
-    return isString(x) && LENGTH(x) > 0 && !isNull(STRING(x)[0]);
+    return isString(x) && LENGTH(x) > 0 && !isNull(STRING_ELT(x, 0));
 }
 
 /* non-empty ("") valid string :*/
 int isValidStringF(SEXP x)
 {
-    return isValidString(x) && CHAR(STRING(x)[0])[0];
+    return isValidString(x) && CHAR(STRING_ELT(x, 0))[0];
 }
 
 int isSymbol(SEXP s)
@@ -337,7 +337,7 @@ int isFrame(SEXP s)
     {
         class = getAttrib(s, R_ClassSymbol);
         for (i = 0; i < length(class); i++)
-            if (!strcmp(CHAR(STRING(class)[i]), "data.frame"))
+            if (!strcmp(CHAR(STRING_ELT(class, i)), "data.frame"))
                 return 1;
     }
     return 0;
@@ -410,9 +410,9 @@ int isVectorizable(SEXP s)
         n = LENGTH(s);
         for (i = 0; i < n; i++)
         {
-            if (!isVector(VECTOR(s)[i]) || LENGTH(VECTOR(s)[i]) > 1)
+            if (!isVector(VECTOR_ELT(s, i)) || LENGTH(VECTOR_ELT(s, i)) > 1)
                 return 0;
-            mode = (mode >= TYPEOF(VECTOR(s)[i])) ? mode : TYPEOF(VECTOR(s)[i]);
+            mode = (mode >= TYPEOF(VECTOR_ELT(s, i))) ? mode : TYPEOF(VECTOR_ELT(s, i));
         }
         return mode;
     }
@@ -565,7 +565,7 @@ int inherits(SEXP s, char *name)
         nclass = length(class);
         for (i = 0; i < nclass; i++)
         {
-            if (!strcmp(CHAR(STRING(class)[i]), name))
+            if (!strcmp(CHAR(STRING_ELT(class, i)), name))
                 return 1;
         }
     }
@@ -676,7 +676,7 @@ SEXP EnsureString(SEXP s)
         s = PRINTNAME(s);
         break;
     case STRSXP:
-        s = STRING(s)[0];
+        s = STRING_ELT(s, 0);
         break;
     case CHARSXP:
         break;
@@ -802,7 +802,7 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
         errorcall(call, "character argument expected");
-    path = R_ExpandFileName(CHAR(STRING(s)[0]));
+    path = R_ExpandFileName(CHAR(STRING_ELT(s, 0)));
     if (chdir(path) < 0)
         errorcall(call, "cannot change working directory");
     return (R_NilValue);
@@ -817,7 +817,7 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
         errorcall(call, "character argument expected");
-    strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
+    strcpy(buf, R_ExpandFileName(CHAR(STRING_ELT(s, 0))));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)
         if (*p == '\\')
@@ -844,7 +844,7 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (!isPairList(args) || !isValidString(s = CAR(args)))
         errorcall(call, "character argument expected");
-    strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
+    strcpy(buf, R_ExpandFileName(CHAR(STRING_ELT(s, 0))));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)
         if (*p == '\\')

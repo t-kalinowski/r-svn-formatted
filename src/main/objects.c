@@ -88,7 +88,7 @@ static SEXP GetObject(RCNTXT *cptr)
     if (TYPEOF(s) == PROMSXP)
     {
         if (PRVALUE(s) == R_UnboundValue)
-            PRVALUE(s) = eval(PREXPR(s), PRENV(s));
+            SET_PRVALUE(s, eval(PREXPR(s), PRENV(s)));
         s = PRVALUE(s);
     }
     return (s);
@@ -138,12 +138,12 @@ static SEXP newintoold(SEXP new, SEXP old)
 {
     if (new == R_NilValue)
         return R_NilValue;
-    CDR(new) = newintoold(CDR(new), old);
+    SETCDR(new, newintoold(CDR(new), old));
     while (old != R_NilValue)
     {
         if (TAG(old) != R_NilValue && TAG(old) == TAG(new))
         {
-            CAR(old) = CAR(new);
+            SETCAR(old, CAR(new));
             return CDR(new);
         }
         old = CDR(old);
@@ -234,7 +234,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
         nclass = length(class);
         for (i = 0; i < nclass; i++)
         {
-            sprintf(buf, "%s.%s", generic, CHAR(STRING(class)[i]));
+            sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, i)));
             method = install(buf);
             sxp = findVar(method, rho);
             if (isFunction(sxp))
@@ -244,7 +244,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
                 {
                     PROTECT(t = allocVector(STRSXP, nclass - i));
                     for (j = 0; j < length(t); j++, i++)
-                        STRING(t)[j] = STRING(class)[i];
+                        SET_STRING_ELT(t, j, STRING_ELT(class, i));
                     setAttrib(t, install("previous"), class);
                     defineVar(install(".Class"), t, newrho);
                     UNPROTECT(1);
@@ -255,7 +255,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
                 defineVar(install(".Method"), t, newrho);
                 UNPROTECT(1);
                 t = newcall;
-                CAR(t) = method;
+                SETCAR(t, method);
                 R_GlobalContext->callflag = CTXT_GENERIC;
                 *ans = applyMethod(t, sxp, matchedarg, rho, newrho);
                 R_GlobalContext->callflag = CTXT_RETURN;
@@ -275,7 +275,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
         defineVar(install(".Method"), t, newrho);
         UNPROTECT(1);
         t = newcall;
-        CAR(t) = method;
+        SETCAR(t, method);
         R_GlobalContext->callflag = CTXT_GENERIC;
         *ans = applyMethod(t, sxp, matchedarg, rho, newrho);
         R_GlobalContext->callflag = CTXT_RETURN;
@@ -326,10 +326,10 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(obj = GetObject(cptr));
     }
 
-    if (TYPEOF(meth) != STRSXP || LENGTH(meth) < 1 || strlen(CHAR(STRING(meth)[0])) == 0)
+    if (TYPEOF(meth) != STRSXP || LENGTH(meth) < 1 || strlen(CHAR(STRING_ELT(meth, 0))) == 0)
         errorcall(call, "first argument must be a method name");
 
-    strcpy(buf, CHAR(STRING(meth)[0]));
+    strcpy(buf, CHAR(STRING_ELT(meth, 0)));
 
     if (usemethod(buf, obj, call, CDR(args), env, &ans) == 1)
     {
@@ -364,9 +364,9 @@ static SEXP fixcall(SEXP call, SEXP args)
                     found = 1;
             if (!found)
             {
-                CDR(s) = allocList(1);
-                TAG(CDR(s)) = TAG(t);
-                CAR(CDR(s)) = duplicate(CAR(t));
+                SETCDR(s, allocList(1));
+                SET_TAG(CDR(s), TAG(t));
+                SETCAR(CDR(s), duplicate(CAR(t)));
             }
         }
     }
@@ -418,7 +418,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     i = 0;
     for (s = formals, t = actuals; s != R_NilValue; s = CDR(s), t = CDR(t))
     {
-        TAG(t) = TAG(s);
+        SET_TAG(t, TAG(s));
         if (TAG(t) == R_DotsSymbol)
             i = length(CAR(t));
     }
@@ -433,14 +433,14 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (a = CAR(s); a != R_NilValue; a = CDR(a), i++, m = CDR(m))
                 {
                     sprintf(tbuf, "..%d", i);
-                    TAG(m) = mkSYMSXP(mkChar(tbuf), R_UnboundValue);
-                    CAR(m) = CAR(a);
+                    SET_TAG(m, mkSYMSXP(mkChar(tbuf), R_UnboundValue));
+                    SETCAR(m, CAR(a));
                 }
             }
             else
             {
-                TAG(m) = TAG(s);
-                CAR(m) = CAR(s);
+                SET_TAG(m, TAG(s));
+                SETCAR(m, CAR(s));
                 m = CDR(m);
             }
         }
@@ -455,8 +455,8 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(matchedarg = allocList(length(cptr->promargs)));
     for (t = matchedarg, s = cptr->promargs; t != R_NilValue; s = CDR(s), t = CDR(t))
     {
-        CAR(t) = CAR(s);
-        TAG(t) = TAG(s);
+        SETCAR(t, CAR(s));
+        SET_TAG(t, TAG(s));
     }
     for (t = matchedarg; t != R_NilValue; t = CDR(t))
     {
@@ -477,7 +477,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (tmp == R_MissingArg)
                         break;
                 }
-                CAR(t) = mkPROMISE(TAG(m), cptr->cloenv);
+                SETCAR(t, mkPROMISE(TAG(m), cptr->cloenv));
                 break;
             }
     }
@@ -494,7 +494,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         t = findVarInFrame(env, s);
         if (t != R_NilValue && t != R_MissingArg)
         {
-            TYPEOF(t) = LISTSXP; /* a safe mutation */
+            SET_TYPEOF(t, LISTSXP); /* a safe mutation */
             s = matchmethargs(matchedarg, t);
             UNPROTECT(1);
             PROTECT(matchedarg = s);
@@ -531,7 +531,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(generic) || length(generic) > 1)
         errorcall(call, "invalid generic argument to NextMethod");
 
-    if (strlen(CHAR(STRING(generic)[0])) == 0)
+    if (strlen(CHAR(STRING_ELT(generic, 0))) == 0)
         errorcall(call, "generic function not specified");
 
     /* determine whether we are in a Group dispatch */
@@ -549,7 +549,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* determine the root: either the group or the generic will be it */
 
-    if (strlen(CHAR(STRING(group)[0])) == 0)
+    if (strlen(CHAR(STRING_ELT(group, 0))) == 0)
         basename = generic;
     else
         basename = group;
@@ -566,7 +566,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             error("Wrong value for .Method");
         for (i = 0; i < length(method); i++)
         {
-            sprintf(b, "%s", CHAR(STRING(method)[i]));
+            sprintf(b, "%s", CHAR(STRING_ELT(method, i)));
             if (strlen(b))
                 break;
         }
@@ -582,7 +582,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (j = 0; j < length(class); j++)
     {
-        sprintf(buf, "%s.%s", CHAR(STRING(basename)[0]), CHAR(STRING(class)[j]));
+        sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(class, j)));
         if (!strcmp(buf, b))
             break;
     }
@@ -594,18 +594,18 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = j; i < length(class); i++)
     {
-        sprintf(buf, "%s.%s", CHAR(STRING(generic)[0]), CHAR(STRING(class)[i]));
+        sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(class, i)));
         nextfun = findVar(install(buf), env);
         if (isFunction(nextfun))
             break;
     }
     if (!isFunction(nextfun))
     {
-        sprintf(buf, "%s.default", CHAR(STRING(generic)[0]));
+        sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
         nextfun = findVar(install(buf), env);
         if (!isFunction(nextfun))
         {
-            t = install(CHAR(STRING(generic)[0]));
+            t = install(CHAR(STRING_ELT(generic, 0)));
             nextfun = findVar(t, env);
             if (!isFunction(nextfun))
                 error("No method to invoke");
@@ -622,7 +622,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(class = duplicate(class));
     PROTECT(m = allocSExp(ENVSXP));
     for (j = 0; j < length(s); j++)
-        STRING(s)[j] = duplicate(STRING(class)[i++]);
+        SET_STRING_ELT(s, j, duplicate(STRING_ELT(class, i++)));
     setAttrib(s, install("previous"), class);
     defineVar(install(".Class"), s, m);
     PROTECT(method = mkString(buf));
@@ -633,7 +633,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     defineVar(install(".Group"), group, m);
 
-    CAR(newcall) = method;
+    SETCAR(newcall, method);
     ans = applyMethod(newcall, nextfun, matchedarg, env, m);
     UNPROTECT(10);
     return (ans);
@@ -644,7 +644,7 @@ SEXP do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     if (isObject(CAR(args)))
     {
-        CAR(args) = duplicate(CAR(args));
+        SETCAR(args, duplicate(CAR(args)));
         setAttrib(CAR(args), R_ClassSymbol, R_NilValue);
     }
     return CAR(args);
@@ -661,7 +661,7 @@ int InheritsClass(SEXP x, char *name)
         class = getAttrib(x, R_ClassSymbol);
         nclass = length(class);
         for (i = 0; i < nclass; i++)
-            if (!strcmp(CHAR(STRING(class)[i]), name))
+            if (!strcmp(CHAR(STRING_ELT(class, i)), name))
                 return 1;
     }
     return 0;
@@ -679,7 +679,7 @@ void RemoveClass(SEXP x, char *name)
         nclass = length(class);
         nmatch = 0;
         for (i = 0; i < nclass; i++)
-            if (!strcmp(CHAR(STRING(class)[i]), name))
+            if (!strcmp(CHAR(STRING_ELT(class, i)), name))
                 nmatch++;
         if (nmatch == nclass)
         {
@@ -689,9 +689,9 @@ void RemoveClass(SEXP x, char *name)
         {
             PROTECT(newclass = allocVector(STRSXP, nclass - nmatch));
             for (i = 0, j = 0; i < nclass; i++)
-                if (strcmp(CHAR(STRING(class)[i]), name))
+                if (strcmp(CHAR(STRING_ELT(class, i)), name))
                 {
-                    STRING(newclass)[j++] = STRING(class)[i];
+                    SET_STRING_ELT(newclass, j++, STRING_ELT(class, i));
                 }
             setAttrib(x, R_ClassSymbol, newclass);
             UNPROTECT(1);
@@ -734,7 +734,7 @@ SEXP do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (isvec)
                 INTEGER(rval)[j] = 0;
-            if (!strcmp(CHAR(STRING(class)[i]), CHAR(STRING(what)[j])))
+            if (!strcmp(CHAR(STRING_ELT(class, i)), CHAR(STRING_ELT(what, j))))
             {
                 if (isvec)
                     INTEGER(rval)[j] = i + 1;

@@ -234,9 +234,9 @@ void printVector(SEXP x, int index, int quote)
             break;
         case STRSXP:
             if (quote)
-                printStringVector(STRING(x), n, '"', index);
+                printStringVector(STRING_PTR(x), n, '"', index);
             else
-                printStringVector(STRING(x), n, 0, index);
+                printStringVector(STRING_PTR(x), n, 0, index);
             break;
         case CPLXSXP:
             printComplexVector(COMPLEX(x), n, index);
@@ -453,21 +453,21 @@ void printNamedVector(SEXP x, SEXP names, int quote, char *title)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            printNamedLogicalVector(LOGICAL(x), n, STRING(names));
+            printNamedLogicalVector(LOGICAL(x), n, STRING_PTR(names));
             break;
         case INTSXP:
-            printNamedIntegerVector(INTEGER(x), n, STRING(names));
+            printNamedIntegerVector(INTEGER(x), n, STRING_PTR(names));
             break;
         case REALSXP:
-            printNamedRealVector(REAL(x), n, STRING(names));
+            printNamedRealVector(REAL(x), n, STRING_PTR(names));
             break;
         case CPLXSXP:
-            printNamedComplexVector(COMPLEX(x), n, STRING(names));
+            printNamedComplexVector(COMPLEX(x), n, STRING_PTR(names));
             break;
         case STRSXP:
             if (quote)
                 quote = '"';
-            printNamedStringVector(STRING(x), n, quote, STRING(names));
+            printNamedStringVector(STRING_PTR(x), n, quote, STRING_PTR(names));
             break;
         }
     else

@@ -625,7 +625,7 @@ void Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
         errorcall(call, "invalid file argument");
-    strcpy(file, R_ExpandFileName(CHAR(STRING(sfile)[0])));
+    strcpy(file, R_ExpandFileName(CHAR(STRING_ELT(sfile, 0))));
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
     if (R_Interactive && UsingReadline)
     {
@@ -648,7 +648,7 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     sfile = CAR(args);
     if (!isString(sfile) || LENGTH(sfile) < 1)
         errorcall(call, "invalid file argument");
-    strcpy(file, R_ExpandFileName(CHAR(STRING(sfile)[0])));
+    strcpy(file, R_ExpandFileName(CHAR(STRING_ELT(sfile, 0))));
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
     if (R_Interactive && UsingReadline)
     {

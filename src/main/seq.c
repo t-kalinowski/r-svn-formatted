@@ -55,12 +55,12 @@ static SEXP cross(SEXP s, SEXP t)
         k = 0;
         for (i = 0; i < nls; i++)
         {
-            vs = strlen(CHAR(STRING(ls)[i]));
+            vs = strlen(CHAR(STRING_ELT(ls, i)));
             for (j = 0; j < nlt; j++)
             {
-                vt = strlen(CHAR(STRING(lt)[j]));
-                STRING(la)[k] = allocString(vs + vt + 1);
-                sprintf(CHAR(STRING(la)[k]), "%s:%s", CHAR(STRING(ls)[i]), CHAR(STRING(lt)[j]));
+                vt = strlen(CHAR(STRING_ELT(lt, j)));
+                SET_STRING_ELT(la, k, allocString(vs + vt + 1));
+                sprintf(CHAR(STRING_ELT(la, k)), "%s:%s", CHAR(STRING_ELT(ls, i)), CHAR(STRING_ELT(lt, j)));
                 k++;
             }
         }
@@ -68,7 +68,7 @@ static SEXP cross(SEXP s, SEXP t)
         UNPROTECT(1);
     }
     PROTECT(la = allocVector(STRSXP, 1));
-    STRING(la)[0] = mkChar("factor");
+    SET_STRING_ELT(la, 0, mkChar("factor"));
     setAttrib(a, R_ClassSymbol, la);
     UNPROTECT(2);
     return (a);
@@ -179,20 +179,20 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case STRSXP:
         for (i = 0; i < nc; i++)
             for (j = 0; j < (INTEGER(t)[i]); j++)
-                STRING(a)[n++] = STRING(s)[i];
+                SET_STRING_ELT(a, n++, STRING_ELT(s, i));
         break;
     case VECSXP:
     case EXPRSXP:
         for (i = 0; i < nc; i++)
             for (j = 0; j < (INTEGER(t)[i]); j++)
-                VECTOR(a)[n++] = VECTOR(s)[i];
+                SET_VECTOR_ELT(a, n++, VECTOR_ELT(s, i));
         break;
     case LISTSXP:
         u = a;
         for (i = 0; i < nc; i++)
             for (j = 0; j < (INTEGER(t)[i]); j++)
             {
-                CAR(u) = duplicate(CAR(nthcdr(s, i)));
+                SETCAR(u, duplicate(CAR(nthcdr(s, i))));
                 u = CDR(u);
             }
         break;
@@ -205,13 +205,13 @@ static SEXP rep2(SEXP s, SEXP ncopy)
         if (inherits(s, "ordered"))
         {
             PROTECT(tmp = allocVector(STRSXP, 2));
-            STRING(tmp)[0] = mkChar("ordered");
-            STRING(tmp)[1] = mkChar("factor");
+            SET_STRING_ELT(tmp, 0, mkChar("ordered"));
+            SET_STRING_ELT(tmp, 1, mkChar("factor"));
         }
         else
         {
             PROTECT(tmp = allocVector(STRSXP, 1));
-            STRING(tmp)[0] = mkChar("factor");
+            SET_STRING_ELT(tmp, 0, mkChar("factor"));
         }
         setAttrib(a, R_ClassSymbol, tmp);
         UNPROTECT(1);
@@ -269,12 +269,12 @@ static SEXP rep(SEXP s, SEXP ncopy)
         break;
     case STRSXP:
         for (i = 0; i < na; i++)
-            STRING(a)[i] = STRING(s)[i % ns];
+            SET_STRING_ELT(a, i, STRING_ELT(s, i % ns));
         break;
     case LISTSXP:
         i = 0;
         for (t = a; t != R_NilValue; t = CDR(t), i++)
-            CAR(t) = duplicate(CAR(nthcdr(s, (i % ns))));
+            SETCAR(t, duplicate(CAR(nthcdr(s, (i % ns)))));
         break;
     default:
         UNIMPLEMENTED("rep");
@@ -285,13 +285,13 @@ static SEXP rep(SEXP s, SEXP ncopy)
         if (inherits(s, "ordered"))
         {
             PROTECT(tmp = allocVector(STRSXP, 2));
-            STRING(tmp)[0] = mkChar("ordered");
-            STRING(tmp)[1] = mkChar("factor");
+            SET_STRING_ELT(tmp, 0, mkChar("ordered"));
+            SET_STRING_ELT(tmp, 1, mkChar("factor"));
         }
         else
         {
             PROTECT(tmp = allocVector(STRSXP, 1));
-            STRING(tmp)[0] = mkChar("factor");
+            SET_STRING_ELT(tmp, 0, mkChar("factor"));
         }
         setAttrib(a, R_ClassSymbol, tmp);
         UNPROTECT(1);

@@ -71,17 +71,17 @@ SEXP do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (CAR(oldcode) != R_BraceSymbol)
             {
                 PROTECT(tmp = allocList(3));
-                CAR(tmp) = R_BraceSymbol;
-                CADR(tmp) = oldcode;
-                CADDR(tmp) = code;
-                TYPEOF(tmp) = LANGSXP;
+                SETCAR(tmp, R_BraceSymbol);
+                SETCADR(tmp, oldcode);
+                SETCADDR(tmp, code);
+                SET_TYPEOF(tmp, LANGSXP);
                 ctxt->conexit = tmp;
                 UNPROTECT(1);
             }
             else
             {
                 PROTECT(tmp = allocList(1));
-                CAR(tmp) = code;
+                SETCAR(tmp, code);
                 ctxt->conexit = listAppend(oldcode, tmp);
                 UNPROTECT(1);
             }
@@ -98,16 +98,16 @@ SEXP do_args(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (TYPEOF(CAR(args)) == STRSXP && length(CAR(args)) == 1)
     {
-        PROTECT(s = install(CHAR(STRING(CAR(args))[0])));
-        CAR(args) = findFun(s, rho);
+        PROTECT(s = install(CHAR(STRING_ELT(CAR(args), 0))));
+        SETCAR(args, findFun(s, rho));
         UNPROTECT(1);
     }
     if (TYPEOF(CAR(args)) == CLOSXP)
     {
         s = allocSExp(CLOSXP);
-        FORMALS(s) = FORMALS(CAR(args));
-        BODY(s) = R_NilValue;
-        CLOENV(s) = R_GlobalEnv;
+        SET_FORMALS(s, FORMALS(CAR(args)));
+        SET_BODY(s, R_NilValue);
+        SET_CLOENV(s, R_GlobalEnv);
         return (s);
     }
     return R_NilValue;
@@ -146,7 +146,7 @@ SEXP do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (TYPEOF(CAR(args)) == CLOSXP && isEnvironment(CADR(args)))
-        CLOENV(CAR(args)) = CADR(args);
+        SET_CLOENV(CAR(args), CADR(args));
     else if (isEnvironment(CADR(args)))
         setAttrib(CAR(args), R_DotEnvSymbol, CADR(args));
     return CAR(args);
@@ -158,8 +158,8 @@ static void cat_newline(SEXP labels, int *width, int lablen, int ntot)
     *width = 0;
     if (labels != R_NilValue)
     {
-        Rprintf("%s ", EncodeString(CHAR(STRING(labels)[ntot % lablen]), 1, 0, Rprt_adj_left));
-        *width += Rstrlen(CHAR(STRING(labels)[ntot % lablen])) + 1;
+        Rprintf("%s ", EncodeString(CHAR(STRING_ELT(labels, ntot % lablen)), 1, 0, Rprt_adj_left));
+        *width += Rstrlen(CHAR(STRING_ELT(labels, ntot % lablen))) + 1;
     }
 }
 
@@ -168,7 +168,7 @@ static void cat_sepwidth(SEXP sep, int *width, int ntot)
     if (sep == R_NilValue || LENGTH(sep) == 0)
         *width = 0;
     else
-        *width = Rstrlen(CHAR(STRING(sep)[ntot % LENGTH(sep)]));
+        *width = Rstrlen(CHAR(STRING_ELT(sep, ntot % LENGTH(sep))));
 }
 
 static void cat_printsep(SEXP sep, int ntot)
@@ -177,7 +177,7 @@ static void cat_printsep(SEXP sep, int ntot)
     if (sep == R_NilValue || LENGTH(sep) == 0)
         return;
 
-    sepchar = CHAR(STRING(sep)[ntot % LENGTH(sep)]);
+    sepchar = CHAR(STRING_ELT(sep, ntot % LENGTH(sep)));
     Rprintf("%s", sepchar);
     return;
 }
@@ -208,7 +208,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "invalid sep= specification");
     nlsep = 0;
     for (i = 0; i < LENGTH(sepr); i++)
-        if (strstr(CHAR(STRING(sepr)[i]), "\n"))
+        if (strstr(CHAR(STRING_ELT(sepr, i)), "\n"))
             nlsep = 1;
     args = CDR(args);
 
@@ -236,7 +236,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (append == NA_LOGICAL)
         errorcall(call, "invalid append specification");
 
-    if (strlen(pfile = CHAR(STRING(file)[0])) > 0)
+    if (strlen(pfile = CHAR(STRING_ELT(file, 0))) > 0)
     {
         savefp = R_Outputfile;
         if (pfile[0] == '|')
@@ -268,7 +268,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     nobjs = length(objs);
     /*
     for (i = 0; i < nobjs; i++) {
-    if (!isVector(VECTOR(objs)[i]) && !isNull(VECTOR(objs)[i]))
+    if (!isVector(VECTOR_ELT(objs, i)) && !isNull(VECTOR_ELT(objs, i)))
         errorcall(call, "argument %d has invalid type", i + 1);
     }
     */
@@ -277,7 +277,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     nlines = 0;
     for (iobj = 0; iobj < nobjs; iobj++)
     {
-        s = VECTOR(objs)[iobj];
+        s = VECTOR_ELT(objs, iobj);
         if (iobj != 0 && !isNull(s))
             cat_printsep(sepr, 0);
         n = length(s);
@@ -285,12 +285,12 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (labs != R_NilValue && (iobj == 0) && (asInteger(fill) > 0))
             {
-                Rprintf("%s ", CHAR(STRING(labs)[nlines]));
-                width += strlen(CHAR(STRING(labs)[nlines % lablen])) + 1;
+                Rprintf("%s ", CHAR(STRING_ELT(labs, nlines)));
+                width += strlen(CHAR(STRING_ELT(labs, nlines % lablen))) + 1;
                 nlines++;
             }
             if (isString(s))
-                p = CHAR(STRING(s)[0]);
+                p = CHAR(STRING_ELT(s, 0));
             else if (isSymbol(s))
                 p = CHAR(PRINTNAME(s));
             else if (isVectorAtomic(s))
@@ -327,7 +327,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     cat_printsep(sepr, ntot);
                     if (isString(s))
-                        p = CHAR(STRING(s)[i + 1]);
+                        p = CHAR(STRING_ELT(s, i + 1));
                     else
                     {
                         p = EncodeElement(s, i + 1, 0);
@@ -372,17 +372,17 @@ SEXP do_makelist(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (TAG(args) != R_NilValue)
         {
-            STRING(names)[i] = PRINTNAME(TAG(args));
+            SET_STRING_ELT(names, i, PRINTNAME(TAG(args)));
             havenames = 1;
         }
         else
         {
-            STRING(names)[i] = R_BlankString;
+            SET_STRING_ELT(names, i, R_BlankString);
         }
         if (NAMED(CAR(args)))
-            VECTOR(list)[i] = duplicate(CAR(args));
+            SET_VECTOR_ELT(list, i, duplicate(CAR(args)));
         else
-            VECTOR(list)[i] = CAR(args);
+            SET_VECTOR_ELT(list, i, CAR(args));
         args = CDR(args);
     }
     if (havenames)
@@ -409,7 +409,7 @@ SEXP do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
     a = args;
     for (i = 0; i < n; i++)
     {
-        VECTOR(ans)[i] = duplicate(CAR(a));
+        SET_VECTOR_ELT(ans, i, duplicate(CAR(a)));
         if (TAG(a) != R_NilValue)
             named = 1;
         a = CDR(a);
@@ -421,9 +421,9 @@ SEXP do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             if (TAG(a) != R_NilValue)
-                STRING(nms)[i] = PRINTNAME(TAG(a));
+                SET_STRING_ELT(nms, i, PRINTNAME(TAG(a)));
             else
-                STRING(nms)[i] = R_BlankString;
+                SET_STRING_ELT(nms, i, R_BlankString);
             a = CDR(a);
         }
         setAttrib(ans, R_NamesSymbol, nms);
@@ -444,8 +444,8 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
     s = coerceVector(CAR(args), STRSXP);
     if (length(s) == 0)
         error("vector: zero-length type argument");
-    mode = str2type(CHAR(STRING(s)[0]));
-    if (mode == -1 && streql(CHAR(STRING(s)[0]), "double"))
+    mode = str2type(CHAR(STRING_ELT(s, 0)));
+    if (mode == -1 && streql(CHAR(STRING_ELT(s, 0)), "double"))
         mode = REALSXP;
     switch (mode)
     {
@@ -462,7 +462,7 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
         s = allocList(len);
         break;
     default:
-        error("vector: cannot make a vector of mode \"%s\".", CHAR(STRING(s)[0]));
+        error("vector: cannot make a vector of mode \"%s\".", CHAR(STRING_ELT(s, 0)));
     }
     if (mode == INTSXP || mode == LGLSXP)
         for (i = 0; i < len; i++)
@@ -474,7 +474,7 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (mode == STRSXP)
     {
         for (i = 0; i < len; i++)
-            STRING(s)[i] = R_BlankString;
+            SET_STRING_ELT(s, i, R_BlankString);
     }
 #endif
     return s;
@@ -508,7 +508,7 @@ SEXP lengthgets(SEXP x, int len)
             {
                 INTEGER(rval)[i] = INTEGER(x)[i];
                 if (xnames != R_NilValue)
-                    STRING(names)[i] = STRING(xnames)[i];
+                    SET_STRING_ELT(names, i, STRING_ELT(xnames, i));
             }
             else
                 INTEGER(rval)[i] = NA_INTEGER;
@@ -519,7 +519,7 @@ SEXP lengthgets(SEXP x, int len)
             {
                 REAL(rval)[i] = REAL(x)[i];
                 if (xnames != R_NilValue)
-                    STRING(names)[i] = STRING(xnames)[i];
+                    SET_STRING_ELT(names, i, STRING_ELT(xnames, i));
             }
             else
                 REAL(rval)[i] = NA_REAL;
@@ -530,7 +530,7 @@ SEXP lengthgets(SEXP x, int len)
             {
                 COMPLEX(rval)[i] = COMPLEX(x)[i];
                 if (xnames != R_NilValue)
-                    STRING(names)[i] = STRING(xnames)[i];
+                    SET_STRING_ELT(names, i, STRING_ELT(xnames, i));
             }
             else
             {
@@ -542,26 +542,26 @@ SEXP lengthgets(SEXP x, int len)
         for (i = 0; i < len; i++)
             if (i < lenx)
             {
-                STRING(rval)[i] = STRING(x)[i];
+                SET_STRING_ELT(rval, i, STRING_ELT(x, i));
                 if (xnames != R_NilValue)
-                    STRING(names)[i] = STRING(xnames)[i];
+                    SET_STRING_ELT(names, i, STRING_ELT(xnames, i));
             }
             else
-                STRING(rval)[i] = NA_STRING;
+                SET_STRING_ELT(rval, i, NA_STRING);
         break;
     case LISTSXP:
         for (t = rval; t != R_NilValue; t = CDR(t), x = CDR(x))
         {
-            CAR(t) = CAR(x);
-            TAG(t) = TAG(x);
+            SETCAR(t, CAR(x));
+            SET_TAG(t, TAG(x));
         }
     case VECSXP:
         for (i = 0; i < len; i++)
             if (i < lenx)
             {
-                VECTOR(rval)[i] = VECTOR(x)[i];
+                SET_VECTOR_ELT(rval, i, VECTOR_ELT(x, i));
                 if (xnames != R_NilValue)
-                    STRING(names)[i] = STRING(xnames)[i];
+                    SET_STRING_ELT(names, i, STRING_ELT(xnames, i));
             }
         break;
     }
@@ -631,7 +631,7 @@ SEXP do_switch(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isString(x))
     {
         for (y = w; y != R_NilValue; y = CDR(y))
-            if (TAG(y) != R_NilValue && pmatch(STRING(x)[0], TAG(y), 1))
+            if (TAG(y) != R_NilValue && pmatch(STRING_ELT(x, 0), TAG(y), 1))
             {
                 while (CAR(y) == R_MissingArg && y != R_NilValue)
                     y = CDR(y);

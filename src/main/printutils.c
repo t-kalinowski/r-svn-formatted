@@ -471,8 +471,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
             EncodeReal(REAL(x)[index], w, d, e);
             break;
         case STRSXP:
-            formatString(&STRING(x)[index], 1, &w, quote);
-            EncodeString(CHAR(STRING(x)[index]), w, quote, Rprt_adj_left);
+            formatString(&STRING_PTR(x)[index], 1, &w, quote);
+            EncodeString(CHAR(STRING_ELT(x, index)), w, quote, Rprt_adj_left);
             break;
         case CPLXSXP:
             formatComplex(&COMPLEX(x)[index], 1, &w, &d, &e, &wi, &di, &ei);
@@ -614,8 +614,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING(cl)[j]));
-            Rprintf("%*s%s", w - l, "", EncodeString(CHAR(STRING(cl)[j]), l, 0, Rprt_adj_left));
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            Rprintf("%*s%s", w - l, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left));
         }
         else
         {
@@ -629,8 +629,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING(cl)[j]));
-            Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(STRING(cl)[j]), l, 0, Rprt_adj_right));
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_right));
         }
         else
         {
@@ -644,8 +644,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING(cl)[j]));
-            Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(STRING(cl)[j]), l, 0, Rprt_adj_left), w - l, "");
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left), w - l, "");
         }
         else
         {
@@ -659,8 +659,8 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(rl))
         {
-            l = Rstrlen(CHAR(STRING(rl)[i]));
-            Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(STRING(rl)[i]), l, 0, Rprt_adj_left),
+            l = Rstrlen(CHAR(STRING_ELT(rl, i)));
+            Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(STRING_ELT(rl, i)), l, 0, Rprt_adj_left),
                     rlabw - l - lbloff, "");
         }
         else

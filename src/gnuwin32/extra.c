@@ -89,10 +89,10 @@ SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, slen));
     for (i = 0; i < slen; i++)
     {
-        tn = CHAR(STRING(CAR(args))[i]);
+        tn = CHAR(STRING_ELT(CAR(args), i));
         /* try to get a new file name */
         tm = Rwin32_tmpnam(tn);
-        STRING(ans)[i] = mkChar(tm);
+        SET_STRING_ELT(ans, i, mkChar(tm));
         free(tm);
     }
     UNPROTECT(1);
@@ -109,7 +109,7 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     path = CAR(args);
     if (!isString(path) || length(path) != 1)
         errorcall(call, "invalid path argument");
-    strcpy(dir, CHAR(STRING(path)[0]));
+    strcpy(dir, CHAR(STRING_ELT(path, 0)));
     for (p = dir; *p != '\0'; p++)
         if (*p == '/')
             *p = '\\';
@@ -139,7 +139,7 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid file name argument");
     for (i = 0; i < nfiles; i++)
     {
-        strcpy(tmp, CHAR(STRING(fn)[i]));
+        strcpy(tmp, CHAR(STRING_ELT(fn, i)));
         for (p = tmp; *p != '\0'; p++)
             if (*p == '/')
                 *p = '\\';
@@ -227,7 +227,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     if (!isString(CAR(args)))
         errorcall(call, "invalid topic argument");
-    item = CHAR(STRING(CAR(args))[0]);
+    item = CHAR(STRING_ELT(CAR(args), 0));
     type = asInteger(CADR(args));
     if (type == 1)
     {
@@ -247,7 +247,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (!isString(CADDR(args)))
             errorcall(call, "invalid hlpfile argument");
-        hfile = CHAR(STRING(CADDR(args))[0]);
+        hfile = CHAR(STRING_ELT(CADDR(args), 0));
         if (!WinHelp((HWND)0, hfile, HELP_KEY, (DWORD)item))
             warning("WinHelp call failed");
         else
@@ -262,7 +262,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (!isString(CADDR(args)))
             warningcall(call, "invalid hlpfile argument");
-        hfile = CHAR(STRING(CADDR(args))[0]);
+        hfile = CHAR(STRING_ELT(CADDR(args), 0));
         if (!WinHelp((HWND)0, hfile, HELP_QUIT, (DWORD)0))
             error("WinHelp call failed");
     }
@@ -324,7 +324,7 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
             LOWORD(verinfo.dwBuildNumber), verinfo.szCSDVersion);
 
     PROTECT(ans = allocVector(STRSXP, 1));
-    STRING(ans)[0] = mkChar(ver);
+    SET_STRING_ELT(ans, 0, mkChar(ver));
     UNPROTECT(1);
     return (ans);
 }
@@ -348,7 +348,7 @@ SEXP do_shellexec(SEXP call, SEXP op, SEXP args, SEXP env)
     file = CAR(args);
     if (!isString(file) || length(file) != 1)
         errorcall(call, "invalid file argument");
-    internal_shellexec(CHAR(STRING(file)[0]));
+    internal_shellexec(CHAR(STRING_ELT(file, 0)));
     return R_NilValue;
 }
 
@@ -373,26 +373,26 @@ SEXP do_windialog(SEXP call, SEXP op, SEXP args, SEXP env)
     int res = YES;
 
     checkArity(op, args);
-    type = CHAR(STRING(CAR(args))[0]);
+    type = CHAR(STRING_ELT(CAR(args), 0));
     message = CADR(args);
     if (strcmp(type, "ok") == 0)
     {
-        askok(CHAR(STRING(message)[0]));
+        askok(CHAR(STRING_ELT(message, 0)));
         res = 10;
     }
     else if (strcmp(type, "okcancel") == 0)
     {
-        res = askokcancel(CHAR(STRING(message)[0]));
+        res = askokcancel(CHAR(STRING_ELT(message, 0)));
         if (res == YES)
             res = 2;
     }
     else if (strcmp(type, "yesno") == 0)
     {
-        res = askyesno(CHAR(STRING(message)[0]));
+        res = askyesno(CHAR(STRING_ELT(message, 0)));
     }
     else if (strcmp(type, "yesnocancel") == 0)
     {
-        res = askyesnocancel(CHAR(STRING(message)[0]));
+        res = askyesnocancel(CHAR(STRING_ELT(message, 0)));
     }
     else
         errorcall(call, "unknown type");
@@ -409,11 +409,11 @@ SEXP do_windialogstring(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     message = CAR(args);
     def = CADR(args);
-    string = askstring(CHAR(STRING(message)[0]), CHAR(STRING(def)[0]));
+    string = askstring(CHAR(STRING_ELT(message, 0)), CHAR(STRING_ELT(def, 0)));
     if (string)
     {
         ans = allocVector(STRSXP, 1);
-        STRING(ans)[0] = mkChar(string);
+        SET_STRING_ELT(ans, 0, mkChar(string));
         return (ans);
     }
     else
@@ -437,7 +437,7 @@ SEXP do_winmenuadd(SEXP call, SEXP op, SEXP args, SEXP env)
     sitem = CADR(args);
     if (isNull(sitem))
     { /* add a menu */
-        res = winaddmenu(CHAR(STRING(smenu)[0]), errmsg);
+        res = winaddmenu(CHAR(STRING_ELT(smenu, 0)), errmsg);
         if (res > 0)
         {
             sprintf(msgbuf, "unable to add menu (%s)", errmsg);
@@ -446,7 +446,8 @@ SEXP do_winmenuadd(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     { /* add an item */
-        res = winaddmenuitem(CHAR(STRING(sitem)[0]), CHAR(STRING(smenu)[0]), CHAR(STRING(CADDR(args))[0]), errmsg);
+        res = winaddmenuitem(CHAR(STRING_ELT(sitem, 0)), CHAR(STRING_ELT(smenu, 0)), CHAR(STRING_ELT(CADDR(args), 0)),
+                             errmsg);
         if (res > 0)
         {
             sprintf(msgbuf, "unable to add menu item (%s)", errmsg);
@@ -469,13 +470,13 @@ SEXP do_winmenudel(SEXP call, SEXP op, SEXP args, SEXP env)
     sitem = CADR(args);
     if (isNull(sitem))
     { /* delete a menu */
-        res = windelmenu(CHAR(STRING(smenu)[0]), errmsg);
+        res = windelmenu(CHAR(STRING_ELT(smenu, 0)), errmsg);
         if (res > 0)
             errorcall(call, "menu does not exist");
     }
     else
     { /* delete an item */
-        res = windelmenuitem(CHAR(STRING(sitem)[0]), CHAR(STRING(smenu)[0]), errmsg);
+        res = windelmenuitem(CHAR(STRING_ELT(sitem, 0)), CHAR(STRING_ELT(smenu, 0)), errmsg);
         if (res > 0)
         {
             sprintf(msgbuf, "unable to delete menu item (%s)", errmsg);
@@ -501,7 +502,7 @@ SEXP do_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(sfile) || LENGTH(sfile) < 1)
         errorcall(call, "invalid file argument");
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
-        gl_savehistory(CHAR(STRING(sfile)[0]));
+        gl_savehistory(CHAR(STRING_ELT(sfile, 0)));
     else
         errorcall(call, "savehistory can only be used in Rgui and Rterm");
     return R_NilValue;
@@ -516,7 +517,7 @@ SEXP do_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(sfile) || LENGTH(sfile) < 1)
         errorcall(call, "invalid file argument");
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
-        gl_loadhistory(CHAR(STRING(sfile)[0]));
+        gl_loadhistory(CHAR(STRING_ELT(sfile, 0)));
     else
         errorcall(call, "savehistory can only be used in Rgui and Rterm");
     return R_NilValue;
@@ -551,24 +552,25 @@ SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     }
 
-    STRING(ans)[0] = mkChar("Windows");
+    SET_STRING_ELT(ans, 0, mkChar("Windows"));
     sprintf(ver, "%s %d.%d", isNT, (int)verinfo.dwMajorVersion, (int)verinfo.dwMinorVersion);
-    STRING(ans)[1] = mkChar(ver);
+    SET_STRING_ELT(ans, 1, mkChar(ver));
     sprintf(ver, "(build %d) %s", LOWORD(verinfo.dwBuildNumber), verinfo.szCSDVersion);
-    STRING(ans)[2] = mkChar(ver);
+    SET_STRING_ELT(ans, 2, mkChar(ver));
     GetComputerName(name, &namelen);
-    STRING(ans)[3] = mkChar(name);
-    STRING(ans)[4] = mkChar("x86");
+    SET_STRING_ELT(ans, 3, mkChar(name));
+    SET_STRING_ELT(ans, 4, mkChar("x86"));
     GetUserName(user, &userlen);
-    STRING(ans)[6] = STRING(ans)[5] = mkChar(user);
+    SET_STRING_ELT(ans, 5, mkChar(user));
+    SET_STRING_ELT(ans, 6, STRING_ELT(ans, 5));
     PROTECT(ansnames = allocVector(STRSXP, 7));
-    STRING(ansnames)[0] = mkChar("sysname");
-    STRING(ansnames)[1] = mkChar("release");
-    STRING(ansnames)[2] = mkChar("version");
-    STRING(ansnames)[3] = mkChar("nodename");
-    STRING(ansnames)[4] = mkChar("machine");
-    STRING(ansnames)[5] = mkChar("login");
-    STRING(ansnames)[6] = mkChar("user");
+    SET_STRING_ELT(ansnames, 0, mkChar("sysname"));
+    SET_STRING_ELT(ansnames, 1, mkChar("release"));
+    SET_STRING_ELT(ansnames, 2, mkChar("version"));
+    SET_STRING_ELT(ansnames, 3, mkChar("nodename"));
+    SET_STRING_ELT(ansnames, 4, mkChar("machine"));
+    SET_STRING_ELT(ansnames, 5, mkChar("login"));
+    SET_STRING_ELT(ansnames, 6, mkChar("user"));
     setAttrib(ans, R_NamesSymbol, ansnames);
     UNPROTECT(2);
     return ans;

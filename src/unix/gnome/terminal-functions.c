@@ -124,7 +124,7 @@ static void file_open_ok(GtkWidget *widget, gpointer data)
     case VECSXP:
         for (i = 0; i < LENGTH(img); i++)
         {
-            lst = VECTOR(img)[i];
+            lst = VECTOR_ELT(img, i);
             while (lst != R_NilValue)
             {
                 defineVar(TAG(lst), CAR(lst), R_GlobalEnv);

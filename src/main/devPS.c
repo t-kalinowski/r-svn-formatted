@@ -841,7 +841,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
 
     if (!strcmp(pd->papername, "Default") || !strcmp(pd->papername, "default"))
     {
-        SEXP s = STRING(GetOption(install("papersize"), R_NilValue))[0];
+        SEXP s = STRING_ELT(GetOption(install("papersize"), R_NilValue), 0);
         if (s != NA_STRING && strlen(CHAR(s)) > 0)
             strcpy(pd->papername, CHAR(s));
         else
@@ -1635,7 +1635,7 @@ int XFigDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *b
 
     if (!strcmp(pd->papername, "Default") || !strcmp(pd->papername, "default"))
     {
-        SEXP s = STRING(GetOption(install("papersize"), R_NilValue))[0];
+        SEXP s = STRING_ELT(GetOption(install("papersize"), R_NilValue), 0);
         if (s != NA_STRING && strlen(CHAR(s)) > 0)
             strcpy(pd->papername, CHAR(s));
         else

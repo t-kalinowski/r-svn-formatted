@@ -89,7 +89,7 @@ int pmatch(SEXP formal, SEXP tag, int exact)
         f = CHAR(formal);
         break;
     case STRSXP:
-        f = CHAR(STRING(formal)[0]);
+        f = CHAR(STRING_ELT(formal, 0));
         break;
     default:
         goto fail;
@@ -103,7 +103,7 @@ int pmatch(SEXP formal, SEXP tag, int exact)
         t = CHAR(tag);
         break;
     case STRSXP:
-        t = CHAR(STRING(tag)[0]);
+        t = CHAR(STRING_ELT(tag, 0));
         break;
     default:
         goto fail;
@@ -120,16 +120,33 @@ fail:
 
 SEXP matchPar(char *tag, SEXP *list)
 {
-    SEXP *l, s;
-
-    for (l = list; *l != R_NilValue; l = &CDR(*l))
-        if (TAG(*l) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(*l))), 0))
+    if (*list == R_NilValue)
+        return R_MissingArg;
+    else if (TAG(*list) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(*list))), 0))
+    {
+        SEXP s = *list;
+        *list = CDR(*list);
+        return CAR(s);
+    }
+    else
+    {
+        SEXP last = *list;
+        SEXP next = CDR(*list);
+        while (next != R_NilValue)
         {
-            s = *l;
-            *l = CDR(*l);
-            return CAR(s);
+            if (TAG(next) != R_NilValue && psmatch(tag, CHAR(PRINTNAME(TAG(next))), 0))
+            {
+                SETCDR(last, CDR(next));
+                return CAR(next);
+            }
+            else
+            {
+                last = next;
+                next = CDR(next);
+            }
         }
-    return R_MissingArg;
+        return R_MissingArg;
+    }
 }
 
 /* Destructively Extract A Named List Element. */
@@ -145,6 +162,7 @@ SEXP matchArg(SEXP tag, SEXP *list)
 /* return the matched arguments in actuals. */
 
 #define ARGUSED(x) LEVELS(x)
+#define SET_ARGUSED(x, v) SETLEVELS(x, v)
 
 /* We need to leave supplied unchanged in case we call UseMethod */
 
@@ -157,12 +175,12 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
     for (f = formals; f != R_NilValue; f = CDR(f))
     {
         actuals = CONS(R_MissingArg, actuals);
-        MISSING(actuals) = 1;
-        ARGUSED(f) = 0;
+        SET_MISSING(actuals, 1);
+        SET_ARGUSED(f, 0);
     }
 
     for (b = supplied; b != R_NilValue; b = CDR(b))
-        ARGUSED(b) = 0;
+        SET_ARGUSED(b, 0);
 
     PROTECT(actuals);
 
@@ -185,11 +203,11 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
                         error("formal argument \"%s\" matched by multiple actual arguments", CHAR(PRINTNAME(TAG(f))));
                     if (ARGUSED(b) == 2)
                         error("argument %d matches multiple formal arguments", i);
-                    CAR(a) = CAR(b);
+                    SETCAR(a, CAR(b));
                     if (CAR(b) != R_MissingArg)
-                        MISSING(a) = 0; /* not missing this arg */
-                    ARGUSED(b) = 2;
-                    ARGUSED(f) = 2;
+                        SET_MISSING(a, 0); /* not missing this arg */
+                    SET_ARGUSED(b, 2);
+                    SET_ARGUSED(f, 2);
                 }
                 i++;
             }
@@ -228,11 +246,11 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
                         if (ARGUSED(f) == 1)
                             error("formal argument \"%s\" matched by multiple actual arguments",
                                   CHAR(PRINTNAME(TAG(f))));
-                        CAR(a) = CAR(b);
+                        SETCAR(a, CAR(b));
                         if (CAR(b) != R_MissingArg)
-                            MISSING(a) = 0; /* not missing this arg */
-                        ARGUSED(b) = 1;
-                        ARGUSED(f) = 1;
+                            SET_MISSING(a, 0); /* not missing this arg */
+                        SET_ARGUSED(b, 1);
+                        SET_ARGUSED(f, 1);
                     }
                     i++;
                 }
@@ -282,10 +300,10 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
         else
         {
             /* We have a positional match */
-            CAR(a) = CAR(b);
+            SETCAR(a, CAR(b));
             if (CAR(b) != R_MissingArg)
-                MISSING(a) = 0;
-            ARGUSED(b) = 1;
+                SET_MISSING(a, 0);
+            SET_ARGUSED(b, 1);
             b = CDR(b);
             f = CDR(f);
             a = CDR(a);
@@ -295,7 +313,7 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
     if (dots != R_NilValue)
     {
         /* Gobble up all unused actuals */
-        MISSING(dots) = 0;
+        SET_MISSING(dots, 0);
         i = 0;
         for (a = supplied; a != R_NilValue; a = CDR(a))
             if (!ARGUSED(a))
@@ -304,16 +322,16 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
         if (i)
         {
             a = allocList(i);
-            TYPEOF(a) = DOTSXP;
+            SET_TYPEOF(a, DOTSXP);
             f = a;
             for (b = supplied; b != R_NilValue; b = CDR(b))
                 if (!ARGUSED(b))
                 {
-                    CAR(f) = CAR(b);
-                    TAG(f) = TAG(b);
+                    SETCAR(f, CAR(b));
+                    SET_TAG(f, TAG(b));
                     f = CDR(f);
                 }
-            CAR(dots) = a;
+            SETCAR(dots, a);
         }
     }
     else
