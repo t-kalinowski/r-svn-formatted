@@ -19,6 +19,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* <UTF8-FIXME>
+   Semantics of nchar() need to be fixed.
+   substr() should work at char not byte level.
+   Optimized cases of strsplit() need revising.
+   Regex code should be OK, substitution does ASCII comparisons only.
+   abbreviate needs to be fixed.
+   make.names works at byte not char level.
+   Internal fgrep works at byte not char level.
+   chartr/tolower/toupper work at byte not char level.
+   charToRaw/rawToChar should work at byte level, so is OK.
+   agrep needs to test for non-ASCII input.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -1145,13 +1158,11 @@ SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
-        for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
-        {
-            if (STRING_ELT(x, i) == NA_STRING)
-                SET_STRING_ELT(y, i, NA_STRING);
-            else
+        if (STRING_ELT(x, i) == NA_STRING)
+            SET_STRING_ELT(y, i, NA_STRING);
+        else
+            for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
                 *p = tolower(*p);
-        }
     }
     UNPROTECT(1);
     return (y);
@@ -1177,13 +1188,11 @@ SEXP do_toupper(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
-        for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
-        {
-            if (STRING_ELT(x, i) == NA_STRING)
-                SET_STRING_ELT(y, i, NA_STRING);
-            else
+        if (STRING_ELT(x, i) == NA_STRING)
+            SET_STRING_ELT(y, i, NA_STRING);
+        else
+            for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
                 *p = toupper(*p);
-        }
     }
     UNPROTECT(1);
     return (y);
@@ -1453,6 +1462,12 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     /* end NA pattern handling */
 
+#ifdef SUPPORT_UTF8
+    /* FIXME  actually test for non-ASCII strings */
+    if (utf8locale)
+        warning("Use of agrep() in a UTF-8 locale will only work for ASCII strings");
+#endif
+
     /* Create search pattern object. */
     str = CHAR(STRING_ELT(pat, 0));
     aps = apse_create((unsigned char *)str, (apse_size_t)strlen(str), max_distance_opt);
@@ -1519,6 +1534,7 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #define isRaw(x) (TYPEOF(x) == RAWSXP)
 
+/* <UTF8>  charToRaw should work at byte level */
 SEXP do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
@@ -1535,6 +1551,7 @@ SEXP do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+/* <UTF8>  rawToChar should work at byte level */
 SEXP do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, c, x = CAR(args);

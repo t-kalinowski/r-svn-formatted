@@ -18,6 +18,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* <UTF8-FIXME> Octal representation of strings needs fixing
+
+   char here is either ASCII or handled as a whole, apart from Rstrlen
+   and EncodeString.
+*/
+
 /* =========
  * Printing:
  * =========
@@ -284,7 +290,7 @@ int Rstrlen(SEXP s, int quote)
                 len += (quote == *p) ? 2 : 1;
                 break;
             default:
-                len += 1;
+                len++;
                 break;
             }
         }

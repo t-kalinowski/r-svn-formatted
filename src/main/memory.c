@@ -27,6 +27,8 @@
  *	and reset the stack pointer.
  */
 
+/* <UTF8> char here is handled as a whole */
+
 #define USE_RINTERNALS
 
 #ifdef HAVE_CONFIG_H
