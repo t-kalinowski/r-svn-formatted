@@ -25,6 +25,15 @@
 
 extern char *getRHOME(); /* in ../rhome.c */
 
+static int pwait(HANDLE p)
+{
+    DWORD ret;
+
+    WaitForSingleObject(p, INFINITE);
+    GetExitCodeProcess(p, &ret);
+    return ret;
+}
+
 int main(int argc, char **argv)
 {
     /* tasks:
@@ -145,7 +154,7 @@ int main(int argc, char **argv)
             exit(3);
         }
         CloseHandle(pi.hThread);
-        exit(0);
+        exit(pwait(pi.hProcess));
     }
     else
     {
