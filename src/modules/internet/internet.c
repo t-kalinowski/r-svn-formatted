@@ -212,6 +212,16 @@ static void putdots(int *pold, int new)
     if (R_Consolefile)
         fflush(R_Consolefile);
 }
+
+static void putdashes(int *pold, int new)
+{
+    int i, old = *pold;
+    *pold = new;
+    for (i = old; i < new; i++)
+        REprintf("=");
+    if (R_Consolefile)
+        fflush(R_Consolefile);
+}
 #endif
 
 /* note, ALL the possible structures have the first two elements */
@@ -294,7 +304,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, nnew, nbytes = 0;
+        int len, total, guess, nbytes = 0;
         char buf[IBUFSIZE];
 #ifndef Win32
         int ndots = 0;
@@ -318,9 +328,9 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             if (!quiet)
                 REprintf("opened URL\n", url);
             guess = total = ((inetconn *)ctxt)->length;
+#ifdef Win32
             if (guess <= 0)
                 guess = 100 * 1024;
-#ifdef Win32
             R_FlushConsole();
             wprog = newwindow("Download progress", rect(0, 0, 540, 100), Titlebar | Centered);
             setbackground(wprog, dialog_bg());
@@ -340,7 +350,6 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 fwrite(buf, 1, len, out);
                 nbytes += len;
-                nnew = nbytes / 1024;
 #ifdef Win32
                 if (nbytes > guess)
                 {
@@ -350,7 +359,12 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                 setprogressbar(pb, nbytes);
 #else
                 if (!quiet)
-                    putdots(&ndots, nnew);
+                {
+                    if (guess <= 0)
+                        putdots(&ndots, nbytes / 1024);
+                    else
+                        putdashes(&ndots, 50 * nbytes / guess);
+                }
 #endif
             }
             in_R_HTTPClose(ctxt);
@@ -384,7 +398,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, nnew, nbytes = 0;
+        int len, total, guess, nbytes = 0;
         char buf[IBUFSIZE];
 #ifndef Win32
         int ndots = 0;
@@ -408,9 +422,9 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             if (!quiet)
                 REprintf("opened URL\n", url);
             guess = total = ((inetconn *)ctxt)->length;
+#ifdef Win32
             if (guess <= 0)
                 guess = 100 * 1024;
-#ifdef Win32
             R_FlushConsole();
             wprog = newwindow("Download progress", rect(0, 0, 540, 100), Titlebar | Centered);
             setbackground(wprog, LightGrey);
@@ -430,7 +444,6 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 fwrite(buf, 1, len, out);
                 nbytes += len;
-                nnew = nbytes / 1024;
 #ifdef Win32
                 if (nbytes > guess)
                 {
@@ -440,7 +453,12 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                 setprogressbar(pb, nbytes);
 #else
                 if (!quiet)
-                    putdots(&ndots, nnew);
+                {
+                    if (guess <= 0)
+                        putdots(&ndots, nbytes / 1024);
+                    else
+                        putdashes(&ndots, 50 * nbytes / guess);
+                }
 #endif
             }
             in_R_FTPClose(ctxt);
