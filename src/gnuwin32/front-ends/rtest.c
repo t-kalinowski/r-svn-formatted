@@ -35,7 +35,7 @@ void R_CleanUp(SA_TYPE, int, int); /* from Startup.h */
 __declspec(dllimport) int UserBreak;
 
 /* calls into the R DLL */
-extern char *getDLLVersion(), *getRUser();
+extern char *getDLLVersion(), *getRUser(), *get_R_HOME();
 extern void R_DefParams(Rstart), R_SetParams(Rstart);
 extern void setup_term_ui(void), ProcessEvents(void);
 extern void run_Rmainloop(void), end_Rmainloop(void), R_ReplDLLinit(void);
@@ -45,7 +45,8 @@ extern int R_ReplDLLdo1();
 
 /* This version blocks all events: a real one needs to call ProcessEvents
    frequently. See rterm.c and ../system.c for one approach using
-   a separate thread for input */
+   a separate thread for input.
+*/
 int myReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
     fputs(prompt, stdout);
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
 {
     structRstart rp;
     Rstart Rp = &rp;
-    char Rversion[25], RHome[MAX_PATH];
+    char Rversion[25], *RHome;
 
     sprintf(Rversion, "%s.%s", R_MAJOR, R_MINOR);
     if (strcmp(getDLLVersion(), Rversion) != 0)
@@ -90,13 +91,9 @@ int main(int argc, char **argv)
     }
 
     R_DefParams(Rp);
-    if (getenv("R_HOME"))
+    if ((RHome = get_R_HOME()) == NULL)
     {
-        strcpy(RHome, getenv("R_HOME"));
-    }
-    else
-    {
-        fprintf(stderr, "R_HOME must be set\n");
+        fprintf(stderr, "R_HOME must be set in the environment or Registry\n");
         exit(1);
     }
     Rp->rhome = RHome;
@@ -105,7 +102,7 @@ int main(int argc, char **argv)
     Rp->ReadConsole = myReadConsole;
     Rp->WriteConsole = myWriteConsole;
     Rp->CallBack = myCallBack;
-    Rp->message = askok;
+    Rp->ShowMessage = askok;
     Rp->yesnocancel = askyesnocancel;
     Rp->busy = myBusy;
 
