@@ -733,7 +733,11 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (t2 != R_MissingArg)
     { /* so we did something above */
         if (CAR(actuals) == R_DotsSymbol)
+        {
+            UNPROTECT(1);
             actuals = listAppend(t2, CDR(actuals));
+            PROTECT(actuals);
+        }
         else
         {
             for (t1 = actuals; t1 != R_NilValue; t1 = CDR(t1))
