@@ -173,11 +173,11 @@
 #include <unistd.h>
 #endif
 
-/*-- necessary for some (older, i.e., ~ <= 1997) Linuxen:*/
-#ifdef linux
+/* necessary for some (older, i.e., ~ <= 1997) Linuxen, and apparently
+   also some AIX systems.
+   */
 #ifndef FD_SET
 #include <sys/time.h>
-#endif
 #endif
 
 static int UsingReadline = 1;
@@ -196,9 +196,9 @@ static int DebugInitFile = 0;
  * considerably more complex.
  */
 
-/* block on select until either stdin or X11 connection is */
-/* ready to read (return 1 if X11 connection ready to read, */
-/* 2 if stdin ready to read) */
+/* block on select until either stdin or X11 connection is ready to read
+   (return 1 if X11 connection ready to read, 2 if stdin ready to read)
+   */
 
 #define XActivity 1
 #define StdinActivity 2
@@ -363,7 +363,7 @@ char *tilde_expand(char *);
 
 char *R_ExpandFileName(char *s)
 {
-    return tilde_expand(s);
+    return (tilde_expand(s));
 }
 #else
 char *R_ExpandFileName(char *s)
