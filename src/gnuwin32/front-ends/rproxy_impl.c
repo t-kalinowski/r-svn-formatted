@@ -21,7 +21,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy_impl.c,v 1.9 2000/06/20 20:30:08 ripley Exp $
+ *  $Id: rproxy_impl.c,v 1.10 2000/08/07 03:20:38 luke Exp $
  */
 
 #define NONAMELESSUNION
@@ -198,8 +198,8 @@ int SEXP2BDX_Data(SEXP pExpression, BDX_Data **pData)
             lData->raw_data[0].double_value = REAL(pExpression)[0];
             break;
         case BDX_STRING:
-            lData->raw_data[0].string_value = strdup(CHAR(STRING(pExpression)[0]));
-            // lData->raw_data[0].string_value = strdup (STRING (pExpression)[0]);
+            lData->raw_data[0].string_value = strdup(CHAR(STRING_ELT(pExpression, 0)));
+            // lData->raw_data[0].string_value = strdup (STRING_ELT(pExpression, 0));
             break;
         }
         //      UNPROTECT (1);
@@ -244,8 +244,8 @@ int SEXP2BDX_Data(SEXP pExpression, BDX_Data **pData)
                     lData->raw_data[i].double_value = REAL(pExpression)[i];
                     break;
                 case BDX_STRING:
-                    lData->raw_data[i].string_value = strdup(CHAR(STRING(pExpression)[i]));
-                    // lData->raw_data[0].string_value = strdup (STRING (pExpression)[0]);
+                    lData->raw_data[i].string_value = strdup(CHAR(STRING_ELT(pExpression, i)));
+                    // lData->raw_data[0].string_value = strdup (STRING_ELT(pExpression, 0));
                     break;
                 }
             }
@@ -293,7 +293,7 @@ int SEXP2BDX_Data(SEXP pExpression, BDX_Data **pData)
                         break;
                     case BDX_STRING:
                         // lData->raw_data[i].string_value = strdup ("test");
-                        lData->raw_data[i].string_value = strdup(CHAR(STRING(pExpression)[i]));
+                        lData->raw_data[i].string_value = strdup(CHAR(STRING_ELT(pExpression, i)));
                         break;
                     }
                 }
@@ -609,7 +609,7 @@ int R_Proxy_set_symbol(char const *pSymbol, BDX_Data const *pData)
             lProtectCount++;
             strcpy(CHAR(lStringSExp), pData->raw_data[0].string_value);
             lData = PROTECT(allocVector(STRSXP, 1));
-            STRING(lData)[0] = lStringSExp;
+            SET_STRING_ELT(lData, 0, lStringSExp);
         }
         break;
         default:
@@ -675,7 +675,7 @@ int R_Proxy_set_symbol(char const *pSymbol, BDX_Data const *pData)
                 PROTECT(lStringSExp);
                 lProtectCount++;
                 strcpy(CHAR(lStringSExp), pData->raw_data[i].string_value);
-                STRING(lData)[i] = lStringSExp;
+                SET_STRING_ELT(lData, i, lStringSExp);
             }
         }
         break;
