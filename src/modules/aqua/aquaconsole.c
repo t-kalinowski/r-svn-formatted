@@ -503,7 +503,9 @@ void Raqua_ProcessEvents(void);
 
 Boolean AlreadyRunning = false;
 
-int RAquaStdoutPipefd[2];
+FILE *RAquaStdout;
+FILE *RAquaStdoutBack;
+char StdoutFName[255];
 
 void Raqua_StartConsole(Rboolean OpenConsole)
 {
@@ -523,11 +525,9 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 
         InitAboutWindow();
 
-        if (pipe(RAquaStdoutPipefd) < 0)
-            goto noconsole;
-
-        /* dup2(RAquaStdoutPipefd[1], STDOUT_FILENO); */
-        dup2(RAquaStdoutPipefd[1], STDERR_FILENO);
+        sprintf(StdoutFName, "%s", R_ExpandFileName("~/.R/RAqua.stdout"));
+        RAquaStdout = freopen(StdoutFName, "w", stdout);
+        RAquaStdoutBack = fopen(StdoutFName, "r");
 
         GetRPrefs();
 
@@ -676,6 +676,11 @@ void CloseRAquaConsole(void)
     DisposeWindow(ConsoleWindow);
 
     TXNTerminateTextension();
+
+    if (RAquaStdout)
+        fclose(RAquaStdout);
+    if (RAquaStdoutBack)
+        fclose(RAquaStdoutBack);
 }
 
 void Aqua_RWrite(char *buf);
@@ -3252,38 +3257,30 @@ void Raqua_ProcessEvents(void)
     }
 }
 
-int isready(int fd);
-
-int isready(int fd)
-{
-    int rc;
-    fd_set fds;
-    struct timeval tv;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    tv.tv_sec = tv.tv_usec = 0;
-
-    rc = select(fd + 1, &fds, NULL, NULL, &tv);
-    if (rc < 0)
-        return -1;
-
-    return FD_ISSET(fd, &fds) ? 1 : 0;
-}
-
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
 {
-    int r;
-    char c[32001];
+    int len;
+    char *tmpbuf;
 
-    if (isready(RAquaStdoutPipefd[0]) != 1)
+    if (RAquaStdoutBack == NULL)
         return;
 
-    if ((r = read(RAquaStdoutPipefd[0], c, sizeof(c) - 1)) > 0)
+    fseek(RAquaStdoutBack, 0L, SEEK_END);
+    len = ftell(RAquaStdoutBack);
+    if (len < 1)
+        return;
+    rewind(RAquaStdoutBack);
+    if ((tmpbuf = malloc(len + 1)) != NULL)
     {
-        c[r] = '\0';
-        Raqua_WriteConsole(c, r);
+        fread(tmpbuf, 1, len, RAquaStdoutBack);
+        tmpbuf[len] = '\0';
+        Raqua_WriteConsole(tmpbuf, len);
         Aqua_FlushBuffer();
+        free(tmpbuf);
+        fclose(RAquaStdout);
+        fclose(RAquaStdoutBack);
+        RAquaStdout = freopen(StdoutFName, "w", stdout);
+        RAquaStdoutBack = fopen(StdoutFName, "r");
     }
 }
 
