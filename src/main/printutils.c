@@ -577,7 +577,9 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
        REvprintf is part of the error handler.
        Do not change it unless you are SURE that
        your changes are compatible with the
-       error handling mechanism
+       error handling mechanism.
+
+       It is also used in R_Suicide on Unix.
     */
 
     void REvprintf(const char *format, va_list arg)
@@ -588,15 +590,16 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
             if (con == NULL)
             {
                 /* should never happen, but in case of corruption... */
-                R_Suicide("error connection has been corrupted");
+                R_ErrorCon = 2;
             }
             else
             {
                 con->vfprintf(con, format, arg);
                 con->fflush(con);
+                return;
             }
         }
-        else if (R_Consolefile)
+        if (R_Consolefile)
         {
             vfprintf(R_Consolefile, format, arg);
         }
