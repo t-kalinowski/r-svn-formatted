@@ -113,22 +113,22 @@ static void deparse2(SEXP, SEXP);
 
 static char *buff = NULL;
 
-static void AllocBuffer(int len)
+static void AllocBuffer(int blen)
 {
     static int bufsize = 0;
-    if (len * sizeof(char) < bufsize)
+    if (blen * sizeof(char) < bufsize)
         return;
-    len = (len + 1) * sizeof(char);
-    if (len < BUFSIZE)
-        len = BUFSIZE;
+    blen = (blen + 1) * sizeof(char);
+    if (blen < BUFSIZE)
+        blen = BUFSIZE;
     if (buff == NULL)
     {
-        buff = (char *)malloc(len);
+        buff = (char *)malloc(blen);
         buff[0] = '\0';
     }
     else
-        buff = (char *)realloc(buff, len);
-    bufsize = len;
+        buff = (char *)realloc(buff, blen);
+    bufsize = blen;
     if (!buff)
     {
         bufsize = 0;
