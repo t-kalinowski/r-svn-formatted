@@ -2716,9 +2716,15 @@ Rboolean R_IsNamespaceEnv(SEXP rho)
         return TRUE;
     else if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
-        if (name != R_UnboundValue && TYPEOF(name) == STRSXP && LENGTH(name) > 0)
-            return TRUE;
+        SEXP info = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
+        if (info != R_UnboundValue && TYPEOF(info) == ENVSXP)
+        {
+            SEXP spec = findVarInFrame3(info, install("spec"), TRUE);
+            if (spec != R_UnboundValue && TYPEOF(spec) == STRSXP && LENGTH(spec) > 0)
+                return TRUE;
+            else
+                return FALSE;
+        }
         else
             return FALSE;
     }
@@ -2742,9 +2748,15 @@ SEXP R_NamespaceEnvSpec(SEXP rho)
         return R_BaseNamespaceName;
     else if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
-        if (name != R_UnboundValue && TYPEOF(name) == STRSXP && LENGTH(name) > 0)
-            return name;
+        SEXP info = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
+        if (info != R_UnboundValue && TYPEOF(info) == ENVSXP)
+        {
+            SEXP spec = findVarInFrame3(info, install("spec"), TRUE);
+            if (spec != R_UnboundValue && TYPEOF(spec) == STRSXP && LENGTH(spec) > 0)
+                return spec;
+            else
+                return R_NilValue;
+        }
         else
             return R_NilValue;
     }
