@@ -943,8 +943,8 @@ void delobj(object obj)
         delimage((image)obj);
         break;
     default:
-        if (obj->refcount == 1)
-            decrease_refcount(obj);
+        /* if (obj->refcount == 1)   why would this test be here?? */
+        decrease_refcount(obj);
         break;
     }
 }

@@ -23,9 +23,15 @@
  */
 
 #include "internal.h"
+#include <winbase.h>
 
 static HDC GETHDC(drawing d)
 {
+    if (!d)
+    {
+        DebugBreak();
+        return (HDC)0; /* We should never get here, but we do? */
+    }
     if ((d->kind == PrinterObject) || (d->kind == MetafileObject))
     {
         HDC dc = (HDC)d->handle;

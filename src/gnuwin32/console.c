@@ -423,6 +423,8 @@ static int writeline(ConsoleData p, int i, int j)
 void drawconsole(control c, rect r) FBEGIN int i, ll, wd, maxwd = 0;
 
 ll = min(NUMLINES, ROWS);
+if (!BM)
+    FVOIDRETURN; /* This is a workaround for PR#1711.  BM should never be null here */
 gfillrect(BM, p->bg, getrect(BM));
 if (!ll)
     FVOIDRETURN;
