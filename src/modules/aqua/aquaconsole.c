@@ -147,6 +147,9 @@ WindowRef RAboutWindow = NULL;
 WindowRef RPrefsWindow = NULL;
 WindowRef ConsoleWindow = NULL;
 
+ProcessSerialNumber AquaPSN;
+void RAqua2Front(void);
+
 #define kCMDEventClass 'DCMD' /* Event class command AE */
 #define kCMDEvent 'DCMD'      /* Event command          */
 #define CMDLineSize 2048
@@ -491,7 +494,6 @@ void Raqua_StartConsole(Rboolean OpenConsole)
     OSErr err = noErr;
     CFURLRef bundleURL = NULL;
     CFBundleRef RBundle = NULL;
-    ProcessSerialNumber ourPSN;
 
     char buf[300];
     FSRef ref;
@@ -542,8 +544,8 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 
     InstallEventLoopTimer(GetCurrentEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, NULL);
 
-    if (GetCurrentProcess(&ourPSN) == noErr)
-        (void)SetFrontProcess(&ourPSN);
+    RAqua2Front();
+
     if (ConsoleWindow != NULL)
         SelectWindow(ConsoleWindow);
     //    otherPolledEventHandler = R_PolledEvents;
@@ -1106,6 +1108,8 @@ DialogItemIndex WantToSave(WindowRef window, char *title, char *msg)
     AlertStdCFStringAlertParamRec paramRec;
     CFStringRef MsgText, TitleText;
 
+    RAqua2Front();
+
     GetStandardAlertDefaultParams(&paramRec, kStdCFStringAlertVersionOne);
     paramRec.movable = true;
     paramRec.helpButton = false;
@@ -1140,6 +1144,15 @@ DialogItemIndex WantToSave(WindowRef window, char *title, char *msg)
     return (userAction);
 }
 
+void RAqua2Front(void)
+{
+    if (ConsoleWindow != NULL)
+        SelectWindow(ConsoleWindow);
+
+    if (GetCurrentProcess(&AquaPSN) == noErr)
+        (void)SetFrontProcess(&AquaPSN);
+}
+
 DialogItemIndex YesOrNot(char *title, char *msg, char *actionlab, char *canclab)
 {
     OSStatus err = noErr;
@@ -1148,6 +1161,8 @@ DialogItemIndex YesOrNot(char *title, char *msg, char *actionlab, char *canclab)
     DialogItemIndex itemHit;
     AlertStdCFStringAlertParamRec paramRec;
     CFStringRef MsgText, TitleText;
+
+    RAqua2Front();
 
     GetStandardAlertDefaultParams(&paramRec, kStdCFStringAlertVersionOne);
     paramRec.movable = true;
