@@ -1688,7 +1688,8 @@ static BBOX RenderAccent(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc
             RenderChar(code, draw, mc, gc, dd);
     }
     bodyBBox = CombineOffsetBBoxes(bodyBBox, 0, accentBBox, 0, xoffset, yoffset);
-    PMoveTo(savedX + width, savedY, mc);
+    if (draw)
+        PMoveTo(savedX + width, savedY, mc);
     return bodyBBox;
 }
 
