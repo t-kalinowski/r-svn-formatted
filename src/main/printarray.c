@@ -18,10 +18,10 @@
  *
  *
  *  EXPORTS	printMatrix()
- *	     	printArray()
+ *		printArray()
  *
  *  See ./printutils.c	 for general remarks on Printing
- *                       and the Encode.. utils.
+ *			 and the Encode.. utils.
  *
  *  See ./format.c	 for the  format_FOO_  functions used below.
  */
@@ -430,10 +430,12 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
             {
                 l = (i / k) % INTEGER(dim)[j] + 1;
                 if (has_dimnames && ((dn = VECTOR(dimnames)[j]) != R_NilValue))
+                {
                     if (has_dnn)
                         Rprintf(", %s = %s", CHAR(STRING(dnn)[j]), CHAR(STRING(dn)[l - 1]));
                     else
                         Rprintf(", %s", CHAR(STRING(dn)[l - 1]));
+                }
                 else
                     Rprintf(", %d", l);
                 k = k * INTEGER(dim)[j];
