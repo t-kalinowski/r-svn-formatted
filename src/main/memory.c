@@ -442,7 +442,7 @@ void gc(void)
     gc_count++;
     if (gc_reporting)
         REprintf("Garbage collection [nr. %d]...", gc_count);
-#ifndef Macintosh
+#if !defined(Macintosh) && !defined(Win32)
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
     sigprocmask(SIG_BLOCK, &mask, &omask);
@@ -451,7 +451,7 @@ void gc(void)
     markPhase();
     compactPhase();
     scanPhase();
-#ifndef Macintosh
+#if !defined(Macintosh) && !defined(Win32)
     sigprocmask(SIG_SETMASK, &omask, &mask);
 #endif
     if (gc_reporting)

@@ -35,6 +35,10 @@ void isintrpt()
 
 #endif
 
+#ifdef Win32
+extern void ProcessEvents();
+#endif
+
 /* NEEDED: A fixup is needed in browser, because it */
 /* can trap errors, and currently does not reset the */
 /* limit to the right value. */
@@ -63,6 +67,16 @@ SEXP eval(SEXP e, SEXP rho)
     if ((R_EvalCount++ % 100) == 0)
     {
         isintrpt();
+    }
+#endif
+#ifdef Win32
+    if ((R_EvalCount++ % 100) == 0)
+    {
+        ProcessEvents();
+        /* Is this safe? R_EvalCount is not used in other part and
+         * don't want to overflow it
+         */
+        R_EvalCount = 0;
     }
 #endif
 

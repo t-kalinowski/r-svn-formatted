@@ -168,7 +168,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#ifdef Unix
+#if defined(Unix) | defined(Win32)
     DevDesc *dd;
     char *vmax;
     char *file, *bg, *fg;
@@ -296,7 +296,6 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     gcall = call;
     DeviceUnavailable("X11");
 }
-
 SEXP do_Gnome(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     gcall = call;

@@ -1812,6 +1812,11 @@ static void invalidError(char *message, DevDesc *dd)
 }
 
 /*  GNewPlot -- Begin a new plot (advance to new frame if needed)  */
+#ifdef PLOTHISTORY
+void copyGPar(GPar *source, GPar *dest);
+SEXP savedDisplayList;
+GPar savedGPar;
+#endif
 
 DevDesc *GNewPlot(int recording, int ask)
 {
@@ -1858,8 +1863,20 @@ DevDesc *GNewPlot(int recording, int ask)
                     dd = CurrentDevice();
             }
             if (recording)
+#ifdef PLOTHISTORY
+            {
+                PROTECT(savedDisplayList = dd->displayList);
+                copyGPar(&(dd->dpSaved), &(savedGPar));
+#endif
                 initDisplayList(dd);
+#ifdef PLOTHISTORY
+            }
+#endif
             dd->dp.newPage(dd);
+#ifdef PLOTHISTORY
+            if (recording)
+                UNPROTECT(1);
+#endif
             dd->dp.currentFigure = dd->gp.currentFigure = 1;
         }
 
