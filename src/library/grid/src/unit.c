@@ -788,7 +788,7 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, LGContext *
     else if (timesOp(x))
     {
         L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(x))[0] * transformX(arg2(x), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(x))[index % LENGTH(arg1(x))] * transformX(arg2(x), index, vpc, gc, widthCM, heightCM, dd);
     }
     else if (minFunc(x))
     {
@@ -851,7 +851,7 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, LGContext *
     else if (timesOp(y))
     {
         L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(y))[0] * transformY(arg2(y), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(y))[index % LENGTH(arg1(y))] * transformY(arg2(y), index, vpc, gc, widthCM, heightCM, dd);
     }
     else if (minFunc(y))
     {
@@ -914,7 +914,8 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, LGC
     else if (timesOp(width))
     {
         L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(width))[0] * transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(width))[index % LENGTH(arg1(width))] *
+                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, dd);
     }
     else if (minFunc(width))
     {
@@ -977,7 +978,8 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, L
     else if (timesOp(height))
     {
         L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(height))[0] * transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(height))[index % LENGTH(arg1(height))] *
+                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, dd);
     }
     else if (minFunc(height))
     {
