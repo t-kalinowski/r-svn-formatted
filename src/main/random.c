@@ -498,7 +498,7 @@ SEXP R_r2dtable(SEXP n, SEXP r, SEXP c)
        negative values.
        Should maybe do the same here ...
     */
-    if (!isInteger(n) || (length(n) == 0) || !isInteger(r) || (nr == 0) || !isInteger(c) || (nc == 0))
+    if (!isInteger(n) || (length(n) == 0) || !isInteger(r) || (nr <= 1) || !isInteger(c) || (nc <= 1))
         error("invalid arguments");
 
     n_of_samples = INTEGER(n)[0];
