@@ -1108,7 +1108,7 @@ SEXP do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP s, t;
+    SEXP s;
     if (length(args) != 2)
         WrongArgCount(asym[PRIMVAL(op)]);
     if (isString(CAR(args)))
@@ -1121,8 +1121,10 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (isSymbol(CAR(args)))
         {
             s = eval(CADR(args), rho);
+#ifdef CONSERVATIVE_COPYING
             if (NAMED(s))
             {
+                SEXP t;
                 PROTECT(s);
                 t = duplicate(s);
                 UNPROTECT(1);
@@ -1133,6 +1135,19 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
             defineVar(CAR(args), s, rho);
             UNPROTECT(1);
             SET_NAMED(s, 1);
+#else
+            switch (NAMED(s))
+            {
+            case 0:
+                SET_NAMED(s, 1);
+                break;
+            case 1:
+                SET_NAMED(s, 2);
+                break;
+            }
+            R_Visible = 0;
+            defineVar(CAR(args), s, rho);
+#endif
             return (s);
         }
         else if (isLanguage(CAR(args)))
