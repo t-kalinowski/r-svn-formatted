@@ -5,7 +5,7 @@
  * Compile this file with -DNO_GZCOMPRESS to avoid the compression code.
  */
 
-/* @(#) $Id: gzio.c,v 1.3 2004/03/15 09:15:23 ripley Exp $ */
+/* @(#) $Id$ */
 
 #include <stdio.h>
 
@@ -532,6 +532,11 @@ unsigned len;
                 if (ferror(s->file))
                 {
                     s->z_err = Z_ERRNO;
+                    break;
+                }
+                if (feof(s->file))
+                { /* avoid error for empty file */
+                    s->z_err = Z_STREAM_END;
                     break;
                 }
             }

@@ -29,7 +29,7 @@
  *          Addison-Wesley, 1983. ISBN 0-201-06672-6.
  */
 
-/* @(#) $Id: trees.c,v 1.3 2004/03/15 09:15:23 ripley Exp $ */
+/* @(#) $Id$ */
 
 /* #define GEN_TREES_H */
 
@@ -1003,7 +1003,7 @@ int eof;        /* true if this is the last block for a file */
     {
 
         /* Check if the file is ascii or binary */
-        if (s->data_type == Z_UNKNOWN)
+        if (s->strm->data_type == Z_UNKNOWN)
             set_data_type(s);
 
         /* Construct the literal and distance trees */
@@ -1220,7 +1220,7 @@ local void set_data_type(s) deflate_state *s;
         ascii_freq += s->dyn_ltree[n++].Freq;
     while (n < LITERALS)
         bin_freq += s->dyn_ltree[n++].Freq;
-    s->data_type = (Byte)(bin_freq > (ascii_freq >> 2) ? Z_BINARY : Z_ASCII);
+    s->strm->data_type = bin_freq > (ascii_freq >> 2) ? Z_BINARY : Z_ASCII;
 }
 
 /* ===========================================================================
