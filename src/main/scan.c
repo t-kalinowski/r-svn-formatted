@@ -980,6 +980,8 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (!data.ttyflag && !data.wasopen)
         data.con->close(data.con);
+    if (data.quotesave)
+        free(data.quotesave);
     return ans;
 }
 
@@ -1176,6 +1178,8 @@ donecf:
     for (i = 0; i <= nlines; i++)
         INTEGER(bns)[i] = INTEGER(ans)[i];
     UNPROTECT(1);
+    if (data.quotesave)
+        free(data.quotesave);
     return bns;
 }
 
