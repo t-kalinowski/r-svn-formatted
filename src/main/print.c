@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-1998  Robert Gentleman and Ross Ihaka.
+ *  Copyright (C) 1995-1998	Robert Gentleman and Ross Ihaka.
+ *  Copyright (C) 2000		The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -203,7 +204,7 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isNull(CAR(args)))
     {
         R_print.digits = asInteger(CAR(args));
-        if (R_print.digits == NA_INTEGER || R_print.digits < 1 || R_print.digits > 22)
+        if (R_print.digits == NA_INTEGER || R_print.digits < R_MIN_DIGITS_OPT || R_print.digits > R_MAX_DIGITS_OPT)
             errorcall(call, "invalid digits parameter");
     }
     args = CDR(args);
@@ -511,7 +512,7 @@ void PrintValueRec(SEXP s, SEXP env)
         break;
     case CHARSXP:
         Rprintf("\"");
-        Rprintf(EncodeString(CHAR(s), 0, '"', adj_left));
+        Rprintf(EncodeString(CHAR(s), 0, '"', Rprt_adj_left));
         Rprintf("\"\n");
         break;
     case EXPRSXP:
@@ -646,7 +647,7 @@ static void printAttributes(SEXP s, SEXP env)
                 goto nextattr;
             if (i > 1)
                 Rprintf("\n");
-            sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, adj_left));
+            sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, Rprt_adj_left));
             Rprintf(tagbuf);
             Rprintf("\n");
             PrintValueRec(CAR(a), env);

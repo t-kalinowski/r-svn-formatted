@@ -210,7 +210,7 @@ static void printStringVector(SEXP *x, int n, int quote, int index)
             else
                 width = 0;
         }
-        Rprintf("%*s%s", R_print.gap, "", EncodeString(CHAR(x[i]), w, quote, adj_left));
+        Rprintf("%*s%s", R_print.gap, "", EncodeString(CHAR(x[i]), w, quote, Rprt_adj_left));
         width += w + R_print.gap;
     }
     Rprintf("\n");
@@ -290,7 +290,7 @@ static void printNamedLogicalVector(int *x, int n, SEXP *names)
             Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, Rprt_adj_right), R_print.gap, "");
         }
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
@@ -322,7 +322,7 @@ static void printNamedIntegerVector(int *x, int n, SEXP *names)
             Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, Rprt_adj_right), R_print.gap, "");
         }
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
@@ -352,7 +352,7 @@ static void printNamedRealVector(double *x, int n, SEXP *names)
             Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, Rprt_adj_right), R_print.gap, "");
         }
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
@@ -383,7 +383,7 @@ static void printNamedComplexVector(Rcomplex *x, int n, SEXP *names)
             Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, Rprt_adj_right), R_print.gap, "");
         }
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
@@ -433,11 +433,11 @@ static void printNamedStringVector(SEXP *x, int n, int quote, SEXP *names)
             Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(names[k]), w, 0, Rprt_adj_right), R_print.gap, "");
         }
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
-            Rprintf("%s%*s", EncodeString(CHAR(x[k]), w, quote, adj_right), R_print.gap, "");
+            Rprintf("%s%*s", EncodeString(CHAR(x[k]), w, quote, Rprt_adj_right), R_print.gap, "");
     }
     Rprintf("\n");
 }

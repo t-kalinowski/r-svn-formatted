@@ -623,7 +623,7 @@ SEXP labelformat(SEXP labels)
         for (i = 0; i < n; i++)
         {
 #ifdef OLD
-            strp = EncodeString(CHAR(STRING(labels)[i]), 0, 0, adj_left);
+            strp = EncodeString(CHAR(STRING(labels)[i]), 0, 0, Rprt_adj_left);
             STRING(ans)[i] = mkChar(strp);
 #else
             STRING(ans)[i] = STRING(labels)[i];

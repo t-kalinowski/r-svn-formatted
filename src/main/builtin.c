@@ -156,7 +156,7 @@ static void cat_newline(SEXP labels, int *width, int lablen, int ntot)
     *width = 0;
     if (labels != R_NilValue)
     {
-        Rprintf("%s ", EncodeString(CHAR(STRING(labels)[ntot % lablen]), 1, 0, adj_left));
+        Rprintf("%s ", EncodeString(CHAR(STRING(labels)[ntot % lablen]), 1, 0, Rprt_adj_left));
         *width += Rstrlen(CHAR(STRING(labels)[ntot % lablen])) + 1;
     }
 }

@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 2000		The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,8 +53,8 @@ static void printLogicalMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
     if (rn)
     {
         rnw = strlen(rn);
-        if (rnw < rlabw + MIN_LBLOFF)
-            lbloff = MIN_LBLOFF;
+        if (rnw < rlabw + R_MIN_LBLOFF)
+            lbloff = R_MIN_LBLOFF;
         else
             lbloff = rnw - rlabw;
 
@@ -124,8 +125,8 @@ static void printIntegerMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
     if (rn)
     {
         rnw = strlen(rn);
-        if (rnw < rlabw + MIN_LBLOFF)
-            lbloff = MIN_LBLOFF;
+        if (rnw < rlabw + R_MIN_LBLOFF)
+            lbloff = R_MIN_LBLOFF;
         else
             lbloff = rnw - rlabw;
 
@@ -196,8 +197,8 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl,
     if (rn)
     {
         rnw = strlen(rn);
-        if (rnw < rlabw + MIN_LBLOFF)
-            lbloff = MIN_LBLOFF;
+        if (rnw < rlabw + R_MIN_LBLOFF)
+            lbloff = R_MIN_LBLOFF;
         else
             lbloff = rnw - rlabw;
 
@@ -274,8 +275,8 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
     if (rn)
     {
         rnw = strlen(rn);
-        if (rnw < rlabw + MIN_LBLOFF)
-            lbloff = MIN_LBLOFF;
+        if (rnw < rlabw + R_MIN_LBLOFF)
+            lbloff = R_MIN_LBLOFF;
         else
             lbloff = rnw - rlabw;
 
@@ -368,8 +369,8 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
     if (rn)
     {
         rnw = strlen(rn);
-        if (rnw < rlabw + MIN_LBLOFF)
-            lbloff = MIN_LBLOFF;
+        if (rnw < rlabw + R_MIN_LBLOFF)
+            lbloff = R_MIN_LBLOFF;
         else
             lbloff = rnw - rlabw;
 

@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2000   The R Development Core Team.
+ *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998-2000	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,7 +59,8 @@ SEXP eval(SEXP e, SEXP rho)
     /* too complex error" is quite likely. */
 
     int depthsave = R_EvalDepth++;
-    if (R_EvalDepth > asInteger(GetOption(install("expressions"), rho)))
+
+    if (R_EvalDepth > R_Expressions)
         error("evaluation is nested too deeply: infinite recursion?");
 #ifdef Macintosh
     /* check for a user abort */
