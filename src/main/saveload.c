@@ -1341,52 +1341,52 @@ static void OutStringAscii(FILE *fp, char *x)
     fprintf(fp, "%d ", nbytes);
     for (i = 0; i < nbytes; i++)
     {
-        if (x[i] <= 32 || x[i] > 126)
+        switch (x[i])
         {
-            switch (x[i])
-            {
-            case '\n':
-                fprintf(fp, "\\n");
-                break;
-            case '\t':
-                fprintf(fp, "\\t");
-                break;
-            case '\v':
-                fprintf(fp, "\\v");
-                break;
-            case '\b':
-                fprintf(fp, "\\b");
-                break;
-            case '\r':
-                fprintf(fp, "\\r");
-                break;
-            case '\f':
-                fprintf(fp, "\\f");
-                break;
-            case '\a':
-                fprintf(fp, "\\a");
-                break;
-            case '\\':
-                fprintf(fp, "\\\\");
-                break;
-            case '\?':
-                fprintf(fp, "\\?");
-                break;
-            case '\'':
-                fprintf(fp, "\\'");
-                break;
-            case '\"':
-                fprintf(fp, "\\\"");
-                break;
-                /* cannot print char in octal mode -> cast to unsigned
-                   char first */
-            default:
+        case '\n':
+            fprintf(fp, "\\n");
+            break;
+        case '\t':
+            fprintf(fp, "\\t");
+            break;
+        case '\v':
+            fprintf(fp, "\\v");
+            break;
+        case '\b':
+            fprintf(fp, "\\b");
+            break;
+        case '\r':
+            fprintf(fp, "\\r");
+            break;
+        case '\f':
+            fprintf(fp, "\\f");
+            break;
+        case '\a':
+            fprintf(fp, "\\a");
+            break;
+        case '\\':
+            fprintf(fp, "\\\\");
+            break;
+        case '\?':
+            fprintf(fp, "\\?");
+            break;
+        case '\'':
+            fprintf(fp, "\\'");
+            break;
+        case '\"':
+            fprintf(fp, "\\\"");
+            break;
+        default:
+            /* cannot print char in octal mode -> cast to unsigned
+               char first */
+            /* actually, since x is signed char and '\?' == 127
+               is handled above, x[i] > 126 can't happen, but
+               I'm superstitious...  -pd */
+            if (x[i] <= 32 || x[i] > 126)
                 fprintf(fp, "\\%03o", (unsigned char)x[i]);
-                break;
-            }
+            else
+                fputc(x[i], fp);
         }
-        else
-            fputc(x[i], fp);
     }
 }
 
