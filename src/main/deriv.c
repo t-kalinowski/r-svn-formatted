@@ -850,7 +850,7 @@ static SEXP Prune(SEXP lst)
 SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* deriv.default(expr, namevec, function.arg, tag, hessian) */
-    SEXP ans, ans2, expr, funarg, names;
+    SEXP ans, ans2, expr, funarg, names, s;
     int f_index, *d_index, *d2_index;
     int i, j, k, nexpr, nderiv = 0, hessian;
     char *vmax;
@@ -870,7 +870,7 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid variable names");
     args = CDR(args);
     /* function.arg: */
-    PROTECT(funarg = duplicate(CAR(args)));
+    funarg = CAR(args);
     args = CDR(args);
     /* tag: */
     tag = CAR(args);
@@ -1044,6 +1044,10 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(funarg) == CLOSXP)
     {
+        s = allocSExp(CLOSXP);
+        SET_FORMALS(s, FORMALS(funarg));
+        SET_CLOENV(s, CLOENV(funarg));
+        funarg = s;
         SET_BODY(funarg, exprlist);
     }
     else if (isString(funarg))
@@ -1068,7 +1072,7 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_VECTOR_ELT(funarg, 0, exprlist);
         /* funarg = lang2(install("expression"), exprlist); */
     }
-    UNPROTECT(3);
+    UNPROTECT(2);
     vmaxset(vmax);
     return funarg;
 }
