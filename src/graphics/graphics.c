@@ -388,6 +388,7 @@ int GMapUnits(int Runits)
     case 3:
         return INCHES;
     }
+    return 0; /* added to keep -Wall happy */
 }
 
 /* functions to convert from one set of units to another */
@@ -1787,7 +1788,7 @@ int validFigureMargins(DevDesc *dd)
 
 void initDisplayList();
 
-static invalidError(char *message, DevDesc *dd)
+static void invalidError(char *message, DevDesc *dd)
 {
     dd->dp.currentFigure -= 1;
     if (dd->dp.currentFigure < 1)
@@ -1800,8 +1801,6 @@ static invalidError(char *message, DevDesc *dd)
 
 void GNewPlot(DevDesc *dd, int recording)
 {
-    int i, j, n;
-
     if (NoDevices())
         error("No graphics device is active\n");
 
@@ -1864,7 +1863,7 @@ void GNewPlot(DevDesc *dd, int recording)
 void GScale(double min, double max, int axis, DevDesc *dd)
 {
     int log, n, style, swap;
-    double temp, logmin, logmax;
+    double temp;
 
     if (axis == 1 || axis == 3)
     {
@@ -2455,6 +2454,8 @@ static int CSclipline(double *x1, double *y1, double *x2, double *y2, int *clipp
 
     c1 = clipcode(*x1, *y1, Clipxl, Clipxr, Clipyb, Clipyt, dd);
     c2 = clipcode(*x2, *y2, Clipxl, Clipxr, Clipyb, Clipyt, dd);
+    x = Clipxl; /* keep -Wall happy */
+    y = Clipyb; /* keep -Wall happy */
     while (c1 || c2)
     {
         if (c1 & c2)
@@ -2512,6 +2513,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
     double *xx, *yy;
     double x1, y1, x2, y2;
 
+    yy = (double *)NULL; /* keep -Wall happy */
     if (((xx = (double *)C_alloc(n, sizeof(double))) == NULL) || ((yy = (double *)C_alloc(n, sizeof(double))) == NULL))
         error("out of memory while clipping polyline\n");
 
@@ -2573,7 +2575,6 @@ int GLocator(double *x, double *y, int coords, DevDesc *dd)
 {
     /*  Read the current pen position */
 
-    double ix, iy;
     if (!dd->dp.locator)
         error("no locator capability in device driver\n");
     if (dd->dp.locator(x, y, dd))
@@ -3272,6 +3273,8 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
     double a, xadj, yadj;
     int coords;
 
+    a = xadj = yadj = 0.0; /* to keep -Wall happy */
+    coords = 0;            /* to keep -Wall happy */
     if (outer)
     {
         switch (side)
@@ -4145,6 +4148,7 @@ static unsigned hexdigit(int digit)
         return 10 + digit - 'a';
     else
         error("invalid hex digit in color\n");
+    return digit - '0'; /* never occurs but avoid compiler warnings */
 }
 
 static char HexDigits[] = "0123456789ABCDEF";
@@ -4207,6 +4211,7 @@ unsigned int name2col(char *nm)
             return ColorDataBase[i].code;
     }
     error("invalid color name\n");
+    return 0; /* never occurs but avoid compiler warnings */
 }
 
 unsigned int number2col(char *nm, DevDesc *dd)
@@ -4311,6 +4316,7 @@ unsigned RGBpar(SEXP x, int i, DevDesc *dd)
         else
             return ColorTable[abs(index) % ColorTableSize];
     }
+    return 0; /* should not occur */
 }
 
 void InitColors()
@@ -4397,6 +4403,7 @@ unsigned int LTYpar(SEXP value, int index)
     else
         error("invalid line type\n");
     /*NOTREACHED*/
+    return 0; /* never occurs but avoid compiler warnings */
 }
 
 SEXP LTYget(unsigned int lty)

@@ -54,6 +54,7 @@ int chebyshev_init(double *dos, int nos, double eta)
         return 0;
 
     err = 0.0;
+    i = 0; /* just to avoid compiler warnings */
     for (ii = 1; ii <= nos; ii++)
     {
         i = nos - ii;
@@ -63,7 +64,6 @@ int chebyshev_init(double *dos, int nos, double eta)
             return i;
         }
     }
-done:
     return i;
 }
 
@@ -72,7 +72,7 @@ double chebyshev_eval(double x, double *a, int n)
     double b0, b1, b2, twox;
     int i;
 
-    if (n<1 | n> 1000)
+    if (n < 1 || n > 1000)
     {
         ML_ERROR(ML_DOMAIN);
         return ML_NAN;
@@ -85,7 +85,7 @@ double chebyshev_eval(double x, double *a, int n)
     }
 
     twox = x * 2;
-    b1 = 0;
+    b2 = b1 = 0;
     b0 = 0;
     for (i = 1; i <= n; i++)
     {
