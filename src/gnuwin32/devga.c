@@ -1931,7 +1931,7 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
     device = asInteger(CAR(args));
     if (device < 1 || device > NumDevices())
         errorcall(call, "invalid device number");
-    dd = GetDevice(device);
+    dd = GetDevice(device - 1);
     if (!dd)
         errorcall(call, "invalid device");
     filename = CADR(args);
@@ -1943,7 +1943,6 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(type) || LENGTH(type) != 1)
         errorcall(call, "invalid filename argument");
     tp = CHAR(STRING(type)[0]);
-    Rprintf("device %d fn %s tp %s\n", device, fn, tp);
 
     if (!strcmp(tp, "gif"))
     {
