@@ -27,8 +27,7 @@
 
 #include "Defn.h"
 #include "Fileio.h"
-#include "Graphics.h" /* for devX11.h */
-#include "devX11.h"
+#include "Graphics.h" /* for KillAllDevices */
 #include "Runix.h"
 
 extern int SaveAction;
@@ -76,7 +75,7 @@ void Rstd_Suicide(char *s)
 #undef __SYSTEM__
 
 /*
-   This oject is used for the standard input and its file descriptor
+   This object is used for the standard input and its file descriptor
    value is reset by setSelectMask() each time to ensure that it points
    to the correct value of stdin.
  */
@@ -229,7 +228,7 @@ static int setSelectMask(InputHandler *handlers, fd_set *readMask)
     InputHandler *tmp = handlers;
     FD_ZERO(readMask);
 
-    /* If we are dealing with BasicInputHandler Always put stdin */
+    /* If we are dealing with BasicInputHandler always put stdin */
     if (handlers == &BasicInputHandler)
         handlers->fileDescriptor = fileno(stdin);
 
@@ -256,7 +255,7 @@ InputHandler *getSelectedHandler(InputHandler *handlers, fd_set *readMask)
 
     /*
       Temporarily skip the first one if a) there is another one, and
-      b) thi is the BasicInputHandler.
+      b) this is the BasicInputHandler.
     */
     if (handlers == &BasicInputHandler && handlers->next)
         tmp = handlers->next;
