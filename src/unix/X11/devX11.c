@@ -1446,6 +1446,7 @@ static void X11_NewPage(DevDesc *dd)
     {
         if (xd->npages++)
             error("attempt to draw second page on pixmap device");
+        xd->bg = dd->dp.bg;
         SetColor(xd->bg, dd);
         XFillRectangle(display, xd->window, xd->wgc, 0, 0, xd->windowWidth, xd->windowHeight);
         return;
