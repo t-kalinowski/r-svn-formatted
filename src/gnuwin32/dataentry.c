@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2003  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2005  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <wchar.h>
 
 #include "Defn.h"
 #include "Print.h"
@@ -132,6 +134,23 @@ static char labform[6];
 static int xScrollbarScale = 1, yScrollbarScale = 1;
 
 #include <windows.h> /* for Sleep */
+
+int mb_char_len(char *buf, int clength); /* from console.c */
+
+static void moveback()
+{
+    int mb_len;
+
+    if (clength > 0)
+    {
+        mb_len = mb_char_len(buf, clength - 1);
+        clength -= mb_len;
+        bufp -= mb_len;
+        printstring(buf, clength, crow, ccol, 1);
+    }
+    else
+        bell();
+}
 
 /*
  Underlying assumptions (for this version R >= 1.8.0)
@@ -1074,14 +1093,7 @@ static void de_normalkeyin(control c, int k)
             jumpwin(colmin, rowmax);
             break;
         case 'H':
-            if (clength > 0)
-            {
-                clength--;
-                bufp--;
-                printstring(buf, clength, crow, ccol, 1);
-            }
-            else
-                bell();
+            moveback();
             break;
         case 'I':
             if (st & ShiftKey)
@@ -1111,14 +1123,7 @@ static void de_normalkeyin(control c, int k)
     }
     else if (k == '\b')
     {
-        if (clength > 0)
-        {
-            clength--;
-            bufp--;
-            printstring(buf, clength, crow, ccol, 1);
-        }
-        else
-            bell();
+        moveback();
     }
     else if (k == '\n' || k == '\r')
     {
@@ -1184,14 +1189,7 @@ static void de_ctrlkeyin(control c, int key)
         advancerect(DOWN);
         break;
     case DEL:
-        if (clength > 0)
-        {
-            clength--;
-            bufp--;
-            printstring(buf, clength, crow, ccol, 1);
-        }
-        else
-            de_delete(de);
+        moveback();
         break;
     case ENTER:
         advancerect(DOWN);
