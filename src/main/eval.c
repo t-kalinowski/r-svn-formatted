@@ -843,9 +843,11 @@ SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     sprintf(buf, "%s<-", CHAR(PRINTNAME(CAR(expr))));
     CAR(tmploc) = CAR(lhs);
-    PROTECT(expr = assignCall(install(asym[PRIMVAL(op)]), CDR(lhs), install(buf), TAG(tmploc), CDDR(expr), rhs));
+    PROTECT(tmp = mkPROMISE(CADR(args), rho));
+    PRVALUE(tmp) = rhs;
+    PROTECT(expr = assignCall(install(asym[PRIMVAL(op)]), CDR(lhs), install(buf), TAG(tmploc), CDDR(expr), tmp));
     expr = eval(expr, rho);
-    UNPROTECT(4);
+    UNPROTECT(5);
     unbindVar(tmpsym, rho);
     return duplicate(saverhs);
 }
