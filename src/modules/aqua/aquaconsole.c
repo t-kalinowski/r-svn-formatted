@@ -110,6 +110,7 @@ void GraphicCopy(WindowPtr window);
 
 /* item in the Window menu */
 #define kRNewQuartz 'nwqz'
+#define kRActivateDevice 'awqz'
 
 /* items in the Help Menu */
 #define kRHelpStart 'rhlp'
@@ -1623,6 +1624,11 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 consolecmd("quartz()");
                 break;
 
+            case kRActivateDevice:
+                if (GetWindowProperty(window, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) == noErr)
+                    selectDevice(devnum);
+                break;
+
                 /* Help Menu */
             case kRHelpStart:
                 consolecmd("help.start()");
@@ -1782,7 +1788,7 @@ step2:
             err = -1;
             goto step3;
         }
-
+        FSDeleteObject(&fsRef);
         if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
         {
             QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
