@@ -324,9 +324,11 @@ SEXP do_makelist(SEXP call, SEXP op, SEXP args, SEXP rho)
     return list;
 }
 
+#ifdef NOT_used
 SEXP do_namedlist(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 }
+#endif NOT_used
 
 SEXP do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -616,7 +618,7 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         t1 = install(CHAR(STRING(CAR(args))[0]));
 
-    /* envir :  originally, the "where=" argument */
+    /* envir :	originally, the "where=" argument */
 
     if (TYPEOF(CADR(args)) == REALSXP || TYPEOF(CADR(args)) == INTSXP)
     {

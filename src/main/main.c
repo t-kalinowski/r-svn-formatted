@@ -325,7 +325,7 @@ static void R_LoadProfile(FILE *fp)
     }
 }
 
-void mainloop()
+void mainloop(void)
 {
     SEXP cmd;
 
