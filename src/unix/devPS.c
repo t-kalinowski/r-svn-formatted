@@ -107,9 +107,6 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
 
-    int i;
-    char *cpars[20];
-    double *npars;
     double xoff, yoff, pointsize;
     postscriptDesc *pd;
 
