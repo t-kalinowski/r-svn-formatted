@@ -276,7 +276,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
             else
                 neginf = 1;
 #else
-            nanflag = 1;
+            naflag = 1;
 #endif
         }
         else
