@@ -76,8 +76,7 @@ typedef struct GlobalsStruct GlobalsStruct;
 
 GlobalsStruct g; //	Globals
 
-void R_ProcessEvents(void);
-void R_ProcessEvents2(void);
+void Raqua_ProcessEvents(void);
 
 /* Items for the Tools menu */
 #define kRCmdFileShow 'fshw'
@@ -416,7 +415,6 @@ void Aqua_RnWrite(char *buf, int len);
 TXNTypeAttributes RInAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &CurrentPrefs.FGInputColor}};
 TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttributeSize, &CurrentPrefs.FGOutputColor}};
 
-Boolean PrintIsOver = false;
 void Raqua_WriteConsole(char *buf, int len)
 {
     OSStatus err;
@@ -424,23 +422,11 @@ void Raqua_WriteConsole(char *buf, int len)
     TXNOffset oEndOffset;
     EventRef REvent;
 
-    //  fprintf(stderr,"%s",buf);
     if (WeHaveConsole)
     {
         TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
         err = TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
-        R_ProcessEvents2();
-        // TXNForceUpdate(RConsoleOutObject);
-        //   TXNDraw(RConsoleOutObject, NULL);
-        //  fprintf(stderr,"\n>%s< len=%d",buf,strlen(buf));
-        PrintIsOver = false;
-
-        /*
-               CreateEvent(NULL, kEventClassKeyboard, 'fake', 0, kEventAttributeNone, &REvent);
-                SendEventToEventTarget (REvent,GetApplicationEventTarget());
-                while(!PrintIsOver)
-                 R_ProcessEvents();
-         */
+        Raqua_ProcessEvents();
     }
     else
     {
@@ -507,7 +493,6 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, kTXNEndOffset);
 
     while (!InputFinished)
-        //     R_ProcessEvents();
         RunApplicationEventLoop();
 
     if (InputFinished)
@@ -531,9 +516,9 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
         InputFinished = false;
         TXNSetData(RConsoleInObject, kTXNTextData, NULL, 0, kTXNStartOffset, kTXNEndOffset);
         Raqua_WriteConsole(buf, strlen(buf));
+        Raqua_ProcessEvents();
         if (strlen(buf) > 1)
             maintain_cmd_History(buf);
-        // R_ProcessEvents();
     }
 
     return (1);
@@ -585,12 +570,6 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
         switch (GetEventKind(REvent))
         {
 
-            /*   case 'fake':
-               PrintIsOver = true;
-               TXNUpdate(RConsoleOutObject);
-               err = noErr;
-               break;
-              */
         case kEventRawKeyDown:
             err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
             switch (RKeyCode)
@@ -1855,33 +1834,23 @@ void Raqua_GetQuartzParameters(double *width, double *height, double *ps, char *
     *autorefresh = CurrentPrefs.AutoRefresh;
 }
 
-void R_ProcessEvents2(void)
+void Raqua_ProcessEvents(void)
 {
     EventRef theEvent;
     EventTargetRef theTarget = GetEventDispatcherTarget();
+
+    if (CheckEventQueueForUserCancel())
+    {
+        Rprintf("\n");
+        error("user break");
+        raise(SIGINT);
+        return;
+    }
 
     if (ReceiveNextEvent(0, NULL, kEventDurationNoWait, true, &theEvent) == noErr)
     {
         SendEventToEventTarget(theEvent, theTarget);
         ReleaseEvent(theEvent);
-    }
-}
-
-void R_ProcessEvents(void)
-{
-    OSStatus err;
-    EventRef theEvent;
-    EventTargetRef theTarget = GetEventDispatcherTarget();
-
-    err = ReceiveNextEvent(0, NULL, kEventDurationForever, true, &theEvent);
-    if (err == noErr)
-    {
-        (void)SendEventToEventTarget(theEvent, theTarget);
-        ReleaseEvent(theEvent);
-    }
-    else if (err == eventLoopTimedOutErr)
-    {
-        err = noErr;
     }
 }
 
