@@ -618,7 +618,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                 {
                     if (prim_case)
                     {
-                        do_set_prim_method(op, "reset", prev_fun, value);
+                        do_set_prim_method(op, "set", prev_fun, value);
                     }
                     else
                     {
