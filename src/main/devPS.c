@@ -1181,7 +1181,10 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
     int i;
 
     if (!LoadEncoding(pd->encpath, pd->encname, FALSE))
-        error("problem loading encoding file");
+    {
+        warning("problem loading encoding file");
+        return FALSE;
+    }
     for (i = 0; i < 4; i++)
     {
         if (pd->fontfamily == USERAFM)
@@ -1203,7 +1206,7 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
     if (strlen(pd->filename) == 0)
     {
 #ifndef HAVE_POPEN
-        error("printing via file = \"\" is not implemented in this version");
+        warning("printing via file = \"\" is not implemented in this version");
         return FALSE;
 #else
         if (strlen(pd->command) == 0)
@@ -1215,7 +1218,7 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
     else if (pd->filename[0] == '|')
     {
 #ifndef HAVE_POPEN
-        error("file = \"|cmd\" is not implemented in this version");
+        warning("file = \"|cmd\" is not implemented in this version");
         return FALSE;
 #else
         pd->psfp = popen(pd->filename + 1, "w");
@@ -2319,7 +2322,7 @@ typedef struct
     FontMetricInfo metrics[5]; /* font metrics */
 
     /* This group of variables track the current device status.
-     * They should only be set by routines that emit PostScript code. */
+     * They should only be set by routines that emit PDF. */
     struct
     {
         double lwd;    /* line width */
@@ -2687,7 +2690,10 @@ static Rboolean PDF_Open(DevDesc *dd, PDFDesc *pd)
     int i;
 
     if (!LoadEncoding(pd->encpath, pd->encname, TRUE))
-        error("problem loading encoding file");
+    {
+        warning("problem loading encoding file");
+        return FALSE;
+    }
     for (i = 0; i < 4; i++)
     {
         p = Family[pd->fontfamily].afmfile[i];
@@ -2748,7 +2754,7 @@ static void PDF_NewPage(DevDesc *dd)
     char buf[512];
 
     if (pd->pageno > 499 || pd->nobjs > 1099)
-        error("limit on pages or object exceeded:please shut down the PDFdevice");
+        error("limit on pages or objects exceeded:please shut down the PDFdevice");
 
     if (pd->pageno > 0)
     {

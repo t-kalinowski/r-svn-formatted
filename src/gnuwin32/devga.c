@@ -1409,7 +1409,6 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         {
             del(xd->gawin);
             warning("Unable to open file `%s' for writing", &dsp[4]);
-            fclose(xd->fp);
             return FALSE;
         }
     }
@@ -1432,11 +1431,10 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
             warning("Unable to allocate bitmap");
             return FALSE;
         }
-        if (((xd->fp = fopen(p + 1, "wb")) == NULL))
+        if ((xd->fp = fopen(p + 1, "wb")) == NULL)
         {
             del(xd->gawin);
             warning("Unable to open file `%s' for writing", p + 1);
-            fclose(xd->fp);
             return FALSE;
         }
     }
@@ -1459,7 +1457,13 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         xd->kind = METAFILE;
         xd->fast = 0; /* use scalable line widths */
         if (!xd->gawin)
+        {
+            if (ld > ls)
+                warning("Unable to open metafile `%s' for writing", &dsp[ls + 1]);
+            else
+                warning("Unable to open clipboard to write metafile");
             return FALSE;
+        }
     }
     xd->truedpi = devicepixelsy(xd->gawin);
     if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
@@ -1468,7 +1472,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         xd->wanteddpi = xd->truedpi;
     if (!SetBaseFont(xd))
     {
-        Rprintf("can't find any fonts\n");
+        warning("can't find any fonts");
         del(xd->gawin);
         if (xd->kind == SCREEN)
             del(xd->bm);
