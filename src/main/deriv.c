@@ -43,6 +43,8 @@ static SEXP SinhSymbol;
 static SEXP CoshSymbol;
 static SEXP TanhSymbol;
 static SEXP SqrtSymbol;
+static SEXP PnormSymbol;
+static SEXP DnormSymbol;
 
 static void InitDerivSymbols()
 {
@@ -63,6 +65,8 @@ static void InitDerivSymbols()
     CoshSymbol = install("cosh");
     TanhSymbol = install("tanh");
     SqrtSymbol = install("sqrt");
+    PnormSymbol = install("pnorm");
+    DnormSymbol = install("dnorm");
 }
 
 static SEXP Constant(double x)
@@ -273,6 +277,14 @@ static SEXP simplify(SEXP fun, SEXP arg1, SEXP arg2)
     {
         ans = lang2(TanhSymbol, arg1);
     }
+    else if (fun == PnormSymbol)
+    {
+        ans = lang2(PnormSymbol, arg1);
+    }
+    else if (fun == DnormSymbol)
+    {
+        ans = lang2(DnormSymbol, arg1);
+    }
     else
         ans = Constant(NA_REAL);
         /* FIXME */
@@ -432,6 +444,18 @@ static SEXP D(SEXP expr, SEXP var)
             SETCADDR(expr1, Constant(0.5));
             ans = D(expr1, var);
             UNPROTECT(1);
+        }
+        else if (CAR(expr) == PnormSymbol)
+        {
+            ans = simplify(TimesSymbol, PP(simplify(DnormSymbol, CADR(expr), R_MissingArg)), PP(D(CADR(expr), var))),
+            UNPROTECT(2);
+        }
+        else if (CAR(expr) == DnormSymbol)
+        {
+            ans = simplify(
+                TimesSymbol, PP(simplify(MinusSymbol, CADR(expr), R_MissingArg)),
+                PP(simplify(TimesSymbol, PP(simplify(DnormSymbol, CADR(expr), R_MissingArg)), PP(D(CADR(expr), var))))),
+            UNPROTECT(4);
         }
         else
             error("Function %s is not in the derivatives table", PRINTNAME(CAR(expr)));
