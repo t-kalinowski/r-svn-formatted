@@ -2705,61 +2705,13 @@ void GBox(int which, DevDesc *dd)
     }
 }
 
-#ifdef OLD
-void GLPretty(double *xmin, double *xmax, int *n)
-{
-    /*	Set scale and ticks for logarithmic scales  */
-    /*	Note: 1 2 5 10 looks good on logarithmic scales	 */
-
-    double u1, u2, v1, v2, p1, p2;
-
-    if ((*xmax) <= 7.8651 * (*xmin))
-        GPretty(xmin, xmax, n);
-    else
-    {
-        p1 = ceil(*xmin - 0.0001);
-        p2 = floor(*xmax + 0.0001);
-        u1 = pow(10., p1);
-        v1 = pow(10., p2);
-        *n = p2 - p1;
-
-        if (*n <= 1)
-        {
-            *n = 2 * (*n);
-            u2 = 0.5 * u1;
-            if (u2 <= *xmin)
-            {
-                u2 = u1;
-            }
-            else
-                (*n)++;
-
-            v2 = 5.0 * v1;
-            if (v2 >= *xmax)
-            {
-                v2 = v1;
-            }
-            else
-                (*n)++;
-
-            *xmin = u2;
-            *xmax = v2;
-        }
-        else
-        {
-            *xmin = u1;
-            *xmax = v1;
-        }
-    }
-}
-#else
-
 #define LPR_SMALL 2
 #define LPR_MEDIUM 3
 
 void GLPretty(double *ul, double *uh, int *n)
 {
     /* Generate pretty tick values --	LOGARITHMIC scale
+     * __ ul < uh __
      * This only does a very simple setup.
      * The real work happens when the axis is drawn. */
     int p1, p2;
@@ -2767,36 +2719,27 @@ void GLPretty(double *ul, double *uh, int *n)
     p2 = floor(log10(*uh));
 
     if (p2 - p1 <= 0)
-    {
-        /* Very small range : Use tickmarks from a linear scale
+    { /* floor(log10(uh)) <= ceil(log10(ul))
+       * <==>	 log10(uh) - log10(ul) < 2
+       * <==>		uh / ul	       < 100 */
+        /* Very small range : Use tickmarks from a LINEAR scale
          *		      Splus uses n = 9 here, but that is dumb */
         GPretty(ul, uh, n);
         *n = -*n;
     }
-    else if (p2 - p1 <= LPR_SMALL)
-    {
-        /* Small range :  Use 1,2,5,10 times 10^k tickmarks */
-        *ul = pow(10., (double)p1);
-        *uh = pow(10., (double)p2);
-        *n = 3;
-    }
-    else if (p2 - p1 <= LPR_MEDIUM)
-    {
-        /* Medium range :  Use 1,5 times 10^k tickmarks */
-        *ul = pow(10., (double)p1);
-        *uh = pow(10., (double)p2);
-        *n = 2;
-    }
     else
-    {
-        /* Large range : Use 10^k tickmarks
-         *		 But decimate, when there are too many */
+    { /* extra tickmarks --> CreateAtVector(.) in	../plot.c */
         *ul = pow(10., (double)p1);
         *uh = pow(10., (double)p2);
-        *n = 1;
+        if (p2 - p1 <= LPR_SMALL)
+            *n = 3; /* Small range :	Use 1,2,5,10 times 10^k tickmarks */
+        else if (p2 - p1 <= LPR_MEDIUM)
+            *n = 2; /* Medium range :	Use 1,5 times 10^k tickmarks */
+        else
+            *n = 1; /* Large range :	Use 10^k tickmarks
+                     *			But decimate, when there are too many*/
     }
 }
-#endif
 
 void GPretty(double *lo, double *up, int *ndiv)
 {
