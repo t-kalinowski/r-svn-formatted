@@ -46,6 +46,8 @@
 #define kDataBrowserListViewAppendColumn ULONG_MAX
 #endif
 
+void ProcessOneEvent(void);
+
 static void ConfigureDataManager(ControlRef);
 static void CreateDataManager(WindowRef, ControlRef *);
 static ControlRef GetDataBrowserFromWindow(WindowRef window);
@@ -71,7 +73,7 @@ int NumOfDSets = 0;
 DataBrowserItemID *DSetID;
 Boolean *InstallDSet;
 
-extern bool EditingFinished;
+extern bool DataManagerFinished;
 
 extern TXNControlTag RReadOnlyTag[];
 extern TXNControlData RReadOnlyData[];
@@ -445,11 +447,16 @@ SEXP Raqua_datamanger(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid arguments");
 
     TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadOnlyTag, RReadOnlyData);
-    EditingFinished = false;
+    DataManagerFinished = false;
     OpenDataManager();
+#ifdef NEWAQUAELOOP
+    while (!DataManagerFinished)
+        ProcessOneEvent();
+#else
     QuitApplicationEventLoop();
+    RunApplicationEventLoop();
+#endif
 
-    RunApplicationEventLoop(); /* waits till the user closes the dataentry window */
     PROTECT(ans = NEW_LOGICAL(NumOfDSets));
     for (i = 1; i <= NumOfDSets; i++)
         LOGICAL(ans)[i - 1] = InstallDSet[i - 1];

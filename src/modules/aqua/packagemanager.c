@@ -71,7 +71,8 @@ int NumOfAllPkgs = 0;
 DataBrowserItemID *PNameID;
 Boolean *LoadThese;
 
-extern bool EditingFinished;
+extern bool PackageManagerFinished;
+void ProcessOneEvent(void);
 
 extern TXNControlTag RReadOnlyTag[];
 extern TXNControlData RReadOnlyData[];
@@ -453,11 +454,16 @@ SEXP Raqua_packagemanger(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid arguments");
 
     TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadOnlyTag, RReadOnlyData);
-    EditingFinished = false;
+    PackageManagerFinished = false;
     OpenPackageManager();
+#ifdef NEWAQUAELOOP
+    while (!PackageManagerFinished)
+        ProcessOneEvent();
+#else
     QuitApplicationEventLoop();
+    RunApplicationEventLoop();
+#endif
 
-    RunApplicationEventLoop(); /* waits till the user closes the dataentry window */
     PROTECT(ans = NEW_LOGICAL(NumOfAllPkgs));
     for (i = 1; i <= NumOfAllPkgs; i++)
         LOGICAL(ans)[i - 1] = LoadThese[i - 1];
