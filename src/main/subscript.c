@@ -249,41 +249,33 @@ static SEXP logicalSubscript(SEXP s, int ns, int nx, int *stretch)
         return (allocVector(INTSXP, 0));
     count = 0;
     for (i = 0; i < nmax; i++)
-        if (LOGICAL(s)[i % ns] != FALSE)
+        if (LOGICAL(s)[i % ns])
             count++;
     indx = allocVector(INTSXP, count);
     count = 0;
     for (i = 0; i < nmax; i++)
-    {
-        int tmp = LOGICAL(s)[i % ns];
-        if (tmp == NA_LOGICAL)
-            INTEGER(indx)[count++] = NA_INTEGER;
-        else if (tmp == TRUE)
-            INTEGER(indx)[count++] = i + 1;
-    }
+        if (LOGICAL(s)[i % ns])
+        {
+            if (LOGICAL(s)[i % ns] == NA_LOGICAL)
+                INTEGER(indx)[count++] = NA_INTEGER;
+            else
+                INTEGER(indx)[count++] = i + 1;
+        }
     return indx;
 }
 
 static SEXP negativeSubscript(SEXP s, int ns, int nx)
 {
-    int count, i;
-    SEXP indx = PROTECT(allocVector(LGLSXP, nx));
-
+    SEXP indx;
+    int stretch = 0;
+    int i;
+    PROTECT(indx = allocVector(INTSXP, nx));
     for (i = 0; i < nx; i++)
-        LOGICAL(indx)[i] = TRUE;
-    count = nx;
+        INTEGER(indx)[i] = 1;
     for (i = 0; i < ns; i++)
         if (INTEGER(s)[i] != 0)
-        {
-            LOGICAL(indx)[-INTEGER(s)[i] - 1] = FALSE;
-            count--;
-        }
-    s = allocVector(INTSXP, count);
-    count = 0;
-    for (i = 0; i < nx; i++)
-        if (LOGICAL(indx)[i])
-            INTEGER(s)[count++] = i + 1;
-
+            INTEGER(indx)[-INTEGER(s)[i] - 1] = 0;
+    s = logicalSubscript(indx, nx, nx, &stretch);
     UNPROTECT(1);
     return s;
 }
@@ -312,19 +304,14 @@ static SEXP positiveSubscript(SEXP s, int ns, int nx)
 static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
 {
     int i, ii, min, max, canstretch;
-    int have_na = 0;
     canstretch = *stretch;
     *stretch = 0;
-    min = 1;
+    min = 0;
     max = 0;
     for (i = 0; i < ns; i++)
     {
         ii = INTEGER(s)[i];
-        if (ii == NA_INTEGER)
-        {
-            have_na = 1;
-        }
-        else
+        if (ii != NA_INTEGER)
         {
             if (ii < min)
                 min = ii;
@@ -343,14 +330,14 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
     }
     if (min < 0)
     {
-        if (max != 0 || have_na)
+        if (max == 0)
+            return negativeSubscript(s, ns, nx);
+        else
             error("only 0's may mix with negative subscripts");
-        return negativeSubscript(s, ns, nx);
     }
-    if (have_na || min == 0)
-        return positiveSubscript(s, ns, nx);
     else
-        return s;
+        return positiveSubscript(s, ns, nx);
+    return R_NilValue;
 }
 
 typedef SEXP (*StringEltGetter)(SEXP x, int i);
@@ -379,10 +366,10 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
         {
             for (j = 0; j < nnames; j++)
             {
-                SEXP name_j = strg(names, j);
-                if (TYPEOF(name_j) != CHARSXP)
+                SEXP names_j = strg(names, j);
+                if (TYPEOF(names_j) != CHARSXP)
                     error("character vector element does not have type CHARSXP");
-                if (NonNullStringMatch(STRING_ELT(s, i), name_j))
+                if (NonNullStringMatch(STRING_ELT(s, i), names_j))
                 {
                     sub = j + 1;
                     SET_STRING_ELT(indexnames, i, R_NilValue);
@@ -429,12 +416,9 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
     dims is the dimensions of x
     dng is a function (usually getAttrib) that obtains the dimnames
     x is the array to be subscripted.
-   strg extracts elements of a string vector, either obtained by using
-   dng(x, R_NamesSymbol) or from one of the elements of an VECSXP
-   obtained from dng(x, R_DimNamesSymbol).
 */
 
-typedef SEXP (*AttrGetter)(SEXP x, SEXP data);
+typedef SEXP AttrGetter(SEXP x, SEXP data);
 
 SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
@@ -500,9 +484,6 @@ SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
    s is the R subscript value,
    dng gets a given attrib for x, which is the object we are
    subsetting,
-   strg extracts elements of a string vector, either obtained by using
-   dng(x, R_NamesSymbol) or from one of the elements of an VECSXP
-   obtained from dng(x, R_DimNamesSymbol).
 */
 
 SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)

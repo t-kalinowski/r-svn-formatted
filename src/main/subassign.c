@@ -655,8 +655,8 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     /* No GC problems here. */
 
     dim = getAttrib(x, R_DimSymbol);
-    sr = SETCAR(s, arraySubscript(0, CAR(s), dim, getAttrib, STRING_ELT, x));
-    sc = SETCADR(s, arraySubscript(1, CADR(s), dim, getAttrib, STRING_ELT, x));
+    sr = SETCAR(s, arraySubscript(0, CAR(s), dim, getAttrib, (STRING_ELT), x));
+    sc = SETCADR(s, arraySubscript(1, CADR(s), dim, getAttrib, (STRING_ELT), x));
     nrs = LENGTH(sr);
     ncs = LENGTH(sc);
 
