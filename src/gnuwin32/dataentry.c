@@ -1753,7 +1753,7 @@ static dataeditor newdataeditor()
     }
 #endif
     c = (dataeditor)newwindow(" Data Editor", rect(x, y, w, h),
-                              Document | StandardWindow | TrackMouse | VScrollbar | HScrollbar);
+                              Document | StandardWindow | Menubar | VScrollbar | HScrollbar | TrackMouse);
     if (!c)
     {
         freeConsoleData(p);
