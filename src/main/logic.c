@@ -158,9 +158,11 @@ static SEXP lunary(SEXP call, SEXP op, SEXP arg)
     SEXP x, dim, dimnames, names;
     int i, len;
 
+    len = LENGTH(arg);
+    if (len == 0)
+        return (allocVector(LGLSXP, 0));
     if (!isLogical(arg) && !isNumeric(arg))
         errorcall(call, "invalid argument type");
-    len = LENGTH(arg);
     PROTECT(names = getAttrib(arg, R_NamesSymbol));
     PROTECT(dim = getAttrib(arg, R_DimSymbol));
     PROTECT(dimnames = getAttrib(arg, R_DimNamesSymbol));
