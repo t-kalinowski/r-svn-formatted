@@ -92,7 +92,7 @@ void GraphicCopy(WindowPtr window);
 #define kRCmdFileShow 'fshw'
 #define kRCmdEditFile 'edtf'
 
-#define kRCmdIsRAquaUpdated 'nraq'
+#define kRCmdRappUpdates 'nraq'
 
 /* Items for the Tools menu */
 #define kRCmdShowWSpace 'dols'
@@ -1488,8 +1488,8 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 RPrefsHandler(RPrefsWindow);
                 break;
 
-            case kRCmdIsRAquaUpdated:
-                consolecmd("is.RAqua.updated()");
+            case kRCmdRappUpdates:
+                consolecmd("Rapp.updates()");
                 break;
 
                 /* File Menu */
