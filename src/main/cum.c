@@ -167,10 +167,10 @@ SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
             break;
         case 3: /* cummax */
         case 4: /* cummin */
-            errorcall(call, "min/max not defined for complex numbers\n");
+            errorcall(call, "min/max not defined for complex numbers");
             break;
         default:
-            errorcall(call, "unknown cumxxx function\n");
+            errorcall(call, "unknown cumxxx function");
         }
     }
     else
@@ -195,7 +195,7 @@ SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
             return cummin(t, s);
             break;
         default:
-            errorcall(call, "Unknown cum function\n");
+            errorcall(call, "Unknown cum function");
         }
     }
     return R_NilValue; /* for -Wall */

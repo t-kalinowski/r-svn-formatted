@@ -82,7 +82,7 @@ SEXP getAttrib(SEXP vec, SEXP name)
                     STRING(s)[i] = PRINTNAME(TAG(vec));
                 }
                 else
-                    error("getAttrib: invalid type for TAG\n");
+                    error("getAttrib: invalid type for TAG");
             }
             UNPROTECT(1);
             if (any)
@@ -127,7 +127,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
         return removeAttrib(vec, name);
 
     if (vec == R_NilValue)
-        error("attempt to set an attribute on NULL\n");
+        error("attempt to set an attribute on NULL");
 
     PROTECT(vec);
     PROTECT(name);
@@ -225,19 +225,19 @@ static void checkNames(SEXP x, SEXP s)
     if (isVector(x) || isList(x) || isLanguage(x))
     {
         if (!isVector(s) && !isList(s))
-            error("invalid type for names: must be vector\n");
+            error("invalid type for names: must be vector");
         if (length(x) != length(s))
-            error("names attribute must be the same length as the vector\n");
+            error("names attribute must be the same length as the vector");
     }
     else
-        error("names applied to non-vector\n");
+        error("names applied to non-vector");
 }
 
 /* Time Series Parameters */
 
 static void badtsp()
 {
-    error("invalid time series parameters specified\n");
+    error("invalid time series parameters specified");
 }
 
 SEXP tspgets(SEXP vec, SEXP val)
@@ -246,7 +246,7 @@ SEXP tspgets(SEXP vec, SEXP val)
     int n;
 
     if (!isNumeric(val) || length(val) != 3)
-        error("tsp attribute must be numeric of length three\n");
+        error("tsp attribute must be numeric of length three");
 
     if (isReal(val))
     {
@@ -293,7 +293,7 @@ SEXP commentgets(SEXP vec, SEXP comment)
         }
         return R_NilValue;
     }
-    error("attempt to set invalid comment attribute\n");
+    error("attempt to set invalid comment attribute");
     return R_NilValue; /*- just for -Wall */
 }
 
@@ -334,7 +334,7 @@ SEXP classgets(SEXP vec, SEXP class)
         }
         return R_NilValue;
     }
-    error("attempt to set invalid class attribute\n");
+    error("attempt to set invalid class attribute");
     return R_NilValue; /*- just for -Wall */
 }
 
@@ -387,7 +387,7 @@ SEXP namesgets(SEXP vec, SEXP val)
     if (isList(val))
     {
         if (!isVectorizable(val))
-            error("incompatible names argument\n");
+            error("incompatible names argument");
         else
         {
             rval = allocVector(STRSXP, length(vec));
@@ -438,7 +438,7 @@ SEXP namesgets(SEXP vec, SEXP val)
     else if (isVector(vec))
         installAttrib(vec, R_NamesSymbol, val);
     else
-        error("invalid type to set names attribute\n");
+        error("invalid type to set names attribute");
     UNPROTECT(2);
     return vec;
 }
@@ -476,14 +476,14 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
     PROTECT(val);
 
     if (!isArray(vec) && !isList(vec))
-        error("dimnames applied to non-array\n");
+        error("dimnames applied to non-array");
     /* This is probably overkill, but you never know; */
     /* there may be old pair-lists out there */
     if (!isPairList(val) && !isNewList(val))
-        error("dimnames must be a list\n");
+        error("dimnames must be a list");
     dims = getAttrib(vec, R_DimSymbol);
     if ((k = LENGTH(dims)) != length(val))
-        error("length of dimnames must match that of dims\n");
+        error("length of dimnames must match that of dims");
     /* Old list to new list */
     if (isList(val))
     {
@@ -502,9 +502,9 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         if (VECTOR(val)[i] != R_NilValue)
         {
             if (!isVector(VECTOR(val)[i]))
-                error("invalid type for dimname (must be a vector)\n");
+                error("invalid type for dimname (must be a vector)");
             if (INTEGER(dims)[i] != LENGTH(VECTOR(val)[i]) && LENGTH(VECTOR(val)[i]) != 0)
-                error("length of dimnames[%d] not equal to array extent\n", i + 1);
+                error("length of dimnames[%d] not equal to array extent", i + 1);
             if (LENGTH(VECTOR(val)[i]) == 0)
             {
                 VECTOR(val)[i] = R_NilValue;
@@ -572,10 +572,10 @@ SEXP dimgets(SEXP vec, SEXP val)
     PROTECT(vec);
     PROTECT(val);
     if (!isVector(vec) && !isList(vec))
-        error("dim<- : invalid first argument\n");
+        error("dim<- : invalid first argument");
 
     if (!isVector(val) && !isList(val))
-        error("dim<- : invalid second argument\n");
+        error("dim<- : invalid second argument");
     val = coerceVector(val, INTSXP);
     UNPROTECT(1);
     PROTECT(val);
@@ -583,12 +583,12 @@ SEXP dimgets(SEXP vec, SEXP val)
     len = length(vec);
     ndim = length(val);
     if (ndim == 0)
-        error("dim: Invalid dimension vector\n");
+        error("dim: Invalid dimension vector");
     total = 1;
     for (i = 0; i < ndim; i++)
         total *= INTEGER(val)[i];
     if (total != len)
-        error("dim<- length of dims do not match the length of object\n");
+        error("dim<- length of dims do not match the length of object");
     removeAttrib(vec, R_DimNamesSymbol);
     installAttrib(vec, R_DimSymbol, val);
     UNPROTECT(2);
@@ -668,7 +668,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(object);
 
     if (!isNewList(attrs))
-        errorcall(call, "attributes must be in a list\n");
+        errorcall(call, "attributes must be in a list");
 
     /* Empty the existing attribute list */
 
@@ -693,12 +693,12 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         names = getAttrib(attrs, R_NamesSymbol);
         if (names == R_NilValue)
-            errorcall(call, "attributes must be named\n");
+            errorcall(call, "attributes must be named");
         for (i = 0; i < nattrs; i++)
         {
             if (STRING(names)[i] == R_NilValue || CHAR(STRING(names)[i])[0] == '\0')
             {
-                errorcall(call, "all attributes must have names [%d]\n", i);
+                errorcall(call, "all attributes must have names [%d]", i);
             }
             if (!strcmp(CHAR(STRING(names)[i]), "dim"))
                 setAttrib(object, R_DimSymbol, VECTOR(attrs)[i]);
@@ -720,7 +720,7 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
     s = CAR(args);
     t = CADR(args);
     if (!isString(t) || length(t) == 0)
-        error("attribute name must be of mode character\n");
+        error("attribute name must be of mode character");
     return getAttrib(s, install(CHAR(STRING(t)[0])));
 }
 
@@ -737,7 +737,7 @@ SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(name = eval(CADR(args), env));
     if (!isString(name))
-        error("attr<- : name must be of mode character\n");
+        error("attr<- : name must be of mode character");
 
     /* no eval(.), RHS is already evaluated: */
     PROTECT(value = CADDR(args));

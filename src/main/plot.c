@@ -168,7 +168,7 @@ SEXP FixupPch(SEXP pch, int dflt)
             INTEGER(ans)[i] = CHAR(STRING(pch)[i])[0];
     }
     else
-        error("invalid plotting symbol\n");
+        error("invalid plotting symbol");
     for (i = 0; i < n; i++)
     {
         if (INTEGER(ans)[i] < 0)
@@ -258,7 +258,7 @@ SEXP FixupFont(SEXP font, int dflt)
         }
     }
     else
-        error("invalid font specification\n");
+        error("invalid font specification");
     return ans;
 }
 
@@ -397,22 +397,22 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd = CurrentDevice();
 
     if (length(args) < 3)
-        errorcall(call, "at least 3 arguments required\n");
+        errorcall(call, "at least 3 arguments required");
 
     xlim = CAR(args);
     if (!isNumeric(xlim) || LENGTH(xlim) != 2)
-        errorcall(call, "invalid xlim\n");
+        errorcall(call, "invalid xlim");
     args = CDR(args);
 
     ylim = CAR(args);
     if (!isNumeric(ylim) || LENGTH(ylim) != 2)
-        errorcall(call, "invalid ylim\n");
+        errorcall(call, "invalid ylim");
     args = CDR(args);
 
     logscale = 0;
     log = CAR(args);
     if (!isString(log))
-        errorcall(call, "\"log=\" specification must be character\n");
+        errorcall(call, "\"log=\" specification must be character");
     p = CHAR(STRING(log)[0]);
     while (*p)
     {
@@ -427,7 +427,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
             logscale = 1;
             break;
         default:
-            errorcall(call, "invalid \"log=%s\" specification\n", *p);
+            errorcall(call, "invalid \"log=%s\" specification", *p);
         }
         p++;
     }
@@ -444,33 +444,33 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     if (isInteger(xlim))
     {
         if (INTEGER(xlim)[0] == NA_INTEGER || INTEGER(xlim)[1] == NA_INTEGER)
-            errorcall(call, "NAs not allowed in xlim\n");
+            errorcall(call, "NAs not allowed in xlim");
         xmin = INTEGER(xlim)[0];
         xmax = INTEGER(xlim)[1];
     }
     else
     {
         if (!R_FINITE(REAL(xlim)[0]) || !R_FINITE(REAL(xlim)[1]))
-            errorcall(call, "need finite xlim values\n");
+            errorcall(call, "need finite xlim values");
         xmin = REAL(xlim)[0];
         xmax = REAL(xlim)[1];
     }
     if (isInteger(ylim))
     {
         if (INTEGER(ylim)[0] == NA_INTEGER || INTEGER(ylim)[1] == NA_INTEGER)
-            errorcall(call, "NAs not allowed in ylim\n");
+            errorcall(call, "NAs not allowed in ylim");
         ymin = INTEGER(ylim)[0];
         ymax = INTEGER(ylim)[1];
     }
     else
     {
         if (!R_FINITE(REAL(ylim)[0]) || !R_FINITE(REAL(ylim)[1]))
-            errorcall(call, "need finite ylim values\n");
+            errorcall(call, "need finite ylim values");
         ymin = REAL(ylim)[0];
         ymax = REAL(ylim)[1];
     }
     if ((dd->dp.xlog && (xmin < 0 || xmax < 0)) || (dd->dp.ylog && (ymin < 0 || ymax < 0)))
-        errorcall(call, "Logarithmic axis must have positive limits\n");
+        errorcall(call, "Logarithmic axis must have positive limits");
 
     if (R_FINITE(asp) && asp > 0)
     {
@@ -589,7 +589,7 @@ static SEXP labelformat(SEXP labels)
         UNPROTECT(1);
         break;
     default:
-        error("invalid type for axis labels\n");
+        error("invalid type for axis labels");
     }
     return ans;
 }
@@ -649,7 +649,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (ne < 1)
                 error("log - axis(), 'at' creation, _LARGE_ range: "
                       "ne = %d <= 0 !!\n"
-                      "\t axp[0:1]=(%g,%g) ==> i = %d;	nint = %d\n",
+                      "\t axp[0:1]=(%g,%g) ==> i = %d;	nint = %d",
                       ne, axp[0], axp[1], i, nint);
             rng = pow(10., (double)ne); /* >= 10 */
             n = 0;
@@ -661,7 +661,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _LARGE_ range: "
                       "illegal {xy}axp or par; nint=%d\n"
-                      "	 axp[0:1]=(%g,%g), usr[0:1]=(%g,%g); i=%d, ni=%d\n",
+                      "	 axp[0:1]=(%g,%g), usr[0:1]=(%g,%g); i=%d, ni=%d",
                       nint, axp[0], axp[1], umin, umax, i, ne);
             at = allocVector(REALSXP, n);
             dn = axp[0];
@@ -690,7 +690,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _MEDIUM_ range: "
                       "illegal {xy}axp or par;\n"
-                      "	 axp[0]= %g, usr[0:1]=(%g,%g)\n",
+                      "	 axp[0]= %g, usr[0:1]=(%g,%g)",
                       axp[0], umin, umax);
 
             at = allocVector(REALSXP, n);
@@ -732,7 +732,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _SMALL_ range: "
                       "illegal {xy}axp or par;\n"
-                      "	 axp[0]= %g, usr[0:1]=(%g,%g)\n",
+                      "	 axp[0]= %g, usr[0:1]=(%g,%g)",
                       axp[0], umin, umax);
             at = allocVector(REALSXP, n);
             dn = axp[0];
@@ -756,7 +756,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             }
             break;
         default:
-            error("log - axis(), 'at' creation: ILLEGAL {xy}axp[3] = %g\n", axp[2]);
+            error("log - axis(), 'at' creation: ILLEGAL {xy}axp[3] = %g", axp[2]);
         }
     }
     return at;
@@ -781,14 +781,14 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     /* initial checks */
 
     if (length(args) < 3)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
     GCheckState(dd);
 
     /* required argument "side" */
 
     side = asInteger(CAR(args));
     if (side < 1 || side > 4)
-        errorcall(call, "invalid axis number\n");
+        errorcall(call, "invalid axis number");
     args = CDR(args);
 
     /* tick-label locations;  these are coerced lower down */
@@ -866,7 +866,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (!isExpression(lab))
             lab = labelformat(lab);
         if (length(at) != length(lab))
-            errorcall(call, "location and label lengths differ\n");
+            errorcall(call, "location and label lengths differ");
     }
     UNPROTECT(2);
     ind = (int *)R_alloc(n, sizeof(int));
@@ -912,7 +912,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     else
-        errorcall(call, "invalid \"side\" value\n");
+        errorcall(call, "invalid \"side\" value");
 
     x = dd->gp.usr[0];
     y = dd->gp.usr[2];
@@ -1154,7 +1154,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Basic Checks */
     GCheckState(dd);
     if (length(args) < 6)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     sx = R_NilValue; /* -Wall */
     sy = R_NilValue; /* -Wall */
@@ -1172,9 +1172,9 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
         internalTypeCheck(call, sy = CADR(sxy), REALSXP);
     }
     else
-        errorcall(call, "invalid plotting structure\n");
+        errorcall(call, "invalid plotting structure");
     if (LENGTH(sx) != LENGTH(sy))
-        error("x and y lengths differ for plot\n");
+        error("x and y lengths differ for plot");
     n = LENGTH(sx);
     args = CDR(args);
 
@@ -1185,7 +1185,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
             type = CHAR(STRING(CAR(args))[0])[0];
         else
-            errorcall(call, "invalid plot type\n");
+            errorcall(call, "invalid plot type");
     }
     args = CDR(args);
 
@@ -1382,27 +1382,27 @@ static void xypoints(SEXP call, SEXP args, int *n)
     int k = 0; /* -Wall */
 
     if (!isNumeric(CAR(args)) || (k = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "first argument invalid\n");
+        errorcall(call, "first argument invalid");
     CAR(args) = coerceVector(CAR(args), REALSXP);
     *n = k;
     args = CDR(args);
 
     if (!isNumeric(CAR(args)) || (k = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "second argument invalid\n");
+        errorcall(call, "second argument invalid");
     CAR(args) = coerceVector(CAR(args), REALSXP);
     if (k > *n)
         *n = k;
     args = CDR(args);
 
     if (!isNumeric(CAR(args)) || (k = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "third argument invalid\n");
+        errorcall(call, "third argument invalid");
     CAR(args) = coerceVector(CAR(args), REALSXP);
     if (k > *n)
         *n = k;
     args = CDR(args);
 
     if (!isNumeric(CAR(args)) || (k = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "fourth argument invalid\n");
+        errorcall(call, "fourth argument invalid");
     CAR(args) = coerceVector(CAR(args), REALSXP);
     if (k > *n)
         *n = k;
@@ -1420,7 +1420,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd = CurrentDevice();
 
     if (length(args) < 4)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
     GCheckState(dd);
 
     xypoints(call, args, &n);
@@ -1499,7 +1499,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd = CurrentDevice();
 
     if (length(args) < 4)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
     GCheckState(dd);
 
     xypoints(call, args, &n);
@@ -1579,7 +1579,7 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd = CurrentDevice();
 
     if (length(args) < 4)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
     GCheckState(dd);
 
     xypoints(call, args, &n);
@@ -1599,15 +1599,15 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 
     hlength = asReal(GetPar("length", args));
     if (!R_FINITE(hlength) || hlength <= 0)
-        errorcall(call, "invalid head length\n");
+        errorcall(call, "invalid head length");
 
     angle = asReal(GetPar("angle", args));
     if (!R_FINITE(angle))
-        errorcall(call, "invalid head angle\n");
+        errorcall(call, "invalid head angle");
 
     code = asInteger(GetPar("code", args));
     if (code == NA_INTEGER || code < 0 || code > 3)
-        errorcall(call, "invalid arrow head specification\n");
+        errorcall(call, "invalid arrow head specification");
 
     PROTECT(col = FixupCol(GetPar("col", args), NA_INTEGER));
     ncol = LENGTH(col);
@@ -1681,15 +1681,15 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
 
     if (length(args) < 2)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     if (!isNumeric(CAR(args)) || (nx = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "first argument invalid\n");
+        errorcall(call, "first argument invalid");
     sx = CAR(args) = coerceVector(CAR(args), REALSXP);
     args = CDR(args);
 
     if (!isNumeric(CAR(args)) || (ny = LENGTH(CAR(args))) <= 0)
-        errorcall(call, "second argument invalid\n");
+        errorcall(call, "second argument invalid");
     sy = CAR(args) = coerceVector(CAR(args), REALSXP);
     args = CDR(args);
 
@@ -1786,7 +1786,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
 
     if (length(args) < 3)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     sx = R_NilValue; /* -Wall */
     sy = R_NilValue; /* -Wall */
@@ -1803,15 +1803,15 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
         internalTypeCheck(call, sy = CADR(sxy), REALSXP);
     }
     else
-        errorcall(call, "invalid plotting structure\n");
+        errorcall(call, "invalid plotting structure");
     if (LENGTH(sx) != LENGTH(sy))
-        error("x and y lengths differ for plot\n");
+        error("x and y lengths differ for plot");
     n = LENGTH(sx);
     args = CDR(args);
 
     txt = CAR(args);
     if (isNull(txt) || LENGTH(txt) <= 0)
-        errorcall(call, "zero length \"text\" specified\n");
+        errorcall(call, "zero length \"text\" specified");
     args = CDR(args);
 
     PROTECT(adj = CAR(args));
@@ -1834,13 +1834,13 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     else
-        errorcall(call, "invalid adj value\n");
+        errorcall(call, "invalid adj value");
     args = CDR(args);
 
     PROTECT(pos = coerceVector(CAR(args), INTSXP));
     for (i = 0; i < length(pos); i++)
         if (INTEGER(pos)[i] < 1 || INTEGER(pos)[i] > 4)
-            errorcall(call, "invalid pos value\n");
+            errorcall(call, "invalid pos value");
     args = CDR(args);
 
     offset = GConvertXUnits(asReal(CAR(args)), CHARS, INCHES, dd);
@@ -2025,21 +2025,21 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
 
     if (length(args) < 9)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     /* Arg1 : text= */
     /* This has been coerced with char.or.expr() */
     text = CAR(args);
     n = ntext = length(text);
     if (ntext <= 0)
-        errorcall(call, "zero length \"text\" specified\n");
+        errorcall(call, "zero length \"text\" specified");
     args = CDR(args);
 
     /* Arg2 : side= */
     PROTECT(side = coerceVector(CAR(args), INTSXP));
     nside = length(side);
     if (nside <= 0)
-        errorcall(call, "zero length \"side\" specified\n");
+        errorcall(call, "zero length \"side\" specified");
     if (n < nside)
         n = nside;
     args = CDR(args);
@@ -2048,7 +2048,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(line = coerceVector(CAR(args), REALSXP));
     nline = length(line);
     if (nline <= 0)
-        errorcall(call, "zero length \"line\" specified\n");
+        errorcall(call, "zero length \"line\" specified");
     if (n < nline)
         n = nline;
     args = CDR(args);
@@ -2058,7 +2058,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(outer = coerceVector(CAR(args), INTSXP));
     nouter = length(outer);
     if (nouter <= 0)
-        errorcall(call, "zero length \"outer\" specified\n");
+        errorcall(call, "zero length \"outer\" specified");
     if (n < nouter)
         n = nouter;
     args = CDR(args);
@@ -2067,7 +2067,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(at = coerceVector(CAR(args), REALSXP));
     nat = length(at);
     if (nat <= 0)
-        errorcall(call, "zero length \"at\" specified\n");
+        errorcall(call, "zero length \"at\" specified");
     if (n < nat)
         n = nat;
     args = CDR(args);
@@ -2076,7 +2076,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(adj = coerceVector(CAR(args), REALSXP));
     nadj = length(adj);
     if (nadj <= 0)
-        errorcall(call, "zero length \"adj\" specified\n");
+        errorcall(call, "zero length \"adj\" specified");
     if (n < nadj)
         n = nadj;
     args = CDR(args);
@@ -2085,7 +2085,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(cex = FixupCex(CAR(args), 1.0));
     ncex = length(cex);
     if (ncex <= 0)
-        errorcall(call, "zero length \"cex\" specified\n");
+        errorcall(call, "zero length \"cex\" specified");
     if (n < ncex)
         n = ncex;
     args = CDR(args);
@@ -2094,7 +2094,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     ncol = length(col);
     if (ncol <= 0)
-        errorcall(call, "zero length \"col\" specified\n");
+        errorcall(call, "zero length \"col\" specified");
     if (n < ncol)
         n = ncol;
     args = CDR(args);
@@ -2103,7 +2103,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(font = FixupFont(CAR(args), NA_INTEGER));
     nfont = length(font);
     if (nfont <= 0)
-        errorcall(call, "zero length \"font\" specified\n");
+        errorcall(call, "zero length \"font\" specified");
     if (n < nfont)
         n = nfont;
     args = CDR(args);
@@ -2192,7 +2192,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
 
     if (length(args) < 4)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     Main = sub = xlab = ylab = R_NilValue;
 
@@ -2305,7 +2305,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
 
     if (length(args) < 5)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     if ((a = CAR(args)) != R_NilValue)
         CAR(args) = a = coerceVector(a, REALSXP);
@@ -2344,7 +2344,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         if (b == R_NilValue)
         {
             if (LENGTH(a) != 2)
-                errorcall(call, "invalid a=, b= specification\n");
+                errorcall(call, "invalid a=, b= specification");
             aa = REAL(a)[0];
             bb = REAL(a)[1];
         }
@@ -2354,7 +2354,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             bb = asReal(b);
         }
         if (!R_FINITE(aa) || !R_FINITE(bb))
-            errorcall(call, "\"a\" and \"b\" must be finite\n");
+            errorcall(call, "\"a\" and \"b\" must be finite");
         dd->gp.col = INTEGER(col)[0];
         dd->gp.lwd = REAL(lwd)[0];
         if (nlty && INTEGER(lty)[0] != NA_INTEGER)
@@ -2461,7 +2461,7 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     which = asInteger(CAR(args));
     args = CDR(args);
     if (which < 1 || which > 4)
-        errorcall(call, "invalid \"which\" specification\n");
+        errorcall(call, "invalid \"which\" specification");
     col = dd->gp.col;
     dd->gp.col = NA_INTEGER;
     fg = dd->gp.col;
@@ -2499,12 +2499,12 @@ SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     n = asInteger(CAR(args));
     if (n <= 0 || n == NA_INTEGER)
-        error("invalid number of points in locator\n");
+        error("invalid number of points in locator");
     args = CDR(args);
     if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
         type = CHAR(STRING(CAR(args))[0])[0];
     else
-        errorcall(call, "invalid plot type\n");
+        errorcall(call, "invalid plot type");
     PROTECT(x = allocVector(REALSXP, n));
     PROTECT(y = allocVector(REALSXP, n));
     PROTECT(nobs = allocVector(INTSXP, 1));
@@ -2578,11 +2578,11 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     Offset = CAR(args);
     if (npts <= 0 || npts == NA_INTEGER)
-        error("invalid number of points in identify\n");
+        error("invalid number of points in identify");
     if (!isReal(x) || !isReal(y) || !isString(l) || !isReal(Offset))
-        errorcall(call, "incorrect argument type\n");
+        errorcall(call, "incorrect argument type");
     if (LENGTH(x) != LENGTH(y) || LENGTH(x) != LENGTH(l))
-        errorcall(call, "different argument lengths\n");
+        errorcall(call, "different argument lengths");
     n = LENGTH(x);
     if (n <= 0)
     {
@@ -2809,17 +2809,17 @@ SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     str = CAR(args);
     if ((TYPEOF(str) != STRSXP) && (TYPEOF(str) != EXPRSXP))
-        errorcall(call, "character or expression first argument expected\n");
+        errorcall(call, "character or expression first argument expected");
     args = CDR(args);
 
     if ((units = asInteger(CAR(args))) == NA_INTEGER || units < 0)
-        errorcall(call, "invalid units\n");
+        errorcall(call, "invalid units");
     args = CDR(args);
 
     if (isNull(CAR(args)))
         cex = dd->gp.cex;
     else if (!R_FINITE(cex = asReal(CAR(args))) || cex <= 0.0)
-        errorcall(call, "invalid cex value\n");
+        errorcall(call, "invalid cex value");
 
     n = LENGTH(str);
     PROTECT(ans = allocVector(REALSXP, n));
@@ -2848,17 +2848,17 @@ SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
 
     str = CAR(args);
     if ((TYPEOF(str) != STRSXP) && (TYPEOF(str) != EXPRSXP))
-        errorcall(call, "character or expression first argument expected\n");
+        errorcall(call, "character or expression first argument expected");
     args = CDR(args);
 
     if ((units = asInteger(CAR(args))) == NA_INTEGER || units < 0)
-        errorcall(call, "invalid units\n");
+        errorcall(call, "invalid units");
     args = CDR(args);
 
     if (isNull(CAR(args)))
         cex = dd->gp.cex;
     else if (!R_FINITE(cex = asReal(CAR(args))) || cex <= 0.0)
-        errorcall(call, "invalid cex value\n");
+        errorcall(call, "invalid cex value");
 
     n = LENGTH(str);
     PROTECT(ans = allocVector(REALSXP, n));
@@ -2936,7 +2936,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
 
     originalArgs = args;
     if (length(args) < 6)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
 
     dnd_n = asInteger(CAR(args));
     if (dnd_n == NA_INTEGER || dnd_n < 2)
@@ -2991,7 +2991,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 
 badargs:
-    error("invalid dendrogram input\n");
+    error("invalid dendrogram input");
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
@@ -3006,7 +3006,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     GCheckState(dd);
     originalArgs = args;
     if (length(args) < 6)
-        errorcall(call, "too few arguments\n");
+        errorcall(call, "too few arguments");
     n = asInteger(CAR(args));
     if (n == NA_INTEGER || n < 2)
         goto badargs;
@@ -3102,7 +3102,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     vmaxset(vmax);
     return R_NilValue;
 badargs:
-    error("invalid dendrogram input\n");
+    error("invalid dendrogram input");
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 

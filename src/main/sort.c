@@ -254,7 +254,7 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (!isVector(CAR(args)))
-        errorcall(call, "only vectors can be sorted\n");
+        errorcall(call, "only vectors can be sorted");
     ans = duplicate(CAR(args));
     sortVector(ans);
     return ans;
@@ -351,7 +351,7 @@ SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (!isVector(CAR(args)))
-        errorcall(call, "only vectors can be sorted\n");
+        errorcall(call, "only vectors can be sorted");
     n = LENGTH(CAR(args));
     CADR(args) = coerceVector(CADR(args), INTSXP);
     l = INTEGER(CADR(args));
@@ -359,9 +359,9 @@ SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < k; i++)
     {
         if (l[i] == NA_INTEGER)
-            errorcall(call, "NA index\n");
+            errorcall(call, "NA index");
         if (l[i] < 1 || l[i] > n)
-            errorcall(call, "index %d outside bounds\n", l[i]);
+            errorcall(call, "index %d outside bounds", l[i]);
     }
     CAR(args) = duplicate(CAR(args));
     for (i = 0; i < k; i++)
@@ -503,9 +503,9 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (ap = args; ap != R_NilValue; ap = CDR(ap))
     {
         if (!isVector(CAR(ap)))
-            errorcall(call, "Argument %d is not a vector\n", ++narg);
+            errorcall(call, "Argument %d is not a vector", ++narg);
         if (LENGTH(CAR(ap)) != n)
-            errorcall(call, "Argument lengths differ\n");
+            errorcall(call, "Argument lengths differ");
     }
     ans = allocVector(INTSXP, n);
     if (n != 0)
@@ -532,7 +532,7 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue;
     x = CAR(args);
     if (!isVector(x))
-        errorcall(call, "Argument is not a vector\n");
+        errorcall(call, "Argument is not a vector");
     n = LENGTH(x);
     PROTECT(index = allocVector(INTSXP, n));
     PROTECT(rank = allocVector(REALSXP, n));

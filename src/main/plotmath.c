@@ -306,7 +306,7 @@ static double TeX(TEXPAR which)
     case xi13: /* big_op_spacing5 */
         return 0.15 * XHeight();
     default: /* never happens (enum type) */
-        error("invalid `which' in TeX()!\n");
+        error("invalid `which' in TeX()!");
         return 0; /*-Wall*/
     }
 }
@@ -356,7 +356,7 @@ static void SetStyle(STYLE newstyle)
         MathDevice->gp.cex = 0.5 * BaseCex;
         break;
     default:
-        error("invalid math style encountered\n");
+        error("invalid math style encountered");
     }
     CurrentStyle = newstyle;
 }
@@ -1221,7 +1221,7 @@ static BBOX RenderSpace(SEXP expr, int draw)
         return opBBox;
     }
     else
-        error("invalid mathematical annotation\n");
+        error("invalid mathematical annotation");
 
     return NullBBox(); /* -Wall */
 }
@@ -1350,7 +1350,7 @@ static BBOX RenderBin(SEXP expr, int draw)
         return CombineBBoxes(bbox, RenderElement(CADR(expr), draw));
     }
     else
-        error("invalid mathematical annotation\n");
+        error("invalid mathematical annotation");
 
     return NullBBox(); /* -Wall */
 }
@@ -1636,7 +1636,7 @@ static int AccentAtom(SEXP expr)
 
 static void InvalidAccent(SEXP expr)
 {
-    errorcall(expr, "invalid accent\n");
+    errorcall(expr, "invalid accent");
 }
 
 static BBOX RenderAccent(SEXP expr, int draw)
@@ -1847,7 +1847,7 @@ static int DelimCode(SEXP expr, SEXP head)
             code = '.';
     }
     if (code == 0)
-        errorcall(expr, "invalid group delimiter\n");
+        errorcall(expr, "invalid group delimiter");
     return code;
 }
 
@@ -1872,7 +1872,7 @@ static BBOX RenderGroup(SEXP expr, int draw)
     BBOX bbox;
     int code;
     if (length(expr) != 4)
-        errorcall(expr, "invalid group specification\n");
+        errorcall(expr, "invalid group specification");
     bbox = NullBBox();
     code = DelimCode(expr, CADR(expr));
     MathDevice->gp.cex = DelimSymbolMag * MathDevice->gp.cex;
@@ -1965,7 +1965,7 @@ static BBOX RenderDelim(int which, double dist, int draw)
         mid = 253;
         break;
     default:
-        error("group is incomplete\n");
+        error("group is incomplete");
         return ansBBox; /*never reached*/
     }
     topBBox = GlyphBBox(top);
@@ -2042,7 +2042,7 @@ static BBOX RenderBGroup(SEXP expr, int draw)
     double extra = 0.2 * xHeight();
     int delim1, delim2;
     if (length(expr) != 4)
-        errorcall(expr, "invalid group specification\n");
+        errorcall(expr, "invalid group specification");
     bbox = NullBBox();
     delim1 = DelimCode(expr, CADR(expr));
     delim2 = DelimCode(expr, CADDDR(expr));
@@ -2512,7 +2512,7 @@ static BBOX RenderRel(SEXP expr, int draw)
         return CombineBBoxes(bbox, RenderElement(CADDR(expr), draw));
     }
     else
-        error("invalid mathematical annotation\n");
+        error("invalid mathematical annotation");
 
     return NullBBox(); /* -Wall */
 }

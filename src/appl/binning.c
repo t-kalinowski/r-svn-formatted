@@ -62,7 +62,7 @@ void bincode(double *x, int *pn, double *breaks, int *pnb, int *code, int *right
             }
         }
         else if (!*naok)
-            error("NA's in .C(\"bincode\",... NAOK=FALSE)\n");
+            error("NA's in .C(\"bincode\",... NAOK=FALSE)");
 }
 
 /* bincount is called by  hist(.)  [only]
@@ -101,7 +101,7 @@ void bincount(double *x, int *pn, double *breaks, int *pnb, int *count, int *rig
             }
         }
         else if (!*naok)
-            error("NA's in .C(\"bincount\",... NAOK=FALSE)\n");
+            error("NA's in .C(\"bincount\",... NAOK=FALSE)");
 }
 
 /*-- UNUSED, but still in  ./ROUTINES --- eliminate both at once ! */
@@ -136,5 +136,5 @@ void bincode2(double *x, int *pn, double *breaks, int *pnb, int *code, int *incl
             }
         }
         else if (!*naok)
-            error("NA's in .C(\"bincode2\",... NAOK=FALSE)\n");
+            error("NA's in .C(\"bincode2\",... NAOK=FALSE)");
 }

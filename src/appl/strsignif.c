@@ -82,7 +82,7 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
     */
 
     if (wid == 0)
-        error("Width cannot be zero\n");
+        error("Width cannot be zero");
 
     if (strcmp("d", *format) == 0)
     {
@@ -98,7 +98,7 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
             for (i = 0; i < nn; i++)
                 sprintf(result[i], form, wid, (int)((long *)x)[i]);
         else
-            error("`type' must be \"integer\" for  \"d\"-format\n");
+            error("`type' must be \"integer\" for  \"d\"-format");
     }
     else
     { /* --- floating point --- */
@@ -174,6 +174,6 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
                     sprintf(result[i], form, wid, dig, ((double *)x)[i]);
         }
         else
-            error("`type' must be \"real\" for this format\n");
+            error("`type' must be \"real\" for this format");
     }
 }

@@ -133,7 +133,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
 
     cptr = R_GlobalContext;
     if (cptr->callflag != CTXT_RETURN || cptr->cloenv != rho)
-        error("UseMethod used in an inappropriate fashion\n");
+        error("UseMethod used in an inappropriate fashion");
 
     /* Create a new environment without any */
     /* of the formals to the generic in it. */
@@ -230,7 +230,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     nargs = length(args);
 
     if (nargs < 0)
-        errorcall(call, "corrupt internals!\n");
+        errorcall(call, "corrupt internals!");
 
     if (nargs)
         PROTECT(meth = eval(CAR(args), env));
@@ -249,14 +249,14 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
             cptr = cptr->nextcontext;
         }
         if (cptr == NULL)
-            error("UseMethod called from outside a closure\n");
+            error("UseMethod called from outside a closure");
         if (meth == R_MissingArg)
             PROTECT(meth = mkString(CHAR(PRINTNAME(CAR(cptr->call)))));
         PROTECT(obj = GetObject(cptr));
     }
 
     if (TYPEOF(meth) != STRSXP || LENGTH(meth) < 1 || strlen(CHAR(STRING(meth)[0])) == 0)
-        errorcall(call, "first argument must be a method name\n");
+        errorcall(call, "first argument must be a method name");
 
     strcpy(buf, CHAR(STRING(meth)[0]));
 
@@ -268,7 +268,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(1);
     }
     else
-        error("no applicable method for \"%s\"\n", buf);
+        error("no applicable method for \"%s\"", buf);
     return R_NilValue; /* NOT Used */
 }
 
@@ -332,14 +332,14 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         cptr = cptr->nextcontext;
     }
     if (cptr == NULL)
-        error("NextMethod called from outside a closure\n");
+        error("NextMethod called from outside a closure");
 
     PROTECT(newcall = duplicate(cptr->call));
 
     /* set up the arglist */
     s = findFun(CAR(cptr->call), cptr->sysparent);
     if (TYPEOF(s) != CLOSXP)
-        errorcall(cptr->call, "function is not a closure\n");
+        errorcall(cptr->call, "function is not a closure");
 
     /* get formals and actuals; attach the names of the formals to
        the actuals, expanding any ... that occurs */
@@ -433,7 +433,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     else
-        errorcall(call, "wrong argument ...\n");
+        errorcall(call, "wrong argument ...");
 
     /*
       .Class is used to determine the next method; if it doesn't
@@ -448,7 +448,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         s = GetObject(cptr);
         if (!isObject(s))
-            errorcall(call, "object not specified\n");
+            errorcall(call, "object not specified");
         class = getAttrib(s, R_ClassSymbol);
     }
 
@@ -462,9 +462,9 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(generic);
 
     if (!isString(generic) || length(generic) > 1)
-        errorcall(call, "invalid generic argument to NextMethod\n");
+        errorcall(call, "invalid generic argument to NextMethod");
     if (strlen(CHAR(STRING(generic)[0])) == 0)
-        errorcall(call, "generic function not specified\n");
+        errorcall(call, "generic function not specified");
 
     group = dynamicfindVar(install(".Group"), R_GlobalContext);
     PROTECT(realgroup = duplicate(group));
@@ -475,7 +475,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(realgroup = mkString(""));
     }
     if (!isString(group) || length(group) > 1)
-        errorcall(call, "invalid group argument found in NextMethod\n");
+        errorcall(call, "invalid group argument found in NextMethod");
     if (strlen(CHAR(STRING(group)[0])) == 0)
         group = generic;
 
@@ -516,13 +516,13 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             t = install(CHAR(STRING(generic)[0]));
             nextfun = findVar(t, env);
             if (!isFunction(nextfun))
-                error("No method to invoke\n");
+                error("No method to invoke");
             if (TYPEOF(nextfun) == CLOSXP)
             {
                 if (INTERNAL(t) != R_NilValue)
                     nextfun = INTERNAL(t);
                 else
-                    error("No method to invoke\n");
+                    error("No method to invoke");
             }
         }
     }

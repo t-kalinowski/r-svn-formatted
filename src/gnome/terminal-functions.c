@@ -104,7 +104,7 @@ static void file_open_ok(GtkWidget *widget, gpointer data)
 
     if (!fp)
     {
-        error("can't restore environment -- unable to open %s for reading\n",
+        error("can't restore environment -- unable to open %s for reading",
               gtk_file_selection_get_filename(GTK_FILE_SELECTION(data)));
         return;
     }
@@ -179,7 +179,7 @@ static void file_saveas_ok(GtkWidget *widget, gpointer data)
 
     if (!fp)
     {
-        error("can't save environment -- unable to open %s for writing\n",
+        error("can't save environment -- unable to open %s for writing",
               gtk_file_selection_get_filename(GTK_FILE_SELECTION(data)));
         return;
     }

@@ -146,14 +146,14 @@ void findcontext(int mask, SEXP env, SEXP val)
         if (cptr->callflag & CTXT_LOOP)
             jumpfun(cptr, mask, val);
         else
-            error("No loop to break from, jumping to top level\n");
+            error("No loop to break from, jumping to top level");
     }
     else
     { /* return; or browser */
         for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
             if ((cptr->callflag & mask) && cptr->cloenv == env)
                 jumpfun(cptr, mask, val);
-        error("No function to return from, jumping to top level\n");
+        error("No function to return from, jumping to top level");
     }
 }
 
@@ -174,7 +174,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
         n = -n;
 
     if (n < 0)
-        errorcall(R_GlobalContext->call, "not that many enclosing environments\n");
+        errorcall(R_GlobalContext->call, "not that many enclosing environments");
 
     while (cptr->nextcontext != NULL)
     {
@@ -192,7 +192,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
     if (n == 0 && cptr->nextcontext == NULL)
         return R_GlobalEnv;
     else
-        error("sys.frame: not that many enclosing functions\n");
+        error("sys.frame: not that many enclosing functions");
     return R_NilValue; /* just for -Wall */
 }
 
@@ -207,7 +207,7 @@ int R_sysparent(int n, RCNTXT *cptr)
     int j;
     SEXP s;
     if (n <= 0)
-        errorcall(R_ToplevelContext->call, "only positive arguments are allowed\n");
+        errorcall(R_ToplevelContext->call, "only positive arguments are allowed");
     while (cptr->nextcontext != NULL && n > 1)
     {
         if (cptr->callflag == CTXT_RETURN)
@@ -235,7 +235,7 @@ int R_sysparent(int n, RCNTXT *cptr)
     if (n == 0)
         n = 1;
     if (n < 0)
-        error("sys.parent: not that many enclosing functions\n");
+        error("sys.parent: not that many enclosing functions");
     return n;
 }
 
@@ -260,7 +260,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     else
         n = -n;
     if (n < 0)
-        errorcall(R_GlobalContext->call, "illegal frame number\n");
+        errorcall(R_GlobalContext->call, "illegal frame number");
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag == CTXT_RETURN)
@@ -274,7 +274,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     }
     if (n == 0 && cptr->nextcontext == NULL)
         return (duplicate(cptr->call));
-    errorcall(R_GlobalContext->call, "not that many enclosing functions\n");
+    errorcall(R_GlobalContext->call, "not that many enclosing functions");
     return R_NilValue; /* just for -Wall */
 }
 
@@ -286,7 +286,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     else
         n = -n;
     if (n < 0)
-        errorcall(R_GlobalContext->call, "illegal frame number\n");
+        errorcall(R_GlobalContext->call, "illegal frame number");
     while (cptr->nextcontext != NULL)
     {
         if (cptr->callflag == CTXT_RETURN)
@@ -309,7 +309,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     }
     if (n == 0 && cptr->nextcontext == NULL)
         return (findVar(CAR(cptr->call), cptr->sysparent));
-    errorcall(R_GlobalContext->call, "not that many enclosing functions\n");
+    errorcall(R_GlobalContext->call, "not that many enclosing functions");
     return R_NilValue; /* just for -Wall */
 }
 
@@ -332,7 +332,7 @@ SEXP do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     if (cptr == R_ToplevelContext)
-        errorcall(call, "no function to restart\n");
+        errorcall(call, "no function to restart");
     return (R_NilValue);
 }
 
@@ -367,7 +367,7 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         n = -1;
 
     if (n == NA_INTEGER)
-        errorcall(call, "invalid number of environment levels\n");
+        errorcall(call, "invalid number of environment levels");
     switch (PRIMVAL(op))
     {
     case 1: /* parent */
@@ -412,7 +412,7 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     case 9: /* sys.function */
         return (R_sysfunction(n, cptr));
     default:
-        error("internal error in do_sys\n");
+        error("internal error in do_sys");
         return R_NilValue; /* just for -Wall */
     }
 }

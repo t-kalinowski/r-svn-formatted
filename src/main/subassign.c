@@ -84,7 +84,7 @@ static SEXP EnlargeVector(SEXP x, int newlen)
     if (LOGICAL(GetOption(install("check.bounds"), R_NilValue))[0])
         warning("assignment outside vector/list limits");
     if (!isVector(x))
-        error("attempt to enlarge non-vector\n");
+        error("attempt to enlarge non-vector");
 
     /* Enlarge the vector itself. */
     len = length(x);
@@ -252,7 +252,7 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
         break;
 
     default:
-        errorcall(gcall, "incompatible types\n");
+        errorcall(gcall, "incompatible types");
     }
 
     if (stretch)
@@ -352,7 +352,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     if ((TYPEOF(x) != VECSXP && TYPEOF(x) != EXPRSXP) || y != R_NilValue)
     {
         if (n > 0 && ny == 0)
-            errorcall(call, "nothing to replace with\n");
+            errorcall(call, "nothing to replace with");
         if (n > 0 && n % ny)
             warning("number of items to replace is not a multiple of replacement length");
     }
@@ -607,7 +607,7 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     SEXP sr, sc;
 
     if (!isMatrix(x))
-        error("incorrect number of subscripts on matrix\n");
+        error("incorrect number of subscripts on matrix");
 
     nr = nrows(x);
     ny = LENGTH(y);
@@ -624,13 +624,13 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
     /* <TSL> 21Oct97
        if (length(y) == 0)
-       error("Replacement length is zero\n");
+       error("Replacement length is zero");
        </TSL>  */
 
     if (n > 0 && ny == 0)
-        errorcall(call, "nothing to replace with\n");
+        errorcall(call, "nothing to replace with");
     if (n > 0 && n % ny)
-        errorcall(call, "number of items to replace is not a multiple of replacement length\n");
+        errorcall(call, "number of items to replace is not a multiple of replacement length");
 
     which = 100 * TYPEOF(x) + TYPEOF(y);
 
@@ -845,7 +845,7 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         }
         break;
     default:
-        error("incompatible types in subset assignment\n");
+        error("incompatible types in subset assignment");
     }
     UNPROTECT(2);
     return x;
@@ -861,7 +861,7 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
     PROTECT(dims = getAttrib(x, R_DimSymbol));
     if (dims == R_NilValue || (k = LENGTH(dims)) != length(s))
-        error("incorrect number of subscripts\n");
+        error("incorrect number of subscripts");
 
     subs = (int **)R_alloc(k, sizeof(int *));
     index = (int *)R_alloc(k, sizeof(int));
@@ -892,9 +892,9 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     }
 
     if (n > 0 && ny == 0)
-        errorcall(call, "nothing to replace with\n");
+        errorcall(call, "nothing to replace with");
     if (n > 0 && n % ny)
-        errorcall(call, "number of items to replace is not a multiple of replacement length\n");
+        errorcall(call, "number of items to replace is not a multiple of replacement length");
 
     offset[0] = 1;
     for (i = 1; i < k; i++)
@@ -1042,7 +1042,7 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     int i, ii, n, nx, ny, stretch = 1;
 
     if (length(s) > 1)
-        error("invalid number of subscripts to list assign\n");
+        error("invalid number of subscripts to list assign");
 
     PROTECT(index = makeSubscript(x, CAR(s), &stretch));
     n = length(index);
@@ -1071,9 +1071,9 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     nx = length(x);
 
     if (n > 0 && ny == 0)
-        errorcall(call, "nothing to replace with\n");
+        errorcall(call, "nothing to replace with");
     if (n > 0 && n % ny)
-        errorcall(call, "no of items to replace is not a multiple of replacement length\n");
+        errorcall(call, "no of items to replace is not a multiple of replacement length");
 
     if (stretch)
     {
@@ -1167,7 +1167,7 @@ SEXP listAssign1(SEXP call, SEXP x, SEXP subs, SEXP y)
     default:
         dims = getAttrib(x, R_DimSymbol);
         if (dims == R_NilValue || LENGTH(dims) != length(subs))
-            error("incorrect number of subscripts\n");
+            error("incorrect number of subscripts");
 
         PROTECT(ax = allocArray(STRSXP, dims));
         for (px = x, i = 0; px != R_NilValue; px = CDR(px))
@@ -1235,7 +1235,7 @@ static SEXP EvalSubassignArgs(SEXP el, SEXP rho)
                 }
             }
             else if (h != R_MissingArg)
-                error("... used in an incorrect context\n");
+                error("... used in an incorrect context");
         }
         else if (CAR(el) == R_MissingArg)
         {
@@ -1365,7 +1365,7 @@ SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        errorcall(call, "object is not subsetable\n");
+        errorcall(call, "object is not subsetable");
         break;
     }
 
@@ -1474,7 +1474,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isVector(x))
     {
         if (!isVectorList(x) && LENGTH(y) > 1)
-            error("more elements supplied than there are to replace\n");
+            error("more elements supplied than there are to replace");
         if (nsubs == 1)
         {
             offset = OneIndex(x, CAR(subs), length(x), 0, &newname);
@@ -1485,14 +1485,14 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
                 return x;
             }
             if (offset < 0)
-                error("[[]] subscript out of bounds\n");
+                error("[[]] subscript out of bounds");
             if (offset >= LENGTH(x))
                 stretch = offset + 1;
         }
         else
         {
             if (ndims != nsubs)
-                error("[[]] improper number of subscripts\n");
+                error("[[]] improper number of subscripts");
             PROTECT(index = allocVector(INTSXP, ndims));
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
@@ -1501,7 +1501,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
                 [i] = get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR(names)[i], INTEGER(dims)[i], 0);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
-                    error("[[]] subscript out of bounds\n");
+                    error("[[]] subscript out of bounds");
             }
             offset = 0;
             for (i = (ndims - 1); i > 0; i--)
@@ -1624,7 +1624,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             break;
 
         default:
-            error("incompatible types in subset assignment\n");
+            error("incompatible types in subset assignment");
         }
         /* If we stretched, we may have a new name. */
         /* In this case we must create a names attribute */
@@ -1666,7 +1666,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (ndims != nsubs)
-                error("[[]] improper number of subscripts\n");
+                error("[[]] improper number of subscripts");
             PROTECT(index = allocVector(INTSXP, ndims));
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
@@ -1674,7 +1674,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
                 INTEGER(index)[i] = get1index(CAR(subs), CAR(names), INTEGER(dims)[i], 0);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
-                    error("[[]] subscript out of bounds\n");
+                    error("[[]] subscript out of bounds");
             }
             offset = 0;
             for (i = (ndims - 1); i > 0; i--)
@@ -1686,7 +1686,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     else
-        errorcall(gcall, "object is not subsetable\n");
+        errorcall(gcall, "object is not subsetable");
 
     UNPROTECT(1);
     NAMED(x) = 0;

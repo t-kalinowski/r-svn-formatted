@@ -393,7 +393,7 @@ static void XdrOutInteger(FILE *fp, int i)
     if (!xdr_int(&xdrs, &i))
     {
         xdr_destroy(&xdrs);
-        error("a I write error occured\n");
+        error("a I write error occured");
     }
 }
 
@@ -403,7 +403,7 @@ static int XdrInInteger(FILE *fp)
     if (!xdr_int(&xdrs, &i))
     {
         xdr_destroy(&xdrs);
-        error("a read error occured\n");
+        error("a Iread error occured");
     }
     return i;
 }
@@ -413,7 +413,7 @@ static void XdrOutReal(FILE *fp, double x)
     if (!xdr_double(&xdrs, &x))
     {
         xdr_destroy(&xdrs);
-        error("a R write error occured\n");
+        error("a R write error occured");
     }
 }
 
@@ -423,7 +423,7 @@ static double XdrInReal(FILE *fp)
     if (!xdr_double(&xdrs, &x))
     {
         xdr_destroy(&xdrs);
-        error("a read error occured\n");
+        error("a R read error occured");
     }
     return x;
 }
@@ -433,7 +433,7 @@ static void XdrOutComplex(FILE *fp, complex x)
     if (!xdr_double(&xdrs, &(x.r)) || !xdr_double(&xdrs, &(x.i)))
     {
         xdr_destroy(&xdrs);
-        error("a write error occured\n");
+        error("a C write error occured");
     }
 }
 
@@ -443,7 +443,7 @@ static complex XdrInComplex(FILE *fp)
     if (!xdr_double(&xdrs, &(x.r)) || !xdr_double(&xdrs, &(x.i)))
     {
         xdr_destroy(&xdrs);
-        error("a read error occured\n");
+        error("a C read error occured");
     }
     return x;
 }
@@ -453,7 +453,7 @@ static void XdrOutString(FILE *fp, char *s)
     if (!xdr_string(&xdrs, &s, strlen(s)))
     {
         xdr_destroy(&xdrs);
-        error("a S write error occured\n");
+        error("a S write error occured");
     }
 }
 
@@ -463,7 +463,7 @@ static char *XdrInString(FILE *fp)
     if (!xdr_string(&xdrs, &bufp, bufsize))
     {
         xdr_destroy(&xdrs);
-        error("a read error occured\n");
+        error("a S read error occured");
     }
     return buf;
 }
@@ -518,35 +518,35 @@ static int BinaryInInteger(FILE *fp)
 {
     int i;
     if (fread(&i, sizeof(int), 1, fp) != 1)
-        error("a read error occured\n");
+        error("a read error occured");
     return i;
 }
 
 static void BinaryOutReal(FILE *fp, double x)
 {
     if (fwrite(&x, sizeof(double), 1, fp) != 1)
-        error("a write error occured\n");
+        error("a write error occured");
 }
 
 static double BinaryInReal(FILE *fp)
 {
     double x;
     if (fread(&x, sizeof(double), 1, fp) != 1)
-        error("a read error occured\n");
+        error("a read error occured");
     return x;
 }
 
 static void BinaryOutComplex(FILE *fp, complex x)
 {
     if (fwrite(&x, sizeof(complex), 1, fp) != 1)
-        error("a write error occured\n");
+        error("a write error occured");
 }
 
 static complex BinaryInComplex(FILE *fp)
 {
     complex x;
     if (fread(&x, sizeof(complex), 1, fp) != 1)
-        error("a read error occured\n");
+        error("a read error occured");
     return x;
 }
 
@@ -554,7 +554,7 @@ static void BinaryOutString(FILE *fp, char *s)
 {
     int n = strlen(s) + 1; /* NULL too */
     if (fwrite(s, sizeof(char), n, fp) != n)
-        error("a write error occured\n");
+        error("a write error occured");
 }
 
 static char *BinaryInString(FILE *fp)
@@ -667,11 +667,11 @@ static void ReallocVector(SEXP s, int length)
             size = 1 + PTR2VEC(length);
         break;
     default:
-        error("invalid type in ReallocVector\n");
+        error("invalid type in ReallocVector");
         size = 0;
     }
     if (R_VMax - R_VTop < size)
-        error("restore memory exhausted (should not happen)\n");
+        error("restore memory exhausted (should not happen)");
 
     LENGTH(s) = length;
     if (size > 0)
@@ -688,9 +688,9 @@ static void ReallocString(SEXP s, int length)
 {
     long size = 1 + BYTE2VEC(length + 1);
     if (R_VMax - R_VTop < size)
-        error("restore memory exhausted (should not happen)\n");
+        error("restore memory exhausted (should not happen)");
     if (TYPEOF(s) != CHARSXP)
-        error("ReallocString: type conflict\n");
+        error("ReallocString: type conflict");
     CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
     TAG(s) = R_NilValue;
@@ -808,7 +808,7 @@ static SEXP OffsetToNode(int offset)
     if (offset == OldOffset[m])
         return NewAddress[m];
 
-    error("unresolved node during restore\n");
+    error("unresolved node during restore");
     return R_NilValue; /* for -Wall */
 }
 
@@ -859,7 +859,7 @@ static void DataSave(SEXP s, FILE *fp)
         }
     }
     if (k != NSymbol || n != NSymbol + NSave)
-        error("symbol count conflict\n");
+        error("symbol count conflict");
 
     /* write out the forwarding address table */
 
@@ -881,7 +881,7 @@ static void DataSave(SEXP s, FILE *fp)
         }
     }
     if (k != NSave || n != NSymbol + NSave)
-        error("node count conflict\n");
+        error("node count conflict");
 
     k = 0;
     n = 0;
@@ -991,7 +991,7 @@ static void DataSave(SEXP s, FILE *fp)
         }
     }
     if (k != NSave)
-        error("node count conflict\n");
+        error("node count conflict");
 
     /* write out the offset of the list */
 
@@ -1025,7 +1025,7 @@ static void RestoreSEXP(SEXP s, FILE *fp)
             break;
 
         default:
-            error("restore compatibility error - no version %d compatibility\n", VersionId);
+            error("restore compatibility error - no version %d compatibility", VersionId);
         }
     }
 
@@ -1163,10 +1163,10 @@ static SEXP DataLoad(FILE *fp)
     else
     {
         if ((VECREC *)vmaxget() - R_VTop < NVSize)
-            error("vector heap is too small to restore data\n");
+            error("vector heap is too small to restore data");
 
         if (R_Collected < NSave)
-            error("cons heap is too small to restore data\n");
+            error("cons heap is too small to restore data");
     }
 
     /* build the full forwarding table */
@@ -1241,7 +1241,7 @@ SEXP R_LoadFromFile(FILE *fp, int startup)
         return (AsciiLoadOld(fp, 16));
     default:
         fclose(fp);
-        error("restore file corrupted -- no data loaded\n");
+        error("restore file corrupted -- no data loaded");
         return (R_NilValue); /* for -Wall */
     }
 }
@@ -1257,15 +1257,15 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (TYPEOF(CAR(args)) != STRSXP)
-        errorcall(call, "first argument must be a character vector\n");
+        errorcall(call, "first argument must be a character vector");
     if (TYPEOF(CADR(args)) != STRSXP)
-        errorcall(call, "second argument must be a string\n");
+        errorcall(call, "second argument must be a string");
     if (TYPEOF(CADDR(args)) != LGLSXP)
-        errorcall(call, "third argument must be a logical vector\n");
+        errorcall(call, "third argument must be a logical vector");
 
     fp = R_fopen(R_ExpandFileName(CHAR(STRING(CADR(args))[0])), "wb");
     if (!fp)
-        errorcall(call, "unable to open file\n");
+        errorcall(call, "unable to open file");
 
     len = length(CAR(args));
     PROTECT(s = allocList(len));
@@ -1276,7 +1276,7 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
         TAG(t) = install(CHAR(STRING(CAR(args))[j]));
         CAR(t) = findVar(TAG(t), R_GlobalContext->sysparent);
         if (CAR(t) == R_UnboundValue)
-            error("Object \"%s\" not found\n", CHAR(PRINTNAME(TAG(t))));
+            error("Object \"%s\" not found", CHAR(PRINTNAME(TAG(t))));
     }
 
     R_SaveToFile(s, fp, INTEGER(CADDR(args))[0]);
@@ -1391,19 +1391,19 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (TYPEOF(CAR(args)) != STRSXP)
-        errorcall(call, "first argument must be a string\n");
+        errorcall(call, "first argument must be a string");
 
     /* GRW 1/26/99 GRW : added environment parameter so that */
     /* the loaded objects can be placed where desired  */
 
     aenv = CADR(args);
     if (TYPEOF(aenv) != ENVSXP && aenv != R_NilValue)
-        error("invalid envir argument\n");
+        error("invalid envir argument");
 
     /* Process the saved file to obtain a list of saved objects. */
     fp = R_fopen(R_ExpandFileName(CHAR(STRING(CAR(args))[0])), "rb");
     if (!fp)
-        errorcall(call, "unable to open file\n");
+        errorcall(call, "unable to open file");
     R_LoadSavedData(fp, aenv);
     fclose(fp);
     return R_NilValue;
@@ -2072,10 +2072,10 @@ SEXP do_hdf5save(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (length(args) < 2)
-        errorcall(call, "Two arguments are required: HDF-path and an object)");
+        errorcall(call, "Two arguments are required: HDF-path and an object");
 
     if (TYPEOF(CAR(args)) != STRSXP)
-        errorcall(call, "first argument must be a pathname\n");
+        errorcall(call, "first argument must be a pathname");
 
     path = CHAR(STRING(CAR(args))[0]);
 
@@ -2514,10 +2514,10 @@ SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (TYPEOF(CAR(args)) != STRSXP)
-        errorcall(call, "first argument must be a pathname\n");
+        errorcall(call, "first argument must be a pathname");
 
     if (TYPEOF(CADR(args)) != LGLSXP)
-        errorcall(call, "second argument must be a logical vector\n");
+        errorcall(call, "second argument must be a logical vector");
 
     path = CHAR(STRING(CAR(args))[0]);
     restore_syms = INTEGER(CADR(args))[0];
@@ -2549,12 +2549,12 @@ SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
 SEXP do_hdf5save(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    errorcall(call, "HDF5 support unavailable\n");
+    errorcall(call, "HDF5 support unavailable");
     return (R_NilValue); /* -Wall */
 }
 SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    errorcall(call, "HDF5 support unavailable\n");
+    errorcall(call, "HDF5 support unavailable");
     return (R_NilValue); /* -Wall */
 }
 #endif

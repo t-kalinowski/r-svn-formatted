@@ -34,7 +34,7 @@ SEXP do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     if (TYPEOF(CAR(args)) != CLOSXP)
-        errorcall(call, "argument must be a function\n");
+        errorcall(call, "argument must be a function");
     switch (PRIMVAL(op))
     {
     case 0:
@@ -53,7 +53,7 @@ SEXP do_trace(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (TYPEOF(CAR(args)) != CLOSXP && TYPEOF(CAR(args)) != BUILTINSXP && TYPEOF(CAR(args)) != SPECIALSXP)
-        errorcall(call, "argument must be a function\n");
+        errorcall(call, "argument must be a function");
 
     switch (PRIMVAL(op))
     {

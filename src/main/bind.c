@@ -781,7 +781,7 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isVector(args))
             return args;
         else
-            errorcall(call, "argument not a list\n");
+            errorcall(call, "argument not a list");
     }
 
     /* If a non-vector argument was encountered (perhaps a list if */
@@ -908,7 +908,7 @@ SEXP FetchMethod(char *generic, char *classname, SEXP env)
     char buf[LNAMBUF];
     SEXP method;
     if (strlen(generic) + strlen(classname) + 2 > LNAMBUF)
-        error("class name too long in %s\n", generic);
+        error("class name too long in %s", generic);
     sprintf(buf, "%s.%s", generic, classname);
     method = findVar(install(buf), env);
     if (TYPEOF(method) != CLOSXP)
@@ -1044,7 +1044,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     case STRSXP:
         break;
     default:
-        errorcall(call, "cannot create a matrix from these types\n");
+        errorcall(call, "cannot create a matrix from these types");
     }
 
     if (PRIMVAL(op) == 1)
@@ -1102,7 +1102,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
                 if (mrows == -1)
                     mrows = INTEGER(dims)[0];
                 else if (mrows != INTEGER(dims)[0])
-                    errorcall(call, "number of rows of matrices must match (see arg %d)\n", n + 1);
+                    errorcall(call, "number of rows of matrices must match (see arg %d)", n + 1);
                 cols += INTEGER(dims)[1];
             }
             else if (length(CAR(t)) > 0)
@@ -1312,7 +1312,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 if (mcols == 0)
                     mcols = INTEGER(dims)[1];
                 else if (mcols != INTEGER(dims)[1])
-                    errorcall(call, "number of columns of matrices must match (see arg %d)\n", n + 1);
+                    errorcall(call, "number of columns of matrices must match (see arg %d)", n + 1);
                 rows += INTEGER(dims)[0];
             }
             else if (length(CAR(t)) > 0)

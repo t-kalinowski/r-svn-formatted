@@ -302,7 +302,7 @@ SEXP do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         return binary(op, args);
     default:
-        error("operator with more than two arguments\n");
+        error("operator with more than two arguments");
     }
     return ans; /* never used; to keep -Wall happy */
 }
@@ -323,7 +323,7 @@ static SEXP binary(SEXP op, SEXP args)
 
     if (!(isNumeric(x) || isComplex(x)) || !(isNumeric(y) || isComplex(y)))
     {
-        errorcall(lcall, "non-numeric argument to binary operator\n");
+        errorcall(lcall, "non-numeric argument to binary operator");
         return R_NilValue; /* -Wall */
     }
 
@@ -361,7 +361,7 @@ static SEXP binary(SEXP op, SEXP args)
         if (xarray && yarray)
         {
             if (!conformable(x, y))
-                errorcall(lcall, "non-conformable arrays\n");
+                errorcall(lcall, "non-conformable arrays");
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
         else if (xarray)
@@ -396,7 +396,7 @@ static SEXP binary(SEXP op, SEXP args)
         if (xts && yts)
         {
             if (!tsConform(x, y))
-                errorcall(lcall, "Non-conformable time-series\n");
+                errorcall(lcall, "Non-conformable time-series");
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(class = getAttrib(x, R_ClassSymbol));
         }
@@ -485,7 +485,7 @@ static SEXP unary(SEXP op, SEXP s1)
     case CPLXSXP:
         return complex_unary(PRIMVAL(op), s1);
     default:
-        errorcall(lcall, "Invalid argument to unary operator\n");
+        errorcall(lcall, "Invalid argument to unary operator");
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -509,7 +509,7 @@ static SEXP integer_unary(int code, SEXP s1)
         }
         return ans;
     default:
-        error("illegal unary operator\n");
+        error("illegal unary operator");
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -538,7 +538,7 @@ static SEXP real_unary(int code, SEXP s1)
         }
         return ans;
     default:
-        errorcall(lcall, "illegal unary operator\n");
+        errorcall(lcall, "illegal unary operator");
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -835,7 +835,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #if !defined(HAVE_ASINH) || !defined(HAVE_ACOSH) || !defined(HAVE_ATANH)
 static double unavailable(double x)
 {
-    errorcall(lcall, "function unavailable in this R\n");
+    errorcall(lcall, "function unavailable in this R");
     return 0.; /* to keep -Wall happy */
 }
 #ifndef HAVE_ASINH
@@ -891,7 +891,7 @@ static SEXP math1(SEXP op, SEXP sa, double (*f)())
         return sy;
     }
     else
-        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function");
     return sa; /* never used; to keep -Wall happy */
 }
 
@@ -967,7 +967,7 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return math1(op, CAR(args), gamma_cody);
 
     default:
-        errorcall(call, "unimplemented real function\n");
+        errorcall(call, "unimplemented real function");
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -979,7 +979,7 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
     double ai, bi, *a, *b, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb))
-        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
@@ -1116,7 +1116,7 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return math2(op, CAR(args), CADR(args), bessel_y);
 
     default:
-        errorcall(call, "unimplemented real function\n");
+        errorcall(call, "unimplemented real function");
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -1141,7 +1141,7 @@ SEXP do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             return math2(op, CAR(args), CADR(args), atan2);
     default:
-        error("%d arguments passed to \"atan\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"atan\" which requires 1 or 2", n);
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -1166,7 +1166,7 @@ SEXP do_round(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(b = CADR(args));
         break;
     default:
-        error("%d arguments passed to \"round\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"round\" which requires 1 or 2", n);
     }
     if (isComplex(CAR(args)))
     {
@@ -1199,7 +1199,7 @@ SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             return math2(op, CAR(args), CADR(args), logbase);
     default:
-        error("%d arguments passed to \"log\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"log\" which requires 1 or 2", n);
     }
     return s; /* never used; to keep -Wall happy */
 }
@@ -1224,7 +1224,7 @@ SEXP do_signif(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(b = CADR(args));
         break;
     default:
-        error("%d arguments passed to \"signif\" which requires 1 or 2\n", n);
+        error("%d arguments passed to \"signif\" which requires 1 or 2", n);
     }
     if (isComplex(CAR(args)))
     {
@@ -1248,7 +1248,7 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     double ai, bi, ci, *a, *b, *c, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc))
-        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
@@ -1447,7 +1447,7 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3(op, args, bessel_k);
 
     default:
-        errorcall(call, "unimplemented real function\n");
+        errorcall(call, "unimplemented real function");
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math3() */
@@ -1463,7 +1463,7 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     double ai, bi, ci, di, *a, *b, *c, *d, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd))
-        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
@@ -1595,7 +1595,7 @@ SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
     case 12:
         return Math4(op, args, qtukey);
     default:
-        errorcall(call, "unimplemented real function\n");
+        errorcall(call, "unimplemented real function");
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -1614,7 +1614,7 @@ static SEXP math5(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (
     double ai, bi, ci, di, ei, *a, *b, *c, *d, *e, *y;
 
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd) || !isNumeric(se))
-        errorcall(lcall, "Non-numeric argument to mathematical function\n");
+        errorcall(lcall, "Non-numeric argument to mathematical function");
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
@@ -1757,7 +1757,7 @@ SEXP do_math5(SEXP call, SEXP op, SEXP args, SEXP env)
     case 12:
         return Math5(op, args, qtukey);
     default:
-        errorcall(call, "unimplemented real function\n");
+        errorcall(call, "unimplemented real function");
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math5() */

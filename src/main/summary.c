@@ -441,7 +441,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
 
     default:
-        errorcall(call, "internal error ('op' in do_summary).\t Call a Guru\n");
+        errorcall(call, "internal error ('op' in do_summary).\t Call a Guru");
         return R_NilValue; /*-Wall */
     }
 
@@ -679,7 +679,7 @@ na_answer: /* even for IEEE, for INT : */
     return ans;
 
 badmode:
-    errorcall(call, "invalid \"mode\" of argument\n");
+    errorcall(call, "invalid \"mode\" of argument");
     return R_NilValue; /*-Wall */
 } /* do_summary */
 
@@ -887,10 +887,10 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rval;
 
 bad:
-    error("complete.cases: not all arguments have the same length\n");
+    error("complete.cases: not all arguments have the same length");
 
 bad_mode:
-    error("complete.cases: invalid mode of argument\n");
+    error("complete.cases: invalid mode of argument");
 
     return R_NilValue; /* NOTREACHED; for -Wall */
 }

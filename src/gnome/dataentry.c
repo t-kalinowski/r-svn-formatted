@@ -93,7 +93,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     nprotect++;
 
     if (!isList(indata) || !isList(colmodes))
-        errorcall(call, "invalid argument\n");
+        errorcall(call, "invalid argument");
 
     /* initialize the constants */
 
@@ -144,7 +144,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
                 LEVELS(CAR(tvec)) = 0;
             }
             else if (!isVector(CAR(tvec)))
-                errorcall(call, "invalid type for value \n");
+                errorcall(call, "invalid type for value");
             else
             {
                 if (TYPEOF(CAR(tvec)) != type)
@@ -156,12 +156,12 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        errorcall(call, "invalid parameter \n");
+        errorcall(call, "invalid parameter");
     }
 
     /* start up the window, more initializing in here */
     if (initwin())
-        errorcall(call, "invalid device\n");
+        errorcall(call, "invalid device");
 
     /* set up a context which will close the window if there is an error */
     begincontext(&cntxt, 8, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
@@ -538,7 +538,7 @@ void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         }
     }
     else
-        error("spreadsheet: internal memory error\n");
+        error("spreadsheet: internal memory error");
 }
 
 void drawcol(int whichcol)
@@ -732,7 +732,7 @@ static SEXP getccol()
         }
     }
     if (!isVector(CAR(tmp)))
-        error("internal type error in spreadsheet\n");
+        error("internal type error in spreadsheet");
     len = LENGTH(CAR(tmp));
     type = TYPEOF(CAR(tmp));
     if (len < wrow)
@@ -744,7 +744,7 @@ static SEXP getccol()
             else if (type == STRSXP)
                 STRING(tmp2)[i] = STRING(CAR(tmp))[i];
             else
-                error("internal type error in spreadsheet\n");
+                error("internal type error in spreadsheet");
         LEVELS(tmp2) = LEVELS(CAR(tmp));
         CAR(tmp) = tmp2;
     }
@@ -1690,7 +1690,7 @@ void popdownmenu()
 
 SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error("no data entry editor in this version of R\n");
+    error("no data entry editor in this version of R");
     return R_NilValue;
 }
 

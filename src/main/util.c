@@ -460,7 +460,7 @@ int nrows(SEXP s)
         return nrows(CAR(s));
     }
     else
-        error("object is not a matrix\n");
+        error("object is not a matrix");
     return -1;
 }
 
@@ -479,7 +479,7 @@ int ncols(SEXP s)
         return length(s);
     }
     else
-        error("object is not a matrix\n");
+        error("object is not a matrix");
     return -1; /*NOTREACHED*/
 }
 
@@ -672,7 +672,7 @@ SEXP EnsureString(SEXP s)
         s = R_BlankString;
         break;
     default:
-        error("invalid tag in name extraction\n");
+        error("invalid tag in name extraction");
     }
     return s;
 }
@@ -680,7 +680,7 @@ SEXP EnsureString(SEXP s)
 void checkArity(SEXP op, SEXP args)
 {
     if (PRIMARITY(op) >= 0 && PRIMARITY(op) != length(args))
-        error("%d argument%s passed to \"%s\" which requires %d.\n", length(args), (length(args) == 1 ? "" : "s"),
+        error("%d argument%s passed to \"%s\" which requires %d.", length(args), (length(args) == 1 ? "" : "s"),
               PRIMNAME(op), PRIMARITY(op));
 }
 
@@ -691,13 +691,13 @@ SEXP nthcdr(SEXP s, int n)
         while (n-- > 0)
         {
             if (s == R_NilValue)
-                error("\"nthcdr\" list shorter than %d\n", n);
+                error("\"nthcdr\" list shorter than %d", n);
             s = CDR(s);
         }
         return s;
     }
     else
-        error("\"nthcdr\" needs a list to CDR down\n");
+        error("\"nthcdr\" needs a list to CDR down");
     return R_NilValue; /* for -Wall */
 }
 
@@ -787,10 +787,10 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     s = CAR(args);
     if (!isString(s))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     path = R_ExpandFileName(CHAR(STRING(s)[0]));
     if (chdir(path) < 0)
-        errorcall(call, "cannot change working directory\n");
+        errorcall(call, "cannot change working directory");
     return (R_NilValue);
 }
 
@@ -803,7 +803,7 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     s = CAR(args);
     if (!isString(s))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)
@@ -830,7 +830,7 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     s = CAR(args);
     if (!isString(s))
-        errorcall(call, "character argument expected\n");
+        errorcall(call, "character argument expected");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)

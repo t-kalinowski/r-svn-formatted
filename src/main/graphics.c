@@ -293,7 +293,7 @@ double yDevtoCharUnits(double y, DevDesc *dd)
 
 static void BadUnitsError(char *where)
 {
-    error("Bad units specified in %s, please report!\n", where);
+    error("Bad units specified in %s, please report!", where);
 }
 
 /* the functions GConvertXUnits and ConvertYUnits convert a single */
@@ -1840,7 +1840,7 @@ DevDesc *GNewPlot(int recording, int ask)
             PROTECT(defdev = lang1(install(CHAR(STRING(defdev)[0]))));
         }
         else
-            error("No active or default device\n");
+            error("No active or default device");
         eval(defdev, R_GlobalEnv);
         UNPROTECT(1);
     }
@@ -1863,7 +1863,7 @@ DevDesc *GNewPlot(int recording, int ask)
             {
                 NewFrameConfirm();
                 if (NoDevices())
-                    error("attempt to plot on null device\n");
+                    error("attempt to plot on null device");
                 else
                     dd = CurrentDevice();
             }
@@ -1901,28 +1901,28 @@ DevDesc *GNewPlot(int recording, int ask)
     if (!validOuterMargins(dd))
     {
         if (recording)
-            invalidError("Outer margins too large (fig.region too small)\n", dd);
+            invalidError("Outer margins too large (fig.region too small)", dd);
         else
             GText(0.5, 0.5, NFC, "Outer margins too large (fig.region too small)", 0.5, 0.5, 0, dd);
     }
     else if (!validFigureRegion(dd))
     {
         if (recording)
-            invalidError("Figure region too large\n", dd);
+            invalidError("Figure region too large", dd);
         else
             GText(0.5, 0.5, NFC, "Figure region too large", 0.5, 0.5, 0, dd);
     }
     else if (!validFigureMargins(dd))
     {
         if (recording)
-            invalidError("Figure margins too large\n", dd);
+            invalidError("Figure margins too large", dd);
         else
             GText(0.5, 0.5, NFC, "Figure margins too large", 0.5, 0.5, 0, dd);
     }
     else if (!validPlotRegion(dd))
     {
         if (recording)
-            invalidError("Plot region too large\n", dd);
+            invalidError("Plot region too large", dd);
         else
             GText(0.5, 0.5, NFC, "Plot region too large", 0.5, 0.5, 0, dd);
     }
@@ -1994,7 +1994,7 @@ void GScale(double min, double max, int axis, DevDesc *dd)
     case 's': /* FIXME --- implement  's' and 'e' axis styles ! */
     case 'e':
     default:
-        error("axis style \"%c\" unimplemented\n", style);
+        error("axis style \"%c\" unimplemented", style);
     }
 
     if (axis == 1 || axis == 3)
@@ -2257,7 +2257,7 @@ void copyGPar(GPar *source, GPar *dest)
 void GRestore(DevDesc *dd)
 {
     if (NoDevices())
-        error("No graphics device is active\n");
+        error("No graphics device is active");
     copyGPar(&(dd->dp), &(dd->gp));
 }
 
@@ -2431,7 +2431,7 @@ void GSetState(int newstate, DevDesc *dd)
 void GCheckState(DevDesc *dd)
 {
     if (dd->gp.state == 0)
-        error("plot.new has not been called yet\n");
+        error("plot.new has not been called yet");
     if (dd->gp.valid == 0)
         onintr();
 }
@@ -2610,7 +2610,7 @@ static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
     xx = (double *)C_alloc(n, sizeof(double));
     yy = (double *)C_alloc(n, sizeof(double));
     if (xx == NULL || yy == NULL)
-        error("out of memory while clipping polyline\n");
+        error("out of memory while clipping polyline");
 
     xx[0] = x1 = x[0];
     yy[0] = y1 = y[0];
@@ -2689,7 +2689,7 @@ void GLine(double x1, double y1, double x2, double y2, int coords, DevDesc *dd)
 int GLocator(double *x, double *y, int coords, DevDesc *dd)
 {
     if (!dd->dp.locator)
-        error("no locator capability in device driver\n");
+        error("no locator capability in device driver");
     if (dd->dp.locator(x, y, dd))
     {
         GConvert(x, y, DEVICE, coords, dd);
@@ -2705,7 +2705,7 @@ void GMetricInfo(int c, double *ascent, double *descent, double *width, int unit
     if (dd->dp.metricInfo)
         dd->dp.metricInfo(c, ascent, descent, width, dd);
     else
-        error("detailed character metric information unavailable\n");
+        error("detailed character metric information unavailable");
 
     if (units != DEVICE)
     {
@@ -2725,7 +2725,7 @@ void GMetricInfo(int c, double *ascent, double *descent, double *width, int unit
 void GMode(int mode, DevDesc *dd)
 {
     if (NoDevices())
-        error("No graphics device is active\n");
+        error("No graphics device is active");
     if (mode != dd->gp.devmode)
         dd->dp.mode(mode, dd);
     dd->gp.new = dd->dp.new = 0;
@@ -3179,7 +3179,7 @@ double GStrWidth(char *str, int units, DevDesc *dd)
         double wdash;
         sbuf = (char *)malloc(strlen(str) + 1);
         if (sbuf == NULL)
-            error("unable to allocate memory (in GStrWidth)\n");
+            error("unable to allocate memory (in GStrWidth)");
         sb = sbuf;
         for (s = str;; s++)
         {
@@ -3447,7 +3447,7 @@ void GBox(int which, DevDesc *dd)
         GPolygon(4, x, y, NDC, NA_INTEGER, dd->gp.col, dd);
         break;
     default:
-        error("invalid GBox argument\n");
+        error("invalid GBox argument");
     }
 }
 
@@ -3507,10 +3507,10 @@ void GPretty(double *lo, double *up, int *ndiv)
     int ns, nu, nd0;
     short i_small;
     if (*ndiv <= 0)
-        error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
+        error("invalid axis extents [GPretty(.,.,n=%d)", *ndiv);
     if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(dx = *up - *lo))
     {
-        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
+        error("Infinite axis extents [GPretty(%g,%g,%d)]", *lo, *up, *ndiv);
         return; /*-Wall*/
     }
 
@@ -3590,10 +3590,10 @@ void GPretty(double *lo, double *up, int *ndiv)
     double high_u_fact[2] = {.8, 1.7};
 
     if (*ndiv <= 0)
-        error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
+        error("invalid axis extents [GPretty(.,.,n=%d)", *ndiv);
     if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(*up - *lo))
     {
-        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
+        error("Infinite axis extents [GPretty(%g,%g,%d)]", *lo, *up, *ndiv);
         return; /*-Wall*/
     }
 
@@ -4104,7 +4104,7 @@ void hsv2rgb(double *h, double *s, double *v, double *r, double *g, double *b)
         *b = q;
         break;
     default:
-        error("bad hsv to rgb color conversion\n");
+        error("bad hsv to rgb color conversion");
     }
 }
 
@@ -4813,7 +4813,7 @@ static unsigned int hexdigit(int digit)
     else if ('a' <= digit && digit <= 'f')
         return 10 + digit - 'a';
     else
-        error("invalid hex digit in color\n");
+        error("invalid hex digit in color");
     return digit - '0'; /* never occurs but avoid compiler warnings */
 }
 
@@ -4856,7 +4856,7 @@ unsigned int rgb2col(char *rgb)
 {
     unsigned int r, g, b;
     if (rgb[0] != '#' || strlen(rgb) != 7)
-        error("invalid RGB specification\n");
+        error("invalid RGB specification");
     r = 16 * hexdigit(rgb[1]) + hexdigit(rgb[2]);
     g = 16 * hexdigit(rgb[3]) + hexdigit(rgb[4]);
     b = 16 * hexdigit(rgb[5]) + hexdigit(rgb[6]);
@@ -4873,7 +4873,7 @@ unsigned int name2col(char *nm)
         if (StrMatch(ColorDataBase[i].name, nm))
             return ColorDataBase[i].code;
     }
-    error("invalid color name\n");
+    error("invalid color name");
     return 0; /* never occurs but avoid compiler warnings */
 }
 
@@ -4885,7 +4885,7 @@ unsigned int number2col(char *nm)
     char *ptr;
     index = strtod(nm, &ptr);
     if (*ptr)
-        error("invalid color specification\n");
+        error("invalid color specification");
     if (index == 0)
         return CurrentDevice()->dp.bg;
     else
@@ -5058,7 +5058,7 @@ unsigned int LTYpar(SEXP value, int index)
         return linetype[code].pattern;
     }
     else
-        error("invalid line type\n");
+        error("invalid line type");
     /*NOTREACHED*/
     return 0; /* never occurs but avoid compiler warnings */
 }
@@ -5143,7 +5143,7 @@ DevDesc nullDevice;
 void devError()
 {
     error("No graphics device is active -- "
-          "SHOULDN'T happen anymore -- please report\n");
+          "SHOULDN'T happen anymore -- please report");
 }
 
 int NoDevices()

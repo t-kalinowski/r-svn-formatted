@@ -95,7 +95,7 @@ static int isUminus(SEXP s)
             else
                 return 0;
         default:
-            error("invalid form in unary minus check\n");
+            error("invalid form in unary minus check");
             return -1; /* for -Wall */
         }
     }
@@ -433,7 +433,7 @@ static SEXP D(SEXP expr, SEXP var)
             UNPROTECT(1);
         }
         else
-            error("Function %s is not in the derivatives table\n", PRINTNAME(CAR(expr)));
+            error("Function %s is not in the derivatives table", PRINTNAME(CAR(expr)));
         break;
     default:
         ans = Constant(NA_REAL);
@@ -541,7 +541,7 @@ SEXP do_D(SEXP call, SEXP op, SEXP args, SEXP env)
         expr = CAR(args);
     var = CADR(args);
     if (!isString(var) || length(var) < 1)
-        errorcall(call, "variable must be a character string\n");
+        errorcall(call, "variable must be a character string");
     var = install(CHAR(STRING(var)[0]));
     InitDerivSymbols();
     PROTECT(expr = D(expr, var));
@@ -554,7 +554,7 @@ SEXP do_D(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void InvalidExpression(char *where)
 {
-    error("invalid expression in \"%s\"\n", where);
+    error("invalid expression in \"%s\"", where);
 }
 
 static int equal(SEXP expr1, SEXP expr2)
@@ -786,13 +786,13 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     names = CAR(args);
     if (!isString(names) || (nderiv = length(names)) < 1)
-        errorcall(call, "invalid variable names\n");
+        errorcall(call, "invalid variable names");
     args = CDR(args);
     PROTECT(funarg = duplicate(CAR(args)));
     args = CDR(args);
     tag = CAR(args);
     if (!isString(tag) || length(tag) < 1 || length(STRING(tag)[0]) < 1 || length(STRING(tag)[0]) > 60)
-        errorcall(call, "invalid tag\n");
+        errorcall(call, "invalid tag");
     /* NOTE: FindSubexprs is destructive, hence the duplication */
     PROTECT(ans = duplicate(expr));
     f_index = FindSubexprs(ans);

@@ -33,7 +33,7 @@ static char *SaveString(SEXP sxp, int offset)
 {
     char *s;
     if (!isString(sxp) || length(sxp) <= offset)
-        errorcall(gcall, "invalid string argument\n");
+        errorcall(gcall, "invalid string argument");
     s = R_alloc(strlen(CHAR(STRING(sxp)[offset])) + 1, sizeof(char));
     strcpy(s, CHAR(STRING(sxp)[offset]));
     return s;
@@ -41,7 +41,7 @@ static char *SaveString(SEXP sxp, int offset)
 
 static void DeviceUnavailable(char *dev)
 {
-    error("The %s device driver is unavailable.\n", dev);
+    error("The %s device driver is unavailable.", dev);
 }
 
 #ifdef Macintosh
@@ -79,7 +79,7 @@ SEXP do_Macintosh(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!MacDeviceDriver(dd, width, height, ps))
     {
         free(dd);
-        errorcall(call, "unable to start device Macintosh\n");
+        errorcall(call, "unable to start device Macintosh");
     }
     gsetVar(install(".Device"), mkString("Macintosh"), R_NilValue);
     addDevice(dd);
@@ -147,7 +147,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!PSDeviceDriver(dd, file, paper, face, bg, fg, width, height, (double)horizontal, ps))
     {
         free(dd);
-        errorcall(call, "unable to start device PostScript\n");
+        errorcall(call, "unable to start device PostScript");
     }
     gsetVar(install(".Device"), mkString("postscript"), R_NilValue);
     addDevice(dd);
@@ -201,7 +201,7 @@ SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!PicTeXDeviceDriver(dd, file, bg, fg, width, height, debug))
     {
         free(dd);
-        errorcall(call, "unable to start device PicTeX\n");
+        errorcall(call, "unable to start device PicTeX");
     }
     gsetVar(install(".Device"), mkString("pictex"), R_NilValue);
     addDevice(dd);
@@ -252,7 +252,7 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid gamma value");
 
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
-        error("invalid colortype passed to X11 driver\n");
+        error("invalid colortype passed to X11 driver");
     cname = CHAR(STRING(CAR(args))[0]);
     if (strcmp(cname, "mono") == 0)
         colormodel = 0;
@@ -283,7 +283,7 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!X11DeviceDriver(dd, display, width, height, ps, gamma, colormodel, maxcubesize))
     {
         free(dd);
-        errorcall(call, "unable to start device X11\n");
+        errorcall(call, "unable to start device X11");
     }
     gsetVar(install(".Device"), mkString("X11"), R_NilValue);
     addDevice(dd);
@@ -317,7 +317,7 @@ SEXP do_Gnome(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!GnomeDeviceDriver(dd, display, width, height, ps))
     {
         free(dd);
-        errorcall(call, "unable to start device Gnome\n");
+        errorcall(call, "unable to start device Gnome");
     }
     gsetVar(install(".Device"), mkString("Gnome"), R_NilValue);
     addDevice(dd);
