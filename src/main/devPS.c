@@ -1136,6 +1136,13 @@ static char *fontMetricsFileName(char *family, int faceIndex)
     int found = 0;
     PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("graphics"))));
     PROTECT(PSenv = findVar(install(".PSenv"), graphicsNS));
+    /* under lazy loading this will be a promise on first use */
+    if (TYPEOF(PSenv) == PROMSXP)
+    {
+        PROTECT(PSenv);
+        PSenv = eval(PSenv, graphicsNS);
+        UNPROTECT(1);
+    }
     PROTECT(fontdb = findVar(install(".PostScript.Fonts"), PSenv));
     PROTECT(fontnames = getAttrib(fontdb, R_NamesSymbol));
     nfonts = LENGTH(fontdb);
@@ -1168,6 +1175,13 @@ static char *getFontEncoding(char *family)
     int found = 0;
     PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("graphics"))));
     PROTECT(PSenv = findVar(install(".PSenv"), graphicsNS));
+    /* under lazy loading this will be a promise on first use */
+    if (TYPEOF(PSenv) == PROMSXP)
+    {
+        PROTECT(PSenv);
+        PSenv = eval(PSenv, graphicsNS);
+        UNPROTECT(1);
+    }
     PROTECT(fontdb = findVar(install(".PostScript.Fonts"), PSenv));
     PROTECT(fontnames = getAttrib(fontdb, R_NamesSymbol));
     nfonts = LENGTH(fontdb);
@@ -4059,7 +4073,7 @@ static void PDF_SetLineColor(int color, NewDevDesc *dd)
 
     if (color != pd->current.col)
     {
-        if (alphaVersion(pd) && semiTransparent(color))
+        if (alphaVersion(pd))
         {
             /*
              * Apply graphics state parameter dictionary
@@ -4077,7 +4091,7 @@ static void PDF_SetFill(int color, NewDevDesc *dd)
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     if (color != pd->current.fill)
     {
-        if (alphaVersion(pd) && semiTransparent(color))
+        if (alphaVersion(pd))
         {
             /*
              * Apply graphics state parameter dictionary
