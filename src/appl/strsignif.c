@@ -62,6 +62,7 @@
 #include <config.h>
 #endif
 #include "R_ext/Error.h" /* error */
+#include "R_ext/RS.h"    /* Calloc */
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -71,21 +72,19 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
     int wid = *width;
     int dig = *digits;
     int i, nn = *n;
-    int short do_fg = !strcmp("fg", *format); /* == 1	 iff  format == "fg" */
+    int short do_fg = !strcmp("fg", *format); /* == 1  iff  format == "fg" */
     double xx;
-    int iex, j, jL;
+    int iex, j, jL, len_flag = strlen(*flag);
 
-    char f0[12], form[12]; /* ---- Really, instead :
-      char *form;
-      form = Calloc(strlen(*flag)+strlen(*format)+ 4+1, char);
-    */
+    char *f0 = Calloc(do_fg ? 1 + len_flag + 3 : 1, char);
+    char *form = Calloc(len_flag + 4 + strlen(*format), char);
 
     if (wid == 0)
-        error("Width cannot be zero");
+        error(".C(..): Width cannot be zero");
 
     if (strcmp("d", *format) == 0)
     {
-        if (strlen(*flag) == 0)
+        if (len_flag == 0)
             strcpy(form, "%*d");
         else
         {
@@ -97,14 +96,12 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
             for (i = 0; i < nn; i++)
                 sprintf(result[i], form, wid, ((int *)x)[i]);
         else
-            error("`type' must be \"integer\" for  \"d\"-format");
+            error(".C(..): `type' must be \"integer\" for  \"d\"-format");
     }
     else
     { /* --- floating point --- */
-        if (strlen(*flag) == 0)
-        {
+        if (len_flag == 0)
             strcpy(form, "%*.*");
-        }
         else
         {
             strcpy(form, "%");
@@ -159,7 +156,7 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
 #endif
                         }
                         else
-                        {   /* iex >= -4:	NOT "e-" */
+                        { /* iex >= -4:	NOT "e-" */
                             /* if iex >= dig, would have "e+" representation */
 #ifdef DEBUG
                             fprintf(stderr, "\t  iex >= -4; using %d for 'dig'\n", (iex >= dig) ? (iex + 1) : dig);
@@ -173,6 +170,8 @@ void str_signif(char *x, int *n, char **type, int *width, int *digits, char **fo
                     sprintf(result[i], form, wid, dig, ((double *)x)[i]);
         }
         else
-            error("`type' must be \"real\" for this format");
+            error(".C(..): `type' must be \"real\" for this format");
     }
+    Free(form);
+    Free(f0);
 }
