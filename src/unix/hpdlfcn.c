@@ -131,7 +131,7 @@ void *dlopen(const char *fname, int mode)
         handle = PROG_HANDLE;
     else
     {
-        handle = shl_load(fname, mode, 0L);
+        handle = shl_load(fname, mode | BIND_VERBOSE, 0L);
         if (handle != NULL)
         {
             if ((entry = find_lib_entry(handle)) == NULL)
