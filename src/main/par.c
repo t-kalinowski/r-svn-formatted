@@ -130,7 +130,7 @@ static void BoundsCheck(double x, double a, double b, char *s)
  *	"usr",
  *	"xlog", "ylog"
  */
-static int Specify(char *what, SEXP value, DevDesc *dd)
+static void Specify(char *what, SEXP value, DevDesc *dd)
 {
     double x;
     int ix = 0;
@@ -145,14 +145,14 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "ann"))
     {
         lengthCheck(what, value, 1);
-        ix = asInteger(value);
-        dd->dp.ann = dd->gp.ann = (ix != 0);
+        ix = asLogical(value);
+        dd->dp.ann = dd->gp.ann = (ix != 0); /* NA |-> TRUE */
     }
     else if (streql(what, "ask"))
     {
         lengthCheck(what, value, 1);
         ix = asLogical(value);
-        dd->dp.ask = dd->gp.ask = (ix != 0);
+        dd->dp.ask = dd->gp.ask = (ix == 1); /* NA |-> FALSE */
     }
     else if (streql(what, "bg"))
     {
@@ -160,7 +160,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.bg = dd->gp.bg = ix;
-        dd->dp.new = dd->gp.new = 0;
+        dd->dp.new = dd->gp.new = FALSE;
     }
     else if (streql(what, "bty"))
     {
@@ -416,7 +416,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->dp.mai[2] = dd->gp.mai[2] = REAL(value)[2];
         dd->dp.mai[3] = dd->gp.mai[3] = REAL(value)[3];
         dd->dp.mUnits = dd->gp.mUnits = INCHES;
-        dd->dp.defaultPlot = dd->gp.defaultPlot = 1;
+        dd->dp.defaultPlot = dd->gp.defaultPlot = TRUE;
         GReset(dd);
     }
     else if (streql(what, "mar"))
@@ -432,7 +432,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->dp.mar[2] = dd->gp.mar[2] = REAL(value)[2];
         dd->dp.mar[3] = dd->gp.mar[3] = REAL(value)[3];
         dd->dp.mUnits = dd->gp.mUnits = LINES;
-        dd->dp.defaultPlot = dd->gp.defaultPlot = 1;
+        dd->dp.defaultPlot = dd->gp.defaultPlot = TRUE;
         GReset(dd);
     }
     else if (streql(what, "mex"))
@@ -456,8 +456,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->gp.numcols = dd->dp.numcols = ncol;
         dd->gp.currentFigure = dd->dp.currentFigure = nrow * ncol;
         dd->gp.lastFigure = dd->dp.lastFigure = nrow * ncol;
-        dd->gp.defaultFigure = dd->dp.defaultFigure = 1;
-        dd->gp.layout = dd->dp.layout = 0;
+        dd->gp.defaultFigure = dd->dp.defaultFigure = TRUE;
+        dd->gp.layout = dd->dp.layout = FALSE;
         if (nrow > 2 || ncol > 2)
         {
             dd->gp.cexbase = dd->dp.cexbase = 0.66;
@@ -489,8 +489,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->gp.numcols = dd->dp.numcols = ncol;
         dd->gp.currentFigure = dd->dp.currentFigure = nrow * ncol;
         dd->gp.lastFigure = dd->dp.lastFigure = nrow * ncol;
-        dd->gp.defaultFigure = dd->dp.defaultFigure = 1;
-        dd->gp.layout = dd->dp.layout = 0;
+        dd->gp.defaultFigure = dd->dp.defaultFigure = TRUE;
+        dd->gp.layout = dd->dp.layout = FALSE;
         if (nrow > 2 || ncol > 2)
         {
             dd->gp.cexbase = dd->dp.cexbase = 0.66;
@@ -547,8 +547,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
           dd->dp.currentFigure = dd->dp.lastFigure;
         */
         dd->gp.currentFigure = dd->dp.currentFigure;
-        /* dd->gp.defaultFigure = dd->dp.defaultFigure = 1;
-        dd->gp.layout = dd->dp.layout = 0; */
+        /* dd->gp.defaultFigure = dd->dp.defaultFigure = TRUE;
+        dd->gp.layout = dd->dp.layout = FALSE; */
         dd->gp.new = dd->dp.new = 1;
         /*
         if (nrow > 2 || ncol > 2) {
@@ -670,7 +670,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->dp.pin[0] = dd->gp.pin[0] = REAL(value)[0];
         dd->dp.pin[1] = dd->gp.pin[1] = REAL(value)[1];
         dd->dp.pUnits = dd->gp.pUnits = INCHES;
-        dd->dp.defaultPlot = dd->gp.defaultPlot = 0;
+        dd->dp.defaultPlot = dd->gp.defaultPlot = FALSE;
         GReset(dd);
     }
     else if (streql(what, "plt"))
@@ -686,7 +686,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         dd->dp.plt[2] = dd->gp.plt[2] = REAL(value)[2];
         dd->dp.plt[3] = dd->gp.plt[3] = REAL(value)[3];
         dd->dp.pUnits = dd->gp.pUnits = NFC;
-        dd->dp.defaultPlot = dd->gp.defaultPlot = 0;
+        dd->dp.defaultPlot = dd->gp.defaultPlot = FALSE;
         GReset(dd);
     }
     else if (streql(what, "ps"))
@@ -905,7 +905,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     }
     else
         warningcall(gcall, "parameter \"%s\" can't be set", what);
-    return 0; /* never used; to keep -Wall happy */
+    return;
 }
 
 /* Specify2 -- parameters as arguments from higher-level graphics functions
@@ -1941,8 +1941,8 @@ SEXP do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
         dd->gp.mex = dd->dp.mex = 1.0;
     }
 
-    dd->dp.defaultFigure = dd->gp.defaultFigure = 1;
-    dd->dp.layout = dd->gp.layout = 1;
+    dd->dp.defaultFigure = dd->gp.defaultFigure = TRUE;
+    dd->dp.layout = dd->gp.layout = TRUE;
 
     GReset(dd);
 

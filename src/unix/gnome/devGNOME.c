@@ -46,7 +46,7 @@ typedef struct
 
     int windowWidth;   /* Window width (pixels) */
     int windowHeight;  /* Window height (pixels) */
-    int resize;        /* Window resized */
+    Rboolean resize;   /* Window resized */
     GtkWidget *window; /* Graphics Window */
     GtkWidget *canvas;
 
@@ -54,11 +54,14 @@ typedef struct
 
     GdkCursor *gcursor;
 
-    int usefixed;
+    Rboolean usefixed; /* not yet used (??) */
     GdkFont *fixedfont;
     GdkFont *font;
 
 } gnomeDesc;
+
+/* routines from here */
+Rboolean GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize);
 
 /* Device driver actions */
 static void GNOME_Activate(DevDesc *);
@@ -68,10 +71,10 @@ static void GNOME_Close(DevDesc *);
 static void GNOME_Deactivate(DevDesc *);
 static void GNOME_Hold(DevDesc *);
 static void GNOME_Line(double, double, double, double, int, DevDesc *);
-static int GNOME_Locator(double *, double *, DevDesc *);
+static Rboolean GNOME_Locator(double *, double *, DevDesc *);
 static void GNOME_Mode(int);
 static void GNOME_NewPage(DevDesc *);
-static int GNOME_Open(DevDesc *, gnomeDesc *, char *, double, double);
+static Rboolean GNOME_Open(DevDesc *, gnomeDesc *, char *, double, double);
 static void GNOME_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void GNOME_Polyline(int, double *, double *, int, DevDesc *);
 static void GNOME_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -165,7 +168,7 @@ static gint configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointe
         gtkd->windowWidth = event->width;
         gtkd->windowHeight = event->height;
 
-        gtkd->resize = 1;
+        gtkd->resize = TRUE;
     }
 
     return FALSE;
@@ -217,7 +220,7 @@ static GnomeUIInfo graphics_toolbar[] = {
     GNOMEUIINFO_END};
 
 /* create window etc */
-static int GNOME_Open(DevDesc *dd, gnomeDesc *gtkd, char *dsp, double w, double h)
+static Rboolean GNOME_Open(DevDesc *dd, gnomeDesc *gtkd, char *dsp, double w, double h)
 {
     GdkColor bg;
     GtkStyle *wstyle;
@@ -286,7 +289,7 @@ static int GNOME_Open(DevDesc *dd, gnomeDesc *gtkd, char *dsp, double w, double 
     gtk_widget_pop_colormap();
 
     /* we made it! */
-    return 1;
+    return TRUE;
 }
 
 static double GNOME_StrWidth(char *str, DevDesc *dd)
@@ -310,13 +313,13 @@ static void GNOME_Resize(DevDesc *dd)
 {
     gnomeDesc *gtkd = (gnomeDesc *)dd->deviceSpecific;
 
-    if (gtkd->resize != 0)
+    if (gtkd->resize)
     {
         dd->dp.left = dd->gp.left = 0.0;
         dd->dp.right = dd->gp.right = gtkd->windowWidth;
         dd->dp.bottom = dd->gp.bottom = gtkd->windowHeight;
         dd->dp.top = dd->gp.top = 0.0;
-        gtkd->resize = 0;
+        gtkd->resize = FALSE;
     }
 }
 
@@ -348,11 +351,11 @@ static void GNOME_NewPage(DevDesc *dd)
     /* clear off items */
     /*  list = GNOME_CANVAS_GROUP(gnome_canvas_root(GNOME_CANVAS(gtkd->canvas)))->item_list;
     if(list != NULL) {
-      g_list_foreach(list, GNOME_NewPage_iterator, NULL);
-      g_list_free(list);
-      GNOME_CANVAS_GROUP(gnome_canvas_root(GNOME_CANVAS(gtkd->canvas)))->item_list = NULL;
-      GNOME_CANVAS_GROUP(gnome_canvas_root(GNOME_CANVAS(gtkd->canvas)))->item_list_end = NULL;
-      }*/
+    g_list_foreach(list, GNOME_NewPage_iterator, NULL);
+    g_list_free(list);
+    GNOME_CANVAS_GROUP(gnome_canvas_root(GNOME_CANVAS(gtkd->canvas)))->item_list = NULL;
+    GNOME_CANVAS_GROUP(gnome_canvas_root(GNOME_CANVAS(gtkd->canvas)))->item_list_end = NULL;
+    }*/
 }
 
 /* kill off the window etc */
@@ -517,7 +520,7 @@ static void GNOME_Line(double x1, double y1, double x2, double y2, int coords, D
         SetColor(&gcol_fill, dd->gp.col);
         if (dd->gp.lty != 0)
         {
-            /*      SetLineType(GNOME_CANVAS_LINE(item)->gc, dd->gp.lty, dd->gp.lwd); */
+            /*SetLineType(GNOME_CANVAS_LINE(item)->gc, dd->gp.lty, dd->gp.lwd);*/
             gnome_canvas_item_set(item, "line_style", GDK_LINE_ON_OFF_DASH, NULL);
         }
         gnome_canvas_item_set(item, "fill_color_gdk", &gcol_fill, NULL);
@@ -618,9 +621,9 @@ static void GNOME_Text(double x, double y, int coords, char *str, double rot, do
 }
 
 /* locator */
-static int GNOME_Locator(double *x, double *y, DevDesc *dd)
+static Rboolean GNOME_Locator(double *x, double *y, DevDesc *dd)
 {
-    return 0;
+    return FALSE;
 }
 
 /* useless stuff */
@@ -634,13 +637,13 @@ static void GNOME_Hold(DevDesc *dd)
 }
 
 /* Device driver entry point */
-int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
+Rboolean GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
     int ps;
     gnomeDesc *gtkd;
 
     if (!(gtkd = (gnomeDesc *)malloc(sizeof(gnomeDesc))))
-        return 0;
+        return FALSE;
 
     dd->deviceSpecific = (void *)gtkd;
 
@@ -658,7 +661,7 @@ int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, d
     if (!GNOME_Open(dd, gtkd, display, width, height))
     {
         free(gtkd);
-        return 0;
+        return FALSE;
     }
 
     /* setup data structure */
@@ -700,20 +703,20 @@ int GnomeDeviceDriver(DevDesc *dd, char *display, double width, double height, d
     dd->dp.ipr[1] = pixelHeight();
 
     /* device capabilities */
-    dd->dp.canResizePlot = 1;
-    dd->dp.canChangeFont = 0; /* FIXME: surely this is possible */
-    dd->dp.canRotateText = 1;
-    dd->dp.canResizeText = 1;
-    dd->dp.canClip = 0;
-    dd->dp.canHAdj = 0;
+    dd->dp.canResizePlot = TRUE;
+    dd->dp.canChangeFont = FALSE; /* FIXME: surely this is possible */
+    dd->dp.canRotateText = TRUE;
+    dd->dp.canResizeText = TRUE;
+    dd->dp.canClip = FALSE; /* FIXME: really? */
+    dd->dp.canHAdj = 0;     /* not better? {0, 0.5, 1} */
 
     /* x11 device description stuff */
     gtkd->cex = 1.0;
     gtkd->srt = 0.0;
-    gtkd->resize = 0;
+    gtkd->resize = FALSE;
 
-    dd->displayListOn = 1;
+    dd->displayListOn = TRUE;
 
     /* finish */
-    return 1;
+    return TRUE;
 }

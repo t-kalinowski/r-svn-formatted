@@ -52,14 +52,14 @@ void UnLoad_Unzip_Dll();
 void UnLoad_Rbitmap_Dll();
 
 /* used to avoid some flashing during cleaning up */
-int AllDevicesKilled = 0;
+Rboolean AllDevicesKilled = FALSE;
 int setupui(void);
 void delui(void);
 int (*R_yesnocancel)(char *s);
 
 static DWORD mainThreadId;
 
-int UserBreak = 0;
+Rboolean UserBreak = FALSE;
 
 /* callbacks */
 static void (*R_CallBackHook)();
@@ -83,7 +83,7 @@ void R_ProcessEvents(void)
         doevent();
     if (UserBreak)
     {
-        UserBreak = 0;
+        UserBreak = FALSE;
         raise(SIGINT);
     }
     R_CallBackHook();
@@ -383,7 +383,7 @@ void R_CleanUp(int saveact, int status, int runLast)
     CleanEd();
     closeAllHlpFiles();
     KillAllDevices();
-    AllDevicesKilled = 1;
+    AllDevicesKilled = TRUE;
     if (R_Interactive && CharacterMode == RTerm)
         SetConsoleTitle("");
     UnLoad_Unzip_Dll();

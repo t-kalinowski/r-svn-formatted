@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2000  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,22 +45,30 @@
 #include "Graphics.h"
 #include "Fileio.h"  /* R_fopen */
 #include "rotated.h" /* 'Public' routines from here */
-
-#include "R_ext/eventloop.h" /* For the input handlers of the event loop mechanism. */
-
-/* routines from here */
-int X11DeviceDriver(DevDesc *, char *, double, double, double, double, int, int);
+/* For the input handlers of the event loop mechanism: */
+#include "R_ext/eventloop.h"
+#include "R_ext/Memory.h" /* vmaxget */
+#include "Devices.h"
 
 /* These are the currently supported device "models" */
-#define MONOCHROME 0
-#define GRAYSCALE 1
-#define PSEUDOCOLOR1 2
-#define PSEUDOCOLOR2 3
-#define TRUECOLOR 4
+typedef enum
+{
+    MONOCHROME = 0,
+    GRAYSCALE,
+    PSEUDOCOLOR1,
+    PSEUDOCOLOR2,
+    TRUECOLOR
+} X_COLORTYPE;
 
-#define WINDOW 1
-#define PNG 2
-#define JPEG 3
+typedef enum
+{
+    WINDOW, /* NB: have "type > WINDOW" below ... */
+    PNG,
+    JPEG
+} X_GTYPE;
+
+/* routines from here */
+Rboolean X11DeviceDriver(DevDesc *, char *, double, double, double, double, X_COLORTYPE, int);
 
 /********************************************************/
 /* This device driver has been documented so that it be	*/
@@ -122,10 +130,10 @@ typedef struct
     int usefixed;
     XFontStruct *fixedfont;
     XFontStruct *font;
-    int type;    /* Window or pixmap? */
-    int npages;  /* counter for a pixmap */
-    FILE *fp;    /* file for a bitmap device */
-    int quality; /* JPEG quality */
+    X_GTYPE type; /* Window or pixmap? */
+    int npages;   /* counter for a pixmap */
+    FILE *fp;     /* file for a bitmap device */
+    int quality;  /* JPEG quality */
 
 } x11Desc;
 
@@ -145,7 +153,7 @@ static Window rootwin;                  /* Root Window */
 static Visual *visual;                  /* Visual */
 static int depth;                       /* Pixmap depth */
 static int Vclass;                      /* Visual class */
-static int model;                       /* User color model */
+static X_COLORTYPE model;               /* User color model */
 static int maxcubesize;                 /* Max colorcube size */
 static XSetWindowAttributes attributes; /* Window attributes */
 static Colormap colormap;               /* Default color map */
@@ -154,9 +162,9 @@ static int whitepixel;                  /* White */
 static XContext devPtrContext;
 static Atom _XA_WM_PROTOCOLS, protocol;
 
-static int displayOpen = 0;
+static Rboolean displayOpen = FALSE;
+static Rboolean inclose = FALSE;
 static int numX11Devices = 0;
-static int inclose = 0;
 
 /********************************************************/
 /* There must be an entry point for the device driver	*/
@@ -187,10 +195,10 @@ static void X11_Close(DevDesc *);
 static void X11_Deactivate(DevDesc *);
 static void X11_Hold(DevDesc *);
 static void X11_Line(double, double, double, double, int, DevDesc *);
-static int X11_Locator(double *, double *, DevDesc *);
+static Rboolean X11_Locator(double *, double *, DevDesc *);
 static void X11_Mode(int, DevDesc *);
 static void X11_NewPage(DevDesc *);
-static int X11_Open(DevDesc *, x11Desc *, char *, double, double, double, int, int);
+static Rboolean X11_Open(DevDesc *, x11Desc *, char *, double, double, double, X_COLORTYPE, int);
 static void X11_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void X11_Polyline(int, double *, double *, int, DevDesc *);
 static void X11_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -273,7 +281,7 @@ static unsigned GetGrayScalePixel(int r, int g, int b)
     return pixel;
 }
 
-static int GetGrayPalette(Display *display, Colormap cmap, int n)
+static Rboolean GetGrayPalette(Display *displ, Colormap cmap, int n)
 {
     int status, i, m;
     m = 0;
@@ -287,7 +295,7 @@ static int GetGrayPalette(Display *display, Colormap cmap, int n)
         XPalette[i].red = (i * 0xffff) / (n - 1);
         XPalette[i].green = XPalette[i].red;
         XPalette[i].blue = XPalette[i].red;
-        status = XAllocColor(display, cmap, &XPalette[i]);
+        status = XAllocColor(displ, cmap, &XPalette[i]);
         if (status == 0)
         {
             XPalette[i].flags = 0;
@@ -302,13 +310,13 @@ static int GetGrayPalette(Display *display, Colormap cmap, int n)
         for (i = 0; i < PaletteSize; i++)
         {
             if (XPalette[i].flags != 0)
-                XFreeColors(display, cmap, &(XPalette[i].pixel), 1, 0);
+                XFreeColors(displ, cmap, &(XPalette[i].pixel), 1, 0);
         }
         PaletteSize = 0;
-        return 0;
+        return FALSE;
     }
     else
-        return 1;
+        return TRUE;
 }
 
 static void SetupGrayScale()
@@ -465,8 +473,8 @@ static unsigned int GetPseudoColor2Pixel(int r, int g, int b)
     XPalette[PaletteSize].blue = pow(b / 255.0, BlueGamma) * 0xffff;
     if (PaletteSize == 256 || XAllocColor(display, colormap, &XPalette[PaletteSize]) == 0)
     {
-        error("Error: X11 cannot allocate additional graphics colors.\nConsider using X11 with "
-              "colortype=\"pseudo.cube\" or \"gray\".");
+        error("Error: X11 cannot allocate additional graphics colors.\n"
+              "Consider using X11 with colortype=\"pseudo.cube\" or \"gray\".");
     }
     RPalette[PaletteSize].red = r;
     RPalette[PaletteSize].green = g;
@@ -524,7 +532,7 @@ static unsigned GetTrueColorPixel(int r, int g, int b)
 
 /* Interface for General Visual */
 
-unsigned int GetX11Pixel(int r, int g, int b)
+static unsigned int GetX11Pixel(int r, int g, int b)
 {
     switch (model)
     {
@@ -554,7 +562,7 @@ static void FreeX11Colors()
     }
 }
 
-static int SetupX11Color()
+static Rboolean SetupX11Color()
 {
     if (depth <= 1)
     {
@@ -613,9 +621,9 @@ static int SetupX11Color()
     else
     {
         printf("Unknown Visual\n");
-        return 0;
+        return FALSE;
     }
-    return 1;
+    return TRUE;
 }
 
 /* Pixel Dimensions (Inches) */
@@ -1140,16 +1148,18 @@ static int R_X11IOErr(Display *dsp)
     return 0; /* but should never get here */
 }
 
-static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma, int colormodel, int maxcube)
+static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma_fac,
+                         X_COLORTYPE colormodel, int maxcube)
 {
-    /* if have to bail out with "error" then must */
-    /* free(dd) and free(xd) */
+    /* if we have to bail out with "error", then must free(dd) and free(xd) */
 
     XEvent event;
-    int iw, ih, type;
+    int iw, ih;
+    X_GTYPE type;
     char *p = dsp;
     XGCValues gcv;
-    int DisplayOpened = 0; /* Indicates whether the display is created within this particular call. */
+    /* Indicates whether the display is created within this particular call: */
+    Rboolean DisplayOpened = FALSE;
 
     if (!strncmp(dsp, "png::", 5))
     {
@@ -1188,12 +1198,12 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
     if (!displayOpen)
     {
         if ((display = XOpenDisplay(p)) == NULL)
-            return 0;
+            return FALSE;
 #define SETGAMMA
 #ifdef SETGAMMA
-        RedGamma = gamma;
-        GreenGamma = gamma;
-        BlueGamma = gamma;
+        RedGamma = gamma_fac;
+        GreenGamma = gamma_fac;
+        BlueGamma = gamma_fac;
 #endif
         screen = DefaultScreen(display);
         rootwin = DefaultRootWindow(display);
@@ -1205,8 +1215,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
         maxcubesize = maxcube;
         SetupX11Color();
         devPtrContext = XUniqueContext();
-        displayOpen = 1;
-        DisplayOpened = 1;
+        displayOpen = DisplayOpened = TRUE;
         /* set error handlers */
         XSetErrorHandler(R_X11Err);
         XSetIOErrorHandler(R_X11IOErr);
@@ -1217,7 +1226,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
     if (!SetBaseFont(xd))
     {
         Rprintf("can't find X11 font\n");
-        return 0;
+        return FALSE;
     }
 
     /* Foreground and Background Colors */
@@ -1242,7 +1251,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
         if ((xd->window = XCreateWindow(display, rootwin, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
                                         DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
                                         CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) == 0)
-            return 0;
+            return FALSE;
 
         XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)"R Graphics",
                         13);
@@ -1279,7 +1288,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
         xd->windowWidth = iw = w;
         xd->windowHeight = ih = h;
         if ((xd->window = XCreatePixmap(display, rootwin, iw, ih, DefaultDepth(display, screen))) == 0)
-            return 0;
+            return FALSE;
         /* Save the devDesc* with the window for event dispatching */
         /* Is this needed? */
         XSaveContext(display, xd->window, devPtrContext, (caddr_t)dd);
@@ -1304,7 +1313,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
     }
 
     numX11Devices++;
-    return 1;
+    return TRUE;
 }
 
 /********************************************************/
@@ -1328,9 +1337,9 @@ static double X11_StrWidth(char *str, DevDesc *dd)
 /* width information for the given character in DEVICE	*/
 /* units (GMetricInfo does the necessary conversions)	*/
 /* This is used for formatting mathematical expressions	*/
-/* and for exact centering of text (see GText)          */
+/* and for exact centering of text (see GText)		*/
 /* If the device cannot provide metric information then */
-/* it MUST return 0.0 for ascent, descent, and width    */
+/* it MUST return 0.0 for ascent, descent, and width	*/
 /********************************************************/
 
 /* Character Metric Information */
@@ -1476,7 +1485,7 @@ static unsigned long bitgp(XImage *xi, int x, int y)
 {
     int i, r, g, b;
     XColor xcol;
-    /*  returns the colour of the (x,y) pixel stored as RGB */
+    /*	returns the colour of the (x,y) pixel stored as RGB */
     i = XGetPixel(xi, y, x);
     switch (model)
     {
@@ -1487,15 +1496,13 @@ static unsigned long bitgp(XImage *xi, int x, int y)
     case PSEUDOCOLOR2:
         if (i < 512)
         {
-            if (knowncols[i] >= 0)
-                return knowncols[i];
-            else
+            if (knowncols[i] < 0)
             {
                 xcol.pixel = i;
                 XQueryColor(display, colormap, &xcol);
                 knowncols[i] = ((xcol.red >> 8) << 16) | ((xcol.green >> 8) << 8) | (xcol.blue >> 8);
-                return knowncols[i];
             }
+            return knowncols[i];
         }
         else
         {
@@ -1533,7 +1540,7 @@ static void X11_Close(DevDesc *dd)
     {
         /* process pending events */
         /* set block on destroy events */
-        inclose = 1;
+        inclose = TRUE;
         R_ProcessEvents((void *)NULL);
 
         XFreeCursor(display, xd->gcursor);
@@ -1582,11 +1589,11 @@ static void X11_Close(DevDesc *dd)
 #endif
         removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
         XCloseDisplay(display);
-        displayOpen = 0;
+        displayOpen = FALSE;
     }
 
     free(xd);
-    inclose = 0;
+    inclose = FALSE;
 }
 
 /********************************************************/
@@ -1611,7 +1618,7 @@ static void X11_Activate(DevDesc *dd)
     sprintf(num, "%i", deviceNumber(dd) + 1);
     strcat(t, num);
     strcat(t, " (ACTIVE)");
-    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, t, 50);
+    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)t, 50);
     XSync(display, 0);
 }
 
@@ -1636,7 +1643,7 @@ static void X11_Deactivate(DevDesc *dd)
     sprintf(num, "%i", deviceNumber(dd) + 1);
     strcat(t, num);
     strcat(t, " (inactive)");
-    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, t, 50);
+    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)t, 50);
     XSync(display, 0);
 }
 
@@ -1828,7 +1835,6 @@ static void X11_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
 static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *dd)
 {
     XPoint *points;
-    char *vmaxget();
     double devx, devy;
     int i;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
@@ -1905,7 +1911,7 @@ static void X11_Text(double x, double y, int coords, char *str, double rot, doub
 /* not all devices will do anythin (e.g., postscript)	*/
 /********************************************************/
 
-static int X11_Locator(double *x, double *y, DevDesc *dd)
+static Rboolean X11_Locator(double *x, double *y, DevDesc *dd)
 {
     XEvent event;
     DevDesc *ddEvent;
@@ -1945,10 +1951,7 @@ static int X11_Locator(double *x, double *y, DevDesc *dd)
             handleEvent(event);
     }
     /* if it was a Button1 succeed, otherwise fail */
-    if (done == 1)
-        return 1;
-    else
-        return 0;
+    return (done == 1);
 }
 
 /********************************************************/
@@ -2009,25 +2012,25 @@ static void X11_Hold(DevDesc *dd)
 /* the clean-up itself					*/
 /********************************************************/
 
-/*  X11 Device Driver Arguments		*/
-/*    1)  display name			*/
-/*    2)  width (inches)		*/
-/*    3)  height (inches)		*/
-/*    4)  base pointsize		*/
-/*    5)  gamma correction factor	*/
-/*    6)  colormodel                    */
-/*          see defines at top of file  */
-/*    7)  maxcube                    	*/
+/*  X11 Device Driver Arguments	:	*/
+/*	1) display name			*/
+/*	2) width (inches)		*/
+/*	3) height (inches)		*/
+/*	4) base pointsize		*/
+/*	5) gamma correction factor	*/
+/*	6) colormodel,			*/
+/*	 see X_COLORTYPE at top of file */
+/*	7) maxcube			*/
 
-int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, double gamma,
-                    int colormodel, int maxcube)
+Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double height, double pointsize, double gamma_fac,
+                         X_COLORTYPE colormodel, int maxcube)
 {
     int ps;
     x11Desc *xd;
 
     /* allocate new device description */
     if (!(xd = (x11Desc *)malloc(sizeof(x11Desc))))
-        return 0;
+        return FALSE;
 
     /* From here on, if we need to bail out with "error", */
     /* then we must also free(xd). */
@@ -2046,10 +2049,10 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
 
     /*	Start the Device Driver and Hardcopy.  */
 
-    if (!X11_Open(dd, xd, display, width, height, gamma, colormodel, maxcube))
+    if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube))
     {
         free(xd);
-        return 0;
+        return FALSE;
     }
 
     /*	Set up Data Structures. */
@@ -2103,15 +2106,17 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
 
     /* Device capabilities */
 
-    dd->dp.canResizePlot = 1;
-    dd->dp.canChangeFont = 0;
-    dd->dp.canRotateText = 1;
-    dd->dp.canResizeText = 1;
-    dd->dp.canClip = 1;
-    dd->dp.canHAdj = 0;
+    dd->dp.canResizePlot = TRUE;
+    dd->dp.canChangeFont = FALSE;
+    dd->dp.canRotateText = TRUE;
+    dd->dp.canResizeText = TRUE;
+    dd->dp.canClip = TRUE;
+    dd->dp.canHAdj = FALSE;
 
-    /* initialise x11 device description (most of the work */
-    /* has been done in X11_Open) */
+    dd->dp.ask = FALSE;
+
+    /* initialise x11 device description */
+    /* (most of the work has been done in X11_Open) */
 
     xd->cex = 1.0;
     xd->srt = 0.0;
@@ -2120,9 +2125,9 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
 
     dd->deviceSpecific = (void *)xd;
 
-    dd->displayListOn = 1;
+    dd->displayListOn = TRUE;
 
     R_ProcessEvents((void *)NULL);
 
-    return 1;
+    return TRUE;
 }

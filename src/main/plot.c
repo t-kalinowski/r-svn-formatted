@@ -475,13 +475,14 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
 SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* plot.new(ask) - create a new plot "frame" */
-    int ask, asksave;
+
+    Rboolean asksave;
+    int ask; /* maybe NA */
     DevDesc *dd;
 
     checkArity(op, args);
 
-    ask = asLogical(CAR(args));
-    dd = GNewPlot(call != R_NilValue, ask);
+    dd = GNewPlot(GRecording(call), ask);
 
     ask = asLogical(CAR(args));
     if (ask == NA_LOGICAL)
@@ -498,8 +499,7 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GSetState(1, dd);
 
     dd->gp.ask = asksave;
-    /* NOTE: during replays, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
@@ -634,8 +634,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* NOTE: the operation is only recorded if there was no "error" */
-    /* NOTE: if we're replaying then call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -1357,8 +1356,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: during replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_axis */
@@ -1627,8 +1625,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(5);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: during replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_plot_xy */
@@ -1741,8 +1738,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -1830,8 +1826,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(4);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -1938,8 +1933,7 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2054,8 +2048,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2220,8 +2213,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(7);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2498,8 +2490,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(10);
 
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_mtext */
@@ -2713,8 +2704,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2885,8 +2875,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(3);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2926,8 +2915,7 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -3206,9 +3194,9 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         SETCAD4R(saveans, Offset);
         SETCAD4R(CDR(saveans), l);
 
-        /* We are recording, so save enough information to be able to
+        /* If we are recording, save enough information to be able to
            redraw the text labels beside identified points */
-        if (call != R_NilValue)
+        if (GRecording(call))
             recordGraphicOperation(op, saveans, dd);
         UNPROTECT(4);
 
@@ -3250,7 +3238,7 @@ SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* compute the plot layout */
 
-    dd = GNewPlot(call != R_NilValue, NA_LOGICAL);
+    dd = GNewPlot(GRecording(call), NA_LOGICAL);
     lw = 0;
     gw = 0;
     ht = GStrHeight("M", INCHES, dd);
@@ -3336,7 +3324,7 @@ SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Plotting could be done here */
     /* or later in interpreted code. */
 
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, saveargs, dd);
     return R_NilValue;
 }
@@ -3531,8 +3519,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 
@@ -3643,8 +3630,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    /* NOTE: on replay, call == R_NilValue */
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     vmaxset(vmax);
     return R_NilValue;
@@ -3704,9 +3690,9 @@ SEXP do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
         while (theList != R_NilValue)
         {
             SEXP theOperation = CAR(theList);
-            SEXP op = CAR(theOperation);
-            SEXP args = CDR(theOperation);
-            PRIMFUN(op)(R_NilValue, op, args, R_NilValue);
+            SEXP l_op = CAR(theOperation);
+            SEXP l_args = CDR(theOperation);
+            PRIMFUN(l_op)(R_NilValue, l_op, l_args, R_NilValue);
             if (!dd->gp.valid)
                 break;
             theList = CDR(theList);
@@ -4086,7 +4072,7 @@ SEXP do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     GMode(0, dd);
     GRestorePars(dd);
-    if (call != R_NilValue)
+    if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(5);
     return R_NilValue;
