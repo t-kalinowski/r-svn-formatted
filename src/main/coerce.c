@@ -983,6 +983,9 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     case REALSXP:
     case CPLXSXP:
     case STRSXP:
+
+#define COERCE_ERROR error("cannot coerce type %s to %s vector", CHAR(type2str(TYPEOF(v))), CHAR(type2str(type)))
+
         switch (type)
         {
         case SYMSXP:
@@ -1012,10 +1015,16 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
         case LISTSXP:
             ans = coerceToPairList(v);
             break;
+        default:
+            COERCE_ERROR;
         }
+        break;
+    default:
+        COERCE_ERROR;
     }
     return ans;
 }
+#undef COERCE_ERROR
 
 SEXP CreateTag(SEXP x)
 {
@@ -1072,7 +1081,7 @@ static SEXP asFunction(SEXP x)
     return f;
 }
 
-static SEXP ascommon(SEXP call, SEXP u, int type)
+SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
 {
     /* -> as.vector(..) or as.XXX(.) : coerce 'u' to 'type' : */
     SEXP v;
