@@ -1724,7 +1724,7 @@ static SEXP Query(char *what, DevDesc *dd)
     {
         char buf[2];
         PROTECT(value = allocVector(STRSXP, 1));
-        buf[0] = dd->dp.xaxt;
+        buf[0] = dd->dp.yaxt;
         buf[1] = '\0';
         STRING(value)[0] = mkChar(buf);
         UNPROTECT(1);
