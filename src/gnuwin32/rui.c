@@ -337,16 +337,18 @@ static void menupkginstallbioc(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "{a<- CRAN.packages(CRAN=getOption(\"BIOC\"))\ninstall.packages(select.list(a[,1],,TRUE), "
-                         ".libPaths()[1], available=a, CRAN=getOption(\"BIOC\"))}");
+    consolecmd(RConsole,
+               "local({a<- CRAN.packages(CRAN=getOption(\"BIOC\"))\ninstall.packages(select.list(a[,1],,TRUE), "
+               ".libPaths()[1], available=a, CRAN=getOption(\"BIOC\"))})");
 }
 
 static void menupkginstallcran(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole,
-               "{a <- CRAN.packages()\ninstall.packages(select.list(a[,1],,TRUE), .libPaths()[1], available=a)}");
+    consolecmd(
+        RConsole,
+        "local({a <- CRAN.packages()\ninstall.packages(select.list(a[,1],,TRUE), .libPaths()[1], available=a)})");
     /*    show(RConsole); */
 }
 
