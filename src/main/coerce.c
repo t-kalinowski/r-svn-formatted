@@ -1328,9 +1328,6 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
     case 50: /* is.object */
         LOGICAL(ans)[0] = OBJECT(CAR(args));
         break;
-    case 75: /* is.factor */
-        LOGICAL(ans)[0] = isFactor(CAR(args));
-        break;
     case 80:
         LOGICAL(ans)[0] = isFrame(CAR(args));
         break;
@@ -1343,9 +1340,6 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     case 102: /* is.array */
         LOGICAL(ans)[0] = isArray(CAR(args));
-        break;
-    case 103: /* is.ts */
-        LOGICAL(ans)[0] = isTs(CAR(args));
         break;
 
     case 200: /* is.atomic */
