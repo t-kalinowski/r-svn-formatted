@@ -220,6 +220,16 @@ static void extractItem(char *buffer, SEXP ans, int i)
                 expected("a real", buffer);
         }
         break;
+#ifdef scan_complex
+    case CPLXSXP:
+        /* FIXME: Extract "complex" number from buffer ... */
+        /* =====
+           Then, eliminate all the  #ifdef scan_complex ..
+
+           Once you have done it, you have fixed R-bug PR#125 (22 Feb 1999)
+        */
+        break;
+#endif
     case STRSXP:
         if (isNAstring(buffer))
             STRING(ans)[i] = NA_STRING;
@@ -335,6 +345,12 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         for (i = 0; i < n; i++)
             REAL(bns)[i] = REAL(ans)[i];
         break;
+#ifdef scan_complex
+    case CPLXSXP:
+        for (i = 0; i < n; i++)
+            COMPLEX(bns)[i] = COMPLEX(ans)[i];
+        break;
+#endif
     case STRSXP:
         for (i = 0; i < n; i++)
             STRING(bns)[i] = STRING(ans)[i];
@@ -482,6 +498,12 @@ done:
             for (j = 0; j < n; j++)
                 REAL(new)[j] = REAL(old)[j];
             break;
+#ifdef scan_complex
+        case CPLXSXP:
+            for (j = 0; j < n; j++)
+                COMPLEX(new)[j] = COMPLEX(old)[j];
+            break;
+#endif
         case STRSXP:
             for (j = 0; j < n; j++)
                 STRING(new)[j] = STRING(old)[j];
@@ -576,12 +598,22 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     case LGLSXP:
     case INTSXP:
     case REALSXP:
+#ifdef scan_complex
+    case CPLXSXP:
+#endif
     case STRSXP:
         ans = scanVector(TYPEOF(what), nmax, nlines, flush, stripwhite);
         break;
+
     case VECSXP:
         ans = scanFrame(what, nmax, nlines, flush, stripwhite);
         break;
+#ifndef scan_complex
+    case CPLXSXP:
+        if (!ttyflag)
+            fclose(fp);
+        error("scan(): what=\"complex\" is not yet supported\n");
+#endif
     default:
         if (!ttyflag)
             fclose(fp);
