@@ -1134,7 +1134,7 @@ static char *fontMetricsFileName(char *family, int faceIndex)
     int i, nfonts;
     char *result = NULL;
     int found = 0;
-    PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("graphics"))));
+    PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices"))));
     PROTECT(PSenv = findVar(install(".PSenv"), graphicsNS));
     /* under lazy loading this will be a promise on first use */
     if (TYPEOF(PSenv) == PROMSXP)
@@ -1173,7 +1173,7 @@ static char *getFontEncoding(char *family)
     int i, nfonts;
     char *result = NULL;
     int found = 0;
-    PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("graphics"))));
+    PROTECT(graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices"))));
     PROTECT(PSenv = findVar(install(".PSenv"), graphicsNS));
     /* under lazy loading this will be a promise on first use */
     if (TYPEOF(PSenv) == PROMSXP)
@@ -1798,7 +1798,7 @@ static void PSFileHeader(FILE *fp, char *papername, double paperwidth, double pa
     if (prolog == R_UnboundValue)
     {
         /* if no object is visible, look in the graphics namespace */
-        SEXP graphicsNS = R_FindNamespace(ScalarString(mkChar("graphics")));
+        SEXP graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices")));
         prolog = findVar(install(".ps.prolog"), graphicsNS);
         /* under lazy loading this will be a promise on first use */
         if (TYPEOF(prolog) == PROMSXP)
