@@ -3804,7 +3804,7 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
         case 1:
             if (las == 2 || las == 3)
             {
-                at = at + GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
+                at = at - GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line - dd->gp.yLineBias;
                 angle = 90;
                 yadj = 0.5;
