@@ -137,6 +137,12 @@ const unsigned char *pcre_maketables(void)
             x += ctype_xdigit;
         if (isalnum(i) || i == '_')
             x += ctype_word;
+
+        /* Note: strchr includes the terminating zero in the characters it considers.
+        In this instance, that is ok because we want binary zero to be flagged as a
+        meta-character, which in this sense is any character that terminates a run
+        of data characters. */
+
         if (strchr("*+?{^.$|()[", i) != 0)
             x += ctype_meta;
         *p++ = x;
