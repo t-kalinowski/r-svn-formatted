@@ -101,7 +101,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
 
         if ((fp = R_fopen(R_ExpandFileName(filename), "w")) == NULL)
-            errorcall(call, "unable to open file\n");
+            errorcall(call, "unable to open file");
         if (LENGTH(STRING(fn)[0]) == 0)
             EdFileUsed++;
         if (TYPEOF(x) != CLOSXP || isNull(t = getAttrib(x, R_SourceSymbol)))
@@ -119,7 +119,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     sprintf(editcmd, "%s \"%s\"", CHAR(STRING(ed)[0]), filename);
     rc = runcmd(editcmd, 1, 1, "");
     if (rc == NOLAUNCH)
-        errorcall(call, "unable to run editor\n");
+        errorcall(call, "unable to run editor");
     if (rc != 0)
         warningcall(call, "editor ran but returned error status\n");
 #else

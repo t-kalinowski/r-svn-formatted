@@ -43,7 +43,7 @@ SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     if (ntopics > 0)
     {
         if (!isString(fn) || ntopics > 500)
-            errorcall(call, "invalid topics argument\n");
+            errorcall(call, "invalid topics argument");
         for (i = 0; i < ntopics; i++)
             topics[i] = CHAR(STRING(fn)[i]);
     }

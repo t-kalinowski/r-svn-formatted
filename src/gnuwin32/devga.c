@@ -1936,12 +1936,12 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "invalid device");
     filename = CADR(args);
     if (!isString(filename) || LENGTH(filename) != 1)
-        errorcall(call, "invalid filename argument\n");
+        errorcall(call, "invalid filename argument");
     fn = CHAR(STRING(filename)[0]);
     fixslash(fn);
     type = CADDR(args);
     if (!isString(type) || LENGTH(type) != 1)
-        errorcall(call, "invalid filename argument\n");
+        errorcall(call, "invalid filename argument");
     tp = CHAR(STRING(type)[0]);
     Rprintf("device %d fn %s tp %s\n", device, fn, tp);
 
@@ -1959,6 +1959,6 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
         SaveAsPostscript(dd, fn);
     }
     else
-        errorcall(call, "unknown type\n");
+        errorcall(call, "unknown type");
     return R_NilValue;
 }

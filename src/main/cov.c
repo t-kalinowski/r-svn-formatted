@@ -336,7 +336,7 @@ static void complete1(int n, int ncx, double *x, int *ind, int na_fail)
             if (ISNAN(z[i]))
             {
                 if (na_fail)
-                    error("missing observations in cov/cor\n");
+                    error("missing observations in cov/cor");
                 else
                     ind[i] = 0;
             }
@@ -356,7 +356,7 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind, i
             if (ISNAN(z[i]))
             {
                 if (na_fail)
-                    error("missing observations in cov/cor\n");
+                    error("missing observations in cov/cor");
                 else
                     ind[i] = 0;
             }
@@ -368,7 +368,7 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind, i
             if (ISNAN(z[i]))
             {
                 if (na_fail)
-                    error("missing observations in cov/cor\n");
+                    error("missing observations in cov/cor");
                 else
                     ind[i] = 0;
             }
@@ -439,7 +439,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         pair = 1;
         break;
     default:
-        errorcall(call, "invalid computational method\n");
+        errorcall(call, "invalid computational method");
     }
     if (ansmat)
         PROTECT(ans = allocMatrix(REALSXP, ncx, ncy));

@@ -75,7 +75,7 @@ void ProcessEvents(void)
     if (UserBreak)
     {
         UserBreak = 0;
-        /* error("user break\n"); */
+        /* error("user break"); */
         raise(SIGINT);
     }
     R_CallBackHook();

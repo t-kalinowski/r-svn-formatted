@@ -189,7 +189,7 @@ SEXP do_helpstart(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     home = getenv("R_HOME");
     if (home == NULL)
-        error("R_HOME not set\n");
+        error("R_HOME not set");
     sprintf(buf, "%s\\doc\\html\\index.html", home);
     ff = fopen(buf, "r");
     if (!ff)
@@ -239,7 +239,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
         fclose(ff);
         home = getenv("R_HOME");
         if (home == NULL)
-            error("R_HOME not set\n");
+            error("R_HOME not set");
         ShellExecute(NULL, "open", item, NULL, home, SW_SHOW);
     }
     else if (type == 2)
