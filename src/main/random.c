@@ -272,7 +272,7 @@ static void random3(double (*f)(), double *a, int na, double *b, int nb, double 
     {
         ai = a[i % na];
         bi = b[i % nb];
-        ci = c[i % nb];
+        ci = c[i % nc]; /* not i % nb */
         if (FINITE(ai) && FINITE(bi) && FINITE(ci))
         {
             x[i] = MATH_CHECK(f(ai, bi, ci));
