@@ -21,7 +21,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy_impl.c,v 1.22 2004/04/24 23:39:29 murdoch Exp $
+ *  $Id: rproxy_impl.c,v 1.23 2004/06/08 19:48:42 ripley Exp $
  */
 
 #define NONAMELESSUNION
@@ -414,6 +414,8 @@ int R_Proxy_parse_parameters(char const *pParameterString, struct _R_Proxy_init_
 
     return 0;
 }
+
+#include "../shext.h" /* for ShellGetPersonalDirectory */
 
 /* 00-02-18 | baier | R_Proxy_init() now takes parameter string, parse it */
 /* 03-06-01 | baier | now we add %R_HOME%\bin to %PATH% */
