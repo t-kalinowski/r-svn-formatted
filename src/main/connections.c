@@ -2182,6 +2182,8 @@ SEXP do_isopen(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         res = res & con->canwrite;
         break;
+    default:
+        errorcall(call, "unknown 'rw' value");
     }
     PROTECT(ans = allocVector(LGLSXP, 1));
     LOGICAL(ans)[0] = res;
@@ -2708,7 +2710,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
                 break;
             default:
-                error("That size is unknown on this machine");
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             PROTECT(ans = allocVector(INTSXP, n));
             p = (void *)INTEGER(ans);
@@ -2731,7 +2733,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
                 break;
             default:
-                error("That size is unknown on this machine");
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             PROTECT(ans = allocVector(LGLSXP, n));
             p = (void *)LOGICAL(ans);
@@ -2747,7 +2749,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             case 1:
                 break;
             default:
-                error("raw is always of size 1");
+                errorcall(call, "raw is always of size 1");
             }
             PROTECT(ans = allocVector(RAWSXP, n));
             p = (void *)RAW(ans);
@@ -2767,7 +2769,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
                 break;
             default:
-                error("That size is unknown on this machine");
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             PROTECT(ans = allocVector(REALSXP, n));
             p = (void *)REAL(ans);
@@ -2817,6 +2819,8 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                         INTEGER(ans)[i] = (int)*((_lli_t *)buf);
                         break;
 #endif
+                    default:
+                        errorcall(call, "size %d is unknown on this machine", size);
                     }
                 }
             }
@@ -2841,6 +2845,8 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                         REAL(ans)[i] = (double)*((long double *)buf);
                         break;
 #endif
+                    default:
+                        errorcall(call, "size %d is unknown on this machine", size);
                     }
                 }
             }
@@ -2924,7 +2930,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
                 break;
             default:
-                error("That size is unknown on this machine");
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             break;
         case REALSXP:
@@ -2939,7 +2945,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
                 break;
             default:
-                error("That size is unknown on this machine");
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             break;
         case CPLXSXP:
@@ -2955,7 +2961,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
                 error("size changing is not supported for raw vectors");
             break;
         default:
-            error("That type is unimplemented");
+            UNIMPLEMENTED_TYPE("writeBin", object);
         }
         buf = R_chk_calloc(len, size); /* R_alloc(len, size); */
         switch (TYPEOF(object))
@@ -3001,6 +3007,8 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (i = 0; i < len; i++)
                     buf[i] = (signed char)INTEGER(object)[i];
                 break;
+            default:
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             break;
         case REALSXP:
@@ -3029,6 +3037,8 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
             }
 #endif
+            default:
+                errorcall(call, "size %d is unknown on this machine", size);
             }
             break;
         case CPLXSXP:

@@ -630,6 +630,8 @@ SEXP lengthgets(SEXP x, R_len_t len)
             else
                 RAW(rval)[i] = (Rbyte)0;
         break;
+    default:
+        UNIMPLEMENTED_TYPE("length<-", x);
     }
     if (isVector(x) && xnames != R_NilValue)
         setAttrib(rval, R_NamesSymbol, names);

@@ -1056,7 +1056,7 @@ SEXP do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
 
     default:
-        errorcall(call, "unsupported type of array");
+        UNIMPLEMENTED_TYPE("aperm", a);
     }
 
     /* handle the resize */
@@ -1192,6 +1192,9 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     }
                 break;
+            default:
+                /* we checked the type above, but be sure */
+                UNIMPLEMENTED_TYPEt("do_colsum", type);
             }
             if (OP == 1)
             {
@@ -1304,6 +1307,9 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     }
                 break;
+            default:
+                /* we checked the type above, but be sure */
+                UNIMPLEMENTED_TYPEt("do_colsum", type);
             }
             if (OP == 3)
             {

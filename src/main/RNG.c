@@ -129,7 +129,8 @@ double unif_rand(void)
     case USER_UNIF:
         return *((double *)User_unif_fun());
 
-    default: /* can never happen (enum type)*/
+    default:
+        error("unif_rand: unimplemented RNG kind %d", RNG_kind);
         return -1.;
     }
 }
@@ -207,6 +208,8 @@ static void FixupSeeds(RNGtype kind, int initial)
         break;
     case USER_UNIF:
         break;
+    default:
+        error("FixupSeeds: unimplemented RNG kind %d", kind);
     }
 }
 
@@ -267,6 +270,8 @@ static void RNG_Init(RNGtype kind, Int32 seed)
             RNG_Table[kind].i_seed = (Int32 *)User_unif_seedloc();
         }
         break;
+    default:
+        error("RNG_Init: unimplemented RNG kind %d", kind);
     }
 }
 

@@ -1067,6 +1067,7 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
             break;
         default:
             /* Something unintended has happened if we get here. */
+            error("Unimplemented type %d in createRSymbolObject", symbol->type);
             break;
         }
         SET_VECTOR_ELT(sym, 3, tmp = ScalarInteger(nargs));
