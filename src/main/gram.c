@@ -2108,9 +2108,20 @@ yyreturn:
 static int (*ptr_getc)(void);
 static int (*ptr_ungetc)(int);
 
+/* Private pushback, since file ungetc only guarantees one byte.
+   We need up to one MBCS-worth */
+
+static int pushback[16];
+static unsigned int npush = 0;
+
 static int xxgetc(void)
 {
-    int c = ptr_getc();
+    int c;
+
+    if (npush)
+        c = pushback[--npush];
+    else
+        c = ptr_getc();
     if (c == EOF)
     {
         EndOfFile = 1;
@@ -2136,7 +2147,11 @@ static int xxungetc(int c)
     if (KeepSource && GenerateCode && FunctionLevel > 0)
         SourcePtr--;
     xxcharcount--;
-    return ptr_ungetc(c);
+    /* return ptr_ungetc(c); */
+    if (npush >= 16)
+        return EOF;
+    pushback[npush++] = c;
+    return c;
 }
 
 static int xxvalue(SEXP v, int k)
@@ -2776,6 +2791,7 @@ static void ParseInit()
     SourcePtr = FunctionSource;
     xxcharcount = 0;
     KeepSource = *LOGICAL(GetOption(install("keep.source"), R_NilValue));
+    npush = 0;
 }
 
 static SEXP R_Parse1(ParseStatus *status)
