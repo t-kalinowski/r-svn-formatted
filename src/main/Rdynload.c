@@ -992,10 +992,6 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
 
 void InitFunctionHashing()
 {
-#ifdef OLD
-    NaokSymbol = install("NAOK");
-    DupSymbol = install("DUP");
-#endif
 }
 
 DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol *symbol)

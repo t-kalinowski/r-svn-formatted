@@ -377,11 +377,7 @@ FILE *R_OpenSysInitFile(void);
 FILE *R_OpenSiteFile(void);
 FILE *R_OpenInitFile(void);
 
-#ifdef OLD
-static void R_LoadProfile(FILE *fp)
-#else
 static void R_LoadProfile(FILE *fparg, SEXP env)
-#endif
 {
     FILE *volatile fp = fparg; /* is this needed? */
     if (fp != NULL)
@@ -390,11 +386,7 @@ static void R_LoadProfile(FILE *fparg, SEXP env)
         {
             R_GlobalContext = R_ToplevelContext = &R_Toplevel;
             signal(SIGINT, onintr);
-#ifdef OLD
-            R_ReplFile(fp, R_NilValue, 0, 0);
-#else
             R_ReplFile(fp, env, 0, 0);
-#endif
         }
         fclose(fp);
     }

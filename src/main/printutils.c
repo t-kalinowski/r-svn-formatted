@@ -220,12 +220,8 @@ char *EncodeReal(double x, int w, int d, int e)
 
 char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 {
-#if OLD
-    char fmt[64], *efr, *efi;
-#else
     char *Re, *Im, *tmp;
     int flagNegIm = 0;
-#endif
 
     R_AllocStringBuffer(0, buffer);
     /* IEEE allows signed zeros; strip these here */
@@ -240,19 +236,6 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     }
     else
     {
-#if OLD
-        if (er)
-            efr = "e";
-        else
-            efr = "f";
-        if (ei)
-            efi = "e";
-        else
-            efi = "f";
-        sprintf(fmt, "%%%d.%d%s%%+%d.%d%si", wr, dr, efr, wi, di, efi);
-        sprintf(buffer->data, fmt, x.r, x.i);
-#else
-
         /* EncodeReal returns pointer to static storage so copy */
 
         tmp = EncodeReal(x.r, wr, dr, er);
@@ -270,131 +253,114 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         Free(Re);
         Free(Im);
     }
-#endif
-        return buffer->data;
-    }
+    return buffer->data;
+}
 
-    /* There is a heavy ASCII emphasis here */
-    /* Latin1 types are (rightfully) upset */
-    /* WHAT NEEDS TO CHANGE */
-
-#ifdef OLD
-    static int hexdigit(unsigned int x)
+/* strlen() using escaped rather than literal form */
+int Rstrlen(char *s, int quote)
+{
+    char *p;
+    int len;
+    len = 0;
+    p = s;
+    while (*p)
     {
-        return ((x <= 9) ? '0' : 'A' - 10) + x;
-    }
-#endif
-
-    /* strlen() using escaped rather than literal form */
-    int Rstrlen(char *s, int quote)
-    {
-        char *p;
-        int len;
-        len = 0;
-        p = s;
-        while (*p)
+        if (isprint((int)*p))
         {
-            if (isprint((int)*p))
+            switch (*p)
             {
-                switch (*p)
-                {
-                case '\\':
+            case '\\':
 #ifdef ESCquote
-                case '\'':
+            case '\'':
 #endif
-                    len += 2;
-                    break;
+                len += 2;
+                break;
 #ifdef ESC_BARE_QUOTE
-                case '\"':
-                    len += 2;
-                    break;
+            case '\"':
+                len += 2;
+                break;
 #else
             case '\"':
                 len += quote ? 2 : 1;
                 break;
 #endif
-                default:
-                    len += 1;
-                    break;
-                }
-            }
-            else
-                switch (*p)
-                {
-                case '\a':
-                case '\b':
-                case '\f':
-                case '\n':
-                case '\r':
-                case '\t':
-                case '\v':
-                    len += 2;
-                    break;
-                default:
-#ifdef OLD
-                    len += 4;
-                    break;
-#else
+            default:
                 len += 1;
                 break;
-#endif
-                }
-            p++;
-        }
-        return len;
-    }
-
-    /* Here w appears to be the minimum field width */
-    char *EncodeString(char *s, int w, int quote, int right)
-    {
-        int b, i;
-        char *p, *q;
-
-        if (s == CHAR(NA_STRING))
-        {
-            p = quote ? CHAR(R_print.na_string) : CHAR(R_print.na_string_noquote);
-            i = quote ? strlen(CHAR(R_print.na_string)) : strlen(CHAR(R_print.na_string_noquote));
-            quote = 0;
+            }
         }
         else
-        {
-            p = s;
-            i = Rstrlen(s, quote);
-        }
-
-        R_AllocStringBuffer((i + 2 >= w) ? (i + 2) : w, buffer); /* +2 allows for quotes */
-        q = buffer->data;
-        if (right)
-        { /* Right justifying */
-            b = w - i - (quote ? 2 : 0);
-            for (i = 0; i < b; i++)
-                *q++ = ' ';
-        }
-        if (quote)
-            *q++ = quote;
-        while (*p)
-        {
-
-            /* ASCII */
-
-            if (isprint((int)*p))
+            switch (*p)
             {
-                switch (*p)
-                {
-                case '\\':
-                    *q++ = '\\';
-                    *q++ = '\\';
-                    break;
+            case '\a':
+            case '\b':
+            case '\f':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\v':
+                len += 2;
+                break;
+            default:
+                len += 1;
+                break;
+            }
+        p++;
+    }
+    return len;
+}
+
+/* Here w appears to be the minimum field width */
+char *EncodeString(char *s, int w, int quote, int right)
+{
+    int b, i;
+    char *p, *q;
+
+    if (s == CHAR(NA_STRING))
+    {
+        p = quote ? CHAR(R_print.na_string) : CHAR(R_print.na_string_noquote);
+        i = quote ? strlen(CHAR(R_print.na_string)) : strlen(CHAR(R_print.na_string_noquote));
+        quote = 0;
+    }
+    else
+    {
+        p = s;
+        i = Rstrlen(s, quote);
+    }
+
+    R_AllocStringBuffer((i + 2 >= w) ? (i + 2) : w, buffer); /* +2 allows for quotes */
+    q = buffer->data;
+    if (right)
+    { /* Right justifying */
+        b = w - i - (quote ? 2 : 0);
+        for (i = 0; i < b; i++)
+            *q++ = ' ';
+    }
+    if (quote)
+        *q++ = quote;
+    while (*p)
+    {
+
+        /* ASCII */
+
+        if (isprint((int)*p))
+        {
+            switch (*p)
+            {
+            case '\\':
+                *q++ = '\\';
+                *q++ = '\\';
+                break;
 #ifdef ESCquote
-                case '\'':
-                    *q++ = '\\';
-                    *q++ = '\'';
-                    break;
+            case '\'':
+                *q++ = '\\';
+                *q++ = '\'';
+                break;
 #endif
 #ifdef ESC_BARE_QUOTE
-                case '\"':
-                    *q++ = '\"';
-                    break;
+            case '\"':
+                *q++ = '\"';
+                break;
 #else
             case '\"':
                 if (quote)
@@ -402,309 +368,299 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
                 *q++ = '\"';
                 break;
 #endif
-                default:
-                    *q++ = *p;
-                    break;
-                }
-            }
-
-            /* ANSI Escapes */
-
-            else
-                switch (*p)
-                {
-                case '\a':
-                    *q++ = '\\';
-                    *q++ = 'a';
-                    break;
-                case '\b':
-                    *q++ = '\\';
-                    *q++ = 'b';
-                    break;
-                case '\f':
-                    *q++ = '\\';
-                    *q++ = 'f';
-                    break;
-                case '\n':
-                    *q++ = '\\';
-                    *q++ = 'n';
-                    break;
-                case '\r':
-                    *q++ = '\\';
-                    *q++ = 'r';
-                    break;
-                case '\t':
-                    *q++ = '\\';
-                    *q++ = 't';
-                    break;
-                case '\v':
-                    *q++ = '\\';
-                    *q++ = 'v';
-                    break;
-
-                    /* Latin1 Swallowed Here */
-
-#ifdef OLD
-                default:
-                    *q++ = '0';
-                    *q++ = 'x';
-                    *q++ = hexdigit((*p & 0xF0) >> 4);
-                    *q++ = hexdigit(*p & 0x0F);
-#else
             default:
                 *q++ = *p;
                 break;
-#endif
-                }
-            p++;
+            }
         }
-        if (quote)
-            *q++ = quote;
-        if (!right)
-        { /* Left justifying */
-            *q = '\0';
-            b = w - strlen(buffer->data);
-            for (i = 0; i < b; i++)
-                *q++ = ' ';
-        }
+
+        /* ANSI Escapes */
+
+        else
+            switch (*p)
+            {
+            case '\a':
+                *q++ = '\\';
+                *q++ = 'a';
+                break;
+            case '\b':
+                *q++ = '\\';
+                *q++ = 'b';
+                break;
+            case '\f':
+                *q++ = '\\';
+                *q++ = 'f';
+                break;
+            case '\n':
+                *q++ = '\\';
+                *q++ = 'n';
+                break;
+            case '\r':
+                *q++ = '\\';
+                *q++ = 'r';
+                break;
+            case '\t':
+                *q++ = '\\';
+                *q++ = 't';
+                break;
+            case '\v':
+                *q++ = '\\';
+                *q++ = 'v';
+                break;
+
+            default:
+                *q++ = *p;
+                break;
+            }
+        p++;
+    }
+    if (quote)
+        *q++ = quote;
+    if (!right)
+    { /* Left justifying */
         *q = '\0';
-        return buffer->data;
+        b = w - strlen(buffer->data);
+        for (i = 0; i < b; i++)
+            *q++ = ' ';
     }
+    *q = '\0';
+    return buffer->data;
+}
 
-    char *EncodeElement(SEXP x, int indx, int quote)
+char *EncodeElement(SEXP x, int indx, int quote)
+{
+    int w, d, e, wi, di, ei;
+
+    switch (TYPEOF(x))
     {
-        int w, d, e, wi, di, ei;
+    case LGLSXP:
+        formatLogical(&INTEGER(x)[indx], 1, &w);
+        EncodeLogical(INTEGER(x)[indx], w);
+        break;
+    case INTSXP:
+        formatInteger(&INTEGER(x)[indx], 1, &w);
+        EncodeInteger(INTEGER(x)[indx], w);
+        break;
+    case REALSXP:
+        formatReal(&REAL(x)[indx], 1, &w, &d, &e, 0);
+        EncodeReal(REAL(x)[indx], w, d, e);
+        break;
+    case STRSXP:
+        formatString(&STRING_PTR(x)[indx], 1, &w, quote);
+        EncodeString(CHAR(STRING_ELT(x, indx)), w, quote, Rprt_adj_left);
+        break;
+    case CPLXSXP:
+        formatComplex(&COMPLEX(x)[indx], 1, &w, &d, &e, &wi, &di, &ei, 0);
+        EncodeComplex(COMPLEX(x)[indx], w, d, e, wi, di, ei);
+        break;
+    }
+    return buffer->data;
+}
 
-        switch (TYPEOF(x))
+char *Rsprintf(char *format, ...)
+{
+    va_list(ap);
+
+    R_AllocStringBuffer(0, buffer); /* unsafe, as assuming length, but all internal
+                               uses are for a few characters */
+    va_start(ap, format);
+    vsprintf(buffer->data, format, ap);
+    va_end(ap);
+    return buffer->data;
+}
+
+void Rprintf(char *format, ...)
+{
+    va_list(ap);
+
+    va_start(ap, format);
+    Rvprintf(format, ap);
+    va_end(ap);
+}
+
+/*
+  REprintf is used by the error handler do not add
+  anything unless you're sure it won't
+  cause problems
+*/
+void REprintf(char *format, ...)
+{
+    va_list(ap);
+    va_start(ap, format);
+    REvprintf(format, ap);
+    va_end(ap);
+}
+
+void Rcons_vprintf(const char *format, va_list arg)
+{
+    char buf[BUFSIZE], *p = buf, *vmax = vmaxget();
+    int res;
+
+    res = vsnprintf(p, BUFSIZE, format, arg);
+    if (res >= BUFSIZE)
+    { /* res is the desired output length */
+        p = R_alloc(res + 1, sizeof(char));
+        vsprintf(p, format, arg);
+    }
+    else if (res < 0)
+    { /* just a failure indication */
+        p = R_alloc(10 * BUFSIZE, sizeof(char));
+        res = vsnprintf(p, 10 * BUFSIZE, format, arg);
+        if (res < 0)
         {
-        case LGLSXP:
-            formatLogical(&INTEGER(x)[indx], 1, &w);
-            EncodeLogical(INTEGER(x)[indx], w);
-            break;
-        case INTSXP:
-            formatInteger(&INTEGER(x)[indx], 1, &w);
-            EncodeInteger(INTEGER(x)[indx], w);
-            break;
-        case REALSXP:
-            formatReal(&REAL(x)[indx], 1, &w, &d, &e, 0);
-            EncodeReal(REAL(x)[indx], w, d, e);
-            break;
-        case STRSXP:
-            formatString(&STRING_PTR(x)[indx], 1, &w, quote);
-            EncodeString(CHAR(STRING_ELT(x, indx)), w, quote, Rprt_adj_left);
-            break;
-        case CPLXSXP:
-            formatComplex(&COMPLEX(x)[indx], 1, &w, &d, &e, &wi, &di, &ei, 0);
-            EncodeComplex(COMPLEX(x)[indx], w, d, e, wi, di, ei);
-            break;
+            *(p + 10 * BUFSIZE) = '\0';
+            warning("printing of extremely long output is truncated");
         }
-        return buffer->data;
     }
+    R_WriteConsole(p, strlen(buf));
+    vmaxset(vmax);
+}
 
-    char *Rsprintf(char *format, ...)
+void Rvprintf(const char *format, va_list arg)
+{
+    Rconnection con = getConnection(R_OutputCon);
+
+    con->vfprintf(con, format, arg);
+    con->fflush(con);
+}
+
+/*
+   REvprintf is part of the error handler.
+   Do not change it unless you are SURE that
+   your changes are compatible with the
+   error handling mechanism.
+
+   It is also used in R_Suicide on Unix.
+*/
+
+void REvprintf(const char *format, va_list arg)
+{
+    if (R_ErrorCon != 2)
     {
-        va_list(ap);
-
-        R_AllocStringBuffer(0, buffer); /* unsafe, as assuming length, but all internal
-                                   uses are for a few characters */
-        va_start(ap, format);
-        vsprintf(buffer->data, format, ap);
-        va_end(ap);
-        return buffer->data;
-    }
-
-    void Rprintf(char *format, ...)
-    {
-        va_list(ap);
-
-        va_start(ap, format);
-        Rvprintf(format, ap);
-        va_end(ap);
-    }
-
-    /*
-      REprintf is used by the error handler do not add
-      anything unless you're sure it won't
-      cause problems
-    */
-    void REprintf(char *format, ...)
-    {
-        va_list(ap);
-        va_start(ap, format);
-        REvprintf(format, ap);
-        va_end(ap);
-    }
-
-    void Rcons_vprintf(const char *format, va_list arg)
-    {
-        char buf[BUFSIZE], *p = buf, *vmax = vmaxget();
-        int res;
-
-        res = vsnprintf(p, BUFSIZE, format, arg);
-        if (res >= BUFSIZE)
-        { /* res is the desired output length */
-            p = R_alloc(res + 1, sizeof(char));
-            vsprintf(p, format, arg);
-        }
-        else if (res < 0)
-        { /* just a failure indication */
-            p = R_alloc(10 * BUFSIZE, sizeof(char));
-            res = vsnprintf(p, 10 * BUFSIZE, format, arg);
-            if (res < 0)
-            {
-                *(p + 10 * BUFSIZE) = '\0';
-                warning("printing of extremely long output is truncated");
-            }
-        }
-        R_WriteConsole(p, strlen(buf));
-        vmaxset(vmax);
-    }
-
-    void Rvprintf(const char *format, va_list arg)
-    {
-        Rconnection con = getConnection(R_OutputCon);
-
-        con->vfprintf(con, format, arg);
-        con->fflush(con);
-    }
-
-    /*
-       REvprintf is part of the error handler.
-       Do not change it unless you are SURE that
-       your changes are compatible with the
-       error handling mechanism.
-
-       It is also used in R_Suicide on Unix.
-    */
-
-    void REvprintf(const char *format, va_list arg)
-    {
-        if (R_ErrorCon != 2)
+        Rconnection con = getConnection_no_err(R_ErrorCon);
+        if (con == NULL)
         {
-            Rconnection con = getConnection_no_err(R_ErrorCon);
-            if (con == NULL)
-            {
-                /* should never happen, but in case of corruption... */
-                R_ErrorCon = 2;
-            }
-            else
-            {
-                con->vfprintf(con, format, arg);
-                con->fflush(con);
-                return;
-            }
-        }
-        if (R_Consolefile)
-        {
-            /* try to interleave stdout and stderr carefully */
-            if (R_Outputfile && (R_Outputfile != R_Consolefile))
-            {
-                fflush(R_Outputfile);
-                vfprintf(R_Consolefile, format, arg);
-                fflush(R_Consolefile);
-            }
-            else
-                vfprintf(R_Consolefile, format, arg);
+            /* should never happen, but in case of corruption... */
+            R_ErrorCon = 2;
         }
         else
         {
-            char buf[BUFSIZE];
-            int slen;
-
-            vsnprintf(buf, BUFSIZE, format, arg);
-            buf[BUFSIZE - 1] = '\0';
-            slen = strlen(buf);
-            R_WriteConsole(buf, slen);
+            con->vfprintf(con, format, arg);
+            con->fflush(con);
+            return;
         }
     }
-
-    int IndexWidth(int n)
+    if (R_Consolefile)
     {
-        return (int)(log10(n + 0.5) + 1);
-    }
-
-    void VectorIndex(int i, int w)
-    {
-        /* print index label "[`i']" , using total width `w' (left filling blanks) */
-        Rprintf("%*s[%ld]", w - IndexWidth(i) - 2, "", i);
-    }
-
-    void MatrixColumnLabel(SEXP cl, int j, int w)
-    {
-        int l;
-        SEXP tmp;
-
-        if (!isNull(cl))
+        /* try to interleave stdout and stderr carefully */
+        if (R_Outputfile && (R_Outputfile != R_Consolefile))
         {
-            tmp = STRING_ELT(cl, j);
-            if (tmp == NA_STRING)
-                l = R_print.na_width_noquote;
-            else
-                l = Rstrlen(CHAR(tmp), 0);
-            Rprintf("%*s%s", w - l, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left));
+            fflush(R_Outputfile);
+            vfprintf(R_Consolefile, format, arg);
+            fflush(R_Consolefile);
         }
         else
-        {
-            Rprintf("%*s[,%ld]", w - IndexWidth(j + 1) - 3, "", j + 1);
-        }
+            vfprintf(R_Consolefile, format, arg);
     }
-
-    void RightMatrixColumnLabel(SEXP cl, int j, int w)
+    else
     {
-        int l;
-        SEXP tmp;
+        char buf[BUFSIZE];
+        int slen;
 
-        if (!isNull(cl))
-        {
-            tmp = STRING_ELT(cl, j);
-            if (tmp == NA_STRING)
-                l = R_print.na_width_noquote;
-            else
-                l = Rstrlen(CHAR(tmp), 0);
-            Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(tmp), l, 0, Rprt_adj_right));
-        }
-        else
-        {
-            Rprintf("%*s[,%ld]%*s", R_print.gap, "", j + 1, w - IndexWidth(j + 1) - 3, "");
-        }
+        vsnprintf(buf, BUFSIZE, format, arg);
+        buf[BUFSIZE - 1] = '\0';
+        slen = strlen(buf);
+        R_WriteConsole(buf, slen);
     }
+}
 
-    void LeftMatrixColumnLabel(SEXP cl, int j, int w)
+int IndexWidth(int n)
+{
+    return (int)(log10(n + 0.5) + 1);
+}
+
+void VectorIndex(int i, int w)
+{
+    /* print index label "[`i']" , using total width `w' (left filling blanks) */
+    Rprintf("%*s[%ld]", w - IndexWidth(i) - 2, "", i);
+}
+
+void MatrixColumnLabel(SEXP cl, int j, int w)
+{
+    int l;
+    SEXP tmp;
+
+    if (!isNull(cl))
     {
-        int l;
-        SEXP tmp;
-
-        if (!isNull(cl))
-        {
-            tmp = STRING_ELT(cl, j);
-            if (tmp == NA_STRING)
-                l = R_print.na_width_noquote;
-            else
-                l = Rstrlen(CHAR(tmp), 0);
-            Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), w - l, "");
-        }
+        tmp = STRING_ELT(cl, j);
+        if (tmp == NA_STRING)
+            l = R_print.na_width_noquote;
         else
-        {
-            Rprintf("%*s[,%ld]%*s", R_print.gap, "", j + 1, w - IndexWidth(j + 1) - 3, "");
-        }
+            l = Rstrlen(CHAR(tmp), 0);
+        Rprintf("%*s%s", w - l, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left));
     }
-
-    void MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
+    else
     {
-        int l;
-        SEXP tmp;
-
-        if (!isNull(rl))
-        {
-            tmp = STRING_ELT(rl, i);
-            if (tmp == NA_STRING)
-                l = R_print.na_width_noquote;
-            else
-                l = Rstrlen(CHAR(tmp), 0);
-            Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), rlabw - l - lbloff, "");
-        }
-        else
-        {
-            Rprintf("\n%*s[%ld,]", rlabw - 3 - IndexWidth(i + 1), "", i + 1);
-        }
+        Rprintf("%*s[,%ld]", w - IndexWidth(j + 1) - 3, "", j + 1);
     }
+}
+
+void RightMatrixColumnLabel(SEXP cl, int j, int w)
+{
+    int l;
+    SEXP tmp;
+
+    if (!isNull(cl))
+    {
+        tmp = STRING_ELT(cl, j);
+        if (tmp == NA_STRING)
+            l = R_print.na_width_noquote;
+        else
+            l = Rstrlen(CHAR(tmp), 0);
+        Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(tmp), l, 0, Rprt_adj_right));
+    }
+    else
+    {
+        Rprintf("%*s[,%ld]%*s", R_print.gap, "", j + 1, w - IndexWidth(j + 1) - 3, "");
+    }
+}
+
+void LeftMatrixColumnLabel(SEXP cl, int j, int w)
+{
+    int l;
+    SEXP tmp;
+
+    if (!isNull(cl))
+    {
+        tmp = STRING_ELT(cl, j);
+        if (tmp == NA_STRING)
+            l = R_print.na_width_noquote;
+        else
+            l = Rstrlen(CHAR(tmp), 0);
+        Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), w - l, "");
+    }
+    else
+    {
+        Rprintf("%*s[,%ld]%*s", R_print.gap, "", j + 1, w - IndexWidth(j + 1) - 3, "");
+    }
+}
+
+void MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
+{
+    int l;
+    SEXP tmp;
+
+    if (!isNull(rl))
+    {
+        tmp = STRING_ELT(rl, i);
+        if (tmp == NA_STRING)
+            l = R_print.na_width_noquote;
+        else
+            l = Rstrlen(CHAR(tmp), 0);
+        Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(tmp), l, 0, Rprt_adj_left), rlabw - l - lbloff, "");
+    }
+    else
+    {
+        Rprintf("\n%*s[%ld,]", rlabw - 3 - IndexWidth(i + 1), "", i + 1);
+    }
+}

@@ -294,9 +294,7 @@ SEXP eval(SEXP e, SEXP rho)
     case VECSXP:
     case EXTPTRSXP:
     case WEAKREFSXP:
-#ifndef OLD
     case EXPRSXP:
-#endif
         tmp = e;
         /* Make sure constants in expressions are NAMED before being
                used as values.  Setting NAMED to 2 makes sure weird calls
@@ -328,23 +326,11 @@ SEXP eval(SEXP e, SEXP rho)
         {
             PROTECT(tmp);
             tmp = eval(tmp, rho);
-#ifdef old
-            if (NAMED(tmp) == 1)
-                SET_NAMED(tmp, 2);
-            else
-                SET_NAMED(tmp, 1);
-#else
             SET_NAMED(tmp, 2);
-#endif
             UNPROTECT(1);
         }
-#ifdef OLD
-        else if (!isNull(tmp))
-            SET_NAMED(tmp, 1);
-#else
         else if (!isNull(tmp) && NAMED(tmp) < 1)
             SET_NAMED(tmp, 1);
-#endif
         break;
     case PROMSXP:
         if (PRVALUE(e) == R_UnboundValue)
@@ -360,20 +346,7 @@ SEXP eval(SEXP e, SEXP rho)
         }
         tmp = PRVALUE(e);
         break;
-#ifdef OLD
-    case EXPRSXP: {
-        int i, n;
-        n = LENGTH(e);
-        for (i = 0; i < n; i++)
-            tmp = eval(VECTOR_ELT(e, i), rho);
-    }
-    break;
-#endif
     case LANGSXP:
-#ifdef R_PROFILING
-/*	if (R_ProfileOutfile == NULL)
-        R_InitProfiling(PROFOUTNAME, 0); */
-#endif
         if (TYPEOF(CAR(e)) == SYMSXP)
             PROTECT(op = findFun(CAR(e), rho));
         else
@@ -1211,15 +1184,12 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     data frame defined by the system hash table.  The structure there
     is different.  Should we special case here?  */
 
-#ifdef HASHING
-    @ @ @ @ @ @
-#endif
+    /*  We need a temporary variable to hold the intermediate values
+    in the computation.  For efficiency reasons we record the
+    location where this variable is stored.  */
 
-        /*  We need a temporary variable to hold the intermediate values
-        in the computation.  For efficiency reasons we record the
-        location where this variable is stored.  */
-
-        if (rho == R_BaseNamespace) errorcall(call, "cannot do complex assignments in base namespace");
+    if (rho == R_BaseNamespace)
+        errorcall(call, "cannot do complex assignments in base namespace");
     if (rho == R_NilValue)
         errorcall(call, "cannot do complex assignments in NULL environment");
     defineVar(R_TmpvalSymbol, R_NilValue, rho);
