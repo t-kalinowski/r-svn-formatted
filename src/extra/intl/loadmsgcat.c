@@ -753,7 +753,7 @@ const char *internal_function _nl_init_domain_conv(struct loaded_l10nfile *domai
 
     /* Preinitialize fields, to avoid recursion during _nl_find_msg.  */
     domain->codeset_cntr = (domainbinding != NULL ? domainbinding->codeset_cntr : 0);
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     domain->conv = (void *)-1;
 #endif
     domain->conv_tab = NULL;
@@ -799,7 +799,7 @@ const char *internal_function _nl_init_domain_conv(struct loaded_l10nfile *domai
 #ifdef _LIBC
                     outcharset = _NL_CURRENT(LC_CTYPE, CODESET);
 #else
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
                     extern const char *locale_charset(void);
                     outcharset = locale_charset();
 #endif
@@ -807,7 +807,7 @@ const char *internal_function _nl_init_domain_conv(struct loaded_l10nfile *domai
                 }
             }
 
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             /* When using GNU libc >= 2.2 or GNU libiconv >= 1.5,
                we want to use transliteration.  */
 #if (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2) || __GLIBC__ > 2 || _LIBICONV_VERSION >= 0x0105
@@ -844,7 +844,7 @@ void internal_function _nl_free_domain_conv(struct loaded_domain *domain)
     if (domain->conv_tab != NULL && domain->conv_tab != (char **)-1)
         free(domain->conv_tab);
 
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     if (domain->conv != (void *)-1)
         Riconv_close(domain->conv);
 #endif

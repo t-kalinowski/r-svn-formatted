@@ -801,8 +801,10 @@ found:
     }
 
     if (
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
         domain->conv != (void *)-1
+#else
+        0
 #endif
     )
     {
@@ -852,7 +854,7 @@ found:
             while (1)
             {
                 transmem_block_t *newmem;
-#if HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
                 const char *inptr = (const char *)inbuf;
                 size_t inleft = resultlen;
                 char *outptr = (char *)outbuf;
