@@ -58,8 +58,8 @@ rect MDIsize;
 extern int ConsoleAcceptCmd, R_is_running;
 static menubar RMenuBar;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mcopy, mcopypaste, mlazy, mconfig,
-    mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart, mFAQ, mrwFAQ,
-    mpkgl, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde;
+    mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart, mhelpsearch, mFAQ,
+    mrwFAQ, mpkgl, mpkgi, mpkgil, mpkgb, mpkgu, mpkgbu, mde;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext;
 static menu m, mman;
 static char cmd[1024];
@@ -436,6 +436,24 @@ static void menumainlang(control m)
     internal_shellexec("doc\\manual\\R-lang.pdf");
 }
 
+static void menuhelpsearch(control m)
+{
+    char *s;
+    static char olds[256] = "";
+
+    if (!ConsoleAcceptCmd)
+        return;
+    s = askstring("Search help", olds);
+    if (s)
+    {
+        snprintf(cmd, 1024, "help.search(\"%s\")", s);
+        if (strlen(s) > 256)
+            s[255] = '\0';
+        strcpy(olds, s);
+        consolecmd(RConsole, cmd);
+    }
+}
+
 static void menuapropos(control m)
 {
     char *s;
@@ -506,6 +524,7 @@ static void menuact(control m)
         enable(mrm);
         enable(msearch);
         enable(mhelp);
+        enable(mhelpsearch);
         enable(mapropos);
         enable(mpkgl);
         enable(mpkgi);
@@ -524,6 +543,7 @@ static void menuact(control m)
         disable(mrm);
         disable(msearch);
         disable(mhelp);
+        disable(mhelpsearch);
         disable(mapropos);
         disable(mpkgl);
         disable(mpkgi);
@@ -1041,6 +1061,7 @@ int setupui()
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mhelp = newmenuitem("R functions (text)...", 0, menuhelp));
     MCHECK(mhelpstart = newmenuitem("Html help", 0, menuhelpstart));
+    MCHECK(mhelpsearch = newmenuitem("Search help...", 0, menuhelpsearch));
     if (!check_doc_file("doc\\html\\rwin.html"))
         disable(mhelpstart);
     MCHECK(mman = newsubmenu(m, "Manuals"));
