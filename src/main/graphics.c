@@ -1859,6 +1859,13 @@ DevDesc *GNewPlot(Rboolean recording)
     dd = CurrentDevice();
     GRestore(dd);
 
+    /* GNewPlot always starts a new plot UNLESS the user has set
+     * dd->gp.new to TRUE by par(new=TRUE)
+     * If dd->gp.new is FALSE, we leave it that way (further GNewPlot's
+     * will move on to subsequent plots)
+     * If dd->gp.new is TRUE, any subsequent drawing will dirty the plot
+     * and reset dd->gp.new to FALSE
+     */
     if (!dd->gp.new)
     {
         dd->dp.currentFigure += 1;
@@ -1889,7 +1896,6 @@ DevDesc *GNewPlot(Rboolean recording)
             dd->dp.currentFigure = dd->gp.currentFigure = 1;
         }
 
-        dd->dp.new = dd->gp.new = TRUE;
         GReset(dd);
         if (dd->dp.canClip)
             GForceClip(dd);
