@@ -63,63 +63,6 @@
 #define IS_100DPI ((int)(1. / pixelHeight() + 0.5) == 100)
 
 /********************************************************/
-/* Each driver can have its own device-specic graphical */
-/* parameters and resources.  these should be wrapped	*/
-/* in a structure (like the x11Desc structure below)	*/
-/* and attached to the overall device description via	*/
-/* the dd->deviceSpecific pointer			*/
-/* NOTE that there are generic graphical parameters	*/
-/* which must be set by the device driver, but are	*/
-/* common to all device types (see Graphics.h)		*/
-/* so go in the GPar structure rather than this device- */
-/* specific structure					*/
-/********************************************************/
-
-typedef struct
-{
-    /* R Graphics Parameters */
-    /* Local device copy so that we can detect */
-    /* when parameter changes. */
-
-    double cex; /* Character expansion */
-    double srt; /* String rotation */
-    int lty;    /* Line type */
-    double lwd;
-    int col;          /* Color */
-    int fg;           /* Foreground */
-    int bg;           /* Background */
-    int fontface;     /* Typeface */
-    int fontsize;     /* Size in points */
-    int basefontface; /* Typeface */
-    int basefontsize; /* Size in points */
-
-    /* X11 Driver Specific */
-    /* Parameters with copy per X11 device. */
-
-    int windowWidth;                 /* Window width (pixels) */
-    int windowHeight;                /* Window height (pixels) */
-    int resize;                      /* Window resized */
-    Window window;                   /* Graphics Window */
-    GC wgc;                          /* GC for window */
-    Cursor gcursor;                  /* Graphics Cursor */
-    XSetWindowAttributes attributes; /* Window attributes */
-#if 0
-    XColor fgcolor;			/* Foreground color */
-    XColor bgcolor;			/* Background color */
-#endif
-    XRectangle clip; /* The clipping rectangle */
-
-    int usefixed;
-    XFontStruct *fixedfont;
-    XFontStruct *font;
-    X_GTYPE type; /* Window or pixmap? */
-    int npages;   /* counter for a pixmap */
-    FILE *fp;     /* file for a bitmap device */
-    int quality;  /* JPEG quality */
-
-} x11Desc;
-
-/********************************************************/
 /* If there are resources that are shared by all devices*/
 /* of this type, you may wish to make them globals	*/
 /* rather than including them in the device-specific	*/
@@ -180,7 +123,7 @@ static void X11_Line(double, double, double, double, int, DevDesc *);
 static Rboolean X11_Locator(double *, double *, DevDesc *);
 static void X11_Mode(int, DevDesc *);
 static void X11_NewPage(DevDesc *);
-static Rboolean X11_Open(DevDesc *, x11Desc *, char *, double, double, double, X_COLORTYPE, int);
+Rboolean X11_Open(DevDesc *, x11Desc *, char *, double, double, double, X_COLORTYPE, int);
 static void X11_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void X11_Polyline(int, double *, double *, int, DevDesc *);
 static void X11_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -623,6 +566,7 @@ static void handleEvent(XEvent event)
     caddr_t temp;
     DevDesc *dd;
     x11Desc *xd;
+
     if (event.xany.type == Expose)
     {
         while (XCheckTypedEvent(display, Expose, &event))
@@ -655,6 +599,7 @@ static void handleEvent(XEvent event)
 static void R_ProcessEvents(void *data)
 {
     XEvent event;
+
     while (displayOpen && XPending(display))
     {
         XNextEvent(display, &event);
@@ -1136,8 +1081,8 @@ static int R_X11IOErr(Display *dsp)
     return 0; /* but should never get here */
 }
 
-static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma_fac,
-                         X_COLORTYPE colormodel, int maxcube)
+Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma_fac, X_COLORTYPE colormodel,
+                  int maxcube)
 {
     /* if we have to bail out with "error", then must free(dd) and free(xd) */
 
@@ -1201,26 +1146,8 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
     {
         if ((display = XOpenDisplay(p)) == NULL)
             return FALSE;
-#define SETGAMMA
-#ifdef SETGAMMA
-        RedGamma = gamma_fac;
-        GreenGamma = gamma_fac;
-        BlueGamma = gamma_fac;
-#endif
-        screen = DefaultScreen(display);
-        rootwin = DefaultRootWindow(display);
-        depth = DefaultDepth(display, screen);
-        visual = DefaultVisual(display, screen);
-        colormap = DefaultColormap(display, screen);
-        Vclass = visual->class;
-        model = colormodel;
-        maxcubesize = maxcube;
-        SetupX11Color();
-        devPtrContext = XUniqueContext();
-        displayOpen = DisplayOpened = TRUE;
-        /* set error handlers */
-        XSetErrorHandler(R_X11Err);
-        XSetIOErrorHandler(R_X11IOErr);
+        DisplayOpened = TRUE;
+        Rf_setX11Display(display, gamma_fac, colormodel, maxcube, TRUE);
     }
     whitepixel = GetX11Pixel(255, 255, 255);
     blackpixel = GetX11Pixel(0, 0, 0);
@@ -1248,41 +1175,47 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
 
     if (type == WINDOW)
     {
-        xd->windowWidth = iw = w / pixelWidth();
-        xd->windowHeight = ih = h / pixelHeight();
-        if ((xd->window = XCreateWindow(display, rootwin, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
-                                        DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
-                                        CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) == 0)
-            return FALSE;
+        int alreadyCreated = (xd->window != (Window)NULL);
+        if (alreadyCreated == 0)
+        {
+            xd->windowWidth = iw = w / pixelWidth();
+            xd->windowHeight = ih = h / pixelHeight();
+            if ((xd->window = XCreateWindow(display, rootwin, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
+                                            DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
+                                            CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) ==
+                0)
+                return FALSE;
 
-        XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)"R Graphics",
-                        13);
+            XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace,
+                            (unsigned char *)"R Graphics", 13);
 
-        xd->gcursor = XCreateFontCursor(display, CURSOR);
-        XDefineCursor(display, xd->window, xd->gcursor);
+            xd->gcursor = XCreateFontCursor(display, CURSOR);
+            XDefineCursor(display, xd->window, xd->gcursor);
 
-        /* set up protocols so that window manager sends */
-        /* me an event when user "destroys" window */
-        _XA_WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", 0);
-        protocol = XInternAtom(display, "WM_DELETE_WINDOW", 0);
-        XSetWMProtocols(display, xd->window, &protocol, 1);
-
+            /* set up protocols so that window manager sends */
+            /* me an event when user "destroys" window */
+            _XA_WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", 0);
+            protocol = XInternAtom(display, "WM_DELETE_WINDOW", 0);
+            XSetWMProtocols(display, xd->window, &protocol, 1);
+        }
         /* Save the devDesc* with the window for event dispatching */
         XSaveContext(display, xd->window, devPtrContext, (caddr_t)dd);
 
         /* Map the window */
-
-        XSelectInput(display, xd->window, ExposureMask | ButtonPressMask | StructureNotifyMask);
-        XMapWindow(display, xd->window);
-        XSync(display, 0);
-
-        /* Gobble expose events */
-
-        XNextEvent(display, &event);
-        if (event.xany.type == Expose)
+        if (alreadyCreated == 0)
         {
-            while (event.xexpose.count)
-                XNextEvent(display, &event);
+            XSelectInput(display, xd->window, ExposureMask | ButtonPressMask | StructureNotifyMask);
+            XMapWindow(display, xd->window);
+            XSync(display, 0);
+
+            /* Gobble expose events */
+
+            XNextEvent(display, &event);
+            if (event.xany.type == Expose)
+            {
+                while (event.xexpose.count)
+                    XNextEvent(display, &event);
+            }
         }
     }
     else
@@ -1309,7 +1242,7 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
     xd->lty = -1;
     xd->lwd = -1;
 
-    if (DisplayOpened)
+    if (xd->handleOwnEvents == FALSE)
     {
         addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
     }
@@ -1591,7 +1524,8 @@ static void X11_Close(DevDesc *dd)
             XFreeFont(display, fontcache[nfonts].font);
         nfonts = 0;
 #endif
-        removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
+        if (xd->handleOwnEvents == FALSE)
+            removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
         XCloseDisplay(display);
         displayOpen = FALSE;
     }
@@ -1967,6 +1901,7 @@ static Rboolean X11_Locator(double *x, double *y, DevDesc *dd)
 /* Set Graphics mode - not needed for X11 */
 static void X11_Mode(int mode, DevDesc *dd)
 {
+
 #ifdef XSYNC
     if (mode == 0)
         XSync(display, 0);
@@ -2029,27 +1964,11 @@ static void X11_Hold(DevDesc *dd)
 Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double height, double pointsize, double gamma_fac,
                          X_COLORTYPE colormodel, int maxcube)
 {
-    int ps;
     x11Desc *xd;
 
-    /* allocate new device description */
-    if (!(xd = (x11Desc *)malloc(sizeof(x11Desc))))
-        return FALSE;
-
-    /* From here on, if we need to bail out with "error", */
-    /* then we must also free(xd). */
-
-    /*	Font will load at first use.  */
-
-    ps = pointsize;
-    if (ps < 6 || ps > 24)
-        ps = 12;
-    xd->fontface = -1;
-    xd->fontsize = -1;
-    xd->basefontface = 1;
-    xd->basefontsize = ps;
+    xd = Rf_allocX11DeviceDesc(pointsize);
     dd->dp.font = 1;
-    dd->dp.ps = ps;
+    dd->dp.ps = pointsize;
 
     /*	Start the Device Driver and Hardcopy.  */
 
@@ -2059,6 +1978,94 @@ Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double heig
         return FALSE;
     }
 
+    Rf_setX11DeviceData(dd, xd);
+    R_ProcessEvents((void *)NULL);
+
+    return TRUE;
+}
+
+Rboolean R_GetX11Image(int d, XImage **pximage, int *pwidth, int *pheight)
+{
+    SEXP dev = elt(findVar(install(".Devices"), R_NilValue), d);
+
+    if (TYPEOF(dev) != STRSXP ||
+        !(strcmp(CHAR(STRING_ELT(dev, 0)), "XImage") == 0 || strncmp(CHAR(STRING_ELT(dev, 0)), "PNG", 3) == 0 ||
+          strncmp(CHAR(STRING_ELT(dev, 0)), "X11", 3) == 0))
+        return FALSE;
+    else
+    {
+        DevDesc *dd = GetDevice(d);
+        x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+
+        *pximage = XGetImage(display, xd->window, 0, 0, xd->windowWidth, xd->windowHeight, AllPlanes, ZPixmap);
+        *pwidth = xd->windowWidth;
+        *pheight = xd->windowHeight;
+        return TRUE;
+    }
+}
+
+/**
+   Allows callers to retrieve the current Display setting for the process.
+ */
+Display *Rf_getX11Display()
+{
+    return (display);
+}
+
+/**
+ Allows the caller to register the X11 Display object for the process.
+ Typically this will be done when the first X device is created, but this allows
+ other code to generate the Display object and then register it with the R graphics
+ engine.
+ In addition to providing the Display, the caller should also give the default value for the
+ gamma factor and also the colormodel and color cube size. See the documentation for the x11()
+ function.
+ Finally, setHandlers controls whether the code establishes handlers for the X errors.
+ */
+int Rf_setX11Display(Display *dpy, double gamma_fac, X_COLORTYPE colormodel, int maxcube, Rboolean setHandlers)
+{
+    static int alreadyDone = 0;
+    if (alreadyDone)
+    {
+        return (TRUE);
+    }
+    alreadyDone = 1;
+    display = dpy;
+
+#define SETGAMMA
+#ifdef SETGAMMA
+    RedGamma = gamma_fac;
+    GreenGamma = gamma_fac;
+    BlueGamma = gamma_fac;
+#endif
+    screen = DefaultScreen(display);
+    rootwin = DefaultRootWindow(display);
+    depth = DefaultDepth(display, screen);
+    visual = DefaultVisual(display, screen);
+    colormap = DefaultColormap(display, screen);
+    Vclass = visual->class;
+    model = colormodel;
+    maxcubesize = maxcube;
+    SetupX11Color();
+    devPtrContext = XUniqueContext();
+    displayOpen = TRUE;
+    /* set error handlers */
+    if (setHandlers == TRUE)
+    {
+        XSetErrorHandler(R_X11Err);
+        XSetIOErrorHandler(R_X11IOErr);
+    }
+
+    return (TRUE);
+}
+
+/**
+  This fills the general device structure (dd) with the X-specific
+  methods/functions. It also specifies the current values of the
+  dimensions of the device, and establishes the fonts, line styles, etc.
+ */
+int Rf_setX11DeviceData(DevDesc *dd, x11Desc *xd)
+{
     /*	Set up Data Structures. */
 
     dd->dp.open = X11_Open;
@@ -2131,27 +2138,32 @@ Rboolean X11DeviceDriver(DevDesc *dd, char *disp_name, double width, double heig
 
     dd->displayListOn = TRUE;
 
-    R_ProcessEvents((void *)NULL);
-
-    return TRUE;
+    return (TRUE);
 }
 
-Rboolean R_GetX11Image(int d, XImage **pximage, int *pwidth, int *pheight)
+/**
+ This allocates an x11Desc instance  and sets its default values.
+ */
+x11Desc *Rf_allocX11DeviceDesc(double ps)
 {
-    SEXP dev = elt(findVar(install(".Devices"), R_NilValue), d);
-
-    if (TYPEOF(dev) != STRSXP ||
-        !(strcmp(CHAR(STRING_ELT(dev, 0)), "XImage") == 0 || strncmp(CHAR(STRING_ELT(dev, 0)), "PNG", 3) == 0 ||
-          strncmp(CHAR(STRING_ELT(dev, 0)), "X11", 3) == 0))
+    x11Desc *xd;
+    /* allocate new device description */
+    if (!(xd = (x11Desc *)malloc(sizeof(x11Desc))))
         return FALSE;
-    else
-    {
-        DevDesc *dd = GetDevice(d);
-        x11Desc *xd = (x11Desc *)dd->deviceSpecific;
 
-        *pximage = XGetImage(display, xd->window, 0, 0, xd->windowWidth, xd->windowHeight, AllPlanes, ZPixmap);
-        *pwidth = xd->windowWidth;
-        *pheight = xd->windowHeight;
-        return TRUE;
-    }
+    /* From here on, if we need to bail out with "error", */
+    /* then we must also free(xd). */
+
+    /*	Font will load at first use.  */
+
+    if (ps < 6 || ps > 24)
+        ps = 12;
+    xd->fontface = -1;
+    xd->fontsize = -1;
+    xd->basefontface = 1;
+    xd->basefontsize = ps;
+    xd->handleOwnEvents = FALSE;
+    xd->window = (Window)NULL;
+
+    return (xd);
 }
