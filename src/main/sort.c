@@ -735,6 +735,7 @@ static void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean d
         case LGLSXP:
         case INTSXP:
         case REALSXP:
+        case STRSXP:
             if (!nalast)
                 for (i = 0; i < n; i++)
                     isna[i] = !isna[i];
