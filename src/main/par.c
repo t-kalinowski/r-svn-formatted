@@ -89,11 +89,13 @@ static void BoundsCheck(double x, double a, double b, char *s)
 /* via par(...)) is modified, must call GReset() to update the */
 /* layout and the transformations between coordinate systems */
 
+/* If you ADD a NEW par then do NOT forget to update */
+/* the code in ../library/base/R/par */
+
 static int Specify(char *what, SEXP value, DevDesc *dd)
 {
     double x;
     int ix;
-    /* Do NOT forget to update  ../library/base/R/par  if you  ADD a NEW  par !! */
 
     if (streql(what, "adj"))
     {
@@ -700,7 +702,22 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         lengthCheck(what, value, 1);
         x = asReal(value);
         if (FINITE(x))
+        {
             dd->dp.tck = dd->gp.tck = x;
+            dd->dp.tcl = dd->gp.tcl = NA_REAL;
+        }
+        else
+            par_error(what);
+    }
+    else if (streql(what, "tcl"))
+    {
+        lengthCheck(what, value, 1);
+        x = asReal(value);
+        if (FINITE(x))
+        {
+            dd->dp.tcl = dd->gp.tcl = x;
+            dd->dp.tck = dd->gp.tck = NA_REAL;
+        }
         else
             par_error(what);
     }
@@ -1166,6 +1183,15 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
         else
             par_error(what);
     }
+    else if (streql(what, "tcl"))
+    {
+        lengthCheck(what, value, 1);
+        x = asReal(value);
+        if (FINITE(x))
+            dd->gp.tcl = x;
+        else
+            par_error(what);
+    }
     else if (streql(what, "tmag"))
     {
         lengthCheck(what, value, 1);
@@ -1596,6 +1622,11 @@ static SEXP Query(char *what, DevDesc *dd)
     {
         value = allocVector(REALSXP, 1);
         REAL(value)[0] = dd->dp.tck;
+    }
+    else if (streql(what, "tcl"))
+    {
+        value = allocVector(REALSXP, 1);
+        REAL(value)[0] = dd->dp.tcl;
     }
     else if (streql(what, "tmag"))
     {
