@@ -108,7 +108,7 @@ static void bsFinishWrite(EState *s)
     }
 
 /*---------------------------------------------------*/
-static __inline__ void bsW(EState *s, Int32 n, UInt32 v)
+static R_INLINE void bsW(EState *s, Int32 n, UInt32 v)
 {
     bsNEEDW(n);
     s->bsBuff |= (v << (32 - s->bsLive - n));
