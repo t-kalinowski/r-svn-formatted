@@ -111,6 +111,8 @@ int direxists(char *dir)
     /* remove trailing \, but leave c:\ alone */
     if (strlen(dir) > 3 && *(p = dir + strlen(dir) - 1) == '\\')
         *p = '\0';
+    if (strlen(dir) == 2 && dir[1] == ':')
+        strcat(dir, "\\");
     res = stat(dir, &sb);
     if (res != 0)
         return 0;
