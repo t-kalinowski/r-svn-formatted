@@ -558,7 +558,11 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (DispatchOrEval(call, op, args, env, &ans, 1))
+    {
+        R_Visible = 1;
         return (ans);
+    }
+    R_Visible = 1;
 
     /* Method dispatch has failed */
     /* run the generic code */

@@ -475,7 +475,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
     RCNTXT cntxt;
 
     checkArity(op, args);
-    s = eval(CAR(args), rho);
+    s = eval(CAR(args), rho); /* ??? */
 
     dbg = DEBUG(rho);
     t = CAR(CADR(args));
@@ -528,6 +528,7 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isSymbol(CAR(args)) && strcmp(CHAR(PRINTNAME(CAR(args))), "{"))
         bgn = 1;
 
+    t = R_NilValue;
     for (;;)
     {
         if (DEBUG(rho) && bgn)
@@ -1096,6 +1097,9 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
     char *pt, buf[128];
     RCNTXT cntxt;
 
+    /* NEW */
+    PROTECT(args = promiseArgs(args, rho));
+
     PROTECT(x = eval(CAR(args), rho));
 
     pt = strrchr(CHAR(PRINTNAME(CAR(call))), '.');
@@ -1109,7 +1113,7 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
         if (usemethod(buf, x, call, args, rho, ans))
         {
             endcontext(&cntxt);
-            UNPROTECT(2);
+            UNPROTECT(3);
             return 1;
         }
         endcontext(&cntxt);
@@ -1118,7 +1122,7 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
         PROTECT(args);
     *ans = CONS(x, EvalArgs(CDR(args), rho, dropmissing));
     TAG(*ans) = CreateTag(TAG(args));
-    UNPROTECT(2);
+    UNPROTECT(3);
     return 0;
 }
 

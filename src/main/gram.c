@@ -1430,6 +1430,8 @@ SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, int *status)
     {
     case 0: /* End of file */
         *status = PARSE_EOF;
+        if (EndOfFile == 2)
+            *status = PARSE_INCOMPLETE;
         break;
     case 1: /* Syntax error / incomplete */
         *status = PARSE_ERROR;
@@ -1962,6 +1964,12 @@ static int SkipSpace(void)
     return c;
 }
 
+/* Note that with interactive use, EOF cannot occur inside */
+/* a comment.  However, semicolons inside comments make it */
+/* appear that this does happen.  For this reason we use the */
+/* special assignment EndOfFile=2 to indicate that this is */
+/* going on.  This is detected and dealt with in Parse1Buffer. */
+
 static int SkipComment(void)
 {
     char *p;
@@ -1969,16 +1977,18 @@ static int SkipComment(void)
     int c;
 
     p = yytext;
-    *p++ = c;
+    *p++ = '#';
     while ((c = xxgetc()) != '\n' && c != R_EOF)
         *p++ = c;
     *p = '\0';
-    if (R_CommentSxp != R_NilValue)
+    if (GenerateCode && R_CommentSxp != R_NilValue)
     {
         f = mkChar(yytext);
         f = CONS(f, R_NilValue);
         CAR(R_CommentSxp) = listAppend(CAR(R_CommentSxp), f);
     }
+    if (c == R_EOF)
+        EndOfFile = 2;
     return c;
 }
 
@@ -2512,7 +2522,7 @@ again:
     }
     return tok;
 }
-#line 2391 "y.tab.c"
+#line 2399 "y.tab.c"
 #define YYABORT goto yyabort
 #define YYREJECT goto yyabort
 #define YYACCEPT goto yyaccept
@@ -3094,7 +3104,7 @@ yyreduce:
         EatLines = 1;
     }
     break;
-#line 2824 "y.tab.c"
+#line 2832 "y.tab.c"
     }
     yyssp -= yym;
     yystate = *yyssp;

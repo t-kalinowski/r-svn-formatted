@@ -853,15 +853,14 @@ static SEXP coerceToOrdered(SEXP v)
 
 static SEXP coerceToInteger(SEXP v)
 {
-    SEXP ans;
-    int i, n, warn;
+    SEXP ans, lv;
+    int i, li, n, warn;
     double out;
     char *endp;
 
     warn = 0;
-    ans = allocVector(INTSXP, n = LENGTH(v));
-    PROTECT(ans);
-    ATTRIB(ans) = duplicate(ATTRIB(v));
+    PROTECT(ans = allocVector(INTSXP, n = LENGTH(v)));
+    PROTECT(ATTRIB(ans) = duplicate(ATTRIB(v)));
     switch (TYPEOF(v))
     {
     case LGLSXP:
@@ -872,9 +871,11 @@ static SEXP coerceToInteger(SEXP v)
         break;
     case FACTSXP:
     case ORDSXP:
+        lv = coerceVector(getAttrib(v, R_LevelsSymbol), INTSXP);
         for (i = 0; i < n; i++)
         {
-            INTEGER(ans)[i] = (FACTOR(v)[i] == NA_FACTOR) ? NA_INTEGER : FACTOR(v)[i];
+            li = FACTOR(v)[i];
+            INTEGER(ans)[i] = (li == NA_FACTOR) ? NA_INTEGER : INTEGER(lv)[li - 1];
         }
         break;
     case REALSXP:
@@ -933,7 +934,7 @@ static SEXP coerceToInteger(SEXP v)
         }
         break;
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     if (warn)
         warning("integer conversion: some values were too large and were converted to NA\n");
     return ans;
@@ -941,8 +942,8 @@ static SEXP coerceToInteger(SEXP v)
 
 static SEXP coerceToReal(SEXP v)
 {
-    SEXP ans;
-    int i, n;
+    SEXP ans, lv;
+    int i, li, n;
     double out;
     char *endp;
 
@@ -959,9 +960,11 @@ static SEXP coerceToReal(SEXP v)
         break;
     case FACTSXP:
     case ORDSXP:
+        lv = coerceVector(getAttrib(v, R_LevelsSymbol), REALSXP);
         for (i = 0; i < n; i++)
         {
-            REAL(ans)[i] = (FACTOR(v)[i] == NA_FACTOR) ? NA_REAL : FACTOR(v)[i];
+            li = FACTOR(v)[i];
+            REAL(ans)[i] = (li == NA_FACTOR) ? NA_REAL : REAL(lv)[li - 1];
         }
         break;
     case INTSXP:
@@ -999,12 +1002,14 @@ static SEXP coerceToReal(SEXP v)
 
 static SEXP coerceToComplex(SEXP v)
 {
-    SEXP ans;
-    int i, n;
+    SEXP ans, lv;
+    double outr, outi;
+    char *endp;
+    int i, li, n;
 
     n = LENGTH(v);
     PROTECT(ans = allocVector(CPLXSXP, n));
-    ATTRIB(ans) = duplicate(ATTRIB(v));
+    PROTECT(ATTRIB(ans) = duplicate(ATTRIB(v)));
     switch (TYPEOF(v))
     {
     case LGLSXP:
@@ -1024,6 +1029,22 @@ static SEXP coerceToComplex(SEXP v)
         break;
     case FACTSXP:
     case ORDSXP:
+        lv = coerceVector(getAttrib(v, R_LevelsSymbol), CPLXSXP);
+        for (i = 0; i < n; i++)
+        {
+            li = FACTOR(v)[i];
+            if (li == NA_FACTOR)
+            {
+                COMPLEX(ans)[i].r = NA_REAL;
+                COMPLEX(ans)[i].i = NA_REAL;
+            }
+            else
+            {
+                COMPLEX(ans)[i].r = COMPLEX(lv)[li - 1].r;
+                COMPLEX(ans)[i].i = COMPLEX(lv)[li - 1].i;
+            }
+        }
+        break;
         for (i = 0; i < n; i++)
         {
             if (FACTOR(v)[i] == NA_FACTOR)
@@ -1069,26 +1090,46 @@ static SEXP coerceToComplex(SEXP v)
         }
         break;
     case STRSXP:
-#ifdef UNIMPLEMENTED_FEATURE
         for (i = 0; i < n; i++)
         {
-            if (!strcmp(CHAR(STRING(v)[i]), "NA"))
-                REAL(ans)[i] = NA_REAL;
+            endp = CHAR(STRING(v)[i]);
+            if (!strcmp(endp, "NA"))
+            {
+                COMPLEX(ans)[i].r = NA_REAL;
+                COMPLEX(ans)[i].i = NA_REAL;
+            }
             else
             {
-                out = strtod(CHAR(STRING(v)[i]), &endp);
-                if (*endp == '\0') /* we have a real */
-                    REAL(ans)[i] = out;
+                outr = strtod(endp, &endp);
+                if (*endp == '\0')
+                {
+                    COMPLEX(ans)[i].r = outr;
+                    COMPLEX(ans)[i].i = 0.0;
+                }
+                else if (*endp == '+' || *endp == '-')
+                {
+                    outi = strtod(endp, &endp);
+                    if (endp[0] == 'i' && endp[1] == '\0')
+                    {
+                        COMPLEX(ans)[i].r = outr;
+                        COMPLEX(ans)[i].i = outi;
+                    }
+                    else
+                    {
+                        COMPLEX(ans)[i].r = NA_REAL;
+                        COMPLEX(ans)[i].i = NA_REAL;
+                    }
+                }
                 else
-                    REAL(ans)[i] = NA_REAL;
+                {
+                    COMPLEX(ans)[i].r = NA_REAL;
+                    COMPLEX(ans)[i].i = NA_REAL;
+                }
             }
         }
-#else
-        error("character -> complex unimplemented\n");
-#endif
         break;
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 

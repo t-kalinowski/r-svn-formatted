@@ -113,7 +113,6 @@ SEXP do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         error("bad arguments to array\n");
-    /*NOTREACHED*/
 }
 
 SEXP allocArray(SEXPTYPE mode, SEXP dims)

@@ -382,9 +382,16 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Argument-1: x */
 
     x = CAR(args) = coerceVector(CAR(args), REALSXP);
-    ansmat = isMatrix(x);
-    n = nrows(x);
-    ncx = ncols(x);
+    if ((ansmat = isMatrix(x)))
+    {
+        n = nrows(x);
+        ncx = ncols(x);
+    }
+    else
+    {
+        n = length(x);
+        ncx = 1;
+    }
     args = CDR(args);
 
     /* Argument-2: y */
@@ -397,10 +404,19 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         y = CAR(args) = coerceVector(CAR(args), REALSXP);
+        if (isMatrix(y))
+        {
+            if (nrows(y) != n)
+                errorcall(call, "incompatible dimensions\n");
+            ncy = ncols(y);
+        }
+        else
+        {
+            if (length(y) != n)
+                errorcall(call, "incompatible dimensions\n");
+            ncy = 1;
+        }
         ansmat = (ansmat || isMatrix(y));
-        if (nrows(y) != n)
-            errorcall(call, "incompatible dimensions\n");
-        ncy = ncols(y);
     }
     args = CDR(args);
 
