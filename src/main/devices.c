@@ -63,7 +63,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     DevDesc *dd;
     char *vmax;
     char *file, *paper, *family = NULL, *bg, *fg, *cmd;
-    char *afms[4], *encoding;
+    char *afms[5], *encoding;
     int i, horizontal, onefile, pagecentre, printit;
     double height, width, ps;
     SEXP fam;
@@ -75,17 +75,17 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     paper = SaveString(CAR(args), 0);
     args = CDR(args);
 
-    /* `family' can be either one string or a 4-vector of afmpaths. */
+    /* `family' can be either one string or a 5-vector of afmpaths. */
     fam = CAR(args);
     args = CDR(args);
     if (length(fam) == 1)
         family = SaveString(fam, 0);
-    else if (length(fam) == 4)
+    else if (length(fam) == 5)
     {
         if (!isString(fam))
             errorcall(call, "invalid `family' parameter");
         family = "User";
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < 5; i++)
             afms[i] = SaveString(fam, i);
     }
     else

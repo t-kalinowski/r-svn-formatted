@@ -55,24 +55,24 @@ static char PS_hyphen = 173;
 static struct
 {
     char *family;
-    char *afmfile[4];
+    char *afmfile[5];
 } Family[] = {
 
-    {"AvantGarde", {"agw_____.afm", "agd_____.afm", "agwo____.afm", "agdo____.afm"}},
+    {"AvantGarde", {"agw_____.afm", "agd_____.afm", "agwo____.afm", "agdo____.afm", "sy______.afm"}},
 
-    {"Bookman", {"bkl_____.afm", "bkd_____.afm", "bkli____.afm", "bkdi____.afm"}},
+    {"Bookman", {"bkl_____.afm", "bkd_____.afm", "bkli____.afm", "bkdi____.afm", "sy______.afm"}},
 
-    {"Courier", {"com_____.afm", "cob_____.afm", "coo_____.afm", "cobo____.afm"}},
+    {"Courier", {"com_____.afm", "cob_____.afm", "coo_____.afm", "cobo____.afm", "sy______.afm"}},
 
-    {"Helvetica", {"hv______.afm", "hvb_____.afm", "hvo_____.afm", "hvbo____.afm"}},
+    {"Helvetica", {"hv______.afm", "hvb_____.afm", "hvo_____.afm", "hvbo____.afm", "sy______.afm"}},
 
-    {"Helvetica-Narrow", {"hvn_____.afm", "hvnb____.afm", "hvno____.afm", "hvnbo___.afm"}},
+    {"Helvetica-Narrow", {"hvn_____.afm", "hvnb____.afm", "hvno____.afm", "hvnbo___.afm", "sy______.afm"}},
 
-    {"NewCenturySchoolbook", {"ncr_____.afm", "ncb_____.afm", "nci_____.afm", "ncbi____.afm"}},
+    {"NewCenturySchoolbook", {"ncr_____.afm", "ncb_____.afm", "nci_____.afm", "ncbi____.afm", "sy______.afm"}},
 
-    {"Palatino", {"por_____.afm", "pob_____.afm", "poi_____.afm", "pobi____.afm"}},
+    {"Palatino", {"por_____.afm", "pob_____.afm", "poi_____.afm", "pobi____.afm", "sy______.afm"}},
 
-    {"Times", {"tir_____.afm", "tib_____.afm", "tii_____.afm", "tibi____.afm"}},
+    {"Times", {"tir_____.afm", "tib_____.afm", "tii_____.afm", "tibi____.afm", "sy______.afm"}},
 
     {NULL}};
 
@@ -462,6 +462,7 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
         sprintf(buf, "%s%safm%s%s", R_Home, FILESEP, FILESEP, fontpath);
 #ifdef DEBUG_PS
     Rprintf("afmpath is %s\n", buf);
+    Rprintf("reencode is %d\n", reencode);
 #endif
 
     if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
@@ -635,26 +636,38 @@ static char *TypeFaceDef[] = {"R", "B", "I", "BI", "S"};
 static void PSEncodeFont(FILE *fp, char *encname)
 {
     int i;
+    SEXP fontreencoding;
 
     /* include encoding unless it is ISOLatin1Encoding, which is predefined */
     if (strcmp(encname, "ISOLatin1Encoding"))
         fprintf(fp, "%% begin encoding\n%s def\n%% end encoding\n", enccode);
-    for (i = 0; i < 4; i++)
+    fontreencoding = findVar(install(".ps.fontreencoding"), R_GlobalEnv);
+    if (fontreencoding != R_UnboundValue)
     {
-        fprintf(fp, "/%s findfont\n", familyname[i]);
+        if (!isString(fontreencoding))
+            error("Object `.ps.fontreencoding' is not a character vector");
+        for (i = 0; i < length(fontreencoding); i++)
+            fprintf(fp, "%s\n", CHAR(STRING_ELT(fontreencoding, i)));
+    }
+    else
+    {
+        for (i = 0; i < 4; i++)
+        {
+            fprintf(fp, "/%s findfont\n", familyname[i]);
+            fprintf(fp, "dup length dict begin\n");
+            fprintf(fp, "  {1 index /FID ne {def} {pop pop} ifelse} forall\n");
+            fprintf(fp, "  /Encoding %s def\n", encname);
+            fprintf(fp, "  currentdict\n");
+            fprintf(fp, "  end\n");
+            fprintf(fp, "/Font%d exch definefont pop\n", i + 1);
+        }
+        fprintf(fp, "/%s findfont\n", familyname[4]);
         fprintf(fp, "dup length dict begin\n");
         fprintf(fp, "  {1 index /FID ne {def} {pop pop} ifelse} forall\n");
-        fprintf(fp, "  /Encoding %s def\n", encname);
         fprintf(fp, "  currentdict\n");
         fprintf(fp, "  end\n");
-        fprintf(fp, "/Font%d exch definefont pop\n", i + 1);
+        fprintf(fp, "/Font5 exch definefont pop\n");
     }
-    fprintf(fp, "/Symbol findfont\n");
-    fprintf(fp, "dup length dict begin\n");
-    fprintf(fp, "  {1 index /FID ne {def} {pop pop} ifelse} forall\n");
-    fprintf(fp, "  currentdict\n");
-    fprintf(fp, "  end\n");
-    fprintf(fp, "/Font5 exch definefont pop\n");
 }
 
 /* The variables "paperwidth" and "paperheight" give the dimensions */
@@ -665,15 +678,23 @@ static void PSFileHeader(FILE *fp, char *encname, char *papername, double paperw
                          Rboolean landscape, int EPSFheader, double left, double bottom, double right, double top)
 {
     int i;
-    SEXP prolog;
+    SEXP resourcecomments, prolog;
 
     if (EPSFheader)
         fprintf(fp, "%%!PS-Adobe-3.0 EPSF-3.0\n");
     else
         fprintf(fp, "%%!PS-Adobe-3.0\n");
-    fprintf(fp, "%%%%DocumentNeededResources: font Symbol\n");
-    for (i = 0; i < 4; i++)
+    fprintf(fp, "%%%%DocumentNeededResources: font %s\n", familyname[0]);
+    for (i = 1; i < 5; i++)
         fprintf(fp, "%%%%+ font %s\n", familyname[i]);
+    resourcecomments = findVar(install(".ps.resourcecomments"), R_GlobalEnv);
+    if (resourcecomments != R_UnboundValue)
+    {
+        if (!isString(resourcecomments))
+            error("Object .ps.resourcecomments is not a character vector");
+        for (i = 0; i < length(resourcecomments); i++)
+            fprintf(fp, "%s\n", CHAR(STRING_ELT(resourcecomments, i)));
+    }
     if (!EPSFheader)
         fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 () ()\n", papername, paperwidth, paperheight);
     fprintf(fp, "%%%%Title: R Graphics Output\n");
@@ -1201,22 +1222,17 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
         warning("problem loading encoding file");
         return FALSE;
     }
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < 5; i++)
     {
         if (pd->fontfamily == USERAFM)
             p = pd->afmpaths[i];
         else
             p = Family[pd->fontfamily].afmfile[i];
-        if (!PostScriptLoadFontMetrics(p, &(pd->metrics[i]), familyname[i], 1))
+        if (!PostScriptLoadFontMetrics(p, &(pd->metrics[i]), familyname[i], (i < 4) ? 1 : 0))
         {
             warning("cannot read afm file %s", p);
             return FALSE;
         }
-    }
-    if (!PostScriptLoadFontMetrics("sy______.afm", &(pd->metrics[4]), familyname[4], 0))
-    {
-        warning("cannot read afm file sy______.afm");
-        return FALSE;
     }
 
     if (strlen(pd->filename) == 0)
