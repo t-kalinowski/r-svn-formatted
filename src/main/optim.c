@@ -1151,6 +1151,7 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
     strcpy(task, "START");
     while (1)
     {
+        /* Main workhorse setulb() from ../appl/lbfgsb.c : */
         setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, tr, lsave, isave, dsave);
         /*	Rprintf("in lbfgsb - %s\n", task);*/
         if (strncmp(task, "FG", 2) == 0)
