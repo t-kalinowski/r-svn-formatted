@@ -1238,6 +1238,7 @@ SEXP L_lines(SEXP x, SEXP y)
     double *xx, *yy;
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
+    char *vmax;
     LViewportContext vpc;
     R_GE_gcontext gc;
     LTransform transform;
@@ -1255,6 +1256,7 @@ SEXP L_lines(SEXP x, SEXP y)
     if (ny > nx)
         nx = ny;
     /* Convert the x and y values to CM locations */
+    vmax = vmaxget();
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
@@ -1270,6 +1272,7 @@ SEXP L_lines(SEXP x, SEXP y)
     GEMode(1, dd);
     GEPolyline(nx, xx, yy, &gc, dd);
     GEMode(0, dd);
+    vmaxset(vmax);
     return R_NilValue;
 }
 
@@ -1715,6 +1718,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
     LRect *bounds = NULL;
     int numBounds = 0;
     int overlapChecking = LOGICAL(checkOverlap)[0];
+    char *vmax;
     SEXP currentvp, currentgp;
     /* Get the current device
      */
@@ -1729,6 +1733,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
         nx = ny;
     hjust = convertJust(INTEGER(just)[0]);
     vjust = convertJust(INTEGER(just)[1]);
+    vmax = vmaxget();
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
@@ -1791,6 +1796,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
         }
         GEMode(0, dd);
     }
+    vmaxset(vmax);
     UNPROTECT(1);
     return R_NilValue;
 }
@@ -1803,6 +1809,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
     double symbolSize;
+    char *vmax;
     LViewportContext vpc;
     R_GE_gcontext gc;
     LTransform transform;
@@ -1817,6 +1824,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     nx = unitLength(x);
     npch = LENGTH(pch);
     /* Convert the x and y values to CM locations */
+    vmax = vmaxget();
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
@@ -1848,6 +1856,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
             GESymbol(xx[i], yy[i], ipch, symbolSize, &gc, dd);
         }
     GEMode(0, dd);
+    vmaxset(vmax);
     return R_NilValue;
 }
 
