@@ -663,7 +663,7 @@ static SEXP EncodeVars(SEXP formula)
 /* Returns 1 if variable ``whichBit'' in ``thisTerm'' */
 /* is to be encoded by contrasts and 2 if it is to be */
 /* encoded by dummy variables.  This is decided using */
-/* the heuristric of Chambers and Heiberger described */
+/* the heuristic of Chambers and Heiberger described */
 /* in Statistical Models in S, Page 38. */
 
 static int TermCode(SEXP termlist, SEXP thisterm, int whichbit, SEXP term)
@@ -1312,7 +1312,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (ndots && !isString(dotnames))
         errorcall(call, "invalid extra variable names");
 
-    /*  check for NULL extra arguments -- moved from interpreted code*/
+    /*  check for NULL extra arguments -- moved from interpreted code */
 
     nactualdots = 0;
     for (i = 0; i < ndots; i++)
@@ -1655,6 +1655,12 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             LOGICAL(ordered)[i] = 0;
             INTEGER(nlevs)[i] = nlevels(var_i);
+            INTEGER(columns)[i] = ncols(var_i);
+        }
+        else if (isLogical(var_i))
+        {
+            LOGICAL(ordered)[i] = 0;
+            INTEGER(nlevs)[i] = 2;
             INTEGER(columns)[i] = ncols(var_i);
         }
         else if (isNumeric(var_i))
