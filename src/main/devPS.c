@@ -2153,16 +2153,6 @@ Rboolean XFigDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, ch
                                  pagecentre);
 }
 
-#ifdef Unix
-char *Runix_tmpnam(char *prefix);
-#endif
-#ifdef Win32
-char *Rwin32_tmpnam(char *prefix);
-#endif
-#ifdef Macintosh
-char *Rmac_tmpnam(char *prefix);
-#endif
-
 static Rboolean XFig_Open(NewDevDesc *dd, XFigDesc *pd)
 {
     char buf[512], name[50];
@@ -2196,16 +2186,8 @@ static Rboolean XFig_Open(NewDevDesc *dd, XFigDesc *pd)
     }
     if (!pd->psfp)
         return FALSE;
-        /* assume tmpname is less than PATH_MAX */
-#ifdef Unix
-    strcpy(pd->tmpname, Runix_tmpnam("Rxfig"));
-#endif
-#ifdef Win32
-    strcpy(pd->tmpname, Rwin32_tmpnam("Rxfig"));
-#endif
-#ifdef Macintosh
-    strcpy(pd->tmpname, Rmac_tmpnam("Rxfig"));
-#endif
+    /* assume tmpname is less than PATH_MAX */
+    strcpy(pd->tmpname, R_tmpnam("Rxfig"));
     pd->tmpfp = R_fopen(pd->tmpname, "w");
     if (!pd->tmpfp)
     {

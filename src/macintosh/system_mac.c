@@ -869,7 +869,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /*
-    Rmac_tmpnam is a version of Runix_tmpnam for Macintosh.
+    R_tmpnam is a version of the Unix R_tmpnam for Macintosh.
     This routine has been rewritten. Now temporary files are
     written in the default System's Temporary Files directory.
     This directory is freed as needed by the MasOS from time
@@ -880,7 +880,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #define MAC_READ_OR_WRITE 0x0 /* fake a UNIX mode */
 
-char *Rmac_tmpnam(char *prefix)
+char *R_tmpnam(const char *prefix)
 {
     char *tmp, tm[PATH_MAX], tmp1[PATH_MAX], *res;
     char curFolder[MAC_FILE_SIZE], newFolder[MAC_FILE_SIZE];
@@ -891,6 +891,8 @@ char *Rmac_tmpnam(char *prefix)
     Str255 string;
     Handle path = NULL;
 
+    if (!prefix)
+        prefix = ""; /* NULL */
     /* We search for the System Temporary directory */
     err = FindFolder(kOnSystemDisk, kTemporaryFolderType, kCreateFolder, &foundVRefNum, &foundDirID);
 
@@ -948,7 +950,7 @@ SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         tn = CHAR(STRING_ELT(CAR(args), i));
         /* try to get a new file name */
-        tm = Rmac_tmpnam(tn);
+        tm = R_tmpnam(tn);
         SET_STRING_ELT(ans, i, mkChar(tm));
         if (tm)
             free(tm);
@@ -1174,7 +1176,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 void InitEd()
 {
-    DefaultFileName = Rmac_tmpnam("REdit");
+    DefaultFileName = R_tmpnam("REdit");
 }
 
 void CleanEd()
