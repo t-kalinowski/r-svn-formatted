@@ -429,7 +429,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
             logscale = 1;
             break;
         default:
-            errorcall(call, "invalid \"log=%s\" specification", *p);
+            errorcall(call, "invalid \"log=%s\" specification", p);
         }
         p++;
     }
@@ -2019,7 +2019,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP text, side, line, outer, at, adj, cex, col, font;
     int ntext, nside, nline, nouter, nat, nadj, ncex, ncol, nfont;
     int dirtyplot = 0, gpnewsave = 0, dpnewsave = 0;
-    int i, n, fontsave;
+    int i, n, fontsave, colsave;
     double cexsave;
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
@@ -2121,6 +2121,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     dpnewsave = dd->dp.new;
     cexsave = dd->gp.cex;
     fontsave = dd->gp.font;
+    colsave = dd->gp.col;
 
     /* override par("xpd") and force clipping to figure region */
     /* NOTE: don't override to _reduce_ clipping region */
@@ -2145,6 +2146,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         int outerval = INTEGER(outer)[i % nouter];
         int sideval = INTEGER(side)[i % nside];
         int fontval = INTEGER(font)[i % nfont];
+        int colval = INTEGER(col)[i % ncol];
 
         if (outerval == NA_INTEGER)
             outerval = 0;
@@ -2156,6 +2158,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             cexval = cexsave;
         dd->gp.font = (fontval == NA_INTEGER) ? fontsave : fontval;
+        dd->gp.col = (colval == NA_INTEGER) ? colsave : colval;
         dd->gp.adj = ComputeAdjValue(adjval, sideval, dd->gp.las);
         atval = ComputeAtValue(atval, dd->gp.adj, sideval, outerval, dd);
         if (isExpression(text))
