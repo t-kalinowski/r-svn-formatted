@@ -114,7 +114,9 @@ static int xxcharcount, xxcharsave;
 
 /* Handle function source */
 
-/* FIXME: These arrays really ought to be dynamically extendable */
+/* FIXME: These arrays really ought to be dynamically extendable
+   As from 1.6.0, SourceLine[] is, and the other two are checked.
+*/
 
 #define MAXFUNSIZE 131072
 #define MAXLINESIZE 1024
@@ -1753,9 +1755,13 @@ static int xxgetc(void)
     }
     if (c == '\n')
         R_ParseError += 1;
-    /* FIXME: check for overrun in SourcePtr */
     if (GenerateCode && FunctionLevel > 0)
-        *SourcePtr++ = c;
+    {
+        if (SourcePtr < FunctionSource + MAXFUNSIZE)
+            *SourcePtr++ = c;
+        else
+            yyerror("function is too long to keep source");
+    }
     xxcharcount++;
     return c;
 }
@@ -3187,11 +3193,12 @@ static int SymbolValue(int c)
     } while ((c = xxgetc()) != R_EOF && (isalnum(c) || c == '.'));
     xxungetc(c);
     *p = '\0';
-    /* FIXME: check overrun conditions */
     if ((kw = KeywordLookup(yytext)))
     {
         if (kw == FUNCTION)
         {
+            if (FunctionLevel >= MAXNEST)
+                yyerror("functions nested too deeply in source code");
             if (FunctionLevel++ == 0 && GenerateCode)
             {
                 strcpy((char *)FunctionSource, "function");
