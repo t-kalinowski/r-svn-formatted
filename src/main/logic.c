@@ -354,7 +354,19 @@ static SEXP binaryLogic2(int code, SEXP s1, SEXP s2)
     return ans;
 }
 
-static void checkValues(int *x, int n, Rboolean *haveFalse, Rboolean *haveTrue, Rboolean *haveNA);
+static void checkValues(int *x, int n, Rboolean *haveFalse, Rboolean *haveTrue, Rboolean *haveNA)
+{
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        if (x[i] == NA_LOGICAL)
+            *haveNA = TRUE;
+        else if (x[i])
+            *haveTrue = TRUE;
+        else
+            *haveFalse = TRUE;
+    }
+}
 
 /* all, any */
 SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -377,15 +389,11 @@ SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
     for (s = args; s != R_NilValue; s = CDR(s))
     {
         t = CAR(s);
-        if (LGLSXP <= TYPEOF(t) && TYPEOF(t) <= CPLXSXP)
-        {
-            /* coerceVector protects its argument so this actually works
-               just fine */
+        /* coerceVector protects its argument so this actually works
+           just fine */
+        if (TYPEOF(t) != LGLSXP)
             t = coerceVector(t, LGLSXP);
-            checkValues(LOGICAL(t), LENGTH(t), &haveFalse, &haveTrue, &haveNA);
-        }
-        else if (!isNull(t))
-            errorcall(call, "argument(s) must be logical, integer, numeric or complex");
+        checkValues(LOGICAL(t), LENGTH(t), &haveFalse, &haveTrue, &haveNA);
     }
     if (narm)
         haveNA = FALSE;
@@ -400,18 +408,4 @@ SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
         LOGICAL(s)[0] = haveNA ? (haveTrue ? TRUE : NA_LOGICAL) : haveTrue;
     }
     return s;
-}
-
-static void checkValues(int *x, int n, Rboolean *haveFalse, Rboolean *haveTrue, Rboolean *haveNA)
-{
-    int i;
-    for (i = 0; i < n; i++)
-    {
-        if (x[i] == NA_LOGICAL)
-            *haveNA = TRUE;
-        else if (x[i])
-            *haveTrue = TRUE;
-        else
-            *haveFalse = TRUE;
-    }
 }
