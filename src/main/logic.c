@@ -201,7 +201,7 @@ static SEXP lunary(SEXP call, SEXP op, SEXP arg)
             RAW(x)[i] = 0xFF ^ RAW(arg)[i];
         break;
     default:
-        UNIMPLEMENTED("lunary");
+        UNIMPLEMENTED_TYPE("lunary", arg);
     }
     if (names != R_NilValue)
         setAttrib(x, R_NamesSymbol, names);

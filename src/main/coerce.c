@@ -810,7 +810,7 @@ static SEXP coerceToVectorList(SEXP v)
         }
         break;
     default:
-        UNIMPLEMENTED("coerceToVectorList");
+        UNIMPLEMENTED_TYPE("coerceToVectorList", v);
     }
     tmp = getAttrib(v, R_NamesSymbol);
     if (tmp != R_NilValue)
@@ -860,7 +860,7 @@ static SEXP coerceToPairList(SEXP v)
             SETCAR(ansp, VECTOR_ELT(v, i));
             break;
         default:
-            UNIMPLEMENTED("coerceToPairList");
+            UNIMPLEMENTED_TYPE("coerceToPairList", v);
         }
         ansp = CDR(ansp);
     }
@@ -931,7 +931,7 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
                 RAW(rval)[i] = (Rbyte)asInteger(CAR(vp));
             break;
         default:
-            UNIMPLEMENTED("coercePairList");
+            UNIMPLEMENTED_TYPE("coercePairList", v);
         }
     }
     else
@@ -1022,7 +1022,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
                 RAW(rval)[i] = (Rbyte)asInteger(VECTOR_ELT(v, i));
             break;
         default:
-            UNIMPLEMENTED("coerceVectorList");
+            UNIMPLEMENTED_TYPE("coerceVectorList", v);
         }
     }
     else

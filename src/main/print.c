@@ -702,7 +702,7 @@ void PrintValueRec(SEXP s, SEXP env)
         Rprintf("<weak reference>\n");
         break;
     default:
-        UNIMPLEMENTED("PrintValueRec");
+        UNIMPLEMENTED_TYPE("PrintValueRec", s);
     }
     printAttributes(s, env, FALSE);
 }

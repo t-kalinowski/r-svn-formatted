@@ -104,7 +104,7 @@ int asLogical(SEXP x)
         case CPLXSXP:
             return LogicalFromComplex(COMPLEX(x)[0], &warn);
         default:
-            UNIMPLEMENTED("asLogical");
+            UNIMPLEMENTED_TYPE("asLogical", x);
         }
     }
     return NA_LOGICAL;
@@ -131,7 +131,7 @@ int asInteger(SEXP x)
             CoercionWarning(warn);
             return res;
         default:
-            UNIMPLEMENTED("asInteger");
+            UNIMPLEMENTED_TYPE("asInteger", x);
         }
     }
     return NA_INTEGER;
@@ -161,7 +161,7 @@ double asReal(SEXP x)
             CoercionWarning(warn);
             return res;
         default:
-            UNIMPLEMENTED("asReal");
+            UNIMPLEMENTED_TYPE("asReal", x);
         }
     }
     return NA_REAL;
@@ -187,7 +187,7 @@ Rcomplex asComplex(SEXP x)
         case CPLXSXP:
             return COMPLEX(x)[0];
         default:
-            UNIMPLEMENTED("asComplex");
+            UNIMPLEMENTED_TYPE("asComplex", x);
         }
     }
     return z;
@@ -257,7 +257,7 @@ R_len_t asVecSize(SEXP x)
                 error("vector size specified is too large");
             return (R_size_t)d;
         default:
-            UNIMPLEMENTED("asVecSize");
+            UNIMPLEMENTED_TYPE("asVecSize", x);
         }
     }
     return -1;
@@ -682,7 +682,7 @@ SEXP type2str(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return mkChar(TypeTable[i].str);
     }
-    UNIMPLEMENTED("type2str");
+    error("type %d is unimplemented in type2str", t);
     return R_NilValue; /* for -Wall */
 }
 
@@ -697,8 +697,25 @@ SEXP type2symbol(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return install((char *)&TypeTable[i].str);
     }
-    UNIMPLEMENTED("type2str");
+    error("type %d is unimplemented in type2symbol", t);
     return R_NilValue; /* for -Wall */
+}
+
+void UNIMPLEMENTED_TYPEt(char *s, SEXPTYPE t)
+{
+    int i;
+
+    for (i = 0; TypeTable[i].str; i++)
+    {
+        if (TypeTable[i].type == t)
+            error("unimplemented type '%s' in %s\n", TypeTable[i].str, s);
+    }
+    error("unimplemented type (%d) in %s\n", t, s);
+}
+
+void UNIMPLEMENTED_TYPE(char *s, SEXP x)
+{
+    UNIMPLEMENTED_TYPEt(s, TYPEOF(x));
 }
 
 Rboolean isBlankString(char *s)

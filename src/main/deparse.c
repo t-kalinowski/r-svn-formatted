@@ -1182,7 +1182,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         break;
     default:
         d->sourceable = FALSE;
-        UNIMPLEMENTED("deparse2buff");
+        UNIMPLEMENTED_TYPE("deparse2buff", s);
     }
 }
 
@@ -1261,7 +1261,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             print2buff("raw(0)", d);
             break;
         default:
-            UNIMPLEMENTED("vector2buff");
+            UNIMPLEMENTED_TYPE("vector2buff", vector);
         }
     }
     else if (tlen == 1)

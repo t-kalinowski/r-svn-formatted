@@ -508,7 +508,7 @@ static void extractItem(char *buffer, SEXP ans, int i, LocalData *d)
         }
         break;
     default:
-        UNIMPLEMENTED("extractItem");
+        UNIMPLEMENTED_TYPE("extractItem", ans);
     }
 }
 
@@ -633,7 +633,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
             RAW(bns)[i] = RAW(ans)[i];
         break;
     default:
-        UNIMPLEMENTED("scanVector");
+        UNIMPLEMENTED_TYPEt("scanVector", type);
     }
     UNPROTECT(1);
     R_FreeStringBuffer(&strBuf);
@@ -825,7 +825,7 @@ done:
         case NILSXP:
             break;
         default:
-            UNIMPLEMENTED("scanFrame");
+            UNIMPLEMENTED_TYPE("scanFrame", old);
         }
         SET_VECTOR_ELT(ans, i, new);
     }
