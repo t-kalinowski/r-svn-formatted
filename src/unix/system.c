@@ -662,10 +662,8 @@ int main(int ac, char **av)
     fpsetmask(0);
 #endif
 
-#ifdef linux
-#ifdef HAVE___SETFPUCW
+#ifdef NEED___SETFPUCW
     __setfpucw(_FPU_IEEE);
-#endif
 #endif
 
     if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
@@ -762,10 +760,8 @@ void R_CleanUp(int ask)
     fpsetmask(~0);
 #endif
 
-#ifdef linux
-#ifdef HAVE___SETFPUCW
+#ifdef NEED___SETFPUCW
     __setfpucw(_FPU_DEFAULT);
-#endif
 #endif
 
     exit(0);
