@@ -1759,12 +1759,13 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
     { /* just a failure indication */
         usedRalloc = TRUE;
         b = R_alloc(10 * BUFSIZE, sizeof(char));
-        strcpy(b, this->lastline);
+        strncpy(b, this->lastline, 10 * BUFSIZE);
+        *(b + 10 * BUFSIZE - 1) = '\0';
         p = b + already;
         res = vsnprintf(p, 10 * BUFSIZE - already, format, ap);
         if (res < 0)
         {
-            *(b + 10 * BUFSIZE) = '\0';
+            *(b + 10 * BUFSIZE - 1) = '\0';
             warning("printing of extremely long output is truncated");
         }
     }
@@ -1785,7 +1786,7 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
         else
         {
             /* retain the last line */
-            if (strlen(this->lastline) < LAST_LINE_LEN)
+            if (strlen(p) < LAST_LINE_LEN)
             {
                 strcpy(this->lastline, p);
             }
