@@ -514,7 +514,7 @@ static void textext(char *str, picTeXDesc *ptd)
 
 /* Rotated Text */
 
-static double deg2rad = 0.01745329251994329576;
+/*unused: static double deg2rad = 0.01745329251994329576;*/
 
 static void PicTeX_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
 {
