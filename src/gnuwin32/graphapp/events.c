@@ -62,7 +62,8 @@ static void handle_mouse(object obj, HWND hwnd, UINT message, int param, int x, 
     xy.x = x;
     xy.y = y;
     buttons = 0;
-
+    if (!obj)
+        return;
     if (param & MK_LBUTTON)
         buttons |= LeftButton;
     if (param & MK_MBUTTON)
@@ -77,13 +78,16 @@ static void handle_mouse(object obj, HWND hwnd, UINT message, int param, int x, 
     switch (message)
     {
     case WM_MOUSEMOVE:
-        if (buttons)
+        if (obj->call)
         {
-            if (obj->call->mousedrag)
-                obj->call->mousedrag(obj, buttons, xy);
+            if (buttons)
+            {
+                if (obj->call->mousedrag)
+                    obj->call->mousedrag(obj, buttons, xy);
+            }
+            else if (obj->call->mousemove)
+                obj->call->mousemove(obj, buttons, xy);
         }
-        else if (obj->call->mousemove)
-            obj->call->mousemove(obj, buttons, xy);
         break;
     case WM_LBUTTONDOWN:
     case WM_RBUTTONDOWN:
@@ -118,7 +122,7 @@ static void handle_mouse(object obj, HWND hwnd, UINT message, int param, int x, 
                 break;
             }
         }
-        if (obj->call->mousedown)
+        if (obj->call && obj->call->mousedown)
             obj->call->mousedown(obj, buttons, xy);
         break;
     case WM_LBUTTONUP:
@@ -126,7 +130,7 @@ static void handle_mouse(object obj, HWND hwnd, UINT message, int param, int x, 
     case WM_MBUTTONUP:
         if ((obj->flags & TrackMouse) && (buttons == 0))
             ReleaseCapture();
-        if (obj->call->mouseup)
+        if (obj->call && obj->call->mouseup)
             obj->call->mouseup(obj, buttons, xy);
         break;
     }
@@ -929,7 +933,7 @@ int doevent(void)
 
     if (result)
     {
-        del_all_contexts();
+        /*		del_all_contexts();*/
         if (TranslateMenuKeys(&msg))
             return result;
         if ((hwndClient) && TranslateMDISysAccel(hwndClient, &msg))

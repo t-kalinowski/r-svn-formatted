@@ -1,7 +1,7 @@
 /*
  *
  *  R : A Computer Language for Statistical Data Analysis
- *  file console.c
+ *  file winalloc.c
  *  Copyright (C) 1999  Guido Masarotto
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@
 #include <winbase.h>
 #include "ga.h"
 
-void *winmalloc(long size)
+void *winmalloc(size_t size)
 {
     void *u = NULL;
     HGLOBAL h = GlobalAlloc(GMEM_MOVEABLE | GMEM_DISCARDABLE, (DWORD)size);
@@ -46,7 +46,7 @@ void winfree(void *u)
     }
 }
 
-void *winrealloc(void *u, long newsize)
+void *winrealloc(void *u, size_t newsize)
 {
     HGLOBAL hold, hnew;
     void *nu = NULL;
@@ -67,3 +67,30 @@ char *winstrdup(char *s)
         strcpy(new, s);
     return new;
 }
+
+#ifdef DANGER
+
+void *malloc(size_t size)
+{
+    return winmalloc(size);
+}
+
+void free(void *u)
+{
+    winfree(u);
+}
+
+void *realloc(void *u, size_t newsize)
+{
+    return winrealloc(u, newsize);
+}
+
+void *calloc(size_t n, size_t m)
+{
+    size_t size = n * m;
+    void *u = winmalloc(size);
+    if (u)
+        ZeroMemory((PVOID)u, (DWORD)size);
+    return u;
+}
+#endif
