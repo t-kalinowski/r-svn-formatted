@@ -1662,6 +1662,26 @@ double GStrWidth(char *str, int units)
     return w;
 }
 
+double GStrHeight(char *str, int units)
+{
+    double h = GP->cex * GP->cra[1];
+    switch (units)
+    {
+    case 1: /* user == world */
+        h = (h / GP->fig2dev.bx) / GP->win2fig.bx;
+        break;
+    case 2: /* figure */
+        h = h / GP->fig2dev.bx;
+        break;
+    case 3: /* inches */
+        h = h * GP->ipr[0];
+        break;
+    case 4: /* rasters */
+        break;
+    }
+    return h;
+}
+
 /*  GMtext -- Draw text in plot margins  */
 
 void GMtext(char *str, int side, double line, int outer, double at, int las)
