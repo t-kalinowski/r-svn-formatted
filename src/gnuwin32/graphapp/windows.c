@@ -599,6 +599,7 @@ PROTECTED
 void show_window(object obj)
 {
     HWND hwnd = obj->handle;
+    int incremented_aw = 0;
 
     if (!mainloop_started)
     {
@@ -613,7 +614,10 @@ void show_window(object obj)
         disablewindows(obj);
         /* Remember how many real windows active. */
         if (is_top_level_window(obj))
+        {
+            incremented_aw = 1;
             active_windows++;
+        }
     }
     obj->state |= Visible;
     if (hwndClient && (hwnd == hwndFrame) && (MDIFrameFirstTime))
@@ -623,6 +627,11 @@ void show_window(object obj)
     }
     else
         ShowWindow(hwnd, SW_SHOWNORMAL);
+
+    /* workaround for Show bug */
+    if (incremented_aw && !IsWindowVisible(hwnd))
+        active_windows--;
+
     if (obj->menubar)
     {
         if (hwndClient)
