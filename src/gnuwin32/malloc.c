@@ -1095,7 +1095,13 @@ void *wsbrk(long size)
             gReservedSize = max(R_reserved_size, AlignPage64K(size));
             gNextAddress = gAddressBase = (unsigned int)VirtualAlloc(NULL, gReservedSize, MEM_RESERVE, PAGE_NOACCESS);
             if (!gAddressBase)
-                R_Suicide("unable to reserve initial space in wsbrk");
+            {
+                /* can't R_Suicide here
+                   R_Suicide("unable to reserve initial space in wsbrk"); */
+                MessageBox(0, "Cannot reserve memory:\nterminating", "R fatal error",
+                           MB_TASKMODAL | MB_ICONSTOP | MB_OK);
+                exit(3);
+            }
         }
         else if (AlignPage(gNextAddress + size) > (gAddressBase + gReservedSize))
         {
