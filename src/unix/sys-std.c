@@ -172,6 +172,7 @@ int removeInputHandler(InputHandler **handlers, InputHandler *it)
             tmp->next = it->next;
             return (1);
         }
+        tmp = tmp->next;
     }
 
     return (0);
