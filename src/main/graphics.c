@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
- *  Copyright (C) 2002--2003  The R Foundation
+ *  Copyright (C) 2002--2005  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1979,7 +1979,7 @@ void GScale(double min, double max, int axis, DevDesc *dd)
 
     Rboolean swap, is_xaxis = (axis == 1 || axis == 3);
     int log, n, style;
-    double temp, /* for logscale : */ min_o = 0., max_o = 0., tmp2 = 0.; /*-Wall*/
+    double temp, min_o = 0., max_o = 0., tmp2 = 0.; /*-Wall*/
 
     if (is_xaxis)
     {
@@ -2111,6 +2111,9 @@ void GScale(double min, double max, int axis, DevDesc *dd)
         min = max;
         max = temp;
     }
+    /* save only for the extreme case (EPS_FAC_2): */
+    min_o = min;
+    max_o = max;
 
     if (log)
     {
@@ -2121,7 +2124,8 @@ void GScale(double min, double max, int axis, DevDesc *dd)
     else
         GPretty(&min, &max, &n);
 
-    if (fabs(max - min) < (temp = fmax2(fabs(max), fabs(min))) * EPS_FAC_2 * DBL_EPSILON)
+    tmp2 = EPS_FAC_2 * DBL_EPSILON; /* << prevent overflow in product below */
+    if (fabs(max - min) < (temp = fmax2(fabs(max), fabs(min))) * tmp2)
     {
         /* Treat this case somewhat similar to the (min ~= max) case above */
         /* Too much accuracy here just shows machine differences */
@@ -2130,11 +2134,16 @@ void GScale(double min, double max, int axis, DevDesc *dd)
                 fabs(max - min) / (temp * DBL_EPSILON), axis);
 
         /* No pretty()ing anymore */
-        min = Rf_dpptr(dd)->usr[2]; /* original  (min,max) ..*/
-        max = Rf_dpptr(dd)->usr[3];
-        temp = .01 * fabs(max - min);
+        min = min_o;
+        max = max_o;
+        temp = .005 * fabs(max - min); /* .005: not to go to DBL_MIN/MAX */
         min += temp;
         max -= temp;
+        if (log)
+        {
+            min = pow(10., min);
+            max = pow(10., max);
+        }
         n = 1;
     }
 
