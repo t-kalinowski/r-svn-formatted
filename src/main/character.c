@@ -462,7 +462,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 tables = pcre_maketables();
                 re_pcre = pcre_compile(split, options, &errorptr, &erroffset, tables);
                 if (!re_pcre)
-                    errorcall(call, "invalid regular expression");
+                    errorcall(call, "invalid split pattern '%s'", split);
                 re_pe = pcre_study(re_pcre, 0, &errorptr);
                 bufp = buf;
                 if (*bufp != '\0')
@@ -487,7 +487,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 */
                 usedRegex = TRUE;
                 if (regcomp(&reg, split, eflags))
-                    errorcall(call, "invalid split pattern");
+                    errorcall(call, "invalid split pattern '%s'", split);
                 bufp = buf;
                 if (*bufp != '\0')
                 {
@@ -1027,7 +1027,7 @@ static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
             {
                 k = p[1] - '0';
                 if (k > nsubexpr)
-                    error("invalid backreference in regular expression");
+                    error("invalid backreference %d in regular expression", k);
                 n += (regmatch[k].rm_eo - regmatch[k].rm_so) - 2;
                 p++;
             }
