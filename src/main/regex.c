@@ -6782,6 +6782,7 @@ struct re_fail_stack_t *fs;
         if (BE(err < 0, 0))
             return -1;
         /* Pick up valid destinations.  */
+        dest_nodes[0] = dest_nodes[1] = 0; /* -Wall on gcc4 */
         for (ndest = 0, i = 0; i < dfa->edests[node].nelem; ++i)
         {
             int candidate = dfa->edests[node].elems[i];
