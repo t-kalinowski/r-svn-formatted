@@ -1556,12 +1556,12 @@ static void mapFigureRegion(DevDesc *dd)
         if (dd->gp.mfind)
         {
             col = (dd->gp.currentFigure - 1) / dd->gp.numrows + 1;
-            row = dd->gp.currentFigure - (col - 1) * dd->gp.numcols;
+            row = dd->gp.currentFigure - (col - 1) * dd->gp.numrows;
         }
         else
         {
             row = (dd->gp.currentFigure - 1) / dd->gp.numcols + 1;
-            col = dd->gp.currentFigure - (row - 1) * dd->gp.numrows;
+            col = dd->gp.currentFigure - (row - 1) * dd->gp.numcols;
         }
         x0 = (double)(col - 1) / dd->gp.numcols;
         x1 = (double)col / dd->gp.numcols;
@@ -4737,53 +4737,49 @@ void removeDevice(int devNum)
 
 void initDisplayList();
 
+/*
 int SetDevice(SEXP name, SEXP cpars, int ncpars, SEXP npars, int nnpars)
 {
     DevDesc *dd;
 
-    if (!(dd = (DevDesc *)malloc(sizeof(DevDesc))))
+    if (!(dd = (DevDesc *) malloc(sizeof(DevDesc))))
         return 0;
     GInit(&dd->dp);
 
 #ifdef Macintosh
-    if (!strcmp(CHAR(STRING(name)[0]), "Macintosh"))
-        if (MacDeviceDriver(cpars, ncpars, npars, nnpars))
+    if(!strcmp(CHAR(STRING(name)[0]), "Macintosh"))
+        if(MacDeviceDriver(cpars, ncpars, npars, nnpars))
             goto have_device;
 #endif
 
 #ifndef Macintosh
-    if (!strcmp(CHAR(STRING(name)[0]), "postscript"))
-    {
+    if(!strcmp(CHAR(STRING(name)[0]), "postscript")) {
         if (PSDeviceDriver(dd, cpars, ncpars, npars, nnpars))
             goto have_device;
     }
 #endif
 
 #ifdef Unix
-    if (!strcmp(CHAR(STRING(name)[0]), "X11"))
-    {
+    if(!strcmp(CHAR(STRING(name)[0]), "X11")) {
         if (X11DeviceDriver(dd, cpars, ncpars, npars, nnpars))
             goto have_device;
     }
 #endif
 
 #ifdef Win32
-    if (!strcmp(CHAR(STRING(name)[0]), "Win32"))
-        if (WinDeviceDriver(cpars, ncpars, npars, nnpars))
+    if( !strcmp(CHAR(STRING(name)[0]), "Win32") )
+        if(WinDeviceDriver(cpars, ncpars, npars, nnpars))
             goto have_device;
 #endif
 
 #ifdef Unix
 #ifdef SOON
-    if (!strcmp(name, "XFig"))
-        if (XFigDeviceDriver(cpars, ncpars, npars, nnpars))
+    if( !strcmp(name, "XFig") )
+        if(XFigDeviceDriver(cpars, ncpars, npars, nnpars))
             goto have_device;
 #endif
 #endif
 
-    /* Other Device Drivers Go Here */
-
-    /* Device not found */
     return 0;
 
 have_device:
@@ -4793,6 +4789,7 @@ have_device:
 
     return 1;
 }
+*/
 
 void KillDevice(DevDesc *dd)
 {
