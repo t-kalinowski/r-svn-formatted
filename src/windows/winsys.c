@@ -104,6 +104,11 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
     if (i > RBuffLen || i == 0)
         return FALSE;
 
+#ifdef DEBUG
+    sprintf(szDirName, "C:/April\\rapril.exe");
+    GetCurrentDirectory(RBuffLen, tmp);
+    SetCurrentDirectory("C:/April");
+#endif
     /* do the file association thing if need be */
     if (R_WinVersion >= 4.0)
         R_FileAssoc(szDirName);
@@ -112,8 +117,8 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
 
     exe = strrchr(szDirName, '\\');
     *exe = '\0';
-    setenv("RHOME", szDirName, 1);
-    setenv("HOME", szDirName, 1);
+    SetEnvironmentVariable("RHOME", szDirName, 1);
+    SetEnvironmentVariable("HOME", szDirName, 1);
 
     /* set up the memory sizes */
     R_ImageName[0] = '\0';
@@ -152,7 +157,7 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
     if (nset == 0)
         nset = R_QueryMemory("NSize");
     if (vset == 0)
-        vset = R_QueryMemory("Vsize");
+        vset = R_QueryMemory("VSize");
     if (nset < 0 || vset < 0)
     {
         MessageBox(NULL, "Memory problem", "R Memory", MB_OK);
@@ -160,23 +165,11 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
     }
     if (nset != 0)
         R_NSize = nset;
-    else
-    {
-        mchange = 1;
-        nset = R_NSize;
-    }
+
     if (vset != 0)
-    {
-        R_VSmb = vset;
         R_VSize = vset * 1048576;
-    }
-    else
-    {
-        mchange = 1;
-        vset = R_VSmb;
-    }
-    if (mchange)
-        R_SetMemory(nset, vset);
+
+    R_SetMemory(R_NSize, R_VSize);
 
     if (strlen(R_ImageName) == 0)
     {
@@ -237,6 +230,8 @@ int R_QueryMemory(char *regname)
 R_SetMemory has no effect on the current session. It merely posts the
 chosen values for R_NSize and R_Vsize to the registry. They will be retrieved
 and used for subsequent sessions.
+  NSize = # of cons cells
+  VSize = size of vector heap in bytes
 */
 
 void R_SetMemory(int nsize, int vsize)
@@ -360,7 +355,7 @@ SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    errorcall(call, "\"system\" is only available on Unix");
+    errorcall(call, "\"system\" is only available on Unix\n");
     return R_NilValue;
 }
 

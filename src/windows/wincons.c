@@ -66,7 +66,6 @@ HWND RFrame, RClient, RConsoleFrame, RConsole;
 char RGraphClass[] = "RGraphClass";
 char REditClass[] = "REditClass";
 char RDEClass[] = "RDEClass";
-int R_VSmb;
 
 HMENU RMenuConsole, RMenuConsWin;
 HANDLE hAccel;
@@ -247,8 +246,9 @@ errcd:
 BOOL InitApplication(HINSTANCE hinstCurrent)
 {
     WNDCLASS wc;
+    DWORD errno;
 
-    wc.style = CS_HREDRAW | CS_VREDRAW | WS_MAXIMIZE;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc = MainWndProc;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
@@ -256,10 +256,13 @@ BOOL InitApplication(HINSTANCE hinstCurrent)
     wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = GetStockObject(WHITE_BRUSH);
-    wc.lpszMenuName = NULL;
+    wc.lpszMenuName = "Foo";
     wc.lpszClassName = RFrameClass;
     if (!RegisterClass(&wc))
+    {
+        errno = GetLastError();
         return (FALSE);
+    }
 
     wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc = ConsoleWndProc;
@@ -363,7 +366,7 @@ BOOL InitInstance(HINSTANCE hinstCurrent, int nCmdShow)
     mdicreate.hOwner = hinstCurrent;
     mdicreate.x = CW_USEDEFAULT;
     mdicreate.y = CW_USEDEFAULT;
-    mdicreate.cx = (r.right - r.left) * .8;
+    mdicreate.cx = (int)(r.right - r.left) * .8;
     mdicreate.cy = CW_USEDEFAULT;
     mdicreate.style = 0;
     mdicreate.lParam = NULL;
@@ -442,8 +445,7 @@ void R_ProcessDropFiles(HANDLE dropstruct, int win)
         Rprintf("Parsing %s \n", dfilename);
         if (status == PARSE_ERROR)
             error("drag-drop: an error occurred in parsing");
-        for (expr; expr != R_NilValue; expr = CDR(expr))
-            eval(CAR(expr), R_GlobalEnv);
+        eval(expr, R_GlobalEnv);
         UNPROTECT(1);
         break;
     case 2:
@@ -457,15 +459,15 @@ void R_ProcessDropFiles(HANDLE dropstruct, int win)
 LRESULT CALLBACK EdWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     DWORD curPos;
+    char *p;
 
     switch (message)
     {
     case WM_DROPFILES:
         SetFocus(RConsole);
         R_ProcessDropFiles((HANDLE)wParam, 1);
-#ifdef OLD
-        yyprompt((char *)CHAR(STRING(GetOption(install("prompt"), R_NilValue))[0]));
-#endif
+        p = (char *)CHAR(STRING(GetOption(install("prompt"), R_NilValue))[0]);
+        R_WriteConsole(p, strlen(p));
         return 0;
     case WM_PASTE:
         RPasteFromClip();
@@ -541,7 +543,7 @@ LRESULT CALLBACK ConsoleWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             return 0;
         case RRR_OPEN:
             RFName[0] = '\0';
-            if (Win_ROpenDlg(RClient, "Open"))
+            if (Win_ROpenDlg(RClient, 1))
                 menuOpen();
             return 0;
         case RRR_SAVE:
@@ -549,7 +551,7 @@ LRESULT CALLBACK ConsoleWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             menuSave();
             return 0;
         case RRR_LOAD:
-            if (Win_ROpenDlg(RClient, "Load"))
+            if (Win_ROpenDlg(RClient, 2))
                 menuLoad();
             return 0;
         case RRR_UNDO:
@@ -604,6 +606,7 @@ LRESULT CALLBACK ConsoleWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             }
             break;
         case RRR_DATA:
+            RFName[0] = '\0';
             userdata();
             return 0;
         case RRR_SYSDATA:
@@ -635,18 +638,17 @@ void menuLoad(void)
     PROTECT(expr = R_ParseFile(fp, -1, &status));
     if (status == PARSE_ERROR)
         error("load: an error occurred in parsing\n");
-    for (expr; expr != R_NilValue; expr = CDR(expr))
-        eval(CAR(expr), R_GlobalEnv);
+    eval(expr, R_GlobalEnv);
     UNPROTECT(1);
-#ifdef OLD
-    yyprompt((char *)CHAR(STRING(GetOption(install("prompt"), R_NilValue))[0]));
-#endif
+    expr = STRING(GetOption(install("prompt"), R_NilValue))[0];
+    R_WriteConsole(CHAR(expr), strlen(CHAR(expr)));
 }
 
 /*open a saved image to replace the current image */
 void menuOpen(void)
 {
     FILE *fp;
+    char *p;
 
     if (!R_Quiet)
         Rprintf("restore(\"%s\")\n", RFName);
@@ -667,9 +669,8 @@ void menuOpen(void)
         error("workspace file corrupted -- no data loaded\n");
     }
     fclose(fp);
-#ifdef OLD
-    yyprompt((char *)CHAR(STRING(GetOption(install("prompt"), R_NilValue))[0]));
-#endif
+    p = ((char *)CHAR(STRING(GetOption(install("prompt"), R_NilValue))[0]));
+    R_WriteConsole(p, strlen(p));
 }
 
 /* save the current image */
@@ -680,7 +681,6 @@ void menuSave()
     dump_image(RFName, 0);
 }
 
-#pragma argsused
 LRESULT FAR PASCAL MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HWND hWndChild;
@@ -869,7 +869,7 @@ void R_WriteConsole(char *buf, int buflen)
         Edit_ReplaceSel(RConsole, IObuf);
         InStart += slen;
     }
-    RSetCursor();
+    /*RSetCursor();*/
     return;
 }
 
@@ -900,23 +900,28 @@ void R_ClearerrConsole(void)
 
 FILE *R_OpenLibraryFile(char *file)
 {
-    char buf[256], *home;
+    char buf[256], buf2[256];
     FILE *fp;
 
-    if ((home = getenv("RHOME")) == NULL)
+    /*if((home = getenv("RHOME")) == NULL)*/
+    GetEnvironmentVariable("RHOME", buf, 256);
+    if (strlen(buf) == 0)
         return NULL;
-    sprintf(buf, "%s/library/base/R/%s", home, file);
-    fp = R_fopen(buf, "rt");
+    sprintf(buf2, "%s/library/base/R/%s", buf, file);
+    fp = R_fopen(buf2, "rt");
     return fp;
 }
 
 FILE *R_OpenSysInitFile(void)
 {
-    char buf[256];
+    char buf[256], buf2[256];
     FILE *fp;
 
-    sprintf(buf, "%s/library/base/R/Rprofile", getenv("RHOME"));
-    fp = R_fopen(buf, "r");
+    GetEnvironmentVariable("RHOME", buf, 256);
+    if (strlen(buf) == 0)
+        return NULL;
+    sprintf(buf2, "%s/library/base/R/Rprofile", buf);
+    fp = R_fopen(buf2, "r");
     return fp;
 }
 
@@ -1077,10 +1082,10 @@ extern BOOL CALLBACK Menu_SetMem(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     switch (message)
     {
     case WM_INITDIALOG:
-        sprintf(memval, "%d", (int)R_VSmb);
-        SetDlgItemText(hDlg, 103, memval);
-        sprintf(memval, "%d", (int)R_NSize);
+        sprintf(memval, "%d", (int)((R_VSize * sizeof(VECREC)) + 1048575) / 1048576);
         SetDlgItemText(hDlg, 102, memval);
+        sprintf(memval, "%d", (int)R_NSize);
+        SetDlgItemText(hDlg, 103, memval);
         SetFocus(GetDlgItem(hDlg, 1));
         return FALSE;
     case WM_COMMAND:
@@ -1088,16 +1093,20 @@ extern BOOL CALLBACK Menu_SetMem(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
         {
         case IDOK:
             GetDlgItemText(hDlg, 102, memval, 20);
-            nsize = strtol(memval, &p, 10);
+            vsize = strtol(memval, &p, 10);
             if (*p)
             {
                 MessageBox(RConsole, "The  VSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);
-                sprintf(memval, "%d", (int)R_VSmb);
+                sprintf(memval, "%d", (int)((R_VSize * sizeof(VECREC)) + 1048575) / 1048576);
                 SetDlgItemText(hDlg, 102, memval);
                 return 1;
             }
+            if (vsize == ((R_VSize * sizeof(VECREC)) + 1048575) / 1048576)
+                vsize = R_VSize * sizeof(VECREC);
+            else
+                vsize = vsize * 1048576;
             GetDlgItemText(hDlg, 103, memval, 20);
-            vsize = strtol(memval, &p, 10);
+            nsize = strtol(memval, &p, 10);
             if (*p)
             {
                 MessageBox(RConsole, "The  NSize value is not valid", "R Application", MB_ICONEXCLAMATION | MB_OK);

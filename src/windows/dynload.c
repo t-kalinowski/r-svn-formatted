@@ -161,7 +161,7 @@ static AddDLL(char *path)
 
 DL_FUNC R_FindSymbol(char const *name)
 {
-    char buf[MAXIDSIZE + 1];
+    char buf[MAXIDSIZE + 1], buf2[MAXIDSIZE + 1];
     DL_FUNC fcnptr;
     int i;
 
@@ -170,7 +170,7 @@ DL_FUNC R_FindSymbol(char const *name)
 #else
     sprintf(buf, "_%s", name);
 #endif
-    sprintf(buf, "%s_", name);
+
     for (i = 0; i < CountDLL; i++)
     {
         fcnptr = (DL_FUNC)GetProcAddress(LoadedDLL[i].dlh, buf);
@@ -183,7 +183,7 @@ DL_FUNC R_FindSymbol(char const *name)
     return (DL_FUNC)0;
 }
 
-static GetFullDLLPath(SEXP call, char *buf, char *path)
+static void GetFullDLLPath(SEXP call, char *buf, char *path)
 {
     if (path[1] != ':')
     {
