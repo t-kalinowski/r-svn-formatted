@@ -99,6 +99,11 @@ SEXP viewportLayoutPosCol(SEXP vp)
     return VECTOR_ELT(vp, VP_VALIDLPOSCOL);
 }
 
+SEXP viewportgpar(SEXP vp)
+{
+    return VECTOR_ELT(vp, PVP_GPAR);
+}
+
 char *viewportFontFamily(SEXP vp)
 {
     return CHAR(STRING_ELT(VECTOR_ELT(VECTOR_ELT(vp, PVP_GPAR), GP_FONTFAMILY), 0));
@@ -205,13 +210,9 @@ void copyViewportContext(LViewportContext vpc1, LViewportContext *vpc2)
     vpc2->yscalemax = vpc1.yscalemax;
 }
 
-void gcontextFromViewport(SEXP vp, LGContext *gc)
+void gcontextFromViewport(SEXP vp, R_GE_gcontext *gc)
 {
-    gc->font = viewportFont(vp);
-    gc->fontsize = viewportFontSize(vp);
-    gc->cex = viewportCex(vp);
-    gc->lineheight = viewportLineHeight(vp);
-    strcpy(gc->fontfamily, viewportFontFamily(vp));
+    gcontextFromgpar(viewportgpar(vp), 0, gc);
 }
 
 /* The idea is to produce a transformation for this viewport which
@@ -233,7 +234,7 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
     double parentAngle;
     LViewportLocation vpl;
     LViewportContext vpc, parentContext;
-    LGContext gc, parentgc;
+    R_GE_gcontext gc, parentgc;
     LTransform thisLocation, thisRotation, thisJustification, thisTransform;
     LTransform tempTransform, parentTransform, transform;
     SEXP currentWidthCM, currentHeightCM, currentRotation;
@@ -262,10 +263,10 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
          * FIXME:  How do I figure out the device font ??
          * FIXME:  How do I figure out the device fontfamily ??
          */
-        parentgc.fontsize = 10;
+        parentgc.ps = 10;
         parentgc.lineheight = 1.2;
         parentgc.cex = 1;
-        parentgc.font = 1;
+        parentgc.fontface = 1;
         parentgc.fontfamily[0] = '\0';
         /* The device is not rotated
          */

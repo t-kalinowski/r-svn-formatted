@@ -43,29 +43,23 @@
 
 /* Device driver actions */
 static void GNOME_Activate(NewDevDesc *dd);
-static void GNOME_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                         NewDevDesc *dd);
+static void GNOME_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd);
 static void GNOME_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void GNOME_Close(NewDevDesc *dd);
 static void GNOME_Deactivate(NewDevDesc *dd);
 static void GNOME_Hold(NewDevDesc *dd);
 static Rboolean GNOME_Locator(double *x, double *y, NewDevDesc *dd);
-static void GNOME_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                       NewDevDesc *dd);
-static void GNOME_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                             NewDevDesc *dd);
+static void GNOME_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
+static void GNOME_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
 static void GNOME_Mode(int mode, NewDevDesc *dd);
-static void GNOME_NewPage(int fill, double gamma, NewDevDesc *dd);
-static void GNOME_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd);
-static void GNOME_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
-static void GNOME_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
-                       NewDevDesc *dd);
+static void GNOME_NewPage(R_GE_gcontext *gc, NewDevDesc *dd);
+static void GNOME_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
+static void GNOME_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
+static void GNOME_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
 static void GNOME_Resize(NewDevDesc *dd);
 static void GNOME_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
-static double GNOME_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void GNOME_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                       double cex, double ps, NewDevDesc *dd);
+static double GNOME_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
+static void GNOME_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
 static Rboolean GNOME_Open(NewDevDesc *, gnomeDesc *, char *, double, double);
 
 /* Pixel Dimensions (Inches) */
@@ -391,7 +385,7 @@ static GnomeUIInfo graphics_toolbar[] = {
      GNOME_APP_PIXMAP_STOCK, GNOME_STOCK_PIXMAP_CLOSE, 0, (GdkModifierType)0, NULL},
     GNOMEUIINFO_END};
 
-static void GNOME_NewPage(int fill, double gamma, NewDevDesc *dd)
+static void GNOME_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 {
     GnomeCanvasItem *group;
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
@@ -413,9 +407,9 @@ static void GNOME_NewPage(int fill, double gamma, NewDevDesc *dd)
     gd->plotarea = gnome_canvas_item_new(gd->group, gnome_canvas_rect_get_type(), "x1", (double)0.0, "y1", (double)0.0,
                                          "x2", (double)gd->windowWidth, "y2", (double)gd->windowHeight, NULL);
 
-    if (R_OPAQUE(fill))
+    if (R_OPAQUE(gc->fill))
     {
-        gnome_canvas_item_set(gd->plotarea, "fill_color_rgba", Color_RGBA(fill), NULL);
+        gnome_canvas_item_set(gd->plotarea, "fill_color_rgba", Color_RGBA(gc->fill), NULL);
     }
     else
     {
@@ -427,6 +421,7 @@ static void GNOME_NewPage(int fill, double gamma, NewDevDesc *dd)
 static Rboolean GNOME_Open(NewDevDesc *dd, gnomeDesc *gd, char *dsp, double w, double h)
 {
     gint iw, ih;
+    R_GE_gcontext gc;
 
     /*gdk_rgb_set_install(TRUE); */
     /* gdk_rgb_set_verbose(TRUE);*/
@@ -465,7 +460,14 @@ static Rboolean GNOME_Open(NewDevDesc *dd, gnomeDesc *gd, char *dsp, double w, d
     /* create new plot area on canvas */
     /* FIXME: We should have a canvas color argument */
     /* gamma is defaulted to 1 here */
-    GNOME_NewPage(R_RGB(255, 255, 255), 1, dd);
+    /*
+     * WARNING: Many graphical parameters are unset - if GNOME_NewPage
+     * starts to make use of more than fill and gamma then more
+     * parameters need setting here.
+     */
+    gc.fill = R_RGB(255, 255, 255);
+    gc.gamma = 1;
+    GNOME_NewPage(&gc, dd);
 
     /* place and realize the canvas */
     gnome_app_set_contents(GNOME_APP(gd->window), gd->canvas);
@@ -494,19 +496,18 @@ static Rboolean GNOME_Open(NewDevDesc *dd, gnomeDesc *gd, char *dsp, double w, d
     return TRUE;
 }
 
-static double GNOME_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd)
+static double GNOME_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int size;
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
 
-    size = cex * ps + 0.5;
-    SetFont(dd, font, size);
+    size = gc->cex * gc->ps + 0.5;
+    SetFont(dd, gc->fontface, size);
 
     return (double)gdk_string_width(gd->font, str);
 }
 
-static void GNOME_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                             NewDevDesc *dd)
+static void GNOME_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     gint size;
     gint lbearing, rbearing, iascent, idescent, iwidth;
@@ -514,8 +515,8 @@ static void GNOME_MetricInfo(int c, int font, double cex, double ps, double *asc
     gchar tmp[2];
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
 
-    size = cex * ps + 0.5;
-    SetFont(dd, font, size);
+    size = gc->cex * gc->ps + 0.5;
+    SetFont(dd, gc->fontface, size);
 
     if (c == 0)
     {
@@ -655,8 +656,7 @@ static void GNOME_Deactivate(NewDevDesc *dd)
 
 /* drawing stuff */
 
-static void GNOME_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty, double lwd,
-                       NewDevDesc *dd)
+static void GNOME_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     double tmp;
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
@@ -676,20 +676,19 @@ static void GNOME_Rect(double x0, double y0, double x1, double y1, int col, int 
     }
 
     item = gnome_canvas_item_new(gd->group, gnome_canvas_rect_get_type(), "x1", x0, "y1", y0, "x2", x1, "y2", y1,
-                                 "width_units", (double)lwd, NULL);
+                                 "width_units", (double)gc->lwd, NULL);
 
-    if (fill != NA_INTEGER)
+    if (gc->fill != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(fill), NULL);
+        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(gc->fill), NULL);
     }
-    if (col != NA_INTEGER)
+    if (gc->col != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(col), NULL);
+        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(gc->col), NULL);
     }
 }
 
-static void GNOME_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                         NewDevDesc *dd)
+static void GNOME_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     double x1, y1, x2, y2;
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
@@ -701,20 +700,19 @@ static void GNOME_Circle(double x, double y, double r, int col, int fill, double
     y2 = y + r;
 
     item = gnome_canvas_item_new(gd->group, gnome_canvas_ellipse_get_type(), "x1", x1, "y1", y1, "x2", x2, "y2", y2,
-                                 "width_units", (double)lwd, NULL);
+                                 "width_units", (double)gc->lwd, NULL);
 
-    if (fill != NA_INTEGER)
+    if (gc->fill != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(fill), NULL);
+        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(gc->fill), NULL);
     }
-    if (col != NA_INTEGER)
+    if (gc->col != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(col), NULL);
+        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(gc->col), NULL);
     }
 }
 
-static void GNOME_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                       NewDevDesc *dd)
+static void GNOME_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     GnomeCanvasPoints *points;
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
@@ -726,23 +724,23 @@ static void GNOME_Line(double x1, double y1, double x2, double y2, int col, doub
     points->coords[2] = x2;
     points->coords[3] = y2;
 
-    item = gnome_canvas_item_new(gd->group, gnome_canvas_line_get_type(), "points", points, "width_units", (double)lwd,
-                                 NULL);
+    item = gnome_canvas_item_new(gd->group, gnome_canvas_line_get_type(), "points", points, "width_units",
+                                 (double)gc->lwd, NULL);
 
-    if (col != NA_INTEGER)
+    if (gc->col != NA_INTEGER)
     {
-        if (lty != 0)
+        if (gc->lty != 0)
         {
             /*SetLineType(GNOME_CANVAS_LINE(item)->gc, lty, lwd);*/
             gnome_canvas_item_set(item, "line_style", GDK_LINE_ON_OFF_DASH, NULL);
         }
-        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(col), NULL);
+        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(gc->col), NULL);
     }
 
     gnome_canvas_points_free(points);
 }
 
-static void GNOME_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
+static void GNOME_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int i;
     GnomeCanvasPoints *points;
@@ -757,12 +755,12 @@ static void GNOME_Polyline(int n, double *x, double *y, int col, double gamma, i
         points->coords[i * 2 + 1] = y[i];
     }
 
-    item = gnome_canvas_item_new(gd->group, gnome_canvas_line_get_type(), "points", points, "width_units", (double)lwd,
-                                 NULL);
+    item = gnome_canvas_item_new(gd->group, gnome_canvas_line_get_type(), "points", points, "width_units",
+                                 (double)gc->lwd, NULL);
 
-    if (col != NA_INTEGER)
+    if (gc->col != NA_INTEGER)
     {
-        if (lty != 0)
+        if (gc->lty != 0)
         {
             /*
               SetLineType(&stipple, lty, lwd);
@@ -772,14 +770,13 @@ static void GNOME_Polyline(int n, double *x, double *y, int col, double gamma, i
               */
             gnome_canvas_item_set(item, "line_style", GDK_LINE_ON_OFF_DASH, NULL);
         }
-        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(col), NULL);
+        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(gc->col), NULL);
     }
 
     gnome_canvas_points_free(points);
 }
 
-static void GNOME_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd)
+static void GNOME_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int i;
     GnomeCanvasPoints *points;
@@ -797,20 +794,19 @@ static void GNOME_Polygon(int n, double *x, double *y, int col, int fill, double
     item = gnome_canvas_item_new(gd->group, gnome_canvas_polygon_get_type(), "points", points, "width_units", (double)2,
                                  NULL);
 
-    if (fill != NA_INTEGER)
+    if (gc->fill != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(fill), NULL);
+        gnome_canvas_item_set(item, "fill_color_rgba", Color_RGBA(gc->fill), NULL);
     }
-    if (col != NA_INTEGER)
+    if (gc->col != NA_INTEGER)
     {
-        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(col), NULL);
+        gnome_canvas_item_set(item, "outline_color_rgba", Color_RGBA(gc->col), NULL);
     }
 
     gnome_canvas_points_free(points);
 }
 
-static void GNOME_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                       double cex, double ps, NewDevDesc *dd)
+static void GNOME_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     double affine[6] = {1, 0, 0, 1, 0, 0};
     double rrot = DEG2RAD * rot;
@@ -818,8 +814,8 @@ static void GNOME_Text(double x, double y, char *str, double rot, double hadj, i
     gnomeDesc *gd = (gnomeDesc *)dd->deviceSpecific;
     int size;
 
-    size = cex * ps + 0.5;
-    SetFont(dd, font, size);
+    size = gc->cex * gc->ps + 0.5;
+    SetFont(dd, gc->fontface, size);
 
     if (rot != 0)
     {
@@ -832,7 +828,7 @@ static void GNOME_Text(double x, double y, char *str, double rot, double hadj, i
     }
 
     item = gnome_canvas_item_new(gd->group, gnome_canvas_text_get_type(), "text", str, "anchor", GTK_ANCHOR_SOUTH_WEST,
-                                 "x", x, "y", y, "font_gdk", gd->font, "fill_color_rgba", Color_RGBA(col), NULL);
+                                 "x", x, "y", y, "font_gdk", gd->font, "fill_color_rgba", Color_RGBA(gc->col), NULL);
 
     if (rot != 0)
         gnome_canvas_item_affine_relative(item, affine);

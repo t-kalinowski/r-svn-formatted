@@ -156,15 +156,25 @@ double gpAlpha(SEXP gp, int i)
  */
 
 /*
- * Generate a C gpar from an SEXP gpar
- * Assume that index has been checked as valid elsewhere
+ * Generate an R_GE_gcontext from a gpar
  */
-void gcontextFromgpar(SEXP gp, int i, LGContext *gc)
+void gcontextFromgpar(SEXP gp, int i, R_GE_gcontext *gc)
 {
-    gc->font = gpFont(gp, i);
-    gc->fontsize = gpFontSize(gp, i);
+    /*
+     * FIXME: Need to pass gpAlpha down.
+     * It's not clear yet whether this needs to be passed as part
+     * of the col/fill or as a separate parameter in
+     * R_GE_gcontext
+     */
+    gc->col = gpCol(gp, i);
+    gc->fill = gpFill(gp, i);
+    gc->gamma = gpGamma(gp, i);
+    gc->lwd = gpLineWidth(gp, i);
+    gc->lty = gpLineType(gp, i);
     gc->cex = gpCex(gp, i);
+    gc->ps = gpFontSize(gp, i);
     gc->lineheight = gpLineHeight(gp, i);
+    gc->fontface = gpFont(gp, i);
     strcpy(gc->fontfamily, gpFontFamily(gp, i));
 }
 

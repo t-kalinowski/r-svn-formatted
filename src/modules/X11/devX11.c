@@ -120,30 +120,24 @@ static int numX11Devices = 0;
 /* Device Driver Actions */
 
 static void newX11_Activate(NewDevDesc *dd);
-static void newX11_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd);
+static void newX11_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void newX11_Close(NewDevDesc *dd);
 static void newX11_Deactivate(NewDevDesc *dd);
 static void newX11_Hold(NewDevDesc *dd);
 static Rboolean newX11_Locator(double *x, double *y, NewDevDesc *dd);
-static void newX11_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                        NewDevDesc *dd);
-static void newX11_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                              NewDevDesc *dd);
+static void newX11_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
+static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
 static void newX11_Mode(int mode, NewDevDesc *dd);
-static void newX11_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void newX11_NewPage(R_GE_gcontext *gc, NewDevDesc *dd);
 Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double h, double gamma_fac,
                      X_COLORTYPE colormodel, int maxcube, int canvascolor);
-static void newX11_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                           NewDevDesc *dd);
-static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
-static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
-                        double lwd, NewDevDesc *dd);
+static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
+static void newX11_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
+static void newX11_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
-static double newX11_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                        double cex, double ps, NewDevDesc *dd);
+static double newX11_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
+static void newX11_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
 
 /*************************************************/
 /* End of list of required device driver actions */
@@ -1115,26 +1109,25 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
     return TRUE;
 }
 
-static double newX11_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd)
+static double newX11_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
-    int size = cex * ps + 0.5;
-    SetFont(font, size, dd);
+    int size = gc->cex * gc->ps + 0.5;
+    SetFont(gc->fontface, size, dd);
     return (double)XTextWidth(xd->font, str, strlen(str));
 }
 
 /* Character Metric Information */
 /* Passing c == 0 gets font information */
 
-static void newX11_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                              NewDevDesc *dd)
+static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     int first, last;
-    int size = cex * ps + 0.5;
+    int size = gc->cex * gc->ps + 0.5;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
-    SetFont(font, size, dd);
+    SetFont(gc->fontface, size, dd);
     first = xd->font->min_char_or_byte2;
     last = xd->font->max_char_or_byte2;
 
@@ -1201,7 +1194,7 @@ static void newX11_Size(double *left, double *right, double *bottom, double *top
     *top = 0.0;
 }
 
-static void newX11_NewPage(int fill, double gamma, NewDevDesc *dd)
+static void newX11_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 {
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
@@ -1234,16 +1227,16 @@ static void newX11_NewPage(int fill, double gamma, NewDevDesc *dd)
         }
         /* we want to override the default bg="transparent" */
         /*	xd->fill = R_OPAQUE(dd->bg) ? dd->bg : xd->canvas; */
-        xd->fill = R_OPAQUE(fill) ? fill : PNG_TRANS;
+        xd->fill = R_OPAQUE(gc->fill) ? gc->fill : PNG_TRANS;
         SetColor(xd->fill, dd);
         XFillRectangle(display, xd->window, xd->wgc, 0, 0, xd->windowWidth, xd->windowHeight);
         return;
     }
 
     FreeX11Colors();
-    if ((model == PSEUDOCOLOR2) || (xd->fill != fill))
+    if ((model == PSEUDOCOLOR2) || (xd->fill != gc->fill))
     {
-        xd->fill = R_OPAQUE(fill) ? fill : xd->canvas;
+        xd->fill = R_OPAQUE(gc->fill) ? gc->fill : xd->canvas;
         whitepixel = GetX11Pixel(R_RED(xd->fill), R_GREEN(xd->fill), R_BLUE(xd->fill));
         XSetWindowBackground(display, xd->window, whitepixel);
     }
@@ -1407,8 +1400,7 @@ static void newX11_Deactivate(NewDevDesc *dd)
     XSync(display, 0);
 }
 
-static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
-                        double lwd, NewDevDesc *dd)
+static void newX11_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int tmp;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1425,15 +1417,15 @@ static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int
         y0 = y1;
         y1 = tmp;
     }
-    if (R_OPAQUE(fill))
+    if (R_OPAQUE(gc->fill))
     {
-        SetColor(fill, dd);
+        SetColor(gc->fill, dd);
         XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
     }
-    if (R_OPAQUE(col))
+    if (R_OPAQUE(gc->col))
     {
-        SetColor(col, dd);
-        SetLinetype(lty, lwd, dd);
+        SetColor(gc->col, dd);
+        SetLinetype(gc->lty, gc->lwd, dd);
         XDrawRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
     }
 #ifdef XSYNC
@@ -1442,8 +1434,7 @@ static void newX11_Rect(double x0, double y0, double x1, double y1, int col, int
 #endif
 }
 
-static void newX11_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd)
+static void newX11_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int ir, ix, iy;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1452,21 +1443,20 @@ static void newX11_Circle(double x, double y, double r, int col, int fill, doubl
 
     ix = (int)x;
     iy = (int)y;
-    if (R_OPAQUE(fill))
+    if (R_OPAQUE(gc->fill))
     {
-        SetColor(fill, dd);
+        SetColor(gc->fill, dd);
         XFillArc(display, xd->window, xd->wgc, ix - ir, iy - ir, 2 * ir, 2 * ir, 0, 23040);
     }
-    if (R_OPAQUE(col))
+    if (R_OPAQUE(gc->col))
     {
-        SetLinetype(lty, lwd, dd);
-        SetColor(col, dd);
+        SetLinetype(gc->lty, gc->lwd, dd);
+        SetColor(gc->col, dd);
         XDrawArc(display, xd->window, xd->wgc, ix - ir, iy - ir, 2 * ir, 2 * ir, 0, 23040);
     }
 }
 
-static void newX11_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                        NewDevDesc *dd)
+static void newX11_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int xx1, yy1, xx2, yy2;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1478,10 +1468,10 @@ static void newX11_Line(double x1, double y1, double x2, double y2, int col, dou
     xx2 = (int)x2;
     yy2 = (int)y2;
 
-    if (R_OPAQUE(col))
+    if (R_OPAQUE(gc->col))
     {
-        SetColor(col, dd);
-        SetLinetype(lty, lwd, dd);
+        SetColor(gc->col, dd);
+        SetLinetype(gc->lty, gc->lwd, dd);
         XDrawLine(display, xd->window, xd->wgc, xx1, yy1, xx2, yy2);
 #ifdef XSYNC
         if (xd->type == WINDOW)
@@ -1490,7 +1480,7 @@ static void newX11_Line(double x1, double y1, double x2, double y2, int col, dou
     }
 }
 
-static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
+static void newX11_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -1505,10 +1495,10 @@ static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, 
         points[i].y = (int)(y[i]);
     }
 
-    if (R_OPAQUE(col))
+    if (R_OPAQUE(gc->col))
     {
-        SetColor(col, dd);
-        SetLinetype(lty, lwd, dd);
+        SetColor(gc->col, dd);
+        SetLinetype(gc->lty, gc->lwd, dd);
         /* Some X servers need npoints < 64K */
         for (i = 0; i < n; i += 10000 - 1)
         {
@@ -1525,8 +1515,7 @@ static void newX11_Polyline(int n, double *x, double *y, int col, double gamma, 
     vmaxset(vmax);
 }
 
-static void newX11_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                           NewDevDesc *dd)
+static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -1542,19 +1531,19 @@ static void newX11_Polygon(int n, double *x, double *y, int col, int fill, doubl
     }
     points[n].x = (int)(x[0]);
     points[n].y = (int)(y[0]);
-    if (R_OPAQUE(fill))
+    if (R_OPAQUE(gc->fill))
     {
-        SetColor(fill, dd);
+        SetColor(gc->fill, dd);
         XFillPolygon(display, xd->window, xd->wgc, points, n, Complex, CoordModeOrigin);
 #ifdef XSYNC
         if (xd->type == WINDOW)
             XSync(display, 0);
 #endif
     }
-    if (R_OPAQUE(col))
+    if (R_OPAQUE(gc->col))
     {
-        SetColor(col, dd);
-        SetLinetype(lty, lwd, dd);
+        SetColor(gc->col, dd);
+        SetLinetype(gc->lty, gc->lwd, dd);
         XDrawLines(display, xd->window, xd->wgc, points, n + 1, CoordModeOrigin);
 #ifdef XSYNC
         if (xd->type == WINDOW)
@@ -1565,18 +1554,17 @@ static void newX11_Polygon(int n, double *x, double *y, int col, int fill, doubl
     vmaxset(vmax);
 }
 
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                        double cex, double ps, NewDevDesc *dd)
+static void newX11_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int len, size;
     /*    double xl, yl, rot1;*/
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
-    size = cex * ps + 0.5;
-    SetFont(font, size, dd);
-    if (R_OPAQUE(col))
+    size = gc->cex * gc->ps + 0.5;
+    SetFont(gc->fontface, size, dd);
+    if (R_OPAQUE(gc->col))
     {
-        SetColor(col, dd);
+        SetColor(gc->col, dd);
         len = strlen(str);
         XRotDrawString(display, xd->font, rot, xd->window, xd->wgc, (int)x, (int)y, str);
 #ifdef XSYNC

@@ -170,8 +170,8 @@ int intersect(LRect r1, LRect r2)
 /* Calculate the bounding rectangle for a string.
  * x and y assumed to be in INCHES.
  */
-void textRect(double x, double y, SEXP text, int i, char *fontfamily, int font, double lineheight, double cex,
-              double ps, double xadj, double yadj, double rot, GEDevDesc *dd, LRect *r)
+void textRect(double x, double y, SEXP text, int i, R_GE_gcontext *gc, double xadj, double yadj, double rot,
+              GEDevDesc *dd, LRect *r)
 {
     /* NOTE that we must work in inches for the angles to be correct
      */
@@ -182,14 +182,14 @@ void textRect(double x, double y, SEXP text, int i, char *fontfamily, int font, 
     if (isExpression(text))
     {
         SEXP expr = VECTOR_ELT(text, i % LENGTH(text));
-        w = fromDeviceWidth(GEExpressionWidth(expr, font, cex, ps, dd), GE_INCHES, dd);
-        h = fromDeviceHeight(GEExpressionHeight(expr, font, cex, ps, dd), GE_INCHES, dd);
+        w = fromDeviceWidth(GEExpressionWidth(expr, gc, dd), GE_INCHES, dd);
+        h = fromDeviceHeight(GEExpressionHeight(expr, gc, dd), GE_INCHES, dd);
     }
     else
     {
         char *string = CHAR(STRING_ELT(text, i % LENGTH(text)));
-        w = fromDeviceWidth(GEStrWidth(string, fontfamily, font, lineheight, cex, ps, dd), GE_INCHES, dd);
-        h = fromDeviceHeight(GEStrHeight(string, fontfamily, font, lineheight, cex, ps, dd), GE_INCHES, dd);
+        w = fromDeviceWidth(GEStrWidth(string, gc, dd), GE_INCHES, dd);
+        h = fromDeviceHeight(GEStrHeight(string, gc, dd), GE_INCHES, dd);
     }
     rotrad = DEG2RAD * rot;
     sinrotrad = sin(rotrad);

@@ -86,7 +86,7 @@ void findRelHeights(SEXP layout, int *relativeHeights)
 }
 
 void allocateKnownWidths(SEXP layout, int *relativeWidths, double parentWidthCM, double parentHeightCM,
-                         LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd, double *npcWidths,
+                         LViewportContext parentContext, R_GE_gcontext *parentgc, GEDevDesc *dd, double *npcWidths,
                          double *widthLeftCM)
 {
     int i;
@@ -100,7 +100,7 @@ void allocateKnownWidths(SEXP layout, int *relativeWidths, double parentWidthCM,
 }
 
 void allocateKnownHeights(SEXP layout, int *relativeHeights, double parentWidthCM, double parentHeightCM,
-                          LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd, double *npcHeights,
+                          LViewportContext parentContext, R_GE_gcontext *parentgc, GEDevDesc *dd, double *npcHeights,
                           double *heightLeftCM)
 {
     int i;
@@ -148,7 +148,8 @@ int rowRespected(int row, SEXP layout)
  * Some effort is made to find all truly null units
  * (e.g., including a grobwidth unit where the grob's width is null)
  */
-double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, LGContext *parentgc, GEDevDesc *dd)
+double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, R_GE_gcontext *parentgc,
+                  GEDevDesc *dd)
 {
     int i;
     SEXP widths = layoutWidths(layout);
@@ -168,7 +169,7 @@ double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentConte
     return totalWidth;
 }
 
-double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, LGContext *parentgc,
+double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, R_GE_gcontext *parentgc,
                    GEDevDesc *dd)
 {
     int i;
@@ -191,7 +192,7 @@ double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentCon
 
 void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, double hmult, double vmult,
                        double *reducedWidthCM, double *reducedHeightCM, LViewportContext parentContext,
-                       LGContext *parentgc, GEDevDesc *dd, double *npcWidths, double *npcHeights)
+                       R_GE_gcontext *parentgc, GEDevDesc *dd, double *npcWidths, double *npcHeights)
 {
     int i;
     SEXP widths = layoutWidths(layout);
@@ -250,7 +251,7 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
 
 /* These sum up unrespected relative widths and heights (unit = "null")
  */
-double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, LGContext *parentgc,
+double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext parentContext, R_GE_gcontext *parentgc,
                              GEDevDesc *dd)
 {
     int i;
@@ -272,8 +273,8 @@ double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext 
     return totalWidth;
 }
 
-double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext, LGContext *parentgc,
-                              GEDevDesc *dd)
+double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContext parentContext,
+                              R_GE_gcontext *parentgc, GEDevDesc *dd)
 {
     int i;
     SEXP heights = layoutHeights(layout);
@@ -295,7 +296,7 @@ double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContex
 }
 
 void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier, LViewportContext parentContext,
-                            LGContext *parentgc, GEDevDesc *dd, double *npcWidths)
+                            R_GE_gcontext *parentgc, GEDevDesc *dd, double *npcWidths)
 {
     int i;
     SEXP widths = layoutWidths(layout);
@@ -318,7 +319,7 @@ void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier,
 }
 
 void allocateRemainingHeight(SEXP layout, int *relativeHeights, double multiplier, LViewportContext parentContext,
-                             LGContext *parentgc, GEDevDesc *dd, double *npcHeights)
+                             R_GE_gcontext *parentgc, GEDevDesc *dd, double *npcHeights)
 {
     int i;
     SEXP heights = layoutHeights(layout);
@@ -384,7 +385,7 @@ static void subRegion(SEXP layout, int minrow, int maxrow, int mincol, int maxco
 }
 
 void calcViewportLayout(SEXP viewport, double parentWidthCM, double parentHeightCM, LViewportContext parentContext,
-                        LGContext *parentgc, GEDevDesc *dd)
+                        R_GE_gcontext *parentgc, GEDevDesc *dd)
 {
     int i;
     SEXP currentWidths, currentHeights;

@@ -131,31 +131,25 @@ static void Quartz_Close(NewDevDesc *dd);
 static void Quartz_Activate(NewDevDesc *dd);
 static void Quartz_Deactivate(NewDevDesc *dd);
 static void Quartz_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
-static void Quartz_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void Quartz_NewPage(R_GE_gcontext *gc, NewDevDesc *dd);
 static void Quartz_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
-static double Quartz_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
-static void Quartz_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                        double cex, double ps, NewDevDesc *dd);
-static void Quartz_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
-                        double lwd, NewDevDesc *dd);
-static void Quartz_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd);
-static void Quartz_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                        NewDevDesc *dd);
-static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd);
-static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                           NewDevDesc *dd);
+static double Quartz_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
+static void Quartz_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
 static Rboolean Quartz_Locator(double *x, double *y, NewDevDesc *dd);
 static void Quartz_Mode(int mode, NewDevDesc *dd);
 static void Quartz_Hold(NewDevDesc *dd);
-static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                              NewDevDesc *dd);
+static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
 
 static void Quartz_SetFill(int fill, double gamma, NewDevDesc *dd);
 static void Quartz_SetStroke(int color, double gamma, NewDevDesc *dd);
 static void Quartz_SetLineDash(int lty, double lwd, NewDevDesc *dd);
 static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd);
-static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd);
+static void Quartz_SetFont(int style, double cex, double ps, NewDevDesc *dd);
 static CGContextRef GetContext(QuartzDesc *xd);
 
 static SEXP gcall;
@@ -519,7 +513,7 @@ static CGContextRef GetContext(QuartzDesc *xd)
     }
 }
 
-static void Quartz_NewPage(int fill, double gamma, NewDevDesc *dd)
+static void Quartz_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     CGPoint origin = {0.0, 0.0};
@@ -532,10 +526,10 @@ static void Quartz_NewPage(int fill, double gamma, NewDevDesc *dd)
     area.origin = origin;
     area.size = size;
 
-    if (fill == NA_INTEGER)
-        fill = R_RGB(255, 255, 255);
+    if (gc->fill == NA_INTEGER)
+        gc->fill = R_RGB(255, 255, 255);
 
-    Quartz_SetFill(fill, gamma, dd);
+    Quartz_SetFill(gc->fill, gc->gamma, dd);
 
     CGContextFillRect(GetContext(xd), area);
     CGContextFlush(GetContext(xd)); /* we need to flash it just now */
@@ -546,7 +540,7 @@ static void Quartz_Clip(double x0, double x1, double y0, double y1, NewDevDesc *
     return;
 }
 
-static double Quartz_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd)
+static double Quartz_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     CGPoint position;
@@ -560,7 +554,7 @@ static double Quartz_StrWidth(char *str, int font, double cex, double ps, NewDev
 
     CGContextSetTextDrawingMode(GetContext(xd), kCGTextInvisible);
 
-    Quartz_SetFont(font, cex, ps, dd);
+    Quartz_SetFont(gc->fontface, gc->cex, gc->ps, dd);
 
     CGContextShowTextAtPoint(GetContext(xd), 0, 0, str, strlen(str));
 
@@ -570,7 +564,7 @@ static double Quartz_StrWidth(char *str, int font, double cex, double ps, NewDev
     return (position.x);
 }
 
-static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd)
+static void Quartz_SetFont(int style, double cex, double ps, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     int size = cex * ps + 0.5;
@@ -582,7 +576,7 @@ static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd)
     GetPort(&savePort);
     SetPortWindowPort(xd->window);
 
-    switch (font)
+    switch (style)
     {
     case 5:
         strcpy(CurrFont, "Symbol");
@@ -604,8 +598,7 @@ static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd)
     SetPort(savePort);
 }
 
-static void Quartz_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
-                        double cex, double ps, NewDevDesc *dd)
+static void Quartz_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int len, i;
     char *buf = NULL;
@@ -619,14 +612,14 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
 
     CGContextRotateCTM(GetContext(xd), (-1.0 + 2 * rot / 360) * 3.1416);
 
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
 
     CGContextSetTextDrawingMode(GetContext(xd), kCGTextFill);
-    Quartz_SetFill(col, gamma, dd);
-    Quartz_SetFont(font, cex, ps, dd);
+    Quartz_SetFill(gc->col, gc->gamma, dd);
+    Quartz_SetFont(gc->fontface, gc->cex, gc->ps, dd);
     len = strlen(str);
 
-    if (font == 5)
+    if (gc->fontface == 5)
         CGContextShowTextAtPoint(GetContext(xd), 0, 0, str, strlen(str));
     else
     {
@@ -647,8 +640,7 @@ static void Quartz_Text(double x, double y, char *str, double rot, double hadj, 
     CGContextRestoreGState(GetContext(xd));
 }
 
-static void Quartz_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
-                        double lwd, NewDevDesc *dd)
+static void Quartz_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     CGRect rect;
@@ -666,20 +658,19 @@ static void Quartz_Rect(double x0, double y0, double x1, double y1, int col, int
 
     CGContextSaveGState(GetContext(xd));
 
-    Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, lwd, dd);
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
 
-    Quartz_SetFill(fill, gamma, dd);
+    Quartz_SetFill(gc->fill, gc->gamma, dd);
     CGContextFillRect(GetContext(xd), rect);
 
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
     CGContextStrokeRect(GetContext(xd), rect);
 
     CGContextRestoreGState(GetContext(xd));
 }
 
-static void Quartz_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
-                          NewDevDesc *dd)
+static void Quartz_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
 
@@ -687,22 +678,21 @@ static void Quartz_Circle(double x, double y, double r, int col, int fill, doubl
 
     CGContextBeginPath(GetContext(xd));
 
-    Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, lwd, dd);
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
 
     CGContextAddArc(GetContext(xd), (float)x, (float)y, (float)r, 3.141592654 * 2.0, 0.0, 0);
-    Quartz_SetFill(fill, gamma, dd);
+    Quartz_SetFill(gc->fill, gc->gamma, dd);
     CGContextFillPath(GetContext(xd));
 
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
     CGContextAddArc(GetContext(xd), (float)x, (float)y, (float)r, 3.141592654 * 2.0, 0.0, 0);
     CGContextStrokePath(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
 }
 
-static void Quartz_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty, double lwd,
-                        NewDevDesc *dd)
+static void Quartz_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     CGPoint lines[2];
@@ -717,19 +707,19 @@ static void Quartz_Line(double x1, double y1, double x2, double y2, int col, dou
     lines[1].x = (float)x2;
     lines[1].y = (float)y2;
 
-    Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, lwd, dd);
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
 
     CGContextAddLines(GetContext(xd), &lines[0], 2);
 
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
 
     CGContextStrokePath(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
 }
 
-static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
+static void Quartz_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     CGPoint *lines;
     int i;
@@ -749,12 +739,12 @@ static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, 
 
     CGContextSaveGState(GetContext(xd));
 
-    Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, lwd, dd);
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
 
     CGContextBeginPath(GetContext(xd));
     CGContextAddLines(GetContext(xd), &lines[0], n);
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
     CGContextStrokePath(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
@@ -816,8 +806,7 @@ static void Quartz_SetFill(int fill, double gamma, NewDevDesc *dd)
                              (float)R_BLUE(fill) / 255.0, alpha);
 }
 
-static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
-                           NewDevDesc *dd)
+static void Quartz_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int i;
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
@@ -826,8 +815,8 @@ static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, doubl
     CGContextSaveGState(GetContext(xd));
 
     CGContextBeginPath(GetContext(xd));
-    Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, lwd, dd);
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
 
     lines = (CGPoint *)malloc(sizeof(CGPoint) * (n + 1));
 
@@ -843,11 +832,11 @@ static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, doubl
     lines[n].y = (float)y[0];
 
     CGContextAddLines(GetContext(xd), &lines[0], n + 1);
-    Quartz_SetFill(fill, gamma, dd);
+    Quartz_SetFill(gc->fill, gc->gamma, dd);
     CGContextFillPath(GetContext(xd));
 
     CGContextAddLines(GetContext(xd), &lines[0], n + 1);
-    Quartz_SetStroke(col, gamma, dd);
+    Quartz_SetStroke(gc->col, gc->gamma, dd);
     CGContextStrokePath(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
@@ -920,8 +909,7 @@ static void Quartz_Hold(NewDevDesc *dd)
 #define FixedToFloat(a) ((float)(a) / fixed1)
 #define FloatToFixed(a) ((Fixed)((float)(a)*fixed1))
 
-static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width,
-                              NewDevDesc *dd)
+static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     FMetricRec myFMetric;
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
@@ -937,13 +925,13 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
 
     SetPort(GetWindowPort(xd->window));
 
-    Quartz_SetFont(font, cex, ps, dd);
+    Quartz_SetFont(gc->fontface, gc->cex, gc->ps, dd);
 
     if (c == 0)
     {
         FontMetrics(&myFMetric);
-        *ascent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.ascent);
-        *descent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.descent);
+        *ascent = xd->yscale * floor(gc->cex * gc->ps + 0.5) * FixedToFloat(myFMetric.ascent);
+        *descent = xd->yscale * floor(gc->cex * gc->ps + 0.5) * FixedToFloat(myFMetric.descent);
     }
     else
     {
@@ -953,7 +941,7 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
         CGContextScaleCTM(GetContext(xd), -1, 1);
         CGContextRotateCTM(GetContext(xd), -1.0 * 3.1416);
         CGContextSetTextDrawingMode(GetContext(xd), kCGTextInvisible);
-        Quartz_SetFont(font, cex, ps, dd);
+        Quartz_SetFont(gc->fontface, gc->cex, gc->ps, dd);
         CGContextShowTextAtPoint(GetContext(xd), 0, 0, testo, 1);
         position = CGContextGetTextPosition(GetContext(xd));
         CGContextRestoreGState(GetContext(xd));
