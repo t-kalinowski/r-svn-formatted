@@ -3983,16 +3983,28 @@ void GPretty(double *lo, double *up, int *ndiv)
                      /* shrink_sml = */ 0.25, high_u_fact, 2, /* do eps_correction in any case */
                      0 /* return (ns,nu) in  (lo,up) */);
     /* ==> ../appl/pretty.c */
+
+    /* The following is ugly since it kind of happens already in Rpretty0(..):
+     */
+#define rounding_eps 1e-7
     if (nu >= ns + 1)
     {
-        if (ns * unit < *lo)
+        if (ns * unit < *lo - rounding_eps * unit)
             ns++;
-        if (nu > ns + 1 && nu * unit > *up)
+        if (nu > ns + 1 && nu * unit > *up + rounding_eps * unit)
             nu--;
         *ndiv = nu - ns;
     }
     *lo = ns * unit;
     *up = nu * unit;
+#ifdef non_working_ALTERNATIVE
+    if (ns * unit > *lo)
+        *lo = ns * unit;
+    if (nu * unit < *up)
+        *up = nu * unit;
+    if (nu - ns >= 1)
+        *ndiv = nu - ns;
+#endif
 
 #ifdef DEBUG_PLOT
     if (*lo < x1)
