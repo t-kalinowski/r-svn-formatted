@@ -396,6 +396,9 @@ static void optcode(int code)
     Rprintf("\n");
 }
 
+extern int F77_SYMBOL(fdhess)();
+extern int F77_SYMBOL(optif9)();
+
 SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value, names, v;
