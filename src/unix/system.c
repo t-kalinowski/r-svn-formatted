@@ -423,7 +423,7 @@ int Rf_initEmbeddedR(int argc, char **argv)
  *     editor  = editor to be used.
  */
 
-int R_EditFiles(int nfile, char **file, char *editor)
+int R_EditFiles(int nfile, char **file, char **title, char *editor)
 {
     char buf[1024];
 
