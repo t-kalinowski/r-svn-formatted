@@ -8,9 +8,6 @@
 
 #include "Mathlib.h"
 
-#define TRUE 1
-#define FALSE 0
-
 /*----------- DEBUGGING -------------*/
 /* #define DEBUG
  * rather use  make CFLAGS='-DDEBUG -g -I/usr/local/include -I../include'
@@ -81,7 +78,7 @@ double pnchisq(double x, double f, double theta)
 
     /* check if (f+2n) is greater than x */
 
-    flag = FALSE;
+    flag = LFALSE;
     n = 1;
     twon = n * 2;
     for (;;)
@@ -93,7 +90,7 @@ double pnchisq(double x, double f, double theta)
         {
 
             /* find the error bound and check for convergence */
-            flag = TRUE;
+            flag = LTRUE;
             goto L10;
         }
         for (;;)

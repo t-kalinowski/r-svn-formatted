@@ -21,9 +21,6 @@
 
 #include "Mathlib.h"
 
-#define TRUE 1
-#define FALSE 0
-
 double pnt(double t, double df, double delta)
 {
     double a, albeta, b, del, en, errbd, geven, godd, lambda, p, q, rxb, s, tnc, tt, x, xeven, xodd;
@@ -47,10 +44,10 @@ double pnt(double t, double df, double delta)
     }
     tt = t;
     del = delta;
-    negdel = FALSE;
+    negdel = LFALSE;
     if (t < zero)
     {
-        negdel = TRUE;
+        negdel = LTRUE;
         tt = -tt;
         del = -del;
     }
