@@ -2,6 +2,7 @@
  *  A PicTeX device, (C) 1996 Valerio Aimale, for
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 2001  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -265,15 +266,6 @@ static void PicTeX_Close(DevDesc *dd)
     free(ptd);
 }
 
-/* Seek */
-/* NO LONGER USED
-static void PicTeX_MoveTo(double x, double y)
-{
-    xlast = x;
-    ylast = y;
-}
-*/
-
 /* Draw To */
 
 static void PicTeX_ClipLine(double x0, double y0, double x1, double y1, picTeXDesc *ptd)
@@ -393,6 +385,8 @@ static void PicTeX_Polyline(int n, double *x, double *y, int coords, DevDesc *dd
         PicTeX_ClipLine(x1, y1, x2, y2, ptd);
         fprintf(ptd->texfp, "\\plot %.2f %.2f %.2f %.2f /\n", ptd->clippedx0, ptd->clippedy0, ptd->clippedx1,
                 ptd->clippedy1);
+        x1 = x2;
+        y1 = y2;
     }
 }
 
@@ -414,25 +408,11 @@ static double PicTeX_StrWidth(char *str, DevDesc *dd)
     return sum * ptd->fontsize;
 }
 
-/* Start a Path */
-/* NO LONGER USED
-    static void PicTeX_StartPath()
-    {
-        SetLinetype(GP->lty, dd->gp.lwd, dd);
-    }
-*/
-
-/* End a Path */
-/* NO LONGER USED
-    static void PicTeX_EndPath()
-    {
-    }
-*/
-
 /* Possibly Filled Rectangle */
 static void PicTeX_Rect(double x0, double y0, double x1, double y1, int coords, int bg, int fg, DevDesc *dd)
 {
     double x[4], y[4];
+
     x[0] = x0;
     y[0] = y0;
     x[1] = x0;
@@ -544,12 +524,10 @@ static Rboolean PicTeX_Locator(double *x, double *y, DevDesc *dd)
     return FALSE;
 }
 
-/* Set Graphics mode - not needed for PS */
 static void PicTeX_Mode(int mode, DevDesc *dd)
 {
 }
 
-/* GraphicsInteraction() for the Mac */
 static void PicTeX_Hold(DevDesc *dd)
 {
 }

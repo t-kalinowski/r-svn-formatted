@@ -44,6 +44,8 @@
 #endif
 #include "Defn.h"
 
+#define min(a, b) (a > b) ? (b) : (a)
+
 void mac_savehistory(char *file);
 void mac_loadhistory(char *file);
 
@@ -74,7 +76,7 @@ Boolean gfinishedInput;
 char *gbuf;
 SInt16 HISTORY;
 Boolean GWgDone;
-Boolean gInBackground;
+extern Boolean gInBackground;
 Ptr gPreAllocatedBlockPtr;
 SInt32 gUntitledWindowNumber = 0;
 SInt32 gCurrentNumberOfWindows = 0;
@@ -127,14 +129,19 @@ void RWrite(char *buf)
 
 void RnWrite(char *buf, SInt16 len)
 {
-    SInt32 i;
-    char buf2[300];
+    SInt32 i, my_len;
+    char *buf2 = NULL;
 
     if (fileno(stdout) > 1)
     {
-        strncpy(buf2, buf, len);
-        fputs(buf2, stdout);
-        fflush(stdout);
+        buf2 = malloc(len + 2);
+        if (buf2)
+        {
+            strncpy(buf2, buf, len);
+            fputs(buf2, stdout);
+            fflush(stdout);
+            free(buf2);
+        }
     }
     else
         for (i = 0; i < len; i++)
@@ -153,7 +160,6 @@ void R_ReadConsole1(char *prompt, char *buf, int buflen, int hist)
     EventRecord myEvent;
     SInt32 i;
     char tempChar;
-    char buffo[1000];
 
     we = GetWindowWE(Console_Window);
 
@@ -438,14 +444,12 @@ void mac_loadhistory(char *file)
     int i, buflen, j;
     char buf[1002];
 
-    if (!file)
+    if (!file || *file == NULL)
         return;
     fp = fopen(file, "r");
     if (!fp)
     {
-        char msg[256];
-        sprintf(msg, "Unable to open history file \"%s\" for reading", file);
-        warning(msg);
+        REprintf("\nUnable to open history file \"%s\" for reading\n", file);
         return;
     }
 
@@ -480,9 +484,10 @@ void maintain_cmd_History(char *buf)
 {
     char *temp;
     int numberOfChar;
+
     g_Stop = false;
-    numberOfChar = strlen((const char *)buf);
-    temp = malloc(numberOfChar * sizeof(char));
+    numberOfChar = strlen(buf);
+    temp = malloc((numberOfChar + 1) * sizeof(char));
     strcpy(temp, (const char *)buf);
     Cmd_Hist[g_end_Cmd] = temp;
     g_not_first = false;
@@ -513,32 +518,33 @@ void R_WriteConsole1(char *buf, SInt32 buflen)
     SInt32 outlen, lastLen;
     Boolean ended = false;
     WEReference we;
-    char stringona[1000];
+    char *stringona = NULL;
 
     outlen = strlen(buf);
 
-    strncpy(stringona, buf, outlen);
-    for (i = 0; i < outlen; i++)
-        if (buf[i] == '\n')
-            stringona[i] = '\r';
+    stringona = malloc(outlen + 2);
+    if (stringona)
+    {
+        strncpy(stringona, buf, outlen);
+        for (i = 0; i < outlen; i++)
+            if (buf[i] == '\n')
+                stringona[i] = '\r';
 
-    we = GetWindowWE(Console_Window);
-    //   WESetSelection ( WEGetTextLength(we), WEGetTextLength(we), we );
+        we = GetWindowWE(Console_Window);
 
-    WEPut(kCurrentSelection, kCurrentSelection, stringona, outlen, kTextEncodingMultiRun, 0, 0, nil, nil, we);
+        if (we)
+            WEPut(kCurrentSelection, kCurrentSelection, stringona, outlen, kTextEncodingMultiRun, 0, 0, nil, nil, we);
+
+        if (stringona)
+            free(stringona);
+    }
 }
 
+// Updated for Waste 2.X  Jago
 void R_WriteConsoleX(Ptr buf, SInt32 buflen)
 {
     SInt32 i, selStart, selEnd;
-    /*   WEHandle pWE;
-     */
     WEReference pWE;
-
-    // Updated for Waste 2.X  Jago
-
-    /*typedef WEReference WEHandle;*/
-
     SInt32 outLen, lastLen;
     Boolean ended = false;
     WEReference we;
@@ -552,7 +558,6 @@ void R_WriteConsoleX(Ptr buf, SInt32 buflen)
         {
             if (outLen != 0)
             {
-                //            WEInsert(&buf[lastLen], outLen, nil, nil, GetWindowWE(Console_Window));
                 WEPut(kCurrentSelection, kCurrentSelection, &buf[lastLen], outLen, kTextEncodingMultiRun, 0, 0, nil,
                       nil, GetWindowWE(Console_Window));
                 outLen = 0;
@@ -565,7 +570,6 @@ void R_WriteConsoleX(Ptr buf, SInt32 buflen)
             outLen++;
         }
     }
-    //  WEInsert(&buf[lastLen], outLen, nil, nil, GetWindowWE(Console_Window));
     WEPut(kCurrentSelection, kCurrentSelection, &buf[lastLen], outLen, kTextEncodingMultiRun, 0, 0, nil, nil,
           GetWindowWE(Console_Window));
 }

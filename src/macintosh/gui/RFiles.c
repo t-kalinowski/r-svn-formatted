@@ -37,8 +37,8 @@
  *	C port by John C. Daub
  */
 
-#ifndef __WEDEMO__
-#include "wedemo.h"
+#ifndef __WEDEMOAPP__
+#include "RIntf.h"
 #endif
 
 #ifndef __ERRORS__
@@ -49,6 +49,8 @@
 #include <Folders.h>
 #endif
 
+extern SInt16 Edit_Window;
+extern WindowPtr Edit_Windows[MAX_NUM_E_WIN + 1];
 #define kFileNotOpened -1
 
 typedef struct FlavorLookupTable
@@ -290,10 +292,10 @@ OSStatus ReadTextFile(const FSSpec *pFileSpec, WEReference we)
         }
         else
         {
-            if ((*hText)[i] != 0x0A) /* strips also cr escape char  */
-                testo[k] = (*hText)[i];
+            if ((*hText)[i] == 0x0A) /* strips also cr escape char  */
+                testo[k] = '\r';
             else
-                testo[k] = ' ';
+                testo[k] = (*hText)[i];
             k++;
         }
 
@@ -397,7 +399,7 @@ cleanup:
 
     /*	display an alert box if anything went wrong
      */
-    if (err != noErr)
+    if ((err != noErr) && (err != -43)) /* we handle 'File not found' error elsewhere  */
     {
         ErrorAlert(err);
     }

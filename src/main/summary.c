@@ -705,7 +705,7 @@ SEXP do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP sx, ans;
     double s;
-    int i, n, index;
+    int i, n, indx;
 
     checkArity(op, args);
 
@@ -713,17 +713,18 @@ SEXP do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isNumeric(sx))
         errorcall(call, "non-numeric argument");
     n = LENGTH(sx);
-    index = NA_INTEGER;
+    indx = NA_INTEGER;
     s = R_PosInf;
     for (i = 0; i < n; i++)
         if (!ISNAN(REAL(sx)[i]) && REAL(sx)[i] < s)
         {
             s = REAL(sx)[i];
-            index = i;
+            indx = i;
         }
     UNPROTECT(1);
-    ans = allocVector(INTSXP, 1);
-    INTEGER(ans)[0] = index + 1;
+    ans = allocVector(INTSXP, (i = (indx != NA_INTEGER)) ? 1 : 0);
+    if (i)
+        INTEGER(ans)[0] = indx + 1;
     return ans;
 }
 
@@ -732,7 +733,7 @@ SEXP do_first_max(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP sx, ans;
     double s;
-    int i, n, index;
+    int i, n, indx;
 
     checkArity(op, args);
 
@@ -740,17 +741,18 @@ SEXP do_first_max(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isNumeric(sx))
         errorcall(call, "non-numeric argument");
     n = LENGTH(sx);
-    index = NA_INTEGER;
+    indx = NA_INTEGER;
     s = R_NegInf;
     for (i = 0; i < n; i++)
         if (!ISNAN(REAL(sx)[i]) && REAL(sx)[i] > s)
         {
             s = REAL(sx)[i];
-            index = i;
+            indx = i;
         }
     UNPROTECT(1);
-    ans = allocVector(INTSXP, 1);
-    INTEGER(ans)[0] = index + 1;
+    ans = allocVector(INTSXP, (i = (indx != NA_INTEGER)) ? 1 : 0);
+    if (i)
+        INTEGER(ans)[0] = indx + 1;
     return ans;
 }
 

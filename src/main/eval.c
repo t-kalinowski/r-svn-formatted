@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2000	The R Development Core Team.
+ *  Copyright (C) 1998-2001	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -384,7 +384,6 @@ SEXP eval(SEXP e, SEXP rho)
 
 SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 {
-    int i;
     SEXP body, formals, actuals, savedrho;
     volatile SEXP newrho;
     SEXP f, a, tmp;
@@ -503,7 +502,7 @@ regdb :
     /*  Set a longjmp target which will catch any explicit returns
     from the function body.  */
 
-    if ((i = SETJMP(cntxt.cjmpbuf)))
+    if ((SETJMP(cntxt.cjmpbuf)))
     {
         if (R_ReturnedValue == R_DollarSymbol)
         {

@@ -220,7 +220,6 @@ static struct
 } RPalette[512];
 static XColor XPalette[512];
 static int PaletteSize;
-static int RedLevels, GreenLevels, BlueLevels;
 
 /* Monochome Displays : Compute pixel values by converting */
 /* RGB values to luminance and then thresholding. */
@@ -246,7 +245,7 @@ static unsigned GetGrayScalePixel(int r, int g, int b)
 {
     unsigned int d, dmin = 0xFFFFFFFF;
     unsigned int dr;
-    int i, imin;
+    int i;
     unsigned int pixel = 0; /* -Wall */
     int gray = (0.299 * r + 0.587 * g + 0.114 * b) + 0.0001;
     for (i = 0; i < PaletteSize; i++)
@@ -257,7 +256,6 @@ static unsigned GetGrayScalePixel(int r, int g, int b)
         {
             pixel = XPalette[i].pixel;
             dmin = d;
-            imin = i;
         }
     }
     return pixel;
@@ -383,12 +381,7 @@ static int GetColorPalette(Display *dpy, Colormap cmap, int nr, int ng, int nb)
         return 0;
     }
     else
-    {
-        RedLevels = nr;
-        GreenLevels = ng;
-        BlueLevels = nb;
         return 1;
-    }
 }
 
 static void SetupPseudoColor()
@@ -422,7 +415,7 @@ static unsigned int GetPseudoColor1Pixel(int r, int g, int b)
     unsigned int d, dmin = 0xFFFFFFFF;
     unsigned int dr, dg, db;
     unsigned int pixel;
-    int i, imin;
+    int i;
     pixel = 0; /* -Wall */
     for (i = 0; i < PaletteSize; i++)
     {
@@ -434,7 +427,6 @@ static unsigned int GetPseudoColor1Pixel(int r, int g, int b)
         {
             pixel = XPalette[i].pixel;
             dmin = d;
-            imin = i;
         }
     }
     return pixel;
@@ -579,7 +571,7 @@ static Rboolean SetupX11Color()
         {
             if (model == TRUECOLOR)
                 model = PSEUDOCOLOR2;
-            SetupPseudoColor(model);
+            SetupPseudoColor();
         }
     }
     else if (Vclass == TrueColor)
@@ -589,7 +581,7 @@ static Rboolean SetupX11Color()
         else if (model == GRAYSCALE)
             SetupGrayScale();
         else if (model == PSEUDOCOLOR1 || model == PSEUDOCOLOR2)
-            SetupPseudoColor(model);
+            SetupPseudoColor();
         else
             SetupTrueColor();
     }
@@ -1130,6 +1122,16 @@ static int R_X11Err(Display *dsp, XErrorEvent *event)
 
 static int R_X11IOErr(Display *dsp)
 {
+    int fd = ConnectionNumber(display);
+    /*
+    while (nfonts--)  XFreeFont(display, fontcache[nfonts].font);
+    nfonts = 0;
+    */
+    removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
+    /*
+    XCloseDisplay(display);
+    displayOpen = FALSE;
+    */
     error("X11 fatal IO error: please save work and shut down R");
     return 0; /* but should never get here */
 }
@@ -1151,10 +1153,14 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
     {
         FILE *fp;
 #ifndef HAVE_PNG
-        error("No png support in this version of R");
+        warning("No png support in this version of R");
+        return FALSE;
 #endif
         if (!(fp = R_fopen(R_ExpandFileName(dsp + 5), "w")))
-            error("could not open PNG file `%s'", dsp + 6);
+        {
+            warning("could not open PNG file `%s'", dsp + 6);
+            return FALSE;
+        }
         xd->fp = fp;
         type = PNG;
         p = "";
@@ -1163,13 +1169,17 @@ static Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h
     {
         FILE *fp;
 #ifndef HAVE_JPEG
-        error("No jpeg support in this version of R");
+        warning("No jpeg support in this version of R");
+        return FALSE;
 #endif
         p = strchr(dsp + 6, ':');
         *p = '\0';
         xd->quality = atoi(dsp + 6);
         if (!(fp = R_fopen(R_ExpandFileName(p + 1), "w")))
-            error("could not open JPEG file `%s'", p + 1);
+        {
+            warning("could not open JPEG file `%s'", p + 1);
+            return FALSE;
+        }
         xd->fp = fp;
         type = JPEG;
         p = "";

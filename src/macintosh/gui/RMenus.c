@@ -143,6 +143,8 @@ void ConsolePaste(void);
 void ConsoleCopyAndPaste(void);
 OSErr DoOpenText(void);
 OSErr DoOpen(void);
+OSErr DoSource(void);
+void consolecmd(char *cmd);
 
 /*    Extern Global variables   */
 extern void doWindowsMenu(SInt16);
@@ -291,7 +293,7 @@ void PrepareMenus(void)
     }
     else
     {
-        SetMenuItemText(menu, kItemOpen, "\pOpen");
+        SetMenuItemText(menu, kItemOpen, "\pOpen...");
         SetItemCmd(menu, kItemOpen, 'O');
     }
 
@@ -310,6 +312,7 @@ void PrepareMenus(void)
     }
     EnableItem(menu, kItemNew);
     EnableItem(menu, kItemOpen);
+    EnableItem(menu, kItemShow);
     EnableItem(menu, kItemPageSetup);
     EnableItem(menu, kItemPrint);
     EnableItem(menu, kItemQuit);
@@ -324,16 +327,6 @@ void PrepareMenus(void)
             EnableItem(menu, kItemSaveAs);
             EnableItem(menu, kItemSave);
         }
-#ifdef XXX
-        /* We have not make any agreement about this yet.
-           What is dirty, and what is not.
-           enable Save is the active window is dirty
-        */
-        if (WEGetModCount(we) > 0)
-        {
-            EnableItem(menu, kItemSave);
-        }
-#endif
     }
 
     /* *** EDIT MENU ***
@@ -441,260 +434,11 @@ void PrepareMenus(void)
     for (i = 1; i <= CountMenuItems(windowsMenu); i++)
     {
         GetMenuItemText(windowsMenu, i, (unsigned char *)&Menu_Title);
-        /* RnWrite((char *)&Menu_Title[1], Menu_Title[0]);
-           RWrite("\r");
-        */
         EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
         CheckMenuItem(windowsMenu, i, false);
         if (EqString)
             CheckMenuItem(windowsMenu, i, true);
     }
-
-#ifdef UNUSE
-    /* *** FONT MENU ***
-     */
-    menu = GetMenuHandle(kMenuFont);
-
-    /* first, remove all check marks
-     */
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    /* if there is a continuous font all over the selection range,
-       check the corresponding menu item
-    */
-    if (mode & weDoFont)
-    {
-        GetFontName(ts.tsFont, itemText);
-        CheckItem(menu, FindMenuItemText(menu, itemText), true);
-    }
-
-    /* *** SIZE MENU ***
-     */
-    menu = GetMenuHandle(kMenuSize);
-
-    /* first, remove all check marks
-     */
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    /* if there is a continuous font size all over the selection range
-       check the corresponding menu item
-    */
-    if (mode & weDoSize)
-    {
-        NumToString(ts.tsSize, itemText);
-        CheckItem(menu, FindMenuItemText(menu, itemText), true);
-    }
-
-    /* *** STYLE MENU ***
-     */
-    menu = GetMenuHandle(kMenuStyle);
-
-    /* first, remove all check marks
-     */
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    /* check the style menu items corresponding to style attributes
-     */
-    if (mode & weDoFace)
-    {
-        if (ts.tsFace == normal)
-        {
-            CheckItem(menu, kItemPlainText, true);
-        }
-
-        for (item = kItemBold; item <= kItemExtended; item++)
-        {
-            if (ts.tsFace & (1 << (item - kItemBold)))
-            {
-                CheckItem(menu, item, true);
-            }
-        }
-    }
-
-    /* *** COLOR MENU ***
-     */
-    menu = GetMenuHandle(kMenuColor);
-
-    /* first, remove all check marks
-     */
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    /* if there is a continuous color all over the selection range,
-       check the corresponding menu item (if any)
-    */
-    if (mode & weDoColor)
-    {
-        pColors = *(MenuCRsrcHandle)sColors;
-        for (item = pColors->numEntries - 1; item >= 0; item--)
-        {
-            if (EqualColor(&ts.tsColor, &pColors->mcEntryRecs[item].mctRGB2))
-            {
-                CheckItem(menu, pColors->mcEntryRecs[item].mctItem, true);
-            }
-
-        } /* end for loop */
-    }
-
-    /* *** FEATURES MENU ***
-     */
-    menu = GetMenuHandle(kMenuFeatures);
-
-    /* first remove all check marks
-       (except the first two items, which have submenus!)
-    */
-    for (item = CountMenuItems(menu); item >= 3; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    if (window != nil)
-    {
-        /* mark each item according to the corresponding feature
-         */
-        if (WEIsTabHooks(we))
-        {
-            CheckItem(menu, kItemTabHooks, true);
-            DisableItem(menu, kItemAlignment);
-            DisableItem(menu, kItemDirection);
-        }
-        else
-        {
-            EnableItem(menu, kItemAlignment);
-            EnableItem(menu, kItemDirection);
-        }
-
-        if (WEFeatureFlag(weFAutoScroll, weBitTest, we))
-        {
-            CheckItem(menu, kItemAutoScroll, true);
-        }
-
-        if (WEFeatureFlag(weFOutlineHilite, weBitTest, we))
-        {
-            CheckItem(menu, kItemOutlineHilite, true);
-        }
-
-        if (WEFeatureFlag(weFReadOnly, weBitTest, we))
-        {
-            CheckItem(menu, kItemReadOnly, true);
-        }
-
-        if (WEFeatureFlag(weFIntCutAndPaste, weBitTest, we))
-        {
-            CheckItem(menu, kItemIntCutAndPaste, true);
-        }
-
-        if (WEFeatureFlag(weFDragAndDrop, weBitTest, we))
-        {
-            CheckItem(menu, kItemDragAndDrop, true);
-        }
-
-        if ((WEGetInfo(weTranslucencyThreshold, &threshold, we) == noErr) && (threshold > 0))
-        {
-            CheckItem(menu, kItemTranslucentDrags, true);
-        }
-
-        if (WEFeatureFlag(weFDrawOffscreen, weBitTest, we))
-        {
-            CheckItem(menu, kItemOffscreenDrawing, true);
-        }
-    }
-
-    /* *** ALIGNMENT MENU ***
-     */
-    menu = GetMenuHandle(kMenuAlignment);
-
-    /* first, remove all check marks
-     */
-
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    if (window != nil)
-    {
-
-        /* find the Aligment menu item corresponding to the current alignment
-         */
-        switch (WEGetAlignment(we))
-        {
-
-        case weFlushLeft:
-            item = kItemAlignLeft;
-            break;
-
-        case weFlushRight:
-            item = kItemAlignRight;
-            break;
-
-        case weFlushDefault:
-            item = kItemAlignDefault;
-            break;
-
-        case weCenter:
-            item = kItemCenter;
-            break;
-
-        case weJustify:
-            item = kItemJustify;
-            break;
-        }
-
-        /* check the menu item
-         */
-        CheckItem(menu, item, true);
-    }
-
-    /* *** DIRECTION MENU ***
-     */
-    menu = GetMenuHandle(kMenuDirection);
-
-    /* first, remove all check marks
-     */
-    for (item = CountMenuItems(menu); item >= 1; item--)
-    {
-        CheckItem(menu, item, false);
-    }
-
-    if (window != nil)
-    {
-
-        /* find the Direction menu item corresponding to the current direction
-         */
-        switch (WEGetDirection(we))
-        {
-
-        case weDirDefault:
-            item = kItemDirectionDefault;
-            break;
-
-        case weDirLeftToRight:
-            item = kItemDirectionLR;
-            break;
-
-        case weDirRightToLeft:
-            item = kItemDirectionRL;
-            break;
-        }
-
-        /* check the menu item
-         */
-        CheckItem(menu, item, true);
-    }
-
-#endif
 }
 
 /* DoDeskAcc
@@ -734,23 +478,16 @@ OSErr DoOpen(void)
     SEXP img, lst;
     int i;
 
-    /* set up a list of file types we can open for StandardGetFile
-       typeList[0] = kTypeText;
-       typeList[1] = ftSimpleTextDocument;
-
-       //typeList[0] = 'RSES';	// I will either create files with type R Session or R Object
-       //typeList[1] = 'ROBJ';
-       //typeList[2] = kTypeText;
-    */
-
-    typeList[0] = 'BINA';
+    typeList[0] = 'BINA'; /* this are usually files coming from Windows XDR*/
+    typeList[1] = 'RSES'; /* I will either create files with type R  */
+    typeList[2] = 'ROBJ'; /* Session or R Object                         */
 
     /* put up the standard open dialog box.
        (we use CustomGetFile instead of StandardGetFile because we
        want to provide our own dialog filter procedure that takes
        care of updating our windows)
     */
-    CustomGetFile(nil, 1, typeList, &reply, 0, where, nil, GetMySFDialogFilter(), nil, nil, nil);
+    CustomGetFile(nil, 3, typeList, &reply, 0, where, nil, GetMySFDialogFilter(), nil, nil, nil);
     err = FSpGetFInfo(&reply.sfFile, &fileInfo);
     if (err != noErr)
         return err;
@@ -765,13 +502,10 @@ OSErr DoOpen(void)
     */
     if (!(fp = fopen(InitFile, "rb")))
     { /* binary file */
-        RWrite("File cannot be opened !");
+        warning("File cannot be opened !");
         /* warning here perhaps */
         return;
     }
-#ifdef OLD
-    FRAME(R_GlobalEnv) = R_LoadFromFile(fp, 1);
-#else
     PROTECT(img = R_LoadFromFile(fp, 1));
     switch (TYPEOF(img))
     {
@@ -795,12 +529,11 @@ OSErr DoOpen(void)
         break;
     }
     UNPROTECT(1);
-#endif
     fclose(fp);
     return err;
 }
 
-/* DoOpen
+/* DoOpenText
  */
 OSErr DoOpenText(void)
 {
@@ -809,9 +542,13 @@ OSErr DoOpenText(void)
     FInfo fileInfo;
     OSErr err = noErr;
     Point where = {-1, -1}; /* auto center dialog */
-    SInt16 pathLen;
+    SInt16 pathLen, i;
     Handle pathName;
     FILE *fp;
+    Str255 Cur_Title, Menu_Title;
+    MenuHandle windowsMenu;
+    Boolean EqString;
+    char buf[10];
 
     /* set up a list of file types we can open for StandardGetFile
      */
@@ -828,9 +565,74 @@ OSErr DoOpenText(void)
     err = FSpGetFInfo(&reply.sfFile, &fileInfo);
     if (err != noErr)
         return err;
+
     DoNew();
-    ReadTextFile(&reply.sfFile, GetWindowWE(Edit_Windows[Edit_Window - 1]));
+
+    err = ReadTextFile(&reply.sfFile, GetWindowWE(Edit_Windows[Edit_Window - 1]));
+
+    if (err != noErr)
+        REprintf("\n ReadTextFile error: %d\n", err);
+
+    windowsMenu = GetMenu(mWindows);
+    GetWTitle(Edit_Windows[Edit_Window - 1], (unsigned char *)&Cur_Title);
+    for (i = 1; i <= CountMenuItems(windowsMenu); i++)
+    {
+        GetMenuItemText(windowsMenu, i, (unsigned char *)&Menu_Title);
+        EqString = EqualNumString(Menu_Title, Cur_Title, Menu_Title[0]);
+        if (EqString)
+        {
+            DeleteMenuItem(windowsMenu, i);
+            sprintf((char *)&buf[1], " %d", Edit_Window - 1);
+            buf[0] = strlen(buf) - 1;
+            doCopyPString(reply.sfFile.name, Cur_Title);
+            doConcatPStrings(Cur_Title, buf);
+            AppendMenu(windowsMenu, Cur_Title);
+            SetWTitle(Edit_Windows[Edit_Window - 1], Cur_Title);
+            break;
+        }
+    }
+
     return err;
+}
+
+/* DoSource
+ */
+OSErr DoSource(void)
+{
+    StandardFileReply reply;
+    SFTypeList typeList;
+    FInfo fileInfo;
+    OSErr err = noErr;
+    Point where = {-1, -1}; /* auto center dialog */
+    SInt16 pathLen;
+    Handle pathName;
+    FILE *fp;
+    SEXP img, lst;
+    int i;
+    char sourcefile[FILENAME_MAX];
+    char cmd[FILENAME_MAX + 15];
+
+    typeList[0] = kTypeText;
+    typeList[1] = ftSimpleTextDocument;
+
+    /* put up the standard open dialog box.
+       (we use CustomGetFile instead of StandardGetFile because we
+       want to provide our own dialog filter procedure that takes
+       care of updating our windows)
+    */
+    CustomGetFile(nil, 1, typeList, &reply, 0, where, nil, GetMySFDialogFilter(), nil, nil, nil);
+    err = FSpGetFInfo(&reply.sfFile, &fileInfo);
+    if (err != noErr)
+        return err;
+    FSpGetFullPath(&reply.sfFile, &pathLen, &pathName);
+    HLock((Handle)pathName);
+    strncpy(sourcefile, *pathName, pathLen);
+    sourcefile[pathLen] = '\0';
+    HUnlock((Handle)pathName);
+
+    sprintf(cmd, "source(\"%s\")", sourcefile);
+
+    consolecmd(cmd);
 }
 
 /* SaveWindow
@@ -1117,7 +919,8 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
                 }
                 else
                 {
-                    DoSave(window);
+                    if (saving != savingNo)
+                        DoSave(window);
                 }
             }
         }
@@ -1285,9 +1088,11 @@ void DoFileChoice(SInt16 menuItem)
             DoGenKeyDown(&myEvent, true);
         }
         else
-        {
             DoNew();
-        }
+        break;
+
+    case kItemShow:
+        DoOpenText();
         break;
 
     case kItemOpen:
@@ -1297,9 +1102,7 @@ void DoFileChoice(SInt16 menuItem)
             selectDevice(deviceNumber((DevDesc *)gGReference[WinIndex].devdesc));
         }
         else
-        {
-            DoOpenText();
-        }
+            DoSource();
         break;
 
     case kItemEditObject:
@@ -1316,10 +1119,7 @@ void DoFileChoice(SInt16 menuItem)
         {
             err = DoOpen();
             if (err)
-            {
-                RWrite("\r");
                 jump_to_toplevel();
-            }
         }
         break;
 
@@ -1546,8 +1346,9 @@ void DoEditChoice(SInt16 menuItem)
 
 void changeSize(WindowPtr window, SInt16 newSize)
 {
-    WESetOneAttribute(kCurrentSelection, kCurrentSelection, weTagFontSize, &newSize, sizeof(Fixed),
-                      GetWindowWE(window));
+    if (window)
+        WESetOneAttribute(kCurrentSelection, kCurrentSelection, weTagFontSize, &newSize, sizeof(Fixed),
+                          GetWindowWE(window));
 
     /* Old code: mod Jago 08/28/00
 
@@ -1901,4 +1702,29 @@ void ConsolePaste()
         else
             DisposeHandle(myHandle);
     }
+}
+
+/*
+   This routine is intended to pass a command string to R Console
+   Nothing special is done, just writing the command string 'cmd'
+   as is and then send to the R application an Apple Event of
+   carriage return.
+   This is mainly tought to run "source" command fom the menu.
+   Implemented on 9 Feb 2001, Stefano M. Iacus
+*/
+
+void consolecmd(char *cmd)
+{
+    long cmdlen;
+    EventRecord myEvent;
+
+    if ((cmdlen = strlen(cmd)) < 1)
+        return;
+
+    /* we just write the cmd as it is to the console */
+    RnWrite(cmd, cmdlen);
+
+    /* We send a '\r' event to the console */
+    myEvent.message = 140301;
+    DoKeyDown(&myEvent);
 }

@@ -154,7 +154,6 @@ static Display *iodisplay;
 static Window iowindow, menuwindow, menupanes[4];
 static GC iogc;
 static XSizeHints iohint;
-static Cursor hand_cursor;
 static char *font_name = "9x15";
 static XFontStruct *font_info;
 
@@ -1368,21 +1367,19 @@ static int WhichEvent(DEEvent ioevent)
 
 static KeySym GetKey(DEEvent *event)
 {
-    int i;
     char text[1];
     KeySym iokey;
 
-    i = XLookupString(event, text, 10, &iokey, 0);
+    XLookupString(event, text, 10, &iokey, 0);
     return iokey;
 }
 
 static char GetCharP(DEEvent *event)
 {
-    int i;
     char text[1];
     KeySym iokey;
 
-    i = XLookupString(event, text, 1, &iokey, 0);
+    XLookupString(event, text, 1, &iokey, 0);
     return text[0];
 }
 
@@ -1403,7 +1400,7 @@ static void doControl(DEEvent *event)
     KeySym iokey;
 
     (*event).xkey.state = 0;
-    i = XLookupString(event, text, 1, &iokey, 0);
+    XLookupString(event, text, 1, &iokey, 0);
     /* one row overlap when scrolling: top line <--> bottom line */
     switch (text[0])
     {
@@ -1522,7 +1519,6 @@ static Rboolean initwin(void) /* TRUE = Error */
     ioscreen = DefaultScreen(iodisplay);
     iowhite = WhitePixel(iodisplay, ioscreen);
     ioblack = BlackPixel(iodisplay, ioscreen);
-    hand_cursor = XCreateFontCursor(iodisplay, XC_hand2);
 
     iohint.x = 0;
     iohint.y = 0;

@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2000  The R Development Core Team.
+ *  Copyright (C) 1997--2001  The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -158,7 +158,7 @@ void warning(const char *format, ...)
 
 void warningcall(SEXP call, char *format, ...)
 {
-    int w, slen;
+    int w;
     SEXP names, s;
     char *dcall, buf[BUFSIZE];
     RCNTXT *cptr;
@@ -190,7 +190,7 @@ void warningcall(SEXP call, char *format, ...)
     { /* make it an error */
         va_list(ap);
         va_start(ap, format);
-        slen = vsprintf(buf, format, ap);
+        vsprintf(buf, format, ap);
         va_end(ap);
         errorcall(call, "(converted from warning) %s", buf);
     }
@@ -220,7 +220,7 @@ void warningcall(SEXP call, char *format, ...)
         if (R_CollectWarnings > 49)
             return;
         SET_VECTOR_ELT(R_Warnings, R_CollectWarnings, call);
-        slen = vsprintf(buf, format, ap);
+        vsprintf(buf, format, ap);
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
         SET_STRING_ELT(names, R_CollectWarnings++, mkChar(buf));
