@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -41,6 +41,10 @@ double qnchisq(double p, double n, double lambda)
     }
     if (p == 0)
         return 0;
+    /* Invert pnchisq(.) finding an upper and lower bound;
+       then interval halfing : */
+
+    /* FIXME: Use less precision here (see pnchisq() !) */
     for (ux = 1.0; pnchisq(ux, n, lambda) < p; ux *= 2)
         ;
     for (lx = ux; pnchisq(lx, n, lambda) > p; lx *= 0.5)
