@@ -185,6 +185,9 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP na
                     break;
             if ((err = extract_one(uf, dest, NULL, names, nnames)) != UNZ_OK)
                 break;
+#ifdef Win32
+            R_ProcessEvents();
+#endif
         }
     }
     else
@@ -195,6 +198,9 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP na
                 break;
             if ((err = extract_one(uf, dest, files[i], names, nnames)) != UNZ_OK)
                 break;
+#ifdef Win32
+            R_ProcessEvents();
+#endif
         }
     }
     unzClose(uf);
