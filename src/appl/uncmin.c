@@ -596,7 +596,6 @@ static void tregup(int nr, int n, double *x, double f, double *g, double *a, fcn
         xpls[i] = x[i] + sc[i];
     }
     (*fcn)(n, xpls, fpls, state);
-    Rprintf("trust value %g at %f %f %f\n", *fpls, xpls[0], xpls[1], xpls[2]);
     dltf = *fpls - f;
     slp = F77_CALL(ddot)(&n, g, &one, sc, &one);
 
