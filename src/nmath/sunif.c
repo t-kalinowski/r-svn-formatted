@@ -143,6 +143,7 @@ void FixupSeeds(RNGtype kind)
 #ifdef OLD
     RNGtype tkind;
 #endif
+
     /* Set 0 to 1 : */
     if (!RNG_Table[kind].i1_seed)
         RNG_Table[kind].i1_seed++;
