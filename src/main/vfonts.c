@@ -82,13 +82,13 @@ double GVStrWidth(const unsigned char *s, int typeface, int fontindex, int unit,
 {
     R_GE_gcontext gc;
     char *str = (char *)s;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     char *buff;
 #endif
     gcontextFromGP(&gc, dd);
     gc.fontface = typeface;
     gc.fontfamily[0] = fontindex;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
@@ -118,19 +118,19 @@ double GVStrHeight(const unsigned char *s, int typeface, int fontindex, int unit
 {
     R_GE_gcontext gc;
     char *str = (char *)s;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     char *buff;
 #endif
     gcontextFromGP(&gc, dd);
     gc.fontface = typeface;
     gc.fontfamily[0] = fontindex;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
         if (!buff)
             error("allocation failure in GVStrHeight");
-        utf8toLatin1(s, (char *)buff);
+        mbcsToLatin1(s, (char *)buff);
         str = buff;
     }
 #endif
@@ -155,7 +155,7 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
 {
     R_GE_gcontext gc;
     char *str = s;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     char *buff;
 #endif
     gcontextFromGP(&gc, dd);
@@ -166,13 +166,13 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
     GConvert(&x, &y, unit, DEVICE, dd);
     gc.fontface = fontindex;
     gc.fontfamily[0] = typeface;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
         if (!buff)
             error("allocation failure in GVText");
-        utf8toLatin1(s, buff);
+        mbcsToLatin1(s, buff);
         str = buff;
     }
 #endif

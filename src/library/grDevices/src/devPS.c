@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
 #include <wchar.h>
 #include <wctype.h>
 #endif
@@ -627,7 +627,7 @@ static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics, i
     int sum = 0, i;
     short wx;
 
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && !utf8strIsASCII((char *)p) && face != 5)
     {
         wchar_t wc, wc2;
@@ -2213,7 +2213,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
         free(pd);
         error("encoding path is too long");
     }
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && strcmp(encoding, "ISOLatin1.enc"))
     {
         warning("Only encoding = \"ISOLatin1.enc\" is currently allowed in a UTF-8 locale\nAssuming \"ISOLatin1.enc\"");
@@ -2962,7 +2962,7 @@ static int translateFont(char *family, int style, PostScriptDesc *pd)
 static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *str1 = str;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     char *buff;
 #endif
 
@@ -2972,13 +2972,13 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
         if (utf8locale && !utf8strIsASCII(str) && pd->current.font != 5)
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error("allocation failure in PS_Text");
-            utf8toLatin1(str, buff);
+            mbcsToLatin1(str, buff);
             str1 = buff;
         }
 #endif
@@ -3963,7 +3963,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *family, char *encodin
         free(pd);
         error("encoding path is too long");
     }
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale && strcmp(encoding, "ISOLatin1.enc"))
     {
         warning("Only encoding = \"ISOLatin1.enc\" is currently allowed in a UTF-8 locale\nAssuming \"ISOLatin1.enc\"");
@@ -5024,7 +5024,7 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     int face = gc->fontface;
     double a, b, rot1;
     char *str1 = str;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     char *buff;
 #endif
 
@@ -5051,13 +5051,13 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
                 -b, a, x, y);
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
         if (utf8locale && !utf8strIsASCII(str1) && face < 5)
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error("allocation failure in PDF_Text");
-            utf8toLatin1(str, buff);
+            mbcsToLatin1(str, buff);
             str1 = buff;
         }
 #endif
