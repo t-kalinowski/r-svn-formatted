@@ -131,9 +131,10 @@ void R_CleanUp(int saveact)
     GtkWidget *dialog;
     gint which; /* yes = 0, no = 1, cancel = 2 || -1 */
 
-    GList *curfile = R_gtk_editfiles;
-    R_gtk_edititem *edititem;
-
+    /*
+        GList *curfile = R_gtk_editfiles;
+        R_gtk_edititem *edititem;
+    */
     if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
         saveact = SaveAction;
 
@@ -189,13 +190,13 @@ void R_CleanUp(int saveact)
 
     /* save GUI preferences */
     R_gnome_prefs_save();
-    /* unlink all the files we opened for editing */
-    while (curfile != NULL)
-    {
-        edititem = (R_gtk_edititem *)curfile->data;
-        unlink(edititem->filename);
-        curfile = g_list_next(curfile);
-    }
+    /* unlink all the files we opened for editing
+        while(curfile != NULL) {
+          edititem = (R_gtk_edititem *) curfile->data;
+          unlink(edititem->filename);
+          curfile = g_list_next(curfile);
+        }
+    */
 
     /* close all the graphics devices */
     KillAllDevices();
