@@ -75,7 +75,11 @@ static void AllocBuffer(int len)
     len = (len + 1) * sizeof(char);
     if (len < BUFSIZE)
         len = BUFSIZE;
-    Encodebuf = (char *)realloc(Encodebuf, len);
+    /* Protect against broken realloc */
+    if (Encodebuf)
+        Encodebuf = (char *)realloc(Encodebuf, len);
+    else
+        Encodebuf = (char *)malloc(len);
     bufsize = len;
     if (!Encodebuf)
     {

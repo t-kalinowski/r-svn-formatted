@@ -81,7 +81,11 @@ static void AllocBuffer(int len)
         len = (len + 1) * sizeof(char);
         if (len < MAXELTSIZE)
             len = MAXELTSIZE;
-        buff = (char *)realloc(buff, len);
+        /* Protect against broken realloc */
+        if (buff)
+            buff = (char *)realloc(buff, len);
+        else
+            buff = (char *)malloc(len);
         bufsize = len;
         if (!buff)
         {

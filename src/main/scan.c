@@ -227,7 +227,11 @@ static void AllocBuffer(int len)
         len = (len + 1) * sizeof(char);
         if (len < MAXELTSIZE)
             len = MAXELTSIZE;
-        buffer = (char *)realloc(buffer, len);
+        /* Protect against broken realloc */
+        if (buffer)
+            buffer = (char *)realloc(buffer, len);
+        else
+            buffer = (char *)malloc(len);
         bufsize = len;
         if (!buffer)
         {
@@ -863,7 +867,11 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         /* This appears to be necessary to protect quoteset against GC */
         quoteset = CHAR(STRING_ELT(quotes, 0));
-        quotesave = realloc(quotesave, strlen(quoteset) + 1);
+        /* Protect against broken realloc */
+        if (quotesave)
+            quotesave = realloc(quotesave, strlen(quoteset) + 1);
+        else
+            quotesave = malloc(strlen(quoteset) + 1);
         if (!quotesave)
             errorcall(call, "out of memory");
         strcpy(quotesave, quoteset);
@@ -976,7 +984,11 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         /* This appears to be necessary to protect quoteset against GC */
         quoteset = CHAR(STRING_ELT(quotes, 0));
-        quotesave = realloc(quotesave, strlen(quoteset) + 1);
+        /* Protect against broken realloc */
+        if (quotesave)
+            quotesave = realloc(quotesave, strlen(quoteset) + 1);
+        else
+            quotesave = malloc(strlen(quoteset) + 1);
         if (!quotesave)
             errorcall(call, "out of memory");
         strcpy(quotesave, quoteset);

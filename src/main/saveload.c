@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -90,7 +90,11 @@ static void AllocBuffer(int len)
         len = (len + 1) * sizeof(char);
         if (len < MAXELTSIZE)
             len = MAXELTSIZE;
-        buf = (char *)realloc(buf, len);
+        /* Protect against broken realloc */
+        if (buf)
+            buf = (char *)realloc(buf, len);
+        else
+            buf = (char *)malloc(len);
         bufsize = len;
         if (!buf)
         {
@@ -1491,7 +1495,12 @@ static char *InStringAscii(FILE *fp)
     /* All buffers must die! */
     if (nbytes >= buflen)
     {
-        char *newbuf = realloc(buf, nbytes + 1);
+        char *newbuf;
+        /* Protect against broken realloc */
+        if (buf)
+            newbuf = realloc(buf, nbytes + 1);
+        else
+            newbuf = malloc(nbytes + 1);
         if (newbuf == NULL)
             error("out of memory reading ascii string\n");
         buf = newbuf;
@@ -1662,7 +1671,12 @@ static char *InStringBinary(FILE *fp)
     int nbytes = InIntegerBinary(fp);
     if (nbytes >= buflen)
     {
-        char *newbuf = realloc(buf, nbytes + 1);
+        char *newbuf;
+        /* Protect against broken realloc */
+        if (buf)
+            newbuf = realloc(buf, nbytes + 1);
+        else
+            newbuf = malloc(nbytes + 1);
         if (newbuf == NULL)
             error("out of memory reading binary string\n");
         buf = newbuf;
@@ -1753,7 +1767,12 @@ static char *InStringXdr(FILE *fp)
     unsigned int nbytes = InIntegerXdr(fp);
     if (nbytes >= buflen)
     {
-        char *newbuf = realloc(buf, nbytes + 1);
+        char *newbuf;
+        /* Protect against broken realloc */
+        if (buf)
+            newbuf = realloc(buf, nbytes + 1);
+        else
+            newbuf = malloc(nbytes + 1);
         if (newbuf == NULL)
             error("out of memory reading binary string\n");
         buf = newbuf;
