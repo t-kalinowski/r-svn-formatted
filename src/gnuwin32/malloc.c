@@ -1145,15 +1145,15 @@ void *wsbrk(long size)
         if (alignedGoal >= gAddressBase)
         {
             VirtualFree((void *)alignedGoal, gNextAddress - alignedGoal, MEM_DECOMMIT);
-            gNextAddress = gNextAddress + size;
             totalAllocated -= gNextAddress - alignedGoal;
+            gNextAddress = gNextAddress + size;
             return (void *)gNextAddress;
         }
         else /* requested release of more than we have in this block */
         {
             VirtualFree((void *)gAddressBase, gNextAddress - gAddressBase, MEM_DECOMMIT);
-            gNextAddress = gAddressBase;
             totalAllocated -= gNextAddress - gAddressBase;
+            gNextAddress = gAddressBase;
             return (void *)-1;
         }
     }
