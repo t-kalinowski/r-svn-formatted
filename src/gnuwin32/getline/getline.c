@@ -360,12 +360,11 @@ static int gl_getc()
         while (!c)
         {
             a = 0;
-            while (!a)
-            {
-                PeekConsoleInput(Win32InputStream, &r, 1, &a);
-                if (gl_events_hook)
-                    gl_events_hook();
-            }
+            /*   while(!a) {
+                  PeekConsoleInput(Win32InputStream,&r,1,&a);
+                  if (gl_events_hook)
+                         gl_events_hook();
+                     }*/
             ReadConsoleInput(Win32InputStream, &r, 1, &a);
             if (!(r.EventType == KEY_EVENT))
                 break;

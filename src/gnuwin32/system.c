@@ -53,6 +53,8 @@ int AllDevicesKilled = 0;
 int setupui(void);
 void delui(void);
 
+DWORD mainThreadId;
+
 int UserBreak = 0;
 
 /* callbacks */
@@ -155,17 +157,38 @@ static void GuiWriteConsole(char *buf, int len)
 }
 
 /*2: from character console with getline */
-static char LastLine[512];
+
+static char LastLine[512], *gl = NULL;
+static int lineavailable;
+static DWORD id;
+
+static DWORD CALLBACK threadedgetline(LPVOID unused)
+{
+    gl = getline(LastLine);
+    lineavailable = 1;
+    PostThreadMessage(mainThreadId, 0, 0, 0);
+    return 0;
+}
 
 int CharReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
-    static char *gl = NULL;
     int i;
+    HANDLE rH;
 
     if (!gl)
     {
-        strcat(LastLine, prompt);
-        gl = getline(LastLine);
+        strcpy(LastLine, prompt);
+        lineavailable = 0;
+        mainThreadId = GetCurrentThreadId();
+        rH = CreateThread(NULL, 0, threadedgetline, NULL, 0, &id);
+        while (1)
+        {
+            WaitMessage();
+            if (lineavailable)
+                break;
+            doevent();
+        }
+        CloseHandle(rH);
         LastLine[0] = '\0';
         if (addtohistory)
             gl_histadd(gl);
@@ -195,13 +218,14 @@ void CharWriteConsole(char *buf, int len)
 /*
  * Variables used to communicate between thread and main process
  */
-static int lineavailable, lengthofbuffer;
+static int lengthofbuffer;
 static char *inputbuffer;
 
 static DWORD CALLBACK threadedfgets(LPVOID unused)
 {
     inputbuffer = fgets(inputbuffer, lengthofbuffer, stdin);
     lineavailable = 1;
+    PostThreadMessage(mainThreadId, 0, 0, 0);
     return 0;
 }
 
@@ -218,6 +242,7 @@ static int PipeReadConsole(char *prompt, char *buf, int len, int addhistory)
     lineavailable = 0;
     lengthofbuffer = len;
     inputbuffer = buf;
+    mainThreadId = GetCurrentThreadId();
     rH = CreateThread(NULL, 0, threadedfgets, NULL, 0, &id);
     if (!rH)
     {
@@ -225,10 +250,18 @@ static int PipeReadConsole(char *prompt, char *buf, int len, int addhistory)
         inputbuffer = fgets(buf, len, stdin);
         lineavailable = 1;
     }
-    while (!lineavailable)
-        doevent();
-    if (rH)
-        CloseHandle(rH);
+    else
+    {
+        while (1)
+        {
+            WaitMessage();
+            if (lineavailable)
+                break;
+            doevent();
+        }
+        if (rH)
+            CloseHandle(rH);
+    }
     if (!inputbuffer)
         return 0;
     else
