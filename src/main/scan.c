@@ -753,7 +753,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         }
     }
     if (!d->quiet)
-        REprintf("Read %d items\n", n);
+        REprintf("Read %d item%s\n", n, (n == 1) ? "" : "s");
     if (d->ttyflag)
         ConsolePrompt[0] = '\0';
 
@@ -965,7 +965,7 @@ done:
         n++;
     }
     if (!d->quiet)
-        REprintf("Read %d records\n", n);
+        REprintf("Read %d record%s\n", n, (n == 1) ? "" : "s");
     if (d->ttyflag)
         ConsolePrompt[0] = '\0';
 
