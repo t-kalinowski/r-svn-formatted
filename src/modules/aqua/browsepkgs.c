@@ -93,7 +93,7 @@ DataBrowserItemID *PkgID;
 Boolean *InstallPkg;
 
 extern bool BrowsePkgFinished;
-void ProcessOneEvent(void);
+void Raqua_ProcessEvents(void);
 
 extern TXNControlTag RReadOnlyTag[];
 extern TXNControlData RReadOnlyData[];
@@ -490,7 +490,7 @@ SEXP Raqua_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
     BrowsePkgFinished = false;
     OpenBrowsePkg();
     while (!BrowsePkgFinished)
-        ProcessOneEvent();
+        Raqua_ProcessEvents();
 
     PROTECT(ans = NEW_LOGICAL(NumOfPkgs));
 
