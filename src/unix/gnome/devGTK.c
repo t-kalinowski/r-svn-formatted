@@ -818,7 +818,7 @@ static void GTK_Text(double x, double y, int coords, char *str, double rot, doub
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
     GdkColor gcol_fill;
     gint size;
-    double x1, y1, rrot = DEG2RAD * rot;
+    double rrot = DEG2RAD * rot;
 
     GConvert(&x, &y, coords, DEVICE, dd);
 
