@@ -58,7 +58,7 @@ int ConsoleAcceptCmd;
 void closeAllHlpFiles();
 void UnLoad_Unzip_Dll();
 void UnLoad_Rbitmap_Dll();
-void set_workspace_name(char *fn);
+void set_workspace_name(char *fn); /* ../unix/sys-common.c */
 
 /* used to avoid some flashing during cleaning up */
 Rboolean AllDevicesKilled = FALSE;
@@ -939,6 +939,8 @@ int cmdlineoptions(int ac, char **av)
                 snprintf(s, 1024, "ARGUMENT '%s' __ignored__\n", *av);
                 R_ShowMessage(s);
             }
+            if (res != INVALID_HANDLE_VALUE)
+                FindClose(res);
         }
     }
     Rp->rhome = R_Home;
