@@ -1216,9 +1216,6 @@ SEXP findFun(SEXP symbol, SEXP rho)
                 return (vl);
             if (vl == R_MissingArg)
                 error("Argument \"%s\" is missing, with no default", CHAR(PRINTNAME(symbol)));
-#ifdef Warn_on_non_function
-            warning("ignored non function \"%s\"", CHAR(PRINTNAME(symbol)));
-#endif
         }
         rho = ENCLOS(rho);
     }

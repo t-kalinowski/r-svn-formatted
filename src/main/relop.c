@@ -442,9 +442,6 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
 #define STRCMP strcmp
 #endif
 
-/* define NASTRING to have NA_STRING treated as missing */
-#define NASTRING
-
 static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
     int i, n, n1, n2;
@@ -462,12 +459,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case EQOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (strcmp(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) == 0)
+            else if (strcmp(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) == 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -476,12 +470,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case NEOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (streql(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) != 0)
+            else if (streql(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) != 0)
                 LOGICAL(ans)[i] = 0;
             else
                 LOGICAL(ans)[i] = 1;
@@ -490,12 +481,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LTOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) < 0)
+            else if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) < 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -504,12 +492,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GTOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) > 0)
+            else if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) > 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -518,12 +503,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LEOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) <= 0)
+            else if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) <= 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -532,12 +514,9 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GEOP:
         for (i = 0; i < n; i++)
         {
-#ifdef NASTRING
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else
-#endif
-                if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) >= 0)
+            else if (STRCMP(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) >= 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
