@@ -394,8 +394,6 @@ static GnomeUIInfo graphics_toolbar[] = {
 /* create window etc */
 static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)
 {
-    GdkColor bg;
-
     gint iw, ih;
 
     /* initialise pointers */
@@ -895,6 +893,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     /* nominal character sizes */
     cumwidth = 0;
     max_rbearing = 0;
+    min_lbearing = 10000; /* just a random big number */
     for (c = 0; c <= 255; c++)
     {
         g_snprintf(tmp, 2, "%c", (gchar)c);
