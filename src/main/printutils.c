@@ -267,6 +267,7 @@ char *EncodeComplex(complex x, int wr, int dr, int er, int wi, int di, int ei)
     }
 #endif
 
+    /* strlen() using escaped rather than literal form */
     int Rstrlen(char *s)
     {
         char *p;
