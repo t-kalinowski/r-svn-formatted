@@ -267,7 +267,7 @@ static GnomeUIInfo graphics_toolbar[] = {
     GNOMEUIINFO_SEPARATOR,
     {GNOME_APP_UI_ITEM, "Close", "Close this graphics device", tb_close_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
      GNOME_STOCK_PIXMAP_CLOSE, 0, (GdkModifierType)0, NULL},
-    NULL};
+    GNOMEUIINFO_END};
 
 /* create window etc */
 static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)

@@ -156,9 +156,6 @@ static gint configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointe
 static gint delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     DevDesc *dd;
-    gnomeDesc *gtkd;
-
-    /*  g_print("delete\n"); */
 
     dd = (DevDesc *)data;
     g_return_val_if_fail(dd != NULL, FALSE);
@@ -182,8 +179,6 @@ static void tb_close_cb(GtkWidget *widget, gpointer data)
 {
     DevDesc *dd;
 
-    /*  g_print("close\n"); */
-
     dd = (DevDesc *)data;
     g_return_if_fail(dd != NULL);
 
@@ -201,7 +196,7 @@ static GnomeUIInfo graphics_toolbar[] = {
     GNOMEUIINFO_SEPARATOR,
     {GNOME_APP_UI_ITEM, "Close", "Close this graphics device", tb_close_cb, NULL, NULL, GNOME_APP_PIXMAP_STOCK,
      GNOME_STOCK_PIXMAP_CLOSE, 0, (GdkModifierType)0, NULL},
-    NULL};
+    GNOMEUIINFO_END};
 
 /* create window etc */
 static int GNOME_Open(DevDesc *dd, gnomeDesc *gtkd, char *dsp, double w, double h)
@@ -209,7 +204,7 @@ static int GNOME_Open(DevDesc *dd, gnomeDesc *gtkd, char *dsp, double w, double 
     GdkColor bg;
     GtkStyle *wstyle;
 
-    gint iw, ih, result;
+    gint iw, ih;
 
     /*gdk_rgb_set_install(TRUE); */
     gdk_rgb_set_verbose(TRUE);
@@ -317,10 +312,7 @@ void GNOME_NewPage_iterator(gpointer data, gpointer user_data)
 
 static void GNOME_NewPage(DevDesc *dd)
 {
-    int result;
     gnomeDesc *gtkd = (gnomeDesc *)dd->deviceSpecific;
-    GdkRectangle clip_tmp;
-    GList *list;
 
     /* reset background color */
     if (gtkd->bg != dd->dp.bg)
@@ -344,7 +336,6 @@ static void GNOME_NewPage(DevDesc *dd)
 // kill off the window etc
 static void GNOME_Close(DevDesc *dd)
 {
-    gint i, j;
     gnomeDesc *gtkd = (gnomeDesc *)dd->deviceSpecific;
 
     gtk_widget_destroy(gtkd->window);
@@ -506,7 +497,7 @@ static void GNOME_Line(double x1, double y1, double x2, double y2, int coords, D
         SetColor(&gcol_fill, dd->gp.col);
         if (dd->gp.lty != 0)
         {
-            SetLineType(GNOME_CANVAS_LINE(item)->gc, dd->gp.lty, dd->gp.lwd);
+            /*      SetLineType(GNOME_CANVAS_LINE(item)->gc, dd->gp.lty, dd->gp.lwd); */
             gnome_canvas_item_set(item, "line_style", GDK_LINE_ON_OFF_DASH, NULL);
         }
         gnome_canvas_item_set(item, "fill_color_gdk", &gcol_fill, NULL);
@@ -610,6 +601,7 @@ static void GNOME_Text(double x, double y, int coords, char *str, double xc, dou
 // locator
 static int GNOME_Locator(double *x, double *y, DevDesc *dd)
 {
+    return 0;
 }
 
 // useless stuff
