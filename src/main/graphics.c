@@ -1746,6 +1746,14 @@ void GScale(double min, double max, int axis, DevDesc *dd)
         max = log10(max);
     }
 
+    if (!FINITE(min) || !FINITE(max))
+    {
+        warning("Nonfinite axis limits [GScale(%g,%g,%d, .); log=%d]\n", min, max, axis, log);
+        if (!FINITE(min))
+            min = -DBL_MAX;
+        if (!FINITE(max))
+            max = +DBL_MAX;
+    }
     if (min == max)
     {
         if (min == 0)
@@ -2760,19 +2768,32 @@ void GPretty(double *lo, double *up, int *ndiv)
 
     double dx, cell, unit, base, U;
     int ns, nu;
-    short i_small;
+    short i_small, i_big;
     double x1, x2;
     int nd0; /* for the diagnostic output only */
 
     if (*ndiv <= 0)
         error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
     if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf)
-        error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
+#ifdef DEBUG
+        warning
+#else
+        error
+#endif
+            ("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
 
     x1 = *lo;
     x2 = *up;
     nd0 = *ndiv;
     dx = *up - *lo;
+    if (FINITE(dx))
+        i_big = 0;
+    else
+    {
+        dx = FLT_MAX;
+        i_big = 1;
+        warning("..(GPretty): 'df' wasn't finite; now set to %g\n", dx);
+    }
     /* cell := "scale"	here */
     if (dx == 0 && *up == 0)
     { /*	up == lo == 0  */
@@ -2803,31 +2824,24 @@ void GPretty(double *lo, double *up, int *ndiv)
         unit = U;
 
     ns = floor(*lo / unit);
-#ifdef OLD
-    while (ns * unit > *lo * (1 - DBL_EPSILON))
-        ns--;
-#else
+    nu = ceil(*up / unit);
+
+    if (i_big)
+        warning("..\t cell = %g, base =%g, unit =%g; (ns,nu) = (%d,%d)\n", cell, base, unit, ns, nu);
+
     while (ns * unit >= *lo * (1 - DBL_EPSILON))
         ns--;
-#endif
     ns++;
-
-    nu = ceil(*up / unit);
-#ifdef OLD
-    while (nu * unit < *up * (1 + DBL_EPSILON))
-        nu++;
-#else
     while (nu * unit <= *up * (1 + DBL_EPSILON))
         nu++;
-#endif
     nu--;
 
     *ndiv = nu - ns;
     if (*ndiv <= 0)
     {
         warning("Imprecision in axis setup.\t GPretty(%g,%g,%d):\n"
-                "cell=%g, ndiv= %d <=0;\t(ns,nu)=(%d,%d);"
-                "dx=%g, unit=%3e, ismall=%1d.\n",
+                "cell=%g, ndiv= %d <=0; (ns,nu)=(%d,%d); "
+                "dx=%g, unit=%g, ismall=%d.\n",
                 x1, x2, nd0, cell, *ndiv, ns, nu, dx, unit, (int)i_small);
         *ndiv = 1;
         nu = ns + 1;
@@ -4373,7 +4387,8 @@ DevDesc nullDevice;
 
 void devError()
 {
-    error("No graphics device is active -- SHOULDN'T happen anymore -- please report\n");
+    error("No graphics device is active -- "
+          "SHOULDN'T happen anymore -- please report\n");
 }
 
 int NoDevices()
@@ -4412,22 +4427,6 @@ void InitGraphics(void)
     PROTECT(t = mkString("null device"));
     gsetVar(install(".Devices"), CONS(t, R_NilValue), R_NilValue);
     UNPROTECT(2);
-}
-
-/* Get the i-th element of a list */
-
-SEXP elt(SEXP list, int i)
-{
-    int j;
-    SEXP result = list;
-
-    if ((i < 0) || (i > length(list)))
-        return R_NilValue;
-    else
-        for (j = 0; j < i; j++)
-            result = CDR(result);
-
-    return CAR(result);
 }
 
 static SEXP getSymbolValue(char *symbolName)
