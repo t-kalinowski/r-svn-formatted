@@ -73,7 +73,7 @@ extern int h_errno; /* HP-UX 9.05 and GUSI forget to declare this in netdb.h */
 
 #define MAXBACKLOG 5
 
-#if defined(Win32) && !defined(HAVE_BSD_NETWORKING)
+#if !defined(Win32) && !defined(HAVE_BSD_NETWORKING)
 static char socket_msg[] = "sockets are not available on this system\n";
 #endif
 
