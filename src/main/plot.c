@@ -2401,7 +2401,7 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
 
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP text, side, line, outer, at, adj, cex, col, font, vfont;
+    SEXP text, side, line, outer, at, adj, cex, col, font, vfont, string;
     int ntext, nside, nline, nouter, nat, nadj, ncex, ncol, nfont;
     Rboolean dirtyplot = FALSE, gpnewsave = FALSE, dpnewsave = FALSE;
     Rboolean vectorFonts = FALSE;
@@ -2560,18 +2560,25 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
         if (vectorFonts)
         {
+            string = STRING_ELT(text, i % ntext);
 #ifdef GMV_implemented
-            GMVText(CHAR(STRING_ELT(text, i % ntext)), INTEGER(vfont)[0], INTEGER(vfont)[1], sideval, lineval, outerval,
-                    atval, Rf_gpptr(dd)->las, dd);
+            if (string != NA_STRING)
+                GMVText(CHAR(string), INTEGER(vfont)[0], INTEGER(vfont)[1], sideval, lineval, outerval, atval,
+                        Rf_gpptr(dd)->las, dd);
 #else
             warningcall(call, "Hershey fonts not yet implemented for mtext()");
-            GMtext(CHAR(STRING_ELT(text, i % ntext)), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+            if (string != NA_STRING)
+                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
 #endif
         }
         else if (isExpression(text))
             GMMathText(VECTOR_ELT(text, i % ntext), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
         else
-            GMtext(CHAR(STRING_ELT(text, i % ntext)), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+        {
+            string = STRING_ELT(text, i % ntext);
+            if (string != NA_STRING)
+                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+        }
 
         if (outerval == 0)
             dirtyplot = TRUE;
@@ -2600,7 +2607,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
          line, outer,
          ...) */
 
-    SEXP Main, xlab, ylab, sub, vfont;
+    SEXP Main, xlab, ylab, sub, vfont, string;
     double adj, adjy, cex, offset, line, hpos, vpos, where;
     int col, font, outer;
     int i, n;
@@ -2698,7 +2705,11 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             n = length(Main);
             offset = 0.5 * (n - 1) + vpos;
             for (i = 0; i < n; i++)
-                GText(hpos, offset - i, where, CHAR(STRING_ELT(Main, i)), adj, adjy, 0.0, dd);
+            {
+                string = STRING_ELT(Main, i);
+                if (string != NA_STRING)
+                    GText(hpos, offset - i, where, CHAR(string), adj, adjy, 0.0, dd);
+            }
         }
     }
     if (sub != R_NilValue)
@@ -2730,7 +2741,11 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             n = length(sub);
             for (i = 0; i < n; i++)
-                GMtext(CHAR(STRING_ELT(sub, i)), 1, vpos, where, hpos, 0, dd);
+            {
+                string = STRING_ELT(sub, i);
+                if (string != NA_STRING)
+                    GMtext(CHAR(string), 1, vpos, where, hpos, 0, dd);
+            }
         }
     }
     if (xlab != R_NilValue)
@@ -2762,7 +2777,11 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             n = length(xlab);
             for (i = 0; i < n; i++)
-                GMtext(CHAR(STRING_ELT(xlab, i)), 1, vpos + i, where, hpos, 0, dd);
+            {
+                string = STRING_ELT(xlab, i);
+                if (string != NA_STRING)
+                    GMtext(CHAR(string), 1, vpos + i, where, hpos, 0, dd);
+            }
         }
     }
     if (ylab != R_NilValue)
@@ -2794,7 +2813,11 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             n = length(ylab);
             for (i = 0; i < n; i++)
-                GMtext(CHAR(STRING_ELT(ylab, i)), 2, vpos - i, where, hpos, 0, dd);
+            {
+                string = STRING_ELT(ylab, i);
+                if (string != NA_STRING)
+                    GMtext(CHAR(string), 2, vpos - i, where, hpos, 0, dd);
+            }
         }
     }
     GMode(0, dd);
@@ -3620,8 +3643,10 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     ymax = REAL(height)[n - 1];
     pin = Rf_gpptr(dd)->pin[1];
     for (i = 0; i < n; i++)
+    {
         str = STRING_ELT(llabels, i);
-    ll[i] = (str == NA_STRING) ? 0.0 : GStrWidth(CHAR(str), INCHES, dd) + dnd_offset;
+        ll[i] = (str == NA_STRING) ? 0.0 : GStrWidth(CHAR(str), INCHES, dd) + dnd_offset;
+    }
     if (dnd_hang >= 0)
     {
         ymin = ymax - (1 + dnd_hang) * (ymax - ymin);

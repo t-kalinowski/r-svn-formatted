@@ -2499,8 +2499,11 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         PerspBox(0, REAL(xlim), REAL(ylim), REAL(zlim), dd);
         if (doaxes)
-            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), CHAR(STRING_ELT(xlab, 0)), CHAR(STRING_ELT(ylab, 0)),
-                      CHAR(STRING_ELT(zlab, 0)), nTicks, tickType, dd);
+        {
+            SEXP xl = STRING_ELT(xlab, 0), yl = STRING_ELT(ylab, 0), zl = STRING_ELT(zlab, 0);
+            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : CHAR(xl),
+                      (yl == NA_STRING) ? "" : CHAR(yl), (zl == NA_STRING) ? "" : CHAR(zl), nTicks, tickType, dd);
+        }
     }
 
     DrawFacets(REAL(z), REAL(x), REAL(y), nrows(z), ncols(z), INTEGER(indx), 1 / xs, 1 / ys, expand / zs, INTEGER(col),
