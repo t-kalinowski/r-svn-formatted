@@ -1951,7 +1951,7 @@ static void GA_Circle(double x, double y, int coords, double r, int col, int bor
     ix = (int)x;
     iy = (int)y;
     rr = rect(ix - ir, iy - ir, 2 * ir, 2 * ir);
-    if (R_ALPHA(col))
+    if (R_OPAQUE(col))
     {
         SetColor(col, dd);
         DRAW(gfillellipse(_d, xd->fgcolor, rr));
