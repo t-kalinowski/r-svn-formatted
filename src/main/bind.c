@@ -753,6 +753,7 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     ans_length = 0;
     ans_nnames = 0;
 
+    n = 0; /* -Wall */
     if (isNewList(args))
     {
         n = length(args);
@@ -1099,10 +1100,13 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
             if (length(dims) == 2)
             {
                 dn = getAttrib(CAR(t), R_DimNamesSymbol);
-                if (VECTOR(dn)[1] != R_NilValue)
-                    have_cnames = 1;
-                if (VECTOR(dn)[0] != R_NilValue)
-                    mrnames = mrows;
+                if (length(dn) == 2)
+                {
+                    if (VECTOR(dn)[1] != R_NilValue)
+                        have_cnames = 1;
+                    if (VECTOR(dn)[0] != R_NilValue)
+                        mrnames = mrows;
+                }
             }
             else
             {
@@ -1192,6 +1196,8 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_cnames)
             cn = VECTOR(dn)[1] = allocVector(STRSXP, cols);
+        else
+            cn = R_NilValue; /* -Wall */
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
@@ -1303,10 +1309,13 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
             if (length(dims) == 2)
             {
                 dn = getAttrib(CAR(t), R_DimNamesSymbol);
-                if (VECTOR(dn)[0] != R_NilValue)
-                    have_rnames = 1;
-                if (VECTOR(dn)[1] != R_NilValue)
-                    mcnames = mcols;
+                if (length(dn) == 2)
+                {
+                    if (VECTOR(dn)[0] != R_NilValue)
+                        have_rnames = 1;
+                    if (VECTOR(dn)[1] != R_NilValue)
+                        mcnames = mcols;
+                }
             }
             else
             {
@@ -1423,6 +1432,8 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_rnames)
             rn = VECTOR(dn)[0] = allocVector(STRSXP, rows);
+        else
+            rn = R_NilValue; /* -Wall */
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
