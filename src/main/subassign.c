@@ -1373,7 +1373,7 @@ SEXP do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        errorcall(call, "object is not subsetable");
+        errorcall(call, "object is not subsettable");
         break;
     }
 
@@ -1751,7 +1751,7 @@ SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     else
-        errorcall(call, "object is not subsetable");
+        errorcall(call, "object is not subsettable");
 
     UNPROTECT(1);
     SET_NAMED(xtop, 0);
