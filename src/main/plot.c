@@ -1433,7 +1433,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else if (type == 'b' || type == 'c')
     {
-        /* points connected with broken lines */
+        /* broken lines (with points in between if 'b') */
         double d, f;
         d = GConvertYUnits(0.5, CHARS, INCHES, dd);
         dd->gp.col = INTEGER(col)[0];

@@ -1032,11 +1032,13 @@ static void SetLineStyle(int newlty, double newlwd, DevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
     int i, ltyarray[8];
+
     if (pd->lty != newlty || pd->lwd != newlwd)
     {
         pd->lwd = newlwd;
         pd->lty = newlty;
         PostScriptSetLineWidth(pd->psfp, dd->gp.lwd * 0.75);
+        /* process lty : */
         for (i = 0; i < 8 && newlty & 15; i++)
         {
             ltyarray[i] = newlty & 15;
