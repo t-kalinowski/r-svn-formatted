@@ -355,6 +355,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
     SEXP ii, nn, dn;
     int i, j, k, l, b, nb, ndim;
     int nr, nc;
+    int has_dimnames = 0;
 
     ndim = LENGTH(dim);
     if (ndim == 1)
@@ -385,6 +386,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
         {
             dn0 = VECTOR(dimnames)[0];
             dn1 = VECTOR(dimnames)[1];
+            has_dimnames = 1;
         }
         for (i = 0; i < nb; i++)
         {
@@ -393,8 +395,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
             for (j = 2; j < ndim; j++)
             {
                 l = (i / k) % INTEGER(dim)[j] + 1;
-                dn = VECTOR(dimnames)[j];
-                if (dn != R_NilValue)
+                if (has_dimnames && ((dn = VECTOR(dimnames)[j]) != R_NilValue))
                     Rprintf(", %s", CHAR(STRING(dn)[l - 1]));
                 else
                     Rprintf(", %d", l);
