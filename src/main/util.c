@@ -437,17 +437,19 @@ static struct
 {
     char *str;
     int type;
-} TypeTable[] = {{"NULL", NILSXP}, /* real types */
-                 {"symbol", SYMSXP},      {"list", LISTSXP},     {"closure", CLOSXP},     {"environment", ENVSXP},
-                 {"promise", PROMSXP},    {"language", LANGSXP}, {"special", SPECIALSXP}, {"builtin", BUILTINSXP},
-                 {"char", CHARSXP},       {"logical", LGLSXP},   {"integer", INTSXP},     {"real", REALSXP},
-                 {"complex", CPLXSXP},    {"character", STRSXP}, {"...", DOTSXP},         {"any", ANYSXP},
-                 {"expression", EXPRSXP},
+} TypeTable[] = {
+    {"NULL", NILSXP}, /* real types */
+    {"symbol", SYMSXP},      {"list", LISTSXP},       {"closure", CLOSXP},
+    {"environment", ENVSXP}, {"promise", PROMSXP},    {"language", LANGSXP},
+    {"special", SPECIALSXP}, {"builtin", BUILTINSXP}, {"char", CHARSXP},
+    {"logical", LGLSXP},     {"integer", INTSXP},     {"double", REALSXP}, /*- was "real", for R <= 0.61.x */
+    {"complex", CPLXSXP},    {"character", STRSXP},   {"...", DOTSXP},
+    {"any", ANYSXP},         {"expression", EXPRSXP},
 
-                 {"numeric", REALSXP}, /* aliases */
-                 {"name", SYMSXP},
+    {"numeric", REALSXP}, /* aliases */
+    {"name", SYMSXP},
 
-                 {(char *)0, -1}};
+    {(char *)0, -1}};
 
 SEXPTYPE str2type(char *s)
 {
