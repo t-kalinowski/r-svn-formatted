@@ -303,6 +303,7 @@ static double guess_offset(struct tm *tm)
 static double mktime0(struct tm *tm, const int local)
 {
     double res;
+    Rboolean OK;
 #ifndef HAVE_POSIX_LEAPSECONDS
     int i;
 #endif
@@ -312,7 +313,14 @@ static double mktime0(struct tm *tm, const int local)
     if (!local)
         return mktime00(tm);
 
-    if (tm->tm_year < 138 && tm->tm_year >= (have_broken_mktime() ? 70 : 02))
+    OK = tm->tm_year < 138 && tm->tm_year >= (have_broken_mktime() ? 70 : 02);
+#ifdef Win32
+    /* Microsoft's mktime regards times before 1970-01-01 00:00:00 GMT as
+       invalid! */
+    if (tm->tm_year == 70 && tm->tm_mon == 0 && tm->tm_mday <= 1)
+        OK = FALSE;
+#endif
+    if (OK)
     {
         res = (double)mktime(tm);
 #ifndef HAVE_POSIX_LEAPSECONDS
