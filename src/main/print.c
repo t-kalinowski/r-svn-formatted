@@ -617,7 +617,10 @@ void PrintValueRec(SEXP s, SEXP env)
         PrintEnvir(s);
         break;
     case PROMSXP:
-        Rprintf("<promise: %p>\n", s);
+        PROTECT(t = eval(s, env));
+        PrintValueRec(t, env); /*Rprintf("<promise: %p>\n", s);*/
+        R_Visible = 0;         /* reset invisible */
+        UNPROTECT(1);
         break;
     case DOTSXP:
         Rprintf("<...>\n");
