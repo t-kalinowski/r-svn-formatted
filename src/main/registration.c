@@ -1,4 +1,4 @@
-/**
+/*
  *  This file replaces the previously used ROUTINES file and is used to
  *  explicitly register native routines that are located in the R
  *  executable (e.g. R.bin, Rgui.exe) but which are intended to be
@@ -34,19 +34,20 @@
 
 #include "basedecl.h"
 
-/*
-  Omitted (relative to those in ROUTINES)
-fft_factor
-fft_work
-fdhess
-optif9
+/* Omitted (relative to those in ROUTINES):
 
- These can still be called directly in native code in a package.
- They are just not exported here for access via the .C(), .Call(),
- .Fortran() or .External() interfaces.
+   fft_factor
+   fft_work
+   fdhess
+   optif9
 
- If these omitted routines are not visible to package DLLs/shared libraries on some platforms,
- the package should be linked against Rdll.lib or libR.so or the equivalent on that platform.
+   These can still be called directly in native code in a package.
+   They are just not exported here for access via the .C(), .Call(),
+   .Fortran() or .External() interfaces.
+
+   If these omitted routines are not visible to package DLLs/shared
+   libraries on some platforms, the package should be linked against
+   Rdll.lib or libR.so or the equivalent on that platform.
 */
 
 R_NativePrimitiveArgType R_approx_t[] = {REALSXP, REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP};
@@ -79,7 +80,8 @@ R_NativePrimitiveArgType spline_eval_t[] = {INTSXP,  INTSXP,  REALSXP, REALSXP, 
 
 R_NativePrimitiveArgType stemleaf_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP};
 
-/* Note the ANYSXP in the first place. Doesn't quite work. Needs investigation.
+/* Note the ANYSXP in the first place.
+   Doesn't quite work.  Needs investigation.
    See the odd first argument in the routine's definition.
 */
 R_NativePrimitiveArgType str_signif_t[] = {ANYSXP, INTSXP, STRSXP, INTSXP, INTSXP, STRSXP, STRSXP, STRSXP};
@@ -182,7 +184,7 @@ static R_CallMethodDef callMethods[] = {
     CALLDEF(La_chol2inv, 2),
     CALLDEF(La_chol, 1),
 
-    /* in ../main/unique.c to use hashing */
+    /* In @file{../main/unique.c} to use hashing. */
     CALLDEF(Rrowsum_matrix, 4),
     CALLDEF(Rrowsum_df, 4),
 
@@ -191,11 +193,16 @@ static R_CallMethodDef callMethods[] = {
     CALLDEF(R_removeTaskCallback, 1),
     CALLDEF(R_addTaskCallback, 4),
 
-    /* Reflectance for the dynamically loaded native symbols */
+    /* Reflectance for the dynamically loaded native symbols. */
     CALLDEF(R_getSymbolInfo, 2),
 
     /* mapply */
     CALLDEF(do_mapply, 4),
+
+    /* in ../main/random.c to generate 'sequences' of random 2-d tables
+     * using Patefield's algorithm.
+     */
+    CALLDEF(R_r2dtable, 3),
 
     /* Methods related routines. */
     CALLDEF(R_isMethodsDispatchOn, 1),
