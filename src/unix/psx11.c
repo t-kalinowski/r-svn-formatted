@@ -19,7 +19,7 @@
 
 #include "Defn.h"
 #include "Graphics.h"
-#include "PostScript.h"
+#include "PS.h"
 #include "Fileio.h"
 #include "psx11.h"
 #include <math.h>
