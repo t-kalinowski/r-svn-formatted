@@ -22,6 +22,8 @@
  *  distribution:  WASTE Text Engine © 1993-2000 Marco Piovanelli.
  */
 
+#include <RCarbon.h>
+
 #include "RIntf.h"
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -202,7 +204,7 @@ void doWindowsMenu(SInt16 menuItem)
     }
 }
 
-/* doWindowsMenu
+/* doConfigMenu
  */
 void doConfigMenu(SInt16 menuItem)
 {
