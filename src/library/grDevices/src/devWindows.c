@@ -140,7 +140,7 @@ static drawing _d;
 /********************************************************/
 /* Each driver can have its own device-specic graphical */
 /* parameters and resources.  these should be wrapped	*/
-/* in a structure (like the gadesc structure below)    */
+/* in a structure (gadesc in devWindows.h)              */
 /* and attached to the overall device description via 	*/
 /* the dd->deviceSpecific pointer			*/
 /* NOTE that there are generic graphical parameters	*/
@@ -691,6 +691,7 @@ static void SetColor(int color, double gamma, NewDevDesc *dd)
  *	dots which are more widely spaced.  Previously, such a line
  *	would have "dots" which were wide, but not long, nor widely
  *	spaced.
+ *      In this driver, done in graphapp/gdraw.c
  */
 
 static void SetLineStyle(R_GE_gcontext *gc, NewDevDesc *dd)
@@ -698,7 +699,13 @@ static void SetLineStyle(R_GE_gcontext *gc, NewDevDesc *dd)
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     xd->lty = gc->lty;
-    xd->lwd = gc->lwd < 1 ? 1 : gc->lwd;
+    if (xd->lwdscale != 1.0)
+        /* will round to nearest integer */
+        xd->lwd = xd->lwdscale * gc->lwd + 0.5;
+    else
+        xd->lwd = gc->lwd;
+    if (xd->lwd < 1)
+        xd->lwd = 1;
     switch (gc->lend)
     {
     case GE_ROUND_CAP:
@@ -1773,7 +1780,9 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
     xd->bgcolor = xd->canvascolor = GArgb(canvascolor, gamma);
     xd->outcolor = myGetSysColor(COLOR_APPWORKSPACE);
     xd->rescale_factor = 1.0;
-    xd->fast = 1; /* Use 'cosmetic pens' if available */
+    xd->fast = 1; /* Use 'cosmetic pens' if available.
+             Overridden for printers and metafiles.
+           */
     xd->xshift = xd->yshift = 0;
     xd->npage = 0;
     if (!dsp[0])
@@ -1784,6 +1793,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
     else if (!strncmp(dsp, "win.print:", 10))
     {
         xd->kind = PRINTER;
+        xd->fast = 0; /* use scalable line widths */
         xd->gawin = newprinter(MM_PER_INCH * w, MM_PER_INCH * h, &dsp[10]);
         if (!xd->gawin)
             return FALSE;
@@ -1898,6 +1908,9 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
             del(xd->bm);
         return FALSE;
     }
+    xd->lwdscale = xd->truedpi / 96.0; /* matches ps/pdf */
+    if (xd->lwdscale < 1.0)
+        xd->lwdscale = 1.0; /* at least one pixel */
     rr = getrect(xd->gawin);
     xd->origWidth = xd->showWidth = xd->windowWidth = rr.width;
     xd->origHeight = xd->showHeight = xd->windowHeight = rr.height;
