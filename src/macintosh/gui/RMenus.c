@@ -133,6 +133,7 @@ static short RHelpMenuItem = -1;
 static short RTopicHelpItem = -1;
 static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
+static short LinkHtmlHelpItem = -1;
 
 //	user structure passed to the NavEventFilter callback
 
@@ -510,6 +511,13 @@ void PrepareMenus(void)
         CheckMenuItem(windowsMenu, kItemAllowInterrupt, true);
     else
         CheckMenuItem(windowsMenu, kItemAllowInterrupt, false);
+
+    menu = GetMenuHandle(kHMHelpMenuID);
+    EnableMenuItem(menu, RHelpMenuItem);
+    EnableMenuItem(menu, RTopicHelpItem);
+    EnableMenuItem(menu, SearchHelpItem);
+    EnableMenuItem(menu, RunExampleItem);
+    EnableMenuItem(menu, LinkHtmlHelpItem);
 }
 
 void DoDeskAcc(UInt16 menuItem)
@@ -1189,6 +1197,12 @@ void DoHelpChoice(SInt16 menuItem)
 
     if (menuItem == RunExampleItem)
         Do_RunExample();
+
+    if (menuItem == LinkHtmlHelpItem)
+    {
+        consolecmd("link.html.help()");
+        return;
+    }
 }
 
 /* DoAppleChoice :
@@ -1715,6 +1729,8 @@ OSErr InitializeMenus(void)
         SearchHelpItem = CountMenuItems(HelpMenu);
         AppendMenu(HelpMenu, "\pRun An Example...");
         RunExampleItem = CountMenuItems(HelpMenu);
+        AppendMenu(HelpMenu, "\pLink Packages Help");
+        LinkHtmlHelpItem = CountMenuItems(HelpMenu);
     }
 
 #if TARGET_API_MAC_CARBON
