@@ -48,18 +48,17 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
     else
     {
         int ldu = INTEGER(getAttrib(u, R_DimSymbol))[0], ldvt = INTEGER(getAttrib(v, R_DimSymbol))[0];
-        int *iwork;
+        int *iwork = (int *)R_alloc(8 * (n < p ? n : p), sizeof(int));
 
         /* ask for optimal size of work array */
         lwork = -1;
 
         F77_CALL(dgesdd)
-        (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, &itmp, &lwork, iwork,
+        (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, &tmp, &lwork, iwork,
          &info);
         lwork = (int)tmp;
 
         work = (double *)R_alloc(lwork, sizeof(double));
-        iwork = (int *)R_alloc(8 * min(n, p), sizeof(int));
         F77_CALL(dgesdd)
         (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, work, &lwork, iwork,
          &info);
@@ -76,7 +75,7 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
     SET_VECTOR_ELT(val, 0, s);
     SET_VECTOR_ELT(val, 1, u);
     SET_VECTOR_ELT(val, 2, v);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return val;
 }
 
