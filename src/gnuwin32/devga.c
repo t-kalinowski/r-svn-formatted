@@ -1115,6 +1115,7 @@ static void AddtoPlotHistory(SEXP snapshot, int replace)
     SEXP class;
 
     GETDL;
+    PROTECT(snapshot);
     /*    if (dl == R_NilValue) {
         R_ShowMessage("Display list is void!");
         return;
@@ -1129,7 +1130,7 @@ static void AddtoPlotHistory(SEXP snapshot, int replace)
         where = pCURRENTPOS;
     else
         where = pNUMPLOTS;
-    PROTECT(snapshot);
+
     PROTECT(class = allocVector(STRSXP, 1));
     SET_STRING_ELT(class, 0, mkChar("recordedplot"));
     classgets(snapshot, class);
@@ -2121,13 +2122,15 @@ static void GA_Close(NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
-    GETDL;
+    SEXP vDL;
 
     if (xd->kind == SCREEN)
     {
         if (xd->recording)
         {
             AddtoPlotHistory(GEcreateSnapshot(gdd), 0);
+            /* May have changed vDL, so can't use GETDL above */
+            vDL = findVar(install(".SavedPlots"), R_GlobalEnv);
             pCURRENTPOS++; /* so PgUp goes to the last saved plot
                       when a windows() device is opened */
         }
