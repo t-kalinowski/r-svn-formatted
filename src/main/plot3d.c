@@ -1034,7 +1034,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 
     vmax = vmaxget();
     ctr_SegDB = contourLines(REAL(x), nx, REAL(y), ny, REAL(z), zc, atom);
-    vmaxset(vmax);
+    /* we need to keep ctr_SegDB available, so vmaxset(vmax); was wrong */
 
     /* The segment database is now assembled. */
     /* Begin following contours. */
@@ -1440,6 +1440,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 vmaxset(vmax);
             }              /* while */
         }                  /* for(i .. )  for(j ..) */
+    vmaxset(vmax);         /* now we are done with ctr_SegDB */
     UNPROTECT_PTR(label1); /* pwwwargh! This is messy, but last thing
                   protected is likely labelList, and that needs
                   to be preserved across calls */
