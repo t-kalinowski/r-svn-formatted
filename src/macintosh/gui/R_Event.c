@@ -67,7 +67,9 @@
 #include "RIntf.h"
 #endif
 
+#ifdef __MRC__
 #include <Debugging.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -95,6 +97,8 @@ Boolean gQuit, gInBackground;
 extern Boolean OnOpenSource;
 
 #define kResumeMask 1 /* bit of message field for resume vs. suspend */
+
+extern void RPrefs(void);
 
 extern Graphic_Ref gGReference[MAX_NUM_G_WIN + 1];
 extern SInt16 gExpose;
@@ -1123,7 +1127,9 @@ static OSStatus HandleWindowCommand(EventRef inEvent)
     GetEventParameter(inEvent, kEventParamDirectObject, typeHICommand, NULL, sizeof(command), NULL, &command);
 
     window = GetUserFocusWindow();
+#ifdef __MRC__
     check(command.attributes & kHICommandFromMenu);
+#endif
 
     switch (GetEventKind(inEvent))
     {
@@ -1131,7 +1137,8 @@ static OSStatus HandleWindowCommand(EventRef inEvent)
         if (command.commandID == kHICommandPreferences)
         {
             result = noErr;
-            R_ShowMessage("Preferences");
+
+            RPrefs();
             /*
             EventRef event; CreateEvent(
                 NULL, kEventClassWindow,
