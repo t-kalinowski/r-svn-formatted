@@ -103,7 +103,7 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
         for (i = 0; i < n; i++)
         {
             if (!R_FINITE(p[i]))
-                error("non-finite value supplied by nlm");
+                error("non-finite value supplied by optim");
             REAL(x)[i] = p[i] * (OS->parscale[i]);
         }
         SETCADR(OS->R_gcall, x);
@@ -132,13 +132,16 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (2 * eps);
-                if (!R_FINITE(df[i]))
-                    error("non-finite values encountered in finite-difference calculation");
-                REAL(x)[i] = p[i] * (OS->parscale[i]);
+#define DO_df_x                                                                                                        \
+    if (!R_FINITE(df[i]))                                                                                              \
+        error("non-finite finite-difference value [%d]", i);                                                           \
+    REAL(x)[i] = p[i] * (OS->parscale[i])
+
+                DO_df_x;
             }
         }
         else
-        {
+        { /* usebounds */
             for (i = 0; i < n; i++)
             {
                 epsused = eps = OS->ndeps[i];
@@ -163,9 +166,8 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (epsused + eps);
-                if (!R_FINITE(df[i]))
-                    error("non-finite values encountered in finite-difference calculation");
-                REAL(x)[i] = p[i] * (OS->parscale[i]);
+
+                DO_df_x;
             }
         }
         UNPROTECT(1); /* x */
@@ -512,6 +514,8 @@ static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *ma
     double D1, D2;
     int n, *l;
 
+    if (nREPORT <= 0)
+        error("REPORT must be > 0 (method = \"BFGS\")");
     l = (int *)R_alloc(n0, sizeof(int));
     n = 0;
     for (i = 0; i < n0; i++)
@@ -649,10 +653,8 @@ static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *ma
                 ilast = gradcount;
             /* Resets unless has just been reset */
         }
-        if ((iter % nREPORT == 0) && trace)
-        {
+        if (trace && (iter % nREPORT == 0))
             Rprintf("iter%4d value %f\n", iter, f);
-        }
         if (iter >= maxit)
             break;
         if (gradcount - ilast > 2 * n)
@@ -672,6 +674,7 @@ static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *ma
 
 #define big 1.0e+35 /*a very large number*/
 
+/* Nelder-Mead */
 static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
                   double alpha, double beta, double gamma, int trace, int *fncount, int maxit)
 {
@@ -834,13 +837,13 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                 }
                 else
                 {
-                    strcpy(action, "HI-REDUCTION    ");
+                    strcpy(action, "HI-REDUCTION   ");
                     if (VR < VH)
                     {
                         for (i = 0; i < n; i++)
                             P[i][H - 1] = Bvec[i];
                         P[n1 - 1][H - 1] = VR;
-                        strcpy(action, "LO-REDUCTION    ");
+                        strcpy(action, "LO-REDUCTION   ");
                     }
 
                     for (i = 0; i < n; i++)
@@ -921,32 +924,28 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
     double tol, TEMP;
 
     if (trace)
+    {
         Rprintf("  Conjugate gradients function minimiser\n");
-
+        switch (type)
+        {
+        case 1:
+            Rprintf("Method: Fletcher Reeves\n");
+            break;
+        case 2:
+            Rprintf("Method: Polak Ribiere\n");
+            break;
+        case 3:
+            Rprintf("Method: Beale Sorenson\n");
+            break;
+        default:
+            error("unknown type in CG method of optim");
+        }
+    }
     c = vect(n);
     g = vect(n);
     t = vect(n);
 
     setstep = 1.7;
-    if (trace)
-        switch (type)
-        {
-
-        case 1:
-            Rprintf("Method: Fletcher Reeves\n");
-            break;
-
-        case 2:
-            Rprintf("Method: Polak Ribiere\n");
-            break;
-
-        case 3:
-            Rprintf("Method: Beale Sorenson\n");
-            break;
-
-        default:
-            error("unknown type in CG method of optim");
-        }
     *fail = 0;
     cyclimit = n;
     tol = intol * n * sqrt(intol);
@@ -984,9 +983,7 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                     {
                         Rprintf("%10.5f ", Bvec[i - 1]);
                         if (i / 7 * 7 == i && i < n)
-                        {
                             Rprintf("\n");
-                        }
                     }
                     Rprintf("\n");
                 }
@@ -1008,16 +1005,13 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                     {
 
                     case 1: /* Fletcher-Reeves */
-                        TEMP = g[i];
-                        G1 += TEMP * TEMP;
-                        TEMP = c[i];
-                        G2 += TEMP * TEMP;
+                        G1 += g[i] * g[i];
+                        G2 += c[i] * c[i];
                         break;
 
                     case 2: /* Polak-Ribiere */
                         G1 += g[i] * (g[i] - c[i]);
-                        TEMP = c[i];
-                        G2 += TEMP * TEMP;
+                        G2 += c[i] * c[i];
                         break;
 
                     case 3: /* Beale-Sorenson */
