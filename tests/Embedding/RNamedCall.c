@@ -50,8 +50,8 @@ void source(const char *name)
 
 void bar1()
 {
-    SEXP fun, arg, seq, pch, tmp;
-    SEXP e, e1;
+    SEXP fun, pch;
+    SEXP e;
     int n = 7;
 
     PROTECT(e = allocVector(LANGSXP, 4));
