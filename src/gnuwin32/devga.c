@@ -1683,7 +1683,8 @@ static void GA_Size(double *left, double *right, double *bottom, double *top, Ne
 static void GA_Resize(NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-
+    SEXP scale;
+    PROTECT(scale = allocVector(REALSXP, 1));
     if (xd->resize)
     {
         int iw, ih, iw0 = dd->right - dd->left, ih0 = dd->bottom - dd->top;
@@ -1707,9 +1708,9 @@ static void GA_Resize(NewDevDesc *dd)
             rf = min(fw, fh);
             xd->rescale_factor *= rf;
             xd->wanteddpi = xd->rescale_factor * xd->truedpi;
-            /* dd->ps *= rf; */
-            dd->cra[0] *= rf;
-            dd->cra[1] *= rf;
+            /* dd->ps *= rf; dd->cra[0] *= rf; dd->cra[1] *= rf; */
+            REAL(scale)[0] = rf;
+            GEHandleEvent(GE_ScalePS, dd, scale);
             if (fw < fh)
             {
                 dd->left = 0.0;
@@ -1769,6 +1770,7 @@ static void GA_Resize(NewDevDesc *dd)
             gfillrect(xd->bm, xd->outcolor, getrect(xd->bm));
         }
     }
+    UNPROTECT(1);
 }
 
 /********************************************************/
