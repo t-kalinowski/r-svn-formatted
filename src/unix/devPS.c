@@ -22,7 +22,7 @@
 #include "Graphics.h"
 #include "Error.h"
 #include "Fileio.h"
-#include "Platform.h"
+
 #include <stdio.h>
 #include <ctype.h>
 
@@ -420,7 +420,7 @@ double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
     for (; *p; p++)
     {
         if (*p == '-' && isdigit(p[1]))
-            sum += metrics->CharInfo[177].WX; /* n-dash */
+            sum += metrics->CharInfo[173].WX; /* hyphen (n-dash not avail.!) */
         else
             sum += metrics->CharInfo[*p].WX;
     }
@@ -625,7 +625,7 @@ static void PostScriptWriteString(FILE *fp, char *str)
             break;
         case '-':
             if (isdigit(str[1]))
-                fputc(177, fp);
+                fputc(173, fp);
             else
                 fputc(*str, fp);
             break;
@@ -873,7 +873,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     dd->dp.canClip = 0;
 #endif
 
-    /*  Start the driver */
+    /*	Start the driver */
 
     if (!PS_Open(dd, pd))
     {
@@ -1071,7 +1071,7 @@ static void PS_MetricInfo(int c, double *ascent, double *descent, double *width,
     *width = floor(dd->gp.cex * dd->gp.ps + 0.5) * *width;
 }
 
-#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+#ifdef NOT_used_currently /*-- out 'def'	 (-Wall) --*/
 static void PS_MoveTo(double x, double y, int coords, DevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
