@@ -117,6 +117,7 @@ void GraphicCopy(WindowPtr window);
 #define kRCmdBinaryInstallFromBioC 'biob'
 #define kRCmdUpdateFromCRAN 'crup'
 #define kRCmdUpdateFromBioC 'bcup'
+#define kRCmdInstallFromBinary 'ipbt'
 #define kRCmdInstallFromSrc 'ipfs'
 #define kRCmdInstallFromSrcDir 'ipsd'
 #define kRCmdBioCBundleAll 'bial'
@@ -1315,7 +1316,9 @@ DialogItemIndex WantToSave(WindowRef window, char *title, char *msg)
     else
         TitleText = CFSTR("Save changes");
 
-    err = CreateStandardAlert(kAlertCautionAlert, TitleText, MsgText, &paramRec, &WantDialog);
+    err = CreateStandardAlert(kAlertCautionAlert, TitleText, MsgText,
+
+                              &paramRec, &WantDialog);
     if (err == noErr)
     {
         err = RunStandardAlert(WantDialog, NULL, &itemHit);
@@ -1374,7 +1377,9 @@ DialogItemIndex YesOrNot(char *title, char *msg, char *actionlab, char *canclab)
     else
         TitleText = CFSTR("Save changes");
 
-    err = CreateStandardAlert(kAlertCautionAlert, TitleText, MsgText, &paramRec, &WantDialog);
+    err = CreateStandardAlert(kAlertCautionAlert, TitleText, MsgText,
+
+                              &paramRec, &WantDialog);
     if (err == noErr)
     {
         err = RunStandardAlert(WantDialog, NULL, &itemHit);
@@ -1763,6 +1768,10 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 
             case kRCmdBinaryUpdateFromCRAN:
                 consolecmd("browse.update.pkgs()");
+                break;
+
+            case kRCmdInstallFromBinary:
+                consolecmd("install.from.file(binary=TRUE)\r");
                 break;
 
             case kRCmdInstallFromSrc:
