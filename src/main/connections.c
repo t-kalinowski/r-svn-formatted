@@ -51,6 +51,7 @@ extern UImode CharacterMode;
 #define NSINKS 21
 
 static Rconnection Connections[NCONNECTIONS];
+static SEXP OutTextData;
 
 static int R_SinkNumber;
 static int SinkCons[NSINKS], SinkConsClose[NSINKS];
@@ -67,6 +68,17 @@ int NextConnection()
             break;
     if (i >= NCONNECTIONS)
         error("All connections are in use");
+    return i;
+}
+
+static int ConnIndex(Rconnection con)
+{
+    int i;
+    for (i = 0; i < NCONNECTIONS; i++)
+        if (Connections[i] == con)
+            break;
+    if (i >= NCONNECTIONS)
+        error("connection not found");
     return i;
 }
 
@@ -1698,15 +1710,17 @@ static void outtext_close(Rconnection con)
 {
     Routtextconn this = (Routtextconn)con->private;
     SEXP tmp;
+    int idx = ConnIndex(con);
 
     if (strlen(this->lastline) > 0)
     {
         PROTECT(tmp = lengthgets(this->data, ++this->len));
         SET_STRING_ELT(tmp, this->len - 1, mkChar(this->lastline));
-        defineVar(this->namesymbol, tmp, R_GlobalEnv);
+        defineVar(this->namesymbol, tmp, VECTOR_ELT(OutTextData, idx));
         this->data = tmp;
         UNPROTECT(1);
     }
+    SET_VECTOR_ELT(OutTextData, idx, R_NilValue);
 }
 
 static void outtext_destroy(Rconnection con)
@@ -1770,10 +1784,11 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
         q = strchr(p, '\n');
         if (q)
         {
+            int idx = ConnIndex(con);
             *q = '\0';
             PROTECT(tmp = lengthgets(this->data, ++this->len));
             SET_STRING_ELT(tmp, this->len - 1, mkChar(p));
-            defineVar(this->namesymbol, tmp, R_GlobalEnv);
+            defineVar(this->namesymbol, tmp, VECTOR_ELT(OutTextData, idx));
             this->data = tmp;
             UNPROTECT(1);
         }
@@ -1796,7 +1811,7 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
     return res;
 }
 
-static void outtext_init(Rconnection con, char *mode)
+static void outtext_init(Rconnection con, char *mode, int idx)
 {
     Routtextconn this = (Routtextconn)con->private;
     SEXP val;
@@ -1806,18 +1821,18 @@ static void outtext_init(Rconnection con, char *mode)
     {
         /* create variable pointed to by con->description */
         PROTECT(val = allocVector(STRSXP, 0));
-        defineVar(this->namesymbol, val, R_GlobalEnv);
+        defineVar(this->namesymbol, val, VECTOR_ELT(OutTextData, idx));
         UNPROTECT(1);
     }
     else
     {
         /* take over existing variable */
-        val = findVar1(this->namesymbol, R_GlobalEnv, STRSXP, FALSE);
+        val = findVar1(this->namesymbol, VECTOR_ELT(OutTextData, idx), STRSXP, FALSE);
         if (val == R_UnboundValue)
         {
             warning("text connection: appending to a non-existent char vector");
             PROTECT(val = allocVector(STRSXP, 0));
-            defineVar(this->namesymbol, val, R_GlobalEnv);
+            defineVar(this->namesymbol, val, VECTOR_ELT(OutTextData, idx));
             UNPROTECT(1);
         }
     }
@@ -1827,7 +1842,7 @@ static void outtext_init(Rconnection con, char *mode)
     this->lastlinelength = LAST_LINE_LEN;
 }
 
-static Rconnection newouttext(char *description, SEXP sfile, char *mode)
+static Rconnection newouttext(char *description, SEXP sfile, char *mode, int idx)
 {
     Rconnection new;
     void *tmp;
@@ -1874,13 +1889,13 @@ static Rconnection newouttext(char *description, SEXP sfile, char *mode)
         free(new);
         error("allocation of text connection failed");
     }
-    outtext_init(new, mode);
+    outtext_init(new, mode, idx);
     return new;
 }
 
 SEXP do_textconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP sfile, stext, sopen, ans, class;
+    SEXP sfile, stext, sopen, ans, class, venv;
     char *desc, *open;
     int ncon;
     Rconnection con = NULL;
@@ -1897,11 +1912,22 @@ SEXP do_textconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(sopen) || length(sopen) != 1)
         error("invalid `open' argument");
     open = CHAR(STRING_ELT(sopen, 0));
+    venv = CADDDR(args);
+    if (!isEnvironment(venv) && venv != R_NilValue)
+        error("invalid 'environment' argument");
     ncon = NextConnection();
     if (!strlen(open) || strncmp(open, "r", 1) == 0)
         con = Connections[ncon] = newtext(desc, stext);
     else if (strncmp(open, "w", 1) == 0 || strncmp(open, "a", 1) == 0)
-        con = Connections[ncon] = newouttext(CHAR(STRING_ELT(stext, 0)), sfile, open);
+    {
+        if (OutTextData == NULL)
+        {
+            OutTextData = allocVector(VECSXP, NCONNECTIONS);
+            R_PreserveObject(OutTextData);
+        }
+        SET_VECTOR_ELT(OutTextData, ncon, venv);
+        con = Connections[ncon] = newouttext(CHAR(STRING_ELT(stext, 0)), sfile, open, ncon);
+    }
     else
         errorcall(call, "unsupported mode");
     /* already opened */
