@@ -1017,7 +1017,7 @@ void GEPolygon(int n, double *x, double *y, R_GE_gcontext *gc, GEDevDesc *dd)
     char *vmaxsave = vmaxget();
     if (gc->lty == LTY_BLANK)
         /* "transparent" border */
-        gc->col = R_RGBA(255, 255, 255, 255);
+        gc->col = R_TRANWHITE;
     if (dd->dev->canClip)
     {
         /*
@@ -1667,7 +1667,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
              * not using the current fill colour)
              */
             gc->fill = gc->col;
-            gc->col = R_RGBA(255, 255, 255, 255);
+            gc->col = R_TRANWHITE;
             GERect(x - .5, y - .5, x + .5, y + .5, gc, dd);
         }
         else
@@ -1687,13 +1687,13 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
         case 0: /* S square */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GERect(x - xc, y - yc, x + xc, y + yc, gc, dd);
             break;
 
         case 1: /* S octahedron ( circle) */
             xc = RADIUS * size;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GECircle(x, y, xc, gc, dd);
             break;
 
@@ -1708,7 +1708,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[1] = y - yc;
             xx[2] = x - xc;
             yy[2] = y - yc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(3, xx, yy, gc, dd);
             break;
 
@@ -1737,7 +1737,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[2] = y;
             xx[3] = x;
             yy[3] = y - yc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(4, xx, yy, gc, dd);
             break;
 
@@ -1752,14 +1752,14 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[1] = y + yc;
             xx[2] = x - xc;
             yy[2] = y + yc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(3, xx, yy, gc, dd);
             break;
 
         case 7: /* S square and times superimposed */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GERect(x - xc, y - yc, x + xc, y + yc, gc, dd);
             GELine(x - xc, y - yc, x + xc, y + yc, gc, dd);
             GELine(x - xc, y + yc, x + xc, y - yc, gc, dd);
@@ -1789,14 +1789,14 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[2] = y;
             xx[3] = x;
             yy[3] = y - yc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(4, xx, yy, gc, dd);
             break;
 
         case 10: /* S hexagon (circle) and plus superimposed */
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GECircle(x, y, xc, gc, dd);
             GELine(x - xc, y, x + xc, y, gc, dd);
             GELine(x, y - yc, x, y + yc, gc, dd);
@@ -1814,7 +1814,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[1] = y + yc;
             xx[2] = x - xc;
             yy[2] = y + yc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(3, xx, yy, gc, dd);
             xx[0] = x;
             yy[0] = y + r;
@@ -1830,13 +1830,13 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
             GELine(x - xc, y, x + xc, y, gc, dd);
             GELine(x, y - yc, x, y + yc, gc, dd);
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GERect(x - xc, y - yc, x + xc, y + yc, gc, dd);
             break;
 
         case 13: /* S octagon (circle) and times superimposed */
             xc = RADIUS * size;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GECircle(x, y, xc, gc, dd);
             xc = toDeviceWidth(RADIUS * GSTR_0, GE_INCHES, dd);
             yc = toDeviceHeight(RADIUS * GSTR_0, GE_INCHES, dd);
@@ -1852,7 +1852,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             yy[1] = y - xc;
             xx[2] = x - xc;
             yy[2] = y - xc;
-            gc->fill = R_RGBA(255, 255, 255, 255);
+            gc->fill = R_TRANWHITE;
             GEPolygon(3, xx, yy, gc, dd);
             GERect(x - xc, y - xc, x + xc, y + xc, gc, dd);
             break;
@@ -1869,7 +1869,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             xx[3] = x - xc;
             yy[3] = y + yc;
             gc->fill = gc->col;
-            gc->col = R_RGBA(255, 255, 255, 255);
+            gc->col = R_TRANWHITE;
             GEPolygon(4, xx, yy, gc, dd);
             break;
 
@@ -1891,7 +1891,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             xx[2] = x - xc;
             yy[2] = y - yc;
             gc->fill = gc->col;
-            gc->col = R_RGBA(255, 255, 255, 255);
+            gc->col = R_TRANWHITE;
             GEPolygon(3, xx, yy, gc, dd);
             break;
 
@@ -1907,7 +1907,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             xx[3] = x;
             yy[3] = y - yc;
             gc->fill = gc->col;
-            gc->col = R_RGBA(255, 255, 255, 255);
+            gc->col = R_TRANWHITE;
             GEPolygon(4, xx, yy, gc, dd);
             break;
 

@@ -2179,11 +2179,11 @@ void GInit(GPar *dp)
     dp->cexsub = 1.0;
     dp->cexaxis = 1.0;
 
-    dp->col = 0;
-    dp->colmain = 0;
-    dp->collab = 0;
-    dp->colsub = 0;
-    dp->colaxis = 0;
+    dp->col = R_RGB(0, 0, 0);
+    dp->colmain = R_RGB(0, 0, 0);
+    dp->collab = R_RGB(0, 0, 0);
+    dp->colsub = R_RGB(0, 0, 0);
+    dp->colaxis = R_RGB(0, 0, 0);
     dp->gamma = 1;
 
     /* dp->ps = 10; */ /* Device Specific */
@@ -2895,7 +2895,7 @@ void GPolygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *
     gcontextFromGP(&gc, dd);
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
+        fg = R_TRANWHITE; /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -2974,7 +2974,7 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
     ir = (ir > 0) ? ir : 1;
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
+        fg = R_TRANWHITE; /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -2999,7 +2999,7 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
     gcontextFromGP(&gc, dd);
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
+        fg = R_TRANWHITE; /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -3168,7 +3168,7 @@ void GBox(int which, DevDesc *dd)
         {
         case 'o':
         case 'O':
-            GPolygon(4, x, y, NFC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
+            GPolygon(4, x, y, NFC, R_TRANWHITE, Rf_gpptr(dd)->col, dd);
             break;
         case 'l':
         case 'L':
@@ -3197,13 +3197,13 @@ void GBox(int which, DevDesc *dd)
         }
         break;
     case 2: /* Figure */
-        GPolygon(4, x, y, NFC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NFC, R_TRANWHITE, Rf_gpptr(dd)->col, dd);
         break;
     case 3: /* Inner Region */
-        GPolygon(4, x, y, NIC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NIC, R_TRANWHITE, Rf_gpptr(dd)->col, dd);
         break;
     case 4: /* "outer": Device border */
-        GPolygon(4, x, y, NDC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NDC, R_TRANWHITE, Rf_gpptr(dd)->col, dd);
         break;
     default:
         error("invalid GBox argument");
@@ -4309,7 +4309,7 @@ unsigned int name2col(char *nm)
          * All devices should respond to fully transparent by
          * not drawing.
          */
-        return R_RGBA(255, 255, 255, 255);
+        return R_TRANWHITE;
     for (i = 0; ColorDataBase[i].name; i++)
     {
         if (StrMatch(ColorDataBase[i].name, nm))
@@ -4357,7 +4357,7 @@ char *col2name(unsigned int col)
 {
     int i;
 
-    if (R_ALPHA(col) != 0)
+    if (!R_OPAQUE(col))
         return "transparent";
     for (i = 0; ColorDataBase[i].name; i++)
     {
@@ -4406,7 +4406,7 @@ unsigned int RGBpar(SEXP x, int i)
              * Paul 01/07/04
              * Used to be set to NA_INTEGER (see comment in name2col).
              */
-            return R_RGBA(255, 255, 255, 255);
+            return R_TRANWHITE;
         indx = INTEGER(x)[i] - 1;
         if (indx < 0)
             return Rf_dpptr(CurrentDevice())->bg;
@@ -4420,7 +4420,7 @@ unsigned int RGBpar(SEXP x, int i)
              * Paul 01/07/04
              * Used to be set to NA_INTEGER (see comment in name2col).
              */
-            return R_RGBA(255, 255, 255, 255);
+            return R_TRANWHITE;
         indx = REAL(x)[i] - 1;
         if (indx < 0)
             return Rf_dpptr(CurrentDevice())->bg;
