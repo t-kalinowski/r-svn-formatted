@@ -361,7 +361,7 @@ SEXP do_geterrmessage(SEXP call, SEXP op, SEXP args, SEXP env)
 
 void error(const char *format, ...)
 {
-    char buf[BUFSIZE], *p;
+    char buf[BUFSIZE];
 
     va_list(ap);
     va_start(ap, format);
@@ -609,7 +609,7 @@ static struct
 void ErrorMessage(SEXP call, int which_error, ...)
 {
     int i;
-    char buf[BUFSIZE], *p;
+    char buf[BUFSIZE];
     va_list(ap);
 
     i = 0;
@@ -629,7 +629,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
 void WarningMessage(SEXP call, R_WARNING which_warn, ...)
 {
     int i;
-    char buf[BUFSIZE], *p;
+    char buf[BUFSIZE];
     va_list(ap);
 
     i = 0;
