@@ -149,7 +149,7 @@ SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
  */
 void registerBase()
 {
-    baseRegisterIndex = GEregisterSystem(baseCallback);
+    GEregisterSystem(baseCallback, &baseRegisterIndex);
 }
 
 /* FIXME: Make this a macro to avoid function call overhead?
