@@ -150,7 +150,7 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
 
 static void Quartz_SetFill(int fill, double gamma, NewDevDesc *dd);
 static void Quartz_SetStroke(int color, double gamma, NewDevDesc *dd);
-static void Quartz_SetLineDash(int lty, NewDevDesc *dd);
+static void Quartz_SetLineDash(int lty, double lwd, NewDevDesc *dd);
 static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd);
 static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd);
 static CGContextRef GetContext(QuartzDesc *xd);
@@ -561,7 +561,6 @@ static double Quartz_StrWidth(char *str, int font, double cex, double ps, NewDev
     position = CGContextGetTextPosition(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
-
     return (position.x);
 }
 
@@ -569,21 +568,34 @@ static void Quartz_SetFont(int font, double cex, double ps, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     int size = cex * ps + 0.5;
+    FMFontFamily CurrFontId;
+    GrafPtr savePort;
+    Str255 CurrFontName;
+    char CurrFont[256];
+
+    GetPort(&savePort);
+    SetPortWindowPort(xd->window);
 
     switch (font)
     {
-
     case 5:
-        CGContextSelectFont(GetContext(xd), "Symbol", size, kCGEncodingMacRoman);
+        strcpy(CurrFont, "Symbol");
         break;
 
     default:
         if (xd->family)
-            CGContextSelectFont(GetContext(xd), xd->family, size, kCGEncodingMacRoman);
+            strcpy(CurrFont, xd->family);
         else
-            CGContextSelectFont(GetContext(xd), "Helvetica", size, kCGEncodingMacRoman);
+            strcpy(CurrFont, "Helvetica");
         break;
     }
+
+    CGContextSelectFont(GetContext(xd), CurrFont, size, kCGEncodingMacRoman);
+    CopyCStringToPascal(CurrFont, CurrFontName);
+    GetFNum(CurrFontName, &CurrFontId);
+    TextSize(size);
+    TextFont(CurrFontId);
+    SetPort(savePort);
 }
 
 static void Quartz_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma, int font,
@@ -649,7 +661,7 @@ static void Quartz_Rect(double x0, double y0, double x1, double y1, int col, int
     CGContextSaveGState(GetContext(xd));
 
     Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, dd);
+    Quartz_SetLineDash(lty, lwd, dd);
 
     Quartz_SetFill(fill, gamma, dd);
     CGContextFillRect(GetContext(xd), rect);
@@ -670,7 +682,7 @@ static void Quartz_Circle(double x, double y, double r, int col, int fill, doubl
     CGContextBeginPath(GetContext(xd));
 
     Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, dd);
+    Quartz_SetLineDash(lty, lwd, dd);
 
     CGContextAddArc(GetContext(xd), (float)x, (float)y, (float)r, 3.141592654 * 2.0, 0.0, 0);
     Quartz_SetFill(fill, gamma, dd);
@@ -700,7 +712,7 @@ static void Quartz_Line(double x1, double y1, double x2, double y2, int col, dou
     lines[1].y = (float)y2;
 
     Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, dd);
+    Quartz_SetLineDash(lty, lwd, dd);
 
     CGContextAddLines(GetContext(xd), &lines[0], 2);
 
@@ -732,7 +744,7 @@ static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, 
     CGContextSaveGState(GetContext(xd));
 
     Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, dd);
+    Quartz_SetLineDash(lty, lwd, dd);
 
     CGContextBeginPath(GetContext(xd));
     CGContextAddLines(GetContext(xd), &lines[0], n);
@@ -742,34 +754,20 @@ static void Quartz_Polyline(int n, double *x, double *y, int col, double gamma, 
     CGContextRestoreGState(GetContext(xd));
 }
 
-#define MAX_DASH 6
-static float Dash1[] = {1.0, 0.0};
-static float Dash2[] = {1.0, 1.0};
-static float Dash3[] = {2.0, 2.0};
-static float Dash4[] = {4.0, 2.0};
-static float Dash5[] = {4.0, 2.0};
-static float Dash6[] = {6.0, 2.0, 2.0, 2.0};
-
-float *dash[MAX_DASH] = {Dash1, Dash2, Dash3, Dash4, Dash5, Dash6};
-
-size_t dashn[MAX_DASH] = {2, 2, 2, 2, 2, 4};
-
-static void Quartz_SetLineDash(int lty, NewDevDesc *dd)
+static void Quartz_SetLineDash(int newlty, double lwd, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    float dashlist[8];
+    int i, ndash = 0;
 
-    if (lty < 1)
-        lty = 1;
-
-    if (lty > MAX_DASH)
-        lty = MAX_DASH;
-
-    xd->lineType = lty;
-
-    if (lty < 2)
-        return;
-
-    CGContextSetLineDash(GetContext(xd), 0, dash[lty - 1], dashn[lty - 1]);
+    lwd *= 0.75; /* kludge from postscript/pdf */
+    for (i = 0; i < 8 && newlty & 15; i++)
+    {
+        dashlist[ndash++] = (lwd >= 1 ? lwd : 1) * (newlty & 15);
+        newlty = newlty >> 4;
+    }
+    CGContextSetLineDash(GetContext(xd), 0, dashlist, ndash);
+    xd->lineType = newlty;
 }
 
 static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd)
@@ -823,7 +821,7 @@ static void Quartz_Polygon(int n, double *x, double *y, int col, int fill, doubl
 
     CGContextBeginPath(GetContext(xd));
     Quartz_SetLineWidth(lwd, dd);
-    Quartz_SetLineDash(lty, dd);
+    Quartz_SetLineDash(lty, lwd, dd);
 
     lines = (CGPoint *)malloc(sizeof(CGPoint) * (n + 1));
 
@@ -923,20 +921,45 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     char testo[2];
     CGrafPtr savedPort;
+    Rect bounds;
+    CGPoint position;
 
     testo[0] = c;
     testo[1] = '\0';
 
     GetPort(&savedPort);
 
-    *width = xd->xscale * floor(cex * ps + 0.5) * Quartz_StrWidth(testo, font, cex, ps, dd);
-
     SetPort(GetWindowPort(xd->window));
 
-    FontMetrics(&myFMetric);
+    Quartz_SetFont(font, cex, ps, dd);
 
-    *ascent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.ascent);
-    *descent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.descent);
+    if (c == 0)
+    {
+        FontMetrics(&myFMetric);
+        *ascent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.ascent);
+        *descent = xd->yscale * floor(cex * ps + 0.5) * FixedToFloat(myFMetric.descent);
+    }
+    else
+    {
+
+        CGContextSaveGState(GetContext(xd));
+        CGContextTranslateCTM(GetContext(xd), 0, 0);
+        CGContextScaleCTM(GetContext(xd), -1, 1);
+        CGContextRotateCTM(GetContext(xd), -1.0 * 3.1416);
+        CGContextSetTextDrawingMode(GetContext(xd), kCGTextInvisible);
+        Quartz_SetFont(font, cex, ps, dd);
+        CGContextShowTextAtPoint(GetContext(xd), 0, 0, testo, 1);
+        position = CGContextGetTextPosition(GetContext(xd));
+        CGContextRestoreGState(GetContext(xd));
+
+        QDTextBounds(1, testo, &bounds);
+        *ascent = -bounds.top;
+        *descent = bounds.bottom;
+        *width = bounds.right - bounds.left;
+        *width = position.x;
+        //     Rprintf("left=%d, right=%d x=%f y=%f\n", bounds.left, bounds.right,position.x,position.y);
+        //     Rprintf("width=%d\n",bounds.right - bounds.left);
+    }
 
     SetPort(savedPort);
 
