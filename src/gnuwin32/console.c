@@ -37,6 +37,9 @@
 #include "consolestructs.h"
 #include "rui.h"
 #include "getline/getline.h"
+#include "Startup.h" /* for UImode */
+
+extern UImode CharacterMode;
 
 /* xbuf */
 
@@ -764,7 +767,8 @@ if (st == CtrlKey)
         if (p->kind == PAGER)
         {
             consolecopy(c);
-            consolepaste(RConsole);
+            if (CharacterMode == RGui)
+                consolepaste(RConsole);
         }
         else
             consolepaste(c);

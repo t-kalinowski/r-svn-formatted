@@ -35,6 +35,9 @@
 #include "console.h"
 #include "consolestructs.h"
 #include "rui.h"
+#include "Startup.h" /* for UImode */
+
+extern UImode CharacterMode;
 
 #define PAGERMAXKEPT 12
 #define PAGERMAXTITLE 128
@@ -168,6 +171,11 @@ static void pagerpaste(control m)
 {
     control c = getdata(m);
 
+    if (CharacterMode != RGui)
+    {
+        R_ShowMessage("No RGui console to paste to");
+        return;
+    }
     if (!consolecancopy(c))
     {
         R_ShowMessage("No selection");
@@ -279,8 +287,11 @@ static void pagermenuact(control m)
     {
         enable(p->mcopy);
         enable(p->mpopcopy);
-        enable(p->mpaste);
-        enable(p->mpoppaste);
+        if (CharacterMode == RGui)
+        {
+            enable(p->mpaste);
+            enable(p->mpoppaste);
+        }
     }
     else
     {
