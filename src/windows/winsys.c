@@ -19,6 +19,7 @@
 
 #include "wincons.h"
 #include "Graphics.h"
+#include "Fileio.h"
 
 static char szDirName[RBuffLen];
 static jmp_buf R_Winjbuf;
@@ -28,16 +29,23 @@ float R_WinVersion;
 static BOOL CheckSystem(void)
 {
     OSVERSIONINFO osvi;
+    DWORD vinfo;
 
+#ifdef OLD
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     if (!GetVersionEx(&osvi))
         return (FALSE);
     R_WinVersion = (int)osvi.dwMajorVersion;
     R_WinVersion += (int)osvi.dwMinorVersion / 10;
-
-    if (R_WinVersion < 3.1)
+#else
+    vinfo = GetVersion();
+    R_WinVersion = (int)LOBYTE(LOWORD(vinfo));
+    R_WinVersion += ((int)HIBYTE(LOWORD(vinfo))) / 100.0;
+#endif
+    if (R_WinVersion < 3.09)
     {
-        MessageBox((HWND)NULL, "R requires Windows 3.1 or higher", NULL, MB_ICONHAND);
+        sprintf(szDirName, "R requires Windows 3.1 or higher \n You have %f", R_WinVersion);
+        MessageBox((HWND)NULL, szDirName, NULL, MB_ICONHAND);
         return (FALSE);
     }
     return (TRUE);
@@ -77,10 +85,20 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
     char *exe, *ep, tmp[RBuffLen], tm1;
     HINSTANCE hinstLib;
     MYPROC ProcAdd;
+    DWORD erno;
+
+    if (erno = GetLastError())
+    {
+        sprintf(tmp, "erno was %d", (int)erno);
+        MessageBox((HWND)NULL, tmp, NULL, MB_OK);
+        SetLastError(0);
+    }
 
     if (!CheckSystem())
         return (FALSE);
 
+    if (erno = GetLastError())
+        SetLastError(0);
     /* Create the Windows */
     if (!hinstPrevious)
         if (!InitApplication(hinstCurrent))
@@ -95,7 +113,10 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
         return FALSE;
 
     /* do the file association thing if need be */
-    R_FileAssoc(szDirName);
+    if (R_WinVersion >= 4.0)
+        R_FileAssoc(szDirName);
+
+    erno = GetLastError();
 
     exe = strrchr(szDirName, '\\');
     *exe = '\0';
@@ -157,6 +178,8 @@ int WINAPI WinMain(HANDLE hinstCurrent, HANDLE hinstPrevious, LPSTR lpszCmdParam
 
     FreeLibrary(hinstLib);
 */
+
+    erno = GetLastError();
 
     if (0 == setjmp(R_Winjbuf))
         mainloop();
@@ -303,7 +326,7 @@ void dump_image(char *fname, int jump)
     DWORD Clust, FreeClust, SectPerClust, BytesPerSect;
     char tstr[2];
 
-    fp = fopen(fname, "wb");
+    fp = R_fopen(fname, "wb");
     if (!fp)
         error("can't save data -- unable to open file\n");
 
@@ -340,7 +363,7 @@ void RBusy(int which)
 
 void R_SaveGlobalEnv(void)
 {
-    FILE *fp = fopen(R_ImageName, "w");
+    FILE *fp = R_fopen(R_ImageName, "w");
     if (!fp)
         error("can't save data -- unable to open %s\n", R_ImageName);
     R_WriteMagic(fp, R_MAGIC_BINARY);
@@ -350,7 +373,7 @@ void R_SaveGlobalEnv(void)
 
 void R_RestoreGlobalEnv(void)
 {
-    FILE *fp = fopen(R_ImageName, "r");
+    FILE *fp = R_fopen(R_ImageName, "r");
     if (!fp)
     {
         /* warning here perhaps */
