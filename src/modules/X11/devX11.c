@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2000  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1628,14 +1628,14 @@ static void X11_Rect(double x0, double y0, double x1, double y1, int coords, int
         y0 = y1;
         y1 = tmp;
     }
-    if (bg != NA_INTEGER)
+    if (R_OPAQUE(bg))
     {
         SetColor(bg, dd);
         XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
         SetColor(bg, dd);
         XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
     }
-    if (fg != NA_INTEGER)
+    if (R_OPAQUE(fg))
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
@@ -1678,12 +1678,12 @@ static void X11_Circle(double x, double y, int coords, double r, int col, int bo
     GConvert(&x, &y, coords, DEVICE, dd);
     ix = (int)x;
     iy = (int)y;
-    if (col != NA_INTEGER)
+    if (R_OPAQUE(col))
     {
         SetColor(col, dd);
         XFillArc(display, xd->window, xd->wgc, ix - ir, iy - ir, 2 * ir, 2 * ir, 0, 23040);
     }
-    if (border != NA_INTEGER)
+    if (R_OPAQUE(border))
     {
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
         SetColor(border, dd);
@@ -1713,13 +1713,16 @@ static void X11_Line(double x1, double y1, double x2, double y2, int coords, Dev
     xx2 = (int)x2;
     yy2 = (int)y2;
 
-    SetColor(dd->gp.col, dd);
-    SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-    XDrawLine(display, xd->window, xd->wgc, xx1, yy1, xx2, yy2);
+    if (R_OPAQUE(dd->gp.col))
+    {
+        SetColor(dd->gp.col, dd);
+        SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
+        XDrawLine(display, xd->window, xd->wgc, xx1, yy1, xx2, yy2);
 #ifdef XSYNC
-    if (xd->type == WINDOW)
-        XSync(display, 0);
+        if (xd->type == WINDOW)
+            XSync(display, 0);
 #endif
+    }
 }
 
 /********************************************************/
@@ -1750,19 +1753,22 @@ static void X11_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
         points[i].y = (int)(devy);
     }
 
-    SetColor(dd->gp.col, dd);
-    SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
-    /* Some X servers need npoints < 64K */
-    for (i = 0; i < n; i += 10000 - 1)
+    if (R_OPAQUE(dd->gp.col))
     {
-        j = n - i;
-        j = (j <= 10000) ? j : 10000; /* allow for overlap */
-        XDrawLines(display, xd->window, xd->wgc, points + i, j, CoordModeOrigin);
-    }
+        SetColor(dd->gp.col, dd);
+        SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
+        /* Some X servers need npoints < 64K */
+        for (i = 0; i < n; i += 10000 - 1)
+        {
+            j = n - i;
+            j = (j <= 10000) ? j : 10000; /* allow for overlap */
+            XDrawLines(display, xd->window, xd->wgc, points + i, j, CoordModeOrigin);
+        }
 #ifdef XSYNC
-    if (xd->type == WINDOW)
-        XSync(display, 0);
+        if (xd->type == WINDOW)
+            XSync(display, 0);
 #endif
+    }
 
     vmaxset(vmax);
 }
@@ -1802,7 +1808,7 @@ static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
     GConvert(&devx, &devy, coords, DEVICE, dd);
     points[n].x = (int)(devx);
     points[n].y = (int)(devy);
-    if (bg != NA_INTEGER)
+    if (R_OPAQUE(bg))
     {
         SetColor(bg, dd);
         XFillPolygon(display, xd->window, xd->wgc, points, n, Complex, CoordModeOrigin);
@@ -1811,7 +1817,7 @@ static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
             XSync(display, 0);
 #endif
     }
-    if (fg != NA_INTEGER)
+    if (R_OPAQUE(fg))
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd->gp.lwd, dd);
@@ -1842,14 +1848,17 @@ static void X11_Text(double x, double y, int coords, char *str, double rot, doub
 
     size = dd->gp.cex * dd->gp.ps + 0.5;
     SetFont(dd->gp.font, size, dd);
-    SetColor(dd->gp.col, dd);
-    len = strlen(str);
-    GConvert(&x, &y, coords, DEVICE, dd);
-    XRotDrawString(display, xd->font, rot, xd->window, xd->wgc, (int)x, (int)y, str);
+    if (R_OPAQUE(dd->gp.col))
+    {
+        SetColor(dd->gp.col, dd);
+        len = strlen(str);
+        GConvert(&x, &y, coords, DEVICE, dd);
+        XRotDrawString(display, xd->font, rot, xd->window, xd->wgc, (int)x, (int)y, str);
 #ifdef XSYNC
-    if (xd->type == WINDOW)
-        XSync(display, 0);
+        if (xd->type == WINDOW)
+            XSync(display, 0);
 #endif
+    }
 }
 
 /********************************************************/

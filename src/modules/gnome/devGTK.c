@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2000   Lyndon Drake
+ *  Copyright (C) 1998-2001   Lyndon Drake
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -660,7 +660,7 @@ static void GTK_Rect(double x0, double y0, double x1, double y1, int coords, int
         y1 = tmp;
     }
 
-    if (bg != NA_INTEGER)
+    if (R_OPAQUE(bg))
     {
         SetColor(&gcol_fill, bg);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
@@ -671,7 +671,7 @@ static void GTK_Rect(double x0, double y0, double x1, double y1, int coords, int
                            (gint)y1 - (gint)y0);
         gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, (gint)x0, (gint)y0, (gint)x1 - (gint)x0, (gint)y1 - (gint)y0);
     }
-    if (fg != NA_INTEGER)
+    if (R_OPAQUE(fg))
     {
         SetColor(&gcol_outline, fg);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_outline);
@@ -697,7 +697,7 @@ static void GTK_Circle(double x, double y, int coords, double r, int col, int bo
     iy = y - r;
     ir = 2 * floor(r + 0.5);
 
-    if (col != NA_INTEGER)
+    if (R_OPAQUE(col))
     {
         SetColor(&gcol_fill, col);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
@@ -705,7 +705,7 @@ static void GTK_Circle(double x, double y, int coords, double r, int col, int bo
         gdk_draw_arc(gtkd->drawing->window, gtkd->wgc, TRUE, ix, iy, ir, ir, 0, 23040);
         gdk_draw_arc(gtkd->pixmap, gtkd->wgc, TRUE, ix, iy, ir, ir, 0, 23040);
     }
-    if (border != NA_INTEGER)
+    if (R_OPAQUE(border))
     {
         SetColor(&gcol_outline, border);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_outline);
@@ -731,7 +731,7 @@ static void GTK_Line(double x1, double y1, double x2, double y2, int coords, Dev
     ix2 = (gint)x2;
     iy2 = (gint)y2;
 
-    if (dd->gp.col != NA_INTEGER)
+    if (R_OPAQUE(dd->gp.col))
     {
         SetColor(&gcol_fill, dd->gp.col);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
@@ -762,7 +762,7 @@ static void GTK_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
         points[i].y = (gint16)devy;
     }
 
-    if (dd->gp.col != NA_INTEGER)
+    if (R_OPAQUE(dd->gp.col))
     {
         SetColor(&gcol_fill, dd->gp.col);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
@@ -795,7 +795,7 @@ static void GTK_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         points[i].y = (gint16)devy;
     }
 
-    if (bg != NA_INTEGER)
+    if (R_OPAQUE(bg))
     {
         SetColor(&gcol_fill, bg);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
@@ -803,7 +803,7 @@ static void GTK_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         gdk_draw_polygon(gtkd->drawing->window, gtkd->wgc, TRUE, points, n);
         gdk_draw_polygon(gtkd->pixmap, gtkd->wgc, TRUE, points, n);
     }
-    if (fg != NA_INTEGER)
+    if (R_OPAQUE(fg))
     {
         SetColor(&gcol_outline, fg);
         gdk_gc_set_foreground(gtkd->wgc, &gcol_outline);
@@ -830,13 +830,16 @@ static void GTK_Text(double x, double y, int coords, char *str, double rot, doub
     SetFont(dd, dd->gp.font, size);
     gdk_gc_set_font(gtkd->wgc, gtkd->font);
 
-    SetColor(&gcol_fill, dd->gp.col);
-    gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
+    if (R_OPAQUE(dd->gp.col))
+    {
+        SetColor(&gcol_fill, dd->gp.col);
+        gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
 
-    gdk_draw_text_rot(gtkd->drawing->window, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth,
-                      gtkd->windowHeight, str, strlen(str), rrot);
-    gdk_draw_text_rot(gtkd->pixmap, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth, gtkd->windowHeight, str,
-                      strlen(str), rrot);
+        gdk_draw_text_rot(gtkd->drawing->window, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth,
+                          gtkd->windowHeight, str, strlen(str), rrot);
+        gdk_draw_text_rot(gtkd->pixmap, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth, gtkd->windowHeight,
+                          str, strlen(str), rrot);
+    }
 }
 
 typedef struct _GTK_locator_info GTK_locator_info;
