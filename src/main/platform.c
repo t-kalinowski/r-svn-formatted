@@ -1089,36 +1089,49 @@ SEXP do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef HAVE_LOCALE_H
     SEXP locale = CADR(args), ans;
     int cat;
-    char *p;
+    char *p = "";
 
     checkArity(op, args);
     cat = asInteger(CAR(args));
     if (cat == NA_INTEGER || cat < 0)
-        error(_("invalid 'category' argument"));
+        errorcall(call, _("invalid 'category' argument"));
     if (!isString(locale) || LENGTH(locale) != 1)
-        error(_("invalid 'locale' argument"));
+        errorcall(call, _("invalid 'locale' argument"));
     switch (cat)
     {
     case 1:
         cat = LC_ALL;
+        p = CHAR(STRING_ELT(locale, 0));
+        setlocale(LC_COLLATE, p);
+        setlocale(LC_CTYPE, p);
+        setlocale(LC_MONETARY, p);
+        setlocale(LC_TIME, p);
+        p = setlocale(cat, NULL);
         break;
     case 2:
         cat = LC_COLLATE;
+        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
     case 3:
         cat = LC_CTYPE;
+        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
     case 4:
         cat = LC_MONETARY;
+        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
     case 5:
         cat = LC_NUMERIC;
+        warningcall(call, _("setting 'LC_NUMERIC' may cause R to function strangely"));
+        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
     case 6:
         cat = LC_TIME;
+        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
+    default:
+        errorcall(call, _("invalid 'category' argument"));
     }
-    p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
     PROTECT(ans = allocVector(STRSXP, 1));
     if (p)
         SET_STRING_ELT(ans, 0, mkChar(p));
