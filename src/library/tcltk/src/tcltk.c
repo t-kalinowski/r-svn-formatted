@@ -181,8 +181,8 @@ SEXP dotTcl(SEXP args)
 
 SEXP dotTclObjv(SEXP args)
 {
-    SEXP ans, t, avec = CADR(args), nm = getAttrib(avec, R_NamesSymbol);
-    int objc, i, r;
+    SEXP t, avec = CADR(args), nm = getAttrib(avec, R_NamesSymbol);
+    int objc, i;
     Tcl_Obj **objv;
 
     for (objc = 0, i = 0; i < length(avec); i++)
@@ -471,6 +471,8 @@ SEXP RTcl_SetArrayElem(SEXP args)
     xstr = CHAR(STRING_ELT(x, 0));
     istr = CHAR(STRING_ELT(i, 0));
     Tcl_SetVar2Ex(RTcl_interp, xstr, istr, value, 0);
+
+    return R_NilValue;
 }
 
 SEXP RTcl_RemoveArrayElem(SEXP args)
