@@ -107,14 +107,14 @@ void setGridStateElement(GEDevDesc *dd, int elementIndex, SEXP value)
 static void deglobaliseState(SEXP state)
 {
     int index = INTEGER(VECTOR_ELT(state, GSS_GLOBALINDEX))[0];
-    SET_VECTOR_ELT(getSymbolValue(".GRID.STATE"), index, R_NilValue);
+    SET_VECTOR_ELT(findVar(install(".GRID.STATE"), R_gridEvalEnv), index, R_NilValue);
 }
 
 static int findStateSlot()
 {
     int i;
     int result = -1;
-    SEXP globalstate = getSymbolValue(".GRID.STATE");
+    SEXP globalstate = findVar(install(".GRID.STATE"), R_gridEvalEnv);
     for (i = 0; i < length(globalstate); i++)
         if (VECTOR_ELT(globalstate, i) == R_NilValue)
         {
@@ -130,7 +130,7 @@ static void globaliseState(SEXP state)
 {
     int index = findStateSlot();
     SEXP globalstate, indexsxp;
-    PROTECT(globalstate = getSymbolValue(".GRID.STATE"));
+    PROTECT(globalstate = findVar(install(".GRID.STATE"), R_gridEvalEnv));
     /* Record the index for deglobalisation
      */
     PROTECT(indexsxp = allocVector(INTSXP, 1));
