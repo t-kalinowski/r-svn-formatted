@@ -934,7 +934,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
 #ifndef HAVE_PNG
         warning("No png support in this version of R");
         return FALSE;
-#endif
+#else
         if (strlen(dsp + 5) >= 512)
             error("filename too long in png() call");
         strcpy(xd->filename, dsp + 5);
@@ -947,6 +947,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         xd->fp = fp;
         type = PNG;
         p = "";
+#endif
     }
     else if (!strncmp(dsp, "jpeg::", 6))
     {
@@ -955,7 +956,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
 #ifndef HAVE_JPEG
         warning("No jpeg support in this version of R");
         return FALSE;
-#endif
+#else
         p = strchr(dsp + 6, ':');
         *p = '\0';
         xd->quality = atoi(dsp + 6);
@@ -971,6 +972,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         xd->fp = fp;
         type = JPEG;
         p = "";
+#endif
     }
     else if (!strcmp(dsp, "XImage"))
     {
