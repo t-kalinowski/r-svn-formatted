@@ -1205,7 +1205,9 @@ for (;;)
             }
             break;
         case CHARTRANS:
-            if (cur_pos < 2)
+            if (cur_pos < 1)
+                break;
+            if (cur_pos >= max_pos)
                 break;
             cur_char = cur_line[cur_pos];
             cur_line[cur_pos] = cur_line[cur_pos - 1];
