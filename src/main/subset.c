@@ -464,8 +464,8 @@ static SEXP ExtractDropArg(SEXP el, int *drop)
     return el;
 }
 
-/* The [ subset operator.  This provides the most general */
-/* form of subsetting. */
+/* The "[" subset operator.
+ * This provides the most general form of subsetting. */
 
 SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -533,8 +533,7 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "object is not subsetable\n");
 
     /* This is the actual subsetting code. */
-    /* The separation of arrays and matrices */
-    /* is purely an optimization. */
+    /* The separation of arrays and matrices is purely an optimization. */
 
     if (nsubs == 1)
         ans = VectorSubset(ax, CAR(subs), call);
