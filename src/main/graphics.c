@@ -1927,8 +1927,7 @@ DevDesc *GNewPlot(Rboolean recording)
         }
 
         GReset(dd);
-        if (Rf_dpptr(dd)->canClip)
-            GForceClip(dd);
+        GForceClip(dd);
     }
 
     /* IF the division of the device into separate regions */
