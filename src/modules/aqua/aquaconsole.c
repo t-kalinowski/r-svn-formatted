@@ -79,6 +79,10 @@ pascal void RPrefsHandler(WindowRef window);
 
 void RSetTab(void);
 void RSetFontSize(void);
+void RSetFont(void);
+
+void ActivatePrefsWindow(void);
+void DeactivatePrefsWindow(void);
 
 /* Items for the Tools menu */
 #define kRCmdFileShow 'fshw'
@@ -165,6 +169,8 @@ enum
 #define kDeviceFontButton 3001
 
 #define kTabSizeField 1005
+FMFontFamilyInstance instance; // 1
+FMFontSize fontSize;
 
 void pickColor(RGBColor inColour, RGBColor *outColor);
 
@@ -194,7 +200,7 @@ void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
 int NewHelpWindow(char *fileName, char *title, char *WinTitle);
 
-OSStatus MySetFontSelection(WindowRef thisWindow);
+OSStatus MySetFontSelection(void);
 OSStatus MyGetFontSelection(EventRef event);
 
 void consolecmd(char *cmd);
@@ -262,6 +268,8 @@ static short PreferencesItem = -1;
 #define kDeviceFontText 3002
 #define kConsoleFontText 1003
 #define kWorkingDirText 2002
+
+ControlID MainControlID = {kPrefControlsSig, kConsoleFontText};
 
 ControlID WorkingDirTextID = {kPrefControlsSig, kWorkingDirText};
 ControlID ConsoleFontTextID = {kPrefControlsSig, kConsoleFontText};
@@ -508,6 +516,7 @@ void Raqua_StartConsole(void)
 
     RSetTab();
     RSetFontSize();
+    RSetFont();
 
     EnableMenuCommand(NULL, kHICommandPreferences);
 noconsole:
@@ -575,11 +584,14 @@ OSStatus InitMLTE(void)
     defaults.pointSize = Long2Fix(CurrentPrefs.ConsoleFontSize);
     defaults.encoding =
         CreateTextEncoding(kTextEncodingMacRoman, kTextEncodingDefaultVariant, kTextEncodingDefaultFormat);
-    defaults.fontStyle = kTXNDefaultFontStyle;
+    defaults.fontStyle = 0;
 
     options = kTXNWantMoviesMask | kTXNWantSoundMask | kTXNWantGraphicsMask;
 
     status = TXNInitTextension(&defaults, 1, options);
+
+    instance.fontStyle = 0;
+    instance.fontFamily = fontID;
 
     return (status);
 }
@@ -792,6 +804,27 @@ static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent
 /* Changes font size in both Console In and Out
    default size is 12
 */
+
+void RSetFont(void)
+{
+    TXNTypeAttributes typeAttr;
+    SInt16 fontID;
+    Str255 fontname;
+
+    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    GetFNum(fontname, &fontID);
+
+    typeAttr.tag = kTXNQDFontFamilyIDAttribute;
+    typeAttr.size = kTXNQDFontFamilyIDAttributeSize;
+    typeAttr.data.dataValue = fontID;
+
+    TXNSetTypeAttributes(RConsoleOutObject, 1, &typeAttr, 0, kTXNEndOffset);
+    TXNSetTypeAttributes(RConsoleInObject, 1, &typeAttr, 0, kTXNEndOffset);
+
+    instance.fontStyle = 0;
+    instance.fontFamily = fontID;
+}
+
 void RSetFontSize(void)
 {
     TXNTypeAttributes typeAttr;
@@ -800,8 +833,8 @@ void RSetFontSize(void)
     typeAttr.size = kTXNFontSizeAttributeSize;
     typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
 
-    TXNSetTypeAttributes(RConsoleOutObject, 1, &typeAttr, 0, 100000);
-    TXNSetTypeAttributes(RConsoleInObject, 1, &typeAttr, 0, 100000);
+    TXNSetTypeAttributes(RConsoleOutObject, 1, &typeAttr, 0, kTXNEndOffset); // 100000);
+    TXNSetTypeAttributes(RConsoleInObject, 1, &typeAttr, 0, kTXNEndOffset);  // 00);
 }
 
 /* Sets tab space for Console In and Out
@@ -1011,9 +1044,6 @@ void RescaleInOut(double prop)
     EndUpdate(ConsoleWindow);
 }
 
-FMFontFamilyInstance instance; // 1
-FMFontSize fontSize;
-
 static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
 {
     OSStatus err = eventNotHandledErr;
@@ -1030,6 +1060,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     WindowDefPartCode part;
     EventRef hitTest;
     Str255 fontname;
+
     eventClass = GetEventClass(inEvent);
     GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL, &EventWindow);
 
@@ -1046,6 +1077,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
             CopyPascalStringToC(fontname, CurrentPrefs.ConsoleFontName);
             CurrentPrefs.ConsoleFontSize = fontSize;
             SetUpPrefsWindow(&CurrentPrefs);
+            ActivatePrefsWindow();
             break;
 
         case kEventFontSelection: // 8
@@ -1083,14 +1115,13 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
             }
             break;
 
-        case kEventWindowFocusRelinquish:
-            SetFontInfoForSelection(kFontSelectionATSUIType, 0, NULL, NULL);
-            break;
+            //      case kEventWindowFocusRelinquish:
+            //       SetFontInfoForSelection(kFontSelectionATSUIType,
+            //              0, NULL, NULL);
+            //      break;
 
         case kEventWindowFocusAcquired:
-            //              err = SetFontInfoForSelection(kFontSelectionATSUIType, 0, NULL,
-            //               GetWindowEventTarget(EventWindow));
-            MySetFontSelection(EventWindow);
+            MySetFontSelection();
             break;
 
         default:
@@ -1266,6 +1297,8 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
     TXNControlData tabdata;
     TXNBackground RBGInfo;
     TXNTypeAttributes typeAttr;
+    SInt16 fontID;
+    Str255 fontname;
 
     frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask | kTXNDrawGrowIconMask;
     frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNReadOnlyMask;
@@ -1324,7 +1357,16 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
     typeAttr.size = kTXNFontSizeAttributeSize;
     typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
 
-    TXNSetTypeAttributes(RHelpObject, 1, &typeAttr, 0, 100000);
+    TXNSetTypeAttributes(RHelpObject, 1, &typeAttr, 0, kTXNEndOffset);
+
+    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    GetFNum(fontname, &fontID);
+
+    typeAttr.tag = kTXNQDFontFamilyIDAttribute;
+    typeAttr.size = kTXNQDFontFamilyIDAttributeSize;
+    typeAttr.data.dataValue = fontID;
+
+    TXNSetTypeAttributes(RHelpObject, 1, &typeAttr, 0, kTXNEndOffset);
 
     if (err != noErr)
         goto fail;
@@ -2162,6 +2204,7 @@ static pascal OSStatus PrefsTabEventHandlerProc(EventHandlerCallRef inCallRef, E
     WindowRef theWindow = (WindowRef)inUserData; // get the windowRef, passed around as userData
     short controlValue = 0;
     int qq;
+
     //  Get the new value of the tab control now that the user has picked it
     controlValue = GetControlValue(GrabCRef(theWindow, kTabMasterSig, kTabMasterID));
     // same as last ?
@@ -2225,6 +2268,9 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
     ControlFontStyleRec controlStyle;
     ControlRef myControl;
 
+    if (FPIsFontPanelVisible())
+        return (eventNotHandledErr);
+
     // Find out which button was clicked, and what it's ID is
     GetEventParameter(inEvent, kEventParamDirectObject, typeControlRef, NULL, sizeof(ControlRef), NULL, &theCont);
     GetControlID(theCont, &theID);
@@ -2238,6 +2284,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
         RSetColors();
         RSetTab();
         RSetFontSize();
+        RSetFont();
         break;
 
     case kCancelPrefsButton:
@@ -2251,6 +2298,7 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
         RSetColors();
         RSetTab();
         RSetFontSize();
+        RSetFont();
         SaveRPrefs();
         HideWindow(theWindow);
         break;
@@ -2325,40 +2373,35 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
 
 void CallFontPanel(void)
 {
-
+    DeactivatePrefsWindow();
+    MySetFontSelection();
     fprintf(stderr, "\n console font=%d", FPShowHideFontPanel());
 }
 
-OSStatus MySetFontSelection(WindowRef thisWindow)
+OSStatus MySetFontSelection(void)
 {
     OSStatus status = noErr;
-    ATSUStyle myStyle; // 1
-    ATSUAttributeTag myTags[2];
-    ByteCount mySizes[2];
-    ATSUAttributeValuePtr myValues[2];
-    ATSUFontID theFontID;
-    Fixed theFontSize;
-    HIObjectRef myHIObjectTarget; // 2
+    FontSelectionQDStyle qdInfo;
+    FMFontFamilyInstance fontFamilyInstance;
+    Str255 fontname;
+    SInt16 fontID;
 
-    status = ATSUCreateStyle(&myStyle); // 3
-    verify_noerr(ATSUFindFontFromName("Times Roman", strlen("Times Roman"), kFontFullName, kFontNoPlatform,
-                                      kFontNoScript, kFontNoLanguage,
-                                      &theFontID)); // 4
+    CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+    GetFNum(fontname, &fontID);
 
-    myTags[0] = kATSUFontTag; // 5
-    mySizes[0] = sizeof(theFontID);
-    myValues[0] = &theFontID;
+    fontFamilyInstance.fontStyle = 0;
+    fontFamilyInstance.fontFamily = fontID;
+    fprintf(stderr, "\n curr font=%s, id=%d", CurrentPrefs.ConsoleFontName, fontID);
+    instance.fontStyle = fontFamilyInstance.fontStyle;
+    instance.fontFamily = fontFamilyInstance.fontFamily;
 
-    theFontSize = Long2Fix(36); // 6
-    myTags[1] = kATSUSizeTag;
-    mySizes[1] = sizeof(theFontSize);
-    myValues[1] = &theFontSize;
+    qdInfo.version = kFontSelectionQDStyleVersionZero;
+    qdInfo.instance = fontFamilyInstance;
+    qdInfo.size = Long2Fix(CurrentPrefs.ConsoleFontSize);
+    qdInfo.hasColor = false;
 
-    verify_noerr(ATSUSetAttributes(myStyle, 2, myTags, mySizes, myValues)); // 7
-    myHIObjectTarget = (HIObjectRef)GetWindowEventTarget(thisWindow);       // 8
-    SetFontInfoForSelection(kFontSelectionATSUIType, 1, &myStyle,
-                            myHIObjectTarget); // 9
-    status = ATSUDisposeStyle(myStyle);        // 10
+    status = SetFontInfoForSelection(kFontSelectionQDType, 1, &qdInfo, NULL);
+
     return status;
 }
 
@@ -2375,14 +2418,10 @@ OSStatus MyGetFontSelection(EventRef event)
                                NULL, &(instance.fontFamily)); // 2
     check_noerr(status);                                      // 3
 
-    status = GetEventParameter(event, kEventParamFMFontStyle, typeFMFontStyle, NULL, sizeof(instance.fontStyle), NULL,
-                               &(instance.fontStyle)); // 4
-    check_noerr(status);
-
     status =
         GetEventParameter(event, kEventParamFMFontSize, typeFMFontSize, NULL, sizeof(fontSize), NULL, &fontSize); // 5
 
-    fprintf(stderr, "\n family=%d, style=%d, size=%d", instance.fontFamily, instance.fontStyle, fontSize);
+    fprintf(stderr, "\n family=%d, size=%d", instance.fontFamily, fontSize);
     check_noerr(status);
 
     return status;
@@ -2433,6 +2472,24 @@ void pickColor(RGBColor inColour, RGBColor *outColor)
 
     if (!GetColor(where, prompt, &inColour, outColor))
         *outColor = inColour;
+}
+
+void ActivatePrefsWindow(void)
+{
+    ActivateControl(GrabCRef(RPrefsWindow, kTabMasterSig, kTabMasterID));
+    ActivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kApplyPrefsButton));
+    ActivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kCancelPrefsButton));
+    ActivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kDefaultPrefsButton));
+    ActivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kSavePrefsButton));
+}
+
+void DeactivatePrefsWindow(void)
+{
+    DeactivateControl(GrabCRef(RPrefsWindow, kTabMasterSig, kTabMasterID));
+    DeactivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kApplyPrefsButton));
+    DeactivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kCancelPrefsButton));
+    DeactivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kDefaultPrefsButton));
+    DeactivateControl(GrabCRef(RPrefsWindow, kPrefControlsSig, kSavePrefsButton));
 }
 
 #endif /* HAVE_AQUA */
