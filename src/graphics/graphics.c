@@ -2708,9 +2708,9 @@ void GLine(double x1, double y1, double x2, double y2, int coords, DevDesc *dd)
 
     int lineStart, lineEnd;
 
+    GClip(dd);
     if (dd->dp.canClip)
     {
-        GClip(dd);
         dd->dp.line(x1, y1, x2, y2, coords, dd);
     }
     else if (CSclipline(&x1, &y1, &x2, &y2, &lineStart, &lineEnd, coords, dd))
@@ -2774,8 +2774,12 @@ void GPolygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *
     /*  If device can't clip we should use something */
     /*  like Sutherland-Hodgman here */
 
+#ifdef OLD
     if (dd->dp.canClip)
         GClip(dd);
+#else
+    GClip(dd);
+#endif
     dd->dp.polygon(n, x, y, coords, bg, fg, dd);
 }
 
@@ -2783,9 +2787,9 @@ void GPolyline(int n, double *x, double *y, int coords, DevDesc *dd)
 {
     /*  Draw a series of line segments */
 
+    GClip(dd);
     if (dd->dp.canClip)
     {
-        GClip(dd);
         dd->dp.polyline(n, x, y, coords, dd);
     }
     else
@@ -2828,9 +2832,9 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
 
     if (str && *str)
     {
+        GClip(dd);
         if (dd->dp.canClip)
         {
-            GClip(dd);
             dd->dp.text(x, y, coords, str, xc, yc, rot, dd);
         }
         else
