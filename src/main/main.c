@@ -433,7 +433,10 @@ void setup_Rmainloop(void)
         UNPROTECT(1);
     }
     /* gc_inhibit_torture = 0; */
+}
 
+void run_Rmainloop(void)
+{
     /* Here is the real R read-eval-loop. */
     /* We handle the console until end-of-file. */
 
@@ -441,10 +444,7 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
     signal(SIGINT, onintr);
-}
 
-void run_Rmainloop(void)
-{
     R_ReplConsole(R_GlobalEnv, 0, 0);
 }
 
