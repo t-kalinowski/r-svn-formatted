@@ -112,32 +112,35 @@ static void private_delmenu(menu m)
  *  Return -1 if not found, or a number from 0 to strlen(str)-1
  *  to indicate where the char is.
  */
+char *Rf_strchr(const char *s, int c); /* from util.c, MBCS-aware */
+
 static int find_char(int ch, char *str)
 {
-    int where;
-
-#ifdef SUPPORT_GUI_MBCS
-    for (where = 0; str[where] != '\0'; where++)
-    {
-        int mb_len = 0;
-        mbstate_t mb_st;
-
-        memset(&mb_st, 0, sizeof(mbstate_t));
-        mb_len = Rf_mbrtowc(NULL, str + where, MB_CUR_MAX, &mb_st);
-        if (mb_len > 1)
+    /*
+        int where;
+    #ifdef SUPPORT_GUI_MBCS
+        for (where=0; str[where] != '\0'; where++)
         {
-            where += mb_len - 1;
-            continue;
+            int mb_len = 0;
+            mbstate_t mb_st;
+
+            memset(&mb_st, 0, sizeof(mbstate_t));
+            mb_len = Rf_mbrtowc(NULL, str+where, MB_CUR_MAX, &mb_st);
+            if (mb_len > 1) {where += mb_len - 1; continue;}
+            if (str[where] == ch) return where;
         }
-        if (str[where] == ch)
-            return where;
-    }
-#else
-    for (where = 0; str[where] != '\0'; where++)
-        if (str[where] == ch)
-            return where;
-#endif
-    return -1;
+    #else
+        for (where=0; str[where] != '\0'; where++)
+            if (str[where] == ch) return where;
+    #endif
+        return -1;
+    */
+    char *p;
+    p = Rf_strchr(str, ch);
+    if (!p)
+        return -1;
+    else
+        return p - str;
 }
 
 /*

@@ -1282,6 +1282,16 @@ Rboolean mbcsValid(char *str)
 void mbcsToLatin1(char *in, char *out)
 {
 }
+#undef Rf_strchr
+char *Rf_strchr(const char *s, int c)
+{
+    return strchr(s, c);
+}
+#undef Rf_strrchr
+char *Rf_strrchr(const char *s, int c)
+{
+    return strrchr(s, c);
+}
 #endif
 
 #ifdef Win32
