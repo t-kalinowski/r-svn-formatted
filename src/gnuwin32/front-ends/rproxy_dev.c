@@ -17,7 +17,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy_dev.c,v 1.4 2001/12/10 09:35:34 ripley Exp $
+ *  $Id: rproxy_dev.c,v 1.5 2001/12/21 06:55:37 ripley Exp $
  */
 
 // virtual device size
@@ -72,7 +72,9 @@ static void R_Proxy_Graphics_Polyline(int n, double *x, double *y, int col, doub
 static void R_Proxy_Graphics_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
                                   double lwd, NewDevDesc *dd);
 static void R_Proxy_Graphics_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
+#ifdef UNUSED
 static void R_Proxy_Graphics_Resize(NewDevDesc *dd);
+#endif
 static double R_Proxy_Graphics_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
 static void R_Proxy_Graphics_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma,
                                   int font, double cex, double ps, NewDevDesc *dd);
@@ -85,9 +87,6 @@ static void R_Proxy_Graphics_Circle(double pX, double pY, double pRad, int pCol,
 {
     if (__graphics_device)
     {
-        // convert coordinates here
-        double lTmp = 0.0;
-
         __graphics_device->vtbl->circle(__graphics_device, pX, pY, pRad, pFill, pCol, pLty, pLwd);
         return;
     }
@@ -200,7 +199,6 @@ static void R_Proxy_Graphics_Polygon(int pCount, double *pX, double *pY, int pCo
         double *lX = (double *)malloc(pCount * sizeof(double));
         double *lY = (double *)malloc(pCount * sizeof(double));
         int i = 0;
-        char x[1000];
 
         // could use memcpy() for speed
         for (i = 0; i < pCount; i++)
@@ -273,6 +271,8 @@ static void R_Proxy_Graphics_Size(double *left, double *right, double *bottom, d
     *bottom = pDD->bottom;
     *top = pDD->top;
 }
+
+#ifdef UNUSED
 static void R_Proxy_Graphics_Resize(NewDevDesc *pDD)
 {
     if (__graphics_device)
@@ -283,6 +283,8 @@ static void R_Proxy_Graphics_Resize(NewDevDesc *pDD)
 
     MessageBox(GetDesktopWindow(), "Resize()", "R_Proxy_Graphics", MB_OK);
 }
+#endif
+
 // 00-06-22 | baier | added font and size parameters
 static double R_Proxy_Graphics_StrWidth(char *pString, int pFont, double pCex, double pPs, NewDevDesc *pDD)
 {
