@@ -276,7 +276,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     /* Set a longjmp target which will catch any */
     /* explicit returns from the function body. */
 
-    if (setjmp(cntxt.cjmpbuf))
+    if (sigsetjmp(cntxt.cjmpbuf, 1))
     {
         tmp = R_ReturnedValue;
     }
@@ -417,7 +417,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
             do_browser(call, op, args, rho);
         }
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        if ((tmp = setjmp(cntxt.cjmpbuf)))
+        if ((tmp = sigsetjmp(cntxt.cjmpbuf, 1)))
         {
             if (tmp == CTXT_BREAK)
                 break; /* break */
@@ -507,7 +507,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
 
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        if ((cond = setjmp(cntxt.cjmpbuf)))
+        if ((cond = sigsetjmp(cntxt.cjmpbuf, 1)))
         {
             if (cond == CTXT_BREAK)
                 break; /* break */
@@ -551,7 +551,7 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
 
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-        if ((cond = setjmp(cntxt.cjmpbuf)))
+        if ((cond = sigsetjmp(cntxt.cjmpbuf, 1)))
         {
             if (cond == CTXT_BREAK)
                 break; /*break */
