@@ -1627,6 +1627,9 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
         {
             button = event.xbutton.button;
             selected_pane = event.xbutton.window;
+            for (i = 0; selected_pane != menupanes[i]; i++)
+                if (i >= 4)
+                    goto done;
             while (1)
             {
                 while (XCheckTypedEvent(iodisplay, ButtonPress, &event))
