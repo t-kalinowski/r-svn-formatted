@@ -21,6 +21,13 @@
 #ifndef __QUARTZ_DEVICE__
 #define __QUARTZ_DEVICE__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <Defn.h>
+#include <Graphics.h>
+#include <Rdevices.h>
+
 #if (defined(Macintosh) || defined(__APPLE_CC__))
 
 #ifdef Macintosh
@@ -31,16 +38,8 @@
 #ifdef __APPLE_CC__
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CoreFoundation.h>
-//#include <CoreGraphics/CoreGraphics.h>
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <Defn.h>
-#include <Graphics.h>
-#include <Rdevices.h>
 
 #ifdef Macintosh
 #include <CFBundle.h>
@@ -1052,7 +1051,12 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
 
     return;
 }
-
-#endif /* (defined(Macintosh) || defined(__APPLE_CC__)) */
+#else
+SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    warning("Quartz device not available on this platform\n");
+    return R_NilValue;
+}
+#endif /* !(defined(Macintosh) && !defined(__APPLE_CC__)) */
 
 #endif /* __QUARTZ_DEVICE__ */
