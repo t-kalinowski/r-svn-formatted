@@ -891,12 +891,8 @@ void RxmlMessage(int level, const char *format, ...)
         return;
 
     va_start(ap, format);
-#ifdef HAVE_VSNPRINTF
     vsnprintf(buf, MBUFSIZE, format, ap);
     buf[MBUFSIZE - 1] = '\0';
-#else
-    vsprintf(buf, format, ap);
-#endif
     va_end(ap);
     p = buf + strlen(buf) - 1;
     if (strlen(buf) > 0 && *p == '\n')

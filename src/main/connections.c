@@ -128,7 +128,6 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
     char buf[BUFSIZE], *b = buf, *vmax = vmaxget();
     int res, usedRalloc = FALSE;
 
-#ifdef HAVE_VSNPRINTF
     res = vsnprintf(buf, BUFSIZE, format, ap);
     if (res >= BUFSIZE)
     { /* res is the desired output length */
@@ -149,12 +148,6 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
         }
     }
     con->write(b, 1, res, con);
-#else
-    /* allocate a large buffer and hope */
-    b = R_alloc(10 * BUFSIZE, sizeof(char));
-    res = vsprintf(b, format, ap);
-    con->write(b, 1, res, con);
-#endif
     if (usedRalloc)
         vmaxset(vmax);
     return res;
@@ -1260,7 +1253,6 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
     p = b + already;
     buffree = BUFSIZE - already;
 
-#ifdef HAVE_VSNPRINTF
     res = vsnprintf(p, buffree, format, ap);
     if (res >= buffree)
     { /* res is the desired output length */
@@ -1283,13 +1275,6 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
             warning("printing of extremely long output is truncated");
         }
     }
-#else
-    /* allocate a large buffer and hope */
-    b = R_alloc(10 * BUFSIZE, sizeof(char));
-    strcpy(b, this->lastline);
-    p = b + already;
-    res = vsprintf(p, format, ap);
-#endif
 
     /* copy buf line-by-line to object */
     for (p = buf;; p = q + 1)
