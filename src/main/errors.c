@@ -804,25 +804,25 @@ static struct
 {
     const R_WARNING code;
     const char *const format;
-} const ErrorDB[] = {{ERROR_NUMARGS, _("invalid number of arguments")},
-                     {ERROR_ARGTYPE, _("invalid argument type")},
+} const ErrorDB[] = {{ERROR_NUMARGS, "invalid number of arguments"},
+                     {ERROR_ARGTYPE, "invalid argument type"},
 
-                     {ERROR_TSVEC_MISMATCH, _("time-series/vector length mismatch")},
-                     {ERROR_INCOMPAT_ARGS, _("incompatible arguments")},
+                     {ERROR_TSVEC_MISMATCH, "time-series/vector length mismatch"},
+                     {ERROR_INCOMPAT_ARGS, "incompatible arguments"},
 
-                     {ERROR_UNIMPLEMENTED, _("unimplemented feature in %s")},
-                     {ERROR_UNKNOWN, _("unknown error (report this!)")}};
+                     {ERROR_UNIMPLEMENTED, "unimplemented feature in %s"},
+                     {ERROR_UNKNOWN, "unknown error (report this!)"}};
 
 static struct
 {
     R_WARNING code;
     char *format;
 } WarningDB[] = {
-    {WARNING_coerce_NA, _("NAs introduced by coercion")},
-    {WARNING_coerce_INACC, _("inaccurate integer conversion in coercion")},
-    {WARNING_coerce_IMAG, _("imaginary parts discarded in coercion")},
+    {WARNING_coerce_NA, "NAs introduced by coercion"},
+    {WARNING_coerce_INACC, "inaccurate integer conversion in coercion"},
+    {WARNING_coerce_IMAG, "imaginary parts discarded in coercion"},
 
-    {WARNING_UNKNOWN, _("unknown warning (report this!)")},
+    {WARNING_UNKNOWN, "unknown warning (report this!)"},
 };
 
 void ErrorMessage(SEXP call, int which_error, ...)

@@ -38,6 +38,13 @@
 #include <config.h>
 #endif
 
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) gettext(String)
+#else
+#define _(String) (String)
+#endif
+
 #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
 
 #ifdef Win32
@@ -410,9 +417,9 @@ void RxmlNanoHTTPScanProxy(const char *URL)
     proxyPort = 0;
     }*/
     if (URL == NULL)
-        RxmlMessage(0, "Removing HTTP proxy info");
+        RxmlMessage(0, _("Removing HTTP proxy info"));
     else
-        RxmlMessage(1, "Using HTTP proxy %s", URL);
+        RxmlMessage(1, _("Using HTTP proxy %s"), URL);
     if (URL == NULL)
         return;
     buf[indx] = 0;
@@ -1068,7 +1075,7 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
     h = gethostbyname(host);
     if (h == NULL)
     {
-        RxmlMessage(2, "unable to resolve '%s'.", host);
+        RxmlMessage(2, _("unable to resolve '%s'."), host);
         return (-1);
     }
 
@@ -1100,12 +1107,12 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
         s = RxmlNanoHTTPConnectAttempt(addr);
         if (s != -1)
         {
-            RxmlMessage(1, "connected to '%s' on port %d.", host, port);
+            RxmlMessage(1, _("connected to '%s' on port %d."), host, port);
             return (s);
         }
     }
 
-    RxmlMessage(2, "unable to connect to '%s' on port %d.", host, port);
+    RxmlMessage(2, _("unable to connect to '%s' on port %d."), host, port);
     return (-1);
 }
 
@@ -1392,7 +1399,7 @@ retry:
 
     if ((ctxt->location != NULL) && (ctxt->returnValue >= 300) && (ctxt->returnValue < 400))
     {
-        RxmlMessage(1, "Redirect to: %s", ctxt->location);
+        RxmlMessage(1, _("Redirect to: %s"), ctxt->location);
         while (RxmlNanoHTTPRecv(ctxt))
             ;
         if (nbRedirects < XML_NANO_HTTP_MAX_REDIR)
@@ -1403,7 +1410,7 @@ retry:
             goto retry;
         }
         RxmlNanoHTTPFreeCtxt(ctxt);
-        RxmlMessage(2, "Too many redirects, aborting ...");
+        RxmlMessage(2, _("Too many redirects, aborting ..."));
         return (NULL);
     }
 
