@@ -1882,11 +1882,13 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
 
     /* Special cases for plotting pch="." or pch=<character>
      */
+    if (pch == NA_INTEGER) /* do nothing */
+        ;
 #ifdef SUPPORT_MBCS
-    if (' ' <= pch && (mbcslocale || pch <= 255))
+    else if (' ' <= pch && (mbcslocale || pch <= 255))
     {
 #else
-    if (' ' <= pch && pch <= 255)
+    else if (' ' <= pch && pch <= 255)
     {
 #endif
         if (pch == '.')
