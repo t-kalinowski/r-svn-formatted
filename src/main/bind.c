@@ -632,6 +632,7 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (ans_flags != 4)
                 ErrorMessage(call, ERROR_INCOMPAT_ARGS);
+            t = CDR(args);
             while (t != R_NilValue)
             {
                 if (!factorsConform(CAR(args), CAR(t)))

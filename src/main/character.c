@@ -477,7 +477,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             if (s[offset] == '\0' || !global)
                 break;
         }
-        if (nmatch = 0)
+        if (nmatch == 0)
             STRING(ans)[i] = STRING(vec)[i];
         else
         {

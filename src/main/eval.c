@@ -1175,6 +1175,9 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
 
     j = length(class);
     sxp = R_NilValue;
+    /** Need to interleave looking for group and generic methods
+     * eg if class(x) is "foo" "bar" then x>3 should invoke "Ops.foo" rather
+     * than ">.bar"  **/
     for (whichclass = 0; whichclass < j; whichclass++)
     {
         sprintf(buf, "%s.%s", generic, CHAR(STRING(class)[whichclass]));
@@ -1185,19 +1188,15 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
             PROTECT(gr = mkString(""));
             break;
         }
-    }
-    if (!isFunction(sxp)) /* no specific method look for group */
-        for (whichclass = 0; whichclass < j; whichclass++)
+        sprintf(buf, "%s.%s", group, CHAR(STRING(class)[whichclass]));
+        meth = install(buf);
+        sxp = findVar(meth, rho);
+        if (isFunction(sxp))
         {
-            sprintf(buf, "%s.%s", group, CHAR(STRING(class)[whichclass]));
-            meth = install(buf);
-            sxp = findVar(meth, rho);
-            if (isFunction(sxp))
-            {
-                PROTECT(gr = mkString(group));
-                break;
-            }
+            PROTECT(gr = mkString(group));
+            break;
         }
+    }
     if (!isFunction(sxp)) /* no generic or group method so use default*/
         return 0;
 
