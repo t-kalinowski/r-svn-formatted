@@ -3233,3 +3233,13 @@ History:
          structure of old version,  but most details differ.)
 
 */
+
+char *strdup(const char *str)
+{
+    char *newstr;
+
+    newstr = (char *)malloc(strlen(str) + 1);
+    if (newstr)
+        strcpy(newstr, str);
+    return newstr;
+}
