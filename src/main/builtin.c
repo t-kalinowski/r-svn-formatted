@@ -21,10 +21,6 @@
 #include "Print.h"
 #include "Fileio.h"
 
-#ifdef HAVE_LIBREADLINE
-char *tilde_expand(char *);
-#endif
-
 SEXP do_delay(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP expr, env;
@@ -215,15 +211,9 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         savefp = R_Outputfile;
         if (append)
-#ifdef HAVE_LIBREADLINE
-            R_Outputfile = R_fopen(tilde_expand(CHAR(STRING(file)[0])), "a");
+            R_Outputfile = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "a");
         else
-            R_Outputfile = R_fopen(tilde_expand(CHAR(STRING(file)[0])), "w");
-#else
-            R_Outputfile = R_fopen(CHAR(STRING(file)[0]), "a");
-        else
-            R_Outputfile = R_fopen(CHAR(STRING(file)[0]), "w");
-#endif
+            R_Outputfile = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "w");
         if (!R_Outputfile)
         {
             R_Outputfile = savefp;
