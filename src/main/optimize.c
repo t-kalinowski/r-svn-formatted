@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2000  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *  Copyright (C) 1998--2002  Robert Gentleman, Ross Ihaka and the
+ *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -556,6 +556,8 @@ static void optcode(int code)
     Rprintf("\n");
 }
 
+/* NOTE: The actual Dennis-Schnabel algorithm `optif9' is in ../appl/uncmin.c */
+
 SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value, names, v, R_gradientSymbol, R_hessianSymbol;
@@ -566,6 +568,10 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     char *vmax;
 
+    /* .Internal(
+     *	nlm(function(x) f(x, ...), p, hessian, typsize, fscale,
+     *	    msg, ndigit, gradtol, stepmax, steptol, iterlim)
+     */
     function_info *state;
 
     checkArity(op, args);
@@ -583,31 +589,32 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(state->R_fcall = lang2(v, R_NilValue));
     args = CDR(args);
 
-    /* inital parameter value */
+    /* `p' : inital parameter value */
 
     n = 0;
     x = fixparam(CAR(args), &n, call);
     args = CDR(args);
 
-    /* hessian required? */
+    /* `hessian' : H. required? */
 
     want_hessian = asLogical(CAR(args));
     if (want_hessian == NA_LOGICAL)
         want_hessian = 0;
     args = CDR(args);
 
-    /* typical size of parameter elements */
+    /* `typsize' : typical size of parameter elements */
 
     typsiz = fixparam(CAR(args), &n, call);
     args = CDR(args);
 
-    /* expected function size */
+    /* `fscale' : expected function size */
 
     fscale = asReal(CAR(args));
     if (ISNA(fscale))
         invalid_na(call);
     args = CDR(args);
 
+    /* `msg' (bit pattern) */
     omsg = msg = asInteger(CAR(args));
     if (msg == NA_INTEGER)
         invalid_na(call);
@@ -633,6 +640,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
         invalid_na(call);
     args = CDR(args);
 
+    /* `iterlim' (def. 100) */
     itnlim = asInteger(CAR(args));
     if (itnlim == NA_INTEGER)
         invalid_na(call);
