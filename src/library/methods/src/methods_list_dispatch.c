@@ -115,11 +115,13 @@ static SEXP R_get_attr(SEXP obj, char *what)
     return (R_NilValue);
 }
 
+#ifdef UNUSED
 /* return a symbol containing mode (well, actually, typeof) obj */
 static SEXP R_mode(SEXP obj)
 {
     return type2symbol(TYPEOF(obj));
 }
+#endif
 
 /* the  SEXP for the data.class string (roughly, the green book class function) */
 
@@ -146,11 +148,13 @@ static SEXP R_element_named(SEXP obj, char *what)
         return VECTOR_ELT(obj, offset);
 }
 
+#ifdef UNUSED
 static SEXP R_insert_element(SEXP mlist, char *what, SEXP object)
 {
     SEXP sym = install(what);
     return R_subassign3_dflt(R_NilValue, mlist, sym, object);
 }
+#endif
 
 /*  */
 static SEXP ov_mlists[50], ov_methods[50];
@@ -209,7 +213,7 @@ static SEXP R_find_method(SEXP mlist, char *class, SEXP fname)
 SEXP R_quick_method_check(SEXP args, SEXP mlist)
 {
     /* Match the list of (evaluated) args to the methods list. */
-    SEXP object, class_obj, methods, value;
+    SEXP object, methods, value;
     char *class;
     if (!mlist)
         return R_NilValue;
@@ -579,10 +583,10 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
         {
             /* call the S language code to do a search with inheritance */
             SEXP value;
-            SEXP deflt, prev_fun, op;
-            int prim_case, firstCall;
+            SEXP deflt, prev_fun = R_NilValue, op = R_NilValue;
+            Rboolean prim_case, firstCall;
             value = getOverride(mlist);
-            firstCall = value == R_NilValue;
+            firstCall = (value == R_NilValue);
             prim_case = FALSE;
             /* Avoid recursive loop in searching for a method.
                Two cases:  the original function is a primitive (and
@@ -599,7 +603,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                     PROTECT(prev_fun = do_set_prim_method(deflt, "clear", NULL, NULL));
                     nprotect++;
                     /* TO DO:  use context control to ensure the restores in
-                   case of an error */
+                       case of an error */
                 }
                 else
                 {
@@ -608,8 +612,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                                                */
                     setOverride(mlist, deflt);
                     /* call the S function, it returns a revised MethodsList
-                   object, and also stores the revised MethodsList in the
-                   methods metadata.
+                       object, and also stores the revised MethodsList in the
+                       methods metadata.
                     */
                     R_assign_to_method_metadata(fsym, get_skeleton(fsym, R_NilValue));
                 }
@@ -625,8 +629,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
                     {
                         R_assign_to_method_metadata(fsym, fdef);
                         R_clear_method_selection(); /* to be safe.
-                                     The S language code is supposed
-                                     to clear also. */
+                                           The S language code is supposed
+                                           to clear also. */
                     }
                 }
                 if (isNull(value))
@@ -664,8 +668,8 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
             if (prim_case)
                 call = nonstandard_primitive(prim_case, call, f, ev);
             else
-                /* the skeleton is almost surely a call to the same primitive, but we
-                   don't need to assume that. */
+                /* the skeleton is almost surely a call to the same primitive,
+                   but we don't need to assume that. */
                 SETCAR(call, f);
             PROTECT(call);
             nprotect++;
@@ -689,8 +693,8 @@ SEXP R_selectMethod(SEXP fname, SEXP ev, SEXP mlist)
 static SEXP do_dispatch(SEXP fname, SEXP ev, SEXP mlist, int firstTry, int evalArgs)
 {
     char *arg_name, *class;
-    SEXP arg_slot, arg_sym, arg, method, value, child;
-    int inherited, nprotect = 0;
+    SEXP arg_slot, arg_sym, arg, method, value = R_NilValue;
+    int nprotect = 0;
     PROTECT(arg_slot = R_get_attr(mlist, "argument"));
     nprotect++;
     if (arg_slot == R_NilValue)

@@ -986,8 +986,8 @@ SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
         /*    load_methods_package(); */
         ptr = R_get_standardGeneric_ptr();
         /* if(!ptr || ptr == dispatchNonGeneric)
-          error("Something went wrong:  the internal pointer for
-          standardGeneric was not set"); */
+           error("Something went wrong:  the internal pointer for
+           standardGeneric was not set"); */
     }
     checkArity(op, args);
 
@@ -1025,7 +1025,7 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
 
 SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
 {
-    int offset;
+    int offset = 0;
     prim_methods_t code;
     SEXP value;
     switch (code_string[0])
@@ -1088,10 +1088,9 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     }
     else if (fundef && !prim_generics[offset])
     {
-        SEXP env;
         R_PreserveObject(fundef);
         if (TYPEOF(fundef) != CLOSXP)
-            error("The formal definition of a primitive generic must be a  function object (got type %s)",
+            error("The formal definition of a primitive generic must be a function object (got type %s)",
                   type2str(TYPEOF(fundef)));
         prim_generics[offset] = fundef;
         if (mlist)
