@@ -970,6 +970,25 @@ static XFontStruct *RLoadFont(int face, int size)
             Rprintf("failure\n");
 #endif
     }
+    if (!tmp && size > 24)
+    {
+        /* final try, size 24 */
+        pixelsize = 24;
+        if (face == 4)
+            sprintf(buf, symbolname, 24);
+        else
+            sprintf(buf, fontname, weight[face & 1], slant[(face & 2) >> 1], 24);
+#ifdef DEBUG_X11
+        Rprintf("loading:\n%s\n", buf);
+#endif
+        tmp = XLoadQueryFont(display, buf);
+#ifdef DEBUG_X11
+        if (tmp)
+            Rprintf("success\n");
+        else
+            Rprintf("failure\n");
+#endif
+    }
 
     if (tmp)
     {
@@ -977,6 +996,8 @@ static XFontStruct *RLoadFont(int face, int size)
         f->face = face;
         f->size = size;
         f->font = tmp;
+        if (fabs((pixelsize - size) / (double)size) > 0.1)
+            warning("X11 used font size %d when %d was requested", pixelsize, size);
     }
     if (nfonts == MAXFONTS) /* make room in the font cache */
     {
@@ -988,6 +1009,7 @@ static XFontStruct *RLoadFont(int face, int size)
     }
     return tmp;
 }
+
 static int SetBaseFont(x11Desc *xd)
 {
     xd->fontface = xd->basefontface;
@@ -1003,19 +1025,27 @@ static int SetBaseFont(x11Desc *xd)
     }
     return 1;
 }
+
 static void SetFont(int face, int size, DevDesc *dd)
 {
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+    XFontStruct *tmp;
 
     if (face < 1 || face > 5)
         face = 1;
 
     if (!xd->usefixed && (size != xd->fontsize || face != xd->fontface))
     {
-        xd->font = RLoadFont(face, size);
-        xd->fontface = face;
-        xd->fontsize = size;
-        XSetFont(display, xd->wgc, xd->font->fid);
+        tmp = RLoadFont(face, size);
+        if (tmp)
+        {
+            xd->font = tmp;
+            xd->fontface = face;
+            xd->fontsize = size;
+            XSetFont(display, xd->wgc, xd->font->fid);
+        }
+        else
+            error("X11 font at size %d could not be loaded", size);
     }
 }
 #endif
