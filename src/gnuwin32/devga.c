@@ -272,7 +272,7 @@ static void SaveAsWin(DevDesc *dd, char *display)
     ndd->displayList = R_NilValue;
     GInit(&ndd->dp);
     if (GADeviceDriver(ndd, display, GConvertXUnits(1.0, NDC, INCHES, dd), GConvertYUnits(1.0, NDC, INCHES, dd),
-                       dd->gp.ps, 0, 1, White))
+                       dd->gp.ps, 0, 1, White, 1))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -1454,7 +1454,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     xd->col = dd->dp.col = xd->fg;
 
     xd->fgcolor = Black;
-    xd->bgcolor = xd->canvascolor = GArgb(canvascolor, 1.0);
+    xd->bgcolor = xd->canvascolor = GArgb(canvascolor, dd->gp.gamma);
     xd->outcolor = myGetSysColor(COLOR_APPWORKSPACE);
     xd->rescale_factor = 1.0;
     xd->fast = 1; /* Use `cosmetic pens' if available */
@@ -2218,7 +2218,7 @@ static void GA_Hold(DevDesc *dd)
 /********************************************************/
 
 Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, Rboolean recording,
-                        int resize, int canvas)
+                        int resize, int canvas, double gamma)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -2246,6 +2246,7 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
     xd->basefontsize = ps;
     dd->dp.font = 1;
     dd->dp.ps = ps;
+    dd->dp.gamma = dd->gp.gamma = gamma;
 
     /* Start the Device Driver and Hardcopy.  */
 
