@@ -1153,6 +1153,8 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
             return FALSE;
         DisplayOpened = TRUE;
         Rf_setX11Display(display, gamma_fac, colormodel, maxcube, TRUE);
+        if (xd->handleOwnEvents == FALSE)
+            addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
     }
     whitepixel = GetX11Pixel(255, 255, 255);
     blackpixel = GetX11Pixel(0, 0, 0);
@@ -1246,11 +1248,6 @@ Rboolean X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, doubl
     /* graphics call */
     xd->lty = -1;
     xd->lwd = -1;
-
-    if (xd->handleOwnEvents == FALSE)
-    {
-        addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
-    }
 
     numX11Devices++;
     return TRUE;
@@ -1531,6 +1528,7 @@ static void X11_Close(DevDesc *dd)
 #endif
         if (xd->handleOwnEvents == FALSE)
             removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
+
         XCloseDisplay(display);
         displayOpen = FALSE;
     }
