@@ -1,9 +1,14 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "Defn.h"
 
+#ifdef HAVE_GLIBC2
+#define _XOPEN_SOURCE /* so that we get strptime() */
 #include <time.h>
+#undef _XOPEN_SOURCE /* just to make sure */
+#endif
+
+#include "Defn.h"
 
 #ifndef HAVE_STRPTIME
 /* Substitute based on glibc code. */
@@ -23,10 +28,10 @@ static const time_t leapseconds[] = {78796800,  94694400,  126230400, 157766400,
 #endif
 
 /*
-   Adjust a struct tm to be a valid date-time.
-   Return 0 if valid, -1 if invalid and uncorrectable, or a positive
-   integer approximating the number of corrections needed.
-*/
+  Adjust a struct tm to be a valid date-time.
+  Return 0 if valid, -1 if invalid and uncorrectable, or a positive
+  integer approximating the number of corrections needed.
+  */
 static int validate_tm(struct tm *tm)
 {
     int tmp, res = 0;
