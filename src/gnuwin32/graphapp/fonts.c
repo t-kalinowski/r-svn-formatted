@@ -99,6 +99,11 @@ PROTECTED font new_font_object(HFONT hf)
     return (font)obj;
 }
 
+rect getSysFontSize()
+{
+    return SystemFont->rect;
+}
+
 /*
  *  Private font initialisation function.
  */
