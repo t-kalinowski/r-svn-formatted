@@ -375,7 +375,7 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
         pos = this->wpos;
         this->last_was_write = TRUE;
     }
-    if (where == NA_REAL)
+    if (ISNA(where))
         return pos;
 
     switch (origin)
@@ -1369,7 +1369,7 @@ static double clp_seek(Rconnection con, double where, int origin, int rw)
     Rclpconn this = con->private;
     int newpos, oldpos = this->pos;
 
-    if (where == NA_REAL)
+    if (ISNA(where))
         return oldpos;
 
     switch (origin)
