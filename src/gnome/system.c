@@ -133,10 +133,11 @@ void R_CleanUp(int saveact)
         {
             R_ClearerrConsole();
             R_FlushConsole();
-            dialog = gnome_message_box_new("Do you want to save your workspace image?\n\n\
-Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor choose Cancel to return to R.",
-                                           GNOME_MESSAGE_BOX_QUESTION, GNOME_STOCK_BUTTON_YES, GNOME_STOCK_BUTTON_NO,
-                                           GNOME_STOCK_BUTTON_CANCEL, NULL);
+            dialog =
+                gnome_message_box_new("Do you want to save your workspace image?\n\nChoose Yes to save an image and "
+                                      "exit, choose\nNo to exit without saving, or choose Cancel to\nreturn to R.",
+                                      GNOME_MESSAGE_BOX_QUESTION, GNOME_STOCK_BUTTON_YES, GNOME_STOCK_BUTTON_NO,
+                                      GNOME_STOCK_BUTTON_CANCEL, NULL);
 
             gnome_dialog_set_parent(GNOME_DIALOG(dialog), GTK_WINDOW(R_gtk_main_window));
             gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
