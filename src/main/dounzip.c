@@ -49,7 +49,7 @@ static int R_mkdir(char *path)
 #define BUF_SIZE 4096
 static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *nnames)
 {
-    int err = UNZ_OK, nameslen = LENGTH(names);
+    int err = UNZ_OK;
     FILE *fout;
     char outname[PATH_MAX], dirs[PATH_MAX], buf[BUF_SIZE], *p, *pp;
 
@@ -124,24 +124,17 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
             }
         }
         fclose(fout);
-        if (*nnames >= nameslen)
-        {
-            SEXP onames = names;
-            names = allocVector(STRSXP, 2 * nameslen);
-            UNPROTECT(1);
-            PROTECT(names);
-            copyVector(names, onames);
-        }
         SET_STRING_ELT(names, (*nnames)++, mkChar(outname));
     }
     unzCloseCurrentFile(uf);
     return err;
 }
 
-static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP names, int *nnames)
+static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP *pnames, int *nnames)
 {
     int i, err = UNZ_OK;
     unzFile uf;
+    SEXP names = *pnames;
 
     uf = unzOpen(zipname);
     if (!uf)
@@ -155,6 +148,14 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP na
             if (i > 0)
                 if ((err = unzGoToNextFile(uf)) != UNZ_OK)
                     break;
+            if (*nnames + 1 >= LENGTH(names))
+            {
+                SEXP onames = names;
+                names = allocVector(STRSXP, 2 * LENGTH(names));
+                UNPROTECT(1);
+                PROTECT(names);
+                copyVector(names, onames);
+            }
             if ((err = extract_one(uf, dest, NULL, names, nnames)) != UNZ_OK)
                 break;
 #ifdef Win32
@@ -175,6 +176,7 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP na
 #endif
         }
     }
+    *pnames = names;
     unzClose(uf);
     return err;
 }
@@ -214,8 +216,8 @@ SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     if (ntopics > 0)
         PROTECT(names = allocVector(STRSXP, ntopics));
     else
-        PROTECT(names = allocVector(STRSXP, 500));
-    rc = do_unzip(zipname, dest, ntopics, topics, names, &nnames);
+        PROTECT(names = allocVector(STRSXP, 5000));
+    rc = do_unzip(zipname, dest, ntopics, topics, &names, &nnames);
     if (rc != UNZ_OK)
         switch (rc)
         {
