@@ -2315,6 +2315,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
             REprintf("warning: nearest point already identified\n");
         else
         {
+            k++;
             LOGICAL(ind)[imin] = 1;
             xi = REAL(x)[imin];
             yi = REAL(y)[imin];
