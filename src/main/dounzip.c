@@ -23,7 +23,6 @@
 #include <config.h>
 #endif
 
-#if defined(Unix) || defined(Win32) || defined(Macintosh)
 #include "Defn.h"
 #include "unzip.h"
 #ifdef HAVE_SYS_STAT_H
@@ -121,12 +120,8 @@ static int extract_one(unzFile uf, char *dest, char *filename)
         if (strncmp("::", outname, 2) == 0)
             strcpy(outname, &outname[1]);
 #endif
-            /* Rprintf("extracting %s\n", outname); */
-#ifdef Macintosh
+        /* Rprintf("extracting %s\n", outname); */
         fout = R_fopen(outname, "wb");
-#else
-        fout = fopen(outname, "wb");
-#endif
         if (!fout)
         {
             unzCloseCurrentFile(uf);
@@ -391,7 +386,6 @@ Rconnection R_newunz(char *description, char *mode)
 #include <errno.h>
 #else
 extern int errno;
-
 #endif
 
 #if !defined(unix) && !defined(CASESENSITIVITYDEFAULT_YES) && !defined(CASESENSITIVITYDEFAULT_NO)
@@ -694,11 +688,7 @@ static unzFile unzOpen(const char *path)
 
     if (unz_copyright[0] != ' ')
         return NULL;
-#ifdef Macintosh
     fin = R_fopen(path, "rb");
-#else
-    fin = fopen(path, "rb");
-#endif
     if (fin == NULL)
         return NULL;
     central_pos = unzlocal_SearchCentralDir(fin);
@@ -1368,15 +1358,3 @@ static int unzCloseCurrentFile(unzFile file)
     s->pfile_in_zip_read = NULL;
     return err;
 }
-
-#else
-SEXP do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    errorcall(call, "not defined on this platform");
-}
-
-Rconnection R_newunz(char *description, char *mode)
-{
-    error("unz connections not defined on this platform");
-}
-#endif
