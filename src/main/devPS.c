@@ -39,10 +39,6 @@
 extern int errno;
 #endif
 
-#ifdef __MRC__
-extern char *R_fgets(char *buf, int i, FILE *fp);
-#endif
-
 #define INVALID_COL 0xff0a0b0c
 
 /* Define this to use hyphen except in -[0-9] */
@@ -227,11 +223,7 @@ static int MatchKey(char const *l, char const *k)
 static int KeyType(const char *const s)
 {
     int i;
-#ifdef __MRC__
-    if (*s == '\n' || *s == '\r')
-#else
     if (*s == '\n')
-#endif
         return Empty;
     for (i = 0; KeyWordDictionary[i].keyword; i++)
         if (MatchKey(s, KeyWordDictionary[i].keyword))
@@ -402,11 +394,7 @@ static int GetNextItem(FILE *fp, char *dest, int c, EncodingInputState *state)
         }
         if (!state->p || *state->p == '\n' || *state->p == '\0')
         {
-#ifdef __MRC__
-            state->p = R_fgets(state->buf, 1000, fp);
-#else
             state->p = fgets(state->buf, 1000, fp);
-#endif
         }
         /* check for incomplete encoding file */
         if (!state->p)
@@ -520,13 +508,8 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
         for (j = 0; j < 4; j++)
             metrics->CharInfo[ii].BBox[j] = 0;
     }
-#ifdef __MRC__
-    while (R_fgets(buf, BUFSIZE, fp))
-    {
-#else
     while (fgets(buf, BUFSIZE, fp))
     {
-#endif
         switch (KeyType(buf))
         {
 
