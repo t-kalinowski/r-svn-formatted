@@ -20,14 +20,15 @@
 #include <R.h>            /* vmaxget(), vmaxset() error */
 #include <R_ext/Applic.h> /* Fortran routines */
 #include "carray.h"
-
 #include "qr.h"
+#include "ts.h"
+#include "stats.h"
 
 static void assert(int bool)
 {
     if (!bool)
     {
-        error("assert failed in src/library/ts/src/carray.c");
+        error(_("assert failed in src/library/ts/src/carray.c"));
     }
 }
 
@@ -64,7 +65,7 @@ void qr_solve(Array x, Array y, Array coef)
     F77_CALL(dqrdc2)(VECTOR(xt), &n, &n, &p, &tol, &rank, qraux, pivot, work);
 
     if (rank != p)
-        error("Singular matrix in qr_solve\n");
+        error(_("Singular matrix in qr_solve"));
 
     yt = make_zero_matrix(NCOL(y), NROW(y));
     coeft = make_zero_matrix(NCOL(coef), NROW(coef));
@@ -105,7 +106,7 @@ double ldet(Array x)
     F77_CALL(dqrdc2)(VECTOR(xtmp), &n, &n, &p, &tol, &rank, qraux, pivot, work);
 
     if (rank != p)
-        error("Singular matrix in ldet\n");
+        error(_("Singular matrix in ldet"));
 
     for (i = 0, ll = 0.0; i < rank; i++)
     {

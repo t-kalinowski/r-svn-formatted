@@ -34,7 +34,7 @@
 static void assert(int bool)
 {
     if (!bool)
-        error("assert failed in src/library/ts/src/carray.c");
+        error(("assert failed in src/library/ts/src/carray.c"));
 }
 
 static Array init_array()

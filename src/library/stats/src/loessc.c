@@ -24,6 +24,12 @@
 
 #include <string.h>
 #include <R.h>
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) dgettext("stats", String)
+#else
+#define _(String) (String)
+#endif
 
 /* Forward declarations */
 static void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonparametric, Sint *drop_square,
@@ -194,7 +200,7 @@ void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonpara
     nvmax = max(200, N);
     nf = min(N, floor(N * (*span) + 1e-5));
     if (nf <= 0)
-        error("span is too small");
+        error(_("span is too small"));
     tau0 = ((*degree) > 1) ? ((D + 2) * (D + 1) * 0.5) : (D + 1);
     tau = tau0 - (*sum_drop_sqr);
     lv = 50 + (3 * D + 3) * nvmax + N + (tau0 + 2) * nf;
@@ -300,13 +306,13 @@ static void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, doubl
 }
 
 /* begin ehg's FORTRAN-callable C-codes */
+#define MSG(_m_)                                                                                                       \
+    msg = _(_m_);                                                                                                      \
+    break;
 
 void F77_SUB(ehg182)(int *i)
 {
     char *msg, msg2[50];
-#define MSG(_m_)                                                                                                       \
-    msg = _m_;                                                                                                         \
-    break;
 
     switch (*i)
     {

@@ -213,7 +213,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
         sax += asa * xsx;
     }
 
-    /*	W1 equals (1-W) claculated to avoid excessive rounding error
+    /*	W1 equals (1-W) calculated to avoid excessive rounding error
         for W very near 1 (a potential problem in very large samples) */
 
     ssassx = sqrt(ssa * ssx);

@@ -53,7 +53,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
        on these, but should still work this way.  LT */
     if (TYPEOF(sy) != REALSXP || TYPEOF(sZ) != REALSXP || TYPEOF(sa) != REALSXP || TYPEOF(sP) != REALSXP ||
         TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
-        error("invalid argument type");
+        error(_("invalid argument type"));
 
     anew = (double *)R_alloc(p, sizeof(double));
     M = (double *)R_alloc(p, sizeof(double));
@@ -160,7 +160,7 @@ SEXP KalmanSmooth(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh,
        on these, but should still work this way.  LT */
     if (TYPEOF(sy) != REALSXP || TYPEOF(sZ) != REALSXP || TYPEOF(sa) != REALSXP || TYPEOF(sP) != REALSXP ||
         TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
-        error("invalid argument type");
+        error(_("invalid argument type"));
 
     PROTECT(ssa = duplicate(sa));
     a = REAL(ssa);
@@ -363,7 +363,7 @@ SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP
        on these, but should still work this way.  LT */
     if (TYPEOF(sZ) != REALSXP || TYPEOF(sa0) != REALSXP || TYPEOF(sP0) != REALSXP || TYPEOF(sT) != REALSXP ||
         TYPEOF(sV) != REALSXP)
-        error("invalid argument type");
+        error(_("invalid argument type"));
 
     anew = (double *)R_alloc(p, sizeof(double));
     Pnew = (double *)R_alloc(p * p, sizeof(double));
@@ -422,7 +422,7 @@ static void partrans(int p, double *raw, double *new)
     double a, work[100];
 
     if (p > 100)
-        error("can only transform 100 pars in arima0");
+        error(_("can only transform 100 pars in arima0"));
 
     /* Step one: map (-Inf, Inf) to (-1, 1) via tanh
        The parameters are now the pacf phi_{kk} */
@@ -528,7 +528,7 @@ static void invpartrans(int p, double *phi, double *new)
     double a, work[100];
 
     if (p > 100)
-        error("can only transform 100 pars in arima0");
+        error(_("can only transform 100 pars in arima0"));
 
     for (j = 0; j < p; j++)
         work[j] = new[j] = phi[j];
