@@ -1,6 +1,8 @@
 #include "terminal-prefs.h"
 #include "terminal.h"
 
+/* FIXME: needs to be updated to work with the new preferences stuff */
+
 static void prefs_font_entry_changed(GtkWidget *widget, gpointer data)
 {
     GtkWidget *font_picker;

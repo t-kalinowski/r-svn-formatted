@@ -32,17 +32,19 @@
 
 #include "devGNOME.h"
 
+#include "../unix/Startup.h"
+
+#include "terminal.h"
+#include "gtkconsole.h"
+
+#include <gnome.h>
+
 /*-- necessary for some (older, i.e., ~ <= 1997) Linuxen:*/
 #ifdef linux
 #ifndef FD_SET
 #include <sys/time.h>
 #endif
 #endif
-
-#include "terminal.h"
-#include "gtkconsole.h"
-
-#include <gnome.h>
 
 /*--- Initialization Code ---*/
 
@@ -57,54 +59,30 @@
 int UsingReadline = 1;
 int SaveAction = SA_SAVEASK;
 int RestoreAction = SA_RESTORE;
-int LoadSiteFile = 1;
-int LoadInitFile = 1;
-int DebugInitFile = 0;
+int LoadSiteFile = True;
+int LoadInitFile = True;
+int DebugInitFile = False;
 
 /*
  *  1) FATAL MESSAGES AT STARTUP
  */
 
-void suicide_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
-    gtk_main_quit();
-}
-
 void R_Suicide(char *s)
 {
     GtkWidget *dialog;
-    GtkWidget *vbox;
-    GtkWidget *errortext;
-    GtkWidget *hbox;
-    GtkWidget *button;
+    gchar *message;
 
-    dialog = gtk_window_new(GTK_WINDOW_DIALOG);
+    /* Create the error message */
+    message = g_strdup_printf("R: Fatal error\n\n%s", s);
 
-    gtk_window_set_title(GTK_WINDOW(dialog), "R: Fatal error");
-    gtk_widget_set_usize(dialog, 300, 150);
-    gtk_container_border_width(GTK_CONTAINER(dialog), 5);
-    gtk_widget_realize(dialog);
+    dialog = gnome_message_box_new(message, GNOME_MESSAGE_BOX_ERROR, GNOME_STOCK_BUTTON_CLOSE, NULL);
 
-    vbox = gtk_vbox_new(FALSE, 10);
-    gtk_container_add(GTK_CONTAINER(dialog), vbox);
+    if (R_gtk_main_window != NULL)
+        gnome_dialog_set_parent(GNOME_DIALOG(dialog), GTK_WINDOW(R_gtk_main_window));
+    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+    gnome_dialog_set_default(GNOME_DIALOG(dialog), 0);
 
-    errortext = gtk_text_new(NULL, NULL);
-    gtk_text_insert(GTK_TEXT(errortext), NULL, NULL, NULL, s, strlen(s));
-    gtk_box_pack_start(GTK_BOX(vbox), errortext, TRUE, FALSE, 0);
-
-    hbox = gtk_hbox_new(FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, FALSE, 0);
-
-    button = gtk_button_new_with_label("OK");
-    gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 0);
-
-    gtk_widget_show_all(dialog);
-
-    gtk_signal_connect(GTK_OBJECT(dialog), "delete_event", GTK_SIGNAL_FUNC(suicide_delete_event), NULL);
-    gtk_signal_connect(GTK_OBJECT(dialog), "destroy", GTK_SIGNAL_FUNC(suicide_delete_event), NULL);
-    gtk_signal_connect(GTK_OBJECT(button), "clicked", GTK_SIGNAL_FUNC(suicide_delete_event), NULL);
-
-    gtk_main();
+    gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
 
     R_CleanUp(SA_SUICIDE);
 }
@@ -115,6 +93,7 @@ void R_Suicide(char *s)
 
 void R_Busy(int which)
 {
+    /* FIXME: determine if interface updates in here are feasible */
 }
 
 /*
@@ -150,58 +129,29 @@ void R_CleanUp(int saveact)
     {
         if (R_Interactive)
         {
-        qask:
             R_ClearerrConsole();
             R_FlushConsole();
-            if (R_gtk_gui_quit == TRUE)
-            {
-                dialog = gnome_message_box_new("Do you want to save your workspace image?\n\n\
+            dialog = gnome_message_box_new("Do you want to save your workspace image?\n\n\
 Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor choose Cancel to return to R.",
-                                               GNOME_MESSAGE_BOX_QUESTION, GNOME_STOCK_BUTTON_YES,
-                                               GNOME_STOCK_BUTTON_NO, GNOME_STOCK_BUTTON_CANCEL, NULL);
+                                           GNOME_MESSAGE_BOX_QUESTION, GNOME_STOCK_BUTTON_YES, GNOME_STOCK_BUTTON_NO,
+                                           GNOME_STOCK_BUTTON_CANCEL, NULL);
 
-                gnome_dialog_set_parent(GNOME_DIALOG(dialog), GTK_WINDOW(R_gtk_main_window));
-                gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
-                gnome_dialog_set_default(GNOME_DIALOG(dialog), 0);
+            gnome_dialog_set_parent(GNOME_DIALOG(dialog), GTK_WINDOW(R_gtk_main_window));
+            gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+            gnome_dialog_set_default(GNOME_DIALOG(dialog), 0);
 
-                which = gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
-                switch (which)
-                {
-                case 0:
-                    saveact = SA_SAVE;
-                    break;
-                case 1:
-                    saveact = SA_NOSAVE;
-                    break;
-                case 2:
-                    jump_to_toplevel();
-                    break;
-                default:
-                    goto qask;
-                }
-            }
-            else
+            which = gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
+            switch (which)
             {
-                R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
-                switch (buf[0])
-                {
-                case 'y':
-                case 'Y':
-                    saveact = SA_SAVE;
-                    break;
-
-                case 'n':
-                case 'N':
-                    saveact = SA_NOSAVE;
-                    break;
-
-                case 'c':
-                case 'C':
-                    jump_to_toplevel();
-                    break;
-                default:
-                    goto qask;
-                }
+            case 0:
+                saveact = SA_SAVE;
+                break;
+            case 1:
+                saveact = SA_NOSAVE;
+                break;
+            default:
+                jump_to_toplevel();
+                break;
             }
         }
         else
@@ -223,9 +173,6 @@ Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor cho
     default:
     }
 
-    /* close all the graphics devices */
-    KillAllDevices();
-
     /* unlink all the files we opened for editing */
     while (curfile != NULL)
     {
@@ -234,14 +181,15 @@ Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor cho
         curfile = g_list_next(curfile);
     }
 
+    /* close all the graphics devices */
+    KillAllDevices();
+
 #ifdef __FreeBSD__
     fpsetmask(~0);
 #endif
 
-#ifdef linux
-#ifdef HAVE___SETFPUCW
+#ifdef NEED___SETFPUCW
     __setfpucw(_FPU_DEFAULT);
-#endif
 #endif
 
     exit(0);
@@ -249,20 +197,26 @@ Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor cho
 
 void R_ShowMessage(char *s)
 {
-    fprintf(stderr, s);
-}
+    GtkWidget *dialog;
 
-#include "../unix/Startup.h"
+    dialog = gnome_message_box_new(s, GNOME_MESSAGE_BOX_INFO, GNOME_STOCK_BUTTON_OK, NULL);
+
+    if (R_gtk_main_window != NULL)
+        gnome_dialog_set_parent(GNOME_DIALOG(dialog), GTK_WINDOW(R_gtk_main_window));
+    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+    gnome_dialog_set_default(GNOME_DIALOG(dialog), 0);
+
+    gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
+}
 
 /*--- Initialization Code ---*/
 
-static const struct poptOption popt_options[] = {
-    /*  { "no-environ", '\0', POPT_ARG_NONE, &arg_no_environ, 0, "", NULL }, */
-    {NULL, '\0', 0, NULL, 0, NULL, NULL}};
+static const struct poptOption popt_options[] = {{NULL, '\0', 0, NULL, 0, NULL, NULL}};
 
-void handle_args()
+void handle_gnome_args()
 {
     /* handle gnome-specific command line options */
+    /* from popt_options above */
 }
 
 void setStartTime(); /* in sys-unix.c */
@@ -282,32 +236,23 @@ int main(int ac, char **av)
     R_DefParams(Rp);
     R_SizeFromEnv(Rp);
     R_common_command_line(&ac, av, Rp);
-    R_SetParams(Rp);
 
     /* Initialise Gnome library and parse command line arguments */
     gnome_init_with_popt_table(
         "R.gnome", g_strdup_printf("%s.%s %s (%s %s, %s)", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR), ac, av,
         popt_options, 0, NULL);
 
-    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
-        R_HistoryFile = ".Rhistory";
-    R_HistorySize = 512;
-    if ((p = getenv("R_HISTSIZE")))
-    {
-        value = Decode2Long(p, &ierr);
-        if (ierr != 0 || value < 0)
-            fprintf(stderr, "WARNING: invalid R_HISTSIZE ignored;");
-        else
-            R_HistorySize = value;
-    }
-
     /* Load saved preferences */
     R_gnome_load_prefs();
 
     /* Act on previously parsed command line arguments */
-    handle_args();
+    handle_gnome_args();
 
-    R_Interactive = 1;
+    R_SetParams(Rp);
+
+    R_Interactive = isatty(0);
+    R_Consolefile = stdout;
+    R_Outputfile = stdout;
     R_Sinkfile = NULL;
     if ((R_Home = R_HomeDir()) == NULL)
     {
@@ -324,11 +269,21 @@ int main(int ac, char **av)
     fpsetmask(0);
 #endif
 
-#ifdef linux
-#ifdef HAVE___SETFPUCW
+#ifdef NEED___SETFPUCW
     __setfpucw(_FPU_IEEE);
 #endif
-#endif
+
+    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
+        R_HistoryFile = ".Rhistory";
+    R_HistorySize = 512;
+    if ((p = getenv("R_HISTSIZE")))
+    {
+        value = Decode2Long(p, &ierr);
+        if (ierr != 0 || value < 0)
+            fprintf(stderr, "WARNING: invalid R_HISTSIZE ignored;");
+        else
+            R_HistorySize = value;
+    }
 
     /* create console */
     R_gtk_terminal_new();
