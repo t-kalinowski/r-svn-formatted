@@ -184,7 +184,7 @@ static void X11_Polyline(int, double *, double *, int, DevDesc *);
 static void X11_Rect(double, double, double, double, int, int, int, DevDesc *);
 static void X11_Resize(DevDesc *);
 static double X11_StrWidth(char *, DevDesc *);
-static void X11_Text(double, double, int, char *, double, DevDesc *);
+static void X11_Text(double, double, int, char *, double, double, DevDesc *);
 static void X11_MetricInfo(int, double *, double *, double *, DevDesc *);
 
 /*************************************************/
@@ -1668,7 +1668,7 @@ static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
 /* location to DEVICE coordinates using GConvert	*/
 /********************************************************/
 
-static void X11_Text(double x, double y, int coords, char *str, double rot, DevDesc *dd)
+static void X11_Text(double x, double y, int coords, char *str, double rot, double hadj, DevDesc *dd)
 {
     int len, size;
     /*    double xl, yl, rot1;*/
@@ -1893,6 +1893,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     dd->dp.canRotateText = 1;
     dd->dp.canResizeText = 1;
     dd->dp.canClip = 1;
+    dd->dp.canHAdj = 0;
 
     /* initialise x11 device description (most of the work */
     /* has been done in X11_Open) */
