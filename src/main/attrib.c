@@ -263,6 +263,8 @@ SEXP tspgets(SEXP vec, SEXP val)
     if (frequency <= 0)
         badtsp();
     n = nrows(vec);
+    if (n == 0)
+        error("cannot assign `tsp' to zero-length vector");
     if (fabs(end - start - (n - 1) / frequency) > 1.e-5)
         badtsp();
 
