@@ -687,7 +687,7 @@ Rboolean is_missing_arg(SEXP arg, SEXP symbol, SEXP ev)
     if (arg == NULL)
     {
         arg = findVarInFrame(ev, symbol);
-        if (arg == R_NilValue)
+        if (arg == R_UnboundValue)
             error("Couldn't find variable needed for dispatch: \"%s\"", CHAR_STAR(symbol));
     }
     if (arg == R_MissingArg)
