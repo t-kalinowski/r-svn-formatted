@@ -638,18 +638,21 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     RgnHandle CursorRgn;
     NewDevDesc *dd;
     QuartzDesc *xd = NULL;
+    WindowRef EventWindow;
 
     switch (GetEventClass(inEvent))
     {
     case kEventClassWindow:
         GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
+        GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL,
+                          &EventWindow);
         if ((eventKind == kEventWindowBoundsChanged) && (RWinCode != 9))
         {
-            if (GetUserFocusWindow() == ConsoleWindow)
+            if (EventWindow == ConsoleWindow)
                 RescaleInOut(0.8);
             else
             {
-                err = GetWindowProperty(GetUserFocusWindow(), kRAppSignature, 1, sizeof(int), devsize, &devnum);
+                err = GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum);
                 if (err == noErr)
                 {
                     dd = ((GEDevDesc *)GetDevice(devnum))->dev;
