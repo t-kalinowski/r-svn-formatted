@@ -129,7 +129,10 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
     nv = LENGTH(v);
     ng = LENGTH(gm);
     if (nh <= 0 || ns <= 0 || nv <= 0 || ng <= 0)
-        errorcall(call, "invalid argument length");
+    {
+        UNPROTECT(4);
+        return (allocVector(STRSXP, 0));
+    }
     max = nh;
     if (max < ns)
         max = ns;
@@ -137,8 +140,10 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
         max = nv;
     if (max < ng)
         max = ng;
-
     PROTECT(c = allocVector(STRSXP, max));
+    if (max == 0)
+        return (c);
+
     for (i = 0; i < max; i++)
     {
         hh = REAL(h)[i % nh];
@@ -187,19 +192,23 @@ SEXP do_rgb(SEXP call, SEXP op, SEXP args, SEXP env)
         args = CDR(args);
         max_1 = (mV == 1.);
     }
-    PROTECT(nam = coerceVector(CAR(args), STRSXP));
-    args = CDR(args);
 
     nr = LENGTH(r);
     ng = LENGTH(g);
     nb = LENGTH(b);
     if (nr <= 0 || ng <= 0 || nb <= 0)
-        errorcall(call, "invalid argument length");
+    {
+        UNPROTECT(3);
+        return (allocVector(STRSXP, 0));
+    }
     l_max = nr;
     if (l_max < ng)
         l_max = ng;
     if (l_max < nb)
         l_max = nb;
+
+    PROTECT(nam = coerceVector(CAR(args), STRSXP));
+    args = CDR(args);
     if (length(nam) != 0 && length(nam) != l_max)
         errorcall(call, "invalid names vector");
     PROTECT(c = allocVector(STRSXP, l_max));
