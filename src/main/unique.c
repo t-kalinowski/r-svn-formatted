@@ -860,7 +860,6 @@ SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
 {
     SEXP matches, ans;
     int i, j, n, p, ng = 0, offset, offsetg;
-    double *xptr;
 
     n = LENGTH(g);
     p = INTEGER(ncol)[0];
@@ -918,7 +917,6 @@ SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
 {
     SEXP matches, ans, col, xcol;
     int i, j, n, p, ng = 0, offset, offsetg;
-    double *xptr;
 
     n = LENGTH(g);
     p = INTEGER(ncol)[0];
