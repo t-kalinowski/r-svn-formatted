@@ -2528,6 +2528,7 @@ typedef struct
     char filename[PATH_MAX];
 
     int pageno; /* page number */
+    int fileno; /* file number */
 
     int fontfamily;         /* font family */
     char encpath[PATH_MAX]; /* font encoding */
@@ -2662,7 +2663,7 @@ static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, c
 
     pd->onefile = onefile;
     pd->maxpointsize = 72.0 * ((height > width) ? height : width);
-    pd->pageno = 0;
+    pd->pageno = pd->fileno = 0;
     /* Base Pointsize */
     /* Nominal Character Sizes in Pixels */
     /* Only right for 12 point font. */
@@ -2968,7 +2969,7 @@ static Rboolean PDF_Open(NewDevDesc *dd, PDFDesc *pd)
 
     /* NB: this must be binary to get tell positions and line endings right */
 
-    sprintf(buf, pd->filename, pd->pageno + 1); /* page 1 to start */
+    sprintf(buf, pd->filename, pd->fileno + 1); /* file 1 to start */
     pd->pdffp = R_fopen(R_ExpandFileName(buf), "wb");
     if (!pd->pdffp)
     {
@@ -3033,7 +3034,8 @@ static void PDF_NewPage(int fill, double gamma, NewDevDesc *dd)
         if (!pd->onefile)
         {
             PDF_endfile(pd);
-            sprintf(buf, pd->filename, pd->pageno + 1); /* page 1 to start */
+            pd->fileno++;
+            sprintf(buf, pd->filename, pd->fileno + 1); /* file 1 to start */
             pd->pdffp = R_fopen(R_ExpandFileName(buf), "wb");
             if (!pd->pdffp)
                 error("cannot open `pdf' file argument `%s'\n  please shut down the PDFdevice", buf);
