@@ -546,7 +546,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     ldy = length(ydims);
 
     if (ldx != 2 && ldy != 2)
-    {
+    { /* x and y non-matrices */
         if (PRIMVAL(op) == 0)
         {
             nrx = 1;
@@ -561,7 +561,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         ncy = 1;
     }
     else if (ldx != 2)
-    {
+    { /* x not a matrix */
         nry = INTEGER(ydims)[0];
         ncy = INTEGER(ydims)[1];
         nrx = 0;
@@ -582,14 +582,14 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (LENGTH(x) == nry)
-            {
+            { /* x is a row vector */
                 nrx = LENGTH(x);
                 ncx = 1;
             }
         }
     }
     else if (ldy != 2)
-    {
+    { /* y not a matrix */
         nrx = INTEGER(xdims)[0];
         ncx = INTEGER(xdims)[1];
         nry = 0;
@@ -610,14 +610,14 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (LENGTH(y) == nrx)
-            {
+            { /* y is a row vector */
                 nry = LENGTH(y);
                 ncy = 1;
             }
         }
     }
     else
-    { /* ldx == ldy == 2 */
+    { /* x and y matrices */
         nrx = INTEGER(xdims)[0];
         ncx = INTEGER(xdims)[1];
         nry = INTEGER(ydims)[0];
@@ -643,14 +643,17 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     SETCADR(args, coerceVector(CADR(args), mode));
 
     if (PRIMVAL(op) == 0)
-    {
+    { /* op == 0 : matprod() */
+
         PROTECT(ans = allocMatrix(mode, nrx, ncy));
         if (mode == CPLXSXP)
             cmatprod(COMPLEX(CAR(args)), nrx, ncx, COMPLEX(CADR(args)), nry, ncy, COMPLEX(ans));
         else
             matprod(REAL(CAR(args)), nrx, ncx, REAL(CADR(args)), nry, ncy, REAL(ans));
+
         PROTECT(xdims = getAttrib(CAR(args), R_DimNamesSymbol));
         PROTECT(ydims = getAttrib(CADR(args), R_DimNamesSymbol));
+
         if (xdims != R_NilValue || ydims != R_NilValue)
         {
             SEXP dimnames, dimnamesnames, dn;
@@ -688,8 +691,10 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
             UNPROTECT(2);
         }
     }
+
     else
     { /* op == 1: crossprod() */
+
         PROTECT(ans = allocMatrix(mode, ncx, ncy));
         if (mode == CPLXSXP)
             if (sym)
@@ -705,30 +710,53 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
                 crossprod(REAL(CAR(args)), nrx, ncx, REAL(CADR(args)), nry, ncy, REAL(ans));
         }
+
         PROTECT(xdims = getAttrib(CAR(args), R_DimNamesSymbol));
         if (sym)
             PROTECT(ydims = xdims);
         else
             PROTECT(ydims = getAttrib(CADR(args), R_DimNamesSymbol));
+
         if (xdims != R_NilValue || ydims != R_NilValue)
         {
             SEXP dimnames, dimnamesnames, dnx = R_NilValue, dny = R_NilValue;
+
+            /* allocate dimnames and dimnamesnames */
+
             PROTECT(dimnames = allocVector(VECSXP, 2));
             PROTECT(dimnamesnames = allocVector(STRSXP, 2));
+
+            /* There was a bug here.  The second element of a */
+            /* dimnames list was being accessed for a 1-d array. */
+            /* I have just excluded the use of dimnames in this */
+            /* case. - ihaka Sep 30, 2003. */
+
             if (xdims != R_NilValue)
             {
-                dnx = getAttrib(xdims, R_NamesSymbol);
-                SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(xdims, 1));
-                if (!isNull(dnx))
-                    SET_STRING_ELT(dimnamesnames, 0, STRING_ELT(dnx, 1));
+                if (ldx == 2)
+                {
+                    dnx = getAttrib(xdims, R_NamesSymbol);
+                    SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(xdims, 1));
+                    if (!isNull(dnx))
+                        SET_STRING_ELT(dimnamesnames, 0, STRING_ELT(dnx, 1));
+                }
             }
+
             if (ydims != R_NilValue)
             {
-                dny = getAttrib(ydims, R_NamesSymbol);
-                SET_VECTOR_ELT(dimnames, 1, VECTOR_ELT(ydims, 1));
-                if (!isNull(dny))
-                    SET_STRING_ELT(dimnamesnames, 1, STRING_ELT(dny, 1));
+                if (ldy == 2)
+                {
+                    dny = getAttrib(ydims, R_NamesSymbol);
+                    SET_VECTOR_ELT(dimnames, 1, VECTOR_ELT(ydims, 1));
+                    if (!isNull(dny))
+                        SET_STRING_ELT(dimnamesnames, 1, STRING_ELT(dny, 1));
+                }
             }
+
+            /* We sometimes attach a dimnames attribute */
+            /* whose elements are all NULL ... */
+            /* Thus is ugly but causes no real damage. */
+
             if (!isNull(dnx) || !isNull(dny))
                 setAttrib(dimnames, R_NamesSymbol, dimnamesnames);
             setAttrib(ans, R_DimNamesSymbol, dimnames);
