@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -296,7 +296,7 @@ void GetRNGstate()
             warning(".Random.seed was invalid: re-initializing");
             RNG_kind = RNG_DEFAULT;
             }*/
-        if (newN01 < 0 || newN01 > USER_NORM)
+        if (newN01 < 0 || newN01 > INVERSION)
             error(".Random.seed[0] is not a valid Normal type");
         switch (newRNG)
         {
@@ -342,7 +342,7 @@ void PutRNGstate()
     int len_seed, j;
     SEXP seeds;
 
-    if (RNG_kind < 0 || RNG_kind > KNUTH_TAOCP2 || N01_kind < 0 || N01_kind > USER_NORM)
+    if (RNG_kind < 0 || RNG_kind > KNUTH_TAOCP2 || N01_kind < 0 || N01_kind > INVERSION)
     {
         warning("Internal .Random.seed is corrupt: not saving");
         return;
@@ -390,7 +390,7 @@ static void Norm_kind(N01type kind)
 {
     if (kind == -1)
         kind = N01_DEFAULT;
-    if (kind < 0 || kind > USER_NORM)
+    if (kind < 0 || kind > INVERSION)
         error("invalid Normal type in RNGkind");
     if (kind == USER_NORM)
     {
