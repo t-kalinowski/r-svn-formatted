@@ -161,7 +161,7 @@ void R_AllocStringBuffer(int blen, DeparseBuffer *buf)
         if (!buf->data)
         {
             buf->bufsize = 0;
-            error(_("Could not allocate memory for Encodebuf"));
+            error(_("could not allocate memory in C function 'R_AllocStringBuffer'"));
         }
     }
     else
