@@ -351,7 +351,7 @@ static int GetKPX(char *buf, int nkp, FontMetricInfo *metrics)
 
 /* Load Fontmetrics from a File */
 
-int PostScriptLoadFontMetrics(char *fontname, FontMetricInfo *metrics)
+static int PostScriptLoadFontMetrics(char *fontname, FontMetricInfo *metrics)
 {
     char buf[BUFSIZE], *p;
     int mode, i = 0, ii, nKPX = 0;
@@ -454,7 +454,7 @@ error:
     return 0;
 }
 
-double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
+static double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
 {
     int sum = 0, i;
     unsigned char p1, p2;
@@ -478,7 +478,7 @@ double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
     return 0.001 * sum;
 }
 
-void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics)
+static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics)
 {
     if (c == 0)
     {
@@ -531,26 +531,22 @@ static void PSFileHeader(FILE *fp, int font, int encoding, char *papername, doub
         fprintf(fp, "%%!PS-Adobe-3.0 EPSF-3.0\n");
     else
         fprintf(fp, "%%!PS-Adobe-3.0\n");
-    fprintf(fp, "%%%%DocumentFonts: %s %s %s\n%%%%+ %s %s\n", Family[font].font[0].name, Family[font].font[1].name,
-            Family[font].font[2].name, Family[font].font[3].name, Family[font].font[4].name);
+    fprintf(fp, "%%%%DocumentNeededResources: font %s %s %s\n%%%%+ font %s %s\n", Family[font].font[0].name,
+            Family[font].font[1].name, Family[font].font[2].name, Family[font].font[3].name, Family[font].font[4].name);
     if (!EPSFheader)
-        fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 ()\n", papername, paperwidth, paperheight);
+        fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 () ()\n", papername, paperwidth, paperheight);
     fprintf(fp, "%%%%Title: R Graphics Output\n");
     fprintf(fp, "%%%%Creator: R Software\n");
     fprintf(fp, "%%%%Pages: (atend)\n");
     if (landscape)
     {
         fprintf(fp, "%%%%Orientation: Landscape\n");
-        fprintf(fp, "%%%%BoundingBox: %.0f %.0f %.0f %.0f\n", left, bottom, right, top);
-        /* This appears to be wrong, use *same* BBox as Portrait
-                bottom, left, top, right);
-        */
     }
     else
     {
         fprintf(fp, "%%%%Orientation: Portrait\n");
-        fprintf(fp, "%%%%BoundingBox: %.0f %.0f %.0f %.0f\n", left, bottom, right, top);
     }
+    fprintf(fp, "%%%%BoundingBox: %.0f %.0f %.0f %.0f\n", left, bottom, right, top);
     fprintf(fp, "%%%%EndComments\n");
     fprintf(fp, "%%%%BeginProlog\n");
     fprintf(fp, "/gs  { gsave } def\n");
@@ -591,7 +587,7 @@ static void PSFileHeader(FILE *fp, int font, int encoding, char *papername, doub
     fprintf(fp, "%%%%EndProlog\n");
 }
 
-void PostScriptFileTrailer(FILE *fp, int pageno)
+static void PostScriptFileTrailer(FILE *fp, int pageno)
 {
     fprintf(fp, "ep\n");
     fprintf(fp, "%%%%Trailer\n");
@@ -599,38 +595,33 @@ void PostScriptFileTrailer(FILE *fp, int pageno)
     fprintf(fp, "%%%%EOF\n");
 }
 
-void PostScriptStartPage(FILE *fp, int pageno)
+static void PostScriptStartPage(FILE *fp, int pageno)
 {
     fprintf(fp, "%%%%Page: %d %d\n", pageno, pageno);
     fprintf(fp, "bp\n");
 }
 
-void PostScriptEndPage(FILE *fp)
+static void PostScriptEndPage(FILE *fp)
 {
     fprintf(fp, "ep\n");
 }
 
-void PostScriptSetClipRect(FILE *fp, double x0, double x1, double y0, double y1)
+static void PostScriptSetClipRect(FILE *fp, double x0, double x1, double y0, double y1)
 {
     fprintf(fp, "%.2f %.2f %.2f %.2f cl\n", x0, y0, x1, y1);
 }
 
-void PostScriptSetLineWidth(FILE *fp, double linewidth)
+static void PostScriptSetLineWidth(FILE *fp, double linewidth)
 {
     fprintf(fp, "%.2f setlinewidth\n", linewidth);
 }
 
-void PostScriptSetFont(FILE *fp, int typeface, double size)
+static void PostScriptSetFont(FILE *fp, int typeface, double size)
 {
     fprintf(fp, "/ps %.0f def %s %.0f s\n", size, TypeFaceDef[typeface], size);
 }
 
-void PostScriptSetColor(FILE *fp, double r, double g, double b)
-{
-    fprintf(fp, "%.4f %.4f %.4f rgb\n", r, g, b);
-}
-
-void PostScriptSetLineTexture(FILE *fp, int *lty, int nlty, double lwd)
+static void PostScriptSetLineTexture(FILE *fp, int *lty, int nlty, double lwd)
 {
     double dash;
     int i;
@@ -645,32 +636,32 @@ void PostScriptSetLineTexture(FILE *fp, int *lty, int nlty, double lwd)
     fprintf(fp, "] 0 setdash\n");
 }
 
-void PostScriptMoveTo(FILE *fp, double x, double y)
+static void PostScriptMoveTo(FILE *fp, double x, double y)
 {
     fprintf(fp, "%.2f %.2f m\n", x, y);
 }
 
-void PostScriptLineTo(FILE *fp, double x, double y)
+static void PostScriptLineTo(FILE *fp, double x, double y)
 {
     fprintf(fp, "%.2f %.2f l\n", x, y);
 }
 
-void PostScriptStartPath(FILE *fp)
+static void PostScriptStartPath(FILE *fp)
 {
     fprintf(fp, "np\n");
 }
 
-void PostScriptEndPath(FILE *fp)
+static void PostScriptEndPath(FILE *fp)
 {
     fprintf(fp, "o\n");
 }
 
-void PostScriptRectangle(FILE *fp, double x0, double y0, double x1, double y1)
+static void PostScriptRectangle(FILE *fp, double x0, double y0, double x1, double y1)
 {
     fprintf(fp, "%.2f %.2f %.2f %.2f r ", x0, y0, x1, y1);
 }
 
-void PostScriptCircle(FILE *fp, double x, double y, double r)
+static void PostScriptCircle(FILE *fp, double x, double y, double r)
 {
     fprintf(fp, "%.2f %.2f %.2f c ", x, y, r);
 }
@@ -704,7 +695,7 @@ static void PostScriptWriteString(FILE *fp, char *str)
     fputc(')', fp);
 }
 
-void PostScriptText(FILE *fp, double x, double y, char *str, double xc, double yc, double rot)
+static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, double yc, double rot)
 {
     fprintf(fp, "%.2f %.2f ", x, y);
     PostScriptWriteString(fp, str);
