@@ -673,7 +673,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
             errorcall(call, "attributes must be named\n");
         for (i = 0; i < nattrs; i++)
         {
-            if (STRING(names)[i] == R_NilValue && CHAR(STRING(names)[i])[0] == '\0')
+            if (STRING(names)[i] == R_NilValue || CHAR(STRING(names)[i])[0] == '\0')
             {
                 error("all attributes must have names\n");
             }
@@ -682,7 +682,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         for (i = 0; i < nattrs; i++)
         {
-            if (strcmp(CHAR(STRING(attrs)[i]), "dim"))
+            if (strcmp(CHAR(STRING(names)[i]), "dim"))
                 setAttrib(object, install(CHAR(STRING(names)[i])), VECTOR(attrs)[i]);
         }
     }
