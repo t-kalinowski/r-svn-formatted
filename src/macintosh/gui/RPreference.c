@@ -198,6 +198,7 @@ unsigned char *StrToPStr(char *buf, SInt8 size)
 }
 
 extern char *mac_getenv(const char *name);
+Boolean Interrupt;
 
 /* ************************************************************************************************
 doGetPreferences :	This function will be called at the beginning when R application starts.
@@ -271,6 +272,11 @@ void doGetPreferences(void)
     tempComputerColour.red = gComputerColour.red = 0x0000;
     tempComputerColour.green = gComputerColour.green = 0x0000;
     tempComputerColour.blue = gComputerColour.blue = 0x0000;
+
+    if (strcmp(mac_getenv("Interrupt"), "TRUE") == 0)
+        Interrupt = true;
+    else
+        Interrupt = false;
 }
 
 int EightyWidth(void)
