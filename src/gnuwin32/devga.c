@@ -1531,6 +1531,8 @@ static void GA_Resize(DevDesc *dd)
             dd->dp.top = dd->gp.top = 0.0;
             dd->dp.right = dd->gp.right = iw;
             dd->dp.bottom = dd->gp.bottom = ih;
+            xd->showWidth = iw;
+            xd->showHeight = ih;
         }
         else if (xd->resizing == 2)
         {
