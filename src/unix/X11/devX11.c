@@ -113,9 +113,11 @@ typedef struct
     GC wgc;                          /* GC for window */
     Cursor gcursor;                  /* Graphics Cursor */
     XSetWindowAttributes attributes; /* Window attributes */
-    XColor fgcolor;                  /* Foreground color */
-    XColor bgcolor;                  /* Background color */
-    XRectangle clip;                 /* The clipping rectangle */
+#if 0
+    XColor fgcolor;			/* Foreground color */
+    XColor bgcolor;			/* Background color */
+#endif
+    XRectangle clip; /* The clipping rectangle */
 
     int usefixed;
     XFontStruct *fixedfont;
@@ -1408,6 +1410,8 @@ static void X11_NewPage(DevDesc *dd)
     {
         if (xd->npages++)
             error("attempt to draw second page on pixmap device");
+        SetColor(xd->bg, dd);
+        XFillRectangle(display, xd->window, xd->wgc, 0, 0, xd->windowWidth, xd->windowHeight);
         return;
     }
 
@@ -1463,10 +1467,11 @@ static unsigned long bitgp(XImage *xi, int x, int y)
             return ((xcol.red >> 8) << 16) | ((xcol.green >> 8) << 8) | (xcol.blue >> 8);
         }
     case TRUECOLOR:
-        r = (i && RMask) >> RShift * 255 / RMask;
-        g = (i && GMask) >> GShift * 255 / GMask;
-        b = (i && BMask) >> BShift * 255 / BMask;
-        return r << 16 | g << 8 | b;
+        r = ((i >> RShift) & RMask) * 255 / (RMask);
+        g = ((i >> GShift) & GMask) * 255 / (GMask);
+        b = ((i >> BShift) & BMask) * 255 / (BMask);
+        //	    Rprintf("i %x rgb %x %x %x ", i, r,g,b);
+        return (r << 16) | (g << 8) | b;
     default:
         return 0;
     }
@@ -1637,6 +1642,8 @@ static void X11_Rect(double x0, double y0, double x1, double y1, int coords, int
     }
     if (bg != NA_INTEGER)
     {
+        SetColor(bg, dd);
+        XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
         SetColor(bg, dd);
         XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
     }
