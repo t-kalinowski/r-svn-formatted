@@ -1733,6 +1733,8 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
         sprintf(buf, "%s.%s", group, CHAR(STRING_ELT(class, whichclass)));
         *meth = install(buf);
         *sxp = findVar(*meth, rho);
+        if (TYPEOF(*sxp) == PROMSXP)
+            *sxp = eval(*sxp, rho);
         if (isFunction(*sxp))
         {
             *gr = mkString(group);
