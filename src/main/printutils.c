@@ -277,20 +277,12 @@ int Rstrlen(SEXP s, int quote)
             switch (*p)
             {
             case '\\':
-#ifdef ESCquote
+                len += 2;
+                break;
             case '\'':
-#endif
-                len += 2;
+            case '"':
+                len += (quote == *p) ? 2 : 1;
                 break;
-#ifdef ESC_BARE_QUOTE
-            case '\"':
-                len += 2;
-                break;
-#else
-            case '\"':
-                len += quote ? 2 : 1;
-                break;
-#endif
             default:
                 len += 1;
                 break;
@@ -365,23 +357,12 @@ char *EncodeString(SEXP s, int w, int quote, int right)
                 *q++ = '\\';
                 *q++ = '\\';
                 break;
-#ifdef ESCquote
             case '\'':
-                *q++ = '\\';
-                *q++ = '\'';
-                break;
-#endif
-#ifdef ESC_BARE_QUOTE
-            case '\"':
-                *q++ = '\"';
-                break;
-#else
-            case '\"':
-                if (quote)
+            case '"':
+                if (quote == *p)
                     *q++ = '\\';
-                *q++ = '\"';
+                *q++ = *p;
                 break;
-#endif
             default:
                 *q++ = *p;
                 break;
