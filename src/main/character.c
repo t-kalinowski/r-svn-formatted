@@ -231,12 +231,12 @@ SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     return s;
 }
 
-/* strsplit is going to split the strings in the first argument into */
-/* tokens depending on the second argument. The characters of the second */
-/* argument are used to split the first argument.  A list of vectors is */
-/* returned of length equal to the input vector x, each element of the */
-/* list is the collection of splits for the corresponding element of x. */
-
+/* strsplit is going to split the strings in the first argument into
+ * tokens depending on the second argument. The characters of the second
+ * argument are used to split the first argument.  A list of vectors is
+ * returned of length equal to the input vector x, each element of the
+ * list is the collection of splits for the corresponding element of x.
+ */
 SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tok, x;
