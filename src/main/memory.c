@@ -169,7 +169,7 @@ void R_SetMaxVSize(int size)
 {
     if (size == INT_MAX)
         return;
-    if (size >= R_VSize * vsfac)
+    if (size / vsfac >= R_VSize)
         R_MaxVSize = (size + 1) / sizeof(VECREC);
 }
 
@@ -707,8 +707,8 @@ static void AdjustHeapSize(int size_needed)
             R_NSize = orig_R_NSize;
     }
 
-    if (vect_occup > 1.0)
-        R_VSize = (VNeeded < R_MaxVSize) ? VNeeded : R_MaxVSize;
+    if (vect_occup > 1.0 && VNeeded < R_MaxVSize)
+        R_VSize = VNeeded;
     if (vect_occup > R_VGrowFrac)
     {
         int change = R_VGrowIncrMin + R_VGrowIncrFrac * R_NSize;
