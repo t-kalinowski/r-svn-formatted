@@ -2815,4 +2815,10 @@ SEXP do_getRegNS(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         return val;
 }
+
+SEXP do_getNSRegistry(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    checkArity(op, args);
+    return R_NamespaceRegistry;
+}
 #endif
