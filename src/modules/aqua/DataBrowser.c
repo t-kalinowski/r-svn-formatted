@@ -110,8 +110,8 @@ e		9			0
 
 */
 
-int NumOfRoots = 0;
-int *RootItems = NULL;
+UInt32 NumOfRoots = 0;
+DataBrowserItemID *RootItems = NULL;
 int **SubItemsID;
 int CurrentID = 0;
 void InitContainers(void);
@@ -135,7 +135,7 @@ Rect WSBounds = {400, 400, 600, 800};
 int *IDNum;            /* id          */
 Rboolean *IsRoot;      /* isroot      */
 Rboolean *IsContainer; /* iscontainer */
-int *NumberOfItems;    /* numofit     */
+UInt32 *NumberOfItems; /* numofit     */
 int *ParentID;         /* parid       */
 char **Names;          /* name        */
 char **Types;          /* type        */
@@ -237,7 +237,7 @@ SEXP Raqua_do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
     IDNum = (int *)malloc(NumOfID * sizeof(int));
     IsRoot = (Rboolean *)malloc(NumOfID * sizeof(Rboolean));
     IsContainer = (Rboolean *)malloc(NumOfID * sizeof(Rboolean));
-    NumberOfItems = (int *)malloc(NumOfID * sizeof(int));
+    NumberOfItems = (UInt32 *)malloc(NumOfID * sizeof(UInt32));
     ParentID = (int *)malloc(NumOfID * sizeof(int));
 
     for (i = 0; i < NumOfID; i++)
@@ -260,7 +260,10 @@ SEXP Raqua_do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
 
         IDNum[i] = INTEGER(id)[i];
         NumberOfItems[i] = INTEGER(numofit)[i];
-        ParentID[i] = INTEGER(parid)[i];
+        if (INTEGER(parid)[i] == -1)
+            ParentID[i] = kDataBrowserNoItem;
+        else
+            ParentID[i] = INTEGER(parid)[i];
         IsRoot[i] = LOGICAL(isroot)[i];
         IsContainer[i] = LOGICAL(iscont)[i];
     }
@@ -283,7 +286,7 @@ void InitContainers(void)
     if (RootItems)
         free(RootItems);
 
-    RootItems = malloc(sizeof(int) * NumOfRoots);
+    RootItems = malloc(sizeof(DataBrowserItemID) * NumOfRoots);
     SubItemsID = malloc(NumOfID * sizeof(int *));
 
     for (i = 0; i < NumOfID; i++)
@@ -305,8 +308,13 @@ void InitContainers(void)
                     l++;
                 }
             }
-        } /* if(IsContainer[i]) */
-    }     /* for */
+        }
+        else
+        { /* if(IsContainer[i]) */
+            SubItemsID[i] = malloc(sizeof(int));
+            SubItemsID[i][0] = 0;
+        }
+    } /* for */
 }
 
 void OpenDataBrowser(void)
@@ -345,11 +353,9 @@ void OpenDataBrowser(void)
         /* Configure the DataBrowser */
         if (!isBrowserOpen)
             ConfigureDataBrowser(WSpaceBrowser);
-        err = SetDataBrowserTarget(WSpaceBrowser, 1);
+        err = SetDataBrowserTarget(WSpaceBrowser, 0);
 
-        AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, (UInt32)NumOfRoots, (DataBrowserItemID *)RootItems,
-                            kDataBrowserItemNoProperty);
-
+        AddDataBrowserItems(WSpaceBrowser, kDataBrowserNoItem, NumOfRoots, RootItems, kDataBrowserItemNoProperty);
         /* Set the keyboard focus */
         SetKeyboardFocus(BrowserWindow, WSpaceBrowser, kControlDataBrowserPart);
 
@@ -694,8 +700,8 @@ static pascal void MyItemNotification(ControlRef browser, DataBrowserItemID item
     break;
 
     case kDataBrowserContainerOpened: {
-        AddDataBrowserItems(browser, itemID, (UInt32)NumberOfItems[itemID - 1],
-                            (DataBrowserItemID *)SubItemsID[itemID - 1], kObjectColumn);
+        AddDataBrowserItems(browser, itemID, NumberOfItems[itemID - 1], (DataBrowserItemID *)SubItemsID[itemID - 1],
+                            kObjectColumn);
         {
             Boolean variableHeightRows;
             GetDataBrowserTableViewGeometry(browser, NULL, &variableHeightRows);

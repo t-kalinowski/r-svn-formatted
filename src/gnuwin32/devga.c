@@ -230,7 +230,7 @@ static DWORD GALastUpdate = 0;
 
 static VOID CALLBACK GA_timer_proc(HWND hwnd, UINT message, UINT tid, DWORD time)
 {
-    if ((message != WM_TIMER) || tid != TimerNo)
+    if ((message != WM_TIMER) || tid != TimerNo || !GA_xd)
         return;
     gbitblt(GA_xd->gawin, GA_xd->bm, pt(0, 0), getrect(GA_xd->bm));
     GALastUpdate = time;
@@ -1987,6 +1987,8 @@ static void GA_Close(NewDevDesc *dd)
         }
         hide(xd->gawin);
         del(xd->bm);
+        if (xd == GA_xd)
+            GA_xd = NULL;
     }
     else if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
     {
