@@ -20,6 +20,7 @@
 
 #include "Defn.h"
 #include "Mathlib.h"
+#include "arithmetic.h"
 
 /* Error Handling for Floating Point Errors */
 
@@ -224,11 +225,6 @@ static SEXP integer_unary(int, SEXP);
 static SEXP real_unary(int, SEXP);
 static SEXP real_binary(int, SEXP, SEXP);
 static SEXP integer_binary(int, SEXP, SEXP);
-
-extern SEXP complex_unary(int, SEXP);
-extern SEXP complex_binary(int, SEXP, SEXP);
-extern SEXP complex_math1(SEXP, SEXP, SEXP, SEXP);
-extern SEXP complex_math2(SEXP, SEXP, SEXP, SEXP);
 
 static int naflag;
 static SEXP lcall;
@@ -909,6 +905,9 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     case 45:
         return math1(op, CAR(args), pentagamma);
 
+    case 46:
+        return math1(op, CAR(args), gamma_cody);
+
     default:
         errorcall(call, "unimplemented real function\n");
     }
@@ -1052,6 +1051,11 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return math2(op, CAR(args), CADR(args), psignrank);
     case 23:
         return math2(op, CAR(args), CADR(args), qsignrank);
+
+    case 24:
+        return math2(op, CAR(args), CADR(args), bessel_i);
+    case 25:
+        return math2(op, CAR(args), CADR(args), bessel_y);
 
     default:
         errorcall(call, "unimplemented real function\n");
@@ -1370,6 +1374,11 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return math3(op, CAR(args), CADR(args), CADDR(args), pwilcox);
     case 42:
         return math3(op, CAR(args), CADR(args), CADDR(args), qwilcox);
+
+    case 43:
+        return math3(op, CAR(args), CADR(args), CADDR(args), bessel_i);
+    case 44:
+        return math3(op, CAR(args), CADR(args), CADDR(args), bessel_y);
 
     default:
         errorcall(call, "unimplemented real function\n");
