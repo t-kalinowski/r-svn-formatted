@@ -38,6 +38,10 @@ void F77_SUB(lowesf)();
 void F77_SUB(lowesl)();
 void F77_SUB(ehg169)();
 void F77_SUB(ehg196)();
+/* exported (for loessf.f) : */
+void F77_SUB(ehg182)(int *i);
+void F77_SUB(ehg183a)(char *s, int *nc, int *i, int *n, int *inc);
+void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc);
 
 static void warnmsg(char *string)
 {
@@ -302,121 +306,90 @@ void loess_free(void)
 void F77_SUB(ehg182)(int *i)
 {
     char *msg, msg2[50];
+#define MSG(_m_)                                                                                                       \
+    msg = _m_;                                                                                                         \
+    break;
+
     switch (*i)
     {
     case 100:
-        msg = "wrong version number in lowesd.   Probably typo in caller.";
-        break;
+        MSG("wrong version number in lowesd.   Probably typo in caller.")
     case 101:
-        msg = "d>dMAX in ehg131.  Need to recompile with increased dimensions.";
-        break;
+        MSG("d>dMAX in ehg131.  Need to recompile with increased dimensions.")
     case 102:
-        msg = "liv too small.    (Discovered by lowesd)";
-        break;
+        MSG("liv too small.    (Discovered by lowesd)")
     case 103:
-        msg = "lv too small.     (Discovered by lowesd)";
-        break;
+        MSG("lv too small.     (Discovered by lowesd)")
     case 104:
-        msg = "span too small.   fewer data values than degrees of freedom.";
-        break;
+        MSG("span too small.   fewer data values than degrees of freedom.")
     case 105:
-        msg = "k>d2MAX in ehg136.  Need to recompile with increased dimensions.";
-        break;
+        MSG("k>d2MAX in ehg136.  Need to recompile with increased dimensions.")
     case 106:
-        msg = "lwork too small";
-        break;
+        MSG("lwork too small")
     case 107:
-        msg = "invalid value for kernel";
-        break;
+        MSG("invalid value for kernel")
     case 108:
-        msg = "invalid value for ideg";
-        break;
+        MSG("invalid value for ideg")
     case 109:
-        msg = "lowstt only applies when kernel=1.";
-        break;
+        MSG("lowstt only applies when kernel=1.")
     case 110:
-        msg = "not enough extra workspace for robustness calculation";
-        break;
+        MSG("not enough extra workspace for robustness calculation")
     case 120:
-        msg = "zero-width neighborhood. make span bigger";
-        break;
+        MSG("zero-width neighborhood. make span bigger")
     case 121:
-        msg = "all data on boundary of neighborhood. make span bigger";
-        break;
+        MSG("all data on boundary of neighborhood. make span bigger")
     case 122:
-        msg = "extrapolation not allowed with blending";
-        break;
+        MSG("extrapolation not allowed with blending")
     case 123:
-        msg = "ihat=1 (diag L) in l2fit only makes sense if z=x (eval=data).";
-        break;
+        MSG("ihat=1 (diag L) in l2fit only makes sense if z=x (eval=data).")
     case 171:
-        msg = "lowesd must be called first.";
-        break;
+        MSG("lowesd must be called first.")
     case 172:
-        msg = "lowesf must not come between lowesb and lowese, lowesr, or lowesl.";
-        break;
+        MSG("lowesf must not come between lowesb and lowese, lowesr, or lowesl.")
     case 173:
-        msg = "lowesb must come before lowese, lowesr, or lowesl.";
-        break;
+        MSG("lowesb must come before lowese, lowesr, or lowesl.")
     case 174:
-        msg = "lowesb need not be called twice.";
-        break;
+        MSG("lowesb need not be called twice.")
     case 175:
-        msg = "need setLf=.true. for lowesl.";
-        break;
+        MSG("need setLf=.true. for lowesl.")
     case 180:
-        msg = "nv>nvmax in cpvert.";
-        break;
+        MSG("nv>nvmax in cpvert.")
     case 181:
-        msg = "nt>20 in eval.";
-        break;
+        MSG("nt>20 in eval.")
     case 182:
-        msg = "svddc failed in l2fit.";
-        break;
+        MSG("svddc failed in l2fit.")
     case 183:
-        msg = "didnt find edge in vleaf.";
-        break;
+        MSG("didnt find edge in vleaf.")
     case 184:
-        msg = "zero-width cell found in vleaf.";
-        break;
+        MSG("zero-width cell found in vleaf.")
     case 185:
-        msg = "trouble descending to leaf in vleaf.";
-        break;
+        MSG("trouble descending to leaf in vleaf.")
     case 186:
-        msg = "insufficient workspace for lowesf.";
-        break;
+        MSG("insufficient workspace for lowesf.")
     case 187:
-        msg = "insufficient stack space";
-        break;
+        MSG("insufficient stack space")
     case 188:
-        msg = "lv too small for computing explicit L";
-        break;
+        MSG("lv too small for computing explicit L")
     case 191:
-        msg = "computed trace L was negative; something is wrong!";
-        break;
+        MSG("computed trace L was negative; something is wrong!")
     case 192:
-        msg = "computed delta was negative; something is wrong!";
-        break;
+        MSG("computed delta was negative; something is wrong!")
     case 193:
-        msg = "workspace in loread appears to be corrupted";
-        break;
+        MSG("workspace in loread appears to be corrupted")
     case 194:
-        msg = "trouble in l2fit/l2tr";
-        break;
+        MSG("trouble in l2fit/l2tr")
     case 195:
-        msg = "only constant, linear, or quadratic local models allowed";
-        break;
+        MSG("only constant, linear, or quadratic local models allowed")
     case 196:
-        msg = "degree must be at least 1 for vertex influence matrix";
-        break;
+        MSG("degree must be at least 1 for vertex influence matrix")
     case 999:
-        msg = "not yet implemented";
-        break;
+        MSG("not yet implemented")
     default:
         sprintf(msg = msg2, "Assert failed; error code %d\n", *i);
     }
     warnmsg(msg);
 }
+#undef MSG
 
 void F77_SUB(ehg183a)(char *s, int *nc, int *i, int *n, int *inc)
 {
