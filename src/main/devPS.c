@@ -27,6 +27,7 @@
 #include <ctype.h>
 
 #include "Defn.h"
+#include "Rmath.h" /* for rround */
 #include "Graphics.h"
 #include <R_ext/Error.h>
 #include "Fileio.h"
@@ -928,7 +929,7 @@ static void PostScriptMoveTo(FILE *fp, double x, double y)
 
 static void PostScriptRLineTo(FILE *fp, double x0, double y0, double x1, double y1)
 {
-    double x = x1 - x0, y = y1 - y0;
+    double x = rround(x1, 2) - rround(x0, 2), y = rround(y1, 2) - rround(y0, 2);
 
     if (x == 0)
         fprintf(fp, "0");
@@ -1816,7 +1817,12 @@ static void PS_Polyline(int n, double *x, double *y, int col, double gamma, int 
         fprintf(pd->psfp, "np\n");
         fprintf(pd->psfp, "%.2f %.2f m\n", x[0], y[0]);
         for (i = 1; i < n; i++)
+        {
+            /* split up solid lines (only) into chunks of size 1000 */
+            if (lty == 0 && i % 1000 == 0)
+                fprintf(pd->psfp, "currentpoint o m\n");
             PostScriptRLineTo(pd->psfp, x[i - 1], y[i - 1], x[i], y[i]);
+        }
         fprintf(pd->psfp, "o\n");
     }
 }
@@ -2951,7 +2957,7 @@ static void PDF_startfile(PDFDesc *pd)
 
     pd->nobjs = 0;
     pd->pageno = 0;
-    fprintf(pd->pdffp, "%%PDF-1.1\n%%âãÏÓ\r\n");
+    fprintf(pd->pdffp, "%%PDF-1.1\n%%âãÏÓ\r\n");
     pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
 
     /* Object 1 is Info node. Date format is from the PDF manual */
