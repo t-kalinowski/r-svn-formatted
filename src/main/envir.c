@@ -2251,7 +2251,7 @@ static int BuiltinSize(int all, int intern)
             }
             else
             {
-                if (SYMVALUE(CAR(s)) != R_UnboundValue)
+                if ((all || CHAR(PRINTNAME(CAR(s)))[0] != '.') && SYMVALUE(CAR(s)) != R_UnboundValue)
                     count++;
             }
         }
@@ -2274,7 +2274,7 @@ static void BuiltinNames(int all, int intern, SEXP names, int *indx)
             }
             else
             {
-                if (SYMVALUE(CAR(s)) != R_UnboundValue)
+                if ((all || CHAR(PRINTNAME(CAR(s)))[0] != '.') && SYMVALUE(CAR(s)) != R_UnboundValue)
                     SET_STRING_ELT(names, (*indx)++, PRINTNAME(CAR(s)));
             }
         }
