@@ -1729,6 +1729,9 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
     char *fn;
 
     xd = Rf_allocNewX11DeviceDesc(pointsize);
+    if (!xd)
+        return FALSE;
+
     /* Used to set dd->dp.font=1 and dd->dp.ps=pointsize,
      * but Paul removed that.
      * This sort of initialisation occurs in R base graphics now.
@@ -1868,7 +1871,7 @@ newX11Desc *Rf_allocNewX11DeviceDesc(double ps)
     newX11Desc *xd;
     /* allocate new device description */
     if (!(xd = (newX11Desc *)calloc(1, sizeof(newX11Desc))))
-        return FALSE;
+        return NULL;
 
     /* From here on, if we need to bail out with "error", */
     /* then we must also free(xd). */
