@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -30,27 +30,27 @@
  *
  *  void fft_factor(int n, int *maxf, int *maxp)
  *
- *  This factorizes the series length and computes the values of
- *  maxf and maxp which determine the amount of scratch storage
- *  required by the algorithm.
+ *	This factorizes the series length and computes the values of
+ *	maxf and maxp which determine the amount of scratch storage
+ *	required by the algorithm.
  *
- *  If maxf is zero on return, an error occured during factorization.
- *  The nature of the error can be determined from the value of maxp.
- *  If maxp is zero, an invalid (zero) parameter was passed and if
- *  maxp is one the internal nfac array was too small.  This can only
- *  happen for series lengths which exceed 12,754,584.
+ *	If maxf is zero on return, an error occured during factorization.
+ *	The nature of the error can be determined from the value of maxp.
+ *	If maxp is zero, an invalid (zero) parameter was passed and if
+ *	maxp is one the internal nfac array was too small.  This can only
+ *	happen for series lengths which exceed 12,754,584.
  *
- *  The following arrays need to be allocated following the call to
- *  fft_factor and preceding the call to fft_work.
+ *	The following arrays need to be allocated following the call to
+ *	fft_factor and preceding the call to fft_work.
  *
- *	work	double[4*maxf]
- *	iwork	int[maxp]
+ *		work	double[4*maxf]
+ *		iwork	int[maxp]
  *
  *  int fft_work(double *a, double *b, int nseg, int n, int nspn,
- *               int isn, double *work, int *iwork)
+ *		 int isn, double *work, int *iwork)
  *
- *  The routine returns 1 if the transform was completed successfully and
- *  0 if invalid values of the parameters were supplied.
+ *	The routine returns 1 if the transform was completed successfully and
+ *	0 if invalid values of the parameters were supplied.
  *
  *  Ross Ihaka
  *  University of Auckland
@@ -60,50 +60,50 @@
  *  Header from the original Singleton algorithm:
  *
  *  ----------------------------------------------------------------------
- *  subroutine:  fft
+ *  subroutine:	 fft
  *  multivariate complex fourier transform, computed in place
  *  using mixed-radix fast fourier transform algorithm.
  *  ----------------------------------------------------------------------
  *
  *  arrays a and b originally hold the real and imaginary
- *       components of the data, and return the real and
- *       imaginary components of the resulting fourier coefficients.
+ *	 components of the data, and return the real and
+ *	 imaginary components of the resulting fourier coefficients.
  *  multivariate data is indexed according to the fortran
- *       array element successor function, without limit
- *       on the number of implied multiple subscripts.
- *       the subroutine is called once for each variate.
- *       the calls for a multivariate transform may be in any order.
+ *	 array element successor function, without limit
+ *	 on the number of implied multiple subscripts.
+ *	 the subroutine is called once for each variate.
+ *	 the calls for a multivariate transform may be in any order.
  *
  *  n is the dimension of the current variable.
  *  nspn is the spacing of consecutive data values
- *       while indexing the current variable.
+ *	 while indexing the current variable.
  *  nseg*n*nspn is the total number of complex data values.
  *  the sign of isn determines the sign of the complex
- *       exponential, and the magnitude of isn is normally one.
- *       the magnitude of isn determines the indexing increment for a&b.
+ *	 exponential, and the magnitude of isn is normally one.
+ *	 the magnitude of isn determines the indexing increment for a&b.
  *
  *  if fft is called twice, with opposite signs on isn, an
- *       identity transformation is done...calls can be in either order.
- *       the results are scaled by 1/n when the sign of isn is positive.
+ *	 identity transformation is done...calls can be in either order.
+ *	 the results are scaled by 1/n when the sign of isn is positive.
  *
  *  a tri-variate transform with a(n1,n2,n3), b(n1,n2,n3)
  *  is computed by
- *         call fft(a,b,n2*n3,n1,1,-1)
- *         call fft(a,b,n3,n2,n1,-1)
- *         call fft(a,b,1,n3,n1*n2,-1)
+ *	   call fft(a,b,n2*n3,n1,1,-1)
+ *	   call fft(a,b,n3,n2,n1,-1)
+ *	   call fft(a,b,1,n3,n1*n2,-1)
  *
  *  a single-variate transform of n complex data values is computed by
- *         call fft(a,b,1,n,1,-1)
+ *	   call fft(a,b,1,n,1,-1)
  *
  *  the data may alternatively be stored in a single complex
- *       array a, then the magnitude of isn changed to two to
- *       give the correct indexing increment and a(2) used to
- *       pass the initial address for the sequence of imaginary
- *       values, e.g.
- *         call fft(a,a(2),nseg,n,nspn,-2)
+ *	 array a, then the magnitude of isn changed to two to
+ *	 give the correct indexing increment and a(2) used to
+ *	 pass the initial address for the sequence of imaginary
+ *	 values, e.g.
+ *	   call fft(a,a(2),nseg,n,nspn,-2)
  *
  *  array nfac is working storage for factoring n.  the smallest
- *       number exceeding the 15 locations provided is 12,754,584.
+ *	 number exceeding the 15 locations provided is 12,754,584.
  *
  */
 
@@ -146,7 +146,7 @@ static int min(int i, int j)
  *  is indicated by *pmaxp.
  *
  *  If *pmaxp == 0  There was an illegal zero parameter among
- *                  nseg, n, and nspn.
+ *		    nseg, n, and nspn.
  *
  *  If *pmaxp == 1  There we more than 15 factors to ntot.  */
 
@@ -254,19 +254,14 @@ void fft_factor(int n, int *pmaxf, int *pmaxp)
 
 static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn, int m, int kt, double *at, double *ck,
                   double *bt, double *sk, int *np, int *nfac)
-/*
-double *a, *b, *at, *ck, *bt, *sk;
-int ntot, n, nspan, isn, m, kt;
-int *np, *nfac;
-*/
 {
     double aa, aj, ajm, ajp, ak, akm, akp;
     double bb, bj, bjm, bjp, bk, bkm, bkp;
-    double c1, c2, c3, c72, cd;
+    double c1, c2 = 0, c3 = 0, c72, cd;
     double dr, rad;
-    double s1, s120, s2, s3, s72, sd;
+    double s1, s120, s2 = 0, s3 = 0, s72, sd;
     int i, inc, j, jc, jf, jj;
-    int k, k1, k2, k3, k4, kk, klim, ks, kspan, kspnn;
+    int k, k1, k2, k3 = 0, k4, kk, klim, ks, kspan, kspnn;
     int lim, maxf, mm, nn, nt;
 
     a--;
@@ -286,29 +281,25 @@ int *np, *nfac;
     c72 = cos(s72);
     s72 = sin(s72);
     s120 = sqrt(0.75);
-    if (isn > 0)
-        goto L10;
-    s72 = -s72;
-    s120 = -s120;
-    rad = -rad;
-    goto L30;
-
-    /* scale by 1/n for isn > 0 */
-
-#ifdef SCALING
-L10:
-    ak = 1.0 / n;
-    for (j = 1; j <= nt; j += inc)
+    if (isn <= 0)
     {
-        ;
-        a[j] = a[j] * ak;
-        b[j] = b[j] * ak;
-    };
-#else
-L10:;
+        s72 = -s72;
+        s120 = -s120;
+        rad = -rad;
+    }
+    else
+    {
+#ifdef SCALING
+        /* scale by 1/n for isn > 0 */
+        ak = 1.0 / n;
+        for (j = 1; j <= nt; j += inc)
+        {
+            a[j] = a[j] * ak;
+            b[j] = b[j] * ak;
+        }
 #endif
+    }
 
-L30:
     kspan = ks;
     nn = nt - inc;
     jc = ks / n;
@@ -355,7 +346,7 @@ L50:
     if (kk <= jc)
         goto L50;
     if (kk > kspan)
-        goto L350;
+        goto L_fin;
 L60:
     c1 = 1.0 - cd;
     s1 = sd;
@@ -365,9 +356,8 @@ L70:
     ak = c1 - (cd * c1 + sd * s1);
     s1 = (sd * c1 - cd * s1) + s1;
 
-    /* the following three statements compensate for truncation */
-    /* error.  if rounded arithmetic is used, substitute */
-    /*	c1=ak */
+    /* the following three statements compensate for truncation error. */
+    /* if rounded arithmetic is used, substitute  c1=ak */
 
 #ifdef TRUNCATED_ARITHMETIC
     c1 = 0.5 / (ak * ak + s1 * s1) + 0.5;
@@ -441,7 +431,7 @@ L100:
 
 L110:
     if (nfac[i] != 4)
-        goto L230;
+        goto L_f_odd;
     kspnn = kspan;
     kspan = kspan / 4;
 L120:
@@ -453,9 +443,8 @@ L130:
     c2 = c1 - (cd * c1 + sd * s1);
     s1 = (sd * c1 - cd * s1) + s1;
 
-    /* the following three statements compensate for truncation */
-    /* error.  if rounded arithmetic is used, substitute */
-    /* c1=c2 */
+    /* the following three statements compensate for truncation error. */
+    /* if rounded arithmetic is used, substitute  c1=c2 */
 
 #ifdef TRUNCATED_ARITHMETIC
     c1 = 0.5 / (c2 * c2 + s1 * s1) + 0.5;
@@ -514,7 +503,7 @@ L170:
     if (kk <= jc)
         goto L120;
     if (kspan == jc)
-        goto L350;
+        goto L_fin;
     goto L40;
 L180:
     akp = akm + bjm;
@@ -543,7 +532,7 @@ L200:
 
     /* transform for factor of 5 (optional code) */
 
-L210:
+L_f5:
     c2 = c72 * c72 - s72 * s72;
     s2 = 2.0 * c72 * s72;
 L220:
@@ -589,14 +578,14 @@ L220:
 
     /* transform for odd factors */
 
-L230:
+L_f_odd:
     k = nfac[i];
     kspnn = kspan;
     kspan = kspan / k;
     if (k == 3)
         goto L100;
     if (k == 5)
-        goto L210;
+        goto L_f5;
     if (k == jf)
         goto L250;
     jf = k;
@@ -682,7 +671,7 @@ L280:
 
 L290:
     if (i == m)
-        goto L350;
+        goto L_fin;
     kk = jc + 1;
 L300:
     c2 = 1.0 - cd;
@@ -693,9 +682,8 @@ L310:
     c2 = c1 - (cd * c1 + sd * s1);
     s1 = s1 + (sd * c1 - cd * s1);
 
-    /* the following three statements compensate for truncation */
-    /* error.  if rounded arithmetic is used, they may */
-    /* be deleted. */
+    /* the following three statements compensate for truncation error.*/
+    /* if rounded arithmetic is used, they may be deleted. */
 
 #ifdef TRUNCATED_ARITHMETIC
     c1 = 0.5 / (c2 * c2 + s1 * s1) + 0.5;
@@ -736,10 +724,12 @@ L340:
     mm = min(kspan, mm + klim);
     goto L320;
 
+    /*------------------------------------------------------------*/
+
     /* permute the results to normal order---done in two stages */
     /* permutation for square factors of n */
 
-L350:
+L_fin:
     np[1] = ks;
     if (kt == 0)
         goto L440;
@@ -898,10 +888,10 @@ L500:
     /* reorder a and b, following the permutation cycles */
 
     goto L570;
-L510:
+L_ord:
     j = j - 1;
     if (np[j] < 0)
-        goto L510;
+        goto L_ord;
     jj = jc;
 L520:
     kspan = jj;
@@ -945,13 +935,13 @@ L560:
     if (jj != 0)
         goto L520;
     if (j != 1)
-        goto L510;
+        goto L_ord;
 L570:
     j = k3 + 1;
     nt = nt - kspnn;
     i = nt - inc + 1;
     if (nt >= 0)
-        goto L510;
+        goto L_ord;
     return;
 }
 
