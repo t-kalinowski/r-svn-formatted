@@ -426,7 +426,7 @@ static SEXP ItemName(SEXP names, int i)
 /* recursing down from above.  If we have a list and we are */
 /* recursing, we append a new tag component to the base tag */
 /* (either by using the list tags, or their offsets), and then */
-/* we do the recursion.  If we have a vector, we just create the */
+/* we do the recursion.	 If we have a vector, we just create the */
 /* tags for each element. */
 
 static int seqno;
@@ -436,7 +436,7 @@ static int count;
 static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse)
 {
     SEXP names, namei;
-    int i, n, savecount, saveseqno, savefirstpos;
+    int i, n, savecount = 0, saveseqno, savefirstpos = 0;
 
     /* If we beneath a new tag, we reset the index */
     /* sequence and create the new basename string. */
@@ -626,7 +626,7 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* If a non-vector argument was encountered (perhaps a list if */
-    /* recursive is FALSE) then we must return a list.  Otherwise, */
+    /* recursive is FALSE) then we must return a list.	Otherwise, */
     /* we use the natural coercion for vector types. */
 
     mode = NILSXP;
@@ -918,11 +918,10 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     int mode = ANYSXP; /* for -Wall; none from the ones below */
     SEXP a, t;
 
-    /* First we check to see if any of the */
-    /* arguments are data frames.  If there */
-    /* are, we need to a special dispatch */
-    /* to the interpreted data.frame functions. */
-
+    /* First we check to see if any of the arguments are data frames.
+     * If there are, we need to a special dispatch	 -----------
+     * to the interpreted data.frame functions.
+     */
     mode = 0;
     for (a = args; a != R_NilValue; a = CDR(a))
     {
@@ -938,7 +937,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
            currently breaks [cr]bind() if one arg is a df
            while (a != R_NilValue) {
                if (t == R_NilValue)
-                   errorcall(call, "corrupt data frame args!\n");
+               errorcall(call, "corrupt data frame args!\n");
                p = mkPROMISE(CAR(t), rho);
                PRVALUE(p) = CAR(a);
                CAR(a) = p;
@@ -1033,12 +1032,12 @@ static void SetRowNames(SEXP dimnames, SEXP x)
         CAR(dimnames) = x;
 }
 
-static SEXP SetColNames(SEXP dimnames, SEXP x)
+static void SetColNames(SEXP dimnames, SEXP x)
 {
     if (TYPEOF(dimnames) == VECSXP)
         VECTOR(dimnames)[1] = x;
     else if (TYPEOF(dimnames) == LISTSXP)
-        return CADR(dimnames) = x;
+        CADR(dimnames) = x;
 }
 
 static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
