@@ -155,6 +155,9 @@ static pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef
 
 OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
+extern void CloseDataEntry(void);
+extern void CloseBrowsePkg(void);
+
 static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
 static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyDown}};
@@ -798,8 +801,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 break;
 
             case kRCmdInstallFromCRAN:
-                Aqua_RWrite("Install packages from CRAN: not yet implemented");
-                consolecmd("\r");
+                consolecmd("browse.pkgs()");
                 break;
 
             case kRCmdInstallFromBioC:
@@ -885,7 +887,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
         switch (eventKind)
         {
         case kEventFontPanelClosed:
-            fprintf(stderr, "\n font win closed");
+            //                        fprintf(stderr,"\n font win closed");
             GetFontName(instance.fontFamily, fontname);
             if (isConsoleFont)
             {
@@ -971,6 +973,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
     int fsize, txtlen, i;
     Handle DataHandle;
     FILE *fp;
+    ControlRef browser = NULL;
 
     if (GetEventClass(inEvent) != kEventClassWindow)
         return (err);
@@ -999,6 +1002,26 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
         {
             TXNDeleteObject(RHlpObj);
             HideWindow(EventWindow);
+            err = noErr;
+        }
+
+        if (GetWindowProperty(EventWindow, 'RMAC', 'PKGB', sizeof(browser), NULL, &browser) == noErr)
+        {
+            //                    fprintf(stderr,"\n closed dentry");
+            CloseBrowsePkg();
+            QuitApplicationEventLoop();
+            TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
+            EditingFinished = true;
+            err = noErr;
+        }
+
+        if (GetWindowProperty(EventWindow, 'RMAC', 'RDEY', sizeof(browser), NULL, &browser) == noErr)
+        {
+            //                    fprintf(stderr,"\n closed dentry");
+            CloseDataEntry();
+            QuitApplicationEventLoop();
+            TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
+            EditingFinished = true;
             err = noErr;
         }
 
