@@ -2,11 +2,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#include "pixmaps/close.xpm"
-#include "pixmaps/jump_to.xpm"
-#include "pixmaps/print.xpm"
-#include "pixmaps/save-as.xpm"
-
 #include "Defn.h"
 #include "Graphics.h"
 #include "devGTK.h"
@@ -405,26 +400,18 @@ static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)
     gtk_toolbar_set_space_size(GTK_TOOLBAR(gtkd->toolbar), 5);
 
     // add toolbar items
-    icon = gdk_pixmap_create_from_xpm_d(gtkd->window->window, &mask, &gtkd->window->style->white, jump_to_xpm);
-    iconw = gtk_pixmap_new(icon, mask);
-    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Activate", "Activate this device", NULL, iconw,
+    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Activate", "Activate this device", NULL, NULL,
                             GTK_SIGNAL_FUNC(button_active_event), (gpointer)dd);
 
     gtk_toolbar_append_space(GTK_TOOLBAR(gtkd->toolbar));
 
-    icon = gdk_pixmap_create_from_xpm_d(gtkd->window->window, &mask, &gtkd->window->style->white, print_xpm);
-    iconw = gtk_pixmap_new(icon, mask);
-    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Print", "Print the plot", NULL, iconw, NULL, NULL);
+    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Print", "Print the plot", NULL, NULL, NULL, NULL);
 
-    icon = gdk_pixmap_create_from_xpm_d(gtkd->window->window, &mask, &gtkd->window->style->white, save_as_xpm);
-    iconw = gtk_pixmap_new(icon, mask);
-    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Save as", "Save the plot", NULL, iconw, NULL, NULL);
+    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Save as", "Save the plot", NULL, NULL, NULL, NULL);
 
     gtk_toolbar_append_space(GTK_TOOLBAR(gtkd->toolbar));
 
-    icon = gdk_pixmap_create_from_xpm_d(gtkd->window->window, &mask, &gtkd->window->style->white, close_xpm);
-    iconw = gtk_pixmap_new(icon, mask);
-    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Close", "Close device", NULL, iconw,
+    gtk_toolbar_append_item(GTK_TOOLBAR(gtkd->toolbar), "Close", "Close device", NULL, NULL,
                             GTK_SIGNAL_FUNC(button_close_event), (gpointer)dd);
 
     // finished adding toolbar items
