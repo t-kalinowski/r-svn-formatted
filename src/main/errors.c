@@ -23,6 +23,8 @@
 #endif
 
 #include "Defn.h"
+/* -> Errormsg.h */
+
 /* limit on call length at which errorcall/warningcall is split over
    two lines */
 #define LONGCALL 30
@@ -546,24 +548,31 @@ void UNIMPLEMENTED(char *s)
     error("Unimplemented feature in %s", s);
 }
 
+/* ERROR_.. codes in Errormsg.h */
 static struct
 {
-    int index;
+    R_WARNING code;
     char *format;
-} ErrorDB[] = {{ERROR_NUMARGS, "invalid number of arguments\n"},
-               {ERROR_ARGTYPE, "invalid argument type\n"},
+} ErrorDB[] = {{ERROR_NUMARGS, "invalid number of arguments"},
+               {ERROR_ARGTYPE, "invalid argument type"},
 
-               {ERROR_TSVEC_MISMATCH, "time-series/vector length mismatch\n"},
-               {ERROR_INCOMPAT_ARGS, "incompatible arguments\n"},
+               {ERROR_TSVEC_MISMATCH, "time-series/vector length mismatch"},
+               {ERROR_INCOMPAT_ARGS, "incompatible arguments"},
 
-               {
-                   ERROR_UNIMPLEMENTED,
-                   "unimplemented feature in %s\n",
-               },
-               {
-                   ERROR_UNKNOWN,
-                   "unknown error (report this!)\n",
-               }};
+               {ERROR_UNIMPLEMENTED, "unimplemented feature in %s"},
+               {ERROR_UNKNOWN, "unknown error (report this!)"}};
+
+static struct
+{
+    R_WARNING code;
+    char *format;
+} WarningDB[] = {
+    {WARNING_coerce_NA, "NAs introduced by coercion"},
+    {WARNING_coerce_INACC, "inaccurate integer conversion in coercion"},
+    {WARNING_coerce_IMAG, "imaginary parts discarded in coercion"},
+
+    {WARNING_UNKNOWN, "unknown warning (report this!)"},
+};
 
 void ErrorMessage(SEXP call, int which_error, ...)
 {
@@ -582,9 +591,9 @@ void ErrorMessage(SEXP call, int which_error, ...)
     else
         REprintf("Error: "); /* -- dcall = ??? */
     i = 0;
-    while (ErrorDB[i].index != ERROR_UNKNOWN)
+    while (ErrorDB[i].code != ERROR_UNKNOWN)
     {
-        if (ErrorDB[i].index == which_error)
+        if (ErrorDB[i].code == which_error)
             break;
         i++;
     }
@@ -594,16 +603,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
     jump_to_toplevel();
 }
 
-static struct
-{
-    int index;
-    char *format;
-} WarningDB[] = {{
-    WARNING_UNKNOWN,
-    "unknown warning (report this!)\n",
-}};
-
-void WarningMessage(SEXP call, int which_warn, ...)
+void WarningMessage(SEXP call, R_WARNING which_warn, ...)
 {
     int i;
     va_list(ap);
@@ -618,9 +618,9 @@ void WarningMessage(SEXP call, int which_warn, ...)
     else
         REprintf("Warning: "); /* -- dcall = ??? */
     i = 0;
-    while (WarningDB[i].index != WARNING_UNKNOWN)
+    while (WarningDB[i].code != WARNING_UNKNOWN)
     {
-        if (WarningDB[i].index == which_warn)
+        if (WarningDB[i].code == which_warn)
             break;
         i++;
     }
