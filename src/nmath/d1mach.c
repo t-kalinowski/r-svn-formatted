@@ -20,15 +20,16 @@
 
 /* NaNs propagated correctly */
 
-#include "Mathlib.h"
-
 /*-- FIXME:  Eliminate calls to these
  *   =====   o   from C code when
  *	     o   it is only used to initialize "static" variables (threading)
  *  and use the DBL_... constants instead
  */
 
-double d1mach(int i)
+#include "Mathlib.h"
+#undef d1mach
+
+double Rf_d1mach(int i)
 {
     switch (i)
     {
@@ -53,7 +54,7 @@ double d1mach(int i)
     }
 }
 
-double d1mach_(int *i)
+double F77_SYMBOL(d1mach)(int *i)
 {
-    return d1mach(*i);
+    return Rf_d1mach(*i);
 }
