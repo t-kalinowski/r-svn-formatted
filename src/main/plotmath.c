@@ -2939,11 +2939,19 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
     if (R_FINITE(xc))
         CurrentX = ReferenceX - xc * bboxWidth(bbox);
     else
-        CurrentX = ReferenceX;
+        /* Paul 11/2/02
+         * If xc == NA then should centre horizontally.
+         * Used to left-adjust.
+         */
+        CurrentX = ReferenceX - 0.5 * bboxWidth(bbox);
     if (R_FINITE(yc))
         CurrentY = ReferenceY + bboxDepth(bbox) - yc * (bboxHeight(bbox) + bboxDepth(bbox));
     else
-        CurrentY = ReferenceY;
+        /* Paul 11/2/02
+         * If xc == NA then should centre vertically.
+         * Used to bottom-adjust.
+         */
+        CurrentY = ReferenceY + bboxDepth(bbox) - 0.5 * (bboxHeight(bbox) + bboxDepth(bbox));
     CurrentAngle = rot;
     rot *= M_PI_2 / 90; /* radians */
     CosAngle = cos(rot);
@@ -3029,9 +3037,12 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         }
         else
         {
-            line = line + 1 - Rf_gpptr(dd)->yLineBias;
+            /*	    line = line + 1 - Rf_gpptr(dd)->yLineBias;
+                angle = 0;
+                yadj = NA_REAL; */
+            line = line + 1;
             angle = 0;
-            yadj = NA_REAL;
+            yadj = 0;
         }
         break;
     case 2:
@@ -3042,9 +3053,11 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         }
         else
         {
-            line = line + Rf_gpptr(dd)->yLineBias;
+            /*	    line = line + Rf_gpptr(dd)->yLineBias;
+                angle = 90;
+                yadj = NA_REAL; */
             angle = 90;
-            yadj = NA_REAL;
+            yadj = 0;
         }
         break;
     case 3:
@@ -3055,9 +3068,11 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         }
         else
         {
-            line = line + Rf_gpptr(dd)->yLineBias;
+            /*   line = line + Rf_gpptr(dd)->yLineBias;
+             angle = 0;
+             yadj = NA_REAL; */
             angle = 0;
-            yadj = NA_REAL;
+            yadj = 0;
         }
         break;
     case 4:
@@ -3068,9 +3083,12 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         }
         else
         {
-            line = line + 1 - Rf_gpptr(dd)->yLineBias;
+            /*   line = line + 1 - Rf_gpptr(dd)->yLineBias;
+             angle = 90;
+             yadj = NA_REAL; */
+            line = line + 1;
             angle = 90;
-            yadj = NA_REAL;
+            yadj = 0;
         }
         break;
     }
