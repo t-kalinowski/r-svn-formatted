@@ -293,7 +293,7 @@ SEXP do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(args) != 1)
         error("incorrect number of args to length");
 
-    if (isObject(CAR(args)) && DispatchOrEval(call, "length", args, rho, &ans, 0, 1))
+    if (isObject(CAR(args)) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
         return (ans);
 
     ans = allocVector(INTSXP, 1);

@@ -17,11 +17,22 @@ SEXP setVarInFrame(SEXP, SEXP, SEXP);
 #define streql(s, t) (!strcmp((s), (t)))
 void R_PreserveObject(SEXP);
 
+/* from Defn.h */
+typedef SEXP (*R_stdGen_ptr_t)(SEXP, SEXP);
+R_stdGen_ptr_t R_get_standardGeneric_ptr();               /* get method */
+R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t); /* set method */
+
 /* attrib.c */
 SEXP R_data_class(SEXP obj, int singleString);
 
 /* from main/subassign.c */
 SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val);
+
+/* from main/objects.c */
+SEXP R_deferred_default_method();
+SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mlist);
+SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist);
+void R_set_quick_method_check(R_stdGen_ptr_t);
 
 /* the following utilities are included here for now, as statics.  But
    they will eventually be C implementations of slot, data.class,
@@ -40,16 +51,14 @@ static SEXP R_FALSE, R_TRUE;
 static SEXP R_short_skeletons, R_empty_skeletons;
 static SEXP f_x_i_skeleton, fgets_x_i_skeleton, f_x_skeleton, fgets_x_skeleton;
 
-/* from Defn.h */
-typedef SEXP (*R_stdGen_ptr_t)(SEXP, SEXP);
-R_stdGen_ptr_t R_get_standardGeneric_ptr();                   /* get method */
-R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t new); /* set method */
+SEXP R_quick_method_check(SEXP object, SEXP fsym);
 
 void R_initMethodDispatch()
 {
     if (initialized)
         return;
     R_set_standardGeneric_ptr(R_standardGeneric);
+    R_set_quick_method_check(R_quick_method_check);
     s_dot_Arguments = Rf_install(".Arguments");
     s_expression = Rf_install("expression");
     s_function = Rf_install("function");
@@ -195,6 +204,32 @@ static SEXP R_find_method(SEXP mlist, char *class, SEXP fname)
     }
     value = R_element_named(methods, class);
     return value;
+}
+
+SEXP R_quick_method_check(SEXP args, SEXP mlist)
+{
+    /* Match the list of (evaluated) args to the methods list. */
+    SEXP object, class_obj, methods, value;
+    char *class;
+    if (!mlist)
+        return R_NilValue;
+    methods = R_get_attr(mlist, "allMethods");
+    if (methods == R_NilValue)
+    {
+        return R_NilValue;
+    }
+    while (!isNull(args) && !isNull(methods))
+    {
+        object = CAR(args);
+        args = CDR(args);
+        class = CHAR(asChar(R_data_class(object, TRUE)));
+        value = R_element_named(methods, class);
+        if (isNull(value) || isFunction(value))
+            return value;
+        /* continue matching args down the tree */
+        methods = value;
+    }
+    return (R_NilValue);
 }
 
 /* call some S language functions */
@@ -372,7 +407,12 @@ static SEXP get_skeleton(SEXP symbol, SEXP generic)
 {
     SEXP vl = R_UnboundValue;
     if (generic == R_NilValue)
+    {
         generic = get_generic(symbol);
+        if (generic == R_UnboundValue) /* none found: usually a primitive
+                                        */
+            return R_NilValue;
+    }
     if (!IS_GENERIC(generic))
         error("No generic function found for \"%s\"", CHAR_STAR(symbol));
     /* get the skeleton call stored in the environment, to use in case
@@ -514,7 +554,10 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
         /* call the S language function to merge generic
            information. First assign a special version to trap recursive
            calls to the same generic. */
-        R_assign_to_method_metadata(fsym, get_skeleton(fsym, R_NilValue));
+        SEXP skeleton;
+        skeleton = get_skeleton(fsym, R_NilValue);
+        if (!isNull(skeleton)) /* else, none found; is this an error? */
+            R_assign_to_method_metadata(fsym, skeleton);
         PROTECT(fdef = R_S_getAllMethods(fname));
         nprotect++;
         R_assign_to_method_metadata(fsym, fdef);
@@ -535,31 +578,57 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
         if (isNull(f))
         {
             /* call the S language code to do a search with inheritance */
-            SEXP value = getOverride(mlist);
-            /* Avoid recursive loop in searching for a method:  if the S
-               language search calls a generic for which no direct method is
-               defined, we MUST use the override default method.  If this is
-               not a recursive call, we set that override attribute (and the
-               R_S_methodsListSearch code must unset it). */
-            if (value == R_NilValue)
+            SEXP value;
+            SEXP deflt, prev_fun, op;
+            int prim_case, firstCall;
+            value = getOverride(mlist);
+            firstCall = value == R_NilValue;
+            prim_case = FALSE;
+            /* Avoid recursive loop in searching for a method.
+               Two cases:  the original function is a primitive (and
+               then the default method is forced to be also); or
+               the original function is a closure */
+            if (firstCall)
             {
-                SEXP deflt;
                 deflt = R_find_method(mlist, "ANY", fname);
-                if (deflt == R_NilValue)
-                    deflt = R_MissingArg; /* a fixed value indicating no default
-                                           */
-                setOverride(mlist, deflt);
-                /* call the S function, it returns a revised MethodsList
+                prim_case = isPrimitive(deflt);
+                if (prim_case)
+                {
+                    op = deflt;
+                    /* just shut off dispatching of methods for this op */
+                    PROTECT(prev_fun = do_set_prim_method(deflt, "clear", NULL, NULL));
+                    nprotect++;
+                    /* TO DO:  use context control to ensure the restores in
+                   case of an error */
+                }
+                else
+                {
+                    if (deflt == R_NilValue)
+                        deflt = R_MissingArg; /* a fixed value indicating no default
+                                               */
+                    setOverride(mlist, deflt);
+                    /* call the S function, it returns a revised MethodsList
                    object, and also stores the revised MethodsList in the
                    methods metadata.
-                */
-                R_assign_to_method_metadata(fsym, get_skeleton(fsym, R_NilValue));
+                    */
+                    R_assign_to_method_metadata(fsym, get_skeleton(fsym, R_NilValue));
+                }
                 PROTECT(value = R_S_MethodsListSelect(fname, ev, mlist, f_env));
                 nprotect++;
-                R_assign_to_method_metadata(fsym, fdef);
-                R_clear_method_selection(); /* to be safe.
-                             The S language code is supposed
-                             to clear also. */
+                if (firstCall)
+                {
+                    if (prim_case)
+                    {
+                        do_set_prim_method(op, "reset", prev_fun, NULL);
+                    }
+                    else
+                    {
+                        R_assign_to_method_metadata(fsym, fdef);
+                        R_clear_method_selection(); /* to be safe.
+                                     The S language code is supposed
+                                     to clear also. */
+                    }
+                }
                 if (isNull(value))
                     error("No direct or inherited method for function \"%s\" for this call", CHAR_STAR(fname));
                 mlist = value;
@@ -578,22 +647,13 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev)
         val = eval(val, ev);
         break;
     case SPECIALSXP:
-    case BUILTINSXP: {
-        /* most primitives can be handled just by calling the skeleton
-           function, but some need special attention */
-        call = get_skeleton(fsym, fdef); /* get the call with the formal arguments in it */
-        prim_case = primitive_case(fsym, f);
-        if (prim_case)
-            call = nonstandard_primitive(prim_case, call, f, ev);
-        else
-            /* the skeleton is almost surely a call to the same primitive, but we
-               don't need to assume that. */
-            SETCAR(call, f);
-        PROTECT(call);
-        nprotect++;
-        val = eval(call, ev);
+    case BUILTINSXP:
+        /* primitives  can't be methods; they arise only as the
+           default method when a primitive is made generic.  In this
+           case, return a special marker telling the C code to go on
+           with the internal computations. */
+        val = R_deferred_default_method();
         break;
-    }
     case LANGSXP:
         if (mlist == R_NilValue)
         {
@@ -710,4 +770,11 @@ function  MethodListSelect in R */
     UNPROTECT(nprotect);
     nprotect = 0;
     return method;
+}
+
+SEXP R_M_setPrimitiveMethods(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef)
+{
+    SEXP mlist;
+    mlist = R_get_from_f_env(R_get_function_env(fundef, fname), s_dot_Methods, fname);
+    return R_set_prim_method(fname, op, code_vec, fundef, mlist);
 }

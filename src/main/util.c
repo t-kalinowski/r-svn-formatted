@@ -347,6 +347,11 @@ Rboolean isFunction(SEXP s)
     return (TYPEOF(s) == CLOSXP || TYPEOF(s) == BUILTINSXP || TYPEOF(s) == SPECIALSXP);
 }
 
+Rboolean isPrimitive(SEXP s)
+{
+    return (TYPEOF(s) == BUILTINSXP || TYPEOF(s) == SPECIALSXP);
+}
+
 Rboolean isList(SEXP s)
 {
     return (s == R_NilValue || TYPEOF(s) == LISTSXP);
