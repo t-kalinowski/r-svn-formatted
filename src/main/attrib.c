@@ -1127,7 +1127,18 @@ SEXP R_pseudo_null()
 /* the @ operator, and its assignment form.  Processed much like $
    (see do_subset3) but without S3-style methods.
 */
+SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP nlist, object, ans;
 
+    nlist = CADR(args);
+    PROTECT(object = eval(CAR(args), env));
+    ans = R_do_slot(object, nlist);
+    UNPROTECT(1);
+    return ans;
+}
+
+#ifdef NOTYET
 SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nlist, object, ans, class;
@@ -1152,6 +1163,7 @@ SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+#endif
 #if 0
 /* Was a .Primitive implementation for @<-; no longer needed? */
 SEXP do_AT_assign(SEXP call, SEXP op, SEXP args, SEXP env)
