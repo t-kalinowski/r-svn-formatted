@@ -1069,3 +1069,31 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     return (mkString(buf));
 }
+
+void F77_SYMBOL(rexitc)(char *msg, int *nchar)
+{
+    int nc = *nchar;
+    char buf[256];
+    if (nc > 255)
+    {
+        warning("error message truncated to 255 chars");
+        nc = 255;
+    }
+    strncpy(buf, msg, nc);
+    buf[nc] = '\0';
+    error(buf);
+}
+
+void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
+{
+    int nc = *nchar;
+    char buf[256];
+    if (nc > 255)
+    {
+        warning("warning message truncated to 255 chars");
+        nc = 255;
+    }
+    strncpy(buf, msg, nc);
+    buf[nc] = '\0';
+    warning(buf);
+}
