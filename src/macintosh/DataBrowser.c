@@ -32,7 +32,7 @@
 #endif
 #include <Defn.h>
 
-#if (defined(Macintosh) || defined(__APPLE_CC__))
+#if (defined(Macintosh) || defined(HAVE_AQUA))
 
 #ifdef __APPLE_CC__
 #include <Carbon/Carbon.h>
@@ -755,12 +755,14 @@ pascal OSStatus BrowserEventHandler(EventHandlerCallRef a, EventRef inEvent, voi
 
     return result;
 }
+/*
 #else
 SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     warning("object browser not available on this platform\n");
     return R_NilValue;
 }
-#endif /* !(defined(Macintosh) && !defined(__APPLE_CC__)) */
+*/
+#endif /* !(defined(Macintosh) && !defined(HAVE_AQUA)) */
 
 #endif /* __R_DATA_BROWSER__ */
