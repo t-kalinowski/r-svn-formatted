@@ -374,8 +374,31 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
 #endif
 }
 
+/* DGEMM - perform one of the matrix-matrix operations    */
+/* C := alpha*op( A )*op( B ) + beta*C */
+extern void F77_NAME(zgemm)(const char *transa, const char *transb, const int *m, const int *n, const int *k,
+                            const Rcomplex *alpha, const Rcomplex *a, const int *lda, const Rcomplex *b, const int *ldb,
+                            const Rcomplex *beta, Rcomplex *c, const int *ldc);
+
 static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int ncy, Rcomplex *z)
 {
+#ifdef IEEE_754
+    char *transa = "N", *transb = "N";
+    int i;
+    Rcomplex one, zero;
+
+    one.r = 1.0;
+    one.i = zero.r = zero.i = 0.0;
+    if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
+    {
+        F77_CALL(zgemm)(transa, transb, &nrx, &ncy, &ncx, &one, x, &nrx, y, &nry, &zero, z, &nrx);
+    }
+    else
+    { /* zero-extent operations should return zeroes */
+        for (i = 0; i < nrx * ncy; i++)
+            z[i].r = z[i].i = 0;
+    }
+#else
     int i, j, k;
     double xij_r, xij_i, yjk_r, yjk_i, sum_i, sum_r;
 
@@ -392,19 +415,16 @@ static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int nc
                 xij_i = x[i + j * nrx].i;
                 yjk_r = y[j + k * nry].r;
                 yjk_i = y[j + k * nry].i;
-#ifndef IEEE_754
                 if (ISNAN(xij_r) || ISNAN(xij_i) || ISNAN(yjk_r) || ISNAN(yjk_i))
                     goto next_ik;
-#endif
                 sum_r += (xij_r * yjk_r - xij_i * yjk_i);
                 sum_i += (xij_r * yjk_i + xij_i * yjk_r);
             }
             z[i + k * nrx].r = sum_r;
             z[i + k * nrx].i = sum_i;
-#ifndef IEEE_754
         next_ik:;
-#endif
         }
+#endif
 }
 
 static void symcrossprod(double *x, int nr, int nc, double *z)
@@ -412,7 +432,6 @@ static void symcrossprod(double *x, int nr, int nc, double *z)
     char *trans = "T", *uplo = "U";
     double one = 1.0, zero = 0.0;
     int i, j;
-
     if (nr > 0 && nc > 0)
     {
         F77_CALL(dsyrk)(uplo, trans, &nc, &nr, &one, x, &nr, &zero, z, &nc);
@@ -456,6 +475,17 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
 
 static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int ncy, Rcomplex *z)
 {
+#ifdef IEEE_754
+    char *transa = "T", *transb = "N";
+    Rcomplex one, zero;
+
+    one.r = 1.0;
+    one.i = zero.r = zero.i = 0.0;
+    if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
+    {
+        F77_CALL(zgemm)(transa, transb, &ncx, &ncy, &nrx, &one, x, &nrx, y, &nry, &zero, z, &ncx);
+    }
+#else
     int i, j, k;
     double xji_r, xji_i, yjk_r, yjk_i, sum_r, sum_i;
 
@@ -485,8 +515,8 @@ static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int 
         next_ik:;
 #endif
         }
+#endif
 }
-
 SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int ldx, ldy, nrx, ncx, nry, ncy, mode;
@@ -659,7 +689,10 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         PROTECT(ans = allocMatrix(mode, ncx, ncy));
         if (mode == CPLXSXP)
-            ccrossprod(COMPLEX(CAR(args)), nrx, ncx, COMPLEX(CADR(args)), nry, ncy, COMPLEX(ans));
+            if (sym)
+                ccrossprod(COMPLEX(CAR(args)), nrx, ncx, COMPLEX(CAR(args)), nry, ncy, COMPLEX(ans));
+            else
+                ccrossprod(COMPLEX(CAR(args)), nrx, ncx, COMPLEX(CADR(args)), nry, ncy, COMPLEX(ans));
         else
         {
 #ifdef IEEE_754
