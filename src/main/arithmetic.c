@@ -22,7 +22,15 @@
 #include <config.h>
 #endif
 
-#include "Defn.h" /*-> Arith.h */
+#ifdef __OpenBSD__
+/* for definition of "struct exception" in math.h */
+#define __LIBM_PRIVATE
+#endif
+#include "Defn.h" /*-> Arith.h -> math.h */
+#ifdef __OpenBSD__
+#undef __LIBM_PRIVATE
+#endif
+
 #define MATHLIB_PRIVATE
 #include <Rmath.h>
 #undef MATHLIB_PRIVATE
