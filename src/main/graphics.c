@@ -503,7 +503,7 @@ static double xOMA1toDev(double x, DevDesc *dd)
 
 static double yOMA1toDev(double y, DevDesc *dd)
 {
-    return yLinetoDev((dd->gp.oma[0] - y - 1), dd);
+    return yLinetoDev((dd->gp.oma[0] - y), dd);
 }
 
 static double xOMA2toyDev(double x, DevDesc *dd)
@@ -534,7 +534,7 @@ static double xOMA4toyDev(double x, DevDesc *dd)
 
 static double yOMA4toxDev(double y, DevDesc *dd)
 {
-    double ndc = 1.0 - xDevtoNDC(xLinetoDev(dd->gp.oma[3] - y - 1, dd), dd);
+    double ndc = 1.0 - xDevtoNDC(xLinetoDev(dd->gp.oma[3] - y, dd), dd);
     return xNDCtoDev(ndc, dd);
 }
 
@@ -1889,7 +1889,7 @@ DevDesc *GNewPlot(Rboolean recording)
             dd->dp.currentFigure = dd->gp.currentFigure = 1;
         }
 
-        dd->gp.new = dd->gp.new = TRUE;
+        dd->dp.new = dd->gp.new = TRUE;
         GReset(dd);
         if (dd->dp.canClip)
             GForceClip(dd);
@@ -4262,7 +4262,7 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
          3 = always vertical.
     */
     double angle, xadj, yadj;
-    int coords;
+    int coords, subcoords;
 
     /* Init to keep -Wall happy: */
     angle = 0.;
@@ -4275,85 +4275,93 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
         switch (side)
         {
         case 1:
-            angle = 0;
             coords = OMA1;
             break;
         case 2:
-            angle = 90;
             coords = OMA2;
             break;
         case 3:
-            angle = 0;
             coords = OMA3;
             break;
         case 4:
-            angle = 90;
             coords = OMA4;
             break;
         }
-        GText(at, line, coords, str, xadj, yadj, angle, dd);
+        subcoords = NIC;
     }
     else
     {
-        /* Note: I changed dd->gp.yLineBias to 0.3 here. */
-        /* Purely visual tuning. RI */
         switch (side)
         {
         case 1:
-            if (las == 2 || las == 3)
-            {
-                at = at + GConvertXUnits(0.3, LINES, USER, dd);
-                angle = 90;
-            }
-            else
-            {
-                line = line + 1 - dd->gp.yLineBias;
-                angle = 0;
-            }
             coords = MAR1;
             break;
         case 2:
-            if (las == 1 || las == 2)
-            {
-                at = at - GConvertYUnits(0.3, LINES, USER, dd);
-                angle = 0;
-            }
-            else
-            {
-                line = line + dd->gp.yLineBias;
-                angle = 90;
-            }
             coords = MAR2;
             break;
         case 3:
-            if (las == 2 || las == 3)
-            {
-                at = at + GConvertXUnits(0.3, LINES, USER, dd);
-                angle = 90;
-            }
-            else
-            {
-                line = line + dd->gp.yLineBias;
-                angle = 0;
-            }
             coords = MAR3;
             break;
         case 4:
-            if (las == 1 || las == 2)
-            {
-                at = at - GConvertYUnits(0.3, LINES, USER, dd);
-                angle = 0;
-            }
-            else
-            {
-                line = line + 1 - dd->gp.yLineBias;
-                angle = 90;
-            }
             coords = MAR4;
             break;
         }
-        GText(at, line, coords, str, xadj, yadj, angle, dd);
+        subcoords = USER;
     }
+    /* Note: I changed dd->gp.yLineBias to 0.3 here. */
+    /* Purely visual tuning. RI */
+    switch (side)
+    {
+    case 1:
+        if (las == 2 || las == 3)
+        {
+            at = at + GConvertXUnits(0.3, LINES, subcoords, dd);
+            angle = 90;
+        }
+        else
+        {
+            line = line + 1 - dd->gp.yLineBias;
+            angle = 0;
+        }
+        break;
+    case 2:
+        if (las == 1 || las == 2)
+        {
+            at = at - GConvertYUnits(0.3, LINES, subcoords, dd);
+            angle = 0;
+        }
+        else
+        {
+            line = line + dd->gp.yLineBias;
+            angle = 90;
+        }
+        break;
+    case 3:
+        if (las == 2 || las == 3)
+        {
+            at = at + GConvertXUnits(0.3, LINES, subcoords, dd);
+            angle = 90;
+        }
+        else
+        {
+            line = line + dd->gp.yLineBias;
+            angle = 0;
+        }
+        break;
+    case 4:
+        if (las == 1 || las == 2)
+        {
+            at = at - GConvertYUnits(0.3, LINES, subcoords, dd);
+            angle = 0;
+        }
+        else
+        {
+            line = line + 1 - dd->gp.yLineBias;
+            angle = 90;
+        }
+        break;
+    }
+    GText(at, line, coords, str, xadj, yadj, angle, dd);
 } /* GMtext */
 
 /* Colour Code */
