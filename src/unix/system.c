@@ -183,8 +183,10 @@ static void readline_handler(char *line)
         return;
     if (line[0])
     {
+#ifdef HAVE_READLINE_HISTORY_H
         if (strlen(line) && readline_addtohistory)
             add_history(line);
+#endif
         l = (((readline_len - 2) > strlen(line)) ? strlen(line) : (readline_len - 2));
         strncpy(readline_buf, line, l);
         readline_buf[l] = '\n';
@@ -512,7 +514,7 @@ int main(int ac, char **av)
     __setfpucw(_FPU_IEEE);
 #endif
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_HISTORY_H
     if (isatty(0) && UsingReadline)
         read_history(".Rhistory");
 #endif
@@ -565,7 +567,7 @@ void R_CleanUp(int ask)
         case 'y':
         case 'Y':
             R_SaveGlobalEnv();
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_HISTORY_H
             if (isatty(0) && UsingReadline)
                 write_history(".Rhistory");
 #endif
