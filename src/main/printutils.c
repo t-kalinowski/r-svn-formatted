@@ -471,7 +471,7 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
         else
         {    /* 8 bit char */
 #ifdef Win32 /* It seems Windows does not know what is printable! */
-            *q++ = *p;
+            *q++ = *p++;
 #else
             if (!isprint((int)*p))
             {
