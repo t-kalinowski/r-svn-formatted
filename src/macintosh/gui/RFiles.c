@@ -121,7 +121,7 @@ extern pascal OSErr FSpGetFullPath(const FSSpec *, short *, Handle *);
 extern RGBColor tempTypeColour;
 #define kMaxFlavors 7
 
-OSStatus ReadTextFile(const FSSpec *pFileSpec, WEReference we)
+OSStatus ReadTextFile(const FSSpec *pFileSpec, WindowPtr window)
 {
     //	const int			kMaxFlavors = 7 ;
     SInt16 dataForkRefNum = kFileNotOpened;
@@ -145,6 +145,12 @@ OSStatus ReadTextFile(const FSSpec *pFileSpec, WEReference we)
     Boolean srange;
     char *testo;
     RGBColor color;
+    WEReference we;
+
+    if (!window)
+        return -1;
+
+    we = GetWindowWE(window);
 
     BlockZero(hFlavors, sizeof(hFlavors));
 
@@ -411,7 +417,7 @@ cleanup:
     }
 
     if (pFileSpec)
-        SetWTitle(FrontWindow(), (char const *)&pFileSpec->name);
+        SetWTitle(window, (char const *)&pFileSpec->name);
 
     return err;
 }
