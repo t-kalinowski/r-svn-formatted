@@ -215,7 +215,7 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
             /* internal version of isClass() */
             char str[201];
             snprintf(str, 200, ".__C__%s", CHAR(STRING_ELT(class, 0)));
-            if (findVar(install(str), rho))
+            if (findVar(install(str), rho) != R_UnboundValue)
                 callShow = TRUE;
         }
     }
@@ -404,7 +404,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     /* internal version of isClass() */
                     char str[201];
                     snprintf(str, 200, ".__C__%s", CHAR(STRING_ELT(class, 0)));
-                    if (findVar(install(str), env))
+                    if (findVar(install(str), env) != R_UnboundValue)
                         className = CHAR(STRING_ELT(class, 0));
                 }
             }
@@ -806,17 +806,20 @@ void PrintValueEnv(SEXP s, SEXP env)
     if (isObject(s))
     {
         /* The intention here is call show() on S4 objects, otherwise
-           print(), so S4 methods for show have precedence over those for
-           print.  However, currently (2003-02-13) isClass() thinks
-           data.frame is an S4 class.
-            if(isMethodsDispatchOn()) {
-            SEXP class = getAttrib(s, R_ClassSymbol);
-            if(length(class) == 1) {
-            char str[201];
-            snprintf(str, 200, ".__C__%s", CHAR(STRING_ELT(class, 0)));
-            if(findVar(install(str), env)) autoprint = "show";
-            }
-        } */
+           print(), so S4 methods for show() have precedence over those for
+           print().  Some S3 classes extend oldClass and so will be
+           sent to show, but those which do not are not handled correctly
+           as yet.
+        */
+        /* if(isMethodsDispatchOn()) {
+        SEXP class = getAttrib(s, R_ClassSymbol);
+        if(length(class) == 1) {
+        char str[201];
+        snprintf(str, 200, ".__C__%s", CHAR(STRING_ELT(class, 0)));
+        if(findVar(install(str), env) != R_UnboundValue)
+            autoprint = "show";
+        }
+    } */
         PROTECT(call = lang2(install(autoprint), s));
         eval(call, env);
         UNPROTECT(1);
