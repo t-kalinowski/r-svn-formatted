@@ -302,7 +302,7 @@ static void menupkginstallcran(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "{a <- CRAN.packages()\ninstall.packages(select.list(a[,1]), .lib.loc[1], available=a)}");
+    consolecmd(RConsole, "{a <- CRAN.packages()\ninstall.packages(select.list(a[,1],TRUE), .lib.loc[1], available=a)}");
     show(RConsole);
 }
 
