@@ -383,6 +383,10 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     stretch = 1;
     PROTECT(indx = makeSubscript(x, s, &stretch));
     n = length(indx);
+    if (length(y) > 1)
+        for (i = 0; i < n; i++)
+            if (INTEGER(indx)[i] == NA_INTEGER)
+                error("NAs are not allowed in subscripted assignments");
 
     /* Here we make sure that the LHS has */
     /* been coerced into a form which can */
@@ -677,6 +681,15 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     sc = SETCADR(s, arraySubscript(1, CADR(s), dim, getAttrib, (STRING_ELT), x));
     nrs = LENGTH(sr);
     ncs = LENGTH(sc);
+    if (ny > 1)
+    {
+        for (i = 0; i < nrs; i++)
+            if (INTEGER(sr)[i] == NA_INTEGER)
+                error("NAs are not allowed in subscripted assignments");
+        for (i = 0; i < ncs; i++)
+            if (INTEGER(sc)[i] == NA_INTEGER)
+                error("NAs are not allowed in subscripted assignments");
+    }
 
     n = nrs * ncs;
 
@@ -971,6 +984,14 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         errorcall(call, "nothing to replace with");
     if (n > 0 && n % ny)
         errorcall(call, "number of items to replace is not a multiple of replacement length");
+
+    if (ny > 1)
+    { /* check for NAs in indices */
+        for (i = 0; i < k; i++)
+            for (j = 0; j < bound[i]; j++)
+                if (subs[i][j] == NA_INTEGER)
+                    error("NAs are not allowed in subscripted assignments");
+    }
 
     offset[0] = 1;
     for (i = 1; i < k; i++)
