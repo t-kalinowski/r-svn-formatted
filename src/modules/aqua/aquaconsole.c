@@ -72,7 +72,7 @@ extern SA_TYPE RestoreAction;
 void GraphicCopy(WindowPtr window);
 
 /* Items for the Edit menu */
-#define kRCmdEditObject 'edbj'
+#define kRCmdEdirObject 'edbj'
 /* Items for the Tools menu */
 #define kRCmdFileShow 'fshw'
 #define kRCmdEditFile 'edtf'
@@ -336,6 +336,7 @@ static const EventTypeSpec RGlobalWinEvents[] = {
 static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
 
 void InitAboutWindow(void);
+
 int GetTextFromWindow(char *msg, char *text, int len);
 
 void HistBack(void);
@@ -389,6 +390,7 @@ TXNControlData txnControlData[1];
 TXNMargins txnMargins;
 
 static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData);
+static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData);
 
 void SetUpRAquaMenu(void);
 OSStatus InstallAppHandlers(void);
@@ -458,11 +460,14 @@ OSStatus SetUPConsole(void)
         err = TXNActivate(RConsoleOutObject, OutframeID, kScrollBarsAlwaysActive);
         err = TXNActivate(RConsoleInObject, InframeID, kScrollBarsAlwaysActive);
 
-        err = SetWindowProperty(ConsoleWindow, 'RCON', 'tFrm', sizeof(TXNFrameID), &OutframeID);
-        err = SetWindowProperty(ConsoleWindow, 'RCON', 'tObj', sizeof(TXNObject), &RConsoleOutObject);
-        err = SetWindowProperty(ConsoleWindow, 'RCON', 'tFrm', sizeof(TXNFrameID), &InframeID);
-        err = SetWindowProperty(ConsoleWindow, 'RCON', 'tObj', sizeof(TXNObject), &RConsoleInObject);
+        err = SetWindowProperty(ConsoleWindow, 'RCON', 'rFrm', sizeof(TXNFrameID), &OutframeID);
+        err = SetWindowProperty(ConsoleWindow, 'RCON', 'rObj', sizeof(TXNObject), &RConsoleOutObject);
+        err = SetWindowProperty(ConsoleWindow, 'RCON', 'rFrm', sizeof(TXNFrameID), &InframeID);
+        err = SetWindowProperty(ConsoleWindow, 'RCON', 'rObj', sizeof(TXNObject), &RConsoleInObject);
     }
+
+    frameOptions = kTXNShowWindowMask | kTXNDoNotInstallDragProcsMask | kTXNMonostyledTextMask;
+    frameOptions |= kTXNWantHScrollBarMask | kTXNWantVScrollBarMask | kTXNReadOnlyMask;
 
     if (err != noErr)
         return (err);
@@ -496,10 +501,13 @@ OSStatus SetUPConsole(void)
 void Raqua_ProcessEvents(void);
 
 Boolean AlreadyRunning = false;
+
+int RAquaStdoutPipefd[2];
+
 void Raqua_StartConsole(Rboolean OpenConsole)
 {
     IBNibRef nibRef = NULL;
-    OSErr err = noErr;
+    OSErr err = noErr, result;
     CFURLRef bundleURL = NULL;
     CFBundleRef RBundle = NULL;
 
@@ -513,6 +521,12 @@ void Raqua_StartConsole(Rboolean OpenConsole)
             goto noconsole;
 
         InitAboutWindow();
+
+        if (pipe(RAquaStdoutPipefd) < 0)
+            goto noconsole;
+
+        dup2(RAquaStdoutPipefd[1], STDOUT_FILENO);
+        write(RAquaStdoutPipefd[1], " ", 1);
 
         GetRPrefs();
 
@@ -551,6 +565,8 @@ void Raqua_StartConsole(Rboolean OpenConsole)
     }
 
     InstallEventLoopTimer(GetCurrentEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, NULL);
+    InstallEventLoopTimer(GetCurrentEventLoop(), 0, kEventDurationSecond / 5, NewEventLoopTimerUPP(ReadStdoutTimer),
+                          NULL, NULL);
 
     RAqua2Front();
 
@@ -719,7 +735,6 @@ static void Aqua_FlushBuffer(void)
 {
     if (WeHaveConsole)
     {
-
         if (WeAreBuffering)
         {
             TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
@@ -1475,7 +1490,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 }
                 break;
 
-            case kRCmdEditObject:
+            case kRCmdEdirObject:
                 if (GetTextFromWindow("Type the name of the object you want to edit", buf, 255) == kRDlogProc)
                 {
                     sprintf(cmd, "%s <- edit(%s)", buf, buf);
@@ -2100,7 +2115,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
     char cmd[255], filename[300], *buf;
     WindowRef EventWindow;
     EventRef REvent;
-    TXNObject RHlpObj = NULL, REdtObj = NULL;
+    TXNObject RHlpObj = NULL, REdrObj = NULL;
     SInt16 FileRefNum;
     FSSpec fsspec;
     int fsize, txtlen, i;
@@ -2181,10 +2196,10 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
             err = noErr;
         }
 
-        if (GetWindowProperty(EventWindow, 'REDT', 'robj', sizeof(TXNObject), NULL, &REdtObj) == noErr)
+        if (GetWindowProperty(EventWindow, 'REDT', 'robj', sizeof(TXNObject), NULL, &REdrObj) == noErr)
         {
             err = GetWindowProperty(EventWindow, 'REDT', 'chgs', sizeof(ItemCount), NULL, &changes);
-            TXNGetActionChangeCount(REdtObj, kTXNAllCountMask, &newchanges);
+            TXNGetActionChangeCount(REdrObj, kTXNAllCountMask, &newchanges);
             if (changes != newchanges)
             {
                 GetWTitle(EventWindow, wintitle);
@@ -2289,7 +2304,7 @@ int NewEditWindow(char *fileName)
     WindowRef EditWindow = NULL;
     Str255 Title;
     FSSpec fsspec;
-    TXNObject REditObject = NULL;
+    TXNObject REdirObject = NULL;
     TXNFrameID EditFrameID = 0;
     SInt16 refNum = 0;
     TXNFrameOptions frameOptions;
@@ -2344,33 +2359,33 @@ int NewEditWindow(char *fileName)
         fileInfo.fdType = kTXNTextFile;
 
     err = TXNNewObject(NULL, EditWindow, NULL, frameOptions, kTXNTextEditStyleFrameType, fileInfo.fdType,
-                       kTXNSystemDefaultEncoding, &REditObject, &EditFrameID, 0);
+                       kTXNSystemDefaultEncoding, &REdirObject, &EditFrameID, 0);
 
     if (err != noErr)
         goto fail;
 
-    err = TXNSetTXNObjectControls(REditObject, false, 1, REditTag, REditData);
-    TXNSetTXNObjectControls(REditObject, false, 1, txnControlTag, txnControlData);
+    err = TXNSetTXNObjectControls(REdirObject, false, 1, REditTag, REditData);
+    TXNSetTXNObjectControls(REdirObject, false, 1, txnControlTag, txnControlData);
 
     tabdata.tabValue.value = (SInt16)(CurrentPrefs.TabSize * CurrentPrefs.ConsoleFontSize);
     tabdata.tabValue.tabType = kTXNRightTab;
     tabdata.tabValue.filler = 0;
 
-    TXNSetTXNObjectControls(REditObject, false, 1, &tabtag, &tabdata);
+    TXNSetTXNObjectControls(REdirObject, false, 1, &tabtag, &tabdata);
 
     /* setting FG colors */
-    TXNSetTypeAttributes(REditObject, 1, RInAttr, 0, kTXNEndOffset);
+    TXNSetTypeAttributes(REdirObject, 1, RInAttr, 0, kTXNEndOffset);
 
     /* setting BG colors */
     RBGInfo.bgType = kTXNBackgroundTypeRGB;
     RBGInfo.bg.color = CurrentPrefs.BGInputColor;
-    TXNSetBackground(REditObject, &RBGInfo);
+    TXNSetBackground(REdirObject, &RBGInfo);
 
     typeAttr.tag = kTXNQDFontSizeAttribute;
     typeAttr.size = kTXNFontSizeAttributeSize;
     typeAttr.data.dataValue = Long2Fix(CurrentPrefs.ConsoleFontSize);
 
-    TXNSetTypeAttributes(REditObject, 1, &typeAttr, 0, kTXNEndOffset);
+    TXNSetTypeAttributes(REdirObject, 1, &typeAttr, 0, kTXNEndOffset);
 
     CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
     GetFNum(fontname, &fontID);
@@ -2379,12 +2394,12 @@ int NewEditWindow(char *fileName)
     typeAttr.size = kTXNQDFontFamilyIDAttributeSize;
     typeAttr.data.dataValue = fontID;
 
-    TXNSetTypeAttributes(REditObject, 1, &typeAttr, 0, kTXNEndOffset);
+    TXNSetTypeAttributes(REdirObject, 1, &typeAttr, 0, kTXNEndOffset);
 
     if (err != noErr)
         goto fail;
 
-    err = SetWindowProperty(EditWindow, 'REDT', 'robj', sizeof(TXNObject), &REditObject);
+    err = SetWindowProperty(EditWindow, 'REDT', 'robj', sizeof(TXNObject), &REdirObject);
     err = SetWindowProperty(EditWindow, 'REDT', 'rfrm', sizeof(TXNFrameID), &EditFrameID);
     if (WeHaveFSS)
     {
@@ -2402,7 +2417,7 @@ int NewEditWindow(char *fileName)
     err = InstallWindowEventHandler(EditWindow, NewEventHandlerUPP(DoCloseHandler), GetEventTypeCount(RCloseWinEvent),
                                     RCloseWinEvent, (void *)EditWindow, NULL);
 
-    TXNActivate(REditObject, EditFrameID, kScrollBarsAlwaysActive);
+    TXNActivate(REdirObject, EditFrameID, kScrollBarsAlwaysActive);
     if (WeHaveFSS)
     {
         if ((fp = R_fopen(R_ExpandFileName(fileName), "r")))
@@ -2415,7 +2430,7 @@ int NewEditWindow(char *fileName)
             {
                 fread(fbuf, 1, flen, fp);
                 fbuf[flen] = '\0';
-                TXNSetData(REditObject, kTXNTextData, fbuf, strlen(fbuf), kTXNEndOffset, kTXNEndOffset);
+                TXNSetData(REdirObject, kTXNTextData, fbuf, strlen(fbuf), kTXNEndOffset, kTXNEndOffset);
                 free(fbuf);
             }
             fclose(fp);
@@ -2424,23 +2439,23 @@ int NewEditWindow(char *fileName)
 
     ShowWindow(EditWindow);
     BeginUpdate(EditWindow);
-    TXNForceUpdate(REditObject);
-    TXNDraw(REditObject, NULL);
+    TXNForceUpdate(REdirObject);
+    TXNDraw(REdirObject, NULL);
     EndUpdate(EditWindow);
 
-    TXNSetSelection(REditObject, 1, 1);
-    TXNShowSelection(REditObject, false);
-    TXNFocus(REditObject, true);
+    TXNSetSelection(REdirObject, 1, 1);
+    TXNShowSelection(REdirObject, false);
+    TXNFocus(REdirObject, true);
 
-    TXNGetActionChangeCount(REditObject, kTXNAllCountMask, &changes);
+    TXNGetActionChangeCount(REdirObject, kTXNAllCountMask, &changes);
     err = SetWindowProperty(EditWindow, 'REDT', 'chgs', sizeof(ItemCount), &changes);
     AddEditWindow(EditWindow);
     return 0;
 
 fail:
 
-    if (REditObject)
-        TXNDeleteObject(REditObject);
+    if (REdirObject)
+        TXNDeleteObject(REdirObject);
 
     if (EditWindow)
         HideWindow(EditWindow);
@@ -3195,6 +3210,13 @@ pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, l
     return noErr;
 }
 
+void Raqua_doIdle(void);
+void Raqua_doIdle(void)
+{
+    if (ConsoleWindow != NULL)
+        IdleControls(ConsoleWindow);
+}
+
 void Raqua_ProcessEvents(void)
 {
     EventRef theEvent;
@@ -3219,6 +3241,23 @@ void Raqua_ProcessEvents(void)
         SendEventToEventTarget(theEvent, theTarget);
         ReleaseEvent(theEvent);
     }
+}
+
+static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
+{
+    int r;
+    char c[32001];
+
+    if ((r = read(RAquaStdoutPipefd[0], c, 32000)) > 0)
+    {
+        c[r] = '\0';
+        if (r > 1)
+        {
+            Raqua_WriteConsole(c, r);
+            Aqua_FlushBuffer();
+        }
+    }
+    write(RAquaStdoutPipefd[1], " ", 1);
 }
 
 #endif /* HAVE_AQUA */
