@@ -1470,7 +1470,7 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
     return err;
 }
 
-extern void CloseDataBrowser(WindowRef window);
+extern void CloseDataBrowser(void);
 
 /* DoClose:
    In here, you need to understand that different windows have
@@ -1503,7 +1503,7 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
 
     if (isBrowserWindow(window))
     {
-        CloseDataBrowser(window);
+        CloseDataBrowser();
         return (noErr);
     }
 
@@ -2140,11 +2140,7 @@ void DoTools(SInt16 menuItem)
     {
 
     case kItemBrowseWSpace:
-        OpenDataBrowser();
-        break;
-
-    case kItemUpdateBrowser:
-        Rprintf("\n updating...");
+        consolecmd("browse.wspace()");
         break;
 
     case kItemShowWSpace:
