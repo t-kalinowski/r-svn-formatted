@@ -590,8 +590,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         break;
     }
     UNPROTECT(1);
-    if (strBuf.data)
-        free(strBuf.data);
+    R_FreeStringBuffer(&strBuf);
     return bns;
 }
 
@@ -777,8 +776,7 @@ done:
         SET_VECTOR_ELT(ans, i, new);
     }
     UNPROTECT(1);
-    if (buf.data)
-        free(buf.data);
+    R_FreeStringBuffer(&buf);
     return ans;
 }
 
