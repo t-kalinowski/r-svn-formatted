@@ -124,7 +124,7 @@ void registerBase()
 
 /* FIXME: Make this a macro to avoid function call overhead?
  */
-GPar *gpptr(DevDesc *dd)
+GPar *Rf_gpptr(DevDesc *dd)
 {
     if (dd->newDevStruct)
         return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->gp);
@@ -132,7 +132,7 @@ GPar *gpptr(DevDesc *dd)
         return &(dd->gp);
 }
 
-GPar *dpptr(DevDesc *dd)
+GPar *Rf_dpptr(DevDesc *dd)
 {
     if (dd->newDevStruct)
         return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->dp);
@@ -140,7 +140,7 @@ GPar *dpptr(DevDesc *dd)
         return &(dd->dp);
 }
 
-GPar *dpSavedptr(DevDesc *dd)
+GPar *Rf_dpSavedptr(DevDesc *dd)
 {
     if (dd->newDevStruct)
         return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->dpSaved);
@@ -148,7 +148,7 @@ GPar *dpSavedptr(DevDesc *dd)
         return &(dd->dpSaved);
 }
 
-SEXP displayList(DevDesc *dd)
+SEXP Rf_displayList(DevDesc *dd)
 {
     if (dd->newDevStruct)
         return ((GEDevDesc *)dd)->dev->displayList;
