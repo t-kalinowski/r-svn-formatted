@@ -388,8 +388,7 @@ SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         cnt = 0;
         iconvlist(write_one, (void *)ans);
 #else
-        error("`iconvlist' is not available on this system");
-        ans = R_NilValue; /* -Wall */
+        PROTECT(ans = R_NilValue);
 #endif
     }
     else
