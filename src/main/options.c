@@ -159,12 +159,12 @@ static SEXP SetOption(SEXP tag, SEXP value)
 }
 
 /* Note that options are stored as a dotted pair list */
-/* This is larely historical, but is also useful. */
+/* This is barely historical, but is also useful. */
 
 void InitOptions(void)
 {
     SEXP t, val, v;
-    PROTECT(v = val = allocList(8));
+    PROTECT(v = val = allocList(9));
     TAG(v) = install("prompt");
     CAR(v) = mkString("> ");
     v = CDR(v);
@@ -195,6 +195,10 @@ void InitOptions(void)
     TAG(v) = install("verbose");
     CAR(v) = allocVector(LGLSXP, 1);
     LOGICAL(CAR(v))[0] = R_Verbose;
+    v = CDR(v);
+    TAG(v) = install("check.bounds");
+    CAR(v) = allocVector(LGLSXP, 1);
+    LOGICAL(CAR(v))[0] = 0; /* no checking */
     SYMVALUE(install(".Options")) = val;
     UNPROTECT(2);
 }

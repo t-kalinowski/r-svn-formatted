@@ -66,20 +66,6 @@
 
 static SEXP gcall;
 
-static int R_BoundChecking = 0;
-
-SEXP do_checkbounds(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    int flag;
-    checkArity(op, args);
-    flag = asLogical(CAR(args));
-    if (flag == NA_LOGICAL)
-        errorcall(call, "invalid argument\n");
-    R_BoundChecking = flag;
-    R_Visible = 0;
-    return R_NilValue;
-}
-
 /* "EnlargeVector" takes a vector "x" and changes its length to */
 /* "newlen".  This makes it possible to assign values "past the */
 /* end" of the vector or list although, unlike S, we only extend */
@@ -91,7 +77,7 @@ static SEXP EnlargeVector(SEXP x, int newlen)
     SEXP newx, names, newnames;
 
     /* Sanity Checks */
-    if (R_BoundChecking)
+    if (LOGICAL(GetOption(install("check.bounds"), R_NilValue))[0])
         warning("assignment outside vector/list limits\n");
     if (!isVector(x))
         error("attempt to enlarge non-vector\n");

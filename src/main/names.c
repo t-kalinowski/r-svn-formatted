@@ -518,7 +518,6 @@ FUNTAB R_FunTab[] = {
     {"environment", do_envir, 0, 11, 1, PP_FUNCALL},
     {"environment<-", do_envirgets, 0, 1, 2, PP_FUNCALL},
     {"options", do_options, 0, 11, 1, PP_FUNCALL},
-    {"check.bounds", do_checkbounds, 0, 11, 1, PP_FUNCALL},
     {"sink", do_sink, 0, 111, 1, PP_FUNCALL},
     {"lib.fixup", do_libfixup, 0, 111, 2, PP_FUNCALL},
     {"pos.to.env", do_pos2env, 0, 1, 1, PP_FUNCALL},
