@@ -3162,7 +3162,7 @@ void Raqua_CleanUp(SA_TYPE saveact, int status, int runLast)
     if ((tmpdir = getenv("R_SESSION_TMPDIR")))
     {
         snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
-        system((char *)buf);
+        R_system((char *)buf);
     }
     exit(status);
 }

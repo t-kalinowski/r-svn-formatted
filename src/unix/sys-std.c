@@ -738,7 +738,7 @@ void Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
     if ((tmpdir = getenv("R_SESSION_TMPDIR")))
     {
         snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
-        system((char *)buf);
+        R_system((char *)buf);
     }
     if (saveact != SA_SUICIDE)
         KillAllDevices();
@@ -801,7 +801,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
             fclose(tfp);
         }
         snprintf(buf, 1024, "%s < %s", pager, filename);
-        res = system(buf);
+        res = R_system(buf);
         unlink(filename);
         return (res != 0);
     }

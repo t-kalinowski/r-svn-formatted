@@ -202,7 +202,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     if (*state->bufp == '!')
     {
 #ifdef HAVE_SYSTEM
-        system(&(state->buf[1]));
+        R_system(&(state->buf[1]));
 #else
         Rprintf("error: system commands are not supported in this version of R.\n");
 #endif /* HAVE_SYSTEM */
