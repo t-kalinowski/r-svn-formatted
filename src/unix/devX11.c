@@ -469,6 +469,8 @@ static void SetColor(int color, DevDesc *dd)
             Colors[NColors].pixel = xd->fgcolor.pixel;
             NColors++;
         }
+        else if (XAllocColor(display, cmap, &(xd->fgcolor)) == 0)
+            error("color allocation error\n");
     found:
         blackpixel = xd->fgcolor.pixel;
         xd->col = color;
