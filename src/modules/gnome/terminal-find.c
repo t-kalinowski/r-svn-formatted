@@ -34,11 +34,6 @@
 
 #include <regex.h>
 
-/* for strncasecmp, possibly */
-#if defined(HAVE_STRINGS_H)
-#include <strings.h>
-#endif
-
 #define ERRBUF_SIZE 500
 #define MSGBUF_SIZE 2000
 
@@ -300,7 +295,7 @@ int find_update_line_cache(GnomeFindDialog *find_dialog)
             }
             else
             {
-                strcmp_result = strncasecmp(find_params.find_text, find_text_cache + tmp_find_pos, find_text_len);
+                strcmp_result = g_strncasecmp(find_params.find_text, find_text_cache + tmp_find_pos, find_text_len);
             }
 
             /* construct list item if found */

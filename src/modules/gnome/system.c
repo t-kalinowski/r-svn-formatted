@@ -28,10 +28,24 @@
 #include <gnome.h>
 #include <glade/glade.h>
 #include <libgnome/libgnome.h>
-#include <locale.h>
 
+#if defined(HAVE_LOCALE_H)
+#include <locale.h>
+#endif
+
+#ifdef HAVE_STAT
+#ifndef Macintosh
 #include <sys/types.h>
 #include <sys/stat.h>
+#else
+#include <types.h>
+#ifndef __MRC__
+#include <stat.h>
+#else
+#include <mpw_stat.h>
+#endif
+#endif /* mac */
+#endif
 
 #include <Rversion.h>
 
@@ -275,11 +289,13 @@ void gnome_start(int ac, char **av, Rstart Rp)
     gnome_init("R", g_strdup_printf("%s.%s %s (%s-%s-%s)", R_MAJOR, R_MINOR, R_STATUS, R_YEAR, R_MONTH, R_DAY), ac, av);
     R_gnome_initialised = TRUE;
 
-    /* Reset locale information */
+/* Reset locale information */
+#if defined(HAVE_LOCALE_H)
     setlocale(LC_ALL, "C");
     setlocale(LC_CTYPE, "");   /*- make ISO-latin1 etc. work for LOCALE users */
     setlocale(LC_COLLATE, ""); /*- alphabetically sorting */
     setlocale(LC_TIME, "");    /*- names and defaults for date-time formats */
+#endif
 
     /* Initialise libglade */
     glade_gnome_init();
