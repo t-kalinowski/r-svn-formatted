@@ -1770,3 +1770,250 @@ no_more_lines:
         free(data.quotesave);
     return ans2;
 }
+
+/* --------- write.table --------- */
+#include <Print.h>
+
+/* write.table(x, file, nr, nc, rnames, sep, eol, na, dec, quote, qstring)
+   x is a matrix or data frame
+   file is a connection
+   sep eol dec qstring are character strings
+   quote is a numeric vector
+ */
+
+static void writecon(Rconnection con, char *format, ...)
+{
+    va_list(ap);
+    va_start(ap, format);
+    con->vfprintf(con, format, ap);
+    va_end(ap);
+}
+
+static Rboolean isna(SEXP x, int indx)
+{
+    Rcomplex rc;
+    switch (TYPEOF(x))
+    {
+    case LGLSXP:
+        return LOGICAL(x)[indx] == NA_LOGICAL;
+        break;
+    case INTSXP:
+        return INTEGER(x)[indx] == NA_INTEGER;
+        break;
+    case REALSXP:
+        return ISNAN(REAL(x)[indx]);
+        break;
+    case STRSXP:
+        return STRING_ELT(x, indx) == NA_STRING;
+        break;
+    case CPLXSXP:
+        rc = COMPLEX(x)[indx];
+        return ISNAN(rc.r) || ISNAN(rc.i);
+        break;
+    default:
+        break;
+    }
+    return FALSE;
+}
+
+static void change_dec(char *tmp, char cdec, SEXPTYPE t)
+{
+    char *p;
+    switch (t)
+    {
+    case REALSXP:
+    case CPLXSXP:
+        for (p = tmp; *p; p++)
+            if (*p == '.')
+                *p = cdec;
+        break;
+    default:
+        break;
+    }
+}
+
+/* a version of EncodeElement with different escaping of char strings */
+static char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qmethod, R_StringBuffer *buff)
+{
+    int nbuf;
+    char *p, *p0, *q;
+
+    if (TYPEOF(x) == STRSXP)
+    {
+        p0 = CHAR(STRING_ELT(x, indx));
+        if (!quote)
+            return p0;
+        for (nbuf = 2, p = p0; *p; p++) /* find buffer length needed */
+            nbuf += (*p == '"') ? 2 : 1;
+        R_AllocStringBuffer(nbuf, buff);
+        q = buff->data;
+        *q++ = '"';
+        for (p = p0; *p;)
+        {
+            if (*p == '"')
+                *q++ = qmethod ? '\\' : '"';
+            *q++ = *p++;
+        }
+        *q++ = '"';
+        *q = '\0';
+        return buff->data;
+    }
+    return EncodeElement(x, indx, quote ? '"' : 0);
+}
+
+SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP x, sep, rnames, eol, na, dec, quote, xj;
+    int nr, nc, i, j, qmethod;
+    Rboolean wasopen, quote_rn = FALSE, *quote_col;
+    Rconnection con;
+    char *csep, *ceol, *cna, cdec, *tmp;
+    SEXP *levels;
+    R_StringBuffer strBuf = {NULL, 0, MAXELTSIZE};
+
+    checkArity(op, args);
+
+    x = CAR(args);
+    args = CDR(args);
+    /* this is going to be a connection open or openable for writing */
+    if (!inherits(CAR(args), "connection"))
+        errorcall(call, "`file' is not a connection");
+    con = getConnection(asInteger(CAR(args)));
+    args = CDR(args);
+    if (!con->canwrite)
+        error("cannot write to this connection");
+    wasopen = con->isopen;
+    if (!wasopen)
+    {
+        strcpy(con->mode, "wt");
+        if (!con->open(con))
+            error("cannot open the connection");
+    }
+    nr = asInteger(CAR(args));
+    args = CDR(args);
+    nc = asInteger(CAR(args));
+    args = CDR(args);
+    rnames = CAR(args);
+    args = CDR(args);
+    sep = CAR(args);
+    args = CDR(args);
+    eol = CAR(args);
+    args = CDR(args);
+    na = CAR(args);
+    args = CDR(args);
+    dec = CAR(args);
+    args = CDR(args);
+    quote = CAR(args);
+    args = CDR(args);
+    qmethod = asLogical(CAR(args));
+
+    if (nr == NA_INTEGER)
+        errorcall(call, "invalid value for 'nr'");
+    if (nc == NA_INTEGER)
+        errorcall(call, "invalid value for 'nc'");
+    if (!isNull(rnames) && !isString(rnames))
+        errorcall(call, "invalid value for 'rnames'");
+    if (!isString(sep))
+        errorcall(call, "invalid value for 'sep'");
+    if (!isString(eol))
+        errorcall(call, "invalid value for 'eol'");
+    if (!isString(na))
+        errorcall(call, "invalid value for 'na'");
+    if (!isString(dec))
+        errorcall(call, "invalid value for 'dec'");
+    if (qmethod == NA_LOGICAL)
+        errorcall(call, "invalid value for 'qmethod'");
+    csep = CHAR(STRING_ELT(sep, 0));
+    ceol = CHAR(STRING_ELT(eol, 0));
+    cna = CHAR(STRING_ELT(na, 0));
+    if (strlen(CHAR(STRING_ELT(dec, 0))) != 1)
+        errorcall(call, "'dec' must be a single character");
+    cdec = CHAR(STRING_ELT(dec, 0))[0];
+    cdec = (cdec == '.') ? '\0' : cdec;
+    quote_col = (Rboolean *)R_alloc(nc, sizeof(Rboolean));
+    for (j = 0; j < nc; j++)
+        quote_col[j] = FALSE;
+    for (i = 0; i < length(quote); i++)
+    { /* NB, quote might be NULL */
+        int this = INTEGER(quote)[i];
+        if (this == 0)
+            quote_rn = TRUE;
+        if (this > 0)
+            quote_col[this - 1] = TRUE;
+    }
+    R_AllocStringBuffer(0, &strBuf);
+
+    if (isVectorList(x))
+    { /* A data frame */
+
+        /* handle factors internally */
+        levels = (SEXP *)R_alloc(nc, sizeof(SEXP));
+        for (j = 0; j < nc; j++)
+            if (inherits(VECTOR_ELT(x, j), "factor"))
+            {
+                levels[j] = getAttrib(VECTOR_ELT(x, j), R_LevelsSymbol);
+            }
+            else
+                levels[j] = R_NilValue;
+
+        for (i = 0; i < nr; i++)
+        {
+            if (!isNull(rnames))
+                writecon(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf), csep);
+            for (j = 0; j < nc; j++)
+            {
+                xj = VECTOR_ELT(x, j);
+                if (j > 0)
+                    writecon(con, "%s", csep);
+                if (isna(xj, i))
+                    tmp = cna;
+                else
+                {
+                    if (!isNull(levels[j]))
+                    {
+                        tmp = EncodeElement2(levels[j], INTEGER(xj)[i] - 1, quote_col[j], qmethod, &strBuf);
+                    }
+                    else
+                    {
+                        tmp = EncodeElement2(xj, i, quote_col[j], qmethod, &strBuf);
+                    }
+                    if (cdec)
+                        change_dec(tmp, cdec, TYPEOF(xj));
+                }
+                writecon(con, "%s", tmp);
+            }
+            writecon(con, "%s", ceol);
+        }
+    }
+    else
+    { /* A matrix */
+
+        if (!isVectorAtomic(x))
+            UNIMPLEMENTED_TYPE("write.table, matrix method", x);
+
+        for (i = 0; i < nr; i++)
+        {
+            if (!isNull(rnames))
+                writecon(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf), csep);
+            for (j = 0; j < nc; j++)
+            {
+                if (j > 0)
+                    writecon(con, "%s", csep);
+                if (isna(x, i + j * nr))
+                    tmp = cna;
+                else
+                {
+                    tmp = EncodeElement2(x, i + j * nr, quote_col[j], qmethod, &strBuf);
+                    if (cdec)
+                        change_dec(tmp, cdec, TYPEOF(x));
+                }
+                writecon(con, "%s", tmp);
+            }
+            writecon(con, "%s", ceol);
+        }
+    }
+    if (!wasopen)
+        con->close(con);
+    R_FreeStringBuffer(&strBuf);
+    return R_NilValue;
+}

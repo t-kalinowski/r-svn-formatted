@@ -875,6 +875,8 @@ FUNTAB R_FunTab[] = {
     {"getNamespaceRegistry", do_getNSRegistry, 0, 11, 0, {PP_FUNCALL, PREC_FN, 0}},
     {"importIntoEnv", do_importIntoEnv, 0, 11, 4, {PP_FUNCALL, PREC_FN, 0}},
 
+    {"write.table", do_writetable, 0, 111, 11, {PP_FUNCALL, PREC_FN, 0}},
+
     {NULL, NULL, 0, 0, 0, {0, PREC_FN, 0}},
 };
 
