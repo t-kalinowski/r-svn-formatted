@@ -144,9 +144,9 @@ int removeInputHandler(InputHandler **handlers, InputHandler *it)
     InputHandler *tmp;
 
     /* If the handler is the first one in the list, move the list to point
-       to the second element. That's why we use the address of the first element
-       as the first argument.
-     */
+       to the second element. That's why we use the address of the first
+       element as the first argument.
+    */
     if (*handlers == it)
     {
         *handlers = (*handlers)->next;
@@ -195,7 +195,10 @@ InputHandler *getInputHandler(InputHandler *handlers, int fd)
  device connection.  This allows more than one X11 device to be open on a different
  connection. Also, it allows connections a la S4 to be developed on top of this
  mechanism. The return type of this routine has changed.
- */
+*/
+
+static int setSelectMask(InputHandler *, fd_set *);
+
 static InputHandler *waitForActivity()
 {
     int maxfd;
@@ -217,7 +220,8 @@ static InputHandler *waitForActivity()
   then we set its file descriptor to the current value of stdin - its
   file descriptor.
  */
-int setSelectMask(InputHandler *handlers, fd_set *readMask)
+
+static int setSelectMask(InputHandler *handlers, fd_set *readMask)
 {
     int maxfd = -1;
     InputHandler *tmp = handlers;
@@ -249,9 +253,9 @@ InputHandler *getSelectedHandler(InputHandler *handlers, fd_set *readMask)
     InputHandler *tmp = handlers;
 
     /*
-        Temporarily skip the first one if a) there is another one, and
-         b) thi is the BasicInputHandler.
-      */
+      Temporarily skip the first one if a) there is another one, and
+      b) thi is the BasicInputHandler.
+    */
     if (handlers == &BasicInputHandler && handlers->next)
         tmp = handlers->next;
 

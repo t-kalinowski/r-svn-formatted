@@ -183,9 +183,8 @@ int main(int ac, char **av)
         }
     }
 
-    X11ConnectionNumber = stub_X11ConnectionNumber;
-    pR_ProcessEvents = stub_R_ProcessEvents;
     GnomeDeviceDriver = stub_GnomeDeviceDriver;
+    GTKDeviceDriver = stub_GTKDeviceDriver;
     X11DeviceDriver = stub_X11DeviceDriver;
     ptr_dataentry = stub_dataentry;
 #ifdef HAVE_X11
@@ -201,6 +200,7 @@ int main(int ac, char **av)
 #ifndef HAVE_GNOME
             R_Suicide("GNOME GUI is not available in this version");
 #endif
+            R_load_X11_shlib();
             R_load_gnome_shlib();
             R_GUIType = "GNOME";
             gnome_start(ac, av, Rp);

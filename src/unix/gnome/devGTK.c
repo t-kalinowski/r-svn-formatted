@@ -918,7 +918,7 @@ static void GTK_Hold(DevDesc *dd)
 }
 
 /* Device driver entry point */
-int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
+int GTKDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
     int ps;
     gchar tmp[2];
