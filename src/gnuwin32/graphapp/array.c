@@ -20,8 +20,6 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Changes for R: use winmalloc etc not malloc (which does not free) */
-
 #include <stdlib.h>
 #include "internal.h"
 
@@ -60,7 +58,7 @@ char *memalloc(long size)
         return NULL;
 #endif
 #endif
-    block = (long *)winmalloc(sizeof(long) + datasize);
+    block = (long *)malloc(sizeof(long) + datasize);
     if (block == NULL)
         return NULL;
     block[0] = size;
@@ -103,7 +101,7 @@ char *memrealloc(char *a, long new_size)
             return NULL;
 #endif
 #endif
-        block = (long *)winrealloc(block, sizeof(long) + newsize);
+        block = (long *)realloc(block, sizeof(long) + newsize);
         if (block == NULL)
             return NULL;
         a = (char *)&block[1];
@@ -123,7 +121,7 @@ long memlength(char *a)
 void memfree(char *a)
 {
     if (a)
-        winfree((long *)(a)-1);
+        free((long *)(a)-1);
 }
 
 char *memexpand(char *a, long extra)
@@ -156,7 +154,7 @@ char *memexpand(char *a, long extra)
             return NULL;
 #endif
 #endif
-        block = (long *)winrealloc(block, sizeof(long) + newsize);
+        block = (long *)realloc(block, sizeof(long) + newsize);
         if (block == NULL)
             return NULL;
         a = (char *)&block[1];
