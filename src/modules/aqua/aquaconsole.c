@@ -345,6 +345,8 @@ static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef 
 
 static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyDown}};
 
+EventRef WakeUpEvent;
+
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
@@ -592,6 +594,8 @@ void Raqua_StartConsole(Rboolean OpenConsole)
         if (SetUPConsole() != noErr)
             goto noconsole;
 
+        CreateEvent(NULL, kRCustomEventClass, kRWakeUpPlease, 0, kEventAttributeNone, &WakeUpEvent);
+
         if (err == noErr)
             InstallPrefsHandlers();
     }
@@ -714,11 +718,8 @@ void SetUpRAquaMenu(void)
 
 static pascal void RIdleTimer(EventLoopTimerRef inTimer, EventLoopIdleTimerMessage inState, void *inUserData)
 {
-    EventRef REvent;
-    OSErr err1, err2;
 
-    err1 = CreateEvent(NULL, kRCustomEventClass, kRWakeUpPlease, 0, kEventAttributeNone, &REvent);
-    err2 = PostEventToQueue(GetMainEventQueue(), REvent, kEventPriorityHigh);
+    PostEventToQueue(GetMainEventQueue(), WakeUpEvent, kEventPriorityHigh);
 }
 
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData)
@@ -744,6 +745,7 @@ void CloseRAquaConsole(void)
 
     TXNTerminateTextension();
 
+    ReleaseEvent(WakeUpEvent);
     RemoveEventLoopTimer(Inst_RIdleTimer);
     RemoveEventLoopTimer(Inst_OtherEventLoops);
     RemoveEventLoopTimer(Inst_ReadStdoutTimer);
