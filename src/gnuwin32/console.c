@@ -83,6 +83,42 @@ xbuf newxbuf(xlong dim, xint ms, xint shift)
     return p;
 }
 
+/* reallocate increased buffer sizes and update pointers */
+void xbufgrow(xbuf p, xlong dim, xint ms)
+{
+    void *ret, *ret2;
+    int i, change;
+
+    if (dim > p->dim)
+    {
+        ret = realloc(p->b, dim + 1);
+        if (ret)
+        {
+            change = (unsigned long)ret - (unsigned long)p->b;
+            p->b = (char *)ret;
+            p->av += change;
+            p->free += change;
+            for (i = 0; i < p->ns; i++)
+                p->s[i] += change;
+            p->dim = dim;
+        }
+    }
+    if (ms > p->ms)
+    {
+        ret = realloc(p->s, ms * sizeof(char *));
+        if (ret)
+        {
+            ret2 = realloc(p->user, ms * sizeof(int));
+            if (ret2)
+            {
+                p->s = (char **)ret;
+                p->user = (int *)ret2;
+                p->ms = ms;
+            }
+        }
+    }
+}
+
 void xbufdel(xbuf p)
 {
     if (!p)
@@ -202,7 +238,7 @@ rgb consolebg = White, consolefg = Black, consoleuser = Red, pagerhighlight = Re
 
 extern int R_HistorySize; /* from Defn.h */
 
-ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, int kind)
+ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int buflines, rgb fg, rgb ufg, rgb bg, int kind)
 {
     ConsoleData p;
 
@@ -213,7 +249,7 @@ ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, 
     p->kind = kind;
     if (kind == CONSOLE)
     {
-        p->lbuf = newxbuf(DIMLBUF, MLBUF, SLBUF);
+        p->lbuf = newxbuf(bufbytes, buflines, SLBUF);
         if (!p->lbuf)
         {
             free(p);
@@ -1255,9 +1291,10 @@ int fontsty, pointsize;
 int consoler = 25, consolec = 80;
 int pagerrow = 25, pagercol = 80;
 int pagerMultiple = 1, haveusedapager = 0;
+int consolebufb = DIMLBUF, consolebufl = MLBUF;
 
 void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols, rgb nfg, rgb nufg, rgb nbg, rgb high,
-                       int pgr, int pgc, int multiplewindows, int widthonresize)
+                       int pgr, int pgc, int multiplewindows, int widthonresize, int bufbytes, int buflines)
 {
     char msg[LF_FACESIZE + 128];
     strncpy(fontname, fnname, LF_FACESIZE);
@@ -1291,6 +1328,8 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
     pagercol = pgc;
     pagerMultiple = multiplewindows;
     setWidthOnResize = widthonresize;
+    consolebufb = bufbytes;
+    consolebufl = buflines;
 }
 
 void consoleprint(console c) FBEGIN
@@ -1527,8 +1566,8 @@ console newconsole(char *name, int flags)
     console c;
     ConsoleData p;
 
-    p = newconsoledata((consolefn) ? consolefn : FixedFont, consoler, consolec, consolefg, consoleuser, consolebg,
-                       CONSOLE);
+    p = newconsoledata((consolefn) ? consolefn : FixedFont, consoler, consolec, consolebufb, consolebufl, consolefg,
+                       consoleuser, consolebg, CONSOLE);
     if (!p)
         return NULL;
     c = (console)newwindow(name, rect(0, 0, WIDTH, HEIGHT), flags | TrackMouse | VScrollbar | HScrollbar);
