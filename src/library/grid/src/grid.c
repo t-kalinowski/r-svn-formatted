@@ -2066,3 +2066,9 @@ SEXP L_locator()
     UNPROTECT(1);
     return answer;
 }
+
+SEXP L_nullDevice()
+{
+    GEnullDevice();
+    return R_NilValue;
+}
