@@ -1640,9 +1640,9 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
     return R_NilValue;
 }
 
-SEXP L_circle(SEXP x, SEXP y, SEXP r)
+static SEXP gridCircle(SEXP x, SEXP y, SEXP r, Rboolean draw)
 {
-    int i, nx, ny, nr;
+    int i, nx, ny, nr, ncirc;
     double xx, yy, rr1, rr2, rr;
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
@@ -1650,6 +1650,11 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
     R_GE_gcontext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
+    SEXP result = R_NilValue;
+    double xmin = DOUBLE_XMAX;
+    double xmax = DOUBLE_XMIN;
+    double ymin = DOUBLE_XMAX;
+    double ymax = DOUBLE_XMIN;
     /* Get the current device
      */
     GEDevDesc *dd = getDevice();
@@ -1664,9 +1669,11 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
         nx = ny;
     if (nr > nx)
         nx = nr;
-    /* FIXME:  Need to check for NaN's and NA's
-     */
-    GEMode(1, dd);
+    if (draw)
+    {
+        GEMode(1, dd);
+    }
+    ncirc = 0;
     for (i = 0; i < nx; i++)
     {
         gcontextFromgpar(currentgp, i, &gc);
@@ -1678,36 +1685,88 @@ SEXP L_circle(SEXP x, SEXP y, SEXP r)
         rr1 = transformWidthtoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         rr2 = transformHeighttoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         rr = fmin2(rr1, rr2);
-        rr = toDeviceWidth(rr, GE_INCHES, dd);
         /*
          * A negative radius is invalid
          */
         if (rr < 0)
             error("Invalid circle radius (must be non-negative)");
-        /* The graphics engine only takes device coordinates
-         */
-        xx = toDeviceX(xx, GE_INCHES, dd);
-        yy = toDeviceY(yy, GE_INCHES, dd);
         if (R_FINITE(xx) && R_FINITE(yy) && R_FINITE(rr))
-            GECircle(xx, yy, rr, &gc, dd);
+        {
+            if (draw)
+            {
+                /* The graphics engine only takes device coordinates
+                 */
+                xx = toDeviceX(xx, GE_INCHES, dd);
+                yy = toDeviceY(yy, GE_INCHES, dd);
+                rr = toDeviceWidth(rr, GE_INCHES, dd);
+                GECircle(xx, yy, rr, &gc, dd);
+            }
+            else
+            {
+                if (xx + rr < xmin)
+                    xmin = xx + rr;
+                if (xx + rr > xmax)
+                    xmax = xx + rr;
+                if (xx - rr < xmin)
+                    xmin = xx - rr;
+                if (xx - rr > xmax)
+                    xmax = xx - rr;
+                if (yy + rr < ymin)
+                    ymin = yy + rr;
+                if (yy + rr > ymax)
+                    ymax = yy + rr;
+                if (yy - rr < ymin)
+                    ymin = yy - rr;
+                if (yy - rr > ymax)
+                    ymax = yy - rr;
+                ncirc++;
+            }
+        }
     }
-    GEMode(0, dd);
+    if (draw)
+    {
+        GEMode(0, dd);
+    }
+    if (ncirc > 0)
+    {
+        result = allocVector(REALSXP, 4);
+        REAL(result)[0] = xmin;
+        REAL(result)[1] = xmax;
+        REAL(result)[2] = ymin;
+        REAL(result)[3] = ymax;
+    }
+    return result;
+}
+
+SEXP L_circle(SEXP x, SEXP y, SEXP r)
+{
+    gridCircle(x, y, r, TRUE);
     return R_NilValue;
+}
+
+SEXP L_circleBounds(SEXP x, SEXP y, SEXP r)
+{
+    return gridCircle(x, y, r, FALSE);
 }
 
 /* We are assuming here that the R code has checked that
  * x, y, w, and h are all unit objects and that vp is a viewport
  */
-SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
+static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just, Rboolean draw)
 {
     double xx, yy, ww, hh;
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
-    int i, ny, nw, nh, maxn;
+    int i, ny, nw, nh, maxn, nrect;
     LViewportContext vpc;
     R_GE_gcontext gc;
     LTransform transform;
     SEXP currentvp, currentgp;
+    SEXP result = R_NilValue;
+    double xmin = DOUBLE_XMAX;
+    double xmax = DOUBLE_XMIN;
+    double ymin = DOUBLE_XMAX;
+    double ymax = DOUBLE_XMIN;
     /* Get the current device
      */
     GEDevDesc *dd = getDevice();
@@ -1715,8 +1774,6 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
-    /* FIXME:  Need to check for x, y, w, h all same length
-     */
     maxn = unitLength(x);
     ny = unitLength(y);
     nw = unitLength(w);
@@ -1727,15 +1784,17 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
         maxn = nw;
     if (nh > maxn)
         maxn = nh;
-    GEMode(1, dd);
+    if (draw)
+    {
+        GEMode(1, dd);
+    }
+    nrect = 0;
     for (i = 0; i < maxn; i++)
     {
         gcontextFromgpar(currentgp, i, &gc);
         transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
         ww = transformWidthtoINCHES(w, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         hh = transformHeighttoINCHES(h, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
-        /* FIXME:  Need to check for NaN's and NA's
-         */
         /* If the total rotation angle is zero then we can draw a
          * rectangle as the devices understand rectangles
          * Otherwise we have to draw a polygon equivalent.
@@ -1744,14 +1803,40 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
         {
             xx = justifyX(xx, ww, INTEGER(just)[0]);
             yy = justifyY(yy, hh, INTEGER(just)[1]);
-            /* The graphics engine only takes device coordinates
-             */
-            xx = toDeviceX(xx, GE_INCHES, dd);
-            yy = toDeviceY(yy, GE_INCHES, dd);
-            ww = toDeviceWidth(ww, GE_INCHES, dd);
-            hh = toDeviceHeight(hh, GE_INCHES, dd);
-            if (R_FINITE(xx) && R_FINITE(yy) && R_FINITE(ww) && R_FINITE(hh))
-                GERect(xx, yy, xx + ww, yy + hh, &gc, dd);
+            if (draw)
+            {
+                /* The graphics engine only takes device coordinates
+                 */
+                xx = toDeviceX(xx, GE_INCHES, dd);
+                yy = toDeviceY(yy, GE_INCHES, dd);
+                ww = toDeviceWidth(ww, GE_INCHES, dd);
+                hh = toDeviceHeight(hh, GE_INCHES, dd);
+                if (R_FINITE(xx) && R_FINITE(yy) && R_FINITE(ww) && R_FINITE(hh))
+                    GERect(xx, yy, xx + ww, yy + hh, &gc, dd);
+            }
+            else
+            {
+                if (R_FINITE(xx) && R_FINITE(yy) && R_FINITE(ww) && R_FINITE(hh))
+                {
+                    if (xx < xmin)
+                        xmin = xx;
+                    if (xx > xmax)
+                        xmax = xx;
+                    if (xx + ww < xmin)
+                        xmin = xx + ww;
+                    if (xx + ww > xmax)
+                        xmax = xx + ww;
+                    if (yy < ymin)
+                        ymin = yy;
+                    if (yy > ymax)
+                        ymax = yy;
+                    if (yy + hh < ymin)
+                        ymin = yy + hh;
+                    if (yy + hh > ymax)
+                        ymax = yy + hh;
+                    nrect++;
+                }
+            }
         }
         else
         {
@@ -1791,36 +1876,101 @@ SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
             if (R_FINITE(xxx[0]) && R_FINITE(yyy[0]) && R_FINITE(xxx[1]) && R_FINITE(yyy[1]) && R_FINITE(xxx[2]) &&
                 R_FINITE(yyy[2]) && R_FINITE(xxx[3]) && R_FINITE(yyy[3]))
             {
-                /* The graphics engine only takes device coordinates
-                 */
-                xxx[0] = toDeviceX(xxx[0], GE_INCHES, dd);
-                yyy[0] = toDeviceY(yyy[0], GE_INCHES, dd);
-                xxx[1] = toDeviceX(xxx[1], GE_INCHES, dd);
-                yyy[1] = toDeviceY(yyy[1], GE_INCHES, dd);
-                xxx[2] = toDeviceX(xxx[2], GE_INCHES, dd);
-                yyy[2] = toDeviceY(yyy[2], GE_INCHES, dd);
-                xxx[3] = toDeviceX(xxx[3], GE_INCHES, dd);
-                yyy[3] = toDeviceY(yyy[3], GE_INCHES, dd);
-                /* Close the polygon */
-                xxx[4] = xxx[0];
-                yyy[4] = yyy[0];
-                /* Do separate fill and border to avoid border being
-                 * drawn on clipping boundary when there is a fill
-                 */
-                tmpcol = gc.col;
-                gc.col = NA_INTEGER;
-                GEPolygon(5, xxx, yyy, &gc, dd);
-                gc.col = tmpcol;
-                gc.fill = NA_INTEGER;
-                GEPolygon(5, xxx, yyy, &gc, dd);
+                if (draw)
+                {
+                    /* The graphics engine only takes device coordinates
+                     */
+                    xxx[0] = toDeviceX(xxx[0], GE_INCHES, dd);
+                    yyy[0] = toDeviceY(yyy[0], GE_INCHES, dd);
+                    xxx[1] = toDeviceX(xxx[1], GE_INCHES, dd);
+                    yyy[1] = toDeviceY(yyy[1], GE_INCHES, dd);
+                    xxx[2] = toDeviceX(xxx[2], GE_INCHES, dd);
+                    yyy[2] = toDeviceY(yyy[2], GE_INCHES, dd);
+                    xxx[3] = toDeviceX(xxx[3], GE_INCHES, dd);
+                    yyy[3] = toDeviceY(yyy[3], GE_INCHES, dd);
+                    /* Close the polygon */
+                    xxx[4] = xxx[0];
+                    yyy[4] = yyy[0];
+                    /* Do separate fill and border to avoid border being
+                     * drawn on clipping boundary when there is a fill
+                     */
+                    tmpcol = gc.col;
+                    gc.col = NA_INTEGER;
+                    GEPolygon(5, xxx, yyy, &gc, dd);
+                    gc.col = tmpcol;
+                    gc.fill = NA_INTEGER;
+                    GEPolygon(5, xxx, yyy, &gc, dd);
+                }
+                else
+                {
+                    if (xxx[0] < xmin)
+                        xmin = xxx[0];
+                    if (xxx[0] > xmax)
+                        xmax = xxx[0];
+                    if (xxx[1] < xmin)
+                        xmin = xxx[1];
+                    if (xxx[1] > xmax)
+                        xmax = xxx[1];
+                    if (xxx[2] < xmin)
+                        xmin = xxx[2];
+                    if (xxx[2] > xmax)
+                        xmax = xxx[2];
+                    if (xxx[3] < xmin)
+                        xmin = xxx[3];
+                    if (xxx[3] > xmax)
+                        xmax = xxx[3];
+                    if (yyy[0] < ymin)
+                        ymin = yyy[0];
+                    if (yyy[0] > ymax)
+                        ymax = yyy[0];
+                    if (yyy[1] < ymin)
+                        ymin = yyy[1];
+                    if (yyy[1] > ymax)
+                        ymax = yyy[1];
+                    if (yyy[2] < ymin)
+                        ymin = yyy[2];
+                    if (yyy[2] > ymax)
+                        ymax = yyy[2];
+                    if (yyy[3] < ymin)
+                        ymin = yyy[3];
+                    if (yyy[3] > ymax)
+                        ymax = yyy[3];
+                    nrect++;
+                }
             }
         }
     }
-    GEMode(0, dd);
+    if (draw)
+    {
+        GEMode(0, dd);
+    }
+    if (nrect > 0)
+    {
+        result = allocVector(REALSXP, 4);
+        REAL(result)[0] = xmin;
+        REAL(result)[1] = xmax;
+        REAL(result)[2] = ymin;
+        REAL(result)[3] = ymax;
+    }
+    return result;
+}
+
+SEXP L_rect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
+{
+    gridRect(x, y, w, h, just, TRUE);
     return R_NilValue;
 }
 
-SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
+SEXP L_rectBounds(SEXP x, SEXP y, SEXP w, SEXP h, SEXP just)
+{
+    return gridRect(x, y, w, h, just, FALSE);
+}
+
+/*
+ * Code to draw OR size text
+ * Combined to avoid code replication
+ */
+static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap, Rboolean draw)
 {
     int i, nx, ny;
     double *xx, *yy;
@@ -1830,12 +1980,17 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
     LViewportContext vpc;
     R_GE_gcontext gc;
     LTransform transform;
-    SEXP txt;
+    SEXP txt, result = R_NilValue;
+    double xmin = DOUBLE_XMAX;
+    double xmax = DOUBLE_XMIN;
+    double ymin = DOUBLE_XMAX;
+    double ymax = DOUBLE_XMIN;
     /*
      * Bounding rectangles for checking overlapping
      * Initialised to shut up compiler
      */
     LRect *bounds = NULL;
+    LRect trect;
     int numBounds = 0;
     int overlapChecking = LOGICAL(checkOverlap)[0];
     char *vmax;
@@ -1868,7 +2023,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
         txt = coerceVector(txt, EXPRSXP);
     else if (!isExpression(txt))
         txt = coerceVector(txt, STRSXP);
-    if (overlapChecking)
+    if (overlapChecking || !draw)
     {
         bounds = (LRect *)R_alloc(nx, sizeof(LRect));
     }
@@ -1877,15 +2032,25 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
      */
     if (LENGTH(txt) > 0)
     {
-        GEMode(1, dd);
+        int ntxt = 0;
+        if (draw)
+        {
+            /*
+             * Drawing text
+             */
+            GEMode(1, dd);
+        }
         for (i = 0; i < nx; i++)
         {
             int doDrawing = 1;
             gcontextFromgpar(currentgp, i, &gc);
-            if (overlapChecking)
+            /*
+             * Generate bounding boxes when checking for overlap
+             * or sizing text
+             */
+            if (overlapChecking || !draw)
             {
                 int j = 0;
-                LRect trect;
                 textRect(xx[i], yy[i], txt, i, &gc, hjust, vjust, numeric(rot, i % LENGTH(rot)) + rotationAngle, dd,
                          &trect);
                 while (doDrawing && (j < numBounds))
@@ -1897,10 +2062,8 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
                     numBounds++;
                 }
             }
-            if (doDrawing)
+            if (draw && doDrawing)
             {
-                /* FIXME:  Need to check for NaN's and NA's
-                 */
                 /* The graphics engine only takes device coordinates
                  */
                 xx[i] = toDeviceX(xx[i], GE_INCHES, dd);
@@ -1916,12 +2079,70 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
                                numeric(rot, i % LENGTH(rot)) + rotationAngle, &gc, dd);
                 }
             }
+            if (!draw)
+            {
+                double minx, maxx, miny, maxy;
+                /*
+                 * Sizing text
+                 */
+                if (R_FINITE(xx[i]) && R_FINITE(yy[i]))
+                {
+                    textRect(xx[i], yy[i], txt, i, &gc, hjust, vjust, numeric(rot, i % LENGTH(rot)) + rotationAngle, dd,
+                             &trect);
+                    minx = fmin2(trect.x1, fmin2(trect.x2, fmin2(trect.x3, trect.x4)));
+                    if (minx < xmin)
+                        xmin = minx;
+                    maxx = fmax2(trect.x1, fmax2(trect.x2, fmax2(trect.x3, trect.x4)));
+                    if (maxx > xmax)
+                        xmax = maxx;
+                    miny = fmin2(trect.y1, fmin2(trect.y2, fmin2(trect.y3, trect.y4)));
+                    if (miny < ymin)
+                        ymin = miny;
+                    maxy = fmax2(trect.y1, fmax2(trect.y2, fmax2(trect.y3, trect.y4)));
+                    if (maxy > ymax)
+                        ymax = maxy;
+                    ntxt++;
+                }
+            }
         }
-        GEMode(0, dd);
+        if (draw)
+        {
+            GEMode(0, dd);
+        }
+        if (ntxt > 0)
+        {
+            result = allocVector(REALSXP, 4);
+            REAL(result)[0] = xmin;
+            REAL(result)[1] = xmax;
+            REAL(result)[2] = ymin;
+            REAL(result)[3] = ymax;
+        }
     }
     vmaxset(vmax);
     UNPROTECT(1);
+    return result;
+}
+
+SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot, SEXP checkOverlap)
+{
+    gridText(label, x, y, just, rot, checkOverlap, TRUE);
     return R_NilValue;
+}
+
+/*
+ * Return four values representing boundary of text (which may consist
+ * of multiple pieces of text, unaligned, and/or rotated)
+ * in INCHES.
+ *
+ * Result is (xmin, xmax, ymin, ymax)
+ *
+ * Return NULL if no text to draw;  R code will generate unit from that
+ */
+SEXP L_textBounds(SEXP label, SEXP x, SEXP y, SEXP just, SEXP rot)
+{
+    SEXP checkOverlap = allocVector(LGLSXP, 1);
+    LOGICAL(checkOverlap)[0] = FALSE;
+    return gridText(label, x, y, just, rot, checkOverlap, FALSE);
 }
 
 SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
@@ -2065,6 +2286,79 @@ SEXP L_locator()
     }
     UNPROTECT(1);
     return answer;
+}
+
+/*
+ * ****************************************
+ * Calculating boundaries of primitives
+ *
+ * ****************************************
+ */
+
+/*
+ * Return four values representing boundary of set of locations
+ * in INCHES.
+ *
+ * Result is (xmin, xmax, ymin, ymax)
+ *
+ * Used for lines, segments, polygons
+ */
+SEXP L_locnBounds(SEXP x, SEXP y)
+{
+    int i, nx, ny, nloc;
+    double xx, yy;
+    double vpWidthCM, vpHeightCM;
+    double rotationAngle;
+    LViewportContext vpc;
+    R_GE_gcontext gc;
+    LTransform transform;
+    SEXP currentvp, currentgp;
+    SEXP result = R_NilValue;
+    double xmin = DOUBLE_XMAX;
+    double xmax = DOUBLE_XMIN;
+    double ymin = DOUBLE_XMAX;
+    double ymax = DOUBLE_XMIN;
+    /* Get the current device
+     */
+    GEDevDesc *dd = getDevice();
+    currentvp = gridStateElement(dd, GSS_VP);
+    currentgp = gridStateElement(dd, GSS_GPAR);
+    getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
+    getViewportContext(currentvp, &vpc);
+    nx = unitLength(x);
+    ny = unitLength(y);
+    if (ny > nx)
+        nx = ny;
+    nloc = 0;
+    if (nx > 0)
+    {
+        for (i = 0; i < nx; i++)
+        {
+            gcontextFromgpar(currentgp, i, &gc);
+            transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
+            if (R_FINITE(xx) & R_FINITE(yy))
+            {
+                if (xx < xmin)
+                    xmin = xx;
+                if (xx > xmax)
+                    xmax = xx;
+                if (yy < ymin)
+                    ymin = yy;
+                if (yy > ymax)
+                    ymax = yy;
+                nloc++;
+            }
+        }
+    }
+    if (nloc > 0)
+    {
+        result = allocVector(REALSXP, 4);
+        REAL(result)[0] = xmin;
+        REAL(result)[1] = xmax;
+        REAL(result)[2] = ymin;
+        REAL(result)[3] = ymax;
+    }
+    return result;
 }
 
 SEXP L_nullDevice()
