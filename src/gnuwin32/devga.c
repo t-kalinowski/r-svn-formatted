@@ -919,10 +919,6 @@ static void grpopupact(control m)
 
 /* plot history */
 
-#ifdef PLOTHISTORY
-
-/* extern SEXP savedSnapshot;*/
-
 /* NB: this puts .SavedPlots in .GlobalEnv */
 #define GROWTH 4
 #define GETDL SEXP vDL = findVar(install(".SavedPlots"), R_GlobalEnv)
@@ -1163,7 +1159,7 @@ static void menusvar(control m)
         return;
     defineVar(install(v), vDL, R_GlobalEnv);
 }
-#endif
+/* end of plot history */
 
 static void menuconsole(control m)
 {
@@ -1210,7 +1206,6 @@ static void menufix(control m)
 
 static void CHelpKeyIn(control w, int key)
 {
-#ifdef PLOTHISTORY
     NewDevDesc *dd = (NewDevDesc *)getdata(w);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
@@ -1228,7 +1223,6 @@ static void CHelpKeyIn(control w, int key)
         menunext(xd->mnext);
         break;
     }
-#endif
 }
 
 static void NHelpKeyIn(control w, int key)
@@ -1253,7 +1247,6 @@ static void NHelpKeyIn(control w, int key)
 
 static void mbarf(control m)
 {
-#ifdef PLOTHISTORY
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
@@ -1313,7 +1306,6 @@ static void mbarf(control m)
         disable(xd->mclpbm);
     }
     draw(xd->mbar);
-#endif
 }
 
 /********************************************************/
@@ -1499,7 +1491,6 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     MCHECK(xd->mprint = newmenuitem("Print...\tCTRL+P", 0, menuprint));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(xd->mclose = newmenuitem("close Device", 0, menuclose));
-#ifdef PLOTHISTORY
     MCHECK(newmenu("History"));
     MCHECK(xd->mrec = newmenuitem("Recording", 0, menurec));
     if (recording)
@@ -1515,7 +1506,6 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     MCHECK(xd->mgvar = newmenuitem("Get from variable...", 0, menugvar));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(xd->mclear = newmenuitem("Clear history", 0, menugrclear));
-#endif
     MCHECK(newmenu("Resize"));
     MCHECK(xd->mR = newmenuitem("R mode", 0, menuR));
     if (resize == 1)
@@ -1973,14 +1963,12 @@ static void GA_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
     {
         if (xd->buffered)
             SHOW;
-#ifdef PLOTHISTORY
         if (xd->recording && xd->needsave)
             AddtoPlotHistory(dd->savedSnapshot, 0);
         if (xd->replaying)
             xd->needsave = FALSE;
         else
             xd->needsave = TRUE;
-#endif
     }
     xd->bg = gc->fill;
     if (!R_OPAQUE(xd->bg))
