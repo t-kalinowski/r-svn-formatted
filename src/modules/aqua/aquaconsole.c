@@ -69,6 +69,8 @@ void R_RunExitFinalizers(void); /* in memory.c */
 extern SA_TYPE SaveAction;
 extern SA_TYPE RestoreAction;
 
+/* Items for the Edit menu */
+#define kRCmdEditObject 'edbj'
 /* Items for the Tools menu */
 #define kRCmdFileShow 'fshw'
 #define kRCmdEditFile 'edtf'
@@ -110,6 +112,12 @@ extern SA_TYPE RestoreAction;
 #define kRSearchHelpOn 'rsho'
 #define kRExampleRun 'rexr'
 
+#define kRDlog 'RDLG'
+#define kRDlogMsg 1000
+#define kRDlogText 1001
+#define kRDlogProc 1002
+#define kRDlogCanc 1003
+
 OSStatus InitMLTE(void);
 TXNObject RConsoleOutObject = NULL;
 TXNObject RConsoleInObject = NULL;
@@ -121,13 +129,18 @@ bool DataManagerFinished = false;
 bool PackageManagerFinished = false;
 bool DataEntryFinished = false;
 bool BrowsePkgFinished = false;
+bool InputDialogFinished = false;
 
 Boolean HaveContent = false;
 Boolean HaveBigBuffer = false;
 
+void Raqua_helpsearchbrowser(void);
+void Raqua_helpsearchbrowser(void){};
+
 TXNFrameID OutframeID = 0;
 TXNFrameID InframeID = 0;
 
+WindowRef RInputDialog = NULL;
 WindowRef RAboutWindow = NULL;
 WindowRef RPrefsWindow = NULL;
 WindowRef ConsoleWindow = NULL;
@@ -144,6 +157,7 @@ extern pascal void RPrefsHandler(WindowRef window);
 extern void ActivatePrefsWindow(void);
 extern void DeactivatePrefsWindow(void);
 extern void CopyPrefs(RAquaPrefsPointer From, RAquaPrefsPointer To);
+extern ControlRef GrabCRef(WindowRef theWindow, OSType theSig, SInt32 theNum);
 extern RAquaPrefs CurrentPrefs, TempPrefs;
 extern FMFontFamilyInstance instance;
 extern FMFontSize fontSize;
@@ -280,16 +294,19 @@ static const EventTypeSpec REvents[] = {{kEventClassTextInput, kEventTextInputUn
 
 static const EventTypeSpec aboutSpec = {kEventClassWindow, kEventWindowClose};
 
+static const EventTypeSpec inputSpec = {kEventClassControl, kEventControlHit};
+
 static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon);
 static pascal OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 static pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event, void *userData);
+static OSStatus RInputDialogHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
 OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
 extern void CloseDataEntry(void);
 extern void CloseBrowsePkg(void);
 extern void CloseDataManager(void);
-extern void CloseHelpSearchBrowser(void);
+// extern void CloseHelpSearchBrowser(void);
 extern void ClosePackageManager(void);
 
 static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
@@ -307,6 +324,7 @@ static const EventTypeSpec RGlobalWinEvents[] = {
 static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
 
 void InitAboutWindow(void);
+int GetTextFromWindow(char *msg, char *text, int len);
 
 void HistBack(void);
 void HistFwd(void);
@@ -316,7 +334,7 @@ void Raqua_read_history(char *file);
 SEXP Raqua_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env);
 SEXP Raqua_savehistory(SEXP call, SEXP op, SEXP args, SEXP env);
 OSStatus SaveWindow(WindowRef window, Boolean ForceNewFName);
-void Aqua_FlushBuffer(void);
+static void Aqua_FlushBuffer(void);
 
 MenuRef HelpMenu = NULL; /* Will be the Reference to Apple's Help Menu */
 static short RHelpMenuItem = -1;
@@ -325,6 +343,7 @@ static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
 static short PreferencesItem = -1;
 
+int InputDialogAns = kRDlogCanc;
 extern void SetDefaultPrefs(void);
 extern void SetUpPrefsWindow(RAquaPrefsPointer Settings);
 
@@ -383,6 +402,9 @@ OSStatus SetUpGUI(void)
         goto guifailure;
 
     if ((err = CreateWindowFromNib(nibRef, CFSTR("PrefsWindow"), &RPrefsWindow)) != noErr)
+        goto guifailure;
+
+    if ((err = CreateWindowFromNib(nibRef, CFSTR("InputDialog"), &RInputDialog)) != noErr)
         goto guifailure;
 
 guifailure:
@@ -537,6 +559,15 @@ OSStatus InstallAppHandlers(void)
     err = InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec,
                                     (void *)RAboutWindow, NULL);
 
+    err = InstallWindowEventHandler(RInputDialog, NewEventHandlerUPP(RInputDialogHandler), 1, &inputSpec,
+                                    (void *)RInputDialog, NULL);
+
+    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogProc), RInputDialogHandler, 1, &inputSpec,
+                                     RInputDialog, NULL);
+
+    err = InstallControlEventHandler(GrabCRef(RInputDialog, kRDlog, kRDlogCanc), RInputDialogHandler, 1, &inputSpec,
+                                     RInputDialog, NULL);
+
     return err;
 }
 
@@ -582,6 +613,7 @@ void CloseRAquaConsole(void);
 void CloseRAquaConsole(void)
 {
 
+    DisposeWindow(RInputDialog);
     DisposeWindow(RAboutWindow);
     DisposeWindow(RPrefsWindow);
 
@@ -873,6 +905,54 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
     return err;
 }
 
+int GetTextFromWindow(char *msg, char *text, int len)
+{
+    ControlID DLogMsgID = {kRDlog, kRDlogMsg};
+    ControlID DLogTextID = {kRDlog, kRDlogText};
+    ControlID DLogProcID = {kRDlog, kRDlogProc};
+    ControlID DLogCancID = {kRDlog, kRDlogCanc};
+    CFStringRef CFMsg, inputText;
+    ControlHandle RDlogControl;
+    Size outActualSize;
+    ControlFontStyleRec controlStyle;
+
+    if (text == NULL)
+        return (kRDlogCanc); /* you should provide a valid pointer */
+
+    if (msg != NULL)
+    {
+        GetControlByID(RInputDialog, &DLogMsgID, &RDlogControl);
+        CFMsg = CFStringCreateWithCString(NULL, msg, kCFStringEncodingASCII);
+        if (CFMsg)
+        {
+            SetControlData(RDlogControl, kControlLabelPart, kControlStaticTextCFStringTag, sizeof(CFStringRef), &CFMsg);
+            controlStyle.flags = kControlUseJustMask;
+            controlStyle.just = teCenter;
+            CFRelease(CFMsg);
+        }
+    }
+
+    InputDialogAns = kRDlogCanc;
+
+    ShowWindow(RInputDialog);
+    SelectWindow(RInputDialog);
+
+    InputDialogFinished = false;
+
+    while (!InputDialogFinished)
+        Raqua_ProcessEvents();
+
+    if (InputDialogAns == kRDlogProc)
+    {
+        GetControlByID(RInputDialog, &DLogTextID, &RDlogControl);
+        GetControlData(RDlogControl, 0, kControlEditTextCFStringTag, sizeof(CFStringRef), &inputText, &outActualSize);
+        CFStringGetCString(inputText, text, len, kCFStringEncodingMacRoman);
+        CFRelease(inputText);
+    }
+
+    return InputDialogAns;
+}
+
 void InitAboutWindow(void)
 {
     CFStringRef text;
@@ -949,6 +1029,38 @@ void InitAboutWindow(void)
     HIViewSetVisible(fImageView, true);
     HIViewAddSubview(contentView, fImageView);
     CGImageRelease(image);
+}
+
+static OSStatus RInputDialogHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
+{
+    ControlRef theCont = NULL;
+    ControlID theID;
+    WindowRef theWindow = (WindowRef)inUserData;
+
+    GetEventParameter(inEvent, kEventParamDirectObject, typeControlRef, NULL, sizeof(ControlRef), NULL, &theCont);
+    GetControlID(theCont, &theID);
+
+    switch (theID.id)
+    {
+    case kRDlogProc:
+        InputDialogAns = kRDlogProc;
+        HideWindow(theWindow);
+        InputDialogFinished = true;
+        return (noErr);
+        break;
+
+    case kRDlogCanc:
+        HideWindow(theWindow);
+        InputDialogAns = kRDlogCanc;
+        InputDialogFinished = true;
+        return (noErr);
+        break;
+
+    default:
+        break;
+    }
+
+    return (eventNotHandledErr);
 }
 
 pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event, void *userData)
@@ -1314,6 +1426,14 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 }
                 break;
 
+            case kRCmdEditObject:
+                if (GetTextFromWindow("Type the name of the object you want to edit", buf, 255) == kRDlogProc)
+                {
+                    sprintf(cmd, "%s <- edit(%s)", buf, buf);
+                    consolecmd(cmd);
+                }
+                break;
+
             case kHICommandAbout:
                 ShowWindow(RAboutWindow);
                 SelectWindow(RAboutWindow);
@@ -1456,18 +1576,31 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 break;
 
             case kRHelpOnTopic:
-                Aqua_RWrite("Help On Topic: not yet implemented");
-                consolecmd("\r");
+                if (GetTextFromWindow("Type the name of the R command/object you want to have help", buf, 255) ==
+                    kRDlogProc)
+                {
+                    sprintf(cmd, "help(%s)", buf);
+                    consolecmd(cmd);
+                }
                 break;
 
             case kRSearchHelpOn:
-                Aqua_RWrite("Search Help On: not yet implemented");
-                consolecmd("\r");
+                if (GetTextFromWindow("Type the name of the R command/object you want to find help", buf, 255) ==
+                    kRDlogProc)
+                {
+                    sprintf(cmd, "help.search(\"%s\")", buf);
+                    consolecmd(cmd);
+                }
                 break;
 
             case kRExampleRun:
-                Aqua_RWrite("Run An Example: not yet implemented");
-                consolecmd("\r");
+                if (GetTextFromWindow(
+                        "Type the name of the R command you want to run the examples described in the help pages", buf,
+                        255) == kRDlogProc)
+                {
+                    sprintf(cmd, "example(%s)", buf);
+                    consolecmd(cmd);
+                }
                 break;
 
             default:
@@ -1791,7 +1924,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 
         if (GetWindowProperty(EventWindow, 'RMAC', 'HSBR', sizeof(browser), NULL, &browser) == noErr)
         {
-            CloseHelpSearchBrowser();
+            // CloseHelpSearchBrowser();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
             HelpSearchBrowserFinished = true;
             err = noErr;
