@@ -1090,13 +1090,20 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                 }
                 else
                 {
-                    if (isSymbol(CAR(s)) && TYPEOF(SYMVALUE(CAR(s))) == CLOSXP && streql(CHAR(PRINTNAME(CAR(s))), "::"))
+                    SEXP val = R_NilValue; /* -Wall */
+                    if (isSymbol(CAR(s)))
+                    {
+                        val = SYMVALUE(CAR(s));
+                        if (TYPEOF(val) == PROMSXP)
+                            val = eval(val, R_NilValue);
+                    }
+                    if (isSymbol(CAR(s)) && TYPEOF(val) == CLOSXP && streql(CHAR(PRINTNAME(CAR(s))), "::"))
                     { /*  :: is special case */
                         deparse2buff(CADR(s), d);
                         print2buff("::", d);
                         deparse2buff(CADDR(s), d);
                     }
-                    else if (isSymbol(CAR(s)) && TYPEOF(SYMVALUE(CAR(s))) == CLOSXP &&
+                    else if (isSymbol(CAR(s)) && TYPEOF(SYMVALUE(val)) == CLOSXP &&
                              streql(CHAR(PRINTNAME(CAR(s))), ":::"))
                     { /*  ::: is special case */
                         deparse2buff(CADR(s), d);
