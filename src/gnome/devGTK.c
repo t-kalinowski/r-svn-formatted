@@ -489,7 +489,7 @@ static void GTK_MetricInfo(int c, double *ascent, double *descent, double *width
 {
     gint size;
     gint lbearing, rbearing, iascent, idescent, iwidth;
-    gint cumwidth;
+    gint maxwidth;
     gchar tmp[2];
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
 
@@ -498,17 +498,19 @@ static void GTK_MetricInfo(int c, double *ascent, double *descent, double *width
 
     if (c == 0)
     {
-        cumwidth = 0;
+        maxwidth = 0;
 
         for (c = 0; c <= 255; c++)
         {
             g_snprintf(tmp, 2, "%c", (gchar)c);
-            cumwidth += gdk_string_width(gtkd->font, tmp);
+            iwidth = gdk_string_width(gtkd->font, tmp);
+            if (iwidth > maxwidth)
+                maxwidth = iwidth;
         }
 
         *ascent = (double)gtkd->font->ascent;
         *descent = (double)gtkd->font->descent;
-        *width = (double)cumwidth;
+        *width = (double)maxwidth;
     }
     else
     {
@@ -517,7 +519,12 @@ static void GTK_MetricInfo(int c, double *ascent, double *descent, double *width
 
         *ascent = (double)iascent;
         *descent = (double)idescent;
+#ifdef OLD
+        /* This was always returning a width of zero */
         *width = (double)iwidth;
+#else
+        *width = (double)(lbearing + rbearing);
+#endif
     }
 }
 
