@@ -12,6 +12,8 @@
 #include <math.h>
 #include "R.h"
 
+#include "Applic.h"
+
 #undef max
 #undef min
 #undef abs

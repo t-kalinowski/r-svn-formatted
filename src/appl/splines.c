@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998, 1999  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2000  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -322,10 +322,10 @@ void periodic_spline(int n, double *x, double *y, double *b, double *c, double *
 #define X c
 
     /*
-    X[nm1] = -Y[nm1]/L[nm1];
-    X[nm1-1] = -(Y[nm1-1] + M[nm1-1] * X[nm1])/L[nm1-1];
-    for(i=nm1-2 ; i>=1 ; i--)
-        X[i] = -(Y[i] + M[i] * X[i+1] + E[i] * X[nm1])/L[i];
+      X[nm1] = -Y[nm1]/L[nm1];
+      X[nm1-1] = -(Y[nm1-1] + M[nm1-1] * X[nm1])/L[nm1-1];
+      for(i=nm1-2 ; i>=1 ; i--)
+      X[i] = -(Y[i] + M[i] * X[i+1] + E[i] * X[nm1])/L[i];
     */
 
     X[nm1] = Y[nm1] / L[nm1];

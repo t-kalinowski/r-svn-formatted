@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include "Random.h"
+#include "Applic.h"
 
 static void rcont2(int *nrow, int *ncol, int *nrowt, int *ncolt, int *ntotal, double *fact, int *jwork, int *matrix)
 {
