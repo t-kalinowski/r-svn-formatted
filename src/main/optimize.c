@@ -20,15 +20,9 @@
 #include "Defn.h"
 #include "Mathlib.h"
 
-/*	W A R N I N G
- *
- *	As things stand, these routines should not be called
- *	recursively because of the way global variables are used.
- *	This could be fixed by making saving and restoring these
- *	global variables.
- */
-
-/*--------------------------------------------------------------------*/
+/* WARNING : As things stand, these routines should not be called */
+/* recursively because of the way global variables are used.  This */
+/* could be fixed by saving and restoring these global variables. */
 
 /* One Dimensional Minimization */
 /* This is just wrapper code for Brent's "fmin" */
@@ -122,8 +116,6 @@ SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     return CADR(R_fcall1);
 }
 
-/*--------------------------------------------------------------------*/
-
 /* One Dimensional Root Finding */
 /* This is just wrapper code for Brent's "zeroin" */
 
@@ -215,8 +207,6 @@ SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
     UNPROTECT(1);
     return CADR(R_fcall2);
 }
-
-/*--------------------------------------------------------------------*/
 
 /* General Nonlinear Optimization */
 
@@ -407,14 +397,13 @@ static void optcode(int code)
 
 SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP value, v;
-    double *x, *typsiz, fscale, gradtl, stepmx, steptl, *xpls, *gpls, fpls, *a, *wrk;
-    double dlt;
-    int code, i, j, ipr, itnlim, method, iexp, omsg, msg, n, ndigit;
-    int iagflg, iahflg;
-    int want_hessian;
+    SEXP value, names, v;
+
+    double *x, *typsiz, fscale, gradtl, stepmx, steptl, *xpls, *gpls, fpls, *a, *wrk, dlt;
+
+    int code, i, j, k, ipr, itnlim, method, iexp, omsg, msg, n, ndigit, iagflg, iahflg, want_hessian, itncnt;
+
     char *vmax;
-    int itncnt;
 
     checkArity(op, args);
     PrintDefaults(rho);
@@ -505,17 +494,18 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
      *   +	   METHOD,IEXP,MSG,NDIGIT,ITNLIM,IAGFLG,IAHFLG,IPR,
      *   +	   DLT,GRADTL,STEPMX,STEPTL,
      *   +	   XPLS,FPLS,GPLS,ITRMCD,A,WRK)
+     *
+     *
+     *   Note: I have figured out what msg does.
+     *   It is actually a sum of bit flags as follows
+     *     1 = don't check/warn for 1-d problems
+     *     2 = don't check analytic gradients
+     *     4 = don't check analytic hessians
+     *     8 = don't print start and end info
+     *    16 = print at every iteration
+     *   Using msg=9 is absolutely minimal
+     *   I think we always check gradients and hessians
      */
-
-    /* Note: I have figured out what msg does. */
-    /* It is actually a sum of bit flags as follows */
-    /*     1 = don't check/warn for 1-d problems */
-    /*     2 = don't check analytic gradients */
-    /*     4 = don't check analytic hessians */
-    /*     8 = don't print start and end info */
-    /*    16 = print at every iteration */
-    /* Using msg=9 is absolutely minimal */
-    /* I think we always check gradients and hessians */
 
     F77_SYMBOL(optif9)
     (&n, &n, x, F77_SYMBOL(fcn), F77_SYMBOL(d1fcn), F77_SYMBOL(d2fcn), typsiz, &fscale, &method, &iexp, &msg, &ndigit,
@@ -528,7 +518,8 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (want_hessian)
     {
-        PROTECT(v = value = allocList(6));
+        PROTECT(value = allocVector(VECSXP, 6));
+        PROTECT(names = allocVector(STRSXP, 6));
         F77_SYMBOL(fdhess)(&n, xpls, &fpls, F77_SYMBOL(fcn), a, &n, &wrk[0], &wrk[n], &ndigit, typsiz);
         for (i = 0; i < n; i++)
             for (j = 0; j < i; j++)
@@ -536,69 +527,72 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        PROTECT(v = value = allocList(5));
+        PROTECT(value = allocVector(VECSXP, 5));
+        PROTECT(names = allocVector(STRSXP, 5));
     }
+    k = 0;
 
-    CAR(v) = allocVector(REALSXP, 1);
-    REAL(CAR(v))[0] = fpls;
-    TAG(v) = install("minimum");
-    v = CDR(v);
+    STRING(names)[k] = mkChar("minimum");
+    VECTOR(value)[k] = allocVector(REALSXP, 1);
+    REAL(VECTOR(value)[k])[0] = fpls;
+    k++;
 
-    CAR(v) = allocVector(REALSXP, n);
+    STRING(names)[k] = mkChar("estimate");
+    VECTOR(value)[k] = allocVector(REALSXP, n);
     for (i = 0; i < n; i++)
-        REAL(CAR(v))[i] = xpls[i];
-    TAG(v) = install("estimate");
-    v = CDR(v);
+        REAL(VECTOR(value)[k])[i] = xpls[i];
+    k++;
 
-    CAR(v) = allocVector(REALSXP, n);
+    STRING(names)[k] = mkChar("gradient");
+    VECTOR(value)[k] = allocVector(REALSXP, n);
     for (i = 0; i < n; i++)
-        REAL(CAR(v))[i] = gpls[i];
-    TAG(v) = install("gradient");
-    v = CDR(v);
+        REAL(VECTOR(value)[k])[i] = gpls[i];
+    k++;
 
     if (want_hessian)
     {
-        CAR(v) = allocMatrix(REALSXP, n, n);
+        STRING(names)[k] = mkChar("hessian");
+        VECTOR(value)[k] = allocMatrix(REALSXP, n, n);
         for (i = 0; i < n * n; i++)
-            REAL(CAR(v))[i] = a[i];
-        TAG(v) = install("hessian");
-        v = CDR(v);
+            REAL(VECTOR(value)[k])[i] = a[i];
+        k++;
     }
 
-    CAR(v) = allocVector(INTSXP, 1);
-    INTEGER(CAR(v))[0] = code;
-    TAG(v) = install("code");
-    v = CDR(v);
+    STRING(names)[k] = mkChar("code");
+    VECTOR(value)[k] = allocVector(INTSXP, 1);
+    INTEGER(VECTOR(value)[k])[0] = code;
+    k++;
 
     /* added by Jim K Lindsey */
-    CAR(v) = allocVector(INTSXP, 1);
-    INTEGER(CAR(v))[0] = itncnt;
-    TAG(v) = install("iterations");
-    v = CDR(v);
+    STRING(names)[k] = mkChar("iterations");
+    VECTOR(value)[k] = allocVector(INTSXP, 1);
+    INTEGER(VECTOR(value)[k])[0] = itncnt;
+    k++;
 
+    setAttrib(value, R_NamesSymbol, names);
     vmaxset(vmax);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return value;
 }
 
 /*
- *	PURPOSE
+ *  PURPOSE
  *
- *	Print information.  This code done in C to avoid the necessity
- *	of having the (vast) Fortran I/O library loaded.
+ *  Print information.  This code done in C to avoid the necessity
+ *  of having the (vast) Fortran I/O library loaded.
  *
- *	PARAMETERS
+ *  PARAMETERS
  *
- *	nr	   --> row dimension of matrix
- *	n	    --> dimension of problem
- *	x(n)	 --> iterate x[k]
- *	f	    --> function value at x[k]
- *	g(n)	 --> gradient at x[k]
- *	a(n,n)	     --> hessian at x[k]
- *	p(n)	 --> step taken
- *	itncnt	     --> iteration number k
- *	iflg	 --> flag controlling info to print
- *	ipr	  --> device to which to send output
+ *  nr	   --> row dimension of matrix
+ *  n	   --> dimension of problem
+ *  x(n)   --> iterate x[k]
+ *  f	   --> function value at x[k]
+ *  g(n)   --> gradient at x[k]
+ *  a(n,n) --> hessian at x[k]
+ *  p(n)   --> step taken
+ *  itncnt --> iteration number k
+ *  iflg   --> flag controlling info to print
+ *  ipr    --> device to which to send output
  */
 
 int F77_SYMBOL(result)(int *nr, int *n, double *x, double *f, double *g, double *a, double *p, int *itncnt, int *iflg,

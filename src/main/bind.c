@@ -21,21 +21,11 @@
 
 #include "Defn.h"
 
-#ifdef OLD
-#define LIST_ASSIGN(x)                                                                                                 \
-    {                                                                                                                  \
-        CAR(ans_ptr) = x;                                                                                              \
-        ans_ptr = CDR(ans_ptr);                                                                                        \
-    }
-#define LIST_MODE LISTSXP
-#else
 #define LIST_ASSIGN(x)                                                                                                 \
     {                                                                                                                  \
         VECTOR(ans_ptr)[ans_length] = x;                                                                               \
         ans_length++;                                                                                                  \
     }
-#define LIST_MODE VECSXP
-#endif
 
 static SEXP cbind(SEXP, SEXP, SEXPTYPE);
 static SEXP rbind(SEXP, SEXP, SEXPTYPE);
@@ -797,12 +787,12 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* If a non-vector argument was encountered (perhaps a list if */
-    /* recursive=F) then we must return a list.  Otherwise, we use */
+    /* recursive = F) then we must return a list.  Otherwise, we use */
     /* the natural coercion for vector types. */
 
     mode = NILSXP;
     if (ans_flags & 128)
-        mode = LIST_MODE;
+        mode = VECSXP;
     else if (ans_flags & 64)
         mode = STRSXP;
     else if (ans_flags & 32)
@@ -825,19 +815,8 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     /* FIXME : The following assumes one of pair or vector */
     /* based lists applies.  It needs to handle both */
 
-#ifdef NEWLIST
-    if (mode == VECSXP)
-    {
-        if (!recurse)
-        {
-            for (i = 0; i < n; i++)
-                ListAnswer(VECTOR(args)[i], 0);
-        }
-        else
-            ListAnswer(args, recurse);
-        ans_length = length(ans);
-    }
-#else
+#ifdef OLD
+    /* This is here only for historical interest */
     if (mode == LISTSXP)
     {
         if (!recurse)
@@ -847,6 +826,18 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
                 ListAnswer(CAR(args), 0);
                 args = CDR(args);
             }
+        }
+        else
+            ListAnswer(args, recurse);
+        ans_length = length(ans);
+    }
+#else
+    if (mode == VECSXP)
+    {
+        if (!recurse)
+        {
+            for (i = 0; i < n; i++)
+                ListAnswer(VECTOR(args)[i], 0);
         }
         else
             ListAnswer(args, recurse);
@@ -868,9 +859,10 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     if (ans_nnames && ans_length > 0)
     {
         PROTECT(ans_names = allocVector(STRSXP, ans_length));
+#ifdef TRYIT
         if (!recurse)
         {
-            if (mode == VECSXP)
+            if (TYPEOF(args) == VECSXP)
             {
                 SEXP names = getAttrib(args, R_NamesSymbol);
                 for (i = 0; i < n; i++)
@@ -882,7 +874,7 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
                     NewExtractNames(VECTOR(args)[i], R_NilValue, ItemName(names, i), recurse);
                 }
             }
-            else if (mode == LISTSXP)
+            else if (TYPEOF(args) == LISTSXP)
             {
                 while (args != R_NilValue)
                 {
@@ -897,12 +889,15 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
+#endif
             ans_nnames = 0;
             seqno = 0;
             firstpos = 0;
             count = 0;
             NewExtractNames(args, R_NilValue, R_NilValue, recurse);
+#ifdef TRY
         }
+#endif
         setAttrib(ans, R_NamesSymbol, ans_names);
         UNPROTECT(1);
     }
@@ -1089,8 +1084,8 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
     if (mrows != -1)
         rows = mrows;
 
-    /* check conformability of vector arguments */
-    /* look for dimnames */
+    /* Check conformability of vector arguments. */
+    /* Look for dimnames. */
 
     n = 0;
     warned = 0;
@@ -1103,17 +1098,10 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
             if (length(dims) == 2)
             {
                 dn = getAttrib(CAR(t), R_DimNamesSymbol);
-#ifdef NEWLIST
                 if (VECTOR(dn)[1] != R_NilValue)
                     have_cnames = 1;
                 if (VECTOR(dn)[0] != R_NilValue)
                     mrnames = mrows;
-#else
-                if (CADR(dn) != R_NilValue)
-                    have_cnames = 1;
-                if (CAR(dn) != R_NilValue)
-                    mrnames = mrows;
-#endif
             }
             else
             {
@@ -1200,15 +1188,9 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
     if (have_cnames | have_rnames)
     {
         SEXP cn, cnu;
-#ifdef NEWLIST
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_cnames)
             cn = VECTOR(dn)[1] = allocVector(STRSXP, cols);
-#else
-        PROTECT(dn = allocList(2));
-        if (have_cnames)
-            cn = CADR(dn) = allocVector(STRSXP, cols);
-#endif
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
@@ -1320,17 +1302,10 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
             if (length(dims) == 2)
             {
                 dn = getAttrib(CAR(t), R_DimNamesSymbol);
-#ifdef NEWLIST
                 if (VECTOR(dn)[0] != R_NilValue)
                     have_rnames = 1;
                 if (VECTOR(dn)[1] != R_NilValue)
                     mcnames = mcols;
-#else
-                if (CAR(dn) != R_NilValue)
-                    have_rnames = 1;
-                if (CADR(dn) != R_NilValue)
-                    mcnames = mcols;
-#endif
             }
             else
             {
@@ -1444,15 +1419,9 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     if (have_rnames | have_cnames)
     {
         SEXP rn, rnu;
-#ifdef NEWLIST
         PROTECT(dn = allocVector(VECSXP, 2));
         if (have_rnames)
             rn = VECTOR(dn)[0] = allocVector(STRSXP, rows);
-#else
-        PROTECT(dn = allocList(2));
-        if (have_rnames)
-            CAR(dn) = allocVector(STRSXP, rows);
-#endif
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {

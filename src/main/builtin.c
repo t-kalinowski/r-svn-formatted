@@ -214,26 +214,15 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         havefile = 0;
 
-#ifdef NEWLIST
     nobjs = length(objs);
     for (i = 0; i < nobjs; i++)
     {
         if (!isVector(VECTOR(objs)[i]) && !isNull(VECTOR(objs)[i]))
             errorcall(call, "argument %d has invalid type\n", i + 1);
     }
-#else
-    n = 0;
-    for (a = objs; a != R_NilValue; a = CDR(a))
-    {
-        if (!isVector(CAR(a)) && !isNull(CAR(a)))
-            errorcall(call, "argument %d has invalid type\n", n + 1);
-        n += 1;
-    }
-#endif
     width = 0;
     ntot = 0;
     nlines = 0;
-#ifdef NEWLIST
     for (iobj = 0; iobj < nobjs; iobj++)
     {
         s = VECTOR(objs)[iobj];
@@ -289,63 +278,6 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
         }
     }
-#else
-    for (a = objs; a != R_NilValue; a = CDR(a))
-    {
-        s = CAR(a);
-        if (a != objs && !isNull(s))
-            cat_printsep(sepr, 0);
-        n = length(s);
-        if (n > 0)
-        {
-            if (labs != R_NilValue && a == objs)
-            {
-                Rprintf("%s ", CHAR(STRING(labs)[nlines]));
-                width += strlen(CHAR(STRING(labs)[nlines % lablen])) + 1;
-                nlines++;
-            }
-            if (isString(s))
-                p = CHAR(STRING(s)[0]);
-            else
-            {
-                p = EncodeElement(s, 0, 0);
-                strcpy(buf, p);
-                p = buf;
-            }
-            w = strlen(p);
-            cat_sepwidth(sepr, &sepw, ntot);
-            if (a != objs && (width + w + sepw > pwidth))
-            {
-                cat_newline(labs, &width, lablen, nlines);
-                nlines++;
-            }
-            for (i = 0; i < n; i++, ntot++)
-            {
-                Rprintf("%s", p);
-                width += w + sepw;
-                if (i < (n - 1))
-                {
-                    cat_printsep(sepr, ntot);
-                    if (isString(s))
-                        p = CHAR(STRING(s)[i + 1]);
-                    else
-                    {
-                        p = EncodeElement(s, i + 1, 0);
-                        strcpy(buf, p);
-                        p = buf;
-                    }
-                    w = strlen(p);
-                    cat_sepwidth(sepr, &sepw, ntot);
-                    if ((width + w + sepw > pwidth) && pwidth)
-                    {
-                        cat_newline(labs, &width, lablen, nlines);
-                        nlines++;
-                    }
-                }
-            }
-        }
-    }
-#endif
     if ((pwidth != INT_MAX) || nlsep)
         Rprintf("\n");
     if (havefile)
@@ -358,7 +290,6 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-#ifdef NEWLIST
 SEXP do_makelist(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP list, names;
@@ -395,19 +326,6 @@ SEXP do_makelist(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_namedlist(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 }
-#else
-SEXP do_makelist(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    SEXP s = args;
-    while (s != R_NilValue)
-    {
-        if (NAMED(CAR(s)))
-            CAR(s) = duplicate(CAR(s));
-        s = CDR(s);
-    }
-    return args;
-}
-#endif
 
 SEXP do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -465,9 +383,7 @@ SEXP do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
     case CPLXSXP:
     case STRSXP:
     case EXPRSXP:
-#ifdef NEWLIST
     case VECSXP:
-#endif
         s = allocVector(mode, len);
         break;
     case LISTSXP:
@@ -783,15 +699,15 @@ SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
     return (SYMVALUE(symbol));
 }
 
-/* For switch, evaluate the first arg, if it is a character then try to */
-/* match the name with the remaining args, and evaluate the match, if */
-/* there is no match then evaluate the first unnamed arg.  If the value */
-/* of the first arg is not a character string then coerce it to integer */
-/* (k) and choose the kth argument from those that remain provided */
-/* 0 < k < (nargs-1) For character matching, if the value is missing */
-/* then take the next non-missing arg as the value then things like */
-/*     switch(as.character(answer), yes=, YES=1, no=, NO=2, 3) */
-/* work. */
+/* For switch, evaluate the first arg, if it is a character then try */
+/* to match the name with the remaining args, and evaluate the match, */
+/* if there is no match then evaluate the first unnamed arg.  If the */
+/* value of the first arg is not a character string then coerce it to */
+/* an integer k and choose the kth argument from those that remain */
+/* provided 0 < k < (nargs-1). For character matching, if the value */
+/* is missing then take the next non-missing arg as the value. Then */
+/* things like switch(as.character(answer), yes=, YES=1, no=, NO=2, 3) */
+/* will work. */
 
 SEXP switchList(SEXP el, SEXP rho)
 {

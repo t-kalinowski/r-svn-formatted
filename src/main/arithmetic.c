@@ -154,17 +154,12 @@ SEXP do_Machine(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int ibeta, it, irnd, ngrd, machep, negep, iexp, minexp, maxexp;
     double eps, epsneg, xmin, xmax;
-#ifdef NEWLIST
     SEXP ans, nms;
-#else
-    SEXP a, ans;
-#endif
 
     checkArity(op, args);
 
     machar(&ibeta, &it, &irnd, &ngrd, &machep, &negep, &iexp, &minexp, &maxexp, &eps, &epsneg, &xmin, &xmax);
 
-#ifdef NEWLIST
     PROTECT(ans = allocVector(VECSXP, 14));
     PROTECT(nms = allocVector(STRSXP, 14));
     STRING(nms)[0] = mkChar("double.eps");
@@ -210,85 +205,10 @@ SEXP do_Machine(SEXP call, SEXP op, SEXP args, SEXP env)
     VECTOR(ans)[13] = ScalarInteger(INT_MAX);
     setAttrib(ans, R_NamesSymbol, nms);
     UNPROTECT(2);
-#else
-    PROTECT(a = ans = allocList(14));
-
-    TAG(a) = install("double.eps");
-    CAR(a) = allocVector(REALSXP, 1);
-    REAL(CAR(a))[0] = eps;
-    a = CDR(a);
-
-    TAG(a) = install("double.neg.eps");
-    CAR(a) = allocVector(REALSXP, 1);
-    REAL(CAR(a))[0] = epsneg;
-    a = CDR(a);
-
-    TAG(a) = install("double.xmin");
-    CAR(a) = allocVector(REALSXP, 1);
-    REAL(CAR(a))[0] = xmin;
-    a = CDR(a);
-
-    TAG(a) = install("double.xmax");
-    CAR(a) = allocVector(REALSXP, 1);
-    REAL(CAR(a))[0] = xmax;
-    a = CDR(a);
-
-    TAG(a) = install("double.base");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = ibeta;
-    a = CDR(a);
-
-    TAG(a) = install("double.digits");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = it;
-    a = CDR(a);
-
-    TAG(a) = install("double.rounding");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = irnd;
-    a = CDR(a);
-
-    TAG(a) = install("double.guard");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = ngrd;
-    a = CDR(a);
-
-    TAG(a) = install("double.ulp.digits");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = machep;
-    a = CDR(a);
-
-    TAG(a) = install("double.neg.ulp.digits");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = negep;
-    a = CDR(a);
-
-    TAG(a) = install("double.exponent");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = iexp;
-    a = CDR(a);
-
-    TAG(a) = install("double.min.exp");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = minexp;
-    a = CDR(a);
-
-    TAG(a) = install("double.max.exp");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = maxexp;
-    a = CDR(a);
-
-    TAG(a) = install("integer.max");
-    CAR(a) = allocVector(INTSXP, 1);
-    INTEGER(CAR(a))[0] = INT_MAX;
-    a = CDR(a);
-
-    UNPROTECT(1);
-#endif
     return ans;
 }
 
-/* Base 2 Logarithms */
+/* Base 2 and Genreal Base Logarithms */
 
 double log2(double x)
 {
@@ -366,7 +286,7 @@ static SEXP binary(SEXP op, SEXP args)
     /* if either x or y is a matrix with length 1 and the other */
     /* is a vector we want to coerce the matrix to be a vector */
 
-    /* FIXME: danger will robinson.
+    /* FIXME: Danger Will Robinson.
      * -----  We might be trashing arguments here.
      * If we have NAMED(x) or NAMED(y) we should duplicate!
      */
@@ -472,8 +392,8 @@ static SEXP binary(SEXP op, SEXP args)
         setAttrib(x, R_ClassSymbol, class);
         UNPROTECT(2);
     }
-    /* Don't set the dims if one argument is an array of size 0
-       and the other isn't of size zero, cos they're wrong */
+    /* Don't set the dims if one argument is an array of */
+    /* size 0 and the other isn't of size zero, cos they're wrong */
     if (dims != R_NilValue)
     {
         if (!((xarray && (nx == 0) && (ny != 0)) || (yarray && (ny == 0) && (nx != 0))))
