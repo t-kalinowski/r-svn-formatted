@@ -170,6 +170,10 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
         con->close(con);
     free(line);
     free(buf);
+    regfree(&blankline);
+    regfree(&contline);
+    regfree(&trailblank);
+    regfree(&regline);
 
     if (skip == 0)
         k++;
