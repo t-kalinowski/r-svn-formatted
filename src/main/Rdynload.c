@@ -850,10 +850,15 @@ int moduleCdynload(char *module, int local, int now)
 #else
     char dllpath[PATH_MAX], *p = R_Home;
 #endif
+    int res;
+
     if (!p)
         return 0;
     sprintf(dllpath, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
-    return AddDLL(dllpath, local, now);
+    res = AddDLL(dllpath, local, now);
+    if (!res)
+        warning("unable to load shared library \"%s\":\n  %s", dllpath, DLLerror);
+    return res;
 }
 
 /**
