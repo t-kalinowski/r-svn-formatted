@@ -243,7 +243,7 @@ void karma(Starma G, double *sumlog, double *ssq, int iupd, int *nit)
     double *phi = G->phi, *theta = G->theta, *a = G->a, *P = G->P, *V = G->V, *w = G->w, *resid = G->resid;
 
     int i, j, l, ii, ind, indn, indw;
-    double a1, dt, et, ft, g, ut;
+    double a1, dt, et, ft, g, ut, phij, phijdt, work[100];
 
     /*  Invoking this subroutine updates a, P, sumlog and ssq by inclusion
         of data values w(1) to w(n). the corresponding values of resid are
@@ -273,16 +273,41 @@ void karma(Starma G, double *sumlog, double *ssq, int iupd, int *nit)
                 a[r - 1] = 0.0;
                 for (j = 0; j < p; j++)
                     a[j] += phi[j] * a1;
-                ind = -1;
-                indn = r;
-                for (l = 0; l < r; l++)
-                    for (j = l; j < r; j++)
+                if (P[0] == 0.0)
+                { /* last obs was available */
+                    ind = -1;
+                    indn = r;
+                    for (j = 0; j < r; j++)
+                        for (l = j; l < r; l++)
+                        {
+                            ++ind;
+                            P[ind] = V[ind];
+                            if (l < r - 1)
+                                P[ind] += P[indn++];
+                        }
+                }
+                else
+                {
+                    for (j = 0; j < r; j++)
+                        work[j] = P[j];
+                    ind = -1;
+                    indn = r;
+                    dt = P[0];
+                    for (j = 0; j < r; j++)
                     {
-                        ++ind;
-                        P[ind] = V[ind];
-                        if (j < r - 1)
-                            P[ind] += P[indn++];
+                        phij = phi[j];
+                        phijdt = phij * dt;
+                        for (l = j; l < r; l++)
+                        {
+                            ++ind;
+                            P[ind] = V[ind] + phi[l] * phijdt;
+                            if (j < r - 1)
+                                P[ind] += work[j + 1] * phi[l];
+                            if (l < r - 1)
+                                P[ind] += work[l + 1] * phij + P[indn++];
+                        }
                     }
+                }
             }
 
             /*        updating. */
@@ -303,12 +328,11 @@ void karma(Starma G, double *sumlog, double *ssq, int iupd, int *nit)
                 resid[i] = ut / sqrt(ft);
                 *ssq += ut * ut / ft;
                 *sumlog += log(ft);
+                for (l = 0; l < r; l++)
+                    P[l] = 0.0;
             }
             else
                 resid[i] = NA_REAL;
-
-            for (l = 0; l < r; l++)
-                P[l] = 0.0;
         }
         *nit = n;
     }
