@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -266,36 +266,33 @@ SEXP FixupCol(SEXP col, unsigned int dflt)
     int i, n;
     SEXP ans;
     n = length(col);
-    if (length(col) == 0)
+    if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
         INTEGER(ans)[0] = dflt;
     }
-    else if (isList(col))
-    {
-        ans = allocVector(INTSXP, n);
-        for (i = 0; i < n; i++)
-        {
-            INTEGER(ans)[i] = RGBpar(CAR(col), 0);
-            col = CDR(col);
-        }
-    }
     else
     {
         ans = allocVector(INTSXP, n);
-        for (i = 0; i < n; i++)
-            INTEGER(ans)[i] = RGBpar(col, i);
+        if (isList(col))
+            for (i = 0; i < n; i++)
+            {
+                INTEGER(ans)[i] = RGBpar(CAR(col), 0);
+                col = CDR(col);
+            }
+        else
+            for (i = 0; i < n; i++)
+                INTEGER(ans)[i] = RGBpar(col, i);
     }
     return ans;
 }
 
 SEXP FixupCex(SEXP cex, double dflt)
 {
-    SEXP ans = R_NilValue; /* -Wall*/
+    SEXP ans;
     int i, n;
-    double c;
     n = length(cex);
-    if (length(cex) == 0)
+    if (n == 0)
     {
         ans = allocVector(REALSXP, 1);
         if (R_FINITE(dflt) && dflt > 0)
@@ -303,28 +300,28 @@ SEXP FixupCex(SEXP cex, double dflt)
         else
             REAL(ans)[0] = NA_REAL;
     }
-    else if (isReal(cex))
+    else
     {
+        double c;
         ans = allocVector(REALSXP, n);
-        for (i = 0; i < n; i++)
-        {
-            c = REAL(cex)[i];
-            if (R_FINITE(c) && c > 0)
+        if (isReal(cex))
+            for (i = 0; i < n; i++)
+            {
+                c = REAL(cex)[i];
+                if (R_FINITE(c) && c > 0)
+                    REAL(ans)[i] = c;
+                else
+                    REAL(ans)[i] = NA_REAL;
+            }
+        else if (isInteger(cex) || isLogical(cex))
+
+            for (i = 0; i < n; i++)
+            {
+                c = INTEGER(cex)[i];
+                if (c == NA_INTEGER || c <= 0)
+                    c = NA_REAL;
                 REAL(ans)[i] = c;
-            else
-                REAL(ans)[i] = NA_REAL;
-        }
-    }
-    else if (isInteger(cex) || isLogical(cex))
-    {
-        ans = allocVector(REALSXP, n);
-        for (i = 0; i < n; i++)
-        {
-            c = INTEGER(cex)[i];
-            if (c == NA_INTEGER || c <= 0)
-                c = NA_REAL;
-            REAL(ans)[i] = c;
-        }
+            }
     }
     return ans;
 }
@@ -386,7 +383,7 @@ SEXP FixupVFont(SEXP vfont)
  *
  * Main purpose: Treat things like  title(main = list("This Title", font= 4))
  *
- * Called from  do_title()  [only, currently]
+ * Called from	do_title()  [only, currently]
  */
 static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex, int *pfont, SEXP *pvfont)
 {
@@ -902,7 +899,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* axis(side, at, labels, tick,
-     *       line, pos, outer, font, vfont, ...) */
+     *	     line, pos, outer, font, vfont, ...) */
 
     SEXP at, lab, vfont;
     int col, fg, font;
@@ -1515,7 +1512,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     break;
 
-    case 's': /* step function  I */
+    case 's': /* step function	I */
     {
         double xtemp[3], ytemp[3];
         dd->gp.col = INTEGER(col)[0];
@@ -1543,7 +1540,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     break;
 
-    case 'S': /* step function  II */
+    case 'S': /* step function	II */
     {
         double xtemp[3], ytemp[3];
         dd->gp.col = INTEGER(col)[0];
@@ -1724,8 +1721,11 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
         if (R_FINITE(xx[0]) && R_FINITE(yy[0]) && R_FINITE(xx[1]) && R_FINITE(yy[1]))
         {
             dd->gp.col = INTEGER(col)[i % ncol];
+            /* NA color should be ok */
+#ifdef till_R_version_1_3
             if (dd->gp.col == NA_INTEGER)
                 dd->gp.col = dd->dp.col;
+#endif
             dd->gp.lty = INTEGER(lty)[i % nlty];
             dd->gp.lwd = REAL(lwd)[i % nlwd];
             GLine(xx[0], yy[0], xx[1], yy[1], DEVICE, dd);
@@ -1757,16 +1757,16 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     xypoints(call, args, &n);
     sxl = CAR(args);
     nxl = length(sxl);
-    args = CDR(args);
+    args = CDR(args); /* x_left */
     syb = CAR(args);
     nyb = length(syb);
-    args = CDR(args);
+    args = CDR(args); /* y_bottom */
     sxr = CAR(args);
     nxr = length(sxr);
-    args = CDR(args);
+    args = CDR(args); /* x_right */
     syt = CAR(args);
     nyt = length(syt);
-    args = CDR(args);
+    args = CDR(args); /* y_top */
 
     PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     ncol = LENGTH(col);
@@ -2372,16 +2372,16 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
 }
 
 /* mtext(text,
-         side = 3,
-         line = 0,
+     side = 3,
+     line = 0,
      outer = TRUE,
-         at = NA,
-         adj = NA,
-         cex = NA,
-         col = NA,
-         font = NA,
-         vfont = NULL,
-         ...) */
+     at = NA,
+     adj = NA,
+     cex = NA,
+     col = NA,
+     font = NA,
+     vfont = NULL,
+     ...) */
 
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -2532,7 +2532,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         if (outerval == NA_INTEGER)
             outerval = 0;
         /* Note : we ignore any shrinking produced */
-        /* by mfrow / mfcol specs here.  I.e. don't */
+        /* by mfrow / mfcol specs here.	 I.e. don't */
         /* dd->gp.cexbase. */
         if (R_FINITE(cexval))
             dd->gp.cex = cexval;
@@ -2582,8 +2582,8 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Annotation for plots :
 
        title(main, sub, xlab, ylab,
-             line, outer,
-             ...) */
+         line, outer,
+         ...) */
 
     SEXP Main, xlab, ylab, sub, vfont;
     double adj, adjy, cex, offset, line, hpos, vpos, where;
@@ -2792,7 +2792,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /*  abline(a, b, h, v, col, lty, lwd, ...)
-    draw lines in intercept/slope form.  */
+    draw lines in intercept/slope form.	 */
 
 static void getxlimits(double *x, DevDesc *dd)
 {
