@@ -24,7 +24,7 @@
 
 static R_CallMethodDef CallEntries[] = {{"R_isoreg", (DL_FUNC)&R_isoreg, 1}, {NULL, NULL, 0}};
 
-static R_NativePrimitiveArgType Srunmed_t[6] = {REALSXP, REALSXP, INTSXP, INTSXP, INTSXP, INTSXP};
+static R_NativePrimitiveArgType Srunmed_t[6] = {REALSXP, REALSXP, INTSXP, INTSXP, INTSXP, LGLSXP};
 static R_NativePrimitiveArgType Trunmed_t[9] = {INTSXP, INTSXP,  REALSXP, REALSXP, INTSXP,
                                                 INTSXP, REALSXP, INTSXP,  INTSXP};
 
