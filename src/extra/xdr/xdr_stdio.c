@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 /* Local mod: assumes WIN32 is i386 and little-endian generic is 32-bit */
 #ifdef WIN32
 static unsigned long int ntohl(unsigned long int x)
@@ -14,7 +17,8 @@ static unsigned long int ntohl(unsigned long int x)
 #endif
 }
 #else /* net is big-endian: little-endian hosts need byte-swap code */
-#ifdef LITTLE_ENDIAN
+#ifndef WORDS_BIGENDIAN
+/* #ifdef LITTLE_ENDIAN */
 static unsigned long int htonl(unsigned long int x)
 {
     return ((x << 24) | ((x & 0xff00) << 8) | ((x & 0xff0000) >> 8) | (x >> 24));
@@ -132,7 +136,7 @@ static void xdrstdio_destroy(xdrs) register XDR *xdrs;
     if (xdrs->x_op == XDR_ENCODE)
         fflush((FILE *)xdrs->x_private);
     /* xx should we close the file ?? */
-};
+}
 
 static bool_t xdrstdio_getlong(xdrs, lp) XDR *xdrs;
 register long *lp;
