@@ -15,6 +15,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <R.h>
+#include "ts.h"
+
 void R_pp_sum(double *u, int *n, int *l, double *sum)
 {
     int i, j;
