@@ -484,7 +484,7 @@ static void deparse2buff(SEXP s)
         break;
     case VECSXP:
         if (length(s) <= 0)
-            print2buff("NULL");
+            print2buff("list()");
         else
         {
             attr1(s);
