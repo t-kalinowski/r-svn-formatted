@@ -2153,6 +2153,21 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 
 extern SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho);
 
+static int in_R_X11_access(void)
+{
+    if (displayOpen)
+        return TRUE;
+    if ((display = XOpenDisplay(NULL)) == NULL)
+    {
+        return FALSE;
+    }
+    else
+    {
+        XCloseDisplay(display);
+        return TRUE;
+    }
+}
+
 void R_init_R_X11(DllInfo *info)
 {
     R_X11Routines *tmp;
@@ -2165,5 +2180,6 @@ void R_init_R_X11(DllInfo *info)
     tmp->X11 = in_do_X11;
     tmp->de = RX11_dataentry;
     tmp->image = in_R_GetX11Image;
+    tmp->access = in_R_X11_access;
     R_setX11Routines(tmp);
 }
