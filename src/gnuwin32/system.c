@@ -549,43 +549,6 @@ static char RUser[MAX_PATH];
 char *getRHOME(); /* in rhome.c */
 void R_setStartTime();
 
-/* Process ~/.Renviron, if it exists */
-#include "opt.h"
-
-/* like putenv, but allocate storage */
-static void Putenv(char *str)
-{
-    char *buf;
-    buf = (char *)malloc((strlen(str) + 1) * sizeof(char));
-    strcpy(buf, str);
-    putenv(buf);
-}
-
-static void processRenviron()
-{
-    char *opt[2], optf[MAX_PATH], buf[80], *tmp;
-    int ok;
-
-    if (!optopenfile(".Renviron"))
-    {
-        /* R_USER is not necessarily set yet, so we have to work harder */
-        tmp = getenv("R_USER");
-        if (!tmp)
-            tmp = getenv("HOME");
-        if (!tmp)
-            return;
-        sprintf(optf, "%s/.Renviron", tmp);
-        if (!optopenfile(optf))
-            return;
-    }
-    while ((ok = optread(opt, '=')))
-    {
-        sprintf(buf, "%s=%s", opt[0], opt[1]);
-        Putenv(buf);
-    }
-    optclosefile();
-}
-
 void R_SetWin32(Rstart Rp)
 {
     R_Home = Rp->rhome;
@@ -613,13 +576,25 @@ void R_SetWin32(Rstart Rp)
     pR_ShowMessage = Rp->message;
     R_yesnocancel = Rp->yesnocancel;
     my_R_Busy = Rp->busy;
-    /* Process ~/.Renviron, if it exists. */
+    /* Process .Renviron or ~/.Renviron, if it exists.
+       Only used here in embedded versions */
     if (!Rp->NoRenviron)
-        processRenviron();
+        process_users_Renviron();
     _controlfp(_MCW_EM, _MCW_EM);
 }
 
 /* Remove and process NAME=VALUE command line arguments */
+
+static void Putenv(char *str)
+{
+    char *buf;
+    buf = (char *)malloc((strlen(str) + 1) * sizeof(char));
+    if (!buf)
+        R_ShowMessage("allocation failure in reading Renviron");
+    strcpy(buf, str);
+    putenv(buf);
+    /* no free here: storage remains in use */
+}
 
 static void env_command_line(int *pac, char **argv)
 {
@@ -712,7 +687,7 @@ int cmdlineoptions(int ac, char **av)
      */
     if (!Rp->NoRenviron)
     {
-        processRenviron();
+        process_users_Renviron();
         Rp->NoRenviron = TRUE;
     }
     env_command_line(&ac, av);
