@@ -1278,7 +1278,6 @@ static void longpathname(char *path)
             return;
     }
     strcpy(path, tmpbuf);
-    return path;
 }
 
 SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
