@@ -64,6 +64,7 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
     NR = NR - xr;
     NB = NB - xb;
     sum = term;
+    p *= 1 - 1e-7;
     while (sum < p && xr < xend)
     {
         xr++;
@@ -73,6 +74,5 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
         xb--;
         NR--;
     }
-    /* add a fuzz to ensure left continuity */
-    return ceil(xr - 1e-7);
+    return xr;
 }

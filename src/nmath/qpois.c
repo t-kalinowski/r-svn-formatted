@@ -59,6 +59,7 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
     y = floor(mu + sigma * (z + gamma * (z * z - 1) / 6) + 0.5);
     z = ppois(y, lambda, lower_tail, log_p);
 
+    p *= 1 - 1e-7;
     if (z >= p)
     { /* search to the left */
         for (;;)
@@ -78,5 +79,5 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
         }
     }
     /* add a fuzz to ensure left continuity */
-    return ceil(y - 1e-7);
+    return y;
 }
