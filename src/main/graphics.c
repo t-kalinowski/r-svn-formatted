@@ -1863,6 +1863,7 @@ static void invalidError(char *message, DevDesc *dd)
 void copyGPar(GPar *source, GPar *dest);
 SEXP savedDisplayList;
 GPar savedGPar;
+SEXP savedSnapshot;
 #endif
 
 DevDesc *GNewPlot(Rboolean recording)
@@ -1915,8 +1916,14 @@ DevDesc *GNewPlot(Rboolean recording)
                         dd = CurrentDevice();
                 }
 #ifdef PLOTHISTORY
+                /* Remove savedDisplayList and savedGPar once
+                 * devga.c is working as new device
+                 */
                 if (dd->newDevStruct)
+                {
+                    PROTECT(savedSnapshot = GEcreateSnapshot((GEDevDesc *)dd));
                     PROTECT(savedDisplayList = ((GEDevDesc *)dd)->dev->displayList);
+                }
                 else
                     PROTECT(savedDisplayList = dd->displayList);
                 copyGPar(dpSavedptr(dd), &(savedGPar));
@@ -1929,7 +1936,12 @@ DevDesc *GNewPlot(Rboolean recording)
                 dpptr(dd)->newPage(dd);
 #ifdef PLOTHISTORY
             if (recording)
-                UNPROTECT(1);
+            {
+                if (dd->newDevStruct)
+                    UNPROTECT(2);
+                else
+                    UNPROTECT(1);
+            }
 #endif
             dpptr(dd)->currentFigure = gpptr(dd)->currentFigure = 1;
         }
