@@ -12,7 +12,7 @@
 
 #include "eda.h"
 
-double med3(double u, double v, double w)
+static double med3(double u, double v, double w)
 {
     /* Median(u,v,w): */
     if ((u <= v && v <= w) || (u >= v && v >= w))
@@ -25,7 +25,7 @@ double med3(double u, double v, double w)
    ----
    and change = TRUE, when  med3(u,v,w) != v   ==> makes "R" (in "3R") faster
 */
-int imed3(double u, double v, double w)
+static int imed3(double u, double v, double w)
 {
     /* Return (Index-1) of  median(u,v,w) , i.e.,
        -1 : u
@@ -39,7 +39,7 @@ int imed3(double u, double v, double w)
     /* else */ return -1;
 }
 
-Rboolean sm_3(double *x, double *y, int n, int end_rule)
+static Rboolean sm_3(double *x, double *y, int n, int end_rule)
 {
     /* y[] := Running Median of three (x) = "3 (x[])" with "copy ends"
      * ---  return chg := ( y != x ) */
@@ -80,7 +80,7 @@ Rboolean sm_3(double *x, double *y, int n, int end_rule)
     return chg;
 }
 
-int sm_3R(double *x, double *y, double *z, int n, int end_rule)
+static int sm_3R(double *x, double *y, double *z, int n, int end_rule)
 {
     /* y[] := "3R"(x) ; 3R = Median of three, repeated until convergence */
     int i, iter;
@@ -119,7 +119,7 @@ static Rboolean sptest(double *x, int i)
     /* else */ return TRUE;
 }
 
-Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
+static Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
 {
     /* y[] := S(x[])  where S() = "sm_split3"  */
     int i, j;
@@ -162,7 +162,7 @@ Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
     return (chg);
 }
 
-int sm_3RS3R(double *x, double *y, double *z, int n, int end_rule, Rboolean split_ends)
+static int sm_3RS3R(double *x, double *y, double *z, int n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3R S 3R"(x[1:n]);  z = "work"; */
     int iter;
@@ -176,7 +176,7 @@ int sm_3RS3R(double *x, double *y, double *z, int n, int end_rule, Rboolean spli
     return (iter + (int)chg);
 }
 
-int sm_3RSS(double *x, double *y, double *z, int n, int end_rule, Rboolean split_ends)
+static int sm_3RSS(double *x, double *y, double *z, int n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3RSS"(x[1:n]);  z = "work"; */
     int iter;
@@ -190,7 +190,7 @@ int sm_3RSS(double *x, double *y, double *z, int n, int end_rule, Rboolean split
     return (iter + (int)chg);
 }
 
-int sm_3RSR(double *x, double *y, double *z, double *w, int n, int end_rule, Rboolean split_ends)
+static int sm_3RSR(double *x, double *y, double *z, double *w, int n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3RSR"(x[1:n]);  z := residuals; w = "work"; */
 
