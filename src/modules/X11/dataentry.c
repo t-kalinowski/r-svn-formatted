@@ -1415,7 +1415,7 @@ static KeySym GetKey(DEEvent *event)
     char text[1];
     KeySym iokey;
 
-    XLookupString((XKeyEvent *)event, text, 1, &iokey, 0);
+    XLookupString((XKeyEvent *)event, text, 1, &iokey, NULL);
     return iokey;
 }
 
@@ -1424,7 +1424,7 @@ static char GetCharP(DEEvent *event)
     char text[1];
     KeySym iokey;
 
-    XLookupString((XKeyEvent *)event, text, 1, &iokey, 0);
+    XLookupString((XKeyEvent *)event, text, 1, &iokey, NULL);
     return text[0];
 }
 
@@ -1445,7 +1445,7 @@ static void doControl(DEEvent *event)
     KeySym iokey;
 
     (*event).xkey.state = 0;
-    XLookupString((XKeyEvent *)event, text, 1, &iokey, 0);
+    XLookupString((XKeyEvent *)event, text, 1, &iokey, NULL);
     /* one row overlap when scrolling: top line <--> bottom line */
     switch (text[0])
     {
