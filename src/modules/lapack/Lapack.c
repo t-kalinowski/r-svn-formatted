@@ -162,7 +162,9 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
     else
     {
         int liwork, *iwork, itmp, m;
-        double vl, vu, abstol = 0.0;
+        double vl = 0.0, vu = 0.0, abstol = 0.0;
+        /* valgrind seems to think vu should be set, but it is documented
+           not to be used if range='a' */
         int il, iu, *isuppz;
 
         range[0] = 'A';

@@ -227,7 +227,7 @@ SEXP arma0fa(SEXP pG, SEXP inparams)
         for (i = G->ncond; i < G->n; i++)
         {
             tmp = G->w[i];
-            for (j = 0; j < p; j++)
+            for (j = 0; j < min(i - G->ncond, p); j++)
                 tmp -= G->phi[j] * G->w[i - j - 1];
             for (j = 0; j < min(i - G->ncond, q); j++)
                 tmp -= G->theta[j] * G->resid[i - j - 1];
