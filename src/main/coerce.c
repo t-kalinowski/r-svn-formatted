@@ -1808,7 +1808,7 @@ SEXP substitute(SEXP lang, SEXP rho)
     case PROMSXP:
         return substitute(PREXPR(lang), rho);
     case SYMSXP:
-        t = findVarInFrame(rho, lang, TRUE);
+        t = findVarInFrame3(rho, lang, TRUE);
         if (t != R_UnboundValue)
         {
             if (TYPEOF(t) == PROMSXP)
@@ -1848,7 +1848,7 @@ SEXP substituteList(SEXP el, SEXP rho)
         return el;
     if (CAR(el) == R_DotsSymbol)
     {
-        h = findVarInFrame(rho, CAR(el), TRUE);
+        h = findVarInFrame3(rho, CAR(el), TRUE);
         if (h == R_NilValue)
             return substituteList(CDR(el), rho);
         if (TYPEOF(h) != DOTSXP)

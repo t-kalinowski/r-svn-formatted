@@ -896,7 +896,7 @@ void R_SetVarLocValue(R_varloc_t vl, SEXP value)
   symbol in this frame (FALSE).  This is used for get() and exists().
 */
 
-SEXP findVarInFrame(SEXP rho, SEXP symbol, Rboolean doGet)
+SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
 {
     int hashcode;
     SEXP frame, c;
@@ -951,6 +951,11 @@ SEXP findVarInFrame(SEXP rho, SEXP symbol, Rboolean doGet)
     return R_UnboundValue;
 }
 
+SEXP findVarInFrame(SEXP rho, SEXP symbol)
+{
+    findVarInFrame3(rho, symbol, TRUE);
+}
+
 /*----------------------------------------------------------------------
 
   findVar
@@ -998,7 +1003,7 @@ SEXP findVar(SEXP symbol, SEXP rho)
        R_GlobalEnv */
     while (rho != R_GlobalEnv && rho != R_NilValue)
     {
-        vl = findVarInFrame(rho, symbol, TRUE /* get rather than exists */);
+        vl = findVarInFrame3(rho, symbol, TRUE /* get rather than exists */);
         if (vl != R_UnboundValue)
             return (vl);
         rho = ENCLOS(rho);
@@ -1010,7 +1015,7 @@ SEXP findVar(SEXP symbol, SEXP rho)
 #else
     while (rho != R_NilValue)
     {
-        vl = findVarInFrame(rho, symbol, TRUE);
+        vl = findVarInFrame3(rho, symbol, TRUE);
         if (vl != R_UnboundValue)
             return (vl);
         rho = ENCLOS(rho);
@@ -1036,7 +1041,7 @@ SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
     SEXP vl;
     while (rho != R_NilValue)
     {
-        vl = findVarInFrame(rho, symbol, TRUE);
+        vl = findVarInFrame3(rho, symbol, TRUE);
 
         if (vl != R_UnboundValue)
         {
@@ -1075,7 +1080,7 @@ SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits, Rboolean d
         mode = CLOSXP;
     while (rho != R_NilValue)
     {
-        vl = findVarInFrame(rho, symbol, doGet);
+        vl = findVarInFrame3(rho, symbol, doGet);
 
         if (vl != R_UnboundValue)
         {
@@ -1151,12 +1156,12 @@ SEXP ddfindVar(SEXP symbol, SEXP rho)
     SEXP vl;
 
     /* first look for the .. symbol itself */
-    vl = findVarInFrame(rho, symbol, TRUE);
+    vl = findVarInFrame3(rho, symbol, TRUE);
     if (vl != R_UnboundValue)
         return (vl);
 
     i = ddVal(symbol);
-    vl = findVarInFrame(rho, R_DotsSymbol, TRUE);
+    vl = findVarInFrame3(rho, R_DotsSymbol, TRUE);
     if (vl != R_UnboundValue)
     {
         if (length(vl) >= i)
@@ -1196,7 +1201,7 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
     {
         if (cptr->callflag & CTXT_FUNCTION)
         {
-            vl = findVarInFrame(cptr->cloenv, symbol, TRUE);
+            vl = findVarInFrame3(cptr->cloenv, symbol, TRUE);
             if (vl != R_UnboundValue)
                 return vl;
         }
@@ -1228,9 +1233,9 @@ SEXP findFun(SEXP symbol, SEXP rho)
         if (rho == R_GlobalEnv)
             vl = findGlobalVar(symbol);
         else
-            vl = findVarInFrame(rho, symbol, TRUE);
+            vl = findVarInFrame3(rho, symbol, TRUE);
 #else
-        vl = findVarInFrame(rho, symbol, TRUE);
+        vl = findVarInFrame3(rho, symbol, TRUE);
 #endif
         if (vl != R_UnboundValue)
         {
@@ -2683,7 +2688,7 @@ Rboolean R_IsNamespaceEnv(SEXP rho)
         return TRUE;
     else if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = findVarInFrame(rho, install(".__NAMESPACE__."), TRUE);
+        SEXP name = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
         if (name != R_UnboundValue && TYPEOF(name) == STRSXP && LENGTH(name) > 0)
             return TRUE;
         else
@@ -2699,7 +2704,7 @@ SEXP R_NamespaceEnvName(SEXP rho)
         return R_BaseNamespaceName;
     else if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = findVarInFrame(rho, install(".__NAMESPACE__."), TRUE);
+        SEXP name = findVarInFrame3(rho, install(".__NAMESPACE__."), TRUE);
         if (name != R_UnboundValue && TYPEOF(name) == STRSXP && LENGTH(name) > 0)
             return name;
         else
