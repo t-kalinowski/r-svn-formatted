@@ -20,9 +20,10 @@
 #include <math.h>
 
 #include "Defn.h"
-#include "Rdefines.h"        /* for CREATE_STRING_VECTOR */
-#include "R_ext/Constants.h" /* Rboolean */
-#include "Random.h"          /* for the random number generation in samin() */
+#include "Rdefines.h" /* for CREATE_STRING_VECTOR */
+#include "Random.h"   /* for the random number generation in samin() */
+
+#include "Applic.h" /* setulb() */
 
 static SEXP getListElement(SEXP list, char *str)
 {
@@ -58,7 +59,7 @@ typedef struct opt_struct
 static void vmmin(int n, double *b, double *Fmin, int maxit, int trace, int *mask, double abstol, double reltol,
                   int nREPORT, OptStruct OS, int *fncount, int *grcount, int *fail);
 static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
-                  double alpha, double beta, double gamma, int trace, int *fncount, int maxit);
+                  double alpha, double beta, double gamm, int trace, int *fncount, int maxit);
 static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
                   int type, int trace, int *fncount, int *grcount, int maxit);
 static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, int *fail, OptStruct OS,
@@ -239,12 +240,12 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (strcmp(tn, "Nelder-Mead") == 0)
     {
-        double alpha, beta, gamma;
+        double alpha, beta, gamm;
 
         alpha = asReal(getListElement(options, "alpha"));
         beta = asReal(getListElement(options, "beta"));
-        gamma = asReal(getListElement(options, "gamma"));
-        nmmin(npar, dpar, opar, &val, &ifail, abstol, reltol, OS, alpha, beta, gamma, trace, &fncount, maxit);
+        gamm = asReal(getListElement(options, "gamma"));
+        nmmin(npar, dpar, opar, &val, &ifail, abstol, reltol, OS, alpha, beta, gamm, trace, &fncount, maxit);
         for (i = 0; i < npar; i++)
             REAL(par)[i] = opar[i] * (OS->parscale[i]);
         grcount = NA_INTEGER;
@@ -683,7 +684,7 @@ static void vmmin(int n0, double *b, double *Fmin, int maxit, int trace, int *ma
 
 /* Nelder-Mead */
 static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
-                  double alpha, double beta, double gamma, int trace, int *fncount, int maxit)
+                  double alpha, double beta, double gamm, int trace, int *fncount, int maxit)
 {
     char action[50];
     int C;
@@ -820,7 +821,7 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                     P[n1 - 1][C - 1] = f;
                     for (i = 0; i < n; i++)
                     {
-                        f = gamma * Bvec[i] + (1 - gamma) * P[i][C - 1];
+                        f = gamm * Bvec[i] + (1 - gamm) * P[i][C - 1];
                         P[i][C - 1] = Bvec[i];
                         Bvec[i] = f;
                     }
@@ -1112,10 +1113,6 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
     *fncount = funcount;
     *grcount = gradcount;
 }
-
-/* from ../appl/lbfgsb.c : */
-void setulb(int n, int m, double *x, double *l, double *u, int *nbd, double *f, double *g, double factr, double *pgtol,
-            double *wa, int *iwa, char *task, int iprint, int *lsave, int *isave, double *dsave);
 
 static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, int *fail, OptStruct OS,
                    double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg, int trace, int nREPORT)
