@@ -44,8 +44,8 @@ int MDIset = 0;
 static window RFrame;
 extern int ConsoleAcceptCmd;
 static menubar RMenuBar;
-static menuitem msource, mdisplay, mload, msave, mpaste, mcopy, mcopypaste, mlazy;
-static menuitem mls, mrm, msearch, mhelp, mmanintro, mmanref, mmanext, mapropos, mhelpstart;
+static menuitem msource, mdisplay, mload, msave, mpaste, mcopy, mcopypaste, mlazy, mconfig, mls, mrm, msearch, mhelp,
+    mmanintro, mmanref, mmanext, mapropos, mhelpstart;
 static int lhelpstart, lmanintro, lmanref, lmanext;
 static menu m, mman;
 static char cmd[1024];
@@ -190,6 +190,12 @@ static void menucopypaste(control m)
     }
     else
         askok("No selection");
+    show(RConsole);
+}
+
+static void menuconfig(control m)
+{
+    Rgui_configure();
     show(RConsole);
 }
 
@@ -668,6 +674,9 @@ int setupui()
     MCHECK(mpaste = newmenuitem("Paste         \tCTRL+V", 0, menupaste));
     MCHECK(mcopypaste = newmenuitem("Copy And Paste  \tCTRL+X", 0, menucopypaste));
     MCHECK(newmenuitem("Select all", 0, menuselectall));
+    MCHECK(newmenuitem("-", 0, NULL));
+    MCHECK(mconfig = newmenuitem("Console options", 0, menuconfig));
+
     MCHECK(newmenu("Misc"));
     MCHECK(newmenuitem("Stop current computation           \tESC", 0, menukill));
     MCHECK(newmenuitem("-", 0, NULL));

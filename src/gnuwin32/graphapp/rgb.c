@@ -806,7 +806,7 @@ static int RgbValue[RGBCOLORS][3] = {
     {205, 205, 0},   {139, 139, 0},   {154, 205, 50}};
 
 /* Return transparent if the color doesn't exist.
- *  Case insentive comparison?
+ *  Case insensitive comparison?
  */
 rgb nametorgb(char *name)
 {
@@ -830,4 +830,27 @@ rgb nametorgb(char *name)
         return Transparent;
     else
         return rgb(RgbValue[mid][0], RgbValue[mid][1], RgbValue[mid][2]);
+}
+
+/* return "white" not "gray100" */
+char *rgbtoname(rgb in)
+{
+    int i;
+
+    for (i = 0; i < RGBCOLORS; i++)
+        if (in == rgb(RgbValue[i][0], RgbValue[i][1], RgbValue[i][2]) && strcmp(ColorName[i], "gray100") &&
+            strcmp(ColorName[i], "grey100"))
+            return ColorName[i];
+    return "";
+}
+
+int rgbtonum(rgb in)
+{
+    int i;
+
+    for (i = 0; i < RGBCOLORS; i++)
+        if (in == rgb(RgbValue[i][0], RgbValue[i][1], RgbValue[i][2]) && strcmp(ColorName[i], "gray100") &&
+            strcmp(ColorName[i], "grey100"))
+            return i;
+    return -1;
 }
