@@ -277,8 +277,8 @@ L7:
     in[*m - 1] = kn;
     /* BEGIN BY PARTITIONING THE ROOT OF THE TREE */
     split(*n, &x[x_offset], mm, &in[1], ih[1], ih[2], 0, &ia[1], &mb, &mxa, &ib[1], &ia[ma], &mxbb);
-/* FIRST TRAVERSE THE LEFT HALF OF THE TREE */
-/* START WITH THE LEFT SON */
+    /* FIRST TRAVERSE THE LEFT HALF OF THE TREE */
+    /* START WITH THE LEFT SON */
 L8:
     nib += ia[ma];
     --ma;
@@ -297,7 +297,7 @@ L9:
     split(*n, &x[x_offset], mb, &ia[1], ih[inh], ih[ilinh], 1, &ia[1], &mbb, &mxa, &ib[nib], &ia[ma], &mxb);
     mb = mbb;
     goto L8;
-/* THEN THE RIGHT SON */
+    /* THEN THE RIGHT SON */
 L10:
     inh = il[inh];
 L11:
@@ -316,14 +316,14 @@ L11:
     split(*n, &x[x_offset], ia[ma], &ib[nib], ih[inh], ih[ilinh], 2, &ia[1], &mb, &mxa, &ib[nib], &mbb, &mxb);
     ia[ma] = mbb;
     goto L9;
-/* NOW TRAVERSE THE RIGHT HALF OF THE TREE */
+    /* NOW TRAVERSE THE RIGHT HALF OF THE TREE */
 L12:
     mxb = mxbb;
     ma = *m;
     mb = ia[ma];
     nia = 1;
     ia[ma] = 0;
-/* START WITH THE RIGHT SON */
+    /* START WITH THE RIGHT SON */
 L13:
     nia += ia[ma];
     --ma;
@@ -342,7 +342,7 @@ L14:
     split(*n, &x[x_offset], mb, &ib[nib], ih[inh], ih[ilinh], -1, &ia[nia], &ia[ma], &mxa, &ib[nib], &mbb, &mxb);
     mb = mbb;
     goto L13;
-/* THEN THE LEFT SON */
+    /* THEN THE LEFT SON */
 L15:
     inh = il[inh];
 L16:
@@ -374,8 +374,8 @@ L17:
         j = il[j];
     }
     return;
-/* ALL THE SPECIAL CASES ARE HANDLED DOWN HERE */
-/* IF ALL THE POINTS LIE ON A VERTICAL LINE */
+    /* ALL THE SPECIAL CASES ARE HANDLED DOWN HERE */
+    /* IF ALL THE POINTS LIE ON A VERTICAL LINE */
 L18:
     kx = in[1];
     kn = in[1];
@@ -401,7 +401,7 @@ L18:
     {
         goto L22;
     }
-/* IF THERE ARE ONLY TWO POINTS */
+    /* IF THERE ARE ONLY TWO POINTS */
 L21:
     ih[1] = kx;
     ih[2] = kn;
@@ -411,15 +411,15 @@ L21:
         *nh = 2;
     }
     goto L17;
-/* IF THERE IS ONLY ONE POINT */
+    /* IF THERE IS ONLY ONE POINT */
 L22:
     *nh = 2;
     ih[1] = in[1];
     il[1] = 1;
     goto L17;
-/* MULTIPLE EXTREMES ARE HANDLED HERE */
-/* IF THERE ARE SEVERAL POINTS WITH THE (SAME) LARGEST */
-/* FIRST COORDINATE */
+    /* MULTIPLE EXTREMES ARE HANDLED HERE */
+    /* IF THERE ARE SEVERAL POINTS WITH THE (SAME) LARGEST */
+    /* FIRST COORDINATE */
 L23:
     if (maxe)
     {
