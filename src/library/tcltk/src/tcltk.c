@@ -7,6 +7,11 @@
 #define TCL80
 #endif
 
+/* TclCmdProc was redefined to include const in Tcl 8.4 */
+#ifndef CONST84
+#define CONST84
+#endif
+
 #include <Rinternals.h>
 #include <R_ext/PrtUtil.h>
 #ifndef Win32
@@ -53,7 +58,7 @@ static SEXP makeRTclObject(Tcl_Obj *tclobj)
     return obj;
 }
 
-static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     int status, i;
     SEXP text, expr, ans;
@@ -93,7 +98,7 @@ static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
    latter assumes that the first hex address is a LANGSXP and the
    second is an ENVSXP. */
 
-static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     int i;
     SEXP expr, fun, alist;
@@ -116,7 +121,7 @@ static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
     return TCL_OK;
 }
 
-static int R_call_lang(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+static int R_call_lang(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     SEXP expr, env;
 
