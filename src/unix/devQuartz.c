@@ -1233,6 +1233,7 @@ static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     CGLineJoin linejoin;
+    CGLineCap linecap;
     switch (ljoin)
     {
     case GE_ROUND_JOIN:
@@ -1250,7 +1251,7 @@ static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd)
     CGContextSetLineCap(GetContext(xd), linejoin);
 }
 
-static void Quartz_SetLineMitre(R_GE_linemitre lmitre, NewDevDesc *dd)
+static void Quartz_SetLineMitre(double lmitre, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     if (lmitre < 1)
