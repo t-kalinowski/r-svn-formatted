@@ -20,7 +20,7 @@
 #include <windows.h>
 #include <string.h> /* for strrchr(...) */
 #include <stdio.h>
-#include "Version.h"
+#include "Rversion.h"
 
 static char rhomebuf[MAX_PATH];
 

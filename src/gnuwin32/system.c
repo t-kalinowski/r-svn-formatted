@@ -167,14 +167,14 @@
 #include <windows.h>
 #include "run.h"
 #include "Startup.h"
-#include "Version.h"
+/* #include "Rversion.h"*/
 
-static int DefaultSaveAction = 0;
-static int DefaultRestoreAction = 1;
-static int LoadSiteFile = 1;
-static int LoadInitFile = 1;
-static int DebugInitFile = 0;
-static int NoRenviron = 0;
+static int DefaultSaveAction = SA_SAVEASK;
+static int DefaultRestoreAction = SA_NORESTORE;
+static int LoadSiteFile = True;
+static int LoadInitFile = True;
+static int DebugInitFile = False;
+static int NoRenviron = False;
 
 UImode CharacterMode;
 int ConsoleAcceptCmd;
@@ -556,7 +556,7 @@ void R_Busy(int which)
     my_R_Busy(which);
 }
 
-int R_SetParams(Rstart Rp)
+void R_SetParams(Rstart Rp)
 {
     R_Home = Rp->rhome;
     sprintf(RHome, "R_HOME=%s", R_Home);
@@ -595,7 +595,6 @@ int R_SetParams(Rstart Rp)
     gl_events_hook = ProcessEvents;
     _controlfp(_MCW_EM, _MCW_EM);
 #endif
-    return 0;
 }
 
 #define Max_Nsize                                                                                                      \
@@ -614,15 +613,15 @@ int cmdlineoptions(int ac, char **av)
     structRstart rstart;
     Rstart Rp = &rstart;
 
-    Rp->R_Quiet = 0;
-    Rp->R_Slave = 0;
-    Rp->R_Verbose = 0;
-    Rp->SaveAction = 1;
-    Rp->RestoreAction = 1;
-    Rp->LoadSiteFile = 1;
-    Rp->LoadInitFile = 1;
-    Rp->DebugInitFile = 0;
-    Rp->NoRenviron = 0;
+    Rp->R_Quiet = False;
+    Rp->R_Slave = False;
+    Rp->R_Verbose = False;
+    Rp->SaveAction = SA_SAVEASK;
+    Rp->RestoreAction = SA_RESTORE;
+    Rp->LoadSiteFile = True;
+    Rp->LoadInitFile = True;
+    Rp->DebugInitFile = False;
+    Rp->NoRenviron = False;
     Rp->vsize = R_VSIZE;
     Rp->nsize = R_NSIZE;
 
@@ -632,14 +631,14 @@ int cmdlineoptions(int ac, char **av)
     {
         if (isatty(0))
         {
-            Rp->R_Interactive = 1;
+            Rp->R_Interactive = True;
             LastLine[0] = 0;
             Rp->ReadConsole = CharReadConsole;
             Rp->WriteConsole = CharWriteConsole;
         }
         else
         {
-            Rp->R_Interactive = 0;
+            Rp->R_Interactive = False;
             R_Consolefile = stdout; /* used for errors */
             R_Outputfile = stdout;  /* used for sink-able output */
             Rp->ReadConsole = FileReadConsole;
@@ -651,7 +650,7 @@ int cmdlineoptions(int ac, char **av)
     }
     else
     {
-        Rp->R_Interactive = 1;
+        Rp->R_Interactive = True;
         Rp->ReadConsole = GuiReadConsole;
         Rp->WriteConsole = GuiWriteConsole;
         Rp->message = askok;
@@ -665,76 +664,70 @@ int cmdlineoptions(int ac, char **av)
     StartTime = currenttime();
 #endif
 
-    /*    DefaultSaveAction = 1;*/
-
     while (--ac)
     {
         if (**++av == '-')
         {
             if (!strcmp(*av, "-V") || !strcmp(*av, "--version"))
             {
-                sprintf(s, "Version %s.%s %s (%s %s, %s)\nCopyright (C) %s R Develpment Core Team\n\n", R_MAJOR,
-                        R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR, R_YEAR);
-                strcat(s, "R is free software and comes with ABSOLUTELY NO WARRANTY.\n");
-                strcat(s, "You are welcome to redistribute it under the terms of the\n");
-                strcat(s, "GNU General Public License.  For more information about\n");
-                strcat(s, "these matters, see http://www.gnu.org/copyleft/gpl.html.\n");
+                PrintVersion(s);
+                Rprintf(s);
                 R_ShowMessage(s);
                 exit(0);
             }
             else if (!strcmp(*av, "--save"))
             {
-                Rp->SaveAction = 3;
+                Rp->SaveAction = SA_SAVE;
             }
             else if (!strcmp(*av, "--no-save"))
             {
-                Rp->SaveAction = 2;
+                Rp->SaveAction = SA_NOSAVE;
             }
             else if (!strcmp(*av, "--restore"))
             {
-                Rp->RestoreAction = 1;
+                Rp->RestoreAction = SA_RESTORE;
             }
             else if (!strcmp(*av, "--no-restore"))
             {
-                Rp->RestoreAction = 0;
+                Rp->RestoreAction = SA_NORESTORE;
             }
             else if (!strcmp(*av, "--silent") || !strcmp(*av, "--quiet") || !strcmp(*av, "-q"))
             {
-                R_Quiet = 1;
+                R_Quiet = True;
             }
             else if (!strcmp(*av, "--vanilla"))
             {
-                Rp->SaveAction = 2;    /* --no-save */
-                Rp->RestoreAction = 0; /* --no-restore */
-                Rp->LoadSiteFile = 0;  /* --no-site-file */
-                Rp->LoadInitFile = 0;  /* --no-init-file */
-                Rp->NoRenviron = 1;
+                Rp->SaveAction = SA_NOSAVE;       /* --no-save */
+                Rp->RestoreAction = SA_NORESTORE; /* --no-restore */
+                Rp->LoadSiteFile = False;         /* --no-site-file */
+                Rp->LoadInitFile = False;         /* --no-init-file */
+                Rp->NoRenviron = True;
             }
             else if (!strcmp(*av, "--verbose"))
             {
-                R_Verbose = 1;
+                R_Verbose = True;
             }
             else if (!strcmp(*av, "--slave") || !strcmp(*av, "-s"))
             {
-                Rp->R_Quiet = 1;
-                Rp->R_Slave = 1;
-                Rp->SaveAction = 2;
+                Rp->R_Quiet = True;
+                Rp->R_Slave = True;
+                Rp->SaveAction = SA_NOSAVE;
             }
             else if (!strcmp(*av, "--no-site-file"))
             {
-                Rp->LoadSiteFile = 0;
+                Rp->LoadSiteFile = False;
             }
             else if (!strcmp(*av, "--no-init-file"))
             {
-                Rp->LoadInitFile = 0;
+                Rp->LoadInitFile = False;
             }
             else if (!strcmp(*av, "--debug-init"))
             {
-                Rp->DebugInitFile = 1;
+                Rp->DebugInitFile = True;
             }
             else if (!strcmp(*av, "--no-environ"))
             {
-                Rp->NoRenviron = 1;
+                Rp->NoRenviron = True;
             }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
@@ -894,7 +887,7 @@ int cmdlineoptions(int ac, char **av)
     if (!Rp->NoRenviron)
     {
         processRenviron();
-        Rp->NoRenviron = 1;
+        Rp->NoRenviron = True;
     }
 
     if (!vset && (p = getenv("R_VSIZE")))
@@ -913,7 +906,7 @@ int cmdlineoptions(int ac, char **av)
         else
             Rp->nsize = value;
     }
-    if (!R_Interactive && DefaultSaveAction == 0)
+    if (!R_Interactive && DefaultSaveAction == SA_SAVEASK)
         R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
 
     R_SetParams(Rp);
@@ -951,11 +944,11 @@ void R_CleanUp(int ask)
         R_FlushConsole();
         if ((CharacterMode != RGui) && !R_Interactive && (ask == 1))
             ask = DefaultSaveAction;
-        if (ask == 1)
+        if (ask == SA_SAVEASK)
             ans = R_yesnocancel("Save workspace image?");
-        else if (ask == 2)
+        else if (ask == SA_NOSAVE)
             ans = NO;
-        else if (ask == 3)
+        else if (ask == SA_SAVE)
             ans = YES;
 
         switch (ans)
@@ -997,7 +990,7 @@ void R_RestoreGlobalEnv(void)
 {
     FILE *fp;
 
-    if (DefaultRestoreAction)
+    if (DefaultRestoreAction == SA_RESTORE)
     {
         if (!(fp = R_fopen(".RData", "rb")))
         {
@@ -1187,6 +1180,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rval;
 }
 
+#ifdef OLD
 SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *tmp;
@@ -1212,6 +1206,7 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
     exit(0);
     /* NOTREACHED */
 }
+#endif
 
 void R_Suicide(char *s)
 {
