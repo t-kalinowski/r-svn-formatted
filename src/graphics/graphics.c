@@ -1935,11 +1935,11 @@ DevDesc *GNewPlot(int recording, int ask)
         ask = dd->dp.ask;
     asksave = dd->gp.ask;
 
-    dd->dp.currentFigure += 1;
-    dd->gp.currentFigure = dd->dp.currentFigure;
-    if (dd->gp.currentFigure > dd->gp.lastFigure)
+    if (!dd->gp.new)
     {
-        if (!dd->gp.new)
+        dd->dp.currentFigure += 1;
+        dd->gp.currentFigure = dd->dp.currentFigure;
+        if (dd->gp.currentFigure > dd->gp.lastFigure)
         {
             if (dd->gp.ask && recording)
             {
@@ -1952,13 +1952,13 @@ DevDesc *GNewPlot(int recording, int ask)
             if (recording)
                 initDisplayList(dd);
             dd->dp.newPage(dd);
+            dd->dp.currentFigure = dd->gp.currentFigure = 1;
         }
-        dd->gp.new = dd->gp.new = 1;
-        dd->dp.currentFigure = dd->gp.currentFigure = 1;
-    }
 
-    GReset(dd);
-    GForceClip(dd);
+        dd->gp.new = dd->gp.new = 1;
+        GReset(dd);
+        GForceClip(dd);
+    }
 
     /* IF the division of the device into separate regions */
     /* has resulted in any invalid regions ... */
