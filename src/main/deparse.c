@@ -714,23 +714,12 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     case PROMSXP:
         if (d->opts & DELAYPROMISES)
         {
-            print2buff("delay(", d);
+            d->sourceable = FALSE;
+            print2buff("<promise: ", d);
             d->opts &= ~QUOTEEXPRESSIONS; /* don't want delay(quote()) */
             deparse2buff(PREXPR(s), d);
             d->opts = localOpts;
-            if (PRENV(s) == R_GlobalEnv)
-            { /* default env for delay */
-            }
-            else if (PRENV(s) == R_NilValue)
-            {
-                print2buff(", NULL", d);
-            }
-            else
-            {
-                d->sourceable = FALSE;
-                print2buff(", <environment>", d);
-            }
-            print2buff(")", d);
+            print2buff(">", d);
         }
         else
         {
