@@ -127,7 +127,6 @@ static void doprof()
             SEXP fun = CAR(cptr->call);
             if (strlen(buf) < 1000)
             {
-
                 strcat(buf, TYPEOF(fun) == SYMSXP ? CHAR(PRINTNAME(fun)) : "<Anonymous>");
                 strcat(buf, " ");
             }
@@ -149,7 +148,7 @@ static void __cdecl ProfileThread(void *pwait)
         doprof();
     }
 }
-#else
+#else /* Unix */
 static void doprof(int sig)
 {
     RCNTXT *cptr;
