@@ -2398,6 +2398,12 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     zlab = CAR(args);
     args = CDR(args);
+    if (!isString(xlab) || length(xlab) < 1)
+        error("`xlab' must be a character vector of length 1");
+    if (!isString(ylab) || length(ylab) < 1)
+        error("`ylab' must be a character vector of length 1");
+    if (!isString(zlab) || length(zlab) < 1)
+        error("`zlab' must be a character vector of length 1");
 
     if (R_FINITE(Shade) && Shade <= 0)
         Shade = 1;
