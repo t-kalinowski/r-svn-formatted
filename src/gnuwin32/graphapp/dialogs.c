@@ -42,6 +42,8 @@ static char *filter[] = {"All Files (*.*)",
                          "*.bmp",
                          ""};
 
+unsigned int TopmostDialogs = 0; /* May be MB_TOPMOST */
+
 static char *userfilter;
 void setuserfilter(char *uf)
 {
@@ -55,7 +57,7 @@ void apperror(char *errstr)
 {
     if (!errstr)
         errstr = "Unspecified error";
-    MessageBox(0, errstr, "Graphics Library Error", MB_TASKMODAL | MB_ICONSTOP | MB_OK);
+    MessageBox(0, errstr, "Graphics Library Error", MB_TASKMODAL | MB_ICONSTOP | MB_OK | TopmostDialogs);
     exitapp();
 }
 
@@ -63,7 +65,7 @@ void askok(char *info)
 {
     if (!info)
         info = "";
-    MessageBox(0, info, "Information", MB_TASKMODAL | MB_ICONINFORMATION | MB_OK);
+    MessageBox(0, info, "Information", MB_TASKMODAL | MB_ICONINFORMATION | MB_OK | TopmostDialogs);
 }
 
 int askokcancel(char *question)
@@ -72,7 +74,7 @@ int askokcancel(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL);
+    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL | TopmostDialogs);
 
     switch (result)
     {
@@ -93,7 +95,7 @@ int askyesno(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_YESNO);
+    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_YESNO | TopmostDialogs);
 
     switch (result)
     {
@@ -116,7 +118,8 @@ int askyesnocancel(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_YESNOCANCEL);
+    result = MessageBox(0, question, "Question",
+                        MB_TASKMODAL | MB_ICONQUESTION | MB_YESNOCANCEL | MB_SETFOREGROUND | TopmostDialogs);
 
     switch (result)
     {
@@ -526,8 +529,11 @@ char *askstring(char *question, char *default_str)
         settext(data(win)->question, question);
         settext(data(win)->text, default_str);
     }
+    if (TopmostDialogs & MB_TOPMOST)
+        BringToTop(win, 1);
     handle_message_dialog(win);
     current_window = prev;
+
     return get_dialog_string(win);
 }
 
@@ -543,8 +549,11 @@ char *askcdstring(char *question, char *default_str)
         settext(data(win)->question, question);
         settext(data(win)->text, default_str);
     }
+    if (TopmostDialogs & MB_TOPMOST)
+        BringToTop(win, 1);
     handle_message_dialog(win);
     current_window = prev;
+
     return get_dialog_string(win);
 }
 
@@ -560,8 +569,11 @@ char *askpassword(char *question, char *default_str)
         settext(data(win)->question, question);
         settext(data(win)->text, default_str);
     }
+    if (TopmostDialogs & MB_TOPMOST)
+        BringToTop(win, 1);
     handle_message_dialog(win);
     current_window = prev;
+
     return get_dialog_string(win);
 }
 
@@ -605,6 +617,8 @@ char *askUserPass(char *title)
         settext(d->text, "");
         settext(d->pass, "");
     }
+    if (TopmostDialogs & MB_TOPMOST)
+        BringToTop(win, 1);
     handle_message_dialog(win);
     current_window = prev;
     {
