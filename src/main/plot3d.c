@@ -1636,7 +1636,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(5);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, oargs, dd);
     return result;
 }
@@ -1862,7 +1862,7 @@ SEXP do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
     Rf_gpptr(dd)->xpd = xpdsave;
     R_Visible = 0;
     UNPROTECT(1);
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, oargs, dd);
     return R_NilValue;
 
@@ -1951,7 +1951,7 @@ SEXP do_image(SEXP call, SEXP op, SEXP args, SEXP env)
     Rf_gpptr(dd)->xpd = xpdsave;
     R_Visible = 0;
     UNPROTECT(1);
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, oargs, dd);
     return R_NilValue;
 
@@ -2733,7 +2733,9 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     if ((tickType == NA_INTEGER) || (tickType < 1) || (tickType > 2))
         errorcall(call, "invalid ticktype value");
 
-    dd = GNewPlot(GRecording(call));
+    dd = CurrentDevice();
+
+    GNewPlot(GRecording(call, dd));
 
     PROTECT(col = FixupCol(col, Rf_gpptr(dd)->bg));
     ncol = LENGTH(col);
@@ -2810,7 +2812,7 @@ SEXP do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(10);
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
 
     PROTECT(x = allocVector(REALSXP, 16));

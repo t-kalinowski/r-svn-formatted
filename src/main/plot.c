@@ -555,7 +555,8 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
 
-    dd = GNewPlot(GRecording(call));
+    dd = CurrentDevice();
+    GNewPlot(GRecording(call, dd));
 
     Rf_dpptr(dd)->xlog = Rf_gpptr(dd)->xlog = FALSE;
     Rf_dpptr(dd)->ylog = Rf_gpptr(dd)->ylog = FALSE;
@@ -565,7 +566,7 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GSetState(1, dd);
 
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
@@ -708,7 +709,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* NOTE: the operation is only recorded if there was no "error" */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -1557,7 +1558,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_axis */
@@ -1833,7 +1834,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(6);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_plot_xy */
@@ -1944,7 +1945,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2037,7 +2038,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(4);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2159,7 +2160,7 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2260,7 +2261,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2448,7 +2449,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     UNPROTECT(7);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -2805,7 +2806,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(11);
 
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_mtext */
@@ -3034,7 +3035,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_title */
@@ -3280,7 +3281,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(3);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_title */
@@ -3326,7 +3327,7 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
@@ -3621,7 +3622,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
 
         /* If we are recording, save enough information to be able to
            redraw the text labels beside identified points */
-        if (GRecording(call))
+        if (GRecording(call, dd))
             recordGraphicOperation(op, saveans, dd);
         UNPROTECT(5);
 
@@ -3803,7 +3804,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 
@@ -3921,7 +3922,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     vmaxset(vmax);
     return R_NilValue;
@@ -4377,7 +4378,7 @@ SEXP do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     GMode(0, dd);
     GRestorePars(dd);
-    if (GRecording(call))
+    if (GRecording(call, dd))
         recordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(5);
     return R_NilValue;
