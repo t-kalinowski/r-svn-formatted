@@ -205,14 +205,17 @@ void MaybeAllocSeeds(RNGtype kind)
     }
 }
 
-void RNG_Init(RNGtype kind, long seed)
+void RNG_Init(RNGtype kind, Int32 seed)
 {
     int j;
 
+    /* Initial scrambling */
+    for (j = 0; j < 50; j++)
+        seed = (69069 * seed + 1) & 0xffffffff;
     RNG_Table[kind].i1_seed = seed;
     for (j = 0; j < RNG_Table[RNG_kind].n_seed - 1; j++)
     {
-        seed = (69069 * seed) & 0xffffffff;
+        seed = (69069 * seed + 1) & 0xffffffff;
         RNG_Table[kind].i_seed[j] = seed;
     }
     FixupSeeds(kind);
@@ -224,7 +227,5 @@ void Randomize(RNGtype kind)
 
     MaybeAllocSeeds(kind);
 
-    srand((int)time(NULL));
-
-    RNG_Init(kind, (long)rand() | 01 /* odd */);
+    RNG_Init(kind, (Int32)time(NULL));
 }
