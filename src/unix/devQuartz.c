@@ -29,6 +29,7 @@
 #include <Rdevices.h>
 
 #if defined(__APPLE_CC__) && defined(HAVE_AQUA)
+#define __DEBUGGING__
 
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CoreFoundation.h>
