@@ -90,8 +90,6 @@ void onsigusr1()
         inError = 1;
     }
 
-    if (R_Inputfile != NULL)
-        fclose(R_Inputfile);
     R_ResetConsole();
     R_FlushConsole();
     R_ClearerrConsole();
@@ -130,8 +128,6 @@ void onsigusr2()
         inError = 1;
     }
 
-    if (R_Inputfile != NULL)
-        fclose(R_Inputfile);
     R_ResetConsole();
     R_FlushConsole();
     R_ClearerrConsole();
@@ -450,8 +446,6 @@ void jump_to_toplevel()
     }
 
     /* reset some stuff--not sure (all) this belongs here */
-    if (R_Inputfile != NULL)
-        fclose(R_Inputfile);
     R_ResetConsole();
     R_FlushConsole();
     R_ClearerrConsole();
