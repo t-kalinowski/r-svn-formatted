@@ -27,6 +27,7 @@
 #include <float.h>
 #include <R_ext/Arith.h>
 #include <R_ext/Error.h>
+#include <Rmath.h> /* for R_pow */
 #include "mva.h"
 
 #define both_FINITE(a, b) (R_FINITE(a) && R_FINITE(b))
@@ -36,7 +37,7 @@
 #define both_non_NA(a, b) (!ISNAN(a) && !ISNAN(b))
 #endif
 
-double R_euclidean(double *x, int nr, int nc, int i1, int i2)
+static double R_euclidean(double *x, int nr, int nc, int i1, int i2)
 {
     double dev, dist;
     int count, j;
@@ -64,7 +65,7 @@ double R_euclidean(double *x, int nr, int nc, int i1, int i2)
     return sqrt(dist);
 }
 
-double R_maximum(double *x, int nr, int nc, int i1, int i2)
+static double R_maximum(double *x, int nr, int nc, int i1, int i2)
 {
     double dev, dist;
     int count, j;
@@ -91,7 +92,7 @@ double R_maximum(double *x, int nr, int nc, int i1, int i2)
     return dist;
 }
 
-double R_manhattan(double *x, int nr, int nc, int i1, int i2)
+static double R_manhattan(double *x, int nr, int nc, int i1, int i2)
 {
     double dev, dist;
     int count, j;
@@ -119,7 +120,7 @@ double R_manhattan(double *x, int nr, int nc, int i1, int i2)
     return dist;
 }
 
-double R_canberra(double *x, int nr, int nc, int i1, int i2)
+static double R_canberra(double *x, int nr, int nc, int i1, int i2)
 {
     double dev, dist, sum, diff;
     int count, j;
@@ -153,7 +154,7 @@ double R_canberra(double *x, int nr, int nc, int i1, int i2)
     return dist;
 }
 
-double R_dist_binary(double *x, int nr, int nc, int i1, int i2)
+static double R_dist_binary(double *x, int nr, int nc, int i1, int i2)
 {
     int total, count, dist;
     int j;
@@ -192,17 +193,46 @@ double R_dist_binary(double *x, int nr, int nc, int i1, int i2)
     return (double)dist / count;
 }
 
+static double R_minkowski(double *x, int nr, int nc, int i1, int i2, double p)
+{
+    double dev, dist;
+    int count, j;
+
+    count = 0;
+    dist = 0;
+    for (j = 0; j < nc; j++)
+    {
+        if (both_non_NA(x[i1], x[i2]))
+        {
+            dev = (x[i1] - x[i2]);
+            if (!ISNAN(dev))
+            {
+                dist += R_pow(fabs(dev), p);
+                count++;
+            }
+        }
+        i1 += nr;
+        i2 += nr;
+    }
+    if (count == 0)
+        return NA_REAL;
+    if (count != nc)
+        dist /= ((double)count / nc);
+    return R_pow(dist, 1.0 / p);
+}
+
 enum
 {
     EUCLIDEAN = 1,
     MAXIMUM,
     MANHATTAN,
     CANBERRA,
-    BINARY
+    BINARY,
+    MINKOWSKI
 };
 /* == 1,2,..., defined by order in the R function dist */
 
-void R_distance(double *x, int *nr, int *nc, double *d, int *diag, int *method)
+void R_distance(double *x, int *nr, int *nc, double *d, int *diag, int *method, double *p)
 {
     int dc, i, j, ij;
     double (*distfun)(double *, int, int, int, int) = NULL;
@@ -224,13 +254,16 @@ void R_distance(double *x, int *nr, int *nc, double *d, int *diag, int *method)
     case BINARY:
         distfun = R_dist_binary;
         break;
+    case MINKOWSKI:
+        if (!R_FINITE(*p) || *p <= 0)
+            error("distance(): invalid p");
+        break;
     default:
         error("distance(): invalid distance");
     }
-
     dc = (*diag) ? 0 : 1; /* diag=1:  we do the diagonal */
     ij = 0;
     for (j = 0; j <= *nr; j++)
         for (i = j + dc; i < *nr; i++)
-            d[ij++] = distfun(x, *nr, *nc, i, j);
+            d[ij++] = (*method != MINKOWSKI) ? distfun(x, *nr, *nc, i, j) : R_minkowski(x, *nr, *nc, i, j, *p);
 }
