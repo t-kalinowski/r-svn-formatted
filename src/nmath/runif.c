@@ -32,7 +32,7 @@ double runif(double a, double b)
 {
     if (
 #ifdef IEEE_754
-        !finite(a) || !finite(b) ||
+        !R_FINITE(a) || !R_FINITE(b) ||
 #endif
         b < a)
     {

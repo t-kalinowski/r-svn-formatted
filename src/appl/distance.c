@@ -33,7 +33,7 @@ double euclidean(double *x, int nr, int nc, int i1, int i2)
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (FINITE(x[i1]) && FINITE(x[i2]))
+        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
         {
             dev = (x[i1] - x[i2]);
             dist += dev * dev;
@@ -58,7 +58,7 @@ double maximum(double *x, int nr, int nc, int i1, int i2)
     dist = -DBL_MAX;
     for (j = 0; j < nc; j++)
     {
-        if (FINITE(x[i1]) && FINITE(x[i2]))
+        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
         {
             dev = fabs(x[i1] - x[i2]);
             if (dev > dist)
@@ -82,7 +82,7 @@ double manhattan(double *x, int nr, int nc, int i1, int i2)
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (FINITE(x[i1]) && FINITE(x[i2]))
+        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
         {
             dist += fabs(x[i1] - x[i2]);
             count++;
@@ -106,7 +106,7 @@ double canberra(double *x, int nr, int nc, int i1, int i2)
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (FINITE(x[i1]) && FINITE(x[i2]))
+        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
         {
             dist += fabs(x[i1] - x[i2]) / fabs(x[i1] + x[i2]);
             count++;
@@ -132,7 +132,7 @@ double dist_binary(double *x, int nr, int nc, int i1, int i2)
 
     for (j = 0; j < nc; j++)
     {
-        if (FINITE(x[i1]) && FINITE(x[i2]))
+        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
         {
             if (x[i1] || x[i2])
             {

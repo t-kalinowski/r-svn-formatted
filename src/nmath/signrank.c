@@ -136,7 +136,7 @@ double psignrank(double x, double n)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
         return (x + n);
-    if (!FINITE(n))
+    if (!R_FINITE(n))
     {
         ML_ERROR(ME_DOMAIN);
         return (ML_NAN);
@@ -182,7 +182,7 @@ double qsignrank(double x, double n)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
         return (x + n);
-    if (!FINITE(x) || !FINITE(n))
+    if (!R_FINITE(x) || !R_FINITE(n))
     {
         ML_ERROR(ME_DOMAIN);
         return (ML_NAN);

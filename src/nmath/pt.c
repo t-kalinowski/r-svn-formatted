@@ -37,9 +37,9 @@ double pt(double x, double n)
         return ML_NAN;
     }
 #ifdef IEEE_754
-    if (!finite(x))
+    if (!R_FINITE(x))
         return (x < 0) ? 0 : 1;
-    if (!finite(n))
+    if (!R_FINITE(n))
         return pnorm(x, 0.0, 1.0);
 #endif
     if (n > 4e5)

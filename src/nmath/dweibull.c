@@ -43,7 +43,7 @@ double dweibull(double x, double shape, double scale)
     if (x <= 0)
         return 0;
 #ifdef IEEE_754
-    if (!finite(x))
+    if (!R_FINITE(x))
         return 0;
 #endif
     tmp1 = pow(x / scale, shape - 1);

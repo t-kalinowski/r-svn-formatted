@@ -33,7 +33,7 @@ double rnorm(double mu, double sigma)
 {
     if (
 #ifdef IEEE_754
-        !finite(mu) || !finite(sigma) ||
+        !R_FINITE(mu) || !R_FINITE(sigma) ||
 #endif
         sigma < 0.0)
     {

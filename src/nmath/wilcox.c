@@ -174,7 +174,7 @@ double pwilcox(double x, double m, double n)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(m) || ISNAN(n))
         return (x + m + n);
-    if (!FINITE(m) || !FINITE(n))
+    if (!R_FINITE(m) || !R_FINITE(n))
     {
         ML_ERROR(ME_DOMAIN);
         return (ML_NAN);
@@ -222,7 +222,7 @@ double qwilcox(double x, double m, double n)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(m) || ISNAN(n))
         return (x + m + n);
-    if (!FINITE(x) || !FINITE(m) || !FINITE(n))
+    if (!R_FINITE(x) || !R_FINITE(m) || !R_FINITE(n))
     {
         ML_ERROR(ME_DOMAIN);
         return (ML_NAN);

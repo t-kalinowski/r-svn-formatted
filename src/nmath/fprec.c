@@ -52,9 +52,9 @@ double fprec(double x, double digits)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(digits))
         return x + digits;
-    if (!finite(x))
+    if (!R_FINITE(x))
         return x;
-    if (!finite(digits))
+    if (!R_FINITE(digits))
     {
         if (digits > 0)
             return x;
