@@ -328,13 +328,23 @@ static int computeDLOpenFlag(int asLocal, int now)
     return (openFlag);
 }
 
+static DL_FUNC R_dlsym(void *handle, char const *name)
+{
+    char buf[MAXIDSIZE + 1];
+#ifdef HAVE_NO_SYMBOL_UNDERSCORE
+    sprintf(buf, "%s", name);
+#else
+    sprintf(buf, "_%s", name);
+#endif
+    return (DL_FUNC)dlsym(handle, buf);
+}
+
 /* R_FindSymbol checks whether one of the libraries */
 /* that have been loaded contains the symbol name and */
 /* returns a pointer to that symbol upon success. */
 
 DL_FUNC R_FindSymbol(char const *name, char const *pkg)
 {
-    char buf[MAXIDSIZE + 1];
     DL_FUNC fcnptr;
     int i, all = (strlen(pkg) == 0), doit;
 
@@ -342,12 +352,6 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
     for (i = 0; i < nCPFun; i++)
         if (!strcmp(pkg, CPFun[i].pkg) && !strcmp(name, CPFun[i].name))
             return CPFun[i].func;
-#endif
-
-#ifdef HAVE_NO_SYMBOL_UNDERSCORE
-    sprintf(buf, "%s", name);
-#else
-    sprintf(buf, "_%s", name);
 #endif
 
     /* The following is not legal ANSI C. */
@@ -363,7 +367,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
             doit = 2;
         if (doit)
         {
-            fcnptr = (DL_FUNC)dlsym(LoadedDLL[i].handle, buf);
+            fcnptr = R_dlsym(LoadedDLL[i].handle, name);
             if (fcnptr != (DL_FUNC)NULL)
             {
 #ifdef CACHE_DLL_SYM
@@ -383,7 +387,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg)
     if (all || !strcmp(pkg, "base"))
     {
 #ifdef DL_SEARCH_PROG
-        fcnptr = (DL_FUNC)dlsym(dlhandle, buf);
+        fcnptr = R_dlsym(dlhandle, name);
 #else
         for (i = 0; CFunTab[i].name; i++)
             if (!strcmp(name, CFunTab[i].name))
@@ -475,16 +479,16 @@ void R_load_X11_shlib()
         fflush(stdout);
         R_Suicide("Cannot load the X11 shared library");
     }
-    X11ConnectionNumber = (DL_FUNC)dlsym(handle, "X11ConnectionNumber");
+    X11ConnectionNumber = R_dlsym(handle, "X11ConnectionNumber");
     if (!X11ConnectionNumber)
         R_Suicide("Cannot load X11ConnectionNumber");
-    pR_ProcessEvents = (DL_FUNC)dlsym(handle, "R_ProcessEvents");
+    pR_ProcessEvents = R_dlsym(handle, "R_ProcessEvents");
     if (!pR_ProcessEvents)
         R_Suicide("Cannot load R_ProcessEvents");
-    X11DeviceDriver = (DL_FUNC)dlsym(handle, "X11DeviceDriver");
+    X11DeviceDriver = R_dlsym(handle, "X11DeviceDriver");
     if (!X11DeviceDriver)
         R_Suicide("Cannot load X11DeviceDriver");
-    ptr_dataentry = (DL_FUNC)dlsym(handle, "RX11_dataentry");
+    ptr_dataentry = R_dlsym(handle, "RX11_dataentry");
     if (!ptr_dataentry)
         R_Suicide("Cannot load do_dataentry");
 }
@@ -511,46 +515,46 @@ void R_load_gnome_shlib()
         /*	printf("error was %s\n", dlerror());fflush(stdout);*/
         R_Suicide("Probably no GNOME support: cannot load the shared library");
     }
-    ptr_R_Suicide = (DL_FUNC)dlsym(handle, "Rgnome_Suicide");
+    ptr_R_Suicide = R_dlsym(handle, "Rgnome_Suicide");
     if (!ptr_R_Suicide)
         Rstd_Suicide("Cannot load R_Suicide");
-    ptr_R_ShowMessage = (DL_FUNC)dlsym(handle, "Rgnome_ShowMessage");
+    ptr_R_ShowMessage = R_dlsym(handle, "Rgnome_ShowMessage");
     if (!ptr_R_ShowMessage)
         R_Suicide("Cannot load R_ShowMessage");
-    ptr_R_ReadConsole = (DL_FUNC)dlsym(handle, "Rgnome_ReadConsole");
+    ptr_R_ReadConsole = R_dlsym(handle, "Rgnome_ReadConsole");
     if (!ptr_R_ReadConsole)
         R_Suicide("Cannot load R_ReadConsole");
-    ptr_R_WriteConsole = (DL_FUNC)dlsym(handle, "Rgnome_WriteConsole");
+    ptr_R_WriteConsole = R_dlsym(handle, "Rgnome_WriteConsole");
     if (!ptr_R_WriteConsole)
         R_Suicide("Cannot load R_WriteConsole");
-    ptr_R_ResetConsole = (DL_FUNC)dlsym(handle, "Rgnome_ResetConsole");
+    ptr_R_ResetConsole = R_dlsym(handle, "Rgnome_ResetConsole");
     if (!ptr_R_ResetConsole)
         R_Suicide("Cannot load R_ResetConsole");
-    ptr_R_FlushConsole = (DL_FUNC)dlsym(handle, "Rgnome_FlushConsole");
+    ptr_R_FlushConsole = R_dlsym(handle, "Rgnome_FlushConsole");
     if (!ptr_R_FlushConsole)
         R_Suicide("Cannot load R_FlushConsole");
-    ptr_R_ClearerrConsole = (DL_FUNC)dlsym(handle, "Rgnome_ClearerrConsole");
+    ptr_R_ClearerrConsole = R_dlsym(handle, "Rgnome_ClearerrConsole");
     if (!ptr_R_ClearerrConsole)
         R_Suicide("Cannot load R_ClearerrConsole");
-    ptr_R_Busy = (DL_FUNC)dlsym(handle, "Rgnome_Busy");
+    ptr_R_Busy = R_dlsym(handle, "Rgnome_Busy");
     if (!ptr_R_Busy)
         R_Suicide("Cannot load R_Busy");
-    ptr_R_CleanUp = (DL_FUNC)dlsym(handle, "Rgnome_CleanUp");
+    ptr_R_CleanUp = R_dlsym(handle, "Rgnome_CleanUp");
     if (!ptr_R_CleanUp)
         R_Suicide("Cannot load R_CleanUp");
-    ptr_R_ShowFiles = (DL_FUNC)dlsym(handle, "Rgnome_ShowFiles");
+    ptr_R_ShowFiles = R_dlsym(handle, "Rgnome_ShowFiles");
     if (!ptr_R_ShowFiles)
         R_Suicide("Cannot load R_ShowFiles");
-    ptr_R_ChooseFile = (DL_FUNC)dlsym(handle, "Rgnome_ChooseFile");
+    ptr_R_ChooseFile = R_dlsym(handle, "Rgnome_ChooseFile");
     if (!ptr_R_ChooseFile)
         R_Suicide("Cannot load R_ChooseFile");
-    gnome_start = (DL_FUNC)dlsym(handle, "gnome_start");
+    gnome_start = R_dlsym(handle, "gnome_start");
     if (!gnome_start)
         R_Suicide("Cannot load gnome_start");
-    X11DeviceDriver = (DL_FUNC)dlsym(handle, "X11DeviceDriver");
+    X11DeviceDriver = R_dlsym(handle, "X11DeviceDriver");
     if (!X11DeviceDriver)
         R_Suicide("Cannot load X11DeviceDriver");
-    ptr_dataentry = (DL_FUNC)dlsym(handle, "RX11_dataentry");
+    ptr_dataentry = R_dlsym(handle, "RX11_dataentry");
     if (!ptr_dataentry)
         R_Suicide("Cannot load do_dataentry");
 }
