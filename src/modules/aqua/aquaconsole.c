@@ -29,8 +29,8 @@
 #endif
 
 /* necessary for some (older, i.e., ~ <= 1997) Linuxen, and apparently
-   also some AIX systems.
-   */
+also some AIX systems.
+*/
 #ifndef FD_SET
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -418,6 +418,7 @@ static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandPro
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
 static const EventTypeSpec RGlobalWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged},
+                                                 {kEventClassWindow, kEventWindowZoomed},
                                                  {kEventClassWindow, kEventWindowFocusAcquired},
                                                  {kEventClassWindow, kEventWindowFocusRelinquish},
                                                  {kEventClassFont, kEventFontPanelClosed},
@@ -1023,8 +1024,8 @@ void Raqua_WritePrompt(char *prompt)
 }
 
 /* This function is used to echo user input into the console. Currently it uses Raqua_WriteConsole if Cocoa's
-   writeUserInput is not available. It may implicitly flush the console before sending the user input to make
-   sure it arrives in-sync.
+writeUserInput is not available. It may implicitly flush the console before sending the user input to make
+sure it arrives in-sync.
 */
 void Raqua_WriteUserInput(char *str)
 {
@@ -1044,10 +1045,10 @@ void Raqua_WriteUserInput(char *str)
 }
 
 /* writes specified string as-is (no recoding) to console, using events or Cocoa bundle API.
-   FIXME! curerntly the event system has a fixed buffer of 32k, therefore any larger data are truncated.
-   This implies that the string sent via WriteEvent should not exceed 32k. Currently that's not an issue,
-   since the console buffer is only 32k big, but in the future we should split the string into multiple
-   events if it exceeds the limit ... This restriction doesn't apply to cocoaWriteConsole, though.
+FIXME! curerntly the event system has a fixed buffer of 32k, therefore any larger data are truncated.
+This implies that the string sent via WriteEvent should not exceed 32k. Currently that's not an issue,
+since the console buffer is only 32k big, but in the future we should split the string into multiple
+events if it exceeds the limit ... This restriction doesn't apply to cocoaWriteConsole, though.
 */
 void Raqua_WriteEvent(char *str, int len)
 {
@@ -1074,8 +1075,8 @@ void Raqua_WriteEvent(char *str, int len)
 }
 
 /* Aqua's WriteConsole. Uses internally Raqua_WriteEvent,
-   but performs the following tasks: re-codes the string (Lat2Mac),
-   buffers the output
+but performs the following tasks: re-codes the string (Lat2Mac),
+buffers the output
 */
 void Raqua_WriteConsole(char *str, int len)
 {
@@ -1750,7 +1751,7 @@ static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent
 }
 
 /* Changes font size in both Console In and Out
-   default size is 12
+default size is 12
 */
 
 void RSetFont(void)
@@ -1786,8 +1787,8 @@ void RSetFontSize(void)
 }
 
 /* Sets tab space for Console In and Out
-   tabsize: number of chars
- */
+tabsize: number of chars
+*/
 
 void RSetTab(void)
 {
@@ -1823,7 +1824,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
         {
             switch (command.commandID)
             {
-                /* Apple Menu */
+            /* Apple Menu */
             case kHICommandPreferences:
                 RPrefsHandler(RPrefsWindow);
                 break;
@@ -1892,11 +1893,11 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 }
                 break;
 
-            /*
-               If selection occurs in both RConsole-Out and RConsole-In, only the
-               text selected in the RConsole-Out is copied to the clipboard.
-               I'm not sure if it should be the contrary.
-            */
+                /*
+                 If selection occurs in both RConsole-Out and RConsole-In, only the
+                 text selected in the RConsole-Out is copied to the clipboard.
+                 I'm not sure if it should be the contrary.
+                 */
             case kHICommandCopy:
                 if (window == ConsoleWindow)
                 {
@@ -2557,6 +2558,58 @@ void RSetConsoleWidth(void)
         R_SetOptionWidth(floor((double)WinBounds.right / (double)RFontSizes[CurrentPrefs.RFontSize - 1] * 1.61));
 }
 
+OSStatus ResizeHelpWindow(WindowRef theWindow);
+
+OSStatus ResizeHelpWindow(WindowRef theWindow)
+{
+    TXNObject TXObj;
+    TXNFrameID TXFrameID;
+    Rect bounds;
+    OSStatus err = -1;
+
+    if (GetWindowProperty(theWindow, 'RHLP', 'robj', sizeof(TXNObject), NULL, &TXObj) == noErr)
+    {
+        if (GetWindowProperty(theWindow, 'RHLP', 'rfrm', sizeof(TXNFrameID), NULL, &TXFrameID) == noErr)
+        {
+            GetWindowPortBounds(theWindow, &bounds);
+            TXNSetFrameBounds(TXObj, 0, 0, bounds.bottom, bounds.right, TXFrameID);
+            BeginUpdate(theWindow);
+            TXNForceUpdate(TXObj);
+            TXNDraw(TXObj, NULL);
+            EndUpdate(theWindow);
+            err = noErr;
+        }
+    }
+
+    return err;
+}
+
+OSStatus ResizeEditWindow(WindowRef theWindow);
+
+OSStatus ResizeEditWindow(WindowRef theWindow)
+{
+    TXNObject TXObj;
+    TXNFrameID TXFrameID;
+    Rect bounds;
+    OSStatus err = -1;
+
+    if (GetWindowProperty(theWindow, 'REDT', 'robj', sizeof(TXNObject), NULL, &TXObj) == noErr)
+    {
+        if (GetWindowProperty(theWindow, 'REDT', 'rfrm', sizeof(TXNFrameID), NULL, &TXFrameID) == noErr)
+        {
+            GetWindowPortBounds(theWindow, &bounds);
+            TXNSetFrameBounds(TXObj, 0, 0, bounds.bottom, bounds.right, TXFrameID);
+            BeginUpdate(theWindow);
+            TXNForceUpdate(TXObj);
+            TXNDraw(TXObj, NULL);
+            EndUpdate(theWindow);
+            err = noErr;
+        }
+    }
+
+    return err;
+}
+
 static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
 {
     OSStatus err = eventNotHandledErr;
@@ -2565,7 +2618,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     int devnum;
     NewDevDesc *dd;
     WindowRef EventWindow, mywin;
-    EventRef REvent;
+    EventRef REvent, MyEvent;
     TXNFrameID HlpFrameID = 0;
     UInt32 eventClass;
     TXNObject HlpObj = NULL;
@@ -2588,11 +2641,12 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
         if (eventKind == kEventMouseDown)
         {
             if (ConvertEventRefToEventRecord(inEvent, &outEvent))
-                if (FindWindow(outEvent.where, &mywin) == inMenuBar)
-                {
-                    MenuSelect(outEvent.where);
-                    err = noErr;
-                }
+                partCode = FindWindow(outEvent.where, &mywin);
+            if (partCode == inMenuBar)
+            {
+                MenuSelect(outEvent.where);
+                err = noErr;
+            }
         }
         break;
 
@@ -2622,6 +2676,10 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
         GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, NULL, sizeof(RWinCode), NULL, &RWinCode);
         switch (eventKind)
         {
+        case kEventWindowZoomed:
+            if ((err = ResizeHelpWindow(EventWindow)) != noErr)
+                err = ResizeEditWindow(EventWindow);
+            break;
 
         case kEventWindowBoundsChanged:
             if (RWinCode != 9)
@@ -2634,12 +2692,6 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
             }
             break;
 
-            /*
-                  case kEventWindowFocusRelinquish:
-                   SetFontInfoForSelection(kFontSelectionATSUIType,
-                          0, NULL, NULL);
-                  break;
-            */
         case kEventWindowFocusAcquired:
             MySetFontSelection();
             break;
@@ -2770,7 +2822,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 }
 
 /* consolecmd: is used to write in the input R console
-               to send R command via menus.
+to send R command via menus.
 */
 void consolecmd(char *cmd)
 {
@@ -3291,8 +3343,8 @@ OSStatus SelectFile(FSSpec *outFSSpec, char *Title, Boolean saveit, Boolean Have
     if (anErr == noErr)
     {
         /*  Adjust the options to fit our needs
-            Set default location option
-         */
+        Set default location option
+        */
         dialogOptions.dialogOptionFlags |= kNavSelectDefaultLocation;
         dialogOptions.dialogOptionFlags |= kNavAllowInvisibleFiles;
         dialogOptions.dialogOptionFlags |= kNavAllFilesInPopup;
@@ -3305,8 +3357,8 @@ OSStatus SelectFile(FSSpec *outFSSpec, char *Title, Boolean saveit, Boolean Have
             NavTypeListHandle deftypeList = nil; /* we apply no filter for the moment */
 
             /* Call NavGetFile() with specified options and
-               declare our app-defined functions and type list
-             */
+                declare our app-defined functions and type list
+                */
             if (saveit)
                 anErr = NavPutFile(nil, &reply, &dialogOptions, nil, nil, 'ttxt', nil);
             else
@@ -3371,7 +3423,7 @@ Boolean g_not_first = false;
 
 /* do_Down_Array
 This procedure used to maintain the reponse when you click the down array key. (about display
-previous command in console window)                                            */
+                                                                                previous command in console window) */
 void HistBack(void)
 {
     SInt32 textLength;
@@ -3544,10 +3596,10 @@ void Raqua_write_history(char *file)
 }
 
 /**********************************************
- Raqua_read_history: load history command from a
- specified file. Adapted from gl_loadhistory
- for Windows. It can read history files of
- Windowds porting.
+Raqua_read_history: load history command from a
+specified file. Adapted from gl_loadhistory
+for Windows. It can read history files of
+Windowds porting.
 **********************************************/
 void Raqua_read_history(char *file)
 {
@@ -3796,8 +3848,8 @@ void Raqua_ProcessEvents(void)
     bool conv = false;
 
     /*    if(WeHaveConsole)
-         if(otherPolledEventHandler)
-          otherPolledEventHandler();
+        if(otherPolledEventHandler)
+        otherPolledEventHandler();
     */
 
     if (CheckEventQueueForUserCancel())
