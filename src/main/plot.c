@@ -1704,6 +1704,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
      * GClip(dd);
      */
 
+    /* Line drawing :*/
     switch (type)
     {
     case 'l':
@@ -1841,8 +1842,9 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     default: /* OTHERWISE */
         errorcall(call, "invalid plot type '%c'", type);
 
-    } /* End {switch(type)} */
+    } /* End {switch(type)} - for lines */
 
+    /* Points : */
     if (type == 'p' || type == 'b' || type == 'o')
     {
         for (i = 0; i < n; i++)
