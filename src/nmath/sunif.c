@@ -18,19 +18,19 @@
  *
  *  SYNOPSIS
  *
- *    #include "Mathlib.h"
- *    double sunif(void);
+ *	#include "Mathlib.h"
+ *	double sunif(void);
  *
  *  DESCRIPTION
  *
- *     Random variates from the standard uniform distribution, U(0,1).
+ *	Random variates from the standard uniform distribution, U(0,1).
  *
  *  REFERENCE
  *
- *    Wichmann, B. A. and I. D. Hill (1982).
- *    Algorithm AS 183: An efficient and portable
- *    pseudo-random number generator,
- *    Applied Statistics, 31, 188.
+ *	Wichmann, B. A. and I. D. Hill (1982).
+ *	Algorithm AS 183: An efficient and portable
+ *	pseudo-random number generator,
+ *	Applied Statistics, 31, 188.
  */
 
 #include "Mathlib.h" /* >> "Random.h" */
@@ -41,7 +41,6 @@
  *
  * For R, the setup here must be compatible with
  * GetSeeds(), SetSeeds(), SetRNG()  from  ../main/random.c
- *
  */
 
 Int32 dummy[3];
@@ -55,7 +54,7 @@ RNGTAB RNG_Table[] = {
 
 RNGtype RNG_kind = WICHMANN_HILL;
 
-/* SEED vector:  Assume 32 __or more__ bits
+/* SEED vector:	 Assume 32 __or more__ bits
 
  * The first few are `unrolled' for speed
  * Here, use maximal seed length from above;
@@ -107,9 +106,9 @@ double sunif(void)
     case SUPER_DUPER:
 
         /* This is Reeds et al (1984) implementation;
-         * modified using __unsigned__  seeds instead of signed ones
+         * modified using __unsigned__	seeds instead of signed ones
          */
-        I1 ^= ((I1 >> 15) & 0377777); /*  Tausworthe */
+        I1 ^= ((I1 >> 15) & 0377777); /*	 Tausworthe */
         I1 ^= do32bits(I1 << 17);
 #ifdef LONG_32_BITS
         I2 *= 69069; /* Congruential */
@@ -119,7 +118,7 @@ double sunif(void)
         return (I1 ^ I2) * i2_32m1; /* in [0,1) */
 
     case RAND:
-        /* Use ANSI C_INTERNAL  (with which you can only SET a seed,
+        /* Use ANSI C_INTERNAL	(with which you can only SET a seed,
            but not get the current)*/
 
         return rand() / (.1 + RAND_MAX); /* in [0,1) */
@@ -140,8 +139,9 @@ void FixupSeeds(RNGtype kind)
     /* Depending on RNG, set 0 values to non-0, etc. */
 
     int j;
+#ifdef OLD
     RNGtype tkind;
-
+#endif
     /* Set 0 to 1 : */
     if (!RNG_Table[kind].i1_seed)
         RNG_Table[kind].i1_seed++;
