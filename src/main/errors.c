@@ -23,6 +23,7 @@ void jump_to_toplevel();
 static void jump_now();
 
 static int inError = 0;
+static int inWarning = 0;
 
 void onintr()
 {
@@ -56,20 +57,26 @@ void warningcall(SEXP call, char *format, ...)
     RCNTXT *cptr;
 
     w = asInteger(GetOption(install("warn"), R_NilValue));
+
     if (w == NA_INTEGER) /* set to a sensible value */
         w = 0;
-    if (w < 0) /* ignore */
+
+    if (w < 0 || inWarning || inError)
+    { /* ignore if w<0 or already in here*/
         return;
-    else if (w >= 2)
+    }
+    inWarning = 1;
+
+    if (w >= 2)
     { /* make it an error */
         va_list(ap);
         va_start(ap, format);
         slen = vsprintf(buf, format, ap);
         va_end(ap);
         errorcall(call, "(converted from warning) %s\n", buf);
-        return;
     }
-    else if (w == 1)
+
+    if (w == 1)
     { /* print as they happen */
         va_list(ap);
         if (call != R_NilValue)
@@ -83,9 +90,8 @@ void warningcall(SEXP call, char *format, ...)
         REvprintf(format, ap);
         va_end(ap);
         REprintf("\n");
-        return;
     }
-    else if (w == 0)
+    if (w == 0)
     { /* collect them */
         va_list(ap);
         va_start(ap, format);
@@ -98,8 +104,8 @@ void warningcall(SEXP call, char *format, ...)
         va_end(ap);
         names = CAR(ATTRIB(R_Warnings));
         STRING(names)[R_CollectWarnings++] = mkChar(buf);
-        return;
     }
+    inWarning = 0;
 }
 
 void PrintWarnings(void)
@@ -108,6 +114,7 @@ void PrintWarnings(void)
     char *pout;
     SEXP names, s, t;
 
+    inWarning = 1;
     if (R_CollectWarnings == 1)
     {
         REprintf("Warning message: \n");
@@ -146,6 +153,9 @@ void PrintWarnings(void)
     setAttrib(s, R_NamesSymbol, t);
     defineVar(install("last.warning"), s, R_GlobalEnv);
     UNPROTECT(2);
+    inWarning = 0;
+    R_CollectWarnings = 0;
+    R_Warnings = R_NilValue;
     return;
 }
 
@@ -246,7 +256,10 @@ void jump_to_toplevel()
 static void jump_now()
 {
     inError = 0;
+    inWarning = 0;
     R_PPStackTop = 0;
+    R_Warnings = R_NilValue;
+    R_CollectWarnings = 0;
     if (R_Interactive)
         LONGJMP(R_ToplevelContext->cjmpbuf, 0);
     else
