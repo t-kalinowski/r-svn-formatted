@@ -23,7 +23,7 @@
 /*--- I / O -- S u p p o r t -- C o d e ---*/
 
 /* These routines provide hooks for supporting console */
-/* I/O.  Under raw Unix these routines simply provide a */
+/* I/O.	 Under raw Unix these routines simply provide a */
 /* connection to the stdio library.  Under a Motif */
 /* interface the routines would be considerably more */
 /* complex. */
@@ -140,7 +140,7 @@ void Consolegets(char *buf, int buflen)
         fputs(buf, stdout);
 }
 
-/*--- F i l e    H an d l i n g    C o d e ---*/
+/*--- F i l e	 H an d l i n g	   C o d e ---*/
 
 FILE *R_OpenLibraryFile(char *file)
 {
@@ -229,7 +229,7 @@ int main(int ac, char **av)
                 if (value < 1 || value > 1000)
                     REprintf("warning: invalid vector heap size ignored\n");
                 else
-                    R_VSize = value * 1048576; /* Mb */
+                    R_VSize = value * 1048576; /* 1 MByte := 2^20 Bytes*/
                 break;
             case 'n':
                 if ((*av)[2] == '\0')
@@ -262,8 +262,7 @@ int main(int ac, char **av)
         }
     }
 
-    /* On Unix the console is a file */
-    /* we just use stdio to write on it */
+    /* On Unix the console is a file; we just use stdio to write on it */
 
     R_Interactive = isatty(0);
     R_Consolefile = stdout;
@@ -283,6 +282,7 @@ int main(int ac, char **av)
         read_history(".Rhistory");
 #endif
     mainloop();
+    /*++++++  in ../main/main.c */
     return 0;
 
 badargs:
@@ -499,8 +499,8 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 void suicide(char *s)
 {
     REprintf("Fatal error: %s\n", s);
-    RCleanUp(2); /* 2 means don't save anything and it's an unrecoverabl
-e abort */
+    RCleanUp(2);
+    /*	 2 means don't save anything and it's an unrecoverable abort */
 }
 
 /* Declarations to keep f77 happy */
