@@ -908,6 +908,10 @@ void GConvert(double *x, double *y, int from, int to, DevDesc *dd)
         *x = xDevtoNFC(devx, dd);
         *y = yDevtoNFC(devy, dd);
         break;
+    case NPC:
+        *x = xDevtoNPC(devx, dd);
+        *y = yDevtoNPC(devy, dd);
+        break;
     case USER:
         *x = xDevtoUsr(devx, dd);
         *y = yDevtoUsr(devy, dd);
@@ -2870,12 +2874,12 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
                 }
                 else
                 {
-                    if (!dd->dp.xpd)
+                    if (!dd->gp.xpd)
                     {
                         double xtest = xoff;
                         double ytest = yoff;
                         /* FIXME: This needs checking */
-                        GConvert(&xtest, &ytest, NDC, NFC, dd);
+                        GConvert(&xtest, &ytest, NDC, NPC, dd);
                         if (xtest < 0 || ytest < 0 || xtest > 1 || ytest > 1)
                             return;
                     }
