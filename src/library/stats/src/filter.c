@@ -123,7 +123,7 @@ void acf(double *x, int *n, int *nser, int *nlag, int *correlation, double *acf)
     int i, u, v, lag, nl = *nlag, nn = *n, ns = *nser, d1 = nl + 1, d2 = ns * d1, nu;
     double sum, *se;
 
-    se = (double *)R_alloc(nn, sizeof(double));
+    se = (double *)R_alloc(ns, sizeof(double));
     for (u = 0; u < ns; u++)
         for (v = 0; v < ns; v++)
             for (lag = 0; lag <= nl; lag++)
