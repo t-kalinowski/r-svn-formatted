@@ -596,7 +596,6 @@ int PicTeXDeviceDriver(DevDesc *dd, char *filename, char *bg, char *fg, double w
 
     /*	dd->dp.metricInfo = PicTeX_MetricInfo;
      */
-
     dd->dp.metricInfo = NULL;
 
     /* Screen Dimensions in Pixels */
