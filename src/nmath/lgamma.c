@@ -99,8 +99,8 @@ Now UNNECESSARY: caught above */
     if (fabs((x - (int)(x - 0.5)) * ans / x) < dxrel)
     {
 
-        /* The answer is less than half precision because */
-        /* the argument is too near a negative integer. */
+        /* The answer is less than half precision because
+         * the argument is too near a negative integer. */
 
         ML_ERROR(ME_PRECISION);
     }
