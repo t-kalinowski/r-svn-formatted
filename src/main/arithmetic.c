@@ -1638,10 +1638,11 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3_1(args, dnchisq);
     case 35:
         return Math3_2(args, pnchisq);
-#ifdef UNIMP
+        /* #ifdef UNIMP */
+        /* This appears to be IMP already */
     case 36:
         return Math3_2(args, qnchisq);
-#endif
+        /* #endif */
 
 #ifdef UNIMP
     case 37:
