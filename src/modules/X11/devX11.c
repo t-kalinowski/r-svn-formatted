@@ -67,8 +67,6 @@
 #define CURSOR XC_crosshair /* Default cursor */
 #define MM_PER_INCH 25.4    /* mm -> inch conversion */
 
-#define IS_100DPI ((int)(1. / pixelHeight() + 0.5) == 100)
-
 #define X_BELL_VOLUME                                                                                                  \
     0 /* integer between -100 and 100 for the volume                                                                   \
           of the bell in locator. */
@@ -731,7 +729,7 @@ static R_XFont *R_XLoadQueryFontSet(Display *display, const char *fontset_name)
 
 static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
 {
-    int pixelsize, i;
+    int pixelsize, i, dpi;
     cacheentry *f;
     char buf[BUFSIZ];
 #ifdef USE_FONTSET
@@ -747,13 +745,22 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
         size = SMALLEST;
     face--;
 
-    /* Here's a 1st class fudge: make sure that the Adobe design sizes
-       8, 10, 11, 12, 14, 17, 18, 20, 24, 25, 34 can be obtained via
-       an integer "size" at 100 dpi, namely 6, 7, 8, 9, 10, 12, 13,
-       14, 17, 18, 24 points. It's almost y = x * 100/72, but not
-       quite. The constants were found using lm(). --pd */
-    if (IS_100DPI)
+    dpi = (1. / pixelHeight() + 0.5);
+    if (dpi < 80)
+    {
+        /* use pointsize as pixel size */
+    }
+    else if (abs(dpi - 100) < 5)
+    {
+        /* Here's a 1st class fudge: make sure that the Adobe design sizes
+           8, 10, 11, 12, 14, 17, 18, 20, 24, 25, 34 can be obtained via
+           an integer "size" at 100 dpi, namely 6, 7, 8, 9, 10, 12, 13,
+           14, 17, 18, 24 points. It's almost y = x * 100/72, but not
+           quite. The constants were found using lm(). --pd */
         size = R_rint(size * 1.43 - 0.4);
+    }
+    else
+        size = R_rint(size * dpi / 72);
 
     /* search fontcache */
     for (i = nfonts; i--;)
