@@ -1115,8 +1115,11 @@ listbox newdropfield(char *list[], rect r, scrollfn fn)
     for (i = 0; list && list[i]; i++)
         r.height += h;
 
-    obj = newchildwin("combobox", NULL, CBS_DROPDOWN | CBS_DISABLENOSCROLL | WS_BORDER | WS_VSCROLL | WS_HSCROLL, r,
-                      NULL);
+    obj = newchildwin("combobox", NULL,
+                      CBS_DROPDOWN |
+                          // CBS_DISABLENOSCROLL |
+                          WS_BORDER | WS_VSCROLL | WS_HSCROLL,
+                      r, NULL);
     if (!obj)
         return obj;
     obj->kind = DroplistObject;
