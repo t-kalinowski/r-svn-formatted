@@ -389,8 +389,7 @@ static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)
 
     gint iw, ih, result;
 
-    /*gdk_rgb_set_install(TRUE); */
-    gdk_rgb_set_verbose(TRUE);
+    /* initialise colour */
     gdk_rgb_init();
     gtk_widget_push_visual(gdk_rgb_get_visual());
     gtk_widget_push_colormap(gdk_rgb_get_cmap());
@@ -807,7 +806,10 @@ static void GTK_Text(double x, double y, int coords, char *str, double xc, doubl
         y -= -xc * x1 * sin(deg2rad * rot) - yc * y1 * cos(deg2rad * rot);
     }
 
-    gdk_draw_text_rot(gtkd->drawing->window, gtkd->font, gtkd->wgc, (gint)x, (gint)y, str, strlen(str), rot);
+    /*  gdk_draw_text_rot(gtkd->drawing->window,
+              gtkd->font, gtkd->wgc,
+              (gint) x, (gint) y,
+              str, strlen(str), rot);*/
 }
 
 static int GTK_Locator(double *x, double *y, DevDesc *dd)
