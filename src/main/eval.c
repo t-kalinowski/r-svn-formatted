@@ -2529,7 +2529,7 @@ struct
     if (body == NULL)                                                                                                  \
     goto init
 
-#define NEXT() goto *(*pc++).v
+#define NEXT() (__extension__({ goto *(*pc++).v; }))
 #define GETOP() (*pc++).i
 
 #define BCCODE(e) (BCODE *)INTEGER(BCODE_CODE(e))
