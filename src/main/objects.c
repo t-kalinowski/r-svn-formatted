@@ -1090,7 +1090,6 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     }
     else if (fundef && !isNull(fundef) && !prim_generics[offset])
     {
-        SEXP env;
         R_PreserveObject(fundef);
         if (TYPEOF(fundef) != CLOSXP)
             error("The formal definition of a primitive generic must be a function object (got type %s)",
