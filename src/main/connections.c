@@ -3680,10 +3680,10 @@ static size_t gzcon_read(void *ptr, size_t size, size_t nitems, Rconnection con)
             for (i = 0; i < priv->nsaved; i++)
                 ((char *)ptr)[i] = priv->saved[i];
             priv->nsaved = 0;
-            return nsaved + icon->read((char *)ptr + nsaved, 1, len - nsaved, icon);
+            return (nsaved + icon->read((char *)ptr + nsaved, 1, len - nsaved, icon)) / size;
         }
         if (len == 1)
-        {
+        { /* size must be one */
             if (nsaved > 0)
             {
                 ((char *)ptr)[0] = priv->saved[0];
@@ -3730,7 +3730,7 @@ static size_t gzcon_read(void *ptr, size_t size, size_t nitems, Rconnection con)
             break;
     }
     priv->crc = crc32(priv->crc, start, (uInt)(priv->s.next_out - start));
-    return (int)(size * nitems - priv->s.avail_out);
+    return (int)(size * nitems - priv->s.avail_out) / size;
 }
 
 static size_t gzcon_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
@@ -3759,7 +3759,7 @@ static size_t gzcon_write(const void *ptr, size_t size, size_t nitems, Rconnecti
             break;
     }
     priv->crc = crc32(priv->crc, (const Bytef *)ptr, size * nitems);
-    return (int)(size * nitems - priv->s.avail_in);
+    return (int)(size * nitems - priv->s.avail_in) / size;
 }
 
 static int gzcon_fgetc(Rconnection con)
