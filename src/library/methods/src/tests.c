@@ -17,5 +17,5 @@ SEXP R_methods_test_NEW(SEXP className)
     char *class;
     class = CHAR(asChar(className));
     clDef = MAKE_CLASS(class);
-    return NEW(clDef);
+    return NEW_OBJECT(clDef);
 }
