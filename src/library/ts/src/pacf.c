@@ -56,7 +56,7 @@ void uni_pacf(double *cor, double *p, int *pnlag)
 #define max(a, b) ((a < b) ? (b) : (a))
 #endif
 
-static int ip, iq, mp, mq, msp, msq, ns, ir, np, nrbar, n, m;
+static int ip, iq, mp, mq, msp, msq, ns, ir, np, nrbar, n, m, trans;
 static double *a, *p, *v, *thetab, *xnext, *xrow, *rbar, *e, *w, *wkeep, delta, *resid, *phi, *theta, s2, *reg;
 
 void F77_NAME(starma)(int *ip, int *iq, int *ir, int *np, double *phi, double *theta, double *a, double *p, double *v,
@@ -74,7 +74,7 @@ void F77_NAME(forkal)(int *ip, int *iq, int *ir, int *np, int *ird, int *irz, in
                       double *p, double *v, double *resid, double *e, double *xnext, double *xrow, double *rbar,
                       double *thetab, double *store, int *ifault);
 
-void setup_starma(int *na, double *x, int *pn, double *xreg, int *pm, double *dt)
+void setup_starma(int *na, double *x, int *pn, double *xreg, int *pm, double *dt, int *ptrans)
 {
     int i;
 
@@ -90,6 +90,7 @@ void setup_starma(int *na, double *x, int *pn, double *xreg, int *pm, double *dt
     ir = max(ip, iq + 1);
     np = (ir * (ir + 1)) / 2;
     nrbar = max(1, np * (np - 1) / 2);
+    trans = *ptrans;
     a = Calloc(ir, double);
     p = Calloc(np, double);
     v = Calloc(np, double);
