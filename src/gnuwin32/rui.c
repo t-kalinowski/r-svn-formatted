@@ -1024,7 +1024,7 @@ int setupui()
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgu = newmenuitem("Update packages from CRAN", 0, menupkgupdate));
     MCHECK(newmenuitem("-", 0, NULL));
-    MCHECK(mpkgi = newmenuitem("Install package(s) from Bioconductor...", 0, menupkginstallbioc));
+    MCHECK(mpkgb = newmenuitem("Install package(s) from Bioconductor...", 0, menupkginstallbioc));
     MCHECK(mpkgbu = newmenuitem("Update packages from Bioconductor", 0, menupkgupdatebioc));
 #ifdef USE_MDI
     newmdimenu();
