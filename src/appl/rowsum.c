@@ -4,31 +4,25 @@
 ** Add up data along rows
 **
 ** Input
-**      dim:   integer vector, the #rows and #columns of the matrix
-**      na_x:  the value that marks NA's in the X matrix
-**      x  :   matrix of data (remember, S uses column major order!)
-**      group: the group to which each row belongs
+**	dim:   integer vector, the #rows and #columns of the matrix
+**	na_x:  the value that marks NA's in the X matrix
+**	x  :   matrix of data (remember, S uses column major order!)
+**	group: the group to which each row belongs
 **
 ** Output:
-**      dd[0]: the number of unique groups found
-**      x    : rows 1 to dd[0] contain the sums.
+**	dd[0]: the number of unique groups found
+**	x    : rows 1 to dd[0] contain the sums.
 */
 
 #ifdef HAVE_CONFIG_H
 #include <Rconfig.h>
 #endif
 
-void rowsum(dim, na_x, x, group) int *dim;
-double *na_x;
-double *x, *group;
+void rowsum(int *dim, double *na_x, double *x, double *group)
 {
     register int i, j, k;
-    int nrow, ncol;
-    int newrow;
-    int isna;
-    double tgrp, sum;
-    double dummy;
-    double na;
+    int nrow, ncol, newrow, isna;
+    double tgrp, sum, dummy, na;
 
     nrow = dim[0];
     ncol = dim[1];
