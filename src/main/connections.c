@@ -48,7 +48,7 @@ extern UImode CharacterMode;
 
 static Rconnection Connections[NCONNECTIONS];
 
-static int R_SinkNumber, R_SinkSaved;
+static int R_SinkNumber;
 static int SinkCons[NSINKS], SinkConsClose[NSINKS];
 
 static void pushback(Rconnection con, int newLine, char *line);
@@ -2621,7 +2621,6 @@ SEXP do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (icon >= 0 && R_SinkNumber >= NSINKS - 2)
             error("sink stack is full");
         switch_stdout(icon, closeOnExit);
-        R_SinkSaved = R_SinkNumber;
     }
     else
     {
@@ -2652,11 +2651,6 @@ SEXP do_sinknumber(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-void R_SinkReset()
-{
-    R_SinkNumber = R_SinkSaved;
-}
-
 /* ------------------- admin functions  --------------------- */
 
 void InitConnections()
@@ -2673,7 +2667,7 @@ void InitConnections()
     for (i = 3; i < NCONNECTIONS; i++)
         Connections[i] = NULL;
     R_OutputCon = 1;
-    R_SinkSaved = R_SinkNumber = 0;
+    R_SinkNumber = 0;
     SinkCons[0] = 1;
     R_ErrorCon = 2;
 }
