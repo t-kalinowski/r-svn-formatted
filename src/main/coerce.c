@@ -30,11 +30,11 @@
 /* of data vectors.  Type coercion throughout R should use these */
 /* routines to ensure consistency. */
 
-static char *truenames[] = {
+const static char *const truenames[] = {
     "T", "True", "TRUE", "true", (char *)0,
 };
 
-static char *falsenames[] = {
+const static char *const falsenames[] = {
     "F", "False", "FALSE", "false", (char *)0,
 };
 
