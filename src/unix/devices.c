@@ -178,7 +178,6 @@ SEXP do_GTK(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
-        dd->newDevStruct = 1;
         dev->displayList = R_NilValue;
         if (!ptr_GTKDeviceDriver((DevDesc *)dev, display, width, height, ps))
         {
@@ -187,6 +186,7 @@ SEXP do_GTK(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         gsetVar(install(".Device"), mkString("GTK"), R_NilValue);
         dd = GEcreateDevDesc(dev);
+        dd->newDevStruct = 1;
         addDevice((DevDesc *)dd);
         initDisplayList((DevDesc *)dd);
     }
@@ -220,7 +220,6 @@ SEXP do_Gnome(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
-        dd->newDevStruct = 1;
         dev->displayList = R_NilValue;
         if (!ptr_GnomeDeviceDriver((DevDesc *)dev, display, width, height, ps))
         {
@@ -229,6 +228,7 @@ SEXP do_Gnome(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         gsetVar(install(".Device"), mkString("gnome"), R_NilValue);
         dd = GEcreateDevDesc(dev);
+        dd->newDevStruct = 1;
         addDevice((DevDesc *)dd);
         initDisplayList((DevDesc *)dd);
     }
