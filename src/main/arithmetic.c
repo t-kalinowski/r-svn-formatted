@@ -353,7 +353,7 @@ double R_pow(double x, double y) /* = x ^ y */
 
 double R_pow_di(double x, int n)
 {
-    double pow = 1.0;
+    double xn = 1.0;
 
     if (ISNAN(x))
         return x;
@@ -371,14 +371,14 @@ double R_pow_di(double x, int n)
         for (;;)
         {
             if (n & 01)
-                pow *= x;
+                xn *= x;
             if (n >>= 1)
                 x *= x;
             else
                 break;
         }
     }
-    return pow;
+    return xn;
 }
 
 /* General Base Logarithms */
@@ -1876,7 +1876,7 @@ SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
     return op; /* never used; to keep -Wall happy */
 }
 
-#ifdef LTRUE /* WHEN_MATH5_IS_THERE */
+#ifdef WHEN_MATH5_IS_THERE /* as in ./arithmetic.h */
 
 /* Mathematical Functions of Five (Real) Arguments */
 

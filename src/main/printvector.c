@@ -34,7 +34,7 @@
 #include "Print.h"
 
 #define DO_first_lab                                                                                                   \
-    if (index)                                                                                                         \
+    if (indx)                                                                                                          \
     {                                                                                                                  \
         labwidth = IndexWidth(n) + 2;                                                                                  \
         /* labwidth may well be                                                                                        \
@@ -47,7 +47,7 @@
 
 #define DO_newline                                                                                                     \
     Rprintf("\n");                                                                                                     \
-    if (index)                                                                                                         \
+    if (indx)                                                                                                          \
     {                                                                                                                  \
         VectorIndex(i + 1, labwidth);                                                                                  \
         width = labwidth;                                                                                              \
@@ -55,7 +55,7 @@
     else                                                                                                               \
         width = 0
 
-void printLogicalVector(int *x, int n, int index)
+void printLogicalVector(int *x, int n, int indx)
 {
     int i, w, labwidth = 0, width;
 
@@ -75,7 +75,7 @@ void printLogicalVector(int *x, int n, int index)
     Rprintf("\n");
 }
 
-void printIntegerVector(int *x, int n, int index)
+void printIntegerVector(int *x, int n, int indx)
 {
     int i, w, labwidth = 0, width;
 
@@ -95,7 +95,7 @@ void printIntegerVector(int *x, int n, int index)
     Rprintf("\n");
 }
 
-void printRealVector(double *x, int n, int index)
+void printRealVector(double *x, int n, int indx)
 {
     int i, w, d, e, labwidth = 0, width;
 
@@ -115,7 +115,7 @@ void printRealVector(double *x, int n, int index)
     Rprintf("\n");
 }
 
-void printComplexVector(Rcomplex *x, int n, int index)
+void printComplexVector(Rcomplex *x, int n, int indx)
 {
     int i, w, wr, dr, er, wi, di, ei, labwidth = 0, width;
 
@@ -140,7 +140,7 @@ void printComplexVector(Rcomplex *x, int n, int index)
     Rprintf("\n");
 }
 
-static void printStringVector(SEXP *x, int n, int quote, int index)
+static void printStringVector(SEXP *x, int n, int quote, int indx)
 {
     int i, w, labwidth = 0, width;
 
@@ -159,31 +159,31 @@ static void printStringVector(SEXP *x, int n, int quote, int index)
     Rprintf("\n");
 }
 
-void printVector(SEXP x, int index, int quote)
+void printVector(SEXP x, int indx, int quote)
 {
-    /* print R vector x[];	if(index) print indices; if(quote) quote strings */
+    /* print R vector x[];	if(indx) print indices; if(quote) quote strings */
     int n;
 
     if ((n = LENGTH(x)) != 0)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            printLogicalVector(LOGICAL(x), n, index);
+            printLogicalVector(LOGICAL(x), n, indx);
             break;
         case INTSXP:
-            printIntegerVector(INTEGER(x), n, index);
+            printIntegerVector(INTEGER(x), n, indx);
             break;
         case REALSXP:
-            printRealVector(REAL(x), n, index);
+            printRealVector(REAL(x), n, indx);
             break;
         case STRSXP:
             if (quote)
-                printStringVector(STRING_PTR(x), n, '"', index);
+                printStringVector(STRING_PTR(x), n, '"', indx);
             else
-                printStringVector(STRING_PTR(x), n, 0, index);
+                printStringVector(STRING_PTR(x), n, 0, indx);
             break;
         case CPLXSXP:
-            printComplexVector(COMPLEX(x), n, index);
+            printComplexVector(COMPLEX(x), n, indx);
             break;
         }
     else
