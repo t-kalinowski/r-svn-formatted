@@ -33,6 +33,9 @@
  * Linear/constant interpolation then takes place on that interval
  */
 
+/* NB:  R_interv(.) in ./interv.c  is conceptually a special case of
+ *	this, where y = 1:n */
+
 typedef struct
 {
     double ylow;
@@ -86,7 +89,7 @@ static double approx1(double v, double *x, double *y, int n, appr_meth *Meth)
     { /* 2 : constant */
         return y[i] * Meth->f1 + y[j] * Meth->f2;
     }
-}
+} /* approx1() */
 
 /* R Frontend for Linear and Constant Interpolation */
 
