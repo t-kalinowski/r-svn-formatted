@@ -151,7 +151,7 @@ static double R_VF_VStrWidth(const unsigned char *s, R_GE_gcontext *gc, GEDevDes
     char *vmax = vmaxget();
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, s, gc->fontface, gc->fontfamily[0]);
+    codestring = _controlify(dd, s, gc->fontfamily[0], gc->fontface);
 
     label_width = _label_width_hershey(gc, dd, codestring);
 
@@ -178,7 +178,7 @@ static double R_VF_VStrHeight(const unsigned char *s, R_GE_gcontext *gc, GEDevDe
     char *vmax = vmaxget();
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, s, gc->fontface, gc->fontfamily[0]);
+    codestring = _controlify(dd, s, gc->fontfamily[0], gc->fontface);
 
     label_height = _label_height_hershey(gc, dd, codestring);
 
@@ -229,7 +229,7 @@ static void R_VF_VText(double x, double y, char *s, double x_justify, double y_j
     gc->lwd = 1;
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, (unsigned char *)s, gc->fontface, gc->fontfamily[0]);
+    codestring = _controlify(dd, (unsigned char *)s, gc->fontfamily[0], gc->fontface);
 
     /* PAUL MURRELL
        Justification changed from char (e.g., 'l', 'c', 'r') to

@@ -1559,8 +1559,62 @@ static int VFontFamilyCode(char *fontfamily)
     int i;
     for (i = 0; VFontTable[i].minface; i++)
         if (!strcmp(fontfamily, VFontTable[i].name))
+        {
             return i;
+        }
     return -1;
+}
+
+static int VFontFaceCode(int familycode, int fontface)
+{
+    int face = fontface;
+    /*
+     * R's "font" par has historically made 2=bold and 3=italic
+     * These must be switched to correspond to Hershey fontfaces
+     */
+    if (fontface == 2)
+        face = 3;
+    else if (fontface == 3)
+        face = 2;
+    /*
+     * If font face is outside supported set of faces for font
+     * family, either convert or throw and error
+     */
+    if (!(face >= VFontTable[familycode].minface && face <= VFontTable[familycode].maxface))
+    {
+        /*
+         * Silently convert standard faces to closest match
+         */
+        switch (face)
+        {
+            /*
+             * italic becomes plain (gothic only)
+             */
+        case 2:
+            /*
+             * bold becomes plain
+             */
+        case 3:
+            face = 1;
+            break;
+            /*
+             * bold-italic becomes italic for gothic fonts
+             * and bold for sans symbol font
+             */
+        case 4:
+            if (familycode == 7)
+                face = 2;
+            else
+                face = 1;
+            break;
+        default:
+            /*
+             * Other font faces just too wacky so throw an error
+             */
+            error("Font face %d not supported for font family %s", fontface, VFontTable[familycode].name);
+        }
+    }
+    return face;
 }
 
 /****************************************************************
@@ -1578,14 +1632,7 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
     if (vfontcode >= 0)
     {
         gc->fontfamily[0] = vfontcode;
-        /*
-         * R's "font" par has historically made 2=bold and 3=italic
-         * These must be switched to correspond to Hershey fontfaces
-         */
-        if (gc->fontface == 2)
-            gc->fontface = 3;
-        else if (gc->fontface == 3)
-            gc->fontface = 2;
+        gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
         R_GE_VText(x, y, str, xc, yc, rot, gc, dd);
     }
     else
@@ -2214,14 +2261,7 @@ double GEStrWidth(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
     if (vfontcode >= 0)
     {
         gc->fontfamily[0] = vfontcode;
-        /*
-         * R's "font" par has historically made 2=bold and 3=italic
-         * These must be switched to correspond to Hershey fontfaces
-         */
-        if (gc->fontface == 2)
-            gc->fontface = 3;
-        else if (gc->fontface == 3)
-            gc->fontface = 2;
+        gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
         return R_GE_VStrWidth((unsigned char *)str, gc, dd);
     }
     else
@@ -2274,14 +2314,7 @@ double GEStrHeight(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
     if (vfontcode >= 0)
     {
         gc->fontfamily[0] = vfontcode;
-        /*
-         * R's "font" par has historically made 2=bold and 3=italic
-         * These must be switched to correspond to Hershey fontfaces
-         */
-        if (gc->fontface == 2)
-            gc->fontface = 3;
-        else if (gc->fontface == 3)
-            gc->fontface = 2;
+        gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
         return R_GE_VStrHeight((unsigned char *)str, gc, dd);
     }
     else
