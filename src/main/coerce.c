@@ -1041,7 +1041,7 @@ SEXP CreateTag(SEXP x)
     if (isString(x) && length(x) >= 1 && length(STRING_ELT(x, 0)) >= 1)
         x = install(CHAR(STRING_ELT(x, 0)));
     else
-        x = install(CHAR(STRING_ELT(deparse1(x, 1), 0)));
+        x = install(CHAR(STRING_ELT(deparse1(x, 1, TRUE), 0)));
     return x;
 }
 

@@ -121,9 +121,11 @@ typedef struct
 
     int cutoff;
     int backtick;
+    int forDisplay;
+    int sourceable;
 } LocalParseData;
 
-static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick);
+static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, Rboolean forDisplay);
 static void args2buff(SEXP, int, int, LocalParseData *);
 static void deparse2buff(SEXP, LocalParseData *);
 static void print2buff(char *, LocalParseData *);
@@ -184,7 +186,7 @@ void R_FreeStringBuffer(DeparseBuffer *buf)
 SEXP do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ca1;
-    int cut0, backtick;
+    int cut0, backtick, forDisplay;
     /*checkArity(op, args);*/
     if (length(args) < 1)
         errorcall(call, "too few arguments");
@@ -205,17 +207,21 @@ SEXP do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
     backtick = 0;
     if (!isNull(CAR(args)))
         backtick = asLogical(CAR(args));
-    ca1 = deparse1WithCutoff(ca1, 0, cut0, backtick);
+    args = CDR(args);
+    forDisplay = TRUE;
+    if (!isNull(CAR(args)))
+        forDisplay = asLogical(CAR(args));
+    ca1 = deparse1WithCutoff(ca1, 0, cut0, backtick, forDisplay);
     return ca1;
 }
 
-SEXP deparse1(SEXP call, Rboolean abbrev)
+SEXP deparse1(SEXP call, Rboolean abbrev, Rboolean forDisplay)
 {
     Rboolean backtick = TRUE;
-    return (deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick));
+    return (deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, forDisplay));
 }
 
-static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick)
+static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, Rboolean forDisplay)
 {
     /* Arg. abbrev:
         If abbrev is TRUE, then the returned value
@@ -242,6 +248,8 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     DeparseBuffer *buffer = &localData.buffer;
     localData.cutoff = cutoff;
     localData.backtick = backtick;
+    localData.forDisplay = forDisplay;
+    localData.sourceable = TRUE;
     localData.strvec = R_NilValue;
 
     PrintDefaults(R_NilValue); /* from global options() */
@@ -264,6 +272,8 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     }
     R_print.digits = savedigits;
     R_FreeStringBuffer(buffer);
+    if (!forDisplay && !localData.sourceable)
+        warning("deparse may be incomplete");
     return svec;
 }
 
@@ -275,8 +285,9 @@ SEXP deparse1line(SEXP call, Rboolean abbrev)
 {
     SEXP temp;
     Rboolean backtick = TRUE;
+    Rboolean forDisplay = TRUE;
 
-    temp = deparse1WithCutoff(call, abbrev, MAX_Cutoff, backtick);
+    temp = deparse1WithCutoff(call, abbrev, MAX_Cutoff, backtick, forDisplay);
     return (temp);
 }
 
@@ -286,7 +297,7 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP saveenv, tval;
     int i, ifile, res;
-    Rboolean wasopen, havewarned = FALSE;
+    Rboolean wasopen, havewarned = FALSE, forDisplay;
     Rconnection con = (Rconnection)1; /* stdout */
 
     checkArity(op, args);
@@ -298,7 +309,11 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(saveenv = CLOENV(tval));
         SET_CLOENV(tval, R_GlobalEnv);
     }
-    tval = deparse1(tval, 0);
+    forDisplay = FALSE;
+    if (!isNull(CADDR(args)))
+        forDisplay = asLogical(CADDR(args));
+
+    tval = deparse1(tval, 0, forDisplay);
     if (TYPEOF(CAR(args)) == CLOSXP)
     {
         SET_CLOENV(CAR(args), saveenv);
@@ -371,7 +386,7 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
                 Rprintf("%s <-\n", obj_name);
             if (TYPEOF(CAR(o)) != CLOSXP || isNull(tval = getAttrib(CAR(o), R_SourceSymbol)))
-                tval = deparse1(CAR(o), 0);
+                tval = deparse1(CAR(o), 0, FALSE);
             for (j = 0; j < LENGTH(tval); j++)
             {
                 Rprintf("%s\n", CHAR(STRING_ELT(tval, j)));
@@ -392,7 +407,7 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (!havewarned && res < strlen(CHAR(STRING_ELT(names, i))) + 4)
                 warningcall(call, "wrote too few characters");
             if (TYPEOF(CAR(o)) != CLOSXP || isNull(tval = getAttrib(CAR(o), R_SourceSymbol)))
-                tval = deparse1(CAR(o), 0);
+                tval = deparse1(CAR(o), 0, FALSE);
             for (j = 0; j < LENGTH(tval); j++)
             {
                 res = Rconn_printf(con, "%s\n", CHAR(STRING_ELT(tval, j)));
@@ -515,6 +530,8 @@ static void attr1(SEXP s, LocalParseData *d)
 
 static void attr2(SEXP s, LocalParseData *d)
 {
+    Rboolean localForDisplay = d->forDisplay;
+
     if (ATTRIB(s) != R_NilValue)
     {
         SEXP a = ATTRIB(s);
@@ -545,6 +562,7 @@ static void attr2(SEXP s, LocalParseData *d)
             {
                 /* TAG(a) might contain spaces etc */
                 char *tag = CHAR(PRINTNAME(TAG(a)));
+                d->forDisplay = TRUE;
                 if (isValidName(tag))
                     deparse2buff(TAG(a), d);
                 else
@@ -553,6 +571,7 @@ static void attr2(SEXP s, LocalParseData *d)
                     deparse2buff(TAG(a), d);
                     print2buff("\"", d);
                 }
+                d->forDisplay = localForDisplay;
             }
             print2buff(" = ", d);
             deparse2buff(CAR(a), d);
@@ -621,6 +640,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 {
     PPinfo fop;
     Rboolean lookahead = FALSE, lbreak = FALSE, parens;
+    Rboolean localForDisplay = d->forDisplay;
     SEXP op, t;
     char tpb[120];
 
@@ -630,10 +650,20 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff("NULL", d);
         break;
     case SYMSXP:
+        if (!localForDisplay)
+        {
+            attr1(s, d);
+            print2buff("quote(", d);
+        }
         if (d->backtick)
             print2buff(backquotify(CHAR(PRINTNAME(s))), d);
         else
             print2buff(CHAR(PRINTNAME(s)), d);
+        if (!localForDisplay)
+        {
+            print2buff(")", d);
+            attr2(s, d);
+        }
         break;
     case CHARSXP:
         print2buff(CHAR(s), d);
@@ -644,44 +674,63 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff(tpb, d);
         break;
     case PROMSXP:
+        d->sourceable = FALSE;
         deparse2buff(PREXPR(s), d);
         break;
     case CLOSXP:
+        if (!localForDisplay)
+            attr1(s, d);
         print2buff("function (", d);
         args2buff(FORMALS(s), 0, 1, d);
         print2buff(") ", d);
+        d->forDisplay = TRUE;
         writeline(d);
         deparse2buff(BODY_EXPR(s), d);
+        d->forDisplay = localForDisplay;
+        if (!localForDisplay)
+            attr2(s, d);
         break;
     case ENVSXP:
+        d->sourceable = FALSE;
         print2buff("<environment>", d);
         break;
     case VECSXP:
-        attr1(s, d);
+        if (!localForDisplay)
+            attr1(s, d);
         print2buff("list(", d);
         vec2buff(s, d);
         print2buff(")", d);
-        attr2(s, d);
+        if (!localForDisplay)
+            attr2(s, d);
         break;
     case EXPRSXP:
+        if (!localForDisplay)
+            attr1(s, d);
         if (length(s) <= 0)
             print2buff("expression()", d);
         else
         {
             print2buff("expression(", d);
+            d->forDisplay = TRUE;
             vec2buff(s, d);
+            d->forDisplay = localForDisplay;
             print2buff(")", d);
         }
+        if (!localForDisplay)
+            attr2(s, d);
         break;
     case LISTSXP:
-        attr1(s, d);
+        if (!localForDisplay)
+            attr1(s, d);
         print2buff("list(", d);
         d->inlist++;
         for (t = s; CDR(t) != R_NilValue; t = CDR(t))
         {
             if (TAG(t) != R_NilValue)
             {
+                d->forDisplay = TRUE;
                 deparse2buff(TAG(t), d);
+                d->forDisplay = localForDisplay;
                 print2buff(" = ", d);
             }
             deparse2buff(CAR(t), d);
@@ -689,16 +738,24 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         }
         if (TAG(t) != R_NilValue)
         {
+            d->forDisplay = TRUE;
             deparse2buff(TAG(t), d);
+            d->forDisplay = localForDisplay;
             print2buff(" = ", d);
         }
         deparse2buff(CAR(t), d);
         print2buff(")", d);
         d->inlist--;
-        attr2(s, d);
+        if (!localForDisplay)
+            attr2(s, d);
         break;
     case LANGSXP:
         printcomment(s, d);
+        if (!localForDisplay)
+        {
+            print2buff("quote(", d);
+            d->forDisplay = TRUE;
+        }
         if (TYPEOF(CAR(s)) == SYMSXP)
         {
             if ((TYPEOF(SYMVALUE(CAR(s))) == BUILTINSXP) || (TYPEOF(SYMVALUE(CAR(s))) == SPECIALSXP))
@@ -938,6 +995,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     print2buff(")", d);
                     break;
                 default:
+                    d->sourceable = FALSE;
                     UNIMPLEMENTED("deparse2buff");
                 }
             }
@@ -1012,30 +1070,41 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             args2buff(CDR(s), 0, 0, d);
             print2buff(")", d);
         }
+        if (!localForDisplay)
+        {
+            d->forDisplay = localForDisplay;
+            print2buff(")", d);
+        }
         break;
     case STRSXP:
     case LGLSXP:
     case INTSXP:
     case REALSXP:
     case CPLXSXP:
-        attr1(s, d);
+        if (!localForDisplay)
+            attr1(s, d);
         vector2buff(s, d);
-        attr2(s, d);
+        if (!localForDisplay)
+            attr2(s, d);
         break;
     case EXTPTRSXP:
+        d->sourceable = FALSE;
         sprintf(tpb, "<pointer: %p>", R_ExternalPtrAddr(s));
         print2buff(tpb, d);
         break;
 #ifdef BYTECODE
     case BCODESXP:
+        d->sourceable = FALSE;
         print2buff("<bytecode>", d);
         break;
 #endif
     case WEAKREFSXP:
+        d->sourceable = FALSE;
         sprintf(tpb, "<weak reference>");
         print2buff(tpb, d);
         break;
     default:
+        d->sourceable = FALSE;
         UNIMPLEMENTED("deparse2buff");
     }
 }
@@ -1115,15 +1184,15 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     }
     else if (tlen == 1)
     {
-        if (TYPEOF(vector) == INTSXP)
+        if (!d->forDisplay && TYPEOF(vector) == INTSXP)
             print2buff("as.integer(", d);
         scalar2buff(vector, d);
-        if (TYPEOF(vector) == INTSXP)
+        if (!d->forDisplay && TYPEOF(vector) == INTSXP)
             print2buff(")", d);
     }
     else
     {
-        if (TYPEOF(vector) == INTSXP)
+        if (!d->forDisplay && TYPEOF(vector) == INTSXP)
             print2buff("as.integer(", d);
         print2buff("c(", d);
         for (i = 0; i < tlen; i++)
@@ -1136,7 +1205,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 writeline(d);
         }
         print2buff(")", d);
-        if (TYPEOF(vector) == INTSXP)
+        if (!d->forDisplay && TYPEOF(vector) == INTSXP)
             print2buff(")", d);
     }
 }
@@ -1150,6 +1219,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
     SEXP nv;
     int i, n;
     Rboolean lbreak = FALSE;
+    Rboolean localForDisplay = d->forDisplay;
 
     n = length(v);
     nv = getAttrib(v, R_NamesSymbol);
@@ -1163,6 +1233,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
         linebreak(&lbreak, d);
         if (!isNull(nv) && !isNull(STRING_ELT(nv, i)) && *CHAR(STRING_ELT(nv, i)))
         {
+            d->forDisplay = TRUE;
             if (isValidName(CHAR(STRING_ELT(nv, i))))
                 deparse2buff(STRING_ELT(nv, i), d);
             else
@@ -1171,6 +1242,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
                 deparse2buff(STRING_ELT(nv, i), d);
                 print2buff("\"", d);
             }
+            d->forDisplay = localForDisplay;
             print2buff(" = ", d);
         }
         deparse2buff(VECTOR_ELT(v, i), d);
