@@ -677,7 +677,7 @@ void ProcessEvent(void)
         dd->top = top;
         dd->bottom = bottom;
         xd->resize = TRUE;
-        playDisplayList((DevDesc *)gedd);
+        GEplayDisplayList(gedd);
         xd = (MacDesc *)dd->deviceSpecific;
         xd->resize = false;
         haveResize = true;

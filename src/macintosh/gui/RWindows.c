@@ -985,7 +985,7 @@ void DoUpdate(WindowRef window)
         dd->top = top;
         dd->bottom = bottom;
 
-        playDisplayList((DevDesc *)gedd);
+        GEplayDisplayList(gedd);
     }
 
     // tell everything we're done updating
