@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
- *  Copyright (C) 2002--2003  The R Foundation
+ *  Copyright (C) 2002--2004  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3585,7 +3585,6 @@ SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-static int dnd_n;
 static int *dnd_lptr;
 static int *dnd_rptr;
 static double *dnd_hght;
@@ -3596,33 +3595,36 @@ static SEXP *dnd_llabels;
 
 static void drawdend(int node, double *x, double *y, DevDesc *dd)
 {
+    /* Recursive function for 'hclust' dendrogram drawing:
+     * Do left + Do right + Do myself
+     * "do" : 1) label leafs (if there are) and __
+     *        2) find coordinates to draw the  | |
+     *        3) return (*x,*y) of "my anchor"
+     */
     double xl, xr, yl, yr;
     double xx[4], yy[4];
     int k;
+
     *y = dnd_hght[node - 1];
+    /* left part  */
     k = dnd_lptr[node - 1];
     if (k > 0)
         drawdend(k, &xl, &yl, dd);
     else
     {
         xl = dnd_xpos[-k - 1];
-        if (dnd_hang >= 0)
-            yl = *y - dnd_hang;
-        else
-            yl = 0;
+        yl = (dnd_hang >= 0) ? *y - dnd_hang : 0;
         if (dnd_llabels[-k - 1] != NA_STRING)
             GText(xl, yl - dnd_offset, USER, CHAR(dnd_llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
     }
+    /* right part */
     k = dnd_rptr[node - 1];
     if (k > 0)
         drawdend(k, &xr, &yr, dd);
     else
     {
         xr = dnd_xpos[-k - 1];
-        if (dnd_hang >= 0)
-            yr = *y - dnd_hang;
-        else
-            yr = 0;
+        yr = (dnd_hang >= 0) ? *y - dnd_hang : 0;
         if (dnd_llabels[-k - 1] != NA_STRING)
             GText(xr, yr - dnd_offset, USER, CHAR(dnd_llabels[-k - 1]), 1.0, 0.3, 90.0, dd);
     }
@@ -3641,6 +3643,8 @@ static void drawdend(int node, double *x, double *y, DevDesc *dd)
 SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     double x, y;
+    int n;
+
     SEXP originalArgs;
     DevDesc *dd;
 
@@ -3651,34 +3655,40 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(args) < 6)
         errorcall(call, "too few arguments");
 
-    dnd_n = asInteger(CAR(args));
-    if (dnd_n == NA_INTEGER || dnd_n < 2)
+    /* n */
+    n = asInteger(CAR(args));
+    if (n == NA_INTEGER || n < 2)
         goto badargs;
     args = CDR(args);
 
-    if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * dnd_n)
+    /* merge */
+    if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * n)
         goto badargs;
     dnd_lptr = &(INTEGER(CAR(args))[0]);
-    dnd_rptr = &(INTEGER(CAR(args))[dnd_n]);
+    dnd_rptr = &(INTEGER(CAR(args))[n]);
     args = CDR(args);
 
-    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != dnd_n)
+    /* height */
+    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n)
         goto badargs;
     dnd_hght = REAL(CAR(args));
     args = CDR(args);
 
-    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != dnd_n + 1)
+    /* ord = order(x$order) */
+    if (length(CAR(args)) != n + 1)
         goto badargs;
-    dnd_xpos = REAL(CAR(args));
+    dnd_xpos = REAL(coerceVector(CAR(args), REALSXP));
     args = CDR(args);
 
+    /* hang */
     dnd_hang = asReal(CAR(args));
     if (!R_FINITE(dnd_hang))
         goto badargs;
-    dnd_hang = dnd_hang * (dnd_hght[dnd_n - 1] - dnd_hght[0]);
+    dnd_hang = dnd_hang * (dnd_hght[n - 1] - dnd_hght[0]);
     args = CDR(args);
 
-    if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != dnd_n + 1)
+    /* labels */
+    if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != n + 1)
         goto badargs;
     dnd_llabels = STRING_PTR(CAR(args));
     args = CDR(args);
@@ -3694,7 +3704,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
         Rf_gpptr(dd)->xpd = 1;
 
     GMode(1, dd);
-    drawdend(dnd_n, &x, &y, dd);
+    drawdend(n, &x, &y, dd);
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
@@ -3718,7 +3728,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     dd = CurrentDevice();
     GCheckState(dd);
     originalArgs = args;
-    if (length(args) < 6)
+    if (length(args) < 5)
         errorcall(call, "too few arguments");
     n = asInteger(CAR(args));
     if (n == NA_INTEGER || n < 2)
@@ -3727,23 +3737,22 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * n)
         goto badargs;
     merge = CAR(args);
+
     args = CDR(args);
     if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n)
         goto badargs;
     height = CAR(args);
-    args = CDR(args);
-    if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n + 1)
-        goto badargs;
-    dnd_xpos = REAL(CAR(args));
+
     args = CDR(args);
     dnd_hang = asReal(CAR(args));
     if (!R_FINITE(dnd_hang))
         goto badargs;
+
     args = CDR(args);
     if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != n + 1)
         goto badargs;
-
     llabels = CAR(args);
+
     args = CDR(args);
     GSavePars(dd);
     ProcessInlinePars(args, dd, call);
@@ -3769,6 +3778,9 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
         str = STRING_ELT(llabels, i);
         ll[i] = (str == NA_STRING) ? 0.0 : GStrWidth(CHAR(str), INCHES, dd) + dnd_offset;
     }
+
+    imax = -1;
+    yval = -DBL_MAX;
     if (dnd_hang >= 0)
     {
         ymin = ymax - (1 + dnd_hang) * (ymax - ymin);
@@ -3784,8 +3796,6 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
         /* determine the most extreme label depth */
         /* assuming that we are using the full plot */
         /* window for the tree itself */
-        imax = -1;
-        yval = -DBL_MAX;
         for (i = 0; i < n; i++)
         {
             tmp = ((ymax - y[i]) / yrange) * pin + ll[i];
@@ -3798,10 +3808,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-        ymin = 0;
         yrange = ymax;
-        imax = -1;
-        yval = -DBL_MAX;
         for (i = 0; i < n; i++)
         {
             tmp = pin + ll[i];
@@ -3813,9 +3820,9 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     /* now determine how much to scale */
-    ymin = ymax - (pin / (pin - ll[imax])) * (ymax - ymin);
-    GScale(1.0, n + 1.0, 1, dd);
-    GScale(ymin, ymax, 2, dd);
+    ymin = ymax - (pin / (pin - ll[imax])) * yrange;
+    GScale(1.0, n + 1.0, 1 /* x */, dd);
+    GScale(ymin, ymax, 2 /* y */, dd);
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
