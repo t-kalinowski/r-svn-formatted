@@ -32,7 +32,6 @@ static unsigned int BoxColor;
 static unsigned int TextColor;
 static double BaseCex = 1;
 static int MetricUnit = INCHES;
-static double HalfPi = 1.57079632679489661922;
 
 /* Font Definitions */
 
@@ -3077,8 +3076,9 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
     else
         CurrentY = ReferenceY;
     CurrentAngle = rot;
-    CosAngle = cos(rot / 90 * HalfPi);
-    SinAngle = sin(rot / 90 * HalfPi);
+    rot = rot / 90 * M_PI_half; /* radians */
+    CosAngle = cos(rot);
+    SinAngle = sin(rot);
     RenderElement(expr, 1);
 }
 
