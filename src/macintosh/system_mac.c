@@ -1083,6 +1083,17 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     errorcall(call, "unimplemented function\n");
 }
 
+void InitEd()
+{
+    DefaultFileName = Rmac_tmpnam("REdit");
+}
+
+void CleanEd()
+{
+    if (EdFileUsed == 0)
+        unlink(DefaultFileName);
+}
+
 /*  This routine has been completely rewritten. This is the unix equivalent to
     what is found src/unix/edit.c file and adpted for the Macintosh.
     For the time beeing the internal editor is used, next step is to allow the
@@ -1098,8 +1109,6 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     FILE *fp;
     Str255 editname;
     OSStatus err;
-
-    DefaultFileName = Rmac_tmpnam(NULL);
 
     checkArity(op, args);
 
