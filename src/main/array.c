@@ -446,7 +446,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP x, y, xdims, ydims, ans;
 
     if (!(isNumeric(CAR(args)) || isComplex(CAR(args))) || !(isNumeric(CADR(args)) || isComplex(CADR(args))))
-        error("%%*%% requires numeric matrix/vector arguments");
+        errorcall(call, "requires numeric matrix/vector arguments");
 
     x = CAR(args);
     y = CADR(args);
