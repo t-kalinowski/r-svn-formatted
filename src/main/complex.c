@@ -755,10 +755,10 @@ SEXP complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return cmath2(op, CAR(args), CADR(args), z_atan2);
     case 10003:
         return cmath2(op, CAR(args), CADR(args), z_logbase);
+    case 10004:
+        return cmath2(op, CAR(args), CADR(args), z_prec);
     case 0:
         return cmath2(op, CAR(args), CADR(args), z_atan2);
-    case 1:
-        return cmath2(op, CAR(args), CADR(args), z_prec);
     default:
         errorcall(call, "unimplemented complex function\n");
     }
