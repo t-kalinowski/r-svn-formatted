@@ -292,10 +292,9 @@ int Rf_initialize_R(int ac, char **av)
     }
     else
     {
-#else
-    R_Outputfile = stdout;
-    R_Consolefile = stdout;
 #endif
+        R_Outputfile = stdout;
+        R_Consolefile = stdout;
 #ifdef HAVE_AQUA
     }
 #endif
@@ -323,7 +322,8 @@ int Rf_initialize_R(int ac, char **av)
     fpu_setup(1);
 
 #ifdef HAVE_AQUA
-    R_StartConsole();
+    if (useaqua)
+        R_StartConsole();
 #endif
 
     return (0);
