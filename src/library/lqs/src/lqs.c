@@ -25,16 +25,43 @@
  * to be called as  .C(.)  in ../R/lqs.R
  */
 
-#include "S.h"
-#include "Applic.h" /*for the QR	    routines */
-#include "Utils.h"  /*  for the sort() routines */
+#include "S.h"      /* unif_rand(), seed_in(), seed_out() */
+#include "Applic.h" /* for the QR	  routines */
+#include "Utils.h"  /* for the sort() routines */
 #include "Arith.h"  /* R_PosInf */
 #include <math.h>
 
-/* GLOBAL Variables : */
+/* GLOBAL Variables, explicitly allocated and freed: */
 static double *coef, *qraux, *work, *res, *yr, *xr, *means, *d2, *d2copy;
 static longint *pivot, *which, *which2;
 static int *ind;
+
+static void lqs_setup(longint *n, longint *p, longint *nwhich)
+{
+    coef = Calloc(*p, double);
+    qraux = Calloc(*p, double);
+    work = Calloc(2 * (*p), double);
+    res = Calloc(*n, double);
+    yr = Calloc(*n, double);
+    xr = Calloc((*n) * (*p), double);
+    pivot = Calloc(*p, longint);
+    ind = Calloc(*n, int);
+    which = Calloc(*nwhich, longint);
+    /*bestone = Calloc(*nwhich, longint);*/
+}
+
+static void lqs_free()
+{
+    Free(coef);
+    Free(qraux);
+    Free(work);
+    Free(res);
+    Free(yr);
+    Free(xr);
+    Free(pivot);
+    Free(ind);
+    Free(which); /*Free(bestone);*/
+}
 
 /*
    Sampling k from 0:n-1 without replacement.
@@ -66,33 +93,6 @@ static void next_set(longint *x, int n, int k)
         tmp = ++x[--j];
     for (i = j + 1; i < k; i++)
         x[i] = ++tmp;
-}
-
-static void lqs_setup(longint *n, longint *p, longint *nwhich)
-{
-    coef = Calloc(*p, double);
-    qraux = Calloc(*p, double);
-    work = Calloc(2 * (*p), double);
-    res = Calloc(*n, double);
-    yr = Calloc(*n, double);
-    xr = Calloc((*n) * (*p), double);
-    pivot = Calloc(*p, longint);
-    ind = Calloc(*n, int);
-    which = Calloc(*nwhich, longint);
-    /*bestone = Calloc(*nwhich, longint);*/
-}
-
-static void lqs_free()
-{
-    Free(coef);
-    Free(qraux);
-    Free(work);
-    Free(res);
-    Free(yr);
-    Free(xr);
-    Free(pivot);
-    Free(ind);
-    Free(which); /*Free(bestone);*/
 }
 
 /*
@@ -161,7 +161,7 @@ static double chi(double x, double a)
     if (x > 1)
         return (1.0);
     else
-        return (3 * x - 3 * x * x + x * x * x);
+        return (x * (3 + x * (-3 + x)));
 }
 
 /*
@@ -184,7 +184,7 @@ void lqs_fitlots(double *x, double *y, longint *n, longint *p, longint *qn, long
     *sing = 0;
     target = (nn - pp) * (*beta);
 
-    if (!*sample)
+    if (!(*sample))
     {
         for (i = 0; i < nnew; i++)
             which[i] = i;
