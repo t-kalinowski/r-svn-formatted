@@ -17,7 +17,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* based on libxml2-2.3.6:
+/* based on libxml2-2.4.10:
  * nanoftp.c: basic FTP client support
  *
  *  Reference: RFC 959
@@ -104,8 +104,6 @@ static int setSelectMask(InputHandler *handlers, fd_set *readMask)
 #define SOCKET int
 #endif
 
-static char hostname[100];
-
 #define FTP_COMMAND_OK 200
 #define FTP_SYNTAX_ERROR 500
 #define FTP_GET_PASSWD 331
@@ -168,8 +166,6 @@ static void RxmlNanoFTPInit(void)
         return;
 #endif
 
-    gethostname(hostname, sizeof(hostname));
-
     proxyPort = 21;
     env = getenv("no_proxy");
     if (env != NULL)
@@ -223,7 +219,6 @@ void RxmlNanoFTPCleanup(void)
         xmlFree(proxyPasswd);
         proxyPasswd = NULL;
     }
-    hostname[0] = 0;
 #ifdef _WINSOCKAPI_
     if (initialized)
         WSACleanup();
@@ -780,9 +775,9 @@ static int RxmlNanoFTPSendPasswd(void *ctx)
 
     if (ctxt->passwd == NULL)
 #ifdef HAVE_SNPRINTF
-        snprintf(buf, sizeof(buf), "PASS libxml@%s\r\n", hostname);
+        snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
 #else
-        sprintf(buf, "PASS libxml@%s\r\n", hostname);
+        sprintf(buf, "PASS anonymous\r\n");
 #endif
     else
 #ifdef HAVE_SNPRINTF
@@ -977,9 +972,9 @@ static int RxmlNanoFTPConnect(void *ctx)
 #endif
                 else
 #ifdef HAVE_SNPRINTF
-                    snprintf(buf, sizeof(buf), "PASS libxml@%s\r\n", hostname);
+                    snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
 #else
-                    sprintf(buf, "PASS libxml@%s\r\n", hostname);
+                    sprintf(buf, "PASS anonymous\r\n");
 #endif
                 buf[sizeof(buf) - 1] = 0;
                 len = strlen(buf);
@@ -1055,9 +1050,9 @@ static int RxmlNanoFTPConnect(void *ctx)
             /* USER user@host command */
             if (ctxt->user == NULL)
 #ifdef HAVE_SNPRINTF
-                snprintf(buf, sizeof(buf), "USER anonymous@%s\r\n", ctxt->hostname);
+                snprintf(buf, sizeof(buf), "USER anonymous%s\r\n", ctxt->hostname);
 #else
-                sprintf(buf, "USER anonymous@%s\r\n", ctxt->hostname);
+                sprintf(buf, "USER anonymous%s\r\n", ctxt->hostname);
 #endif
             else
 #ifdef HAVE_SNPRINTF
@@ -1085,9 +1080,9 @@ static int RxmlNanoFTPConnect(void *ctx)
             }
             if (ctxt->passwd == NULL)
 #ifdef HAVE_SNPRINTF
-                snprintf(buf, sizeof(buf), "PASS libxml@%s\r\n", hostname);
+                snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
 #else
-                sprintf(buf, "PASS libxml@%s\r\n", hostname);
+                sprintf(buf, "PASS anonymous\r\n");
 #endif
             else
 #ifdef HAVE_SNPRINTF
