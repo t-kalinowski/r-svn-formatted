@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 static void clearwindow(void);
+static int newcol;
 
 /*
    The spreadsheet function returns a list of vectors. The types of
@@ -330,7 +331,8 @@ void drawwindow()
     nhigh = (windowHeight - 2 * bwidth - hwidth) / box_h;
     for (i = 1; i <= nhigh; i++)
         drawline(0, hwidth + i * box_h, windowWidth, hwidth + i * box_h);
-    colmax = colmin + (nwide - 2); /* so row 0 and col 0 are reserved for labels */
+    /* so row 0 and col 0 are reserved for labels */
+    colmax = colmin + (nwide - 2);
     rowmax = rowmin + (nhigh - 2);
     printlabs();
     if (inputlist != R_NilValue)
@@ -357,7 +359,7 @@ static void clearwindow()
 }
 
 /* find_coords finds the coordinates of the upper left corner of the
-   given square on the screen */
+   given cell on the screen */
 
 void find_coords(int row, int col, int *xcoord, int *ycoord)
 {
@@ -707,8 +709,10 @@ static SEXP getccol()
     if (length(inputlist) < wcol)
         inputlist = listAppend(inputlist, allocList(wcol - length(inputlist)));
     tmp = nthcdr(inputlist, wcol - 1);
+    newcol = 0;
     if (CAR(tmp) == R_NilValue)
     {
+        newcol = 1;
         len = (wrow < 100) ? 100 : wrow;
         CAR(tmp) = ssNewVector(REALSXP, len);
         if (TAG(tmp) == R_NilValue)
@@ -736,15 +740,18 @@ static SEXP getccol()
         LEVELS(tmp2) = LEVELS(CAR(tmp));
         CAR(tmp) = tmp2;
     }
-    return (CAR(tmp));
+    return (tmp);
 }
 
 /* close up the entry to a cell, put the value that has been entered
    into the correct place and as the correct type */
 
+extern double R_strtod(char *c, char **end); /* in coerce.c */
+
 void closerect()
 {
-    SEXP cvec, tvec;
+    SEXP cvec, c0vec, tvec;
+    int wcol = ccol + colmin - 1, wrow = rowmin + crow - 1;
 
     *bufp = '\0';
 
@@ -756,46 +763,65 @@ void closerect()
             if (crow == 0)
             {
                 /* then we are entering a new column name */
-                if (length(inputlist) < ccol + colmin - 1)
-                    inputlist = listAppend(inputlist, allocList((ccol - colmin - 1 - length(inputlist))));
-                tvec = nthcdr(inputlist, ccol + colmin - 2);
+                if (length(inputlist) < wcol)
+                    inputlist = listAppend(inputlist, allocList((wcol - length(inputlist))));
+                tvec = nthcdr(inputlist, wcol - 1);
                 TAG(tvec) = install(buf);
-                printstring(buf, strlen(buf), 0, ccol - colmin + 1, 0);
+                printstring(buf, strlen(buf), 0, wcol, 0);
             }
             else
             {
-                cvec = getccol();
-                if ((crow + rowmin - 1) > (int)LEVELS(cvec))
-                    LEVELS(cvec) = (crow + rowmin - 1);
+                /* do it this way to ensure NA, Inf, ...  can get set */
+                char *endp;
+                double new = R_strtod(buf, &endp);
+                int warn = !isBlankString(endp);
+                c0vec = getccol();
+                cvec = CAR(c0vec);
+                if (wrow > (int)LEVELS(cvec))
+                    LEVELS(cvec) = wrow;
                 if (TYPEOF(cvec) == STRSXP)
                 {
                     tvec = allocString(strlen(buf));
                     strcpy(CHAR(tvec), buf);
-                    STRING(cvec)[(rowmin + crow - 2)] = tvec;
+                    STRING(cvec)[wrow - 1] = tvec;
                 }
                 else
-                    REAL(cvec)[(rowmin + crow - 2)] = atof(buf);
+                    REAL(cvec)[wrow - 1] = atof(buf);
+                REAL(cvec)[wrow - 1] = new;
+                if (newcol & warn)
+                {
+                    /* change mode to character */
+                    int levs = LEVELS(cvec);
+                    cvec = CAR(c0vec) = coerceVector(cvec, STRSXP);
+                    LEVELS(cvec) = levs;
+                    tvec = allocString(strlen(buf));
+                    strcpy(CHAR(tvec), buf);
+                    STRING(cvec)[wrow - 1] = tvec;
+                }
                 drawelt(crow, ccol);
             }
         }
         else if (crow == 0)
         {
             sprintf(buf, "var%d", ccol);
-            printstring(buf, strlen(buf), 0, ccol - colmin + 1, 0);
+            printstring(buf, strlen(buf), 0, wcol, 0);
         }
         else
         {
-            cvec = getccol();
-            if ((crow + rowmin - 1) > (int)LEVELS(cvec))
-                LEVELS(cvec) = (crow + rowmin - 1);
+            c0vec = getccol();
+            cvec = CAR(c0vec);
+            if (wrow > (int)LEVELS(cvec))
+                LEVELS(cvec) = wrow;
             if (TYPEOF(cvec) == STRSXP)
-                STRING(cvec)[(rowmin + crow - 2)] = NA_STRING;
+                STRING(cvec)[wrow - 1] = NA_STRING;
             else
-                REAL(cvec)[(rowmin + crow - 2)] = NA_REAL;
+                REAL(cvec)[wrow - 1] = NA_REAL;
             drawelt(crow, ccol);
         }
     }
     CellModified = 0;
+    if (newcol)
+        drawcol(wcol); /* to fill in NAs */
 
     downlightrect();
 
@@ -878,10 +904,10 @@ void handlechar(char *text)
             tvec = R_NilValue;
         if (crow == 0) /* variable name */
             currentexp = 3;
-        else if (TYPEOF(CAR(tvec)) == STRSXP) /* character data */
-            currentexp = 2;
-        else /* numeric data */
+        else if (TYPEOF(CAR(tvec)) == REALSXP) /* numeric data */
             currentexp = 1;
+        else /* character data */
+            currentexp = 2;
         clearrect();
         highlightrect();
     }
