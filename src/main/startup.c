@@ -188,7 +188,7 @@ static void SetSize(R_size_t vsize, R_size_t nsize)
         sprintf(msg,
                 "WARNING: invalid v(ector heap)size `%lu' ignored\n"
                 "using default = %gM\n",
-                vsize, R_VSIZE / Mega);
+                (unsigned long)vsize, R_VSIZE / Mega);
         R_ShowMessage(msg);
         R_VSize = R_VSIZE;
     }
@@ -199,7 +199,7 @@ static void SetSize(R_size_t vsize, R_size_t nsize)
         sprintf(msg,
                 "WARNING: invalid language heap (n)size `%lu' ignored,"
                 " using default = %ld\n",
-                nsize, R_NSIZE);
+                (unsigned long)nsize, R_NSIZE);
         R_ShowMessage(msg);
         R_NSize = R_NSIZE;
     }
