@@ -50,13 +50,6 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
     if (p == R_DT_1)
         return xend;
 
-    /* FIXME */
-    if (!lower_tail || log_p)
-    {
-        warning("lower_tail & log_p not yet implemented in ptukey()");
-        return ML_NAN;
-    }
-
     xr = xstart;
     xb = n - xr;
 
@@ -64,7 +57,11 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
     NR = NR - xr;
     NB = NB - xb;
     sum = term;
-    p *= 1 - 1e-7;
+    if (!lower_tail || log_p)
+    {
+        p = R_D_qIv(R_D_Lval(p));
+    }
+    p *= 1 - 64 * DBL_EPSILON;
     while (sum < p && xr < xend)
     {
         xr++;
