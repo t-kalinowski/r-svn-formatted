@@ -32,6 +32,7 @@
 #include "Platform.h"
 #include "S.h"
 
+extern int isValidName(char *);
 static void printAttributes(SEXP, SEXP);
 
 int R_print_width;
@@ -268,7 +269,12 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     if (taglen + strlen(CHAR(STRING(names)[i])) > TAGBUFLEN)
                         sprintf(ptag, "$...");
                     else
-                        sprintf(ptag, "$%s", CHAR(STRING(names)[i]));
+                    {
+                        if (isValidName(CHAR(STRING(names)[i])))
+                            sprintf(ptag, "$%s", CHAR(STRING(names)[i]));
+                        else
+                            sprintf(ptag, "$\"%s\"", CHAR(STRING(names)[i]));
+                    }
                 }
                 else
                 {
@@ -377,7 +383,12 @@ static void printList(SEXP s, SEXP env)
                 if (taglen + strlen(CHAR(PRINTNAME(TAG(s)))) > TAGBUFLEN)
                     sprintf(ptag, "$...");
                 else
-                    sprintf(ptag, "$%s", CHAR(PRINTNAME(TAG(s))));
+                {
+                    if (isValidName(CHAR(PRINTNAME(TAG(s)))))
+                        sprintf(ptag, "$%s", CHAR(PRINTNAME(TAG(s))));
+                    else
+                        sprintf(ptag, "$\"%s\"", CHAR(PRINTNAME(TAG(s))));
+                }
             }
             else
             {
