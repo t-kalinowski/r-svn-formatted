@@ -227,6 +227,8 @@ static int ThreadedReadConsole(char *prompt, char *buf, int len, int addtohistor
         if (lineavailable)
             break;
         doevent();
+        if (R_tcldo)
+            R_tcldo();
     }
     lineavailable = 0;
     /* restore handler  */
