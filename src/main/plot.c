@@ -891,18 +891,18 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
 
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* axis(side, at, labels, tick,
-     *	     line, pos, outer, font, vfont, ...) */
+    /* axis(side, at, labels, tick, line, pos,
+     *      outer, font, vfont, lty, lwd, col, ...) */
 
     SEXP at, lab, vfont;
-    int col, fg, font;
+    int col, font, lty;
     int i, n, nint = 0, ntmp, side, *ind, outer;
     int istart, iend, incr;
     Rboolean dolabels, doticks, logflag = FALSE;
     Rboolean vectorFonts = FALSE;
     double x, y, temp, tnew, tlast;
     double axp[3], usr[2];
-    double gap, labw, low, high, line, pos;
+    double gap, labw, low, high, line, pos, lwd;
     double axis_base, axis_tick, axis_lab, axis_low, axis_high;
 
     SEXP originalArgs = args, label;
@@ -956,7 +956,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     args = CDR(args);
 
-    /* Required argument: "ticks" */
+    /* Required argument: "tick" */
     /* This indicates whether or not ticks and the axis line */
     /* should be plotted: TRUE => show, FALSE => don't show. */
 
@@ -965,10 +965,10 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     /* Optional argument: "line" */
-    /* Specifies an offset outward from the plot for the axis. */
-    /* The values in the par value "mgp" are interpreted */
-    /* relative to this value. */
 
+    /* Specifies an offset outward from the plot for the axis.
+     * The values in the par value "mgp" are interpreted
+     * relative to this value. */
     line = asReal(CAR(args));
     if (!R_FINITE(line))
         line = Rf_gpptr(dd)->mgp[2];
@@ -1004,6 +1004,18 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(vfont = FixupVFont(CAR(args)));
     if (!isNull(vfont))
         vectorFonts = TRUE;
+    args = CDR(args);
+
+    /* Optional argument: "lty" */
+    lty = asInteger(FixupLty(CAR(args), NA_INTEGER));
+    args = CDR(args);
+
+    /* Optional argument: "lwd" */
+    lwd = asReal(FixupLwd(CAR(args), Rf_gpptr(dd)->lwd));
+    args = CDR(args);
+
+    /* Optional argument: "col" */
+    col = asInteger(FixupCol(CAR(args), Rf_gpptr(dd)->fg));
     args = CDR(args);
 
     /* Retrieve relevant "par" values. */
@@ -1080,9 +1092,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     if (n == 0)
         errorcall(call, "no locations are finite");
 
-    /* Ok, all systems are "GO".  Let's get to it. */
-    /* First we process all the inline par values. */
-
+    /* Ok, all systems are "GO".  Let's get to it.
+     * First we process all the remaining inline par values */
     GSavePars(dd);
     ProcessInlinePars(args, dd, call);
 
@@ -1098,12 +1109,10 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         return R_NilValue;
     }
 
-    /* I can't think of a good reason to allow axes with a non-solid line-type,
-     * so I override any value the user may have specified.
-     * This may need to be revisited, but this should
-     * cover 99.99% of the cases. */
-
-    Rf_gpptr(dd)->lty = LTY_SOLID;
+    /* no! we do allow an `lty' argument -- will not be used often though
+     *  Rf_gpptr(dd)->lty = LTY_SOLID; */
+    Rf_gpptr(dd)->lty = lty;
+    Rf_gpptr(dd)->lwd = lwd;
 
     /* Override par("xpd") and force clipping to figure region.
      * NOTE: don't override to _reduce_ clipping region */
@@ -1113,8 +1122,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     Rf_gpptr(dd)->adj = 0.5;
     Rf_gpptr(dd)->font = (font == NA_INTEGER) ? Rf_gpptr(dd)->fontaxis : font;
     Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * Rf_gpptr(dd)->cexaxis;
-    col = Rf_gpptr(dd)->col;
-    fg = Rf_gpptr(dd)->fg;
+    /* no!   col = Rf_gpptr(dd)->col; */
 
     /* Draw the axis */
     GMode(1, dd);
@@ -1149,7 +1157,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (doticks)
         {
-            Rf_gpptr(dd)->col = fg;
+            Rf_gpptr(dd)->col = col; /*was fg */
             GLine(axis_low, axis_base, axis_high, axis_base, NFC, dd);
             for (i = 0; i < n; i++)
             {
@@ -1176,7 +1184,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             axis_lab = -axis_base + GConvertYUnits(Rf_gpptr(dd)->mgp[1], LINES, NFC, dd) + GConvertY(0.0, NPC, NFC, dd);
         }
         else
-        {
+        { /* side == 3 */
             axis_lab = axis_base + GConvertYUnits(Rf_gpptr(dd)->mgp[1], LINES, NFC, dd) - GConvertY(1.0, NPC, NFC, dd);
         }
         axis_lab = GConvertYUnits(axis_lab, NFC, LINES, dd);
@@ -1262,7 +1270,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (doticks)
         {
-            Rf_gpptr(dd)->col = fg;
+            Rf_gpptr(dd)->col = col; /*was fg */
             GLine(axis_base, axis_low, axis_base, axis_high, NFC, dd);
             for (i = 0; i < n; i++)
             {
@@ -1290,7 +1298,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             axis_lab = -axis_base + GConvertXUnits(Rf_gpptr(dd)->mgp[1], LINES, NFC, dd) + GConvertX(0.0, NPC, NFC, dd);
         }
         else
-        {
+        { /* side == 4 */
             axis_lab = axis_base + GConvertXUnits(Rf_gpptr(dd)->mgp[1], LINES, NFC, dd) - GConvertX(1.0, NPC, NFC, dd);
         }
         axis_lab = GConvertXUnits(axis_lab, NFC, LINES, dd);
@@ -3353,6 +3361,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
+#ifdef using_internal_dotplot
 SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, labs, offset, saveargs;
@@ -3374,7 +3383,7 @@ SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args); /* character */
     offset = CAR(args);
     args = CDR(args); /* logical */
-#ifdef NEW
+#ifdef OLD
     colors = CAR(args);
     args = CDR(args); /* integer */
     ltypes = CAR(args);
@@ -3477,6 +3486,7 @@ SEXP do_dotplot(SEXP call, SEXP op, SEXP args, SEXP env)
         recordGraphicOperation(op, saveargs, dd);
     return R_NilValue;
 }
+#endif /* using_internal_dotplot */
 
 SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env)
 {

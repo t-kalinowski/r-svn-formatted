@@ -707,7 +707,7 @@ FUNTAB R_FunTab[] = {
     {"palette", do_palette, 0, 11, 1, PP_FUNCALL},
     {"plot.new", do_plot_new, 0, 111, 0, PP_FUNCALL},
     {"plot.window", do_plot_window, 0, 111, 3, PP_FUNCALL},
-    {"axis", do_axis, 0, 111, 7, PP_FUNCALL},
+    {"axis", do_axis, 0, 111, 12, PP_FUNCALL},
     {"plot.xy", do_plot_xy, 0, 111, 6, PP_FUNCALL},
     {"text", do_text, 0, 111, 7, PP_FUNCALL},
     {"mtext", do_mtext, 0, 111, 5, PP_FUNCALL},
@@ -731,7 +731,7 @@ FUNTAB R_FunTab[] = {
     {"dend.window", do_dendwindow, 0, 111, 6, PP_FUNCALL},
     {"replay", do_replay, 0, 111, 0, PP_FUNCALL},
     {"erase", do_erase, 0, 111, 1, PP_FUNCALL},
-    {"dotplot", do_dotplot, 0, 111, 1, PP_FUNCALL},
+    /*{"dotplot",	do_dotplot,	0,	111,	1,	PP_FUNCALL},*/
     {"persp", do_persp, 0, 111, 4, PP_FUNCALL},
     {"filledcontour", do_filledcontour, 0, 111, 5, PP_FUNCALL},
     /* {"getDL",	do_getDL,	0,	111,	0,	PP_FUNCALL},
