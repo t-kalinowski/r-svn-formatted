@@ -1032,10 +1032,10 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
 
-    checkArity(op, args);
-
     if (DispatchGroup("Math", call, op, args, env, &s))
         return s;
+
+    checkArity(op, args);
 
     if (isComplex(CAR(args)))
         return complex_math1(call, op, args, env);
@@ -1256,7 +1256,10 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 
     case 0:
         return Math2(args, atan2);
-        /*case 1: return Math2(args, prec); */
+    case 10001:
+        return Math2(args, rround);
+    case 10004:
+        return Math2(args, prec);
 
     case 2:
         return Math2(args, lbeta);
@@ -1345,39 +1348,17 @@ SEXP do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
     return s; /* never used; to keep -Wall happy */
 }
 
-SEXP do_round(SEXP call, SEXP op, SEXP args, SEXP env)
+/* The S4 Math2 group, round and signif */
+SEXP do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP a, b;
-    int n;
+    SEXP a;
     if (DispatchGroup("Math", call, op, args, env, &a))
         return a;
-    b = R_NilValue; /* -Wall */
 
-    switch (n = length(args))
-    {
-    case 1:
-        PROTECT(a = CAR(args));
-        PROTECT(b = allocVector(REALSXP, 1));
-        REAL(b)[0] = 0;
-        break;
-    case 2:
-        if (length(CADR(args)) == 0)
-            errorcall(call, "illegal 2nd arg of length 0");
-        PROTECT(a = CAR(args));
-        PROTECT(b = CADR(args));
-        break;
-    default:
-        error("%d arguments passed to \"round\" which requires 1 or 2", n);
-    }
-    if (isComplex(CAR(args)))
-    {
-        args = list2(a, b);
-        a = complex_math2(call, op, args, env);
-    }
-    else
-        a = math2(a, b, rround, call);
-    UNPROTECT(2);
-    return a;
+    checkArity(op, args);
+    if (length(CADR(args)) == 0)
+        errorcall(call, "illegal 2nd arg of length 0");
+    return do_math2(call, op, args, env);
 }
 
 SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -1405,41 +1386,6 @@ SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         error("%d arguments passed to \"log\" which requires 1 or 2", n);
     }
     return s; /* never used; to keep -Wall happy */
-}
-
-SEXP do_signif(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP a, b;
-    int n;
-    if (DispatchGroup("Math", call, op, args, env, &a))
-        return a;
-    b = R_NilValue; /* -Wall */
-
-    switch (n = length(args))
-    {
-    case 1:
-        PROTECT(a = CAR(args));
-        PROTECT(b = allocVector(REALSXP, 1));
-        REAL(b)[0] = 6;
-        break;
-    case 2:
-        if (length(CADR(args)) == 0)
-            errorcall(call, "illegal 2nd arg of length 0");
-        PROTECT(a = CAR(args));
-        PROTECT(b = CADR(args));
-        break;
-    default:
-        error("%d arguments passed to \"signif\" which requires 1 or 2", n);
-    }
-    if (isComplex(CAR(args)))
-    {
-        args = list2(a, b);
-        a = complex_math2(call, op, args, env);
-    }
-    else
-        a = math2(a, b, prec, call);
-    UNPROTECT(2);
-    return a;
 }
 
 /* Mathematical Functions of Three (Real) Arguments */
