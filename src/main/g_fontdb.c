@@ -20,7 +20,7 @@
 /* PAUL MURRELL
    sys-defines.h not used
 */
-// #include "sys-defines.h"
+/* #include "sys-defines.h" */
 
 /* PAUL MURRELL
    extern.h renamed g_extern.h
@@ -277,7 +277,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Added accents for "Oslash" and "oslash"
          */
-         //      0, 0, 0, 0, 0, 0, 0, 0,
+         /*      0, 0, 0, 0, 0, 0, 0, 0, */
          802,
          220,
          0,
@@ -354,7 +354,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "Oslash"
          */
-         //      2015, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0,
+         /*      2015, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0, */
          ACC0,
          ACC1,
          ACC1,
@@ -390,7 +390,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "oslash"
          */
-         //      2115, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0,
+         /*      2115, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0, */
          ACC0,
          ACC0,
          ACC0,
@@ -2708,7 +2708,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Added accents for "Oslash" and "oslash"
          */
-         //      0, 0, 0, 0, 0, 0, 0, 0,
+         /*      0, 0, 0, 0, 0, 0, 0, 0, */
          802,
          220,
          0,
@@ -2785,7 +2785,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "Oslash"
          */
-         //      515, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0,
+         /*      515, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0, */
          ACC0,
          ACC1,
          ACC1,
@@ -2821,7 +2821,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "oslash"
          */
-         //      615, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0,
+         /*      615, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0, */
          ACC0,
          ACC0,
          ACC0,
