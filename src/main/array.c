@@ -1,7 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2003   The R Development Core Team.
+ *  Copyright (C) 1998-2001   The R Development Core Team
+ *  Copyright (C) 2002--2003  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,9 +14,10 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  A copy of the GNU General Public License is available via WWW at
+ *  http://www.gnu.org/copyleft/gpl.html.  You can also obtain it by
+ *  writing to the Free Software Foundation, Inc., 59 Temple Place,
+ *  Suite 330, Boston, MA  02111-1307  USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -26,21 +28,21 @@
 #include <Rmath.h>
 #include <R_ext/RS.h>
 #include <R_ext/Applic.h> /* for dgemm */
-/* "GetRowNames" and "GetColNames" are utility routines which */
-/* locate and return the row names and column names from the */
-/* dimnames attribute of a matrix.  They are useful because */
-/* old versions of R used pair-based lists for dimnames */
-/* whereas recent versions use vector based lists */
 
-/* FIXME : This is nonsense.  When the "dimnames" attribute is */
-/* grabbed off an array it is always adjusted to be a vector. */
+/* "GetRowNames" and "GetColNames" are utility routines which
+ * locate and return the row names and column names from the
+ * dimnames attribute of a matrix.  They are useful because
+ * old versions of R used pair-based lists for dimnames
+ * whereas recent versions use vector based lists.
 
+ * These are now very old, plus
+ * ``When the "dimnames" attribute is
+ *   grabbed off an array it is always adjusted to be a vector.''
+*/
 SEXP GetRowNames(SEXP dimnames)
 {
     if (TYPEOF(dimnames) == VECSXP)
         return VECTOR_ELT(dimnames, 0);
-    else if (TYPEOF(dimnames) == LISTSXP)
-        return CAR(dimnames);
     else
         return R_NilValue;
 }
@@ -49,8 +51,6 @@ SEXP GetColNames(SEXP dimnames)
 {
     if (TYPEOF(dimnames) == VECSXP)
         return VECTOR_ELT(dimnames, 1);
-    else if (TYPEOF(dimnames) == LISTSXP)
-        return CADR(dimnames);
     else
         return R_NilValue;
 }
@@ -519,6 +519,7 @@ static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int 
         }
 #endif
 }
+/* "%*%" (op = 0)  or  crossprod (op = 1) : */
 SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int ldx, ldy, nrx, ncx, nry, ncy, mode;
@@ -616,7 +617,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-    {
+    { /* ldx == ldy == 2 */
         nrx = INTEGER(xdims)[0];
         ncx = INTEGER(xdims)[1];
         nry = INTEGER(ydims)[0];
@@ -688,7 +689,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-    {
+    { /* op == 1: crossprod() */
         PROTECT(ans = allocMatrix(mode, ncx, ncy));
         if (mode == CPLXSXP)
             if (sym)
