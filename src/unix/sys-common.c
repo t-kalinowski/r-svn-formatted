@@ -106,7 +106,7 @@ void R_RestoreGlobalEnv(void)
         case LISTSXP:
             while (img != R_NilValue)
             {
-                setVarInFrame(R_GlobalEnv, TAG(img), CAR(img));
+                defineVar(TAG(img), CAR(img), R_GlobalEnv);
                 img = CDR(img);
             }
             break;
@@ -116,7 +116,7 @@ void R_RestoreGlobalEnv(void)
                 lst = VECTOR(img)[i];
                 while (lst != R_NilValue)
                 {
-                    setVarInFrame(R_GlobalEnv, TAG(lst), CAR(lst));
+                    defineVar(TAG(lst), CAR(lst), R_GlobalEnv);
                     lst = CDR(lst);
                 }
             }
