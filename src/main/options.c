@@ -403,6 +403,18 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
                     errorcall(call, "warn parameter invalid");
                 VECTOR(value)[i] = SetOption(tag, argi);
             }
+            else if (streql(CHAR(namei), "warning.expression"))
+            {
+                if (!isLanguage(argi) && !isExpression(argi))
+                    errorcall(call, "warning.expression parameter invalid");
+                VECTOR(value)[i] = SetOption(tag, argi);
+            }
+            else if (streql(CHAR(namei), "error"))
+            {
+                if (!isLanguage(argi) && !isExpression(argi))
+                    errorcall(call, "error parameter invalid");
+                VECTOR(value)[i] = SetOption(tag, argi);
+            }
             else if (streql(CHAR(namei), "echo"))
             {
                 if (TYPEOF(argi) != LGLSXP || LENGTH(argi) != 1)

@@ -99,7 +99,7 @@ SEXP eval(SEXP e, SEXP rho)
     case ENVSXP:
     case CLOSXP:
     case VECSXP:
-#ifndef OLD
+#ifdef OLD
     case EXPRSXP:
 #endif
         tmp = e;
@@ -157,7 +157,7 @@ SEXP eval(SEXP e, SEXP rho)
         }
         tmp = PRVALUE(e);
         break;
-#ifdef OLD
+#ifndef OLD
     case EXPRSXP: {
         int i, n;
         n = LENGTH(e);
