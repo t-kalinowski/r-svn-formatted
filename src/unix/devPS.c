@@ -91,6 +91,7 @@ static void PS_Text(double, double, int, char *, double, double, double, DevDesc
 static void SetColor(int, DevDesc *);
 static void SetFont(int, int, DevDesc *);
 static void SetLinetype(int, DevDesc *);
+static void SetLinewidth(DevDesc *);
 static int matchfamily(char *name);
 
 /*  PostScript Device Driver Parameters	 */
@@ -529,7 +530,15 @@ static void SetLinetype(int newlty, DevDesc *dd)
         ltyarray[i] = newlty & 15;
         newlty = newlty >> 4;
     }
-    PostScriptSetLineTexture(pd->psfp, ltyarray, i, 0.75 /* dd->gp.lwd */);
+    /* the line texture is scaled by the line width */
+    PostScriptSetLineTexture(pd->psfp, ltyarray, i, dd->gp.lwd * 0.75);
+}
+
+static void SetLinewidth(DevDesc *dd)
+{
+    postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
+
+    PostScriptSetLineWidth(pd->psfp, dd->gp.lwd * 0.75);
 }
 
 static void SetFont(int style, int size, DevDesc *dd)
@@ -662,6 +671,7 @@ static void PS_StartPath(DevDesc *dd)
 
     SetColor(dd->gp.col, dd);
     SetLinetype(dd->gp.lty, dd);
+    SetLineWidth(dd);
     PostScriptStartPath(pd->psfp);
 }
 
@@ -688,6 +698,7 @@ static void PS_Rect(double x0, double y0, double x1, double y1, int coords, int 
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd);
+        SetLinewidth(dd);
         PostScriptOpenRectangle(pd->psfp, x0, y0, x1, y1);
     }
 }
@@ -706,6 +717,7 @@ static void PS_Circle(double x, double y, int coords, double r, int bg, int fg, 
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd);
+        SetLinewidth(dd);
         PostScriptOpenCircle(pd->psfp, x, y, r);
     }
 }
@@ -718,6 +730,7 @@ static void PS_Line(double x1, double y1, double x2, double y2, int coords, DevD
     GConvert(&x2, &y2, coords, DEVICE, dd);
     SetColor(dd->gp.col, dd);
     SetLinetype(dd->gp.lty, dd);
+    SetLinewidth(dd);
     PostScriptStartPath(pd->psfp);
     PostScriptMoveTo(pd->psfp, x1, y1);
     PostScriptLineTo(pd->psfp, x2, y2);
@@ -753,6 +766,7 @@ static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd);
+        SetLinewidth(dd);
         fprintf(pd->psfp, "np\n");
         xx = x[0];
         yy = y[0];
@@ -778,6 +792,7 @@ static void PS_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
     pd = (postscriptDesc *)dd->deviceSpecific;
     SetColor(dd->gp.col, dd);
     SetLinetype(dd->gp.lty, dd);
+    SetLinewidth(dd);
     fprintf(pd->psfp, "np\n");
     xx = x[0];
     yy = y[0];
