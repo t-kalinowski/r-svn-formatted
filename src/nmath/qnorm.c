@@ -39,12 +39,6 @@
 
 #include "Mathlib.h"
 
-/* Mathematical Constants */
-
-#define SIXTEN 1.6                              /* Magic Cutoff */
-#define SQRT32 5.656854249492380195206754896838 /* sqrt(32) */
-#define SQRPI 0.398942280401432677939946059934  /* 1 / sqrt(2 * pi) */
-
 double qnorm(double p, double mu, double sigma)
 {
     double q, r, val;

@@ -44,9 +44,7 @@
 
 /*  Mathematical Constants */
 
-#define SIXTEN 1.6                              /* Magic Cutoff */
-#define SQRT32 5.656854249492380195206754896838 /* sqrt(32) */
-#define SQRPI 0.398942280401432677939946059934  /* 1 / sqrt(2 * pi) */
+#define SIXTEN 1.6 /* Magic Cutoff */
 
 double pnorm(double x, double mu, double sigma)
 {
@@ -119,7 +117,7 @@ double pnorm(double x, double mu, double sigma)
         result = 0.5 + temp;
         ccum = 0.5 - temp;
     }
-    else if (y <= SQRT32)
+    else if (y <= M_SQRT_32)
     {
 
         /* Evaluate pnorm for 0.66291 <= |z| <= sqrt(32) */
@@ -158,7 +156,7 @@ double pnorm(double x, double mu, double sigma)
             xden = (xden + q[i - 1]) * xsq;
         }
         result = xsq * (xnum + p[4]) / (xden + q[4]);
-        result = (SQRPI - result) / y;
+        result = (M_1_SQRT_2PI - result) / y;
         xsq = floor(x * SIXTEN) / SIXTEN;
         del = (x - xsq) * (x + xsq);
         result = exp(-xsq * xsq * 0.5) * exp(-del * 0.5) * result;
