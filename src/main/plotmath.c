@@ -2461,8 +2461,7 @@ static BBOX RenderCurly(SEXP expr, int draw)
  */
 
 /* Binary Relationships */
-
-SymTab RelTable[] = {
+static SymTab RelTable[] = {
     {"<", 60},     /* less */
     {"==", 61},    /* equal */
     {">", 62},     /* greater */
@@ -2854,7 +2853,7 @@ static BBOX RenderOffsetElement(SEXP expr, double x, double y, int draw)
 /* Calculate width of expression */
 /* BBOXes are in INCHES (see MetricUnit) */
 
-void GExpressionBBox(SEXP expr, int units, double *width, double *height, double *depth, DevDesc *dd)
+static void GExpressionBBox(SEXP expr, int units, double *width, double *height, double *depth, DevDesc *dd)
 {
     BBOX bbox;
     MathDevice = dd;

@@ -514,7 +514,7 @@ static void textext(char *str, picTeXDesc *ptd)
 static void PicTeX_Text(double x, double y, int coords, char *str, double rot, DevDesc *dd)
 {
     int size;
-    double xoff = 0.0, yoff = 0.0, xl, yl, xctemp;
+    double xoff = 0.0, yoff = 0.0;
     picTeXDesc *ptd = (picTeXDesc *)dd->deviceSpecific;
 
     size = dd->gp.cex * dd->gp.ps + 0.5;

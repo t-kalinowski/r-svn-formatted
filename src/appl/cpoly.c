@@ -39,7 +39,7 @@
 #endif
 
 #include <float.h>
-#include "Fortran.h"
+#include "Fortran.h" /* for POW_DI */
 #include "Arith.h"
 #include "Applic.h"
 
@@ -48,6 +48,12 @@ static void fxshft(int *, double *, double *, int *);
 static void vrshft(int, double *, double *, int *);
 static void nexth(int *);
 static void noshft(int);
+static void polyev(int *, double *, double *, double *, double *, double *, double *, double *, double *);
+static double errev(int *, double *, double *, double *, double *, double *, double *);
+static double cpoly_cauchy(int *, double *, double *);
+static void cpoly_scale(int *, double *, double *, double *, double *, double *, double *);
+static void cdivid(double *, double *, double *, double *, double *, double *);
+static double cpoly_cmod(double *, double *);
 
 /* Global Variables (too many!) */
 
@@ -72,7 +78,7 @@ static double mre;
 static double eta;
 static double infin;
 
-int cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi, int *fail)
+int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi, int *fail)
 {
     int i__1;
     double d__1, d__2;
@@ -551,7 +557,8 @@ static void nexth(int *bool)
 
 /*--------------------- Independent Complex Polynomial Utilities ----------*/
 
-void polyev(int *nn, double *sr, double *si, double *pr, double *pi, double *qr, double *qi, double *pvr, double *pvi)
+static void polyev(int *nn, double *sr, double *si, double *pr, double *pi, double *qr, double *qi, double *pvr,
+                   double *pvi)
 {
     /* evaluates a polynomial  p  at  s	 by the horner recurrence
      * placing the partial sums in q and the computed value in pv.
@@ -571,7 +578,7 @@ void polyev(int *nn, double *sr, double *si, double *pr, double *pi, double *qr,
     }
 }
 
-double errev(int *nn, double *qr, double *qi, double *ms, double *mp, double *are, double *mre)
+static double errev(int *nn, double *qr, double *qi, double *ms, double *mp, double *are, double *mre)
 {
     /*	bounds the error in evaluating the polynomial by the horner
      *	recurrence.
@@ -592,7 +599,7 @@ double errev(int *nn, double *qr, double *qi, double *ms, double *mp, double *ar
     return e * (*are + *mre) - *mp * *mre;
 }
 
-double cpoly_cauchy(int *nn, double *pt, double *q)
+static double cpoly_cauchy(int *nn, double *pt, double *q)
 {
     /* Computes a lower bound on the moduli of the zeros of a polynomial
      * pt[1:nn] is the modulus of the coefficients.
@@ -654,7 +661,7 @@ double cpoly_cauchy(int *nn, double *pt, double *q)
     return x;
 }
 
-void cpoly_scale(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base, double *fact)
+static void cpoly_scale(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base, double *fact)
 {
     /* Returns a scale factor to multiply the coefficients of the polynomial.
      * The scaling is done to avoid overflow and to avoid
@@ -704,7 +711,7 @@ void cpoly_scale(int *nn, double *pt, double *eta, double *infin, double *smalno
         *fact = 1.0;
 }
 
-void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
+static void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
 {
     /* complex division c = a/b, i.e., (cr +i*ci) = (ar +i*ai) / (br +i*bi),
        avoiding overflow. */
@@ -732,7 +739,7 @@ void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, double *
     }
 }
 
-double cpoly_cmod(double *r, double *i)
+static double cpoly_cmod(double *r, double *i)
 {
     /* modulus of a complex number avoiding overflow. */
     double ai, ar, d1;

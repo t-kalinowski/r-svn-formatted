@@ -261,7 +261,7 @@ void R_set_SaveAction(int sa)
     SaveAction = sa;
 }
 
-void setStartTime(); /* in sys-unix.c */
+void R_setStartTime(); /* in sys-unix.c */
 
 int main(int ac, char **av)
 {
@@ -273,7 +273,7 @@ int main(int ac, char **av)
 
     gc_inhibit_torture = 1;
 #ifdef HAVE_TIMES
-    setStartTime();
+    R_setStartTime();
 #endif
 
     R_DefParams(Rp);

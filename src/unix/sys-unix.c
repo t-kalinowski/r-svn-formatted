@@ -139,7 +139,7 @@ SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 static clock_t StartTime;
 static struct tms timeinfo;
 
-void setStartTime()
+void R_setStartTime()
 {
     StartTime = times(&timeinfo);
 }

@@ -73,9 +73,9 @@ static int g_unit;
 
 /* forward references */
 static bool _composite_char(unsigned char *composite, unsigned char *character, unsigned char *accent);
-void _draw_stroke(DevDesc *dd, bool pendown, double deltax, double deltay);
-double _label_width_hershey(DevDesc *dd, const unsigned short *label);
-void _draw_hershey_string(DevDesc *dd, const unsigned short *string);
+static void _draw_stroke(DevDesc *dd, bool pendown, double deltax, double deltay);
+static double _label_width_hershey(DevDesc *dd, const unsigned short *label);
+static void _draw_hershey_string(DevDesc *dd, const unsigned short *string);
 
 /* _draw_hershey_stroke() draws a stroke, taking into account the
    transformation from Hershey units to user units, and also the current
@@ -86,7 +86,7 @@ void _draw_hershey_string(DevDesc *dd, const unsigned short *string);
    an absolute coordinate system because it does the rotation
 */
 
-void _draw_hershey_stroke(DevDesc *dd, bool pendown, double deltax, double deltay)
+static void _draw_hershey_stroke(DevDesc *dd, bool pendown, double deltax, double deltay)
 {
     _draw_stroke(dd, pendown, GConvertXUnits(HERSHEY_X_UNITS_TO_USER_UNITS(deltax), g_unit, INCHES, dd),
                  GConvertYUnits(HERSHEY_Y_UNITS_TO_USER_UNITS(deltay), g_unit, INCHES, dd));
@@ -99,20 +99,20 @@ void _draw_hershey_stroke(DevDesc *dd, bool pendown, double deltax, double delta
 static double currX;
 static double currY;
 
-void moverel(double dx, double dy)
+static void moverel(double dx, double dy)
 {
     currX += dx;
     currY += dy;
 }
 
-void linerel(double dx, double dy, DevDesc *dd)
+static void linerel(double dx, double dy, DevDesc *dd)
 {
     GLine(currX, currY, currX + dx, currY + dy, INCHES /* g_unit */, dd);
     currX += dx;
     currY += dy;
 }
 
-void _draw_stroke(DevDesc *dd, bool pendown, double deltax, double deltay)
+static void _draw_stroke(DevDesc *dd, bool pendown, double deltax, double deltay)
 {
     double dx, dy;
     double theta;
@@ -169,7 +169,7 @@ double GVStrWidth(const unsigned char *s, int typeface, int fontindex, int unit,
    Added _label_height_hershey and GVStrHeight function
 */
 
-double _label_height_hershey(DevDesc *dd, const unsigned short *label)
+static double _label_height_hershey(DevDesc *dd, const unsigned short *label)
 {
     return (HERSHEY_Y_UNITS_TO_USER_UNITS(HERSHEY_LARGE_CAPHEIGHT));
 }
@@ -212,12 +212,9 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
             double rotation, DevDesc *dd)
 {
     unsigned short *codestring;
-    char x_justify_c, y_justify_c;
     double label_width, label_height;
     double x_offset, y_offset;
     double x_displacement;
-    double postdx, dx, dy;
-    double theta;
     double srtsave, lwdsave;
     int ltysave;
 
@@ -385,7 +382,7 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
 /* _label_width_hershey() computes the width (total delta x) of a
    controlified character string to be rendered in a vector font, in user
    units */
-double _label_width_hershey(DevDesc *dd, const unsigned short *label)
+static double _label_width_hershey(DevDesc *dd, const unsigned short *label)
 {
     const unsigned short *ptr = label;
     unsigned short c;
@@ -542,7 +539,7 @@ double _label_width_hershey(DevDesc *dd, const unsigned short *label)
    specified in Hershey units.  Size scaling and obliquing (true/false) are
    specified.  This is used for repositioning during rendering of
    composite (accented) characters. */
-void _draw_hershey_penup_stroke(DevDesc *dd, double dx, double dy, double charsize, bool oblique)
+static void _draw_hershey_penup_stroke(DevDesc *dd, double dx, double dy, double charsize, bool oblique)
 {
     double shear;
 
@@ -554,7 +551,7 @@ void _draw_hershey_penup_stroke(DevDesc *dd, double dx, double dy, double charsi
 /* _draw_hershey_glyph() invokes move() and cont() to draw a raw Hershey
    glyph, specified by index in the occidental or oriental glyph arrays.
    Size scaling and obliquing (true/false) are specified. */
-void _draw_hershey_glyph(DevDesc *dd, int glyphnum, double charsize, int type, bool oblique)
+static void _draw_hershey_glyph(DevDesc *dd, int glyphnum, double charsize, int type, bool oblique)
 {
     double xcurr, ycurr;
     double xfinal, yfinal;
@@ -615,7 +612,7 @@ void _draw_hershey_glyph(DevDesc *dd, int glyphnum, double charsize, int type, b
 /* _draw_hershey_string() strokes a string beginning at present location,
    which is taken to be on the string's baseline.  Besides invoking move()
    and cont(), it invokes linewidth(). */
-void _draw_hershey_string(DevDesc *dd, const unsigned short *string)
+static void _draw_hershey_string(DevDesc *dd, const unsigned short *string)
 {
     unsigned short c;
     const unsigned short *ptr = string;

@@ -641,7 +641,7 @@ static void handleEvent(XEvent event)
         }
 }
 
-void ProcessEvents(void)
+void R_ProcessEvents(void)
 {
     XEvent event;
     while (displayOpen && XPending(display))
@@ -1272,7 +1272,7 @@ static void X11_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
 /* this is not usually called directly by the graphics	*/
 /* engine because the detection of device resizes	*/
 /* (e.g., a window resize) are usually detected by	*/
-/* device-specific code	(see ProcessEvents in this file)*/
+/* device-specific code	(see R_ProcessEvents in this file)*/
 /********************************************************/
 
 static void X11_Resize(DevDesc *dd)
@@ -1329,7 +1329,7 @@ static void X11_Close(DevDesc *dd)
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
 
     /* process pending events */
-    ProcessEvents();
+    R_ProcessEvents();
 
     XFreeCursor(display, xd->gcursor);
     XFreeGC(display, xd->wgc);
@@ -1669,7 +1669,7 @@ static int X11_Locator(double *x, double *y, DevDesc *dd)
     DevDesc *ddEvent;
     caddr_t temp;
     int done = 0;
-    ProcessEvents(); /* discard pending events */
+    R_ProcessEvents(); /* discard pending events */
     XSync(display, 1);
     /* handle X events as normal until get a button */
     /* click in the desired device */
@@ -1877,7 +1877,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
 
     dd->displayListOn = 1;
 
-    ProcessEvents();
+    R_ProcessEvents();
 
     return 1;
 }

@@ -351,7 +351,7 @@ SEXP FixupVFont(SEXP vfont)
     {
         SEXP vf;
         int typeface, fontindex;
-        int minindex, maxindex;
+        int minindex, maxindex = 0; /* -Wall*/
         int i;
         PROTECT(vf = coerceVector(vfont, INTSXP));
         if (length(vf) != 2)
