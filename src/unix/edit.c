@@ -33,7 +33,7 @@
 #include <stdio.h>
 #ifdef Win32
 #include "run.h"
-int Rgui_Edit(char *filename);
+int Rgui_Edit(char *filename, char *title, int modal);
 #endif
 
 #ifdef HAVE_AQUA
@@ -88,8 +88,8 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i, rc;
     ParseStatus status;
-    SEXP x, fn, envir, ed, t;
-    char *filename, *editcmd, *vmaxsave, *cmd;
+    SEXP x, fn, envir, ti, ed, t;
+    char *filename, *title, *editcmd, *vmaxsave, *cmd;
     FILE *fp;
 
     checkArity(op, args);
@@ -97,13 +97,15 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     vmaxsave = vmaxget();
 
     x = CAR(args);
+    args = CDR(args);
     if (TYPEOF(x) == CLOSXP)
         envir = CLOENV(x);
     else
         envir = R_NilValue;
     PROTECT(envir);
 
-    fn = CADR(args);
+    fn = CAR(args);
+    args = CDR(args);
     if (!isString(fn))
         error("invalid argument to edit()");
 
@@ -128,8 +130,9 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
             fprintf(fp, "%s\n", CHAR(STRING_ELT(t, i)));
         fclose(fp);
     }
-
-    ed = CAR(CDDR(args));
+    ti = CAR(args);
+    args = CDR(args);
+    ed = CAR(args);
     if (!isString(ed))
         errorcall(call, "argument `editor' type not valid");
     cmd = CHAR(STRING_ELT(ed, 0));
@@ -139,7 +142,19 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
     if (!strcmp(cmd, "internal"))
     {
-        Rgui_Edit(filename);
+        if (!isString(ti))
+            error("title must be a string");
+        if (LENGTH(STRING_ELT(ti, 0)) > 0)
+        {
+            title = R_alloc(strlen(CHAR(STRING_ELT(ti, 0))), sizeof(char));
+            strcpy(title, CHAR(STRING_ELT(ti, 0)));
+        }
+        else
+        {
+            title = R_alloc(strlen(filename), sizeof(char));
+            strcpy(title, filename);
+        }
+        Rgui_Edit(filename, title, 1);
     }
     else
     {

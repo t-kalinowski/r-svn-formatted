@@ -532,7 +532,7 @@ int internal_ShowFile(char *file, char *header)
  *     editor  = editor to be used.
  */
 
-int R_EditFiles(int nfile, char **file, char *editor)
+int R_EditFiles(int nfile, char **file, char **title, char *editor)
 {
     int i;
     char buf[1024];
@@ -545,7 +545,7 @@ int R_EditFiles(int nfile, char **file, char *editor)
         {
             if (!strcmp(editor, "internal"))
             {
-                Rgui_Edit(file[i], 0);
+                Rgui_Edit(file[i], title[i], 0);
             }
             else
             {
