@@ -132,9 +132,9 @@ OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
 static DllInfo baseDll;
 #endif
 
-void R_addCRoutine(DllInfo *info, R_CMethodDef *croutine, Rf_DotCSymbol *sym);
-void R_addCallRoutine(DllInfo *info, R_CallMethodDef *croutine, Rf_DotCallSymbol *sym);
-void R_addFortranRoutine(DllInfo *info, R_FortranMethodDef *croutine, Rf_DotFortranSymbol *sym);
+void R_addCRoutine(DllInfo *info, const R_CMethodDef *const croutine, Rf_DotCSymbol *sym);
+void R_addCallRoutine(DllInfo *info, const R_CallMethodDef *const croutine, Rf_DotCallSymbol *sym);
+void R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym);
 
 /*
  Returns a reference to the DllInfo object associated with the dynamic library
@@ -163,8 +163,8 @@ DllInfo *R_getDllInfo(const char *path)
   that makes a call to this routine, rather than the usual dynamic resolution
   done by dlsym() or the equivalent on the different platforms.
  */
-int R_registerRoutines(DllInfo *info, R_CMethodDef *croutines, R_CallMethodDef *callRoutines,
-                       R_FortranMethodDef *fortranRoutines)
+int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const R_CallMethodDef *const callRoutines,
+                       const R_FortranMethodDef *const fortranRoutines)
 {
     int i, num;
 
@@ -217,21 +217,21 @@ int R_registerRoutines(DllInfo *info, R_CMethodDef *croutines, R_CallMethodDef *
     return (1);
 }
 
-void R_addFortranRoutine(DllInfo *info, R_FortranMethodDef *croutine, Rf_DotFortranSymbol *sym)
+void R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
     sym->numArgs = croutine->numArgs > -1 ? croutine->numArgs : -1;
 }
 
-void R_addCRoutine(DllInfo *info, R_CMethodDef *croutine, Rf_DotCSymbol *sym)
+void R_addCRoutine(DllInfo *info, const R_CMethodDef *const croutine, Rf_DotCSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
     sym->numArgs = croutine->numArgs > -1 ? croutine->numArgs : -1;
 }
 
-void R_addCallRoutine(DllInfo *info, R_CallMethodDef *croutine, Rf_DotCallSymbol *sym)
+void R_addCallRoutine(DllInfo *info, const R_CallMethodDef *const croutine, Rf_DotCallSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
