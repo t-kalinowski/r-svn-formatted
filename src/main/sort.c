@@ -304,7 +304,7 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     decreasing = asLogical(CADR(args));
     if (decreasing == NA_LOGICAL)
-        error("`decreasing' is invalid");
+        error("`decreasing' must be TRUE or FALSE");
     if (CAR(args) == R_NilValue)
         return R_NilValue;
     if (!isVectorAtomic(CAR(args)))
@@ -825,7 +825,7 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     decreasing = asLogical(CAR(args));
     if (decreasing == NA_LOGICAL)
-        error("`decreasing' is invalid");
+        error("`decreasing' must be TRUE or FALSE");
     args = CDR(args);
     if (args == R_NilValue)
         return R_NilValue;
