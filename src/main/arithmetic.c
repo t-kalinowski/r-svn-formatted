@@ -166,16 +166,21 @@ int R_IsNaNorNA(double x)
 int R_finite(double x)
 {
 #ifdef Macintosh
+    /* FIXME: merge with generic isfinite case */
     return isfinite(x);
 #endif
 #ifdef HAVE_WORKING_FINITE
     return finite(x);
+#else
+#ifdef HAVE_ISFINITE_IN_MATH_H
+    return isfinite(x);
 #else
 #ifdef _AIX
 #include <fp.h>
     return FINITE(x);
 #else
     return (!isnan(x) & (x != R_PosInf) & (x != R_NegInf));
+#endif
 #endif
 #endif
 }
