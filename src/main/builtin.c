@@ -239,7 +239,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
         savefp = R_Outputfile;
         if (pfile[0] == '|')
         {
-#if defined(Win32) || defined(NO_POPEN)
+#ifndef HAVE_POPEN
             error("file = \"|cmd\" is not implemented in this version");
 #else
             R_Outputfile = popen(pfile + 1, "w");
