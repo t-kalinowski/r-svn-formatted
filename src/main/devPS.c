@@ -775,7 +775,7 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
     {
         free(dd);
         free(pd);
-        error("invalid page type (postscript)");
+        error("invalid page type `%s' (postscript)", pd->papername);
     }
     pd->pagecentre = pagecentre;
     pd->paperwidth = 72 * pd->pagewidth;
