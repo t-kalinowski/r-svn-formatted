@@ -507,7 +507,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
     double xStart, yStart;
     double dx, dy, dxy;
     double labelHeight;
-    SEXP label1 = allocVector(REALSXP, 8);
+    SEXP label1 = PROTECT(allocVector(REALSXP, 8));
     SEXP label2;
     SEXP lab;
     int gotLabel = 0;
@@ -1004,7 +1004,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 
                             FindCorners(labelDistance, labelHeight, label2, xxx[index], yyy[index], xxx[index + range],
                                         yyy[index + range], dd);
-                            labelList = CONS(label2, labelList);
+                            UNPROTECT_PTR(labelList);
+                            labelList = PROTECT(CONS(label2, labelList));
 
                             ddl = 0;
                             /* draw an extra bit of segment if the label
@@ -1088,6 +1089,9 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 C_free((char *)yyy);
             }
         }
+    UNPROTECT_PTR(label1); /* pwwwargh! This is messy, but last thing
+                  protected is likely labelList, and that needs
+                  to be preserved across calls */
 }
 
 /* contour(x,y,z, levels, col, lty) */
@@ -1245,7 +1249,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     colsave = dd->gp.col;
     lwdsave = dd->gp.lwd;
     cexsave = dd->gp.cex;
-    labelList = R_NilValue;
+    labelList = PROTECT(R_NilValue);
     GMode(1, dd);
     for (i = 0; i < nc; i++)
     {
@@ -1270,7 +1274,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     dd->gp.col = colsave;
     dd->gp.lwd = lwdsave;
     dd->gp.cex = cexsave;
-    UNPROTECT(4);
+    UNPROTECT(5);
     /* NOTE: only record operation if no "error"  */
     /* NOTE: on replay, call == R_NilValue */
     if (call != R_NilValue)

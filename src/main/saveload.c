@@ -1778,7 +1778,7 @@ static void OutStringAscii(FILE *fp, char *x)
                 fprintf(fp, "\\\"");
                 break;
             default:
-                fprintf(fp, "\\%o", x[i]);
+                fprintf(fp, "\\%03o", x[i]);
                 break;
             }
         }
