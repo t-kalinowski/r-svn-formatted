@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka
+ *  Copyright (C) 1997--2003  Robert Gentleman, Ross Ihaka
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -717,7 +717,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
     {
         if (pager == NULL || strlen(pager) == 0)
             pager = "more";
-        filename = R_tmpnam(NULL);
+        filename = R_tmpnam(NULL, R_TempDir);
         if ((tfp = fopen(filename, "w")) != NULL)
         {
             for (i = 0; i < nfile; i++)

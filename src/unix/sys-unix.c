@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka
+ *  Copyright (C) 1997--2003  Robert Gentleman, Ross Ihaka
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -300,14 +300,14 @@ void InitTempDir()
     }
 }
 
-char *R_tmpnam(const char *prefix)
+char *R_tmpnam(const char *prefix, const char *tempdir)
 {
     char tm[PATH_MAX], tmp1[PATH_MAX], *res;
     unsigned int n, done = 0;
 
     if (!prefix)
         prefix = ""; /* NULL */
-    strcpy(tmp1, R_TempDir);
+    strcpy(tmp1, tempdir);
     for (n = 0; n < 100; n++)
     {
         /* try a random number at the end */

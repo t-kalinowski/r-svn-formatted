@@ -1,7 +1,7 @@
 /*
   R : A Computer Language for Statistical Data Analysis
   Copyright (C) 1995-1996   Robert Gentleman and Ross Ihaka
-  Copyright (C) 1997-2002   Robert Gentleman, Ross Ihaka
+  Copyright (C) 1997-2003   Robert Gentleman, Ross Ihaka
                             and the R Development Core Team
 
   This program is free software; you can redistribute it and/or modify
@@ -850,21 +850,34 @@ SEXP do_tempdir(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans;
-    char *tn, *tm;
-    int i, slen = 0 /* -Wall */;
+    SEXP ans, pattern, tempdir;
+    char *tn, *td, *tm;
+    int i, n1, n2, slen;
 
     checkArity(op, args);
-    if (!isString(CAR(args)) || (slen = LENGTH(CAR(args))) < 1)
-        errorcall(call, "invalid file name argument");
+    pattern = CAR(args);
+    n1 = length(pattern);
+    tempdir = CADR(args);
+    n2 = length(tempdir);
+    if (!isString(pattern))
+        errorcall(call, "invalid filename pattern");
+    if (!isString(tempdir))
+        errorcall(call, "invalid tempdir");
+    if (n1 < 1)
+        errorcall(call, "no patterns");
+    if (n2 < 1)
+        errorcall(call, "no tempdir");
+    slen = (n1 > n2) ? n1 : n2;
     PROTECT(ans = allocVector(STRSXP, slen));
     for (i = 0; i < slen; i++)
     {
-        tn = CHAR(STRING_ELT(CAR(args), i));
+        tn = CHAR(STRING_ELT(pattern, i % n1));
+        td = CHAR(STRING_ELT(tempdir, i % n2));
         /* try to get a new file name */
-        tm = R_tmpnam(tn);
+        tm = R_tmpnam(tn, td);
         SET_STRING_ELT(ans, i, mkChar(tm));
-        free(tm);
+        if (tm)
+            free(tm);
     }
     UNPROTECT(1);
     return (ans);
