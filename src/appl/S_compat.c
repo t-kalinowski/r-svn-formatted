@@ -39,6 +39,8 @@ void F77_NAME(dqrdca)(double *x, longint *ldx, longint *n, longint *p, double *q
     F77_NAME(dqrdc2)(x, ldx, n, p, tol, rank, qraux, jpvt, work);
 }
 
+/* Changed 99/08/17 by BDR: rhs is rhs(ldx, nrhs) in S */
+
 void F77_NAME(dbksl)(double *x, longint *ldx, longint *n, double *rhs, longint *nrhs, longint *info)
 { /* solve multiple right hand sides on
      upper triangular system of equations */
@@ -50,6 +52,6 @@ void F77_NAME(dbksl)(double *x, longint *ldx, longint *n, double *rhs, longint *
         F77_NAME(dtrsl)(x, ldx, n, rhs, &job, info);
         if (*info)
             return;
-        rhs += *n;
+        rhs += *ldx;
     }
 }
