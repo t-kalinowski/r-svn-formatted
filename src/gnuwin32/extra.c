@@ -857,7 +857,7 @@ static void cleanup()
 static void cancel(button b)
 {
     strcpy(selected, "");
-    done = 1;
+    done = 2;
 }
 
 static void finish(button b)
@@ -927,13 +927,20 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (multiple)
     {
-        for (i = 0; i < n; i++)
-            if (isselected(f_list, i))
-                nsel++;
-        PROTECT(ans = allocVector(STRSXP, nsel));
-        for (i = 0, j = 0; i < n; i++)
-            if (isselected(f_list, i))
-                SET_STRING_ELT(ans, j++, mkChar(clist[i]));
+        if (done == 1)
+        { /* Finish */
+            for (i = 0; i < n; i++)
+                if (isselected(f_list, i))
+                    nsel++;
+            PROTECT(ans = allocVector(STRSXP, nsel));
+            for (i = 0, j = 0; i < n; i++)
+                if (isselected(f_list, i))
+                    SET_STRING_ELT(ans, j++, mkChar(clist[i]));
+        }
+        else
+        { /* cancel */
+            PROTECT(ans = allocVector(STRSXP, 0));
+        }
     }
     else
     {

@@ -51,7 +51,7 @@ int RguiMDI = RW_MDI | RW_TOOLBAR | RW_STATUSBAR;
 int MDIset = 0;
 static window RFrame;
 #endif
-extern int ConsoleAcceptCmd;
+extern int ConsoleAcceptCmd, R_is_running;
 static menubar RMenuBar;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mcopy, mcopypaste, mlazy, mconfig,
     mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mapropos, mhelpstart, mFAQ, mrwFAQ,
@@ -100,18 +100,12 @@ static void menudisplay(control m)
 {
     char *fn;
 
-    if (!ConsoleAcceptCmd)
-        return;
     setuserfilter("All files (*.*)\0*.*\0\0");
     fn = askfilename("Select file to show", "");
     show(RConsole);
     if (fn)
     {
         fixslash(fn);
-        /*	sprintf(cmd,
-                "file.show(\"%s\", title=\"File\", header=\"%s\")",
-                fn, fn);
-                consolecmd(RConsole, cmd);*/
         internal_ShowFile(fn, fn);
     }
 }
@@ -154,8 +148,6 @@ static void menuloadhistory(control m)
 {
     char *fn;
 
-    if (!ConsoleAcceptCmd)
-        return;
     setuserfilter("All files (*.*)\0*.*\0\0");
     fn = askfilename("Load history from", R_HistoryFile);
     show(RConsole);
@@ -170,8 +162,6 @@ static void menusavehistory(control m)
 {
     char *fn;
 
-    if (!ConsoleAcceptCmd)
-        return;
     setuserfilter("All files (*.*)\0*.*\0\0");
     fn = askfilesave("Save history in", R_HistoryFile);
     show(RConsole);
@@ -429,13 +419,20 @@ static void menuabout(control m)
     show(RConsole);
 }
 
-/* some menu command can be issued only if R is waiting for input */
+/* some menu commands can be issued only if R is waiting for input */
 static void menuact(control m)
 {
     if (consolegetlazy(RConsole))
         check(mlazy);
     else
         uncheck(mlazy);
+
+    /* dispaly needs pager set */
+    if (R_is_running)
+        enable(mdisplay);
+    else
+        disable(mdisplay);
+
     if (ConsoleAcceptCmd)
     {
         enable(msource);
@@ -451,21 +448,7 @@ static void menuact(control m)
         enable(mpkgil);
         enable(mpkgu);
     }
-    if (consolecancopy(RConsole))
-    {
-        enable(mcopy);
-        enable(mcopypaste);
-    }
     else
-    {
-        disable(mcopy);
-        disable(mcopypaste);
-    }
-    if (consolecanpaste(RConsole))
-        enable(mpaste);
-    else
-        disable(mpaste);
-    if (!ConsoleAcceptCmd)
     {
         disable(msource);
         disable(mload);
@@ -480,6 +463,23 @@ static void menuact(control m)
         disable(mpkgil);
         disable(mpkgu);
     }
+
+    if (consolecancopy(RConsole))
+    {
+        enable(mcopy);
+        enable(mcopypaste);
+    }
+    else
+    {
+        disable(mcopy);
+        disable(mcopypaste);
+    }
+
+    if (consolecanpaste(RConsole))
+        enable(mpaste);
+    else
+        disable(mpaste);
+
     draw(RMenuBar);
 }
 
