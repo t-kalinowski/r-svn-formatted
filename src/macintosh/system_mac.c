@@ -57,6 +57,7 @@ int pclose(FILE *fp)
 #endif
 
 void R_Suicide(char *s);
+void GetSysVersion(void);
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -154,9 +155,11 @@ extern SInt32 systemVersion;
 
 int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 {
+#ifndef __MRC__
     if (fileno(stdin) > 1)
         return (FileReadConsole(prompt, buf, len, addtohistory));
     else
+#endif
         R_ReadConsole1(prompt, buf, len, addtohistory);
 
     buf[strlen((char *)buf) - 1] = '\n';
@@ -192,9 +195,11 @@ static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
 
 void R_WriteConsole(char *buf, int len)
 {
+#ifndef __MRC__
     if (fileno(stdout) > 1)
         fputs(buf, stdout);
     else
+#endif
         R_WriteConsole1(buf, len);
 }
 
@@ -209,16 +214,20 @@ void R_ResetConsole()
 
 void R_FlushConsole()
 {
+#ifndef __MRC__
     if (fileno(stdin) > 1)
         fflush(stdin);
+#endif
 }
 
 /* Clear Console EOF */
 
 void R_ClearerrConsole()
 {
+#ifndef __MRC__
     if (fileno(stdin) > 1)
         clearerr(stdin);
+#endif
 }
 
 /*--- File Handling Code ---*/
@@ -270,6 +279,12 @@ FILE *R_OpenInitFile(void)
             return fp;
     }
     return fp;
+}
+
+void GetSysVersion(void)
+{
+    Gestalt(gestaltSystemVersion, &systemVersion);
+    systemVersion = (systemVersion << 16) | 0x8000;
 }
 
 /* R_OpenFile
@@ -399,19 +414,27 @@ int Mac_initialize_R(int ac, char **av)
     Rstart Rp = &rstart;
     OSErr err;
 
+    GetSysVersion();
     GetHomeLocation(); /* should stay here because getenv depends on this */
     if ((R_Home = R_HomeDir()) == NULL)
         R_Suicide("R home directory is not defined");
 
     if ((err = Initialize()) == noErr)
     {
+
         gAppResFileRefNum = CurResFile();
+
         doGetPreferences();
+
+#ifndef __MRC__
         if ((fileno(stdin) == 0) || (fileno(stdout) == 1))
         {
+#endif
             DoNew(true);
             Console_Window = FrontWindow();
+#ifndef __MRC__
         }
+#endif
     }
     else
         return (1);
@@ -455,7 +478,8 @@ int Mac_initialize_R(int ac, char **av)
     if (!Rp->NoRenviron)
         process_user_Renviron();
 
-    /* On Unix the console is a file; we just use stdio to write on it */
+        /* On Unix the console is a file; we just use stdio to write on it */
+#ifndef __MRC__
     if (fileno(stdin) > 1)
     {
         R_Consolefile = stdout;
@@ -464,14 +488,17 @@ int Mac_initialize_R(int ac, char **av)
     }
     else
     {
+#endif
         R_Interactive = TRUE; /* On the Mac we must be interactive */
         Rp->R_Interactive = R_Interactive;
         R_Consolefile = NULL; /* We get the input from the GUI console*/
+#ifndef __MRC__
     }
 
     if (fileno(stdout) > 1)
         R_Outputfile = stdout; /* We send output to the file specified by the user */
     else
+#endif
         R_Outputfile = NULL; /* We send the output to the GUI console*/
 
     //  R_Sinkfile = NULL;		/* We begin writing to the console. */
@@ -524,8 +551,10 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
         saveact = SaveAction;
 
+#ifndef __MRC__
     if (fileno(stdin) > 1)
         R_Interactive = false;
+#endif
 
     if (saveact == SA_SAVEASK)
     {
