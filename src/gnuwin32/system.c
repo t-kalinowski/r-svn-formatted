@@ -464,7 +464,11 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, int del, c
                 }
                 else
                 {
-                    sprintf(buf, "%s  \"%s\"", pager, file[i]);
+                    /* Quote path if necessary */
+                    if (pager[0] != '"' && strchr(pager, ' '))
+                        sprintf(buf, "\"%s\" \"%s\"", pager, file[i]);
+                    else
+                        sprintf(buf, "%s \"%s\"", pager, file[i]);
                     runcmd(buf, 0, 1, "");
                 }
             }
