@@ -408,7 +408,7 @@ SEXP do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
 {
     SEXP class, dims, tsp, xnames, ynames, val;
-    int mismatch, nx, ny, xarray, yarray, xts, yts;
+    int mismatch = 0, nx, ny, xarray, yarray, xts, yts;
     int xattr, yattr;
     SEXP lcall = call;
     PROTECT_INDEX xpi, ypi;
@@ -440,7 +440,9 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         yarray = yts = yattr = FALSE;
 
     /* If either x or y is a matrix with length 1 and the other is a
-       vector, we want to coerce the matrix to be a vector. */
+       vector, we want to coerce the matrix to be a vector.
+       Do we want to?  We don't do it!  BDR 2004-03-06
+    */
 
     /* FIXME: Danger Will Robinson.
      * -----  We might be trashing arguments here.
@@ -460,7 +462,6 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         }
     }
 
-    mismatch = 0;
     if (xarray || yarray)
     {
         if (xarray && yarray)
@@ -495,15 +496,6 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
     }
     else
     {
-        if (nx == ny || nx == 1 || ny == 1)
-            mismatch = 0;
-        else if (nx > 0 && ny > 0)
-        {
-            if (nx > ny)
-                mismatch = nx % ny;
-            else
-                mismatch = ny % nx;
-        }
         dims = R_NilValue;
         if (xattr)
         {
@@ -519,6 +511,15 @@ SEXP R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         }
         else
             ynames = R_NilValue;
+    }
+    if (nx == ny || nx == 1 || ny == 1)
+        mismatch = 0;
+    else if (nx > 0 && ny > 0)
+    {
+        if (nx > ny)
+            mismatch = nx % ny;
+        else
+            mismatch = ny % nx;
     }
 
     if (xts || yts)

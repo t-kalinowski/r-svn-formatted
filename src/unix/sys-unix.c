@@ -223,7 +223,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; fgets(buf, INTERN_BUFSIZE, fp); i++)
         {
             read = strlen(buf);
-            if (read < INTERN_BUFSIZE)
+            if (read > 0 && buf[read - 1] == '\n')
                 buf[read - 1] = '\0'; /* chop final CR */
             tchar = mkChar(buf);
             UNPROTECT(1);
