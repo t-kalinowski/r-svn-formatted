@@ -504,8 +504,8 @@ static double **Lmatrix(int n)
 in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
 converted by p2c then re-crafted by B.D. Ripley */
 
-static void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int maxit, int trace, int *mask,
-                  double abstol, double reltol, int nREPORT, void *ex, int *fncount, int *grcount, int *fail)
+void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int maxit, int trace, int *mask,
+           double abstol, double reltol, int nREPORT, void *ex, int *fncount, int *grcount, int *fail)
 {
     Rboolean accpoint, enough;
     double *g, *t, *X, *c, **B;
@@ -677,8 +677,8 @@ static void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fming
 #define big 1.0e+35 /*a very large number*/
 
 /* Nelder-Mead */
-static void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fail, double abstol, double intol,
-                  void *ex, double alpha, double beta, double gamm, int trace, int *fncount, int maxit)
+void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fail, double abstol, double intol,
+           void *ex, double alpha, double beta, double gamm, int trace, int *fncount, int maxit)
 {
     char action[50];
     int C;
@@ -912,8 +912,8 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, 
     *fncount = funcount;
 }
 
-static void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr fmingr, int *fail,
-                  double abstol, double intol, void *ex, int type, int trace, int *fncount, int *grcount, int maxit)
+void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr fmingr, int *fail, double abstol,
+           double intol, void *ex, int type, int trace, int *fncount, int *grcount, int maxit)
 {
     Rboolean accpoint;
     double *c, *g, *t;
@@ -1107,9 +1107,9 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, 
     *grcount = gradcount;
 }
 
-static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, optimfn fminfn,
-                   optimgr fmingr, int *fail, void *ex, double factr, double pgtol, int *fncount, int *grcount,
-                   int maxit, char *msg, int trace, int nREPORT)
+void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, optimfn fminfn, optimgr fmingr,
+            int *fail, void *ex, double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg,
+            int trace, int nREPORT)
 {
     char task[60];
     double f, *g, dsave[29], *wa;
@@ -1204,7 +1204,7 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
 #define E1 1.7182818 /* exp(1.0)-1.0 */
 #define STEPS 100
 
-static void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, double ti, int trace, void *ex)
+void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, double ti, int trace, void *ex)
 
 /* Given a starting point pb[0..n-1], simulated annealing minimization
    is performed on the function fminfn. The starting temperature
