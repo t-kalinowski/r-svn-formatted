@@ -20,6 +20,7 @@ static gint delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 void R_gtk_terminal_new()
 {
     GtkWidget *table;
+    GtkWidget *frame;
     GtkWidget *vscrollbar;
 
     GtkStyle *textstyle;
@@ -91,6 +92,9 @@ void R_gtk_terminal_new()
     R_gtk_editfiles = NULL;
 
     R_gtk_gui_quit = FALSE;
+
+    /* Initialise the find code */
+    R_gtk_terminal_find_init();
 
     /* finish up */
     return;
