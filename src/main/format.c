@@ -266,7 +266,6 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     {
         if (!R_FINITE(x[i]))
         {
-#ifdef IEEE_754
             if (ISNA(x[i]))
                 naflag = 1;
             else if (ISNAN(x[i]))
@@ -275,9 +274,6 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
                 posinf = 1;
             else
                 neginf = 1;
-#else
-            naflag = 1;
-#endif
         }
         else
         {
@@ -338,14 +334,12 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     } /* else : "E" Exponential format -- all done above */
     if (naflag && *m < R_print.na_width)
         *m = R_print.na_width;
-#ifdef IEEE_754
     if (nanflag && *m < 3)
         *m = 3;
     if (posinf && *m < 3)
         *m = 3;
     if (neginf && *m < 4)
         *m = 4;
-#endif
 }
 
 void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei)
@@ -357,20 +351,16 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
     int neg, sgn;
     int i, kpower, nsig;
     int naflag;
-#ifdef IEEE_754
     int rnanflag, rposinf, rneginf, inanflag, iposinf;
-#endif
 
     eps = pow(10.0, -(double)R_print.digits);
 
     naflag = 0;
-#ifdef IEEE_754
     rnanflag = 0;
     rposinf = 0;
     rneginf = 0;
     inanflag = 0;
     iposinf = 0;
-#endif
     neg = 0;
 
     rt = mxl = mxsl = mxns = INT_MIN;
@@ -389,7 +379,6 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
 
             /* real part */
 
-#ifdef IEEE_754
             if (!R_FINITE(x[i].r))
             {
                 if (ISNAN(x[i].r))
@@ -400,7 +389,6 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
                     rneginf = 1;
             }
             else
-#endif
             {
                 scientific(&(x[i].r), &sgn, &kpower, &nsig);
 
@@ -426,7 +414,6 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
             /* this is always unsigned */
             /* we explicitly put the sign in when we print */
 
-#ifdef IEEE_754
             if (!R_FINITE(x[i].i))
             {
                 if (ISNAN(x[i].i))
@@ -435,7 +422,6 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
                     iposinf = 1;
             }
             else
-#endif
             {
                 scientific(&(x[i].i), &sgn, &kpower, &nsig);
 
@@ -489,14 +475,12 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
         *mr = 0;
         *nr = 0;
     }
-#ifdef IEEE_754
     if (rnanflag && *mr < 3)
         *mr = 3;
     if (rposinf && *mr < 3)
         *mr = 3;
     if (rneginf && *mr < 4)
         *mr = 4;
-#endif
 
     /* overall format for imaginary part */
 
@@ -527,12 +511,10 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
         *mi = 0;
         *ni = 0;
     }
-#ifdef IEEE_754
     if (inanflag && *mi < 3)
         *mi = 3;
     if (iposinf && *mi < 3)
         *mi = 3;
-#endif
     if (*mr < 0)
         *mr = 0;
     if (*mi < 0)
