@@ -275,7 +275,7 @@ void periodic_spline(int n, double *x, double *y, double *b, double *c, double *
 
     B[1] = x[2] - x[1];
     B[nm1] = x[n] - x[nm1];
-    A[1] = 2.0 * (B[1] + (x[nm1] - x[n - 2]));
+    A[1] = 2.0 * (B[1] + B[nm1]);
     C[1] = (y[2] - y[1]) / B[1] - (y[n] - y[nm1]) / B[nm1];
 
     for (i = 2; i < n; i++)
@@ -321,17 +321,14 @@ void periodic_spline(int n, double *x, double *y, double *b, double *c, double *
 
 #define X c
 
-    /*
-      X[nm1] = -Y[nm1]/L[nm1];
-      X[nm1-1] = -(Y[nm1-1] + M[nm1-1] * X[nm1])/L[nm1-1];
-      for(i=nm1-2 ; i>=1 ; i--)
-      X[i] = -(Y[i] + M[i] * X[i+1] + E[i] * X[nm1])/L[i];
-    */
-
     X[nm1] = Y[nm1] / L[nm1];
     X[nm1 - 1] = (Y[nm1 - 1] - M[nm1 - 1] * X[nm1]) / L[nm1 - 1];
     for (i = nm1 - 2; i >= 1; i--)
         X[i] = (Y[i] - M[i] * X[i + 1] - E[i] * X[nm1]) / L[i];
+
+    /* Wrap around */
+
+    X[n] = X[1];
 
     /* Compute polynomial coefficients */
 
