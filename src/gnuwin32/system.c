@@ -661,7 +661,7 @@ int cmdlineoptions(int ac, char **av)
     structRstart rstart;
     Rstart Rp = &rstart;
     MEMORYSTATUS ms;
-    Rboolean usedRdata = FALSE;
+    Rboolean usedRdata = FALSE, processing = TRUE;
 
     /* ensure R_Home gets set early: we are in rgui or rterm here */
     R_Home = getRHOME();
@@ -758,7 +758,7 @@ int cmdlineoptions(int ac, char **av)
 
     while (--ac)
     {
-        if (**++av == '-')
+        if (processing && **++av == '-')
         {
             if (!strcmp(*av, "--no-environ"))
             {
@@ -816,11 +816,14 @@ int cmdlineoptions(int ac, char **av)
                 else
                     R_max_memory = value;
             }
+            else if (!strcmp(*av, "--args"))
+            {
+                break;
+            }
             else
             {
                 snprintf(s, 1024, "WARNING: unknown option %s\n", *av);
                 R_ShowMessage(s);
-                break;
             }
         }
         else

@@ -464,17 +464,24 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
     int ierr;
     R_size_t value;
     char *p, **av = argv, msg[1024];
+    Rboolean processing = TRUE;
 
     R_RestoreHistory = 1;
     while (--ac)
     {
-        if (**++av == '-')
+        if (processing && **++av == '-')
         {
             if (!strcmp(*av, "--version"))
             {
                 PrintVersion(msg);
                 R_ShowMessage(msg);
                 exit(0);
+            }
+            else if (!strcmp(*av, "--args"))
+            {
+                /* copy this through for further processing */
+                argv[newac++] = *av;
+                processing = FALSE;
             }
 #if 0
 	    else if(!strcmp(*av, "--print-nsize")) {
@@ -653,7 +660,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     Rp->nsize = value;
             }
             else
-            {
+            { /* unknown -option */
                 argv[newac++] = *av;
             }
         }
