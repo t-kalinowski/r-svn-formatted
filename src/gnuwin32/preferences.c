@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  file preferences.c
  *  Copyright (C) 2000  Guido Masarotto and Brian Ripley
+ *                2003  R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@
 #include "rui.h"
 
 extern char fontname[LF_FACESIZE + 1];    /* from console.c */
+extern int consolex, consoley;            /* from console.c */
 extern int pagerMultiple, haveusedapager; /* from pager.c */
 
 /*                configuration editor                        */
@@ -49,7 +51,7 @@ struct structGUI
     int tt_font;
     int pointsize;
     char style[20];
-    int crows, ccols, setWidthOnResize, prows, pcols, cbb, cbl;
+    int crows, ccols, cx, cy, setWidthOnResize, prows, pcols, cbb, cbl;
     rgb bg, fg, user, hlt;
 };
 typedef struct structGUI *Gui;
@@ -77,12 +79,12 @@ static char *FontsList[] = {"Courier", "Courier New", "FixedSys", "FixedFont", "
 
 static window wconfig;
 static button bApply, bSave, bFinish, bCancel;
-static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_prows, l_pcols, l_cols, l_bgcol, l_fgcol,
-    l_usercol, l_highlightcol, l_cbb, l_cbl;
+static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_cols, l_bgcol,
+    l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
 static radiobutton rb_mdi, rb_sdi, rb_mwin, rb_swin;
 static listbox f_font, f_style, d_point, bgcol, fgcol, usercol, highlightcol;
 static checkbox toolbar, statusbar, tt_font, c_resize;
-static field f_crows, f_ccols, f_prows, f_pcols, f_cbb, f_cbl;
+static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl;
 
 static void getGUIstate(Gui p)
 {
@@ -96,6 +98,8 @@ static void getGUIstate(Gui p)
     strcpy(p->style, gettext(f_style));
     p->crows = atoi(gettext(f_crows));
     p->ccols = atoi(gettext(f_ccols));
+    p->cx = atoi(gettext(f_cx));
+    p->cy = atoi(gettext(f_cy));
     p->setWidthOnResize = ischecked(c_resize);
     p->cbb = atoi(gettext(f_cbb));
     p->cbl = atoi(gettext(f_cbl));
@@ -113,8 +117,9 @@ static int has_changed()
     return a->MDI != b->MDI || a->toolbar != b->toolbar || a->statusbar != b->statusbar ||
            a->pagerMultiple != b->pagerMultiple || strcmp(a->font, b->font) || a->tt_font != b->tt_font ||
            a->pointsize != b->pointsize || strcmp(a->style, b->style) || a->crows != b->crows || a->ccols != b->ccols ||
-           a->cbb != b->cbb || a->cbl != b->cbl || a->setWidthOnResize != b->setWidthOnResize || a->prows != b->prows ||
-           a->pcols != b->pcols || a->bg != b->bg || a->fg != b->fg || a->user != b->user || a->hlt != b->hlt;
+           a->cx != b->cx || a->cy != b->cy || a->cbb != b->cbb || a->cbl != b->cbl ||
+           a->setWidthOnResize != b->setWidthOnResize || a->prows != b->prows || a->pcols != b->pcols ||
+           a->bg != b->bg || a->fg != b->fg || a->user != b->user || a->hlt != b->hlt;
 }
 
 static void cleanup()
@@ -140,6 +145,10 @@ static void cleanup()
     delobj(l_ccols);
     delobj(f_ccols);
     delobj(c_resize);
+    delobj(l_cx);
+    delobj(f_cx);
+    delobj(l_cy);
+    delobj(f_cy);
     delobj(l_cbb);
     delobj(f_cbb);
     delobj(l_cbl);
@@ -310,6 +319,12 @@ static void save(button b)
     fprintf(fp, "setwidthonresize = %s\n\n", ischecked(c_resize) ? "yes" : "no");
     fprintf(fp, "# memory limits for the console scrolling buffer, in bytes and lines\n");
     fprintf(fp, "bufbytes = %s\nbuflines = %s\n\n", gettext(f_cbb), gettext(f_cbl));
+    fprintf(fp, "# Initial position of the console (pixels, relative to the workspace for MDI)\n");
+    fprintf(fp, "xconsole = %s\nyconsole = %s\n\n", gettext(f_cx), gettext(f_cy));
+    fprintf(fp, "%s\n%s\n%s\n%s\n%s\n%s\n\n", "# Dimension of MDI frame in pixels",
+            "# Format (w*h+xorg+yorg) or use -ve w and h for offsets from right bottom",
+            "# This will come up maximized if w==0", "# MDIsize = 0*0+0+0", "# MDIsize = 1000*800+100+0",
+            "# MDIsize = -50*-50+50+50  # 50 pixels space all round");
     fprintf(fp, "%s\n%s\n%s\npagerstyle = %s\n\n\n", "# The internal pager can displays help in a single window",
             "# or in multiple windows (one for each topic)",
             "# pagerstyle can be set to `singlewindow' or `multiplewindows'",
@@ -384,7 +399,7 @@ void Rgui_configure()
     l_mwin = newlabel("Pager style", rect(10, 50, 90, 20), AlignLeft);
     newradiogroup();
     rb_mwin = newradiobutton("multiple windows", rect(150, 50, 150, 20), NULL);
-    rb_swin = newradiobutton("single window", rect(320, 50, 100, 20), NULL);
+    rb_swin = newradiobutton("single window", rect(320, 50, 150, 20), NULL);
     if (pagerMultiple)
         check(rb_mwin);
     else
@@ -438,6 +453,12 @@ void Rgui_configure()
     c_resize = newcheckbox("set options(width) on resize?", rect(50, 175, 200, 20), NULL);
     if (setWidthOnResize)
         check(c_resize);
+    l_cx = newlabel("Initial x", rect(270, 175, 70, 20), AlignLeft);
+    sprintf(buf, "%d", consolex);
+    f_cx = newfield(buf, rect(350, 175, 40, 20));
+    l_cy = newlabel("y", rect(450, 175, 30, 20), AlignLeft);
+    sprintf(buf, "%d", consoley);
+    f_cy = newfield(buf, rect(480, 175, 40, 20));
 
     /* Pager size */
     l_prows = newlabel("Pager   rows", rect(10, 210, 70, 20), AlignLeft);
