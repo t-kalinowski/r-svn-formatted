@@ -1081,9 +1081,13 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             else
             {
-                SetClipboardData(CF_TEXT, hglb);
+                success = SetClipboardData(CF_TEXT, hglb) != 0;
+                if (!success)
+                {
+                    warningcall(call, "Unable to write to the clipboard");
+                    GlobalFree(hglb);
+                }
                 CloseClipboard();
-                success = TRUE;
             }
         }
     }
