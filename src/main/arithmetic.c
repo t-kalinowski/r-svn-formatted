@@ -132,6 +132,7 @@ int R_IsNaN(double x)
     return 0;
 }
 
+/* <FIXME> This is not used in base R, and should be removed */
 int R_IsNaNorNA(double x)
 {
     /* True for *both* NA and NaN.
@@ -147,10 +148,8 @@ int R_IsNaNorNA(double x)
 #include <ieeefp.h> /* others [Solaris 2.5.x], .. */
 #endif
 #endif
-#if defined(Win32) && defined(_MSC_VER)
-#include <float.h>
-#endif
 
+/* <FIXME> Simplify this mess */
 int R_finite(double x)
 {
 #ifdef HAVE_WORKING_FINITE
