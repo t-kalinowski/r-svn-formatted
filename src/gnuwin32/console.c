@@ -18,6 +18,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "Error.h"
 #include <windows.h>
 #include <string.h>
 #include <ctype.h>
@@ -212,19 +213,25 @@ static xbuf file2xbuf(char *name, int del)
 {
     HANDLE f;
     DWORD rr, vv;
-    char *q, *p;
+    char *q, *p, buf[MAX_PATH + 25];
     xlong dim;
     xint ms;
     xbuf xb;
 
     f = CreateFile(name, GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (f == INVALID_HANDLE_VALUE)
+    {
+        sprintf(buf, "File %s could not be opened by internal pager\n", name);
+        warning(buf);
         return NULL;
+    }
     vv = GetFileSize(f, NULL);
     p = (char *)winmalloc((size_t)vv + 1);
     if (!p)
     {
         CloseHandle(f);
+        sprintf(buf, "Insufficient memory to display %s in internal pager\n", name);
+        warning(buf);
         return NULL;
     }
     ReadFile(f, p, vv, &rr, NULL);
@@ -1711,7 +1718,7 @@ static int pageraddfile(char *wtitle, char *filename, int deleteonexit)
 
     if (!nxbuf)
     {
-        askok("File not found or memory insufficient");
+        /*	askok("File not found or memory insufficient"); */
         return 0;
     }
     if (pagerActualKept == PAGERMAXKEPT)
