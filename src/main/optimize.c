@@ -29,7 +29,8 @@
 #include <R_ext/Applic.h>
 #include <R_ext/RS.h> /* for Memcpy */
 
-/* One Dimensional Minimization --- just wrapper code for Brent's "fmin" */
+/* One Dimensional Minimization --- just wrapper for
+ * Brent's "fmin" --> ../appl/fmin.c */
 
 struct callinfo
 {
