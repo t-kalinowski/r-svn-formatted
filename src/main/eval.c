@@ -339,12 +339,12 @@ SEXP eval(SEXP e, SEXP rho)
             if (R_Profiling)
             {
                 RCNTXT cntxt;
-                begincontext(&cntxt, CTXT_BUILTIN, e, R_NilValue, R_NilValue, R_NilValue);
                 PROTECT(tmp = evalList(CDR(e), rho));
                 R_Visible = 1 - PRIMPRINT(op);
+                begincontext(&cntxt, CTXT_BUILTIN, e, R_NilValue, R_NilValue, R_NilValue);
                 tmp = PRIMFUN(op)(e, op, tmp, rho);
-                UNPROTECT(1);
                 endcontext(&cntxt);
+                UNPROTECT(1);
             }
             else
             {
