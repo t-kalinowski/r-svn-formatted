@@ -584,10 +584,17 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     {
         if (R_ErrorCon != 2)
         {
-            Rconnection con = getConnection(R_ErrorCon);
-
-            con->vfprintf(con, format, arg);
-            con->fflush(con);
+            Rconnection con = getConnection_no_err(R_ErrorCon);
+            if (con == NULL)
+            {
+                /* should never happen, but in case of corruption... */
+                R_Suicide("error connection has been corrupted");
+            }
+            else
+            {
+                con->vfprintf(con, format, arg);
+                con->fflush(con);
+            }
         }
         else if (R_Consolefile)
         {

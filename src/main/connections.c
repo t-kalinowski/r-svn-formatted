@@ -70,6 +70,16 @@ Rconnection getConnection(int n)
     return con;
 }
 
+/* for use in REvprintf */
+Rconnection getConnection_no_err(int n)
+{
+    Rconnection con = NULL;
+
+    if (n < 0 || n == NA_INTEGER || !(con = Connections[n]))
+        return NULL;
+    return con;
+}
+
 void Rconn_setEncoding(Rconnection con, SEXP enc)
 {
     int i;
