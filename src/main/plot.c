@@ -911,7 +911,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     labw = GStrWidth(CHAR(STRING(lab)[i]), NFC, dd);
                     tnew = tempx - 0.5 * labw;
-                    /* check that there's room for labels */
+                    /* Check that there is room for labels */
                     if (dd->gp.las == 2 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[i]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
@@ -1956,7 +1956,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         dd->gp.font = dd->gp.fontmain;
         if (isExpression(Main))
         {
-            GMathText(xNPCtoUsr(adj, dd), 0.5 * dd->gp.mar[2], MAR3, VECTOR(Main)[0], 0.5, 0.5, 0.0, dd);
+            GMathText(xNPCtoUsr(adj, dd), 0.5 * dd->gp.mar[2], MAR3, VECTOR(Main)[0], adj, 0.5, 0.0, dd);
         }
         else
         {
