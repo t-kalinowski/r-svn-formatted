@@ -289,7 +289,7 @@ void errorcall(SEXP call, char *format, ...)
         dcall = CHAR(STRING(deparse1(call, 0))[0]);
         sprintf(errbuf, "Error in %s : ", dcall);
         if (strlen(dcall) > LONGCALL)
-            strcat(errbuf, "\n	");
+            strcat(errbuf, "\n	"); /* <- TAB */
     }
     else
         sprintf(errbuf, "Error: ");
@@ -462,21 +462,29 @@ void isintrpt()
 void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;
+    SEXP c_call;
 
-    cptr = R_GlobalContext->nextcontext;
-    while (!(cptr->callflag & CTXT_FUNCTION) && cptr->nextcontext != NULL)
-        cptr = cptr->nextcontext;
-
-    if (CAR(args) != R_NilValue)
-    {
-        CAR(args) = coerceVector(CAR(args), STRSXP);
-        if (!isValidString(CAR(args)))
-            errorcall(cptr->call, " [invalid string in stop(.)]");
-        errorcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
+    if (asLogical(CAR(args)))
+    { /* find context -> "Error in ..:" */
+        cptr = R_GlobalContext->nextcontext;
+        while (!(cptr->callflag & CTXT_FUNCTION) && cptr->nextcontext != NULL)
+            cptr = cptr->nextcontext;
+        c_call = cptr->call;
     }
     else
-        errorcall(cptr->call, "");
-    /*NOTREACHED*/
+        c_call = R_NilValue;
+
+    args = CDR(args);
+
+    if (CAR(args) != R_NilValue)
+    { /* message */
+        CAR(args) = coerceVector(CAR(args), STRSXP);
+        if (!isValidString(CAR(args)))
+            errorcall(c_call, " [invalid string in stop(.)]");
+        errorcall(c_call, "%s", CHAR(STRING(CAR(args))[0]));
+    }
+    else
+        errorcall(c_call, "");
 }
 
 SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
