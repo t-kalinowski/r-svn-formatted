@@ -2326,7 +2326,7 @@ static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE
     y -= -xl * sin(rot1) - yl * cos(rot1);
     SetFont(gc->fontface, size, rot, dd);
     SetColor(gc->col, gc->gamma, dd);
-    if (R_OPAQUE(xd->fgcolor))
+    if (R_OPAQUE(gc->col))
     {
 #ifdef NOCLIPTEXT
         gsetcliprect(xd->gawin, getrect(xd->gawin));
