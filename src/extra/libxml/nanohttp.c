@@ -58,6 +58,8 @@
 #include <resolv.h>
 #endif
 
+/* #define DEBUG_HTTP */
+
 #define BAD_CAST (unsigned char *)
 
 #define xmlFree free
@@ -69,7 +71,29 @@ static void xmlNanoHTTPScanProxy(const char *URL);
 static void *xmlNanoHTTPMethod(const char *URL, const char *method, const char *input, char **contentType,
                                const char *headers);
 
-#define err Rf_warning
+#ifdef Unix
+#include <R_ext/eventloop.h>
+
+/* modified from src/unix/sys-std.c  */
+static int setSelectMask(InputHandler *handlers, fd_set *readMask)
+{
+    int maxfd = -1;
+    InputHandler *tmp = handlers;
+    FD_ZERO(readMask);
+
+    while (tmp)
+    {
+        FD_SET(tmp->fileDescriptor, readMask);
+        maxfd = maxfd < tmp->fileDescriptor ? tmp->fileDescriptor : maxfd;
+        tmp = tmp->next;
+    }
+
+    return (maxfd);
+}
+#endif
+
+#include <R_ext/Error.h>
+#define err warning
 
 /**
  * A couple of portability macros
@@ -476,8 +500,9 @@ static int xmlNanoHTTPRecv(xmlNanoHTTPCtxtPtr ctxt)
 {
     fd_set rfd;
     struct timeval tv;
+    double used = 0.0;
 
-    while (ctxt->state & XML_NANO_HTTP_READ)
+    if (ctxt->state & XML_NANO_HTTP_READ)
     {
         if (ctxt->in == NULL)
         {
@@ -517,39 +542,97 @@ static int xmlNanoHTTPRecv(xmlNanoHTTPCtxtPtr ctxt)
             ctxt->content = ctxt->in + d_content;
             ctxt->inrptr = ctxt->in + d_inrptr;
         }
-        ctxt->last = recv(ctxt->fd, ctxt->inptr, XML_NANO_HTTP_CHUNK, 0);
-        if (ctxt->last > 0)
+
+        while (1)
         {
-            ctxt->inptr += ctxt->last;
-            return (ctxt->last);
-        }
-        if (ctxt->last == 0)
-        {
-            return (0);
-        }
-        if (ctxt->last == -1)
-        {
-            switch (socket_errno())
+            int maxfd = 0, howmany;
+#ifdef Unix
+            InputHandler *what;
+
+            if (R_wait_usec > 0)
             {
-            case EINPROGRESS:
-            case EWOULDBLOCK:
-#if defined(EAGAIN) && EAGAIN != EWOULDBLOCK
-            case EAGAIN:
+                R_PolledEvents();
+                tv.tv_sec = 0;
+                tv.tv_usec = R_wait_usec;
+            }
+            else
+            {
+                tv.tv_sec = timeout;
+                tv.tv_usec = 0;
+            }
+#elif defined(Win32)
+            tv.tv_sec = 0;
+            tv.tv_usec = 2e5;
+            R_ProcessEvents();
+#else
+            tv.tv_sec = timeout;
+            tv.tv_usec = 0;
 #endif
-                break;
-            default:
+
+#ifdef Unix
+            maxfd = setSelectMask(R_InputHandlers, &rfd);
+#else
+            FD_ZERO(&rfd);
+#endif
+            FD_SET(ctxt->fd, &rfd);
+            if (maxfd < ctxt->fd)
+                maxfd = ctxt->fd;
+
+            howmany = select(maxfd + 1, &rfd, NULL, NULL, &tv);
+
+            if (howmany < 0)
+            {
+#ifdef DEBUG_HTTP
+                perror("select in xmlNanoHTTPRecv");
+#endif
                 return (0);
             }
+            if (howmany == 0)
+            {
+                used += tv.tv_sec + 1e-6 * tv.tv_usec;
+                if (used >= timeout)
+                    return (0);
+                continue;
+            }
+
+#ifdef Unix
+            if (!FD_ISSET(ctxt->fd, &rfd))
+            { /* was one of the extras */
+                what = getSelectedHandler(R_InputHandlers, &rfd);
+                if (!what)
+                    what->handler((void *)NULL);
+                continue;
+            }
+#endif
+
+            /* was the socket */
+            ctxt->last = recv(ctxt->fd, ctxt->inptr, XML_NANO_HTTP_CHUNK, 0);
+            if (ctxt->last > 0)
+            {
+                ctxt->inptr += ctxt->last;
+                return (ctxt->last);
+            }
+            if (ctxt->last == 0)
+            {
+                return (0);
+            }
+            if (ctxt->last == -1)
+            {
+                switch (socket_errno())
+                {
+                case EINPROGRESS:
+                case EWOULDBLOCK:
+#if defined(EAGAIN) && EAGAIN != EWOULDBLOCK
+                case EAGAIN:
+#endif
+                    break;
+                default:
+                    return (0);
+                }
+            }
         }
-
-        tv.tv_sec = timeout;
-        tv.tv_usec = 0;
-        FD_ZERO(&rfd);
-        FD_SET(ctxt->fd, &rfd);
-
-        if (select(ctxt->fd + 1, &rfd, NULL, NULL, &tv) < 1)
-            return (0); /* although this includes an error */
     }
+
     return (0);
 }
 
@@ -720,9 +803,10 @@ static void xmlNanoHTTPScanAnswer(xmlNanoHTTPCtxtPtr ctxt, const char *line)
 static int xmlNanoHTTPConnectAttempt(struct sockaddr *addr, int port)
 {
     SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-    fd_set wfd;
+    fd_set wfd, rfd;
     struct timeval tv;
     int status;
+    double used = 0.0;
 
     if (s == -1)
     {
@@ -769,6 +853,7 @@ static int xmlNanoHTTPConnectAttempt(struct sockaddr *addr, int port)
 
     if ((connect(s, addr, sizeof(*addr)) == -1))
     {
+
         switch (socket_errno())
         {
         case EINPROGRESS:
@@ -781,50 +866,90 @@ static int xmlNanoHTTPConnectAttempt(struct sockaddr *addr, int port)
         }
     }
 
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
-
-    FD_ZERO(&wfd);
-    FD_SET(s, &wfd);
-
-    switch (select(s + 1, NULL, &wfd, NULL, &tv))
+    while (1)
     {
-    case 0:
-        /* Time out */
-        closesocket(s);
-        return (-1);
-    case -1:
-        /* Ermm.. ?? */
-#ifdef DEBUG_HTTP
-        perror("select");
+        int maxfd = 0;
+#ifdef Unix
+        InputHandler *what;
+
+        if (R_wait_usec > 0)
+        {
+            R_PolledEvents();
+            tv.tv_sec = 0;
+            tv.tv_usec = R_wait_usec;
+        }
+        else
+        {
+            tv.tv_sec = timeout;
+            tv.tv_usec = 0;
+        }
+#elif defined(Win32)
+        tv.tv_sec = 0;
+        tv.tv_usec = 2e5;
+        R_ProcessEvents();
+#else
+        tv.tv_sec = timeout;
+        tv.tv_usec = 0;
 #endif
-        closesocket(s);
-        return (-1);
-    }
 
-    if (FD_ISSET(s, &wfd))
-    {
-        SOCKLEN_T len;
-        len = sizeof(status);
-        if (getsockopt(s, SOL_SOCKET, SO_ERROR, (char *)&status, &len) < 0)
+#ifdef Unix
+        maxfd = setSelectMask(R_InputHandlers, &rfd);
+#else
+        FD_ZERO(&rfd);
+#endif
+        FD_ZERO(&wfd);
+        FD_SET(s, &wfd);
+        if (maxfd < s)
+            maxfd = s;
+
+        switch (select(maxfd + 1, &rfd, &wfd, NULL, &tv))
         {
-            /* Solaris error code */
-            return (-1);
-        }
-        if (status)
-        {
+        case 0:
+            /* Time out */
+            used += tv.tv_sec + 1e-6 * tv.tv_usec;
+            if (used < timeout)
+                continue;
             closesocket(s);
-            errno = status;
+            return (-1);
+        case -1:
+            /* Ermm.. ?? */
+#ifdef DEBUG_HTTP
+            perror("select");
+#endif
+            closesocket(s);
             return (-1);
         }
-    }
-    else
-    {
-        /* pbm */
-        return (-1);
-    }
 
-    return (s);
+        if (FD_ISSET(s, &wfd))
+        {
+            SOCKLEN_T len;
+            len = sizeof(status);
+            if (getsockopt(s, SOL_SOCKET, SO_ERROR, (char *)&status, &len) < 0)
+            {
+                /* Solaris error code */
+                return (-1);
+            }
+            if (status)
+            {
+                closesocket(s);
+                errno = status;
+                return (-1);
+            }
+            else
+                return (s);
+#ifdef Unix
+        }
+        else
+        { /* some other handler needed */
+            what = getSelectedHandler(R_InputHandlers, &rfd);
+            if (!what)
+                what->handler((void *)NULL);
+            continue;
+#endif
+        }
+    }
+    /* not reached */
+    return (-1);
 }
 
 /**
