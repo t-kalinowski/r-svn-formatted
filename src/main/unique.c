@@ -577,13 +577,13 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* Get the function definition */
+    sysp = R_GlobalContext->sysparent;
 
     if (TYPEOF(CAR(args)) == NILSXP)
     {
         /* Get the env that the function containing */
         /* matchcall was called from. */
         cptr = R_GlobalContext;
-        sysp = R_GlobalContext->sysparent;
         while (cptr != NULL)
         {
             if (cptr->callflag == CTXT_RETURN && cptr->cloenv == sysp)
