@@ -280,7 +280,7 @@ static void SaveAsWin(NewDevDesc *dd, char *display)
     ndd->displayList = R_NilValue;
     if (GADeviceDriver(ndd, display, fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
-                       ((gadesc *)dd->deviceSpecific)->fontsize, 0, 1, White, 1))
+                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, 1))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -343,7 +343,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     if (PSDeviceDriver((DevDesc *)ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
-                       ((gadesc *)dd->deviceSpecific)->fontsize, 0, 1, 0, ""))
+                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, ""))
         /* horizontal=F, onefile=F, pagecentre=T, print.it=F */
         PrivateCopyDevice(dd, ndd, "postscript");
 }
@@ -401,7 +401,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     if (PDFDeviceDriver((DevDesc *)ndd, fn, family, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
-                        ((gadesc *)dd->deviceSpecific)->fontsize, 1))
+                        ((gadesc *)dd->deviceSpecific)->basefontsize, 1))
         PrivateCopyDevice(dd, ndd, "PDF");
 }
 
