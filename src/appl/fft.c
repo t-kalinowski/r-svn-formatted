@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998--1998  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,7 +18,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <math.h>
+#include "Mathlib.h" /* for imax2(.),..*/
 
 /*  Fast Fourier Transform
  *
@@ -119,24 +120,6 @@ static int maxp;
  *  m contains the number of factors and kt contains the number
  *  of square factors  */
 
-/* a whole bunch of stuff to keep watcom's C compiler happy */
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
-static int max(int i, int j)
-{
-    return (i > j) ? i : j;
-}
-
-static int min(int i, int j)
-{
-    return (i < j) ? i : j;
-}
-
 /*  fft_factor - factorization check and determination of memory
  *  requirements for the fft.  On return *pmaxf will give the
  *  maximum factor size and *pmaxp will give the amount of integer
@@ -213,7 +196,7 @@ void fft_factor(int n, int *pmaxf, int *pmaxp)
         /* all square factors out now, but k >= 5 still */
 
         kt = m;
-        maxp = max(kt + kt + 2, k - 1);
+        maxp = imax2(kt + kt + 2, k - 1);
         j = 2;
         do
         {
@@ -246,7 +229,7 @@ void fft_factor(int n, int *pmaxf, int *pmaxp)
         maxf = m - kt;
         maxf = nfac[maxf - 1];
         if (kt > 0)
-            maxf = max(nfac[kt - 1], maxf);
+            maxf = imax2(nfac[kt - 1], maxf);
     }
     *pmaxf = maxf;
     *pmaxp = maxp;
@@ -313,7 +296,7 @@ static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn, int
     maxf = m - kt;
     maxf = nfac[maxf];
     if (kt > 0)
-        maxf = max(nfac[kt], maxf);
+        maxf = imax2(nfac[kt], maxf);
 
     /* compute fourier transform */
 
@@ -350,7 +333,7 @@ L50:
 L60:
     c1 = 1.0 - cd;
     s1 = sd;
-    mm = min(k1 / 2, klim);
+    mm = imin2(k1 / 2, klim);
     goto L80;
 L70:
     ak = c1 - (cd * c1 + sd * s1);
@@ -397,7 +380,7 @@ L90:
     s1 = ((kk - 1) / jc) * dr * rad;
     c1 = cos(s1);
     s1 = sin(s1);
-    mm = min(k1 / 2, mm + klim);
+    mm = imin2(k1 / 2, mm + klim);
     goto L80;
 
     /* transform for factor of 3 (optional code) */
@@ -437,7 +420,7 @@ L110:
 L120:
     c1 = 1.0;
     s1 = 0;
-    mm = min(kspan, klim);
+    mm = imin2(kspan, klim);
     goto L150;
 L130:
     c2 = c1 - (cd * c1 + sd * s1);
@@ -527,7 +510,7 @@ L200:
     s1 = ((kk - 1) / jc) * dr * rad;
     c1 = cos(s1);
     s1 = sin(s1);
-    mm = min(kspan, mm + klim);
+    mm = imin2(kspan, mm + klim);
     goto L140;
 
     /* transform for factor of 5 (optional code) */
@@ -676,7 +659,7 @@ L290:
 L300:
     c2 = 1.0 - cd;
     s1 = sd;
-    mm = min(kspan, klim);
+    mm = imin2(kspan, klim);
     goto L320;
 L310:
     c2 = c1 - (cd * c1 + sd * s1);
@@ -721,7 +704,7 @@ L340:
     s1 = ((kk - 1) / jc) * dr * rad;
     c2 = cos(s1);
     s1 = sin(s1);
-    mm = min(kspan, mm + klim);
+    mm = imin2(kspan, mm + klim);
     goto L320;
 
     /*------------------------------------------------------------*/
@@ -942,7 +925,6 @@ L570:
     i = nt - inc + 1;
     if (nt >= 0)
         goto L_ord;
-    return;
 }
 
 int fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *work, int *iwork)
