@@ -45,7 +45,9 @@ SEXP R_set_slot(SEXP obj, SEXP name, SEXP value)
         value = pseudo_NULL;
     }
     PROTECT(obj);
+    PROTECT(name);
+    PROTECT(value);
     setAttrib(obj, name, value);
-    UNPROTECT(1);
+    UNPROTECT(3);
     return obj;
 }
