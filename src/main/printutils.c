@@ -504,6 +504,11 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         va_end(ap);
     }
 
+    /*
+      REprintf is used by the error handler do not add
+      anything unless you're sure it won't
+      cause problems
+    */
     void REprintf(char *format, ...)
     {
         va_list(ap);
@@ -561,8 +566,13 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         }
     }
 
-    /* Assume here that error messages are short: as this is called from
-       the error handler there is not much we can do */
+    /*
+       REvprintf is part of the error handler.
+       Do not change it unless you are SURE that
+       your changes are compatible with the
+       error handling mechanism
+    */
+
     void REvprintf(const char *format, va_list arg)
     {
         if (R_Consolefile)
