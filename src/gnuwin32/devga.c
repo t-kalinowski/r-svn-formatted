@@ -470,7 +470,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     if (PDFDeviceDriver((DevDesc *)ndd, fn, family, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
-                        ((gadesc *)dd->deviceSpecific)->basefontsize, 1, "R Graphics Output"))
+                        ((gadesc *)dd->deviceSpecific)->basefontsize, 1, "R Graphics Output", R_NilValue, 1, 4))
         PrivateCopyDevice(dd, ndd, "PDF");
 }
 

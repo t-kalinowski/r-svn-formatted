@@ -2895,7 +2895,7 @@ void GPolygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *
     gcontextFromGP(&gc, dd);
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = NA_INTEGER; /* transparent for the border */
+        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -2974,7 +2974,7 @@ void GCircle(double x, double y, int coords, double radius, int bg, int fg, DevD
     ir = (ir > 0) ? ir : 1;
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = NA_INTEGER; /* transparent for the border */
+        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -2999,7 +2999,7 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
     gcontextFromGP(&gc, dd);
 
     if (Rf_gpptr(dd)->lty == LTY_BLANK)
-        fg = NA_INTEGER; /* transparent for the border */
+        fg = R_RGBA(255, 255, 255, 255); /* transparent for the border */
 
     /*
      * Work in device coordinates because that is what the
@@ -3168,7 +3168,7 @@ void GBox(int which, DevDesc *dd)
         {
         case 'o':
         case 'O':
-            GPolygon(4, x, y, NFC, NA_INTEGER, Rf_gpptr(dd)->col, dd);
+            GPolygon(4, x, y, NFC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
             break;
         case 'l':
         case 'L':
@@ -3197,13 +3197,13 @@ void GBox(int which, DevDesc *dd)
         }
         break;
     case 2: /* Figure */
-        GPolygon(4, x, y, NFC, NA_INTEGER, Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NFC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
         break;
     case 3: /* Inner Region */
-        GPolygon(4, x, y, NIC, NA_INTEGER, Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NIC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
         break;
     case 4: /* "outer": Device border */
-        GPolygon(4, x, y, NDC, NA_INTEGER, Rf_gpptr(dd)->col, dd);
+        GPolygon(4, x, y, NDC, R_RGBA(255, 255, 255, 255), Rf_gpptr(dd)->col, dd);
         break;
     default:
         error("invalid GBox argument");
@@ -4295,7 +4295,21 @@ unsigned int name2col(char *nm)
 {
     int i;
     if (strcmp(nm, "NA") == 0 || strcmp(nm, "transparent") == 0)
-        return NA_INTEGER;
+        /*
+         * Paul 01/07/04
+         *
+         * Used to be set to NA_INTEGER.
+         *
+         * Now set to fully transparent white.
+         *
+         * In some cases, fully transparent gets caught by
+         * the graphics engine and no drawing occurs, but
+         * in other cases, transparent colours are passed to devices.
+         *
+         * All devices should respond to fully transparent by
+         * not drawing.
+         */
+        return R_RGBA(255, 255, 255, 255);
     for (i = 0; ColorDataBase[i].name; i++)
     {
         if (StrMatch(ColorDataBase[i].name, nm))
@@ -4388,7 +4402,11 @@ unsigned int RGBpar(SEXP x, int i)
     else if (isInteger(x) || isLogical(x))
     {
         if (INTEGER(x)[i] == NA_INTEGER)
-            return NA_INTEGER;
+            /*
+             * Paul 01/07/04
+             * Used to be set to NA_INTEGER (see comment in name2col).
+             */
+            return R_RGBA(255, 255, 255, 255);
         indx = INTEGER(x)[i] - 1;
         if (indx < 0)
             return Rf_dpptr(CurrentDevice())->bg;
@@ -4398,7 +4416,11 @@ unsigned int RGBpar(SEXP x, int i)
     else if (isReal(x))
     {
         if (!R_FINITE(REAL(x)[i]))
-            return NA_INTEGER;
+            /*
+             * Paul 01/07/04
+             * Used to be set to NA_INTEGER (see comment in name2col).
+             */
+            return R_RGBA(255, 255, 255, 255);
         indx = REAL(x)[i] - 1;
         if (indx < 0)
             return Rf_dpptr(CurrentDevice())->bg;
@@ -4406,6 +4428,30 @@ unsigned int RGBpar(SEXP x, int i)
             return R_ColorTable[indx % R_ColorTableSize];
     }
     return 0; /* should not occur */
+}
+
+/*
+ * Is element i of a colour object NA (or NULL)?
+ */
+Rboolean isNAcol(SEXP col, int index, int ncol)
+{
+    Rboolean result;
+    if (isNull(col))
+        result = TRUE;
+    else
+    {
+        if (isLogical(col))
+            result = LOGICAL(col)[index % ncol] == NA_LOGICAL;
+        else if (isString(col))
+            result = strcmp(CHAR(STRING_ELT(col, index % ncol)), "NA") == 0;
+        else if (isInteger(col))
+            result = INTEGER(col)[index % ncol] == NA_INTEGER;
+        else if (isReal(col))
+            result = !R_FINITE(REAL(col)[index % ncol]);
+        else
+            error("Invalid colour");
+    }
+    return result;
 }
 
 /* Initialize the Color Databases */
@@ -4910,6 +4956,11 @@ void KillAllDevices(void)
     /* don't try to close or remove the null device ! */
     while (R_NumDevices > 1)
         killDevice(R_CurrentDevice);
+    /*
+     * Free the font and encoding structures used by
+     * PostScript, Xfig, and PDF devices
+     */
+    freeType1Fonts();
     /* FIXME: There should really be a formal graphics finaliser
      * but this is a good proxy for now.
      */
