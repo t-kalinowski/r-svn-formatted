@@ -1001,8 +1001,8 @@ void CheckFormals(SEXP ls)
                 error("invalid formal argument list for \"function\"\n");
 }
 
-/* Evaluate the first argument in the environment specified by */
-/* the second argument. */
+/* "eval" and "eval.with.vis" : Evaluate the first argument */
+/* in the environment specified by the second argument. */
 
 SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1052,6 +1052,18 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         expr = eval(expr, env);
         endcontext(&cntxt);
         UNPROTECT(1);
+    }
+    if (PRIMVAL(op))
+    {
+        PROTECT(env = allocVector(VECSXP, 2));
+        PROTECT(encl = allocVector(STRSXP, 2));
+        STRING(encl)[0] = mkChar("value");
+        STRING(encl)[1] = mkChar("visible");
+        VECTOR(env)[0] = expr;
+        VECTOR(env)[1] = ScalarLogical(R_Visible);
+        setAttrib(env, R_NamesSymbol, encl);
+        expr = env;
+        UNPROTECT(2);
     }
     UNPROTECT(1);
     return expr;
