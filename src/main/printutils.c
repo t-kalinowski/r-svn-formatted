@@ -622,10 +622,11 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void MatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
-        SEXP tmp = STRING_ELT(cl, j);
+        SEXP tmp;
 
         if (!isNull(cl))
         {
+            tmp = STRING_ELT(cl, j);
             if (tmp == NA_STRING)
                 l = R_print.na_width_noquote;
             else
@@ -641,10 +642,11 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void RightMatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
-        SEXP tmp = STRING_ELT(cl, j);
+        SEXP tmp;
 
         if (!isNull(cl))
         {
+            tmp = STRING_ELT(cl, j);
             if (tmp == NA_STRING)
                 l = R_print.na_width_noquote;
             else
@@ -660,10 +662,11 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void LeftMatrixColumnLabel(SEXP cl, int j, int w)
     {
         int l;
-        SEXP tmp = STRING_ELT(cl, j);
+        SEXP tmp;
 
         if (!isNull(cl))
         {
+            tmp = STRING_ELT(cl, j);
             if (tmp == NA_STRING)
                 l = R_print.na_width_noquote;
             else
@@ -679,10 +682,11 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     void MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
     {
         int l;
-        SEXP tmp = STRING_ELT(rl, i);
+        SEXP tmp;
 
         if (!isNull(rl))
         {
+            tmp = STRING_ELT(rl, i);
             if (tmp == NA_STRING)
                 l = R_print.na_width_noquote;
             else
