@@ -239,13 +239,23 @@ void InitAquaIO(void)
     ptr_InitAquaIO();
 }
 
+extern Rboolean useaqua; /* from system.c */
+
 void R_ProcessEvents(void)
 {
     EventRef theEvent;
     EventRecord outEvent;
-    EventTargetRef theTarget = GetEventDispatcherTarget();
+    EventTargetRef theTarget;
     bool conv = false;
 
+    if (!useaqua)
+    {
+        if (R_interrupts_pending)
+            onintr();
+        return;
+    }
+
+    theTarget = GetEventDispatcherTarget();
     if (CheckEventQueueForUserCancel())
         onintr();
 
