@@ -32,10 +32,6 @@
 #include "nmath.h"
 #include "dpq.h"
 
-#ifdef DEBUG_qbinom
-#include "PrtUtil.h"
-#endif
-
 double qbinom(double p, double n, double pr, int lower_tail, int log_p)
 {
     double q, mu, sigma, gamma, z, y;
