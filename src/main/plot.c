@@ -436,6 +436,9 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
         ymin = REAL(ylim)[0];
         ymax = REAL(ylim)[1];
     }
+    if ((dd->dp.xlog && (xmin < 0 || xmax < 0)) || (dd->dp.ylog && (ymin < 0 || ymax < 0)))
+        errorcall(call, "Logarithmic axis must have positive limits\n");
+
     if (FINITE(asp) && asp > 0)
     {
         double pin1, pin2, scale, xdelta, ydelta, xscale, yscale, xadd, yadd;
@@ -609,7 +612,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (ne < 1)
                 error("log - axis(), 'at' creation, _LARGE_ range: "
                       "ne = %d <= 0 !!\n"
-                      "\t axp[0:1]=(%g,%g) ==> i = %d;  nint = %d\n",
+                      "\t axp[0:1]=(%g,%g) ==> i = %d;	nint = %d\n",
                       ne, axp[0], axp[1], i, nint);
             rng = pow(10., (double)ne); /* >= 10 */
             n = 0;
