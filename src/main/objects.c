@@ -381,7 +381,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nargs)
         PROTECT(generic = eval(CAR(args), env));
     else
-        generic = R_MissingArg;
+        errorcall(call, "there must be a first argument");
 
     if (nargs > 2) /* R-lang says there should be a warning */
         warningcall(call, "Arguments after the first two are ignored");
@@ -398,8 +398,8 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (cptr == NULL)
             error("UseMethod called from outside a closure");
-        if (generic == R_MissingArg)
-            PROTECT(generic = mkString(CHAR(PRINTNAME(CAR(cptr->call)))));
+        /* if (generic == R_MissingArg)
+           PROTECT(generic = mkString(CHAR(PRINTNAME(CAR(cptr->call))))); */
         PROTECT(obj = GetObject(cptr));
     }
 
