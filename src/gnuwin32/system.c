@@ -433,30 +433,43 @@ void R_ClearerrConsole()
 
 /*--- File Handling Code ---*/
 
-static HaveHOME = -1;
-static UserHOME[PATH_MAX] static newFileName[PATH_MAX] char *R_ExpandFileName(char *s)
+static int HaveHOME = -1;
+static char UserHOME[PATH_MAX];
+static char newFileName[PATH_MAX];
+char *R_ExpandFileName(char *s)
 {
-    return s;
     char *p;
 
     if (s[0] != '~')
         return s;
     if (HaveHOME < 0)
     {
+        HaveHOME = 0;
         p = getenv("HOME");
         if (p && strlen(p))
         {
             strcpy(UserHOME, p);
-            strcat(UserHOME, FILESEP);
             HaveHOME = 1;
         }
         else
-            HaveHOME = 0;
+        {
+            p = getenv("HOMEDIR");
+            if (p)
+            {
+                strcpy(UserHOME, p);
+                p = getenv("HOMEPATH");
+                if (p)
+                {
+                    strcat(UserHOME, p);
+                    HaveHOME = 1;
+                }
+            }
+        }
     }
     if (HaveHOME > 0)
     {
         strcpy(newFileName, UserHOME);
-        strcat(newFileName, s);
+        strcat(newFileName, s + 1);
         return newFileName;
     }
     else
@@ -965,47 +978,53 @@ void R_InitialData(void)
 
 void R_dot_Last(void); /* in main.c */
 
-if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
-    saveact = SaveAction;
+void R_CleanUp(int saveact)
+{
+    if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
+        saveact = SaveAction;
 
-if (saveact == SA_SAVEASK)
-    if (R_Interactive)
+    if (saveact == SA_SAVEASK)
     {
-        switch (R_yesnocancel("Save workspace image?"))
+        if (R_Interactive)
         {
-        case YES:
-            saveact = SA_SAVE;
-            break;
-        case NO:
-            saveact = SA_NOSAVE;
-            break;
-        case CANCEL:
-            jump_to_toplevel();
-            break;
+            switch (R_yesnocancel("Save workspace image?"))
+            {
+            case YES:
+                saveact = SA_SAVE;
+                break;
+            case NO:
+                saveact = SA_NOSAVE;
+                break;
+            case CANCEL:
+                jump_to_toplevel();
+                break;
+            }
         }
+        else
+            saveact = SaveAction;
     }
 
-switch (saveact)
-{
-case SA_SAVE:
-    R_dot_Last();
-    if (R_DirtyImage)
-        R_SaveGlobalEnv();
-    break;
-case SA_NOSAVE:
-    R_dot_Last();
-    break;
-case SA_SUICIDE:
-default:
-}
-CleanEd();
-closeAllHlpFiles();
-KillAllDevices();
-AllDevicesKilled = 1;
-if (CharacterMode == RGui)
-    savehistory(RConsole, ".Rhistory");
-UnLoad_Unzip_Dll();
-exitapp();
+    switch (saveact)
+    {
+    case SA_SAVE:
+        R_dot_Last();
+        if (R_DirtyImage)
+            R_SaveGlobalEnv();
+        break;
+    case SA_NOSAVE:
+        R_dot_Last();
+        break;
+    case SA_SUICIDE:
+    default:
+    }
+    CleanEd();
+    closeAllHlpFiles();
+    KillAllDevices();
+    AllDevicesKilled = 1;
+    if (CharacterMode == RGui)
+        savehistory(RConsole, ".Rhistory");
+    UnLoad_Unzip_Dll();
+    exitapp();
 }
 
 /* Saving and Restoring the Global Environment */

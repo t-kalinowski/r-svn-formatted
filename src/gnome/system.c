@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the
- *                            R Development Coreeam
+ *  Copyright (C) 1997--1999  Robert Gentleman, Ross Ihaka and the
+ *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
  *    int   R_ReadConsole(char *prompt, char *buf, int buflen, int hist)
  *
  *  This function prints the given prompt at the console and then
- *  does a gets(3)-like operation, transfering up to "buflen" characters
+ *  does a gets(3)-like operation, transferring up to "buflen" characters
  *  into the buffer "buf".  The last two characters are set to "\n\0"
  *  to preserve sanity.	 If "hist" is non-zero, then the line is added
  *  to any command history which is being maintained.  Note that this
@@ -101,7 +101,6 @@
  *    SEXP  do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
  *    SEXP  do_machine(SEXP call, SEXP op, SEXP args, SEXP rho)
  *    SEXP  do_proctime(SEXP call, SEXP op, SEXP args, SEXP rho)
- *    SEXP  do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
  *    SEXP  do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 
@@ -142,8 +141,8 @@ struct tms timeinfo;
 #endif
 
 int UsingReadline = 1;
-int DefaultSaveAction = 0;
-int DefaultRestoreAction = 1;
+int SaveAction = SA_SAVEASK;
+int RestoreAction = SA_RESTORE;
 int LoadSiteFile = 1;
 int LoadInitFile = 1;
 int DebugInitFile = 0;
@@ -153,7 +152,9 @@ int arg_no_init_file = 0, arg_no_environ = 0, arg_vanilla = 0, arg_version = 0, 
 char *arg_vsize, *arg_nsize;
 int arg_quiet, arg_slave;
 
-#define Max_Nsize 20000000      /* must be < LONG_MAX (= 2^32 - 1 =) 2147483647 = 2.1e9 */
+#define Max_Nsize                                                                                                      \
+    20000000                    /* must be < LONG_MAX (= 2^32 - 1 =)                                                   \
+                       2147483647 = 2.1e9 */
 #define Max_Vsize (2048 * Mega) /* must be < LONG_MAX */
 
 #define Min_Nsize 200000
@@ -181,33 +182,30 @@ static const struct poptOption popt_options[] = {{"version", '\0', POPT_ARG_NONE
 void handle_args()
 {
     int value, ierr;
+    char msg[1024];
     /* handle command line options */
 
     if (arg_version)
     {
-        fprintf(stderr, "Version %s.%s %s (%s %s, %s)\n", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
-        fprintf(stderr, "Copyright (C) %s R Development Core Team\n\n", R_YEAR);
-        fprintf(stderr, "R is free software and comes with ABSOLUTELY NO WARRANTY.\n");
-        fprintf(stderr, "You are welcome to redistribute it under the terms of the\n");
-        fprintf(stderr, "GNU General Public License.  For more information about\n");
-        fprintf(stderr, "these matters, see http://www.gnu.org/copyleft/gpl.html.\n");
+        PrintVersion(msg);
+        fprintf(stderr, msg);
         exit(0);
     }
     if (arg_save)
     {
-        DefaultSaveAction = 3;
+        SaveAction = SA_SAVE;
     }
     if (arg_no_save)
     {
-        DefaultSaveAction = 2;
+        SaveAction = SA_NOSAVE;
     }
     if (arg_restore)
     {
-        DefaultRestoreAction = 1;
+        RestoreAction = SA_RESTORE;
     }
     if (arg_no_restore)
     {
-        DefaultRestoreAction = 0;
+        RestoreAction = SA_NORESTORE;
     }
     if (arg_quiet)
     {
@@ -215,10 +213,10 @@ void handle_args()
     }
     if (arg_vanilla)
     {
-        DefaultSaveAction = 2;    /* --no-save */
-        DefaultRestoreAction = 0; /* --no-restore */
-        LoadSiteFile = 0;         /* --no-site-file */
-        LoadInitFile = 0;         /* --no-init-file */
+        SaveAction = SA_NOSAVE;       /* --no-save */
+        RestoreAction = SA_NORESTORE; /* --no-restore */
+        LoadSiteFile = 0;             /* --no-site-file */
+        LoadInitFile = 0;             /* --no-init-file */
     }
     if (arg_verbose)
     {
@@ -228,7 +226,7 @@ void handle_args()
     {
         R_Quiet = 1;
         R_Slave = 1;
-        DefaultSaveAction = 2;
+        SaveAction = SA_NOSAVE;
     }
     if (arg_no_site_file)
     {
@@ -346,9 +344,12 @@ int main(int ac, char **av)
     {
         R_Suicide("R home directory is not defined");
     }
-
-    if (!R_Interactive && DefaultSaveAction == 0)
-        R_Suicide("you must specify `--save' or `--no-save'");
+    /*
+     *  Since users' expectations for save/no-save will differ, we decided
+     *  that they should be forced to specify in the non-interactive case.
+     */
+    if (!R_Interactive && SaveAction != SA_SAVE && SaveAction != SA_NOSAVE)
+        R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
 
 #ifdef __FreeBSD__
     fpsetmask(0);
@@ -373,18 +374,20 @@ int main(int ac, char **av)
     return 0;
 }
 
-/* R_CleanUp is invoked at the end of the session to give */
-/* the user the option of saving their data.  If ask=1 the */
-/* user is asked their preference, if ask=2 the answer is */
-/* assumed to be "no" and if ask=3 the answer is assumed to */
-/* be "yes".  When R is being used non-interactively, and */
-/* ask=1, the value is changed to 3.  The philosophy is */
-/* that saving unwanted data is less bad than non saving */
-/* data that is wanted. */
+/*
+   R_CleanUp is invoked at the end of the session to give the user the
+   option of saving their data.
+   If ask == SA_SAVEASK the user should be asked if possible (and this
+   option should not occur in non-interactive use).
+   If ask = SA_SAVE or SA_NOSAVE the decision is known.
+   If ask = SA_DEFAULT use the SaveAction set at startup.
+   In all these cases run .Last() unless quitting is cancelled.
+   If ask = SA_SUICIDE, no save, no .Last, possibly other things.
+ */
 
 void R_dot_Last(void); /* in main.c */
 
-void R_CleanUp(int ask)
+void R_CleanUp(int saveact)
 {
     GtkWidget *dialog;
     gchar buf[128];
@@ -393,16 +396,16 @@ void R_CleanUp(int ask)
     GList *curfile = R_gtk_editfiles;
     R_gtk_edititem *edititem;
 
-    if (R_DirtyImage)
-    {
-    qask:
-        R_ClearerrConsole();
-        R_FlushConsole();
-        if (!R_Interactive && ask == 1)
-            ask = DefaultSaveAction;
+    if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
+        saveact = SaveAction;
 
-        if (ask == 1)
+    if (saveact == SA_SAVEASK)
+    {
+        if (R_Interactive)
         {
+        qask:
+            R_ClearerrConsole();
+            R_FlushConsole();
             if (R_gtk_gui_quit == TRUE)
             {
                 dialog = gnome_message_box_new("Do you want to save your workspace image?\n\n\
@@ -415,51 +418,62 @@ Choose Yes to save an image and exit,\nchoose No to exit without saving,\nor cho
                 gnome_dialog_set_default(GNOME_DIALOG(dialog), 0);
 
                 which = gnome_dialog_run_and_close(GNOME_DIALOG(dialog));
+                switch (which)
+                {
+                case 0:
+                    saveact = SA_SAVE;
+                    break;
+                case 1:
+                    saveact = SA_NOSAVE;
+                    break;
+                case 2:
+                    jump_to_toplevel();
+                    break;
+                default:
+                    goto qask;
+                }
             }
             else
             {
                 R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
-
                 switch (buf[0])
                 {
                 case 'y':
                 case 'Y':
-                    which = 0;
+                    saveact = SA_SAVE;
                     break;
 
                 case 'n':
                 case 'N':
-                    which = 1;
+                    saveact = SA_NOSAVE;
                     break;
 
                 case 'c':
                 case 'C':
-                    which = 2;
+                    jump_to_toplevel();
                     break;
+                default:
+                    goto qask;
                 }
             }
         }
-        else if (ask == 2)
-            which = 1;
-        else if (ask == 3)
-            which = 0;
+        else
+            saveact = SaveAction;
+    }
 
-        switch (which)
-        {
-        case 0:
-            R_dot_Last();
-            R_SaveGlobalEnv();
-
-            if (R_Interactive)
-                gtk_console_save_history(GTK_CONSOLE(R_gtk_terminal_text), R_HistoryFile, R_HistorySize, NULL);
-            break;
-        case 1:
-            R_dot_Last();
-            break;
-        default:
-            jump_to_toplevel();
-            break;
-        }
+    switch (saveact)
+    {
+    case SA_SAVE:
+        R_dot_Last();
+        R_SaveGlobalEnv();
+        if (R_Interactive)
+            gtk_console_save_history(GTK_CONSOLE(R_gtk_terminal_text), R_HistoryFile, R_HistorySize, NULL);
+        break;
+    case SA_NOSAVE:
+        R_dot_Last();
+        break;
+    case SA_SUICIDE:
+    default:
     }
 
     /* close all the graphics devices */
@@ -527,8 +541,7 @@ void R_Suicide(char *s)
 
     gtk_main();
 
-    R_CleanUp(2);
-    /*	 2 means don't save anything and it's an unrecoverable abort */
+    R_CleanUp(SA_SUICIDE);
 }
 
 /* Declarations to keep f77 happy */
