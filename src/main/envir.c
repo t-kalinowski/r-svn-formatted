@@ -1197,7 +1197,7 @@ static SEXP mfindVarInFrame(SEXP rho, SEXP symbol)
 */
 SEXP do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP name, val, aenv;
+    SEXP name = R_NilValue, val, aenv;
     int ginherits = 0;
     checkArity(op, args);
 
