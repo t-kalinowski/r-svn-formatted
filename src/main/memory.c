@@ -2428,9 +2428,9 @@ SEXP(HASHTAB)(SEXP x)
 {
     return HASHTAB(x);
 }
-int(NARGS)(SEXP x)
+int(ENVFLAGS)(SEXP x)
 {
-    return NARGS(x);
+    return ENVFLAGS(x);
 }
 
 void(SET_FRAME)(SEXP x, SEXP v)
@@ -2448,9 +2448,9 @@ void(SET_HASHTAB)(SEXP x, SEXP v)
     CHECK_OLD_TO_NEW(x, v);
     HASHTAB(x) = v;
 }
-void(SET_NARGS)(SEXP x, int v)
+void(SET_ENVFLAGS)(SEXP x, int v)
 {
-    SET_NARGS(x, v);
+    SET_ENVFLAGS(x, v);
 }
 
 /* Promise Accessors */
