@@ -1824,7 +1824,10 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
     }
 
     Rf_setNewX11DeviceData((NewDevDesc *)(dd), xd);
+
+#if BUG
     R_ProcessEvents((void *)NULL);
+#endif
 
     return TRUE;
 }
