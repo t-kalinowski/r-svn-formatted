@@ -54,11 +54,21 @@ double beta(double a, double b)
         return a + b;
 #endif
 
-    if (a <= 0 || b <= 0)
+    if (a < 0 || b < 0)
     {
         ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
+    else if (a == 0 || b == 0)
+    {
+        return ML_POSINF;
+    }
+#ifdef IEEE_754
+    else if (!FINITE(a) || !FINITE(b))
+    {
+        return 0;
+    }
+#endif
 
     if (a + b < xmax)
         return gamma(a) * gamma(b) / gamma(a + b);

@@ -39,22 +39,32 @@ double lbeta(double a, double b)
 
     p = q = a;
     if (b < p)
-        p = b;
+        p = b; /* := min(a,b) */
     if (b > q)
-        q = b;
+        q = b; /* := max(a,b) */
 
 #ifdef IEEE_754
     if (ISNAN(a) || ISNAN(b))
         return a + b;
 #endif
 
-    /* both arguments must be > 0 */
+    /* both arguments must be >= 0 */
 
-    if (p <= 0)
+    if (p < 0)
     {
         ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
+    else if (p == 0)
+    {
+        return ML_POSINF;
+    }
+#ifdef IEEE_754
+    else if (!FINITE(q))
+    {
+        return ML_NEGINF;
+    }
+#endif
 
     if (p >= 10)
     {
@@ -69,6 +79,6 @@ double lbeta(double a, double b)
         return lgamma(p) + corr + p - p * log(p + q) + (q - 0.5) * logrelerr(-p / (p + q));
     }
     else
-        /* p and q are small. */
+        /* p and q are small: p <= q > 10. */
         return log(gamma(p) * (gamma(q) / gamma(p + q)));
 }
