@@ -359,7 +359,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
 
 SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, generic, obj;
+    SEXP ans, generic = R_NilValue /* -Wall */, obj;
     SEXP callenv, defenv;
     int nargs;
     RCNTXT *cptr;
@@ -381,7 +381,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nargs)
         PROTECT(generic = eval(CAR(args), env));
     else
-        errorcall(call, "there must be a first argument");
+        errorcall(call, "There must be a first argument");
 
     if (nargs > 2) /* R-lang says there should be a warning */
         warningcall(call, "Arguments after the first two are ignored");
