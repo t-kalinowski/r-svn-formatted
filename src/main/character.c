@@ -841,7 +841,9 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
         if (utf8locale)
         {
-            /* This cannot lengthen the string, so safe to overwrite it */
+            /* This cannot lengthen the string, so safe to overwrite it.
+               Would also be possible a char at a time.
+             */
             int nc = mbstowcs(NULL, this, 0);
             wchar_t *wstr = Calloc(nc + 1, wchar_t), *wc;
             mbstowcs(wstr, this, nc + 1);
