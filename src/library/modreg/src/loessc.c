@@ -12,30 +12,36 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
+/*
+ *  Altered by B.D. Ripley to use  F77_SYMBOL, declare routines before use.
+ */
 #include <stdio.h>
 #include <math.h>
 #include <S.h>
-#ifdef lint
-#define F77_SUB(x) x
-#define F77_COM(x) x
-#else
-#ifdef __STDC__
-#define F77_SUB(x) x##_
-#define F77_COM(x) x##_
-#else
-#define F77_SUB(x) x /**/ _
-#define F77_COM(x) x /**/ _
-#endif
-#endif
 
-static void errmsg(char *string)
-{
-    PROBLEM "%s\n", string RECOVER(NULL_ENTRY);
-}
+#define F77_SUB(x) F77_SYMBOL(x)
+
+void loess_workspace();
+void loess_prune();
+void loess_grow();
+void loess_free();
+void F77_SUB(lowesa)();
+void F77_SUB(lowesb)();
+void F77_SUB(lowesc)();
+void F77_SUB(lowesd)();
+void F77_SUB(lowese)();
+void F77_SUB(lowesf)();
+void F77_SUB(lowesl)();
+void F77_SUB(ehg169)();
+void F77_SUB(ehg196)();
+
 static void warnmsg(char *string)
 {
     PROBLEM "%s\n", string WARNING(NULL_ENTRY);
 }
+
+#undef min
+#undef max
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
@@ -45,8 +51,8 @@ static void warnmsg(char *string)
 static long *iv, liv, lv, tau;
 static double *v;
 
-loess_raw(y, x, weights, robust, d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, surf_stat, surface,
-          parameter, a, xi, vert, vval, diagonal, trL, one_delta, two_delta, setLf) double *y,
+void loess_raw(y, x, weights, robust, d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, surf_stat,
+               surface, parameter, a, xi, vert, vval, diagonal, trL, one_delta, two_delta, setLf) double *y,
     *x, *weights, *robust, *span, *cell, *surface, *xi, *vert, *vval, *diagonal, *trL, *one_delta, *two_delta;
 long *d, *n, *parameter, *a, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *setLf;
 char **surf_stat;
@@ -122,23 +128,24 @@ char **surf_stat;
     loess_free();
 }
 
-loess_dfit(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, d, n, m, fit) double *y,
+void loess_dfit(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, d, n, m,
+                fit) double *y,
     *x, *x_evaluate, *weights, *span, *fit;
 long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
 {
-    long zero = 0, one = 1;
+    long zero = 0;
 
     loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, &zero);
     F77_SUB(lowesf)(x, y, weights, iv, &liv, &lv, v, m, x_evaluate, &zero, &zero, fit);
     loess_free();
 }
 
-loess_dfitse(y, x, x_evaluate, weights, robust, family, span, degree, nonparametric, drop_square, sum_drop_sqr, d, n, m,
-             fit, L) double *y,
+void loess_dfitse(y, x, x_evaluate, weights, robust, family, span, degree, nonparametric, drop_square, sum_drop_sqr, d,
+                  n, m, fit, L) double *y,
     *x, *x_evaluate, *weights, *robust, *span, *fit, *L;
 long *family, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
 {
-    long zero = 0, one = 1, two = 2;
+    long zero = 0, two = 2;
 
     loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, &zero);
     if (*family == GAUSSIAN)
@@ -150,7 +157,7 @@ long *family, *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
     }
     loess_free();
 }
-loess_ifit(parameter, a, xi, vert, vval, m, x_evaluate, fit) double *xi, *vert, *vval, *x_evaluate, *fit;
+void loess_ifit(parameter, a, xi, vert, vval, m, x_evaluate, fit) double *xi, *vert, *vval, *x_evaluate, *fit;
 long *parameter, *a, *m;
 {
     loess_grow(parameter, a, xi, vert, vval);
@@ -158,8 +165,8 @@ long *parameter, *a, *m;
     loess_free();
 }
 
-loess_ise(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, d, n, m, fit,
-          L) double *y,
+void loess_ise(y, x, x_evaluate, weights, span, degree, nonparametric, drop_square, sum_drop_sqr, cell, d, n, m, fit,
+               L) double *y,
     *x, *x_evaluate, *weights, *span, *cell, *fit, *L;
 long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
 {
@@ -172,7 +179,7 @@ long *degree, *nonparametric, *drop_square, *sum_drop_sqr, *d, *n, *m;
     loess_free();
 }
 
-loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, setLf) long *d, *n, *degree,
+void loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, setLf) long *d, *n, *degree,
     *nonparametric, *drop_square, *sum_drop_sqr, *setLf;
 double *span;
 {
@@ -200,10 +207,10 @@ double *span;
         iv[i + 40] = drop_square[i];
 }
 
-loess_prune(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
+void loess_prune(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
 long *parameter, *a;
 {
-    long d, vc, a1, v1, xi1, vv1, nc, nv, nvmax, i, j, k;
+    long d, vc, a1, v1, xi1, vv1, nc, nv, nvmax, i, k;
 
     d = iv[1];
     vc = iv[3] - 1;
@@ -236,10 +243,10 @@ long *parameter, *a;
         vval[i] = v[vv1 + i];
 }
 
-loess_grow(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
+void loess_grow(parameter, a, xi, vert, vval) double *xi, *vert, *vval;
 long *parameter, *a;
 {
-    long d, vc, nc, nv, a1, v1, xi1, vv1, i, j, k;
+    long d, vc, nc, nv, a1, v1, xi1, vv1, i, k;
 
     d = parameter[0];
     vc = parameter[2];
@@ -288,7 +295,7 @@ long *parameter, *a;
     (&d, &vc, &nc, &nc, &nv, &nv, v + v1, iv + a1, v + xi1, iv + iv[7] - 1, iv + iv[8] - 1, iv + iv[9] - 1);
 }
 
-loess_free()
+void loess_free()
 {
     Free(v);
     Free(iv);
@@ -416,6 +423,7 @@ void F77_SUB(ehg182)(i) int *i;
     warnmsg(mess);
 }
 
+#include <string.h>
 void F77_SUB(ehg183)(s, i, n, inc) char *s;
 int *i, *n, *inc;
 {
