@@ -144,7 +144,7 @@ DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_FocusOnConsole, ptr_Raqua
     ptr_do_browsepkgs, ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_InitAquaIO,
     ptr_RSetConsoleWidth;
 
-DL_FUNC ptr_R_ProcessEvents, ptr_CocoaInnerQuartzDevice, ptr_CocoaGetQuartzParameters;
+DL_FUNC ptr_R_ProcessEvents, ptr_CocoaInnerQuartzDevice, ptr_CocoaGetQuartzParameters, ptr_CocoaSystem;
 
 Rboolean CocoaInnerQuartzDevice(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg)
