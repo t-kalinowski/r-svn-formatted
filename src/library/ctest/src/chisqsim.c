@@ -12,6 +12,8 @@
 #include "R_ext/Random.h"
 #include "R_ext/Applic.h"
 
+#include "ctest.h"
+
 static void rcont2(int *nrow, int *ncol, int *nrowt, int *ncolt, int *ntotal, double *fact, int *jwork, int *matrix)
 {
     int nlmp, j, l, m, ia, ib, ic, jc, id, ie, ii, nrowtl, iap, idp, igp, ihp, iip, nll, nlm, nrowm, ncolm, lsm, lsp;
