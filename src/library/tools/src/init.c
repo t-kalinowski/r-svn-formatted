@@ -21,7 +21,8 @@
 #include "tools.h"
 #include <R_ext/Rdynload.h>
 
-R_CallMethodDef callMethods[] = {{"delim_match", (DL_FUNC)&delim_match, 2}, {NULL, NULL, 0}};
+R_CallMethodDef callMethods[] = {
+    {"delim_match", (DL_FUNC)&delim_match, 2}, {"Rmd5", (DL_FUNC)&Rmd5, 1}, {NULL, NULL, 0}};
 
 void R_init_tools(DllInfo *dll)
 {
