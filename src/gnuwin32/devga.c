@@ -2726,7 +2726,7 @@ SEXP do_bringtotop(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-        if (dev < 1 || dev > NumDevices() || dev == NA_INTEGER)
+        if (dev < 1 || dev > R_MaxDevices || dev == NA_INTEGER)
             errorcall(call, "invalid value of `which'");
         gdd = (GEDevDesc *)GetDevice(dev - 1);
         if (!gdd)
