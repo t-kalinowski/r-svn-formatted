@@ -30,6 +30,7 @@ static char *ConsoleBufp;
 static int ConsoleBufCnt;
 static char ConsolePrompt[32];
 
+/* NOT Used ? */
 static void InitConsoleGetchar()
 {
     ConsoleBufCnt = 0;
@@ -91,7 +92,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
             filled = c;
             goto donefill;
         }
-        if (type == STRSXP && c == '\"' || c == '\'')
+        if (type == STRSXP && (c == '\"' || c == '\''))
         {
             quote = c;
             while ((c = scanchar()) != R_EOF && c != quote)
@@ -190,7 +191,7 @@ static void expected(char *what, char *got)
     error("\"scan\" expected %s got \"%s\"\n", what, got);
 }
 
-static SEXP extractItem(char *buffer, SEXP ans, int i)
+static void extractItem(char *buffer, SEXP ans, int i)
 {
     char *endp;
 

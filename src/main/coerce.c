@@ -61,7 +61,7 @@ SEXP do_codesgets(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, y;
     double yi;
-    int i, iy, lx, nx, ny;
+    int i, iy = 0, lx, nx, ny;
 
     checkArity(op, args);
     x = CAR(args);
@@ -248,6 +248,7 @@ SEXP do_as(SEXP call, SEXP op, SEXP args, SEXP rho)
         return install(CHAR(STRING(u)[0]));
     default:
         errorcall(call, "unimplemented coersion\n");
+        return R_NilValue; /* for -Wall */
     }
 }
 

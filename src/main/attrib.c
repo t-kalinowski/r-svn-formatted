@@ -131,9 +131,9 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
 /* the output.  Note that the Dim and Names attributes */
 /* should have been assigned elsewhere. */
 
-SEXP copyMostAttrib(SEXP inp, SEXP ans)
+void copyMostAttrib(SEXP inp, SEXP ans)
 {
-    SEXP s, t, u;
+    SEXP s;
     PROTECT(ans);
     PROTECT(inp);
     for (s = ATTRIB(inp); s != R_NilValue; s = CDR(s))
@@ -144,7 +144,6 @@ SEXP copyMostAttrib(SEXP inp, SEXP ans)
         }
     }
     UNPROTECT(2);
-    return;
 }
 
 static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
@@ -282,6 +281,7 @@ SEXP commentgets(SEXP vec, SEXP comment)
         return R_NilValue;
     }
     error("attempt to set invalid comment attribute\n");
+    return R_NilValue; /*- just for -Wall */
 }
 
 SEXP do_commentgets(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -320,6 +320,7 @@ SEXP classgets(SEXP vec, SEXP class)
         return R_NilValue;
     }
     error("attempt to set invalid class attribute\n");
+    return R_NilValue; /*- just for -Wall */
 }
 
 SEXP do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)

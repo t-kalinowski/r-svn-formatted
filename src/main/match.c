@@ -101,6 +101,7 @@ int pmatch(SEXP formal, SEXP tag, int exact)
 
 fail:
     error("invalid partial string match\n");
+    return 0; /* for -Wall */
 }
 
 /**************************************************/

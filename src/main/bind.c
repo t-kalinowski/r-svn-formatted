@@ -699,7 +699,7 @@ SEXP substituteList(SEXP, SEXP);
 
 SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int mode;
+    int mode = ANYSXP; /* for -Wall; none from the ones below */
     SEXP t;
 
     rho = env;
@@ -780,6 +780,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         return rbind(call, args, mode);
     }
+    return call; /* never used; just for -Wall */
 }
 
 static int imax(int i, int j)

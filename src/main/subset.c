@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,7 @@
  *
  */
 
+#ifdef NotUsed /* -Wall */
 static void SetArgsforUseMethod(SEXP x)
 {
     char buf[4];
@@ -53,6 +54,7 @@ static void SetArgsforUseMethod(SEXP x)
         }
     }
 }
+#endif
 
 SEXP fixLevels(SEXP result, SEXP arg)
 {

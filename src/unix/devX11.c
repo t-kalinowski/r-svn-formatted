@@ -25,8 +25,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/cursorfont.h>
-#include <X11/Xutil.h>
+#include <X11/Intrinsic.h>/*->  Xlib.h  Xutil.h Xresource.h .. */
 #include "rotated.h"
+#include "devX11.h" /* 'Public' routines from here */
 
 /********************************************************/
 /* This device driver has been documented so that it be	*/
@@ -49,9 +50,6 @@
 /* specific structure					*/
 /********************************************************/
 
-/* R Graphics Parameters */
-/* local device copy so that we can detect */
-/* when parameter changes */
 typedef struct
 {
     /* R Graphics Parameters */
@@ -164,7 +162,6 @@ static void X11_MetricInfo(int, double *, double *, double *, DevDesc *);
 /* Support Routines */
 
 static void FreeColors(void);
-void ProcessEvents(void);
 static XFontStruct *RLoadFont(int, int);
 static double pixelHeight(void);
 static double pixelWidth(void);

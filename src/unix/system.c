@@ -105,6 +105,8 @@
 
 #include "Defn.h"
 #include "Fileio.h"
+#include "Graphics.h" /* KillAllDevices() [nothing else?] */
+#include "devX11.h"   /* 'Public' routines from devX11.c (event loop) */
 
 #ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
@@ -164,6 +166,7 @@ static int waitForActivity()
             return XActivity;
     if (FD_ISSET(stdinfd, &readMask))
         return StdinActivity;
+    return 0; /* for -Wall*/
 }
 
 #ifdef HAVE_LIBREADLINE
@@ -703,7 +706,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     FILE *fp;
     char *x = "r", buf[120];
-    int read, i, j;
+    int read = 0, i, j;
     SEXP tlist = R_NilValue, tchar, rval;
 
     checkArity(op, args);
@@ -759,7 +762,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *tmp;
-    int ask;
+    int ask = 0;
 
     if (R_BrowseLevel)
     {

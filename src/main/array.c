@@ -113,6 +113,7 @@ SEXP do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         error("bad arguments to array\n");
+    return call; /* never used; just for -Wall */
 }
 
 SEXP allocArray(SEXPTYPE mode, SEXP dims)
@@ -357,7 +358,9 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
                 sum += xij * yjk;
             }
             z[i + k * nrx] = sum;
+#ifndef IEEE_754
         next_ik:;
+#endif
         }
 }
 
@@ -388,7 +391,9 @@ static void cmatprod(complex *x, int nrx, int ncx, complex *y, int nry, int ncy,
             }
             z[i + k * nrx].r = sum_r;
             z[i + k * nrx].i = sum_i;
+#ifndef IEEE_754
         next_ik:;
+#endif
         }
 }
 
@@ -413,7 +418,9 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
                 sum += xji * yjk;
             }
             z[i + k * ncx] = sum;
+#ifndef IEEE_754
         next_ik:;
+#endif
         }
 }
 
@@ -444,7 +451,9 @@ static void ccrossprod(complex *x, int nrx, int ncx, complex *y, int nry, int nc
             }
             z[i + k * ncx].r = sum_r;
             z[i + k * ncx].i = sum_i;
+#ifndef IEEE_754
         next_ik:;
+#endif
         }
 }
 
@@ -595,7 +604,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, r, dims, dn;
-    int i, len, ncol, nrow;
+    int i, len = 0, ncol = 0, nrow = 0;
 
     checkArity(op, args);
     a = CAR(args);
@@ -687,6 +696,7 @@ SEXP do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 not_matrix:
     errorcall(call, "argument is not a matrix\n");
+    return call; /* never used; just for -Wall */
 }
 
 /* swap works by finding for a index i, the position */

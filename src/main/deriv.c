@@ -91,6 +91,7 @@ static int isUminus(SEXP s)
                 return 0;
         default:
             error("invalid form in unary minus check\n");
+            return -1; /* for -Wall */
         }
     }
     else

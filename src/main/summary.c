@@ -598,6 +598,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
 badarg:
     errorcall(call, "invalid argument type\n");
+    return R_NilValue; /* for -Wall */
 }
 
 SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -725,5 +726,5 @@ bad:
     error("complete.cases: not all arguments have the same length\n");
 bad2:
     error("complete.cases: invalid argument type\n");
-    /*NOTREACHED*/
+    return R_NilValue; /* NOTREACHED; for -Wall */
 }

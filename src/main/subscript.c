@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -372,5 +372,5 @@ SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
     }
     else
         error("subscripting on non-vector\n");
-    /*NOTREACHED*/
+    return x; /*NOTREACHED*/
 }

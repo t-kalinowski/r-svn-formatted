@@ -434,7 +434,7 @@ SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static int equal(int i, int j, SEXP x)
 {
-    int c;
+    int c = -1;
 
     switch (TYPEOF(x))
     {
@@ -461,7 +461,7 @@ static int equal(int i, int j, SEXP x)
 
 static int greater(int i, int j, SEXP x)
 {
-    int c;
+    int c = -1;
 
     switch (TYPEOF(x))
     {
@@ -489,7 +489,7 @@ static int greater(int i, int j, SEXP x)
 static int listgreater(int i, int j, SEXP key)
 {
     SEXP x;
-    int c;
+    int c = -1;
 
     while (key != R_NilValue)
     {
@@ -565,6 +565,8 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isVector(CAR(args)))
         n = LENGTH(CAR(args));
+    else
+        n = -1; /* for -Wall;  will have error below */
     for (ap = args; ap != R_NilValue; ap = CDR(ap))
     {
         if (!isVector(CAR(ap)))

@@ -1895,8 +1895,6 @@ int validFigureMargins(DevDesc *dd)
     return ((dd->gp.plt[0] < dd->gp.plt[1]) && (dd->gp.plt[2] < dd->gp.plt[3]));
 }
 
-void initDisplayList();
-
 static void invalidError(char *message, DevDesc *dd)
 {
     dd->dp.currentFigure -= 1;

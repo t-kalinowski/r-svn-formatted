@@ -442,7 +442,7 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
                 if (nsig > i_mxns)
                     i_mxns = nsig;
             }
-        done:;
+            /* done: ; */
         }
     }
 

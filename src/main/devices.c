@@ -35,13 +35,15 @@ static char *SaveString(SEXP sxp, int offset)
     return s;
 }
 
+#ifdef NotUsed
 static void DeviceUnavailable(char *dev)
 {
     errorcall(gcall, "%s device is unavailable.\n", dev);
 }
+#endif
 
 #ifdef Unix
-int X11DeviceDriver(DevDesc *, char *, double, double, double);
+#include "../unix/devX11.h"
 
 SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {

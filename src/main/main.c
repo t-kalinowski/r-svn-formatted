@@ -216,7 +216,7 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
                 return;
             bufp = buf;
         }
-        while (c = *bufp++)
+        while ((c = *bufp++))
         {
             R_IoBufferPutc(c, &R_ConsoleIob);
             if (c == ';' || c == '\n')
@@ -298,7 +298,7 @@ FILE *R_OpenInitFile(void);
 
 static int doneit;
 
-static int R_LoadProfile(FILE *fp)
+static void R_LoadProfile(FILE *fp)
 {
     if (fp != NULL)
     {

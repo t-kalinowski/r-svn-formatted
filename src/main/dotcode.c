@@ -779,6 +779,7 @@ static int string2type(char *s)
         }
     }
     error("type \"%s\" not supported in interlanguage calls\n", s);
+    return 1; /* for -Wall */
 }
 
 void call_R(char *func, long nargs, void **arguments, char **modes, long *lengths, char **names, long nres,

@@ -156,7 +156,7 @@ void isintrpt()
 }
 #endif
 
-SEXP do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
+void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     CAR(args) = coerceVector(CAR(args), STRSXP);
     if (length(CAR(args)) <= 0)
@@ -219,7 +219,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
         REprintf("Error in %s : ", dcall);
     }
     else
-        REprintf("Error: ", dcall);
+        REprintf("Error: ", dcall); /*-- dcall = ??? */
     i = 0;
     while (ErrorDB[i].index != ERROR_UNKNOWN)
     {
@@ -255,7 +255,7 @@ void WarningMessage(SEXP call, int which_warn, ...)
         REprintf("Warning in %s : ", dcall);
     }
     else
-        REprintf("Warning: ", dcall);
+        REprintf("Warning: ", dcall); /*-- dcall = ??? */
     i = 0;
     while (WarningDB[i].index != WARNING_UNKNOWN)
     {

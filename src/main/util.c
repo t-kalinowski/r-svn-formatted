@@ -343,6 +343,7 @@ int nrows(SEXP s)
     }
     else
         error("object is not a matrix\n");
+    return -1;
 }
 
 int ncols(SEXP s)
@@ -478,7 +479,7 @@ SEXPTYPE str2type(char *s)
         if (!strcmp(s, TypeTable[i].str))
             return TypeTable[i].type;
     }
-    return -1;
+    /*NOTREACHED :*/ return TypeTable[0].type;
 }
 
 SEXP type2str(SEXPTYPE t)
@@ -491,6 +492,7 @@ SEXP type2str(SEXPTYPE t)
             return mkChar(TypeTable[i].str);
     }
     UNIMPLEMENTED("type2str");
+    return R_NilValue; /* for -Wall */
 }
 
 /* function to test whether a string is a true value */
@@ -536,6 +538,7 @@ SEXP nthcdr(SEXP s, int n)
     }
     else
         error("\"nthcdr\" need a list to CDR down\n");
+    return R_NilValue; /* for -Wall */
 }
 
 /* mfindVarInFrame - look up symbol in a single environment frame */

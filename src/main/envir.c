@@ -340,7 +340,10 @@ SEXP do_detach(SEXP call, SEXP op, SEXP args, SEXP env)
     for (t = R_GlobalEnv; ENCLOS(t) != R_NilValue && pos > 2; t = ENCLOS(t))
         pos--;
     if (pos != 2)
+    {
         error("detach: invalid pos= given\n");
+        s = t; /* for -Wall */
+    }
     else
     {
         PROTECT(s = ENCLOS(t));
@@ -545,6 +548,7 @@ static SEXP pos2env(int pos, SEXP call)
     if (pos == NA_INTEGER || pos < -1 || pos == 0)
     {
         errorcall(call, "invalid argument\n");
+        env = call; /* just for -Wall */
     }
     else if (pos == -1)
     {

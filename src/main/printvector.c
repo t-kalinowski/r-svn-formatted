@@ -27,7 +27,7 @@
 
 static void printLogicalVector(int *x, int n, int index)
 {
-    int i, w, labwidth, width;
+    int i, w, labwidth = 0, width;
 
     if (index)
     {
@@ -62,7 +62,7 @@ static void printLogicalVector(int *x, int n, int index)
 
 static void printFactorVector(int *x, int n, int index, SEXP levels, int nlev)
 {
-    int i, j, w, labwidth, width;
+    int i, j, w, labwidth = 0, width;
 
     if (index)
     {
@@ -112,7 +112,7 @@ static void printFactorVector(int *x, int n, int index, SEXP levels, int nlev)
 
 static void printIntegerVector(int *x, int n, int index)
 {
-    int i, w, labwidth, width;
+    int i, w, labwidth = 0, width;
 
     if (index)
     {
@@ -147,7 +147,7 @@ static void printIntegerVector(int *x, int n, int index)
 
 void printRealVector(double *x, int n, int index)
 {
-    int i, w, d, e, labwidth, width;
+    int i, w, d, e, labwidth = 0, width;
 
     if (index)
     {
@@ -182,7 +182,7 @@ void printRealVector(double *x, int n, int index)
 
 void printComplexVector(complex *x, int n, int index)
 {
-    int i, w, wr, dr, er, wi, di, ei, labwidth, width;
+    int i, w, wr, dr, er, wi, di, ei, labwidth = 0, width;
 
     if (index)
     {
@@ -226,7 +226,7 @@ void printComplexVector(complex *x, int n, int index)
 
 static void printStringVector(SEXP *x, int n, int quote, int index)
 {
-    int i, w, labwidth, width;
+    int i, w, labwidth = 0, width;
 
     if (index)
     {

@@ -69,6 +69,7 @@ static int CountItems(SEXP sxp, int handsoff)
         return CountItems(CAR(sxp), handsoff) + CountItems(CDR(sxp), handsoff);
     }
     errorcall(gcall, "invalid argument type\n");
+    return -1; /* for -Wall */
 }
 
 static void InsertVector(SEXP sxp, int handsoff)

@@ -637,6 +637,7 @@ static void ReallocVector(SEXP s, int length)
         break;
     default:
         error("invalid type in ReallocVector\n");
+        size = 0;
     }
     if (R_VMax - R_VTop < size)
         error("restore memory exhausted (should not happen)\n");
@@ -779,6 +780,7 @@ static SEXP OffsetToNode(int offset)
         return NewAddress[m];
 
     error("unresolved node during restore\n");
+    return R_NilValue; /* for -Wall */
 }
 
 static void DataSave(SEXP s, FILE *fp)
@@ -1162,32 +1164,25 @@ void R_SaveToFile(SEXP obj, FILE *fp, int ascii)
 
 SEXP R_LoadFromFile(FILE *fp)
 {
-    SEXP ans;
-
     switch (R_ReadMagic(fp))
     {
 #ifdef HAVE_RPC_XDR_H
     case R_MAGIC_XDR:
-        ans = XdrLoad(fp);
-        break;
+        return (XdrLoad(fp));
 #endif
     case R_MAGIC_BINARY:
-        ans = BinaryLoad(fp);
-        break;
+        return (BinaryLoad(fp));
     case R_MAGIC_ASCII:
-        ans = AsciiLoad(fp);
-        break;
+        return (AsciiLoad(fp));
     case R_MAGIC_BINARY_VERSION16:
-        ans = BinaryLoadOld(fp, 16);
-        break;
+        return (BinaryLoadOld(fp, 16));
     case R_MAGIC_ASCII_VERSION16:
-        ans = AsciiLoadOld(fp, 16);
-        break;
+        return (AsciiLoadOld(fp, 16));
     default:
         fclose(fp);
         error("restore file corrupted -- no data loaded\n");
+        return (R_NilValue); /* for -Wall */
     }
-    return ans;
 }
 
 /***************************************/

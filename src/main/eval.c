@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -558,7 +558,7 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     findcontext(PRIMVAL(op), R_NilValue);
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 SEXP do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -632,6 +632,7 @@ SEXP do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
         findcontext(CTXT_BROWSER, v);
     else
         findcontext(CTXT_RETURN, v);
+    return R_NilValue; /*NOTREACHED*/
 }
 
 SEXP do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -694,7 +695,7 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, SEXP tmploc)
     }
     else
         error("invalid (Non-language) left side of assignment\n");
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 /* Main entry point for complex assignments */
@@ -808,6 +809,7 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         UNIMPLEMENTED("do_set");
     }
+    return R_NilValue; /*NOTREACHED*/
 }
 
 /*  evalList  -  evaluate each expression in el  */

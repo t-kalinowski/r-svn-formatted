@@ -84,7 +84,7 @@ static SEXP FactorCoerce(SEXP x, SEXP y)
     return ans;
 invalid:
     errorcall(rcall, "invalid factor level in comparison\n");
-    /*NOTREACHED*/
+    return x; /*NOTREACHED*/
 }
 
 SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)

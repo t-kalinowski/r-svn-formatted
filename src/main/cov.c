@@ -439,6 +439,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
     default:
         errorcall(call, "invalid computational method\n");
+        pair = 0; /* just for -Wall */
     }
     if (pair == NA_INTEGER)
         pair = 0;

@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -189,6 +189,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
         return R_GlobalEnv;
     else
         error("sys.frame: not that many enclosing functions\n");
+    return R_NilValue; /* just for -Wall */
 }
 
 /*
@@ -279,6 +280,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
     if (n == 0 && cptr->nextcontext == NULL)
         return (duplicate(cptr->call));
     errorcall(R_GlobalContext->call, "not that many enclosing functions\n");
+    return R_NilValue; /* just for -Wall */
 }
 
 SEXP R_sysfunction(int n, RCNTXT *cptr)
@@ -312,6 +314,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     if (n == 0 && cptr->nextcontext == NULL)
         return (findVar(CAR(cptr->call), cptr->sysparent));
     errorcall(R_GlobalContext->call, "not that many enclosing functions\n");
+    return R_NilValue; /* just for -Wall */
 }
 
 /*
@@ -396,5 +399,6 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         return (R_sysfunction(n, cptr));
     default:
         error("internal error in do_sys\n");
+        return R_NilValue; /* just for -Wall */
     }
 }
