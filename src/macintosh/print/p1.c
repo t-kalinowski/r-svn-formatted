@@ -265,7 +265,14 @@ void printLoop(WindowPtr window) // PMPrintSession printSession, PMPageFormat pa
         return;
 
     if (pageFormat == kPMNoPageFormat)
-        DoPageSetup();
+    {
+        status = DoPageSetup();
+        if (status != noErr)
+        {
+            pageFormat = kPMNoPageFormat;
+            return;
+        }
+    }
 
     if (!isGraphicWindow(window))
     {
@@ -275,6 +282,9 @@ void printLoop(WindowPtr window) // PMPrintSession printSession, PMPageFormat pa
 
     if (status == noErr)
         status = DoPrintDialog(); // printSession, pageFormat, &printSettings);
+
+    if (status != noErr)
+        return;
 
     //	Since this sample code doesn't have a window, give the spool file a name.
     status = PMSetJobNameCFString(printSettings, jobName);
