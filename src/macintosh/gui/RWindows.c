@@ -1726,6 +1726,8 @@ void RnWWin(char *buf, SInt16 len, WEReference we)
 {
     SInt32 i;
 
+    if (we == NULL)
+        return;
     for (i = 0; i < len; i++)
     {
         WEKey(buf[i], NULL, we);
