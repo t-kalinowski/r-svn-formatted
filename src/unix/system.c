@@ -268,7 +268,7 @@ int Rf_initialize_R(int ac, char **av)
                     break;
                 else
 #endif
-                    snprintf(msg, 1024, _("WARNING: unknown option %s\n"), *av);
+                    snprintf(msg, 1024, _("WARNING: unknown option '%s'\n"), *av);
                 R_ShowMessage(msg);
             }
         }

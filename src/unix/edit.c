@@ -145,7 +145,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!strcmp(cmd, "internal"))
     {
         if (!isString(ti))
-            error(_("title must be a string"));
+            error(_("'title' must be a string"));
         if (LENGTH(STRING_ELT(ti, 0)) > 0)
         {
             title = R_alloc(strlen(CHAR(STRING_ELT(ti, 0))) + 1, sizeof(char));
@@ -167,7 +167,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
             sprintf(editcmd, "%s \"%s\"", cmd, filename);
         rc = runcmd(editcmd, 1, 1, "");
         if (rc == NOLAUNCH)
-            errorcall(call, _("unable to run editor %s"), cmd);
+            errorcall(call, _("unable to run editor '%s'"), cmd);
         if (rc != 0)
             warningcall(call, _("editor ran but returned error status"));
     }
@@ -189,7 +189,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     x = PROTECT(R_ParseFile(fp, -1, &status));
     fclose(fp);
     if (status != PARSE_OK)
-        errorcall(call, _("An error occurred on line %d\n use a command like\n x <- edit()\n to recover"),
+        errorcall(call, _("an error occurred on line %d\n use a command like\n x <- edit()\n to recover"),
                   R_ParseError);
     R_ResetConsole();
     { /* can't just eval(x) here */
