@@ -413,41 +413,58 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
         else
         {
             nms = getAttrib(spec, R_NamesSymbol);
-            n = length(nms);
-            for (i = 0; i < n; i++)
+            if (nms == R_NilValue)
+            { /* PR#1939 */
+                txt = VECTOR_ELT(spec, 0);
+                if (TYPEOF(txt) == LANGSXP || TYPEOF(txt) == SYMSXP)
+                {
+                    UNPROTECT(1);
+                    PROTECT(txt = coerceVector(txt, EXPRSXP));
+                }
+                else if (!isExpression(txt))
+                {
+                    UNPROTECT(1);
+                    PROTECT(txt = coerceVector(txt, STRSXP));
+                }
+            }
+            else
             {
-                if (!strcmp(CHAR(STRING_ELT(nms, i)), "cex"))
+                n = length(nms);
+                for (i = 0; i < n; i++)
                 {
-                    cex = asReal(VECTOR_ELT(spec, i));
-                }
-                else if (!strcmp(CHAR(STRING_ELT(nms, i)), "col"))
-                {
-                    col = asInteger(FixupCol(VECTOR_ELT(spec, i), NA_INTEGER));
-                }
-                else if (!strcmp(CHAR(STRING_ELT(nms, i)), "font"))
-                {
-                    font = asInteger(FixupFont(VECTOR_ELT(spec, i), NA_INTEGER));
-                }
-                else if (!strcmp(CHAR(STRING_ELT(nms, i)), "vfont"))
-                {
-                    vfont = FixupVFont(VECTOR_ELT(spec, i));
-                }
-                else if (!strcmp(CHAR(STRING_ELT(nms, i)), ""))
-                {
-                    txt = VECTOR_ELT(spec, i);
-                    if (TYPEOF(txt) == LANGSXP)
+                    if (!strcmp(CHAR(STRING_ELT(nms, i)), "cex"))
                     {
-                        UNPROTECT(1);
-                        PROTECT(txt = coerceVector(txt, EXPRSXP));
+                        cex = asReal(VECTOR_ELT(spec, i));
                     }
-                    else if (!isExpression(txt))
+                    else if (!strcmp(CHAR(STRING_ELT(nms, i)), "col"))
                     {
-                        UNPROTECT(1);
-                        PROTECT(txt = coerceVector(txt, STRSXP));
+                        col = asInteger(FixupCol(VECTOR_ELT(spec, i), NA_INTEGER));
                     }
+                    else if (!strcmp(CHAR(STRING_ELT(nms, i)), "font"))
+                    {
+                        font = asInteger(FixupFont(VECTOR_ELT(spec, i), NA_INTEGER));
+                    }
+                    else if (!strcmp(CHAR(STRING_ELT(nms, i)), "vfont"))
+                    {
+                        vfont = FixupVFont(VECTOR_ELT(spec, i));
+                    }
+                    else if (!strcmp(CHAR(STRING_ELT(nms, i)), ""))
+                    {
+                        txt = VECTOR_ELT(spec, i);
+                        if (TYPEOF(txt) == LANGSXP)
+                        {
+                            UNPROTECT(1);
+                            PROTECT(txt = coerceVector(txt, EXPRSXP));
+                        }
+                        else if (!isExpression(txt))
+                        {
+                            UNPROTECT(1);
+                            PROTECT(txt = coerceVector(txt, STRSXP));
+                        }
+                    }
+                    else
+                        errorcall(call, "invalid graphics parameter");
                 }
-                else
-                    errorcall(call, "invalid graphics parameter");
             }
         }
         break;
