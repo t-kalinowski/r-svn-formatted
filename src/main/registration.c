@@ -250,6 +250,12 @@ static R_CallMethodDef callMethods[] = {
     CALLDEF(R_lazyLoadDBinsertValue, 5),
     CALLDEF(R_lazyLoadDBfetch, 4),
 
+#ifdef BYTECODE
+    CALLDEF(R_getbcprofcounts, 0),
+    CALLDEF(R_startbcprof, 0),
+    CALLDEF(R_stopbcprof, 0),
+#endif
+
     {NULL, NULL, 0}};
 
 #define EXTDEF(name)                                                                                                   \
