@@ -340,7 +340,7 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             else if (streql(CHAR(namei), "contrasts"))
             {
-                if (TYPEOF(argi) != STRSXP || LENGTH(s) != 2)
+                if (TYPEOF(argi) != STRSXP || LENGTH(argi) != 2)
                     errorcall(call, "contrasts parameter invalid\n");
                 VECTOR(value)[i] = SetOption(tag, argi);
             }

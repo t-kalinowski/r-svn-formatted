@@ -40,7 +40,7 @@ static SEXP stripAttrib(SEXP tag, SEXP lst)
 
 SEXP getAttrib(SEXP vec, SEXP name)
 {
-    SEXP s, blank;
+    SEXP s;
     int len, i, any;
 
     if (isString(name))
@@ -62,13 +62,12 @@ SEXP getAttrib(SEXP vec, SEXP name)
         {
             len = length(vec);
             PROTECT(s = allocVector(STRSXP, len));
-            blank = mkChar("");
             i = 0;
             any = 0;
             for (; vec != R_NilValue; vec = CDR(vec), i++)
             {
                 if (TAG(vec) == R_NilValue)
-                    STRING(s)[i] = blank;
+                    STRING(s)[i] = R_BlankString;
                 else if (isSymbol(TAG(vec)))
                 {
                     any = 1;
@@ -575,7 +574,7 @@ SEXP dimgets(SEXP vec, SEXP val)
 
 SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP attrs, blank, names, namesattr, value;
+    SEXP attrs, names, namesattr, value;
     int nvalues;
     namesattr = R_NilValue;
     attrs = ATTRIB(CAR(args));
@@ -592,7 +591,6 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
     /* FIXME */
     PROTECT(value = allocVector(VECSXP, nvalues));
     PROTECT(names = allocVector(STRSXP, nvalues));
-    PROTECT(blank = mkChar(""));
     nvalues = 0;
     if (namesattr != R_NilValue)
     {
@@ -604,7 +602,7 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         VECTOR(value)[nvalues] = CAR(attrs);
         if (TAG(attrs) == R_NilValue)
-            STRING(names)[nvalues] = blank;
+            STRING(names)[nvalues] = R_BlankString;
         else
             STRING(names)[nvalues] = PRINTNAME(TAG(attrs));
         attrs = CDR(attrs);
@@ -612,7 +610,7 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     setAttrib(value, R_NamesSymbol, names);
     NAMED(value) = NAMED(CAR(args));
-    UNPROTECT(3);
+    UNPROTECT(2);
     return value;
 }
 

@@ -192,13 +192,11 @@ static void ListAnswer(SEXP x, int recurse)
             }
         }
         else
-        {
             while (x != R_NilValue)
             {
                 LIST_ASSIGN(duplicate(CAR(x)));
                 x = CDR(x);
             }
-        }
         break;
     default:
         LIST_ASSIGN(duplicate(x));
@@ -463,7 +461,6 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse)
     case NILSXP:
         break;
     case LISTSXP:
-    case LANGSXP:
         for (i = 0; i < n; i++)
         {
             namei = ItemName(names, i);
@@ -533,10 +530,10 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse)
     seqno = seqno + saveseqno;
 }
 
-/* Code to extract the optional arguments to c(). */
-/* We do it this way, rather than having an interpreted */
-/* font-end do the job, because we want to avoid duplication */
-/* at the top level.  FIXME : is there another possibility? */
+/* Code to extract the optional arguments to c().  We do it this */
+/* way, rather than having an interpreted font-end do the job, */
+/* because we want to avoid duplication at the top level. */
+/* FIXME : is there another possibility? */
 
 static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
 {

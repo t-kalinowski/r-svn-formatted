@@ -1222,7 +1222,7 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
             }
         }
         if (!set)
-            STRING(m)[i] = mkChar("");
+            STRING(m)[i] = R_BlankString;
         s = CDR(s);
     }
 

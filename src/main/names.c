@@ -628,9 +628,6 @@ extern void installFunTab(int i)
         INTERNAL(install(R_FunTab[i].name)) = mkPRIMSXP(i, R_FunTab[i].eval % 10);
     else
         SYMVALUE(install(R_FunTab[i].name)) = mkPRIMSXP(i, R_FunTab[i].eval % 10);
-    /*
-    printf("%d %s %d\n", i, R_FunTab[i].name, R_FunTab[i].code);
-    */
 }
 
 void SymbolShortcuts()
