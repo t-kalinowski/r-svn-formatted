@@ -318,8 +318,6 @@ SEXP allocVector(SEXPTYPE type, int length)
         break;
     case LGLSXP:
     case INTSXP:
-    case FACTSXP:
-    case ORDSXP:
         if (length <= 0)
             size = 0;
         else
@@ -374,7 +372,6 @@ SEXP allocVector(SEXPTYPE type, int length)
 #endif
     LENGTH(s) = length;
     NAMED(s) = 0;
-    OBJECT(s) = (type == FACTSXP || type == ORDSXP);
     ATTRIB(s) = R_NilValue;
     if (size > 0)
     {
@@ -490,8 +487,6 @@ void markSExp(SEXP s)
         case SPECIALSXP:
         case CHARSXP:
         case LGLSXP:
-        case FACTSXP:
-        case ORDSXP:
         case INTSXP:
         case REALSXP:
         case CPLXSXP:
@@ -540,8 +535,6 @@ void compactPhase(void)
             size = LENGTH(s) + 1;
             break;
         case LGLSXP:
-        case FACTSXP:
-        case ORDSXP:
         case INTSXP:
             size = LENGTH(s) * sizeof(int);
             break;

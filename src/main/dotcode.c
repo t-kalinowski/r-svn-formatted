@@ -53,8 +53,6 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg)
     switch (TYPEOF(s))
     {
     case LGLSXP:
-    case FACTSXP:
-    case ORDSXP:
     case INTSXP:
         n = LENGTH(s);
         iptr = INTEGER(s);
@@ -145,8 +143,6 @@ static SEXP CPtrToRObj(void *p, int n, SEXPTYPE type)
     switch (type)
     {
     case LGLSXP:
-    case FACTSXP:
-    case ORDSXP:
     case INTSXP:
         s = allocVector(type, n);
         iptr = (int *)p;

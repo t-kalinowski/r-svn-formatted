@@ -666,8 +666,6 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                     {
                     case INTSXP:
                     case LGLSXP:
-                    case FACTSXP:
-                    case ORDSXP:
                         if (INTEGER(u)[i] == NA_INTEGER)
                             INTEGER(rval)[i % len] = 0;
                         break;
@@ -697,8 +695,6 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                 case INTSXP:
                 case LGLSXP:
-                case FACTSXP:
-                case ORDSXP:
                     if (INTEGER(u)[i] == NA_INTEGER)
                         INTEGER(rval)[i % len] = 0;
                     break;

@@ -20,16 +20,16 @@
 #include "Defn.h"
 
 /*
- * Subscript Preamble:
+ *  Subscript Preamble:
  *
- * There are three kinds of subscripting [, [[, and $. We have
- * three different functions to do these. The special [ subscripting
- * where dim(x)==ncol(subscript matrix) is handled down inside
- * vectorSubset. The subscript matrix is turned into a subscript
- * vector of the appropriate size and then vectorSubset continues.
- * This provides coherence especially regarding attributes etc. (it
- * would be quicker to pull this case out and do it alone but then
- * we have 2 things to update re attributes).
+ *  There are three kinds of subscripting [, [[, and $. We have
+ *  three different functions to do these. The special [ subscripting
+ *  where dim(x)==ncol(subscript matrix) is handled down inside
+ *  vectorSubset. The subscript matrix is turned into a subscript
+ *  vector of the appropriate size and then vectorSubset continues.
+ *  This provides coherence especially regarding attributes etc. (it
+ *  would be quicker to pull this case out and do it alone but then
+ *  we have 2 things to update re attributes).
  *
  */
 
@@ -56,26 +56,6 @@ static void SetArgsforUseMethod(SEXP x)
 }
 #endif
 
-SEXP fixLevels(SEXP result, SEXP arg)
-{
-    SEXP attrib, nattrib;
-
-    if (isFactor(result))
-    {
-        LEVELS(result) = LEVELS(arg);
-        PROTECT(result);
-        PROTECT(arg);
-        if ((attrib = getAttrib(arg, nattrib = install("levels"))) != R_NilValue)
-        {
-            PROTECT(attrib);
-            setAttrib(result, nattrib, attrib);
-            UNPROTECT(1);
-        }
-        UNPROTECT(2);
-    }
-    return result;
-}
-
 /* This does the transfer of elements from "x" to "result" */
 /* according to the integer subscripts given in "index". */
 
@@ -100,8 +80,6 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
         switch (mode)
         {
         case LGLSXP:
-        case FACTSXP:
-        case ORDSXP:
         case INTSXP:
             if (0 <= ii && ii < nx && ii != NA_INTEGER)
                 INTEGER(result)[i] = INTEGER(x)[ii];
@@ -250,8 +228,6 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
                 {
                 case LGLSXP:
                 case INTSXP:
-                case FACTSXP:
-                case ORDSXP:
                     INTEGER(result)[ij] = NA_INTEGER;
                     break;
                 case REALSXP:
@@ -273,8 +249,6 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
                 {
                 case LGLSXP:
                 case INTSXP:
-                case FACTSXP:
-                case ORDSXP:
                     INTEGER(result)[ij] = INTEGER(x)[iijj];
                     break;
                 case REALSXP:
@@ -331,103 +305,6 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
         DropDims(result);
     UNPROTECT(3);
     return result;
-}
-
-SEXP frameSubset(SEXP x, SEXP s, SEXP call, int drop)
-{
-    SEXP sr, sc, a, ap, ss, xp, oat, s1;
-    int nr, nc, ncs;
-    int i;
-
-    if (!isFrame(x))
-        errorcall(call, "argument is not a data frame\n");
-
-    nc = length(x);
-    nr = nrows(CAR(x));
-
-    /* s is protected */
-    /* the following ensures that */
-    /* pointers remain protected */
-
-    switch (length(s))
-    {
-    case 1:
-        PROTECT(sr = allocVector(INTSXP, nr));
-        for (i = 0; i < nr; i++)
-            INTEGER(sr)[i] = i + 1;
-        PROTECT(sc = frameSubscript(1, CAR(s), x));
-        break;
-    case 2:
-        PROTECT(sr = frameSubscript(0, CAR(s), x));
-        PROTECT(sc = frameSubscript(1, CADR(s), x));
-        break;
-    default:
-        errorcall(call, "invalid data frame subsetting\n");
-    }
-    ncs = LENGTH(sc);
-    if (ncs == 0)
-        error("zero is an invalid subscript for data frames\n");
-    PROTECT(a = allocList(ncs));
-    ap = a;
-    PROTECT(ss = allocList(2));
-    for (i = 0; i < ncs; i++)
-    {
-        xp = nthcdr(x, INTEGER(sc)[i] - 1);
-        if (isMatrix(CAR(xp)))
-        {
-            CAR(ss) = sr;
-            CADR(ss) = arraySubscript(1, R_MissingArg, CAR(xp));
-            CAR(ap) = matrixSubset(CAR(xp), ss, call, drop);
-            CAR(ap) = fixLevels(CAR(ap), CAR(xp));
-            TAG(ap) = TAG(xp);
-            oat = ATTRIB(CAR(ap));
-            ATTRIB(CAR(ap)) = duplicate(ATTRIB(CAR(xp)));
-            for (s1 = oat; s1 != R_NilValue; s1 = CDR(s1))
-            {
-                if (TAG(s1) == R_DimSymbol)
-                    setAttrib(CAR(ap), R_DimSymbol, CAR(s1));
-                if (TAG(s1) == R_LevelsSymbol)
-                    setAttrib(CAR(ap), R_LevelsSymbol, CAR(s1));
-                if (TAG(s1) == R_DimNamesSymbol)
-                    setAttrib(CAR(ap), R_DimNamesSymbol, CAR(s1));
-            }
-            ap = CDR(ap);
-        }
-        else
-        {
-            CAR(ap) = vectorSubset(CAR(xp), sr, call);
-            CAR(ap) = fixLevels(CAR(ap), CAR(xp));
-            TAG(ap) = TAG(xp);
-            oat = ATTRIB(ap);
-            ATTRIB(CAR(ap)) = duplicate(ATTRIB(CAR(xp)));
-            for (s1 = oat; s1 != R_NilValue; s1 = CDR(s1))
-            {
-                if (TAG(s1) == R_LevelsSymbol)
-                    setAttrib(CAR(ap), R_LevelsSymbol, CAR(s1));
-                if (TAG(s1) == R_NamesSymbol)
-                    setAttrib(CAR(ap), R_NamesSymbol, CAR(s1));
-            }
-            ap = CDR(ap);
-        }
-    }
-    UNPROTECT(1);
-    if (ncs == 1 && drop)
-    {
-        UNPROTECT(3);
-        /* attach row.names(x) here as names(x) ? */
-        return CAR(a);
-    }
-    xp = getAttrib(x, R_RowNamesSymbol);
-    if (!isNull(xp))
-    {
-        PROTECT(xp);
-        PROTECT(ap = vectorSubset(xp, sr, call));
-        setAttrib(a, R_RowNamesSymbol, ap);
-        UNPROTECT(2);
-    }
-    DataFrameClass(a);
-    UNPROTECT(3);
-    return a;
 }
 
 static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
@@ -507,13 +384,6 @@ static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
                 LOGICAL(result)[i] = LOGICAL(x)[ii];
             else
                 LOGICAL(result)[i] = NA_LOGICAL;
-            break;
-        case FACTSXP:
-        case ORDSXP:
-            if (ii != NA_INTEGER)
-                FACTOR(result)[i] = FACTOR(x)[ii];
-            else
-                FACTOR(result)[i] = NA_FACTOR;
             break;
         case INTSXP:
             if (ii != NA_INTEGER)
@@ -702,7 +572,7 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
     setAttrib(ans, R_ClassSymbol, R_NilValue);
 
     UNPROTECT(1);
-    return fixLevels(ans, x);
+    return ans;
 }
 
 /* The [[]] subset operator.  It needs to be fast. */
@@ -810,8 +680,6 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-        case FACTSXP:
-        case ORDSXP:
         case INTSXP:
             INTEGER(ans)[0] = INTEGER(x)[offset];
             break;
@@ -826,7 +694,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     UNPROTECT(1);
-    return fixLevels(ans, x);
+    return ans;
 }
 
 /* a helper to partially match tags against a candidate */
@@ -911,32 +779,4 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     NAMED(CAR(y)) = NAMED(x);
     return CAR(y);
-}
-
-/* Data Frame subsetting */
-
-SEXP do_subsetdf(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    SEXP frame;
-    int drop = 1;
-
-    PROTECT(args = EvalArgs(args, rho, 0));
-    ExtractDropArg(args, &drop);
-    frame = frameSubset(CAR(args), CDR(args), call, drop);
-    UNPROTECT(1);
-    return frame;
-}
-
-SEXP do_subsetdf2(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    SEXP frame;
-    int drop = 1;
-
-    PROTECT(args = EvalArgs(args, rho, 0));
-    ExtractDropArg(args, &drop);
-    frame = frameSubset(CAR(args), CDR(args), call, drop);
-    UNPROTECT(1);
-    if (isFrame(frame))
-        return CAR(frame);
-    return frame;
 }

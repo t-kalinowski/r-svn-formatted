@@ -192,10 +192,6 @@ static struct
 
                {ERROR_TSVEC_MISMATCH, "time-series/vector length mismatch\n"},
                {ERROR_INCOMPAT_ARGS, "incompatible arguments\n"},
-               {
-                   ERROR_INCOMPAT_FACTORS,
-                   "incompatible factors\n",
-               },
 
                {
                    ERROR_UNIMPLEMENTED,

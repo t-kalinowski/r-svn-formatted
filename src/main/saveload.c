@@ -608,8 +608,6 @@ static void ReallocVector(SEXP s, int length)
         break;
     case LGLSXP:
     case INTSXP:
-    case FACTSXP:
-    case ORDSXP:
         if (length <= 0)
             size = 0;
         else
@@ -696,8 +694,6 @@ static void MarkSave(SEXP s)
             NVSize += 1 + BYTE2VEC(LENGTH(s) + 1);
             break;
         case LGLSXP:
-        case FACTSXP:
-        case ORDSXP:
         case INTSXP:
             NSave++;
             NVSize += 1 + INT2VEC(LENGTH(s));
@@ -929,8 +925,6 @@ static void DataSave(SEXP s, FILE *fp)
                     break;
                 case INTSXP:
                 case LGLSXP:
-                case FACTSXP:
-                case ORDSXP:
                     l = LENGTH(&R_NHeap[i]);
                     OutInteger(fp, l);
                     OutNewline(fp);
@@ -1039,8 +1033,6 @@ static void RestoreSEXP(SEXP s, FILE *fp)
             COMPLEX(s)[j] = InComplex(fp);
         break;
     case INTSXP:
-    case FACTSXP:
-    case ORDSXP:
     case LGLSXP:
         LENGTH(s) = len = InInteger(fp);
         ;

@@ -351,7 +351,6 @@ SEXP do_detach(SEXP call, SEXP op, SEXP args, SEXP env)
         ENCLOS(t) = x;
     }
     R_Visible = 0;
-    FrameClassFix(FRAME(s));
     UNPROTECT(1);
     return FRAME(s);
 }

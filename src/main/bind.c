@@ -17,12 +17,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* NOTE ON FACTORS */
-/* For us, c(factor1, factor2) is legal only if factor1 */
-/* and factor2 are either both ordered or both unordered */
-/* and have the same levels.  Any attempt at combining */
-/* factors with anything else is stamped on. */
-
 #include "Defn.h"
 
 static SEXP cbind(SEXP, SEXP, SEXPTYPE);
@@ -77,14 +71,9 @@ static void answertype(SEXP x, int recurse, int usenames)
                 ans_flags |= 1;
                 ans_length += LENGTH(CAR(t));
                 break;
-            case FACTSXP:
-                ans_flags |= 2;
-                ans_length += LENGTH(CAR(t));
-                break;
-            case ORDSXP:
-                ans_flags |= 4;
-                ans_length += LENGTH(CAR(t));
-                break;
+
+                /* factors here previously */
+
             case INTSXP:
                 ans_flags |= 8;
                 ans_length += LENGTH(CAR(t));
@@ -135,17 +124,6 @@ static void listanswer(SEXP x, int recurse)
         for (i = 0; i < LENGTH(x); i++)
         {
             CAR(ans_ptr) = allocVector(TYPEOF(x), 1);
-            INTEGER(CAR(ans_ptr))[0] = INTEGER(x)[i];
-            ans_ptr = CDR(ans_ptr);
-        }
-        break;
-    case FACTSXP:
-    case ORDSXP:
-        for (i = 0; i < LENGTH(x); i++)
-        {
-            CAR(ans_ptr) = allocVector(TYPEOF(x), 1);
-            LEVELS(CAR(ans_ptr)) = LEVELS(x);
-            setAttrib(CAR(ans_ptr), R_LevelsSymbol, getAttrib(x, R_LevelsSymbol));
             INTEGER(CAR(ans_ptr))[0] = INTEGER(x)[i];
             ans_ptr = CDR(ans_ptr);
         }
@@ -598,7 +576,7 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     /* (perhaps a list if recursive=F) then we must */
     /* return a list.  Otherwise, if there was a character */
     /* mode argument we must return a character vector. */
-    /* and otherwise, we use the natural coersion. */
+    /* and otherwise, we use the natural coercion. */
     /* The exception is "factor" vectors.  These can */
     /* only be combined with factors of exactly the */
     /* same "orderedness", number of levels and */
@@ -613,32 +591,6 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (ans_flags & 1)
             mode = LGLSXP;
-        if (ans_flags & 2)
-        {
-            if (ans_flags != 2)
-                ErrorMessage(call, ERROR_INCOMPAT_ARGS);
-            t = CDR(args);
-            while (t != R_NilValue)
-            {
-                if (!factorsConform(CAR(args), CAR(t)))
-                    ErrorMessage(call, ERROR_INCOMPAT_FACTORS);
-                t = CDR(t);
-            }
-            mode = FACTSXP;
-        }
-        if (ans_flags & 4)
-        {
-            if (ans_flags != 4)
-                ErrorMessage(call, ERROR_INCOMPAT_ARGS);
-            t = CDR(args);
-            while (t != R_NilValue)
-            {
-                if (!factorsConform(CAR(args), CAR(t)))
-                    ErrorMessage(call, ERROR_INCOMPAT_FACTORS);
-                t = CDR(t);
-            }
-            mode = ORDSXP;
-        }
         if (ans_flags & 8)
             mode = INTSXP;
         if (ans_flags & 16)
@@ -673,11 +625,6 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
         realanswer(args);
     else
         integeranswer(args);
-    if (mode == FACTSXP || mode == ORDSXP)
-    {
-        LEVELS(ans) = LEVELS(CAR(args));
-        setAttrib(ans, R_LevelsSymbol, getAttrib(CAR(args), R_LevelsSymbol));
-    }
     args = t;
     if (ans_nnames && ans_length > 0)
     {
@@ -700,7 +647,52 @@ SEXP substituteList(SEXP, SEXP);
 SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int mode = ANYSXP; /* for -Wall; none from the ones below */
-    SEXP t;
+    SEXP a, p, t;
+
+    /* First we check to see if any of the */
+    /* arguments are data frames.  If there */
+    /* are, we need to a special dispatch */
+    /* to the interpreted data.frame functions. */
+
+    mode = 0;
+    for (a = args; a != R_NilValue; a = CDR(a))
+    {
+        if (isFrame(CAR(a)))
+            mode = 1;
+    }
+    if (mode)
+    {
+        a = args;
+        t = CDR(call);
+        while (a != R_NilValue)
+        {
+            if (t == R_NilValue)
+                errorcall(call, "corrupt data frame args!\n");
+            p = mkPROMISE(CAR(t), rho);
+            PRVALUE(p) = CAR(a);
+            CAR(a) = p;
+            t = CDR(t);
+            a = CDR(a);
+        }
+        switch (PRIMVAL(op))
+        {
+        case 1:
+            op = install("cbind.data.frame");
+            break;
+        case 2:
+            op = install("rbind.data.frame");
+            break;
+        }
+        PROTECT(op = findFun(op, env));
+        if (TYPEOF(op) != CLOSXP)
+            errorcall(call, "non closure invoked in rbind/cbind\n");
+        args = applyClosure(call, op, args, env, R_NilValue);
+        UNPROTECT(1);
+        return args;
+    }
+
+    /* There are no data frames in the argument list. */
+    /*  Perform default action */
 
     rho = env;
     ans_flags = 0;
@@ -725,31 +717,6 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (ans_flags & 1)
             mode = LGLSXP;
-        if (ans_flags & 2)
-        {
-            if (ans_flags != 2)
-                ErrorMessage(call, ERROR_INCOMPAT_ARGS);
-            t = CDR(args);
-            while (t != R_NilValue)
-            {
-                if (!factorsConform(CAR(args), CAR(t)))
-                    ErrorMessage(call, ERROR_INCOMPAT_FACTORS);
-                t = CDR(t);
-            }
-            mode = FACTSXP;
-        }
-        if (ans_flags & 4)
-        {
-            if (ans_flags != 4)
-                ErrorMessage(call, ERROR_INCOMPAT_ARGS);
-            while (t != R_NilValue)
-            {
-                if (!factorsConform(CAR(args), CAR(t)))
-                    ErrorMessage(call, ERROR_INCOMPAT_FACTORS);
-                t = CDR(t);
-            }
-            mode = ORDSXP;
-        }
         if (ans_flags & 8)
             mode = INTSXP;
         if (ans_flags & 16)
@@ -762,8 +729,6 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     {
     case NILSXP:
     case LGLSXP:
-    case FACTSXP:
-    case ORDSXP:
     case INTSXP:
     case REALSXP:
     case CPLXSXP:
@@ -931,11 +896,6 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
                 }
             }
         }
-    }
-    if (mode == FACTSXP || mode == ORDSXP)
-    {
-        LEVELS(result) = LEVELS(CAR(args));
-        setAttrib(result, R_LevelsSymbol, getAttrib(CAR(args), R_LevelsSymbol));
     }
     if (have_cnames | have_rnames)
     {
@@ -1141,11 +1101,6 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 n += mrows;
             }
         }
-    }
-    if (mode == FACTSXP || mode == ORDSXP)
-    {
-        LEVELS(result) = LEVELS(CAR(args));
-        setAttrib(result, R_LevelsSymbol, getAttrib(CAR(args), R_LevelsSymbol));
     }
     if (have_rnames | have_cnames)
     {

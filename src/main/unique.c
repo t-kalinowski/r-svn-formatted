@@ -140,12 +140,6 @@ void HashTableSetup(SEXP x)
         equal = iequal;
         MKsetup(3);
         break;
-    case FACTSXP:
-    case ORDSXP:
-        hash = ihash;
-        equal = iequal;
-        MKsetup(LEVELS(x) + 1);
-        break;
     case INTSXP:
         hash = ihash;
         equal = iequal;
@@ -253,10 +247,6 @@ SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
     k = 0;
     switch (TYPEOF(x))
     {
-    case FACTSXP:
-    case ORDSXP:
-        LEVELS(ans) = LEVELS(x);
-        setAttrib(ans, R_LevelsSymbol, getAttrib(x, R_LevelsSymbol));
     case LGLSXP:
     case INTSXP:
         for (i = 0; i < n; i++)
@@ -384,9 +374,71 @@ SEXP match(SEXP table, SEXP x, int nmatch)
 }
 
 /* Partial Matching of Strings */
-/* Loosely based on Therneau's charmatch */
+/* Fully S Compatible version. */
 
 SEXP do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans, input, target;
+    int i, j, k, match, n_input, n_target, perfect, temp, dups_ok;
+    checkArity(op, args);
+
+    input = CAR(args);
+    n_input = LENGTH(input);
+    target = CADR(args);
+    n_target = LENGTH(target);
+    dups_ok = asLogical(CADDR(args));
+    if (dups_ok == NA_LOGICAL)
+        errorcall(call, "invalid \"duplicates.ok\" argument\n");
+
+    if (!isString(input) || !isString(target))
+        errorcall(call, "argument is not of mode character\n");
+
+    ans = allocVector(INTSXP, n_input);
+
+    for (i = 0; i < n_input; i++)
+    {
+        temp = strlen(CHAR(STRING(input)[i]));
+        match = 0;
+        perfect = 0;
+        if (temp)
+        {
+            for (j = 0; j < n_target; j++)
+            {
+                k = strncmp(CHAR(STRING(input)[i]), CHAR(STRING(target)[j]), temp);
+                if (k == 0)
+                {
+                    if (strlen(CHAR(STRING(target)[j])) == temp)
+                    {
+                        if (perfect == 1)
+                        {
+                            if (!dups_ok)
+                                match = 0;
+                        }
+                        else
+                        {
+                            perfect = 1;
+                            match = j + 1;
+                        }
+                    }
+                    else if (perfect == 0)
+                    {
+                        if (match == 0)
+                            match = j + 1;
+                        else if (!dups_ok)
+                            match = 0;
+                    }
+                }
+            }
+        }
+        INTEGER(ans)[i] = match;
+    }
+    return ans;
+}
+
+/* Partial Matching of Strings */
+/* Based on Therneau's charmatch. */
+
+SEXP do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, input, target;
     int i, j, k, match, n_input, n_target, perfect, temp;
@@ -436,10 +488,9 @@ SEXP do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/*
-   matching the supplied arguments to the formal arguments;
-   returned value is a list with all components named
-*/
+/* Functions for matching the supplied arguments to the */
+/* formal arguments of functions.  The returned value */
+/* is a list with all components named. */
 
 #define ARGUSED(x) LEVELS(x)
 

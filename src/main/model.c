@@ -1395,10 +1395,14 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(data);
     PROTECT(subset);
 
-    /* Glue on the row names. Create some if they */
-    /* don't exist - use as.character(1:nr). */
+    /* Turn the data "list" into a "data.frame" */
+    /* so that subsetting methods will work. */
+    /* To do this we must attach "class"  and */
+    /* "row.names" attributes */
 
-    DataFrameClass(data);
+    PROTECT(tmp = mkString("data.frame"));
+    setAttrib(data, R_ClassSymbol, tmp);
+    UNPROTECT(1);
     if (length(row_names) == nr)
     {
         setAttrib(data, R_RowNamesSymbol, row_names);
@@ -1415,7 +1419,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
 
-    /* Do the subsetting if required. */
+    /* Do the subsetting, if required. */
 
     if (subset != R_NilValue)
     {
@@ -1554,7 +1558,7 @@ static char *AppendInteger(char *buf, int i)
 SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP expr, factors, terms, v, vars, vnames, assign, xnames, tnames;
-    SEXP count, contrast, contr1, contr2, nlevels, ordered, columns, x;
+    SEXP count, contrast, contr1, contr2, nlevs, ordered, columns, x;
     SEXP variable, var_i;
     int fik, first, i, j, k, kk, ll, n, nc, nterms, nvar;
     int intercept, jstart, jnext, response, index;
@@ -1631,7 +1635,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* in a term in the model. */
 
     PROTECT(variable = allocVector(VECSXP, nvar));
-    PROTECT(nlevels = allocVector(INTSXP, nvar));
+    PROTECT(nlevs = allocVector(INTSXP, nvar));
     PROTECT(ordered = allocVector(LGLSXP, nvar));
     PROTECT(columns = allocVector(INTSXP, nvar));
 
@@ -1644,19 +1648,19 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (i == response - 1)
         {
             LOGICAL(ordered)[0] = 0;
-            INTEGER(nlevels)[0] = 0;
+            INTEGER(nlevs)[0] = 0;
             INTEGER(columns)[0] = 0;
         }
         else if (isOrdered(var_i))
         {
             LOGICAL(ordered)[i] = 1;
-            INTEGER(nlevels)[i] = LEVELS(var_i);
+            INTEGER(nlevs)[i] = nlevels(var_i);
             INTEGER(columns)[i] = ncols(var_i);
         }
         else if (isUnordered(var_i))
         {
             LOGICAL(ordered)[i] = 0;
-            INTEGER(nlevels)[i] = LEVELS(var_i);
+            INTEGER(nlevs)[i] = nlevels(var_i);
             INTEGER(columns)[i] = ncols(var_i);
         }
         else if (isNumeric(var_i))
@@ -1664,7 +1668,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
             VECTOR(variable)[i] = coerceVector(var_i, REALSXP);
             var_i = VECTOR(variable)[i];
             LOGICAL(ordered)[i] = 0;
-            INTEGER(nlevels)[i] = 0;
+            INTEGER(nlevs)[i] = 0;
             INTEGER(columns)[i] = ncols(var_i);
         }
         else
@@ -1683,7 +1687,7 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             for (i = response; i < nvar; i++)
             {
-                if (INTEGER(nlevels)[i] > 1 && INTEGER(factors)[i + j * nvar] == 1)
+                if (INTEGER(nlevs)[i] > 1 && INTEGER(factors)[i + j * nvar] == 1)
                 {
                     INTEGER(factors)[i + j * nvar] = 2;
                     goto alldone;
@@ -1698,7 +1702,7 @@ alldone:;
     /* expression to evaluate these, substituting */
     /* the required arguments at call time. */
     /* The calls have the following form: */
-    /* (contrast.type nlevels contrasts) */
+    /* (contrast.type nlevs contrasts) */
 
     PROTECT(contr1 = allocVector(VECSXP, nvar));
     PROTECT(contr2 = allocVector(VECSXP, nvar));
@@ -1717,7 +1721,7 @@ alldone:;
 
     for (i = 0; i < nvar; i++)
     {
-        if (INTEGER(nlevels)[i])
+        if (INTEGER(nlevs)[i])
         {
             k = 0;
             for (j = 0; j < nterms; j++)
@@ -1758,7 +1762,7 @@ alldone:;
         {
             if (INTEGER(factors)[i + j * nvar])
             {
-                if (INTEGER(nlevels)[i])
+                if (INTEGER(nlevs)[i])
                 {
                     switch (INTEGER(factors)[i + j * nvar])
                     {
@@ -1894,7 +1898,7 @@ alldone:;
                 }
                 if (jnext == jstart)
                 {
-                    if (INTEGER(nlevels)[i] > 0)
+                    if (INTEGER(nlevs)[i] > 0)
                     {
                         firstfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
                                     ncols(contrast), INTEGER(var_i));
@@ -1908,7 +1912,7 @@ alldone:;
                 }
                 else
                 {
-                    if (INTEGER(nlevels)[i] > 0)
+                    if (INTEGER(nlevs)[i] > 0)
                     {
                         addfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
                                   ncols(contrast), INTEGER(var_i));
