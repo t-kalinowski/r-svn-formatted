@@ -1246,3 +1246,13 @@ SEXP do_nsl(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 #endif
+
+SEXP do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP ans;
+
+    PROTECT(ans = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = getpid();
+    UNPROTECT(1);
+    return ans;
+}
