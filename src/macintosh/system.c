@@ -180,6 +180,8 @@ FILE *R_OpenLibraryFile(char *file)
     /* and descends from there to "library:base:R and opens */
     /* the specified file within that directory.  It returns */
     /* the resulting file pointer. */
+
+    /* ... */
 }
 
 FILE *R_OpenSysInitFile(void)
@@ -196,6 +198,8 @@ FILE *R_OpenSiteFile(void)
     /* and descends from there to the folder "etc" and opens */
     /* the file "Rprofile" within that directory.  It returns */
     /* the resulting file pointer. */
+
+    /* ... */
 }
 
 FILE *R_OpenInitFile(void)
@@ -222,13 +226,14 @@ int main(int ac, char **av)
     /* This is probably zero on the mac as we have direct */
     /* access to the number of ticks since process start */
 
-    /* ???? */
+    /* ... */
 
     /* FIXME HERE: Command line options are not available. */
     /* Application resources must be inspected here */
     /* and used to modify the compiled-in defaults. */
+    /* Compare with the Unix code. */
 
-    /* ???? */
+    /* ... */
 
     /* Set up the file handling defaults. */
 
@@ -239,8 +244,10 @@ int main(int ac, char **av)
     R_Sinkfile = NULL;     /* We begin writing to the console. */
 
     /* FIXME HERE: Initialize the floating point system for true IEEE. */
+    /* I don't know what is required here.  We want to handle NaNs and */
+    /* infinities.  R uses them. */
 
-    /* ???? */
+    /* ... */
 
     /* Call the real R main program (in ../main/main.c) */
     mainloop();
@@ -287,12 +294,6 @@ void R_CleanUp(int ask)
         case 'y':
         case 'Y':
             R_SaveGlobalEnv();
-#ifdef HAVE_LIBREADLINE
-#ifdef HAVE_READLINE_HISTORY_H
-            if (isatty(0) && UsingReadline)
-                write_history(".Rhistory");
-#endif
-#endif
             break;
         case 'n':
         case 'N':
@@ -307,13 +308,9 @@ void R_CleanUp(int ask)
     }
     KillAllDevices();
 
-#ifdef __FreeBSD__
-    fpsetmask(~0);
-#endif
+    /* FIXME HERE: Reset the floating-point system here */
 
-#ifdef linux
-    __setfpucw(_FPU_DEFAULT);
-#endif
+    /* ... */
 
     exit(0);
 }
@@ -393,7 +390,8 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* DON'T FIXME HERE:  This function is invoked when the user types q() */
 /* It should not pop up a dialog, but should query the user */
-/* in the console window. */
+/* in the console window.  Use a popup dialog when quite is selected */
+/* from the file menu. */
 
 SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
