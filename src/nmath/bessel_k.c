@@ -58,7 +58,7 @@ double bessel_k(double x, double alpha, double expo)
 #ifdef MATHLIB_STANDALONE
     bk = (double *)calloc(nb, sizeof(double));
     if (!bk)
-        MATHLIB_ERROR("%s", "bessel_k allocation error");
+        MATHLIB_ERROR("%s", _("bessel_k allocation error"));
 #else
     vmax = vmaxget();
     bk = (double *)R_alloc(nb, sizeof(double));
@@ -67,10 +67,10 @@ double bessel_k(double x, double alpha, double expo)
     if (ncalc != nb)
     { /* error input */
         if (ncalc < 0)
-            MATHLIB_WARNING4("bessel_k(%g): ncalc (=%ld) != nb (=%ld); alpha=%g. Arg. out of range?\n", x, ncalc, nb,
+            MATHLIB_WARNING4(_("bessel_k(%g): ncalc (=%ld) != nb (=%ld); alpha=%g. Arg. out of range?\n"), x, ncalc, nb,
                              alpha);
         else
-            MATHLIB_WARNING2("bessel_k(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
+            MATHLIB_WARNING2(_("bessel_k(%g,nu=%g): precision lost in result\n"), x, alpha + nb - 1);
     }
     x = bk[nb - 1];
 #ifdef MATHLIB_STANDALONE

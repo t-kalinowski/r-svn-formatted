@@ -60,7 +60,7 @@ double bessel_y(double x, double alpha)
 #ifdef MATHLIB_STANDALONE
     by = (double *)calloc(nb, sizeof(double));
     if (!by)
-        MATHLIB_ERROR("%s", "bessel_y allocation error");
+        MATHLIB_ERROR("%s", _("bessel_y allocation error"));
 #else
     vmax = vmaxget();
     by = (double *)R_alloc(nb, sizeof(double));
@@ -71,10 +71,10 @@ double bessel_y(double x, double alpha)
         if (ncalc == -1)
             return ML_POSINF;
         else if (ncalc < -1)
-            MATHLIB_WARNING4("bessel_y(%g): ncalc (=%ld) != nb (=%ld); alpha=%g. Arg. out of range?\n", x, ncalc, nb,
+            MATHLIB_WARNING4(_("bessel_y(%g): ncalc (=%ld) != nb (=%ld); alpha=%g. Arg. out of range?\n"), x, ncalc, nb,
                              alpha);
         else /* ncalc >= 0 */
-            MATHLIB_WARNING2("bessel_y(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
+            MATHLIB_WARNING2(_("bessel_y(%g,nu=%g): precision lost in result\n"), x, alpha + nb - 1);
     }
     x = by[nb - 1];
 #ifdef MATHLIB_STANDALONE

@@ -60,7 +60,7 @@ static double afc(int i)
 
     if (i < 0)
     {
-        MATHLIB_WARNING("rhyper.c: afc(i), i=%d < 0 -- SHOULD NOT HAPPEN!\n", i);
+        MATHLIB_WARNING(("rhyper.c: afc(i), i=%d < 0 -- SHOULD NOT HAPPEN!\n"), i);
         return -1; /* unreached (Wall) */
     }
     else if (i <= 7)

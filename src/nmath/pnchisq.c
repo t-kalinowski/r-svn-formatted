@@ -194,7 +194,7 @@ double pnchisq_raw(double x, double f, double theta, double errmax, double relto
 
     if (is_it)
     {
-        MATHLIB_WARNING2("pnchisq(x=%g, ..): not converged in %d iter.", x, itrmax);
+        MATHLIB_WARNING2(_("pnchisq(x=%g, ..): not converged in %d iter."), x, itrmax);
     }
 #ifdef DEBUG_pnch
     REprintf("\n == L_End: n=%d; term= %g; bound=%g\n", n, term, bound);
