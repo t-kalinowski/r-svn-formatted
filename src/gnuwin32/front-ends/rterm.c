@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "Rversion.h"
+#include "Startup.h"
 #define PSIGNAL
 #include "psignal.h"
 
@@ -32,7 +33,7 @@ static void my_onintr()
 
 int AppMain(int argc, char **argv)
 {
-    CharacterMode = 1;
+    CharacterMode = RTerm;
     if (strcmp(getDLLVersion(), getRVersion()) != 0)
     {
         fprintf(stderr, "Error: R.DLL version does not match\n");
