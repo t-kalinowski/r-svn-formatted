@@ -106,11 +106,14 @@ typedef struct
     enum DeviceKinds kind;
     int windowWidth;  /* Window width (pixels) */
     int windowHeight; /* Window height (pixels) */
-    Rboolean resize;  /* Window resized */
-    window gawin;     /* Graphics window */
-                      /*FIXME: we should have union for this stuff and
-                        maybe change gawin to canvas*/
-                      /* SCREEN section*/
+    int showWidth;    /* device width (pixels) */
+    int showHeight;   /* device height (pixels) */
+    int origWidth, origHeight, xshift, yshift;
+    Rboolean resize; /* Window resized */
+    window gawin;    /* Graphics window */
+                     /*FIXME: we should have union for this stuff and
+                       maybe change gawin to canvas*/
+                     /* SCREEN section*/
     popup locpopup, grpopup;
     button stoploc;
     menubar mbar, mbarloc;
@@ -118,6 +121,7 @@ typedef struct
     menuitem mpng, mbmp, mjpeg50, mjpeg75, mjpeg100;
     menuitem mps, mwm, mclpbm, mclpwm, mprint, mclose;
     menuitem mrec, madd, mreplace, mprev, mnext, mclear, msvar, mgvar;
+    menuitem mR, mfit, mfix;
     Rboolean recording, replaying, needsave;
     bitmap bm;
     /* PNG and JPEG section */
@@ -134,14 +138,26 @@ typedef struct
     Rboolean locator;
     int clicked; /* {0,1,2} */
     int px, py, lty, lwd;
+    int resizing; /* {1,2,3} */
+    double rescale_factor;
 } gadesc;
+
+rect getregion(gadesc *xd)
+{
+    rect r = getrect(xd->bm);
+    r.x += max(0, xd->xshift);
+    r.y += max(0, xd->yshift);
+    r.width = min(r.width, xd->showWidth);
+    r.height = min(r.height, xd->showHeight);
+    return r;
+}
 
 /********************************************************/
 /* There are a number of actions that every device 	*/
 /* driver is expected to perform (even if, in some	*/
 /* cases it does nothing - just so long as it doesn't 	*/
 /* crash !).  this is how the graphics engine interacts */
-/* with each device. ecah action will be documented 	*/
+/* with each device. Each action will be documented 	*/
 /* individually. 					*/
 /* hooks for these actions must be set up when the 	*/
 /* device is first created				*/
@@ -159,7 +175,7 @@ static void GA_Line(double, double, double, double, int, DevDesc *);
 static Rboolean GA_Locator(double *, double *, DevDesc *);
 static void GA_Mode(int);
 static void GA_NewPage(DevDesc *);
-static Rboolean GA_Open(DevDesc *, gadesc *, char *, double, double, Rboolean);
+static Rboolean GA_Open(DevDesc *, gadesc *, char *, double, double, Rboolean, int);
 static void GA_Polygon(int, double *, double *, int, int, int, DevDesc *);
 static void GA_Polyline(int, double *, double *, int, DevDesc *);
 static void GA_Rect(double, double, double, double, int, int, int, DevDesc *);
@@ -213,7 +229,7 @@ static void SaveAsWin(DevDesc *dd, char *display)
     ndd->displayList = R_NilValue;
     GInit(&ndd->dp);
     if (GADeviceDriver(ndd, display, GConvertXUnits(1.0, NDC, INCHES, dd), GConvertYUnits(1.0, NDC, INCHES, dd),
-                       dd->gp.ps, 0))
+                       dd->gp.ps, 0, 1))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -936,6 +952,38 @@ static void menuconsole(control m)
     show(RConsole);
 }
 
+static void menuR(control m)
+{
+    DevDesc *dd = (DevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+    check(xd->mR);
+    uncheck(xd->mfix);
+    uncheck(xd->mfit);
+    xd->resizing = 1;
+}
+
+static void menufit(control m)
+{
+    DevDesc *dd = (DevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    uncheck(xd->mR);
+    check(xd->mfit);
+    uncheck(xd->mfix);
+    xd->resizing = 2;
+}
+
+static void menufix(control m)
+{
+    DevDesc *dd = (DevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    uncheck(xd->mR);
+    uncheck(xd->mfit);
+    check(xd->mfix);
+    xd->resizing = 3;
+}
+
 static void CHelpKeyIn(control w, int key)
 {
     DevDesc *dd = (DevDesc *)getdata(w);
@@ -1063,14 +1111,32 @@ static void mbarf(control m)
         }                                                                                                              \
     }
 
-static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean recording)
+static void devga_sbf(control c, int pos)
+{
+    DevDesc *dd = (DevDesc *)getdata(c);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+    if (pos < 0)
+    {
+        pos = min(-pos - 1, xd->origWidth - xd->windowWidth);
+        xd->xshift = -pos;
+    }
+    else
+    {
+        pos = min(pos, xd->origHeight - xd->windowHeight);
+        xd->yshift = -pos;
+    }
+    xd->resize = 1;
+    HelpExpose(c, getrect(xd->gawin));
+}
+
+static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean recording, int resize)
 {
     menu m;
     int iw, ih;
-    double dw, dh, d;
+    double dw, dw0, dh, d;
 
     xd->kind = SCREEN;
-    dw = w / pixelWidth(NULL);
+    dw = dw0 = w / pixelWidth(NULL);
     dh = h / pixelHeight(NULL);
     if ((dw / devicewidth(NULL)) > 0.85)
     {
@@ -1086,11 +1152,15 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     }
     iw = dw + 0.5;
     ih = dh + 0.5;
-    if (!(xd->gawin = newwindow("R Graphics", rect(devicewidth(NULL) - iw - 5, 0, iw, ih),
-                                Document | StandardWindow | Menubar)))
+    if (resize == 2)
+        xd->rescale_factor = dw / dw0;
+    if (!(xd->gawin = newwindow("R Graphics", rect(devicewidth(NULL) - iw - 25, 0, iw, ih),
+                                Document | StandardWindow | Menubar | VScrollbar | HScrollbar)))
     {
         return 0;
     }
+    gchangescrollbar(xd->gawin, VWINSB, 0, ih - 1, ih, 0);
+    gchangescrollbar(xd->gawin, HWINSB, 0, iw - 1, iw, 0);
 
     addto(xd->gawin);
     gsetcursor(xd->gawin, ArrowCursor);
@@ -1177,6 +1247,16 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     MCHECK(xd->mgvar = newmenuitem("Get from variable", 0, menugvar));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(xd->mclear = newmenuitem("Clear history", 0, menuclear));
+    MCHECK(newmenu("Resize"));
+    MCHECK(xd->mR = newmenuitem("R mode", 0, menuR));
+    if (resize == 1)
+        check(xd->mR);
+    MCHECK(xd->mfit = newmenuitem("Fit to window", 0, menufit));
+    if (resize == 2)
+        check(xd->mfit);
+    MCHECK(xd->mfix = newmenuitem("Fixed size", 0, menufix));
+    if (resize == 3)
+        check(xd->mfix);
     newmdimenu();
 
     /* Normal popup */
@@ -1196,7 +1276,8 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     gchangepopup(xd->gawin, xd->grpopup);
 
     MCHECK(xd->bm = newbitmap(getwidth(xd->gawin), getheight(xd->gawin), getdepth(xd->gawin)));
-
+    gfillrect(xd->gawin, LightGray, getrect(xd->gawin));
+    gfillrect(xd->bm, LightGray, getrect(xd->bm));
     addto(xd->gawin);
     setdata(xd->mbar, (void *)dd);
     setdata(xd->mpng, (void *)dd);
@@ -1216,9 +1297,13 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     setdata(xd->mgvar, (void *)dd);
     setdata(xd->madd, (void *)dd);
     setdata(xd->mreplace, (void *)dd);
-    show(xd->gawin);
+    setdata(xd->mR, (void *)dd);
+    setdata(xd->mfit, (void *)dd);
+    setdata(xd->mfix, (void *)dd);
+    show(xd->gawin); /* twice, for a Windows bug */
     show(xd->gawin);
     BringToTop(xd->gawin);
+    sethit(xd->gawin, devga_sbf);
     setresize(xd->gawin, HelpResize);
     setredraw(xd->gawin, HelpExpose);
     setmousedown(xd->gawin, HelpMouseClick);
@@ -1227,11 +1312,12 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     setclose(xd->gawin, HelpClose);
     xd->recording = recording;
     xd->replaying = FALSE;
+    xd->resizing = resize;
 
     return 1;
 }
 
-static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, Rboolean recording)
+static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, Rboolean recording, int resize)
 {
     rect rr;
 
@@ -1245,10 +1331,11 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
 
     xd->fgcolor = Black;
     xd->bgcolor = White;
-
+    xd->rescale_factor = 1.0;
+    xd->xshift = xd->yshift = 0;
     if (!dsp[0])
     {
-        if (!setupScreenDevice(dd, xd, w, h, recording))
+        if (!setupScreenDevice(dd, xd, w, h, recording, resize))
             return FALSE;
     }
     else if (!strcmp(dsp, "win.print"))
@@ -1327,7 +1414,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
     if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
         xd->wanteddpi = 72;
     else
-        xd->wanteddpi = xd->truedpi;
+        xd->wanteddpi = xd->rescale_factor * xd->truedpi;
     if (!SetBaseFont(xd))
     {
         Rprintf("can't find any fonts\n");
@@ -1337,8 +1424,8 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         return FALSE;
     }
     rr = getrect(xd->gawin);
-    xd->windowWidth = rr.width;
-    xd->windowHeight = rr.height;
+    xd->origWidth = xd->showWidth = xd->windowWidth = rr.width;
+    xd->origHeight = xd->showHeight = xd->windowHeight = rr.height;
     xd->clip = rr;
     setdata(xd->gawin, (void *)dd);
     xd->needsave = FALSE;
@@ -1419,12 +1506,71 @@ static void GA_Resize(DevDesc *dd)
 
     if (xd->resize)
     {
-        int iw, ih;
+        int iw, ih, iw0 = dd->dp.right - dd->dp.left, ih0 = dd->dp.bottom - dd->dp.top;
+        double fw, fh, rf, shift;
 
-        dd->dp.left = dd->gp.left = 0.0;
-        dd->dp.right = dd->gp.right = iw = xd->windowWidth;
-        dd->dp.bottom = dd->gp.bottom = ih = xd->windowHeight;
-        dd->dp.top = dd->gp.top = 0.0;
+        iw = xd->windowWidth;
+        ih = xd->windowHeight;
+        if (xd->resizing == 1)
+        {
+            dd->dp.left = dd->gp.left = 0.0;
+            dd->dp.top = dd->gp.top = 0.0;
+            dd->dp.right = dd->gp.right = iw;
+            dd->dp.bottom = dd->gp.bottom = ih;
+        }
+        else if (xd->resizing == 2)
+        {
+            fw = (iw + 0.5) / (iw0 + 0.5);
+            fh = (ih + 0.5) / (ih0 + 0.5);
+            rf = min(fw, fh);
+            xd->rescale_factor *= rf;
+            xd->wanteddpi = xd->rescale_factor * xd->truedpi;
+            dd->dp.ps *= rf;
+            dd->dp.cra[0] *= rf;
+            dd->dp.cra[1] *= rf;
+            if (fw < fh)
+            {
+                dd->dp.left = dd->gp.left = 0.0;
+                xd->showWidth = dd->dp.right = dd->gp.right = iw;
+                xd->showHeight = ih0 * fw;
+                shift = (ih - xd->showHeight) / 2.0;
+                dd->dp.top = dd->gp.top = shift;
+                dd->dp.bottom = dd->gp.bottom = ih0 * fw + shift;
+                xd->xshift = 0;
+                xd->yshift = shift;
+            }
+            else
+            {
+                dd->dp.top = dd->gp.top = 0.0;
+                xd->showHeight = dd->dp.bottom = dd->gp.bottom = ih;
+                xd->showWidth = iw0 * fh;
+                shift = (iw - xd->showWidth) / 2.0;
+                dd->dp.left = dd->gp.left = shift;
+                dd->dp.right = dd->gp.right = iw0 * fh + shift;
+                xd->xshift = shift;
+                xd->yshift = 0;
+            }
+            xd->clip = getregion(xd);
+        }
+        else if (xd->resizing == 3)
+        {
+            if (iw0 < iw)
+                shift = (iw - iw0) / 2.0;
+            else
+                shift = min(0, xd->xshift);
+            dd->dp.left = dd->gp.left = shift;
+            dd->dp.right = dd->gp.right = iw0 + shift;
+            xd->xshift = shift;
+            gchangescrollbar(xd->gawin, HWINSB, max(-shift, 0), xd->origWidth - 1, xd->windowWidth, 0);
+            if (ih0 < ih)
+                shift = (ih - ih0) / 2.0;
+            else
+                shift = min(0, xd->yshift);
+            dd->dp.top = dd->gp.top = shift;
+            dd->dp.bottom = dd->gp.bottom = ih0 + shift;
+            xd->yshift = shift;
+            gchangescrollbar(xd->gawin, VWINSB, max(-shift, 0), xd->origHeight - 1, xd->windowHeight, 0);
+        }
         xd->resize = FALSE;
         if (xd->kind == SCREEN)
         {
@@ -1435,7 +1581,8 @@ static void GA_Resize(DevDesc *dd)
                 R_ShowMessage("Insufficient memory for resize. Killing device");
                 KillDevice(dd);
             }
-            setbackground(xd->bm, xd->bgcolor);
+            gfillrect(xd->gawin, LightGray, getrect(xd->gawin));
+            gfillrect(xd->bm, LightGray, getrect(xd->bm));
         }
     }
 }
@@ -1479,9 +1626,9 @@ static void GA_NewPage(DevDesc *dd)
     }
     else
     {
-        xd->clip = getrect(xd->bm);
+        xd->clip = getregion(xd);
     }
-    DRAW(gfillrect(_d, xd->bgcolor, getrect(_d)));
+    DRAW(gfillrect(_d, xd->bgcolor, getregion(xd)));
 }
 
 /********************************************************/
@@ -1899,7 +2046,7 @@ static void GA_Hold(DevDesc *dd)
 /* should know what you are doing if you do this)	*/
 /* (5) it must attach the device-specific parameters	*/
 /* structure to the device description structure	*/
-/* e.g., dd->deviceSpecfic = (void *) xd;		*/
+/* e.g., dd->deviceSpecific = (void *) xd;		*/
 /* (6) it must FREE the overall device description if 	*/
 /* it wants to bail out to the top-level		*/
 /* the graphics engine is responsible for allocating 	*/
@@ -1908,7 +2055,8 @@ static void GA_Hold(DevDesc *dd)
 /* the clean-up itself					*/
 /********************************************************/
 
-Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, Rboolean recording)
+Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, Rboolean recording,
+                        int resize)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -1939,7 +2087,7 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
 
     /* Start the Device Driver and Hardcopy.  */
 
-    if (!GA_Open(dd, xd, display, width, height, recording))
+    if (!GA_Open(dd, xd, display, width, height, recording, resize))
     {
         free(xd);
         return FALSE;
@@ -1975,8 +2123,9 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
 
     /* Nominal Character Sizes in Pixels */
     gcharmetric(xd->gawin, xd->font, -1, &a, &d, &w);
-    dd->dp.cra[0] = w;
-    dd->dp.cra[1] = a + d;
+    dd->dp.cra[0] = w * xd->rescale_factor;
+    dd->dp.cra[1] = (a + d) * xd->rescale_factor;
+
     /* Character Addressing Offsets */
     /* These are used to plot a single plotting character */
     /* so that it is exactly over the plotting point */
@@ -2200,4 +2349,24 @@ static void SaveAsBmp(DevDesc *dd, char *fn)
     R_SaveAsBmp(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
     gsetcliprect(xd->bm, r);
     fclose(fp);
+}
+
+SEXP do_bringtotop(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    int dev;
+    DevDesc *dd;
+    gadesc *xd;
+
+    checkArity(op, args);
+    dev = asInteger(CAR(args));
+    if (dev < 1 || dev > NumDevices() || dev == NA_INTEGER)
+        errorcall(call, "invalid value of `which'");
+    dd = GetDevice(dev - 1);
+    if (!dd)
+        errorcall(call, "invalid device");
+    xd = (gadesc *)dd->deviceSpecific;
+    if (!xd)
+        errorcall(call, "invalid device");
+    BringToTop(xd->gawin);
+    return R_NilValue;
 }
