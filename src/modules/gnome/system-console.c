@@ -49,7 +49,7 @@ void R_gtk_terminal_line_event(GtkWidget *widget)
 }
 
 /* Fill a text buffer with user typed console input. */
-int Rgnome_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
+int Rgnome_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
     if (!R_Interactive)
     {
