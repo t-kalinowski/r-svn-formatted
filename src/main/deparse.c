@@ -231,6 +231,8 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     file = CADR(args);
+    if (!isValidString(file))
+        errorcall(call, "file name must be a valid character string\n");
 
     fp = NULL;
     if (strlen(CHAR(STRING(file)[0])) > 0)
@@ -809,7 +811,7 @@ static void print2buff(char *strng)
     bufflen = strlen(buff);
     /*if (bufflen + tlen > BUFSIZE) {
     buff[0] = '\0';
-    error("string too long in deparse");
+    error("string too long in deparse\n");
     }*/
     AllocBuffer(bufflen + tlen);
     strcat(buff, strng);

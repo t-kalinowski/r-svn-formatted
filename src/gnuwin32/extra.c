@@ -93,6 +93,9 @@ SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn, ans;
@@ -100,6 +103,7 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
     WIN32_FIND_DATA find_data;
     HANDLE fh;
     int i, nfiles, failures = 0;
+    struct stat sb;
 
     checkArity(op, args);
     fn = CAR(args);
@@ -112,6 +116,15 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         for (p = tmp; *p != '\0'; p++)
             if (*p == '/')
                 *p = '\\';
+        if (stat(tmp, &sb))
+            /* Is this a directory? */
+            if (sb.st_mode & _S_IFDIR)
+            {
+                if (rmdir(tmp))
+                    failures++;
+                continue;
+            }
+        /* Regular file (or more) */
         strcpy(dir, tmp);
         if ((p = strrchr(dir, '\\')))
             *(++p) = '\0';
@@ -146,14 +159,13 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_helpstart(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans;
     char *home, buf[MAX_PATH];
     FILE *ff;
 
     checkArity(op, args);
     home = getenv("R_HOME");
     if (home == NULL)
-        error("R_HOME not set");
+        error("R_HOME not set\n");
     sprintf(buf, "%s\\doc\\html\\index.html", home);
     ff = fopen(buf, "r");
     if (!ff)
@@ -168,10 +180,7 @@ SEXP do_helpstart(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     fclose(ff);
     ShellExecute(NULL, "open", buf, NULL, home, SW_SHOW);
-    PROTECT(ans = allocVector(STRSXP, 1));
-    STRING(ans)[0] = mkChar("");
-    UNPROTECT(1);
-    return (ans);
+    return R_NilValue;
 }
 
 static int nhfiles = 0;
@@ -206,7 +215,7 @@ SEXP do_helpitem(SEXP call, SEXP op, SEXP args, SEXP env)
         fclose(ff);
         home = getenv("R_HOME");
         if (home == NULL)
-            error("R_HOME not set");
+            error("R_HOME not set\n");
         ShellExecute(NULL, "open", item, NULL, home, SW_SHOW);
     }
     else if (type == 2)

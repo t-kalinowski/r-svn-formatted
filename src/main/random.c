@@ -51,6 +51,8 @@ static void GetRNGstate()
         if (!isVector(seeds))
             error(".Random.seed is not a vector");
         RNG_kind = INTEGER(seeds)[0];
+        if (RNG_kind > MERSENNE_TWISTER || RNG_kind < 0)
+            RNG_kind = WICHMANN_HILL;
         len_seed = RNG_Table[RNG_kind].n_seed;
         if (LENGTH(seeds) > 1 && LENGTH(seeds) < len_seed + 1)
         {

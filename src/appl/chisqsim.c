@@ -10,10 +10,9 @@
 #include <math.h>
 #include "S.h"
 
-static void rcont2(long *nrow, long *ncol, long *nrowt, long *ncolt, long *ntotal, double *fact, long *jwork,
-                   long *matrix)
+static void rcont2(int *nrow, int *ncol, int *nrowt, int *ncolt, int *ntotal, double *fact, int *jwork, int *matrix)
 {
-    long nlmp, j, l, m, ia, ib, ic, jc, id, ie, ii, nrowtl, iap, idp, igp, ihp, iip, nll, nlm, nrowm, ncolm, lsm, lsp;
+    int nlmp, j, l, m, ia, ib, ic, jc, id, ie, ii, nrowtl, iap, idp, igp, ihp, iip, nll, nlm, nrowm, ncolm, lsm, lsp;
     double x, y, dummy, sumprb;
 
     --jwork;
@@ -160,11 +159,11 @@ static void rcont2(long *nrow, long *ncol, long *nrowt, long *ncolt, long *ntota
    Calculates the Pearson chi-squared for each generated table.
    */
 
-void chisqsim(long *nrow, long *ncol, long *nrowt, long *ncolt, long *n, long *b, double *expected, long *observed,
-              double *fact, long *jwork, double *results)
+void chisqsim(int *nrow, int *ncol, int *nrowt, int *ncolt, int *n, int *b, double *expected, int *observed,
+              double *fact, int *jwork, double *results)
 {
     /* Local variables */
-    long i, j, iter;
+    int i, j, iter;
     double chi, e, o, x;
 
     /* Calculate log-factorials */

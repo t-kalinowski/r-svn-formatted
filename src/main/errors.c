@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1999  The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,11 +24,25 @@
 
 #include "Defn.h"
 
-void jump_to_toplevel();
 static void jump_now();
 
 static int inError = 0;
 static int inWarning = 0;
+
+/* Interface / Calling Hierarchy :
+
+  R__stop()   -> do_error .    errorcall \-/->--->----------------\
+              \	          X                        \
+               \-> error ->--/-\-->-- jump_to_toplevel --> jump_now
+
+  R__warning()-> do_warning   -> warningcall -> if(warn >= 2) errorcall
+                 /
+            warning /
+
+  ErrorMessage   : similar to errorcall()   but with message from ErrorDB[]
+
+  WarningMessage : similar to warningcall() but with message from WarningDB[].
+*/
 
 void onintr()
 {
@@ -67,7 +82,7 @@ void warningcall(SEXP call, char *format, ...)
     if (s != R_NilValue)
     {
         if (!isLanguage(s) && !isExpression(s))
-            error("invalid option \"warning.expression\"");
+            error("invalid option \"warning.expression\"\n");
         cptr = R_GlobalContext;
         while (cptr->callflag != CTXT_RETURN && cptr->callflag)
             cptr = cptr->nextcontext;
@@ -94,8 +109,7 @@ void warningcall(SEXP call, char *format, ...)
         va_end(ap);
         errorcall(call, "(converted from warning) %s", buf);
     }
-
-    if (w == 1)
+    else if (w == 1)
     { /* print as they happen */
         va_list(ap);
         if (call != R_NilValue)
@@ -110,7 +124,7 @@ void warningcall(SEXP call, char *format, ...)
         va_end(ap);
         REprintf("\n");
     }
-    if (w == 0)
+    else if (w == 0)
     { /* collect them */
         va_list(ap);
         va_start(ap, format);
@@ -124,6 +138,7 @@ void warningcall(SEXP call, char *format, ...)
         names = CAR(ATTRIB(R_Warnings));
         STRING(names)[R_CollectWarnings++] = mkChar(buf);
     }
+    /* else:  w <= -1 */
     inWarning = 0;
 }
 
@@ -220,6 +235,10 @@ void error(const char *format, ...)
     if (inError)
         jump_now();
 #ifdef NEWERROR
+    /* This must be improved: otherwise gives
+       messages like
+       `` Error in stop("FOO and BAR") : FOO and BAR ''
+    */
     if (R_GlobalContext->call == R_NilValue)
         dcall = CHAR(STRING(deparse1(R_CurrentExpr, 0))[0]);
     else
@@ -248,6 +267,9 @@ void jump_to_toplevel()
     RCNTXT *c;
     SEXP s, t;
     int nback = 0;
+
+    if (!R_Error_Halt && R_Verbose)
+        REprintf(" >ERR: jump_to_toplevel()\n");
     inError = 1;
     if (R_Inputfile != NULL)
         fclose(R_Inputfile);
@@ -267,8 +289,7 @@ void jump_to_toplevel()
         if (c->callflag == CTXT_RESTART)
         {
             inError = 0;
-            c->callflag = CTXT_RETURN; /* reset to a closure */
-            findcontext(CTXT_RETURN, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
         }
     }
     if (R_Sinkfile)
@@ -293,11 +314,12 @@ static void jump_now()
     inError = 0;
     inWarning = 0;
     R_PPStackTop = 0;
-    /* I think the following is needed somewhere near here: BDR
+    /* I think the following is needed somewhere near here: BDR;
+       RG tells MM that he believes very differently.
        if (R_CollectWarnings) PrintWarnings();*/
     R_Warnings = R_NilValue;
     R_CollectWarnings = 0;
-    if (R_Interactive)
+    if (R_Interactive || !R_Error_Halt)
         LONGJMP(R_ToplevelContext->cjmpbuf, 0);
     else
         REprintf("Execution halted\n");
@@ -327,6 +349,9 @@ void isintrpt()
 
 void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    /*=== SHOULD call errorcall() in the same way
+     *===  that  do_warning uses warningcall()
+     */
     CAR(args) = coerceVector(CAR(args), STRSXP);
     if (length(CAR(args)) <= 0)
         error("");

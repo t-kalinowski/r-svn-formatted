@@ -241,9 +241,6 @@ void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *n
 
     extern double gamma_cody(double); /*--> ./gamma.c */
 
-    /* Builtin functions */
-    double pow_di(double *, long *);
-
     /* Local variables */
     long nend, intx, nbmx, k, l, n, nstart;
     double pold, test, p, em, en, empal, emp2al, halfx, aa, bb, cc, psave, plast, tover, psavel, sum, nu, twonu;
@@ -267,7 +264,7 @@ void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *n
                 bi[k] = ML_POSINF;
             return;
         }
-        intx = (long)(*x);
+        intx = (long)(*x); /* --> we will probably fail when *x > LONG_MAX */
         if (*x >= rtnsig)
         {   /* "non-small" x */
             /* -------------------------------------------------------------------
@@ -288,7 +285,7 @@ void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *n
             }
             else
             {
-                test /= pow_di(&const__, &intx);
+                test /= pow(const__, (double)intx);
             }
             if (nbmx >= 3)
             {

@@ -401,6 +401,11 @@ static SEXP complex_relop(int code, SEXP s1, SEXP s2)
     UNPROTECT(2);
     return ans;
 }
+#ifdef HAVE_STRCOLL
+#define STRCMP strcoll
+#else
+#define STRCMP strcmp
+#endif
 
 static SEXP string_relop(int code, SEXP s1, SEXP s2)
 {
@@ -437,7 +442,7 @@ static SEXP string_relop(int code, SEXP s1, SEXP s2)
     case LTOP:
         for (i = 0; i < n; i++)
         {
-            if (strcmp(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) < 0)
+            if (STRCMP(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) < 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -446,7 +451,7 @@ static SEXP string_relop(int code, SEXP s1, SEXP s2)
     case GTOP:
         for (i = 0; i < n; i++)
         {
-            if (strcmp(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) > 0)
+            if (STRCMP(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) > 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -455,7 +460,7 @@ static SEXP string_relop(int code, SEXP s1, SEXP s2)
     case LEOP:
         for (i = 0; i < n; i++)
         {
-            if (strcmp(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) <= 0)
+            if (STRCMP(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) <= 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;
@@ -464,7 +469,7 @@ static SEXP string_relop(int code, SEXP s1, SEXP s2)
     case GEOP:
         for (i = 0; i < n; i++)
         {
-            if (strcmp(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) >= 0)
+            if (STRCMP(CHAR(STRING(s1)[i % n1]), CHAR(STRING(s2)[i % n2])) >= 0)
                 LOGICAL(ans)[i] = 1;
             else
                 LOGICAL(ans)[i] = 0;

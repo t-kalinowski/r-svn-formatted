@@ -64,7 +64,7 @@ SEXP complex_unary(int code, SEXP s1)
         }
         return ans;
     default:
-        error("illegal complex unary operator");
+        error("illegal complex unary operator\n");
         return R_NilValue; /* -Wall*/
     }
 }
@@ -311,6 +311,7 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
                 REAL(y)[i] = COMPLEX(x)[i].i;
             break;
         case 3: /* Mod */
+        case 6: /* abs */
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
@@ -393,6 +394,7 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
                     REAL(y)[i] = 0;
             break;
         case 3: /* Mod */
+        case 6: /* abs */
             y = allocVector(REALSXP, n);
             for (i = 0; i < n; i++)
             {
@@ -425,8 +427,8 @@ static void z_rround(complex *r, complex *x, complex *p)
     r->i = rround(x->i, p->r);
 }
 
-/* Question:  This treats real and imaginary parts */
-/* separately.	Should it do them jointly? */
+/* Question:  This treats real and imaginary parts separately.  Should
+   it do them jointly? */
 
 static void z_prec(complex *r, complex *x, complex *p)
 {
@@ -646,9 +648,9 @@ SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int n;
-    x = CAR(args);
+    PROTECT(x = CAR(args));
     n = length(x);
-    y = allocVector(CPLXSXP, n);
+    PROTECT(y = allocVector(CPLXSXP, n));
     naflag = 0;
 
     switch (PRIMVAL(op))
@@ -660,9 +662,6 @@ SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         cmath1(z_log, COMPLEX(x), COMPLEX(y), n);
         break;
 
-    case 0:
-        errorcall(call, "abs() unimplemented for complex; use Mod()");
-        break;
     case 3:
         cmath1(z_sqrt, COMPLEX(x), COMPLEX(y), n);
         break;
@@ -716,6 +715,9 @@ SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (naflag)
         warning("NAs produced in function \"%s\"", PRIMNAME(op));
+    ATTRIB(y) = duplicate(ATTRIB(x));
+    OBJECT(y) = OBJECT(x);
+    UNPROTECT(2);
     return y;
 }
 
@@ -729,6 +731,8 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
 
     na = length(sa);
     nb = length(sb);
+    if ((na == 0) || (nb == 0))
+        return (allocVector(CPLXSXP, 0));
     n = (na < nb) ? nb : na;
     PROTECT(sa = coerceVector(sa, CPLXSXP));
     PROTECT(sb = coerceVector(sb, CPLXSXP));
@@ -736,38 +740,27 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
     a = COMPLEX(sa);
     b = COMPLEX(sb);
     y = COMPLEX(sy);
-    if (na < 1 || na < 1)
+    naflag = 0;
+    for (i = 0; i < n; i++)
     {
-        for (i = 0; i < n; i++)
+        ai = a[i % na];
+        bi = b[i % nb];
+        if (ISNA(ai.r) && ISNA(ai.i) && ISNA(bi.r) && ISNA(bi.i))
         {
             y[i].r = NA_REAL;
             y[i].i = NA_REAL;
         }
-    }
-    else
-    {
-        naflag = 0;
-        for (i = 0; i < n; i++)
+        else
         {
-            ai = a[i % na];
-            bi = b[i % nb];
-            if (ISNA(ai.r) && ISNA(ai.i) && ISNA(bi.r) && ISNA(bi.i))
+            f(&y[i], &ai, &bi);
+#ifndef IEEE_754
+            if (ISNA(y[i].r) || ISNA(y[i].i))
             {
                 y[i].r = NA_REAL;
                 y[i].i = NA_REAL;
+                naflag = 1;
             }
-            else
-            {
-                f(&y[i], &ai, &bi);
-#ifndef IEEE_754
-                if (ISNA(y[i].r) || ISNA(y[i].i))
-                {
-                    y[i].r = NA_REAL;
-                    y[i].i = NA_REAL;
-                    naflag = 1;
-                }
 #endif
-            }
         }
     }
     if (naflag)
@@ -803,7 +796,7 @@ SEXP complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
     case 0:
         return cmath2(op, CAR(args), CADR(args), z_atan2);
     default:
-        errorcall(call, "unimplemented complex function");
+        errorcall(call, "unimplemented complex function\n");
         return call; /* just for -Wall */
     }
 }
@@ -882,7 +875,7 @@ SEXP do_polyroot(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             if (!R_FINITE(COMPLEX(z)[i].r) || !R_FINITE(COMPLEX(z)[i].i))
-                errorcall(call, "invalid polynomial coefficient");
+                errorcall(call, "invalid polynomial coefficient\n");
             REAL(zr)[degree - i] = COMPLEX(z)[i].r;
             REAL(zi)[degree - i] = COMPLEX(z)[i].i;
         }

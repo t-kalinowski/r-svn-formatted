@@ -461,7 +461,7 @@ rect gstrrect(drawing d, font f, char *s)
     else
         dc = GetDC(0);
     old = SelectObject(dc, f->handle);
-    GetTextExtentPoint(dc, (LPSTR)s, strlen(s), &size);
+    GetTextExtentPoint32(dc, (LPSTR)s, strlen(s), &size);
     SelectObject(dc, old);
     if (!d)
         ReleaseDC(0, dc);
@@ -498,6 +498,7 @@ void gcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *width
     TEXTMETRIC tm;
     HFONT old;
     HDC dc = GETHDC(d);
+
     old = SelectObject(dc, (HFONT)f->handle);
     GetTextMetrics(dc, &tm);
     first = tm.tmFirstChar;

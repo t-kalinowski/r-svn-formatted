@@ -230,7 +230,7 @@ static SEXP logicalSubscript(SEXP s, int ns, int nx, int *stretch)
         error("subscript (%d) out of bounds, should be at most %d", ns, nx);
 #else
     if (!canstretch && ns > nx)
-        error("(subscript) logical subscript too long");
+        error("(subscript) logical subscript too long\n");
     nmax = (ns > nx) ? ns : nx;
     *stretch = (ns > nx) ? ns : 0;
 #endif

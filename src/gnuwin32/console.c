@@ -671,7 +671,7 @@ FVOIDEND
 
 void consoletogglelazy(control c) FBEGIN if (p->kind == PAGER) return;
 p->lazyupdate = (p->lazyupdate + 1) % 2;
-FVOIDEND;
+FVOIDEND
 
 int consolegetlazy(control c) FBEGIN FEND(p->lazyupdate)
 
@@ -1371,9 +1371,6 @@ WIDTH = r.width;
 HEIGHT = r.height;
 BORDERX = (WIDTH - COLS * FW) / 2;
 BORDERY = (HEIGHT - ROWS * FH) / 2;
-if (p->lbuf)
-    FVOIDRETURN; /* don't implement resize if no content
-    yet in pager */
 del(BM);
 BM = newbitmap(r.width, r.height, 2);
 if (!BM)
@@ -1381,6 +1378,9 @@ if (!BM)
     R_ShowMessage("Insufficient memory. Please close the console");
     return;
 }
+if (!p->lbuf)
+    FVOIDRETURN; /* don't implement resize if no content
+   yet in pager */
 if (p->r >= 0)
 {
     if (NUMLINES > ROWS)

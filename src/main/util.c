@@ -79,7 +79,7 @@ static char *falsenames[] = {
 
 int asLogical(SEXP x)
 {
-    if (isVector(x))
+    if (isVectorAtomic(x))
     {
         if (LENGTH(x) < 1)
             return NA_INTEGER;
@@ -93,8 +93,6 @@ int asLogical(SEXP x)
             return R_FINITE(REAL(x)[0]) ? (REAL(x)[0] != 0.0) : NA_LOGICAL;
         case CPLXSXP:
             return R_FINITE(COMPLEX(x)[0].r) ? (COMPLEX(x)[0].r != 0.0) : NA_LOGICAL;
-        default:
-            return NA_LOGICAL;
         }
     }
     return NA_LOGICAL;
@@ -102,7 +100,7 @@ int asLogical(SEXP x)
 
 int asInteger(SEXP x)
 {
-    if (isVectorObject(x) && LENGTH(x) >= 1)
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
     {
         switch (TYPEOF(x))
         {
@@ -121,10 +119,8 @@ int asInteger(SEXP x)
 
 double asReal(SEXP x)
 {
-    if (isVector(x))
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
     {
-        if (LENGTH(x) < 1)
-            return NA_REAL;
         switch (TYPEOF(x))
         {
         case LGLSXP:
@@ -134,8 +130,6 @@ double asReal(SEXP x)
             return REAL(x)[0];
         case CPLXSXP:
             return COMPLEX(x)[0].r;
-        default:
-            return NA_REAL;
         }
     }
     return NA_REAL;
@@ -146,7 +140,7 @@ complex asComplex(SEXP x)
     complex z;
     z.r = NA_REAL;
     z.i = NA_REAL;
-    if (isVectorObject(x) && LENGTH(x) >= 1)
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
     {
         switch (TYPEOF(x))
         {
@@ -177,10 +171,8 @@ SEXP asChar(SEXP x)
     int w, d, e;
     char buf[MAXELTSIZE];
 
-    if (isVector(x))
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
     {
-        if (LENGTH(x) < 1)
-            return NA_STRING;
         switch (TYPEOF(x))
         {
         case LGLSXP:
@@ -203,7 +195,9 @@ SEXP asChar(SEXP x)
             else
                 sprintf(buf, "%*.*f", w, d, REAL(x)[0]);
             return mkChar(buf);
-            /* FIXME: CPLXSXP case here */
+
+            /* case CPLXSXP: --- FIXME here */
+
         case STRSXP:
             return STRING(x)[0];
         default:
@@ -228,7 +222,7 @@ void internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
 
 int isValidString(SEXP x)
 {
-    return isString(x) && length(x) > 0 && !isNull(STRING(x)[0]);
+    return isString(x) && LENGTH(x) > 0 && !isNull(STRING(x)[0]);
 }
 
 int isSymbol(SEXP s)
@@ -292,7 +286,22 @@ int isVectorList(SEXP s)
     }
 }
 
-int isVectorObject(SEXP s)
+int isVectorAtomic(SEXP s)
+{
+    switch (TYPEOF(s))
+    {
+    case LGLSXP:
+    case INTSXP:
+    case REALSXP:
+    case CPLXSXP:
+    case STRSXP:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int isVector(SEXP s) /* isVectorList() or isVectorAtomic() */
 {
     switch (TYPEOF(s))
     {
@@ -336,25 +345,6 @@ int isExpression(SEXP s)
 int isLanguage(SEXP s)
 {
     return (s == R_NilValue || TYPEOF(s) == LANGSXP);
-}
-
-int isVector(SEXP s)
-{
-    switch (TYPEOF(s))
-    {
-    case LGLSXP:
-    case INTSXP:
-    case REALSXP:
-    case CPLXSXP:
-    case STRSXP:
-    case VECSXP:
-    case EXPRSXP:
-        return 1;
-        break;
-    default:
-        return 0;
-        break;
-    }
 }
 
 int isMatrix(SEXP s)
@@ -784,13 +774,11 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
     const char *path;
 
     checkArity(op, args);
-
-    s = CAR(args);
-    if (!isString(s))
-        errorcall(call, "character argument expected");
+    if (!isPairList(args) || !isValidString(s = CAR(args)))
+        errorcall(call, "character argument expected\n");
     path = R_ExpandFileName(CHAR(STRING(s)[0]));
     if (chdir(path) < 0)
-        errorcall(call, "cannot change working directory");
+        errorcall(call, "cannot change working directory\n");
     return (R_NilValue);
 }
 
@@ -801,9 +789,8 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
     char buf[PATH_MAX], *p, fsp = FILESEP[0];
 
     checkArity(op, args);
-    s = CAR(args);
-    if (!isString(s))
-        errorcall(call, "character argument expected");
+    if (!isPairList(args) || !isValidString(s = CAR(args)))
+        errorcall(call, "character argument expected\n");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)
@@ -828,9 +815,8 @@ SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     char buf[PATH_MAX], *p, fsp = FILESEP[0];
 
     checkArity(op, args);
-    s = CAR(args);
-    if (!isString(s))
-        errorcall(call, "character argument expected");
+    if (!isPairList(args) || !isValidString(s = CAR(args)))
+        errorcall(call, "character argument expected\n");
     strcpy(buf, R_ExpandFileName(CHAR(STRING(s)[0])));
 #ifdef Win32
     for (p = buf; *p != '\0'; p++)

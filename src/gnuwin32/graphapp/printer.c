@@ -57,6 +57,7 @@ static HDC chooseprinter()
 {
     PRINTDLG pd;
     HDC dc;
+    DWORD rc;
     char cwd[MAX_PATH];
 
     GetCurrentDirectory(MAX_PATH, cwd);
@@ -82,7 +83,12 @@ static HDC chooseprinter()
 
     dc = PrintDlg(&pd) ? pd.hDC : NULL;
     SetCurrentDirectory(cwd);
-
+    if (!dc)
+    {
+        rc = CommDlgExtendedError(); /* 0 means user cancelled */
+        if (rc)
+            R_ShowMessage("Unable to choose printer");
+    }
     return dc;
 }
 

@@ -168,7 +168,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        errorcall(call, "invalid parameter(s)");
+        errorcall(call, "invalid parameter(s) \n");
     }
 
     /* start up the window, more initializing in here */

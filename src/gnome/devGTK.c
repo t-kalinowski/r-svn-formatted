@@ -347,8 +347,7 @@ static gint expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
         dd->dp.resize(dd);
     }
 
-    gdk_draw_pixmap(gtkd->drawing->window, gtkd->wgc, gtkd->pixmap, event->area.x, event->area.y, event->area.x,
-                    event->area.y, event->area.width, event->area.height);
+    playDisplayList(dd);
 
     return FALSE;
 }
@@ -449,11 +448,6 @@ static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)
     /* initialise line params */
     gtkd->lty = -1;
     gtkd->lwd = -1;
-
-    /* create offscreen drawable */
-    gtkd->pixmap = gdk_pixmap_new(gtkd->drawing->window, gtkd->windowWidth, gtkd->windowHeight, -1);
-    gdk_gc_set_foreground(gtkd->wgc, &gtkd->gcol_bg);
-    gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, 0, 0, gtkd->windowWidth, gtkd->windowHeight);
 
     /* let other widgets use the default colour settings */
     gtk_widget_pop_visual();
@@ -811,14 +805,12 @@ static void GTK_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
     g_free(points);
 }
 
-double deg2rad = 0.01745329251994329576;
-
 static void GTK_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
 {
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
     GdkColor gcol_fill;
     gint size;
-    double x1, y1;
+    double x1, y1, rrot = DEG2RAD * rot;
 
     GConvert(&x, &y, coords, DEVICE, dd);
 
@@ -833,14 +825,12 @@ static void GTK_Text(double x, double y, int coords, char *str, double xc, doubl
     {
         x1 = GTK_StrWidth(str, dd);
         y1 = GConvertYUnits(1, CHARS, DEVICE, dd);
-        x += -xc * x1 * cos(deg2rad * rot) + yc * y1 * sin(deg2rad * rot);
-        y -= -xc * x1 * sin(deg2rad * rot) - yc * y1 * cos(deg2rad * rot);
+        x += -xc * x1 * cos(rrot) + yc * y1 * sin(rrot);
+        y -= -xc * x1 * sin(rrot) - yc * y1 * cos(rrot);
     }
 
     gdk_draw_text_rot(gtkd->drawing->window, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth,
-                      gtkd->windowHeight, str, strlen(str), deg2rad * rot);
-    gdk_draw_text_rot(gtkd->pixmap, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth, gtkd->windowHeight, str,
-                      strlen(str), deg2rad * rot);
+                      gtkd->windowHeight, str, strlen(str), rrot);
 }
 
 typedef struct _GTK_locator_info GTK_locator_info;

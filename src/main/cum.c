@@ -105,7 +105,11 @@ static SEXP cummax(SEXP x, SEXP s)
 {
     int i;
     double max;
-    max = REAL(x)[0];
+#ifdef IEEE_754
+    max = R_NegInf;
+#else
+    max = NA_REAL;
+#endif
     for (i = 0; i < length(x); i++)
     {
         if (ISNAN(REAL(x)[i]) || ISNAN(max))
@@ -125,7 +129,11 @@ static SEXP cummin(SEXP x, SEXP s)
 {
     int i;
     double min;
-    min = REAL(x)[0];
+#ifdef IEEE_754
+    min = R_PosInf;
+#else
+    min = NA_REAL;
+#endif
     for (i = 0; i < length(x); i++)
     {
         if (ISNAN(REAL(x)[i]) || ISNAN(min))

@@ -239,10 +239,8 @@ int R_sysparent(int n, RCNTXT *cptr)
         cptr = cptr->nextcontext;
     }
     n = j - n + 1;
-    if (n == 0)
-        n = 1;
     if (n < 0)
-        error("sys.parent: not that many enclosing functions");
+        n = 0;
     return n;
 }
 
@@ -320,7 +318,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
     return R_NilValue; /* just for -Wall */
 }
 
-/*some real insanity: to keep Duncan sane*/
+/* some real insanity to keep Duncan sane */
 
 SEXP do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -328,13 +326,8 @@ SEXP do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (!isLogical(CAR(args)))
-        errorcall(call, "argument to restart must be a logical");
-
-    if (!asLogical(CAR(args))) /* FALSE */
+    if (!asLogical(CAR(args)))
         return (R_NilValue);
-
-    /* else TRUE */
     for (cptr = R_GlobalContext->nextcontext; cptr != R_ToplevelContext; cptr = cptr->nextcontext)
     {
         if (cptr->callflag == CTXT_RETURN)
@@ -343,8 +336,8 @@ SEXP do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
             break;
         }
     }
-    if (cptr == R_ToplevelContext) /* didn't find a closure to restart */
-        errorcall(call, "no function to restart");
+    if (cptr == R_ToplevelContext)
+        errorcall(call, "no function to restart\n");
     return (R_NilValue);
 }
 
@@ -383,8 +376,14 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     switch (PRIMVAL(op))
     {
     case 1: /* parent */
+        nframe = framedepth(cptr);
         rval = allocVector(INTSXP, 1);
-        INTEGER(rval)[0] = R_sysparent(n, cptr);
+        i = nframe;
+        /* This is a pretty awful kludge, but the alternative would be
+           a major redesign of everything... -pd */
+        while (n-- > 0)
+            i = R_sysparent(nframe - i + 1, cptr);
+        INTEGER(rval)[0] = i;
         return rval;
     case 2: /* call */
         return R_syscall(n, cptr);
@@ -411,8 +410,8 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
         return rval;
     case 7: /* sys.on.exit */
-        if (R_GlobalContext->conexit)
-            return R_GlobalContext->conexit;
+        if (R_GlobalContext->nextcontext != NULL)
+            return R_GlobalContext->nextcontext->conexit;
         else
             return R_NilValue;
     case 8: /* sys.parents */

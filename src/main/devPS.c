@@ -243,9 +243,9 @@ static int KeyType(char *s)
 
 static char *SkipToNextItem(char *p)
 {
-    while (!isspace(*p))
+    while (!isspace((int)*p))
         p++;
-    while (isspace(*p))
+    while (isspace((int)*p))
         p++;
     return p;
 }
@@ -255,7 +255,7 @@ static char *SkipToNextKey(char *p)
     while (*p != ';')
         p++;
     p++;
-    while (isspace(*p))
+    while (isspace((int)*p))
         p++;
     return p;
 }
@@ -421,12 +421,16 @@ static void PSEncodeFont(FILE *fp, int index, int encoding)
 /* region box is for the rotated page. */
 
 static void PSFileHeader(FILE *fp, int font, int encoding, char *papername, double paperwidth, double paperheight,
-                         int landscape, double left, double bottom, double right, double top)
+                         int landscape, int EPSFheader, double left, double bottom, double right, double top)
 {
-    fprintf(fp, "%%!PS-Adobe-3.0\n");
+    if (EPSFheader)
+        fprintf(fp, "%%!PS-Adobe-3.0 EPSF-3.0\n");
+    else
+        fprintf(fp, "%%!PS-Adobe-3.0\n");
     fprintf(fp, "%%%%DocumentFonts: %s %s %s\n%%%%+ %s %s\n", Family[font].font[0].name, Family[font].font[1].name,
             Family[font].font[2].name, Family[font].font[3].name, Family[font].font[4].name);
-    fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 ()\n", papername, paperwidth, paperheight);
+    if (!EPSFheader)
+        fprintf(fp, "%%%%DocumentMedia: %s %.0f %.0f 0 ()\n", papername, paperwidth, paperheight);
     fprintf(fp, "%%%%Title: R Graphics Output\n");
     fprintf(fp, "%%%%Creator: R Software\n");
     fprintf(fp, "%%%%Pages: (atend)\n");
@@ -614,6 +618,7 @@ typedef struct
     double height;     /* plot height in points */
     double pagewidth;  /* page width in points */
     double pageheight; /* page height in points */
+    int pagecentre;    /* centre image on page? */
 
     double lwd;  /* current line width */
     int lty;     /* current line type */
@@ -622,6 +627,8 @@ typedef struct
     rcolor bg;   /* background color */
 
     FILE *psfp; /* output file */
+
+    int EPSFheader; /* EPSF header */
 } PostScriptDesc;
 
 static FontMetricInfo metrics[5]; /* font metrics */
@@ -668,7 +675,7 @@ static void SetLineStyle(int newlty, double newlwd, DevDesc *dd);
 static int MatchFamily(char *name);
 
 int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg, double width, double height,
-                   double horizontal, double ps)
+                   double horizontal, double ps, int onefile, int pagecentre)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -740,14 +747,29 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
         pd->pagewidth = 7.25;
         pd->pageheight = 10.5;
     }
+    else if (!strcmp(pd->papername, "special"))
+    {
+        if (pd->landscape)
+        {
+            pd->pagewidth = height;
+            pd->pageheight = width;
+        }
+        else
+        {
+            pd->pagewidth = width;
+            pd->pageheight = height;
+        }
+    }
     else
     {
         free(dd);
         free(pd);
         error("invalid page type (postscript)");
     }
+    pd->pagecentre = pagecentre;
     pd->paperwidth = 72 * pd->pagewidth;
     pd->paperheight = 72 * pd->pageheight;
+    pd->EPSFheader = !onefile;
     if (pd->landscape)
     {
         double tmp;
@@ -755,12 +777,22 @@ int PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg,
         pd->pagewidth = pd->pageheight;
         pd->pageheight = tmp;
     }
-    if (pd->width < 0.1 || pd->width > pd->pagewidth - 0.5)
-        pd->width = pd->pagewidth - 0.5;
-    if (pd->height < 0.1 || pd->height > pd->pageheight - 0.5)
-        pd->height = pd->pageheight - 0.5;
-    xoff = (pd->pagewidth - pd->width) / 2.0;
-    yoff = (pd->pageheight - pd->height) / 2.0;
+    if (strcmp(pd->papername, "special"))
+    {
+        if (pd->width < 0.1 || pd->width > pd->pagewidth - 0.5)
+            pd->width = pd->pagewidth - 0.5;
+        if (pd->height < 0.1 || pd->height > pd->pageheight - 0.5)
+            pd->height = pd->pageheight - 0.5;
+    }
+    if (pagecentre)
+    {
+        xoff = (pd->pagewidth - pd->width) / 2.0;
+        yoff = (pd->pageheight - pd->height) / 2.0;
+    }
+    else
+    {
+        xoff = yoff = 0.0;
+    }
     pd->maxpointsize = 72.0 * ((pd->pageheight > pd->pagewidth) ? pd->pageheight : pd->pagewidth);
     pd->pageno = 0;
     pd->lty = 1;
@@ -929,10 +961,10 @@ static int PS_Open(DevDesc *dd, PostScriptDesc *pd)
 
     if (pd->landscape)
         PSFileHeader(pd->psfp, pd->fontfamily, pd->encoding, pd->papername, pd->paperwidth, pd->paperheight,
-                     pd->landscape, dd->dp.bottom, dd->dp.left, dd->dp.top, dd->dp.right);
+                     pd->landscape, pd->EPSFheader, dd->dp.bottom, dd->dp.left, dd->dp.top, dd->dp.right);
     else
         PSFileHeader(pd->psfp, pd->fontfamily, pd->encoding, pd->papername, pd->paperwidth, pd->paperheight,
-                     pd->landscape, dd->dp.left, dd->dp.bottom, dd->dp.right, dd->dp.top);
+                     pd->landscape, pd->EPSFheader, dd->dp.left, dd->dp.bottom, dd->dp.right, dd->dp.top);
 
     pd->fontstyle = 1;
     pd->fontsize = 10;
@@ -955,6 +987,8 @@ static void PS_NewPage(DevDesc *dd)
     pd->pageno++;
     if (pd->pageno > 1)
         PostScriptEndPage(pd->psfp);
+    if (pd->pageno > 1 && pd->EPSFheader)
+        warning("multiple pages used in postscript() with onefile=FALSE");
     PostScriptStartPage(pd->psfp, pd->pageno);
     PostScriptSetFont(pd->psfp, pd->fontstyle - 1, pd->fontsize);
     PostScriptSetLineWidth(pd->psfp, 0.75);

@@ -215,10 +215,10 @@ void R_DefParams(Rstart Rp)
 #define Max_Nsize                                                                                                      \
     20000000                    /* must be < LONG_MAX (= 2^32 - 1 =)                                                   \
                        2147483647 = 2.1e9 */
-#define Max_Vsize (2048 * Mega) /* must be < LONG_MAX */
+#define Max_Vsize (2048 * Mega) /* 2048*Mega = 2^(11+20) must be < LONG_MAX */
 
-#define Min_Nsize 200000
-#define Min_Vsize (2 * Mega)
+#define Min_Nsize 160000
+#define Min_Vsize (1 * Mega)
 
 void R_SizeFromEnv(Rstart Rp)
 {
@@ -481,7 +481,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             else
             {
                 argv[newac++] = *av;
-                break;
             }
         }
         else

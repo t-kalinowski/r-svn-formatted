@@ -79,7 +79,7 @@ int __initialize(void *ignoredParameter)
 
 int Sock_init()
 {
-#if defined(_Windows)
+#if defined(Win32)
     WSADATA wsaData;
     WORD wVers = MAKEWORD(1, 1);
     if (WSAStartup(wVers, &wsaData) != 0)
@@ -166,7 +166,7 @@ int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
     if (retval == -1)
     {
         Sock_error(perr, errno, 0);
-#ifdef _Windows
+#ifdef Win32
         closesocket(sock);
 #else
         close(sock);
@@ -178,7 +178,7 @@ int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
 
 int Sock_close(int fd, Sock_error_t perr)
 {
-#ifdef _Windows
+#ifdef Win32
     if (closesocket(fd) != 0)
         return Sock_error(perr, WSAENOTSOCK, 0);
 #else

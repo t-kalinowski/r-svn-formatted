@@ -584,7 +584,7 @@ static SEXP coerceToExpression(SEXP v)
 {
     SEXP ans;
     int i, n;
-    if (isVectorObject(v))
+    if (isVectorAtomic(v))
     {
         n = LENGTH(v);
         PROTECT(ans = allocVector(EXPRSXP, n));
@@ -610,14 +610,16 @@ static SEXP coerceToExpression(SEXP v)
             for (i = 0; i < n; i++)
                 VECTOR(ans)[i] = ScalarString(STRING(v)[i]);
             break;
+#ifdef never_used
         case VECSXP:
             for (i = 0; i < n; i++)
                 VECTOR(ans)[i] = VECTOR(v)[i];
             break;
+#endif
         }
     }
     else
-    {
+    { /* not used either */
         PROTECT(ans = allocVector(EXPRSXP, 1));
         VECTOR(ans)[0] = duplicate(v);
     }
@@ -1146,8 +1148,9 @@ SEXP do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     case VECSXP:
     case EXPRSXP:
+        if (0 == (n = length(args)))
+            errorcall(call, "illegal length 0 argument\n");
         names = getAttrib(args, R_NamesSymbol);
-        n = length(args);
         PROTECT(ap = ans = allocList(n));
         for (i = 0; i < n; i++)
         {

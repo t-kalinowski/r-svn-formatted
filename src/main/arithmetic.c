@@ -264,7 +264,8 @@ double R_pow(double x, double y) /* = x ^ y */
                 return ((x < 1) ? R_PosInf : 0.);
         }
     }
-    return (R_NaN); /* all other cases: (-Inf)^{+-Inf, non-int}; (neg)^{+-Inf} */
+    return (R_NaN); /* all other cases: (-Inf)^{+-Inf,
+               non-int}; (neg)^{+-Inf} */
 }
 #endif
 
@@ -368,8 +369,8 @@ static SEXP binary(SEXP op, SEXP args)
         {
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
-        else /*(yarray)*/
-        {
+        else
+        { /* (yarray) */
             PROTECT(dims = getAttrib(y, R_DimSymbol));
         }
         PROTECT(xnames = getAttrib(x, R_DimNamesSymbol));
@@ -407,8 +408,8 @@ static SEXP binary(SEXP op, SEXP args)
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(class = getAttrib(x, R_ClassSymbol));
         }
-        else /*(yts)*/
-        {
+        else
+        { /* (yts) */
             if (length(y) < length(x))
                 ErrorMessage(lcall, ERROR_TSVEC_MISMATCH);
             PROTECT(tsp = getAttrib(y, R_TspSymbol));
@@ -441,8 +442,8 @@ static SEXP binary(SEXP op, SEXP args)
     }
 
     PROTECT(x);
-    /* Don't set the dims if one argument is an array of */
-    /* size 0 and the other isn't of size zero, cos they're wrong */
+    /* Don't set the dims if one argument is an array of size 0 and the
+       other isn't of size zero, cos they're wrong */
     if (dims != R_NilValue)
     {
         if (!((xarray && (nx == 0) && (ny != 0)) || (yarray && (ny == 0) && (nx != 0))))
@@ -910,8 +911,6 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 
     switch (PRIMVAL(op))
     {
-    case 0:
-        return math1(op, CAR(args), fabs);
     case 1:
         return math1(op, CAR(args), floor);
     case 2:
@@ -983,6 +982,8 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
 
     na = LENGTH(sa);
     nb = LENGTH(sb);
+    if ((na == 0) || (nb == 0))
+        return (allocVector(REALSXP, 0));
     n = (na < nb) ? nb : na;
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sb = coerceVector(sb, REALSXP));
@@ -990,36 +991,28 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
     a = REAL(sa);
     b = REAL(sb);
     y = REAL(sy);
-    if (na < 1 || nb < 1)
+    naflag = 0;
+    mod_iterate(na, nb, ia, ib)
     {
-        for (i = 0; i < n; i++)
-            y[i] = NA_REAL;
-    }
-    else
-    {
-        naflag = 0;
-        mod_iterate(na, nb, ia, ib)
+        ai = a[ia];
+        bi = b[ib];
+        if (ISNAN(ai) || ISNAN(bi))
         {
-            ai = a[ia];
-            bi = b[ib];
-            if (ISNAN(ai) || ISNAN(bi))
-            {
 #ifdef IEEE_754
-                y[i] = ai + bi;
+            y[i] = ai + bi;
 #else
+            y[i] = NA_REAL;
+#endif
+        }
+        else
+        {
+            y[i] = MATH_CHECK(f(ai, bi));
+            if (ISNAN(y[i]))
+            {
+#ifdef OLD
                 y[i] = NA_REAL;
 #endif
-            }
-            else
-            {
-                y[i] = MATH_CHECK(f(ai, bi));
-                if (ISNAN(y[i]))
-                {
-#ifdef OLD
-                    y[i] = NA_REAL;
-#endif
-                    naflag = 1;
-                }
+                naflag = 1;
             }
         }
     }
@@ -1162,6 +1155,8 @@ SEXP do_round(SEXP call, SEXP op, SEXP args, SEXP env)
         REAL(b)[0] = 0;
         break;
     case 2:
+        if (length(CADR(args)) == 0)
+            errorcall(call, "illegal 2nd arg of length 0");
         PROTECT(a = CAR(args));
         PROTECT(b = CADR(args));
         break;
@@ -1194,6 +1189,8 @@ SEXP do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             return math1(op, CAR(args), R_log);
     case 2:
+        if (length(CADR(args)) == 0)
+            errorcall(call, "illegal 2nd arg of length 0");
         if (isComplex(CAR(args)) || isComplex(CDR(args)))
             return complex_math2(call, op, args, env);
         else
@@ -1220,6 +1217,8 @@ SEXP do_signif(SEXP call, SEXP op, SEXP args, SEXP env)
         REAL(b)[0] = 6;
         break;
     case 2:
+        if (length(CADR(args)) == 0)
+            errorcall(call, "illegal 2nd arg of length 0");
         PROTECT(a = CAR(args));
         PROTECT(b = CADR(args));
         break;
@@ -1253,6 +1252,8 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     na = LENGTH(sa);
     nb = LENGTH(sb);
     nc = LENGTH(sc);
+    if ((na == 0) || (nb == 0) || (nc == 0))
+        return (allocVector(REALSXP, 0));
     n = na;
     if (n < nb)
         n = nb;
@@ -1266,37 +1267,29 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
     b = REAL(sb);
     c = REAL(sc);
     y = REAL(sy);
-    if (na < 1 || nb < 1 || nc < 1)
+    naflag = 0;
+    mod_iterate3(na, nb, nc, ia, ib, ic)
     {
-        for (i = 0; i < n; i++)
-            y[i] = NA_REAL;
-    }
-    else
-    {
-        naflag = 0;
-        mod_iterate3(na, nb, nc, ia, ib, ic)
+        ai = a[ia];
+        bi = b[ib];
+        ci = c[ic];
+        if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci))
         {
-            ai = a[ia];
-            bi = b[ib];
-            ci = c[ic];
-            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci))
-            {
 #ifdef IEEE_754
-                y[i] = ai + bi + ci;
+            y[i] = ai + bi + ci;
 #else
+            y[i] = NA_REAL;
+#endif
+        }
+        else
+        {
+            y[i] = MATH_CHECK(f(ai, bi, ci));
+            if (ISNAN(y[i]))
+            {
+#ifdef OLD
                 y[i] = NA_REAL;
 #endif
-            }
-            else
-            {
-                y[i] = MATH_CHECK(f(ai, bi, ci));
-                if (ISNAN(y[i]))
-                {
-#ifdef OLD
-                    y[i] = NA_REAL;
-#endif
-                    naflag = 1;
-                }
+                naflag = 1;
             }
         }
     }
@@ -1469,6 +1462,8 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     nb = LENGTH(sb);
     nc = LENGTH(sc);
     nd = LENGTH(sd);
+    if ((na == 0) || (nb == 0) || (nc == 0) || (nd == 0))
+        return (allocVector(REALSXP, 0));
     n = na;
     if (n < nb)
         n = nb;
@@ -1486,38 +1481,30 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
     c = REAL(sc);
     d = REAL(sd);
     y = REAL(sy);
-    if (na < 1 || nb < 1 || nc < 1 || nd < 1)
+    naflag = 0;
+    mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
-        for (i = 0; i < n; i++)
-            y[i] = NA_REAL;
-    }
-    else
-    {
-        naflag = 0;
-        mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
+        ai = a[ia];
+        bi = b[ib];
+        ci = c[ic];
+        di = d[id];
+        if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di))
         {
-            ai = a[ia];
-            bi = b[ib];
-            ci = c[ic];
-            di = d[id];
-            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di))
-            {
 #ifdef IEEE_754
-                y[i] = ai + bi + ci + di;
+            y[i] = ai + bi + ci + di;
 #else
+            y[i] = NA_REAL;
+#endif
+        }
+        else
+        {
+            y[i] = MATH_CHECK(f(ai, bi, ci, di));
+            if (ISNAN(y[i]))
+            {
+#ifdef OLD
                 y[i] = NA_REAL;
 #endif
-            }
-            else
-            {
-                y[i] = MATH_CHECK(f(ai, bi, ci, di));
-                if (ISNAN(y[i]))
-                {
-#ifdef OLD
-                    y[i] = NA_REAL;
-#endif
-                    naflag = 1;
-                }
+                naflag = 1;
             }
         }
     }
@@ -1621,6 +1608,8 @@ static SEXP math5(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (
     nc = LENGTH(sc);
     nd = LENGTH(sd);
     ne = LENGTH(se);
+    if ((na == 0) || (nb == 0) || (nc == 0) || (nd == 0) || (ne == 0))
+        return (allocVector(REALSXP, 0));
     n = na;
     if (n < nb)
         n = nb;
@@ -1629,7 +1618,7 @@ static SEXP math5(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (
     if (n < nd)
         n = nd;
     if (n < ne)
-        n = ne; /* n = min(na,nb,nc,nd,ne) */
+        n = ne; /* n = max(na,nb,nc,nd,ne) */
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sb = coerceVector(sb, REALSXP));
     PROTECT(sc = coerceVector(sc, REALSXP));
@@ -1642,39 +1631,31 @@ static SEXP math5(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (
     d = REAL(sd);
     e = REAL(se);
     y = REAL(sy);
-    if (na < 1 || nb < 1 || nc < 1 || nd < 1 || ne < 1)
+    naflag = 0;
+    mod_iterate5(na, nb, nc, nd, ne, ia, ib, ic, id, ie)
     {
-        for (i = 0; i < n; i++)
-            y[i] = NA_REAL;
-    }
-    else
-    {
-        naflag = 0;
-        mod_iterate5(na, nb, nc, nd, ne, ia, ib, ic, id, ie)
+        ai = a[ia];
+        bi = b[ib];
+        ci = c[ic];
+        di = d[id];
+        ei = e[ie];
+        if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di) || ISNAN(ei))
         {
-            ai = a[ia];
-            bi = b[ib];
-            ci = c[ic];
-            di = d[id];
-            ei = e[ie];
-            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di) || ISNAN(ei))
-            {
 #ifdef IEEE_754
-                y[i] = ai + bi + ci + di + ei;
+            y[i] = ai + bi + ci + di + ei;
 #else
+            y[i] = NA_REAL;
+#endif
+        }
+        else
+        {
+            y[i] = MATH_CHECK(f(ai, bi, ci, di, ei));
+            if (ISNAN(y[i]))
+            {
+#ifdef OLD
                 y[i] = NA_REAL;
 #endif
-            }
-            else
-            {
-                y[i] = MATH_CHECK(f(ai, bi, ci, di, ei));
-                if (ISNAN(y[i]))
-                {
-#ifdef OLD
-                    y[i] = NA_REAL;
-#endif
-                    naflag = 1;
-                }
+                naflag = 1;
             }
         }
     }
