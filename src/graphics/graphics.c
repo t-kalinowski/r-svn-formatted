@@ -2843,7 +2843,7 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
             {
                 double xtest = x;
                 double ytest = y;
-                GConvert(&xtest, &ytest, coords, NFC, dd);
+                GConvert(&xtest, &ytest, coords, NDC, dd);
                 if (xtest < 0 || ytest < 0 || xtest > 1 || ytest > 1)
                     return;
             }
