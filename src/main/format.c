@@ -19,8 +19,10 @@
  *
  *  Object Formatting
  *
- *  See ./printutils.c for general remarks on Printing and the Encode.. utils.
  *  See ./paste.c for do_paste() , do_format() and  do_formatinfo()
+ *  See ./printutils.c for general remarks on Printing and the Encode.. utils.
+ *  See ./print.c  for do_printdefault, do_printmatrix, etc.
+ *
  *  These  formatFOO() functions determine the proper width, digits, etc.
  */
 
@@ -171,7 +173,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
      *	kpower = Exponent of 10;
      *	nsig   = min(print_digits, #{significant digits of alpha}
      *
-     * where  |x| = alpha * 10^kpower   and	 1 <= alpha < 10
+     * where  |x| = alpha * 10^kpower	and	 1 <= alpha < 10
      */
     register double alpha;
     register double r;
@@ -288,7 +290,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
                 mxns = nsig; /* max sig digits */
         }
     }
-    /* F Format (NEW):  use "F" format
+    /* F Format (NEW):	use "F" format
      *	    WHENEVER we use not more space than 'E'
      *		and still satisfy 'print_digits'
      *
@@ -298,8 +300,8 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
      * If the additional exponent digit is required *e is set to 2
      */
 
-    /*-- These  'mxsl' & 'rt'  are	used in	 F Format
-     *   AND in the	 ____ if(.) "F" else "E" ___   below: */
+    /*-- These	'mxsl' & 'rt'  are	used in	 F Format
+     *	 AND in the	 ____ if(.) "F" else "E" ___   below: */
     if (mxl < 0)
         mxsl = 1 + neg;
     /* old?? if (mxl != mnl && mxl + rt > MAXDIG) rt = MAXDIG - mxl; */
@@ -314,7 +316,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     else
         *e = 1;
     *n = mxns - 1;
-    *m = neg + (*n > 0) + *n + 4 + *e; /* width m for E  format */
+    *m = neg + (*n > 0) + *n + 4 + *e; /* width m for E	 format */
 
     if (mF <= *m)
     { /* IFF it needs less space : "F" (Fixpoint) format */
