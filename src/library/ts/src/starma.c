@@ -346,7 +346,7 @@ void forkal(Starma G, int d, int il, double *delta, double *y, double *amse, int
     double *a, *P, *store;
     int rd = r + d, rz = rd * (rd + 1) / 2;
     double phii, phij, sigma2, a1, aa, dt, phijdt, ams, tmp;
-    int i, j, k, l;
+    int i, j, k, l, nu = 0;
     int k1;
     int i45, jj, kk, lk, ll;
     int nt;
@@ -431,11 +431,12 @@ void forkal(Starma G, int d, int il, double *delta, double *y, double *amse, int
 
     sigma2 = 0.0;
     for (j = 0; j < nt; j++)
-    {
-        tmp = G->resid[j];
-        sigma2 += tmp * tmp;
-    }
-    sigma2 /= nt;
+        if (!ISNAN(tmp = G->resid[j]))
+        {
+            nu++;
+            sigma2 += tmp * tmp;
+        }
+    sigma2 /= nu;
 
     /*     reset the initial a and P when differencing occurs */
 
