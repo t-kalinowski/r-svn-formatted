@@ -488,6 +488,8 @@ void *R_HTTPOpen(const char *url)
             }
         }
     }
+    else
+        return NULL;
     con = (inetconn *)malloc(sizeof(inetconn));
     if (con)
     {
