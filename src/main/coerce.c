@@ -640,6 +640,9 @@ static SEXP coerceToVectorList(SEXP v)
     switch (TYPEOF(v))
     {
     case LGLSXP:
+        for (i = 0; i < n; i++)
+            SET_VECTOR_ELT(ans, i, ScalarLogical(LOGICAL(v)[i]));
+        break;
     case INTSXP:
         for (i = 0; i < n; i++)
             SET_VECTOR_ELT(ans, i, ScalarInteger(INTEGER(v)[i]));
