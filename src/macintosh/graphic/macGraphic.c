@@ -362,7 +362,7 @@ static void Mac_Close(NewDevDesc *dd)
     if ((WinIndex = isGraphicWindow(xd->window)) == 0)
         return;
 
-    RemWinMenuItem();
+    RemWinMenuItem(xd->window);
     changeGWinPtr(xd->window, Cur_Title);
     DestroyWindow(xd->window);
     free(xd);
@@ -386,7 +386,7 @@ static void Mac_Activate(NewDevDesc *dd)
     Boolean EqString = FALSE;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
     SInt16 WinIndex = isGraphicWindow(xd->window);
-    int devNum = deviceNumber((DevDesc *)dd);
+    int devNum = devNumber((DevDesc *)dd);
 
     sprintf((char *)&titledString[1], "Graphics Window %d [Inactive]", devNum + 1);
     titledString[0] = strlen((char *)&titledString[1]);
@@ -432,7 +432,7 @@ static void Mac_Deactivate(NewDevDesc *dd)
     Boolean EqString;
     MenuHandle windowsMenu;
     MacDesc *xd = (MacDesc *)dd->deviceSpecific;
-    int devNum = deviceNumber((DevDesc *)dd);
+    int devNum = devNumber((DevDesc *)dd);
     sprintf((char *)&titledString[1], "Graphics Window %d [Active]", devNum + 1);
     titledString[0] = strlen((char *)&titledString[1]);
 
