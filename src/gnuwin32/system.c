@@ -178,6 +178,7 @@ void Rconsolesetwidth(int cols)
 
 static int GuiReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
+    int res;
     char *p;
     char *NormalPrompt = (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_NilValue), 0));
 
@@ -187,12 +188,12 @@ static int GuiReadConsole(char *prompt, char *buf, int len, int addtohistory)
         Rconsolesetwidth(consolecols(RConsole));
     }
     ConsoleAcceptCmd = !strcmp(prompt, NormalPrompt);
-    consolereads(RConsole, prompt, buf, len, addtohistory);
+    res = consolereads(RConsole, prompt, buf, len, addtohistory);
     for (p = buf; *p; p++)
         if (*p == EOF)
             *p = '\001';
     ConsoleAcceptCmd = 0;
-    return 1;
+    return !res;
 }
 
 /* 2 and 3: reading in a thread */
@@ -245,10 +246,10 @@ static int ThreadedReadConsole(char *prompt, char *buf, int len, int addtohistor
 /*2: from character console with getline (only used as InThreadReadConsole)*/
 static int CharReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
-    getline(prompt, buf, len);
+    int res = getline(prompt, buf, len);
     if (addtohistory)
         gl_histadd(buf);
-    return 1;
+    return !res;
 }
 
 /*3: (as InThreadReadConsole) and 4: non-interactive */

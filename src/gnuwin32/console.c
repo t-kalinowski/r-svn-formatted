@@ -568,7 +568,11 @@ int consolegetlazy(control c) FBEGIN FEND(p->lazyupdate)
     void consoleflush(control c) FBEGIN REDRAW;
 FVOIDEND
 
-/* These are the getline keys ^A ^E ^B ^F ^N ^P ^K ^H ^D ^U ^T ^O */
+/* These are the getline keys ^A ^E ^B ^F ^N ^P ^K ^H ^D ^U ^T ^O,
+   plus ^Z for EOF.
+
+   We also use ^C ^V/^Y ^X (copy/paste/both) ^W ^L
+*/
 #define BEGINLINE 1
 #define ENDLINE 5
 #define CHARLEFT 2
@@ -581,7 +585,8 @@ FVOIDEND
 #define KILLLINE 21
 #define CHARTRANS 20
 #define OVERWRITE 15
-/* free ^G ^Q ^R ^S */
+#define EOFKEY 26
+/* free ^G ^Q ^R ^S, perhaps ^I ^J */
 
 static void storekey(control c, int k) FBEGIN if (p->kind == PAGER) return;
 if (k == BKSP)
@@ -1189,7 +1194,7 @@ for (;;)
             cur_line[cur_pos - 1] = cur_char;
             break;
         default:
-            if (chtype || (cur_char == '\n'))
+            if (chtype || (cur_char == '\n') || (cur_char == EOFKEY))
             {
                 if (chtype)
                 {
@@ -1213,7 +1218,7 @@ for (;;)
                 xbuffixl(p->lbuf);
                 consolewrites(c, "\n");
                 REDRAW;
-                FRETURN(0);
+                FRETURN(cur_char == EOFKEY);
             }
             break;
         }
