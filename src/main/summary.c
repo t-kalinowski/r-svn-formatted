@@ -64,7 +64,7 @@ static Rboolean isum(int *x, int n, int *value, Rboolean narm)
     }
     if (s > INT_MAX || s < R_INT_MIN)
     {
-        warning("Integer overflow in sum(.); use sum(as.numeric(.))");
+        warning(_("Integer overflow in sum(.); use sum(as.numeric(.))"));
         *value = NA_INTEGER;
     }
     else
@@ -396,7 +396,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
 
     default:
-        errorcall(call, "internal error ('op' in do_summary).\t Call a Guru");
+        errorcall(call, _("internal error ('op' in do_summary).\t Call a Guru"));
         return R_NilValue; /*-Wall */
     }
 
@@ -490,7 +490,7 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                             s = (double)icum + (double)itmp;
                             if (s > INT_MAX || s < R_INT_MIN)
                             {
-                                warning("Integer overflow in sum(.); use sum(as.numeric(.))");
+                                warning(_("Integer overflow in sum(.); use sum(as.numeric(.))"));
                                 goto na_answer;
                             }
                             else
@@ -593,9 +593,9 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     if (empty && (iop == 2 || iop == 3))
     {
         if (iop == 2)
-            warning("no finite arguments to min; returning Inf");
+            warning(_("no finite arguments to min; returning Inf"));
         else
-            warning("no finite arguments to max; returning -Inf");
+            warning(_("no finite arguments to max; returning -Inf"));
         ans_type = REALSXP;
     }
 
@@ -660,7 +660,7 @@ SEXP do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
                                                                                                                        \
     PROTECT(sx = coerceVector(CAR(args), REALSXP));                                                                    \
     if (!isNumeric(sx))                                                                                                \
-        errorcall(call, "non-numeric argument");                                                                       \
+        errorcall(call, _("non-numeric argument"));                                                                    \
     n = LENGTH(sx);                                                                                                    \
     indx = NA_INTEGER;
 
@@ -906,7 +906,7 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rval;
 
 bad:
-    errorcall(call, "not all arguments have the same length");
+    errorcall(call, _("not all arguments have the same length"));
 
 bad_mode:
     errorcall_return(call, R_MSG_mode);
