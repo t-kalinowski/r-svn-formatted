@@ -232,11 +232,10 @@ SEXP R_NewHashTable(int size, int growth_rate)
     SEXP table;
 
     /* Some checking */
-    if (growth_rate == 0)
-    {
-        error("Hash table growth rate must be > 0");
-    }
-    if (size == 0)
+    if (growth_rate <= 0)
+        growth_rate = HASHTABLEGROWTHRATE;
+
+    if (size <= 0)
     {
         size = HASHMINSIZE;
     }
