@@ -90,14 +90,14 @@ SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* xmin */
 
     xmin = asReal(CAR(args));
-    if (!isFinite(xmin))
+    if (!FINITE(xmin))
         errorcall(call, "invalid xmin value\n");
     args = CDR(args);
 
     /* xmax */
 
     xmax = asReal(CAR(args));
-    if (!isFinite(xmax))
+    if (!FINITE(xmax))
         errorcall(call, "invalid xmax value\n");
     if (xmin >= xmax)
         errorcall(call, "xmin not less than xmax\n");
@@ -106,7 +106,7 @@ SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* tol */
 
     tol = asReal(CAR(args));
-    if (!isFinite(tol) || tol <= 0.0)
+    if (!FINITE(tol) || tol <= 0.0)
         errorcall(call, "invalid tol value\n");
 
     R_env1 = rho;
@@ -182,14 +182,14 @@ SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* xmin */
 
     xmin = asReal(CAR(args));
-    if (!isFinite(xmin))
+    if (!FINITE(xmin))
         errorcall(call, "invalid xmin value\n");
     args = CDR(args);
 
     /* xmax */
 
     xmax = asReal(CAR(args));
-    if (!isFinite(xmax))
+    if (!FINITE(xmax))
         errorcall(call, "invalid xmax value\n");
     if (xmin >= xmax)
         errorcall(call, "xmin not less than xmax\n");
@@ -198,7 +198,7 @@ SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* tol */
 
     tol = asReal(CAR(args));
-    if (!isFinite(tol) || tol <= 0.0)
+    if (!FINITE(tol) || tol <= 0.0)
         errorcall(call, "invalid tol value\n");
 
     R_env2 = rho;
