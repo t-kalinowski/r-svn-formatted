@@ -27,7 +27,7 @@
  */
 
 #include "Mathlib.h"
-#include "Errormsg.h"
+#include "Error.h"
 
 double qsignrank(double x, double n)
 {

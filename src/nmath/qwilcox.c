@@ -27,7 +27,7 @@
  */
 
 #include "Mathlib.h"
-#include "Errormsg.h" /* for warning() */
+#include "Error.h"
 
 double qwilcox(double x, double m, double n)
 {
