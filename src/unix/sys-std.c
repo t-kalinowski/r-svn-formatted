@@ -31,7 +31,7 @@
 #include "devX11.h"
 #include "Runix.h"
 
-int SaveAction;
+extern int SaveAction;
 
 void fpu_setup(int); /* in sys-unix.c */
 
@@ -71,7 +71,9 @@ void Rstd_Suicide(char *s)
  * considerably more complex.
  */
 
+#define __SYSTEM__
 #include "R_ext/eventloop.h"
+#undef __SYSTEM__
 
 /*
    This oject is used for the standard input and its file descriptor
@@ -84,7 +86,7 @@ static InputHandler BasicInputHandler = {StdinActivity, -1, NULL};
    This can be reset by the initialization routines which
    can ignore stdin, etc..
 */
-InputHandler *InputHandlers = &BasicInputHandler;
+InputHandler *R_InputHandlers = &BasicInputHandler;
 
 /*
   Initialize the input source handlers used to check for input on the
@@ -95,7 +97,7 @@ InputHandler *initStdinHandler(void)
     InputHandler *inputs;
     extern void R_processEvents(void);
 
-    inputs = addInputHandler(InputHandlers, fileno(stdin), NULL, StdinActivity);
+    inputs = addInputHandler(R_InputHandlers, fileno(stdin), NULL, StdinActivity);
     /* Defer the X11 registration until it is loaded and actually used. */
 
     return (inputs);
@@ -120,7 +122,7 @@ InputHandler *addInputHandler(InputHandler *handlers, int fd, InputHandlerProc h
 
     if (handlers == NULL)
     {
-        InputHandlers = input;
+        R_InputHandlers = input;
         return (input);
     }
 
@@ -204,11 +206,11 @@ static InputHandler *waitForActivity()
     int maxfd;
     fd_set readMask;
 
-    maxfd = setSelectMask(InputHandlers, &readMask);
+    maxfd = setSelectMask(R_InputHandlers, &readMask);
 
     select(maxfd + 1, &readMask, NULL, NULL, NULL);
 
-    return (getSelectedHandler(InputHandlers, &readMask));
+    return (getSelectedHandler(R_InputHandlers, &readMask));
 }
 
 /*
@@ -340,7 +342,7 @@ int Rstd_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory
             fflush(stdout);
         }
 
-        if (InputHandlers == NULL)
+        if (R_InputHandlers == NULL)
             initStdinHandler();
 
         for (;;)

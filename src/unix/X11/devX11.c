@@ -1195,7 +1195,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
 
     if (DisplayOpened)
     {
-        addInputHandler(InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
+        addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
     }
 
     numX11Devices++;
@@ -1393,7 +1393,7 @@ static void X11_Close(DevDesc *dd)
             XFreeFont(display, fontcache[nfonts].font);
         nfonts = 0;
 #endif
-        removeInputHandler(&InputHandlers, getInputHandler(InputHandlers, fd));
+        removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
         XCloseDisplay(display);
         displayOpen = 0;
     }
