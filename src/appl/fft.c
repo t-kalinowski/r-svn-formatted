@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--1999 R Development Core Team
+ *  Copyright (C) 1998--2000	R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -244,7 +244,7 @@ void fft_factor(int n, int *pmaxf, int *pmaxp)
 static void fftmx(double *a, double *b, int ntot, int n, int nspan, int isn, int m, int kt, double *at, double *ck,
                   double *bt, double *sk, int *np, int *nfac)
 {
-    /* called from  fft_work() */
+    /* called from	fft_work() */
 
     /* Design BUG:	One purpose of fft_factor() would be to compute
      * ----------	nfac[] once and for all; and fft_work() [i.e. fftmx ]
@@ -945,19 +945,19 @@ L570:
         goto L_ord;
 }
 
-int fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *work, int *iwork)
+Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *work, int *iwork)
 {
     int nf, nspan, ntot;
 
     /* check that factorization was successful */
 
     if (old_n == 0)
-        return 0;
+        return FALSE;
 
     /* check that the parameters match those of the factorization call */
 
     if (n != old_n || nseg <= 0 || nspn <= 0 || isn == 0)
-        return 0;
+        return FALSE;
 
     /* perform the transform */
 
@@ -967,5 +967,5 @@ int fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *w
 
     fftmx(a, b, ntot, nf, nspan, isn, m, kt, &work[0], &work[maxf], &work[2 * maxf], &work[3 * maxf], iwork, nfac);
 
-    return 1;
+    return TRUE;
 }
