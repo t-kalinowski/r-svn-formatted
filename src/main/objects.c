@@ -274,7 +274,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static SEXP fixcall(SEXP call, SEXP args)
 {
-    SEXP s, t, u;
+    SEXP s, t;
     int found;
 
     for (t = args; t != R_NilValue; t = CDR(t))
