@@ -164,7 +164,16 @@ SEXP FixupPch(SEXP pch, int dflt)
     {
         ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
-            INTEGER(ans)[i] = CHAR(STRING_ELT(pch, i))[0];
+            INTEGER(ans)[i] = STRING_ELT(pch, i) != NA_STRING ? CHAR(STRING_ELT(pch, i))[0] : NA_INTEGER;
+    }
+    else if (isLogical(pch))
+    { /* NA, but not TRUE/FALSE */
+        ans = allocVector(INTSXP, n);
+        for (i = 0; i < n; i++)
+            if (LOGICAL(pch)[i] == NA_LOGICAL)
+                INTEGER(ans)[i] = NA_INTEGER;
+            else
+                error("only NA allowed in logical plotting symbol");
     }
     else
         error("invalid plotting symbol");
