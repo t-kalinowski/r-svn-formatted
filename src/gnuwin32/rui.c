@@ -585,6 +585,8 @@ static void popupact(control m)
         disable(ConsolePopup[1].m);
 }
 
+RECT RframeRect; /* for use by pagercreate */
+
 int setupui()
 {
     initapp(0, 0);
@@ -595,6 +597,7 @@ int setupui()
         RFrame = newwindow("RGui", rect(0, 0, 0, 0), StandardWindow | Menubar | Workspace);
         setclose(RFrame, closeconsole);
         show(RFrame);
+        GetClientRect(RFrame->handle, &RframeRect);
         TRACERUI("Rgui done");
     }
     TRACERUI("Console");
@@ -675,7 +678,7 @@ int setupui()
     MCHECK(mcopypaste = newmenuitem("Copy And Paste  \tCTRL+X", 0, menucopypaste));
     MCHECK(newmenuitem("Select all", 0, menuselectall));
     MCHECK(newmenuitem("-", 0, NULL));
-    MCHECK(mconfig = newmenuitem("Console options", 0, menuconfig));
+    MCHECK(mconfig = newmenuitem("GUI preferences", 0, menuconfig));
 
     MCHECK(newmenu("Misc"));
     MCHECK(newmenuitem("Stop current computation           \tESC", 0, menukill));

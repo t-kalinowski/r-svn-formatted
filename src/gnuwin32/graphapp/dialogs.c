@@ -205,6 +205,11 @@ char *askfilename(char *title, char *default_name)
 
 char *askfilesave(char *title, char *default_name)
 {
+    return askfilesavewithdir(title, default_name, NULL);
+}
+
+char *askfilesavewithdir(char *title, char *default_name, char *dir)
+{
     int i;
     OPENFILENAME ofn;
     char cwd[MAX_PATH];
@@ -224,10 +229,15 @@ char *askfilesave(char *title, char *default_name)
     ofn.nMaxFile = _MAX_PATH;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
-    if (GetCurrentDirectory(MAX_PATH, cwd))
-        ofn.lpstrInitialDir = cwd;
+    if (dir && strlen(dir) > 0)
+        ofn.lpstrInitialDir = dir;
     else
-        ofn.lpstrInitialDir = NULL;
+    {
+        if (GetCurrentDirectory(MAX_PATH, cwd))
+            ofn.lpstrInitialDir = cwd;
+        else
+            ofn.lpstrInitialDir = NULL;
+    }
     ofn.lpstrTitle = title;
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR | OFN_HIDEREADONLY;
     ofn.nFileOffset = 0;
