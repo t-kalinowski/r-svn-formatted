@@ -50,6 +50,15 @@
 
 #include "Defn.h"
 
+#define ENVIRONMENT_LOCKING
+#ifdef ENVIRONMENT_LOCKING
+/* Environment locking: */
+#define FRAME_LOCK_MASK (1 << 14)
+#define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
+#define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
+/*#define UNLOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) & (~ FRAME_LOCK_MASK))*/
+#endif
+
 /*----------------------------------------------------------------------
 
   Hash Tables
@@ -110,7 +119,11 @@ extern int R_Newhashpjw(char *s)
 
 */
 
+#ifdef ENVIRONMENT_LOCKING
+static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value, Rboolean frame_locked)
+#else
 static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
+#endif
 {
     SEXP chain;
 
@@ -125,10 +138,12 @@ static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
     }
     /* Grab the chain from the hashtable */
     chain = VECTOR_ELT(table, hashcode);
+#ifndef ENVIRONMENT_LOCKING
     if (isNull(chain))
     {
         SET_HASHPRI(table, HASHPRI(table) + 1);
     }
+#endif
     /* Add the value into the chain */
     for (; !isNull(chain); chain = CDR(chain))
     {
@@ -138,6 +153,14 @@ static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
             return;
         }
     }
+#ifdef ENVIRONMENT_LOCKING
+    if (frame_locked)
+        error("can't add bindings to a locked environment");
+    if (isNull(chain))
+    {
+        SET_HASHPRI(table, HASHPRI(table) + 1);
+    }
+#endif
     SET_VECTOR_ELT(table, hashcode, CONS(value, VECTOR_ELT(table, hashcode)));
     SET_TAG(VECTOR_ELT(table, hashcode), symbol);
     return;
@@ -537,7 +560,11 @@ static void R_FlushGlobalCacheFromTable(SEXP table)
 static void R_AddGlobalCache(SEXP symbol, SEXP place)
 {
     int oldpri = HASHPRI(R_GlobalCache);
+#ifdef ENVIRONMENT_LOCKING
+    R_HashSet(hashIndex(symbol, R_GlobalCache), symbol, R_GlobalCache, place, FALSE);
+#else
     R_HashSet(hashIndex(symbol, R_GlobalCache), symbol, R_GlobalCache, place);
+#endif
     if (oldpri != HASHPRI(R_GlobalCache) && HASHPRI(R_GlobalCache) > 0.85 * HASHSIZE(R_GlobalCache))
     {
         R_GlobalCache = R_HashResize(R_GlobalCache);
@@ -615,6 +642,12 @@ void unbindVar(SEXP symbol, SEXP rho)
 {
     int hashcode;
     SEXP c;
+#ifdef ENVIRONMENT_LOCKING
+    if (rho == R_NilValue)
+        error("can't unbind in the NULL environment");
+    if (FRAME_IS_LOCKED(rho))
+        error("can't remove bindings from a locked environment");
+#endif
 #ifdef USE_GLOBAL_CACHE
     if (IS_GLOBAL_FRAME(rho))
         R_FlushGlobalCache(symbol);
@@ -1054,6 +1087,10 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
                 }
                 frame = CDR(frame);
             }
+#ifdef ENVIRONMENT_LOCKING
+            if (FRAME_IS_LOCKED(rho))
+                error("can't add bindings to a locked environment");
+#endif
             SET_FRAME(rho, CONS(value, FRAME(rho)));
             SET_TAG(FRAME(rho), symbol);
         }
@@ -1066,7 +1103,11 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
                 SET_HASHASH(c, 1);
             }
             hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
+#ifdef ENVIRONMENT_LOCKING
+            R_HashSet(hashcode, symbol, HASHTAB(rho), value, FRAME_IS_LOCKED(rho));
+#else
             R_HashSet(hashcode, symbol, HASHTAB(rho), value);
+#endif
             if (R_HashSizeCheck(HASHTAB(rho)))
                 SET_HASHTAB(rho, R_HashResize(HASHTAB(rho)));
         }
@@ -1221,6 +1262,10 @@ static int RemoveVariable(SEXP name, int hashcode, SEXP env)
 {
     int found;
     SEXP list;
+#ifdef ENVIRONMENT_LOCKING
+    if (FRAME_IS_LOCKED(env))
+        error("can't remove bindings from a locked environment");
+#endif
     if (IS_HASHED(env))
     {
         SEXP hashtab = HASHTAB(env);
@@ -1990,3 +2035,16 @@ SEXP do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue; /* -Wall */
     }
 }
+
+#ifdef ENVIRONMENT_LOCKING
+void R_LockEnvironment(SEXP env, Rboolean bindings)
+{
+    if (bindings)
+        error("locking bindings is not supported yet");
+    if (env == R_NilValue)
+        error("locking the NULL (base) environment is not supported yet");
+    if (TYPEOF(env) != ENVSXP)
+        error("not an environment");
+    LOCK_FRAME(env);
+}
+#endif
