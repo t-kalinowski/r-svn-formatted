@@ -391,7 +391,7 @@ static int AddDLL(char *path, int asLocal, int now)
     return 1;
 }
 
-DllInfo *R_RegisterDLL(HINSTANCE *handle, const char *path)
+DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
 {
     char *dpath, DLLname[PATH_MAX], *p, *name;
     DllInfo *info;
