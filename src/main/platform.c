@@ -362,10 +362,13 @@ SEXP do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP f1, f2, ans;
-    int i, n, n1, n2;
+    SEXP f1, f2;
+    int n, n1, n2;
+#ifdef HAVE_SYMLINK
+    SEXP ans;
+    int i;
     char from[PATH_MAX], to[PATH_MAX], *p;
-
+#endif
     checkArity(op, args);
     f1 = CAR(args);
     n1 = length(f1);
