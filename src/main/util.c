@@ -24,6 +24,43 @@
 
 SEXP mkChar(char *);
 
+SEXP ScalarLogical(int x)
+{
+    SEXP ans = allocVector(LGLSXP, 1);
+    INTEGER(ans)[0] = x;
+    return ans;
+}
+
+SEXP ScalarInteger(int x)
+{
+    SEXP ans = allocVector(INTSXP, 1);
+    INTEGER(ans)[0] = x;
+    return ans;
+}
+
+SEXP ScalarReal(double x)
+{
+    SEXP ans = allocVector(REALSXP, 1);
+    REAL(ans)[0] = x;
+    return ans;
+}
+
+SEXP ScalarComplex(complex x)
+{
+    SEXP ans = allocVector(CPLXSXP, 1);
+    COMPLEX(ans)[0] = x;
+    return ans;
+}
+
+SEXP ScalarString(SEXP x)
+{
+    SEXP ans;
+    PROTECT(ans = allocVector(STRSXP, 1));
+    STRING(ans)[0] = x;
+    UNPROTECT(1);
+    return ans;
+}
+
 static char *truenames[] = {
     "T", "True", "TRUE", "true", (char *)0,
 };
@@ -46,6 +83,8 @@ int asInteger(SEXP x)
             return (INTEGER(x)[0]);
         case REALSXP:
             return FINITE(REAL(x)[0]) ? ((int)(REAL(x)[0])) : NA_INTEGER;
+        case CPLXSXP:
+            return FINITE(COMPLEX(x)[0].r) ? ((int)(COMPLEX(x)[0].r)) : NA_INTEGER;
         default:
             return NA_INTEGER;
         }
@@ -67,6 +106,8 @@ int asLogical(SEXP x)
             return (INTEGER(x)[0] == NA_INTEGER) ? NA_LOGICAL : (INTEGER(x)[0]) != 0;
         case REALSXP:
             return FINITE(REAL(x)[0]) ? (REAL(x)[0] != 0.0) : NA_LOGICAL;
+        case CPLXSXP:
+            return FINITE(COMPLEX(x)[0].r) ? (COMPLEX(x)[0].r != 0.0) : NA_LOGICAL;
         default:
             return NA_LOGICAL;
         }
@@ -87,6 +128,8 @@ double asReal(SEXP x)
             return (INTEGER(x)[0] == NA_INTEGER) ? NA_REAL : (INTEGER(x)[0]);
         case REALSXP:
             return REAL(x)[0];
+        case CPLXSXP:
+            return COMPLEX(x)[0].r;
         default:
             return NA_REAL;
         }
@@ -125,6 +168,7 @@ SEXP asChar(SEXP x)
             else
                 sprintf(buf, "%*.*f", w, d, REAL(x)[0]);
             return mkChar(buf);
+            /* FIXME: CPLXSXP case here */
         case STRSXP:
             return STRING(x)[0];
         default:
@@ -177,6 +221,62 @@ int isList(SEXP s)
 {
     return (s == R_NilValue || TYPEOF(s) == LISTSXP);
 }
+
+#ifdef NEWLIST
+int isPairList(SEXP s)
+{
+    int ans;
+    switch (TYPEOF(s))
+    {
+    case NILSXP:
+    case LISTSXP:
+    case LANGSXP:
+        ans = 1;
+        break;
+    default:
+        ans = 0;
+        break;
+    }
+    return ans;
+}
+
+int isVectorList(SEXP s)
+{
+    int ans;
+    switch (TYPEOF(s))
+    {
+    case VECSXP:
+    case EXPRSXP:
+        ans = 1;
+        break;
+    default:
+        ans = 0;
+        break;
+    }
+    return ans;
+}
+
+int isVectorObject(SEXP s)
+{
+    int ans;
+    switch (TYPEOF(s))
+    {
+    case LGLSXP:
+    case INTSXP:
+    case REALSXP:
+    case CPLXSXP:
+    case STRSXP:
+    case VECSXP:
+    case EXPRSXP:
+        ans = 1;
+        break;
+    default:
+        ans = 0;
+        break;
+    }
+    return ans;
+}
+#endif
 
 #ifdef NEWLIST
 int isNewList(SEXP s)
@@ -276,13 +376,12 @@ int tsConform(SEXP x, SEXP y)
     return 0;
 }
 
-/* check to see if a list can be made into a vector */
-/* it must have every elt being a vector of length 1 */
+/* Check to see if a list can be made into a vector. */
+/* it must have every elementt being a vector of length 1. */
 
 int isVectorizable(SEXP s)
 {
     int mode = 0;
-
     if (isNull(s))
         return 1;
     else if (!isList(s))
@@ -295,6 +394,8 @@ int isVectorizable(SEXP s)
     }
     return mode;
 }
+
+/* Check to see if the arrays "x" and "y" have the identical extents */
 
 int conformable(SEXP x, SEXP y)
 {
@@ -354,6 +455,9 @@ int nlevels(SEXP f)
         return 0;
     return LENGTH(getAttrib(f, R_LevelsSymbol));
 }
+
+/* Is an object of numeric type. */
+/* FIXME:  the LGLSXP case should be excluded here. */
 
 int isNumeric(SEXP s)
 {
@@ -479,7 +583,8 @@ SEXPTYPE str2type(char *s)
         if (!strcmp(s, TypeTable[i].str))
             return TypeTable[i].type;
     }
-    /*NOTREACHED :*/ return TypeTable[0].type;
+    /*NOTREACHED :*/
+    return TypeTable[0].type;
 }
 
 SEXP type2str(SEXPTYPE t)
@@ -495,12 +600,11 @@ SEXP type2str(SEXPTYPE t)
     return R_NilValue; /* for -Wall */
 }
 
-/* function to test whether a string is a true value */
+/* Function to test whether a string is a true value */
 
 int StringTrue(char *name)
 {
     int i;
-
     for (i = 0; truenames[i]; i++)
         if (!strcmp(name, truenames[i]))
             return (1);
@@ -510,7 +614,6 @@ int StringTrue(char *name)
 int StringFalse(char *name)
 {
     int i;
-
     for (i = 0; falsenames[i]; i++)
         if (!strcmp(name, falsenames[i]))
             return (1);
@@ -541,7 +644,7 @@ SEXP nthcdr(SEXP s, int n)
     return R_NilValue; /* for -Wall */
 }
 
-/* mfindVarInFrame - look up symbol in a single environment frame */
+/* mfindVarInFrame - look up symbol in a single environment frame. */
 static SEXP mfindVarInFrame(SEXP frame, SEXP symbol)
 {
     while (frame != R_NilValue)
@@ -556,7 +659,6 @@ static SEXP mfindVarInFrame(SEXP frame, SEXP symbol)
 static int isMissing(SEXP symbol, SEXP rho)
 {
     SEXP vl;
-
     while (rho != R_NilValue)
     {
         vl = mfindVarInFrame(FRAME(rho), symbol);
@@ -578,7 +680,6 @@ SEXP do_missing(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rval, s, t;
     int ind;
-
     checkArity(op, args);
     s = CAR(args);
     if (!isSymbol(s))
@@ -612,7 +713,7 @@ havebinding:
         LOGICAL(rval)[0] = 0;
         return rval;
         /*
-        errorcall(call, "non-promise bound to argument\n");
+          errorcall(call, "non-promise bound to argument\n");
         */
     }
 
@@ -626,7 +727,6 @@ havebinding:
 SEXP do_nargs(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP t;
-
     t = allocVector(INTSXP, 1);
     *INTEGER(t) = NARGS(rho);
     return (t);
@@ -635,7 +735,6 @@ SEXP do_nargs(SEXP call, SEXP op, SEXP args, SEXP rho)
 void setIVector(int *vec, int len, int val)
 {
     int i;
-
     for (i = 0; i < len; i++)
         vec[i] = val;
 }
@@ -643,7 +742,6 @@ void setIVector(int *vec, int len, int val)
 void setRVector(double *vec, int len, double val)
 {
     int i;
-
     for (i = 0; i < len; i++)
         vec[i] = val;
 }
@@ -651,24 +749,23 @@ void setRVector(double *vec, int len, double val)
 void setSVector(SEXP *vec, int len, SEXP val)
 {
     int i;
-
     for (i = 0; i < len; i++)
         vec[i] = val;
 }
 
 int isFree(SEXP val)
 {
-    SEXP t = R_FreeSEXP;
-
+    SEXP t;
     for (t = R_FreeSEXP; t != R_NilValue; t = CAR(t))
         if (val == t)
             return 1;
     return (0);
 }
 
-/*
-  here are some debugging functions-hence the d-prefix
-*/
+/* Debugging functions (hence the d-prefix). */
+/* These are intended to be called interactively from */
+/* a debugger such as gdb, so you don't have to remember */
+/* the names of the data structure components. */
 
 int dtype(SEXP q)
 {

@@ -20,21 +20,6 @@
 #include "Defn.h"
 #include "Mathlib.h"
 
-#ifdef not_used_currently
-
-static void CheckDims(SEXP dims)
-{
-    int i;
-
-    for (i = 0; i < LENGTH(dims); i++)
-    {
-        if (INTEGER(dims)[i] < 0)
-            error("invalid array extent\n");
-    }
-}
-
-#endif
-
 SEXP do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP vals, snr, snc;
@@ -103,32 +88,6 @@ SEXP allocMatrix(SEXPTYPE mode, int nrow, int ncol)
     return s;
 }
 
-#ifdef use_do_array /*--- unused (1998, April 24 -- 0.62 unstable */
-
-SEXP do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    SEXP vals, dims, ans;
-
-    if (length(args) != 2)
-        error("incorrect arg count to \"array\"\n");
-    vals = CAR(args);
-    dims = CADR(args);
-
-    if (isVector(vals) && isNumeric(dims) && LENGTH(dims) >= 2)
-    {
-        PROTECT(dims = coerceVector(dims, INTSXP));
-        CheckDims(dims);
-        PROTECT(ans = allocArray(TYPEOF(vals), dims));
-        copyVector(ans, vals);
-        UNPROTECT(2);
-        return ans;
-    }
-    else
-        error("bad arguments to array\n");
-    return call; /* never used; just for -Wall */
-}
-#endif
-
 SEXP allocArray(SEXPTYPE mode, SEXP dims)
 {
     SEXP array;
@@ -145,56 +104,69 @@ SEXP allocArray(SEXPTYPE mode, SEXP dims)
     return array;
 }
 
-/* DropDims strips away redundant dimensioning */
-/* information If there is an appropriate dimnames */
-/* attribute the correct element is extracted and */
-/* attached to the vector as a names attribute.  Note */
-/* that this function mutates x.  Duplication should */
-/* occur before this is called. */
+/* DropDims strips away redundant dimensioning information. */
+/* If there is an appropriate dimnames attribute the correct */
+/* element is extracted and attached to the vector as a names */
+/* attribute.  Note that this function mutates x. */
+/* Duplication should occur before this is called. */
 
 SEXP DropDims(SEXP x)
 {
-    SEXP p, q, r, pdims, pdimnames;
+    SEXP p, q, r, dims, dimnames;
     int i, n;
 
-    /* Locate the dims and dimnames attributes */
+    PROTECT(x);
 
-    pdims = R_NilValue;
-    pdimnames = R_NilValue;
-    for (p = ATTRIB(x); p != R_NilValue; p = CDR(p))
+    dims = getAttrib(x, R_DimSymbol);
+    dimnames = getAttrib(x, R_DimNamesSymbol);
+
+    /* Check that dropping will actually do something. */
+    /* (1) Check that there is a "dim" attribute. */
+
+    if (dims == R_NilValue)
     {
-        if (TAG(p) == R_DimSymbol)
-            pdims = p;
-        if (TAG(p) == R_DimNamesSymbol)
-            pdimnames = p;
+        UNPROTECT(1);
+        return x;
     }
 
-    /* Check that dropping will actually do something */
-
-    if (pdims == R_NilValue)
-        return x;
-    p = CAR(pdims);
+    /* (2) Check that there are redundant extents */
     n = 0;
-    for (i = 0; i < LENGTH(p); i++)
-        if (INTEGER(p)[i] != 1)
+    for (i = 0; i < LENGTH(dims); i++)
+        if (INTEGER(dims)[i] != 1)
             n++;
-    if (n == LENGTH(p))
+    if (n == LENGTH(dims))
+    {
+        UNPROTECT(1);
         return x;
-
-    PROTECT(x);
+    }
 
     if (n <= 1)
     { /* vector */
         SEXP newnames = R_NilValue;
-        if (pdimnames != R_NilValue)
+        if (dimnames != R_NilValue)
         {
-            q = CAR(pdimnames);
-            for (i = 0; i < LENGTH(p); i++)
+            n = length(dims);
+#ifdef NEWLIST
+            for (i = 0; i < n; i++)
             {
-                if (INTEGER(p)[i] != 1)
+                if (INTEGER(dims)[i] != 1)
+                {
+                    newnames = VECTOR(dimnames)[i];
+                    break;
+                }
+            }
+#else
+            q = dimnames;
+            for (i = 0; i < n; i++)
+            {
+                if (INTEGER(dims)[i] != 1)
+                {
                     newnames = CAR(q);
+                    break;
+                }
                 q = CDR(q);
             }
+#endif
         }
         PROTECT(newnames);
         setAttrib(x, R_DimNamesSymbol, R_NilValue);
@@ -206,30 +178,44 @@ SEXP DropDims(SEXP x)
     { /* array */
         SEXP newdims, newdimnames;
         PROTECT(newdims = allocVector(INTSXP, n));
-        p = CAR(pdims);
         n = 0;
-        for (i = 0; i < LENGTH(p); i++)
-            if (INTEGER(p)[i] != 1)
-                INTEGER(newdims)[n++] = INTEGER(p)[i];
-        if (pdimnames)
+        for (i = 0; i < LENGTH(dims); i++)
+            if (INTEGER(dims)[i] != 1)
+                INTEGER(newdims)[n++] = INTEGER(dims)[i];
+        if (dimnames != R_NilValue)
         {
-            PROTECT(newdimnames = allocList(n));
-            q = CAR(pdimnames);
-            r = newdimnames;
-            for (i = 0; i < LENGTH(p); i++)
+#ifdef NEWLIST
+            int j = 0;
+            PROTECT(newdimnames = allocVector(VECSXP, n));
+            for (i = 0; i < LENGTH(dims); i++)
             {
-                if (INTEGER(p)[i] != 1)
+                if (INTEGER(dims)[i] != 1)
+                {
+                    VECTOR(newdimnames)[j++] = VECTOR(dimnames)[i];
+                }
+            }
+#else
+            PROTECT(newdimnames = allocList(n));
+            q = dimnames;
+            r = newdimnames;
+            for (i = 0; i < LENGTH(dims); i++)
+            {
+                if (INTEGER(dims)[i] != 1)
                 {
                     CAR(r) = CAR(q);
                     r = CDR(r);
                 }
                 q = CDR(q);
             }
+#endif
+        }
+        setAttrib(x, R_DimNamesSymbol, R_NilValue);
+        setAttrib(x, R_DimSymbol, newdims);
+        if (dimnames != R_NilValue)
+        {
+            setAttrib(x, R_DimNamesSymbol, newdimnames);
             UNPROTECT(1);
         }
-        CAR(pdims) = newdims;
-        if (pdimnames != R_NilValue)
-            CAR(pdimnames) = newdimnames;
         UNPROTECT(1);
     }
     UNPROTECT(1);
@@ -303,7 +289,8 @@ SEXP do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* FIXME - What about non IEEE overflow ??? */
+/* FIXME - What about non-IEEE overflow ??? */
+/* Does it really matter? */
 
 static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, double *z)
 {
@@ -685,10 +672,8 @@ not_matrix:
 static int swap(int ival, SEXP dims1, SEXP dims2, SEXP perm, SEXP ind1, SEXP ind2)
 {
     int len, t1, i;
-
     len = length(dims1);
     t1 = ival;
-
     for (i = 0; i < len; i++)
     {
         INTEGER(ind1)[i] = t1 % INTEGER(dims1)[i];

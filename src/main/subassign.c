@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995--1998  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997, 1998  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,53 +16,55 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  Subset Mutation for Lists and Vectors
+ *
+ *  The following table shows the codes which have been assigned to the
+ *  type combinations in assignments of the form "x[s] <- y".  Here the
+ *  type of y is given across the top of the table and the type of x at
+ *  the side.  (Note: the lack of 11 and 12 indices here is due to the
+ *  removal of built-in factors).
+ *
+ *
+ *          x \ y LANG  LGL  INT REAL CPLX  STR  VEC EXPR
+ *
+ *          LANG   606  610  613  614  615  616  619  620
+ *          LGL   1006 1010 1013 1014 1015 1016 1019 1020
+ *          INT   1306 1310 1313 1314 1315 1316 1319 1320
+ *          REAL  1406 1410 1413 1414 1415 1416 1419 1420
+ *          CPLX  1506 1510 1513 1514 1515 1516 1519 1520
+ *          STR   1606 1610 1613 1614 1615 1616 1619 1620
+ *          VEC   1906 1910 1913 1914 1915 1916 1919 1920
+ *          EXPR  2006 2010 2013 2014 2015 2016 1719 2020
+ *
+ *
+ *  The following table (which is laid out as described above) contains
+ *  "*" for those combinations where the assignment has been implemented.
+ *  Some assignments do not make a great deal of sense and we have chosen
+ *  to leave them unimplemented, although the addition of new assignment
+ *  combinations represents no great difficulty.
+ *
+ *
+ *                LANG  LGL  INT REAL CPLX  STR  VEC EXPR
+ *
+ *          LANG
+ *          LGL           *    *    *    *    *         *
+ *          INT           *    *    *    *    *         *
+ *          REAL          *    *    *    *    *         *
+ *          CPLX          *    *    *    *    *         *
+ *          STR           *    *    *    *    *         *
+ *          VEC           *                        *
+ *          EXPR     *                                  *
+ *
+ *  The reason for the LGL row and column are because we want to allow any
+ *  assignment of the form "x[s] <- NA" (col) and because the interpreted
+ *  "ifelse" requires assignment into a logical object.
  */
 
 #include "Defn.h"
 
 static SEXP gcall;
-
-/* The following table shows the codes which have been	*/
-/* assigned to the type combinations in assignments of	*/
-/* the form  "x[s] <- y".  Here the type of y is given	*/
-/* across the top of the table and the type of x at the */
-/* side.  (Note: the lack of 11 and 12 indices here is	*/
-/* due to the removal of built-in factors).		*/
-
-/*-----------------------------------------*/
-/* x \ y LGL  INT REAL CPLX  STR EXPR LANG */
-/* LGL	1010 1013 1014 1015 1016 1020 1006 */
-/* INT	1310 1313 1314 1315 1316 1320 1306 */
-/* REAL 1410 1413 1414 1415 1416 1420 1406 */
-/* CPLX 1510 1513 1514 1515 1516 1520 1506 */
-/* STR	1610 1613 1614 1615 1616 1620 1606 */
-/* EXPR 2010 2013 2014 2015 2016 2020 2006 */
-/* LANG	 610  613  614	615  616  620  606 */
-/*-----------------------------------------*/
-
-/* The following table (which is laid out as described	*/
-/* above) contains "*" for those combinations where the */
-/* assignment has been implemented.  Some assignments	*/
-/* do not make a great deal of sense and we have chosen */
-/* to leave them unimplemented, although the addition	*/
-/* of new assignment combinations represents no great	*/
-/* difficulty. */
-
-/*----------------------------------------*/
-/*	LGL  INT REAL CPLX  STR EXPR LANG */
-/* LGL	  *    *    *	 *    *	   *	  */
-/* INT	  *    *    *	 *    *	   *	  */
-/* REAL	  *    *    *	 *    *	   *	  */
-/* CPLX	  *    *    *	 *    *	   *	  */
-/* STR	  *    *    *	 *    *	   *	  */
-/* EXPR				   *	* */
-/* LANG					  */
-/*----------------------------------------*/
-
-/* The reason for the LGL row and column are because we	 */
-/* want to allow any assignment of the form "x[s] <- NA" */
-/* (col) and because the interpreted "ifelse" requires	 */
-/* assignment into a logical object.			 */
 
 #ifdef NotUsed
 static void SetArgsforUseMethod(SEXP x)
@@ -85,7 +88,7 @@ static void SetArgsforUseMethod(SEXP x)
         }
     }
 }
-#endif /*not used*/
+#endif
 
 static int R_BoundChecking = 0;
 
@@ -101,6 +104,11 @@ SEXP do_checkbounds(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
+/* "EnlargeVector" takes a vector or list "x" and changes its length to */
+/* "nnew".  This makes it possible to assign values "past the end" of a */
+/* vector or list although, unlike S, we only extend as much as is */
+/* necessary. */
+
 static SEXP EnlargeVector(SEXP x, int nnew)
 {
     int i, n;
@@ -111,6 +119,9 @@ static SEXP EnlargeVector(SEXP x, int nnew)
 
     if (isVector(x))
     {
+
+        /* We begin by enlarging the vector itself. */
+
         n = length(x);
         PROTECT(x);
         PROTECT(newx = allocVector(TYPEOF(x), nnew));
@@ -146,12 +157,21 @@ static SEXP EnlargeVector(SEXP x, int nnew)
                 STRING(newx)[i] = ap;
             break;
         case EXPRSXP:
+#ifdef NEWLIST
+        case VECSXP:
+#endif
             for (i = 0; i < n; i++)
                 VECTOR(newx)[i] = VECTOR(x)[i];
             for (i = n; i < nnew; i++)
                 VECTOR(newx)[i] = R_NilValue;
             break;
         }
+
+        /* After having enlarged the vector, we must ensure that */
+        /* The attribute list is correctly adjusted.   This means */
+        /* enlarging the "names" attribute (if any) and deleting */
+        /* any "dim" and "dimnames" attributes. */
+
         ap = alist = ATTRIB(x);
         PROTECT(nap = newalist = CONS(R_NilValue, R_NilValue));
         while (ap != R_NilValue)
@@ -198,6 +218,7 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch)
     case 1514: /* complex    <- real	    */
     case 1515: /* complex    <- complex    */
     case 1616: /* character  <- character  */
+    case 1919: /* vector     <- vector     */
     case 2020: /* expression <- expression */
 
         break;
@@ -236,6 +257,15 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch)
         *x = coerceVector(*x, STRSXP);
         break;
 
+    case 1910: /* logical    <- vector    */
+    case 1913: /* integer    <- vector    */
+    case 1914: /* real       <- vector    */
+    case 1915: /* complex    <- vector    */
+    case 1916: /* character  <- vector    */
+
+        *x = coerceVector(*x, VECSXP);
+        break;
+
     case 2001: /* expression <- symbol	   */
     case 2006: /* expression <- language  */
     case 2010: /* expression <- logical   */
@@ -243,6 +273,7 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch)
     case 2014: /* expression <- real	   */
     case 2015: /* expression <- complex   */
     case 2016: /* expression <- character */
+    case 2019: /* expression <- vector    */
 
         /* Note : no coercion is needed here, */
         /* we just insert the rhs into the lhs. */
@@ -256,20 +287,19 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch)
         *x = EnlargeVector(*x, stretch);
 }
 
-static SEXP vectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
+static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     SEXP dim, index;
     int i, ii, iy, n, ny, stretch, which;
     double ry;
 
-    /* Check to see if we have special matrix */
-    /* subscripting.  If so, we make a real */
-    /* subscript vector. */
-
     if (isNull(x) && isNull(y))
     {
         return R_NilValue;
     }
+
+    /* Check to see if we have special matrix subscripting. */
+    /* If so, we manufacture a real subscript vector. */
 
     dim = getAttrib(x, R_DimSymbol);
     if (isMatrix(s) && isArray(x) && (isInteger(s) || isReal(s)) && ncols(s) == length(dim))
@@ -443,6 +473,22 @@ static SEXP vectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         }
         break;
 
+    case 1910: /* vector     <- logical    */
+    case 1913: /* vector     <- integer    */
+    case 1914: /* vector     <- real       */
+    case 1915: /* vector     <- complex    */
+    case 1916: /* vector     <- character  */
+
+        for (i = 0; i < n; i++)
+        {
+            ii = INTEGER(index)[i];
+            if (ii == NA_INTEGER)
+                continue;
+            ii = ii - 1;
+            VECTOR(x)[ii] = VECTOR(y)[i % ny];
+        }
+        break;
+
     case 2001:
     case 2006: /* expression <- language   */
     case 2010: /* expression <- logical    */
@@ -466,7 +512,7 @@ static SEXP vectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     return x;
 }
 
-static SEXP matrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
+static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     int i, j, ii, jj, ij, iy, k, which;
     double ry;
@@ -480,7 +526,7 @@ static SEXP matrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     nr = nrows(x);
     ny = LENGTH(y);
 
-    /* s has been protected. */
+    /* Note that "s" has been protected. */
     /* No GC problems here. */
 
     sr = CAR(s) = arraySubscript(0, CAR(s), x);
@@ -716,7 +762,7 @@ static SEXP matrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     return x;
 }
 
-static SEXP arrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
+static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     int i, j, ii, iy, jj, k = 0, n, ny, which;
     int **subs, *index, *bound, *offset;
@@ -1041,9 +1087,9 @@ SEXP listAssign1(SEXP call, SEXP x, SEXP subs, SEXP y)
             STRING(ay)[0] = y;
         }
         if (nsubs == 2)
-            ax = matrixAssign(call, ax, subs, ay);
+            ax = MatrixAssign(call, ax, subs, ay);
         else
-            ax = arrayAssign(call, ax, subs, ay);
+            ax = ArrayAssign(call, ax, subs, ay);
         for (px = x, i = 0; px != R_NilValue; px = CDR(px))
             CAR(px) = duplicate(STRING(ax)[i++]);
         UNPROTECT(2);
@@ -1052,9 +1098,9 @@ SEXP listAssign1(SEXP call, SEXP x, SEXP subs, SEXP y)
     return x;
 }
 
-/* This is a special version of EvalArgs.  We don't */
-/* want to evaluate the last argument It has already */
-/* been evaluated by applydefine.  */
+/* This is a special version of EvalArgs.  We don't want to */
+/* evaluate the last argument. It has already been evaluated */
+/* by applydefine. */
 
 static SEXP EvalSubassignArgs(SEXP el, SEXP rho)
 {
@@ -1065,13 +1111,12 @@ static SEXP EvalSubassignArgs(SEXP el, SEXP rho)
     while (CDR(el) != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it */
-        /* is bound to.	 If its binding is Null (i.e. zero length) */
-        /* we just ignore it and return the cdr with all its */
-        /* expressions evaluated; if it is bound to a ... list */
-        /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value. */
-        /* Anything else bound to a ... symbol is an error */
+        /* If we have a ... symbol, we look to see what it is bound to. */
+        /* If its binding is Null (i.e. zero length) we just ignore it */
+        /* and return the cdr with all its expressions evaluated; if it */
+        /* is bound to a ... list of promises, we force all the promises */
+        /* and then splice the list of resulting values into the return */
+        /* value.  Anything else bound to a ... symbol is an error */
 
         if (CAR(el) == R_DotsSymbol)
         {
@@ -1131,15 +1176,12 @@ static void SubAssignArgs(SEXP args, SEXP *x, SEXP *s, SEXP *y)
     CDR(p) = R_NilValue;
 }
 
-/* The [<- operator.  x is the vector that is */
-/* to be assigned into, y is the vector	 that */
-/* is going to provide the new values and s is */
-/* the vector of subscripts that are going to */
-/* be replaced.	 On entry (CAR(args)) and the last */
-/* argument have been evaluated been the remainder */
-/* of args have not. */
-/* If this was called directly the CAR(args) and the last */
-/* arg won't have been. */
+/* The [<- operator.  "x" is the vector that is to be assigned into, */
+/* y is the vector that is going to provide the new values and s is */
+/* the vector of subscripts that are going to be replaced. */
+/* On entry (CAR(args)) and the last argument have been evaluated */
+/* and the remainder of args have not.  If this was called directly */
+/* the CAR(args) and the last arg won't have been. */
 
 SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1147,11 +1189,9 @@ SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nsubs;
     RCNTXT cntxt;
 
-    /* This code performs an internal version */
-    /* of method dispatch.	We evaluate the first */
-    /* argument and attempt to dispatch on it. */
-    /* If the dispatch fails, we "drop through" */
-    /* to the default code below. */
+    /* This code performs an internal version of method dispatch. */
+    /* We evaluate the first argument and attempt to dispatch on it. */
+    /* If the dispatch fails, we "drop through" to the default code below. */
 
     gcall = call;
     CAR(args) = eval(CAR(args), rho);
@@ -1169,9 +1209,8 @@ SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     PROTECT(CDR(args) = EvalSubassignArgs(CDR(args), rho));
 
-    /* If there are multiple references to an */
-    /* object we must duplicate it so that only */
-    /* the local version is mutated. */
+    // If there are multiple references to an object we must */
+    // duplicate it so that only the local version is mutated. */
 
     if (NAMED(CAR(args)) == 2)
     {
@@ -1179,37 +1218,36 @@ SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     SubAssignArgs(args, &x, &subs, &y);
 
-    /* We can't modify an object which is named in */
-    /* another environment.	 NAMED(x)==2 indicates */
-    /* that x was obtained through a promise evaluation */
-    /* and hence it may be bound to a symbol elsewhere. */
-    /* This will duplicate more often than necessary, */
-    /* but saves over always duplicating. */
+    /* We can't modify an object which is named in another environment. */
+    /* NAMED(x)==2 indicates that x was obtained through a promise */
+    /* evaluation and hence it may be bound to a symbol elsewhere. */
+    /* This will duplicate more often than necessary, but saves over */
+    /* always duplicating.
 
     nsubs = length(subs);
-    if (isVector(x))
-    {
-        switch (nsubs)
-        {
-        case 0:
-            break;
-        case 1:
-            x = vectorAssign(call, x, CAR(subs), y);
-            break;
-        case 2:
-            x = matrixAssign(call, x, subs, y);
-            break;
-        default:
-            x = arrayAssign(call, x, subs, y);
-            break;
-        }
+#ifdef NEWLIST
+    if (isVectorObject(x)) {
+#else
+    if (isVector(x)) {
+#endif
+    switch (nsubs) {
+    case 0:
+        break;
+    case 1:
+        x = VectorAssign(call, x, CAR(subs), y);
+        break;
+    case 2:
+        x = MatrixAssign(call, x, subs, y);
+        break;
+    default:
+        x = ArrayAssign(call, x, subs, y);
+        break;
     }
-    else if (isList(x) || isLanguage(x))
-    {
-        x = listAssign1(call, x, subs, y);
     }
-    else
-        errorcall(call, "object is not subsetable\n");
+    else if(isList(x) || isLanguage(x)) {
+    x = listAssign1(call, x, subs, y);
+    }
+    else errorcall(call, "object is not subsetable\n");
 
     /* Note the setting of NAMED(x) to zero here. */
     /* This means that the following assignment will */
@@ -1375,6 +1413,17 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             STRING(x)[offset] = STRING(y)[0];
             break;
 
+        case 1901: /* vector     <- symbol	    */
+        case 1906: /* vector     <- language   */
+        case 1910: /* vector     <- logical    */
+        case 1913: /* vector     <- integer    */
+        case 1914: /* vector     <- real       */
+        case 1915: /* vector     <- complex    */
+        case 1916: /* vector     <- character  */
+
+            VECTOR(x)[offset] = y;
+            break;
+
         case 2001: /* expression <- symbol	    */
         case 2006: /* expression <- language   */
         case 2010: /* expression <- logical    */
@@ -1386,6 +1435,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             VECTOR(x)[offset] = y;
             break;
 
+        case 1919: /* vector     <- vector     */
         case 2020: /* expression <- expression */
 
             VECTOR(x)[offset] = VECTOR(y)[0];

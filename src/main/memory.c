@@ -15,12 +15,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-#include "Defn.h"
-#include "Graphics.h"
-
-/*      MEMORY MANAGEMENT
+ *
+ *
+ *      MEMORY MANAGEMENT
  *
  *	Separate areas are maintained for fixed and variable sized
  *	objects.  The first of these is allocated as an array of
@@ -49,6 +46,9 @@
  *	exits.  This can be done with the functions getvmax and
  *	setvmax.
  */
+
+#include "Defn.h"
+#include "Graphics.h"
 
 static int gc_reporting = 0;
 
@@ -103,7 +103,6 @@ Handle gVHeapH;
 void CleanUpMemory(void)
 {
     OSErr result;
-
     if (gStackH != nil)
         TempDisposeHandle(gStackH, &result);
     if (gNHeapH != nil)
@@ -238,7 +237,8 @@ char *S_realloc(char *p, long new, long old, int size)
     return q;
 }
 
-/* allocSExp - get SEXPREC from free list; call gc if necessary */
+/* "allocSExp" allocate a SEXPREC from free list */
+/* call gc if necessary */
 
 SEXP allocSExp(SEXPTYPE t)
 {
@@ -256,21 +256,13 @@ SEXP allocSExp(SEXPTYPE t)
     CDR(s) = R_NilValue;
     TAG(s) = R_NilValue;
     ATTRIB(s) = R_NilValue;
-#ifdef oldmem
-    NAMED(s) = 0;
-    OBJECT(s) = 0;
-    LEVELS(s) = 0;
-    DEBUG(s) = 0;
-    TRACE(s) = 0;
-#else
     *(int *)(&(s)->sxpinfo) = 0;
-#endif
     TYPEOF(s) = t;
     return s;
 }
 
-/* allocString - allocate a string on the (vector) heap */
-/* all vector objects must be a multiple of sizeof(ALIGN) */
+/* "allocString" allocate a string on the (vector) heap. */
+/* All vector objects  must be a multiple of sizeof(ALIGN) */
 /* bytes so that alignment is preserved for all objects */
 
 SEXP allocString(int length)
@@ -291,17 +283,7 @@ SEXP allocString(int length)
             mem_err_heap();
     }
 
-#ifdef oldmem
-    s = R_FreeSEXP;
-    R_FreeSEXP = CDR(s);
-    TYPEOF(s) = CHARSXP;
-    TAG(s) = R_NilValue;
-    ATTRIB(s) = R_NilValue;
-    NAMED(s) = 0;
-    OBJECT(s) = 0;
-#else
     s = allocSExp(CHARSXP);
-#endif
     CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
     BACKPOINTER(*R_VTop) = s;
@@ -309,7 +291,7 @@ SEXP allocString(int length)
     return s;
 }
 
-/* allocVector - allocate a vector object on the heap */
+/* Allocate a vector object on the heap */
 
 SEXP allocVector(SEXPTYPE type, int length)
 {
@@ -377,13 +359,7 @@ SEXP allocVector(SEXPTYPE type, int length)
             mem_err_heap();
     }
 
-#ifdef oldmem
-    s = R_FreeSEXP;
-    R_FreeSEXP = CDR(s);
-    TYPEOF(s) = type;
-#else
     s = allocSExp(type);
-#endif
     LENGTH(s) = length;
     NAMED(s) = 0;
     ATTRIB(s) = R_NilValue;
@@ -416,14 +392,11 @@ SEXP allocList(int n)
     for (i = 0; i < n; i++)
     {
         result = CONS(R_NilValue, result);
-#ifdef oldmem
-        TAG(result) = R_NilValue;
-#endif
     }
     return result;
 }
 
-/* gc - mark-sweep garbage collector */
+/* "gc" a mark-sweep garbage collector */
 
 void gc(void)
 {
@@ -449,7 +422,7 @@ void gc(void)
     }
 }
 
-/* unmarkPhase - reset mark in ALL cons cells */
+/* "unmarkPhase" reset mark in ALL cons cells */
 
 void unmarkPhase(void)
 {
@@ -459,7 +432,8 @@ void unmarkPhase(void)
         MARK(&R_NHeap[i]) = 0;
 }
 
-/* markPhase - set mark in all accessible cons cells */
+/* "markPhase" set mark in all accessible cons cells */
+
 void markPhase(void)
 {
     int i;
@@ -480,17 +454,18 @@ void markPhase(void)
         markSExp(R_CurrentExpr);
 
     for (i = 0; i < R_MaxDevices; i++)
-    { /* Device Display Lists */
+    { /* Device display lists */
         dd = GetDevice(i);
         if (dd)
             markSExp(dd->displayList);
     }
 
-    for (i = 0; i < R_PPStackTop; i++) /* protected pointers */
+    for (i = 0; i < R_PPStackTop; i++) /* Protected pointers */
         markSExp(R_PPStack[i]);
 }
 
-/* markSExp - set mark in s and all cells accessible from it */
+/* "markSExp" set mark in s and all cells accessible from it */
+
 void markSExp(SEXP s)
 {
     int i;
@@ -537,7 +512,8 @@ void markSExp(SEXP s)
     }
 }
 
-/* compactPhase - compact the vector heap */
+/* "compactPhase" compact the vector heap */
+
 void compactPhase(void)
 {
     VECREC *vto, *vfrom;
@@ -592,7 +568,8 @@ void compactPhase(void)
     R_VTop = vto;
 }
 
-/* scanPhase - reconstruct free list from cells not marked */
+/* "scanPhase" reconstruct free list from cells not marked */
+
 void scanPhase(void)
 {
     int i;
@@ -607,17 +584,13 @@ void scanPhase(void)
         {
             CDR(&R_NHeap[i]) = R_FreeSEXP;
             R_FreeSEXP = &R_NHeap[i];
-#ifdef oldmem
-            CAR(&R_NHeap[i]) = R_NilValue;
-            TAG(&R_NHeap[i]) = R_NilValue;
-            ATTRIB(&R_NHeap[i]) = R_NilValue;
-#endif
             R_Collected = R_Collected + 1;
         }
     }
 }
 
-/* protect - push a single argument onto R_PPStack */
+/* "protect" push a single argument onto R_PPStack */
+
 void protect(SEXP s)
 {
     if (R_PPStackTop >= R_PPStackSize)
@@ -626,7 +599,8 @@ void protect(SEXP s)
     R_PPStackTop = R_PPStackTop + 1;
 }
 
-/* unprotect - pop argument list from top of R_PPStack */
+/* "unprotect" pop argument list from top of R_PPStack */
+
 void unprotect(int l)
 {
     if (R_PPStackTop > 0)
@@ -635,7 +609,7 @@ void unprotect(int l)
         error("stack imbalance in \"unprotect\"\n");
 }
 
-/* initStack - initialize environment stack */
+/* "initStack" initialize environment stack */
 void initStack(void)
 {
     R_PPStackTop = 0;

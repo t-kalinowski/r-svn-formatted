@@ -86,6 +86,23 @@ SEXP getAttrib(SEXP vec, SEXP name)
     for (s = ATTRIB(vec); s != R_NilValue; s = CDR(s))
         if (TAG(s) == name)
         {
+#ifdef NEWLIST
+            if (name == R_DimNamesSymbol && TYPEOF(CAR(s)) == LISTSXP)
+            {
+                SEXP new, old;
+                int i;
+                new = allocVector(VECSXP, length(CAR(s)));
+                old = CAR(s);
+                i = 0;
+                while (old != R_NilValue)
+                {
+                    VECTOR(new)[i++] = CAR(old);
+                    old = CDR(old);
+                }
+                NAMED(new) = NAMED(vec);
+                return new;
+            }
+#endif
             NAMED(CAR(s)) = NAMED(vec);
             return CAR(s);
         }
@@ -146,11 +163,9 @@ void copyMostAttrib(SEXP inp, SEXP ans)
 static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
 {
     SEXP s, t;
-
     PROTECT(vec);
     PROTECT(name);
     PROTECT(val);
-
     for (s = ATTRIB(vec); s != R_NilValue; s = CDR(s))
     {
         if (TAG(s) == name)
@@ -177,7 +192,6 @@ static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
 static SEXP removeAttrib(SEXP vec, SEXP name)
 {
     SEXP t;
-
     if (name == R_NamesSymbol && isList(vec))
     {
         for (t = vec; t != R_NilValue; t = CDR(t))
@@ -439,20 +453,65 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
 
     if (!isArray(vec) && !isList(vec))
         error("dimnames applied to non-array\n");
+#ifdef NEWLIST
+    if (!isList(val) && !isNewList(val))
+#else
     if (!isList(val))
-        error("invalid type for dimnames: must be a list\n");
+#endif
+        error("dimnames must be a list\n");
     dims = getAttrib(vec, R_DimSymbol);
     if ((k = LENGTH(dims)) != length(val))
-        error("dimnames: number of dimensions must equal number of names\n");
+        error("length of dimnames must match that of dims\n");
+
+#ifdef NEWLIST
+    if (isList(val))
+    {
+        SEXP newval;
+        newval = allocVector(VECSXP, k);
+        for (i = 0; i < k; i++)
+        {
+            VECTOR(newval)[i] = val;
+            val = CDR(val);
+        }
+        UNPROTECT(1);
+        PROTECT(val = newval);
+    }
+    for (i = 0; i < k; i++)
+    {
+        if (VECTOR(val)[i] != R_NilValue)
+        {
+            if (!isVector(VECTOR(val)[i]))
+                error("invalid type for dimname (must be a vector)\n");
+            if (INTEGER(dims)[i] != LENGTH(VECTOR(val)[i]) && LENGTH(VECTOR(val)[i]) != 0)
+                error("length of dimnames element not equal to array extent\n");
+            if (LENGTH(VECTOR(val)[i]) == 0)
+            {
+                VECTOR(val)[i] = R_NilValue;
+            }
+            else if (!isString(VECTOR(val)[i]))
+            {
+                VECTOR(val)[i] = coerceVector(VECTOR(val)[i], STRSXP);
+            }
+        }
+    }
+    installAttrib(vec, R_DimNamesSymbol, val);
+    if (isList(vec) && k == 1)
+    {
+        top = VECTOR(val)[0];
+        i = 0;
+        for (val = vec; !isNull(val); val = CDR(val))
+            TAG(val) = install(CHAR(STRING(top)[i++]));
+    }
+#else
     top = val;
     for (i = 0; i < k; i++)
     {
         if (CAR(val) != R_NilValue)
         {
             if (!isVector(CAR(val)))
-                error("invalid type for dim name must be a vector\n");
+                error("invalid type for dimname (must be a vector)\n");
             if (INTEGER(dims)[i] != LENGTH(CAR(val)) && LENGTH(CAR(val)) != 0)
-                error("length of namelist must equal dims\n");
+                error("length of dimnames element not equal to array extent\n");
             if (LENGTH(CAR(val)) == 0)
             {
                 CAR(val) = R_NilValue;
@@ -472,6 +531,7 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         for (val = vec; !isNull(val); val = CDR(val))
             TAG(val) = install(CHAR(STRING(top)[i++]));
     }
+#endif
     UNPROTECT(2);
     return (vec);
 }
@@ -518,10 +578,8 @@ SEXP do_dimgets(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP dimgets(SEXP vec, SEXP val)
 {
     int len, ndim, i, total;
-
     PROTECT(vec);
     PROTECT(val);
-
     if (!isVector(vec) && !isList(vec))
         error("dim<- : invalid first argument\n");
 
@@ -589,7 +647,6 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
-
     s = R_NilValue;
     if (isList(CAR(args)))
         s = getAttrib(CAR(args), R_NamesSymbol);
@@ -697,7 +754,6 @@ static SEXP TrimDim(SEXP l)
 SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t;
-
     if (CAR(args) == R_NilValue)
     {
         warning("attempt to set attributes on NULL\n");
@@ -710,7 +766,6 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     if (isList(s))
         setAttrib(s, R_NamesSymbol, R_NilValue);
     ATTRIB(s) = R_NilValue;
-
     OBJECT(s) = 0;
 
     if (!isList(t))
@@ -770,4 +825,32 @@ SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     setAttrib(obj, name, value);
     UNPROTECT(3);
     return obj;
+}
+
+/* These provide useful shortcuts which give access to the dimnames */
+/* for matrices and arrays in a standard form. */
+
+void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl)
+{
+    SEXP dimnames = getAttrib(x, R_DimNamesSymbol);
+    if (isNull(dimnames))
+    {
+        *rl = R_NilValue;
+        *cl = R_NilValue;
+    }
+    else
+    {
+#ifdef NEWLIST
+        *rl = VECTOR(dimnames)[0];
+        *cl = VECTOR(dimnames)[1];
+#else
+        *rl = CAR(dimnames);
+        *cl = CADR(dimnames);
+#endif
+    }
+}
+
+SEXP GetArrayDimnames(SEXP x)
+{
+    return getAttrib(x, R_DimNamesSymbol);
 }

@@ -48,7 +48,7 @@ static void printLogicalMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         if (!isNull(cl))
             clabw = strlen(CHAR(STRING(cl)[j]));
         else
-            clabw = IndexWidth(j + 1) + 3; /* changed j+1 to c and back */
+            clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
         w[j] += PRINT_GAP;
@@ -103,7 +103,7 @@ static void printIntegerMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
         if (!isNull(cl))
             clabw = strlen(CHAR(STRING(cl)[j]));
         else
-            clabw = IndexWidth(j + 1) + 3; /* replaced j+1 by c and back */
+            clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
         w[j] += PRINT_GAP;
@@ -164,7 +164,7 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl)
         if (!isNull(cl))
             clabw = strlen(CHAR(STRING(cl)[j]));
         else
-            clabw = IndexWidth(j + 1) + 3; /* replaced j+1 by c and back */
+            clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
         w[j] += PRINT_GAP;
@@ -300,7 +300,7 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
         if (!isNull(cl))
             clabw = strlen(CHAR(STRING(cl)[j]));
         else
-            clabw = IndexWidth(j + 1) + 3; /* replaced j+1 by c and back */
+            clabw = IndexWidth(j + 1) + 3;
         if (w[j] < clabw)
             w[j] = clabw;
         /* w[j] += PRINT_GAP; */
@@ -341,13 +341,14 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
     }
 }
 
-void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right)
+void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl)
 {
-    SEXP dimnames, rl, cl;
+    SEXP dimnames;
     int r, c;
 
     r = INTEGER(dim)[0];
     c = INTEGER(dim)[1];
+#ifdef OLD
     rl = R_NilValue;
     cl = R_NilValue;
     dimnames = getAttrib(x, R_DimNamesSymbol);
@@ -358,6 +359,7 @@ void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right)
         if (!isNull(CADR(dimnames)))
             cl = CADR(dimnames);
     }
+#endif
 
     switch (TYPEOF(x))
     {
@@ -381,9 +383,9 @@ void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right)
     }
 }
 
-static void printArrayGeneral(SEXP x, SEXP dim, int quote)
+static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
 {
-    SEXP dimnames, ii, nn, dn;
+    SEXP ii, nn, dn;
     int i, j, k, l, b, nb, ndim;
     int nr, nc;
 
@@ -391,19 +393,42 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote)
     if (ndim == 1)
         printVector(x, 1, quote);
     else if (ndim == 2)
-        printMatrix(x, 0, dim, quote, 0);
+    {
+        SEXP rl, cl;
+        GetMatrixDimnames(x, &rl, &cl);
+        printMatrix(x, 0, dim, quote, 0, rl, cl);
+    }
     else
     {
-        dimnames = getAttrib(x, R_DimNamesSymbol);
+        SEXP dn0, dn1;
         PROTECT(ii = allocVector(INTSXP, ndim));
         PROTECT(nn = allocVector(INTSXP, ndim));
-        /* use the above to do higher indexing */
         nr = INTEGER(dim)[0];
         nc = INTEGER(dim)[1];
         b = nr * nc;
         nb = 1;
         for (i = 2; i < ndim; i++)
             nb *= INTEGER(dim)[i];
+#ifdef NEWLIST
+        dn0 = VECTOR(dimnames)[0];
+        dn1 = VECTOR(dimnames)[1];
+        for (i = 0; i < nb; i++)
+        {
+            Rprintf(", ");
+            k = 1;
+            for (j = 2; j < ndim; j++)
+            {
+                l = (i / k) % INTEGER(dim)[j] + 1;
+                dn = VECTOR(dimnames)[j];
+                if (dn != R_NilValue)
+                    Rprintf(", %s", CHAR(STRING(dn)[l - 1]));
+                else
+                    Rprintf(", %d", l);
+                k = k * INTEGER(dim)[j];
+            }
+#else
+        dn0 = CAR(dimnames);
+        dn1 = CADR(dimnames);
         for (i = 0; i < nb; i++)
         {
             Rprintf(", ");
@@ -419,6 +444,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote)
                 k = k * INTEGER(dim)[j];
                 dn = CDR(dn);
             }
+#endif
             printf("\n\n");
 
             switch (TYPEOF(x))
@@ -427,18 +453,18 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote)
                 printLogicalMatrix(x, i * b, nr, nc, CAR(dimnames), CADR(dimnames));
                 break;
             case INTSXP:
-                printIntegerMatrix(x, i * b, nr, nc, CAR(dimnames), CADR(dimnames));
+                printIntegerMatrix(x, i * b, nr, nc, dn0, dn1);
                 break;
             case REALSXP:
-                printRealMatrix(x, i * b, nr, nc, CAR(dimnames), CADR(dimnames));
+                printRealMatrix(x, i * b, nr, nc, dn0, dn1);
                 break;
             case CPLXSXP:
-                printComplexMatrix(x, i * b, nr, nc, CAR(dimnames), CADR(dimnames));
+                printComplexMatrix(x, i * b, nr, nc, dn0, dn1);
                 break;
             case STRSXP:
                 if (quote)
                     quote = '"';
-                printStringMatrix(x, i * b, nr, nc, quote, 0, CAR(dimnames), CADR(dimnames));
+                printStringMatrix(x, i * b, nr, nc, quote, 0, dn0, dn1);
                 break;
             }
             Rprintf("\n");
@@ -447,19 +473,7 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote)
     }
 }
 
-void printArray(SEXP x, int quote)
+void printArray(SEXP x, SEXP dim, int quote, SEXP dimnames)
 {
-    printArrayGeneral(x, getAttrib(x, R_DimSymbol), quote);
+    printArrayGeneral(x, dim, quote, dimnames);
 }
-
-/* not used (0.62;  April 23, 1998 -- MM (-Wall)
-static int CountColumns(SEXP x)
-{
-    int k =0;
-    while(x != R_NilValue && isList(x) ) {
-        k += ncols(CAR(x));
-        x = CDR(x);
-    }
-    return k;
-}
---*/

@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997, 1998  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,48 +16,27 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  Vector and List Subsetting
+ *
+ *  There are three kinds of subscripting [, [[, and $.
+ *  We have three different functions to compute these.
+ *
+ *
+ *  Note on Matrix Subscripts
+ *
+ *  The special [ subscripting where dim(x) == ncol(subscript matrix)
+ *  is handled inside vectorSubset. The subscript matrix is turned
+ *  into a subscript vector of the appropriate size and then
+ *  vectorSubset continues.  This provides coherence especially
+ *  regarding attributes etc. (it would be quicker handle this case
+ *  separately, but then we would have more to keep in step.
  */
 
 #include "Defn.h"
 
-/*
- *  Subscript Preamble:
- *
- *  There are three kinds of subscripting [, [[, and $. We have
- *  three different functions to do these. The special [ subscripting
- *  where dim(x)==ncol(subscript matrix) is handled down inside
- *  vectorSubset. The subscript matrix is turned into a subscript
- *  vector of the appropriate size and then vectorSubset continues.
- *  This provides coherence especially regarding attributes etc. (it
- *  would be quicker to pull this case out and do it alone but then
- *  we have 2 things to update re attributes).
- *
- */
-
-#ifdef NotUsed /* -Wall */
-static void SetArgsforUseMethod(SEXP x)
-{
-    char buf[4];
-    int i = 1;
-
-    if (TAG(x) == R_NilValue)
-        TAG(x) = install("x");
-    for (x = CDR(x); x != R_NilValue; x = CDR(x))
-    {
-        if (TAG(x) == R_NilValue)
-        {
-            if (i < 10)
-                sprintf(buf, "..%d", i);
-            else
-                sprintf(buf, ".%d", i);
-            TAG(x) = install(buf);
-            i++;
-        }
-    }
-}
-#endif
-
-/* This does the transfer of elements from "x" to "result" */
+/* ExtractSubset does the transfer of elements from "x" to "result" */
 /* according to the integer subscripts given in "index". */
 
 static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
@@ -70,7 +50,7 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
     tmp = result;
 
     if (x == R_NilValue)
-        return (x);
+        return x;
 
     for (i = 0; i < n; i++)
     {
@@ -104,12 +84,17 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
             }
             break;
         case STRSXP:
+            if (0 <= ii && ii < nx && ii != NA_INTEGER)
+                STRING(result)[i] = STRING(x)[ii];
+            else
+                STRING(result)[i] = NA_STRING;
+            break;
         case VECSXP:
         case EXPRSXP:
             if (0 <= ii && ii < nx && ii != NA_INTEGER)
-                VECTOR(result)[i] = STRING(x)[ii];
+                VECTOR(result)[i] = VECTOR(x)[ii];
             else
-                VECTOR(result)[i] = NA_STRING;
+                VECTOR(result)[i] = R_NilValue;
             break;
         case LISTSXP:
         case LANGSXP:
@@ -130,9 +115,9 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
     return result;
 }
 
-static SEXP vectorSubset(SEXP x, SEXP s, SEXP call)
+static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 {
-    int n, mode, stretch = 0;
+    int n, mode, stretch = 1;
     SEXP index, result, attrib, nattrib;
 
     if (s == R_MissingArg)
@@ -141,9 +126,8 @@ static SEXP vectorSubset(SEXP x, SEXP s, SEXP call)
     PROTECT(s);
     attrib = getAttrib(x, R_DimSymbol);
 
-    /* Check to see if we have special matrix */
-    /* subscripting.  If we do, make a real */
-    /* subscript vector and protect it. */
+    /* Check to see if we have special matrix subscripting. */
+    /* If we do, make a real subscript vector and protect it. */
 
     if (isMatrix(s) && isArray(x) && (isInteger(s) || isReal(s)) && ncols(s) == length(attrib))
     {
@@ -152,20 +136,17 @@ static SEXP vectorSubset(SEXP x, SEXP s, SEXP call)
         PROTECT(s);
     }
 
-    /* Convert to a vector of integer */
-    /* subscripts in the range 1:length(x). */
+    /* Convert to a vector of integer subscripts */
+    /* in the range 1:length(x). */
 
     PROTECT(index = makeSubscript(x, s, &stretch));
     n = LENGTH(index);
 
-    /* Allocate the result */
+    /* Allocate the result. */
 
     mode = TYPEOF(x);
-    /* if(mode == LANGSXP) mode = LISTSXP; */
     result = allocVector(mode, n);
     NAMED(result) = NAMED(x);
-    if (isFactor(x))
-        LEVELS(result) = LEVELS(x);
 
     PROTECT(result = ExtractSubset(x, result, index, call));
     if (result != R_NilValue &&
@@ -182,7 +163,7 @@ static SEXP vectorSubset(SEXP x, SEXP s, SEXP call)
     return result;
 }
 
-SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
+SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
 {
     SEXP a, attr, p, result, sr, sc;
     int nr, nc, nrs, ncs;
@@ -191,9 +172,8 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
     nr = nrows(x);
     nc = ncols(x);
 
-    /* s is protected */
-    /* the following ensures that */
-    /* pointers remain protected */
+    /* Note that "s" is protected on entry. */
+    /* The following ensures that pointers remain protected. */
 
     sr = CAR(s) = arraySubscript(0, CAR(s), x);
     sc = CADR(s) = arraySubscript(1, CADR(s), x);
@@ -218,7 +198,7 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
             if (jj != NA_INTEGER)
             {
                 if (jj < 1 || jj > nc)
-                    errorcall(call, "subscript out of bounds\n");
+                    errorcall(call, "subscript out of boundsn");
                 jj--;
             }
             ij = i + j * nrs;
@@ -307,7 +287,7 @@ SEXP matrixSubset(SEXP x, SEXP s, SEXP call, int drop)
     return result;
 }
 
-static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
+static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
 {
     int i, j, k, ii, jj, mode, n;
     int **subs, *index, *offset, *bound;
@@ -324,8 +304,8 @@ static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
     offset = (int *)R_alloc(k, sizeof(int));
     bound = (int *)R_alloc(k, sizeof(int));
 
-    /* Construct a vector to contain the */
-    /* returned values. Store its extents.*/
+    /* Construct a vector to contain the returned values. */
+    /* Store its extents. */
 
     n = 1;
     r = s;
@@ -344,9 +324,6 @@ static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
     /* A HEAP COMPACTION COULD MOVE THE VALUES */
     /* WHICH SUBS IS POINTING AT. */
 
-    /*
-    n = 1;
-    */
     r = s;
     for (i = 0; i < k; i++)
     {
@@ -358,7 +335,7 @@ static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
     for (i = 1; i < k; i++)
         offset[i] = offset[i - 1] * INTEGER(xdims)[i - 1];
 
-    /* Transfer the subset elements from x to a. */
+    /* Transfer the subset elements from "x" to "a". */
 
     for (i = 0; i < n; i++)
     {
@@ -463,7 +440,7 @@ static SEXP arraySubset(SEXP x, SEXP s, SEXP call, int drop)
         }
         a = CDR(a);
     }
-    /* Free Temporary memory */
+    /* Free temporary memory */
     vmaxset(vmaxsave);
     if (drop)
         DropDims(result);
@@ -486,40 +463,106 @@ static SEXP ExtractDropArg(SEXP el, int *drop)
     return el;
 }
 
-/* The [] subset operator.  This provides */
-/* the most general form of subsetting. */
+/* The [ subset operator.  This provides the most general */
+/* form of subsetting. */
 
 SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, dim, ax, px, x, subs;
-    int drop, i, nsubs;
+    int drop, i, ndim, nsubs, type;
 
-    /* If the first argument is an object and */
-    /* there is an approriate method, we dispatch */
-    /* to that method, otherwise we evaluate the */
-    /* arguments and fall through to the generic */
-    /* code below.  Note that evaluation retains */
-    /* any missing arggument indicators. */
+    /* If the first argument is an object and there is an */
+    /* approriate method, we dispatch to that method, */
+    /* otherwise we evaluate the arguments and fall through */
+    /* to the generic code below.  Note that evaluation */
+    /* retains any missing arggument indicators. */
 
     if (DispatchOrEval(call, op, args, rho, &ans, 0))
         return (ans);
 
-    /* Method dispatch has failed, we now just */
-    /* run the generic internal code */
+    /* Method dispatch has failed, we now */
+    /* run the generic internal code. */
 
-    PROTECT(args = ans);
+    /* By default we drop extents of length 1 */
+
     drop = 1;
+    PROTECT(args = ans);
     ExtractDropArg(args, &drop);
     x = CAR(args);
+
+    /* This was intended for compatibility with S, */
+    /* but in fact S does not do this. */
+    /* FIXME: replace the test by isNull ... ? */
 
     if (x == R_NilValue)
     {
         UNPROTECT(1);
         return x;
     }
-
     subs = CDR(args);
+    nsubs = length(subs);
 
+#ifdef NEWLIST
+    PROTECT(dim = getAttrib(x, R_DimSymbol));
+    ndim = length(dim);
+
+    /* Here we need to coerce pair-based objects into */
+    /* generic vectors, before we attempt to subset. */
+
+    if (isPairList(x))
+    {
+        type = TYPEOF(x);
+        if (ndim > 1)
+        {
+            PROTECT(ax = allocArray(VECSXP, dim));
+            setAttrib(ax, R_DimNamesSymbol, getAttrib(x, R_DimNamesSymbol));
+            setAttrib(ax, R_NamesSymbol, getAttrib(x, R_DimNamesSymbol));
+        }
+        else
+        {
+            PROTECT(ax = allocVector(VECSXP, length(x)));
+            setAttrib(ax, R_NamesSymbol, getAttrib(x, R_DimNamesSymbol));
+        }
+        for (px = x, i = 0; px != R_NilValue; px = CDR(px))
+            VECTOR(ax)[i++] = CAR(px);
+    }
+    else
+        PROTECT(ax = x);
+
+    if (!isVectorObject(x))
+        errorcall(call, "object is not subsetable\n");
+
+    /* This is the actual subsetting code. */
+    /* The separation of arrays and matrices is an optimisation. */
+
+    if (nsubs == 1)
+        ans = VectorSubset(x, CAR(subs), call);
+    else
+    {
+        if (nsubs != length(dim))
+            errorcall(call, "incorrect number of dimensions\n");
+        else if (nsubs == 2)
+            ans = MatrixSubset(x, subs, call, drop);
+        else
+            ans = ArraySubset(x, subs, call, drop);
+    }
+
+    /* Note: we do not coerce back to pair-based lists. */
+    /* They are "defunct" in this version of R. */
+
+    if (type == LANGSXP)
+    {
+        PROTECT(ans = allocList(LENGTH(ax)));
+        for (px = ans, i = 0; px != R_NilValue; px = CDR(px))
+            CAR(px) = STRING(ax)[i++];
+        setAttrib(ans, R_DimSymbol, getAttrib(ax, R_DimSymbol));
+        setAttrib(ans, R_DimNamesSymbol, getAttrib(ax, R_DimNamesSymbol));
+        setAttrib(ans, R_NamesSymbol, getAttrib(ax, R_NamesSymbol));
+    }
+    setAttrib(ans, R_TspSymbol, R_NilValue);
+    setAttrib(ans, R_ClassSymbol, R_NilValue);
+    UNPROTECT(3);
+#else
     if (isVector(x) || isList(x) || isLanguage(x))
     {
 
@@ -528,7 +571,7 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         if (nsubs == 1)
         {
-            ans = vectorSubset(x, CAR(subs), call);
+            ans = VectorSubset(x, CAR(subs), call);
         }
         else
         {
@@ -541,9 +584,9 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
                     STRING(ax)[i++] = CAR(px);
                 setAttrib(ax, R_DimNamesSymbol, getAttrib(x, R_DimNamesSymbol));
                 if (nsubs == 2)
-                    ax = matrixSubset(ax, subs, call, drop);
+                    ax = MatrixSubset(ax, subs, call, drop);
                 else
-                    ax = arraySubset(ax, subs, call, drop);
+                    ax = ArraySubset(ax, subs, call, drop);
                 PROTECT(ans = allocList(LENGTH(ax)));
                 for (px = ans, i = 0; px != R_NilValue; px = CDR(px))
                     CAR(px) = STRING(ax)[i++];
@@ -555,9 +598,9 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
             {
                 if (nsubs == 2)
-                    ans = matrixSubset(x, subs, call, drop);
+                    ans = MatrixSubset(x, subs, call, drop);
                 else
-                    ans = arraySubset(x, subs, call, drop);
+                    ans = ArraySubset(x, subs, call, drop);
             }
         }
         UNPROTECT(1);
@@ -567,34 +610,33 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     setAttrib(ans, R_TspSymbol, R_NilValue);
     setAttrib(ans, R_ClassSymbol, R_NilValue);
-
     UNPROTECT(1);
+#endif
     return ans;
 }
 
-/* The [[]] subset operator.  It needs to be fast. */
-/* the arguments to this call are evaluated */
+/* The [[ subset operator.  It needs to be fast. */
+/* The arguments to this call are evaluated on entry. */
 
 SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, dims, dimnames, index, subs, x;
-    int drop, i, ndims, nsubs, offset = 0;
+    int i, ndims, nsubs, offset = 0;
+    int drop = 1;
 
-    /* If the first argument is an object and */
-    /* there is an approriate method, we dispatch */
-    /* to that method, otherwise we evaluate the */
-    /* arguments and fall through to the generic */
-    /* code below.  Note that evaluation retains */
-    /* any missing arggument indicators. */
+    /* If the first argument is an object and there is */
+    /* an approriate method, we dispatch to that method, */
+    /* otherwise we evaluate the arguments and fall */
+    /* through to the generic code below.  Note that */
+    /* evaluation retains any missing argument indicators. */
 
     if (DispatchOrEval(call, op, args, rho, &ans, 0))
         return (ans);
 
-    /* Method dispatch has failed, we now just */
-    /* run the generic internal code */
+    /* Method dispatch has failed. */
+    /* We now run the generic internal code. */
 
     PROTECT(args = ans);
-    drop = 1;
     ExtractDropArg(args, &drop);
     x = CAR(args);
 
@@ -607,12 +649,13 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         return x;
     }
 
+    /* Get the subscripting and dimensioning information */
+    /* and check that any array subscripting is compatible. */
+
     subs = CDR(args);
     nsubs = length(subs);
-
     dims = getAttrib(x, R_DimSymbol);
     ndims = length(dims);
-
     if (nsubs > 1 && nsubs != ndims)
         errorcall(call, "incorrect number of subscripts\n");
 
@@ -624,8 +667,8 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
             offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), 1);
             if (offset < 0 || offset >= length(x))
             {
-                /* a bold attempt to get the same behaviour
-                   for $ and [[ */
+                /* a bold attempt to get the same */
+                /* behaviour for $ and [[ */
                 if (offset < 0 && (isList(x) || isLanguage(x)))
                 {
                     UNPROTECT(1);
@@ -637,7 +680,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else
         {
-            /* Here we use the fact that */
+            /* Here we use the fact that: */
             /* CAR(R_NilValue) = R_NilValue */
             /* CDR(R_NilValue) = R_NilValue */
             PROTECT(index = allocVector(INTSXP, nsubs));
@@ -660,19 +703,27 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         errorcall(call, "object is not subsettable\n");
 
+#ifdef NEWLIST
+    if (isPairList(x))
+    {
+        ans = CAR(nthcdr(x, offset));
+        NAMED(ans) = NAMED(x);
+    }
+    else if (isVectorList(x))
+    {
+        ans = duplicate(VECTOR(x)[offset]);
+    }
+#else
     if (isList(x) || isLanguage(x))
     {
         ans = CAR(nthcdr(x, offset));
         NAMED(ans) = NAMED(x);
-        UNPROTECT(1);
-        return ans;
     }
-    if (isExpression(x))
+    else if (isExpression(x) || TYPEOF(x) == VECSXP)
     {
         ans = duplicate(VECTOR(x)[offset]);
-        UNPROTECT(1);
-        return ans;
     }
+#endif
     else
     {
         ans = allocVector(TYPEOF(x), 1);
@@ -685,6 +736,9 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         case REALSXP:
             REAL(ans)[0] = REAL(x)[offset];
             break;
+        case CPLXSXP:
+            COMPLEX(ans)[0] = COMPLEX(x)[offset];
+            break;
         case STRSXP:
             STRING(ans)[0] = STRING(x)[offset];
             break;
@@ -696,88 +750,171 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* a helper to partially match tags against a candidate */
-/* return  0 for a perfect match  */
-/*	 1 for a partial match  */
-/*	-1 for no match         */
+/* A helper to partially match tags against a candidate. */
+/* Returns: */
+/*      0 for a perfect match */
+/*	 1 for a partial match */
+/*	-1 for no match */
 
-static int pstrmatch(SEXP target, char *input, int slen)
+#define NO_MATCH -1
+#define EXACT_MATCH 0
+#define PARTIAL_MATCH 1
+
+static int pstrmatch(SEXP target, SEXP input, int slen)
 {
+    char *st;
     int k;
 
     if (target == R_NilValue)
         return -1;
 
-    k = strncmp(CHAR(PRINTNAME(target)), input, slen);
-
+    switch (TYPEOF(target))
+    {
+    case SYMSXP:
+        st = CHAR(PRINTNAME(target));
+        break;
+    case CHARSXP:
+        st = CHAR(target);
+        break;
+    }
+    k = strncmp(st, CHAR(input), slen);
     if (k == 0)
     {
-        if (strlen(CHAR(PRINTNAME(target))) == slen)
-            return 0;
+        if (strlen(st) == slen)
+            return EXACT_MATCH;
         else
-            return 1;
+            return PARTIAL_MATCH;
     }
     else
-        return -1;
+        return NO_MATCH;
 }
 
-/* The $ subset operator.  We need to be sure to */
-/* only evaluate the first arg.  The second will be */
-/*a symbol that needs to be matched, not evaluated */
+/* The $ subset operator.  We need to be sure to only evaluate */
+/* the first argument.  The second will be a symbol that needs */
+/* to be matched, not evaluated. */
 
 SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, y, nlist;
-    int slen, posi, s = 0, idx;
-    char *input;
+    SEXP x, y, input, nlist;
+    int slen;
 
     checkArity(op, args);
 
     PROTECT(x = eval(CAR(args), env));
-
-    if (!isList(x) && !isFrame(x) && !isLanguage(x))
-    {
-        UNPROTECT(1);
-        return R_NilValue;
-    }
-
     nlist = CADR(args);
-    /* if (isString(nlist))
-        nlist = install(CHAR(STRING(nlist)[0]));*/
     if (isSymbol(nlist))
-        input = CHAR(PRINTNAME(nlist));
+        input = PRINTNAME(nlist);
     else if (isString(nlist))
-        input = CHAR(STRING(nlist)[0]);
+        input = STRING(nlist)[0];
     else
     {
         errorcall(call, "invalid subscript type\n");
         return R_NilValue; /*-Wall*/
     }
-    slen = strlen(input);
-    posi = idx = 0;
 
-    UNPROTECT(1);
-    for (y = x; y != R_NilValue; y = CDR(y))
+    /* Optimisation to prevent repeated recalculation */
+    slen = strlen(CHAR(input));
+
+#ifdef NEWLIST
+    /* If this is not a list object we return NULL. */
+    /* Or should this be allocVector(VECSXP, 0)? */
+
+    if (isPairList(x))
     {
-        posi++;
-        s = pstrmatch(TAG(y), input, slen);
-        if (s == 0)
-            break;
-        if (s == 1)
+        SEXP xmatch;
+        int havematch;
+        UNPROTECT(1);
+        for (y = x; y != R_NilValue; y = CDR(y))
         {
-            if (idx == 0)
-                idx = posi;
-            else
-                idx = -1; /* more than 1 partial match */
+            switch (pstrmatch(TAG(y), input, slen))
+            {
+            case EXACT_MATCH:
+                y = CAR(y);
+                NAMED(y) = NAMED(x);
+                return y;
+                break;
+            case PARTIAL_MATCH:
+                if (havematch)
+                    return R_NilValue;
+                havematch = 1;
+                xmatch = y;
+                break;
+            }
         }
+        if (havematch)
+        {
+            y = CAR(xmatch);
+            NAMED(y) = NAMED(x);
+            return y;
+        }
+        return R_NilValue;
     }
-    if (s)
+    else if (isVectorList(x))
     {
-        if (idx > 0)
-            y = nthcdr(x, idx - 1);
-        else
-            return R_NilValue; /* more than 1 partial match */
+        int i, n, havematch, imatch;
+        nlist = getAttrib(x, R_NamesSymbol);
+        UNPROTECT(1);
+        n = length(nlist);
+        havematch = 0;
+        for (i = 0; i < n; i = i + 1)
+        {
+            switch (pstrmatch(STRING(nlist)[i], input, slen))
+            {
+            case EXACT_MATCH:
+                y = VECTOR(x)[i];
+                NAMED(y) = NAMED(x);
+                return y;
+                break;
+            case PARTIAL_MATCH:
+                if (havematch)
+                    return R_NilValue;
+                havematch = 1;
+                imatch = i;
+                break;
+            }
+        }
+        if (havematch)
+        {
+            y = VECTOR(x)[imatch];
+            NAMED(y) = NAMED(x);
+            return y;
+        }
+        return R_NilValue;
     }
-    NAMED(CAR(y)) = NAMED(x);
-    return CAR(y);
+    UNPROTECT(1);
+    return R_NilValue;
+#else
+    if (isList(x) || isLanguage(x))
+    {
+        SEXP xmatch;
+        int havematch;
+        UNPROTECT(1);
+        for (y = x; y != R_NilValue; y = CDR(y))
+        {
+            switch (pstrmatch(TAG(y), input, slen))
+            {
+            case EXACT_MATCH:
+                y = CAR(y);
+                NAMED(y) = NAMED(x);
+                return y;
+                break;
+            case PARTIAL_MATCH:
+                if (havematch)
+                    return R_NilValue;
+                havematch = 1;
+                xmatch = y;
+                break;
+            }
+        }
+        if (havematch)
+        {
+            y = CAR(xmatch);
+            NAMED(y) = NAMED(x);
+            return y;
+        }
+        return R_NilValue;
+    }
+    UNPROTECT(1);
+    return R_NilValue;
+#endif
 }

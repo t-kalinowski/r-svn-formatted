@@ -107,6 +107,7 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     a = CDR(a);
     right = asInteger(CAR(a));
 
+#ifdef OLD
     PROTECT(oldnames = getAttrib(x, R_DimNamesSymbol));
     /* fix up the dimnames */
     if (length(rowlab) || length(collab) || rowlab == R_NilValue || collab == R_NilValue)
@@ -122,7 +123,13 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         setAttrib(x, R_DimNamesSymbol, a);
         UNPROTECT(1);
     }
-    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, right);
+#else
+    if (length(rowlab) == 0)
+        rowlab = R_NilValue;
+    if (length(collab) == 0)
+        collab = R_NilValue;
+#endif
+    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, right, rowlab, collab);
     setAttrib(x, R_DimNamesSymbol, oldnames);
     UNPROTECT(1);
     return x;
@@ -197,7 +204,6 @@ static void PrintGenericVector(SEXP s, SEXP env)
     {
         PROTECT(dims);
         PROTECT(t = allocArray(STRSXP, dims));
-        setAttrib(t, R_DimNamesSymbol, getAttrib(s, R_DimNamesSymbol));
         for (i = 0; i < ns; i++)
         {
             switch (TYPEOF(VECTOR(s)[i]))
@@ -232,9 +238,16 @@ static void PrintGenericVector(SEXP s, SEXP env)
             STRING(t)[i] = mkChar(pbuf);
         }
         if (LENGTH(dims) == 2)
-            printMatrix(t, 0, dims, 0, 0);
+        {
+            SEXP rl, cl;
+            GetMatrixDimnames(s, &rl, &cl);
+            printMatrix(t, 0, dims, 0, 0, rl, cl);
+        }
         else
-            printArray(t, 0);
+        {
+            names = GetArrayDimnames(s);
+            printArray(t, dims, 0, names);
+        }
         UNPROTECT(2);
     }
     else
@@ -246,52 +259,55 @@ static void PrintGenericVector(SEXP s, SEXP env)
         CAR(newcall) = install("print");
         TYPEOF(newcall) = LANGSXP;
 
-        for (i = 0; i < ns; i++)
+        if (ns > 0)
         {
-            if (i > 0)
-                Rprintf("\n");
-            if (names != R_NilValue && STRING(names)[i] != R_NilValue && *CHAR(STRING(names)[i]) != '\0')
+            for (i = 0; i < ns; i++)
             {
-                if (taglen + strlen(CHAR(STRING(names)[i])) > TAGBUFLEN)
-                    sprintf(ptag, "$...");
+                if (i > 0)
+                    Rprintf("\n");
+                if (names != R_NilValue && STRING(names)[i] != R_NilValue && *CHAR(STRING(names)[i]) != '\0')
+                {
+                    if (taglen + strlen(CHAR(STRING(names)[i])) > TAGBUFLEN)
+                        sprintf(ptag, "$...");
+                    else
+                        sprintf(ptag, "$%s", CHAR(STRING(names)[i]));
+                }
                 else
-                    sprintf(ptag, "$%s", CHAR(STRING(names)[i]));
-            }
-            else
-            {
-                if (taglen + IndexWidth(i) > TAGBUFLEN)
-                    sprintf(ptag, "$...");
+                {
+                    if (taglen + IndexWidth(i) > TAGBUFLEN)
+                        sprintf(ptag, "$...");
+                    else
+                        sprintf(ptag, "[[%d]]", i + 1);
+                }
+                Rprintf("%s\n", tagbuf);
+                if (isObject(VECTOR(s)[i]))
+                {
+                    CADR(newcall) = VECTOR(s)[i];
+                    eval(newcall, env);
+                }
                 else
-                    sprintf(ptag, "[[%d]]", i + 1);
+                    PrintValueRec(VECTOR(s)[i], env);
+                *ptag = '\0';
             }
-            Rprintf("%s\n", tagbuf);
-            if (isObject(VECTOR(s)[i]))
-            {
-                CADR(newcall) = VECTOR(s)[i];
-                eval(newcall, env);
-            }
-            else
-                PrintValueRec(VECTOR(s)[i], env);
-            *ptag = '\0';
+            Rprintf("\n");
         }
-        Rprintf("\n");
+        else
+            Rprintf("NULL\n");
         UNPROTECT(1);
     }
-    printAttributes(s, env);
 }
 #endif
 
 static void printList(SEXP s, SEXP env)
 {
     int i, taglen;
-    SEXP dims, t, newcall;
+    SEXP dims, dimnames, t, newcall;
     char *pbuf, *ptag;
 
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
     {
         PROTECT(dims);
         PROTECT(t = allocArray(STRSXP, dims));
-        setAttrib(t, R_DimNamesSymbol, getAttrib(s, R_DimNamesSymbol));
         i = 0;
         while (s != R_NilValue)
         {
@@ -327,9 +343,16 @@ static void printList(SEXP s, SEXP env)
             s = CDR(s);
         }
         if (LENGTH(dims) == 2)
-            printMatrix(t, 0, dims, 0, 0);
+        {
+            SEXP rl, cl;
+            GetMatrixDimnames(s, &rl, &cl);
+            printMatrix(t, 0, dims, 0, 0, rl, cl);
+        }
         else
-            printArray(t, 0);
+        {
+            dimnames = getAttrib(s, R_DimNamesSymbol);
+            printArray(t, dims, 0, dimnames);
+        }
         UNPROTECT(2);
     }
     else
@@ -412,10 +435,8 @@ static void PrintExpression(SEXP s)
 #endif
 }
 
-/* PrintValueRec - recursively print an SEXP
- *
- * This is the "dispatching" function for  print.default()
- */
+/* PrintValueRec - recursively print an SEXP */
+/* This is the "dispatching" function for  print.default() */
 
 void PrintValueRec(SEXP s, SEXP env)
 {
@@ -490,9 +511,17 @@ void PrintValueRec(SEXP s, SEXP env)
                 UNPROTECT(1);
             }
             else if (LENGTH(t) == 2)
-                printMatrix(s, 0, t, print_quote, 0);
+            {
+                SEXP rl, cl;
+                GetMatrixDimnames(s, &rl, &cl);
+                printMatrix(s, 0, t, print_quote, 0, rl, cl);
+            }
             else
-                printArray(s, print_quote);
+            {
+                SEXP dimnames;
+                dimnames = GetArrayDimnames(s);
+                printArray(s, t, print_quote, dimnames);
+            }
         }
         else
         {
