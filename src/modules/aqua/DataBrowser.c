@@ -471,11 +471,16 @@ static void CreateDataBrowser(WindowRef window, ControlRef *browser)
     SetControlData(*browser, kControlNoPart, kControlDataBrowserIncludesFrameAndFocusTag, sizeof(frameAndFocus),
                    &frameAndFocus);
 }
+#include "Raqua.h"
+
+extern RAquaPrefs CurrentPrefs;
 
 static void ConfigureDataBrowser(ControlRef browser)
 {
     Rect insetRect;
     DataBrowserViewStyle viewStyle;
+    SInt16 fontID;
+    Str255 fontname;
 
     GetDataBrowserViewStyle(browser, &viewStyle);
 
@@ -496,8 +501,6 @@ static void ConfigureDataBrowser(ControlRef browser)
         columnDesc.headerBtnDesc.btnFontStyle.flags = kControlUseFontMask | kControlUseJustMask;
 
         columnDesc.headerBtnDesc.btnContentInfo.contentType = kControlNoContent;
-        GetIconRef(kOnSystemDisk, kSystemIconsCreator, kGenericFolderIcon,
-                   &columnDesc.headerBtnDesc.btnContentInfo.u.iconRef);
 
         /* Add the Object column */
 
@@ -505,15 +508,18 @@ static void ConfigureDataBrowser(ControlRef browser)
         columnDesc.propertyDesc.propertyType = kDataBrowserTextType;
         columnDesc.propertyDesc.propertyFlags = kDataBrowserPropertyIsMutable | kDataBrowserListViewDefaultColumnFlags;
 
-        columnDesc.headerBtnDesc.btnContentInfo.contentType = kControlContentIconRef;
-
         columnDesc.headerBtnDesc.minimumWidth = 30;
         columnDesc.headerBtnDesc.maximumWidth = 200;
 
         columnDesc.headerBtnDesc.btnFontStyle.just = teFlushLeft;
 
-        columnDesc.headerBtnDesc.btnFontStyle.font = kControlFontViewSystemFont;
+        CopyCStringToPascal(CurrentPrefs.ConsoleFontName, fontname);
+        GetFNum(fontname, &fontID);
+
+        columnDesc.headerBtnDesc.btnFontStyle.font = fontID;
+        columnDesc.headerBtnDesc.btnFontStyle.size = CurrentPrefs.ConsoleFontSize;
         columnDesc.headerBtnDesc.btnFontStyle.style = normal;
+        columnDesc.headerBtnDesc.btnFontStyle.backColor = CurrentPrefs.BGOutputColor;
 
         columnDesc.headerBtnDesc.titleString =
             CFStringCreateWithCString(CFAllocatorGetDefault(), "Object", kCFStringEncodingMacRoman);
@@ -549,8 +555,6 @@ static void ConfigureDataBrowser(ControlRef browser)
         AddDataBrowserListViewColumn(browser, &columnDesc, kDataBrowserListViewAppendColumn);
 
         SetDataBrowserListViewDisclosureColumn(browser, kObjectColumn, false);
-
-        ReleaseIconRef(columnDesc.headerBtnDesc.btnContentInfo.u.iconRef);
     }
     break;
     }

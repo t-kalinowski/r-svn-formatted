@@ -434,10 +434,10 @@ static pascal OSStatus deGetSetItemData(ControlRef browser, DataBrowserItemID it
     OSStatus err = noErr;
     CFStringRef text, value;
     SEXP tmp;
-    int i, col, row;
+    int i, col, row = -1;
     char buf[1000];
 
-    if (property >= 1000)
+    if (property >= 1000 & property < 10000)
     {
         col = property - 1000;
         row = itemID;
