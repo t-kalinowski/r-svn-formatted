@@ -563,6 +563,9 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         }
         */
         GReset(dd);
+        /* Force a device clip */
+        if (dd->dp.canClip)
+            GForceClip(dd);
     }
     else if (streql(what, "mgp"))
     {
