@@ -130,7 +130,8 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     for (m = 0; m < nwhat; m++)
                     {
                         whatlen = strlen(CHAR(STRING_ELT(what, m)));
-                        if (line[whatlen] == ':' && strncmp(CHAR(STRING_ELT(what, m)), line, whatlen) == 0)
+                        if (strlen(line) > whatlen && line[whatlen] == ':' &&
+                            strncmp(CHAR(STRING_ELT(what, m)), line, whatlen) == 0)
                         {
                             SET_STRING_ELT(retval, m + nwhat * k, mkChar(line + regmatch[0].rm_eo));
                             lastm = m;
