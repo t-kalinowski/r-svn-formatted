@@ -61,26 +61,27 @@ FSSpec ConsolefileFSSpec;
 char InitFile[256];
 extern Boolean WeArePasting;
 
-#define rAppStringsID 128
+/*
+#define	rAppStringsID			128
 
-enum
-{
-    sApplicationName = 1,
+enum {
+    sApplicationName 		= 1,
     sTranslationLockedErr,
     sTranslationErr,
     sOpeningErr,
-    sReadErr, // 5
+    sReadErr,
     sWriteToBusyFileErr,
     sBusyOpen,
     sChooseFile,
     sChooseFolder,
-    sChooseVolume, // 10
+    sChooseVolume,
     sCreateFolder,
     sChooseObject,
     sChooseApp
 };
 
-#define kSelectFolderPrefKey 4
+#define kSelectFolderPrefKey	4
+*/
 
 OSErr doRSave(Boolean *haveCancel)
 {
