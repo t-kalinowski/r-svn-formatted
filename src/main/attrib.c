@@ -752,9 +752,11 @@ SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 /* These provide useful shortcuts which give access to */
 /* the dimnames for matrices and arrays in a standard form. */
 
-void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl)
+void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl, char **rn, char **cn)
 {
     SEXP dimnames = getAttrib(x, R_DimNamesSymbol);
+    SEXP nn;
+
     if (isNull(dimnames))
     {
         *rl = R_NilValue;
@@ -764,6 +766,17 @@ void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl)
     {
         *rl = VECTOR(dimnames)[0];
         *cl = VECTOR(dimnames)[1];
+        nn = getAttrib(dimnames, R_NamesSymbol);
+        if (isNull(nn))
+        {
+            *rn = NULL;
+            *cn = NULL;
+        }
+        else
+        {
+            *rn = CHAR(STRING(nn)[0]);
+            *cn = CHAR(STRING(nn)[1]);
+        }
     }
 }
 

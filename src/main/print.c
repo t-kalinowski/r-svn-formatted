@@ -127,6 +127,7 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int quote;
     SEXP a, x, rowlab, collab;
+    char *rowname = NULL, *colname = NULL;
 #ifdef OLD
     SEXP oldnames;
 #endif
@@ -164,7 +165,7 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(collab) == 0)
         collab = R_NilValue;
 #endif
-    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, R_print.right, rowlab, collab);
+    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, R_print.right, rowlab, collab, rowname, colname);
 #ifdef OLD
     setAttrib(x, R_DimNamesSymbol, oldnames);
     UNPROTECT(1);
@@ -237,7 +238,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
 {
     int i, taglen, ns;
     SEXP dims, t, names, newcall, tmp;
-    char *pbuf, *ptag;
+    char *pbuf, *ptag, *rn, *cn;
 
     ns = length(s);
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
@@ -281,8 +282,8 @@ static void PrintGenericVector(SEXP s, SEXP env)
         if (LENGTH(dims) == 2)
         {
             SEXP rl, cl;
-            GetMatrixDimnames(s, &rl, &cl);
-            printMatrix(t, 0, dims, R_print.quote, R_print.right, rl, cl);
+            GetMatrixDimnames(s, &rl, &cl, &rn, &cn);
+            printMatrix(t, 0, dims, R_print.quote, R_print.right, rl, cl, rn, cn);
         }
         else
         {
@@ -347,7 +348,7 @@ static void printList(SEXP s, SEXP env)
 {
     int i, taglen;
     SEXP dims, dimnames, t, newcall;
-    char *pbuf, *ptag;
+    char *pbuf, *ptag, *rn, *cn;
 
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
     {
@@ -398,8 +399,8 @@ static void printList(SEXP s, SEXP env)
         if (LENGTH(dims) == 2)
         {
             SEXP rl, cl;
-            GetMatrixDimnames(s, &rl, &cl);
-            printMatrix(t, 0, dims, R_print.quote, R_print.right, rl, cl);
+            GetMatrixDimnames(s, &rl, &cl, &rn, &cn);
+            printMatrix(t, 0, dims, R_print.quote, R_print.right, rl, cl, rn, cn);
         }
         else
         {
@@ -481,6 +482,7 @@ void PrintValueRec(SEXP s, SEXP env)
 {
     int i;
     SEXP t;
+    char *rn, *cn;
 
     switch (TYPEOF(s))
     {
@@ -550,8 +552,8 @@ void PrintValueRec(SEXP s, SEXP env)
             else if (LENGTH(t) == 2)
             {
                 SEXP rl, cl;
-                GetMatrixDimnames(s, &rl, &cl);
-                printMatrix(s, 0, t, R_print.quote, R_print.right, rl, cl);
+                GetMatrixDimnames(s, &rl, &cl, &rn, &cn);
+                printMatrix(s, 0, t, R_print.quote, R_print.right, rl, cl, rn, cn);
             }
             else
             {
