@@ -1,8 +1,9 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2003  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *  Copyright (C) 1997--2002  Robert Gentleman, Ross Ihaka and the
+ *			      R Development Core Team
+ *  Copyright (C) 2003	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -315,7 +316,7 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static void ProbSampleReplace(int n, double *p, int *perm, int nans, int *ans)
 {
-    double random;
+    double rU;
     int i, j;
     int nm1 = n - 1;
 
@@ -333,10 +334,10 @@ static void ProbSampleReplace(int n, double *p, int *perm, int nans, int *ans)
     /* compute the sample */
     for (i = 0; i < nans; i++)
     {
-        random = unif_rand();
+        rU = unif_rand();
         for (j = 0; j < nm1; j++)
         {
-            if (random <= p[j])
+            if (rU <= p[j])
                 break;
         }
         ans[i] = perm[j];
@@ -347,8 +348,8 @@ static void ProbSampleReplace(int n, double *p, int *perm, int nans, int *ans)
 
 static void ProbSampleNoReplace(int n, double *p, int *perm, int nans, int *ans)
 {
-    double random, mass, totalmass;
-    int i, j, k, nm1;
+    double rT, mass, totalmass;
+    int i, j, k, n1;
 
     /* Record element identities */
     for (i = 0; i < n; i++)
@@ -360,25 +361,23 @@ static void ProbSampleNoReplace(int n, double *p, int *perm, int nans, int *ans)
 
     /* Compute the sample */
     totalmass = 1;
-    nm1 = n - 1;
-    for (i = 0; i < nans; i++)
+    for (i = 0, n1 = n - 1; i < nans; i++, n1--)
     {
-        random = totalmass * unif_rand();
+        rT = totalmass * unif_rand();
         mass = 0;
-        for (j = 0; j < nm1; j++)
+        for (j = 0; j < n1; j++)
         {
             mass += p[j];
-            if (random <= mass)
+            if (rT <= mass)
                 break;
         }
         ans[i] = perm[j];
         totalmass -= p[j];
-        for (k = j; k < nm1; k++)
+        for (k = j; k < n1; k++)
         {
             p[k] = p[k + 1];
             perm[k] = perm[k + 1];
         }
-        nm1 = nm1 - 1;
     }
 }
 
@@ -406,9 +405,6 @@ static void SampleNoReplace(int k, int n, int *y, int *x)
     }
 }
 
-/* do_sample - equal probability sampling with/without replacement. */
-/* Implements sample(n, k, r) - choose k elements from 1 to n */
-/* with/without replacement according to r. */
 static void FixupProb(SEXP call, double *p, int n, int k, int replace)
 {
     double sum;
@@ -422,15 +418,20 @@ static void FixupProb(SEXP call, double *p, int n, int k, int replace)
         if (p[i] < 0)
             errorcall(call, "non-positive probability");
         if (p[i] > 0)
+        {
             npos++;
-        sum += p[i];
+            sum += p[i];
+        }
     }
     if (npos == 0 || (!replace && k > npos))
         errorcall(call, "insufficient positive probabilities");
     for (i = 0; i < n; i++)
-        p[i] = p[i] / sum;
+        p[i] /= sum;
 }
 
+/* do_sample - equal probability sampling with/without replacement. */
+/* Implements sample(n, k, r) - choose k elements from 1 to n */
+/* with/without replacement according to r. */
 SEXP do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, y, prob;
@@ -482,6 +483,44 @@ SEXP do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
     PutRNGstate();
     UNPROTECT(1);
     return y;
+}
+
+SEXP do_rmultinom(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP prob, ans, nms;
+    int n, size, k, i, ik;
+    checkArity(op, args);
+    n = asInteger(CAR(args));
+    args = CDR(args); /* n= #{samples} */
+    size = asInteger(CAR(args));
+    args = CDR(args); /* X ~ Multi(size, prob) */
+    if (n == NA_INTEGER || n < 0)
+        errorcall(call, "invalid first argument `n'");
+    if (size == NA_INTEGER || size < 0)
+        errorcall(call, "invalid second argument `size'");
+    prob = CAR(args);
+    prob = coerceVector(prob, REALSXP);
+    k = length(prob); /* k = #{components or classes} = X-vector length */
+    if (NAMED(prob))
+        prob = duplicate(prob); /*as `do_sample' -- need this line? */
+    PROTECT(prob);
+    FixupProb(call, REAL(prob), k, 0, 1); /*check and make sum = 1 */
+    GetRNGstate();
+    PROTECT(ans = allocMatrix(INTSXP, k, n)); /* k x n : natural for columnwise store */
+    for (i = ik = 0; i < n; i++, ik += k)
+        rmultinom(size, REAL(prob), k, &INTEGER(ans)[ik]);
+    PutRNGstate();
+    if (!isNull(nms = getAttrib(prob, R_NamesSymbol)))
+    {
+        SEXP dimnms;
+        PROTECT(nms);
+        PROTECT(dimnms = allocVector(VECSXP, 2));
+        SET_VECTOR_ELT(dimnms, 0, nms);
+        setAttrib(ans, R_DimNamesSymbol, dimnms);
+        UNPROTECT(2);
+    }
+    UNPROTECT(2);
+    return ans;
 }
 
 SEXP R_r2dtable(SEXP n, SEXP r, SEXP c)
