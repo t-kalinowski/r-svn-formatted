@@ -123,7 +123,7 @@ Now UNNECESSARY: caught above */
         ML_ERROR(ME_PRECISION);
     }
 
-    if (x <= 0 && ((int)(-x)) % 2 == 0)
+    if (x < 0 && fmod(floor(-x), 2.) == 0)
         signgam = -1;
     return ans;
 }
