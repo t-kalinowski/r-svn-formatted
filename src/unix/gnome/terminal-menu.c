@@ -167,6 +167,7 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
     gchar *copyright;
 
     const gchar *authors[] = {"Douglas Bates",
+                              "John Chambers",
                               "Peter Dalgaard",
                               "Robert Gentleman",
                               "Kurt Hornik",
