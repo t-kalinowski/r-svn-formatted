@@ -79,16 +79,14 @@ void ssort(char **x, int n)
         }
 }
 
+/*
 void fixslash(char *s)
 {
     char *p;
 
-    for (p = s; *p; p++)
-        if (*p == '\\')
-            *p = '/';
-    if (*(p + strlen(s)) == '/')
-        *p = '\0';
+    for (p = s; *p; p++) if (*p == '\\') *p = '/';
 }
+*/
 
 void dosslash(char *s)
 {
@@ -97,8 +95,6 @@ void dosslash(char *s)
     for (p = s; *p; p++)
         if (*p == '/')
             *p = '\\';
-    if (*(p + strlen(s)) == '\\')
-        *p = '\0';
 }
 
 #include <sys/stat.h>
@@ -107,8 +103,12 @@ int direxists(char *dir)
 {
     struct stat sb;
     int res;
+    char *p;
 
     dosslash(dir);
+    /* remove trailing \, but leave c:\ alone */
+    if (strlen(dir) > 3 && *(p = dir + strlen(dir) - 1) == '\\')
+        *p = '\0';
     res = stat(dir, &sb);
     if (res != 0)
         return 0;
