@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2000  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2003  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -292,9 +292,12 @@ SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
                 errorcall(call, "invalid type for value");
             else
             {
+                int len = LENGTH(CAR(tvec));
                 if (TYPEOF(CAR(tvec)) != type)
                     SETCAR(tvec, coerceVector(CAR(tvec), type));
-                tmp = SETLEVELS(CAR(tvec), LENGTH(CAR(tvec)));
+                if (len > 65535)
+                    error("data editor column limit is length 65535");
+                tmp = SETLEVELS(CAR(tvec), len);
                 ymaxused = max(tmp, ymaxused);
             }
         }
@@ -421,6 +424,11 @@ static void drawwindow(void)
     /* so row 0 and col 0 are reserved for labels */
     colmax = colmin + (nwide - 2);
     rowmax = rowmin + (nhigh - 2);
+    if (rowmax > 65535)
+    {
+        rowmax = 65535;
+        rowmin = rowmax - (nhigh - 2);
+    }
     printlabs();
     if (inputlist != R_NilValue)
         for (i = colmin; i <= colmax; i++)
@@ -781,6 +789,8 @@ static void jumppage(DE_DIRECTION dir)
         drawrow(rowmin);
         break;
     case DOWN:
+        if (rowmax >= 65535)
+            return;
         rowmin++;
         rowmax++;
         copyarea(0, hwidth + 2 * box_h, 0, hwidth + box_h);
@@ -913,7 +923,15 @@ static void closerect(void)
             cvec = CAR(c0vec);
             wrow0 = (int)LEVELS(cvec);
             if (wrow > wrow0)
+            {
+                if (wrow > 65535)
+                {
+                    /* This should not be possible, but check anyway */
+                    REprintf("%s\n", "column truncated to length 65535");
+                    wrow = 65535;
+                }
                 SETLEVELS(cvec, wrow);
+            }
             ymaxused = max(ymaxused, wrow);
             if (clength != 0)
             {
