@@ -339,8 +339,8 @@ void formatReal(double *x, int l, int *m, int *n, int *e, int nsmall)
     *n = mxns - 1;
     *m = neg + (*n > 0) + *n + 4 + *e; /* width m for E	 format */
 
-    if (mF <= *m)
-    { /* IFF it needs less space : "F" (Fixpoint) format */
+    if (mF <= *m + R_print.scipen)
+    { /* Fixpoint if it needs less space */
         *e = 0;
         *n = rgt;
         *m = mF;
@@ -475,8 +475,8 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
             *er = 1;
         *nr = mxns - 1;
         *mr = neg + (*nr > 0) + *nr + 4 + *er;
-        if (mF <= *mr)
-        { /* IFF it needs less space : "F" (Fixpoint) format */
+        if (mF <= *mr + R_print.scipen)
+        { /* Fixpoint if it needs less space */
             *er = 0;
             *nr = rt;
             *mr = mF;
@@ -511,8 +511,8 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
             *ei = 1;
         *ni = i_mxns - 1;
         *mi = (*ni > 0) + *ni + 4 + *ei;
-        if (mF <= *mi)
-        { /* IFF it needs less space : "F" (Fixpoint) format */
+        if (mF <= *mi + R_print.scipen)
+        { /* Fixpoint if it needs less space */
             *ei = 0;
             *ni = i_rt;
             *mi = mF;
