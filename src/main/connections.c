@@ -163,7 +163,7 @@ static int null_fgetc(Rconnection con)
     return 0; /* -Wall */
 }
 
-static long null_seek(Rconnection con, int where, int origin)
+static long null_seek(Rconnection con, int where, int origin, int rw)
 {
     error("seek not enabled for this connection");
     return 0; /* -Wall */
@@ -215,22 +215,57 @@ void init_con(Rconnection new, char *description, char *mode)
 }
 
 /* ------------------- file connections --------------------- */
+#ifdef Unix
+char *Runix_tmpnam(char *prefix);
+#endif
+#ifdef Win32
+char *Rwin32_tmpnam(char *prefix);
+#endif
+#ifdef Macintosh
+char *Rmac_tmpnam(char *prefix);
+#endif
 
 static void file_open(Rconnection con)
 {
+    char *name;
     FILE *fp;
+    Rfileconn this = con->private;
+    Rboolean temp = FALSE;
 #ifdef HAVE_FCNTL_H
-    int fd, flags;
+    int fd, flags, mlen = strlen(con->mode);
 #endif
 
-    fp = R_fopen(R_ExpandFileName(con->description), con->mode);
+    if (strlen(con->description) == 0)
+    {
+        temp = TRUE;
+#ifdef Unix
+        name = Runix_tmpnam("Rf");
+#endif
+#ifdef Win32
+        name = Rwin32_tmpnam("Rf");
+#endif
+#ifdef Macintosh
+        name = Rmac_tmpnam("Rf");
+#endif
+    }
+    else
+        name = R_ExpandFileName(con->description);
+    fp = R_fopen(name, con->mode);
     if (!fp)
-        error("cannot open file `%s'", R_ExpandFileName(con->description));
-    ((Rfileconn)(con->private))->fp = fp;
+        error("cannot open file `%s'", name);
+    if (temp)
+        unlink(name);
+    this->fp = fp;
     con->isopen = TRUE;
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
+    if (mlen >= 2 && con->mode[1] == '+')
+        con->canread = TRUE;
+    this->last_was_write = !con->canread;
+    this->rpos = 0;
+    if (con->canwrite)
+        this->wpos = ftell(fp);
+    if (mlen >= 2 && con->mode[mlen - 1] == 'b')
         con->text = FALSE;
     else
         con->text = TRUE;
@@ -255,22 +290,61 @@ static void file_close(Rconnection con)
 
 static int file_vfprintf(Rconnection con, const char *format, va_list ap)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
-    return vfprintf(fp, format, ap);
+    Rfileconn this = con->private;
+
+    if (!this->last_was_write)
+    {
+        this->rpos = ftell(this->fp);
+        this->last_was_write = TRUE;
+        fseek(this->fp, this->wpos, SEEK_SET);
+    }
+    return vfprintf(this->fp, format, ap);
 }
 
 static int file_fgetc(Rconnection con)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
-    int c = fgetc(fp);
+    Rfileconn this = con->private;
+    FILE *fp = this->fp;
+    int c;
+
+    if (this->last_was_write)
+    {
+        this->wpos = ftell(this->fp);
+        this->last_was_write = FALSE;
+        fseek(this->fp, this->rpos, SEEK_SET);
+    }
+    c = fgetc(fp);
     return feof(fp) ? R_EOF : con->encoding[c];
 }
 
-static long file_seek(Rconnection con, int where, int origin)
+static long file_seek(Rconnection con, int where, int origin, int rw)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
+    Rfileconn this = con->private;
+    FILE *fp = this->fp;
     long pos = ftell(fp);
     int whence = SEEK_SET;
+
+    /* make sure both positions are set */
+    if (this->last_was_write)
+        this->wpos = pos;
+    else
+        this->rpos = pos;
+    if (rw == 1)
+    {
+        if (!con->canread)
+            error("connection is not open for reading");
+        pos = this->rpos;
+        this->last_was_write = FALSE;
+    }
+    if (rw == 2)
+    {
+        if (!con->canwrite)
+            error("connection is not open for writiing");
+        pos = this->wpos;
+        this->last_was_write = TRUE;
+    }
+    if (where == NA_INTEGER)
+        return pos;
 
     switch (origin)
     {
@@ -281,31 +355,37 @@ static long file_seek(Rconnection con, int where, int origin)
     default:
         whence = SEEK_SET;
     }
-    if (where >= 0)
-        fseek(fp, where, whence);
+    fseek(fp, where, whence);
+    if (this->last_was_write)
+        this->wpos = ftell(this->fp);
+    else
+        this->rpos = ftell(this->fp);
     return pos;
 }
 
 static void file_truncate(Rconnection con)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
+    Rfileconn this = con->private;
+    FILE *fp = this->fp;
     int fd = fileno(fp);
     int size = lseek(fd, 0, SEEK_CUR);
 
     if (!con->isopen || !con->canwrite)
         error("can only truncate connections open for writing");
 
+    if (!this->last_was_write)
+        this->rpos = ftell(this->fp);
 #ifdef HAVE_FTRUNCATE
     if (ftruncate(fd, size))
         error("file truncation failed");
-#else
-#ifdef Win32
+#elif defined(Win32)
     if (chsize(fd, size))
         error("file truncation failed");
 #else
     error("Unavailable on this platform");
 #endif
-#endif
+    this->last_was_write = TRUE;
+    this->wpos = ftell(this->fp);
 }
 
 static int file_fflush(Rconnection con)
@@ -317,13 +397,29 @@ static int file_fflush(Rconnection con)
 
 static size_t file_read(void *ptr, size_t size, size_t nitems, Rconnection con)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
+    Rfileconn this = con->private;
+    FILE *fp = this->fp;
+
+    if (this->last_was_write)
+    {
+        this->wpos = ftell(this->fp);
+        this->last_was_write = FALSE;
+        fseek(this->fp, this->rpos, SEEK_SET);
+    }
     return fread(ptr, size, nitems, fp);
 }
 
 static size_t file_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
 {
-    FILE *fp = ((Rfileconn)(con->private))->fp;
+    Rfileconn this = con->private;
+    FILE *fp = this->fp;
+
+    if (!this->last_was_write)
+    {
+        this->rpos = ftell(this->fp);
+        this->last_was_write = TRUE;
+        fseek(this->fp, this->wpos, SEEK_SET);
+    }
     return fwrite(ptr, size, nitems, fp);
 }
 
@@ -585,7 +681,7 @@ static int gzfile_fgetc(Rconnection con)
     return con->encoding[gzgetc(fp)];
 }
 
-static long gzfile_seek(Rconnection con, int where, int origin)
+static long gzfile_seek(Rconnection con, int where, int origin, int rw)
 {
     gzFile fp = ((Rgzfileconn)(con->private))->fp;
     long pos = gztell(fp);
@@ -919,7 +1015,7 @@ static int text_fgetc(Rconnection con)
         return (int)(this->data[this->cur++]);
 }
 
-static long text_seek(Rconnection con, int where, int origin)
+static long text_seek(Rconnection con, int where, int origin, int rw)
 {
     if (where >= 0)
         error("seek is not relevant for text connection");
@@ -1403,11 +1499,25 @@ SEXP do_isopen(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     Rconnection con;
     SEXP ans;
+    int rw, res;
 
     checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
+    rw = asInteger(CADR(args));
+    res = con->isopen != FALSE;
+    switch (rw)
+    {
+    case 0:
+        break;
+    case 1:
+        res = res & con->canread;
+        break;
+    case 2:
+        res = res & con->canwrite;
+        break;
+    }
     PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = con->isopen != FALSE;
+    LOGICAL(ans)[0] = res;
     UNPROTECT(1);
     return ans;
 }
@@ -1477,21 +1587,22 @@ SEXP do_close(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-/* seek(con, where = numeric(), origin = "start") */
+/* seek(con, where = numeric(), origin = "start", rw = "") */
 SEXP do_seek(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int where, origin;
+    int where, origin, rw;
     SEXP ans;
     Rconnection con = NULL;
 
     checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
+    if (!con->isopen)
+        error("connection is not open");
     where = asInteger(CADR(args));
     origin = asInteger(CADDR(args));
-    if (where == NA_INTEGER || where < 0)
-        where = -1;
+    rw = asInteger(CADDDR(args));
     PROTECT(ans = allocVector(INTSXP, 1));
-    INTEGER(ans)[0] = con->seek(con, where, origin);
+    INTEGER(ans)[0] = con->seek(con, where, origin, rw);
     UNPROTECT(1);
     return ans;
 }
@@ -1623,7 +1734,7 @@ SEXP do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     { /* for a non-blocking connection, more input may
  have become available, so re-position */
         if (con->canseek && !con->blocking)
-            con->seek(con, con->seek(con, -1, 1), 1);
+            con->seek(con, con->seek(con, -1, 1, 1), 1, 1);
     }
     con->incomplete = FALSE;
 
@@ -2792,6 +2903,8 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (PRIMVAL(op))
         { /* call to file() */
+            if (strlen(url) == 0)
+                open = "w+";
             con = newfile(url, strlen(open) ? open : "r");
             class2 = "file";
         }
