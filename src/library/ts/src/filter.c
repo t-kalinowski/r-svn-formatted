@@ -60,10 +60,12 @@ void filter1(double *x, int *n, double *filter, int *nfilt, int *sides, int *cir
                 else
                 {
                     out[i] = NA_REAL;
-                    continue;
+                    goto bad;
                 }
             }
             out[i] = z;
+        bad:
+            continue;
         }
     }
     else
@@ -84,10 +86,12 @@ void filter1(double *x, int *n, double *filter, int *nfilt, int *sides, int *cir
                 else
                 {
                     out[i] = NA_REAL;
-                    continue;
+                    goto bad2;
                 }
             }
             out[i] = z;
+        bad2:
+            continue;
         }
     }
 }
@@ -108,10 +112,12 @@ void filter2(double *x, int *n, double *filter, int *nfilt, double *out)
             else
             {
                 out[i] = NA_REAL;
-                continue;
+                goto bad3;
             }
         }
         out[nf + i] = sum;
+    bad3:
+        continue;
     }
 }
 
@@ -121,7 +127,6 @@ void acf(double *x, int *n, int *nser, int *nlag, int *correlation, double *acf)
     double sum, *se;
 
     se = (double *)R_alloc(nn, sizeof(double));
-
     for (u = 0; u < ns; u++)
         for (v = 0; v < ns; v++)
             for (lag = 0; lag <= nl; lag++)
