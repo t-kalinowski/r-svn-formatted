@@ -1201,8 +1201,7 @@ SEXP do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP name, val, aenv;
     int ginherits = 0;
     checkArity(op, args);
-    name = findVar(CAR(args), rho);
-    PROTECT(args = evalList(args, rho));
+
     if (!isString(CAR(args)) || length(CAR(args)) == 0)
         error("invalid first argument");
     else
@@ -1220,7 +1219,7 @@ SEXP do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
         setVar(name, val, aenv);
     else
         defineVar(name, val, aenv);
-    UNPROTECT(2);
+    UNPROTECT(1);
     return val;
 }
 
@@ -1342,20 +1341,6 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
     int ginherits = 0, where;
     checkArity(op, args);
 
-    /* Grab the environment off the first arg */
-    /* for use as the default environment. */
-
-    /* TODO: Don't we have a better way */
-    /* of doing this using sys.xxx now? */
-
-    rval = findVar(CAR(args), rho);
-    if (TYPEOF(rval) == PROMSXP)
-        genv = PRENV(rval);
-
-    /* Now we can evaluate the arguments */
-
-    PROTECT(args = evalList(args, rho));
-
     /* The first arg is the object name */
     /* It must be present and a string */
 
@@ -1408,8 +1393,6 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* Search for the object */
     rval = findVar1mode(t1, genv, gmode, ginherits);
-
-    UNPROTECT(1);
 
     if (PRIMVAL(op))
     { /* have get(.) */
