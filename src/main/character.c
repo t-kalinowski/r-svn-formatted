@@ -1103,8 +1103,10 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     regex_t reg;
     regmatch_t regmatch[10];
     int i, j, n, ns, nmatch, offset;
-    int global, igcase_opt, extended_opt, eflags;
+    int global, igcase_opt, extended_opt, fixed_opt, eflags;
     char *s, *t, *u;
+    char *spat = NULL; /* -Wall */
+    int patlen = 0, replen = 0, st, nr = 1;
 
     checkArity(op, args);
 
@@ -1120,10 +1122,13 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     extended_opt = asLogical(CAR(args));
     args = CDR(args);
+    fixed_opt = asLogical(CAR(args));
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
     if (extended_opt == NA_INTEGER)
         extended_opt = 1;
+    if (fixed_opt == NA_INTEGER)
+        fixed_opt = 0;
 
     if (length(pat) < 1 || length(rep) < 1)
         errorcall(call, R_MSG_IA);
@@ -1147,8 +1152,16 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     if (igcase_opt)
         eflags = eflags | REG_ICASE;
 
-    if (regcomp(&reg, CHAR(STRING_ELT(pat, 0)), eflags))
+    if (!fixed_opt && regcomp(&reg, CHAR(STRING_ELT(pat, 0)), eflags))
         errorcall(call, "invalid regular expression '%s'", CHAR(STRING_ELT(pat, 0)));
+    if (fixed_opt)
+    {
+        spat = CHAR(STRING_ELT(pat, 0));
+        patlen = strlen(spat);
+        if (!patlen)
+            errorcall(call, "zero-length pattern");
+        replen = strlen(CHAR(STRING_ELT(rep, 0)));
+    }
 
     n = length(vec);
     PROTECT(ans = allocVector(STRSXP, n));
@@ -1156,77 +1169,101 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         /* NA `pat' are removed in R code */
-        /* the C code is left in case we change our minds again */
-        /* NA matches only itself */
-        if (STRING_ELT(vec, i) == NA_STRING)
-        {
-            if (STRING_ELT(pat, 0) == NA_STRING)
-                SET_STRING_ELT(ans, i, STRING_ELT(rep, 0));
-            else
-                SET_STRING_ELT(ans, i, NA_STRING);
-            continue;
-        }
-        if (STRING_ELT(pat, 0) == NA_STRING)
-        {
-            SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
-            continue;
-        }
-        /* end NA handling */
         offset = 0;
         nmatch = 0;
         s = CHAR(STRING_ELT(vec, i));
         t = CHAR(STRING_ELT(rep, 0));
         ns = strlen(s);
-        while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
+
+        if (fixed_opt)
         {
-            nmatch += 1;
-            if (regmatch[0].rm_eo == 0)
-                offset++;
+            st = fgrep_one(spat, s);
+            if (st < 0)
+                SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
+            else if (STRING_ELT(rep, 0) == NA_STRING)
+                SET_STRING_ELT(ans, i, NA_STRING);
             else
             {
-                ns += length_adj(t, regmatch, reg.re_nsub);
-                offset += regmatch[0].rm_eo;
+                if (global)
+                { /* need to find number of matches */
+                    nr = 0;
+                    do
+                    {
+                        nr++;
+                        s += st + patlen;
+                    } while ((st = fgrep_one(spat, s)) >= 0);
+                    /* and reset */
+                    s = CHAR(STRING_ELT(vec, i));
+                    st = fgrep_one(spat, s);
+                }
+                SET_STRING_ELT(ans, i, allocString(ns + nr * (replen - patlen)));
+                u = CHAR(STRING_ELT(ans, i));
+                *u = '\0';
+                do
+                {
+                    nr = strlen(u);
+                    strncat(u, s, st);
+                    u[nr + st] = '\0';
+                    s += st + patlen;
+                    strcat(u, t);
+                } while (global && (st = fgrep_one(spat, s)) >= 0);
+                strcat(u, s);
             }
-            if (s[offset] == '\0' || !global)
-                break;
         }
-        if (nmatch == 0)
-            SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
-        else if (STRING_ELT(rep, 0) == NA_STRING)
-            SET_STRING_ELT(ans, i, NA_STRING);
         else
         {
-            SET_STRING_ELT(ans, i, allocString(ns));
-            offset = 0;
-            nmatch = 0;
-            s = CHAR(STRING_ELT(vec, i));
-            t = CHAR(STRING_ELT(rep, 0));
-            u = CHAR(STRING_ELT(ans, i));
-            ns = strlen(s);
             while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
             {
-                for (j = 0; j < regmatch[0].rm_so; j++)
-                    *u++ = s[offset + j];
+                nmatch += 1;
                 if (regmatch[0].rm_eo == 0)
-                {
-                    *u++ = s[offset];
                     offset++;
-                }
                 else
                 {
-                    u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
+                    ns += length_adj(t, regmatch, reg.re_nsub);
                     offset += regmatch[0].rm_eo;
                 }
                 if (s[offset] == '\0' || !global)
                     break;
             }
-            if (offset < ns)
-                for (j = offset; s[j]; j++)
-                    *u++ = s[j];
-            *u = '\0';
+            if (nmatch == 0)
+                SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
+            else if (STRING_ELT(rep, 0) == NA_STRING)
+                SET_STRING_ELT(ans, i, NA_STRING);
+            else
+            {
+                SET_STRING_ELT(ans, i, allocString(ns));
+                offset = 0;
+                nmatch = 0;
+                s = CHAR(STRING_ELT(vec, i));
+                t = CHAR(STRING_ELT(rep, 0));
+                u = CHAR(STRING_ELT(ans, i));
+                ns = strlen(s);
+                while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
+                {
+                    for (j = 0; j < regmatch[0].rm_so; j++)
+                        *u++ = s[offset + j];
+                    if (regmatch[0].rm_eo == 0)
+                    {
+                        *u++ = s[offset];
+                        offset++;
+                    }
+                    else
+                    {
+                        u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
+                        offset += regmatch[0].rm_eo;
+                    }
+                    if (s[offset] == '\0' || !global)
+                        break;
+                }
+                if (offset < ns)
+                    for (j = offset; s[j]; j++)
+                        *u++ = s[j];
+                *u = '\0';
+            }
         }
     }
-    regfree(&reg);
+    if (!fixed_opt)
+        regfree(&reg);
     UNPROTECT(4);
     return ans;
 }
