@@ -86,6 +86,7 @@
 
 #include <Rdynpriv.h>
 
+#ifdef Unix
 /* HP-UX 11.0 has dlfcn.h, but according to libtool as of Dec 2001
    this support is broken. So we force use of shlib even when dlfcn.h
    is available */
@@ -97,9 +98,7 @@
 #ifdef HAVE_DLFCN_H
 #define HAVE_DYNAMIC_LOADING
 #endif
-#endif
-
-#ifdef Unix
+#endif /* __hpux */
 #ifndef HAVE_NO_SYMBOL_UNDERSCORE
 #ifdef HAVE_ELF_H
 #define HAVE_NO_SYMBOL_UNDERSCORE
@@ -110,6 +109,10 @@
 #ifdef Macintosh
 extern char *strdup();
 #define HAVE_NO_SYMBOL_UNDERSCORE
+#endif
+
+#ifdef Win32
+#define HAVE_DYNAMIC_LOADING
 #endif
 
 /* The following code loads in a compatibility module written by Luke
