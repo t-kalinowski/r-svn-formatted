@@ -564,7 +564,7 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
     dd->canChangeFont = TRUE;
     dd->canRotateText = TRUE;
     dd->canResizeText = TRUE;
-    dd->canClip = FALSE;
+    dd->canClip = TRUE;
     dd->canHAdj = 0;
     dd->canChangeGamma = FALSE;
 
@@ -848,7 +848,34 @@ static void Quartz_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 
 static void Quartz_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd)
 {
-    return;
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    float x, y, width, height;
+
+    if (x0 < x1)
+    {
+        x = x0;
+        width = (float)(x1 - x0);
+    }
+    else
+    {
+        x = x1;
+        width = (float)(x0 - x1);
+    }
+
+    if (y0 < y1)
+    {
+        y = y0;
+        height = (float)(y1 - y0);
+    }
+    else
+    {
+        y = y1;
+        height = (float)(y0 - y1);
+    }
+
+    CGContextSaveGState(GetContext(xd));
+    CGContextClipToRect(GetContext(xd), CGRectMake(x, y, width, height));
+    CGContextRestoreGState(GetContext(xd));
 }
 
 static double Quartz_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
