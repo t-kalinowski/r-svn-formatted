@@ -411,7 +411,13 @@ static void extractItem(char *buffer, SEXP ans, int i, LocalData *d)
         if (isNAstring(buffer, 0, d))
             LOGICAL(ans)[i] = NA_INTEGER;
         else
-            LOGICAL(ans)[i] = StringTrue(buffer);
+        {
+            int tr = StringTrue(buffer), fa = StringFalse(buffer);
+            if (tr || fa)
+                LOGICAL(ans)[i] = tr;
+            else
+                expected("a logical", buffer, d);
+        }
         break;
     case INTSXP:
         if (isNAstring(buffer, 0, d))
