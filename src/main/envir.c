@@ -786,19 +786,17 @@ static SEXP mfindVarInFrame(SEXP rho, SEXP symbol)
     if (HASHTAB(rho) == R_NilValue)
     {
         frame = FRAME(rho);
-        while (frame != R_NilValue)
-        {
-            if (TAG(frame) == symbol)
-                return frame;
-            frame = CDR(frame);
-        }
     }
     else
     {
-        /* Do the hash table thing */
         hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
-        /* Will return 'R_UnboundValue' if not found */
-        return (R_HashGet(hashcode, symbol, HASHTAB(rho)));
+        frame = VECTOR(HASHTAB(rho))[hashcode];
+    }
+    while (frame != R_NilValue)
+    {
+        if (TAG(frame) == symbol)
+            return frame;
+        frame = CDR(frame);
     }
     return R_NilValue;
 }
