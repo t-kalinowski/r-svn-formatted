@@ -51,7 +51,7 @@
 #include "Runix.h"
 
 #ifdef HAVE_AQUA
-void R_StartConsole(void)
+void R_StartConsole(Rboolean OpenConsole)
 {
     ptr_R_StartConsole();
 }
@@ -337,7 +337,7 @@ int Rf_initialize_R(int ac, char **av)
 
 #ifdef HAVE_AQUA
     if (useaqua)
-        R_StartConsole();
+        R_StartConsole(TRUE);
 #endif
 
     return (0);

@@ -83,8 +83,11 @@ typedef struct
     double yscale;
 } QuartzDesc;
 
+OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
+
 extern OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
-static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
+static const EventTypeSpec QuartzEvents[] = {{kEventClassWindow, kEventWindowClose},
+                                             {kEventClassWindow, kEventWindowBoundsChanged}};
 
 Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                  char *family, Rboolean antialias, Rboolean autorefresh);
@@ -210,8 +213,8 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
         dev->savedSnapshot = R_NilValue;
 
         strcpy(fontfamily, family);
-        GetQuartzParameters(&width, &height, &ps, fontfamily, &antialias, &autorefresh);
-
+        /*    GetQuartzParameters(&width, &height, &ps, fontfamily, &antialias, &autorefresh);
+         */
         if (!QuartzDeviceDriver((DevDesc *)dev, display, width, height, ps, fontfamily, antialias, autorefresh))
         {
             free(dev);
@@ -391,8 +394,13 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     SetWTitle(devWindow, Title);
 
     ShowWindow(devWindow);
-    err = InstallWindowEventHandler(devWindow, NewEventHandlerUPP(DoCloseHandler), GetEventTypeCount(RCloseWinEvent),
-                                    RCloseWinEvent, (void *)devWindow, NULL);
+    /*
+        err = InstallWindowEventHandler( devWindow, NewEventHandlerUPP(DoCloseHandler),
+                                              GetEventTypeCount(RCloseWinEvent),
+                                              RCloseWinEvent, (void *)devWindow, NULL);
+    */
+    err = InstallWindowEventHandler(devWindow, NewEventHandlerUPP(QuartzEventHandler), GetEventTypeCount(QuartzEvents),
+                                    QuartzEvents, (void *)devWindow, NULL);
 
     if (err != noErr)
         return (0);
@@ -846,6 +854,47 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
     SetPort(savedPort);
 
     return;
+}
+
+OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData)
+{
+    OSStatus err = eventNotHandledErr;
+    UInt32 eventKind = GetEventKind(inEvent), RWinCode, devsize;
+    int devnum;
+    WindowRef EventWindow;
+    EventRef REvent;
+    NewDevDesc *dd;
+
+    if (GetEventClass(inEvent) != kEventClassWindow)
+        return (err);
+
+    GetEventParameter(inEvent, kEventParamDirectObject, typeWindowRef, NULL, sizeof(EventWindow), NULL, &EventWindow);
+
+    if (GetWindowProperty(EventWindow, kRAppSignature, 'QRTZ', sizeof(int), NULL, &devnum) != noErr)
+        return eventNotHandledErr;
+
+    switch (eventKind)
+    {
+    case kEventWindowClose: {
+        KillDevice(GetDevice(devnum));
+        err = noErr;
+    }
+    break;
+
+    case kEventWindowBoundsChanged:
+        if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
+        {
+            dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
+            GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
+            err = noErr;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return err;
 }
 
 #else
