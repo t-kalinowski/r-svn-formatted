@@ -35,6 +35,7 @@
  *    Journal of Statistical Computation and Simulation 22, 127-145.
  */
 
+#include "Defn.h" /* only for  REprintf(.) below  [-Wall] */
 #include "Mathlib.h"
 
 /* TRUE and FALSE conflict with the MAC */
@@ -65,6 +66,7 @@ static double afc(int i)
     if (i < 0)
     {
         REprintf("rhyper.c: afc(i), i=%d < 0 -- SHOULD NOT HAPPEN!\n", i);
+        return -1; /* unreached (Wall) */
     }
     else if (i <= 7)
     {
