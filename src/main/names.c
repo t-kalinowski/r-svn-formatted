@@ -39,7 +39,7 @@
  *3 PRIMNAME	PRIMFUN	PRIMVAL	 [*]  PRIMARITY PPINFO
  *
  * where "2" are the component names of the FUNTAB struct (Defn.h)
- * and   "3" are the accessor macros. [*]: PRIMPRINT(.) uses the eval component
+ * and	 "3" are the accessor macros. [*]: PRIMPRINT(.) uses the eval component
  *
  * printname:	The function name in R
  *
@@ -69,16 +69,6 @@
  * pp-info:	Deparsing Info (-> names.h )
  *
  */
-
-SEXP do_indexsearch(SEXP, SEXP, SEXP, SEXP);
-SEXP do_surface(SEXP, SEXP, SEXP, SEXP);
-SEXP do_flatContour(SEXP, SEXP, SEXP, SEXP);
-SEXP do_filledcontour(SEXP, SEXP, SEXP, SEXP);
-SEXP do_restart(SEXP, SEXP, SEXP, SEXP);
-SEXP do_primitive(SEXP, SEXP, SEXP, SEXP);
-SEXP do_symbols(SEXP, SEXP, SEXP, SEXP);
-SEXP do_attr(SEXP, SEXP, SEXP, SEXP);
-SEXP do_ascharacter(SEXP, SEXP, SEXP, SEXP);
 
 FUNTAB R_FunTab[] = {
 
@@ -181,8 +171,6 @@ FUNTAB R_FunTab[] = {
     {"dim<-", do_dimgets, 0, 0, 2, PP_FUNCALL},
     {"attributes", do_attributes, 0, 1, 1, PP_FUNCALL},
     {"attributes<-", do_attributesgets, 0, 1, 1, PP_FUNCALL},
-    /*KH {"attr",	do_attr,	0,	1,	2,	PP_FUNCALL},
-     */
     {"attr", do_attr, 0, 1, 2, PP_FUNCALL},
     {"attr<-", do_attrgets, 0, 0, 3, PP_FUNCALL},
     {"comment", do_comment, 0, 11, 1, PP_FUNCALL},

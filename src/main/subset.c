@@ -417,8 +417,9 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
     dimnamesnames = getAttrib(dimnames, R_NamesSymbol);
     if (dimnames != R_NilValue)
     {
-        SEXP xdims;
-        int j = 0;
+        /*SEXP xdims;
+        int */
+        j = 0;
         PROTECT(xdims = allocVector(VECSXP, k));
         if (TYPEOF(dimnames) == VECSXP)
         {
@@ -485,7 +486,6 @@ static void ExtractDropArg(SEXP el, int *drop)
 SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
-    SEXP do_subset_dflt(SEXP, SEXP, SEXP, SEXP);
 
     /* If the first argument is an object and there is an */
     /* approriate method, we dispatch to that method, */
@@ -604,7 +604,6 @@ SEXP do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
-    SEXP do_subset2_dflt(SEXP, SEXP, SEXP, SEXP);
 
     /* If the first argument is an object and there is */
     /* an approriate method, we dispatch to that method, */
@@ -765,7 +764,6 @@ static enum pmatch { NO_MATCH, EXACT_MATCH, PARTIAL_MATCH } pstrmatch(SEXP targe
 SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP input, nlist, ans;
-    SEXP R_subset3_dflt(SEXP, SEXP);
 
     checkArity(op, args);
 
