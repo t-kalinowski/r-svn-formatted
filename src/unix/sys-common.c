@@ -256,6 +256,12 @@ void R_SetParams(Rstart Rp)
 
 /* Remove and process common command-line arguments */
 
+void R_common_badargs()
+{
+    R_ShowMessage("invalid argument passed to R\n");
+    exit(1);
+}
+
 void R_common_command_line(int *pac, char **argv, Rstart Rp)
 {
     int ac = *pac, newac = 1; /* argv[0] is process name */
@@ -350,7 +356,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 if (ierr)
                 {
                     if (ierr < 0)
-                        goto badargs; /* if(*p) goto badargs; */
+                        R_common_badargs(); /* if(*p) goto badargs; */
                     sprintf(msg, "--vsize %ld'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
                     R_ShowMessage(msg);
                 }
@@ -379,7 +385,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 if (ierr)
                 {
                     if (ierr < 0)
-                        goto badargs;
+                        R_common_badargs();
                     sprintf(msg, "--nsize %ld'%c': too large", value, (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
                     R_ShowMessage(msg);
                 }
@@ -399,8 +405,4 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
     }
     *pac = newac;
     return;
-
-badargs:
-    R_ShowMessage("invalid argument passed to R\n");
-    exit(1);
 }
