@@ -31,7 +31,7 @@
 
 #include "R.h"
 #include "R_ext/Applic.h" /* for the QR	  routines */
-#include "R_ext/Utils.h"  /* for the sort() routines */
+#include "R_ext/Utils.h"  /* for the *sort() routines */
 #define BIG DBL_MAX
 
 /* GLOBAL Variables, explicitly allocated and freed: */
@@ -236,7 +236,7 @@ void lqs_fitlots(double *x, double *y, int *n, int *p, int *qn, int *lts, int *a
                solution.  */
             if (*adj)
             {
-                rsort(res, nn);
+                R_rsort(res, nn);
                 if (*lts)
                     a = ltsadj(res, nn, *qn, &thiscrit);
                 else
