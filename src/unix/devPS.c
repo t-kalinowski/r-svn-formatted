@@ -28,12 +28,10 @@
 
 #define PS_minus_default 45
 /* wrongly was 177 (plusminus);
-   hyphen = 45 or 173;  (n-dash not available as code!)
+   hyphen = 45 or 173;	(n-dash not available as code!)
    175 = "¯" (= "overline" (= high 'negative' sign))
 */
 char PS_minus = PS_minus_default; /*-> TODO: make this a ps.option() !*/
-
-#undef DEBUG
 
 /* Part 0.  AFM File Names */
 
@@ -325,9 +323,9 @@ static int GetFontBBox(char *buf, FontMetricInfo *metrics)
     if (sscanf(buf, "FontBBox %hd %hd %hd %hd", &(metrics->FontBBox[0]), &(metrics->FontBBox[1]),
                &(metrics->FontBBox[2]), &(metrics->FontBBox[3])) != 4)
         return 0;
-#ifdef DEBUG
-    printf("FontBBox %d %d %d %d\n", (metrics->FontBBox[0]), (metrics->FontBBox[1]), (metrics->FontBBox[2]),
-           (metrics->FontBBox[3]));
+#ifdef DEBUG_PS
+    Rprintf("FontBBox %d %d %d %d\n", (metrics->FontBBox[0]), (metrics->FontBBox[1]), (metrics->FontBBox[2]),
+            (metrics->FontBBox[3]));
 #endif
     return 1;
 }
@@ -361,9 +359,9 @@ static int GetCharInfo(char *buf, FontMetricInfo *metrics)
     sscanf(p, "%hd %hd %hd %hd", &(metrics->CharInfo[nchar].BBox[0]), &(metrics->CharInfo[nchar].BBox[1]),
            &(metrics->CharInfo[nchar].BBox[2]), &(metrics->CharInfo[nchar].BBox[3]));
 
-#ifdef DEBUG
-    printf("nchar = %d %d %d %d %d %d\n", nchar, metrics->CharInfo[nchar].WX, metrics->CharInfo[nchar].BBox[0],
-           metrics->CharInfo[nchar].BBox[1], metrics->CharInfo[nchar].BBox[2], metrics->CharInfo[nchar].BBox[3]);
+#ifdef DEBUG_PS
+    Rprintf("nchar = %d %d %d %d %d %d\n", nchar, metrics->CharInfo[nchar].WX, metrics->CharInfo[nchar].BBox[0],
+            metrics->CharInfo[nchar].BBox[1], metrics->CharInfo[nchar].BBox[2], metrics->CharInfo[nchar].BBox[3]);
 #endif
     return 1;
 }
@@ -519,18 +517,18 @@ static void PSFileHeader(FILE *fp, int font, int encoding, char *papername, doub
     fprintf(fp, "/o   { stroke } def\n");
     fprintf(fp, "/c   { newpath 0 360 arc } def\n");
     fprintf(fp, "/r   { 3 index 3 index moveto 1 index 4 -1 roll\n");
-    fprintf(fp, "       lineto exch 1 index lineto lineto closepath } def\n");
+    fprintf(fp, "	lineto exch 1 index lineto lineto closepath } def\n");
     fprintf(fp, "/p1  { stroke } def\n");
     fprintf(fp, "/p2  { bg setrgbcolor fill fg setrgbcolor } def\n");
     fprintf(fp, "/p3  { gsave bg setrgbcolor fill grestore stroke } def\n");
     fprintf(fp, "/t   { 6 -2 roll moveto gsave 3 index true\n");
-    fprintf(fp, "       charpath flattenpath pathbbox grestore gsave\n");
-    fprintf(fp, "       5 -1 roll rotate 6 -1 roll neg 3 -1 roll 5 -1\n");
-    fprintf(fp, "       roll sub mul 4 -1 roll neg 3 -1 roll 4 -1 roll\n");
-    fprintf(fp, "       sub mul rmoveto show grestore } def\n");
+    fprintf(fp, "	charpath flattenpath pathbbox grestore gsave\n");
+    fprintf(fp, "	5 -1 roll rotate 6 -1 roll neg 3 -1 roll 5 -1\n");
+    fprintf(fp, "	roll sub mul 4 -1 roll neg 3 -1 roll 4 -1 roll\n");
+    fprintf(fp, "	sub mul rmoveto show grestore } def\n");
     fprintf(fp, "/cl  { initclip newpath 3 index 3 index moveto 1 index\n");
-    fprintf(fp, "       4 -1 roll lineto  exch 1 index lineto lineto\n");
-    fprintf(fp, "       closepath clip newpath } def\n");
+    fprintf(fp, "	4 -1 roll lineto  exch 1 index lineto lineto\n");
+    fprintf(fp, "	closepath clip newpath } def\n");
     fprintf(fp, "/rgb { setrgbcolor } def\n");
     fprintf(fp, "/s   { scalefont setfont } def\n");
     fprintf(fp, "/R   { /Font1 findfont } def\n");
@@ -1204,7 +1202,7 @@ static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, 
             xx = x[i];
             yy = y[i];
             GConvert(&xx, &yy, coords, DEVICE, dd);
-            fprintf(pd->psfp, "  %.2f %.2f l\n", xx, yy);
+            fprintf(pd->psfp, "	 %.2f %.2f l\n", xx, yy);
         }
         fprintf(pd->psfp, "cp p%d\n", code);
     }
