@@ -31,7 +31,7 @@
 #include <Rconnections.h>
 #include <R_ext/R-ftp-http.h>
 
-static void sock_open(Rconnection con)
+static Rboolean sock_open(Rconnection con)
 {
     Rsockconn this = (Rsockconn)con->private;
     int sock, sock1;
@@ -47,10 +47,16 @@ static void sock_open(Rconnection con)
     {
         sock1 = R_SockOpen(this->port);
         if (sock1 < 0)
-            error("port %d cannot be opened", this->port);
+        {
+            warning("port %d cannot be opened", this->port);
+            return FALSE;
+        }
         sock = R_SockListen(sock1, buf, 256);
         if (sock < 0)
-            error("problem in listening on this socket");
+        {
+            warning("problem in listening on this socket");
+            return FALSE;
+        }
         free(con->description);
         con->description = (char *)malloc(strlen(buf) + 10);
         sprintf(con->description, "<-%s:%d", buf, this->port);
@@ -60,7 +66,10 @@ static void sock_open(Rconnection con)
     {
         sock = R_SockConnect(this->port, con->description);
         if (sock < 0)
-            error("%s:%d cannot be opened", con->description, this->port);
+        {
+            warning("%s:%d cannot be opened", con->description, this->port);
+            return FALSE;
+        }
         sprintf(buf, "->%s:%d", con->description, this->port);
         strcpy(con->description, buf);
     }
@@ -72,6 +81,7 @@ static void sock_open(Rconnection con)
     else
         con->text = TRUE;
     con->save = -1000;
+    return TRUE;
 }
 
 static void sock_close(Rconnection con)

@@ -52,31 +52,40 @@ static void in_R_FTPClose(void *ctx);
 
 static Rboolean IDquiet = TRUE;
 
-static void url_open(Rconnection con)
+static Rboolean url_open(Rconnection con)
 {
     void *ctxt;
     char *url = con->description;
     UrlScheme type = ((Rurlconn)(con->private))->type;
 
     if (con->mode[0] != 'r')
+    {
         error("can only open URLs for reading");
+    }
 
     switch (type)
     {
     case HTTPsh:
         ctxt = in_R_HTTPOpen(url, 0);
         if (ctxt == NULL)
+        {
             error("cannot open URL `%s'", url);
+            return FALSE;
+        }
         ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     case FTPsh:
         ctxt = in_R_FTPOpen(url);
         if (ctxt == NULL)
+        {
             error("cannot open URL `%s'", url);
+            return FALSE;
+        }
         ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     default:
-        error("unknown URL scheme");
+        warning("unknown URL scheme");
+        return FALSE;
     }
 
     con->isopen = TRUE;
@@ -87,6 +96,7 @@ static void url_open(Rconnection con)
     else
         con->text = TRUE;
     con->save = -1000;
+    return TRUE;
 }
 
 static void url_close(Rconnection con)
