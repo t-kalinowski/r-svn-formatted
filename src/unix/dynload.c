@@ -67,7 +67,7 @@ typedef struct
     char *name;
     DL_FUNC func;
 } CFunTabEntry;
-#include "FFDecl.h"
+
 #include "FFDecl.h"
 
 /* This provides a table of built-in C and Fortran functions */

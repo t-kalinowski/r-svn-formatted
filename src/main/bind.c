@@ -666,9 +666,11 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         a = args;
         t = CDR(call);
-        while (a != R_NilValue)
-        {
-            if (t == R_NilValue)
+        /* FIXME KH 1998/06/23
+           This should obviously do something useful, but
+           currently breaks [cr]bind() if one arg is a df
+        while (a != R_NilValue) {
+            if(t == R_NilValue)
                 errorcall(call, "corrupt data frame args!\n");
             p = mkPROMISE(CAR(t), rho);
             PRVALUE(p) = CAR(a);
@@ -676,6 +678,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
             t = CDR(t);
             a = CDR(a);
         }
+        */
         switch (PRIMVAL(op))
         {
         case 1:
@@ -1041,6 +1044,8 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
                 u = CAR(t);
                 k = LENGTH(u);
                 mrows = (isMatrix(u)) ? nrows(u) : 1;
+                if (k == 0)
+                    mrows = 0;
                 for (i = 0; i < mrows; i++)
                     for (j = 0; j < cols; j++)
                         STRING(result)[i + n + (j * rows)] = STRING(u)[(i + j * mrows) % k];

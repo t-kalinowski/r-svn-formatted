@@ -994,6 +994,9 @@ static SEXP listRemove(SEXP x, SEXP s)
             px = CDR(px);
         }
     }
+    ATTRIB(CDR(a)) = ATTRIB(x);
+    OBJECT(CDR(a)) = OBJECT(x);
+    NAMED(CDR(a)) = NAMED(x);
     UNPROTECT(2);
     vmaxset(h);
     return CDR(a);
@@ -1465,7 +1468,12 @@ SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TAG(x) == nlist)
     {
         if (val == R_NilValue)
+        {
+            ATTRIB(CDR(x)) = ATTRIB(x);
+            OBJECT(CDR(x)) = OBJECT(x);
+            NAMED(CDR(x)) = NAMED(x);
             x = CDR(x);
+        }
         else
             CAR(x) = val;
     }
