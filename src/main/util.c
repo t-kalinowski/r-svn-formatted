@@ -307,7 +307,7 @@ Rboolean isVectorAtomic(SEXP s)
     case CPLXSXP:
     case STRSXP:
         return TRUE;
-    default:
+    default: /* including NULL */
         return FALSE;
     }
 }
