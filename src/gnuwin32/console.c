@@ -820,7 +820,7 @@ while ((i < y1) || ((i == y1) && (j <= x1)))
 GlobalUnlock(hglb);
 if (!OpenClipboard(NULL) || !EmptyClipboard())
 {
-    R_ShowMessage("Impossible to open the clipboard");
+    R_ShowMessage("Unable to open the clipboard");
     GlobalFree(hglb);
     FVOIDRETURN;
 }
@@ -1313,7 +1313,7 @@ fp = fopen(s, "w");
 if (!fp)
 {
     char msg[256];
-    sprintf(msg, "Impossible to open %s", s);
+    sprintf(msg, "Unable to open %s", s);
     R_ShowMessage(s);
     FVOIDRETURN;
 }
@@ -1905,7 +1905,7 @@ pager newpager1win(char *wtitle, char *filename, int deleteonexit)
 {
     if (!pagerInstance && !(pagerInstance = pagercreate()))
     {
-        R_ShowMessage("Impossible to create pager windows");
+        R_ShowMessage("Unable to create pager windows");
         return NULL;
     }
     if (!pageraddfile(wtitle, filename, deleteonexit))
