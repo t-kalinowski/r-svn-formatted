@@ -32,20 +32,19 @@
 #include "Defn.h"
 
 #ifdef HAVE_PCRE
-/* care needed as pcreposix defines various regex structures
-   in a non-standard way, so keep this file separate */
 #ifdef HAVE_PCRE_IN_PCRE
-#include <pcre/pcreposix.h>
+#include <pcre/pcre.h>
 #else
-#include <pcreposix.h>
+#include <pcre.h>
 #endif
 
 SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
-    regex_t reg;
     int i, j, n, nmatches;
-    int igcase_opt, value_opt, eflags = 0;
+    int igcase_opt, value_opt, options = 0, erroffset;
+    const char *errorptr;
+    pcre *re_pcre;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -65,9 +64,10 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, R_MSG_IA);
 
     if (igcase_opt)
-        eflags = eflags | REG_ICASE;
+        options |= PCRE_CASELESS;
 
-    if (regcomp(&reg, CHAR(STRING_ELT(pat, 0)), eflags))
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, NULL);
+    if (!re_pcre)
         errorcall(call, "invalid regular expression");
 
     n = length(vec);
@@ -75,7 +75,10 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     nmatches = 0;
     for (i = 0; i < n; i++)
     {
-        if (regexec(&reg, CHAR(STRING_ELT(vec, i)), 0, NULL, 0) == 0)
+        int rc, ovector;
+        char *s = CHAR(STRING_ELT(vec, i));
+        rc = pcre_exec(re_pcre, NULL, s, strlen(s), 0, 0, &ovector, 0);
+        if (rc >= 0)
         {
             INTEGER(ind)[i] = 1;
             nmatches++;
@@ -83,7 +86,7 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             INTEGER(ind)[i] = 0;
     }
-    regfree(&reg);
+    (pcre_free)(re_pcre);
     PROTECT(ind);
     if (value_opt)
     {
@@ -91,11 +94,7 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
         j = 0;
         for (i = 0; i < n; i++)
             if (INTEGER(ind)[i])
-            {
                 SET_STRING_ELT(ans, j++, STRING_ELT(vec, i));
-                /* FIXME: Want to inherit 'names(vec)': [the following is wrong]
-                   TAG	 (ans)[j]   = TAG(vec)[i]; */
-            }
     }
     else
     {
@@ -113,11 +112,11 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
  * either once or globally.
  * The functions are loosely patterned on the "sub" and "gsub" in "nawk". */
 
-static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
+static int length_adj(char *repl, int *ovec, int nsubexpr)
 {
     int k, n;
     char *p = repl;
-    n = strlen(repl) - (regmatch[0].rm_eo - regmatch[0].rm_so);
+    n = strlen(repl) - (ovec[1] - ovec[0]);
     while (*p)
     {
         if (*p == '\\')
@@ -127,7 +126,7 @@ static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
                 k = p[1] - '0';
                 if (k > nsubexpr)
                     error("invalid backreference in regular expression");
-                n += (regmatch[k].rm_eo - regmatch[k].rm_so) - 2;
+                n += (ovec[2 * k + 1] - ovec[2 * k]) - 2;
                 p++;
             }
             else if (p[1] == 0)
@@ -146,7 +145,7 @@ static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
     return n;
 }
 
-static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmatch, int nsubexpr)
+static char *string_adj(char *target, char *orig, char *repl, int *ovec, int nsubexpr)
 {
     int i, k;
     char *p = repl, *t = target;
@@ -157,7 +156,7 @@ static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmat
             if ('1' <= p[1] && p[1] <= '9')
             {
                 k = p[1] - '0';
-                for (i = regmatch[k].rm_so; i < regmatch[k].rm_eo; i++)
+                for (i = ovec[2 * k]; i < ovec[2 * k + 1]; i++)
                     *t++ = orig[i];
                 p += 2;
             }
@@ -180,11 +179,12 @@ static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmat
 SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, vec, ans;
-    regex_t reg;
-    regmatch_t regmatch[10];
-    int i, j, n, ns, nmatch, offset;
-    int global, igcase_opt, eflags = 0;
+    int i, j, n, ns, nmatch, offset, re_nsub;
+    int global, igcase_opt, options = 0, erroffset;
     char *s, *t, *u;
+    const char *errorptr;
+    pcre *re_pcre;
+    pcre_extra *re_pe;
 
     checkArity(op, args);
 
@@ -205,30 +205,34 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, R_MSG_IA);
 
     if (igcase_opt)
-        eflags = eflags | REG_ICASE;
+        options |= PCRE_CASELESS;
 
-    if (regcomp(&reg, CHAR(STRING_ELT(pat, 0)), eflags))
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), options, &errorptr, &erroffset, NULL);
+    if (!re_pcre)
         errorcall(call, "invalid regular expression");
+    re_nsub = pcre_info(re_pcre, NULL, NULL);
+    re_pe = pcre_study(re_pcre, 0, &errorptr);
 
     n = length(vec);
     PROTECT(ans = allocVector(STRSXP, n));
 
     for (i = 0; i < n; i++)
     {
+        int ovector[30];
         offset = 0;
         nmatch = 0;
         s = CHAR(STRING_ELT(vec, i));
         t = CHAR(STRING_ELT(rep, 0));
         ns = strlen(s);
-        while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
+        while (pcre_exec(re_pcre, re_pe, s, ns, 0, 0, ovector, 30) >= 0)
         {
             nmatch += 1;
-            if (regmatch[0].rm_eo == 0)
+            if (ovector[0] == 0)
                 offset++;
             else
             {
-                ns += length_adj(t, regmatch, reg.re_nsub);
-                offset += regmatch[0].rm_eo;
+                ns += length_adj(t, ovector, re_nsub);
+                offset += ovector[1];
             }
             if (s[offset] == '\0' || !global)
                 break;
@@ -244,19 +248,19 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             t = CHAR(STRING_ELT(rep, 0));
             u = CHAR(STRING_ELT(ans, i));
             ns = strlen(s);
-            while (regexec(&reg, &s[offset], 10, regmatch, 0) == 0)
+            while (pcre_exec(re_pcre, NULL, s + offset, ns - offset, 0, 0, ovector, 30) >= 0)
             {
-                for (j = 0; j < regmatch[0].rm_so; j++)
+                for (j = 0; j < ovector[0]; j++)
                     *u++ = s[offset + j];
-                if (regmatch[0].rm_eo == 0)
+                if (ovector[1] == 0)
                 {
                     *u++ = s[offset];
                     offset++;
                 }
                 else
                 {
-                    u = string_adj(u, &s[offset], t, regmatch, reg.re_nsub);
-                    offset += regmatch[0].rm_eo;
+                    u = string_adj(u, &s[offset], t, ovector, re_nsub);
+                    offset += ovector[1];
                 }
                 if (s[offset] == '\0' || !global)
                     break;
@@ -266,7 +270,8 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             *u = '\0';
         }
     }
-    regfree(&reg);
+    (pcre_free)(re_pe);
+    (pcre_free)(re_pcre);
     UNPROTECT(1);
     return ans;
 }
@@ -274,9 +279,9 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ans, matchlen;
-    regex_t reg;
-    regmatch_t regmatch[10];
-    int i, n, st;
+    int i, n, st, erroffset;
+    const char *errorptr;
+    pcre *re_pcre;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -287,7 +292,8 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(pat) || length(pat) < 1 || !isString(text) || length(text) < 1)
         errorcall(call, R_MSG_IA);
 
-    if (regcomp(&reg, CHAR(STRING_ELT(pat, 0)), 0))
+    re_pcre = pcre_compile(CHAR(STRING_ELT(pat, 0)), 0, &errorptr, &erroffset, NULL);
+    if (!re_pcre)
         errorcall(call, "invalid regular expression");
     n = length(text);
     PROTECT(ans = allocVector(INTSXP, n));
@@ -295,18 +301,21 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
-        if (regexec(&reg, CHAR(STRING_ELT(text, i)), 1, regmatch, 0) == 0)
+        int rc, ovector[3];
+        char *s = CHAR(STRING_ELT(text, i));
+        rc = pcre_exec(re_pcre, NULL, s, strlen(s), 0, 0, ovector, 3);
+        if (rc >= 0)
         {
-            st = regmatch[0].rm_so;
+            st = ovector[0];
             INTEGER(ans)[i] = st + 1; /* index from one */
-            INTEGER(matchlen)[i] = regmatch[0].rm_eo - st;
+            INTEGER(matchlen)[i] = ovector[1] - st;
         }
         else
         {
             INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
         }
     }
-    regfree(&reg);
+    (pcre_free)(re_pcre);
     setAttrib(ans, install("match.length"), matchlen);
     UNPROTECT(2);
     return ans;
@@ -314,14 +323,14 @@ SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
 SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("`perl = TRUE' is not support on this platform");
+    error("`perl = TRUE' is not supported on this platform");
 }
 SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("`perl = TRUE' is not support on this platform");
+    error("`perl = TRUE' is not supported on this platform");
 }
 SEXP do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("`perl = TRUE' is not support on this platform");
+    error("`perl = TRUE' is not supported on this platform");
 }
 #endif
