@@ -72,12 +72,14 @@ static int extract_one(unzFile uf, char *dest, char *filename)
     err = unzOpenCurrentFile(uf);
     if (err != UNZ_OK)
         return err;
-    if (strlen(dest) + strlen(filename) > PATH_MAX > 2)
+    if (strlen(dest) > PATH_MAX - 1)
         return 1;
     strcpy(outname, dest);
     strcat(outname, FILESEP);
     if (filename)
     {
+        if (strlen(dest) + strlen(filename) > PATH_MAX - 2)
+            return 1;
         strcat(outname, filename);
     }
     else
