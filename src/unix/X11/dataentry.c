@@ -1135,6 +1135,13 @@ static void doSpreadKey(int key, DEEvent *event)
         advancerect(RIGHT);
     else if (iokey == XK_Up)
         advancerect(UP);
+    else if (iokey == XK_Page_Up)
+    {
+        int i = rowmin - nhigh + 2;
+        jumpwin(colmin, max(1, i));
+    }
+    else if (iokey == XK_Page_Down)
+        jumpwin(colmin, rowmax);
     else if ((iokey == XK_BackSpace) || (iokey == XK_Delete))
     {
         if (clength > 0)
@@ -1154,7 +1161,21 @@ static void doSpreadKey(int key, DEEvent *event)
             advancerect(RIGHT);
     }
     else if (iokey == XK_Home)
+    {
         jumpwin(1, 1);
+        downlightrect();
+        crow = ccol = 1;
+        highlightrect();
+    }
+    else if (iokey == XK_End)
+    {
+        int i = ymaxused - nhigh + 2;
+        jumpwin(xmaxused, max(i, 1));
+        downlightrect();
+        crow = ymaxused - rowmin + 1;
+        ccol = 1;
+        highlightrect();
+    }
     else if (IsModifierKey(iokey))
     {
     }
