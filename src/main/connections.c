@@ -2067,6 +2067,11 @@ SEXP do_open(SEXP call, SEXP op, SEXP args, SEXP env)
     con = getConnection(i);
     if (i < 3)
         error("cannot open standard connections");
+    if (con->isopen)
+    {
+        warning("connection is already open");
+        return R_NilValue;
+    }
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
         error("invalid `open' argument");
