@@ -1950,6 +1950,17 @@ void unprotect_ptr(SEXP s)
     R_PPStackTop--;
 }
 
+void R_ProtectWithIndex(SEXP s, PROTECT_INDEX *pi)
+{
+    protect(s);
+    *pi = R_PPStackTop - 1;
+}
+
+void R_Reprotect(SEXP s, PROTECT_INDEX i)
+{
+    R_PPStack[i] = s;
+}
+
 /* "initStack" initialize environment stack */
 void initStack(void)
 {
