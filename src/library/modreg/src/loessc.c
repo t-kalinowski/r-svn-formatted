@@ -21,11 +21,11 @@
 #include <string.h>
 #include <R.h>
 
-/* Much cleaner would be a  loess.h !! */
-void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonparametric, Sint *drop_square,
-                     Sint *sum_drop_sqr, Sint *setLf);
-void loess_prune(Sint *parameter, Sint *a, double *xi, double *vert, double *vval);
-void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, double *vval);
+/* Forward declarations */
+static void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonparametric, Sint *drop_square,
+                            Sint *sum_drop_sqr, Sint *setLf);
+static void loess_prune(Sint *parameter, Sint *a, double *xi, double *vert, double *vval);
+static void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, double *vval);
 
 /* These (and many more) are in ./loessf.f : */
 void F77_SUB(lowesa)();
@@ -42,11 +42,6 @@ void F77_SUB(ehg182)(int *i);
 void F77_SUB(ehg183a)(char *s, int *nc, int *i, int *n, int *inc);
 void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc);
 
-static void warnmsg(char *string)
-{
-    PROBLEM "%s", string WARNING(NULL_ENTRY);
-}
-
 #undef min
 #undef max
 
@@ -57,6 +52,13 @@ static void warnmsg(char *string)
 
 static Sint *iv, liv, lv, tau;
 static double *v;
+
+/* these are set in an earlier call to loess_workspace or loess_grow */
+static void loess_free(void)
+{
+    Free(v);
+    Free(iv);
+}
 
 void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, Sint *n, double *span, Sint *degree,
                Sint *nonparametric, Sint *drop_square, Sint *sum_drop_sqr, double *cell, char **surf_stat,
@@ -127,6 +129,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, S
         for (i = 0; i < (*n); i++)
             diagonal[i] = hat_matrix[i * k];
     }
+    loess_free();
 }
 
 void loess_dfit(double *y, double *x, double *x_evaluate, double *weights, double *span, Sint *degree,
@@ -136,6 +139,7 @@ void loess_dfit(double *y, double *x, double *x_evaluate, double *weights, doubl
 
     loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, &zero);
     F77_SUB(lowesf)(x, y, weights, iv, &liv, &lv, v, m, x_evaluate, &zero, &zero, fit);
+    loess_free();
 }
 
 void loess_dfitse(double *y, double *x, double *x_evaluate, double *weights, double *robust, Sint *family, double *span,
@@ -152,12 +156,15 @@ void loess_dfitse(double *y, double *x, double *x_evaluate, double *weights, dou
         F77_SUB(lowesf)(x, y, weights, iv, &liv, &lv, v, m, x_evaluate, L, &two, fit);
         F77_SUB(lowesf)(x, y, robust, iv, &liv, &lv, v, m, x_evaluate, &zero, &zero, fit);
     }
+    loess_free();
 }
+
 void loess_ifit(Sint *parameter, Sint *a, double *xi, double *vert, double *vval, Sint *m, double *x_evaluate,
                 double *fit)
 {
     loess_grow(parameter, a, xi, vert, vval);
     F77_SUB(lowese)(iv, &liv, &lv, v, m, x_evaluate, fit);
+    loess_free();
 }
 
 void loess_ise(double *y, double *x, double *x_evaluate, double *weights, double *span, Sint *degree,
@@ -170,6 +177,7 @@ void loess_ise(double *y, double *x, double *x_evaluate, double *weights, double
     v[1] = *cell;
     F77_SUB(lowesb)(x, y, weights, &zero, &zero, iv, &liv, &lv, v);
     F77_SUB(lowesl)(iv, &liv, &lv, v, m, x_evaluate, L);
+    loess_free();
 }
 
 void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonparametric, Sint *drop_square,
@@ -190,8 +198,8 @@ void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonpara
         lv = lv + (D + 1) * nf * nvmax;
         liv = liv + nf * nvmax;
     }
-    iv = (Sint *)R_alloc(liv, sizeof(Sint));
-    v = (double *)R_alloc(lv, sizeof(double));
+    iv = Calloc(liv, Sint);
+    v = Calloc(lv, double);
 
     F77_SUB(lowesd)(&version, iv, &liv, &lv, v, d, n, span, degree, &nvmax, setLf);
     iv[32] = *nonparametric;
@@ -199,7 +207,7 @@ void loess_workspace(Sint *d, Sint *n, double *span, Sint *degree, Sint *nonpara
         iv[i + 40] = drop_square[i];
 }
 
-void loess_prune(Sint *parameter, Sint *a, double *xi, double *vert, double *vval)
+static void loess_prune(Sint *parameter, Sint *a, double *xi, double *vert, double *vval)
 {
     Sint d, vc, a1, v1, xi1, vv1, nc, nv, nvmax, i, k;
 
@@ -234,7 +242,7 @@ void loess_prune(Sint *parameter, Sint *a, double *xi, double *vert, double *vva
         vval[i] = v[vv1 + i];
 }
 
-void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, double *vval)
+static void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, double *vval)
 {
     Sint d, vc, nc, nv, a1, v1, xi1, vv1, i, k;
 
@@ -244,8 +252,8 @@ void loess_grow(Sint *parameter, Sint *a, double *xi, double *vert, double *vval
     nv = parameter[4];
     liv = parameter[5];
     lv = parameter[6];
-    iv = (Sint *)R_alloc(liv, sizeof(Sint));
-    v = (double *)R_alloc(lv, sizeof(double));
+    iv = Calloc(liv, Sint);
+    v = Calloc(lv, double);
 
     iv[1] = d;
     iv[2] = parameter[1];
@@ -371,7 +379,7 @@ void F77_SUB(ehg182)(int *i)
     default:
         sprintf(msg = msg2, "Assert failed; error code %d\n", *i);
     }
-    warnmsg(msg);
+    warning(msg);
 }
 #undef MSG
 
@@ -387,7 +395,7 @@ void F77_SUB(ehg183a)(char *s, int *nc, int *i, int *n, int *inc)
         strcat(mess, num);
     }
     strcat(mess, "\n");
-    warnmsg(mess);
+    warning(mess);
 }
 
 void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc)
@@ -402,5 +410,5 @@ void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc)
         strcat(mess, num);
     }
     strcat(mess, "\n");
-    warnmsg(mess);
+    warning(mess);
 }
