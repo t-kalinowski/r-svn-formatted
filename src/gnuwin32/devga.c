@@ -92,11 +92,11 @@ typedef struct
     /* R Graphics Parameters */
     /* local device copy so that we can detect */
     /* when parameter changes */
-    int col;      /* Color */
-    int fg;       /* Foreground */
-    int bg;       /* Background */
-    int fontface; /* Typeface */
-    int fontsize; /* Size in points */
+    int col;                    /* Color */
+    int fg;                     /* Foreground */
+    int bg;                     /* Background */
+    int fontface;               /* Typeface */
+    int fontsize, basefontsize; /* Size in points */
     double fontangle;
 
     /* X11 Driver Specific */
@@ -394,10 +394,10 @@ static void RFontInit()
 static int SetBaseFont(x11Desc *xd)
 {
     xd->fontface = 1;
-    xd->fontsize = 12;
+    xd->fontsize = xd->basefontsize;
     xd->fontangle = 0.0;
     xd->usefixed = 0;
-    xd->font = gnewfont(xd->gawin, fontname[0], fontstyle[0], MulDiv(12, xd->wanteddpi, xd->truedpi), 0.0);
+    xd->font = gnewfont(xd->gawin, fontname[0], fontstyle[0], MulDiv(xd->fontsize, xd->wanteddpi, xd->truedpi), 0.0);
     if (!xd->font)
     {
         xd->usefixed = 1;
@@ -1328,6 +1328,11 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
         if (!xd->gawin)
             return 0;
     }
+    xd->truedpi = devicepixelsy(xd->gawin);
+    if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
+        xd->wanteddpi = 72;
+    else
+        xd->wanteddpi = xd->truedpi;
     if (!SetBaseFont(xd))
     {
         Rprintf("can't find any fonts\n");
@@ -1340,11 +1345,6 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
     xd->windowWidth = rr.width;
     xd->windowHeight = rr.height;
     xd->clip = rr;
-    xd->truedpi = devicepixelsy(xd->gawin);
-    if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
-        xd->wanteddpi = 72;
-    else
-        xd->wanteddpi = xd->truedpi;
     setdata(xd->gawin, (void *)dd);
     xd->needsave = 0;
     return 1;
@@ -1403,6 +1403,8 @@ static void X11_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
 
     xd->clip = rcanon(rpt(pt(x0, y0), pt(x1, y1)));
+    xd->clip.width += 1;
+    xd->clip.height += 1;
 }
 
 /********************************************************/
@@ -1934,6 +1936,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     int ps;
     x11Desc *xd;
     rect rr;
+    int a, d, w;
 
     /* allocate new device description */
     if (!(xd = (x11Desc *)malloc(sizeof(x11Desc))))
@@ -1950,6 +1953,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     ps = 2 * (ps / 2);
     xd->fontface = -1;
     xd->fontsize = -1;
+    xd->basefontsize = ps;
     dd->dp.font = 1;
     dd->dp.ps = ps;
 
@@ -1990,9 +1994,9 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     dd->dp.bottom = dd->dp.top + rr.height;         /* bottom */
 
     /* Nominal Character Sizes in Pixels */
-    dd->dp.cra[0] = fontwidth(xd->font);
-    dd->dp.cra[1] = fontascent(xd->font) + fontdescent(xd->font);
-
+    gcharmetric(xd->gawin, xd->font, 0, &a, &d, &w);
+    dd->dp.cra[0] = w;
+    dd->dp.cra[1] = a + d;
     /* Character Addressing Offsets */
     /* These are used to plot a single plotting character */
     /* so that it is exactly over the plotting point */
