@@ -40,6 +40,12 @@ unsigned int ScaleColor(double x)
         error("color intensity %g, not in [0,1]", x);
     return (unsigned int)(255 * x + 0.5);
 }
+unsigned int CheckColor(int x)
+{
+    if (x == NA_INTEGER || x < 0 || x > 255)
+        error("color intensity %d, not in 0:255", x);
+    return (unsigned int)x;
+}
 
 static void setpalette(char **palette)
 {
@@ -105,7 +111,7 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP c, h, s, v, gm;
     double hh, ss, vv, gg, r, g, b;
-    int i, min, max, nh, ns, nv, ng;
+    int i, max, nh, ns, nv, ng;
 
     checkArity(op, args);
 
@@ -122,6 +128,8 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
     ns = LENGTH(s);
     nv = LENGTH(v);
     ng = LENGTH(gm);
+    if (nh <= 0 || ns <= 0 || nv <= 0 || ng <= 0)
+        errorcall(call, "invalid argument length");
     max = nh;
     if (max < ns)
         max = ns;
@@ -129,15 +137,6 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
         max = nv;
     if (max < ng)
         max = ng;
-    min = nh;
-    if (min > ns)
-        min = ns;
-    if (min > nv)
-        min = nv;
-    if (min > ng)
-        min = ng;
-    if (min <= 0)
-        errorcall(call, "invalid argument length");
 
     PROTECT(c = allocVector(STRSXP, max));
     for (i = 0; i < max; i++)
@@ -160,50 +159,70 @@ SEXP do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_rgb(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP c, r, g, b, n;
-    int i, min, max, nr, ng, nb;
-    unsigned int ri, gi, bi;
+    SEXP c, r, g, b, nam;
+    int OP, i, l_max, nr, ng, nb;
+    Rboolean max_1 = FALSE;
+    double mV;
 
     checkArity(op, args);
-
-    PROTECT(r = coerceVector(CAR(args), REALSXP));
-    args = CDR(args);
-    PROTECT(g = coerceVector(CAR(args), REALSXP));
-    args = CDR(args);
-    PROTECT(b = coerceVector(CAR(args), REALSXP));
-    args = CDR(args);
-    PROTECT(n = coerceVector(CAR(args), STRSXP));
+    OP = PRIMVAL(op);
+    if (OP)
+    { /* op == 1:  rgb256() :*/
+        PROTECT(r = coerceVector(CAR(args), INTSXP));
+        args = CDR(args);
+        PROTECT(g = coerceVector(CAR(args), INTSXP));
+        args = CDR(args);
+        PROTECT(b = coerceVector(CAR(args), INTSXP));
+        args = CDR(args);
+    }
+    else
+    {
+        PROTECT(r = coerceVector(CAR(args), REALSXP));
+        args = CDR(args);
+        PROTECT(g = coerceVector(CAR(args), REALSXP));
+        args = CDR(args);
+        PROTECT(b = coerceVector(CAR(args), REALSXP));
+        args = CDR(args);
+        mV = asReal(CAR(args));
+        args = CDR(args);
+        max_1 = (mV == 1.);
+    }
+    PROTECT(nam = coerceVector(CAR(args), STRSXP));
     args = CDR(args);
 
     nr = LENGTH(r);
     ng = LENGTH(g);
     nb = LENGTH(b);
-    max = nr;
-    if (max < ng)
-        max = ng;
-    if (max < nb)
-        max = nb;
-    min = nr;
-    if (min > ng)
-        min = ng;
-    if (min > nb)
-        min = nb;
-    if (min <= 0)
+    if (nr <= 0 || ng <= 0 || nb <= 0)
         errorcall(call, "invalid argument length");
-
-    if (length(n) != 0 && length(n) != max)
+    l_max = nr;
+    if (l_max < ng)
+        l_max = ng;
+    if (l_max < nb)
+        l_max = nb;
+    if (length(nam) != 0 && length(nam) != l_max)
         errorcall(call, "invalid names vector");
+    PROTECT(c = allocVector(STRSXP, l_max));
 
-    PROTECT(c = allocVector(STRSXP, max));
-    for (i = 0; i < max; i++)
-    {
-        ri = ScaleColor(REAL(r)[i % nr]);
-        gi = ScaleColor(REAL(g)[i % ng]);
-        bi = ScaleColor(REAL(b)[i % nb]);
-        SET_STRING_ELT(c, i, mkChar(RGB2rgb(ri, gi, bi)));
+#define _R_set_c_RGB(_R, _G, _B)                                                                                       \
+    for (i = 0; i < l_max; i++)                                                                                        \
+    SET_STRING_ELT(c, i, mkChar(RGB2rgb(_R, _G, _B)))
+
+    if (OP)
+    { /* OP == 1:  rgb256() :*/
+        _R_set_c_RGB(CheckColor(INTEGER(r)[i % nr]), CheckColor(INTEGER(g)[i % ng]), CheckColor(INTEGER(b)[i % nb]));
     }
-    if (length(n) != 0)
-        setAttrib(c, R_NamesSymbol, n);
+    else if (max_1)
+    {
+        _R_set_c_RGB(ScaleColor(REAL(r)[i % nr]), ScaleColor(REAL(g)[i % ng]), ScaleColor(REAL(b)[i % nb]));
+    }
+    else
+    { /* maxColorVal not in {1, 255} */
+        _R_set_c_RGB(ScaleColor(REAL(r)[i % nr] / mV), ScaleColor(REAL(g)[i % ng] / mV),
+                     ScaleColor(REAL(b)[i % nb] / mV));
+    }
+    if (length(nam) != 0)
+        setAttrib(c, R_NamesSymbol, nam);
     UNPROTECT(5);
     return c;
 }
