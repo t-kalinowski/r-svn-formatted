@@ -1396,6 +1396,7 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     res = mkdir(dir, 0777);
     if (show && res && errno == EEXIST)
         warning("'%s' already exists", dir);
+end:
     PROTECT(ans = allocVector(LGLSXP, 1));
     LOGICAL(ans)[0] = (res == 0);
     UNPROTECT(1);
