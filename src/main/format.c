@@ -260,7 +260,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
 
     for (i = 0; i < l; i++)
     {
-        if (!FINITE(x[i]))
+        if (!R_FINITE(x[i]))
         {
 #ifdef IEEE_754
             if (ISNA(x[i]))
@@ -386,7 +386,7 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
             /* real part */
 
 #ifdef IEEE_754
-            if (!FINITE(x[i].r))
+            if (!R_FINITE(x[i].r))
             {
                 if (ISNAN(x[i].r))
                     rnanflag = 1;
@@ -423,7 +423,7 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
             /* we explicitly put the sign in when we print */
 
 #ifdef IEEE_754
-            if (!FINITE(x[i].i))
+            if (!R_FINITE(x[i].i))
             {
                 if (ISNAN(x[i].i))
                     inanflag = 1;

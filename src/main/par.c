@@ -76,26 +76,26 @@ static void naIntCheck(int x, char *s)
 
 static void posRealCheck(double x, char *s)
 {
-    if (!FINITE(x) || x <= 0)
+    if (!R_FINITE(x) || x <= 0)
         par_error(s);
 }
 
 static void nonnegRealCheck(double x, char *s)
 {
-    if (!FINITE(x) || x < 0)
+    if (!R_FINITE(x) || x < 0)
         par_error(s);
 }
 
 static void naRealCheck(double x, char *s)
 {
-    if (!FINITE(x))
+    if (!R_FINITE(x))
         par_error(s);
 }
 
 static void BoundsCheck(double x, double a, double b, char *s)
 {
     /* Check if   a <= x <= b */
-    if (!FINITE(x) || (FINITE(a) && x < a) || (FINITE(b) && x > b))
+    if (!R_FINITE(x) || (R_FINITE(a) && x < a) || (R_FINITE(b) && x > b))
         par_error(s);
 }
 
@@ -702,9 +702,9 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         lengthCheck(what, value, 1);
         x = asReal(value);
         dd->dp.tck = dd->gp.tck = x;
-        if (FINITE(x))
+        if (R_FINITE(x))
             dd->dp.tcl = dd->gp.tcl = NA_REAL;
-        else if (!FINITE(dd->dp.tcl))
+        else if (!R_FINITE(dd->dp.tcl))
             dd->dp.tcl = dd->gp.tcl = -0.5;
     }
     else if (streql(what, "tcl"))
@@ -712,9 +712,9 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         lengthCheck(what, value, 1);
         x = asReal(value);
         dd->dp.tcl = dd->gp.tcl = x;
-        if (FINITE(x))
+        if (R_FINITE(x))
             dd->dp.tck = dd->gp.tck = NA_REAL;
-        else if (!FINITE(dd->dp.tck))
+        else if (!R_FINITE(dd->dp.tck))
             dd->dp.tck = dd->gp.tck = 0.02; /* S Default */
     }
     else if (streql(what, "tmag"))

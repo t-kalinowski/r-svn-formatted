@@ -130,7 +130,7 @@ char *EncodeReal(double x, int w, int d, int e)
     /* IEEE allows signed zeros (yuck!) */
     if (x == 0.0)
         x = 0.0;
-    if (!FINITE(x))
+    if (!R_FINITE(x))
     {
 #ifdef IEEE_754
         if (ISNA(x))

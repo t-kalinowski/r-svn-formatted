@@ -96,7 +96,7 @@ static char HexDigits[] = "0123456789ABCDEF";
 
 double Log10(double x)
 {
-    return (FINITE(x) && x > 0.0) ? log10(x) : NA_REAL;
+    return (R_FINITE(x) && x > 0.0) ? log10(x) : NA_REAL;
 }
 
 /* In interpreted R, units are as follows:
@@ -1954,12 +1954,12 @@ void GScale(double min, double max, int axis, DevDesc *dd)
         max = log10(max);
     }
 
-    if (!FINITE(min) || !FINITE(max))
+    if (!R_FINITE(min) || !R_FINITE(max))
     {
         warning("Nonfinite axis limits [GScale(%g,%g,%d, .); log=%d]", min, max, axis, log);
-        if (!FINITE(min))
+        if (!R_FINITE(min))
             min = -.45 * DBL_MAX;
-        if (!FINITE(max))
+        if (!R_FINITE(max))
             max = +.45 * DBL_MAX;
         /* max - min is now finite */
     }
@@ -3245,14 +3245,14 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
         /* Fixup for string centering. */
         /* Higher functions send in NA_REAL */
         /* when true text centering is desired */
-        if (!FINITE(yc))
+        if (!R_FINITE(yc))
         {
             yadj = (dd->gp.yCharOffset - 0.5);
             yc = 0.5;
         }
         else
             yadj = 0;
-        if (!FINITE(xc))
+        if (!R_FINITE(xc))
             xc = 0.5;
         /* We work in NDC coordinates */
         GConvert(&x, &y, coords, NDC, dd);
@@ -3502,7 +3502,7 @@ void GPretty(double *lo, double *up, int *ndiv)
     short i_small;
     if (*ndiv <= 0)
         error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
-    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !FINITE(dx = *up - *lo))
+    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(dx = *up - *lo))
     {
         error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
         return; /*-Wall*/
@@ -3585,7 +3585,7 @@ void GPretty(double *lo, double *up, int *ndiv)
 
     if (*ndiv <= 0)
         error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
-    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !FINITE(*up - *lo))
+    if (*lo == R_PosInf || *up == R_PosInf || *lo == R_NegInf || *up == R_NegInf || !R_FINITE(*up - *lo))
     {
         error("Infinite axis extents [GPretty(%g,%g,%d)]\n", *lo, *up, *ndiv);
         return; /*-Wall*/
@@ -4965,7 +4965,7 @@ unsigned int RGBpar(SEXP x, int i, DevDesc *dd)
     }
     else if (isReal(x))
     {
-        if (!FINITE(REAL(x)[i]))
+        if (!R_FINITE(REAL(x)[i]))
             return NA_INTEGER;
         index = REAL(x)[i] - 1;
         if (index < 0)
@@ -5051,7 +5051,7 @@ unsigned int LTYpar(SEXP value, int index)
     else if (isReal(value))
     {
         code = REAL(value)[index];
-        if (!FINITE(code) || code <= 0)
+        if (!R_FINITE(code) || code <= 0)
             return NA_INTEGER;
         code = (code - 1) % nlinetype;
         return linetype[code].pattern;

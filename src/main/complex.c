@@ -877,7 +877,7 @@ SEXP do_polyroot(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < n; i++)
         {
-            if (!FINITE(COMPLEX(z)[i].r) || !FINITE(COMPLEX(z)[i].i))
+            if (!R_FINITE(COMPLEX(z)[i].r) || !R_FINITE(COMPLEX(z)[i].i))
                 errorcall(call, "invalid polynomial coefficient\n");
             REAL(zr)[degree - i] = COMPLEX(z)[i].r;
             REAL(zi)[degree - i] = COMPLEX(z)[i].i;

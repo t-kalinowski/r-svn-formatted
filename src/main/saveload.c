@@ -124,7 +124,7 @@ static int AsciiInInteger(FILE *fp)
 
 static void AsciiOutReal(FILE *fp, double x)
 {
-    if (!FINITE(x))
+    if (!R_FINITE(x))
     {
         if (ISNAN(x))
             fprintf(fp, "NA");
