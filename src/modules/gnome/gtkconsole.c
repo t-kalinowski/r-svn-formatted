@@ -279,7 +279,8 @@ void gtk_console_enable_input(GtkConsole *object, gchar *prompt, guint prompt_le
     if ((prompt != NULL) && (*prompt != '\0') && (prompt_len != 0))
     {
         gtk_text_set_point(GTK_TEXT(object), gtk_text_get_length(GTK_TEXT(object)));
-        gtk_text_insert(GTK_TEXT(object), NULL, NULL, NULL, prompt, prompt_len);
+
+        gtk_text_insert(GTK_TEXT(object), NULL, NULL, NULL, prompt, prompt_len > 0 ? prompt_len : strlen(prompt));
     }
 
     /* Update input_start_index */
