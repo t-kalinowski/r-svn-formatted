@@ -1,6 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,11 +70,9 @@ double POW_DD(double *ap, double *bp)
     return pow(*ap, *bp);
 }
 
-#define log10e 0.43429448190325182765
-
 double DLOG10(double *x)
 {
-    return log10e * log(*x);
+    return M_LOG10E * log(*x);
 }
 
 /* Complex Arithmetic */
