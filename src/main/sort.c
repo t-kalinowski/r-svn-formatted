@@ -140,7 +140,6 @@ void rsort(double *x, int n)
     } while (h != 1);
 }
 
-#ifdef COMPLEX_DATA
 void csort(complex *x, int n)
 {
     int i, j, h;
@@ -171,7 +170,6 @@ void csort(complex *x, int n)
         }
     } while (h != 1);
 }
-#endif
 
 void ssort(SEXP *x, int n)
 {
@@ -224,11 +222,9 @@ void sortVector(SEXP s)
         case REALSXP:
             rsort(REAL(s), n);
             break;
-#ifdef COMPLEX_DATA
         case CPLXSXP:
             csort(COMPLEX(s), n);
             break;
-#endif
         case STRSXP:
             ssort(STRING(s), n);
             break;
@@ -316,7 +312,6 @@ void rFind(double *x, int n, int k)
     }
 }
 
-#ifdef COMPLEX_DATA
 void cFind(complex *x, int n, int k)
 {
     int L, R, i, j;
@@ -350,7 +345,6 @@ void cFind(complex *x, int n, int k)
             R = j;
     }
 }
-#endif
 
 void sFind(SEXP *x, int n, int k)
 {
@@ -453,11 +447,9 @@ static int equal(int i, int j, SEXP x)
     case REALSXP:
         c = rcmp(REAL(x)[i], REAL(x)[j]);
         break;
-#ifdef COMPLEX_DATA
     case CPLXSXP:
         c = ccmp(COMPLEX(x)[i], COMPLEX(x)[j]);
         break;
-#endif
     case STRSXP:
         c = scmp(STRING(x)[i], STRING(x)[j]);
         break;
@@ -482,11 +474,9 @@ static int greater(int i, int j, SEXP x)
     case REALSXP:
         c = rcmp(REAL(x)[i], REAL(x)[j]);
         break;
-#ifdef COMPLEX_DATA
     case CPLXSXP:
         c = ccmp(COMPLEX(x)[i], COMPLEX(x)[j]);
         break;
-#endif
     case STRSXP:
         c = scmp(STRING(x)[i], STRING(x)[j]);
         break;
@@ -515,11 +505,9 @@ static int listgreater(int i, int j, SEXP key)
         case REALSXP:
             c = rcmp(REAL(x)[i], REAL(x)[j]);
             break;
-#ifdef COMPLEX_DATA
         case CPLXSXP:
             c = ccmp(COMPLEX(x)[i], COMPLEX(x)[j]);
             break;
-#endif
         case STRSXP:
             c = scmp(STRING(x)[i], STRING(x)[j]);
             break;

@@ -201,11 +201,9 @@ static void printList(SEXP s)
             case REALSXP:
                 pbuf = Rsprintf("Numeric,%d", LENGTH(CAR(s)));
                 break;
-#ifdef COMPLEX_DATA
             case CPLXSXP:
                 pbuf = Rsprintf("Complex,%d", LENGTH(CAR(s)));
                 break;
-#endif
             case STRSXP:
                 pbuf = Rsprintf("Character,%d", LENGTH(CAR(s)));
                 break;
@@ -360,9 +358,7 @@ void PrintValueRec(SEXP s)
     case INTSXP:
     case REALSXP:
     case STRSXP:
-#ifdef COMPLEX_DATA
     case CPLXSXP:
-#endif
         PROTECT(t = getAttrib(s, R_DimSymbol));
         if (TYPEOF(t) == INTSXP)
         {
