@@ -1078,13 +1078,19 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
             n = 2 * maxMethodsOffset;
         if (prim_methods)
         {
-            long m = maxMethodsOffset;
+            int i;
 
-            /* NB: Preferring S_realloc over Realloc here, since the
-                   former zeros the added memory. */
-            prim_methods = (prim_methods_t *)S_realloc((char *)prim_methods, n, m, sizeof(prim_methods_t));
-            prim_generics = (SEXP *)S_realloc((char *)prim_generics, n, m, sizeof(SEXP));
-            prim_mlist = (SEXP *)S_realloc((char *)prim_mlist, n, m, sizeof(SEXP));
+            prim_methods = Realloc(prim_methods, n, prim_methods_t);
+            prim_generics = Realloc(prim_generics, n, SEXP);
+            prim_mlist = Realloc(prim_mlist, n, SEXP);
+
+            /* Realloc does not clear the added memory, hence: */
+            for (i = maxMethodsOffset; i < n; i++)
+            {
+                prim_methods[i] = NO_METHODS;
+                prim_generics[i] = NULL;
+                prim_mlist[i] = NULL;
+            }
         }
         else
         {
