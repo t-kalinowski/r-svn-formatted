@@ -763,7 +763,7 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
 {
     double disc;
     double a, b;
-    int i, one = 1;
+    int i, one = 1, firstback = 1;
     double t1, t2, t3, almbda, tlmbda, rmnlmb;
     double scl, rln, sln, slp;
     double temp1, temp2;
@@ -801,9 +801,7 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
     while (*iretcd > 1)
     {
         for (i = 0; i < n; ++i)
-        {
             xpls[i] = x[i] + almbda * p[i];
-        }
         (*fcn)(n, xpls, fpls, state);
         if (*fpls <= f + slp * 1e-4 * almbda)
         {
@@ -820,9 +818,10 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
         {
             /* solution not (yet) found */
 
+            /* First find a point with a finite value */
             if (almbda < rmnlmb)
             {
-                /* 	no satisfactory xpls found sufficiently distinct from x */
+                /* no satisfactory xpls found sufficiently distinct from x */
 
                 *iretcd = 1;
                 return;
@@ -830,46 +829,55 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
             else
             {
                 /* 	calculate new lambda */
-                if (almbda == 1.0)
+                /* modifications by BDR 2000/01/05 to cover non-finite values */
+                if (*fpls == DBL_MAX)
                 {
-                    /* 	first backtrack: quadratic fit */
-
-                    tlmbda = -slp / ((*fpls - f - slp) * 2.);
+                    almbda *= 0.1;
+                    firstback = 1;
                 }
                 else
                 {
-                    /* 	all subsequent backtracks: cubic fit */
-                    t1 = *fpls - f - almbda * slp;
-                    t2 = pfpls - f - plmbda * slp;
-                    t3 = 1. / (almbda - plmbda);
-                    a = t3 * (t1 / (almbda * almbda) - t2 / (plmbda * plmbda));
-                    b = t3 * (t2 * almbda / (plmbda * plmbda) - t1 * plmbda / (almbda * almbda));
-                    disc = b * b - a * 3. * slp;
-                    if (disc > b * b)
+                    if (firstback)
                     {
-                        /* 	only one positive critical point, must be minimum */
-
-                        tlmbda = (-b + ((a < 0) ? -sqrt(disc) : sqrt(disc))) / (a * 3.);
+                        /* 	first backtrack: quadratic fit */
+                        tlmbda = -almbda * slp / ((*fpls - f - slp) * 2.);
+                        firstback = 0;
                     }
                     else
                     {
-                        /* 	both critical points positive, first is minimum */
-                        tlmbda = (-b + ((a < 0) ? sqrt(disc) : -sqrt(disc))) / (a * 3.);
+                        /* 	all subsequent backtracks: cubic fit */
+                        t1 = *fpls - f - almbda * slp;
+                        t2 = pfpls - f - plmbda * slp;
+                        t3 = 1. / (almbda - plmbda);
+                        a = t3 * (t1 / (almbda * almbda) - t2 / (plmbda * plmbda));
+                        b = t3 * (t2 * almbda / (plmbda * plmbda) - t1 * plmbda / (almbda * almbda));
+                        disc = b * b - a * 3. * slp;
+                        if (disc > b * b)
+                        {
+                            /* 	only one positive critical point, must be minimum */
+
+                            tlmbda = (-b + ((a < 0) ? -sqrt(disc) : sqrt(disc))) / (a * 3.);
+                        }
+                        else
+                        {
+                            /* 	both critical points positive, first is minimum */
+                            tlmbda = (-b + ((a < 0) ? sqrt(disc) : -sqrt(disc))) / (a * 3.);
+                        }
+                        if (tlmbda > almbda * .5)
+                        {
+                            tlmbda = almbda * .5;
+                        }
                     }
-                    if (tlmbda > almbda * .5)
+                    plmbda = almbda;
+                    pfpls = *fpls;
+                    if (tlmbda < almbda * .1)
                     {
-                        tlmbda = almbda * .5;
+                        almbda *= .1;
                     }
-                }
-                plmbda = almbda;
-                pfpls = *fpls;
-                if (tlmbda < almbda * .1)
-                {
-                    almbda *= .1;
-                }
-                else
-                {
-                    almbda = tlmbda;
+                    else
+                    {
+                        almbda = tlmbda;
+                    }
                 }
             }
         }
