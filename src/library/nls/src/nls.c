@@ -1,5 +1,5 @@
 /*
- *  $Id: nls.c,v 1.10 2001/02/27 10:41:35 pd Exp $
+ *  $Id: nls.c,v 1.11 2001/05/10 15:19:26 maechler Exp $
  *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
@@ -72,9 +72,9 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     doTrace = asLogical(doTraceArg);
 
     if (!isNewList(control))
-        error("control must be a list\n");
+        error("control must be a list");
     if (!isNewList(m))
-        error("m must be a list\n");
+        error("m must be a list");
 
     PROTECT(tmp = getAttrib(control, R_NamesSymbol));
 
@@ -177,7 +177,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
         if (fac < minFac)
         {
             UNPROTECT(9);
-            error("step factor reduced below minimum");
+            error("step factor %g reduced below `minFactor' of %g", fac, minFac);
         }
         if (doTrace)
             eval(trace, R_GlobalEnv);
@@ -186,7 +186,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     if (!hasConverged)
     {
         UNPROTECT(9);
-        error("maximum number of iterations exceeded");
+        error("number of iterations exceeded maximum of %g", maxIter);
     }
 
     UNPROTECT(9);
