@@ -707,7 +707,7 @@ static void Mac_Polyline(int n, double *x, double *y, int col, double gamma, int
     SetPort(port);
 
     for (i = 1; i < n; i++)
-        Mac_Line(x[i - 1], y[i - 1], x[i], y[i], col, lty, lwd, dd);
+        Mac_Line(x[i - 1], y[i - 1], x[i], y[i], col, gamma, lty, lwd, dd);
 
     SetPort(savedPort);
 }
@@ -778,8 +778,8 @@ static void Mac_Polygon(int n, double *x, double *y, int col, int fill, double g
     MoveTo(startXX, startYY);
 
     for (i = 0; i < n - 1; i++)
-        Mac_Line(x[i], y[i], x[i + 1], y[i + 1], col, lty, lwd, dd);
-    Mac_Line(x[n - 1], y[n - 1], x[0], y[0], col, lty, lwd, dd);
+        Mac_Line(x[i], y[i], x[i + 1], y[i + 1], col, gamma, lty, lwd, dd);
+    Mac_Line(x[n - 1], y[n - 1], x[0], y[0], col, gamma, lty, lwd, dd);
 
     KillPoly(myPolygon);
     SetPort(savedPort);
