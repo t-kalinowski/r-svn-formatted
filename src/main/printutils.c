@@ -475,7 +475,7 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                 else
                 {
 #ifndef Win32
-                    if (wc > 0xfff)
+                    if (wc > 0xffff)
                         snprintf(buf, 11, "\\U%08x", (unsigned int)wc);
                     else
 #endif
