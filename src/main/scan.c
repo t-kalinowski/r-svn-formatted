@@ -24,11 +24,12 @@
 #define SCAN_BLOCKSIZE 1000
 /* The size of the console buffer */
 #define CONSOLE_BUFFER_SIZE 1024
+#define CONSOLE_PROMPT_SIZE 32
 
 static char ConsoleBuf[CONSOLE_BUFFER_SIZE];
 static char *ConsoleBufp;
 static int ConsoleBufCnt;
-static char ConsolePrompt[32];
+static char ConsolePrompt[CONSOLE_PROMPT_SIZE];
 
 #ifdef NOT_used
 static void InitConsoleGetchar()
@@ -308,6 +309,8 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
     }
     if (!quiet)
         REprintf("Read %d items\n", n);
+    if (ttyflag)
+        ConsolePrompt[0] = '\0';
 
     if (n == 0)
     {
@@ -461,6 +464,8 @@ done:
     }
     if (!quiet)
         REprintf("Read %d lines\n", n);
+    if (ttyflag)
+        ConsolePrompt[0] = '\0';
 
     for (i = 0; i < nc; i++)
     {
@@ -834,9 +839,19 @@ SEXP do_readln(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int c;
     char buffer[MAXELTSIZE], *bufp = buffer;
-    SEXP ans;
+    SEXP ans, prompt;
 
     checkArity(op, args);
+
+    prompt = CAR(args);
+    if (prompt == R_NilValue)
+        PROTECT(prompt);
+    else
+    {
+        PROTECT(prompt = coerceVector(prompt, STRSXP));
+        if (length(prompt) > 0)
+            strncpy(ConsolePrompt, CHAR(*STRING(prompt)), CONSOLE_PROMPT_SIZE - 1);
+    }
 
     /* skip white space */
     while ((c = ConsoleGetchar()) == ' ' || c == '\t')
@@ -855,9 +870,11 @@ SEXP do_readln(SEXP call, SEXP op, SEXP args, SEXP rho)
     while (isspace(*--bufp))
         ;
     *++bufp = '\0';
+    ConsolePrompt[0] = '\0';
+
     PROTECT(ans = allocVector(STRSXP, 1));
     STRING(ans)[0] = mkChar(buffer);
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
@@ -882,6 +899,8 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
         *bufp++ = c;
     }
     *bufp++ = '\0';
+    ConsolePrompt[0] = '\0';
+
     bufp = buffer;
     while (isspace(*bufp))
         bufp++;
