@@ -2,6 +2,7 @@
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
  *  Copyright (C) 2000-2001 the R Development Core Team
+ *  Copyright (C) 2004	    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +20,7 @@
  *
  *  SYNOPSIS
  *
- *    #include "Rnorm.h"
+ *    #include <Rmath.h>
  *    void dpsifn(double x, int n, int kode, int m,
  *		  double *ans, int *nz, int *ierr)
  *    double digamma(double x);
@@ -119,8 +120,9 @@
  *
  *  AUTHOR
  *
- *    Amos, D. E.  (Fortran)
- *    Ross Ihaka   (C Translation)
+ *    Amos, D. E.  	(Fortran)
+ *    Ross Ihaka   	(C Translation)
+ *    Martin Maechler   (x < 0, and psigamma())
  *
  *  REFERENCES
  *
@@ -138,7 +140,9 @@
 
 #include "nmath.h"
 
-static void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)
+#define n_max (100)
+
+void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)
 {
     const double bvalues[] = {
         /* Bernoulli Numbers */
@@ -149,33 +153,84 @@ static void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *
         6.01580873900642368e+08, -1.51163157670921569e+10, 4.29614643061166667e+11, -1.37116552050883328e+13,
         4.88332318973593167e+14, -1.92965793419400681e+16};
     const double *b = (double *)&bvalues - 1; /* ==> b[1] = bvalues[0], etc */
-    const int nmax = 100;
+    const int nmax = n_max;
 
     int i, j, k, mm, mx, nn, np, nx, fn;
     double arg, den, elim, eps, fln, fx, rln, rxsq, r1m4, r1m5, s, slope, t, ta, tk, tol, tols, tss, tst, tt, t1, t2,
         wdtol, xdmln, xdmy, xinc, xln, xm, xmin, xq, yint;
-    double trm[23], trmr[101];
+    double trm[23], trmr[n_max + 1];
 
     *ierr = 0;
-    if (x <= 0.0 || n < 0 || kode < 1 || kode > 2 || m < 1)
+    if (n < 0 || kode < 1 || kode > 2 || m < 1)
     {
         *ierr = 1;
         return;
     }
+    if (x <= 0.)
+    {
+        /* use	Abramowitz & Stegun 6.4.7 "Reflection Formula"
+         *	psi(k, x) = (-1)^k psi(k, 1-x)	-  pi^{n+1} (d/dx)^n cot(x)
+         */
+        if (x == (long)x)
+        {
+            /* non-positive integer : +Inf or NaN depends on n */
+            for (j = 0; j < m; j++) /* k = j + n : */
+                ans[j] = ((j + n) % 2) ? ML_POSINF : ML_NAN;
+            return;
+        }
+        dpsifn(1. - x, n, /*kode = */ 1, m, ans, nz, ierr);
+        /* ans[j] == (-1)^(k+1) / gamma(k+1) * psi(k, 1 - x)
+         *	     for j = 0:(m-1) ,	k = n + j
+         */
 
-    /* fortran adjustment */
-    ans--;
+        /* Cheat for now: only work for	 m = 1, n in {0,1,2,3} : */
+        if (m > 1 || n > 3)
+        { /* doesn't happen for digamma() .. pentagamma() */
+            /* not yet implemented */
+            *ierr = 4;
+            return;
+        }
+        x *= M_PI; /* pi * x */
+        if (n == 0)
+            tt = cos(x) / sin(x);
+        else if (n == 1)
+            tt = -1 / pow(sin(x), 2);
+        else if (n == 2)
+            tt = 2 * cos(x) / pow(sin(x), 3);
+        else if (n == 3)
+            tt = -2 * (2 * pow(cos(x), 2) + 1) / pow(sin(x), 4);
+        else /* can not happen! */
+            tt = ML_NAN;
+        /* end cheat */
+
+        s = (n % 2) ? -1. : 1.; /* s = (-1)^n */
+        /* t := pi^(n+1) * d_n(x) / gamma(n+1)	, where
+         *		   d_n(x) := (d/dx)^n cot(x)*/
+        t1 = t2 = s = 1.;
+        for (k = 0, j = k - n; j < m; k++, j++, s = -s)
+        {
+            /* k == n+j , s = (-1)^k */
+            t1 *= M_PI; /* t1 == pi^(k+1) */
+            if (k >= 2)
+                t2 *= k; /* t2 == k! == gamma(k+1) */
+            if (j >= 0)  /* by cheat above,  tt === d_k(x) */
+                ans[j] = s * (ans[j] + t1 / t2 * tt);
+        }
+        if (n == 0 && kode == 2)
+            ans[0] += xln;
+        return;
+    } /* x <= 0 */
 
     *nz = 0;
     mm = m;
-    nx = imin2(-i1mach(15), i1mach(16));
+    nx = imin2(-i1mach(15), i1mach(16)); /* = 1021 */
     r1m5 = d1mach(5);
     r1m4 = d1mach(4) * 0.5;
-    wdtol = fmax2(r1m4, 0.5e-18);
+    wdtol = fmax2(r1m4, 0.5e-18); /* 1.11e-16 */
 
     /* elim = approximate exponential over and underflow limit */
 
-    elim = 2.302 * (nx * r1m5 - 3.0);
+    elim = 2.302 * (nx * r1m5 - 3.0); /* = 700.6174... */
     xln = log(x);
     for (;;)
     {
@@ -198,14 +253,14 @@ static void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *
         {
             if (x < wdtol)
             {
-                ans[1] = pow(x, -n - 1.0);
+                ans[0] = pow(x, -n - 1.0);
                 if (mm != 1)
                 {
-                    for (i = 2, k = 1; i <= mm; i++, k++)
-                        ans[k + 1] = ans[k] / x;
+                    for (k = 1; k < mm; k++)
+                        ans[k] = ans[k - 1] / x;
                 }
                 if (n == 0 && kode == 2)
-                    ans[1] += xln;
+                    ans[0] += xln;
                 return;
             }
 
@@ -254,8 +309,8 @@ static void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *
                 goto L10;
         }
         nz++;
-        ans[mm] = 0.0;
         mm--;
+        ans[mm] = 0.;
         if (mm == 0)
             return;
     }
@@ -271,17 +326,17 @@ static void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *
         trm[i] = pow(den, (double)-np);
         s += trm[i];
     }
-    ans[1] = s;
+    ans[0] = s;
     if (n == 0 && kode == 2)
-        ans[1] = s + xln;
+        ans[0] = s + xln;
 
     if (mm != 1)
     { /* generate higher derivatives, j > n */
 
         tol = wdtol / 5.0;
-        for (j = 2; j <= mm; j++)
+        for (j = 1; j < mm; j++)
         {
-            t = t / x;
+            t /= x;
             s = t;
             tols = t * tol;
             den = x;
@@ -353,7 +408,7 @@ L10:
             }
         }
     }
-    ans[mm] = s;
+    ans[mm - 1] = s;
     if (fn == 0)
         goto L30;
 
@@ -395,8 +450,7 @@ L10:
                 fx = x + xm;
             }
         }
-        mx = mm - j + 1;
-        ans[mx] = s;
+        ans[mm - j] = s;
         if (fn == 0)
             goto L30;
     }
@@ -408,13 +462,41 @@ L20:
 
 L30:
     if (kode != 2)
-        ans[1] = s - xdmln;
+        ans[0] = s - xdmln;
     else if (xdmy != x)
     {
         xq = xdmy / x;
-        ans[1] = s - log(xq);
+        ans[0] = s - log(xq);
     }
     return;
+} /* dpsifn() */
+
+double psigamma(double x, double deriv)
+{
+    /* n-th derivative of psi(x);  e.g., psigamma(x,0) == digamma(x) */
+    double ans;
+    int nz, ierr, k, n;
+
+    if (ISNAN(x))
+        return x;
+    deriv = floor(deriv + 0.5);
+    n = (int)deriv;
+    if (n > n_max)
+    {
+        MATHLIB_WARNING2("deriv = %d > %d (= n_max)", n, n_max);
+        return ML_NAN;
+    }
+    dpsifn(x, n, 1, 1, &ans, &nz, &ierr);
+    if (ierr != 0)
+    {
+        errno = EDOM;
+        return ML_NAN;
+    }
+    /* ans ==  A := (-1)^(n+1) / gamma(n+1) * psi(n, x) */
+    ans = -ans; /* = (-1)^(0+1) * gamma(0+1) * A */
+    for (k = 1; k <= n; k++)
+        ans *= (-k); /* = (-1)^(k+1) * gamma(k+1) * A */
+    return ans;      /* = psi(n, x) */
 }
 
 double digamma(double x)
@@ -423,11 +505,12 @@ double digamma(double x)
     int nz, ierr;
     if (ISNAN(x))
         return x;
+
     dpsifn(x, 0, 1, 1, &ans, &nz, &ierr);
     if (ierr != 0)
     {
         errno = EDOM;
-        return -DBL_MAX;
+        return ML_NAN;
     }
     return -ans;
 }
@@ -442,7 +525,7 @@ double trigamma(double x)
     if (ierr != 0)
     {
         errno = EDOM;
-        return -DBL_MAX;
+        return ML_NAN;
     }
     return ans;
 }
@@ -457,7 +540,7 @@ double tetragamma(double x)
     if (ierr != 0)
     {
         errno = EDOM;
-        return -DBL_MAX;
+        return ML_NAN;
     }
     return -2.0 * ans;
 }
@@ -472,7 +555,7 @@ double pentagamma(double x)
     if (ierr != 0)
     {
         errno = EDOM;
-        return -DBL_MAX;
+        return ML_NAN;
     }
     return 6.0 * ans;
 }

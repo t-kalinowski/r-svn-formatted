@@ -1394,6 +1394,8 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math2(args, bessel_j);
     case 25:
         return Math2(args, bessel_y);
+    case 26:
+        return Math2(args, psigamma);
 
     default:
         errorcall(call, "unimplemented real function of 2 numeric arg.s");
