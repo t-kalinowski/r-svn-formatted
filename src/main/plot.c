@@ -1972,6 +1972,7 @@ static double ComputeAtValue(double at, double adj, int side, int outer, DevDesc
          col = NA,
          font = NA,
          ...) */
+
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP text, side, line, outer, at, adj, cex, col, font;
@@ -2015,7 +2016,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Arg4 : outer= */
     /* outer == NA => outer <- 0 */
-    PROTECT(outer = coerceVector(CAR(args), REALSXP));
+    PROTECT(outer = coerceVector(CAR(args), INTSXP));
     nouter = length(outer);
     if (nouter <= 0)
         errorcall(call, "zero length \"outer\" specified\n");
@@ -2074,11 +2075,13 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     dirtyplot = 0;
     gpnewsave = dd->gp.new;
     dpnewsave = dd->dp.new;
+    cexsave = dd->gp.cex;
 
     /* override par("xpd") and force clipping to figure region */
     /* NOTE: don't override to _reduce_ clipping region */
     if (dd->gp.xpd < 1)
         dd->gp.xpd = 1;
+
     if (outer)
     {
         gpnewsave = dd->gp.new;
