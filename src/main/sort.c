@@ -692,19 +692,6 @@ static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean de
             indx[j] = itmp;                                                                                            \
         }
 
-#define insertion_with_index                                                                                           \
-    for (i = lo; i <= hi; i++)                                                                                         \
-    {                                                                                                                  \
-        itmp = indx[i];                                                                                                \
-        j = i;                                                                                                         \
-        while (j >= 1 && less2(indx[j - 1], itmp))                                                                     \
-        {                                                                                                              \
-            indx[j] = indx[j - 1];                                                                                     \
-            j--;                                                                                                       \
-        }                                                                                                              \
-        indx[j] = itmp;                                                                                                \
-    }
-
 static void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasing)
 {
     int c, i, j, h, t, lo = 0, hi = n - 1;
@@ -753,45 +740,38 @@ static void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean d
             else lo += numna;
         }
 
-    /* Shell sort isn't stable, but it proves to be somewhat faster
-       to run a final insertion sort to re-order runs of ties when
-       comparison is cheap.
-    */
+    /* Shell sort isn't stable, so add test on index */
     for (t = 0; incs[t] > hi - lo + 1; t++)
         ;
     switch (TYPEOF(key))
     {
     case LGLSXP:
     case INTSXP:
-#define less2(a, b) (ix[a] == ix[b] && a > b)
         if (decreasing)
         {
-#define less(a, b) (ix[a] < ix[b])
-            sort2_with_index insertion_with_index
+#define less(a, b) (ix[a] < ix[b] || (ix[a] == ix[b] && a > b))
+            sort2_with_index
 #undef less
         }
         else
         {
-#define less(a, b) (ix[a] > ix[b])
-            sort2_with_index insertion_with_index
+#define less(a, b) (ix[a] > ix[b] || (ix[a] == ix[b] && a > b))
+            sort2_with_index
 #undef less
-#undef less2
         }
         break;
     case REALSXP:
-#define less2(a, b) (x[a] == x[b] && a > b)
         if (decreasing)
         {
-#define less(a, b) (x[a] < x[b])
-            sort2_with_index insertion_with_index
+#define less(a, b) (x[a] < x[b] || (x[a] == x[b] && a > b))
+            sort2_with_index
 #undef less
         }
         else
         {
-#define less(a, b) (x[a] > x[b])
-            sort2_with_index insertion_with_index
+#define less(a, b) (x[a] > x[b] || (x[a] == x[b] && a > b))
+            sort2_with_index
 #undef less
-#undef less2
         }
         break;
     case STRSXP:
@@ -898,12 +878,14 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rank;
 }
 
+#include <R_ext/RS.h>
+
 SEXP do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, ans;
     Rboolean nalast, decreasing;
-    unsigned int cnts[1002];
-    int i, n, tmp, xmax = 0, off, napos;
+    unsigned int *cnts;
+    int i, n, tmp, xmax = NA_INTEGER, xmin = NA_INTEGER, off, napos;
 
     checkArity(op, args);
 
@@ -924,12 +906,25 @@ SEXP do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
             continue;
         if (tmp < 0)
             errorcall(call, "negative value in x");
-        if (tmp > xmax)
+        if (xmax == NA_INTEGER || tmp > xmax)
             xmax = tmp;
+        if (xmin == NA_INTEGER || tmp < xmin)
+            xmin = tmp;
     }
-    if (xmax > 1000)
-        errorcall(call, "too large values in x");
+    if (xmin == NA_INTEGER)
+    { /* all NAs, so nothing to do */
+        for (i = 0; i < n; i++)
+            INTEGER(ans)[i] = i + 1;
+        UNPROTECT(1);
+        return ans;
+    }
+
+    xmax -= xmin;
+    if (xmax > 100000)
+        errorcall(call, "too large a range of values in x");
     napos = off ? 0 : xmax + 1;
+    off -= xmin;
+    cnts = Calloc(xmax + 1, unsigned int);
 
     for (i = 0; i <= xmax + 1; i++)
         cnts[i] = 0;
@@ -956,6 +951,7 @@ SEXP do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
             INTEGER(ans)[--cnts[(tmp == NA_INTEGER) ? napos : off + tmp]] = i + 1;
         }
 
+    Free(cnts);
     UNPROTECT(1);
     return ans;
 }
