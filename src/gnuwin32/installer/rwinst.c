@@ -20,7 +20,7 @@
 
 #include "graphapp.h"
 #include "ga.h"
-#include "Version.h"
+#include "RVersion.h"
 #include <windows.h>
 #include <string.h>
 
@@ -771,11 +771,12 @@ void page3()
         delobj(lres3);
         strcat(lab, "base files . . . ");
         lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(dest1, dest);
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
         strcat(str, "b.zip");
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -790,11 +791,12 @@ void page3()
         delobj(lres3);
         strcat(lab, "text help . . .");
         lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(dest1, dest);
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
         strcat(str, "h.zip");
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -809,11 +811,12 @@ void page3()
         delobj(lres3);
         strcat(lab, "HTML help . . .");
         lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(dest1, dest);
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
         strcat(str, "w.zip");
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -828,11 +831,12 @@ void page3()
         delobj(lres3);
         strcat(lab, "latex files . . .");
         lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(dest1, dest);
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
         strcat(str, "l.zip");
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -847,11 +851,12 @@ void page3()
         delobj(lres3);
         strcat(lab, "winhelp . . .");
         lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+        strcpy(dest1, dest);
         strcpy(str, src);
         strcat(str, "/");
         strcat(str, Rver);
         strcat(str, "wh.zip");
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (!rc)
         {
             strcpy(lab, lab2);
@@ -871,9 +876,7 @@ void page3()
         strcat(str, Rver);
         strcat(str, "sp.zip");
         strcpy(dest1, dest);
-        strcat(dest1, "/");
-        strcat(dest1, Rver);
-        rc = do_unzip(str, dest, 0, NULL, 0, NULL, over);
+        rc = do_unzip(str, dest1, 0, NULL, 0, NULL, over);
         if (rc)
         {
             strcpy(lab, lab2);
