@@ -4996,7 +4996,6 @@ const char *const _occidental_hershey_glyphs[NUM_OCCIDENTAL_HERSHEY_GLYPHS] = {
     /* empty Kanji glyph (space) [4399] */
     "D_",
 };
-
 #ifndef NO_KANJI
 const char *const _oriental_hershey_glyphs[NUM_ORIENTAL_HERSHEY_GLYPHS] = {
     /******** Oriental Hershey Glyphs 0 to 99 ********/
