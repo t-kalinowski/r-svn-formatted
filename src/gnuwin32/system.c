@@ -861,6 +861,7 @@ int cmdlineoptions(int ac, char **av)
             else if (!strcmp(*av, "--debug"))
             {
                 Rp->DebugMenuitem = TRUE;
+                breaktodebugger();
             }
             else if (!strcmp(*av, "--args"))
             {
