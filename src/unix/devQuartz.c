@@ -343,6 +343,7 @@ typedef struct
     int fontsize;  /* Size in points */
     int usefixed;
     int color; /* color */
+    int bg;    /* bg color */
     int fill;  /* fill color */
     WindowPtr window;
     int lineType;
@@ -364,16 +365,16 @@ static const EventTypeSpec QuartzEvents[] = {{kEventClassWindow, kEventWindowClo
                                              {kEventClassWindow, kEventWindowBoundsChanged}};
 
 Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
-                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos);
+                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg);
 
 Rboolean QuartzDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, char *family,
-                            Rboolean antialias, Rboolean autorefresh, int quartzpos);
+                            Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg);
 
 OSStatus SetCGContext(QuartzDesc *xd);
 
 /* Device primitives */
 
-static Rboolean Quartz_Open(NewDevDesc *, QuartzDesc *, char *, double, double);
+static Rboolean Quartz_Open(NewDevDesc *, QuartzDesc *, char *, double, double, int);
 static void Quartz_Close(NewDevDesc *dd);
 static void Quartz_Activate(NewDevDesc *dd);
 static void Quartz_Deactivate(NewDevDesc *dd);
@@ -476,7 +477,7 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
         if (!QuartzDeviceDriver((DevDesc *)dev, display, width, height, ps, fontfamily, antialias, autorefresh,
-                                quartzpos))
+                                quartzpos, 0xffffffff))
         {
             free(dev);
             errorcall(call, "unable to start device Quartz\n");
@@ -492,14 +493,14 @@ SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 Rboolean QuartzDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, char *family,
-                            Rboolean antialias, Rboolean autorefresh, int quartzpos)
+                            Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg)
 {
     return innerQuartzDeviceDriver((NewDevDesc *)dd, display, width, height, pointsize, family, antialias, autorefresh,
-                                   quartzpos);
+                                   quartzpos, bg);
 }
 
 Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
-                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos)
+                                 char *family, Rboolean antialias, Rboolean autorefresh, int quartzpos, int bg)
 {
     QuartzDesc *xd;
     int ps;
@@ -511,7 +512,7 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
 
     xd->QuartzPos = quartzpos; /* by default it is Top-Right */
 
-    if (!Quartz_Open(dd, xd, display, width, height))
+    if (!Quartz_Open(dd, xd, display, width, height, bg))
         return (FALSE);
 
     ps = pointsize;
@@ -645,7 +646,7 @@ OSStatus SetCGContext(QuartzDesc *xd)
     return err;
 }
 
-static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wid, double hgt)
+static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wid, double hgt, int bg)
 {
 
     OSStatus err;
@@ -660,7 +661,8 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     xd->window = NULL;
     xd->context = NULL;
     xd->auxcontext = NULL;
-    dd->startfill = R_RGB(255, 255, 255);
+
+    xd->bg = dd->startfill = bg; /* 0xffffffff; transparent */
     dd->startcol = R_RGB(0, 0, 0);
     /* Create a new window with the specified size */
 

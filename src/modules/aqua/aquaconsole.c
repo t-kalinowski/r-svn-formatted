@@ -4052,7 +4052,7 @@ static void loadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundl
 
     if (baseURL == NULL)
     {
-        fprintf(stderr, "\n CantCopyURL");
+        REprintf("\n CantCopyURL");
         goto CantCopyURL;
     }
 
@@ -4060,7 +4060,7 @@ static void loadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundl
         CFURLCreateCopyAppendingPathComponent(kCFAllocatorSystemDefault, baseURL, CFSTR("RCocoaBundle.bundle"), false);
     if (CocoabundleURL == NULL)
     {
-        fprintf(stderr, "\n CantCreateCocoaBundleURL");
+        REprintf("\n CantCreateCocoaBundleURL");
         goto CantCreateBundleURL;
     }
     *bundlePtr = CFBundleCreate(NULL, CocoabundleURL);
@@ -4077,23 +4077,21 @@ static void loadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundl
         cocoaProcessEvents = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("processEvents"));
 
         if (!cocoaInitializeBundle)
-            fprintf(stderr,
-                    "Cocoa bundle found, but initializeBundle function is not present. The bundle won't be used.\n");
+            REprintf("Cocoa bundle found, but initializeBundle function is not present. The bundle won't be used.\n");
         else
             cocoaFeatures = (*cocoaInitializeBundle)(userInput);
 
         /* we perform sanity checks for each feature set to prevent segfaults due to undefined functions */
         if (((cocoaFeatures & cocoa_basic) > 0) && ((!cocoaWriteConsole) || (!cocoaWritePrompt)))
         {
-            fprintf(
-                stderr,
+            REprintf(
                 "Cocoa bundle advertizes basic features, but at least one feature was not found! Disabling bundle.\n");
             cocoaFeatures = 0;
         }
         if (((cocoaFeatures & cocoa_loop) > 0) && ((!cocoaProcessEvents)))
         {
-            fprintf(stderr, "Cocoa bundle advertizes event loop features, but at least one feature was not found! "
-                            "Disabling bundle.\n");
+            REprintf("Cocoa bundle advertizes event loop features, but at least one feature was not found! Disabling "
+                     "bundle.\n");
             cocoaFeatures = 0;
         }
     }
