@@ -694,6 +694,9 @@ const static struct
                  {"expression", EXPRSXP},
                  {"list", VECSXP},
                  {"externalptr", EXTPTRSXP},
+#ifdef BYTECODE
+                 {"bytecode", BCODESXP},
+#endif
                  {"weakref", WEAKREFSXP},
                  /* aliases : */
                  {"numeric", REALSXP},
