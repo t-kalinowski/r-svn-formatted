@@ -172,13 +172,13 @@ static double chi(double x, double a)
    data points and the residuals from all the data points.
  */
 void lqs_fitlots(double *x, double *y, int *n, int *p, int *qn, int *lts, int *adj, int *sample, int *nwhich,
-                 int *ntrials, double *crit, int *sing, int *bestone, double *bestcoef, int *pk0, double *beta)
+                 int *ntrials, double *crit, int *sing, int *bestone, double *bestcoef, double *pk0, double *beta)
 {
     int nnew = *nwhich, pp = *p;
-    int i, iter, j, k, k0 = *pk0, nn = *n, this, trial;
+    int i, iter, j, k, nn = *n, this, trial;
     int rank, info, n100 = 100;
     int firsttrial = 1;
-    double a = 0.0, tol = 1.0e-7, sum, thiscrit, best = BIG, target, old, new, dummy;
+    double a = 0.0, tol = 1.0e-7, sum, thiscrit, best = BIG, target, old, new, dummy, k0 = *pk0;
 
     lqs_setup(n, p, nwhich);
 
