@@ -562,7 +562,7 @@ static void RFontInit()
             strcat(oops, " will be ignored.");
             R_ShowMessage(oops);
             for (i = 0; i < fontnum; i++)
-                free(fontname);
+                free(fontname[i]);
             RStandardFonts();
             notdone = 0;
         }
@@ -2649,11 +2649,6 @@ void UnLoad_Rbitmap_Dll()
     RbitmapAlreadyLoaded = 0;
 }
 
-static unsigned long privategetpixel(void *d, int i, int j)
-{
-    return ggetpixel((bitmap)d, pt(j, i));
-}
-
 static int png_rows = 0;
 
 static unsigned long privategetpixel2(void *d, int i, int j)
@@ -2674,34 +2669,21 @@ static void SaveAsBitmap(NewDevDesc *dd)
     gsetcliprect(xd->gawin, r2 = getrect(xd->gawin));
     if (xd->fp)
     {
-        if (getdepth(xd->gawin) > 8)
+        getbitmapdata2(xd->gawin, &data);
+        if (data)
         {
-            getbitmapdata2(xd->gawin, &data);
-            if (data)
-            {
-                png_rows = r2.width;
-                if (xd->kind == PNG)
-                    R_SaveAsPng(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->fp,
-                                R_OPAQUE(xd->bg) ? 0 : xd->pngtrans);
-                else if (xd->kind == JPEG)
-                    R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->quality, xd->fp);
-                else
-                    R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->fp);
-                free(data);
-            }
-            else
-                warning("processing of the plot ran out of memory");
-        }
-        else
-        {
+            png_rows = r2.width;
             if (xd->kind == PNG)
-                R_SaveAsPng(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->fp,
+                R_SaveAsPng(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->fp,
                             R_OPAQUE(xd->bg) ? 0 : xd->pngtrans);
             else if (xd->kind == JPEG)
-                R_SaveAsJpeg(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->quality, xd->fp);
+                R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->quality, xd->fp);
             else
-                R_SaveAsBmp(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->fp);
+                R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->fp);
+            free(data);
         }
+        else
+            warning("processing of the plot ran out of memory");
         fclose(xd->fp);
     }
     gsetcliprect(xd->gawin, r);
@@ -2732,20 +2714,15 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
     }
     r = ggetcliprect(xd->bm);
     gsetcliprect(xd->bm, r2 = getrect(xd->bm));
-    if (getdepth(xd->gawin) > 8)
+    getbitmapdata2(xd->bm, &data);
+    if (data)
     {
-        getbitmapdata2(xd->bm, &data);
-        if (data)
-        {
-            png_rows = r2.width;
-            R_SaveAsPng(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp, 0);
-            free(data);
-        }
-        else
-            warning("processing of the plot ran out of memory");
+        png_rows = r2.width;
+        R_SaveAsPng(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp, 0);
+        free(data);
     }
     else
-        R_SaveAsPng(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp, 0);
+        warning("processing of the plot ran out of memory");
     /* R_OPAQUE(xd->bg) ? 0 : xd->canvascolor) ; */
     gsetcliprect(xd->bm, r);
     fclose(fp);
@@ -2773,20 +2750,15 @@ static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
     }
     r = ggetcliprect(xd->bm);
     gsetcliprect(xd->bm, r2 = getrect(xd->bm));
-    if (getdepth(xd->gawin) > 8)
+    getbitmapdata2(xd->bm, &data);
+    if (data)
     {
-        getbitmapdata2(xd->bm, &data);
-        if (data)
-        {
-            png_rows = r2.width;
-            R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, quality, fp);
-            free(data);
-        }
-        else
-            warning("processing of the plot ran out of memory");
+        png_rows = r2.width;
+        R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, quality, fp);
+        free(data);
     }
     else
-        R_SaveAsJpeg(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, quality, fp);
+        warning("processing of the plot ran out of memory");
     gsetcliprect(xd->bm, r);
     fclose(fp);
 }
@@ -2814,20 +2786,16 @@ static void SaveAsBmp(NewDevDesc *dd, char *fn)
     }
     r = ggetcliprect(xd->bm);
     gsetcliprect(xd->bm, r2 = getrect(xd->bm));
-    if (getdepth(xd->gawin) > 8)
+
+    getbitmapdata2(xd->bm, &data);
+    if (data)
     {
-        getbitmapdata2(xd->bm, &data);
-        if (data)
-        {
-            png_rows = r2.width;
-            R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp);
-            free(data);
-        }
-        else
-            warning("processing of the plot ran out of memory");
+        png_rows = r2.width;
+        R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fp);
+        free(data);
     }
     else
-        R_SaveAsBmp(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
+        warning("processing of the plot ran out of memory");
     gsetcliprect(xd->bm, r);
     fclose(fp);
 }
