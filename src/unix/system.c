@@ -57,7 +57,6 @@ void R_StartConsole(Rboolean OpenConsole)
 #endif
 
 Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/platform.c */
-extern SA_TYPE SaveAction;
 
 /* call pointers to allow interface switching */
 
@@ -115,9 +114,27 @@ void R_setStartTime(void); /* in sys-unix.c */
 Rboolean useaqua = FALSE;
 #endif
 
+void R_setupHistory()
+{
+    int value, ierr;
+    char *p;
+
+    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
+        R_HistoryFile = ".Rhistory";
+    R_HistorySize = 512;
+    if ((p = getenv("R_HISTSIZE")))
+    {
+        value = R_Decode2Long(p, &ierr);
+        if (ierr != 0 || value < 0)
+            R_ShowMessage("WARNING: invalid R_HISTSIZE ignored;");
+        else
+            R_HistorySize = value;
+    }
+}
+
 int Rf_initialize_R(int ac, char **av)
 {
-    int i, ioff = 1, j, value, ierr;
+    int i, ioff = 1, j;
     Rboolean useX11 = TRUE, useTk = FALSE;
     char *p, msg[1024], **avv;
     structRstart rstart;
@@ -292,17 +309,7 @@ int Rf_initialize_R(int ac, char **av)
     if (!R_Interactive && Rp->SaveAction != SA_SAVE && Rp->SaveAction != SA_NOSAVE)
         R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
 
-    if ((R_HistoryFile = getenv("R_HISTFILE")) == NULL)
-        R_HistoryFile = ".Rhistory";
-    R_HistorySize = 512;
-    if ((p = getenv("R_HISTSIZE")))
-    {
-        value = R_Decode2Long(p, &ierr);
-        if (ierr != 0 || value < 0)
-            R_ShowMessage("WARNING: invalid R_HISTSIZE ignored;");
-        else
-            R_HistorySize = value;
-    }
+    R_setupHistory();
     if (R_RestoreHistory)
         Rstd_read_history(R_HistoryFile);
     fpu_setup(1);
