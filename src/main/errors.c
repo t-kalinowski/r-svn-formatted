@@ -104,7 +104,7 @@ void onsigusr1()
         if (IS_RESTART_BIT_SET(c->callflag))
         {
             inError = 0;
-            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
         }
     }
 
@@ -465,7 +465,7 @@ void jump_to_toplevel()
         if (IS_RESTART_BIT_SET(c->callflag))
         {
             inError = 0;
-            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
         }
         if (c->callflag == CTXT_TOPLEVEL)
             break;
@@ -509,7 +509,7 @@ void jump_now()
         if (IS_RESTART_BIT_SET(c->callflag))
         {
             inError = 0;
-            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
         }
         if (c->callflag == CTXT_TOPLEVEL)
             break;
@@ -743,7 +743,7 @@ void R_ReturnOrRestart(SEXP val, SEXP env, Rboolean restart)
         if (c->callflag & mask && c->cloenv == env)
             findcontext(mask, env, val);
         else if (restart && IS_RESTART_BIT_SET(c->callflag))
-            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
         else if (c->callflag == CTXT_TOPLEVEL)
             error("No function to return from, jumping to top level");
     }
@@ -757,7 +757,7 @@ void R_JumpToToplevel(Rboolean restart)
     for (c = R_GlobalContext; c != NULL; c = c->nextcontext)
     {
         if (restart && IS_RESTART_BIT_SET(c->callflag))
-            findcontext(CTXT_RESTART, c->cloenv, R_DollarSymbol);
+            findcontext(CTXT_RESTART, c->cloenv, R_RestartToken);
         else if (c->callflag == CTXT_TOPLEVEL)
             break;
     }
