@@ -1919,7 +1919,12 @@ static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     int size = gc->cex * gc->ps + 0.5;
 
     SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
-    a = (double)gstrwidth(xd->gawin, xd->font, str);
+#ifdef SUPPORT_UTF8
+    if (gc->fontface != 5)
+        a = (double)gwstrwidth(xd->gawin, xd->font, str);
+    else
+#endif
+        a = (double)gstrwidth(xd->gawin, xd->font, str);
     return a;
 }
 
@@ -1940,7 +1945,12 @@ static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
-    gcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
+#ifdef SUPPORT_UTF8
+    if (gc->fontface != 5)
+        gwcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
+    else
+#endif
+        gcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     /* Some Windows systems report that space has height and depth,
        so we have a kludge.  Note that 32 is space in symbol font too */
     if (c == 32)
@@ -2504,17 +2514,17 @@ static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE
     SetColor(gc->col, gc->gamma, dd);
     if (R_OPAQUE(gc->col))
     {
-#ifdef NOCLIPTEXT
-        gsetcliprect(xd->gawin, getrect(xd->gawin));
-        gdrawstr1(xd->gawin, xd->font, xd->fgcolor, pt(x, y), str, hadj);
-        if (xd->kind == SCREEN)
+#ifdef SUPPORT_UTF8
+        if (gc->fontface != 5)
         {
-            gsetcliprect(xd->bm, getrect(xd->bm));
-            gdrawstr1(xd->bm, xd->font, xd->fgcolor, pt(x, y), str, hadj);
+            /* These macros need to be wrapped in braces */
+            DRAW(gwdrawstr(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
         }
-#else
-        DRAW(gdrawstr1(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
+        else
 #endif
+        {
+            DRAW(gdrawstr1(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
+        }
     }
     SH;
 }

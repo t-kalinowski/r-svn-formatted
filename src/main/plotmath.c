@@ -1086,7 +1086,7 @@ static BBOX RenderStr(char *str, int draw, mathContext *mc, R_GE_gcontext *gc, G
         char *p = str;
         mbstate_t mb_st;
         mbs_init(&mb_st);
-        while ((used = mbrtowc(&wc, p, n, &mb_st)) > 0)
+        while ((used = Mbrtowc(&wc, p, n, &mb_st)) > 0)
         {
             glyphBBox = GlyphBBox(wc, gc, dd);
             resultBBox = CombineBBoxes(resultBBox, glyphBBox);

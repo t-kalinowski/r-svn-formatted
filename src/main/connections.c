@@ -3217,7 +3217,7 @@ static SEXP readFixedString(Rconnection con, int len)
                 if (m < clen - 1)
                     error("invalid UTF-8 input in readChar");
                 p += clen - 1;
-                if ((int)mbrlen(q, clen, NULL) < 0)
+                if ((int)mbrtowc(NULL, q, clen, NULL) < 0)
                     error("invalid UTF-8 input in readChar");
             }
         }
