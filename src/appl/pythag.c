@@ -1,6 +1,7 @@
 /* finds dsqrt(a**2+b**2) without overflow or destructive underflow */
 
-#include "Mathlib.h"
+#include "Mathlib.h" /*fmax2 ..*/
+#include "Applic.h"
 
 double pythag(double a, double b)
 {

@@ -18,6 +18,7 @@
  */
 
 #include "Mathlib.h"
+#include "Applic.h"
 
 static void sort(double *x, int n)
 {
@@ -32,14 +33,14 @@ static void sort(double *x, int n)
     {
         if (l > 1)
         {
-            l = l - 1;
+            l--;
             xt = x[l];
         }
         else
         {
             xt = x[ir];
             x[ir] = x[1];
-            ir = ir - 1;
+            ir--;
             if (ir == 1)
                 break;
         }
@@ -48,14 +49,14 @@ static void sort(double *x, int n)
         while (j <= ir)
         {
             if (j < ir && x[j] < x[j + 1])
-                j = j + 1;
+                j++;
             if (xt >= x[j])
                 j = ir + 1;
             else
             {
                 x[i] = x[j];
                 i = j;
-                j = j + i;
+                j += i;
             }
         }
         x[i] = xt;
@@ -151,8 +152,7 @@ static void lowest(double *x, double *y, int n, double *xs, double *ys, int nlef
     }
 }
 
-static void clowess(double *x, double *y, int n, double f, int nsteps, double delta, double *ys, double *rw,
-                    double *res)
+void clowess(double *x, double *y, int n, double f, int nsteps, double delta, double *ys, double *rw, double *res)
 {
     int i, iter, j, last, m1, m2, nleft, nright, ns, ok;
     double alpha, c1, c9, cmad, cut, d1, d2, denom, r;
@@ -291,8 +291,7 @@ static void clowess(double *x, double *y, int n, double f, int nsteps, double de
     }
 }
 
-int lowess(double *x, double *y, int *n, double *f, int *nsteps, double *delta, double *ys, double *rw, double *res)
+void lowess(double *x, double *y, int *n, double *f, int *nsteps, double *delta, double *ys, double *rw, double *res)
 {
     clowess(x, y, *n, *f, *nsteps, *delta, ys, rw, res);
-    return 0;
 }
