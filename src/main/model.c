@@ -1832,6 +1832,8 @@ alldone:;
     {
         for (i = 0; i < nvar; i++)
         {
+            if (INTEGER(columns)[i] == 0)
+                continue;
             var_i = VECTOR(variable)[i];
             fik = INTEGER(factors)[i + k * nvar];
             if (fik)
