@@ -419,10 +419,11 @@ void R_ProcessEvents(void)
     EventTargetRef theTarget;
     bool conv = false;
 
-    if (!useaqua | !useCocoa)
+    if (!useaqua || !useCocoa)
     {
         if (R_interrupts_pending)
             onintr();
+        return;
     }
 
     if (useCocoa)
