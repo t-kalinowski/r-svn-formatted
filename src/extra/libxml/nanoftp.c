@@ -4,13 +4,14 @@
  *  Reference: RFC 959
  */
 
-#ifdef Win32
-#define INCLUDE_WINSOCK
-#include "win32config.h"
-#else
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#ifdef Win32
+#define INCLUDE_WINSOCK
+#include "win32config.h"
+#define _WINSOCKAPI_
 #endif
 
 #include <R_ext/Error.h>
@@ -90,11 +91,12 @@ typedef struct xmlNanoFTPCtxt
 } xmlNanoFTPCtxt, *xmlNanoFTPCtxtPtr;
 
 static int initialized = 0;
-static char *proxy = NULL;       /* the proxy name if any */
-static int proxyPort = 0;        /* the proxy port if any */
-static char *proxyUser = NULL;   /* user for proxy authentication */
-static char *proxyPasswd = NULL; /* passwd for proxy authentication */
-static int proxyType = 0;        /* uses TYPE or a@b ? */
+static char *proxy = NULL;        /* the proxy name if any */
+static int proxyPort = 0;         /* the proxy port if any */
+static char *proxyUser = NULL;    /* user for proxy authentication */
+static char *proxyPasswd = NULL;  /* passwd for proxy authentication */
+static int proxyType = 0;         /* uses TYPE or a@b ? */
+static unsigned int timeout = 60; /* the select() timeout in seconds */
 
 static void xmlNanoFTPScanProxy(const char *URL);
 
@@ -510,7 +512,7 @@ static int xmlNanoFTPGetMore(void *ctx)
     }
 
     /*
-     * Read the amount left on teh control connection
+     * Read the amount left on the control connection
      */
     if ((len = recv(ctxt->controlFd, &ctxt->controlBuf[ctxt->controlBufIndex], size, 0)) < 0)
     {
@@ -1261,61 +1263,6 @@ static int xmlNanoFTPGetConnection(void *ctx)
 }
 
 /**
- * xmlNanoFTPCloseConnection:
- * @ctx:  an FTP context
- *
- * Close the data connection from the server
- *
- * Returns -1 incase of error, 0 otherwise
- */
-
-static int xmlNanoFTPCloseConnection(void *ctx)
-{
-    xmlNanoFTPCtxtPtr ctxt = (xmlNanoFTPCtxtPtr)ctx;
-    int res;
-    fd_set rfd, efd;
-    struct timeval tv;
-
-    closesocket(ctxt->dataFd);
-    ctxt->dataFd = -1;
-    tv.tv_sec = 15;
-    tv.tv_usec = 0;
-    FD_ZERO(&rfd);
-    FD_SET(ctxt->controlFd, &rfd);
-    FD_ZERO(&efd);
-    FD_SET(ctxt->controlFd, &efd);
-    res = select(ctxt->controlFd + 1, &rfd, NULL, &efd, &tv);
-    if (res < 0)
-    {
-#ifdef DEBUG_FTP
-        perror("select");
-#endif
-        closesocket(ctxt->controlFd);
-        ctxt->controlFd = -1;
-        return (-1);
-    }
-    if (res == 0)
-    {
-#ifdef DEBUG_FTP
-        err("xmlNanoFTPCloseConnection: timeout\n");
-#endif
-        closesocket(ctxt->controlFd);
-        ctxt->controlFd = -1;
-    }
-    else
-    {
-        res = xmlNanoFTPGetResponse(ctxt);
-        if (res != 2)
-        {
-            closesocket(ctxt->controlFd);
-            ctxt->controlFd = -1;
-            return (-1);
-        }
-    }
-    return (0);
-}
-
-/**
  * xmlNanoFTPGetSocket:
  * @ctx:  an FTP context
  * @filename:  the file to retrieve (or NULL if path is in context).
@@ -1408,6 +1355,7 @@ int xmlNanoFTPRead(void *ctx, void *dest, int len)
     int got = 0, res;
     fd_set rfd;
     struct timeval tv;
+    double used = 0.0;
 
     if (ctx == NULL)
         return (-1);
@@ -1425,13 +1373,14 @@ int xmlNanoFTPRead(void *ctx, void *dest, int len)
         FD_SET(ctxt->dataFd, &rfd);
         res = select(ctxt->dataFd + 1, &rfd, NULL, NULL, &tv);
         if (res < 0)
-        {
+        { /* socket error */
             closesocket(ctxt->dataFd);
             ctxt->dataFd = -1;
             return (-1);
         }
         if (res == 0)
-        {
+        { /* timeout, no data available yet */
+            used += tv.tv_sec + 1e6 * tv.tv_usec;
             res = xmlNanoFTPCheckResponse(ctxt);
             if (res < 0)
             {
@@ -1457,44 +1406,10 @@ int xmlNanoFTPRead(void *ctx, void *dest, int len)
         }
         else
             break;
+        if (used > timeout)
+            return (0);
     }
     return got;
-}
-
-/**
- * xmlNanoFTPRead:
- * @ctx:  the FTP context
- * @dest:  a buffer
- * @len:  the buffer length
- *
- * This function tries to read @len bytes from the existing FTP connection
- * and saves them in @dest. This is a blocking call.
- *
- * Returns the number of byte read. 0 is an indication of an end of connection.
- *         -1 indicates a parameter error.
- */
-int xmlNanoFTPRead0(void *ctx, void *dest, int len)
-{
-    xmlNanoFTPCtxtPtr ctxt = (xmlNanoFTPCtxtPtr)ctx;
-
-    if (ctx == NULL)
-        return (-1);
-    if (ctxt->dataFd < 0)
-        return (0);
-    if (dest == NULL)
-        return (-1);
-    if (len <= 0)
-        return (0);
-
-    len = recv(ctxt->dataFd, dest, len, 0);
-#ifdef DEBUG_FTP
-    err("Recvd %d bytes\n", len);
-#endif
-    if (len <= 0)
-    {
-        xmlNanoFTPCloseConnection(ctxt);
-    }
-    return (len);
 }
 
 /**
@@ -1563,4 +1478,17 @@ int xmlNanoFTPClose(void *ctx)
     }
     xmlNanoFTPFreeCtxt(ctxt);
     return (0);
+}
+
+/**
+ * xmlNanoFTPTimeout:
+ * @delay:  the delay in seconds
+ *
+ * Set the FTP timeout, (default is 60secs).  0 means immediate
+ * return, while -1 infinite.
+ */
+
+void xmlNanoFTPTimeout(int delay)
+{
+    timeout = (unsigned int)delay;
 }

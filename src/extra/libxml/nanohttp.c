@@ -14,13 +14,14 @@
 /* TODO add compression support, Send the Accept- , and decompress on the
         fly with ZLIB if found at compile-time */
 
-#ifdef Win32
-#define INCLUDE_WINSOCK
-#include "win32config.h"
-#else
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#ifdef Win32
+#define INCLUDE_WINSOCK
+#include "win32config.h"
+#define _WINSOCKAPI_
 #endif
 
 #include <stdio.h>
@@ -547,7 +548,7 @@ static int xmlNanoHTTPRecv(xmlNanoHTTPCtxtPtr ctxt)
         FD_SET(ctxt->fd, &rfd);
 
         if (select(ctxt->fd + 1, &rfd, NULL, NULL, &tv) < 1)
-            return (0);
+            return (0); /* although this includes an error */
     }
     return (0);
 }
