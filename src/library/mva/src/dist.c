@@ -17,14 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <math.h>
 #include <float.h>
-
-double realNA(void);
-int isFinite(double);
-
-#define NA_REAL realNA()
-#define FINITE(x) isFinite(x)
+#include "Arith.h"
 
 #define EUCLIDEAN 1
 #define MAXIMUM 2
@@ -34,8 +28,8 @@ int isFinite(double);
 
 static double euclidean(double *x, int nr, int nc, int i1, int i2)
 {
-    double count, dev, dist;
-    int j;
+    double dev, dist;
+    int count, j;
 
     count = 0;
     dist = 0;
@@ -53,14 +47,14 @@ static double euclidean(double *x, int nr, int nc, int i1, int i2)
     if (count == 0)
         return NA_REAL;
     if (count != nc)
-        dist *= (count / nc);
+        dist *= ((double)count / nc);
     return sqrt(dist);
 }
 
 static double maximum(double *x, int nr, int nc, int i1, int i2)
 {
-    double count, dev, dist;
-    int j;
+    double dev, dist;
+    int count, j;
 
     count = 0;
     dist = -DBL_MAX;
@@ -83,8 +77,8 @@ static double maximum(double *x, int nr, int nc, int i1, int i2)
 
 static double manhattan(double *x, int nr, int nc, int i1, int i2)
 {
-    double count, dist;
-    int j;
+    double dist;
+    int count, j;
 
     count = 0;
     dist = 0;
@@ -101,14 +95,14 @@ static double manhattan(double *x, int nr, int nc, int i1, int i2)
     if (count == 0)
         return NA_REAL;
     if (count != nc)
-        dist *= (count / nc);
+        dist *= ((double)count / nc);
     return dist;
 }
 
 static double canberra(double *x, int nr, int nc, int i1, int i2)
 {
-    double count, dist;
-    int j;
+    double dist;
+    int count, j;
 
     count = 0;
     dist = 0;
