@@ -964,8 +964,6 @@ void DoUpdate(WindowRef window)
     {
         WEUpdate(updateRgn, GetWindowWE(window));
         // tell everything we're done updating
-        EndUpdate(window);
-        DisposeRgn(updateRgn);
     }
     else
     {
@@ -983,6 +981,9 @@ void DoUpdate(WindowRef window)
 
         GEplayDisplayList(gedd);
     }
+
+    EndUpdate(window);
+    DisposeRgn(updateRgn);
 
     // restore the old graphics port
     SetPort(savePort);
