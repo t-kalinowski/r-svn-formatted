@@ -76,12 +76,15 @@ double pbeta_raw(double x, double pin, double qin, int lower_tail)
 
         /* tail approximation */
 
-        ans = 0;
         xb = p * log(fmax2(y, sml)) - log(p) - lbeta(p, q);
         if (xb > lnsml && y != 0)
-            ans = exp(xb);
-        if (swap_tail == lower_tail)
-            ans = 1 - ans;
+        {
+            ans = (swap_tail == lower_tail) ? -expm1(xb) : exp(xb);
+        }
+        else
+        {
+            ans = (swap_tail == lower_tail) ? 1. : 0;
+        }
     }
     else
     {

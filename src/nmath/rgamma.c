@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2001 The R Development Core Team
+ *  Copyright (C) 2000-2002 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,12 +76,6 @@ double rgamma(double a, double scale)
     const double a5 = 0.1423657;
     const double a6 = -0.1367177;
     const double a7 = 0.1233795;
-
-    const double e1 = 1.0;
-    const double e2 = 0.4999897;
-    const double e3 = 0.166829;
-    const double e4 = 0.0407753;
-    const double e5 = 0.010293;
 
     /* State variables [FIXME for threading!] :*/
     static double aa = 0.;
@@ -210,16 +204,14 @@ double rgamma(double a, double scale)
             /* (if q not positive go to step 8) */
             if (q > 0.0)
             {
-                if (q <= 0.5)
-                    w = ((((e5 * q + e4) * q + e3) * q + e2) * q + e1) * q;
-                else
-                    w = exp(q) - 1.0;
+                w = expm1(q);
+                /*  ^^^^^ original code had approximation with rel.err < 2e-7 */
                 /* if t is rejected sample again at step 8 */
                 if (c * fabs(u) <= w * exp(e - 0.5 * t * t))
                     break;
             }
         }
-    }
+    } /* repeat .. until  `t' is accepted */
     x = s + 0.5 * t;
     return scale * x * x;
 }
