@@ -1662,7 +1662,12 @@ SEXP do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
     c = CDR(c);
     for (i = 0; i < n; i++)
     {
+#ifdef OLD
         CAR(c) = VECTOR(args)[i];
+#else
+        CAR(c) = mkPROMISE(VECTOR(args)[i], rho);
+        PRVALUE(CAR(c)) = VECTOR(args)[i];
+#endif
         if (ItemName(names, i) != R_NilValue)
             TAG(c) = install(CHAR(ItemName(names, i)));
         c = CDR(c);
