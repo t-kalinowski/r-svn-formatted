@@ -588,8 +588,8 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
 
 SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, t;
-    int mode, recurse, usenames;
+    SEXP ans;
+    SEXP do_c_dflt(SEXP, SEXP, SEXP, SEXP);
 
     checkArity(op, args);
 
@@ -600,6 +600,14 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
         R_Visible = 1;
         return (ans);
     }
+    return do_c_dflt(call, op, ans, env);
+}
+
+SEXP do_c_dflt(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans, t;
+    int mode, recurse, usenames;
+
     R_Visible = 1;
 
     /* Method dispatch has failed; run the default code. */
@@ -609,9 +617,9 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     usenames = 1;
     recurse = 0;
     if (length(args) > 1)
-        PROTECT(args = ExtractOptionals(ans, &recurse, &usenames));
+        PROTECT(args = ExtractOptionals(args, &recurse, &usenames));
     else
-        PROTECT(args = ans);
+        PROTECT(args);
 
     /* Determine the type of the returned value. */
     /* The strategy here is appropriate because the */
