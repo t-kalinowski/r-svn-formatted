@@ -694,52 +694,73 @@ static SEXP mfindVarInFrame(SEXP frame, SEXP symbol)
 
 static int isMissing(SEXP symbol, SEXP rho)
 {
-    SEXP vl;
-    while (rho != R_NilValue)
+    SEXP vl, s;
+
+    if (DDVAL(symbol))
+        s = R_DotsSymbol;
+    else
+        s = symbol;
+
+    vl = mfindVarInFrame(FRAME(rho), s);
+    if (vl != R_NilValue)
     {
-        vl = mfindVarInFrame(FRAME(rho), symbol);
-        if (vl != R_NilValue)
+        if (DDVAL(symbol))
         {
-            if (MISSING(vl) == 1)
+            if (length(CAR(vl)) < DDVAL(symbol) || CAR(vl) == R_MissingArg)
                 return 1;
-            if (TYPEOF(CAR(vl)) == PROMSXP && TYPEOF(PREXPR(CAR(vl))) == SYMSXP)
-                return isMissing(PREXPR(CAR(vl)), PRENV(CAR(vl)));
             else
-                return 0;
+                vl = nthcdr(CAR(vl), DDVAL(symbol) - 1);
         }
-        rho = ENCLOS(rho);
+        if (MISSING(vl) == 1 || CAR(vl) == R_MissingArg)
+            return 1;
+        if (TYPEOF(CAR(vl)) == PROMSXP && TYPEOF(PREXPR(CAR(vl))) == SYMSXP)
+            return isMissing(PREXPR(CAR(vl)), PRENV(CAR(vl)));
+        else
+            return 0;
     }
     return 0;
 }
 
+/* in do_missing rho is the environment that missing was called from */
+
 SEXP do_missing(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP rval, s, t;
-    int ind;
+    SEXP rval, t, sym, s;
+
     checkArity(op, args);
-    s = CAR(args);
-    if (!isSymbol(s))
+    s = sym = CAR(args);
+    if (!isSymbol(sym))
         error("\"missing\" illegal use of missing\n");
 
-    ind = 0;
+    if (DDVAL(sym))
+    {
+        sym = R_DotsSymbol;
+    }
     rval = allocVector(LGLSXP, 1);
 
-    while (rho != R_NilValue)
+    t = mfindVarInFrame(FRAME(rho), sym);
+    if (t != R_NilValue)
     {
-        t = mfindVarInFrame(FRAME(rho), s);
-        if (t != R_NilValue)
+        if (DDVAL(s))
         {
-            if (MISSING(t))
+            if (length(CAR(t)) < DDVAL(s) || CAR(t) == R_MissingArg)
             {
                 LOGICAL(rval)[0] = 1;
                 return rval;
             }
             else
-                goto havebinding;
+                t = nthcdr(CAR(t), DDVAL(s) - 1);
         }
-        rho = ENCLOS(rho);
+        if (MISSING(t) || CAR(t) == R_MissingArg)
+        {
+            LOGICAL(rval)[0] = 1;
+            return rval;
+        }
+        else
+            goto havebinding;
     }
-    errorcall(call, "missing applied to non-argument\n");
+    else /* it wasn't an argument to the function */
+        error("\"missing\" illegal use of missing\n");
 
 havebinding:
 
@@ -748,7 +769,6 @@ havebinding:
     {
         LOGICAL(rval)[0] = 0;
         return rval;
-        /* errorcall(call, "non-promise bound to argument\n"); */
     }
 
     if (!isSymbol(PREXPR(t)))
