@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1202,11 +1202,10 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* These functions convert old (pairlist) lists into new */
-/* (vectorlist) lists.  The conversion can be defeated by */
+/* (vectorlist) lists.	The conversion can be defeated by */
 /* hiding things inside closures, but it is doubtful that */
 /* anyone has done this. */
 
-SEXP PairToVectorList(SEXP);
 static SEXP ConvertPairToVector(SEXP);
 
 static SEXP ConvertAttributes(SEXP attrs)

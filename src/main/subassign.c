@@ -1258,9 +1258,6 @@ static void SubAssignArgs(SEXP args, SEXP *x, SEXP *s, SEXP *y)
 /* and the remainder of args have not.  If this was called directly */
 /* the CAR(args) and the last arg won't have been. */
 
-SEXP PairToVectorList(SEXP);
-SEXP VectorToPairList(SEXP);
-
 SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP subs, x, y;

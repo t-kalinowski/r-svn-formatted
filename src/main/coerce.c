@@ -37,7 +37,7 @@ static char *falsenames[] = {
 #define WARN_INACC 2
 #define WARN_IMAG 4
 
-void CoercionWarning(int warn)
+static void CoercionWarning(int warn)
 {
     if (warn & WARN_NA)
         warning("NAs introduced by coercion\n");
@@ -47,22 +47,22 @@ void CoercionWarning(int warn)
         warning("imaginary parts discarded in coercion\n");
 }
 
-int LogicalFromInteger(int x, int *warn)
+static int LogicalFromInteger(int x, int *warn)
 {
     return (x == NA_INTEGER) ? NA_LOGICAL : (x != 0);
 }
 
-int LogicalFromReal(double x, int *warn)
+static int LogicalFromReal(double x, int *warn)
 {
     return ISNAN(x) ? NA_LOGICAL : (x != 0);
 }
 
-int LogicalFromComplex(complex x, int *warn)
+static int LogicalFromComplex(complex x, int *warn)
 {
     return (ISNAN(x.r) || ISNAN(x.i)) ? NA_LOGICAL : (x.r != 0 || x.i != 0);
 }
 
-int LogicalFromString(SEXP x, int *warn)
+static int LogicalFromString(SEXP x, int *warn)
 {
     if (x != R_NaString)
     {
@@ -77,12 +77,12 @@ int LogicalFromString(SEXP x, int *warn)
     return NA_LOGICAL;
 }
 
-int IntegerFromLogical(int x, int *warn)
+static int IntegerFromLogical(int x, int *warn)
 {
     return (x == NA_LOGICAL) ? NA_INTEGER : x;
 }
 
-int IntegerFromReal(double x, int *warn)
+static int IntegerFromReal(double x, int *warn)
 {
     if (ISNAN(x))
         return NA_INTEGER;
@@ -99,7 +99,7 @@ int IntegerFromReal(double x, int *warn)
     return x;
 }
 
-int IntegerFromComplex(complex x, int *warn)
+static int IntegerFromComplex(complex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_INTEGER;
@@ -118,7 +118,7 @@ int IntegerFromComplex(complex x, int *warn)
     return x.r;
 }
 
-int IntegerFromString(SEXP x, int *warn)
+static int IntegerFromString(SEXP x, int *warn)
 {
     double xdouble;
     char *endp;
@@ -146,12 +146,12 @@ int IntegerFromString(SEXP x, int *warn)
     return NA_INTEGER;
 }
 
-double RealFromLogical(int x, int *warn)
+static double RealFromLogical(int x, int *warn)
 {
     return (x == NA_LOGICAL) ? NA_REAL : x;
 }
 
-double RealFromInteger(int x, int *warn)
+static double RealFromInteger(int x, int *warn)
 {
     if (x == NA_INTEGER)
         return NA_REAL;
@@ -159,7 +159,7 @@ double RealFromInteger(int x, int *warn)
         return x;
 }
 
-double RealFromComplex(complex x, int *warn)
+static double RealFromComplex(complex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_INTEGER;
@@ -168,7 +168,7 @@ double RealFromComplex(complex x, int *warn)
     return x.r;
 }
 
-double RealFromString(SEXP x, int *warn)
+static double RealFromString(SEXP x, int *warn)
 {
     double xdouble;
     char *endp;
@@ -183,7 +183,7 @@ double RealFromString(SEXP x, int *warn)
     return NA_REAL;
 }
 
-complex ComplexFromLogical(int x, int *warn)
+static complex ComplexFromLogical(int x, int *warn)
 {
     complex z;
     if (x == NA_LOGICAL)
@@ -199,7 +199,7 @@ complex ComplexFromLogical(int x, int *warn)
     return z;
 }
 
-complex ComplexFromInteger(int x, int *warn)
+static complex ComplexFromInteger(int x, int *warn)
 {
     complex z;
     if (x == NA_INTEGER)
@@ -215,7 +215,7 @@ complex ComplexFromInteger(int x, int *warn)
     return z;
 }
 
-complex ComplexFromReal(double x, int *warn)
+static complex ComplexFromReal(double x, int *warn)
 {
     complex z;
     if (ISNAN(x))
@@ -231,7 +231,7 @@ complex ComplexFromReal(double x, int *warn)
     return z;
 }
 
-complex ComplexFromString(SEXP x, int *warn)
+static complex ComplexFromString(SEXP x, int *warn)
 {
     double xr, xi;
     complex z;
@@ -263,28 +263,28 @@ complex ComplexFromString(SEXP x, int *warn)
     return z;
 }
 
-SEXP StringFromLogical(int x, int *warn)
+static SEXP StringFromLogical(int x, int *warn)
 {
     int w;
     formatLogical(&x, 1, &w);
     return mkChar(EncodeLogical(x, w));
 }
 
-SEXP StringFromInteger(int x, int *warn)
+static SEXP StringFromInteger(int x, int *warn)
 {
     int w;
     formatInteger(&x, 1, &w);
     return mkChar(EncodeInteger(x, w));
 }
 
-SEXP StringFromReal(double x, int *warn)
+static SEXP StringFromReal(double x, int *warn)
 {
     int w, d, e;
     formatReal(&x, 1, &w, &d, &e);
     return mkChar(EncodeReal(x, w, d, e));
 }
 
-SEXP StringFromComplex(complex x, int *warn)
+static SEXP StringFromComplex(complex x, int *warn)
 {
     int wr, dr, er, wi, di, ei;
     formatComplex(&x, 1, &wr, &dr, &er, &wi, &di, &ei);
