@@ -156,8 +156,11 @@ static SEXP EnlargeVector(SEXP x, int newlen)
     return newx;
 }
 
-static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level)
+static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level)
 {
+    Rboolean redo_which = (level == 1);
+    int which = 100 * TYPEOF(*x) + TYPEOF(*y);
+
     switch (which)
     {
 
@@ -178,6 +181,7 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
     case 1919: /* vector     <- vector     */
     case 2020: /* expression <- expression */
 
+        redo_which = FALSE;
         break;
 
     case 1013: /* logical    <- integer    */
@@ -262,8 +266,8 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
 
         /* Note : No coercion is needed here. */
         /* We just insert the RHS into the LHS. */
-        /* FIXME : is this true or should it be */
-        /* just like the "vector" case. */
+        /* FIXME: is this true or should it be just like the "vector" case? */
+        redo_which = FALSE;
         break;
 
     default:
@@ -272,6 +276,11 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
 
     if (stretch)
         *x = EnlargeVector(*x, stretch);
+
+    if (redo_which)
+        return (100 * TYPEOF(*x) + TYPEOF(*y));
+    else
+        return (which);
 }
 
 static SEXP DeleteListElements(SEXP x, SEXP which)
@@ -354,13 +363,11 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     PROTECT(index = makeSubscript(x, s, &stretch));
     n = length(index);
 
-    which = 100 * TYPEOF(x) + TYPEOF(y);
-
     /* Here we make sure that the LHS has */
     /* been coerced into a form which can */
     /* accept elements from the RHS. */
-
-    SubassignTypeFix(&x, &y, which, stretch, 1);
+    which = SubassignTypeFix(&x, &y, stretch, 1);
+    /* = 100 * TYPEOF(x) + TYPEOF(y);*/
     ny = length(y);
     nx = length(x);
 
@@ -384,9 +391,9 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     else
         PROTECT(y);
 
-    /* Note that we are now committed.  Since we are mutating */
-    /* existing objects any changes we make now are (likely */
-    /* to be) permanent.  Beware! */
+    /* Note that we are now committed. */
+    /* Since we are mutating existing objects, */
+    /* any changes we make now are (likely to be) permanent.  Beware! */
 
     switch (which)
     {
@@ -566,6 +573,9 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
         x = DeleteListElements(x, index);
         UNPROTECT(4);
         return x;
+
+    default:
+        warningcall(call, "sub assignment (*[*] <- *) not done; __bug?__");
     }
     /* Check for additional named elements. */
     /* Note we are using a horrible hack in makeSubscript */
@@ -647,9 +657,7 @@ static SEXP MatrixAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     if (n > 0 && n % ny)
         errorcall(call, "number of items to replace is not a multiple of replacement length");
 
-    which = 100 * TYPEOF(x) + TYPEOF(y);
-
-    SubassignTypeFix(&x, &y, which, 0, 1);
+    which = SubassignTypeFix(&x, &y, 0, 1);
 
     PROTECT(x);
 
@@ -915,12 +923,10 @@ static SEXP ArrayAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     for (i = 1; i < k; i++)
         offset[i] = offset[i - 1] * INTEGER(dims)[i - 1];
 
-    which = 100 * TYPEOF(x) + TYPEOF(y);
-
     /* Here we make sure that the LHS has been coerced into */
     /* a form which can accept elements from the RHS. */
 
-    SubassignTypeFix(&x, &y, which, 0, 1);
+    which = SubassignTypeFix(&x, &y, 0, 1); /* = 100 * TYPEOF(x) + TYPEOF(y);*/
 
     if (ny == 0)
     {
@@ -1396,6 +1402,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         SETCAR(args, x = duplicate(x));
     }
+
     dims = getAttrib(x, R_DimSymbol);
     ndims = length(dims);
     nsubs = length(subs);
@@ -1441,9 +1448,8 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             offset += INTEGER(index)[0];
             UNPROTECT(1);
         }
-        which = 100 * TYPEOF(x) + TYPEOF(y);
 
-        SubassignTypeFix(&x, &y, which, stretch, 2);
+        which = SubassignTypeFix(&x, &y, stretch, 2);
         PROTECT(x);
 
         switch (which)
