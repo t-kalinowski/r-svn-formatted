@@ -267,6 +267,8 @@ static double guess_offset(struct tm *tm)
     {
         offset1 = (double)mktime(tm) - mktime00(tm);
         olddst = (offset1 < offset) ? 1 : 0;
+        if (olddst)
+            offset = offset1;
     }
     tm->tm_year = oldyear;
     tm->tm_isdst = olddst;
