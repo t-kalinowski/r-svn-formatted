@@ -1215,7 +1215,10 @@ again:
         if (dd)
         {
             if (dd->newDevStruct)
+            {
                 FORWARD_NODE(((GEDevDesc *)dd)->dev->displayList);
+                FORWARD_NODE(((GEDevDesc *)dd)->dev->savedSnapshot);
+            }
             else
                 FORWARD_NODE(dd->displayList);
         }

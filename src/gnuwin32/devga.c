@@ -1799,7 +1799,7 @@ static void GA_NewPage(int fill, double gamma, NewDevDesc *dd)
     {
 #ifdef PLOTHISTORY
         if (xd->recording && xd->needsave)
-            AddtoPlotHistory(savedSnapshot, 0);
+            AddtoPlotHistory(dd->savedSnapshot, 0);
         if (xd->replaying)
             xd->needsave = FALSE;
         else
