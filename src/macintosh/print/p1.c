@@ -261,6 +261,7 @@ void printLoop(WindowPtr window) // PMPrintSession printSession, PMPageFormat pa
     PicHandle WPicHandle = NULL;
     CGrafPtr tempPort;
     Rect tempRect;
+    double left, right, top, bottom;
     CFStringRef jobName = CFSTR("R Graphics");
 
     if (!printSession)
@@ -360,24 +361,35 @@ void printLoop(WindowPtr window) // PMPrintSession printSession, PMPageFormat pa
                 if (status == noErr)
                 {
                     SInt16 WinIndex;
-                    DevDesc *dd;
+                    NewDevDesc *dd;
+                    GEDevDesc *gedd;
                     MacDesc *xd;
 
                     WinIndex = isGraphicWindow(window);
-                    dd = (DevDesc *)gGReference[WinIndex].devdesc;
+                    gedd = (GEDevDesc *)gGReference[WinIndex].gedevdesc;
+                    dd = (NewDevDesc *)gGReference[WinIndex].newdevdesc;
                     xd = (MacDesc *)dd->deviceSpecific;
 
                     //  gGReference[WinIndex].printPort = printingPort;
                     gGReference[WinIndex].activePort = printingPort;
                     WeArePrinting = true;
                     xd->resize = true;
-                    dd->dp.resize(dd);
+                    dd->size(&left, &right, &bottom, &top, dd);
+                    dd->left = left;
+                    dd->right = right;
+                    dd->top = top;
+                    dd->bottom = bottom;
 
-                    playDisplayList(dd);
-                    xd->resize = true;
+                    xd->resize = TRUE;
+                    playDisplayList((DevDesc *)gedd);
+
                     WeArePrinting = false;
-                    dd->dp.resize(dd);
-
+                    dd->size(&left, &right, &bottom, &top, dd);
+                    dd->left = left;
+                    dd->right = right;
+                    dd->top = top;
+                    dd->bottom = bottom;
+                    xd->resize = FALSE;
                     //	Restore the QD grafport.
                     SetPort(currPort);
                 }
