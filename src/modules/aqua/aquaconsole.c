@@ -455,6 +455,8 @@ OSStatus SetUpGUI(void)
     if ((err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &ConsoleWindow)) != noErr)
         goto guifailure;
 
+    RepositionWindow(ConsoleWindow, NULL, kWindowCascadeOnMainScreen);
+
     if ((err = CreateWindowFromNib(nibRef, CFSTR("AboutWindow"), &RAboutWindow)) != noErr)
         goto guifailure;
 
