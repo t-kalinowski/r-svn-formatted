@@ -327,6 +327,7 @@ void R_DefParams(Rstart Rp)
     Rp->nsize = R_NSIZE;
     Rp->max_vsize = R_SIZE_T_MAX;
     Rp->max_nsize = R_SIZE_T_MAX;
+    Rp->ppsize = R_PPSSIZE;
     Rp->NoRenviron = FALSE;
 }
 
@@ -408,6 +409,7 @@ void R_SetParams(Rstart Rp)
     SetSize(Rp->vsize, Rp->nsize);
     R_SetMaxNSize(Rp->max_nsize);
     R_SetMaxVSize(Rp->max_vsize);
+    R_SetPPSize(Rp->ppsize);
     CommandLineArgs = Rp->CommandLineArgs;
     NumCommandLineArgs = Rp->NumCommandLineArgs;
 #ifdef Win32
@@ -462,6 +464,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
 {
     int ac = *pac, newac = 1; /* argv[0] is process name */
     int ierr;
+    long lval;
     R_size_t value;
     char *p, **av = argv, msg[1024];
     Rboolean processing = TRUE;
@@ -559,7 +562,8 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
-                     !strcmp(*av, "-V") || !strcmp(*av, "-n") || !strcmp(*av, "-v"))
+                     !strcmp(*av, "-nsize") || !strcmp(*av, "-vsize") || !strcmp(*av, "-V") || !strcmp(*av, "-n") ||
+                     !strcmp(*av, "-v"))
             {
                 snprintf(msg, 1024, "WARNING: option %s no longer supported\n", *av);
                 R_ShowMessage(msg);
@@ -603,62 +607,79 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                         Rp->max_vsize = value;
                 }
             }
-            else if (strncmp(*av, "--vsize", 7) == 0)
+            else if (strncmp(*av, "--max-ppsize", 12) == 0)
             {
-                if (strlen(*av) < 9)
+                if (strlen(*av) < 14)
                 {
                     ac--;
                     av++;
                     p = *av;
                 }
                 else
-                    p = &(*av)[8];
+                    p = &(*av)[13];
                 if (p == NULL)
                 {
-                    R_ShowMessage("WARNING: no vsize given\n");
+                    R_ShowMessage("WARNING: no value given for -max-ppsize given\n");
                     break;
                 }
-                value = R_Decode2Long(p, &ierr);
-                if (ierr)
-                {
-                    if (ierr < 0) /* R_common_badargs(); */
-                        sprintf(msg, "WARNING: --vsize value is invalid: ignored\n");
-                    else
-                        sprintf(msg, "WARNING: --vsize=%ld`%c': too large and ignored\n", value,
-                                (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
-                    R_ShowMessage(msg);
-                }
+                lval = strtol(p, &p, 10);
+                if (lval < 0)
+                    R_ShowMessage("WARNING: -max-ppsize value is negative: ignored\n");
+                else if (lval < 10000)
+                    R_ShowMessage("WARNING: -max-ppsize value is too small: ignored\n");
+
+                else if (lval > 100000)
+                    R_ShowMessage("WARNING: -max-ppsize value is too large: ignored\n");
                 else
-                    Rp->vsize = value;
+                    Rp->ppsize = lval;
             }
-            else if (strncmp(*av, "--nsize", 7) == 0)
-            {
-                if (strlen(*av) < 9)
-                {
-                    ac--;
-                    av++;
-                    p = *av;
-                }
-                else
-                    p = &(*av)[8];
-                if (p == NULL)
-                {
-                    R_ShowMessage("WARNING: no nsize given\n");
-                    break;
-                }
-                value = R_Decode2Long(p, &ierr);
-                if (ierr)
-                {
-                    if (ierr < 0) /* R_common_badargs(); */
-                        sprintf(msg, "WARNING: --nsize value is invalid: ignored\n");
-                    else
-                        sprintf(msg, "WARNING: --nsize=%lu`%c': too large and ignored\n", value,
-                                (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
-                    R_ShowMessage(msg);
-                }
-                else
-                    Rp->nsize = value;
-            }
+#if 0
+	    else if(strncmp(*av, "--vsize", 7) == 0) {
+		if(strlen(*av) < 9) {
+		    ac--; av++; p = *av;
+		}
+		else
+		    p = &(*av)[8];
+		if (p == NULL) {
+		    R_ShowMessage("WARNING: no vsize given\n");
+		    break;
+		}
+		value = R_Decode2Long(p, &ierr);
+		if(ierr) {
+		    if(ierr < 0) /* R_common_badargs(); */
+			sprintf(msg, "WARNING: --vsize value is invalid: ignored\n");
+		    else
+			sprintf(msg, "WARNING: --vsize=%ld`%c': too large and ignored\n",
+				value,
+				(ierr == 1) ? 'M': ((ierr == 2) ? 'K' : 'k'));
+		    R_ShowMessage(msg);
+
+		} else
+		    Rp->vsize = value;
+	    }
+	    else if(strncmp(*av, "--nsize", 7) == 0) {
+		if(strlen(*av) < 9) {
+		    ac--; av++; p = *av;
+		}
+		else
+		    p = &(*av)[8];
+		if (p == NULL) {
+		    R_ShowMessage("WARNING: no nsize given\n");
+		    break;
+		}
+		value = R_Decode2Long(p, &ierr);
+		if(ierr) {
+		    if(ierr < 0) /* R_common_badargs(); */
+			sprintf(msg, "WARNING: --nsize value is invalid: ignored\n");
+		    else
+		    sprintf(msg, "WARNING: --nsize=%lu`%c': too large and ignored\n",
+			    value,
+			    (ierr == 1) ? 'M': ((ierr == 2) ? 'K':'k'));
+		    R_ShowMessage(msg);
+		} else
+		    Rp->nsize = value;
+	    }
+#endif
             else
             { /* unknown -option */
                 argv[newac++] = *av;

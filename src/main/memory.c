@@ -201,6 +201,11 @@ void R_SetMaxNSize(R_size_t size)
         R_MaxNSize = size;
 }
 
+void R_SetPPSize(unsigned long size)
+{
+    R_PPStackSize = size;
+}
+
 /* Miscellaneous Globals. */
 
 static SEXP R_VStack = NULL; /* R_alloc stack pointer */
