@@ -158,7 +158,10 @@ OSErr NewRasterTextRotation(char *str, int face, int size, int color, int xx, in
     {
 
         realFace = 0; /* plain symbol */
-        postFontId = FMGetFontFamilyFromName(MacSymbolFont);
+        if (systemVersion > kMinSystemVersion)
+            postFontId = FMGetFontFamilyFromName(MacSymbolFont);
+        else
+            GetFNum(MacSymbolFont, &postFontId);
 
         TextFont(postFontId);
         TextFace(realFace);
