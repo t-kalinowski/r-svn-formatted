@@ -1725,16 +1725,6 @@ static void newX11_Text(double x, double y, char *str, double rot, double hadj, 
     }
 }
 
-static void X11_Mode(int mode, DevDesc *dd)
-{
-#ifdef XSYNC
-    if (mode == 0)
-        XSync(display, 0);
-#else
-    XSync(display, 0);
-#endif
-}
-
 static Rboolean newX11_Locator(double *x, double *y, NewDevDesc *dd)
 {
     XEvent event;
