@@ -21,7 +21,7 @@
 
 SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, f, counts, vec, ans;
+    SEXP x, f, counts, vec;
     int i, j, k, nobs, nlevs, nfac;
 
     checkArity(op, args);

@@ -2601,7 +2601,7 @@ static int CSclipline(double *x1, double *y1, double *x2, double *y2, int *clipp
 static void CScliplines(int n, double *x, double *y, int coords, DevDesc *dd)
 {
     int ind1, ind2;
-    int firstPoint = 1;
+    /*int firstPoint = 1;*/
     int count = 0;
     int i = 0;
     double *xx, *yy, temp;

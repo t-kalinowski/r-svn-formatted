@@ -349,7 +349,7 @@ SEXP VectorToPairList(SEXP x)
 
 static SEXP coerceToSymbol(SEXP v)
 {
-    SEXP ans;
+    SEXP ans = R_NilValue;
     int warn;
     if (length(v) <= 0)
         error("Invalid data of mode \"%s\" (too short)\n", type2str(TYPEOF(v)));
@@ -680,8 +680,8 @@ SEXP PairToVectorList(SEXP);
 /* Coerce a list to the given type */
 static SEXP coercePairList(SEXP v, SEXPTYPE type)
 {
-    int i, n;
-    SEXP rval, vp, names;
+    int i, n = 0;
+    SEXP rval = R_NilValue, vp, names;
 
     names = v;
     if (type == EXPRSXP)

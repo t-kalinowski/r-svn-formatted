@@ -1765,7 +1765,7 @@ static SEXP Query(char *what, DevDesc *dd)
 
 SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ap, vp, value;
+    SEXP value;
     SEXP originalArgs = args;
     DevDesc *dd;
     int new_spec, nargs;

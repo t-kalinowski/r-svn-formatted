@@ -324,7 +324,6 @@ static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, int 
 
 void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl)
 {
-    SEXP dimnames;
     int r, c;
 
     r = INTEGER(dim)[0];

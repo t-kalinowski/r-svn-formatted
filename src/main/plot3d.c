@@ -727,6 +727,7 @@ typedef double Trans3d[4][4];
 static SEXP gcall;
 static Trans3d VT;
 
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
 static void MakeVector(double x, double y, double z, Vector3d v)
 {
     v[0] = x;
@@ -734,6 +735,7 @@ static void MakeVector(double x, double y, double z, Vector3d v)
     v[2] = z;
     v[3] = 1;
 }
+#endif
 
 static void TransVector(Vector3d u, Trans3d T, Vector3d v)
 {
@@ -832,7 +834,7 @@ static void YRotate(double angle)
 static void Perspective(double d)
 {
     Trans3d T;
-    int i, j;
+
     SetToIdentity(T);
     T[2][3] = -1 / d;
     Accumulate(T);
@@ -877,7 +879,7 @@ void OrderFacets(double *depth, int *index, int n)
 /* yields an occlusion compatible ordering. */
 /* Note that we ignore z values when doing this. */
 
-static int DepthOrder(double *z, double *x, double *y, int nx, int ny, double *depth, int *index)
+static void DepthOrder(double *z, double *x, double *y, int nx, int ny, double *depth, int *index)
 {
     int i, ii, j, jj, nx1, ny1;
     Vector3d u, v;
@@ -983,7 +985,8 @@ static void DrawFacets(double *z, double *x, double *y, int nx, int ny, int *ind
     }
 }
 
-static int CheckRange(double *x, int n, double min, double max)
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
+static void CheckRange(double *x, int n, double min, double max)
 {
     double xmin, xmax;
     int i;
@@ -1000,8 +1003,9 @@ static int CheckRange(double *x, int n, double min, double max)
     if (xmin < min || xmax > max)
         errorcall(gcall, "coordinates outsize specified range\n");
 }
+#endif
 
-static int PerspWindow(double *xlim, double *ylim, double *zlim, DevDesc *dd)
+static void PerspWindow(double *xlim, double *ylim, double *zlim, DevDesc *dd)
 {
     double pin1, pin2, scale, xdelta, ydelta, xscale, yscale, xadd, yadd;
     double xmax, xmin, ymax, ymin, xx, yy;
@@ -1117,7 +1121,7 @@ static void PerspBox(int front, double *x, double *y, double *z, DevDesc *dd)
         }
         near = (d[0] * e[1] - d[1] * e[0]) < 0;
 
-        if (front && near || (!front && !near))
+        if ((front && near) || (!front && !near))
         {
             GLine(v0[0] / v0[3], v0[1] / v0[3], v1[0] / v1[3], v1[1] / v1[3], USER, dd);
             GLine(v1[0] / v1[3], v1[1] / v1[3], v2[0] / v2[3], v2[1] / v2[3], USER, dd);
