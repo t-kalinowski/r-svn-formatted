@@ -18,7 +18,7 @@
  */
 
 /*
- * This file aims to be system independent so it sees the underline
+ * This file aims to be system independent so it sees the underlying
  * structures only using:
  * void *d : an 'opaque' view of the source of the pixels;
  * int width, height: dimensions in pixels;
@@ -109,7 +109,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
     }
 
     /* Set error handling.  REQUIRED if you aren't supplying your own
-     * error hadnling functions in the png_create_write_struct() call.
+     * error handling functions in the png_create_write_struct() call.
      */
     if (setjmp(png_ptr->jmpbuf))
     {
