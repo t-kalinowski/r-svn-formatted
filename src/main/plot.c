@@ -96,10 +96,8 @@ SEXP do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /*  P A R A M E T E R	 U T I L I T I E S  */
 
-int Specify2(char *, SEXP, DevDesc *);
-
 /* ProcessInLinePars handles inline par specifications in graphics functions.
- * It does this by calling Specify2 which is in par.c */
+ * It does this by calling Specify2() from ./par.c */
 
 void ProcessInlinePars(SEXP s, DevDesc *dd)
 {
@@ -117,8 +115,8 @@ void ProcessInlinePars(SEXP s, DevDesc *dd)
 }
 
 /* GetPar is intended for looking through a list  -- typically that bound
- *	to ... --  for a particular parameter value.  This is easier than trying
- *	to match every graphics parameter in argument lists explicitly.
+ *	to ... --  for a particular parameter value.  This is easier than
+ *	trying to match every graphics parameter in argument lists explicitly.
  * FIXME: This needs to be destructive, so that "ProcessInlinePars"
  *	can be safely called afterwards.
  */
@@ -596,6 +594,9 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             warning("CreateAtVector \"log\"(from axis()): "
                     "usr[0] = %g > %g = usr[1] !\n",
                     umin, umax);
+        dn = axp[0];
+        if (dn < 1e-300)
+            warning("CreateAtVector \"log\"(from axis()): axp[0] = %g !\n", dn);
 
         /* You get the 3 cases below by
          *  for(y in 1e-5*c(1,2,8))  plot(y, log = "y")
@@ -605,8 +606,12 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
         case 1: /* large range:	1	 * 10^k */
             i = floor(log10(axp[1])) - ceil(log10(axp[0])) + 0.25;
             ne = i / nint + 1;
-            rng = pow(10., (double)ne);
-            dn = axp[0];
+            if (ne < 1)
+                error("log - axis(), 'at' creation, _LARGE_ range: "
+                      "ne = %d <= 0 !!\n"
+                      "\t axp[0:1]=(%g,%g) ==> i = %d;  nint = %d\n",
+                      ne, axp[0], axp[1], i, nint);
+            rng = pow(10., (double)ne); /* >= 10 */
             n = 0;
             while (dn < umax)
             {
@@ -616,7 +621,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _LARGE_ range: "
                       "illegal {xy}axp or par; nint=%d\n"
-                      "	 axp[1:2]=(%g,%g), usr[1:2]=(%g,%g); i=%d, ni=%d\n",
+                      "	 axp[0:1]=(%g,%g), usr[0:1]=(%g,%g); i=%d, ni=%d\n",
                       nint, axp[0], axp[1], umin, umax, i, ne);
             at = allocVector(REALSXP, n);
             dn = axp[0];
@@ -629,7 +634,6 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             break;
 
         case 2: /* medium range:  1, 5	  * 10^k */
-            dn = axp[0];
             n = 0;
             if (0.5 * dn >= umin)
                 n++;
@@ -646,7 +650,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _MEDIUM_ range: "
                       "illegal {xy}axp or par;\n"
-                      "	 axp[1]= %g, usr[1:2]=(%g,%g)\n",
+                      "	 axp[0]= %g, usr[0:1]=(%g,%g)\n",
                       axp[0], umin, umax);
 
             at = allocVector(REALSXP, n);
@@ -667,7 +671,6 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             break;
 
         case 3: /* small range:	 1,2,5,10 * 10^k */
-            dn = axp[0];
             n = 0;
             if (0.2 * dn >= umin)
                 n++;
@@ -689,7 +692,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             if (!n)
                 error("log - axis(), 'at' creation, _SMALL_ range: "
                       "illegal {xy}axp or par;\n"
-                      "	 axp[1]= %g, usr[1:2]=(%g,%g)\n",
+                      "	 axp[0]= %g, usr[0:1]=(%g,%g)\n",
                       axp[0], umin, umax);
             at = allocVector(REALSXP, n);
             dn = axp[0];
@@ -1588,7 +1591,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* polygon(x, y, col, border) */
     SEXP sx, sy, col, border, lty;
-    int nx = 1, ny = 1, ncol, nborder, nlty, xpd, i, start;
+    int nx = 1, ny = 1, ncol, nborder, nlty, xpd, i, start = 0;
     double *x, *y, xx, yy, xold, yold;
 
     SEXP originalArgs = args;
@@ -1646,13 +1649,13 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
         yy = y[i];
         GConvert(&xx, &yy, USER, DEVICE, dd);
         if ((FINITE(xx) && FINITE(yy)) && !(FINITE(xold) && FINITE(yold)))
-            start = i;
+            start = i; /* first valid point of current segment */
         else if ((FINITE(xold) && FINITE(yold)) && !(FINITE(xx) && FINITE(yy)))
         {
             if (i - start > 1)
                 GPolygon(i - start, x + start, y + start, USER, INTEGER(col)[0], INTEGER(border)[0], dd);
         }
-        else if ((FINITE(xold) && FINITE(yold)) && (i == nx - 1))
+        else if ((FINITE(xold) && FINITE(yold)) && (i == nx - 1)) /* very last */
             GPolygon(nx - start, x + start, y + start, USER, INTEGER(col)[0], INTEGER(border)[0], dd);
         xold = xx;
         yold = yy;
@@ -1792,14 +1795,14 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
 {
-    /* mtext(text, side, line, outer, at = NULL, ...)
-     *				     where "..."  supports  adj, cex, col, font
+    /* mtext(text, side, line, outer, at = NULL, adj = NA, ...)
+     *				where "..."  supports  cex, col, font
      */
     SEXP text;
 #ifdef OLD
     SEXP cex, col, font;
 #endif
-    double line, at, adj = 0;
+    double line, at, adj;
     int side, outer;
     int gpnewsave = 0, dpnewsave = 0;
     SEXP originalArgs = args;
@@ -1842,12 +1845,12 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     adj = asReal(CAR(args));
+    args = CDR(args);
 
     GSavePars(dd);
     ProcessInlinePars(args, dd);
 
-    /* If there was no inline "adj=" */
-    /* choose a default based on "las". */
+    /* If there was no "adj=" , choose a default based on "las". */
 
     if (!FINITE(adj))
     {
@@ -2205,6 +2208,9 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /*     box(which="plot", lty="solid", ...)
+           --- which is coded, 1 = plot, 2 = figure, 3 = inner, 4 = outer.
+    */
     int which, col, fg;
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
@@ -2216,8 +2222,8 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     if (which < 1 || which > 4)
         errorcall(call, "invalid \"which\" specification\n");
     col = dd->gp.col;
-    fg = dd->gp.col;
     dd->gp.col = NA_INTEGER;
+    fg = dd->gp.col;
     dd->gp.fg = NA_INTEGER;
     ProcessInlinePars(args, dd);
     if (dd->gp.col == NA_INTEGER)
