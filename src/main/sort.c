@@ -85,6 +85,57 @@ static int scmp(SEXP x, SEXP y)
 #endif
 }
 
+Rboolean isunsorted(SEXP x)
+{
+    int n, i;
+
+    if (!isVectorAtomic(x))
+        error("only atomic vectors can be tested to be sorted");
+    n = LENGTH(x);
+    if (n >= 2)
+        switch (TYPEOF(x))
+        {
+
+            /* NOTE: x must have no NAs {is.na(.) in R};
+               hence be faster than `rcmp()', `icmp()' for these two cases */
+
+        case LGLSXP:
+        case INTSXP:
+            for (i = 0; i + 1 < n; i++)
+                if (INTEGER(x)[i] > INTEGER(x)[i + 1])
+                    return TRUE;
+            break;
+        case REALSXP:
+            for (i = 0; i + 1 < n; i++)
+                if (REAL(x)[i] > REAL(x)[i + 1])
+                    return TRUE;
+            break;
+        case CPLXSXP:
+            for (i = 0; i + 1 < n; i++)
+                if (ccmp(COMPLEX(x)[i], COMPLEX(x)[i + 1]) > 0)
+                    return TRUE;
+            break;
+        case STRSXP:
+            for (i = 0; i + 1 < n; i++)
+                if (scmp(STRING_ELT(x, i), STRING_ELT(x, i + 1)) > 0)
+                    return TRUE;
+            break;
+        default:
+            error("unknown atomic type in isunsorted() -- should not happen");
+        }
+    return FALSE; /* sorted */
+}
+
+SEXP do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP ans;
+
+    checkArity(op, args);
+    ans = allocVector(LGLSXP, 1);
+    LOGICAL(ans)[0] = isunsorted(CAR(args));
+    return ans;
+}
+
 /*--- Part II: Complete (non-partial) Sorting ---*/
 
 /* SHELLsort -- corrected from R. Sedgewick `Algorithms in C'
@@ -226,10 +277,8 @@ void revsort(double *a, int *ib, int n)
 
 void sortVector(SEXP s)
 {
-    int n;
-
-    n = LENGTH(s);
-    if (n >= 2)
+    int n = LENGTH(s);
+    if (n >= 2 && isunsorted(s))
         switch (TYPEOF(s))
         {
         case LGLSXP:
@@ -254,11 +303,18 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (!isVector(CAR(args)))
-        errorcall(call, "only vectors can be sorted");
-    ans = duplicate(CAR(args));
-    sortVector(ans);
-    return ans;
+    if (CAR(args) == R_NilValue)
+        return R_NilValue;
+    if (!isVectorAtomic(CAR(args)))
+        errorcall(call, "only atomic vectors can be sorted");
+    if (isunsorted(CAR(args)))
+    { /* do not duplicate if sorted */
+        ans = duplicate(CAR(args));
+        sortVector(ans);
+        return (ans);
+    }
+    else
+        return (CAR(args));
 }
 
 /*--- Part III: Partial Sorting ---*/
