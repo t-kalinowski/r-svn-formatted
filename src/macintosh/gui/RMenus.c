@@ -235,7 +235,7 @@ static pascal Boolean MySFDialogFilter(DialogPtr dialog, EventRecord *event, SIn
     /*    intercept window events directed to windows behind the dialog */
     if ((event->what == updateEvt) || (event->what == activateEvt))
     {
-        if ((WindowPtr)event->message != dialog)
+        if ((WindowPtr)event->message != GetDialogWindow(dialog))
         {
             DoWindowEvent(event);
         }

@@ -155,7 +155,7 @@ transferring up to buflen characters into the buffer buf. The last character is 
 preserve sanity.
 */
 
-void R_ReadConsole1(char *prompt, char *buf, int buflen, int hist)
+void R_ReadConsole1(char *prompt, unsigned char *buf, int buflen, int hist)
 {
     WEReference we;
     EventRecord myEvent;
@@ -180,7 +180,7 @@ void R_ReadConsole1(char *prompt, char *buf, int buflen, int hist)
     // Change_Color(gTypeColour.red, gTypeColour.green, gTypeColour.blue, we);
 
     // gbuf is a ptr, which is used to point to the receive buffer
-    gbuf = buf;
+    gbuf = (char *)buf;
     gbuflen = buflen;
 
     // Call the Receive loop
@@ -236,7 +236,7 @@ void R_ReadConsole1(char *prompt, char *buf, int buflen, int hist)
                        gComputerColour.blue, we);
     // ********* Don't try to change the content of buf
     if (strlen((const char *)buf) > 1)
-        maintain_cmd_History(buf);
+        maintain_cmd_History((char *)buf);
 }
 
 void DRWrite(long in)

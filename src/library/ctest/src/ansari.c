@@ -8,17 +8,13 @@
 #include "ctest.h"
 
 /*
-  Removed the non-local variable `double ***w'
-  and moved to R_alloc from Calloc. No need for
-  w_free() since the .C() calls will clear it.
-  The tests for whether the memory was allocated
-  can be discarded as R_alloc will throw an error.
+  Removed the non-local variable `double ***w' and moved to R_alloc from
+  Calloc.
+  No need for w_free() since the .C() calls will clear it.
+  The tests for whether the memory was allocated can be discarded as
+  R_alloc will throw an error.
   The .C() will handle the vmaxget() and vmaxset().
  */
-static void errmsg(char *s)
-{
-    PROBLEM "%s", s RECOVER(NULL_ENTRY);
-}
 
 static double ***w_init(Sint m, Sint n)
 {
@@ -26,10 +22,14 @@ static double ***w_init(Sint m, Sint n)
     double ***w;
 
     w = (double ***)R_alloc(m + 1, sizeof(double **));
+    if (!w)
+        error("allocation error in w_init().");
     memset(w, '\0', (m + 1) * sizeof(double **));
     for (i = 0; i <= m; i++)
     {
         w[i] = (double **)R_alloc(n + 1, sizeof(double *));
+        if (!w[i])
+            error("allocation error in w_init().");
         memset(w[i], '\0', (n + 1) * sizeof(double *));
     }
     return (w);
@@ -37,8 +37,7 @@ static double ***w_init(Sint m, Sint n)
 
 #if 0
 /* 
-  This is not needed if we use R_alloc() and let R 
-  garbage collect.
+  This is not needed if we use R_alloc() and let R garbage collect.
  */
 static void
 w_free(Sint m, Sint n, double ***w)
@@ -68,6 +67,8 @@ static double cansari(int k, int m, int n, double ***w)
     if (w[m][n] == 0)
     {
         w[m][n] = (double *)R_alloc(u + 1, sizeof(double));
+        if (!w[m][n])
+            error("allocation error in cansari().");
         memset(w[m][n], '\0', (u + 1) * sizeof(double));
         for (i = 0; i <= u; i++)
             w[m][n][i] = -1;
@@ -87,8 +88,10 @@ static double cansari(int k, int m, int n, double ***w)
 }
 
 /*
-  Is this ever called? There is no .C() in the package.
+  Is this ever called?
+  There is no .C() in the package.
   However, apparently users know about it.
+  And indeed, package `exactRankTests' uses it.
  */
 void dansari(Sint *len, double *x, Sint *m, Sint *n)
 {
@@ -152,7 +155,7 @@ void qansari(Sint *len, double *x, Sint *m, Sint *n)
     {
         xi = x[i];
         if (xi < 0 || xi > 1)
-            errmsg("probabilities outside [0,1] in qansari()");
+            error("probabilities outside [0,1] in qansari()");
         if (xi == 0)
             x[i] = l;
         else if (xi == 1)

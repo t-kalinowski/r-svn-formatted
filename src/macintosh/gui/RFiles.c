@@ -117,10 +117,11 @@ int R_ChooseFile(int isNewFile, char *fileBuf, int buflen);
 extern pascal OSErr FSpGetFullPath(const FSSpec *, short *, Handle *);
 
 extern RGBColor tempTypeColour;
+#define kMaxFlavors 7
 
 OSStatus ReadTextFile(const FSSpec *pFileSpec, WEReference we)
 {
-    const int kMaxFlavors = 7;
+    //	const int			kMaxFlavors = 7 ;
     SInt16 dataForkRefNum = kFileNotOpened;
     SInt16 resForkRefNum = kFileNotOpened;
     Handle hText = nil;
@@ -395,14 +396,14 @@ cleanup:
     }
 
     if (pFileSpec)
-        SetWTitle(FrontWindow(), &pFileSpec->name);
+        SetWTitle(FrontWindow(), (char const *)&pFileSpec->name);
 
     return err;
 }
 
 OSStatus ReadUnicodeTextFile(const FSSpec *pFileSpec, WEReference we)
 {
-    const int kMaxFlavors = 4;
+    //	const int	kMaxFlavors = 4 ;
     SInt16 dataForkRefNum = kFileNotOpened;
     SInt16 resForkRefNum = kFileNotOpened;
     Handle hUnicodeText = nil;

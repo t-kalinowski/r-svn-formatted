@@ -1744,7 +1744,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* rect(xl, yb, xr, yt, col, border, lty, lwd, xpd) */
-    SEXP sxl, sxr, syb, syt, col, lty, lwd, border;
+    SEXP sxl, sxr, syb, syt, sxpd, col, lty, lwd, border;
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt, ncol, nlty, nlwd, nborder, xpd;
     SEXP originalArgs = args;
@@ -1784,7 +1784,11 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     nlwd = length(lwd);
     args = CDR(args);
 
-    xpd = asInteger(CAR(args));
+    sxpd = CAR(args);
+    if (sxpd != R_NilValue)
+        xpd = asInteger(sxpd);
+    else
+        xpd = dd->gp.xpd;
     args = CDR(args);
 
     GSavePars(dd);
@@ -1832,7 +1836,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* arrows(x0, y0, x1, y1, length, angle, code, col, lty, lwd, xpd) */
-    SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
+    SEXP sx0, sx1, sy0, sy1, sxpd, col, lty, lwd;
     double *x0, *x1, *y0, *y1;
     double xx0, yy0, xx1, yy1;
     double hlength, angle;
@@ -1889,7 +1893,11 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "'lwd' must be numeric of length >=1");
     args = CDR(args);
 
-    xpd = asInteger(CAR(args));
+    sxpd = CAR(args);
+    if (sxpd != R_NilValue)
+        xpd = asInteger(sxpd);
+    else
+        xpd = dd->gp.xpd;
     args = CDR(args);
 
     GSavePars(dd);
@@ -2773,6 +2781,49 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 /*  abline(a, b, h, v, col, lty, lwd, ...)
     draw lines in intercept/slope form.  */
 
+static void getxlimits(double *x, DevDesc *dd)
+{
+    /*
+     * xpd = 0 means clip to current plot region
+     * xpd = 1 means clip to current figure region
+     * xpd = 2 means clip to device region
+     */
+    switch (dd->gp.xpd)
+    {
+    case 0:
+        x[0] = dd->gp.usr[0];
+        x[1] = dd->gp.usr[1];
+        break;
+    case 1:
+        x[0] = GConvertX(0, NFC, USER, dd);
+        x[1] = GConvertX(1, NFC, USER, dd);
+        break;
+    case 2:
+        x[0] = GConvertX(0, NDC, USER, dd);
+        x[1] = GConvertX(1, NDC, USER, dd);
+        break;
+    }
+}
+
+static void getylimits(double *y, DevDesc *dd)
+{
+    switch (dd->gp.xpd)
+    {
+    case 0:
+        y[0] = dd->gp.usr[2];
+        y[1] = dd->gp.usr[3];
+        break;
+    case 1:
+        y[0] = GConvertY(0, NFC, USER, dd);
+        y[1] = GConvertY(1, NFC, USER, dd);
+        break;
+    case 2:
+        y[0] = GConvertY(0, NDC, USER, dd);
+        y[1] = GConvertY(1, NDC, USER, dd);
+        break;
+    }
+}
+
 SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP a, b, h, v, untf, col, lty, lwd;
@@ -2820,6 +2871,8 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GSavePars(dd);
 
+    ProcessInlinePars(args, dd);
+
     nlines = 0;
 
     if (a != R_NilValue)
@@ -2845,8 +2898,19 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             dd->gp.lty = dd->dp.lty;
         GMode(1, dd);
-        x[0] = dd->gp.usr[0];
-        x[1] = dd->gp.usr[1];
+        /* FIXME?
+         * Seems like the logic here is just draw from xmin to xmax
+         * and you're guaranteed to draw at least from ymin to ymax
+         * This MAY cause a problem at some stage when the line being
+         * drawn is VERY steep -- and the problem is worse now that
+         * abline will potentially draw to the extents of the device
+         * (when xpd=NA).  NOTE that R's internal clipping protects the
+         * device drivers from stupidly large numbers, BUT there is
+         * still a risk that we could produce a number which is too
+         * big for the computer's brain.
+         * Paul.
+         */
+        getxlimits(x, dd);
         if (R_FINITE(dd->gp.lwd))
         {
             if (LOGICAL(untf)[0] == 1 && (dd->gp.xlog || dd->gp.ylog))
@@ -2898,8 +2962,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             aa = REAL(h)[i];
             if (R_FINITE(aa) && R_FINITE(dd->gp.lwd))
             {
-                x[0] = dd->gp.usr[0];
-                x[1] = dd->gp.usr[1];
+                getxlimits(x, dd);
                 y[0] = aa;
                 y[1] = aa;
                 GLine(x[0], y[0], x[1], y[1], USER, dd);
@@ -2922,8 +2985,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
             aa = REAL(v)[i];
             if (R_FINITE(aa) && R_FINITE(dd->gp.lwd))
             {
-                y[0] = dd->gp.usr[2];
-                y[1] = dd->gp.usr[3];
+                getylimits(y, dd);
                 x[0] = aa;
                 x[1] = aa;
                 GLine(x[0], y[0], x[1], y[1], USER, dd);

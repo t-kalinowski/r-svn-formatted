@@ -237,7 +237,7 @@ int Rf_initialize_R(int ac, char **av)
         {
             if (!strcmp(*av, "--no-readline"))
             {
-                UsingReadline = 0;
+                UsingReadline = FALSE;
             }
             else
             {

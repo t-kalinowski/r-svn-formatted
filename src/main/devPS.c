@@ -1,5 +1,3 @@
-
-
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
@@ -532,7 +530,6 @@ static int PostScriptLoadFontMetrics(char *fontpath, FontMetricInfo *metrics, ch
     /* Make an index for kern-pair searches: relies on having contiguous
        blocks by first char for efficiency, but works in all cases. */
     {
-        int j;
         short ind, tmp;
         for (j = 0; j < 256; j++)
         {
@@ -1193,13 +1190,13 @@ static Rboolean PS_Open(DevDesc *dd, PostScriptDesc *pd)
             p = Family[pd->fontfamily].afmfile[i];
         if (!PostScriptLoadFontMetrics(p, &(pd->metrics[i]), familyname[i], 1))
         {
-            warning("cannot read afm file %s", buf);
+            warning("cannot read afm file %s", p);
             return FALSE;
         }
     }
     if (!PostScriptLoadFontMetrics("sy______.afm", &(pd->metrics[4]), familyname[4], 0))
     {
-        warning("cannot read afm file %s", buf);
+        warning("cannot read afm file sy______.afm");
         return FALSE;
     }
 
@@ -1948,13 +1945,13 @@ static Rboolean XFig_Open(DevDesc *dd, XFigDesc *pd)
     {
         if (!PostScriptLoadFontMetrics(Family[pd->fontfamily].afmfile[i], &(pd->metrics[i]), name, 1))
         {
-            warning("cannot read afm file %s", buf);
+            warning("cannot read afm file %s", Family[pd->fontfamily].afmfile[i]);
             return FALSE;
         }
     }
     if (!PostScriptLoadFontMetrics("sy______.afm", &(pd->metrics[4]), name, 0))
     {
-        warning("cannot read afm file %s", buf);
+        warning("cannot read afm file sy______.afm");
         return FALSE;
     }
 
@@ -2699,13 +2696,13 @@ static Rboolean PDF_Open(DevDesc *dd, PDFDesc *pd)
         p = Family[pd->fontfamily].afmfile[i];
         if (!PostScriptLoadFontMetrics(p, &(pd->metrics[i]), familyname[i], 1))
         {
-            warning("cannot read afm file %s", buf);
+            warning("cannot read afm file %s", p);
             return FALSE;
         }
     }
     if (!PostScriptLoadFontMetrics("sy______.afm", &(pd->metrics[4]), familyname[4], 0))
     {
-        warning("cannot read afm file %s", buf);
+        warning("cannot read afm file sy______.afm");
         return FALSE;
     }
 

@@ -56,10 +56,11 @@ static void Mac_Activate(DevDesc *);
 static void Mac_Circle(double, double, int, double, int, int, DevDesc *);
 static void Mac_Clip(double, double, double, double, DevDesc *);
 static void Mac_Close(DevDesc *);
+static Rboolean Mac_Open(DevDesc *, MacDesc *, char *, double, double);
 static void Mac_Deactivate(DevDesc *);
 static void Mac_Hold(DevDesc *);
 static void Mac_Line(double, double, double, double, int, DevDesc *);
-static int Mac_Locator(double *, double *, DevDesc *);
+static Rboolean Mac_Locator(double *, double *, DevDesc *);
 static void Mac_Mode(int, DevDesc *);
 static void Mac_NewPage(DevDesc *);
 static void Mac_Polygon(int, double *, double *, int, int, int, DevDesc *);
@@ -150,13 +151,13 @@ static void Mac_Resize(DevDesc *dd)
 /* Mac_Open : Open the Window, setup the the MAC devices record              */
 /*****************************************************************************/
 
-static int Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double hgt)
+static Rboolean Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double hgt)
 {
     SInt16 WinIndex;
     if (!SetBaseFont(xd))
     {
         Rprintf("can't find Macintosh font\n");
-        return 0;
+        return FALSE;
     }
 
     gScreenRes = GetScreenRes();
@@ -182,7 +183,7 @@ static int Mac_Open(DevDesc *dd, MacDesc *xd, char *dsp, double wid, double hgt)
     dd->dp.col = R_RGB(0, 0, 0);
     xd->resize = false;
     xd->lineType = 0;
-    return 1;
+    return TRUE;
 }
 
 void Mac_Dev_Kill(WindowPtr window)
@@ -232,7 +233,7 @@ static double Mac_StrWidth(char *str, DevDesc *dd)
     else
         port = GetWindowPort(xd->window);
 
-    SetPortWindowPort(port);
+    SetPort(port);
     SetFont(dd->gp.font, size, dd);
     width = TextWidth(str, 0, Stringlen);
 
@@ -845,7 +846,7 @@ static void Mac_Text(double x, double y, int coords, char *str, double rot, doub
 /* not all devices will do anythin (e.g., postscript)                 */
 /**********************************************************************/
 
-static int Mac_Locator(double *x, double *y, DevDesc *dd)
+static Rboolean Mac_Locator(double *x, double *y, DevDesc *dd)
 {
     EventRecord event;
     SInt16 key;
@@ -912,13 +913,13 @@ static int Mac_Locator(double *x, double *y, DevDesc *dd)
             if (key == kReturn)
             {
                 SetPort(savePort);
-                return 0;
+                return FALSE;
             }
         }
     }
 
     SetPort(savePort);
-    return 1;
+    return TRUE;
 }
 
 /**********************************************************************/
