@@ -5222,16 +5222,16 @@ SEXP PostScript(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(STRING_ELT(CAR(args), 0));
+    file = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    paper = CHAR(STRING_ELT(CAR(args), 0));
+    paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
 
     /* 'family' can be either one string or a 5-vector of afmpaths. */
     fam = CAR(args);
     args = CDR(args);
     if (length(fam) == 1)
-        family = CHAR(STRING_ELT(fam, 0));
+        family = CHAR(asChar(fam));
     else if (length(fam) == 5)
     {
         if (!isString(fam))
@@ -5243,11 +5243,11 @@ SEXP PostScript(SEXP args)
     else
         error(_("invalid 'family' parameter in %s"), call);
 
-    encoding = CHAR(STRING_ELT(CAR(args), 0));
+    encoding = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    bg = CHAR(STRING_ELT(CAR(args), 0));
+    bg = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    fg = CHAR(STRING_ELT(CAR(args), 0));
+    fg = CHAR(asChar(CAR(args)));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -5265,9 +5265,9 @@ SEXP PostScript(SEXP args)
     args = CDR(args);
     printit = asLogical(CAR(args));
     args = CDR(args);
-    cmd = CHAR(STRING_ELT(CAR(args), 0));
+    cmd = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    title = CHAR(STRING_ELT(CAR(args), 0));
+    title = CHAR(asChar(CAR(args)));
     args = CDR(args);
     fonts = CAR(args);
     if (!isNull(fonts) && !isString(fonts))
@@ -5326,15 +5326,15 @@ SEXP XFig(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(STRING_ELT(CAR(args), 0));
+    file = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    paper = CHAR(STRING_ELT(CAR(args), 0));
+    paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    family = CHAR(STRING_ELT(CAR(args), 0));
+    family = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    bg = CHAR(STRING_ELT(CAR(args), 0));
+    bg = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    fg = CHAR(STRING_ELT(CAR(args), 0));
+    fg = CHAR(asChar(CAR(args)));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -5406,17 +5406,17 @@ SEXP PDF(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(STRING_ELT(CAR(args), 0));
+    file = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    paper = CHAR(STRING_ELT(CAR(args), 0));
+    paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    family = CHAR(STRING_ELT(CAR(args), 0));
+    family = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    encoding = CHAR(STRING_ELT(CAR(args), 0));
+    encoding = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    bg = CHAR(STRING_ELT(CAR(args), 0));
+    bg = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    fg = CHAR(STRING_ELT(CAR(args), 0));
+    fg = CHAR(asChar(CAR(args)));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -5428,7 +5428,7 @@ SEXP PDF(SEXP args)
     args = CDR(args);
     pagecentre = asLogical(CAR(args));
     args = CDR(args);
-    title = CHAR(STRING_ELT(CAR(args), 0));
+    title = CHAR(asChar(CAR(args)));
     args = CDR(args);
     fonts = CAR(args);
     args = CDR(args);

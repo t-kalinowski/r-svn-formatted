@@ -633,11 +633,11 @@ SEXP PicTeX(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(STRING_ELT(CAR(args), 0));
+    file = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    bg = CHAR(STRING_ELT(CAR(args), 0));
+    bg = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    fg = CHAR(STRING_ELT(CAR(args), 0));
+    fg = CHAR(asChar(CAR(args)));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
