@@ -384,8 +384,8 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
         /* ASCII */
         if ((unsigned char)*p < 0x80)
         {
-            if (isprint((int)*p))
-            {
+            if (*p != '\t' && isprint((int)*p))
+            { /* Windows has \t as printable */
                 switch (*p)
                 {
                 case '\\':
