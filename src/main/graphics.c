@@ -2827,7 +2827,7 @@ void GPretty(double *lo, double *up, int *ndiv)
         nu++;
     nu--;
 #ifdef DEBUG_PLOT
-    REprintf("\t -> new (ns,nu) = (%d,%d)", ns, nu);
+    REprintf("\t -> new (ns,nu) = (%d,%d)\n", ns, nu);
 #endif
 
     nd0 = nu - ns;
