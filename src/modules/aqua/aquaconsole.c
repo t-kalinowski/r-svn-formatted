@@ -449,14 +449,8 @@ SEXP Raqua_savehistory(SEXP call, SEXP op, SEXP args, SEXP env);
 OSStatus SaveWindow(WindowRef window, Boolean ForceNewFName);
 static void Aqua_FlushBuffer(void);
 
-MenuRef HelpMenu = NULL; /* Will be the Reference to Apple's Help Menu */
-static short RHelpMenuItem = -1;
-static short RAquaFAQMenuItem = -1;
-static short RAquaWhatsNewMenuItem = -1;
-static short RTopicHelpItem = -1;
-static short RunExampleItem = -1;
-static short SearchHelpItem = -1;
-static short PreferencesItem = -1;
+MenuRef HelpMenu = NULL;   /* Will be the Reference to Apple's Help Menu */
+MenuRef myHelpMenu = NULL; /* This is the ref to the help menu in the nib file */
 
 int InputDialogAns = kRDlogCanc;
 extern void SetDefaultPrefs(void);
@@ -547,6 +541,12 @@ OSStatus SetUpGUI(void)
     {
         if (cocoaSetupMenu)
             cocoaSetupMenu(0);
+    }
+
+    if ((cocoaFeatures & cocoa_menu) == 0)
+    { /* if Cocoa bundle doesn't provide the menu, we create it */
+        if ((err = CreateMenuFromNib(nibRef, CFSTR("MyHelpMenu"), &myHelpMenu)) != noErr)
+            goto guifailure;
     }
 
     if (WeHaveCocoa && cocoaSelectWindow)
@@ -854,38 +854,10 @@ void SetUpRAquaMenu(void)
 
     if (HelpMenu != nil)
     {
-        CopyCStringToPascal("R Help", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-        RHelpMenuItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, RHelpMenuItem, kRHelpStart);
-        SetMenuItemCommandKey(HelpMenu, RHelpMenuItem, false, '?');
-
-        CopyCStringToPascal("R Mac OS X FAQ", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-
-        RAquaFAQMenuItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, RAquaFAQMenuItem, kRMacOSXFAQ);
-
-        CopyCStringToPascal("What's new in this version", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-
-        RAquaWhatsNewMenuItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, RAquaWhatsNewMenuItem, kRAquaWhatsNew);
-
-        CopyCStringToPascal("Help On Topic...", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-        RTopicHelpItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, RTopicHelpItem, kRHelpOnTopic);
-
-        CopyCStringToPascal("Search Help On...", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-        SearchHelpItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, SearchHelpItem, kRSearchHelpOn);
-
-        CopyCStringToPascal("Run An Example...", menuStr);
-        AppendMenu(HelpMenu, menuStr);
-        RunExampleItem = CountMenuItems(HelpMenu);
-        SetMenuItemCommandID(HelpMenu, RunExampleItem, kRExampleRun);
+        if (myHelpMenu)
+        {
+            CopyMenuItems(myHelpMenu, 1, CountMenuItems(myHelpMenu), HelpMenu, 0);
+        }
     }
     EnableMenuCommand(NULL, kHICommandPreferences);
 
