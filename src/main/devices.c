@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,13 +34,6 @@ static char *SaveString(SEXP sxp, int offset)
     strcpy(s, CHAR(STRING(sxp)[offset]));
     return s;
 }
-
-#ifdef NotUsed
-static void DeviceUnavailable(char *dev)
-{
-    errorcall(gcall, "%s device is unavailable.\n", dev);
-}
-#endif
 
 #ifdef Unix
 #include "../unix/devX11.h"
@@ -90,6 +83,11 @@ SEXP do_x11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DeviceUnavailable("X11");
 }
+
+static void DeviceUnavailable(char *dev)
+{
+    errorcall(gcall, "%s device is unavailable.\n", dev);
+}
 #endif
 
 /*  PostScript Device Driver Parameters:
@@ -97,7 +95,7 @@ SEXP do_x11(SEXP call, SEXP op, SEXP args, SEXP env)
  *  file	= output filename
  *  paper	= paper type
  *  face	= typeface = "family"
- *  bg	        = background color
+ *  bg		= background color
  *  fg		= foreground color
  *  width	= width in inches
  *  height	= height in inches
@@ -154,13 +152,12 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
 /*  PicTeX Device Driver Parameters
  *  --------------------		--> ../unix/devPicTeX.c
  *  file    = output filename
- *  bg      = background color
- *  fg      = foreground color
+ *  bg	    = background color
+ *  fg	    = foreground color
  *  width   = width in inches
  *  height  = height in inches
  *  debug   = int; if non-0, write TeX-Comments into output.
  */
-int PicTeXDeviceDriver(DevDesc *, char *, char *, char *, double, double, int);
 
 SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
 {
