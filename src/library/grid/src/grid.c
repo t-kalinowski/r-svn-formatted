@@ -393,7 +393,7 @@ static SEXP findInChildren(SEXP name, SEXP children)
     int n = LENGTH(childnames);
     int count = 0;
     Rboolean found = FALSE;
-    SEXP result;
+    SEXP result = R_NilValue;
     PROTECT(result);
     while (count < n && !found)
     {
@@ -527,7 +527,7 @@ static SEXP findvppathInChildren(SEXP path, SEXP name, SEXP pathsofar, SEXP chil
     int n = LENGTH(childnames);
     int count = 0;
     Rboolean found = FALSE;
-    SEXP result;
+    SEXP result = R_NilValue;
     PROTECT(result);
     while (count < n && !found)
     {
