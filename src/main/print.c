@@ -157,6 +157,7 @@ SEXP do_prmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, naprint;
+    int tryS4;
     checkArity(op, args);
     PrintDefaults(rho);
 
@@ -198,6 +199,10 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (R_print.right == NA_LOGICAL)
         errorcall(call, "invalid right parameter");
     args = CDR(args);
+
+    tryS4 = asLogical(CAR(args));
+    if (R_print.right == NA_LOGICAL)
+        errorcall(call, "invalid tryS4 internal parameter");
 
     CustomPrintValue(x, rho);
     PrintDefaults(rho); /* reset, as na.print.etc may have been set */
