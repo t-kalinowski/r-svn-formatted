@@ -581,7 +581,7 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, dims, dimnames, index, subs, x;
-    int drop, i, ndims, nsubs, offset;
+    int drop, i, ndims, nsubs, offset = 0;
 
     /* If the first argument is an object and */
     /* there is an approriate method, we dispatch */
@@ -626,6 +626,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), 1);
             if (offset < 0 || offset >= length(x))
+            {
                 /* a bold attempt to get the same behaviour
                    for $ and [[ */
                 if (offset < 0 && (isList(x) || isLanguage(x)))
@@ -635,6 +636,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
                 }
                 else
                     errorcall(call, "subscript out of bounds\n");
+            }
         }
         else
         {
@@ -704,7 +706,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static int pstrmatch(SEXP target, char *input, int slen)
 {
-    int t, k;
+    int k;
 
     if (target == R_NilValue)
         return -1;
@@ -729,7 +731,7 @@ static int pstrmatch(SEXP target, char *input, int slen)
 SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y, nlist;
-    int slen, posi, s, idx;
+    int slen, posi, s = 0, idx;
     char *input;
 
     checkArity(op, args);
@@ -750,8 +752,10 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (isString(nlist))
         input = CHAR(STRING(nlist)[0]);
     else
+    {
         errorcall(call, "invalid subscript type\n");
-
+        return R_NilValue; /*-Wall*/
+    }
     slen = strlen(input);
     posi = idx = 0;
 

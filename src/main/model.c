@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997 Robert Gentleman, Ross Ihaka and the R Core Team
  *
@@ -660,7 +660,7 @@ static SEXP EncodeVars(SEXP formula)
         return CONS(term, R_NilValue);
     }
     error("invalid model formula\n");
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 /* TermCode - decide on the encoding of a model term. */
@@ -1162,6 +1162,7 @@ static SEXP ExpandDots(SEXP object, SEXP value)
 
 badformula:
     error("invalid formula in update\n");
+    return R_NilValue; /*NOTREACHED*/
 }
 
 SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)

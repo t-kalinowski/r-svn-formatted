@@ -49,10 +49,12 @@ int get1index(SEXP s, SEXP names, int pok)
             for (i = 0; i < length(names); i++)
             {
                 if (!strncmp(CHAR(STRING(names)[i]), CHAR(STRING(s)[0]), len))
+                {
                     if (k == -1)
                         k = i;
                     else
                         k = -2;
+                }
             }
         }
     }
@@ -220,7 +222,7 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
     }
     else
         return positiveSubscript(s, ns, nx);
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 static SEXP stringSubscript(SEXP s, int ns, SEXP names)
@@ -285,7 +287,7 @@ SEXP arraySubscript(int dim, SEXP s, SEXP x)
     default:
         error("invalid subscript\n");
     }
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 SEXP frameSubscript(int dim, SEXP s, SEXP x)
@@ -323,7 +325,7 @@ SEXP frameSubscript(int dim, SEXP s, SEXP x)
     default:
         error("invalid subscript\n");
     }
-    /*NOTREACHED*/
+    return R_NilValue; /*NOTREACHED*/
 }
 
 /* Subscript creation.  The first thing we do is check to see */

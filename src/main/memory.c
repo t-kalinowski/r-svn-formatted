@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -303,7 +303,7 @@ SEXP allocVector(SEXPTYPE type, int length)
 {
     SEXP s;
     int i;
-    long size;
+    long size = 0;
 
     if (length < 0)
         errorcall(R_GlobalContext->call, "negative length vectors are not allowed\n");

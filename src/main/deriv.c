@@ -663,6 +663,7 @@ static int FindSubexprs(SEXP expr)
         break;
     default:
         InvalidExpression("FindSubexprs");
+        return -1 /*-Wall*/;
     }
 }
 

@@ -162,7 +162,6 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
     default:
         errorcall(call, "incorrect number of arguments\n");
-        trim = 0;
     }
 
     if (!isVector(x = CAR(args)))

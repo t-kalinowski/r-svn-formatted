@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -390,6 +390,7 @@ static void ExtractNames(SEXP args, int recurse, int check, SEXP base)
     while (args != R_NilValue)
     {
         if (!isNull(CAR(args)))
+        {
             if (isVector(CAR(args)))
             {
                 if (!isNull(TAG(args)))
@@ -471,17 +472,18 @@ static void ExtractNames(SEXP args, int recurse, int check, SEXP base)
                 base = R_NilValue;
             }
             else
-            {
+            { /* neither	 Vector	 nor  List */
                 if (!isNull(TAG(args)))
                     STRING(ans_names)[ans_nnames++] = TAG(args);
                 else
                     STRING(ans_names)[ans_nnames++] = blank;
             }
+        } /* if(! null...) */
         args = CDR(args);
-    }
+    } /* while */
     if (check && ans_nnames != ans_length)
     {
-        printf("INTERNAL ERROR: ans_nnames = %d    ans_length = %d\n", ans_nnames, ans_length);
+        printf("INTERNAL ERROR: ans_nnames = %d	   ans_length = %d\n", ans_nnames, ans_length);
         error("incorrect names vector length\n");
     }
     UNPROTECT(1);

@@ -105,7 +105,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, x, tok, w;
     int i, j, len, tlen, ntok;
-    char buff[MAXELTSIZE], *pt, *split;
+    char buff[MAXELTSIZE], *pt, *split = "";
 
     checkArity(op, args);
     x = CAR(args);
