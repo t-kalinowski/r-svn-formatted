@@ -573,8 +573,8 @@ int PicTeXDeviceDriver(DevDesc *dd, char *filename, char *bg, char *fg, double w
 
     strcpy(ptd->filename, filename);
 
-    dd->dp.bg = dd->gp.bg = str2col(bg, dd);
-    dd->dp.fg = dd->gp.fg = str2col(fg, dd);
+    dd->dp.bg = dd->gp.bg = str2col(bg);
+    dd->dp.fg = dd->gp.fg = str2col(fg);
 
     dd->dp.activate = PicTeX_Activate;
     dd->dp.deactivate = PicTeX_Deactivate;

@@ -152,7 +152,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "bg"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.bg = dd->gp.bg = ix;
         dd->dp.new = dd->gp.new = 0;
@@ -220,35 +220,35 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "col"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.col = dd->gp.col = ix;
     }
     else if (streql(what, "col.main"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.colmain = dd->gp.colmain = ix;
     }
     else if (streql(what, "col.lab"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.collab = dd->gp.collab = ix;
     }
     else if (streql(what, "col.sub"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.colsub = dd->gp.colsub = ix;
     }
     else if (streql(what, "col.axis"))
     {
         lengthCheck(what, value, 1);
-        naIntCheck(ix = RGBpar(value, 0, dd), what);
+        naIntCheck(ix = RGBpar(value, 0), what);
         dd->dp.colaxis = dd->gp.colaxis = ix;
     }
     else if (streql(what, "crt"))
@@ -270,7 +270,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "fg"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->dp.col = dd->gp.col = dd->dp.fg = dd->gp.fg = ix;
     }
@@ -911,7 +911,7 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "bg"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.bg = ix;
     }
@@ -978,35 +978,35 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "col"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.col = ix;
     }
     else if (streql(what, "col.main"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.colmain = ix;
     }
     else if (streql(what, "col.lab"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.collab = ix;
     }
     else if (streql(what, "col.sub"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.colsub = ix;
     }
     else if (streql(what, "col.axis"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.colaxis = ix;
     }
@@ -1029,7 +1029,7 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     else if (streql(what, "fg"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
+        ix = RGBpar(value, 0);
         naIntCheck(ix, what);
         dd->gp.fg = ix;
     }

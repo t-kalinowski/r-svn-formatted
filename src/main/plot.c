@@ -19,10 +19,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*---------------- BIG "FIXME" : Accept "lwd" wherever there's	lty !!! ----
- *		   ====================================================
- */
-
 #ifdef HAVE_CONFIG_H
 #include <Rconfig.h>
 #endif
@@ -136,7 +132,7 @@ SEXP GetPar(char *which, SEXP parlist)
     return R_NilValue;
 }
 
-SEXP FixupPch(SEXP pch, DevDesc *dd)
+SEXP FixupPch(SEXP pch, int dflt)
 {
     int i, n;
     SEXP ans = R_NilValue; /* -Wall*/
@@ -145,7 +141,7 @@ SEXP FixupPch(SEXP pch, DevDesc *dd)
     if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
-        INTEGER(ans)[0] = dd->gp.pch;
+        INTEGER(ans)[0] = dflt;
     }
     else if (isList(pch))
     {
@@ -176,12 +172,12 @@ SEXP FixupPch(SEXP pch, DevDesc *dd)
     for (i = 0; i < n; i++)
     {
         if (INTEGER(ans)[i] < 0)
-            INTEGER(ans)[i] = dd->gp.pch;
+            INTEGER(ans)[i] = dflt;
     }
     return ans;
 }
 
-SEXP FixupLty(SEXP lty, DevDesc *dd)
+SEXP FixupLty(SEXP lty, int dflt)
 {
     int i, n;
     SEXP ans;
@@ -189,7 +185,7 @@ SEXP FixupLty(SEXP lty, DevDesc *dd)
     if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
-        INTEGER(ans)[0] = dd->gp.lty;
+        INTEGER(ans)[0] = dflt;
     }
     else
     {
@@ -200,7 +196,7 @@ SEXP FixupLty(SEXP lty, DevDesc *dd)
     return ans;
 }
 
-SEXP FixupLwd(SEXP lwd, DevDesc *dd)
+SEXP FixupLwd(SEXP lwd, double dflt)
 {
     int i, n;
     double w;
@@ -210,7 +206,7 @@ SEXP FixupLwd(SEXP lwd, DevDesc *dd)
     if (n == 0)
     {
         ans = allocVector(REALSXP, 1);
-        REAL(ans)[0] = dd->gp.lwd;
+        REAL(ans)[0] = dflt;
     }
     else
     {
@@ -229,7 +225,7 @@ SEXP FixupLwd(SEXP lwd, DevDesc *dd)
     return ans;
 }
 
-SEXP FixupFont(SEXP font)
+SEXP FixupFont(SEXP font, int dflt)
 {
     int i, k, n;
     SEXP ans = R_NilValue; /* -Wall*/
@@ -237,7 +233,7 @@ SEXP FixupFont(SEXP font)
     if (n == 0)
     {
         ans = allocVector(INTSXP, 1);
-        INTEGER(ans)[0] = NA_INTEGER;
+        INTEGER(ans)[0] = dflt;
     }
     else if (isInteger(font) || isLogical(font))
     {
@@ -266,23 +262,22 @@ SEXP FixupFont(SEXP font)
     return ans;
 }
 
-SEXP FixupCol(SEXP col, DevDesc *dd)
+SEXP FixupCol(SEXP col, int dflt)
 {
     int i, n;
     SEXP ans;
-
     n = length(col);
     if (length(col) == 0)
     {
         ans = allocVector(INTSXP, 1);
-        INTEGER(ans)[0] = NA_INTEGER;
+        INTEGER(ans)[0] = dflt;
     }
     else if (isList(col))
     {
         ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
         {
-            INTEGER(ans)[i] = RGBpar(CAR(col), 0, dd);
+            INTEGER(ans)[i] = RGBpar(CAR(col), 0);
             col = CDR(col);
         }
     }
@@ -290,12 +285,12 @@ SEXP FixupCol(SEXP col, DevDesc *dd)
     {
         ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
-            INTEGER(ans)[i] = RGBpar(col, i, dd);
+            INTEGER(ans)[i] = RGBpar(col, i);
     }
     return ans;
 }
 
-SEXP FixupCex(SEXP cex)
+SEXP FixupCex(SEXP cex, double dflt)
 {
     SEXP ans = R_NilValue; /* -Wall*/
     int i, n;
@@ -304,7 +299,10 @@ SEXP FixupCex(SEXP cex)
     if (length(cex) == 0)
     {
         ans = allocVector(REALSXP, 1);
-        REAL(ans)[0] = NA_REAL;
+        if (R_FINITE(dflt) && dflt > 0)
+            REAL(ans)[0] = dflt;
+        else
+            REAL(ans)[0] = NA_REAL;
     }
     else if (isReal(cex))
     {
@@ -641,7 +639,7 @@ static SEXP CreateAtVector(double *axp, double *usr, int nint, int log)
             warning("CreateAtVector \"log\"(from axis()): axp[0] = %g !", dn);
 
         /* You get the 3 cases below by
-         *  for(y in 1e-5*c(1,2,8))  plot(y, log = "y")
+         *  for (y in 1e-5*c(1,2,8))  plot(y, log = "y")
          */
         switch (n)
         {
@@ -1188,23 +1186,23 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     args = CDR(args);
 
-    PROTECT(pch = FixupPch(CAR(args), dd));
+    PROTECT(pch = FixupPch(CAR(args), dd->gp.pch));
     args = CDR(args);
     npch = length(pch);
 
-    PROTECT(lty = FixupLty(CAR(args), dd));
+    PROTECT(lty = FixupLty(CAR(args), dd->gp.lty));
     args = CDR(args);
     nlty = length(lty);
 
-    PROTECT(col = FixupCol(CAR(args), dd));
+    PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     args = CDR(args);
     ncol = LENGTH(col);
 
-    PROTECT(bg = FixupCol(CAR(args), dd));
+    PROTECT(bg = FixupCol(CAR(args), NA_INTEGER));
     args = CDR(args);
     nbg = LENGTH(bg);
 
-    PROTECT(cex = FixupCex(CAR(args)));
+    PROTECT(cex = FixupCex(CAR(args), 1.0));
     args = CDR(args);
     ncex = LENGTH(cex);
 
@@ -1437,15 +1435,15 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     ny1 = length(sy1);
     args = CDR(args);
 
-    PROTECT(col = FixupCol(CAR(args), dd));
+    PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     ncol = LENGTH(col);
     args = CDR(args);
 
-    PROTECT(lty = FixupLty(CAR(args), dd));
+    PROTECT(lty = FixupLty(CAR(args), dd->gp.lty));
     nlty = length(lty);
     args = CDR(args);
 
-    PROTECT(lwd = FixupLwd(CAR(args), dd));
+    PROTECT(lwd = FixupLwd(CAR(args), dd->gp.lwd));
     nlwd = length(lwd);
     args = CDR(args);
 
@@ -1515,13 +1513,13 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     nyt = length(syt);
     args = CDR(args);
 
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    PROTECT(col = FixupCol(GetPar("col", args), NA_INTEGER));
     ncol = LENGTH(col);
 
-    PROTECT(border = FixupCol(GetPar("border", args), dd));
+    PROTECT(border = FixupCol(GetPar("border", args), NA_INTEGER));
     nborder = LENGTH(border);
 
-    PROTECT(lty = FixupLty(GetPar("lty", args), dd));
+    PROTECT(lty = FixupLty(GetPar("lty", args), dd->gp.lty));
     nlty = length(lty);
 
     xpd = asInteger(GetPar("xpd", args));
@@ -1608,10 +1606,10 @@ SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     if (code == NA_INTEGER || code < 0 || code > 3)
         errorcall(call, "invalid arrow head specification\n");
 
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    PROTECT(col = FixupCol(GetPar("col", args), NA_INTEGER));
     ncol = LENGTH(col);
 
-    PROTECT(lty = FixupLty(GetPar("lty", args), dd));
+    PROTECT(lty = FixupLty(GetPar("lty", args), dd->gp.lty));
     nlty = length(lty);
 
     PROTECT(lwd = GetPar("lwd", args)); /*need  FixupLwd ?*/
@@ -1695,13 +1693,13 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     if (ny != nx)
         errorcall(call, "x and y lengths differ in polygon");
 
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    PROTECT(col = FixupCol(GetPar("col", args), NA_INTEGER));
     ncol = LENGTH(col);
 
-    PROTECT(border = FixupCol(GetPar("border", args), dd));
+    PROTECT(border = FixupCol(GetPar("border", args), NA_INTEGER));
     nborder = LENGTH(border);
 
-    PROTECT(lty = FixupLty(GetPar("lty", args), dd));
+    PROTECT(lty = FixupLty(GetPar("lty", args), dd->gp.lty));
     nlty = length(lty);
 
     /*
@@ -1845,13 +1843,13 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     offset = GConvertXUnits(asReal(CAR(args)), CHARS, INCHES, dd);
     args = CDR(args);
 
-    PROTECT(cex = FixupCex(GetPar("cex", args)));
+    PROTECT(cex = FixupCex(GetPar("cex", args), 1.0));
     ncex = LENGTH(cex);
 
-    PROTECT(col = FixupCol(GetPar("col", args), dd));
+    PROTECT(col = FixupCol(GetPar("col", args), NA_INTEGER));
     ncol = LENGTH(col);
 
-    PROTECT(font = FixupFont(GetPar("font", args)));
+    PROTECT(font = FixupFont(GetPar("font", args), NA_INTEGER));
     nfont = LENGTH(font);
 
     xpd = asLogical(GetPar("xpd", args));
@@ -2081,7 +2079,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     /* Arg7 : cex */
-    PROTECT(cex = FixupCex(CAR(args)));
+    PROTECT(cex = FixupCex(CAR(args), 1.0));
     ncex = length(cex);
     if (ncex <= 0)
         errorcall(call, "zero length \"cex\" specified\n");
@@ -2090,7 +2088,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     /* Arg8 : col */
-    PROTECT(col = FixupCol(CAR(args), dd));
+    PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     ncol = length(col);
     if (ncol <= 0)
         errorcall(call, "zero length \"col\" specified\n");
@@ -2099,7 +2097,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     /* Arg9 : font */
-    PROTECT(font = FixupFont(CAR(args)));
+    PROTECT(font = FixupFont(CAR(args), NA_INTEGER));
     nfont = length(font);
     if (nfont <= 0)
         errorcall(call, "zero length \"font\" specified\n");
@@ -2290,9 +2288,11 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
+/*  abline(a, b, h, v, col, lty, lwd, ...)
+    draw lines in intercept/slope form.  */
+
 SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* abline(a, b, h, v, col, lty, ...) */
     SEXP a, b, h, v, col, lty, lwd;
     int i, ncol, nlines, nlty, nlwd;
     double aa, bb, x[2], y[2];
@@ -2320,15 +2320,15 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         CAR(args) = v = coerceVector(v, REALSXP);
     args = CDR(args);
 
-    PROTECT(col = FixupCol(CAR(args), dd));
+    PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     args = CDR(args);
     ncol = LENGTH(col);
 
-    PROTECT(lty = FixupLty(CAR(args), dd));
+    PROTECT(lty = FixupLty(CAR(args), dd->gp.lty));
     args = CDR(args);
     nlty = length(lty);
 
-    PROTECT(lwd = FixupLwd(CAR(args), dd));
+    PROTECT(lwd = FixupLwd(CAR(args), dd->gp.lwd));
     args = CDR(args);
     nlwd = length(lwd);
 
@@ -2999,62 +2999,50 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP originalArgs, merge, height, llabels;
     char *vmax;
     DevDesc *dd;
-
     dd = CurrentDevice();
     GCheckState(dd);
-
     originalArgs = args;
     if (length(args) < 6)
         errorcall(call, "too few arguments\n");
-
     n = asInteger(CAR(args));
     if (n == NA_INTEGER || n < 2)
         goto badargs;
     args = CDR(args);
-
     if (TYPEOF(CAR(args)) != INTSXP || length(CAR(args)) != 2 * n)
         goto badargs;
     merge = CAR(args);
     args = CDR(args);
-
     if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n)
         goto badargs;
     height = CAR(args);
     args = CDR(args);
-
     if (TYPEOF(CAR(args)) != REALSXP || length(CAR(args)) != n + 1)
         goto badargs;
     dnd_xpos = REAL(CAR(args));
     args = CDR(args);
-
     dnd_hang = asReal(CAR(args));
     if (!R_FINITE(dnd_hang))
         goto badargs;
     args = CDR(args);
-
     if (TYPEOF(CAR(args)) != STRSXP || length(CAR(args)) != n + 1)
         goto badargs;
+
     llabels = CAR(args);
     args = CDR(args);
-
     GSavePars(dd);
     ProcessInlinePars(args, dd);
     dd->gp.cex = dd->gp.cexbase * dd->gp.cex;
     dnd_offset = GStrWidth("m", INCHES, dd);
-
     vmax = vmaxget();
     y = (double *)R_alloc(n, sizeof(double));
     ll = (double *)R_alloc(n, sizeof(double));
     dnd_lptr = &(INTEGER(merge)[0]);
     dnd_rptr = &(INTEGER(merge)[n]);
-
     ymin = REAL(height)[0];
     ymax = REAL(height)[n - 1];
     pin = dd->gp.pin[1];
-
     for (i = 0; i < n; i++)
         ll[i] = GStrWidth(CHAR(STRING(llabels)[i]), INCHES, dd) + dnd_offset;
-
     if (dnd_hang >= 0)
     {
         ymin = ymax - (1 + dnd_hang) * (ymax - ymin);
@@ -3110,7 +3098,6 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
         recordGraphicOperation(op, originalArgs, dd);
     vmaxset(vmax);
     return R_NilValue;
-
 badargs:
     error("invalid dendrogram input\n");
     return R_NilValue; /* never used; to keep -Wall happy */
@@ -3121,18 +3108,13 @@ SEXP do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP col;
     int ncol;
     DevDesc *dd = CurrentDevice();
-
     checkArity(op, args);
-
-    PROTECT(col = FixupCol(CAR(args), dd));
+    PROTECT(col = FixupCol(CAR(args), NA_INTEGER));
     ncol = LENGTH(col);
-
     GSavePars(dd);
-
     GMode(1, dd);
     GRect(0.0, 0.0, 1.0, 1.0, NDC, INTEGER(col)[0], NA_INTEGER, dd);
     GMode(0, dd);
-
     GRestorePars(dd);
     UNPROTECT(1);
     return R_NilValue;
@@ -3141,11 +3123,8 @@ SEXP do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DevDesc *dd = CurrentDevice();
-
     checkArity(op, args);
-
     dd->dp.resize();
     playDisplayList(dd);
-
     return R_NilValue;
 }
