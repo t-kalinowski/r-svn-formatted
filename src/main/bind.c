@@ -231,6 +231,7 @@ static void StringAnswer(SEXP x, struct BindData *data)
             x = CDR(x);
         }
         break;
+    case EXPRSXP:
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
@@ -260,6 +261,7 @@ static void IntegerAnswer(SEXP x, struct BindData *data)
             x = CDR(x);
         }
         break;
+    case EXPRSXP:
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
@@ -288,6 +290,7 @@ static void RealAnswer(SEXP x, struct BindData *data)
         }
         break;
     case VECSXP:
+    case EXPRSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
             RealAnswer(VECTOR_ELT(x, i), data);
@@ -325,6 +328,7 @@ static void ComplexAnswer(SEXP x, struct BindData *data)
             x = CDR(x);
         }
         break;
+    case EXPRSXP:
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
@@ -827,7 +831,9 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     /* the natural coercion for vector types. */
 
     mode = NILSXP;
-    if (data.ans_flags & 128)
+    if (data.ans_flags & 256)
+        mode = EXPRSXP;
+    else if (data.ans_flags & 128)
         mode = VECSXP;
     else if (data.ans_flags & 64)
         mode = STRSXP;
@@ -851,7 +857,7 @@ SEXP do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     /* FIXME : The following assumes one of pair or vector */
     /* based lists applies.  It needs to handle both */
 
-    if (mode == VECSXP)
+    if (mode == VECSXP || mode == EXPRSXP)
     {
         if (!recurse)
         {
