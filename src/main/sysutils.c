@@ -365,7 +365,7 @@ static int write_one(unsigned int namescount, char **names, void *data)
 /* iconv(x, from, to, sub) */
 SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     SEXP ans, x = CAR(args);
     iconv_t obj;
     int i, j;
@@ -477,7 +477,7 @@ SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
 void *Riconv_open(char *tocode, char *fromcode)
 {
 #ifdef Win32
