@@ -1,6 +1,6 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1997  Robert Gentleman and Ross Ihaka
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997-1998  Robert Gentleman, Ross Ihaka and the R Core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,29 +35,34 @@ int F77_SYMBOL(rs)(int *nm, int *n, double *a, double *w, int *matz, double *z, 
 
 /* Private Entry Points */
 
-static int balanc_(int *nm, int *n, double *a, int *low, int *igh, double *scale);
-static int balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *z);
-static int cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *zr, double *zi);
-static int cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, double *scale);
-static int cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci);
-static int comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, double *wr, double *wi, int *ierr);
-static int comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *orti, double *hr, double *hi, double *wr,
-                   double *wi, double *zr, double *zi, int *ierr);
-static int corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, double *ortr, double *orti);
-static int csroot_(double *xr, double *xi, double *yr, double *yi);
-static int elmhes_(int *nm, int *n, int *low, int *igh, double *a, int *int_);
-static int eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, double *z);
+static void balanc_(int *nm, int *n, double *a, int *low, int *igh, double *scale);
+static void balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *z);
+static void cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *zr, double *zi);
+static void cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, double *scale);
+static void cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci);
+static void comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, double *wr, double *wi, int *ierr);
+static void comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *orti, double *hr, double *hi, double *wr,
+                    double *wi, double *zr, double *zi, int *ierr);
+static void corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, double *ortr, double *orti);
+static void csroot_(double *xr, double *xi, double *yr, double *yi);
+static void elmhes_(int *nm, int *n, int *low, int *igh, double *a, int *int_);
+static void eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, double *z);
 static double epslon_(double *x);
-static int hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, int *ierr);
-static int hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, double *z, int *ierr);
-static int htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m, double *zr, double *zi);
-static int htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau);
+static void hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, int *ierr);
+static void hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, double *z, int *ierr);
+static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m, double *zr, double *zi);
+static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau);
 static double pythag_(double *a, double *b);
-static int tql1_(int *n, double *d, double *e, int *ierr);
-static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr);
-static int tqlrat_(int *n, double *d, double *e2, int *ierr);
-static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2);
-static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z);
+static void tql1_(int *n, double *d, double *e, int *ierr);
+static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr);
+static void tqlrat_(int *n, double *d, double *e2, int *ierr);
+static void tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2);
+static void tred2_(int *nm, int *n, double *a, double *d, double *e, double *z);
+
+/* Table of constant values (to be passed as &..) */
+
+static double c_zero = 0.;
+static double c_one = 1.;
 
 /*     subroutine balanc
  *
@@ -70,40 +75,40 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z);
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        a contains the input matrix to be balanced.
+ *	  a contains the input matrix to be balanced.
  *
  *     on output
  *
- *        a contains the balanced matrix.
+ *	  a contains the balanced matrix.
  *
- *        low and igh are two ints such that a(i,j)
- *          is equal to zero if
- *           (1) i is greater than j and
- *           (2) j=1,...,low-1 or i=igh+1,...,n.
+ *	  low and igh are two ints such that a(i,j)
+ *	    is equal to zero if
+ *	     (1) i is greater than j and
+ *	     (2) j=1,...,low-1 or i=igh+1,...,n.
  *
- *        scale contains information determining the
- *           permutations and scaling factors used.
+ *	  scale contains information determining the
+ *	     permutations and scaling factors used.
  *
  *     suppose that the principal submatrix in rows low through igh
  *     has been balanced, that p(j) denotes the index interchanged
  *     with j during the permutation step, and that the elements
  *     of the diagonal matrix used are denoted by d(i,j).  then
- *        scale(j) = p(j),    for j = 1,...,low-1
- *                 = d(j,j),      j = low,...,igh
- *                 = p(j)         j = igh+1,...,n.
+ *	  scale(j) = p(j),    for j = 1,...,low-1
+ *		   = d(j,j),	  j = low,...,igh
+ *		   = p(j)	  j = igh+1,...,n.
  *     the order in which the interchanges are made is n to igh+1,
  *     then 1 to low-1.
  *
  *     note that 1 is returned for igh if igh is zero formally.
  *
  *     the algol procedure exc contained in balance appears in
- *     balanc  in line.  (note that the algol roles of identifiers
+ *     balanc  in line.	 (note that the algol roles of identifiers
  *     k,l have been reversed.)
  *
  *     questions and comments should be directed to burton s. garbow,
@@ -113,65 +118,54 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z);
  *     this version dated august 1983.
  */
 
-/* Table of constant values */
-
-static double c_b256 = 0.;
-static double c_b314 = 1.;
-
-static int balanc_(int *nm, int *n, double *a, int *low, int *igh, double *scale)
+static void balanc_(int *nm, int *n, double *a, int *low, int *igh, double *scale)
 {
     /* System generated locals */
-    int a_dim1, a_offset, i__1, i__2;
-    double d__1;
+    int a_dim1;
 
     /* Local variables */
     int iexc;
     double c, f, g;
     int i, j, k, l, m;
     double r, s, radix, b2;
-    int jj;
+    int jj, nn;
     int noconv;
+
+    nn = *n;
     /* Parameter adjustments */
     --scale;
     a_dim1 = *nm;
-    a_offset = a_dim1 + 1;
-    a -= a_offset;
+    a -= (a_dim1 + 1);
 
     /* Function Body */
     radix = 16.;
 
     b2 = radix * radix;
     k = 1;
-    l = *n;
-    goto L100;
-/*     .......... in-line procedure for row and */
-/*                column exchange .......... */
-L20:
+    l = nn;
+    goto L_entry;
+    /*----------*/
+
+/*     .......... in-line procedure for row and column exchange .......... */
+L_r_c_exch:
     scale[m] = (double)j;
-    if (j == m)
+    if (j != m)
     {
-        goto L50;
+        for (i = 1; i <= l; ++i)
+        {
+            f = a[i + j * a_dim1];
+            a[i + j * a_dim1] = a[i + m * a_dim1];
+            a[i + m * a_dim1] = f;
+        }
+
+        for (i = k; i <= nn; ++i)
+        {
+            f = a[j + i * a_dim1];
+            a[j + i * a_dim1] = a[m + i * a_dim1];
+            a[m + i * a_dim1] = f;
+        }
     }
 
-    i__1 = l;
-    for (i = 1; i <= i__1; ++i)
-    {
-        f = a[i + j * a_dim1];
-        a[i + j * a_dim1] = a[i + m * a_dim1];
-        a[i + m * a_dim1] = f;
-        /* L30: */
-    }
-
-    i__1 = *n;
-    for (i = k; i <= i__1; ++i)
-    {
-        f = a[j + i * a_dim1];
-        a[j + i * a_dim1] = a[m + i * a_dim1];
-        a[m + i * a_dim1] = f;
-        /* L40: */
-    }
-
-L50:
     switch (iexc)
     {
     case 1:
@@ -180,100 +174,87 @@ L50:
         goto L130;
     }
 /*     .......... search for rows isolating an eigenvalue */
-/*                and push them down .......... */
+/*		  and push them down .......... */
 L80:
     if (l == 1)
     {
-        goto L280;
+        goto L_end;
     }
     --l;
 /*     .......... for j=l step -1 until 1 do -- .......... */
-L100:
-    i__1 = l;
-    for (jj = 1; jj <= i__1; ++jj)
+L_entry:
+    for (jj = 1; jj <= l; ++jj)
     {
         j = l + 1 - jj;
 
-        i__2 = l;
-        for (i = 1; i <= i__2; ++i)
+        for (i = 1; i <= l; ++i)
         {
-            if (i == j)
+            if (i != j)
             {
-                goto L110;
+                if (a[j + i * a_dim1] != 0.)
+                {
+                    goto L120;
+                }
             }
-            if (a[j + i * a_dim1] != 0.)
-            {
-                goto L120;
-            }
-        L110:;
         }
 
         m = l;
         iexc = 1;
-        goto L20;
+        goto L_r_c_exch;
     L120:;
     }
 
     goto L140;
 /*     .......... search for columns isolating an eigenvalue */
-/*                and push them left .......... */
+/*		  and push them left .......... */
 L130:
     ++k;
 
 L140:
-    i__1 = l;
-    for (j = k; j <= i__1; ++j)
+    for (j = k; j <= l; ++j)
     {
 
-        i__2 = l;
-        for (i = k; i <= i__2; ++i)
+        for (i = k; i <= l; ++i)
         {
-            if (i == j)
+            if (i != j)
             {
-                goto L150;
+                if (a[i + j * a_dim1] != 0.)
+                {
+                    goto L170;
+                }
             }
-            if (a[i + j * a_dim1] != 0.)
-            {
-                goto L170;
-            }
-        L150:;
         }
 
         m = k;
         iexc = 2;
-        goto L20;
+        goto L_r_c_exch;
     L170:;
     }
     /*     .......... now balance the submatrix in rows k to l .......... */
-    i__1 = l;
-    for (i = k; i <= i__1; ++i)
+    for (i = k; i <= l; ++i)
     {
-        /* L180: */
         scale[i] = 1.;
     }
-/*     .......... iterative loop for norm reduction .......... */
-L190:
+
+/* .......... iterative loop for norm reduction ............................ */
+Loop:
     noconv = FALSE;
 
-    i__1 = l;
-    for (i = k; i <= i__1; ++i)
+    for (i = k; i <= l; ++i)
     {
         c = 0.;
         r = 0.;
 
-        i__2 = l;
-        for (j = k; j <= i__2; ++j)
+        for (j = k; j <= l; ++j)
         {
-            if (j == i)
+            if (j != i)
             {
-                goto L200;
+                c += fabs(a[j + i * a_dim1]);
+                r += fabs(a[i + j * a_dim1]);
             }
-            c += (d__1 = a[j + i * a_dim1], abs(d__1));
-            r += (d__1 = a[i + j * a_dim1], abs(d__1));
-        L200:;
         }
-        /*     .......... guard against zero c or r due to underflow .........
-        . */
+
+        /*     .......... guard against zero c or r due to underflow ......... */
         if (c == 0. || r == 0.)
         {
             goto L270;
@@ -281,7 +262,7 @@ L190:
         g = r / radix;
         f = 1.;
         s = c + r;
-    L210:
+    L210: /* while (..) */
         if (c >= g)
         {
             goto L220;
@@ -291,7 +272,8 @@ L190:
         goto L210;
     L220:
         g = r * radix;
-    L230:
+
+    L230: /* while (..) */
         if (c < g)
         {
             goto L240;
@@ -299,6 +281,7 @@ L190:
         f /= radix;
         c /= b2;
         goto L230;
+
     /*     .......... now balance .......... */
     L240:
         if ((c + r) / f >= s * .95)
@@ -309,33 +292,28 @@ L190:
         scale[i] *= f;
         noconv = TRUE;
 
-        i__2 = *n;
-        for (j = k; j <= i__2; ++j)
+        for (j = k; j <= nn; ++j)
         {
-            /* L250: */
             a[i + j * a_dim1] *= g;
         }
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
-            /* L260: */
             a[j + i * a_dim1] *= f;
         }
 
     L270:;
-    }
+    } /* for (i = k, i <= l ..) */
 
     if (noconv)
     {
-        goto L190;
+        goto Loop;
     }
 
-L280:
+L_end:
     *low = k;
     *igh = l;
-    return 0;
-}
+} /* balanc_ */
 
 /*     subroutine balbak
  *
@@ -349,26 +327,26 @@ L280:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by  balanc.
+ *	  low and igh are ints determined by  balanc.
  *
- *        scale contains information determining the permutations
- *          and scaling factors used by  balanc.
+ *	  scale contains information determining the permutations
+ *	    and scaling factors used by	 balanc.
  *
- *        m is the number of columns of z to be back transformed.
+ *	  m is the number of columns of z to be back transformed.
  *
- *        z contains the real and imaginary parts of the eigen-
- *          vectors to be back transformed in its first m columns.
+ *	  z contains the real and imaginary parts of the eigen-
+ *	    vectors to be back transformed in its first m columns.
  *
  *     on output
  *
- *        z contains the real and imaginary parts of the
- *          transformed eigenvectors in its first m columns.
+ *	  z contains the real and imaginary parts of the
+ *	    transformed eigenvectors in its first m columns.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -376,10 +354,10 @@ L280:
  *     this version dated august 1983.
  */
 
-static int balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *z)
+static void balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *z)
 {
     /* System generated locals */
-    int z_dim1, z_offset, i__1, i__2;
+    int z_dim1, z_offset;
 
     /* Local variables */
     int i, j, k;
@@ -395,34 +373,25 @@ static int balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, d
     /* Function Body */
     if (*m == 0)
     {
-        goto L200;
+        goto L_end;
     }
-    if (*igh == *low)
+    if (*igh != *low)
     {
-        goto L120;
-    }
-
-    i__1 = *igh;
-    for (i = *low; i <= i__1; ++i)
-    {
-        s = scale[i];
-        /*     .......... left hand eigenvectors are back transformed */
-        /*                if the foregoing statement is replaced by */
-        /*                s=1.0d0/scale(i). .......... */
-        i__2 = *m;
-        for (j = 1; j <= i__2; ++j)
+        for (i = *low; i <= *igh; ++i)
         {
-            /* L100: */
-            z[i + j * z_dim1] *= s;
+            s = scale[i];
+            /*     .......... left hand eigenvectors are back transformed */
+            /*		  if the foregoing statement is replaced by */
+            /*		  s=1.0d0/scale(i). .......... */
+            for (j = 1; j <= *m; ++j)
+            {
+                z[i + j * z_dim1] *= s;
+            }
         }
-
-        /* L110: */
     }
-/*     ......... for i=low-1 step -1 until 1, */
-/*               igh+1 step 1 until n do -- .......... */
-L120:
-    i__1 = *n;
-    for (ii = 1; ii <= i__1; ++ii)
+    /*     ......... for i=low-1 step -1 until 1, */
+    /*		 igh+1 step 1 until n do -- .......... */
+    for (ii = 1; ii <= *n; ++ii)
     {
         i = ii;
         if (i >= *low && i <= *igh)
@@ -439,20 +408,17 @@ L120:
             goto L140;
         }
 
-        i__2 = *m;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= *m; ++j)
         {
             s = z[i + j * z_dim1];
             z[i + j * z_dim1] = z[k + j * z_dim1];
             z[k + j * z_dim1] = s;
-            /* L130: */
         }
 
     L140:;
     }
 
-L200:
-    return 0;
+L_end:;
 }
 
 /*     subroutine cbabk2
@@ -468,28 +434,28 @@ L200:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by  cbal.
+ *	  low and igh are ints determined by  cbal.
  *
- *        scale contains information determining the permutations
- *          and scaling factors used by  cbal.
+ *	  scale contains information determining the permutations
+ *	    and scaling factors used by	 cbal.
  *
- *        m is the number of eigenvectors to be back transformed.
+ *	  m is the number of eigenvectors to be back transformed.
  *
- *        zr and zi contain the real and imaginary parts,
- *          respectively, of the eigenvectors to be
- *          back transformed in their first m columns.
+ *	  zr and zi contain the real and imaginary parts,
+ *	    respectively, of the eigenvectors to be
+ *	    back transformed in their first m columns.
  *
  *     on output
  *
- *        zr and zi contain the real and imaginary parts,
- *          respectively, of the transformed eigenvectors
- *          in their first m columns.
+ *	  zr and zi contain the real and imaginary parts,
+ *	    respectively, of the transformed eigenvectors
+ *	    in their first m columns.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -497,10 +463,10 @@ L200:
  *     this version dated august 1983.
  */
 
-static int cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *zr, double *zi)
+static void cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *zr, double *zi)
 {
     /* System generated locals */
-    int zr_dim1, zr_offset, zi_dim1, zi_offset, i__1, i__2;
+    int z_dim1, z_offset;
 
     /* Local variables */
     int i, j, k;
@@ -509,45 +475,35 @@ static int cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, d
 
     /* Parameter adjustments */
     --scale;
-    zi_dim1 = *nm;
-    zi_offset = zi_dim1 + 1;
-    zi -= zi_offset;
-    zr_dim1 = *nm;
-    zr_offset = zr_dim1 + 1;
-    zr -= zr_offset;
+    z_dim1 = *nm;
+    z_offset = z_dim1 + 1;
+    zi -= z_offset;
+    zr -= z_offset;
 
     /* Function Body */
     if (*m == 0)
     {
-        goto L200;
+        goto L_end;
     }
-    if (*igh == *low)
+    if (*igh != *low)
     {
-        goto L120;
-    }
-
-    i__1 = *igh;
-    for (i = *low; i <= i__1; ++i)
-    {
-        s = scale[i];
-        /*     .......... left hand eigenvectors are back transformed */
-        /*                if the foregoing statement is replaced by */
-        /*                s=1.0d0/scale(i). .......... */
-        i__2 = *m;
-        for (j = 1; j <= i__2; ++j)
+        for (i = *low; i <= *igh; ++i)
         {
-            zr[i + j * zr_dim1] *= s;
-            zi[i + j * zi_dim1] *= s;
-            /* L100: */
+            s = scale[i];
+            /*     .......... left hand eigenvectors are back transformed */
+            /*		  if the foregoing statement is replaced by */
+            /*		  s=1.0d0/scale(i). .......... */
+            for (j = 1; j <= *m; ++j)
+            {
+                zr[i + j * z_dim1] *= s;
+                zi[i + j * z_dim1] *= s;
+            }
         }
-
-        /* L110: */
+        /*     .......... for i=low-1 step -1 until 1, */
+        /*		  igh+1 step 1 until n do -- .......... */
     }
-/*     .......... for i=low-1 step -1 until 1, */
-/*                igh+1 step 1 until n do -- .......... */
-L120:
-    i__1 = *n;
-    for (ii = 1; ii <= i__1; ++ii)
+
+    for (ii = 1; ii <= *n; ++ii)
     {
         i = ii;
         if (i >= *low && i <= *igh)
@@ -564,24 +520,21 @@ L120:
             goto L140;
         }
 
-        i__2 = *m;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= *m; ++j)
         {
-            s = zr[i + j * zr_dim1];
-            zr[i + j * zr_dim1] = zr[k + j * zr_dim1];
-            zr[k + j * zr_dim1] = s;
-            s = zi[i + j * zi_dim1];
-            zi[i + j * zi_dim1] = zi[k + j * zi_dim1];
-            zi[k + j * zi_dim1] = s;
-            /* L130: */
+            s = zr[i + j * z_dim1];
+            zr[i + j * z_dim1] = zr[k + j * z_dim1];
+            zr[k + j * z_dim1] = s;
+            s = zi[i + j * z_dim1];
+            zi[i + j * z_dim1] = zi[k + j * z_dim1];
+            zi[k + j * z_dim1] = s;
         }
 
     L140:;
     }
 
-L200:
-    return 0;
-}
+L_end:;
+} /* cbabk2_ */
 
 /*     subroutine cbal
  *
@@ -595,35 +548,35 @@ L200:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        ar and ai contain the real and imaginary parts,
- *          respectively, of the complex matrix to be balanced.
+ *	  ar and ai contain the real and imaginary parts,
+ *	    respectively, of the complex matrix to be balanced.
  *
  *     on output
  *
- *        ar and ai contain the real and imaginary parts,
- *          respectively, of the balanced matrix.
+ *	  ar and ai contain the real and imaginary parts,
+ *	    respectively, of the balanced matrix.
  *
- *        low and igh are two ints such that ar(i,j) and ai(i,j)
- *          are equal to zero if
- *           (1) i is greater than j and
- *           (2) j=1,...,low-1 or i=igh+1,...,n.
+ *	  low and igh are two ints such that ar(i,j) and ai(i,j)
+ *	    are equal to zero if
+ *	     (1) i is greater than j and
+ *	     (2) j=1,...,low-1 or i=igh+1,...,n.
  *
- *        scale contains information determining the
- *           permutations and scaling factors used.
+ *	  scale contains information determining the
+ *	     permutations and scaling factors used.
  *
  *     suppose that the principal submatrix in rows low through igh
  *     has been balanced, that p(j) denotes the index interchanged
  *     with j during the permutation step, and that the elements
  *     of the diagonal matrix used are denoted by d(i,j).  then
- *        scale(j) = p(j),    for j = 1,...,low-1
- *                 = d(j,j)       j = low,...,igh
- *                 = p(j)         j = igh+1,...,n.
+ *	  scale(j) = p(j),    for j = 1,...,low-1
+ *		   = d(j,j)	  j = low,...,igh
+ *		   = p(j)	  j = igh+1,...,n.
  *     the order in which the interchanges are made is n to igh+1,
  *     then 1 to low-1.
  *
@@ -641,11 +594,10 @@ L200:
  *     this version dated august 1983.
  */
 
-static int cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, double *scale)
+static void cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, double *scale)
 {
     /* System generated locals */
-    int ar_dim1, ar_offset, ai_dim1, ai_offset, i__1, i__2;
-    double d__1, d__2;
+    int ar_dim1, ar_offset, ai_dim1, ai_offset;
 
     /* Local variables */
     int iexc;
@@ -671,8 +623,9 @@ static int cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, do
     k = 1;
     l = *n;
     goto L100;
+
 /*     .......... in-line procedure for row and */
-/*                column exchange .......... */
+/*		  column exchange .......... */
 L20:
     scale[m] = (double)j;
     if (j == m)
@@ -680,8 +633,7 @@ L20:
         goto L50;
     }
 
-    i__1 = l;
-    for (i = 1; i <= i__1; ++i)
+    for (i = 1; i <= l; ++i)
     {
         f = ar[i + j * ar_dim1];
         ar[i + j * ar_dim1] = ar[i + m * ar_dim1];
@@ -689,11 +641,9 @@ L20:
         f = ai[i + j * ai_dim1];
         ai[i + j * ai_dim1] = ai[i + m * ai_dim1];
         ai[i + m * ai_dim1] = f;
-        /* L30: */
     }
 
-    i__1 = *n;
-    for (i = k; i <= i__1; ++i)
+    for (i = k; i <= *n; ++i)
     {
         f = ar[j + i * ar_dim1];
         ar[j + i * ar_dim1] = ar[m + i * ar_dim1];
@@ -713,7 +663,7 @@ L50:
         goto L130;
     }
 /*     .......... search for rows isolating an eigenvalue */
-/*                and push them down .......... */
+/*		  and push them down .......... */
 L80:
     if (l == 1)
     {
@@ -722,13 +672,11 @@ L80:
     --l;
 /*     .......... for j=l step -1 until 1 do -- .......... */
 L100:
-    i__1 = l;
-    for (jj = 1; jj <= i__1; ++jj)
+    for (jj = 1; jj <= l; ++jj)
     {
         j = l + 1 - jj;
 
-        i__2 = l;
-        for (i = 1; i <= i__2; ++i)
+        for (i = 1; i <= l; ++i)
         {
             if (i == j)
             {
@@ -749,17 +697,15 @@ L100:
 
     goto L140;
 /*     .......... search for columns isolating an eigenvalue */
-/*                and push them left .......... */
+/*		  and push them left .......... */
 L130:
     ++k;
 
 L140:
-    i__1 = l;
-    for (j = k; j <= i__1; ++j)
+    for (j = k; j <= l; ++j)
     {
 
-        i__2 = l;
-        for (i = k; i <= i__2; ++i)
+        for (i = k; i <= l; ++i)
         {
             if (i == j)
             {
@@ -778,35 +724,26 @@ L140:
     L170:;
     }
     /*     .......... now balance the submatrix in rows k to l .......... */
-    i__1 = l;
-    for (i = k; i <= i__1; ++i)
-    {
-        /* L180: */
+    for (i = k; i <= l; ++i)
         scale[i] = 1.;
-    }
+
 /*     .......... iterative loop for norm reduction .......... */
 L190:
     noconv = FALSE;
 
-    i__1 = l;
-    for (i = k; i <= i__1; ++i)
+    for (i = k; i <= l; ++i)
     {
-        c = 0.;
-        r = 0.;
+        c = r = 0.;
 
-        i__2 = l;
-        for (j = k; j <= i__2; ++j)
+        for (j = k; j <= l; ++j)
         {
-            if (j == i)
+            if (j != i)
             {
-                goto L200;
+                c = c + fabs(ar[j + i * ar_dim1]) + fabs(ai[j + i * ai_dim1]);
+                r = r + fabs(ar[i + j * ar_dim1]) + fabs(ai[i + j * ai_dim1]);
             }
-            c = c + (d__1 = ar[j + i * ar_dim1], abs(d__1)) + (d__2 = ai[j + i * ai_dim1], abs(d__2));
-            r = r + (d__1 = ar[i + j * ar_dim1], abs(d__1)) + (d__2 = ai[i + j * ai_dim1], abs(d__2));
-        L200:;
         }
-        /*     .......... guard against zero c or r due to underflow .........
-        . */
+        /*     .......... guard against zero c or r due to underflow ......... */
         if (c == 0. || r == 0.)
         {
             goto L270;
@@ -842,20 +779,16 @@ L190:
         scale[i] *= f;
         noconv = TRUE;
 
-        i__2 = *n;
-        for (j = k; j <= i__2; ++j)
+        for (j = k; j <= *n; ++j)
         {
             ar[i + j * ar_dim1] *= g;
             ai[i + j * ai_dim1] *= g;
-            /* L250: */
         }
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             ar[j + i * ar_dim1] *= f;
             ai[j + i * ai_dim1] *= f;
-            /* L260: */
         }
 
     L270:;
@@ -869,7 +802,6 @@ L190:
 L280:
     *low = k;
     *igh = l;
-    return 0;
 }
 
 /*     subroutine cdiv
@@ -877,7 +809,7 @@ L280:
  *     complex division, (cr,ci) = (ar,ai)/(br,bi)
  */
 
-static int cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
+static void cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
 {
     /* System generated locals */
     double d__1, d__2;
@@ -885,7 +817,7 @@ static int cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, dou
     /* Local variables */
     double s, ais, bis, ars, brs;
 
-    s = abs(*br) + abs(*bi);
+    s = fabs(*br) + fabs(*bi);
     ars = *ar / s;
     ais = *ai / s;
     brs = *br / s;
@@ -897,7 +829,6 @@ static int cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, dou
     s = d__1 * d__1 + d__2 * d__2;
     *cr = (ars * brs + ais * bis) / s;
     *ci = (ais * brs - ars * bis) / s;
-    return 0;
 }
 
 /*     subroutine cg
@@ -909,96 +840,82 @@ static int cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, dou
  *
  *     on input
  *
- *        nm  must be set to the row dimension of the two-dimensional
- *        array parameters as declared in the calling program
- *        dimension statement.
+ *	  nm  must be set to the row dimension of the two-dimensional
+ *	  array parameters as declared in the calling program
+ *	  dimension statement.
  *
- *        n  is the order of the matrix  a=(ar,ai).
+ *	  n  is the order of the matrix	 a=(ar,ai).
  *
- *        ar  and  ai  contain the real and imaginary parts,
- *        respectively, of the complex general matrix.
+ *	  ar  and  ai  contain the real and imaginary parts,
+ *	  respectively, of the complex general matrix.
  *
- *        matz  is an int variable set equal to zero if
- *        only eigenvalues are desired.  otherwise it is set to
- *        any non-zero int for both eigenvalues and eigenvectors.
+ *	  matz	is an int variable set equal to zero if
+ *	  only eigenvalues are desired.	 otherwise it is set to
+ *	  any non-zero int for both eigenvalues and eigenvectors.
  *
  *     on output
  *
- *        wr  and  wi  contain the real and imaginary parts,
- *        respectively, of the eigenvalues.
+ *	  wr  and  wi  contain the real and imaginary parts,
+ *	  respectively, of the eigenvalues.
  *
- *        zr  and  zi  contain the real and imaginary parts,
- *        respectively, of the eigenvectors if matz is not zero.
+ *	  zr  and  zi  contain the real and imaginary parts,
+ *	  respectively, of the eigenvectors if matz is not zero.
  *
- *        ierr  is an int output variable set equal to an error
- *           completion code described in the documentation for comqr
- *           and comqr2.  the normal completion code is zero.
+ *	  ierr	is an int output variable set equal to an error
+ *	     completion code described in the documentation for comqr
+ *	     and comqr2.  the normal completion code is zero.
  *
- *        fv1, fv2, and  fv3  are temporary storage arrays.
+ *	  fv1, fv2, and	 fv3  are temporary storage arrays.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
  *
  *     this version dated august 1983.
  */
-
 int F77_SYMBOL(cg)(int *nm, int *n, double *ar, double *ai, double *wr, double *wi, int *matz, double *zr, double *zi,
                    double *fv1, double *fv2, double *fv3, int *ierr)
 {
-    /* System generated locals */
-    int ar_dim1, ar_offset, ai_dim1, ai_offset, zr_dim1, zr_offset, zi_dim1, zi_offset;
+    int Nm, Nm1;
 
     /* Local variables */
-    extern int cbal_(), corth_(), comqr_(), cbabk2_(), comqr2_();
     int is1, is2;
 
+    Nm = *nm;
+    Nm1 = Nm + 1;
     /* Parameter adjustments */
     --fv3;
     --fv2;
     --fv1;
-    zi_dim1 = *nm;
-    zi_offset = zi_dim1 + 1;
-    zi -= zi_offset;
-    zr_dim1 = *nm;
-    zr_offset = zr_dim1 + 1;
-    zr -= zr_offset;
+    zi -= Nm1;
+    zr -= Nm1;
     --wi;
     --wr;
-    ai_dim1 = *nm;
-    ai_offset = ai_dim1 + 1;
-    ai -= ai_offset;
-    ar_dim1 = *nm;
-    ar_offset = ar_dim1 + 1;
-    ar -= ar_offset;
+    ai -= Nm1;
+    ar -= Nm1;
 
     /* Function Body */
-    if (*n <= *nm)
+    if (*n > Nm)
     {
-        goto L10;
+        *ierr = *n * 10;
+        goto L_end;
     }
-    *ierr = *n * 10;
-    goto L50;
 
-L10:
-    cbal_(nm, n, &ar[ar_offset], &ai[ai_offset], &is1, &is2, &fv1[1]);
-    corth_(nm, n, &is1, &is2, &ar[ar_offset], &ai[ai_offset], &fv2[1], &fv3[1]);
-    if (*matz != 0)
-    {
-        goto L20;
+    cbal_(nm, n, &ar[Nm1], &ai[Nm1], &is1, &is2, &fv1[1]);
+    corth_(nm, n, &is1, &is2, &ar[Nm1], &ai[Nm1], &fv2[1], &fv3[1]);
+    if (*matz == 0)
+    { /* .......... find eigenvalues only .......... */
+        comqr_(nm, n, &is1, &is2, &ar[Nm1], &ai[Nm1], &wr[1], &wi[1], ierr);
     }
-    /*     .......... find eigenvalues only .......... */
-    comqr_(nm, n, &is1, &is2, &ar[ar_offset], &ai[ai_offset], &wr[1], &wi[1], ierr);
-    goto L50;
-/*     .......... find both eigenvalues and eigenvectors .......... */
-L20:
-    comqr2_(nm, n, &is1, &is2, &fv2[1], &fv3[1], &ar[ar_offset], &ai[ai_offset], &wr[1], &wi[1], &zr[zr_offset],
-            &zi[zi_offset], ierr);
-    if (*ierr != 0)
-    {
-        goto L50;
+    else
+    { /* .......... find both eigenvalues and eigenvectors ...*/
+        comqr2_(nm, n, &is1, &is2, &fv2[1], &fv3[1], &ar[Nm1], &ai[Nm1], &wr[1], &wi[1], &zr[Nm1], &zi[Nm1], ierr);
+        if (*ierr == 0)
+        {
+            cbabk2_(nm, n, &is1, &is2, &fv1[1], n, &zr[Nm1], &zi[Nm1]);
+        }
     }
-    cbabk2_(nm, n, &is1, &is2, &fv1[1], n, &zr[zr_offset], &zi[zi_offset]);
-L50:
+
+L_end:
     return 0;
 }
 
@@ -1011,31 +928,31 @@ L50:
  *
  *     on input
  *
- *        nm  must be set to the row dimension of the two-dimensional
- *        array parameters as declared in the calling program
- *        dimension statement.
+ *	  nm  must be set to the row dimension of the two-dimensional
+ *	  array parameters as declared in the calling program
+ *	  dimension statement.
  *
- *        n  is the order of the matrix  a=(ar,ai).
+ *	  n  is the order of the matrix	 a=(ar,ai).
  *
- *        ar  and  ai  contain the real and imaginary parts,
- *        respectively, of the complex hermitian matrix.
+ *	  ar  and  ai  contain the real and imaginary parts,
+ *	  respectively, of the complex hermitian matrix.
  *
- *        matz  is an int variable set equal to zero if
- *        only eigenvalues are desired.  otherwise it is set to
- *        any non-zero int for both eigenvalues and eigenvectors.
+ *	  matz	is an int variable set equal to zero if
+ *	  only eigenvalues are desired.	 otherwise it is set to
+ *	  any non-zero int for both eigenvalues and eigenvectors.
  *
  *     on output
  *
- *        w  contains the eigenvalues in ascending order.
+ *	  w  contains the eigenvalues in ascending order.
  *
- *        zr  and  zi  contain the real and imaginary parts,
- *        respectively, of the eigenvectors if matz is not zero.
+ *	  zr  and  zi  contain the real and imaginary parts,
+ *	  respectively, of the eigenvectors if matz is not zero.
  *
- *        ierr  is an int output variable set equal to an error
- *           completion code described in the documentation for tqlrat
- *           and tql2.  the normal completion code is zero.
+ *	  ierr	is an int output variable set equal to an error
+ *	     completion code described in the documentation for tqlrat
+ *	     and tql2.	the normal completion code is zero.
  *
- *        fv1, fv2, and  fm1  are temporary storage arrays.
+ *	  fv1, fv2, and	 fm1  are temporary storage arrays.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -1047,11 +964,10 @@ int F77_SYMBOL(ch)(int *nm, int *n, double *ar, double *ai, double *w, int *matz
                    double *fv2, double *fm1, int *ierr)
 {
     /* System generated locals */
-    int ar_dim1, ar_offset, ai_dim1, ai_offset, zr_dim1, zr_offset, zi_dim1, zi_offset, i__1, i__2;
+    int ar_dim1, ar_offset, ai_dim1, ai_offset, zr_dim1, zr_offset, zi_dim1, zi_offset;
 
     /* Local variables */
     int i, j;
-    extern int htridi_(), htribk_(), tqlrat_(), tql2_();
 
     /* Parameter adjustments */
     fm1 -= 3;
@@ -1090,15 +1006,11 @@ L10:
     goto L50;
 /*     .......... find both eigenvalues and eigenvectors .......... */
 L20:
-    i__1 = *n;
-    for (i = 1; i <= i__1; ++i)
+    for (i = 1; i <= *n; ++i)
     {
-
-        i__2 = *n;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= *n; ++j)
         {
             zr[j + i * zr_dim1] = 0.;
-            /* L30: */
         }
 
         zr[i + i * zr_dim1] = 1.;
@@ -1113,12 +1025,12 @@ L20:
     htribk_(nm, n, &ar[ar_offset], &ai[ai_offset], &fm1[3], n, &zr[zr_offset], &zi[zi_offset]);
 L50:
     return 0;
-}
+} /* ch(.) */
 
 /*     subroutine comqr
  *
  *     this subroutine is a translation of a unitary analogue of the
- *     algol procedure  comlr, num. math. 12, 369-376(1968) by martin
+ *     algol procedure	comlr, num. math. 12, 369-376(1968) by martin
  *     and wilkinson.
  *     handbook for auto. comp., vol.ii-linear algebra, 396-403(1971)
  *     the unitary analogue substitutes the qr algorithm of francis
@@ -1129,42 +1041,42 @@ L50:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  cbal.  if  cbal  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	cbal.  if  cbal	 has not been used,
+ *	    set low=1, igh=n.
  *
- *        hr and hi contain the real and imaginary parts,
- *          respectively, of the complex upper hessenberg matrix.
- *          their lower triangles below the subdiagonal contain
- *          information about the unitary transformations used in
- *          the reduction by  corth, if performed.
+ *	  hr and hi contain the real and imaginary parts,
+ *	    respectively, of the complex upper hessenberg matrix.
+ *	    their lower triangles below the subdiagonal contain
+ *	    information about the unitary transformations used in
+ *	    the reduction by  corth, if performed.
  *
  *     on output
  *
- *        the upper hessenberg portions of hr and hi have been
- *          destroyed.  therefore, they must be saved before
- *          calling  comqr  if subsequent calculation of
- *          eigenvectors is to be performed.
+ *	  the upper hessenberg portions of hr and hi have been
+ *	    destroyed.	therefore, they must be saved before
+ *	    calling  comqr  if subsequent calculation of
+ *	    eigenvectors is to be performed.
  *
- *        wr and wi contain the real and imaginary parts,
- *          respectively, of the eigenvalues.  if an error
- *          exit is made, the eigenvalues should be correct
- *          for indices ierr+1,...,n.
+ *	  wr and wi contain the real and imaginary parts,
+ *	    respectively, of the eigenvalues.  if an error
+ *	    exit is made, the eigenvalues should be correct
+ *	    for indices ierr+1,...,n.
  *
- *        ierr is set to
- *          zero       for normal return,
- *          j          if the limit of 30*n iterations is exhausted
- *                     while the j-th eigenvalue is being sought.
+ *	  ierr is set to
+ *	    zero       for normal return,
+ *	    j	       if the limit of 30*n iterations is exhausted
+ *		       while the j-th eigenvalue is being sought.
  *
  *     calls cdiv for complex division.
  *     calls csroot for complex square root.
- *     calls pythag for  dsqrt(a*a + b*b) .
+ *     calls pythag for	 dsqrt(a*a + b*b) .
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -1172,19 +1084,16 @@ L50:
  *     this version dated august 1983.
  */
 
-static int comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, double *wr, double *wi, int *ierr)
+static void comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, double *wr, double *wi, int *ierr)
 {
     /* System generated locals */
     int hr_dim1, hr_offset, hi_dim1, hi_offset, i__1, i__2;
     double d__1, d__2, d__3, d__4;
 
     /* Local variables */
-    extern int cdiv_();
     double norm;
     int i, j, l, en, ll;
     double si, ti, xi, yi, sr, tr, xr, yr;
-    extern double pythag_();
-    extern int csroot_();
     int lp1, itn, its;
     double zzi, zzr;
     int enm1;
@@ -1267,12 +1176,12 @@ L180:
 L220:
     if (en < *low)
     {
-        goto L1001;
+        goto L_end;
     }
     its = 0;
     enm1 = en - 1;
 /*     .......... look for single small sub-diagonal element */
-/*                for l=en step -1 until low d0 -- .......... */
+/*		  for l=en step -1 until low d0 -- .......... */
 L240:
     i__1 = en;
     for (ll = *low; ll <= i__1; ++ll)
@@ -1282,14 +1191,13 @@ L240:
         {
             goto L300;
         }
-        tst1 = (d__1 = hr[l - 1 + (l - 1) * hr_dim1], abs(d__1)) + (d__2 = hi[l - 1 + (l - 1) * hi_dim1], abs(d__2)) +
-               (d__3 = hr[l + l * hr_dim1], abs(d__3)) + (d__4 = hi[l + l * hi_dim1], abs(d__4));
-        tst2 = tst1 + (d__1 = hr[l + (l - 1) * hr_dim1], abs(d__1));
+        tst1 = fabs(hr[l - 1 + (l - 1) * hr_dim1]) + fabs(hi[l - 1 + (l - 1) * hi_dim1]) + fabs(hr[l + l * hr_dim1]) +
+               fabs(hi[l + l * hi_dim1]);
+        tst2 = tst1 + fabs(hr[l + (l - 1) * hr_dim1]);
         if (tst2 == tst1)
         {
             goto L300;
         }
-        /* L260: */
     }
 /*     .......... form shift .......... */
 L300:
@@ -1299,7 +1207,7 @@ L300:
     }
     if (itn == 0)
     {
-        goto L1000;
+        goto L_err_end;
     }
     if (its == 10 || its == 20)
     {
@@ -1452,11 +1360,10 @@ L660:
     en = enm1;
     goto L220;
 /*     .......... set error -- all eigenvalues have not */
-/*                converged after 30*n iterations .......... */
-L1000:
+/*		  converged after 30*n iterations .......... */
+L_err_end:
     *ierr = en;
-L1001:
-    return 0;
+L_end:;
 }
 
 /*     subroutine comqr2
@@ -1465,7 +1372,7 @@ L1001:
  *     MESHED overflow control WITH triangular multiply (10/30/89 BSG)
  *
  *     this subroutine is a translation of a unitary analogue of the
- *     algol procedure  comlr2, num. math. 16, 181-204(1970) by peters
+ *     algol procedure	comlr2, num. math. 16, 181-204(1970) by peters
  *     and wilkinson.
  *     handbook for auto. comp., vol.ii-linear algebra, 372-395(1971).
  *     the unitary analogue substitutes the qr algorithm of francis
@@ -1473,59 +1380,59 @@ L1001:
  *
  *     this subroutine finds the eigenvalues and eigenvectors
  *     of a complex upper hessenberg matrix by the qr
- *     method.  the eigenvectors of a complex general matrix
+ *     method.	the eigenvectors of a complex general matrix
  *     can also be found if  corth  has been used to reduce
  *     this general matrix to hessenberg form.
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  cbal.  if  cbal  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	cbal.  if  cbal	 has not been used,
+ *	    set low=1, igh=n.
  *
- *        ortr and orti contain information about the unitary trans-
- *          formations used in the reduction by  corth, if performed.
- *          only elements low through igh are used.  if the eigenvectors
- *          of the hessenberg matrix are desired, set ortr(j) and
- *          orti(j) to 0.0d0 for these elements.
+ *	  ortr and orti contain information about the unitary trans-
+ *	    formations used in the reduction by	 corth, if performed.
+ *	    only elements low through igh are used.  if the eigenvectors
+ *	    of the hessenberg matrix are desired, set ortr(j) and
+ *	    orti(j) to 0.0d0 for these elements.
  *
- *        hr and hi contain the real and imaginary parts,
- *          respectively, of the complex upper hessenberg matrix.
- *          their lower triangles below the subdiagonal contain further
- *          information about the transformations which were used in the
- *          reduction by  corth, if performed.  if the eigenvectors of
- *          the hessenberg matrix are desired, these elements may be
- *          arbitrary.
+ *	  hr and hi contain the real and imaginary parts,
+ *	    respectively, of the complex upper hessenberg matrix.
+ *	    their lower triangles below the subdiagonal contain further
+ *	    information about the transformations which were used in the
+ *	    reduction by  corth, if performed.	if the eigenvectors of
+ *	    the hessenberg matrix are desired, these elements may be
+ *	    arbitrary.
  *
  *     on output
  *
- *        ortr, orti, and the upper hessenberg portions of hr and hi
- *          have been destroyed.
+ *	  ortr, orti, and the upper hessenberg portions of hr and hi
+ *	    have been destroyed.
  *
- *        wr and wi contain the real and imaginary parts,
- *          respectively, of the eigenvalues.  if an error
- *          exit is made, the eigenvalues should be correct
- *          for indices ierr+1,...,n.
+ *	  wr and wi contain the real and imaginary parts,
+ *	    respectively, of the eigenvalues.  if an error
+ *	    exit is made, the eigenvalues should be correct
+ *	    for indices ierr+1,...,n.
  *
- *        zr and zi contain the real and imaginary parts,
- *          respectively, of the eigenvectors.  the eigenvectors
- *          are unnormalized.  if an error exit is made, none of
- *          the eigenvectors has been found.
+ *	  zr and zi contain the real and imaginary parts,
+ *	    respectively, of the eigenvectors.	the eigenvectors
+ *	    are unnormalized.  if an error exit is made, none of
+ *	    the eigenvectors has been found.
  *
- *        ierr is set to
- *          zero       for normal return,
- *          j          if the limit of 30*n iterations is exhausted
- *                     while the j-th eigenvalue is being sought.
+ *	  ierr is set to
+ *	    zero       for normal return,
+ *	    j	       if the limit of 30*n iterations is exhausted
+ *		       while the j-th eigenvalue is being sought.
  *
  *     calls cdiv for complex division.
  *     calls csroot for complex square root.
- *     calls pythag for  dsqrt(a*a + b*b) .
+ *     calls pythag for	 dsqrt(a*a + b*b) .
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -1533,8 +1440,8 @@ L1001:
  *     this version dated october 1989.
  */
 
-static int comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *orti, double *hr, double *hi, double *wr,
-                   double *wi, double *zr, double *zi, int *ierr)
+static void comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *orti, double *hr, double *hi, double *wr,
+                    double *wi, double *zr, double *zi, int *ierr)
 {
     /* System generated locals */
     int hr_dim1, hr_offset, hi_dim1, hi_offset, zr_dim1, zr_offset, zi_dim1, zi_offset, i__1, i__2, i__3;
@@ -1542,12 +1449,9 @@ static int comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *or
 
     /* Local variables */
     int iend;
-    extern int cdiv_();
     double norm;
     int i, j, k, l, m, ii, en, jj, ll, nn;
     double si, ti, xi, yi, sr, tr, xr, yr;
-    extern double pythag_();
-    extern int csroot_();
     int ip1, lp1, itn, its;
     double zzi, zzr;
     int enm1;
@@ -1589,7 +1493,7 @@ static int comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *or
         /* L101: */
     }
     /*     .......... form the matrix of accumulated transformations */
-    /*                from the information left by corth .......... */
+    /*		  from the information left by corth .......... */
     iend = *igh - *low - 1;
     if (iend < 0)
     {
@@ -1736,7 +1640,7 @@ L220:
     its = 0;
     enm1 = en - 1;
 /*     .......... look for single small sub-diagonal element */
-/*                for l=en step -1 until low do -- .......... */
+/*		  for l=en step -1 until low do -- .......... */
 L240:
     i__1 = en;
     for (ll = *low; ll <= i__1; ++ll)
@@ -1763,7 +1667,7 @@ L300:
     }
     if (itn == 0)
     {
-        goto L1000;
+        goto L_err_end;
     }
     if (its == 10 || its == 20)
     {
@@ -1957,7 +1861,7 @@ L660:
     en = enm1;
     goto L220;
 /*     .......... all roots found.  backsubstitute to find */
-/*                vectors of upper triangular form .......... */
+/*		  vectors of upper triangular form .......... */
 L680:
     norm = 0.;
 
@@ -1979,7 +1883,7 @@ L680:
 
     if (*n == 1 || norm == 0.)
     {
-        goto L1001;
+        goto L_end;
     }
     /*     .......... for en=n step -1 until 2 do -- .......... */
     i__2 = *n;
@@ -2071,8 +1975,8 @@ L680:
     L840:;
     }
     /*     .......... multiply by transformation matrix to give */
-    /*                vectors of original full matrix. */
-    /*                for j=n step -1 until low do -- .......... */
+    /*		  vectors of original full matrix. */
+    /*		  for j=n step -1 until low do -- .......... */
     i__2 = *n;
     for (jj = *low; jj <= i__2; ++jj)
     {
@@ -2099,13 +2003,12 @@ L680:
         }
     }
 
-    goto L1001;
+    goto L_end;
 /*     .......... set error -- all eigenvalues have not */
-/*                converged after 30*n iterations .......... */
-L1000:
+/*		  converged after 30*n iterations .......... */
+L_err_end:
     *ierr = en;
-L1001:
-    return 0;
+L_end:;
 }
 
 /*     subroutine corth
@@ -2122,31 +2025,31 @@ L1001:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  cbal.  if  cbal  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	cbal.  if  cbal	 has not been used,
+ *	    set low=1, igh=n.
  *
- *        ar and ai contain the real and imaginary parts,
- *          respectively, of the complex input matrix.
+ *	  ar and ai contain the real and imaginary parts,
+ *	    respectively, of the complex input matrix.
  *
  *     on output
  *
- *        ar and ai contain the real and imaginary parts,
- *          respectively, of the hessenberg matrix.  information
- *          about the unitary transformations used in the reduction
- *          is stored in the remaining triangles under the
- *          hessenberg matrix.
+ *	  ar and ai contain the real and imaginary parts,
+ *	    respectively, of the hessenberg matrix.  information
+ *	    about the unitary transformations used in the reduction
+ *	    is stored in the remaining triangles under the
+ *	    hessenberg matrix.
  *
- *        ortr and orti contain further information about the
- *          transformations.  only elements low through igh are used.
+ *	  ortr and orti contain further information about the
+ *	    transformations.  only elements low through igh are used.
  *
- *     calls pythag for  dsqrt(a*a + b*b) .
+ *     calls pythag for	 dsqrt(a*a + b*b) .
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -2154,14 +2057,11 @@ L1001:
  *     this version dated august 1983.
  */
 
-static int corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, double *ortr, double *orti)
+static void corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, double *ortr, double *orti)
 {
     /* System generated locals */
     int ar_dim1, ar_offset, ai_dim1, ai_offset, i__1, i__2, i__3;
     double d__1, d__2;
-
-    /* Builtin functions */
-    double sqrt();
 
     /* Local variables */
     double f, g, h;
@@ -2172,7 +2072,6 @@ static int corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, d
     int ii, jj;
     double fr;
     int mp;
-    extern double pythag_();
     int kp1;
 
     /* Parameter adjustments */
@@ -2308,8 +2207,7 @@ static int corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, d
     L180:;
     }
 
-L200:
-    return 0;
+L200:;
 }
 
 /*     subroutine csroot
@@ -2318,18 +2216,14 @@ L200:
  *     branch chosen so that yr .ge. 0.0 and sign(yi) .eq. sign(xi)
  */
 
-static int csroot_(double *xr, double *xi, double *yr, double *yi)
+static void csroot_(double *xr, double *xi, double *yr, double *yi)
 {
-    /* Builtin functions */
-    double sqrt();
-
     /* Local variables */
     double s, ti, tr;
-    extern double pythag_();
 
     tr = *xr;
     ti = *xi;
-    s = sqrt((pythag_(&tr, &ti) + abs(tr)) * .5);
+    s = sqrt((pythag_(&tr, &ti) + fabs(tr)) * .5);
     if (tr >= 0.)
     {
         *yr = s;
@@ -2350,7 +2244,6 @@ static int csroot_(double *xr, double *xi, double *yr, double *yi)
     {
         *yi = ti / *yr * .5;
     }
-    return 0;
 }
 
 /*     subroutine elmhes
@@ -2366,27 +2259,27 @@ static int csroot_(double *xr, double *xi, double *yr, double *yi)
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  balanc.  if  balanc  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	balanc.	 if  balanc  has not been used,
+ *	    set low=1, igh=n.
  *
- *        a contains the input matrix.
+ *	  a contains the input matrix.
  *
  *     on output
  *
- *        a contains the hessenberg matrix.  the multipliers
- *          which were used in the reduction are stored in the
- *          remaining triangle under the hessenberg matrix.
+ *	  a contains the hessenberg matrix.  the multipliers
+ *	    which were used in the reduction are stored in the
+ *	    remaining triangle under the hessenberg matrix.
  *
- *        int contains information on the rows and columns
- *          interchanged in the reduction.
- *          only elements low through igh are used.
+ *	  int contains information on the rows and columns
+ *	    interchanged in the reduction.
+ *	    only elements low through igh are used.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -2394,7 +2287,7 @@ static int csroot_(double *xr, double *xi, double *yr, double *yi)
  *     this version dated august 1983.
  */
 
-static int elmhes_(int *nm, int *n, int *low, int *igh, double *a, int *int_)
+static void elmhes_(int *nm, int *n, int *low, int *igh, double *a, int *int_)
 {
     /* System generated locals */
     int a_dim1, a_offset, i__1, i__2, i__3;
@@ -2500,8 +2393,7 @@ static int elmhes_(int *nm, int *n, int *low, int *igh, double *a, int *int_)
     L180:;
     }
 
-L200:
-    return 0;
+L200:;
 }
 
 /*     subroutine eltran
@@ -2512,32 +2404,32 @@ L200:
  *
  *     this subroutine accumulates the stabilized elementary
  *     similarity transformations used in the reduction of a
- *     real general matrix to upper hessenberg form by  elmhes.
+ *     real general matrix to upper hessenberg form by	elmhes.
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  balanc.  if  balanc  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	balanc.	 if  balanc  has not been used,
+ *	    set low=1, igh=n.
  *
- *        a contains the multipliers which were used in the
- *          reduction by  elmhes  in its lower triangle
- *          below the subdiagonal.
+ *	  a contains the multipliers which were used in the
+ *	    reduction by  elmhes  in its lower triangle
+ *	    below the subdiagonal.
  *
- *        int contains information on the rows and columns
- *          interchanged in the reduction by  elmhes.
- *          only elements low through igh are used.
+ *	  int contains information on the rows and columns
+ *	    interchanged in the reduction by  elmhes.
+ *	    only elements low through igh are used.
  *
  *     on output
  *
- *        z contains the transformation matrix produced in the
- *          reduction by  elmhes.
+ *	  z contains the transformation matrix produced in the
+ *	    reduction by  elmhes.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -2545,7 +2437,7 @@ L200:
  *     this version dated august 1983.
  */
 
-static int eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, double *z)
+static void eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, double *z)
 {
     /* System generated locals */
     int a_dim1, a_offset, z_dim1, z_offset, i__1, i__2;
@@ -2616,8 +2508,7 @@ static int eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, do
     L140:;
     }
 
-L200:
-    return 0;
+L200:;
 }
 
 /*     function epslon
@@ -2626,20 +2517,20 @@ L200:
  *
  *     this program should function properly on all systems
  *     satisfying the following two assumptions,
- *        1.  the base used in representing floating point
- *            numbers is not a power of three.
- *        2.  the quantity  a  in statement 10 is represented to
- *            the accuracy used in floating point variables
- *            that are stored in memory.
+ *	  1.  the base used in representing floating point
+ *	      numbers is not a power of three.
+ *	  2.  the quantity  a  in statement 10 is represented to
+ *	      the accuracy used in floating point variables
+ *	      that are stored in memory.
  *     the statement number 10 and the go to 10 are intended to
  *     force optimizing compilers to generate code satisfying
  *     assumption 2.
  *     under these assumptions, it should be true that,
- *            a  is not exactly equal to four-thirds,
- *            b  has a zero for its last bit or digit,
- *            c  is not exactly equal to one,
- *            eps  measures the separation of 1.0 from
- *                 the next larger floating point number.
+ *	      a	 is not exactly equal to four-thirds,
+ *	      b	 has a zero for its last bit or digit,
+ *	      c	 is not exactly equal to one,
+ *	      eps  measures the separation of 1.0 from
+ *		   the next larger floating point number.
  *     the developers of eispack would appreciate being informed
  *     about any systems where these assumptions do not hold.
  *
@@ -2658,12 +2549,12 @@ static double epslon_(double *x)
 L10:
     b = a - 1.;
     c = b + b + b;
-    eps = (d__1 = c - 1., abs(d__1));
+    eps = (d__1 = c - 1., fabs(d__1));
     if (eps == 0.)
     {
         goto L10;
     }
-    ret_val = eps * abs(*x);
+    ret_val = eps * fabs(*x);
     return ret_val;
 }
 
@@ -2680,39 +2571,39 @@ L10:
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  balanc.  if  balanc  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	balanc.	 if  balanc  has not been used,
+ *	    set low=1, igh=n.
  *
- *        h contains the upper hessenberg matrix.  information about
- *          the transformations used in the reduction to hessenberg
- *          form by  elmhes  or  orthes, if performed, is stored
- *          in the remaining triangle under the hessenberg matrix.
+ *	  h contains the upper hessenberg matrix.  information about
+ *	    the transformations used in the reduction to hessenberg
+ *	    form by  elmhes  or	 orthes, if performed, is stored
+ *	    in the remaining triangle under the hessenberg matrix.
  *
  *     on output
  *
- *        h has been destroyed.  therefore, it must be saved
- *          before calling  hqr  if subsequent calculation and
- *          back transformation of eigenvectors is to be performed.
+ *	  h has been destroyed.	 therefore, it must be saved
+ *	    before calling  hqr	 if subsequent calculation and
+ *	    back transformation of eigenvectors is to be performed.
  *
- *        wr and wi contain the real and imaginary parts,
- *          respectively, of the eigenvalues.  the eigenvalues
- *          are unordered except that complex conjugate pairs
- *          of values appear consecutively with the eigenvalue
- *          having the positive imaginary part first.  if an
- *          error exit is made, the eigenvalues should be correct
- *          for indices ierr+1,...,n.
+ *	  wr and wi contain the real and imaginary parts,
+ *	    respectively, of the eigenvalues.  the eigenvalues
+ *	    are unordered except that complex conjugate pairs
+ *	    of values appear consecutively with the eigenvalue
+ *	    having the positive imaginary part first.  if an
+ *	    error exit is made, the eigenvalues should be correct
+ *	    for indices ierr+1,...,n.
  *
- *        ierr is set to
- *          zero       for normal return,
- *          j          if the limit of 30*n iterations is exhausted
- *                     while the j-th eigenvalue is being sought.
+ *	  ierr is set to
+ *	    zero       for normal return,
+ *	    j	       if the limit of 30*n iterations is exhausted
+ *		       while the j-th eigenvalue is being sought.
  *
  *     questions and comments should be directed to burton s. garbow,
  *     mathematics and computer science div, argonne national laboratory
@@ -2720,14 +2611,11 @@ L10:
  *     this version dated september 1989.
  */
 
-static int hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, int *ierr)
+static void hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, int *ierr)
 {
     /* System generated locals */
     int h_dim1, h_offset, i__1, i__2, i__3;
     double d__1, d__2;
-
-    /* Builtin functions */
-    double sqrt(), DSIGN();
 
     /* Local variables */
     double norm;
@@ -2751,7 +2639,7 @@ static int hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, doub
     norm = 0.;
     k = 1;
     /*     .......... store roots isolated by balanc */
-    /*                and compute matrix norm .......... */
+    /*		  and compute matrix norm .......... */
     i__1 = *n;
     for (i = 1; i <= i__1; ++i)
     {
@@ -2760,7 +2648,7 @@ static int hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, doub
         for (j = k; j <= i__2; ++j)
         {
             /* L40: */
-            norm += (d__1 = h[i + j * h_dim1], abs(d__1));
+            norm += (d__1 = h[i + j * h_dim1], fabs(d__1));
         }
 
         k = i;
@@ -2780,13 +2668,13 @@ static int hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, doub
 L60:
     if (en < *low)
     {
-        goto L1001;
+        goto L_end;
     }
     its = 0;
     na = en - 1;
     enm2 = na - 1;
 /*     .......... look for single small sub-diagonal element */
-/*                for l=en step -1 until low do -- .......... */
+/*		  for l=en step -1 until low do -- .......... */
 L70:
     i__1 = en;
     for (ll = *low; ll <= i__1; ++ll)
@@ -2796,13 +2684,13 @@ L70:
         {
             goto L100;
         }
-        s = (d__1 = h[l - 1 + (l - 1) * h_dim1], abs(d__1)) + (d__2 = h[l + l * h_dim1], abs(d__2));
+        s = (d__1 = h[l - 1 + (l - 1) * h_dim1], fabs(d__1)) + (d__2 = h[l + l * h_dim1], fabs(d__2));
         if (s == 0.)
         {
             s = norm;
         }
         tst1 = s;
-        tst2 = tst1 + (d__1 = h[l + (l - 1) * h_dim1], abs(d__1));
+        tst2 = tst1 + (d__1 = h[l + (l - 1) * h_dim1], fabs(d__1));
         if (tst2 == tst1)
         {
             goto L100;
@@ -2824,7 +2712,7 @@ L100:
     }
     if (itn == 0)
     {
-        goto L1000;
+        goto L_err_end;
     }
     if (its != 10 && its != 20)
     {
@@ -2840,7 +2728,7 @@ L100:
         h[i + i * h_dim1] -= x;
     }
 
-    s = (d__1 = h[en + na * h_dim1], abs(d__1)) + (d__2 = h[na + enm2 * h_dim1], abs(d__2));
+    s = (d__1 = h[en + na * h_dim1], fabs(d__1)) + (d__2 = h[na + enm2 * h_dim1], fabs(d__2));
     x = s * .75;
     y = x;
     w = s * -.4375 * s;
@@ -2848,8 +2736,8 @@ L130:
     ++its;
     --itn;
     /*     .......... look for two consecutive small */
-    /*                sub-diagonal elements. */
-    /*                for m=en-2 step -1 until l do -- .......... */
+    /*		  sub-diagonal elements. */
+    /*		  for m=en-2 step -1 until l do -- .......... */
     i__1 = enm2;
     for (mm = l; mm <= i__1; ++mm)
     {
@@ -2860,7 +2748,7 @@ L130:
         p = (r * s - w) / h[m + 1 + m * h_dim1] + h[m + (m + 1) * h_dim1];
         q = h[m + 1 + (m + 1) * h_dim1] - zz - r - s;
         r = h[m + 2 + (m + 1) * h_dim1];
-        s = abs(p) + abs(q) + abs(r);
+        s = fabs(p) + fabs(q) + fabs(r);
         p /= s;
         q /= s;
         r /= s;
@@ -2868,8 +2756,8 @@ L130:
         {
             goto L150;
         }
-        tst1 = abs(p) * ((d__1 = h[m - 1 + (m - 1) * h_dim1], abs(d__1)) + abs(zz) +
-                         (d__2 = h[m + 1 + (m + 1) * h_dim1], abs(d__2)));
+        tst1 = fabs(p) * ((d__1 = h[m - 1 + (m - 1) * h_dim1], abs(d__1)) + abs(zz) +
+                          (d__2 = h[m + 1 + (m + 1) * h_dim1], abs(d__2)));
         tst2 = tst1 + (d__1 = h[m + (m - 1) * h_dim1], abs(d__1)) * (abs(q) + abs(r));
         if (tst2 == tst1)
         {
@@ -2893,7 +2781,7 @@ L150:
     L160:;
     }
     /*     .......... double qr step involving rows l to en and */
-    /*                columns m to en .......... */
+    /*		  columns m to en .......... */
     i__1 = na;
     for (k = m; k <= i__1; ++k)
     {
@@ -2909,7 +2797,7 @@ L150:
         {
             r = h[k + 2 + (k - 1) * h_dim1];
         }
-        x = abs(p) + abs(q) + abs(r);
+        x = fabs(p) + fabs(q) + fabs(r);
         if (x == 0.)
         {
             goto L260;
@@ -3006,7 +2894,7 @@ L270:
 L280:
     p = (y - x) / 2.;
     q = p * p + w;
-    zz = sqrt((abs(q)));
+    zz = sqrt((fabs(q)));
     x += t;
     if (q < 0.)
     {
@@ -3033,11 +2921,10 @@ L330:
     en = enm2;
     goto L60;
 /*     .......... set error -- all eigenvalues have not */
-/*                converged after 30*n iterations .......... */
-L1000:
+/*		  converged after 30*n iterations .......... */
+L_err_end:
     *ierr = en;
-L1001:
-    return 0;
+L_end:;
 }
 
 /*     subroutine hqr2
@@ -3049,54 +2936,54 @@ L1001:
  *     this subroutine finds the eigenvalues and eigenvectors
  *     of a real upper hessenberg matrix by the qr method.  the
  *     eigenvectors of a real general matrix can also be found
- *     if  elmhes  and  eltran  or  orthes  and  ortran  have
+ *     if  elmhes  and	eltran	or  orthes  and	 ortran	 have
  *     been used to reduce this general matrix to hessenberg form
  *     and to accumulate the similarity transformations.
  *
  *     on input
  *
- *        nm must be set to the row dimension of two-dimensional
- *          array parameters as declared in the calling program
- *          dimension statement.
+ *	  nm must be set to the row dimension of two-dimensional
+ *	    array parameters as declared in the calling program
+ *	    dimension statement.
  *
- *        n is the order of the matrix.
+ *	  n is the order of the matrix.
  *
- *        low and igh are ints determined by the balancing
- *          subroutine  balanc.  if  balanc  has not been used,
- *          set low=1, igh=n.
+ *	  low and igh are ints determined by the balancing
+ *	    subroutine	balanc.	 if  balanc  has not been used,
+ *	    set low=1, igh=n.
  *
- *        h contains the upper hessenberg matrix.
+ *	  h contains the upper hessenberg matrix.
  *
- *        z contains the transformation matrix produced by  eltran
- *          after the reduction by  elmhes, or by  ortran  after the
- *          reduction by  orthes, if performed.  if the eigenvectors
- *          of the hessenberg matrix are desired, z must contain the
- *          identity matrix.
+ *	  z contains the transformation matrix produced by  eltran
+ *	    after the reduction by  elmhes, or by  ortran  after the
+ *	    reduction by  orthes, if performed.	 if the eigenvectors
+ *	    of the hessenberg matrix are desired, z must contain the
+ *	    identity matrix.
  *
  *     on output
  *
- *        h has been destroyed.
+ *	  h has been destroyed.
  *
- *        wr and wi contain the real and imaginary parts,
- *          respectively, of the eigenvalues.  the eigenvalues
- *          are unordered except that complex conjugate pairs
- *          of values appear consecutively with the eigenvalue
- *          having the positive imaginary part first.  if an
- *          error exit is made, the eigenvalues should be correct
- *          for indices ierr+1,...,n.
+ *	  wr and wi contain the real and imaginary parts,
+ *	    respectively, of the eigenvalues.  the eigenvalues
+ *	    are unordered except that complex conjugate pairs
+ *	    of values appear consecutively with the eigenvalue
+ *	    having the positive imaginary part first.  if an
+ *	    error exit is made, the eigenvalues should be correct
+ *	    for indices ierr+1,...,n.
  *
- *        z contains the real and imaginary parts of the eigenvectors.
- *          if the i-th eigenvalue is real, the i-th column of z
- *          contains its eigenvector.  if the i-th eigenvalue is complex
- *          with positive imaginary part, the i-th and (i+1)-th
- *          columns of z contain the real and imaginary parts of its
- *          eigenvector.  the eigenvectors are unnormalized.  if an
- *          error exit is made, none of the eigenvectors has been found.
+ *	  z contains the real and imaginary parts of the eigenvectors.
+ *	    if the i-th eigenvalue is real, the i-th column of z
+ *	    contains its eigenvector.  if the i-th eigenvalue is complex
+ *	    with positive imaginary part, the i-th and (i+1)-th
+ *	    columns of z contain the real and imaginary parts of its
+ *	    eigenvector.  the eigenvectors are unnormalized.  if an
+ *	    error exit is made, none of the eigenvectors has been found.
  *
- *        ierr is set to
- *          zero       for normal return,
- *          j          if the limit of 30*n iterations is exhausted
- *                     while the j-th eigenvalue is being sought.
+ *	  ierr is set to
+ *	    zero       for normal return,
+ *	    j	       if the limit of 30*n iterations is exhausted
+ *		       while the j-th eigenvalue is being sought.
  *
  *     calls cdiv for complex division.
  *
@@ -3106,17 +2993,13 @@ L1001:
  *     this version dated august 1983.
  */
 
-static int hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, double *z, int *ierr)
+static void hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, double *z, int *ierr)
 {
     /* System generated locals */
     int h_dim1, h_offset, z_dim1, z_offset, i__1, i__2, i__3;
     double d__1, d__2, d__3, d__4;
 
-    /* Builtin functions */
-    double sqrt(), DSIGN();
-
     /* Local variables */
-    extern int cdiv_();
     double norm;
     int i, j, k, l, m;
     double p, q, r, s, t, w, x, y;
@@ -3143,7 +3026,7 @@ static int hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, dou
     norm = 0.;
     k = 1;
     /*     .......... store roots isolated by balanc */
-    /*                and compute matrix norm .......... */
+    /*		  and compute matrix norm .......... */
     i__1 = *n;
     for (i = 1; i <= i__1; ++i)
     {
@@ -3178,7 +3061,7 @@ L60:
     na = en - 1;
     enm2 = na - 1;
 /*     .......... look for single small sub-diagonal element */
-/*                for l=en step -1 until low do -- .......... */
+/*		  for l=en step -1 until low do -- .......... */
 L70:
     i__1 = en;
     for (ll = *low; ll <= i__1; ++ll)
@@ -3216,7 +3099,7 @@ L100:
     }
     if (itn == 0)
     {
-        goto L1000;
+        goto L_err_end;
     }
     if (its != 10 && its != 20)
     {
@@ -3240,8 +3123,8 @@ L130:
     ++its;
     --itn;
     /*     .......... look for two consecutive small */
-    /*                sub-diagonal elements. */
-    /*                for m=en-2 step -1 until l do -- .......... */
+    /*		  sub-diagonal elements. */
+    /*		  for m=en-2 step -1 until l do -- .......... */
     i__1 = enm2;
     for (mm = l; mm <= i__1; ++mm)
     {
@@ -3252,7 +3135,7 @@ L130:
         p = (r * s - w) / h[m + 1 + m * h_dim1] + h[m + (m + 1) * h_dim1];
         q = h[m + 1 + (m + 1) * h_dim1] - zz - r - s;
         r = h[m + 2 + (m + 1) * h_dim1];
-        s = abs(p) + abs(q) + abs(r);
+        s = fabs(p) + fabs(q) + fabs(r);
         p /= s;
         q /= s;
         r /= s;
@@ -3285,7 +3168,7 @@ L150:
     L160:;
     }
     /*     .......... double qr step involving rows l to en and */
-    /*                columns m to en .......... */
+    /*		  columns m to en .......... */
     i__1 = na;
     for (k = m; k <= i__1; ++k)
     {
@@ -3301,7 +3184,7 @@ L150:
         {
             r = h[k + 2 + (k - 1) * h_dim1];
         }
-        x = abs(p) + abs(q) + abs(r);
+        x = fabs(p) + fabs(q) + fabs(r);
         if (x == 0.)
         {
             goto L260;
@@ -3418,7 +3301,7 @@ L270:
 L280:
     p = (y - x) / 2.;
     q = p * p + w;
-    zz = sqrt((abs(q)));
+    zz = sqrt((fabs(q)));
     h[en + en * h_dim1] = x + t;
     x = h[en + en * h_dim1];
     h[na + na * h_dim1] = y + t;
@@ -3437,7 +3320,7 @@ L280:
     wi[na] = 0.;
     wi[en] = 0.;
     x = h[en + na * h_dim1];
-    s = abs(x) + abs(zz);
+    s = fabs(x) + fabs(zz);
     p = x / s;
     q = zz / s;
     r = sqrt(p * p + q * q);
@@ -3482,11 +3365,11 @@ L330:
     en = enm2;
     goto L60;
 /*     .......... all roots found.  backsubstitute to find */
-/*                vectors of upper triangular form .......... */
+/*		  vectors of upper triangular form .......... */
 L340:
     if (norm == 0.)
     {
-        goto L1001;
+        goto L_end;
     }
     /*     .......... for en=n step -1 until 1 do -- .......... */
     i__1 = *n;
@@ -3568,7 +3451,7 @@ L340:
             q = (wr[i] - p) * (wr[i] - p) + wi[i] * wi[i];
             t = (x * s - zz * r) / q;
             h[i + en * h_dim1] = t;
-            if (abs(x) <= abs(zz))
+            if (fabs(x) <= fabs(zz))
             {
                 goto L650;
             }
@@ -3605,7 +3488,7 @@ L340:
     L710:
         m = na;
         /*     .......... last vector component chosen imaginary so that */
-        /*                eigenvector matrix is triangular .......... */
+        /*		  eigenvector matrix is triangular .......... */
         if ((d__1 = h[en + na * h_dim1], abs(d__1)) <= (d__2 = h[na + en * h_dim1], abs(d__2)))
         {
             goto L720;
@@ -3616,7 +3499,7 @@ L340:
     L720:
         d__1 = -h[na + en * h_dim1];
         d__2 = h[na + na * h_dim1] - p;
-        cdiv_(&c_b256, &d__1, &d__2, &q, &h[na + na * h_dim1], &h[na + en * h_dim1]);
+        cdiv_(&c_zero, &d__1, &d__2, &q, &h[na + na * h_dim1], &h[na + en * h_dim1]);
     L730:
         h[en + na * h_dim1] = 0.;
         h[en + en * h_dim1] = 1.;
@@ -3670,7 +3553,7 @@ L340:
             {
                 goto L784;
             }
-            tst1 = norm * (abs(w) + abs(q) + abs(x) + abs(y) + abs(zz));
+            tst1 = norm * (fabs(w) + fabs(q) + fabs(x) + fabs(y) + fabs(zz));
             vr = tst1;
         L783:
             vr *= .01;
@@ -3683,7 +3566,7 @@ L340:
             d__1 = x * r - zz * ra + q * sa;
             d__2 = x * s - zz * sa - q * ra;
             cdiv_(&d__1, &d__2, &vr, &vi, &h[i + na * h_dim1], &h[i + en * h_dim1]);
-            if (abs(x) <= abs(zz) + abs(q))
+            if (fabs(x) <= fabs(zz) + fabs(q))
             {
                 goto L785;
             }
@@ -3724,7 +3607,7 @@ L340:
     L800:;
     }
     /*     .......... end back substitution. */
-    /*                vectors of isolated roots .......... */
+    /*		  vectors of isolated roots .......... */
     i__1 = *n;
     for (i = 1; i <= i__1; ++i)
     {
@@ -3743,8 +3626,8 @@ L340:
     L840:;
     }
     /*     .......... multiply by transformation matrix to give */
-    /*                vectors of original full matrix. */
-    /*                for j=n step -1 until low do -- .......... */
+    /*		  vectors of original full matrix. */
+    /*		  for j=n step -1 until low do -- .......... */
     i__1 = *n;
     for (jj = *low; jj <= i__1; ++jj)
     {
@@ -3768,16 +3651,15 @@ L340:
         }
     }
 
-    goto L1001;
+    goto L_end;
 /*     .......... set error -- all eigenvalues have not */
-/*                converged after 30*n iterations .......... */
-L1000:
+/*		  converged after 30*n iterations .......... */
+L_err_end:
     *ierr = en;
-L1001:
-    return 0;
+L_end:;
 }
 
-static int htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m, double *zr, double *zi)
+static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m, double *zr, double *zi)
 {
     /* System generated locals */
     int ar_dim1, ar_offset, ai_dim1, ai_offset, zr_dim1, zr_offset, zi_dim1, zi_offset, i__1, i__2, i__3;
@@ -3794,32 +3676,32 @@ static int htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m,
 
     /*     this subroutine forms the eigenvectors of a complex hermitian */
     /*     matrix by back transforming those of the corresponding */
-    /*     real symmetric tridiagonal matrix determined by  htridi. */
+    /*     real symmetric tridiagonal matrix determined by	htridi. */
 
     /*     on input */
 
-    /*        nm must be set to the row dimension of two-dimensional */
-    /*          array parameters as declared in the calling program */
-    /*          dimension statement. */
+    /*	  nm must be set to the row dimension of two-dimensional */
+    /*	    array parameters as declared in the calling program */
+    /*	    dimension statement. */
 
-    /*        n is the order of the matrix. */
+    /*	  n is the order of the matrix. */
 
-    /*        ar and ai contain information about the unitary trans- */
-    /*          formations used in the reduction by  htridi  in their */
-    /*          full lower triangles except for the diagonal of ar. */
+    /*	  ar and ai contain information about the unitary trans- */
+    /*	    formations used in the reduction by	 htridi	 in their */
+    /*	    full lower triangles except for the diagonal of ar. */
 
-    /*        tau contains further information about the transformations. */
+    /*	  tau contains further information about the transformations. */
 
-    /*        m is the number of eigenvectors to be back transformed. */
+    /*	  m is the number of eigenvectors to be back transformed. */
 
-    /*        zr contains the eigenvectors to be back transformed */
-    /*          in its first m columns. */
+    /*	  zr contains the eigenvectors to be back transformed */
+    /*	    in its first m columns. */
 
     /*     on output */
 
-    /*        zr and zi contain the real and imaginary parts, */
-    /*          respectively, of the transformed eigenvectors */
-    /*          in their first m columns. */
+    /*	  zr and zi contain the real and imaginary parts, */
+    /*	    respectively, of the transformed eigenvectors */
+    /*	    in their first m columns. */
 
     /*     note that the last component of each returned vector */
     /*     is real and that vector euclidean norms are preserved. */
@@ -3854,8 +3736,8 @@ static int htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m,
         goto L200;
     }
     /*     .......... transform the eigenvectors of the real symmetric */
-    /*                tridiagonal matrix to those of the hermitian */
-    /*                tridiagonal matrix. .......... */
+    /*		  tridiagonal matrix to those of the hermitian */
+    /*		  tridiagonal matrix. .......... */
     i__1 = *n;
     for (k = 1; k <= i__1; ++k)
     {
@@ -3916,18 +3798,14 @@ static int htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m,
     L140:;
     }
 
-L200:
-    return 0;
+L200:;
 } /* htribk_ */
 
-static int htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau)
+static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau)
 {
     /* System generated locals */
     int ar_dim1, ar_offset, ai_dim1, ai_offset, i__1, i__2, i__3;
     double d__1, d__2;
-
-    /* Builtin functions */
-    double sqrt();
 
     /* Local variables */
     double f, g, h;
@@ -3935,7 +3813,6 @@ static int htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e
     double scale, fi, gi, hh;
     int ii;
     double si;
-    extern double pythag_();
     int jp1;
 
     /*     this subroutine is a translation of a complex analogue of */
@@ -3949,35 +3826,35 @@ static int htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e
 
     /*     on input */
 
-    /*        nm must be set to the row dimension of two-dimensional */
-    /*          array parameters as declared in the calling program */
-    /*          dimension statement. */
+    /*	  nm must be set to the row dimension of two-dimensional */
+    /*	    array parameters as declared in the calling program */
+    /*	    dimension statement. */
 
-    /*        n is the order of the matrix. */
+    /*	  n is the order of the matrix. */
 
-    /*        ar and ai contain the real and imaginary parts, */
-    /*          respectively, of the complex hermitian input matrix. */
-    /*          only the lower triangle of the matrix need be supplied. */
+    /*	  ar and ai contain the real and imaginary parts, */
+    /*	    respectively, of the complex hermitian input matrix. */
+    /*	    only the lower triangle of the matrix need be supplied. */
 
     /*     on output */
 
-    /*        ar and ai contain information about the unitary trans- */
-    /*          formations used in the reduction in their full lower */
-    /*          triangles.  their strict upper triangles and the */
-    /*          diagonal of ar are unaltered. */
+    /*	  ar and ai contain information about the unitary trans- */
+    /*	    formations used in the reduction in their full lower */
+    /*	    triangles.	their strict upper triangles and the */
+    /*	    diagonal of ar are unaltered. */
 
-    /*        d contains the diagonal elements of the the tridiagonal matrix.
+    /*	  d contains the diagonal elements of the the tridiagonal matrix.
      */
 
-    /*        e contains the subdiagonal elements of the tridiagonal */
-    /*          matrix in its last n-1 positions.  e(1) is set to zero. */
+    /*	  e contains the subdiagonal elements of the tridiagonal */
+    /*	    matrix in its last n-1 positions.  e(1) is set to zero. */
 
-    /*        e2 contains the squares of the corresponding elements of e. */
-    /*          e2 may coincide with e if the squares are not needed. */
+    /*	  e2 contains the squares of the corresponding elements of e. */
+    /*	    e2 may coincide with e if the squares are not needed. */
 
-    /*        tau contains further information about the transformations. */
+    /*	  tau contains further information about the transformations. */
 
-    /*     calls pythag for  dsqrt(a*a + b*b) . */
+    /*     calls pythag for	 dsqrt(a*a + b*b) . */
 
     /*     questions and comments should be directed to burton s. garbow, */
     /*     mathematics and computer science div, argonne national laboratory
@@ -4153,8 +4030,6 @@ static int htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e
         ai[i + i * ai_dim1] = scale * sqrt(h);
         /* L300: */
     }
-
-    return 0;
 } /* htridi_ */
 
 static double pythag_(double *a, double *b)
@@ -4165,7 +4040,7 @@ static double pythag_(double *a, double *b)
     /* Local variables */
     double p, r, s, t, u;
 
-    /*     finds dsqrt(a**2+b**2) without overflow or destructive underflow */
+    /*     finds dsqrt(a^2+b^2) without overflow or destructive underflow */
 
     /* Computing MAX */
     d__1 = abs(*a), d__2 = abs(*b);
@@ -4204,9 +4079,7 @@ int F77_SYMBOL(rg)(int *nm, int *n, double *a, double *wr, double *wi, int *matz
     int a_dim1, a_offset, z_dim1, z_offset;
 
     /* Local variables */
-    extern int balbak_(), balanc_(), elmhes_(), eltran_();
     int is1, is2;
-    extern int hqr_(), hqr2_();
 
     /*     this subroutine calls the recommended sequence of */
     /*     subroutines from the eigensystem subroutine package (eispack) */
@@ -4215,38 +4088,38 @@ int F77_SYMBOL(rg)(int *nm, int *n, double *a, double *wr, double *wi, int *matz
 
     /*     on input */
 
-    /*        nm  must be set to the row dimension of the two-dimensional */
-    /*        array parameters as declared in the calling program */
-    /*        dimension statement. */
+    /*	  nm  must be set to the row dimension of the two-dimensional */
+    /*	  array parameters as declared in the calling program */
+    /*	  dimension statement. */
 
-    /*        n  is the order of the matrix  a. */
+    /*	  n  is the order of the matrix	 a. */
 
-    /*        a  contains the real general matrix. */
+    /*	  a  contains the real general matrix. */
 
-    /*        matz  is an int variable set equal to zero if */
-    /*        only eigenvalues are desired.  otherwise it is set to */
-    /*        any non-zero int for both eigenvalues and eigenvectors. */
+    /*	  matz	is an int variable set equal to zero if */
+    /*	  only eigenvalues are desired.	 otherwise it is set to */
+    /*	  any non-zero int for both eigenvalues and eigenvectors. */
 
     /*     on output */
 
-    /*        wr  and  wi  contain the real and imaginary parts, */
-    /*        respectively, of the eigenvalues.  complex conjugate */
-    /*        pairs of eigenvalues appear consecutively with the */
-    /*        eigenvalue having the positive imaginary part first. */
+    /*	  wr  and  wi  contain the real and imaginary parts, */
+    /*	  respectively, of the eigenvalues.  complex conjugate */
+    /*	  pairs of eigenvalues appear consecutively with the */
+    /*	  eigenvalue having the positive imaginary part first. */
 
-    /*        z  contains the real and imaginary parts of the eigenvectors */
-    /*        if matz is not zero.  if the j-th eigenvalue is real, the */
-    /*        j-th column of  z  contains its eigenvector.  if the j-th */
-    /*        eigenvalue is complex with positive imaginary part, the */
-    /*        j-th and (j+1)-th columns of  z  contain the real and */
-    /*        imaginary parts of its eigenvector.  the conjugate of this */
-    /*        vector is the eigenvector for the conjugate eigenvalue. */
+    /*	  z  contains the real and imaginary parts of the eigenvectors */
+    /*	  if matz is not zero.	if the j-th eigenvalue is real, the */
+    /*	  j-th column of  z  contains its eigenvector.	if the j-th */
+    /*	  eigenvalue is complex with positive imaginary part, the */
+    /*	  j-th and (j+1)-th columns of	z  contain the real and */
+    /*	  imaginary parts of its eigenvector.  the conjugate of this */
+    /*	  vector is the eigenvector for the conjugate eigenvalue. */
 
-    /*        ierr  is an int output variable set equal to an error */
-    /*           completion code described in the documentation for hqr */
-    /*           and hqr2.  the normal completion code is zero. */
+    /*	  ierr	is an int output variable set equal to an error */
+    /*	     completion code described in the documentation for hqr */
+    /*	     and hqr2.	the normal completion code is zero. */
 
-    /*        iv1  and  fv1  are temporary storage arrays. */
+    /*	  iv1  and  fv1	 are temporary storage arrays. */
 
     /*     questions and comments should be directed to burton s. garbow, */
     /*     mathematics and computer science div, argonne national laboratory
@@ -4298,15 +4171,12 @@ L20:
     balbak_(nm, n, &is1, &is2, &fv1[1], n, &z[z_offset]);
 L50:
     return 0;
-} /* rg_ */
+} /* rg */
 
 int F77_SYMBOL(rs)(int *nm, int *n, double *a, double *w, int *matz, double *z, double *fv1, double *fv2, int *ierr)
 {
     /* System generated locals */
     int a_dim1, a_offset, z_dim1, z_offset;
-
-    /* Local variables */
-    extern int tred1_(), tred2_(), tql1_(), tql2_();
 
     /*     this subroutine calls the recommended sequence of */
     /*     subroutines from the eigensystem subroutine package (eispack) */
@@ -4315,29 +4185,29 @@ int F77_SYMBOL(rs)(int *nm, int *n, double *a, double *w, int *matz, double *z, 
 
     /*     on input */
 
-    /*        nm  must be set to the row dimension of the two-dimensional */
-    /*        array parameters as declared in the calling program */
-    /*        dimension statement. */
+    /*	  nm  must be set to the row dimension of the two-dimensional */
+    /*	  array parameters as declared in the calling program */
+    /*	  dimension statement. */
 
-    /*        n  is the order of the matrix  a. */
+    /*	  n  is the order of the matrix	 a. */
 
-    /*        a  contains the real symmetric matrix. */
+    /*	  a  contains the real symmetric matrix. */
 
-    /*        matz  is an int variable set equal to zero if */
-    /*        only eigenvalues are desired.  otherwise it is set to */
-    /*        any non-zero int for both eigenvalues and eigenvectors. */
+    /*	  matz	is an int variable set equal to zero if */
+    /*	  only eigenvalues are desired.	 otherwise it is set to */
+    /*	  any non-zero int for both eigenvalues and eigenvectors. */
 
     /*     on output */
 
-    /*        w  contains the eigenvalues in ascending order. */
+    /*	  w  contains the eigenvalues in ascending order. */
 
-    /*        z  contains the eigenvectors if matz is not zero. */
+    /*	  z  contains the eigenvectors if matz is not zero. */
 
-    /*        ierr  is an int output variable set equal to an error */
-    /*           completion code described in the documentation for tqlrat */
-    /*           and tql2.  the normal completion code is zero. */
+    /*	  ierr	is an int output variable set equal to an error */
+    /*	     completion code described in the documentation for tqlrat */
+    /*	     and tql2.	the normal completion code is zero. */
 
-    /*        fv1  and  fv2  are temporary storage arrays. */
+    /*	  fv1  and  fv2	 are temporary storage arrays. */
 
     /*     questions and comments should be directed to burton s. garbow, */
     /*     mathematics and computer science div, argonne national laboratory
@@ -4384,28 +4254,10 @@ L20:
     tql2_(nm, n, &w[1], &fv1[1], &z[z_offset], ierr);
 L50:
     return 0;
-} /* rs_ */
+} /* rs */
 
-static int tql1_(int *n, double *d, double *e, int *ierr)
+static void tql1_(int *n, double *d, double *e, int *ierr)
 {
-    /* System generated locals */
-    int i__1, i__2;
-    double d__1, d__2;
-
-    /* Builtin functions */
-    double DSIGN();
-
-    /* Local variables */
-    double c, f, g, h;
-    int i, j, l, m;
-    double p, r, s, c2, c3;
-    int l1, l2;
-    double s2;
-    int ii;
-    extern double pythag_();
-    double dl1, el1;
-    int mml;
-    double tst1, tst2;
 
     /*     this subroutine is a translation of the algol procedure tql1, */
     /*     num. math. 11, 293-306(1968) by bowdler, martin, reinsch, and */
@@ -4417,80 +4269,81 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
 
     /*     on input */
 
-    /*        n is the order of the matrix. */
+    /*	  n is the order of the matrix. */
 
-    /*        d contains the diagonal elements of the input matrix. */
+    /*	  d contains the diagonal elements of the input matrix. */
 
-    /*        e contains the subdiagonal elements of the input matrix */
-    /*          in its last n-1 positions.  e(1) is arbitrary. */
+    /*	  e contains the subdiagonal elements of the input matrix */
+    /*	    in its last n-1 positions.	e(1) is arbitrary. */
 
-    /*      on output */
+    /*	on output */
 
-    /*        d contains the eigenvalues in ascending order.  if an */
-    /*          error exit is made, the eigenvalues are correct and */
-    /*          ordered for indices 1,2,...ierr-1, but may not be */
-    /*          the smallest eigenvalues. */
+    /*	  d contains the eigenvalues in ascending order.  if an */
+    /*	    error exit is made, the eigenvalues are correct and */
+    /*	    ordered for indices 1,2,...ierr-1, but may not be */
+    /*	    the smallest eigenvalues. */
 
-    /*        e has been destroyed. */
+    /*	  e has been destroyed. */
 
-    /*        ierr is set to */
-    /*          zero       for normal return, */
-    /*          j          if the j-th eigenvalue has not been */
-    /*                     determined after 30 iterations. */
+    /*	  ierr is set to */
+    /*	    zero       for normal return, */
+    /*	    j	       if the j-th eigenvalue has not been */
+    /*		       determined after 30 iterations. */
 
-    /*     calls pythag for  dsqrt(a*a + b*b) . */
+    /*     calls pythag for	 dsqrt(a*a + b*b) . */
 
-    /*     questions and comments should be directed to burton s. garbow, */
-    /*     mathematics and computer science div, argonne national laboratory
+    /*     questions and comments should be directed to burton s. garbow,
+     *     mathematics and computer science div, argonne national laboratory
+
+     *     this version dated august 1983.
+
+     * ------------------------------------------------------------------
      */
 
-    /*     this version dated august 1983. */
-
-    /*     ------------------------------------------------------------------
-     */
+    /* Local variables */
+    double c, f, g, h;
+    double p, r, s, c2, c3;
+    double s2, dl1, el1, tst1, tst2;
+    int i, j, l, m, l1, l2, ii, mml, nn;
 
     /* Parameter adjustments */
     --e;
     --d;
 
     /* Function Body */
+    nn = *n;
     *ierr = 0;
-    if (*n == 1)
+    if (nn == 1)
     {
-        goto L1001;
+        goto L_end;
     }
 
-    i__1 = *n;
-    for (i = 2; i <= i__1; ++i)
+    for (i = 2; i <= nn; ++i)
     {
-        /* L100: */
         e[i - 1] = e[i];
     }
 
-    f = 0.;
-    tst1 = 0.;
-    e[*n] = 0.;
+    f = tst1 = 0.;
+    e[nn] = 0.;
 
-    i__1 = *n;
-    for (l = 1; l <= i__1; ++l)
+    for (l = 1; l <= nn; ++l)
     {
         j = 0;
-        h = (d__1 = d[l], abs(d__1)) + (d__2 = e[l], abs(d__2));
+        h = fabs(d[l]) + fabs(e[l]);
         if (tst1 < h)
         {
             tst1 = h;
         }
         /*     .......... look for small sub-diagonal element .......... */
-        i__2 = *n;
-        for (m = l; m <= i__2; ++m)
+        for (m = l; m <= nn; ++m)
         {
-            tst2 = tst1 + (d__1 = e[m], abs(d__1));
+            tst2 = tst1 + fabs(e[m]);
             if (tst2 == tst1)
             {
                 goto L120;
             }
             /*     .......... e(n) is always zero, so there is no exit */
-            /*                through the bottom of the loop .......... */
+            /*		  through the bottom of the loop .......... */
             /* L110: */
         }
 
@@ -4502,7 +4355,7 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
     L130:
         if (j == 30)
         {
-            goto L1000;
+            goto L_err_end;
         }
         ++j;
         /*     .......... form shift .......... */
@@ -4510,20 +4363,18 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
         l2 = l1 + 1;
         g = d[l];
         p = (d[l1] - g) / (e[l] * 2.);
-        r = pythag_(&p, &c_b314);
+        r = pythag_(&p, &c_one);
         d[l] = e[l] / (p + DSIGN(&r, &p));
         d[l1] = e[l] * (p + DSIGN(&r, &p));
         dl1 = d[l1];
         h = g - d[l];
-        if (l2 > *n)
+        if (l2 > nn)
         {
             goto L145;
         }
 
-        i__2 = *n;
-        for (i = l2; i <= i__2; ++i)
+        for (i = l2; i <= nn; ++i)
         {
-            /* L140: */
             d[i] -= h;
         }
 
@@ -4537,8 +4388,7 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
         s = 0.;
         mml = m - l;
         /*     .......... for i=m-1 step -1 until l do -- .......... */
-        i__2 = mml;
-        for (ii = 1; ii <= i__2; ++ii)
+        for (ii = 1; ii <= mml; ++ii)
         {
             c3 = c2;
             c2 = c;
@@ -4558,7 +4408,7 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
         p = -s * s2 * c3 * el1 * e[l] / dl1;
         e[l] = s * p;
         d[l] = c * p;
-        tst2 = tst1 + (d__1 = e[l], abs(d__1));
+        tst2 = tst1 + fabs(e[l]);
         if (tst2 > tst1)
         {
             goto L130;
@@ -4571,8 +4421,7 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
             goto L250;
         }
         /*     .......... for i=l step -1 until 2 do -- .......... */
-        i__2 = l;
-        for (ii = 2; ii <= i__2; ++ii)
+        for (ii = 2; ii <= l; ++ii)
         {
             i = l + 2 - ii;
             if (p >= d[i - 1])
@@ -4580,7 +4429,6 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
                 goto L270;
             }
             d[i] = d[i - 1];
-            /* L230: */
         }
 
     L250:
@@ -4590,35 +4438,26 @@ static int tql1_(int *n, double *d, double *e, int *ierr)
         /* L290: */
     }
 
-    goto L1001;
+    goto L_end;
 /*     .......... set error -- no convergence to an */
-/*                eigenvalue after 30 iterations .......... */
-L1000:
+/*		  eigenvalue after 30 iterations .......... */
+L_err_end:
     *ierr = l;
-L1001:
-    return 0;
+L_end:;
 } /* tql1_ */
 
-static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
+static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
 {
     /* System generated locals */
-    int z_dim1, z_offset, i__1, i__2, i__3;
-    double d__1, d__2;
-
-    /* Builtin functions */
-    double DSIGN();
+    int z_dim1;
 
     /* Local variables */
     double c, f, g, h;
+    double p, r, s, c2, c3, s2;
+    double dl1, el1, tst1, tst2;
     int i, j, k, l, m;
-    double p, r, s, c2, c3;
     int l1, l2;
-    double s2;
-    int ii;
-    extern double pythag_();
-    double dl1, el1;
-    int mml;
-    double tst1, tst2;
+    int ii, mml, nn;
 
     /*     this subroutine is a translation of the algol procedure tql2, */
     /*     num. math. 11, 293-306(1968) by bowdler, martin, reinsch, and */
@@ -4633,41 +4472,41 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
 
     /*     on input */
 
-    /*        nm must be set to the row dimension of two-dimensional */
-    /*          array parameters as declared in the calling program */
-    /*          dimension statement. */
+    /*	  nm must be set to the row dimension of two-dimensional */
+    /*	    array parameters as declared in the calling program */
+    /*	    dimension statement. */
 
-    /*        n is the order of the matrix. */
+    /*	  n is the order of the matrix. */
 
-    /*        d contains the diagonal elements of the input matrix. */
+    /*	  d contains the diagonal elements of the input matrix. */
 
-    /*        e contains the subdiagonal elements of the input matrix */
-    /*          in its last n-1 positions.  e(1) is arbitrary. */
+    /*	  e contains the subdiagonal elements of the input matrix */
+    /*	    in its last n-1 positions.	e(1) is arbitrary. */
 
-    /*        z contains the transformation matrix produced in the */
-    /*          reduction by  tred2, if performed.  if the eigenvectors */
-    /*          of the tridiagonal matrix are desired, z must contain */
-    /*          the identity matrix. */
+    /*	  z contains the transformation matrix produced in the */
+    /*	    reduction by  tred2, if performed.	if the eigenvectors */
+    /*	    of the tridiagonal matrix are desired, z must contain */
+    /*	    the identity matrix. */
 
-    /*      on output */
+    /*	on output */
 
-    /*        d contains the eigenvalues in ascending order.  if an */
-    /*          error exit is made, the eigenvalues are correct but */
-    /*          unordered for indices 1,2,...,ierr-1. */
+    /*	  d contains the eigenvalues in ascending order.  if an */
+    /*	    error exit is made, the eigenvalues are correct but */
+    /*	    unordered for indices 1,2,...,ierr-1. */
 
-    /*        e has been destroyed. */
+    /*	  e has been destroyed. */
 
-    /*        z contains orthonormal eigenvectors of the symmetric */
-    /*          tridiagonal (or full) matrix.  if an error exit is made, */
-    /*          z contains the eigenvectors associated with the stored */
-    /*          eigenvalues. */
+    /*	  z contains orthonormal eigenvectors of the symmetric */
+    /*	    tridiagonal (or full) matrix.  if an error exit is made, */
+    /*	    z contains the eigenvectors associated with the stored */
+    /*	    eigenvalues. */
 
-    /*        ierr is set to */
-    /*          zero       for normal return, */
-    /*          j          if the j-th eigenvalue has not been */
-    /*                     determined after 30 iterations. */
+    /*	  ierr is set to */
+    /*	    zero       for normal return, */
+    /*	    j	       if the j-th eigenvalue has not been */
+    /*		       determined after 30 iterations. */
 
-    /*     calls pythag for  dsqrt(a*a + b*b) . */
+    /*     calls pythag for	 dsqrt(a*a + b*b) . */
 
     /*     questions and comments should be directed to burton s. garbow, */
     /*     mathematics and computer science div, argonne national laboratory
@@ -4675,55 +4514,48 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
 
     /*     this version dated august 1983. */
 
-    /*     ------------------------------------------------------------------
+    /* ------------------------------------------------------------------
      */
 
     /* Parameter adjustments */
     z_dim1 = *nm;
-    z_offset = z_dim1 + 1;
-    z -= z_offset;
+    z -= (z_dim1 + 1);
     --e;
     --d;
 
+    nn = *n;
+
     /* Function Body */
     *ierr = 0;
-    if (*n == 1)
-    {
-        goto L1001;
-    }
+    if (nn == 1)
+        return;
 
-    i__1 = *n;
-    for (i = 2; i <= i__1; ++i)
+    for (i = 2; i <= nn; ++i)
     {
-        /* L100: */
         e[i - 1] = e[i];
     }
 
-    f = 0.;
-    tst1 = 0.;
-    e[*n] = 0.;
+    f = tst1 = 0.;
+    e[nn] = 0.;
 
-    i__1 = *n;
-    for (l = 1; l <= i__1; ++l)
+    for (l = 1; l <= nn; ++l)
     {
         j = 0;
-        h = (d__1 = d[l], abs(d__1)) + (d__2 = e[l], abs(d__2));
+        h = fabs(d[l]) + fabs(e[l]);
         if (tst1 < h)
         {
             tst1 = h;
         }
         /*     .......... look for small sub-diagonal element .......... */
-        i__2 = *n;
-        for (m = l; m <= i__2; ++m)
+        for (m = l; m <= nn; ++m)
         {
-            tst2 = tst1 + (d__1 = e[m], abs(d__1));
+            tst2 = tst1 + fabs(e[m]);
             if (tst2 == tst1)
             {
                 goto L120;
             }
             /*     .......... e(n) is always zero, so there is no exit */
-            /*                through the bottom of the loop .......... */
-            /* L110: */
+            /*		  through the bottom of the loop .......... */
         }
 
     L120:
@@ -4731,10 +4563,12 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
         {
             goto L220;
         }
-    L130:
+
+    L130: /* WHILE (j < 30) { .... try to converge .... } */
+
         if (j == 30)
         {
-            goto L1000;
+            goto L_noconv;
         }
         ++j;
         /*     .......... form shift .......... */
@@ -4742,24 +4576,15 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
         l2 = l1 + 1;
         g = d[l];
         p = (d[l1] - g) / (e[l] * 2.);
-        r = pythag_(&p, &c_b314);
+        r = pythag_(&p, &c_one);
         d[l] = e[l] / (p + DSIGN(&r, &p));
         d[l1] = e[l] * (p + DSIGN(&r, &p));
         dl1 = d[l1];
         h = g - d[l];
-        if (l2 > *n)
-        {
-            goto L145;
-        }
 
-        i__2 = *n;
-        for (i = l2; i <= i__2; ++i)
-        {
-            /* L140: */
+        for (i = l2; i <= nn; ++i)
             d[i] -= h;
-        }
 
-    L145:
         f += h;
         /*     .......... ql transformation .......... */
         p = d[m];
@@ -4769,8 +4594,7 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
         s = 0.;
         mml = m - l;
         /*     .......... for i=m-1 step -1 until l do -- .......... */
-        i__2 = mml;
-        for (ii = 1; ii <= i__2; ++ii)
+        for (ii = 1; ii <= mml; ++ii)
         {
             c3 = c2;
             c2 = c;
@@ -4785,97 +4609,72 @@ static int tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
             p = c * d[i] - s * g;
             d[i + 1] = h + s * (c * g + s * d[i]);
             /*     .......... form vector .......... */
-            i__3 = *n;
-            for (k = 1; k <= i__3; ++k)
+            for (k = 1; k <= nn; ++k)
             {
                 h = z[k + (i + 1) * z_dim1];
                 z[k + (i + 1) * z_dim1] = s * z[k + i * z_dim1] + c * h;
                 z[k + i * z_dim1] = c * z[k + i * z_dim1] - s * h;
-                /* L180: */
             }
-
-            /* L200: */
         }
 
         p = -s * s2 * c3 * el1 * e[l] / dl1;
         e[l] = s * p;
         d[l] = c * p;
-        tst2 = tst1 + (d__1 = e[l], abs(d__1));
+        tst2 = tst1 + fabs(e[l]);
         if (tst2 > tst1)
         {
             goto L130;
         }
+
     L220:
         d[l] += f;
-        /* L240: */
     }
     /*     .......... order eigenvalues and eigenvectors .......... */
-    i__1 = *n;
-    for (ii = 2; ii <= i__1; ++ii)
+    for (ii = 2; ii <= nn; ++ii)
     {
         i = ii - 1;
         k = i;
         p = d[i];
 
-        i__2 = *n;
-        for (j = ii; j <= i__2; ++j)
+        for (j = ii; j <= nn; ++j)
         {
-            if (d[j] >= p)
+            if (d[j] < p)
             {
-                goto L260;
+                k = j;
+                p = d[j];
             }
-            k = j;
-            p = d[j];
-        L260:;
         }
 
-        if (k == i)
+        if (k != i)
         {
-            goto L300;
-        }
-        d[k] = d[i];
-        d[i] = p;
+            d[k] = d[i];
+            d[i] = p;
 
-        i__2 = *n;
-        for (j = 1; j <= i__2; ++j)
-        {
-            p = z[j + i * z_dim1];
-            z[j + i * z_dim1] = z[j + k * z_dim1];
-            z[j + k * z_dim1] = p;
-            /* L280: */
+            for (j = 1; j <= nn; ++j)
+            {
+                p = z[j + i * z_dim1];
+                z[j + i * z_dim1] = z[j + k * z_dim1];
+                z[j + k * z_dim1] = p;
+            }
         }
-
-    L300:;
     }
 
-    goto L1001;
-/*     .......... set error -- no convergence to an */
-/*                eigenvalue after 30 iterations .......... */
-L1000:
+    return;
+
+L_noconv:
+    /*	   .......... set error -- no convergence to an */
+    /*		  eigenvalue after 30 iterations .......... */
     *ierr = l;
-L1001:
-    return 0;
+
 } /* tql2_ */
 
-/* *** for old version, "send otqlrat from eispack" */
-/* * From dana!moler Tue, 1 Sep 87 10:15:40 PDT */
-/* * New TQLRAT */
-static int tqlrat_(int *n, double *d, double *e2, int *ierr)
+static void tqlrat_(int *n, double *d, double *e2, int *ierr)
 {
-    /* System generated locals */
-    int i__1, i__2;
-    double d__1, d__2;
 
-    /* Builtin functions */
-    double sqrt(), DSIGN();
+    /** for old version, "send otqlrat from eispack" */
+    /** From dana!moler Tue, 1 Sep 87 10:15:40 PDT */
 
-    /* Local variables */
-    double b, c, f, g, h;
-    int i, j, l, m;
-    double p, r, s, t;
-    int l1, ii;
-    extern double pythag_(), epslon_();
-    int mml;
+    /** New TQLRAT */
 
     /*     This subroutine is a translation of the Algol procedure tqlrat, */
     /*     Algorithm 464, Comm. ACM 16, 689(1973) by Reinsch. */
@@ -4885,29 +4684,29 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
 
     /*     On input */
 
-    /*        N is the order of the matrix. */
+    /*	  N is the order of the matrix. */
 
-    /*        D contains the diagonal elements of the input matrix. */
+    /*	  D contains the diagonal elements of the input matrix. */
 
-    /*        E2 contains the squares of the subdiagonal elements of the */
-    /*          input matrix in its last N-1 positions.  E2(1) is arbitrary.
+    /*	  E2 contains the squares of the subdiagonal elements of the */
+    /*	    input matrix in its last N-1 positions.  E2(1) is arbitrary.
      */
 
-    /*      On output */
+    /*	On output */
 
-    /*        D contains the eigenvalues in ascending order.  If an */
-    /*          error exit is made, the eigenvalues are correct and */
-    /*          ordered for indices 1,2,...IERR-1, but may not be */
-    /*          the smallest eigenvalues. */
+    /*	  D contains the eigenvalues in ascending order.  If an */
+    /*	    error exit is made, the eigenvalues are correct and */
+    /*	    ordered for indices 1,2,...IERR-1, but may not be */
+    /*	    the smallest eigenvalues. */
 
-    /*        E2 has been destroyed. */
+    /*	  E2 has been destroyed. */
 
-    /*        IERR is set to */
-    /*          zero       for normal return, */
-    /*          J          if the J-th eigenvalue has not been */
-    /*                     determined after 30 iterations. */
+    /*	  IERR is set to */
+    /*	    zero       for normal return, */
+    /*	    J	       if the J-th eigenvalue has not been */
+    /*		       determined after 30 iterations. */
 
-    /*     Calls PYTHAG for  DSQRT(A*A + B*B) . */
+    /*     Calls PYTHAG for	 DSQRT(A*A + B*B) . */
 
     /*     Questions and comments should be directed to Burton S. Garbow, */
     /*     Mathematics and Computer Science Div, Argonne National Laboratory
@@ -4915,40 +4714,44 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
 
     /*     This version dated August 1987. */
     /*     Modified by C. Moler to fix underflow/overflow difficulties, */
-    /*     especially on the VAX and other machines where epslon(1.0d0)**2 */
+    /*     especially on the VAX and other machines where epslon(1.0d0)^2 */
     /*     nearly underflows.  See the loop involving statement 102 and */
     /*     the two statements just before statement 200. */
 
     /*     ------------------------------------------------------------------
      */
 
+    /* Local variables */
+    double b, c, f, g, h;
+    int i, j, l, m;
+    double p, r, s, t;
+    int l1, ii;
+    int mml;
+    int nn;
+
     /* Parameter adjustments */
     --e2;
     --d;
 
     /* Function Body */
+    nn = *n;
     *ierr = 0;
-    if (*n == 1)
-    {
-        goto L1001;
-    }
 
-    i__1 = *n;
-    for (i = 2; i <= i__1; ++i)
+    if (nn == 1)
+        return;
+
+    for (i = 2; i <= nn; ++i)
     {
-        /* L100: */
         e2[i - 1] = e2[i];
     }
 
-    f = 0.;
-    t = 0.;
-    e2[*n] = 0.;
+    f = t = 0.;
+    e2[nn] = 0.;
 
-    i__1 = *n;
-    for (l = 1; l <= i__1; ++l)
+    for (l = 1; l <= nn; ++l)
     {
         j = 0;
-        h = (d__1 = d[l], abs(d__1)) + sqrt(e2[l]);
+        h = fabs(d[l]) + sqrt(e2[l]);
         if (t > h)
         {
             goto L105;
@@ -4960,32 +4763,27 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
         {
             goto L105;
         }
-        /*        Spliting tolerance underflowed.  Look for larger value. */
-        i__2 = *n;
-        for (i = l; i <= i__2; ++i)
+        /* Splitting tolerance underflowed.  Look for larger value. */
+        for (i = l; i <= nn; ++i)
         {
-            h = (d__1 = d[i], abs(d__1)) + sqrt(e2[i]);
+            h = fabs(d[i]) + sqrt(e2[i]);
             if (h > t)
             {
                 t = h;
             }
-            /* L102: */
         }
         b = epslon_(&t);
         c = b * b;
-    /*     .......... LOOK FOR SMALL SQUARED SUB-DIAGONAL ELEMENT ........
-    .. */
+    /*     .......... LOOK FOR SMALL SQUARED SUB-DIAGONAL ELEMENT ........ */
     L105:
-        i__2 = *n;
-        for (m = l; m <= i__2; ++m)
+        for (m = l; m <= nn; ++m)
         {
             if (e2[m] <= c)
             {
                 goto L120;
             }
             /*     .......... E2(N) IS ALWAYS ZERO, SO THERE IS NO EXIT */
-            /*                THROUGH THE BOTTOM OF THE LOOP .......... */
-            /* L110: */
+            /*		  THROUGH THE BOTTOM OF THE LOOP .......... */
         }
 
     L120:
@@ -4993,25 +4791,28 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
         {
             goto L210;
         }
-    L130:
+
+    Loop: /* WHILE(j < 30) {....} */
         if (j == 30)
         {
-            goto L1000;
+            /*	 .......... SET ERROR -- NO CONVERGENCE TO AN */
+            /*		  EIGENVALUE AFTER 30 ITERATIONS .......... */
+            *ierr = l;
+            return;
         }
+
         ++j;
         /*     .......... FORM SHIFT .......... */
         l1 = l + 1;
         s = sqrt(e2[l]);
         g = d[l];
         p = (d[l1] - g) / (s * 2.);
-        r = pythag_(&p, &c_b314);
+        r = pythag_(&p, &c_one);
         d[l] = s / (p + DSIGN(&r, &p));
         h = g - d[l];
 
-        i__2 = *n;
-        for (i = l1; i <= i__2; ++i)
+        for (i = l1; i <= nn; ++i)
         {
-            /* L140: */
             d[i] -= h;
         }
 
@@ -5026,8 +4827,7 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
         s = 0.;
         mml = m - l;
         /*     .......... FOR I=M-1 STEP -1 UNTIL L DO -- .......... */
-        i__2 = mml;
-        for (ii = 1; ii <= i__2; ++ii)
+        for (ii = 1; ii <= mml; ++ii)
         {
             i = m - ii;
             p = g * h;
@@ -5036,7 +4836,7 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
             s = e2[i] / r;
             d[i + 1] = h + s * (h + d[i]);
             g = d[i] - e2[i] / g;
-            /*           Avoid division by zero on next pass */
+            /*	     Avoid division by zero on next pass */
             if (g == 0.)
             {
                 g = epslon_(&d[i]);
@@ -5047,71 +4847,52 @@ static int tqlrat_(int *n, double *d, double *e2, int *ierr)
 
         e2[l] = s * g;
         d[l] = h;
-        /*     .......... GUARD AGAINST UNDERFLOW IN CONVERGENCE TEST ........
-        .. */
-        if (h == 0.)
-        {
-            goto L210;
-        }
-        if ((d__1 = e2[l], abs(d__1)) <= (d__2 = c / h, abs(d__2)))
+        /*     .......... GUARD AGAINST UNDERFLOW IN CONVERGENCE TEST ........ */
+        if (h == 0. || fabs(e2[l]) <= fabs(c / h))
         {
             goto L210;
         }
         e2[l] = h * e2[l];
         if (e2[l] != 0.)
         {
-            goto L130;
+            goto Loop;
         }
+
     L210:
         p = d[l] + f;
         /*     .......... ORDER EIGENVALUES .......... */
-        if (l == 1)
+        if (l != 1)
         {
-            goto L250;
-        }
-        /*     .......... FOR I=L STEP -1 UNTIL 2 DO -- .......... */
-        i__2 = l;
-        for (ii = 2; ii <= i__2; ++ii)
-        {
-            i = l + 2 - ii;
-            if (p >= d[i - 1])
+            /*	 .......... FOR I=L STEP -1 UNTIL 2 DO -- .......... */
+            for (ii = 2; ii <= l; ++ii)
             {
-                goto L270;
+                i = l + 2 - ii;
+                if (p >= d[i - 1])
+                {
+                    goto L270;
+                }
+                d[i] = d[i - 1];
             }
-            d[i] = d[i - 1];
-            /* L230: */
         }
-
-    L250:
         i = 1;
     L270:
         d[i] = p;
-        /* L290: */
-    }
 
-    goto L1001;
-/*     .......... SET ERROR -- NO CONVERGENCE TO AN */
-/*                EIGENVALUE AFTER 30 ITERATIONS .......... */
-L1000:
-    *ierr = l;
-L1001:
-    return 0;
+    } /* for (l = 1..nn ) */
+
 } /* tqlrat_ */
 
-static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
+static void tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
 {
     /* System generated locals */
-    int a_dim1, a_offset, i__1, i__2, i__3;
+    int a_dim1;
     double d__1;
-
-    /* Builtin functions */
-    double sqrt(), DSIGN();
 
     /* Local variables */
     double f, g, h;
     int i, j, k, l;
     double scale;
-    int ii, jp1;
+    int ii, jp1, nn;
 
     /*     this subroutine is a translation of the algol procedure tred1, */
     /*     num. math. 11, 181-195(1968) by martin, reinsch, and wilkinson. */
@@ -5123,28 +4904,28 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
 
     /*     on input */
 
-    /*        nm must be set to the row dimension of two-dimensional */
-    /*          array parameters as declared in the calling program */
-    /*          dimension statement. */
+    /*	  nm must be set to the row dimension of two-dimensional */
+    /*	    array parameters as declared in the calling program */
+    /*	    dimension statement. */
 
-    /*        n is the order of the matrix. */
+    /*	  n is the order of the matrix. */
 
-    /*        a contains the real symmetric input matrix.  only the */
-    /*          lower triangle of the matrix need be supplied. */
+    /*	  a contains the real symmetric input matrix.  only the */
+    /*	    lower triangle of the matrix need be supplied. */
 
     /*     on output */
 
-    /*        a contains information about the orthogonal trans- */
-    /*          formations used in the reduction in its strict lower */
-    /*          triangle.  the full upper triangle of a is unaltered. */
+    /*	  a contains information about the orthogonal trans- */
+    /*	    formations used in the reduction in its strict lower */
+    /*	    triangle.  the full upper triangle of a is unaltered. */
 
-    /*        d contains the diagonal elements of the tridiagonal matrix. */
+    /*	  d contains the diagonal elements of the tridiagonal matrix. */
 
-    /*        e contains the subdiagonal elements of the tridiagonal */
-    /*          matrix in its last n-1 positions.  e(1) is set to zero. */
+    /*	  e contains the subdiagonal elements of the tridiagonal */
+    /*	    matrix in its last n-1 positions.  e(1) is set to zero. */
 
-    /*        e2 contains the squares of the corresponding elements of e. */
-    /*          e2 may coincide with e if the squares are not needed. */
+    /*	  e2 contains the squares of the corresponding elements of e. */
+    /*	    e2 may coincide with e if the squares are not needed. */
 
     /*     questions and comments should be directed to burton s. garbow, */
     /*     mathematics and computer science div, argonne national laboratory
@@ -5160,20 +4941,17 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
     --e;
     --d;
     a_dim1 = *nm;
-    a_offset = a_dim1 + 1;
-    a -= a_offset;
+    a -= (a_dim1 + 1);
 
     /* Function Body */
-    i__1 = *n;
-    for (i = 1; i <= i__1; ++i)
+    nn = *n;
+    for (i = 1; i <= nn; ++i)
     {
         d[i] = a[*n + i * a_dim1];
         a[*n + i * a_dim1] = a[i + i * a_dim1];
-        /* L100: */
     }
     /*     .......... for i=n step -1 until 1 do -- .......... */
-    i__1 = *n;
-    for (ii = 1; ii <= i__1; ++ii)
+    for (ii = 1; ii <= nn; ++ii)
     {
         i = *n + 1 - ii;
         l = i - 1;
@@ -5184,25 +4962,21 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
             goto L130;
         }
         /*     .......... scale row (algol tol then not needed) .......... */
-        i__2 = l;
-        for (k = 1; k <= i__2; ++k)
+        for (k = 1; k <= l; ++k)
         {
-            /* L120: */
-            scale += (d__1 = d[k], abs(d__1));
+            scale += fabs(d[k]);
         }
 
         if (scale != 0.)
         {
             goto L140;
         }
-
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        /* else : */
+        for (j = 1; j <= l; ++j)
         {
             d[j] = a[l + j * a_dim1];
             a[l + j * a_dim1] = a[i + j * a_dim1];
             a[i + j * a_dim1] = 0.;
-            /* L125: */
         }
 
     L130:
@@ -5211,12 +4985,10 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
         goto L300;
 
     L140:
-        i__2 = l;
-        for (k = 1; k <= i__2; ++k)
+        for (k = 1; k <= l; ++k)
         {
             d[k] /= scale;
             h += d[k] * d[k];
-            /* L150: */
         }
 
         e2[i] = scale * scale * h;
@@ -5231,15 +5003,12 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
             goto L285;
         }
         /*     .......... form a*u .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
-            /* L170: */
             e[j] = 0.;
         }
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = d[j];
             g = e[j] + a[j + j * a_dim1] * f;
@@ -5249,12 +5018,10 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
                 goto L220;
             }
 
-            i__3 = l;
-            for (k = jp1; k <= i__3; ++k)
+            for (k = jp1; k <= l; ++k)
             {
                 g += a[k + j * a_dim1] * d[k];
                 e[k] += a[k + j * a_dim1] * f;
-                /* L200: */
             }
 
         L220:
@@ -5264,146 +5031,114 @@ static int tred1_(int *nm, int *n, double *a, double *d, double *e, double *e2)
         /*     .......... form p .......... */
         f = 0.;
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             e[j] /= h;
             f += e[j] * d[j];
-            /* L245: */
         }
 
         h = f / (h + h);
         /*     .......... form q .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
-            /* L250: */
             e[j] -= h * d[j];
         }
         /*     .......... form reduced a .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = d[j];
             g = e[j];
 
-            i__3 = l;
-            for (k = j; k <= i__3; ++k)
+            for (k = j; k <= l; ++k)
             {
-                /* L260: */
                 a[k + j * a_dim1] = a[k + j * a_dim1] - f * e[k] - g * d[k];
             }
-
-            /* L280: */
         }
 
     L285:
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = d[j];
             d[j] = a[l + j * a_dim1];
             a[l + j * a_dim1] = a[i + j * a_dim1];
             a[i + j * a_dim1] = f * scale;
-            /* L290: */
         }
 
     L300:;
     }
-
-    return 0;
 } /* tred1_ */
 
-static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
+static void tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
 {
     /* System generated locals */
-    int a_dim1, a_offset, z_dim1, z_offset, i__1, i__2, i__3;
+    int a_dim1;
     double d__1;
 
-    /* Builtin functions */
-    double sqrt(), DSIGN();
-
     /* Local variables */
-    double f, g, h;
-    int i, j, k, l;
-    double scale, hh;
-    int ii, jp1;
+    double f, g, h, scale, hh;
+    int i, j, k, l, ii, jp1, nn;
 
-    /*     this subroutine is a translation of the algol procedure tred2, */
-    /*     num. math. 11, 181-195(1968) by martin, reinsch, and wilkinson. */
-    /*     handbook for auto. comp., vol.ii-linear algebra, 212-226(1971). */
+    /* This onsubroutine is a translation of the algol procedure tred2,
+     *  Num. Math. 11, 181-195(1968) by Martin, Reinsch, and Wilkinson, s.a.
+     *  Handbook for Auto. Comp., Vol.II - Linear Algebra, 212-226(1971).
 
-    /*     this subroutine reduces a real symmetric matrix to a */
-    /*     symmetric tridiagonal matrix using and accumulating */
-    /*     orthogonal similarity transformations. */
+     * It reduces a real symmetric matrix to a
+     * symmetric tridiagonal matrix using and accumulating
+     * orthogonal similarity transformations.
 
-    /*     on input */
+     * On INPUT
 
-    /*        nm must be set to the row dimension of two-dimensional */
-    /*          array parameters as declared in the calling program */
-    /*          dimension statement. */
+     *	nm must be set to the row dimension of two-dimensional
+     *	  array parameters as declared in the calling program
+     *	  dimension statement.
 
-    /*        n is the order of the matrix. */
+     *	n is the order of the matrix.
 
-    /*        a contains the real symmetric input matrix.  only the */
-    /*          lower triangle of the matrix need be supplied. */
+     *	a contains the real symmetric input matrix.  only the
+     *	  lower triangle of the matrix need be supplied.
 
-    /*     on output */
+     * On OUTPUT
 
-    /*        d contains the diagonal elements of the tridiagonal matrix. */
+     *	d contains the diagonal elements of the tridiagonal matrix.
 
-    /*        e contains the subdiagonal elements of the tridiagonal */
-    /*          matrix in its last n-1 positions.  e(1) is set to zero. */
+     *	e contains the subdiagonal elements of the tridiagonal
+     *	  matrix in its last n-1 positions.  e(1) is set to zero.
 
-    /*        z contains the orthogonal transformation matrix */
-    /*          produced in the reduction. */
+     *	z contains the orthogonal transformation matrix
+     *	  produced in the reduction.
 
-    /*        a and z may coincide.  if distinct, a is unaltered. */
+     *	a and z may coincide.  if distinct, a is unaltered.
 
-    /*     questions and comments should be directed to burton s. garbow, */
-    /*     mathematics and computer science div, argonne national laboratory
-     */
+     * Questions and comments should be directed to Burton S. Garbow,
+     * Mathematics and Computer Science Div, Argonne National Laboratory.
 
-    /*     this version dated august 1983. */
-
-    /*     ------------------------------------------------------------------
+     * This version dated august 1983.
+     * ------------------------------------------------------------------
      */
 
     /* Parameter adjustments */
-    z_dim1 = *nm;
-    z_offset = z_dim1 + 1;
-    z -= z_offset;
+    a_dim1 = *nm;
+    z -= (a_dim1 + 1);
     --e;
     --d;
-    a_dim1 = *nm;
-    a_offset = a_dim1 + 1;
-    a -= a_offset;
+    a -= (a_dim1 + 1);
 
     /* Function Body */
-    i__1 = *n;
-    for (i = 1; i <= i__1; ++i)
-    {
+    nn = *n;
 
-        i__2 = *n;
-        for (j = i; j <= i__2; ++j)
+    for (i = 1; i <= nn; ++i)
+    {
+        for (j = i; j <= nn; ++j)
         {
-            /* L80: */
-            z[j + i * z_dim1] = a[j + i * a_dim1];
+            z[j + i * a_dim1] = a[j + i * a_dim1];
         }
-
-        d[i] = a[*n + i * a_dim1];
-        /* L100: */
+        d[i] = a[nn + i * a_dim1];
     }
 
-    if (*n == 1)
-    {
-        goto L510;
-    }
     /*     .......... for i=n step -1 until 2 do -- .......... */
-    i__1 = *n;
-    for (ii = 2; ii <= i__1; ++ii)
+    for (ii = 2; ii <= nn; ++ii)
     {
-        i = *n + 2 - ii;
+        i = nn + 2 - ii;
         l = i - 1;
         h = 0.;
         scale = 0.;
@@ -5412,11 +5147,9 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
             goto L130;
         }
         /*     .......... scale row (algol tol then not needed) .......... */
-        i__2 = l;
-        for (k = 1; k <= i__2; ++k)
+        for (k = 1; k <= l; ++k)
         {
-            /* L120: */
-            scale += (d__1 = d[k], abs(d__1));
+            scale += fabs(d[k]);
         }
 
         if (scale != 0.)
@@ -5426,20 +5159,18 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
     L130:
         e[i] = d[l];
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
-            d[j] = z[l + j * z_dim1];
-            z[i + j * z_dim1] = 0.;
-            z[j + i * z_dim1] = 0.;
+            d[j] = z[l + j * a_dim1];
+            z[i + j * a_dim1] = 0.;
+            z[j + i * a_dim1] = 0.;
             /* L135: */
         }
 
         goto L290;
 
     L140:
-        i__2 = l;
-        for (k = 1; k <= i__2; ++k)
+        for (k = 1; k <= l; ++k)
         {
             d[k] /= scale;
             h += d[k] * d[k];
@@ -5453,30 +5184,27 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
         h -= f * g;
         d[l] = f - g;
         /*     .......... form a*u .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             /* L170: */
             e[j] = 0.;
         }
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = d[j];
-            z[j + i * z_dim1] = f;
-            g = e[j] + z[j + j * z_dim1] * f;
+            z[j + i * a_dim1] = f;
+            g = e[j] + z[j + j * a_dim1] * f;
             jp1 = j + 1;
             if (l < jp1)
             {
                 goto L220;
             }
 
-            i__3 = l;
-            for (k = jp1; k <= i__3; ++k)
+            for (k = jp1; k <= l; ++k)
             {
-                g += z[k + j * z_dim1] * d[k];
-                e[k] += z[k + j * z_dim1] * f;
+                g += z[k + j * a_dim1] * d[k];
+                e[k] += z[k + j * a_dim1] * f;
                 /* L200: */
             }
 
@@ -5487,8 +5215,7 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
         /*     .......... form p .......... */
         f = 0.;
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             e[j] /= h;
             f += e[j] * d[j];
@@ -5497,29 +5224,24 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
 
         hh = f / (h + h);
         /*     .......... form q .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             /* L250: */
             e[j] -= hh * d[j];
         }
         /*     .......... form reduced a .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = d[j];
             g = e[j];
 
-            i__3 = l;
-            for (k = j; k <= i__3; ++k)
+            for (k = j; k <= l; ++k)
             {
-                /* L260: */
-                z[k + j * z_dim1] = z[k + j * z_dim1] - f * e[k] - g * d[k];
+                z[k + j * a_dim1] = z[k + j * a_dim1] - f * e[k] - g * d[k];
             }
 
-            d[j] = z[l + j * z_dim1];
-            z[i + j * z_dim1] = 0.;
-            /* L280: */
+            d[j] = z[l + j * a_dim1];
+            z[i + j * a_dim1] = 0.;
         }
 
     L290:
@@ -5527,66 +5249,51 @@ static int tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
         /* L300: */
     }
     /*     .......... accumulation of transformation matrices .......... */
-    i__1 = *n;
-    for (i = 2; i <= i__1; ++i)
+    for (i = 2; i <= nn; ++i)
     {
         l = i - 1;
-        z[*n + l * z_dim1] = z[l + l * z_dim1];
-        z[l + l * z_dim1] = 1.;
+        z[nn + l * a_dim1] = z[l + l * a_dim1];
+        z[l + l * a_dim1] = 1.;
         h = d[i];
         if (h == 0.)
         {
             goto L380;
         }
 
-        i__2 = l;
-        for (k = 1; k <= i__2; ++k)
+        for (k = 1; k <= l; ++k)
         {
-            /* L330: */
-            d[k] = z[k + i * z_dim1] / h;
+            d[k] = z[k + i * a_dim1] / h;
         }
 
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             g = 0.;
 
-            i__3 = l;
-            for (k = 1; k <= i__3; ++k)
+            for (k = 1; k <= l; ++k)
             {
-                /* L340: */
-                g += z[k + i * z_dim1] * z[k + j * z_dim1];
+                g += z[k + i * a_dim1] * z[k + j * a_dim1];
             }
 
-            i__3 = l;
-            for (k = 1; k <= i__3; ++k)
+            for (k = 1; k <= l; ++k)
             {
-                z[k + j * z_dim1] -= g * d[k];
-                /* L360: */
+                z[k + j * a_dim1] -= g * d[k];
             }
         }
 
     L380:
-        i__3 = l;
-        for (k = 1; k <= i__3; ++k)
+        for (k = 1; k <= l; ++k)
         {
-            /* L400: */
-            z[k + i * z_dim1] = 0.;
+            z[k + i * a_dim1] = 0.;
         }
-
-        /* L500: */
     }
 
-L510:
-    i__1 = *n;
-    for (i = 1; i <= i__1; ++i)
+    /* L510: */
+    for (i = 1; i <= nn; ++i)
     {
-        d[i] = z[*n + i * z_dim1];
-        z[*n + i * z_dim1] = 0.;
-        /* L520: */
+        d[i] = z[nn + i * a_dim1];
+        z[nn + i * a_dim1] = 0.;
     }
 
-    z[*n + *n * z_dim1] = 1.;
+    z[nn + nn * a_dim1] = 1.;
     e[1] = 0.;
-    return 0;
 } /* tred2_ */
