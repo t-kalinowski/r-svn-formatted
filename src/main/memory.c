@@ -2756,6 +2756,11 @@ void(SET_PRVALUE)(SEXP x, SEXP v)
     CHECK_OLD_TO_NEW(x, v);
     PRVALUE(x) = v;
 }
+void(SET_PRCODE)(SEXP x, SEXP v)
+{
+    CHECK_OLD_TO_NEW(x, v);
+    PRCODE(x) = v;
+}
 void(SET_PRSEEN)(SEXP x, int v)
 {
     SET_PRSEEN(x, v);
