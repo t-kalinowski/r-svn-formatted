@@ -2088,10 +2088,7 @@ void GScale(double min, double max, int axis, DevDesc *dd)
 
     swap = min > max;
     if (swap)
-    {
-#ifdef DEBUG_PLOT
-        REprintf("GScale(..axis=%d) __SWAP__ (min = %g > %g = max); log=%d]\n", axis, min, max, log);
-#endif
+    { /* Feature: in R, something like  xlim = c(100,0)  just works */
         temp = min;
         min = max;
         max = temp;
