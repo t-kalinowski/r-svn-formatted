@@ -790,191 +790,198 @@ static SEXP OffsetToNode(int offset)
 
 static void DataSave(SEXP s, FILE *fp)
 {
-    int i, j, k, l, n;
-
-    /* compute the storage requirements */
-    /* and write these to the save file */
-    /* NSymbol = # of symbols written */
-    /* NSave = # of symbols written */
-    /* NVSize = # of vector cells written */
-
-    NSave = 0;
-    NSymbol = 0;
-    NVSize = 0;
-    unmarkPhase();
-    MarkSave(s);
-
-    OutInit(fp);
-
-    OutInteger(fp, NSymbol);
-    OutSpace(fp, 1);
-    OutInteger(fp, NSave);
-    OutSpace(fp, 1);
-    OutInteger(fp, NVSize);
-    OutNewline(fp);
-
-    /* write out any required symbols */
-
-    k = 0;
-    n = 0;
-    for (i = 0; i < R_NSize; i++)
+    BEGIN_SUSPEND_INTERRUPTS
     {
-        if (MARK(&R_NHeap[i]))
+        int i, j, k, l, n;
+
+        /* compute the storage requirements */
+        /* and write these to the save file */
+        /* NSymbol = # of symbols written */
+        /* NSave = # of symbols written */
+        /* NVSize = # of vector cells written */
+
+        NSave = 0;
+        NSymbol = 0;
+        NVSize = 0;
+        unmarkPhase();
+        MarkSave(s);
+
+        OutInit(fp);
+
+        OutInteger(fp, NSymbol);
+        OutSpace(fp, 1);
+        OutInteger(fp, NSave);
+        OutSpace(fp, 1);
+        OutInteger(fp, NVSize);
+        OutNewline(fp);
+
+        /* write out any required symbols */
+
+        k = 0;
+        n = 0;
+        for (i = 0; i < R_NSize; i++)
         {
-            if (TYPEOF(&R_NHeap[i]) == SYMSXP)
+            if (MARK(&R_NHeap[i]))
             {
-                OutInteger(fp, n);
-                OutSpace(fp, 1);
-                OutInteger(fp, NodeToOffset(&R_NHeap[i]));
-                OutSpace(fp, 1);
-                OutString(fp, CHAR(PRINTNAME(&R_NHeap[i])));
-                OutNewline(fp);
-                k++;
-            }
-            n++;
-        }
-    }
-    if (k != NSymbol || n != NSymbol + NSave)
-        error("symbol count conflict");
-
-    /* write out the forwarding address table */
-
-    k = 0;
-    n = 0;
-    for (i = 0; i < R_NSize; i++)
-    {
-        if (MARK(&R_NHeap[i]))
-        {
-            if (TYPEOF(&R_NHeap[i]) != SYMSXP)
-            {
-                OutInteger(fp, n);
-                OutSpace(fp, 1);
-                OutInteger(fp, NodeToOffset(&R_NHeap[i]));
-                OutNewline(fp);
-                k++;
-            }
-            n++;
-        }
-    }
-    if (k != NSave || n != NSymbol + NSave)
-        error("node count conflict");
-
-    k = 0;
-    n = 0;
-    for (i = 0; i < R_NSize; i++)
-    {
-        if (MARK(&R_NHeap[i]))
-        {
-            if (TYPEOF(&R_NHeap[i]) != SYMSXP)
-            {
-
-                OutInteger(fp, n);
-                OutSpace(fp, 1);
-                OutInteger(fp, TYPEOF(&R_NHeap[i]));
-                OutSpace(fp, 1);
-                OutInteger(fp, OBJECT(&R_NHeap[i]));
-                OutSpace(fp, 1);
-                OutInteger(fp, LEVELS(&R_NHeap[i]));
-                OutSpace(fp, 1);
-                OutInteger(fp, NodeToOffset(ATTRIB(&R_NHeap[i])));
-                OutSpace(fp, 1);
-
-                switch (TYPEOF(&R_NHeap[i]))
+                if (TYPEOF(&R_NHeap[i]) == SYMSXP)
                 {
-                case LISTSXP:
-                case LANGSXP:
-                case CLOSXP:
-                case PROMSXP:
-                case ENVSXP:
-                    OutInteger(fp, NodeToOffset(CAR(&R_NHeap[i])));
+                    OutInteger(fp, n);
                     OutSpace(fp, 1);
-                    OutInteger(fp, NodeToOffset(CDR(&R_NHeap[i])));
+                    OutInteger(fp, NodeToOffset(&R_NHeap[i]));
                     OutSpace(fp, 1);
-                    OutInteger(fp, NodeToOffset(TAG(&R_NHeap[i])));
+                    OutString(fp, CHAR(PRINTNAME(&R_NHeap[i])));
                     OutNewline(fp);
-                    break;
-                case SPECIALSXP:
-                case BUILTINSXP:
-                    OutInteger(fp, strlen(PRIMNAME(&R_NHeap[i])));
-                    OutSpace(fp, 1);
-                    OutString(fp, PRIMNAME(&R_NHeap[i]));
-                    OutNewline(fp);
-                    break;
-                case CHARSXP:
-                    OutInteger(fp, LENGTH(&R_NHeap[i]));
-                    OutSpace(fp, 1);
-                    OutString(fp, CHAR(&R_NHeap[i]));
-                    OutNewline(fp);
-                    break;
-                case REALSXP:
-                    l = LENGTH(&R_NHeap[i]);
-                    OutInteger(fp, l);
-                    OutNewline(fp);
-                    for (j = 0; j < l; j++)
-                    {
-                        OutReal(fp, REAL(&R_NHeap[i])[j]);
-                        if ((j + 1) % 10 == 0 || j == l - 1)
-                            OutNewline(fp);
-                        else
-                            OutSpace(fp, 1);
-                    }
-                    break;
-                case CPLXSXP:
-                    l = LENGTH(&R_NHeap[i]);
-                    OutInteger(fp, l);
-                    OutNewline(fp);
-                    for (j = 0; j < l; j++)
-                    {
-                        OutComplex(fp, COMPLEX(&R_NHeap[i])[j]);
-                        if ((j + 1) % 10 == 0 || j == l - 1)
-                            OutNewline(fp);
-                        else
-                            OutSpace(fp, 1);
-                    }
-                    break;
-                case INTSXP:
-                case LGLSXP:
-                    l = LENGTH(&R_NHeap[i]);
-                    OutInteger(fp, l);
-                    OutNewline(fp);
-                    for (j = 0; j < l; j++)
-                    {
-                        OutInteger(fp, INTEGER(&R_NHeap[i])[j]);
-                        if ((j + 1) % 10 == 0 || j == l - 1)
-                            OutNewline(fp);
-                        else
-                            OutSpace(fp, 1);
-                    }
-                    break;
-                case STRSXP:
-                case VECSXP:
-                case EXPRSXP:
-                    l = LENGTH(&R_NHeap[i]);
-                    OutInteger(fp, l);
-                    OutNewline(fp);
-                    for (j = 0; j < l; j++)
-                    {
-                        OutInteger(fp, NodeToOffset(VECTOR(&R_NHeap[i])[j]));
-                        if ((j + 1) % 10 == 0 || j == l - 1)
-                            OutNewline(fp);
-                        else
-                            OutSpace(fp, 1);
-                    }
+                    k++;
                 }
-                k++;
+                n++;
             }
-            n++;
         }
+        if (k != NSymbol || n != NSymbol + NSave)
+            error("symbol count conflict");
+
+        /* write out the forwarding address table */
+
+        k = 0;
+        n = 0;
+        for (i = 0; i < R_NSize; i++)
+        {
+            if (MARK(&R_NHeap[i]))
+            {
+                if (TYPEOF(&R_NHeap[i]) != SYMSXP)
+                {
+                    OutInteger(fp, n);
+                    OutSpace(fp, 1);
+                    OutInteger(fp, NodeToOffset(&R_NHeap[i]));
+                    OutNewline(fp);
+                    k++;
+                }
+                n++;
+            }
+        }
+        if (k != NSave || n != NSymbol + NSave)
+            error("node count conflict");
+
+        k = 0;
+        n = 0;
+        for (i = 0; i < R_NSize; i++)
+        {
+            if (MARK(&R_NHeap[i]))
+            {
+                if (TYPEOF(&R_NHeap[i]) != SYMSXP)
+                {
+
+                    OutInteger(fp, n);
+                    OutSpace(fp, 1);
+                    OutInteger(fp, TYPEOF(&R_NHeap[i]));
+                    OutSpace(fp, 1);
+                    OutInteger(fp, OBJECT(&R_NHeap[i]));
+                    OutSpace(fp, 1);
+                    OutInteger(fp, LEVELS(&R_NHeap[i]));
+                    OutSpace(fp, 1);
+                    OutInteger(fp, NodeToOffset(ATTRIB(&R_NHeap[i])));
+                    OutSpace(fp, 1);
+
+                    switch (TYPEOF(&R_NHeap[i]))
+                    {
+                    case LISTSXP:
+                    case LANGSXP:
+                    case CLOSXP:
+                    case PROMSXP:
+                    case ENVSXP:
+                        OutInteger(fp, NodeToOffset(CAR(&R_NHeap[i])));
+                        OutSpace(fp, 1);
+                        OutInteger(fp, NodeToOffset(CDR(&R_NHeap[i])));
+                        OutSpace(fp, 1);
+                        OutInteger(fp, NodeToOffset(TAG(&R_NHeap[i])));
+                        OutNewline(fp);
+                        break;
+                    case SPECIALSXP:
+                    case BUILTINSXP:
+                        OutInteger(fp, strlen(PRIMNAME(&R_NHeap[i])));
+                        OutSpace(fp, 1);
+                        OutString(fp, PRIMNAME(&R_NHeap[i]));
+                        OutNewline(fp);
+                        break;
+                    case CHARSXP:
+                        OutInteger(fp, LENGTH(&R_NHeap[i]));
+                        OutSpace(fp, 1);
+                        OutString(fp, CHAR(&R_NHeap[i]));
+                        OutNewline(fp);
+                        break;
+                    case REALSXP:
+                        l = LENGTH(&R_NHeap[i]);
+                        OutInteger(fp, l);
+                        OutNewline(fp);
+                        for (j = 0; j < l; j++)
+                        {
+                            OutReal(fp, REAL(&R_NHeap[i])[j]);
+                            if ((j + 1) % 10 == 0 || j == l - 1)
+                                OutNewline(fp);
+                            else
+                                OutSpace(fp, 1);
+                        }
+                        break;
+                    case CPLXSXP:
+                        l = LENGTH(&R_NHeap[i]);
+                        OutInteger(fp, l);
+                        OutNewline(fp);
+                        for (j = 0; j < l; j++)
+                        {
+                            OutComplex(fp, COMPLEX(&R_NHeap[i])[j]);
+                            if ((j + 1) % 10 == 0 || j == l - 1)
+                                OutNewline(fp);
+                            else
+                                OutSpace(fp, 1);
+                        }
+                        break;
+                    case INTSXP:
+                    case LGLSXP:
+                        l = LENGTH(&R_NHeap[i]);
+                        OutInteger(fp, l);
+                        OutNewline(fp);
+                        for (j = 0; j < l; j++)
+                        {
+                            OutInteger(fp, INTEGER(&R_NHeap[i])[j]);
+                            if ((j + 1) % 10 == 0 || j == l - 1)
+                                OutNewline(fp);
+                            else
+                                OutSpace(fp, 1);
+                        }
+                        break;
+                    case STRSXP:
+                    case VECSXP:
+                    case EXPRSXP:
+                        l = LENGTH(&R_NHeap[i]);
+                        OutInteger(fp, l);
+                        OutNewline(fp);
+                        for (j = 0; j < l; j++)
+                        {
+                            OutInteger(fp, NodeToOffset(VECTOR(&R_NHeap[i])[j]));
+                            if ((j + 1) % 10 == 0 || j == l - 1)
+                                OutNewline(fp);
+                            else
+                                OutSpace(fp, 1);
+                        }
+                    }
+                    k++;
+                }
+                n++;
+            }
+        }
+        if (k != NSave)
+            error("node count conflict");
+
+        /* write out the offset of the list */
+
+        OutInteger(fp, NodeToOffset(s));
+        OutNewline(fp);
+
+        OutTerm(fp);
+
+        /* unmark again to preserver the invariant */
+        unmarkPhase();
     }
-    if (k != NSave)
-        error("node count conflict");
-
-    /* write out the offset of the list */
-
-    OutInteger(fp, NodeToOffset(s));
-    OutNewline(fp);
-
-    OutTerm(fp);
+    END_SUSPEND_INTERRUPTS;
 }
 
 static void RestoreSEXP(SEXP s, FILE *fp)
