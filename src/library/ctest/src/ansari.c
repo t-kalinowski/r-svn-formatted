@@ -7,44 +7,55 @@
 
 #include "ctest.h"
 
-static double ***w;
-
+/*
+  Removed the non-local variable `double ***w'
+  and moved to R_alloc from Calloc. No need for
+  w_free() since the .C() calls will clear it.
+  The tests for whether the memory was allocated
+  can be discarded as R_alloc will throw an error.
+  The .C() will handle the vmaxget() and vmaxset().
+ */
 static void errmsg(char *s)
 {
     PROBLEM "%s", s RECOVER(NULL_ENTRY);
 }
 
-static void w_init(Sint m, Sint n)
+static double ***w_init(Sint m, Sint n)
 {
     Sint i;
+    double ***w;
 
-    w = Calloc(m + 1, double **);
-    if (!w)
-        errmsg("allocation error 1 in `ansari.c'");
+    w = (double ***)R_alloc(m + 1, sizeof(double **));
+    memset(w, '\0', (m + 1) * sizeof(double **));
     for (i = 0; i <= m; i++)
     {
-        w[i] = Calloc(n + 1, double *);
-        if (!w[i])
-            errmsg("allocation error 2 in `ansari.c'");
+        w[i] = (double **)R_alloc(n + 1, sizeof(double *));
+        memset(w[i], '\0', (n + 1) * sizeof(double *));
     }
+    return (w);
 }
 
-static void w_free(Sint m, Sint n)
+#if 0
+/* 
+  This is not needed if we use R_alloc() and let R 
+  garbage collect.
+ */
+static void
+w_free(Sint m, Sint n, double ***w)
 {
     Sint i, j;
-    for (i = m; i >= 0; i--)
-    {
-        for (j = n; j >= 0; j--)
-        {
-            Free(w[i][j]);
+    for (i = m; i >= 0; i--) {
+	for (j = n; j >= 0; j--) {
+	    Free(w[i][j]);
         }
-        Free(w[i]);
+	Free(w[i]);
     }
     Free(w);
     w = 0;
 }
+#endif
 
-static double cansari(int k, int m, int n)
+static double cansari(int k, int m, int n, double ***w)
 {
     int i, l, u;
 
@@ -56,9 +67,8 @@ static double cansari(int k, int m, int n)
 
     if (w[m][n] == 0)
     {
-        w[m][n] = Calloc(u + 1, double);
-        if (!w[m][n])
-            errmsg("allocation error in cansari()");
+        w[m][n] = (double *)R_alloc(u + 1, sizeof(double));
+        memset(w[m][n], '\0', (u + 1) * sizeof(double));
         for (i = 0; i <= u; i++)
             w[m][n][i] = -1;
     }
@@ -70,35 +80,41 @@ static double cansari(int k, int m, int n)
         else if (n == 0)
             w[m][n][k] = (k == l);
         else
-            w[m][n][k] = cansari(k, m, n - 1) + cansari(k - (m + n + 1) / 2, m - 1, n);
+            w[m][n][k] = cansari(k, m, n - 1, w) + cansari(k - (m + n + 1) / 2, m - 1, n, w);
     }
 
     return (w[m][n][k]);
 }
 
-void dansari(Sint *len, double *x, Sint *m, Sint *n)
+#if 0
+/*
+  Is this ever called?
+ */
+void
+dansari(Sint *len, double *x, Sint *m, Sint *n)
 {
     Sint i;
+    double ***w;    
 
-    w_init(*m, *n);
+    w = w_init(*m, *n);
     for (i = 0; i < *len; i++)
-        if (fabs(x[i] - floor(x[i] + 0.5)) > 1e-7)
-        {
-            x[i] = 0;
-        }
-        else
-        {
-            x[i] = cansari((Sint)x[i], (Sint)*m, (Sint)*n) / choose(*m + *n, *m);
-        }
-    w_free(*m, *n);
+	if (fabs(x[i] - floor(x[i] + 0.5)) > 1e-7) {
+	    x[i] = 0;
+	} else {
+	    x[i] = cansari((Sint)x[i], (Sint)*m, (Sint)*n, w)
+		/ choose(*m + *n, *m);
+	}
+    /* w_free(*m, *n, w); */
 }
+#endif
 
 void pansari(Sint *len, double *x, Sint *m, Sint *n)
 {
     Sint i, j, l, u;
     double c, p, q;
+    double ***w;
 
-    w_init(*m, *n);
+    w = w_init(*m, *n);
     l = (*m + 1) * (*m + 1) / 4;
     u = l + *m * *n / 2;
     c = choose(*m + *n, *m);
@@ -114,20 +130,21 @@ void pansari(Sint *len, double *x, Sint *m, Sint *n)
             p = 0;
             for (j = l; j <= q; j++)
             {
-                p += cansari((Sint)j, (Sint)*m, (Sint)*n);
+                p += cansari((Sint)j, (Sint)*m, (Sint)*n, w);
             }
             x[i] = p / c;
         }
     }
-    w_free(*m, *n);
+    /* w_free(*m, *n, w); */
 }
 
 void qansari(Sint *len, double *x, Sint *m, Sint *n)
 {
     Sint i, l, u;
     double c, p, q, xi;
+    double ***w;
 
-    w_init(*m, *n);
+    w = w_init(*m, *n);
     l = (*m + 1) * (*m + 1) / 4;
     u = l + *m * *n / 2;
     c = choose(*m + *n, *m);
@@ -146,7 +163,7 @@ void qansari(Sint *len, double *x, Sint *m, Sint *n)
             q = 0;
             for (;;)
             {
-                p += cansari(q, (Sint)*m, (Sint)*n) / c;
+                p += cansari(q, (Sint)*m, (Sint)*n, w) / c;
                 if (p >= xi)
                     break;
                 q++;
@@ -154,5 +171,5 @@ void qansari(Sint *len, double *x, Sint *m, Sint *n)
             x[i] = q;
         }
     }
-    w_free(*m, *n);
+    /* w_free(*m, *n, w); */
 }
