@@ -890,8 +890,8 @@ SEXP do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
     int i = 0;
 
     checkArity(op, args);
-    PROTECT(ans = allocVector(LGLSXP, 6));
-    PROTECT(ansnames = allocVector(STRSXP, 6));
+    PROTECT(ans = allocVector(LGLSXP, 7));
+    PROTECT(ansnames = allocVector(STRSXP, 7));
 
     SET_STRING_ELT(ansnames, i, mkChar("jpeg"));
 #ifdef HAVE_JPEG
@@ -935,6 +935,12 @@ SEXP do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
     INTEGER(ans)[i++] = 0;
 #endif
 
+    SET_STRING_ELT(ansnames, i, mkChar("http/ftp"));
+#if defined(HAVE_LIBXML) || defined(USE_WININET)
+    INTEGER(ans)[i++] = 1;
+#else
+    INTEGER(ans)[i++] = 0;
+#endif
     setAttrib(ans, R_NamesSymbol, ansnames);
     UNPROTECT(2);
     return ans;
