@@ -933,7 +933,8 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (fixed_opt)
             {
-                INTEGER(ans)[i] = fgrep_one(spat, CHAR(STRING_ELT(text, i)));
+                st = fgrep_one(spat, CHAR(STRING_ELT(text, i)));
+                INTEGER(ans)[i] = (st > -1) ? (st + 1) : -1;
                 INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? strlen(spat) : -1;
             }
             else
