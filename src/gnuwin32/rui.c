@@ -342,20 +342,7 @@ static void menupkginstallcran(control m)
 
 static void menupkginstalllocal(control m)
 {
-    char *fn;
-
-    if (!ConsoleAcceptCmd)
-        return;
-    setuserfilter("zip files (*.zip)\0*.zip\0\0All files (*.*)\0*.*\0\0");
-    fn = askfilename("Select zip file to install", "");
-    Rwin_fpset();
-    /*    show(RConsole); */
-    if (fn)
-    {
-        fixslash(fn);
-        sprintf(cmd, "install.packages(\"%s\", .libPaths()[1], CRAN = NULL)", fn);
-        consolecmd(RConsole, cmd);
-    }
+    consolecmd(RConsole, "install.packages(choose.files('*.zip'), .libPaths()[1], CRAN = NULL)");
 }
 
 static void menuconsolehelp(control m)
@@ -918,7 +905,7 @@ int setupui()
     MCHECK(mpkgl = newmenuitem("Load package...", 0, menupkgload));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgi = newmenuitem("Install package from CRAN...", 0, menupkginstallcran));
-    MCHECK(mpkgil = newmenuitem("Install package from local zip file...", 0, menupkginstalllocal));
+    MCHECK(mpkgil = newmenuitem("Install packages from local zip files...", 0, menupkginstalllocal));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgu = newmenuitem("Update packages from CRAN", 0, menupkgupdate));
 #ifdef USE_MDI

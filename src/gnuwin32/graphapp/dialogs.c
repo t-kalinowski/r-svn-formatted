@@ -25,7 +25,8 @@
 
 #include "internal.h"
 
-static char strbuf[256];
+#define BUFSIZE _MAX_PATH
+static char strbuf[BUFSIZE];
 
 static char *filter[] = {"All Files (*.*)",
                          "*.*",
@@ -173,7 +174,7 @@ char *askfilename(char *title, char *default_name)
     ofn.nMaxCustFilter = 0;
     ofn.nFilterIndex = 0;
     ofn.lpstrFile = strbuf;
-    ofn.nMaxFile = _MAX_PATH;
+    ofn.nMaxFile = BUFSIZE;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
     ofn.lpstrInitialDir = cod;
@@ -203,6 +204,68 @@ char *askfilename(char *title, char *default_name)
     }
 }
 
+char *askfilenames(char *title, char *default_name, char *strbuf, int bufsize)
+{
+    int i;
+    OPENFILENAME ofn;
+    char cwd[MAX_PATH] = "";
+    if (!default_name)
+        default_name = "";
+    strcpy(strbuf, default_name);
+    GetCurrentDirectory(MAX_PATH, cwd);
+    if (!strcmp(cod, ""))
+        strcpy(cod, cwd);
+
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.hwndOwner = current_window ? current_window->handle : 0;
+    ofn.hInstance = 0;
+    ofn.lpstrFilter = userfilter ? userfilter : filter[0];
+    ofn.lpstrCustomFilter = NULL;
+    ofn.nMaxCustFilter = 0;
+    ofn.nFilterIndex = 0;
+    ofn.lpstrFile = strbuf;
+    ofn.nMaxFile = bufsize;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
+    ofn.lpstrInitialDir = cod;
+    ofn.lpstrTitle = title;
+    ofn.Flags = OFN_CREATEPROMPT | OFN_HIDEREADONLY | OFN_ALLOWMULTISELECT | OFN_EXPLORER;
+    ofn.nFileOffset = 0;
+    ofn.nFileExtension = 0;
+    ofn.lpstrDefExt = "*";
+    ofn.lCustData = 0L;
+    ofn.lpfnHook = NULL;
+    ofn.lpTemplateName = NULL;
+
+    if (GetOpenFileName(&ofn) == 0)
+    {
+        GetCurrentDirectory(MAX_PATH, cod);
+        SetCurrentDirectory(cwd);
+        strbuf[0] = 0;
+        strbuf[1] = 0;
+        return strbuf;
+    }
+    else
+    {
+        GetCurrentDirectory(MAX_PATH, cod);
+        SetCurrentDirectory(cwd);
+        for (i = 0; i < 10; i++)
+            if (peekevent())
+                doevent();
+        return strbuf;
+    }
+}
+
+int countFilenames(char *list)
+{
+    char *temp;
+    int count;
+    count = 0;
+    for (temp = list; *temp; temp += strlen(temp) + 1)
+        count++;
+    return count;
+}
+
 char *askfilesave(char *title, char *default_name)
 {
     return askfilesavewithdir(title, default_name, NULL);
@@ -226,7 +289,7 @@ char *askfilesavewithdir(char *title, char *default_name, char *dir)
     ofn.nMaxCustFilter = 0;
     ofn.nFilterIndex = 0;
     ofn.lpstrFile = strbuf;
-    ofn.nMaxFile = _MAX_PATH;
+    ofn.nMaxFile = BUFSIZE;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
     if (dir && strlen(dir) > 0)
@@ -344,7 +407,7 @@ static void browse_button(control c)
     dialog_data *d = data(w);
 
     OPENFILENAME ofn;
-    char strbuf[256] = "anything", *p;
+    char strbuf[_MAX_PATH] = "anything", *p;
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.hwndOwner = 0;
