@@ -1033,6 +1033,8 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 
     case 10:
         return math1(CAR(args), exp);
+    case 12:
+        return math1(CAR(args), log1p);
     case 20:
         return math1(CAR(args), cos);
     case 21:
