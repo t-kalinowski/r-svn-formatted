@@ -164,6 +164,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
     filled = 1;
     if (sepchar == 0)
     {
+        /* skip all white space */
         while ((c = scanchar()) == ' ' || c == '\t')
             ;
         if (c == '\n' || c == '\r' || c == R_EOF)
@@ -199,7 +200,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
                 unscanchar(c);
         }
         else
-        {
+        { /* not a char string */
             do
             {
                 if (bufp >= &buffer[MAXELTSIZE - 2])
@@ -215,7 +216,7 @@ static int fillBuffer(char *buffer, SEXPTYPE type, int strip)
         }
     }
     else
-    {
+    { /* have separator */
         while ((c = scanchar()) != sepchar && c != '\n' && c != '\r' && c != R_EOF)
         {
             /* eat white space */
@@ -273,9 +274,15 @@ donefill:
     return filled;
 }
 
-static int isNAstring(char *buf)
+/* If mode = 0 use for numeric fields where "" is NA
+   If mode = 1 use for character fields where "" is verbatim unless
+   na.strings includes "" */
+static int isNAstring(char *buf, int mode)
 {
     int i;
+
+    if (!mode && strlen(buf) == 0)
+        return 1;
     for (i = 0; i < length(NAstrings); i++)
         if (!strcmp(CHAR(STRING_ELT(NAstrings, i)), buf))
             return 1;
@@ -301,13 +308,13 @@ static void extractItem(char *buffer, SEXP ans, int i)
     switch (TYPEOF(ans))
     {
     case LGLSXP:
-        if (isNAstring(buffer))
+        if (isNAstring(buffer, 0))
             LOGICAL(ans)[i] = NA_INTEGER;
         else
             LOGICAL(ans)[i] = StringTrue(buffer);
         break;
     case INTSXP:
-        if (isNAstring(buffer))
+        if (isNAstring(buffer, 0))
             INTEGER(ans)[i] = NA_INTEGER;
         else
         {
@@ -317,7 +324,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
         }
         break;
     case REALSXP:
-        if (isNAstring(buffer))
+        if (isNAstring(buffer, 0))
             REAL(ans)[i] = NA_REAL;
         else
         {
@@ -327,7 +334,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
         }
         break;
     case CPLXSXP:
-        if (isNAstring(buffer))
+        if (isNAstring(buffer, 0))
             COMPLEX(ans)[i].r = COMPLEX(ans)[i].i = NA_REAL;
         else
         {
@@ -337,7 +344,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
         }
         break;
     case STRSXP:
-        if (isNAstring(buffer))
+        if (isNAstring(buffer, 1))
             SET_STRING_ELT(ans, i, NA_STRING);
         else
             SET_STRING_ELT(ans, i, mkChar(buffer));
@@ -345,7 +352,7 @@ static void extractItem(char *buffer, SEXP ans, int i)
     }
 }
 
-static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEXP stripwhite)
+static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEXP stripwhite, int blskip)
 {
     SEXP ans, bns;
     int blocksize, c, i, n, linesread, nprev, strip, bch;
@@ -398,13 +405,14 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
             copyVector(ans, bns);
         }
         bch = fillBuffer(buffer, type, strip);
-        if (nprev == n && strlen(buffer) == 0 && (bch == '\n' || bch == R_EOF))
+        if (nprev == n && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (ttyflag || bch == R_EOF)
                 break;
         }
         else
         {
+            /* REprintf("|%s|\n", buffer);*/
             extractItem(buffer, ans, n);
             if (++n == maxitems)
             {
@@ -464,7 +472,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
     return bns;
 }
 
-static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill, SEXP stripwhite)
+static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill, SEXP stripwhite, int blskip)
 {
     SEXP ans, new, old;
     char buffer[MAXELTSIZE];
@@ -552,7 +560,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         }
 
         bch = fillBuffer(buffer, TYPEOF(VECTOR_ELT(ans, ii)), strip);
-        if (colsread == 0 && strlen(buffer) == 0 && (bch == '\n' || bch == R_EOF))
+        if (colsread == 0 && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (ttyflag || bch == R_EOF)
                 break;
@@ -632,32 +640,10 @@ done:
     return ans;
 }
 
-/* FIXME: These two macros are used only two times each. Silly. --pd */
-
-#define scan_sep_check                                                                                                 \
-    if (isString(sep) || isNull(sep))                                                                                  \
-    {                                                                                                                  \
-        if (length(sep) == 0)                                                                                          \
-            sepchar = 0;                                                                                               \
-        else                                                                                                           \
-            sepchar = CHAR(STRING_ELT(sep, 0))[0];                                                                     \
-    }                                                                                                                  \
-    else                                                                                                               \
-        errorcall(call, "invalid sep value");
-
-#define scan_file                                                                                                      \
-    ttyflag = 0;                                                                                                       \
-    filename = R_ExpandFileName(filename);                                                                             \
-    if ((fp = R_fopen(filename, "r")) == NULL)                                                                         \
-        errorcall(call, "can't open file %s", filename);                                                               \
-    for (i = 0; i < nskip; i++)                                                                                        \
-        while ((c = scanchar()) != '\n' && c != R_EOF)                                                                 \
-            ;
-
 SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes;
-    int i, c, nlines, nmax, nskip, flush, fill;
+    int i, c, nlines, nmax, nskip, flush, fill, blskip;
     char *filename;
 
     checkArity(op, args);
@@ -687,8 +673,12 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     stripwhite = CAR(args);
     args = CDR(args);
     quiet = asLogical(CAR(args));
+    args = CDR(args);
+    blskip = asLogical(CAR(args));
     if (quiet == NA_LOGICAL)
         quiet = 0;
+    if (blskip == NA_LOGICAL)
+        blskip = 1;
     if (nskip < 0 || nskip == NA_INTEGER)
         nskip = 0;
     if (nlines < 0 || nlines == NA_INTEGER)
@@ -703,16 +693,25 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(NAstrings) != STRSXP)
         errorcall(call, "invalid na.strings value");
 
-    scan_sep_check
+    if (isString(sep) || isNull(sep))
+    {
+        if (length(sep) == 0)
+            sepchar = 0;
+        else
+            sepchar = CHAR(STRING_ELT(sep, 0))[0];
+    }
+    else
+        errorcall(call, "invalid sep value");
 
-        if (isString(dec) || isNull(dec))
+    if (isString(dec) || isNull(dec))
     {
         if (length(dec) == 0)
             decchar = '.';
         else
             decchar = CHAR(STRING_ELT(dec, 0))[0];
     }
-    else errorcall(call, "invalid decimal separator");
+    else
+        errorcall(call, "invalid decimal separator");
 
     if (isString(quotes))
     {
@@ -741,7 +740,13 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (filename)
     {
-        scan_file
+        ttyflag = 0;
+        filename = R_ExpandFileName(filename);
+        if ((fp = R_fopen(filename, "r")) == NULL)
+            errorcall(call, "can't open file %s", filename);
+        for (i = 0; i < nskip; i++)
+            while ((c = scanchar()) != '\n' && c != R_EOF)
+                ;
     }
     else
         ttyflag = 1;
@@ -756,11 +761,11 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     case REALSXP:
     case CPLXSXP:
     case STRSXP:
-        ans = scanVector(TYPEOF(what), nmax, nlines, flush, stripwhite);
+        ans = scanVector(TYPEOF(what), nmax, nlines, flush, stripwhite, blskip);
         break;
 
     case VECSXP:
-        ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite);
+        ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip);
         break;
     default:
         if (!ttyflag)
@@ -776,7 +781,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, bns, quotes;
     int nfields, nskip, i, c, inquote, quote = 0;
-    int blocksize, nlines;
+    int blocksize, nlines, blskip;
     char *filename = ""; /* -Wall */
 
     checkArity(op, args);
@@ -788,13 +793,25 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     quotes = CAR(args);
     args = CDR(args);
     nskip = asInteger(CAR(args));
+    args = CDR(args);
+    blskip = asLogical(CAR(args));
 
     if (nskip < 0 || nskip == NA_INTEGER)
         nskip = 0;
+    if (blskip == NA_LOGICAL)
+        blskip = 1;
 
-    scan_sep_check
+    if (isString(sep) || isNull(sep))
+    {
+        if (length(sep) == 0)
+            sepchar = 0;
+        else
+            sepchar = CHAR(STRING_ELT(sep, 0))[0];
+    }
+    else
+        errorcall(call, "invalid sep value");
 
-        if (isString(quotes))
+    if (isString(quotes))
     {
         /* This appears to be necessary to protect quoteset against GC */
         quoteset = CHAR(STRING_ELT(quotes, 0));
@@ -804,8 +821,10 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         strcpy(quotesave, quoteset);
         quoteset = quotesave;
     }
-    else if (isNull(quotes)) quoteset = "";
-    else errorcall(call, "invalid quote symbol set");
+    else if (isNull(quotes))
+        quoteset = "";
+    else
+        errorcall(call, "invalid quote symbol set");
 
     if (isValidStringF(file))
     {
@@ -816,7 +835,12 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (filename)
     {
-        scan_file
+        filename = R_ExpandFileName(filename);
+        if ((fp = R_fopen(filename, "r")) == NULL)
+            errorcall(call, "can't open file %s", filename);
+        for (i = 0; i < nskip; i++)
+            while ((c = scanchar()) != '\n' && c != R_EOF)
+                ;
     }
 
     blocksize = SCAN_BLOCKSIZE;
@@ -840,7 +864,7 @@ SEXP do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else if (c == '\n')
         {
-            if (nfields)
+            if (nfields || !blskip)
             {
                 INTEGER(ans)[nlines] = nfields;
                 nlines++;
@@ -922,8 +946,6 @@ donecf:
     UNPROTECT(1);
     return bns;
 }
-#undef scan_sep_check
-#undef scan_file
 
 /* frame.convert(char, na.strings, as.is) */
 
@@ -978,7 +1000,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < len; i++)
     {
         tmp = CHAR(STRING_ELT(cvec, i));
-        if (isNAstring(tmp) || strlen(tmp) == 0)
+        if (strlen(tmp) == 0 || isNAstring(tmp, 1))
             REAL(rval)[i] = NA_REAL;
         else
         {
@@ -1002,12 +1024,12 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(dup = duplicated(cvec));
             j = 0;
             for (i = 0; i < len; i++)
-                if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i))))
+                if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i)), 1))
                     j++;
             PROTECT(levs = allocVector(STRSXP, j));
             j = 0;
             for (i = 0; i < len; i++)
-                if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i))))
+                if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i)), 1))
                     SET_STRING_ELT(levs, j++, STRING_ELT(cvec, i));
 
             /* put the levels in lexicographic order */
