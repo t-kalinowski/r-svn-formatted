@@ -55,6 +55,11 @@
 #ifdef HAVE_AQUA
 #include <Carbon/Carbon.h>
 
+#ifndef max
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 OSStatus InitMLTE(void);
 TXNObject RConsoleOutObject = NULL;
 TXNObject RConsoleInObject = NULL;
@@ -110,7 +115,8 @@ OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory)
 OSStatus FSMakePath(SInt16 volRefNum, SInt32 dirID, ConstStr255Param name, UInt8 *path, UInt32 maxPathSize);
 OSErr FSMakeFSRef(FSVolumeRefNum volRefNum, SInt32 dirID, ConstStr255Param name, FSRef *ref);
 
-int RAqua_R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager);
+int Raqua_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager);
+int Raqua_ChooseFile(int new, char *buf, int len);
 
 void Raqua_StartConsole(void);
 void Raqua_WriteConsole(char *buf, int len);
@@ -136,7 +142,8 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 
 WindowRef ConsoleWindow = NULL;
 
-static const EventTypeSpec KeybEvents[] = {kEventClassKeyboard, kEventRawKeyUp};
+static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyUp},
+                                           {kEventClassKeyboard, kEventRawKeyDown}};
 
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
@@ -144,6 +151,14 @@ static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandPro
 static const EventTypeSpec RGlobalWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged}};
 
 static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
+
+void HistBack(void);
+void HistFwd(void);
+void maintain_cmd_History(char *buf);
+void mac_savehistory(char *file);
+void mac_loadhistory(char *file);
+SEXP Raqua_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env);
+SEXP Raqua_savehistory(SEXP call, SEXP op, SEXP args, SEXP env);
 
 MenuRef HelpMenu = NULL; /* Will be the Reference to Apple's Help Menu */
 static short RHelpMenuItem = -1;
@@ -302,6 +317,7 @@ noconsole:
 /* BEWARE: before quitting R via ExitToShell() call TXNTerminateTextension() */
 
 void Aqua_RWrite(char *buf);
+void Aqua_RnWrite(char *buf, int len);
 
 RGBColor RFGOutColor = {0x0000, 0x0000, 0xffff};
 RGBColor RFGInColor = {0xffff, 0x0000, 0x0000};
@@ -366,11 +382,6 @@ OSStatus InitMLTE(void)
     return (status);
 }
 
-#ifndef max
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     OSStatus err = noErr;
@@ -408,6 +419,8 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
         InputFinished = false;
         TXNSetData(RConsoleInObject, kTXNTextData, NULL, 0, kTXNStartOffset, kTXNEndOffset);
         Raqua_WriteConsole(buf, strlen(buf));
+        if (strlen(buf) > 1)
+            maintain_cmd_History(buf);
     }
 
     return (1);
@@ -418,6 +431,14 @@ void Aqua_RWrite(char *buf)
     if (WeHaveConsole)
     {
         TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
+    }
+}
+
+void Aqua_RnWrite(char *buf, int len)
+{
+    if (WeHaveConsole)
+    {
+        TXNSetData(RConsoleInObject, kTXNTextData, buf, min(len, strlen(buf)), 0, TXNDataSize(RConsoleInObject));
     }
 }
 
@@ -440,7 +461,7 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
 {
     OSStatus err = eventNotHandledErr;
     UInt32 RKeyCode;
-
+    char c;
     /* make sure that we're processing a keyboard event */
     if (GetEventClass(REvent) == kEventClassKeyboard)
     {
@@ -455,10 +476,31 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
             }
             break;
 
+        case kEventRawKeyDown:
+            err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
+            switch (RKeyCode)
+            {
+            case 126: /* key up - history back */
+                HistBack();
+                break;
+
+            case 125: /* key down - history forward */
+                HistFwd();
+                break;
+
+            default:
+                err = eventNotHandledErr;
+                break;
+            }
+            break;
+
+            break;
+
         default:
             break;
         }
     }
+    return err;
 }
 
 pascal void RAboutHandler(WindowRef window)
@@ -837,7 +879,7 @@ void consolecmd(char *cmd)
     if (strlen(cmd) < 1)
         return;
 
-    TXNSetData(RConsoleInObject, kTXNTextData, cmd, strlen(cmd), kTXNEndOffset, kTXNEndOffset);
+    TXNSetData(RConsoleInObject, kTXNTextData, cmd, strlen(cmd), 0, TXNDataSize(RConsoleInObject));
     CreateEvent(NULL, kEventClassKeyboard, kEventRawKeyUp, 0, kEventAttributeNone, &REvent);
     SetEventParameter(REvent, kEventParamKeyCode, typeUInt32, sizeof(RKeyCode), &RKeyCode);
     SendEventToEventTarget(REvent, GetApplicationEventTarget());
@@ -875,21 +917,11 @@ OSErr DoSelectDirectory(void)
         WDPBRec wdpb;
         Size actualSize = 0;
 
-        //               err= FSMakeFSSpec(0, 0, NULL, &finalFSSpec);
-
         if ((theErr = AEGetNthPtr(&(theReply.selection), 1, typeFSS, &keyWord, &typeCode, &finalFSSpec, sizeof(FSSpec),
                                   &actualSize)) == noErr)
         {
-            // 'finalFSSpec' is the selected directoryÉ
-
             err = FSMakePath(finalFSSpec.vRefNum, finalFSSpec.parID, finalFSSpec.name, buf, 300);
-
-            //     err = FSMakeFSSpec(finalFSSpec.vRefNum, finalFSSpec.parID, finalFSSpec.name, &tempSpec);
-            //    CopyCStringToPascal(tempSpec.name,path);
-            fprintf(stderr, "\n FSMakePath err =%d, name=%s", err, path);
-
             chdir(buf);
-            fprintf(stderr, "\n newdir=%s", buf);
         }
 
         theErr = NavDisposeReply(&theReply);
@@ -898,7 +930,7 @@ OSErr DoSelectDirectory(void)
     return theErr;
 }
 
-int RAqua_R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager)
+int Raqua_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, Rboolean del, char *pager)
 {
     int i;
 
@@ -911,6 +943,24 @@ int RAqua_R_ShowFiles(int nfile, char **fileName, char **title, char *WinTitle, 
     }
 
     return 1;
+}
+
+int Raqua_ChooseFile(int new, char *buf, int len)
+{
+    char fname[301];
+    OSStatus err;
+    FSSpec tempfss;
+
+    *buf = '\0';
+
+    if (SelectFile(&tempfss, "Choose file name") == noErr)
+    {
+        err = FSMakePath(tempfss.vRefNum, tempfss.parID, tempfss.name, fname, 300);
+        strncpy(buf, fname, len);
+        buf[len - 1] = '\0';
+    }
+
+    return strlen(buf);
 }
 
 int NewHelpWindow(char *fileName, char *title, char *WinTitle)
@@ -1134,6 +1184,230 @@ OSStatus SelectFile(FSSpec *outFSSpec, char *Title)
 
 cleanup:
     return anErr;
+}
+
+#define maxhist 500
+char *Cmd_Hist[maxhist];
+int g_cur_Cmd, g_start_Cmd, g_end_Cmd;
+Boolean g_Stop = false;
+Boolean g_down = true;
+Boolean g_not_first = false;
+
+/* do_Down_Array
+This procedure used to maintain the reponse when you click the down array key. (about display
+previous command in console window)                                            */
+void HistBack(void)
+{
+    SInt32 textLength;
+    char mybuf[40];
+
+    if (g_start_Cmd != g_end_Cmd)
+    {
+        if (!g_down)
+        {
+            g_cur_Cmd--;
+        }
+        g_not_first = true;
+        g_down = true;
+        if (g_start_Cmd == 0)
+        {
+            if (g_cur_Cmd < g_start_Cmd)
+            {
+                SysBeep(10);
+            }
+            else
+            {
+                textLength = strlen(Cmd_Hist[g_cur_Cmd]) - 1;
+                Aqua_RnWrite(Cmd_Hist[g_cur_Cmd], textLength);
+                g_cur_Cmd--;
+            }
+        }
+        else
+        {
+            if (g_cur_Cmd == g_end_Cmd)
+            {
+                SysBeep(10);
+            }
+            else
+            {
+                if (g_cur_Cmd == -1)
+                    g_cur_Cmd = maxhist - 1;
+                textLength = strlen(Cmd_Hist[g_cur_Cmd]) - 1;
+                Aqua_RnWrite(Cmd_Hist[g_cur_Cmd], textLength);
+                g_cur_Cmd--;
+                if (g_cur_Cmd == -1)
+                    g_cur_Cmd = maxhist - 1;
+            }
+        }
+    }
+}
+
+void HistFwd(void)
+{
+    SInt32 textLength;
+
+    if (g_start_Cmd != g_end_Cmd)
+    {
+        if ((g_down) && (g_not_first))
+        {
+            g_cur_Cmd++;
+            g_down = false;
+        }
+        if (g_start_Cmd == 0)
+        {
+            if (g_cur_Cmd == (g_end_Cmd - 1))
+                SysBeep(10);
+            else
+            {
+                g_cur_Cmd++;
+                textLength = strlen(Cmd_Hist[g_cur_Cmd]) - 1;
+                Aqua_RnWrite(Cmd_Hist[g_cur_Cmd], textLength);
+            }
+        }
+        else
+        {
+            if ((g_cur_Cmd == (maxhist - 1)) && (g_end_Cmd == 0))
+            {
+                SysBeep(10);
+            }
+            else if ((g_cur_Cmd == g_end_Cmd) || (g_cur_Cmd == (g_end_Cmd - 1)))
+            {
+                SysBeep(10);
+            }
+            else
+            {
+                g_cur_Cmd++;
+                if (g_cur_Cmd == maxhist)
+                    g_cur_Cmd = 0;
+                textLength = strlen(Cmd_Hist[g_cur_Cmd]) - 1;
+                Aqua_RnWrite(Cmd_Hist[g_cur_Cmd], textLength);
+            }
+        }
+    }
+}
+
+void maintain_cmd_History(char *buf)
+{
+    char *temp;
+    int numberOfChar;
+
+    g_Stop = false;
+    numberOfChar = strlen(buf);
+    temp = malloc((numberOfChar + 1) * sizeof(char));
+    strcpy(temp, (const char *)buf);
+    Cmd_Hist[g_end_Cmd] = temp;
+    g_not_first = false;
+    g_cur_Cmd = g_end_Cmd;
+    g_end_Cmd++;
+    if (g_end_Cmd <= g_start_Cmd)
+    {
+        g_start_Cmd++;
+    }
+    if (g_start_Cmd == maxhist)
+    {
+        g_start_Cmd = 0;
+    }
+    if (g_end_Cmd == maxhist)
+    {
+        g_end_Cmd = 0;
+        g_start_Cmd = 1;
+    }
+}
+
+SEXP Raqua_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP sfile;
+
+    checkArity(op, args);
+    sfile = CAR(args);
+    if (!isString(sfile) || LENGTH(sfile) < 1)
+        errorcall(call, "invalid file argument");
+    mac_savehistory(CHAR(STRING_ELT(sfile, 0)));
+    return R_NilValue;
+}
+
+SEXP Raqua_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP sfile;
+
+    checkArity(op, args);
+    sfile = CAR(args);
+    if (!isString(sfile) || LENGTH(sfile) < 1)
+        errorcall(call, "invalid file argument");
+    mac_loadhistory(CHAR(STRING_ELT(sfile, 0)));
+    return R_NilValue;
+}
+
+void mac_savehistory(char *file)
+{
+    FILE *fp;
+    int i;
+    char hist_buff[1000];
+
+    if (!file || !g_end_Cmd)
+        return;
+
+    fp = R_fopen(file, "w");
+    if (!fp)
+    {
+        char msg[256];
+        sprintf(msg, "Unable to open history file \"%s\" for writing", file);
+        warning(msg);
+        return;
+    }
+
+    if (g_start_Cmd < g_end_Cmd)
+        for (i = g_start_Cmd; i < g_end_Cmd; i++)
+        {
+            fprintf(fp, "%s\n", Cmd_Hist[i]);
+        }
+    else
+        for (i = 0; i < maxhist; i++)
+            fprintf(fp, "%s\n", Cmd_Hist[i]);
+    fclose(fp);
+}
+
+/**********************************************
+ mac_loadhistory: load history command from a
+ specified file. Adapted from gl_loadhistory
+ for Windows. It can read history files of
+ Windowds porting.
+**********************************************/
+void mac_loadhistory(char *file)
+{
+    FILE *fp;
+    int i, buflen, j;
+    char buf[1002];
+
+    if (!file || *file == NULL)
+        return;
+    fp = R_fopen(file, "r");
+    if (!fp)
+    {
+        REprintf("\nUnable to open history file \"%s\" for reading\n", file);
+        return;
+    }
+
+    for (i = 0;; i++)
+    {
+        if (!fgets(buf, 1000, fp))
+            break;
+        if ((buflen = strlen(buf)) > 1)
+        {
+            if (buf[buflen - 1] == 0x0A)
+            {
+                if (buf[buflen - 2] == 0x0D)
+                    buf[buflen - 1] = '\0';
+                else
+                {
+                    buf[buflen] = '\0';
+                    buf[buflen - 1] = 0x0D;
+                }
+            }
+            maintain_cmd_History(buf);
+        }
+    }
+    fclose(fp);
 }
 
 #endif /* HAVE_AQUA */
