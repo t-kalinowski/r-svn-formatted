@@ -32,6 +32,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+static char HexDigits[] = "0123456789ABCDEF";
+
 /*--->> Documentation now in  ../include/Graphics.h  "API" ----- */
 
 /*-------------------------------------------------------------------
@@ -4279,8 +4281,6 @@ static unsigned int hexdigit(int digit)
     return digit - '0'; /* never occurs but avoid compiler warnings */
 }
 
-static char HexDigits[] = "0123456789ABCDEF";
-
 #ifdef UNUSED
 /* Integer to Hex Digit */
 
@@ -4536,7 +4536,7 @@ SEXP LTYget(unsigned int lty)
 {
     SEXP ans;
     int i, ndash;
-    char dash[8];
+    unsigned char dash[8];
     unsigned int l;
 
     for (i = 0; linetype[i].name; i++)
@@ -4556,7 +4556,7 @@ SEXP LTYget(unsigned int lty)
     STRING(ans)[0] = allocString(ndash);
     for (i = 0; i < ndash; i++)
     {
-        CHAR(STRING(ans)[0])[i] = dash[i] + '0';
+        CHAR(STRING(ans)[0])[i] = HexDigits[dash[i]];
     }
     UNPROTECT(1);
     return ans;
