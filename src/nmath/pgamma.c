@@ -38,14 +38,14 @@
  *
  *  REFERENCES
  *
- *    Algorithm 239, Incomplete Gamma Function
+ *    Algorithm AS 239, Incomplete Gamma Function
  *    Applied Statistics 37, 1988.
  */
 
 #include "Mathlib.h"
 
-static const double third = 1.0 / 3.0, zero = 0.0, one = 1.0, two = 2.0, oflo = 1.0e+37, three = 3.0, nine = 9.0,
-                    xbig = 1.0e+8, plimit = 1000.0e0, elimit = -88.0e0;
+static const double third = 1.0 / 3.0, zero = 0.0, one = 1.0, two = 2.0, three = 3.0, nine = 9.0, xbig = 1.0e+8,
+                    oflo = 1.0e+37, plimit = 1000.0e0, elimit = -88.0e0;
 
 double pgamma(double x, double p, double scale)
 {
