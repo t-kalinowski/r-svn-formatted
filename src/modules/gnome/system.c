@@ -49,9 +49,9 @@
 
 #include "gtkconsole.h"
 #include "terminal.h"
-#include "terminal-prefs.h"
+#include "terminal-prefs.h" /* declares R_set_SaveAction */
 
-#include "system.h"
+#include "system.h" /* routines in other files to assign to interface ptrs */
 
 /*--- Initialization Code ---*/
 
@@ -133,7 +133,7 @@ static void Rgnome_CleanUp(SA_TYPE saveact, int status, int runLast)
     if (saveact == SA_SAVEASK)
     {
         if (R_Interactive)
-        {
+        { /* This is always interactive ... */
             R_ClearerrConsole();
             R_FlushConsole();
             dialog = gnome_message_box_new("Do you want to save your workspace image?\n\n"
@@ -189,6 +189,7 @@ static void Rgnome_CleanUp(SA_TYPE saveact, int status, int runLast)
 
     /* save GUI preferences */
     R_gnome_prefs_save();
+
     /* unlink all the files we opened for editing
         while(curfile != NULL) {
           edititem = (R_gtk_edititem *) curfile->data;
@@ -228,6 +229,7 @@ static void Rgnome_ShowMessage(char *s)
 
 static const struct poptOption popt_options[] = {{NULL, '\0', 0, NULL, 0, NULL, NULL}};
 
+/* for use in terminal-prefs.c */
 void R_set_SaveAction(int sa)
 {
     SaveAction = sa;
@@ -266,9 +268,7 @@ int main(int ac, char **av)
 
     process_system_Renviron();
 
-#ifdef _R_HAVE_TIMING_
     R_setStartTime();
-#endif
     R_DefParams(Rp);
     /* Store the command line arguments before they are processed
        by the R option handler.
@@ -347,9 +347,10 @@ int main(int ac, char **av)
     /*
      *  Since users' expectations for save/no-save will differ, we decided
      *  that they should be forced to specify in the non-interactive case.
-     */
-    if (!R_Interactive && SaveAction != SA_SAVE && SaveAction != SA_NOSAVE)
+     *  But that does not occur!
+        if (!R_Interactive && SaveAction != SA_SAVE && SaveAction != SA_NOSAVE)
         R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
+     */
 
     /* create console */
     R_gtk_terminal_new();
