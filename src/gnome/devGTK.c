@@ -51,11 +51,13 @@ typedef struct
 
     /* GTK Driver Specific */
 
-    int windowWidth;   /* Window width (pixels) */
-    int windowHeight;  /* Window height (pixels) */
-    int resize;        /* Window resized */
-    GtkWidget *window; /* Graphics Window */
-    GtkWidget *drawing;
+    int windowWidth;    /* Window width (pixels) */
+    int windowHeight;   /* Window height (pixels) */
+    int resize;         /* Window resized */
+    GtkWidget *window;  /* Graphics frame */
+    GtkWidget *drawing; /* Drawable window */
+
+    GdkPixmap *pixmap; /* Backing store */
 
     GdkGC *wgc;
     GdkColor gcol_bg;
@@ -78,7 +80,7 @@ static void GTK_Deactivate(DevDesc *);
 static void GTK_Hold(DevDesc *);
 static void GTK_Line(double, double, double, double, int, DevDesc *);
 static int GTK_Locator(double *, double *, DevDesc *);
-static void GTK_Mode(int);
+static void GTK_Mode(int, DevDesc *);
 static void GTK_NewPage(DevDesc *);
 static int GTK_Open(DevDesc *, gtkDesc *, char *, double, double);
 static void GTK_Polygon(int, double *, double *, int, int, int, DevDesc *);
@@ -345,7 +347,8 @@ static gint expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
         dd->dp.resize(dd);
     }
 
-    playDisplayList(dd);
+    gdk_draw_pixmap(gtkd->drawing->window, gtkd->wgc, gtkd->pixmap, event->area.x, event->area.y, event->area.x,
+                    event->area.y, event->area.width, event->area.height);
 
     return FALSE;
 }
@@ -446,6 +449,11 @@ static int GTK_Open(DevDesc *dd, gtkDesc *gtkd, char *dsp, double w, double h)
     gtkd->lty = -1;
     gtkd->lwd = -1;
 
+    /* create offscreen drawable */
+    gtkd->pixmap = gdk_pixmap_new(gtkd->drawing->window, gtkd->windowWidth, gtkd->windowHeight, -1);
+    gdk_gc_set_foreground(gtkd->wgc, &gtkd->gcol_bg);
+    gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, 0, 0, gtkd->windowWidth, gtkd->windowHeight);
+
     /* let other widgets use the default colour settings */
     gtk_widget_pop_visual();
     gtk_widget_pop_colormap();
@@ -533,6 +541,11 @@ static void GTK_Resize(DevDesc *dd)
         dd->dp.bottom = dd->gp.bottom = gtkd->windowHeight;
         dd->dp.top = dd->gp.top = 0.0;
         gtkd->resize = 0;
+
+        gdk_pixmap_unref(gtkd->pixmap);
+        gtkd->pixmap = gdk_pixmap_new(gtkd->drawing->window, gtkd->windowWidth, gtkd->windowHeight, -1);
+        gdk_gc_set_foreground(gtkd->wgc, &gtkd->gcol_bg);
+        gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, 0, 0, gtkd->windowWidth, gtkd->windowHeight);
     }
 }
 
@@ -556,6 +569,9 @@ static void GTK_NewPage(DevDesc *dd)
     }
 
     gdk_window_clear(gtkd->drawing->window);
+
+    gdk_gc_set_foreground(gtkd->wgc, &gtkd->gcol_bg);
+    gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, 0, 0, gtkd->windowWidth, gtkd->windowHeight);
 }
 
 /* kill off the window etc */
@@ -564,6 +580,8 @@ static void GTK_Close(DevDesc *dd)
     gtkDesc *gtkd = (gtkDesc *)dd->deviceSpecific;
 
     gtk_widget_destroy(gtkd->window);
+
+    gdk_pixmap_unref(gtkd->pixmap);
 
     numGTKDevices--;
 
@@ -644,6 +662,7 @@ static void GTK_Rect(double x0, double y0, double x1, double y1, int coords, int
 
         gdk_draw_rectangle(gtkd->drawing->window, gtkd->wgc, TRUE, (gint)x0, (gint)y0, (gint)x1 - (gint)x0,
                            (gint)y1 - (gint)y0);
+        gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, TRUE, (gint)x0, (gint)y0, (gint)x1 - (gint)x0, (gint)y1 - (gint)y0);
     }
     if (fg != NA_INTEGER)
     {
@@ -653,6 +672,8 @@ static void GTK_Rect(double x0, double y0, double x1, double y1, int coords, int
         SetLineType(dd, dd->gp.lty, dd->gp.lwd);
 
         gdk_draw_rectangle(gtkd->drawing->window, gtkd->wgc, FALSE, (gint)x0, (gint)y0, (gint)x1 - (gint)x0,
+                           (gint)y1 - (gint)y0);
+        gdk_draw_rectangle(gtkd->pixmap, gtkd->wgc, FALSE, (gint)x0, (gint)y0, (gint)x1 - (gint)x0,
                            (gint)y1 - (gint)y0);
     }
 }
@@ -675,6 +696,7 @@ static void GTK_Circle(double x, double y, int coords, double r, int col, int bo
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
 
         gdk_draw_arc(gtkd->drawing->window, gtkd->wgc, TRUE, ix, iy, ir, ir, 0, 23040);
+        gdk_draw_arc(gtkd->pixmap, gtkd->wgc, TRUE, ix, iy, ir, ir, 0, 23040);
     }
     if (border != NA_INTEGER)
     {
@@ -684,6 +706,7 @@ static void GTK_Circle(double x, double y, int coords, double r, int col, int bo
         SetLineType(dd, dd->gp.lty, dd->gp.lwd);
 
         gdk_draw_arc(gtkd->drawing->window, gtkd->wgc, FALSE, ix, iy, ir, ir, 0, 23040);
+        gdk_draw_arc(gtkd->pixmap, gtkd->wgc, FALSE, ix, iy, ir, ir, 0, 23040);
     }
 }
 
@@ -709,6 +732,7 @@ static void GTK_Line(double x1, double y1, double x2, double y2, int coords, Dev
         SetLineType(dd, dd->gp.lty, dd->gp.lwd);
 
         gdk_draw_line(gtkd->drawing->window, gtkd->wgc, ix1, iy1, ix2, iy2);
+        gdk_draw_line(gtkd->pixmap, gtkd->wgc, ix1, iy1, ix2, iy2);
     }
 }
 
@@ -739,6 +763,7 @@ static void GTK_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
         SetLineType(dd, dd->gp.lty, dd->gp.lwd);
 
         gdk_draw_lines(gtkd->drawing->window, gtkd->wgc, points, n);
+        gdk_draw_lines(gtkd->pixmap, gtkd->wgc, points, n);
     }
 
     g_free(points);
@@ -769,6 +794,7 @@ static void GTK_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         gdk_gc_set_foreground(gtkd->wgc, &gcol_fill);
 
         gdk_draw_polygon(gtkd->drawing->window, gtkd->wgc, TRUE, points, n);
+        gdk_draw_polygon(gtkd->pixmap, gtkd->wgc, TRUE, points, n);
     }
     if (fg != NA_INTEGER)
     {
@@ -778,6 +804,7 @@ static void GTK_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
         SetLineType(dd, dd->gp.lty, dd->gp.lwd);
 
         gdk_draw_polygon(gtkd->drawing->window, gtkd->wgc, FALSE, points, n);
+        gdk_draw_polygon(gtkd->pixmap, gtkd->wgc, FALSE, points, n);
     }
 
     g_free(points);
@@ -811,17 +838,25 @@ static void GTK_Text(double x, double y, int coords, char *str, double xc, doubl
 
     gdk_draw_text_rot(gtkd->drawing->window, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth,
                       gtkd->windowHeight, str, strlen(str), deg2rad * rot);
+    gdk_draw_text_rot(gtkd->pixmap, gtkd->font, gtkd->wgc, (int)x, (int)y, gtkd->windowWidth, gtkd->windowHeight, str,
+                      strlen(str), deg2rad * rot);
 }
 
 static int GTK_Locator(double *x, double *y, DevDesc *dd)
 {
     /* FIXME: implement this */
-    g_message("locator");
+    g_message("FIXME: GTK_Locator is not implemented");
     return 0;
 }
 
-static void GTK_Mode(gint mode)
+static void GTK_Mode(gint mode, DevDesc *dd)
 {
+#ifdef XSYNC
+    if (mode == 0)
+        gdk_flush();
+#else
+    gdk_flush();
+#endif
 }
 
 static void GTK_Hold(DevDesc *dd)
