@@ -55,5 +55,5 @@ double dgamma(double x, double shape, double scale)
         return 1 / scale;
     }
     x = x / scale;
-    return exp((shape - 1) * log(x) - lgamma(shape) - x) / scale;
+    return exp((shape - 1) * log(x) - lgammafn(shape) - x) / scale;
 }

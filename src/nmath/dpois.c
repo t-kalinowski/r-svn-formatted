@@ -46,5 +46,5 @@ double dpois(double x, double lambda)
     if (!finite(x))
         return 0;
 #endif
-    return exp(x * log(lambda) - lambda - lgamma(x + 1));
+    return exp(x * log(lambda) - lambda - lgammafn(x + 1));
 }
