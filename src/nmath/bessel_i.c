@@ -23,6 +23,7 @@
  *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
 #include "nmath.h"
+static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *ncalc);
 
 static double exparg = 709.; /* maximal x for UNscaled answer, see below */
 
@@ -54,7 +55,7 @@ double bessel_i(double x, double alpha, double expo)
     return x;
 }
 
-void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *ncalc)
+static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *ncalc)
 {
     /* -------------------------------------------------------------------
 

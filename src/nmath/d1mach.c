@@ -47,7 +47,7 @@ double Rf_d1mach(int i)
         return pow((double)i1mach(10), 1 - (double)i1mach(14));
 
     case 5:
-        return log10(2.0); /* = M_LOG10_2 in Mathlib.h */
+        return log10(2.0); /* = M_LOG10_2 in Rmath.h */
 
     default:
         return 0.0;

@@ -20,7 +20,7 @@
  *
  *  SYNOPSIS
  *
- *	#include "Mathlib.h"
+ *	#include "Rmath.h"
  *	double qtukey(p, rr, cc, df, lower_tail, log_p);
  *
  *  DESCRIPTION
@@ -121,7 +121,7 @@ double qtukey(double p, double rr, double cc, double df, int lower_tail, int log
     static const double eps = 0.0001;
     static const int maxiter = 50;
 
-    double ans, valx0, valx1, x0, x1, xabs;
+    double ans = 0.0, valx0, valx1, x0, x1, xabs;
     int iter;
 
 #ifdef IEEE_754
