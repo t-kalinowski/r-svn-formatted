@@ -430,6 +430,7 @@ void PostScriptOpenCircle(FILE *fp, double x, double y, double r)
     fprintf(fp, "%.2f %.2f %.2f co\n", x, y, r);
 }
 
+#ifdef GONE
 void PostScriptFilledPolygon(FILE *fp, double *x, double *y, int nxy)
 {
     int i;
@@ -439,7 +440,9 @@ void PostScriptFilledPolygon(FILE *fp, double *x, double *y, int nxy)
         fprintf(fp, "  %.2f %.2f l\n", x[i], y[i]);
     fprintf(fp, "cp f\n");
 }
+#endif
 
+#ifdef GONE
 void PostScriptOpenPolygon(FILE *fp, double *x, double *y, int nxy)
 {
     int i;
@@ -449,7 +452,9 @@ void PostScriptOpenPolygon(FILE *fp, double *x, double *y, int nxy)
         fprintf(fp, "%.2f %.2f l\n", x[i], y[i]);
     fprintf(fp, "cp o\n");
 }
+#endif
 
+#ifdef GONE
 void PostScriptPolyline(FILE *fp, double *x, double *y, int nxy)
 {
     int i;
@@ -459,6 +464,7 @@ void PostScriptPolyline(FILE *fp, double *x, double *y, int nxy)
         fprintf(fp, "%.2f %.2f l\n", x[i], y[i]);
     fprintf(fp, "o\n");
 }
+#endif
 
 static void PostScriptWriteString(FILE *fp, char *str)
 {

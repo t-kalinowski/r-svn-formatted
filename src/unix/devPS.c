@@ -623,7 +623,6 @@ static void PS_Close(DevDesc *dd)
 static void PS_Activate(DevDesc *dd)
 {
 }
-
 static void PS_Deactivate(DevDesc *dd)
 {
 }
@@ -719,33 +718,71 @@ static void PS_Line(double x1, double y1, double x2, double y2, int coords, DevD
 
 static void PS_Polygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *dd)
 {
+    postscriptDesc *pd;
+    double xx, yy;
     int i;
-    postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
-    for (i = 0; i < n; i++)
-        GConvert(&x[i], &y[i], coords, DEVICE, dd);
+    pd = (postscriptDesc *)dd->deviceSpecific;
     if (bg != NA_INTEGER)
     {
         SetColor(bg, dd);
-        PostScriptFilledPolygon(pd->psfp, x, y, n);
+        fprintf(pd->psfp, "np\n");
+        xx = x[0];
+        yy = y[0];
+        GConvert(&xx, &yy, coords, DEVICE, dd);
+        fprintf(pd->psfp, "  %.2f %.2f m\n", xx, yy);
+        for (i = 1; i < n; i++)
+        {
+            xx = x[i];
+            yy = y[i];
+            GConvert(&xx, &yy, coords, DEVICE, dd);
+            fprintf(pd->psfp, "  %.2f %.2f l\n", xx, yy);
+        }
+        fprintf(pd->psfp, "cp f\n");
     }
+
     if (fg != NA_INTEGER)
     {
         SetColor(fg, dd);
         SetLinetype(dd->gp.lty, dd);
-        PostScriptOpenPolygon(pd->psfp, x, y, n);
+        fprintf(pd->psfp, "np\n");
+        xx = x[0];
+        yy = y[0];
+        GConvert(&xx, &yy, coords, DEVICE, dd);
+        fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
+        for (i = 1; i < n; i++)
+        {
+            xx = x[i];
+            yy = y[i];
+            GConvert(&xx, &yy, coords, DEVICE, dd);
+            fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
+        }
+        fprintf(pd->psfp, "cp o\n");
     }
 }
 
 static void PS_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
 {
+    postscriptDesc *pd;
+    double xx, yy;
     int i;
-    postscriptDesc *pd = (postscriptDesc *)dd->deviceSpecific;
 
-    for (i = 0; i < n; i++)
-        GConvert(&x[i], &y[i], coords, DEVICE, dd);
+    pd = (postscriptDesc *)dd->deviceSpecific;
     SetColor(dd->gp.col, dd);
-    PostScriptPolyline(pd->psfp, x, y, n);
+    SetLinetype(dd->gp.lty, dd);
+    fprintf(pd->psfp, "np\n");
+    xx = x[0];
+    yy = y[0];
+    GConvert(&xx, &yy, coords, DEVICE, dd);
+    fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
+    for (i = 1; i < n; i++)
+    {
+        xx = x[i];
+        yy = y[i];
+        GConvert(&xx, &yy, coords, DEVICE, dd);
+        fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
+    }
+    fprintf(pd->psfp, "o\n");
 }
 
 static void PS_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)

@@ -942,6 +942,8 @@ static void X11_Rect(double x0, double y0, double x1, double y1, int coords, int
     int tmp;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
 
+    /* These in-place conversions are ok */
+
     GConvert(&x0, &y0, coords, DEVICE, dd);
     GConvert(&x1, &y1, coords, DEVICE, dd);
 
@@ -996,6 +998,9 @@ static void X11_Circle(double x, double y, int coords, double r, int col, int bo
 #else
     ir = floor(r + 0.5);
 #endif
+
+    /* In-place conversion ok */
+
     GConvert(&x, &y, coords, DEVICE, dd);
     ix = (int)x;
     iy = (int)y;
@@ -1024,6 +1029,8 @@ static void X11_Line(double x1, double y1, double x2, double y2, int coords, Dev
 {
     double xx1, yy1, xx2, yy2;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+
+    /* In-place conversion ok */
 
     GConvert(&x1, &y1, coords, DEVICE, dd);
     GConvert(&x2, &y2, coords, DEVICE, dd);
