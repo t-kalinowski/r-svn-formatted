@@ -329,7 +329,8 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         LOGICAL(ans)[0] = TYPEOF(CAR(args)) == LANGSXP;
         break;
     case 301: /* is.language */
-        LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == SYMSXP) || (TYPEOF(CAR(args)) == LANGSXP);
+        LOGICAL(ans)
+        [0] = (TYPEOF(CAR(args)) == SYMSXP) || (TYPEOF(CAR(args)) == LANGSXP) || (TYPEOF(CAR(args)) == EXPRSXP);
         break;
     case 302: /* is.function */
         LOGICAL(ans)
@@ -337,7 +338,7 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
 
     case 999: /* is.single */
-        errorcall(call, "type unimplemented in R\n");
+        errorcall(call, "type \"single\" unimplemented in R\n");
     default:
         errorcall(call, "unimplemented predicate\n");
     }
@@ -651,7 +652,7 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             xr = REAL(x)[i];
-            if (xr != xr || FINITE(xr))
+            if (xr != xr /*NaN*/ || FINITE(xr))
                 INTEGER(ans)[i] = 0;
             else
                 INTEGER(ans)[i] = 1;
@@ -661,7 +662,7 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             xr = COMPLEX(x)[i].r;
-            xr = COMPLEX(x)[i].i;
+            xi = COMPLEX(x)[i].i;
             if ((xr != xr || FINITE(xr)) && (xi != xi || FINITE(xi)))
                 INTEGER(ans)[i] = 0;
             else
