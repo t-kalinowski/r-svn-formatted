@@ -301,7 +301,7 @@ typedef struct structConsoleData *ConsoleData;
 #define USER(i) (p->lbuf->user[i])
 #define VLINE(i) ((strlen(LINE(i)) > FC) ? &LINE(i)[FC] : "")
 #define RLINE(i) (rect(0, BORDERY + (i)*FH, WIDTH, FH))
-#define RMLINES(i, j) (rect(0, BORDERY + (i)*FH, WIDTH, BORDERY + (j - i + 1) * FH))
+#define RMLINES(i, j) (rect(0, BORDERY + (i)*FH, WIDTH, (j - i + 1) * FH))
 #define cur_pos (p->cur_pos)
 #define max_pos (p->max_pos)
 #define prompt_len (p->prompt_len)
@@ -572,13 +572,13 @@ if (p->needredraw)
 PBEGIN
 if (ds == 1)
 {
-    gscroll(BM, pt(0, BORDERY), RMLINES(1, ROWS - 1));
+    gscroll(BM, pt(0, -FH), RMLINES(0, ROWS - 1));
     gfillrect(BM, p->bg, RLINE(ROWS - 1));
     WRITELINE(fv + ROWS - 1, ROWS - 1);
 }
 else if (ds == -1)
 {
-    gscroll(BM, pt(0, BORDERY + FH), RMLINES(0, ROWS - 2));
+    gscroll(BM, pt(0, FH), RMLINES(0, ROWS - 1));
     gfillrect(BM, p->bg, RLINE(0));
     WRITELINE(fv, 0);
 }
@@ -1360,6 +1360,7 @@ static rgb consolebg = White, consolefg = Black, consoleuser = Red;
 void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols, rgb nfg, rgb nufg, rgb nbg, int pgr,
                        int pgc, int multiplewindows, int widthonresize)
 {
+    char msg[LF_FACESIZE + 128];
     strncpy(fontname, fnname, LF_FACESIZE);
     fontname[LF_FACESIZE] = '\0';
     fontsty = fnsty;
@@ -1371,8 +1372,13 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
         consolefn = gnewfont(NULL, fnname, fnsty, fnpoints, 0.0);
     if (!consolefn)
     {
-        char msg[LF_FACESIZE + 128];
-        sprintf(msg, "Font %s-%d-%d  not found.\nUsing system fixed font.", fontname, fontsty, pointsize);
+        sprintf(msg, "Font %s-%d-%d  not found.\nUsing system fixed font.", fontname, fontsty | FixedWidth, pointsize);
+        askok(msg);
+        consolefn = FixedFont;
+    }
+    if (!ghasfixedwidth(consolefn))
+    {
+        sprintf(msg, "Font %s-%d-%d has variable width.\nUsing system fixed font.", fontname, fontsty, pointsize);
         askok(msg);
         consolefn = FixedFont;
     }
@@ -1480,6 +1486,7 @@ console newconsole(char *name, int flags)
     WIDTH = getwidth(c);
     COLS = WIDTH / FW - 1;
     ROWS = HEIGHT / FH - 1;
+    gsetcursor(c, ArrowCursor);
     gchangescrollbar(c, VWINSB, 0, 0, ROWS, 1);
     BORDERX = (WIDTH - COLS * FW) / 2;
     BORDERY = (HEIGHT - ROWS * FH) / 2;
@@ -1714,6 +1721,7 @@ static pager pagercreate()
     ROWS = HEIGHT / FH - 1;
     BORDERX = (WIDTH - COLS * FW) / 2;
     BORDERY = (HEIGHT - ROWS * FH) / 2;
+    gsetcursor(c, ArrowCursor);
     gchangescrollbar(c, VWINSB, 0, 0, ROWS, 0);
     setbackground(c, consolebg);
     if (ismdi() && (RguiMDI & RW_TOOLBAR))

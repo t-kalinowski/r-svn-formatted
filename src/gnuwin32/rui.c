@@ -171,8 +171,8 @@ static void menulazy(control m)
 
 static void menukill(control m)
 {
-    error("User break.\n");
     show(RConsole);
+    error("User break.\n");
 }
 
 static void menuls(control m)
@@ -555,7 +555,7 @@ int setupui()
         MCHECK(addtooltip(bt, "Source R code"));
         r.x += (btsize + 1);
 
-        MCHECK(bt = newimagebutton(open2_image, r, menuloadimage));
+        MCHECK(bt = newimagebutton(open1_image, r, menuloadimage));
         MCHECK(addtooltip(bt, "Load image"));
         r.x += (btsize + 1);
 
@@ -573,6 +573,10 @@ int setupui()
 
         MCHECK(bt = newimagebutton(copypaste_image, r, menucopypaste));
         MCHECK(addtooltip(bt, "Copy and paste"));
+        r.x += (btsize + 6);
+
+        MCHECK(bt = newimagebutton(stop_image, r, menukill));
+        MCHECK(addtooltip(bt, "Stop current computation"));
         r.x += (btsize + 6);
 
         MCHECK(bt = newimagebutton(print_image, r, menuprint));
@@ -610,7 +614,7 @@ int setupui()
     MCHECK(mcopypaste = newmenuitem("Copy And Paste  \tCTRL+X", 0, menucopypaste));
     MCHECK(newmenuitem("Select all", 0, menuselectall));
     MCHECK(newmenu("Misc"));
-    MCHECK(newmenuitem("Kill current computation           \tESC", 0, menukill));
+    MCHECK(newmenuitem("Stop current computation           \tESC", 0, menukill));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mlazy = newmenuitem("Buffered output\tCTRL+W", 0, menulazy));
     MCHECK(newmenuitem("-", 0, NULL));

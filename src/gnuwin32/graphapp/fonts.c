@@ -45,9 +45,8 @@ static int screen_dpiy = 96; /* logical dpi for VGA */
  */
 static void private_delfont(font f)
 {
-    if ((f != SystemFont) && !(f == FixedFont))
-        if (f->handle)
-            DeleteObject(f->handle);
+    if (f && (f != SystemFont) && (f != FixedFont) && (f->handle))
+        DeleteObject(f->handle);
 }
 
 /*

@@ -354,6 +354,7 @@ static void SetFont(int face, int size, double rot, DevDesc *dd)
     if (!xd->usefixed && (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle))
     {
         del(xd->font);
+        doevent();
         xd->font = gnewfont(xd->gawin, fontname[face - 1], fontstyle[face - 1], size, rot);
         if (xd->font)
         {
