@@ -20,6 +20,8 @@
 #include "Defn.h"
 #include "Mathlib.h"
 
+/*--- Part I: Comparison Utilities ---*/
+
 static int icmp(int x, int y)
 {
     if (x == NA_INTEGER)
@@ -48,7 +50,8 @@ static int rcmp(double x, double y)
 
 static int ccmp(complex x, complex y)
 {
-    if (ISNAN(x.r)) /* compare real parts */
+    /* compare real parts */
+    if (ISNAN(x.r))
         return 1;
     if (ISNAN(y.r))
         return -1;
@@ -56,8 +59,8 @@ static int ccmp(complex x, complex y)
         return -1;
     if (x.r > y.r)
         return 1;
-
-    if (ISNAN(x.i)) /* compare complex parts */
+    /* compare complex parts */
+    if (ISNAN(x.i))
         return 1;
     if (ISNAN(y.i))
         return -1;
@@ -77,6 +80,8 @@ static int scmp(SEXP x, SEXP y)
     return strcmp(CHAR(x), CHAR(y));
 #endif
 }
+
+/*--- Part II: Complete (non-partial) Sorting ---*/
 
 void isort(int *x, int n)
 {
@@ -206,9 +211,6 @@ void sortVector(SEXP s)
 {
     int n;
 
-    if (!isVector(s))
-        error("only vectors can be sorted\n");
-
     n = LENGTH(s);
     if (n >= 2)
         switch (TYPEOF(s))
@@ -241,6 +243,8 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
     sortVector(ans);
     return ans;
 }
+
+/*--- Part III: Partial Sorting ---*/
 
 void iFind(int *x, int n, int k)
 {
@@ -406,24 +410,25 @@ SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (!isVector(CAR(args)))
-        error("only vectors can be sorted\n");
-    CADR(args) = coerceVector(CADR(args), INTSXP);
+        errorcall(call, "only vectors can be sorted\n");
     n = LENGTH(CAR(args));
-    k = LENGTH(CADR(args));
+    CADR(args) = coerceVector(CADR(args), INTSXP);
     l = INTEGER(CADR(args));
+    k = LENGTH(CADR(args));
     for (i = 0; i < k; i++)
     {
         if (l[i] == NA_INTEGER)
-            error("NA index in find\n");
+            errorcall(call, "NA index\n");
         if (l[i] < 1 || l[i] > n)
-            error("index %d outside bounds in find\n", l[i]);
+            errorcall(call, "index %d outside bounds\n", l[i]);
     }
     CAR(args) = duplicate(CAR(args));
-    l = INTEGER(CADR(args));
     for (i = 0; i < k; i++)
         find(CAR(args), l[i] - 1);
     return CAR(args);
 }
+
+/*--- Part IV : Rank & Order ---*/
 
 static int equal(int i, int j, SEXP x)
 {
