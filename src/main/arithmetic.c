@@ -549,7 +549,7 @@ static SEXP real_unary(int code, SEXP s1)
  * in the loop (tested on Intel and Sparc)
  */
 #define mod_iterate(n1, n2, i1, i2)                                                                                    \
-    for (i = i1 = i2 = 0; i < n; (++i1, (i1 == n1) && (i1 = 0), ++i2, (i2 == n2) && (i2 = 0), ++i))
+    for (i = i1 = i2 = 0; i < n; i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2, ++i)
 
 static SEXP integer_binary(int code, SEXP s1, SEXP s2)
 {
@@ -1238,7 +1238,7 @@ SEXP do_signif(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #define mod_iterate3(n1, n2, n3, i1, i2, i3)                                                                           \
     for (i = i1 = i2 = i3 = 0; i < n;                                                                                  \
-         (++i1, (i1 == n1) && (i1 = 0), ++i2, (i2 == n2) && (i2 = 0), ++i3, (i3 == n3) && (i3 = 0), ++i))
+         i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2, i3 = (++i3 == n3) ? 0 : i3, ++i)
 
 static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
 {
@@ -1446,8 +1446,8 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
 } /* do_math3() */
 
 #define mod_iterate4(n1, n2, n3, n4, i1, i2, i3, i4)                                                                   \
-    for (i = i1 = i2 = i3 = i4 = 0; i < n; (++i1, (i1 == n1) && (i1 = 0), ++i2, (i2 == n2) && (i2 = 0), ++i3,          \
-                                            (i3 == n3) && (i3 = 0), ++i4, (i4 == n4) && (i4 = 0), ++i))
+    for (i = i1 = i2 = i3 = i4 = 0; i < n; i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2,                     \
+        i3 = (++i3 == n3) ? 0 : i3, i4 = (++i4 == n4) ? 0 : i4, ++i)
 
 static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
 {
