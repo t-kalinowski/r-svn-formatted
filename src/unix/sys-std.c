@@ -484,6 +484,9 @@ void pushReadline(char *prompt, rl_vcpfunc_t f)
         ReadlineStack.fun[++ReadlineStack.current] = f;
 
     rl_callback_handler_install(prompt, f);
+    /* flush stdout in case readline wrote the prompt, but didn't flush
+       stdout to make it visible. (needed for Apple's rl in OS X 10.4-pre) */
+    fflush(stdout);
 }
 
 /*
