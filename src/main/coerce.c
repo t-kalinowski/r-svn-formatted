@@ -762,6 +762,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     SEXP rval, names;
 
     names = v;
+    rval = R_NilValue; /* -Wall */
     if (type == EXPRSXP)
     {
         PROTECT(rval = allocVector(type, 1));
@@ -824,7 +825,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
 
 SEXP coerceVector(SEXP v, SEXPTYPE type)
 {
-    SEXP ans;
+    SEXP ans = R_NilValue; /* -Wall */
     if (TYPEOF(v) == type)
         return v;
 
@@ -1677,7 +1678,8 @@ SEXP do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         CAR(c) = VECTOR(args)[i];
-        TAG(c) = install(CHAR(ItemName(names, i)));
+        if (ItemName(names, i) != R_BlankString)
+            TAG(c) = install(CHAR(ItemName(names, i)));
         c = CDR(c);
     }
     call = eval(call, rho);
