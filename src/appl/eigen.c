@@ -29,7 +29,6 @@ static void balanc_(int *nm, int *n, double *a, int *low, int *igh, double *scal
 static void balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *z);
 static void cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, double *zr, double *zi);
 static void cbal_(int *nm, int *n, double *ar, double *ai, int *low, int *igh, double *scale);
-static void cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci);
 static void comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, double *wr, double *wi, int *ierr);
 static void comqr2_(int *nm, int *n, int *low, int *igh, double *ortr, double *orti, double *hr, double *hi, double *wr,
                     double *wi, double *zr, double *zi, int *ierr);
@@ -42,7 +41,6 @@ static void hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, dou
 static void hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, double *wi, double *z, int *ierr);
 static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m, double *zr, double *zi);
 static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau);
-static double pythag_(double *a, double *b);
 static void tql1_(int *n, double *d, double *e, int *ierr);
 static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr);
 static void tqlrat_(int *n, double *d, double *e2, int *ierr);
@@ -52,7 +50,6 @@ static void tred2_(int *nm, int *n, double *a, double *d, double *e, double *z);
 /* Table of constant values (to be passed as &..) */
 
 static double c_zero = 0.;
-static double c_one = 1.;
 
 /*     subroutine balanc
  *
@@ -272,7 +269,7 @@ Loop:
         c /= b2;
         goto L230;
 
-    /*     .......... now balance .......... */
+        /*     .......... now balance .......... */
     L240:
         if ((c + r) / f >= s * .95)
         {
@@ -369,7 +366,7 @@ static void balbak_(int *nm, int *n, int *low, int *igh, double *scale, int *m, 
         for (i = *low; i <= *igh; ++i)
         {
             s = scale[i];
-            /*     .......... left hand eigenvectors are back transformed */
+            /*	   .......... left hand eigenvectors are back transformed */
             /*		  if the foregoing statement is replaced by */
             /*		  s=1.0d0/scale(i). .......... */
             for (j = 1; j <= *m; ++j)
@@ -479,7 +476,7 @@ static void cbabk2_(int *nm, int *n, int *low, int *igh, double *scale, int *m, 
         for (i = *low; i <= *igh; ++i)
         {
             s = scale[i];
-            /*     .......... left hand eigenvectors are back transformed */
+            /*	   .......... left hand eigenvectors are back transformed */
             /*		  if the foregoing statement is replaced by */
             /*		  s=1.0d0/scale(i). .......... */
             for (j = 1; j <= *m; ++j)
@@ -749,7 +746,7 @@ Loop:
         c /= b2;
         goto L230;
 
-    /*     .......... now balance .......... */
+        /*     .......... now balance .......... */
     L240:
         if ((c + r) / f >= s * .95)
         {
@@ -778,26 +775,6 @@ Loop:
 L_fin:
     *low = k;
     *igh = l;
-}
-
-/*     subroutine cdiv
- *
- *     complex division, (cr,ci) = (ar,ai)/(br,bi)
- */
-
-static void cdiv_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
-{
-    /* Local variables */
-    double s, ais, bis, ars, brs;
-
-    s = fabs(*br) + fabs(*bi);
-    ars = *ar / s;
-    ais = *ai / s;
-    brs = *br / s;
-    bis = *bi / s;
-    s = brs * brs + bis * bis;
-    *cr = (ars * brs + ais * bis) / s;
-    *ci = (ais * brs - ars * bis) / s;
 }
 
 /*     subroutine cg
@@ -1070,7 +1047,7 @@ static void comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, 
             j = i + (i - 1) * h_dim1;
             if (hi[j] != 0.)
             {
-                norm = pythag_(&hr[j], &hi[j]);
+                norm = pythag(hr[j], hi[j]);
                 yr = hr[j] / norm;
                 yi = hi[j] / norm;
                 hr[j] = norm;
@@ -1095,7 +1072,7 @@ static void comqr_(int *nm, int *n, int *low, int *igh, double *hr, double *hi, 
         }
     }
 
-    /*     .......... store roots isolated by cbal .......... */
+    /*	   .......... store roots isolated by cbal .......... */
     for (i = 1; i <= nn; ++i)
     {
         if (i < *low || i > high)
@@ -1116,7 +1093,7 @@ L_search_next: /*     .......... search for next eigenvalue .......... */
     its = 0;
     enm1 = en - 1;
 
-L_repeat: /*     .......... look for single small sub-diagonal element
+L_repeat: /*	 .......... look for single small sub-diagonal element
            *		  for l=en step -1 until low d0 -- .......... */
     for (ll = *low; ll <= en; ++ll)
     {
@@ -1133,7 +1110,7 @@ L_repeat: /*     .......... look for single small sub-diagonal element
     /* L300: .......... form shift .......... */
 
     if (l == en)
-    { /*     .......... a root found .......... */
+    { /*	  .......... a root found .......... */
         wr[en] = hr[en + en * h_dim1] + tr;
         wi[en] = hi[en + en * h_dim1] + ti;
         en = enm1;
@@ -1176,7 +1153,7 @@ L_repeat: /*     .......... look for single small sub-diagonal element
 
             d__1 = yr + zzr;
             d__2 = yi + zzi;
-            cdiv_(&xr, &xi, &d__1, &d__2, &xr, &xi);
+            cdivid(&xr, &xi, &d__1, &d__2, &xr, &xi);
             sr -= xr;
             si -= xi;
         }
@@ -1201,8 +1178,8 @@ L_repeat: /*     .......... look for single small sub-diagonal element
         ii = im1 * h_dim1;
         sr = hr[i + ii];
         hr[i + ii] = 0.;
-        d__1 = pythag_(&hr[im1 + ii], &hi[im1 + ii]);
-        norm = pythag_(&d__1, &sr);
+        d__1 = pythag(hr[im1 + ii], hi[im1 + ii]);
+        norm = pythag(d__1, sr);
         xr = hr[im1 + ii] / norm;
         wr[im1] = xr;
         xi = hi[im1 + ii] / norm;
@@ -1227,7 +1204,7 @@ L_repeat: /*     .......... look for single small sub-diagonal element
     si = hi[en + en * h_dim1];
     if (si != 0.)
     {
-        norm = pythag_(&hr[en + en * h_dim1], &si);
+        norm = pythag(hr[en + en * h_dim1], si);
         sr = hr[en + en * h_dim1] / norm;
         si /= norm;
         hr[en + en * h_dim1] = norm;
@@ -1459,7 +1436,7 @@ L150:
         ll = min(i + 1, high);
         if (hi[i + (i - 1) * dim1] != 0.)
         {
-            norm = pythag_(&hr[i + (i - 1) * dim1], &hi[i + (i - 1) * dim1]);
+            norm = pythag(hr[i + (i - 1) * dim1], hi[i + (i - 1) * dim1]);
             yr = hr[i + (i - 1) * dim1] / norm;
             yi = hi[i + (i - 1) * dim1] / norm;
             hr[i + (i - 1) * dim1] = norm;
@@ -1566,7 +1543,7 @@ L300: /*	    .......... form shift .......... */
             }
             d__1 = yr + zzr;
             d__2 = yi + zzi;
-            cdiv_(&xr, &xi, &d__1, &d__2, &xr, &xi);
+            cdivid(&xr, &xi, &d__1, &d__2, &xr, &xi);
             sr -= xr;
             si -= xi;
         }
@@ -1591,8 +1568,8 @@ L300: /*	    .......... form shift .......... */
         ii = im1 * dim1;
         sr = hr[i + ii];
         hr[i + ii] = 0.;
-        d__1 = pythag_(&hr[im1 + ii], &hi[im1 + ii]);
-        norm = pythag_(&d__1, &sr);
+        d__1 = pythag(hr[im1 + ii], hi[im1 + ii]);
+        norm = pythag(d__1, sr);
         xr = hr[im1 + ii] / norm;
         wr[im1] = xr;
         xi = hi[im1 + ii] / norm;
@@ -1617,7 +1594,7 @@ L300: /*	    .......... form shift .......... */
     si = hi[en + en * dim1];
     if (si != 0.)
     {
-        norm = pythag_(&hr[en + en * dim1], &si);
+        norm = pythag(hr[en + en * dim1], si);
         sr = hr[en + en * dim1] / norm;
         si /= norm;
         hr[en + en * dim1] = norm;
@@ -1734,7 +1711,7 @@ L680:
         enm1 = en - 1;
         for (ii = 1; ii <= enm1; ++ii)
         {
-            /*     .......... for i=en-1 step -1 until 1 do -- .......... */
+            /*	   .......... for i=en-1 step -1 until 1 do -- .......... */
             i = en - ii;
             zzr = zzi = 0.;
             for (j = i + 1; j <= en; ++j)
@@ -1758,7 +1735,7 @@ L680:
                 }
             }
 
-            cdiv_(&zzr, &zzi, &yr, &yi, &hr[i + en * dim1], &hi[i + en * dim1]);
+            cdivid(&zzr, &zzi, &yr, &yi, &hr[i + en * dim1], &hi[i + en * dim1]);
             /*     .......... overflow control .......... */
             tr = fabs(hr[i + en * dim1]) + fabs(hi[i + en * dim1]);
             if (tr != 0.)
@@ -1910,7 +1887,7 @@ static void corth_(int *nm, int *n, int *low, int *igh, double *ar, double *ai, 
         }
 
         g = sqrt(h);
-        f = pythag_(&ortr[m], &orti[m]);
+        f = pythag(ortr[m], orti[m]);
         if (f == 0.)
         {
             ortr[m] = g;
@@ -1992,7 +1969,7 @@ static void csroot_(double *xr, double *xi, double *yr, double *yi)
 
     tr = *xr;
     ti = *xi;
-    s = sqrt((pythag_(&tr, &ti) + fabs(tr)) * .5);
+    s = sqrt((pythag(tr, ti) + fabs(tr)) * .5);
     if (tr >= 0.)
         *yr = s;
     if (ti < 0.)
@@ -2183,7 +2160,7 @@ static void eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, d
 
     /* Function Body */
     high = *igh;
-    /*     .......... initialize z to identity matrix .......... */
+    /*	   .......... initialize z to identity matrix .......... */
     for (j = 1; j <= *n; ++j)
     {
         for (i = 1; i <= *n; ++i)
@@ -2247,18 +2224,16 @@ static void eltran_(int *nm, int *n, int *low, int *igh, double *a, int *int_, d
 
 static double epslon_(double *x)
 {
-    /* Local variables */
-    double a, b, c, eps;
+    static double a = 1.3333333333333333;
+    double b, c, eps;
 
-    a = 1.3333333333333333;
-L10:
-    b = a - 1.;
-    c = b + b + b;
-    eps = fabs(c - 1.);
-    if (eps == 0.)
+    do
     {
-        goto L10;
-    }
+        b = a - 1.;
+        c = b + b + b;
+        eps = fabs(c - 1.);
+    } while (eps == 0.);
+
     return (eps * fabs(*x));
 }
 
@@ -2362,7 +2337,7 @@ static void hqr_(int *nm, int *n, int *low, int *igh, double *h, double *wr, dou
     t = 0.;
     itn = nn * 30;
 
-L60: /*     .......... search for next eigenvalues .......... */
+L60: /*	   .......... search for next eigenvalues .......... */
     if (en < *low)
     {
         goto L_end;
@@ -2371,7 +2346,7 @@ L60: /*     .......... search for next eigenvalues .......... */
     na = en - 1;
     enm2 = na - 1;
 
-L70: /*     .......... look for single small sub-diagonal element
+L70: /*	   .......... look for single small sub-diagonal element
       *		  for l=en step -1 until low do -- .......... */
     for (ll = *low; ll <= en; ++ll)
     {
@@ -2522,7 +2497,7 @@ L130:
             i__2 = en, i__3 = k + 3;
             j = min(i__2, i__3);
 
-            /*     .......... column modification .......... */
+            /*	   .......... column modification .......... */
             for (i = l; i <= j; ++i)
             {
                 p = x * h[i + k * h_dim1] + y * h[i + (k + 1) * h_dim1] + zz * h[i + (k + 2) * h_dim1];
@@ -2533,7 +2508,7 @@ L130:
         }
         else
         {
-            /*     .......... row modification .......... */
+            /*	   .......... row modification .......... */
             for (j = k; j <= en; ++j)
             {
                 p = h[k + j * h_dim1] + q * h[k + 1 + j * h_dim1];
@@ -2543,7 +2518,7 @@ L130:
 
             i__3 = k + 3;
             j = min(en, i__3);
-            /*     .......... column modification .......... */
+            /*	   .......... column modification .......... */
             for (i = l; i <= j; ++i)
             {
                 p = x * h[i + k * h_dim1] + y * h[i + (k + 1) * h_dim1];
@@ -2556,14 +2531,14 @@ L130:
 
     goto L70;
 
-L270: /*     .......... one root found .......... */
+L270: /*	    .......... one root found .......... */
 
     wr[en] = x + t;
     wi[en] = 0.;
     en = na;
     goto L60;
 
-L280: /*     .......... two roots found .......... */
+L280: /*	    .......... two roots found .......... */
     p = (y - x) / 2.;
     q = p * p + w;
     zz = sqrt((fabs(q)));
@@ -2584,7 +2559,7 @@ L280: /*     .......... two roots found .......... */
     wi[en] = 0.;
     goto L330;
 
-L320: /*     .......... complex pair .......... */
+L320: /*	    .......... complex pair .......... */
     wr[na] = x + p;
     wr[en] = x + p;
     wi[na] = zz;
@@ -2673,16 +2648,10 @@ static void hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, do
     double d__1, d__2, d__3, d__4;
 
     /* Local variables */
-    double norm;
     int i, j, k, l = 0, m = 0;
+    int na, ii, en, jj, ll, mm, nn, mp2, itn, its, enm2, notlas;
     double p, q, r = 0., s = 0., t, w, x, y;
-    int na, ii, en, jj;
-    double ra, sa;
-    int ll, mm, nn;
-    double vi, vr, zz;
-    int notlas;
-    int mp2, itn, its, enm2;
-    double tst1, tst2;
+    double norm, ra, sa, vi, vr, zz, tst1, tst2;
 
     /* Parameter adjustments */
     z_dim1 = *nm;
@@ -2717,8 +2686,9 @@ static void hqr2_(int *nm, int *n, int *low, int *igh, double *h, double *wr, do
     en = *igh;
     t = 0.;
     itn = *n * 30;
-/*     .......... search for next eigenvalues .......... */
-L60:
+
+L_next:
+    /*     .......... search for next eigenvalues .......... */
     if (en < *low)
     {
         goto L340;
@@ -2734,7 +2704,7 @@ L70:
         l = en + *low - ll;
         if (l == *low)
         {
-            goto L100;
+            break;
         }
         s = fabs(h[l - 1 + (l - 1) * h_dim1]) + fabs(h[l + l * h_dim1]);
         if (s == 0.)
@@ -2745,12 +2715,10 @@ L70:
         tst2 = tst1 + fabs(h[l + (l - 1) * h_dim1]);
         if (tst2 == tst1)
         {
-            goto L100;
+            break;
         }
-        /* L80: */
     }
-/*     .......... form shift .......... */
-L100:
+    /*     .......... form shift .......... */
     x = h[en + en * h_dim1];
     if (l == en)
     {
@@ -2806,19 +2774,17 @@ L130:
         r /= s;
         if (m == l)
         {
-            goto L150;
+            break;
         }
         tst1 = abs(p) * ((d__1 = h[m - 1 + (m - 1) * h_dim1], abs(d__1)) + abs(zz) +
                          (d__2 = h[m + 1 + (m + 1) * h_dim1], abs(d__2)));
         tst2 = tst1 + (d__1 = h[m + (m - 1) * h_dim1], abs(d__1)) * (abs(q) + abs(r));
         if (tst2 == tst1)
         {
-            goto L150;
+            break;
         }
-        /* L140: */
     }
 
-L150:
     mp2 = m + 2;
 
     i__1 = en;
@@ -2961,7 +2927,7 @@ L270:
     wr[en] = h[en + en * h_dim1];
     wi[en] = 0.;
     en = na;
-    goto L60;
+    goto L_next;
 /*     .......... two roots found .......... */
 L280:
     p = (y - x) / 2.;
@@ -3028,7 +2994,7 @@ L320:
     wi[en] = -zz;
 L330:
     en = enm2;
-    goto L60;
+    goto L_next;
 /*     .......... all roots found.  backsubstitute to find */
 /*		  vectors of upper triangular form .......... */
 L340:
@@ -3056,7 +3022,7 @@ L340:
         {
             goto L800;
         }
-    /*     .......... real vector .......... */
+        /*     .......... real vector .......... */
     L600:
         m = en;
         h[en + en * h_dim1] = 1.;
@@ -3075,7 +3041,6 @@ L340:
             i__3 = en;
             for (j = m; j <= i__3; ++j)
             {
-                /* L610: */
                 r += h[i + j * h_dim1] * h[j + en * h_dim1];
             }
 
@@ -3109,7 +3074,7 @@ L340:
         L635:
             h[i + en * h_dim1] = -r / t;
             goto L680;
-        /*     .......... solve real equations .......... */
+            /*     .......... solve real equations .......... */
         L640:
             x = h[i + (i + 1) * h_dim1];
             y = h[i + 1 + i * h_dim1];
@@ -3125,7 +3090,7 @@ L340:
         L650:
             h[i + 1 + en * h_dim1] = (-s - y * t) / zz;
 
-        /*     .......... overflow control .......... */
+            /*     .......... overflow control .......... */
         L680:
             t = (d__1 = h[i + en * h_dim1], abs(d__1));
             if (t == 0.)
@@ -3142,30 +3107,28 @@ L340:
             for (j = i; j <= i__3; ++j)
             {
                 h[j + en * h_dim1] /= t;
-                /* L690: */
             }
 
         L700:;
         }
         /*     .......... end real vector .......... */
         goto L800;
-    /*     .......... complex vector .......... */
+        /*     .......... complex vector .......... */
     L710:
         m = na;
         /*     .......... last vector component chosen imaginary so that */
         /*		  eigenvector matrix is triangular .......... */
         if ((d__1 = h[en + na * h_dim1], abs(d__1)) <= (d__2 = h[na + en * h_dim1], abs(d__2)))
         {
-            goto L720;
+            d__1 = -h[na + en * h_dim1];
+            d__2 = h[na + na * h_dim1] - p;
+            cdivid(&c_zero, &d__1, &d__2, &q, &h[na + na * h_dim1], &h[na + en * h_dim1]);
         }
-        h[na + na * h_dim1] = q / h[en + na * h_dim1];
-        h[na + en * h_dim1] = -(h[en + en * h_dim1] - p) / h[en + na * h_dim1];
-        goto L730;
-    L720:
-        d__1 = -h[na + en * h_dim1];
-        d__2 = h[na + na * h_dim1] - p;
-        cdiv_(&c_zero, &d__1, &d__2, &q, &h[na + na * h_dim1], &h[na + en * h_dim1]);
-    L730:
+        else
+        {
+            h[na + na * h_dim1] = q / h[en + na * h_dim1];
+            h[na + en * h_dim1] = -(h[en + en * h_dim1] - p) / h[en + na * h_dim1];
+        }
         h[en + na * h_dim1] = 0.;
         h[en + en * h_dim1] = 1.;
         enm2 = na - 1;
@@ -3174,16 +3137,14 @@ L340:
             goto L800;
         }
         /*     .......... for i=en-2 step -1 until 1 do -- .......... */
-        i__2 = enm2;
-        for (ii = 1; ii <= i__2; ++ii)
+        for (ii = 1; ii <= enm2; ++ii)
         {
             i = na - ii;
             w = h[i + i * h_dim1] - p;
             ra = 0.;
             sa = 0.;
 
-            i__3 = en;
-            for (j = m; j <= i__3; ++j)
+            for (j = m; j <= en; ++j)
             {
                 ra += h[i + j * h_dim1] * h[j + na * h_dim1];
                 sa += h[i + j * h_dim1] * h[j + en * h_dim1];
@@ -3202,73 +3163,65 @@ L340:
             m = i;
             if (wi[i] != 0.)
             {
-                goto L780;
+                /*.......... solve complex equations .......... */
+                x = h[i + (i + 1) * h_dim1];
+                y = h[i + 1 + i * h_dim1];
+                vr = (wr[i] - p) * (wr[i] - p) + wi[i] * wi[i] - q * q;
+                vi = (wr[i] - p) * 2. * q;
+                if (vr == 0. && vi == 0.)
+                {
+                    tst1 = norm * (fabs(w) + fabs(q) + fabs(x) + fabs(y) + fabs(zz));
+                    vr = tst1;
+                    do
+                    {
+                        vr *= .01;
+                        tst2 = tst1 + vr;
+                    } while (tst2 > tst1);
+                }
+                d__1 = x * r - zz * ra + q * sa;
+                d__2 = x * s - zz * sa - q * ra;
+                cdivid(&d__1, &d__2, &vr, &vi, &h[i + na * h_dim1], &h[i + en * h_dim1]);
+                if (fabs(x) <= fabs(zz) + fabs(q))
+                {
+                    d__1 = -r - y * h[i + na * h_dim1];
+                    d__2 = -s - y * h[i + en * h_dim1];
+                    cdivid(&d__1, &d__2, &zz, &q, &h[i + 1 + na * h_dim1], &h[i + 1 + en * h_dim1]);
+                }
+                else
+                {
+                    h[i + 1 + na * h_dim1] = (-ra - w * h[i + na * h_dim1] + q * h[i + en * h_dim1]) / x;
+                    h[i + 1 + en * h_dim1] = (-sa - w * h[i + en * h_dim1] - q * h[i + na * h_dim1]) / x;
+                }
             }
-            d__1 = -ra;
-            d__2 = -sa;
-            cdiv_(&d__1, &d__2, &w, &q, &h[i + na * h_dim1], &h[i + en * h_dim1]);
-            goto L790;
-        /*     .......... solve complex equations .......... */
-        L780:
-            x = h[i + (i + 1) * h_dim1];
-            y = h[i + 1 + i * h_dim1];
-            vr = (wr[i] - p) * (wr[i] - p) + wi[i] * wi[i] - q * q;
-            vi = (wr[i] - p) * 2. * q;
-            if (vr != 0. || vi != 0.)
+            else
             {
-                goto L784;
+                d__1 = -ra;
+                d__2 = -sa;
+                cdivid(&d__1, &d__2, &w, &q, &h[i + na * h_dim1], &h[i + en * h_dim1]);
             }
-            tst1 = norm * (fabs(w) + fabs(q) + fabs(x) + fabs(y) + fabs(zz));
-            vr = tst1;
-        L783:
-            vr *= .01;
-            tst2 = tst1 + vr;
-            if (tst2 > tst1)
-            {
-                goto L783;
-            }
-        L784:
-            d__1 = x * r - zz * ra + q * sa;
-            d__2 = x * s - zz * sa - q * ra;
-            cdiv_(&d__1, &d__2, &vr, &vi, &h[i + na * h_dim1], &h[i + en * h_dim1]);
-            if (fabs(x) <= fabs(zz) + fabs(q))
-            {
-                goto L785;
-            }
-            h[i + 1 + na * h_dim1] = (-ra - w * h[i + na * h_dim1] + q * h[i + en * h_dim1]) / x;
-            h[i + 1 + en * h_dim1] = (-sa - w * h[i + en * h_dim1] - q * h[i + na * h_dim1]) / x;
-            goto L790;
-        L785:
-            d__1 = -r - y * h[i + na * h_dim1];
-            d__2 = -s - y * h[i + en * h_dim1];
-            cdiv_(&d__1, &d__2, &zz, &q, &h[i + 1 + na * h_dim1], &h[i + 1 + en * h_dim1]);
 
-        /*     .......... overflow control .......... */
-        L790:
+            /*     .......... overflow control .......... */
+
             /* Computing MAX */
             d__3 = (d__1 = h[i + na * h_dim1], abs(d__1)), d__4 = (d__2 = h[i + en * h_dim1], abs(d__2));
             t = max(d__3, d__4);
-            if (t == 0.)
+            if (t != 0.)
             {
-                goto L795;
-            }
-            tst1 = t;
-            tst2 = tst1 + 1. / tst1;
-            if (tst2 > tst1)
-            {
-                goto L795;
-            }
-            i__3 = en;
-            for (j = i; j <= i__3; ++j)
-            {
-                h[j + na * h_dim1] /= t;
-                h[j + en * h_dim1] /= t;
-                /* L792: */
+                tst1 = t;
+                tst2 = tst1 + 1. / tst1;
+                if (tst2 <= tst1)
+                {
+                    for (j = i; j <= en; ++j)
+                    {
+                        h[j + na * h_dim1] /= t;
+                        h[j + en * h_dim1] /= t;
+                    }
+                }
             }
 
         L795:;
         }
-    /*     .......... end complex vector .......... */
+        /*     .......... end complex vector .......... */
     L800:;
     }
     /*     .......... end back substitution. */
@@ -3284,7 +3237,6 @@ L340:
         i__2 = *n;
         for (j = i; j <= i__2; ++j)
         {
-            /* L820: */
             z[i + j * z_dim1] = h[i + j * h_dim1];
         }
 
@@ -3304,12 +3256,8 @@ L340:
         {
             zz = 0.;
 
-            i__3 = m;
-            for (k = *low; k <= i__3; ++k)
-            {
-                /* L860: */
+            for (k = *low; k <= m; ++k)
                 zz += z[i + k * z_dim1] * h[k + j * h_dim1];
-            }
 
             z[i + j * z_dim1] = zz;
             /* L880: */
@@ -3330,9 +3278,8 @@ static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m
     int ar_dim1, ar_offset, ai_dim1, ai_offset, zr_dim1, zr_offset, zi_dim1, zi_offset, i__1, i__2, i__3;
 
     /* Local variables */
-    double h;
     int i, j, k, l;
-    double s, si;
+    double h, s, si;
 
     /*     this subroutine is a translation of a complex analogue of */
     /*     the algol procedure trbak1, num. math. 11, 181-195(1968) */
@@ -3398,7 +3345,7 @@ static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m
     /* Function Body */
     if (*m == 0)
     {
-        goto L200;
+        goto L_end;
     }
     /*     .......... transform the eigenvectors of the real symmetric */
     /*		  tridiagonal matrix to those of the hermitian */
@@ -3418,7 +3365,7 @@ static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m
 
     if (*n == 1)
     {
-        goto L200;
+        goto L_end;
     }
     /*     .......... recover and apply the householder matrices .......... */
     i__2 = *n;
@@ -3444,8 +3391,7 @@ static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m
                 si = si + ar[i + k * ar_dim1] * zi[k + j * zi_dim1] + ai[i + k * ai_dim1] * zr[k + j * zr_dim1];
                 /* L110: */
             }
-            /*     .......... double divisions avoid possible underflow ......
-            .... */
+            /*     .......... double divisions avoid possible underflow .......... */
             s = s / h / h;
             si = si / h / h;
 
@@ -3454,16 +3400,13 @@ static void htribk_(int *nm, int *n, double *ar, double *ai, double *tau, int *m
             {
                 zr[k + j * zr_dim1] = zr[k + j * zr_dim1] - s * ar[i + k * ar_dim1] - si * ai[i + k * ai_dim1];
                 zi[k + j * zi_dim1] = zi[k + j * zi_dim1] - si * ar[i + k * ar_dim1] + s * ai[i + k * ai_dim1];
-                /* L120: */
             }
-
-            /* L130: */
         }
 
     L140:;
     }
 
-L200:;
+L_end:;
 } /* htribk_ */
 
 static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *e, double *e2, double *tau)
@@ -3473,12 +3416,8 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
     double d__1, d__2;
 
     /* Local variables */
-    double f, g, h;
-    int i, j, k, l;
-    double scale, fi, gi, hh;
-    int ii;
-    double si;
-    int jp1;
+    int i, j, k, l, ii, jp1;
+    double f, g, h, scale, fi, gi, hh, si;
 
     /*     this subroutine is a translation of a complex analogue of */
     /*     the algol procedure tred1, num. math. 11, 181-195(1968) */
@@ -3549,7 +3488,6 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
     i__1 = *n;
     for (i = 1; i <= i__1; ++i)
     {
-        /* L100: */
         d[i] = ar[i + i * ar_dim1];
     }
     /*     .......... for i=n step -1 until 1 do -- .......... */
@@ -3568,8 +3506,7 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
         i__2 = l;
         for (k = 1; k <= i__2; ++k)
         {
-            /* L120: */
-            scale = scale + (d__1 = ar[i + k * ar_dim1], abs(d__1)) + (d__2 = ai[i + k * ai_dim1], abs(d__2));
+            scale += (d__1 = ar[i + k * ar_dim1], abs(d__1)) + (d__2 = ai[i + k * ai_dim1], abs(d__2));
         }
 
         if (scale != 0.)
@@ -3590,13 +3527,12 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
             ar[i + k * ar_dim1] /= scale;
             ai[i + k * ai_dim1] /= scale;
             h = h + ar[i + k * ar_dim1] * ar[i + k * ar_dim1] + ai[i + k * ai_dim1] * ai[i + k * ai_dim1];
-            /* L150: */
         }
 
         e2[i] = scale * scale * h;
         g = sqrt(h);
         e[i] = scale * g;
-        f = pythag_(&ar[i + l * ar_dim1], &ai[i + l * ai_dim1]);
+        f = pythag(ar[i + l * ar_dim1], ai[i + l * ai_dim1]);
         /*     .......... form next diagonal element of matrix t .......... */
         if (f == 0.)
         {
@@ -3640,25 +3576,21 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
                 goto L220;
             }
 
-            i__3 = l;
-            for (k = jp1; k <= i__3; ++k)
+            for (k = jp1; k <= l; ++k)
             {
-                g = g + ar[k + j * ar_dim1] * ar[i + k * ar_dim1] - ai[k + j * ai_dim1] * ai[i + k * ai_dim1];
-                gi = gi - ar[k + j * ar_dim1] * ai[i + k * ai_dim1] - ai[k + j * ai_dim1] * ar[i + k * ar_dim1];
-                /* L200: */
+                g += ar[k + j * ar_dim1] * ar[i + k * ar_dim1] - ai[k + j * ai_dim1] * ai[i + k * ai_dim1];
+                gi += -ar[k + j * ar_dim1] * ai[i + k * ai_dim1] - ai[k + j * ai_dim1] * ar[i + k * ar_dim1];
             }
-        /*     .......... form element of p .......... */
+            /*     .......... form element of p .......... */
         L220:
             e[j] = g / h;
             tau[(j << 1) + 2] = gi / h;
-            f = f + e[j] * ar[i + j * ar_dim1] - tau[(j << 1) + 2] * ai[i + j * ai_dim1];
-            /* L240: */
+            f += e[j] * ar[i + j * ar_dim1] - tau[(j << 1) + 2] * ai[i + j * ai_dim1];
         }
 
         hh = f / (h + h);
         /*     .......... form reduced a .......... */
-        i__2 = l;
-        for (j = 1; j <= i__2; ++j)
+        for (j = 1; j <= l; ++j)
         {
             f = ar[i + j * ar_dim1];
             g = e[j] - hh * f;
@@ -3667,24 +3599,20 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
             gi = tau[(j << 1) + 2] - hh * fi;
             tau[(j << 1) + 2] = -gi;
 
-            i__3 = j;
-            for (k = 1; k <= i__3; ++k)
+            for (k = 1; k <= j; ++k)
             {
                 ar[j + k * ar_dim1] = ar[j + k * ar_dim1] - f * e[k] - g * ar[i + k * ar_dim1] +
                                       fi * tau[(k << 1) + 2] + gi * ai[i + k * ai_dim1];
                 ai[j + k * ai_dim1] = ai[j + k * ai_dim1] - f * tau[(k << 1) + 2] - g * ai[i + k * ai_dim1] -
                                       fi * e[k] - gi * ar[i + k * ar_dim1];
-                /* L260: */
             }
         }
 
     L270:
-        i__3 = l;
-        for (k = 1; k <= i__3; ++k)
+        for (k = 1; k <= l; ++k)
         {
             ar[i + k * ar_dim1] = scale * ar[i + k * ar_dim1];
             ai[i + k * ai_dim1] = scale * ai[i + k * ai_dim1];
-            /* L280: */
         }
 
         tau[(l << 1) + 2] = -si;
@@ -3696,46 +3624,6 @@ static void htridi_(int *nm, int *n, double *ar, double *ai, double *d, double *
         /* L300: */
     }
 } /* htridi_ */
-
-static double pythag_(double *a, double *b)
-{
-    /* System generated locals */
-    double ret_val, d__1, d__2, d__3;
-
-    /* Local variables */
-    double p, r, s, t, u;
-
-    /*     finds dsqrt(a^2+b^2) without overflow or destructive underflow */
-
-    /* Computing MAX */
-    d__1 = abs(*a), d__2 = abs(*b);
-    p = max(d__1, d__2);
-    if (p == 0.)
-    {
-        goto L20;
-    }
-    /* Computing MIN */
-    d__2 = abs(*a), d__3 = abs(*b);
-    /* Computing 2nd power */
-    d__1 = min(d__2, d__3) / p;
-    r = d__1 * d__1;
-L10:
-    t = r + 4.;
-    if (t == 4.)
-    {
-        goto L20;
-    }
-    s = r / t;
-    u = s * 2. + 1.;
-    p = u * p;
-    /* Computing 2nd power */
-    d__1 = s / u;
-    r = d__1 * d__1 * r;
-    goto L10;
-L20:
-    ret_val = p;
-    return ret_val;
-} /* pythag_ */
 
 int F77_SYMBOL(rg)(int *nm, int *n, double *a, double *wr, double *wi, int *matz, double *z, int *iv1, double *fv1,
                    int *ierr)
@@ -3789,7 +3677,7 @@ int F77_SYMBOL(rg)(int *nm, int *n, double *a, double *wr, double *wi, int *matz
      */
 
     /* System generated locals */
-    int a_dim1, a_offset, z_dim1, z_offset;
+    int z_dim1, z_offset;
 
     /* Local variables */
     int is1, is2;
@@ -3797,43 +3685,37 @@ int F77_SYMBOL(rg)(int *nm, int *n, double *a, double *wr, double *wi, int *matz
     /* Parameter adjustments */
     --fv1;
     --iv1;
+    --wi;
+    --wr;
     z_dim1 = *nm;
     z_offset = z_dim1 + 1;
     z -= z_offset;
-    --wi;
-    --wr;
-    a_dim1 = *nm;
-    a_offset = a_dim1 + 1;
-    a -= a_offset;
+    a -= z_offset;
 
     /* Function Body */
-    if (*n <= *nm)
+    if (*n > *nm)
     {
-        goto L10;
+        *ierr = *n * 10;
+        return 0;
     }
-    *ierr = *n * 10;
-    goto L50;
 
-L10:
-    balanc_(nm, n, &a[a_offset], &is1, &is2, &fv1[1]);
-    elmhes_(nm, n, &is1, &is2, &a[a_offset], &iv1[1]);
+    balanc_(nm, n, &a[z_offset], &is1, &is2, &fv1[1]);
+    elmhes_(nm, n, &is1, &is2, &a[z_offset], &iv1[1]);
     if (*matz != 0)
     {
-        goto L20;
+        /*.......... find both eigenvalues and eigenvectors .......... */
+        eltran_(nm, n, &is1, &is2, &a[z_offset], &iv1[1], &z[z_offset]);
+        hqr2_(nm, n, &is1, &is2, &a[z_offset], &wr[1], &wi[1], &z[z_offset], ierr);
+        if (*ierr == 0)
+        {
+            balbak_(nm, n, &is1, &is2, &fv1[1], n, &z[z_offset]);
+        }
     }
-    /*     .......... find eigenvalues only .......... */
-    hqr_(nm, n, &is1, &is2, &a[a_offset], &wr[1], &wi[1], ierr);
-    goto L50;
-/*     .......... find both eigenvalues and eigenvectors .......... */
-L20:
-    eltran_(nm, n, &is1, &is2, &a[a_offset], &iv1[1], &z[z_offset]);
-    hqr2_(nm, n, &is1, &is2, &a[a_offset], &wr[1], &wi[1], &z[z_offset], ierr);
-    if (*ierr != 0)
+    else
     {
-        goto L50;
+        /* .......... find eigenvalues only .......... */
+        hqr_(nm, n, &is1, &is2, &a[z_offset], &wr[1], &wi[1], ierr);
     }
-    balbak_(nm, n, &is1, &is2, &fv1[1], n, &z[z_offset]);
-L50:
     return 0;
 } /* rg */
 
@@ -3936,7 +3818,7 @@ static void tql1_(int *n, double *d, double *e, int *ierr)
 
      * on OUTPUT
 
-     *	d contains the eigenvalues in ascending order.  if an
+     *	d contains the eigenvalues in ascending order.	if an
      *	  error exit is made, the eigenvalues are correct and
      *	  ordered for indices 1,2,...ierr-1, but may not be
      *	  the smallest eigenvalues.
@@ -4007,7 +3889,7 @@ static void tql1_(int *n, double *d, double *e, int *ierr)
     Loop:
         if (j == 30)
         {
-            /*     .......... set error -- no convergence to an */
+            /*	   .......... set error -- no convergence to an */
             /*		  eigenvalue after 30 iterations .......... */
             *ierr = l;
             return;
@@ -4018,7 +3900,7 @@ static void tql1_(int *n, double *d, double *e, int *ierr)
         l2 = l1 + 1;
         g = d[l];
         p = (d[l1] - g) / (e[l] * 2.);
-        r = pythag_(&p, &c_one);
+        r = pythag(p, 1.);
         r = p + DSIGN(&r, &p);
         d[l] = e[l] / r;
         d[l1] = e[l] * r;
@@ -4046,7 +3928,7 @@ static void tql1_(int *n, double *d, double *e, int *ierr)
             i = m - ii;
             g = c * e[i];
             h = c * p;
-            r = pythag_(&p, &e[i]);
+            r = pythag(p, e[i]);
             e[i + 1] = s * r;
             s = e[i] / r;
             c = p / r;
@@ -4100,7 +3982,7 @@ static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
      * this subroutine finds the eigenvalues and eigenvectors
      * of a symmetric tridiagonal matrix by the ql method.
      * the eigenvectors of a full symmetric matrix can also
-     * be found if  tred2  has been used to reduce this
+     * be found if	tred2  has been used to reduce this
      * full matrix to tridiagonal form.
 
      * on INPUT
@@ -4117,20 +3999,20 @@ static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
      *	  in its last n-1 positions.	e(1) is arbitrary.
 
      *	z contains the transformation matrix produced in the
-     *	  reduction by  tred2, if performed.	if the eigenvectors
+     *	  reduction by	tred2, if performed.	if the eigenvectors
      *	  of the tridiagonal matrix are desired, z must contain
      *	  the identity matrix.
 
      * on OUTPUT
 
-     *	d contains the eigenvalues in ascending order.  if an
+     *	d contains the eigenvalues in ascending order.	if an
      *	  error exit is made, the eigenvalues are correct but
      *	  unordered for indices 1,2,...,ierr-1.
 
      *	e has been destroyed.
 
      *	z contains orthonormal eigenvectors of the symmetric
-     *	  tridiagonal (or full) matrix.  if an error exit is made,
+     *	  tridiagonal (or full) matrix.	 if an error exit is made,
      *	  z contains the eigenvectors associated with the stored
      *	  eigenvalues.
 
@@ -4215,7 +4097,7 @@ static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
         l2 = l1 + 1;
         g = d[l];
         p = (d[l1] - g) / (e[l] * 2.);
-        r = pythag_(&p, &c_one);
+        r = pythag(p, 1.);
         d[l] = e[l] / (p + DSIGN(&r, &p));
         d[l1] = e[l] * (p + DSIGN(&r, &p));
         dl1 = d[l1];
@@ -4241,7 +4123,7 @@ static void tql2_(int *nm, int *n, double *d, double *e, double *z, int *ierr)
             i = m - ii;
             g = c * e[i];
             h = c * p;
-            r = pythag_(&p, &e[i]);
+            r = pythag(p, e[i]);
             e[i + 1] = s * r;
             s = e[i] / r;
             c = p / r;
@@ -4309,14 +4191,12 @@ L_noconv:
 
 static void tqlrat_(int *n, double *d, double *e2, int *ierr)
 {
-
     /** for old version, "send otqlrat from eispack"
-     ** From dana!moler Tue, 1 Sep 87 10:15:40 PDT
+     * From dana!moler Tue, 1 Sep 87 10:15:40 PDT
 
-     ** New TQLRAT **
-     */
+     * ** New TQLRAT **
 
-    /* This subroutine is a translation of the Algol procedure tqlrat,
+     * This subroutine is a translation of the Algol procedure tqlrat,
      * Algorithm 464, Comm. ACM 16, 689(1973) by Reinsch.
 
      * This subroutine finds the eigenvalues of a symmetric
@@ -4334,7 +4214,7 @@ static void tqlrat_(int *n, double *d, double *e2, int *ierr)
 
      * On OUTPUT
 
-     *	D contains the eigenvalues in ascending order.  If an
+     *	D contains the eigenvalues in ascending order.	If an
      *	  error exit is made, the eigenvalues are correct and
      *	  ordered for indices 1,2,...IERR-1, but may not be
      *	  the smallest eigenvalues.
@@ -4410,7 +4290,7 @@ static void tqlrat_(int *n, double *d, double *e2, int *ierr)
         }
         b = epslon_(&t);
         c = b * b;
-    /*     .......... LOOK FOR SMALL SQUARED SUB-DIAGONAL ELEMENT ........ */
+        /*     .......... LOOK FOR SMALL SQUARED SUB-DIAGONAL ELEMENT ........ */
     L105:
         for (m = l; m <= nn; ++m)
         {
@@ -4443,7 +4323,7 @@ static void tqlrat_(int *n, double *d, double *e2, int *ierr)
         s = sqrt(e2[l]);
         g = d[l];
         p = (d[l1] - g) / (s * 2.);
-        r = pythag_(&p, &c_one);
+        r = pythag(p, 1.);
         d[l] = s / (p + DSIGN(&r, &p));
         h = g - d[l];
 
@@ -4843,7 +4723,6 @@ static void tred2_(int *nm, int *n, double *a, double *d, double *e, double *z)
 
         L220:
             e[j] = g;
-            /* L240: */
         }
         /*     .......... form p .......... */
         f = 0.;
