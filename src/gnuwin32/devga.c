@@ -1148,15 +1148,15 @@ static void devga_sbf(control c, int pos)
     HelpExpose(c, getrect(xd->gawin));
 }
 
-static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean recording, int resize)
+static int setupScreenDevice(DevDesc *dd, gadesc *xd, double w, double h, Rboolean recording, int resize)
 {
     menu m;
     int iw, ih;
     double dw, dw0, dh, d;
 
     xd->kind = SCREEN;
-    dw = dw0 = w / pixelWidth(NULL);
-    dh = h / pixelHeight(NULL);
+    dw = dw0 = (int)(w / pixelWidth(NULL));
+    dh = (int)(h / pixelHeight(NULL));
     if (resize != 3)
     {
         if ((dw / devicewidth(NULL)) > 0.85)
