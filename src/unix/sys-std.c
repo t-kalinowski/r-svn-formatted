@@ -914,7 +914,9 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
     if (R_Interactive && UsingReadline)
     {
         write_history(file);
+#ifdef HAVE_HISTORY_TRUNCATE_FILE
         history_truncate_file(file, R_HistorySize);
+#endif
     }
     else
         errorcall(call, "no history available to save");
