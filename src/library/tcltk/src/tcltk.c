@@ -244,19 +244,23 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
     int count;
     Tcl_Obj *tclobj, *elem;
     int i;
-    SEXP val;
+    SEXP val, drop;
 
     val = CADR(args);
+    drop = CADDR(args);
 
     tclobj = Tcl_NewObj();
 
     count = length(val);
-    for (i = 0; i < count; i++)
-    {
-        elem = Tcl_NewObj();
-        Tcl_SetStringObj(elem, CHAR(STRING_ELT(val, i)), -1);
-        Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
-    }
+    if (count == 1 && LOGICAL(drop)[0])
+        Tcl_SetStringObj(tclobj, CHAR(STRING_ELT(val, 0)), -1);
+    else
+        for (i = 0; i < count; i++)
+        {
+            elem = Tcl_NewObj();
+            Tcl_SetStringObj(elem, CHAR(STRING_ELT(val, i)), -1);
+            Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
+        }
 
     return makeRTclObject(tclobj);
 }
@@ -301,18 +305,22 @@ SEXP RTcl_ObjFromDoubleVector(SEXP args)
     int count;
     Tcl_Obj *tclobj, *elem;
     int i;
-    SEXP val;
+    SEXP val, drop;
 
     val = CADR(args);
+    drop = CADDR(args);
 
     tclobj = Tcl_NewObj();
 
     count = length(val);
-    for (i = 0; i < count; i++)
-    {
-        elem = Tcl_NewDoubleObj(REAL(val)[i]);
-        Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
-    }
+    if (count == 1 && LOGICAL(drop)[0])
+        tclobj = Tcl_NewDoubleObj(REAL(val)[0]);
+    else
+        for (i = 0; i < count; i++)
+        {
+            elem = Tcl_NewDoubleObj(REAL(val)[i]);
+            Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
+        }
 
     return makeRTclObject(tclobj);
 }
@@ -357,18 +365,22 @@ SEXP RTcl_ObjFromIntVector(SEXP args)
     int count;
     Tcl_Obj *tclobj, *elem;
     int i;
-    SEXP val;
+    SEXP val, drop;
 
     val = CADR(args);
+    drop = CADDR(args);
 
     tclobj = Tcl_NewObj();
 
     count = length(val);
-    for (i = 0; i < count; i++)
-    {
-        elem = Tcl_NewIntObj(INTEGER(val)[i]);
-        Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
-    }
+    if (count == 1 && LOGICAL(drop)[0])
+        tclobj = Tcl_NewIntObj(INTEGER(val)[0]);
+    else
+        for (i = 0; i < count; i++)
+        {
+            elem = Tcl_NewIntObj(INTEGER(val)[i]);
+            Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
+        }
 
     return makeRTclObject(tclobj);
 }
