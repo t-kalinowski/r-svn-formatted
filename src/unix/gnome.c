@@ -66,7 +66,7 @@ static DL_FUNC Rdlsym(void *handle, char const *name)
 
 extern DL_FUNC ptr_R_Suicide, ptr_R_ShowMessage, ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole,
     ptr_R_FlushConsole, ptr_R_ClearerrConsole, ptr_R_Busy, ptr_R_CleanUp, ptr_R_ShowFiles, ptr_R_ChooseFile,
-    ptr_gnome_start, ptr_GnomeDeviceDriver, ptr_GTKDeviceDriver, ptr_R_loadhistory, ptr_R_savehistory;
+    ptr_gnome_start, ptr_GnomeDeviceDriver, ptr_R_loadhistory, ptr_R_savehistory;
 
 /* This is called too early to use moduleCdynload */
 void R_load_gnome_shlib(void)
@@ -133,9 +133,6 @@ void R_load_gnome_shlib(void)
     ptr_gnome_start = Rdlsym(handle, "gnome_start");
     if (!ptr_gnome_start)
         R_Suicide("Cannot load gnome_start");
-    ptr_GTKDeviceDriver = Rdlsym(handle, "GTKDeviceDriver");
-    if (!ptr_GTKDeviceDriver)
-        R_Suicide("Cannot load GTKDeviceDriver");
     ptr_R_loadhistory = Rdlsym(handle, "Rgnome_loadhistory");
     if (!ptr_R_loadhistory)
         R_Suicide("Cannot load Rgnome_loadhsitoryr");
