@@ -242,9 +242,6 @@ L230:
 L240:
     *nlast = k;
 
-    Free(icon);
-    Free(check);
-
     return;
 }
 
@@ -327,9 +324,6 @@ L60:
         }
         coord[k - 1] = 0;
     }
-
-    Free(coord);
-    Free(size);
 
     return;
 }
@@ -434,9 +428,6 @@ L50:
         }
         coord[k - 1] = 0;
     }
-
-    Free(coord);
-    Free(size);
 
     return;
 }
