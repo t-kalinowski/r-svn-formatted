@@ -199,12 +199,18 @@ void warning(const char *format, ...)
 /* temporary hook to allow experimenting with alternate warning mechanisms */
 static void (*R_WarningHook)(SEXP, char *) = NULL;
 
+static void reset_inWarning(void *data)
+{
+    inWarning = 0;
+}
+
 void warningcall(SEXP call, const char *format, ...)
 {
     int w;
     SEXP names, s;
     char *dcall, buf[BUFSIZE];
     RCNTXT *cptr;
+    RCNTXT cntxt;
 
     if (R_WarningHook != NULL)
     {
@@ -237,6 +243,11 @@ void warningcall(SEXP call, const char *format, ...)
     { /* ignore if w<0 or already in here*/
         return;
     }
+
+    /* set up a context which will restore inWarning if there is an exit */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    cntxt.cend = &reset_inWarning;
+
     inWarning = 1;
 
     if (w >= 2)
@@ -280,6 +291,7 @@ void warningcall(SEXP call, const char *format, ...)
         SET_STRING_ELT(names, R_CollectWarnings++, mkChar(buf));
     }
     /* else:  w <= -1 */
+    endcontext(&cntxt);
     inWarning = 0;
 }
 
@@ -287,6 +299,11 @@ void PrintWarnings(void)
 {
     int i;
     SEXP names, s, t;
+    RCNTXT cntxt;
+
+    /* set up a context which will restore inWarning if there is an exit */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    cntxt.cend = &reset_inWarning;
 
     inWarning = 1;
     if (R_CollectWarnings == 1)
@@ -331,6 +348,9 @@ void PrintWarnings(void)
     setAttrib(s, R_NamesSymbol, t);
     defineVar(install("last.warning"), s, R_GlobalEnv);
     UNPROTECT(2);
+
+    endcontext(&cntxt);
+
     inWarning = 0;
     R_CollectWarnings = 0;
     R_Warnings = R_NilValue;
@@ -342,9 +362,17 @@ static char errbuf[BUFSIZE];
 /* temporary hook to allow experimenting with alternate error mechanisms */
 static void (*R_ErrorHook)(SEXP, char *) = NULL;
 
+static void restore_inError(void *data)
+{
+    int *poldval = data;
+    inError = *poldval;
+}
+
 void errorcall(SEXP call, const char *format, ...)
 {
+    RCNTXT cntxt;
     char *p, *dcall;
+    int oldInError;
 
     va_list(ap);
 
@@ -374,6 +402,12 @@ void errorcall(SEXP call, const char *format, ...)
         }
         jump_now();
     }
+
+    /* set up a context to restore inError value on exit */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    cntxt.cend = &restore_inError;
+    cntxt.cenddata = &oldInError;
+    oldInError = inError;
 
     if (call != R_NilValue)
     {
@@ -406,6 +440,9 @@ void errorcall(SEXP call, const char *format, ...)
     if (R_ShowErrorMessages)
         REprintf("%s", errbuf);
     jump_to_toplevel();
+
+    /* not reached */
+    endcontext(&cntxt);
 }
 
 SEXP do_geterrmessage(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -437,12 +474,21 @@ void error(const char *format, ...)
 
 void jump_to_toplevel()
 {
+    RCNTXT cntxt;
     RCNTXT *c;
     SEXP s, t;
-    int haveHandler;
+    int haveHandler, oldInError;
     int nback = 0;
 
-    inError = 1;
+    /* set up a context to restore inError value on exit */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    cntxt.cend = &restore_inError;
+    cntxt.cenddata = &oldInError;
+
+    oldInError = inError;
+
+    if (!inError)
+        inError = 1;
 
     if (R_ShowErrorMessages && R_CollectWarnings)
     {
@@ -515,6 +561,9 @@ void jump_to_toplevel()
     setVar(install(".Traceback"), s, R_GlobalEnv);
     UNPROTECT(1);
     jump_now();
+
+    /* not reached */
+    endcontext(&cntxt);
 }
 
 /*
