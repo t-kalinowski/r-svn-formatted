@@ -7,12 +7,14 @@
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
+static double poly(float *, int, float);
+
 void swilk(int *init,                                    /* logical: is a[] already initialized ? */
-           float *x, int *n, int *n1, int *n2, float *a, /* coefficients */
+           float *x, int *n, int *n1, int *n2, float *a, /* coefficients a[] */
            double *w, double *pw, int *ifault)
 {
 
-    /*	  ALGORITHM AS R94 APPL. STATIST. (1995) VOL.44, NO.4
+    /*	ALGORITHM AS R94 APPL. STATIST. (1995) vol.44, no.4, 547-551.
 
         Calculates the Shapiro-Wilk W test and its significance level
     */
@@ -52,10 +54,8 @@ void swilk(int *init,                                    /* logical: is a[] alre
     float r__1;
 
     /*
-        Auxiliary routines
+        Auxiliary routines : poly()  {below}
     */
-    extern double poly(float *, int, float);
-
     /* Local variables */
     int i, j, ncens, i1, nn2;
 
@@ -233,7 +233,7 @@ L70:
         gamma = poly(g, 2, an);
         if (y >= gamma)
         {
-            *pw = small;
+            *pw = small; /* FIXME: rather use an even smaller value, or NA ? */
             return;
         }
         y = -log(gamma - y);
@@ -276,7 +276,7 @@ L70:
     return;
 } /* swilk */
 
-double poly(float *cc, int nord, float x)
+static double poly(float *cc, int nord, float x)
 {
     /* Algorithm AS 181.2	Appl. Statist.	(1982) Vol. 31, No. 2
 
