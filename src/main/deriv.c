@@ -45,6 +45,9 @@ static SEXP TanhSymbol;
 static SEXP SqrtSymbol;
 static SEXP PnormSymbol;
 static SEXP DnormSymbol;
+static SEXP AsinSymbol;
+static SEXP AcosSymbol;
+static SEXP AtanSymbol;
 
 static Rboolean Initialized = FALSE;
 
@@ -70,6 +73,10 @@ static void InitDerivSymbols()
     SqrtSymbol = install("sqrt");
     PnormSymbol = install("pnorm");
     DnormSymbol = install("dnorm");
+    AsinSymbol = install("asin");
+    AcosSymbol = install("acos");
+    AtanSymbol = install("atan");
+
     Initialized = TRUE;
 }
 
@@ -281,6 +288,10 @@ static SEXP simplify(SEXP fun, SEXP arg1, SEXP arg2)
     {
         ans = lang2(TanhSymbol, arg1);
     }
+    else if (fun == SqrtSymbol)
+    {
+        ans = lang2(SqrtSymbol, arg1);
+    }
     else if (fun == PnormSymbol)
     {
         ans = lang2(PnormSymbol, arg1);
@@ -288,6 +299,18 @@ static SEXP simplify(SEXP fun, SEXP arg1, SEXP arg2)
     else if (fun == DnormSymbol)
     {
         ans = lang2(DnormSymbol, arg1);
+    }
+    else if (fun == AsinSymbol)
+    {
+        ans = lang2(AsinSymbol, arg1);
+    }
+    else if (fun == AcosSymbol)
+    {
+        ans = lang2(AcosSymbol, arg1);
+    }
+    else if (fun == AtanSymbol)
+    {
+        ans = lang2(AtanSymbol, arg1);
     }
     else
         ans = Constant(NA_REAL);
@@ -461,6 +484,33 @@ static SEXP D(SEXP expr, SEXP var)
                 PP(simplify(TimesSymbol, PP(simplify(DnormSymbol, CADR(expr), R_MissingArg)), PP(D(CADR(expr), var))))),
             UNPROTECT(4);
         }
+        else if (CAR(expr) == AsinSymbol)
+        {
+            ans = simplify(DivideSymbol, PP(D(CADR(expr), var)),
+                           PP(simplify(SqrtSymbol,
+                                       PP(simplify(MinusSymbol, Constant(1.),
+                                                   PP(simplify(PowerSymbol, CADR(expr), Constant(2.))))),
+                                       R_MissingArg))),
+            UNPROTECT(4);
+        }
+        else if (CAR(expr) == AcosSymbol)
+        {
+            ans = simplify(MinusSymbol,
+                           PP(simplify(DivideSymbol, PP(D(CADR(expr), var)),
+                                       PP(simplify(SqrtSymbol,
+                                                   PP(simplify(MinusSymbol, Constant(1.),
+                                                               PP(simplify(PowerSymbol, CADR(expr), Constant(2.))))),
+                                                   R_MissingArg)))),
+                           R_MissingArg),
+            UNPROTECT(5);
+        }
+        else if (CAR(expr) == AtanSymbol)
+        {
+            ans = simplify(DivideSymbol, PP(D(CADR(expr), var)),
+                           PP(simplify(PlusSymbol, Constant(1.), PP(simplify(PowerSymbol, CADR(expr), Constant(2.)))))),
+            UNPROTECT(3);
+        }
+
         else
         {
             SEXP u = deparse1(CAR(expr), 0);
