@@ -166,7 +166,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     x = CAR(args);
     tok = CADR(args);
     if (!isString(x) || !isString(tok))
-        errorcall(call, "non-character argument in strsplit()");
+        errorcall_return(call, "non-character argument in strsplit()");
     len = LENGTH(x);
     tlen = LENGTH(tok);
     PROTECT(s = allocVector(VECSXP, len));
@@ -372,7 +372,7 @@ SEXP do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (!isString(CAR(args)))
-        errorcall(call, "the first argument must be a string");
+        errorcall_return(call, "the first argument must be a string");
     len = length(CAR(args));
 
     PROTECT(ans = allocVector(STRSXP, len));
@@ -449,7 +449,7 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         value_opt = 0;
 
     if (!isString(pat) || length(pat) < 1 || !isString(vec))
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
 
     eflags = 0;
 
@@ -597,7 +597,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         extended_opt = 1;
 
     if (!isString(pat) || length(pat) < 1 || !isString(rep) || length(rep) < 1 || !isString(vec))
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
 
     eflags = 0;
     if (extended_opt)
@@ -686,7 +686,7 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         extended_opt = 1;
 
     if (!isString(pat) || length(pat) < 1 || !isString(text) || length(text) < 1)
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
 
     eflags = extended_opt ? REG_EXTENDED : 0;
 
@@ -895,7 +895,7 @@ SEXP do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     x = CAR(args);
     if (!isString(old) || (length(old) < 1) || !isString(new) || (length(new) < 1) || !isString(x))
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
 
     for (i = 0; i <= UCHAR_MAX; i++)
         xtable[i] = i;

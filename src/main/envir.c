@@ -160,7 +160,7 @@ SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
 {
     SEXP chain;
 
-#if 0 
+#if 0
 /* Removed by pd -- never seen the "3rd arg" stuff and when the table
    is a VECSXP it can't be NULL...*/
 
@@ -168,7 +168,7 @@ SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
     if (TYPEOF(table) != VECSXP){
 	printf("3rd arg (table) not of type VECSXP, from R_HashGet\n");
     }
-    
+
     if (isNull(table)) {
 	error("Table is null, from R_HashGet");
     }
@@ -1654,21 +1654,21 @@ static SEXP pos2env(int pos, SEXP call)
     SEXP env;
     if (pos == NA_INTEGER || pos < -1 || pos == 0)
     {
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
         env = call; /* just for -Wall */
     }
     else if (pos == -1)
     {
         env = R_GlobalContext->sysparent;
         if (R_GlobalEnv != R_NilValue && env == R_NilValue)
-            errorcall(call, "invalid argument");
+            errorcall(call, R_MSG_IA);
     }
     else
     {
         for (env = R_GlobalEnv; env != R_NilValue && pos > 1; env = ENCLOS(env))
             pos--;
         if (pos != 1)
-            error("invalid argument");
+            error(R_MSG_IA);
     }
     return env;
 }

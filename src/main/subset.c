@@ -112,7 +112,7 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
             tmp = CDR(tmp);
             break;
         default:
-            errorcall(call, "non-subsetable object");
+            errorcall(call, R_MSG_ob_nonsub);
         }
     }
     return result;
@@ -192,7 +192,7 @@ static SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
         if (ii != NA_INTEGER)
         {
             if (ii < 1 || ii > nr)
-                errorcall(call, "subscript out of bounds");
+                errorcall(call, R_MSG_subs_o_b);
             ii--;
         }
         for (j = 0; j < ncs; j++)
@@ -201,7 +201,7 @@ static SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
             if (jj != NA_INTEGER)
             {
                 if (jj < 1 || jj > nc)
-                    errorcall(call, "subscript out of bounds");
+                    errorcall(call, R_MSG_subs_o_b);
                 jj--;
             }
             ij = i + j * nrs;
@@ -346,7 +346,7 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
                 goto assignLoop;
             }
             if (jj < 1 || jj > INTEGER(xdims)[j])
-                errorcall(call, "subscript out of bounds");
+                errorcall(call, R_MSG_subs_o_b);
             ii += (jj - 1) * offset[j];
         }
 
@@ -539,7 +539,7 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(ax = x);
 
     if (!isVector(ax))
-        errorcall(call, "object is not subsetable");
+        errorcall(call, R_MSG_ob_nonsub);
 
     /* This is the actual subsetting code. */
     /* The separation of arrays and matrices is purely an optimization. */
@@ -643,7 +643,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
                     return R_NilValue;
                 }
                 else
-                    errorcall(call, "subscript out of bounds");
+                    errorcall(call, R_MSG_subs_o_b);
             }
         }
         else
@@ -658,7 +658,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
                 INTEGER(index)[i] = get1index(CAR(subs), VECTOR(dimnames)[i], INTEGER(index)[i], 1);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
-                    errorcall(call, "subscript out of bounds");
+                    errorcall(call, R_MSG_subs_o_b);
             }
             offset = 0;
             for (i = (nsubs - 1); i > 0; i--)
@@ -668,7 +668,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-        errorcall(call, "object is not subsettable");
+        errorcall(call, R_MSG_ob_nonsub);
 
     if (isPairList(x))
     {
@@ -740,13 +740,13 @@ static int pstrmatch(SEXP target, SEXP input, int slen)
         return NO_MATCH;
 }
 
-/* The $ subset operator.  We need to be sure to only evaluate */
-/* the first argument.	The second will be a symbol that needs */
-/* to be matched, not evaluated. */
-
+/* The $ subset operator.
+   We need to be sure to only evaluate the first argument.
+   The second will be a symbol that needs to be matched, not evaluated.
+*/
 SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, y, input, nlist, ans, arg1;
+    SEXP x, y, input, nlist, ans;
     int slen;
 
     checkArity(op, args);
@@ -762,8 +762,7 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
         STRING(input)[0] = STRING(nlist)[0];
     else
     {
-        errorcall(call, "invalid subscript type");
-        return R_NilValue; /*-Wall*/
+        errorcall_return(call, "invalid subscript type");
     }
 
     /* replace the second argument with a string */

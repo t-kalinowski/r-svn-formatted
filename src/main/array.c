@@ -840,7 +840,7 @@ SEXP do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
             VECTOR(r)[j] = VECTOR(a)[i];
         }
     default:
-        errorcall(call, "invalid argument");
+        errorcall(call, R_MSG_IA);
     }
 
     if (INTEGER(CAR(CDDR(args)))[0])
