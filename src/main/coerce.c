@@ -233,9 +233,12 @@ SEXP do_as(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* as.name */
     case 102:
-        if (!isString(CAR(args)) || LENGTH(CAR(args)) < 0 || streql(CHAR(STRING(CAR(args))[0]), ""))
+        u = CAR(args);
+        if (TYPEOF(u) == SYMSXP)
+            return u;
+        if (!isString(u) || LENGTH(u) < 0 || streql(CHAR(STRING(u)[0]), ""))
             errorcall(call, "character argument required\n");
-        return install(CHAR(STRING(CAR(args))[0]));
+        return install(CHAR(STRING(u)[0]));
     default:
         errorcall(call, "unimplemented coersion\n");
     }
@@ -612,7 +615,12 @@ SEXP coerceList(SEXP v, SEXPTYPE type)
         i = 0;
         t = v;
         for (; v != R_NilValue; v = CDR(v), i++)
-            STRING(rval)[i] = STRING(deparse1(CAR(v), 0))[0];
+        {
+            if (isString(CAR(v)) && length(CAR(v)) == 1)
+                STRING(rval)[i] = STRING(CAR(v))[0];
+            else
+                STRING(rval)[i] = STRING(deparse1(CAR(v), 0))[0];
+        }
     }
     else if (type == EXPRSXP)
     {

@@ -1374,7 +1374,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             error("number of elements supplied larger than number of elements to replace\n");
         if (nsubs == 1)
         {
-            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol));
+            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), 0);
             if (offset < 0 || offset >= LENGTH(x))
                 error("[[]] subscript out of bounds\n");
         }
@@ -1386,7 +1386,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
             {
-                INTEGER(index)[i] = get1index(CAR(subs), isList(names) ? CAR(names) : R_NilValue);
+                INTEGER(index)[i] = get1index(CAR(subs), isList(names) ? CAR(names) : R_NilValue, 0);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
                     error("[[]] subscript out of bounds\n");
@@ -1528,7 +1528,7 @@ SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
             names = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < ndims; i++)
             {
-                INTEGER(index)[i] = get1index(CAR(subs), CAR(names));
+                INTEGER(index)[i] = get1index(CAR(subs), CAR(names), 0);
                 subs = CDR(subs);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])
                     error("[[]] subscript out of bounds\n");

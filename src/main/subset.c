@@ -33,8 +33,6 @@
  *
  */
 
-int get1index(SEXP, SEXP);
-
 static void SetArgsforUseMethod(SEXP x)
 {
     char buf[4];
@@ -751,7 +749,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         if (nsubs == 1)
         {
-            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol));
+            offset = get1index(CAR(subs), getAttrib(x, R_NamesSymbol), 1);
             if (offset < 0 || offset >= length(x))
                 /* a bold attempt to get the same behaviour
                    for $ and [[ */
@@ -772,7 +770,7 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
             dimnames = getAttrib(x, R_DimNamesSymbol);
             for (i = 0; i < nsubs; i++)
             {
-                INTEGER(index)[i] = get1index(CAR(subs), CAR(dimnames));
+                INTEGER(index)[i] = get1index(CAR(subs), CAR(dimnames), 1);
                 subs = CDR(subs);
                 dimnames = CDR(dimnames);
                 if (INTEGER(index)[i] < 0 || INTEGER(index)[i] >= INTEGER(dims)[i])

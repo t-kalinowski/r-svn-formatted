@@ -120,20 +120,39 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         /* first find out how many splits there will be */
         strcpy(buff, CHAR(STRING(x)[i]));
-        split = CHAR(STRING(tok)[i % tlen]);
-        ntok = 0;
-        if (strtok(buff, split) != NULL)
-            do
-            {
-                ntok++;
-            } while (strtok(NULL, split) != NULL);
-        PROTECT(t = allocVector(STRSXP, ntok));
-        strcpy(buff, CHAR(STRING(x)[i]));
-        pt = strtok(buff, split);
-        for (j = 0; j < ntok; j++)
+        if (tlen > 0)
         {
-            STRING(t)[j] = mkChar(pt);
-            pt = strtok(NULL, split);
+            split = CHAR(STRING(tok)[i % tlen]);
+            ntok = 0;
+            if (strtok(buff, split) != NULL)
+                do
+                {
+                    ntok++;
+                } while (strtok(NULL, split) != NULL);
+        }
+        else
+            ntok = strlen(buff);
+
+        PROTECT(t = allocVector(STRSXP, ntok));
+        if (tlen > 0)
+        {
+            strcpy(buff, CHAR(STRING(x)[i]));
+            pt = strtok(buff, split);
+            for (j = 0; j < ntok; j++)
+            {
+                STRING(t)[j] = mkChar(pt);
+                pt = strtok(NULL, split);
+            }
+        }
+        else
+        {
+            char bf[2];
+            bf[1] = '\0';
+            for (j = 0; j < ntok; j++)
+            {
+                bf[0] = buff[j];
+                STRING(t)[j] = mkChar(bf);
+            }
         }
         CAR(w) = t;
         UNPROTECT(1);

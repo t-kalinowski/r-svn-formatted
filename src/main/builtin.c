@@ -157,8 +157,8 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP a, objs, file, fill, sepr, labs, s;
     FILE *savefp;
     int havefile, append;
-    int w, i, n, pwidth, width, sepw, lablen, ntot, nlsep;
-    char *p;
+    int w, i, n, pwidth, width, sepw, lablen, ntot, nlsep, nlines;
+    char *p, buf[512];
 
     checkArity(op, args);
 
@@ -233,6 +233,7 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     width = 0;
     ntot = 0;
+    nlines = 0;
     for (a = objs; a != R_NilValue; a = CDR(a))
     {
         s = CAR(a);
@@ -243,18 +244,25 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (labs != R_NilValue && a == objs)
             {
-                Rprintf("%s ", CHAR(STRING(labs)[0]));
-                width += strlen(CHAR(STRING(labs)[ntot % lablen])) + 1;
-                ntot++;
+                Rprintf("%s ", CHAR(STRING(labs)[nlines]));
+                width += strlen(CHAR(STRING(labs)[nlines % lablen])) + 1;
+                nlines++;
             }
             if (isString(s))
                 p = CHAR(STRING(s)[0]);
             else
+            {
                 p = EncodeElement(s, 0, 0);
+                strcpy(buf, p);
+                p = buf;
+            }
             w = strlen(p);
             cat_sepwidth(sepr, &sepw, ntot);
             if (a != objs && (width + w + sepw > pwidth))
-                cat_newline(labs, &width, lablen, ntot);
+            {
+                cat_newline(labs, &width, lablen, nlines);
+                nlines++;
+            }
             for (i = 0; i < n; i++, ntot++)
             {
                 Rprintf("%s", p);
@@ -265,10 +273,18 @@ SEXP do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                     if (isString(s))
                         p = CHAR(STRING(s)[i + 1]);
                     else
+                    {
                         p = EncodeElement(s, i + 1, 0);
+                        strcpy(buf, p);
+                        p = buf;
+                    }
+                    w = strlen(p);
                     cat_sepwidth(sepr, &sepw, ntot);
                     if ((width + w + sepw > pwidth) && pwidth)
-                        cat_newline(labs, &width, lablen, ntot);
+                    {
+                        cat_newline(labs, &width, lablen, nlines);
+                        nlines++;
+                    }
                 }
             }
         }

@@ -89,7 +89,7 @@ static SEXP cross(SEXP s1, SEXP s2)
             v1 = strlen(CHAR(STRING(levs1)[i]));
             for (j = 0; j < l2; j++)
             {
-                v2 = strlen(CHAR(STRING(levs2)[i]));
+                v2 = strlen(CHAR(STRING(levs2)[j]));
                 STRING(levs)[k] = allocString(v1 + v2 + 1);
                 sprintf(CHAR(STRING(levs)[k]), "%s:%s", CHAR(STRING(levs1)[i]), CHAR(STRING(levs2)[j]));
                 k++;
