@@ -630,6 +630,6 @@ int PicTeXDeviceDriver(DevDesc *dd, char *filename, char *bg, char *fg, double w
     ptd->debug = debug;
 
     dd->deviceSpecific = (void *)ptd;
-
+    dd->displayListOn = 0;
     return 1;
 }
