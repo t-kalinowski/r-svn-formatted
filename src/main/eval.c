@@ -17,6 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* File processed for NEWLIST */
+
 #define ARGUSED(x) LEVELS(x)
 
 #include "Defn.h"
@@ -24,9 +26,9 @@
 SEXP do_browser(SEXP, SEXP, SEXP, SEXP);
 
 #ifdef Macintosh
-/*  The universe will end if the Stack on the Mac grows
- *  until it hits the heap.  This code places a limit
- *  on the depth to which eval can recurse.  */
+
+/* The universe will end if the Stack on the Mac grows til it hits the heap. */
+/* This code places a limit on the depth to which eval can recurse. */
 
 #define EVAL_LIMIT 100
 extern void isintrpt();
@@ -37,21 +39,19 @@ extern void isintrpt();
 /* can trap errors, and currently does not reset the */
 /* limit to the right value. */
 
-/* not ifdef'ed to keep main etc happy */
+/* These are not ifdef'ed to keep main etc happy. */
 extern int R_EvalDepth;
 extern int R_EvalCount;
 
-/* eval - return value of e evaluated in rho */
+/* Return value of "e" evaluated in "rho". */
 
 SEXP eval(SEXP e, SEXP rho)
 {
     SEXP op, tmp, val;
 
-    /*
-     * The use of depthsave below is necessary because of the possibility
-     * of non-local returns from evaluation.  Without this an "expression
-     * too complex error" is quite likely.
-     */
+    /* The use of depthsave below is necessary because of the possibility */
+    /* of non-local returns from evaluation.  Without this an "expression */
+    /* too complex error" is quite likely. */
 
 #ifdef EVAL_LIMIT
     int depthsave = R_EvalDepth++;
@@ -189,7 +189,8 @@ SEXP eval(SEXP e, SEXP rho)
     return (tmp);
 }
 
-/* applyClosure - apply SEXP op of type CLOSXP to actuals */
+/* Apply SEXP op of type CLOSXP to actuals */
+
 SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 {
     int nargs;
@@ -228,7 +229,6 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     }
 
     /* Fix up any extras that were supplied by usemethod. */
-
     if (suppliedenv != R_NilValue)
     {
         for (tmp = FRAME(suppliedenv); tmp != R_NilValue; tmp = CDR(tmp))
@@ -458,8 +458,10 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ans = eval(body, rho);
                 break;
             case EXPRSXP:
-                VECTOR(v)[0] = VECTOR(val)[i];
-                setVar(sym, v, rho);
+#ifdef NEWLIST
+            case VECSXP:
+#endif
+                setVar(sym, VECTOR(val)[i], rho);
                 ans = eval(body, rho);
                 break;
             case LISTSXP:
@@ -497,14 +499,12 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, "missing value where logical needed\n");
         else if (!cond)
             break;
-
         if (bgn && DEBUG(rho))
         {
             Rprintf("debug: ");
             PrintValue(CAR(args));
             do_browser(call, op, args, rho);
         }
-
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
         if ((cond = sigsetjmp(cntxt.cjmpbuf, 1)))
         {
@@ -548,7 +548,6 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
             PrintValue(CAR(args));
             do_browser(call, op, args, rho);
         }
-
         begincontext(&cntxt, CTXT_LOOP, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
         if ((cond = sigsetjmp(cntxt.cjmpbuf, 1)))
         {
@@ -583,7 +582,6 @@ SEXP do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s;
-
     if (args == R_NilValue)
     {
         s = R_NilValue;
@@ -609,13 +607,10 @@ SEXP do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, v, vals;
     int nv = 0;
-
     /* We do the evaluation here so that we */
     /* can tag any untagged return values if */
     /* they are specified by symbols */
-
     PROTECT(vals = evalList(args, rho));
-
     a = args;
     v = vals;
     while (!isNull(a))
@@ -656,28 +651,24 @@ SEXP do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
     return mkCLOSXP(CAR(args), CADR(args), rho);
 }
 
-/* Assignments for complex LVAL specifications		*/
-/* This is the stuff that nightmares are made of ...	*/
-
-/* evalseq - preprocess the LHS of an assignment.	*/
-/* Given an expression, evalseq builds a list of	*/
-/* partial values for the exression.  For example,	*/
-/* the assignment x$a[3] <- 10 with LHS x$a[3] yields	*/
-/* the (improper) list:					*/
-/*							*/
-/*	 (eval(x$a[3])  eval(x$a)  eval(x)  .  x)	*/
-/*							*/
-/* Note the terminating symbol.				*/
-/* The partial evaluations are carried out efficiently	*/
-/* using previously computed components.		*/
+/*
+ *  Assignments for complex LVAL specifications. This is the stuff that
+ *  nightmares are made of ...  Note that "evalseq" preprocesses the LHS
+ *  of an assignment.  Given an expression, it builds a list of partial
+ *  values for the exression.  For example, the assignment x$a[3] <- 10
+ *  with LHS x$a[3] yields the (improper) list:
+ *
+ *	 (eval(x$a[3])  eval(x$a)  eval(x)  .  x)
+ *
+ *  (Note the terminating symbol).  The partial evaluations are carried
+ *  out efficiently using previously computed components.
+ */
 
 static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, SEXP tmploc)
 {
     SEXP val, nval, nexpr;
-
     if (isNull(expr))
         error("invalid (NULL) left side of assignment\n");
-
     if (isSymbol(expr))
     {
         PROTECT(expr);
@@ -696,12 +687,9 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, SEXP tmploc)
     {
         PROTECT(expr);
         PROTECT(val = evalseq(CADR(expr), rho, forcelocal, tmploc));
-
         CAR(tmploc) = CAR(val);
-
         PROTECT(nexpr = LCONS(TAG(tmploc), CDDR(expr)));
         PROTECT(nexpr = LCONS(CAR(expr), nexpr));
-
         nval = eval(nexpr, rho);
         UNPROTECT(4);
         return CONS(nval, val);
@@ -712,7 +700,7 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, SEXP tmploc)
 }
 
 /* Main entry point for complex assignments */
-/* 1. We have checked to see that CAR(args) is a LANGSXP */
+/* We have checked to see that CAR(args) is a LANGSXP */
 
 static char *asym[] = {":=", "<-", "<<-"};
 
@@ -728,7 +716,6 @@ SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* a <- b <- c is parsed as a <- (b <- c) */
 
     PROTECT(saverhs = rhs = eval(CADR(args), rho));
-
     tmpsym = install("*tmp*");
     defineVar(tmpsym, R_NilValue, rho);
     tmploc = FRAME(rho);
@@ -736,7 +723,6 @@ SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
         tmploc = CDR(tmploc);
 
     /* do a partial evaluation down through the lhs */
-
     lhs = evalseq(CADR(expr), rho, PRIMVAL(op) == 1, tmploc);
 
     PROTECT(lhs);
@@ -747,10 +733,8 @@ SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
         sprintf(buf, "%s<-", CHAR(PRINTNAME(CAR(expr))));
         tmp = install(buf);
         UNPROTECT(1);
-
         CAR(tmploc) = CAR(lhs);
         PROTECT(rhs = replaceCall(tmp, TAG(tmploc), CDDR(expr), rhs));
-
         rhs = eval(rhs, rho);
         UNPROTECT(1);
         PROTECT(rhs);
@@ -761,7 +745,6 @@ SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     CAR(tmploc) = CAR(lhs);
     PROTECT(expr = assignCall(install(asym[PRIMVAL(op)]), CDR(lhs), install(buf), TAG(tmploc), CDDR(expr), rhs));
     expr = eval(expr, rho);
-
     UNPROTECT(4);
     unbindVar(tmpsym, rho);
     return duplicate(saverhs);
@@ -774,12 +757,11 @@ SEXP do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
     return CAR(args);
 }
 
-/*  do_set - assignment in its various forms  */
+/*  Assignment in its various forms  */
 
 SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s;
-
     if (length(args) != 2)
         WrongArgCount(asym[PRIMVAL(op)]);
     if (isString(CAR(args)))
@@ -807,7 +789,6 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else
             errorcall(call, "invalid (do_set) left-hand side to assignment\n");
-
     case 2: /* <<- */
         if (isSymbol(CAR(args)))
         {
@@ -832,12 +813,10 @@ SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue; /*NOTREACHED*/
 }
 
-/*  evalList  -  evaluate each expression in el  */
-
-/*  This is a naturally recursive algorithm, but we
- *  use the iterative form below because it is does
- *  not cause growth of the pointer protection stack,
- *  and because it is a little more efficient.  */
+/* Evaluate each expression in "el" in the environment "rho".  This is */
+/* a naturally recursive algorithm, but we use the iterative form below */
+/* because it is does not cause growth of the pointer protection stack, */
+/* and because it is a little more efficient. */
 
 SEXP evalList(SEXP el, SEXP rho)
 {
@@ -848,12 +827,12 @@ SEXP evalList(SEXP el, SEXP rho)
     while (el != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it */
-        /* is bound to.  If its binding is Null (i.e. zero length) */
+        /* If we have a ... symbol, we look to see what it is */
+        /* bound to.  If its binding is Null (i.e. zero length) */
         /* we just ignore it and return the cdr with all its */
         /* expressions evaluated; if it is bound to a ... list */
         /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value. */
+        /* the list of resulting values into the return value.  */
         /* Anything else bound to a ... symbol is an error */
 
         if (CAR(el) == R_DotsSymbol)
@@ -884,12 +863,10 @@ SEXP evalList(SEXP el, SEXP rho)
     return CDR(ans);
 }
 
-/*  evalListKeepMissing  -  evaluate each expression in el  */
-
-/*  This is a naturally recursive algorithm, but we
- *  use the iterative form below because it is does
- *  not cause growth of the pointer protection stack,
- *  and because it is a little more efficient.  */
+/* A slight variation of evaluating each expression in "el" in "rho". */
+/* This is a naturally recursive algorithm, but we use the iterative */
+/* form below because it is does not cause growth of the pointer */
+/* protection stack, and because it is a little more efficient. */
 
 SEXP evalListKeepMissing(SEXP el, SEXP rho)
 {
@@ -900,12 +877,12 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
     while (el != R_NilValue)
     {
 
-        /* If we have a ... symbol, we look to see what it */
-        /* is bound to.  If its binding is Null (i.e. zero length) */
+        /* If we have a ... symbol, we look to see what it is */
+        /* bound to.  If its binding is Null (i.e. zero length) */
         /* we just ignore it and return the cdr with all its */
         /* expressions evaluated; if it is bound to a ... list */
         /* of promises, we force all the promises and then splice */
-        /* the list of resulting values into the return value. */
+        /* the list of resulting values into the return value.  */
         /* Anything else bound to a ... symbol is an error */
 
         if (CAR(el) == R_DotsSymbol)
@@ -945,12 +922,10 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
     return CDR(ans);
 }
 
-/*  promiseArgs - create a promise to evaluate each argument  */
-
-/*  This is a naturally recursive algorithm, but we
- *  use the iterative form below because it is does
- *  not cause growth of the pointer protection stack,
- *  and because it is a little more efficient.  */
+/* Create a promise to evaluate each argument.  Although this is most */
+/* naturally attacked with a recursive algorithm, we use the iterative */
+/* form below because it is does not cause growth of the pointer */
+/* protection stack, and because it is a little more efficient. */
 
 SEXP promiseArgs(SEXP el, SEXP rho)
 {
@@ -1005,7 +980,7 @@ SEXP promiseArgs(SEXP el, SEXP rho)
     return CDR(ans);
 }
 
-/*  CheckFormals - check that each formal is a symbol */
+/* Check that each formal is a symbol */
 
 void CheckFormals(SEXP ls)
 {
@@ -1015,27 +990,23 @@ void CheckFormals(SEXP ls)
                 error("invalid formal argument list for \"function\"\n");
 }
 
-/*  WrongArgCount - error recovery for incorrect  */
-/*                  argument count error.         */
+/* Error recovery for incorrect argument count error. */
 
 void WrongArgCount(char *s)
 {
     error("incorrect number of arguments to \"%s\"\n", s);
 }
 
-/*  do_eval - evaluate the first argument   */
-/*            in the environment specified  */
-/*            by the second argument.       */
+/* Evaluate the first argument in the environment specified by */
+/* the second argument. */
 
 SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP expr, env;
     int nback;
     checkArity(op, args);
-
     expr = CAR(args);
     env = CADR(args);
-
     switch (TYPEOF(env))
     {
     case NILSXP:
@@ -1060,7 +1031,6 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         errorcall(call, "invalid second argument\n");
     }
-
     if (isLanguage(expr) || isExpression(expr) || isSymbol(expr))
     {
         PROTECT(expr);
@@ -1075,11 +1045,8 @@ SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;
     SEXP t, s, ans;
-
     cptr = R_GlobalContext;
-
     /* get the args supplied */
-
     while (cptr != NULL)
     {
         if (cptr->callflag == CTXT_RETURN && cptr->cloenv == rho)
@@ -1087,9 +1054,7 @@ SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
         cptr = cptr->nextcontext;
     }
     args = cptr->promargs;
-
     /* get the env recall was called from */
-
     s = R_GlobalContext->sysparent;
     while (cptr != NULL)
     {
@@ -1099,7 +1064,6 @@ SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (cptr == NULL)
         error("Recall called from outside a closure\n");
-
     t = CAR(cptr->call);
     s = findFun(t, cptr->sysparent);
     PROTECT(t = LCONS(t, args));
@@ -1116,15 +1080,14 @@ SEXP EvalArgs(SEXP el, SEXP rho, int dropmissing)
         return evalListKeepMissing(el, rho);
 }
 
-/*  DispatchOrEval - This code is used in internal functions
- *  which dispatch to object methods (e.g. "[" or "[[").
- *  The code either builds promises and dispatches to the
- *  appropriate method, or it evauates the (unevaluated)
- *  arguments it comes in with and returns them so that
- *  the generic built-in C code can continue.
- *
- * To call this an ugly hack would be to insult all
- * existing ugly hacks at large in the world.  */
+/* DispatchOrEval is used in internal functions which dispatch to */
+/* object methods (e.g. "[" or "[[").  The code either builds promises */
+/* and dispatches to the appropriate method, or it evauates the */
+/* (unevaluated) arguments it comes in with and returns them so that */
+/* the generic built-in C code can continue. */
+
+/* To call this an ugly hack would be to insult all existing ugly hacks */
+/* at large in the world. */
 
 int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropmissing)
 {
@@ -1134,9 +1097,7 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
 
     /* NEW */
     PROTECT(args = promiseArgs(args, rho));
-
     PROTECT(x = eval(CAR(args), rho));
-
     pt = strrchr(CHAR(PRINTNAME(CAR(call))), '.');
 
     if (isObject(x) && (pt == NULL || strcmp(pt, ".default")))
@@ -1153,27 +1114,20 @@ int DispatchOrEval(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans, int dropm
         }
         endcontext(&cntxt);
     }
-    /*
-     else
-         PROTECT(args);
-   */
+    /* else PROTECT(args); */
     *ans = CONS(x, EvalArgs(CDR(args), rho, dropmissing));
     TAG(*ans) = CreateTag(TAG(args));
     UNPROTECT(2);
     return 0;
 }
 
-/*  dominates -  compare two class attributes and  */
-/*               decide whether one dominates the  */
-/*               other; for now a pretty simple    */
-/*               version but it could get more     */
-/*               complicated comparing factors     */
-/*               (ordered vs not) etc.             */
+/* Compare two class attributes and decide whether one dominates the */
+/* other.  For now this is a pretty simple version but it could get */
+/* more complicated comparing factors (ordered vs not) etc. */
 
 static SEXP dominates(SEXP cclass, SEXP newobj)
 {
     SEXP t;
-
     t = getAttrib(newobj, R_ClassSymbol);
     if (cclass == R_NilValue)
         return t;
@@ -1185,11 +1139,11 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
     int i, j, nargs, whichclass, set;
     SEXP class, s, t, m, meth, sxp, gr, newrho;
     char buf[512], generic[128], *pt;
-
     /* check whether we are processing the default method */
     sprintf(buf, "%s", CHAR(PRINTNAME(CAR(call))));
     pt = strtok(buf, ".");
     pt = strtok(NULL, ".");
+
     if (pt != NULL && !strcmp(pt, "default"))
         return 0;
 
@@ -1212,9 +1166,9 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
 
     j = length(class);
     sxp = R_NilValue;
-    /** Need to interleave looking for group and generic methods
-     * eg if class(x) is "foo" "bar" then x>3 should invoke "Ops.foo" rather
-     * than ">.bar"  **/
+    /* Need to interleave looking for group and generic methods */
+    /* eg if class(x) is "foo" "bar" then x>3 should invoke */
+    /* "Ops.foo" rather than ">.bar" */
     for (whichclass = 0; whichclass < j; whichclass++)
     {
         sprintf(buf, "%s.%s", generic, CHAR(STRING(class)[whichclass]));
@@ -1278,10 +1232,10 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
 
     PROTECT(t = LCONS(meth, CDR(call)));
 
-    /* the arguments have been evaluated; since we are passing them
-     * out to a closure we need to wrap them in promises so that
-     * they get duplicated and things like missing/substitute work
-     *								*/
+    /* the arguments have been evaluated; since we are passing them */
+    /* out to a closure we need to wrap them in promises so that */
+    /* they get duplicated and things like missing/substitute work. */
+
     PROTECT(s = promiseArgs(CDR(call), rho));
     if (length(s) != length(args))
         errorcall(call, "dispatch error\n");

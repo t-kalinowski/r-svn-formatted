@@ -42,6 +42,7 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(2);
     return s;
 }
+
 static void substr(char *buf, char *str, int sa, int so)
 {
     int i;
@@ -99,47 +100,51 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
     return s;
 }
 
-/* strsplit is going to split the strings in the first argument
-   into tokens depending on the second argument. The characters
-   of the second argument are used to split the first argument.
-   A list of vectors is returned of length equal to the input vector x,
-   each element of the list is the collection of splits for the corresponding
-   element of x.
- */
+/* strsplit is going to split the strings in the first argument into */
+/* tokens depending on the second argument. The characters of the second */
+/* argument are used to split the first argument.  A list of vectors is */
+/* returned of length equal to the input vector x, each element of the */
+/* list is the collection of splits for the corresponding element of x. */
+
 SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP s, t, x, tok, w;
+    SEXP s, t, x, tok;
+#ifndef NEWLIST
+    SEXP w;
+#endif
     int i, j, len, tlen, ntok;
     char buff[MAXELTSIZE], *pt, *split = "";
 
     checkArity(op, args);
     x = CAR(args);
     tok = CADR(args);
-
     if (!isString(x) || !isString(tok))
         error("invalid type to strsplit\n");
-
     len = LENGTH(x);
     tlen = LENGTH(tok);
-    PROTECT(s = allocList(len));
-    w = s;
+#ifdef NEWLIST
+    PROTECT(s = allocVector(VECSXP, len));
+#else
+    PROTECT(w = s = allocList(len));
+#endif
     for (i = 0; i < len; i++)
     {
-        /* first find out how many splits there will be */
+        /* find out how many splits there will be */
         strcpy(buff, CHAR(STRING(x)[i]));
         if (tlen > 0)
         {
             split = CHAR(STRING(tok)[i % tlen]);
             ntok = 0;
             if (strtok(buff, split) != NULL)
+            {
                 do
                 {
                     ntok++;
                 } while (strtok(NULL, split) != NULL);
+            }
         }
         else
             ntok = strlen(buff);
-
         PROTECT(t = allocVector(STRSXP, ntok));
         if (tlen > 0)
         {
@@ -161,24 +166,26 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 STRING(t)[j] = mkChar(bf);
             }
         }
-        CAR(w) = t;
         UNPROTECT(1);
+#ifdef NEWLIST
+        VECTOR(s)[i] = t;
+#else
+        CAR(w) = t;
         w = CDR(w);
+#endif
     }
     UNPROTECT(1);
     return s;
 }
-/* abbreviate long names in the S-designated fashion; first spaces then
-   lower case vowels; then lower case consonants; then upper case letters
-   special characters
-   letters are dropped from the end of words and at least one letter is
-   retained from each word
-   if use.classes is FALSE then the only differentiation is between white
-   space and letters
-   if unique abbreviations are not produced letters are added until the
-   results are unique (duplicated names are removed prior to entry).
-   names, minlength, use.classes, dot
-*/
+
+/* Abbreviate long names in the S-designated fashion; first spaces then */
+/* lower case vowels; then lower case consonants; then upper case letters */
+/* special characters.  Letters are dropped from the end of words and at */
+/* least one letter is retained from each word.  If use.classes is FALSE */
+/* then the only differentiation is between white space and letters.  If */
+/* unique abbreviations are not produced letters are added until the */
+/* results are unique (duplicated names are removed prior to entry). */
+/* names, minlength, use.classes, dot */
 
 static SEXP stripchars(SEXP inchar, int minlen)
 {
@@ -189,6 +196,7 @@ static SEXP stripchars(SEXP inchar, int minlen)
     upper = strlen(buff1) - 1;
 
     /*remove beginning blanks */
+
     j = 0;
     for (i = 0; i < upper; i++)
         if (isspace(buff1[i]))
@@ -249,6 +257,7 @@ static SEXP stripchars(SEXP inchar, int minlen)
     }
 
 donesc:
+
     upper = strlen(buff1);
     if (upper > minlen)
         for (i = upper - 1; i > 0; i--)
@@ -401,10 +410,9 @@ SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef HAVE_REGCOMP
 
-/*  The following R functions do substitution for     */
-/*  regular expressions, either once or globally.     */
-/*  The functions are loosely patterned on the "sub"  */
-/*  and "gsub" in "nawk".			      */
+/* The following R functions do substitution for regular expressions, */
+/* either once or globally.  The functions are loosely patterned on the */
+/* "sub" and "gsub" in "nawk". */
 
 static int length_adj(char *repl, regmatch_t *regmatch, int nsubexpr)
 {

@@ -68,7 +68,7 @@ static int isOne(SEXP x)
     return asReal(x) == 1.0;
 }
 
-/* MatchVar - Determine whether two ``variables'' are */
+/* MatchVar determines whether two ``variables'' are */
 /* identical.  Expressions are identical if they have */
 /* the same list structure and their atoms are identical. */
 /* This is just EQUAL from lisp. */
@@ -80,42 +80,30 @@ static int MatchVar(SEXP var1, SEXP var2)
         return 1;
     if (isNull(var1) || isNull(var2))
         return 0;
-
     /* Non-atomic objects - compare CARs & CDRs */
-
     if ((isList(var1) || isLanguage(var1)) && (isList(var2) || isLanguage(var2)))
         return MatchVar(CAR(var1), CAR(var2)) && MatchVar(CDR(var1), CDR(var2));
-
     /* Symbols */
-
     if (isSymbol(var1) && isSymbol(var2))
         return (var1 == var2);
-
     /* Literal Numerics */
-
     if (isNumeric(var1) && isNumeric(var2))
         return (asReal(var1) == asReal(var2));
-
     /* Nothing else matches */
-
     return 0;
 }
 
-/* InstallVar - Locate a ``variable'' in the model */
-/* variable list.  Add it to the list if not found. */
+/* InstallVar locates a ``variable'' in the model */
+/* variable list;  adding it to the list if not found. */
 
 static int InstallVar(SEXP var)
 {
     SEXP v;
     int index;
-
     /* Check that variable is legitimate */
-
     if (!isSymbol(var) && !isLanguage(var) && !isZeroOne(var))
         error("invalid term in model formula\n");
-
     /* Lookup/Install it */
-
     index = 0;
     for (v = varlist; CDR(v) != R_NilValue; v = CDR(v))
     {
@@ -127,7 +115,7 @@ static int InstallVar(SEXP var)
     return index + 1;
 }
 
-/* if there is a dotsxp being expanded then we need to see */
+/* If there is a dotsxp being expanded then we need to see */
 /* whether any of the variables in the data frame match with */
 /* the variable on the lhs. If so they shouldn't be included */
 /* in the factors */
@@ -136,7 +124,6 @@ void CheckRHS(SEXP v)
 {
     int i, j;
     SEXP s, t;
-
     while ((isList(v) || isLanguage(v)) && v != R_NilValue)
     {
         CheckRHS(CAR(v));
@@ -163,7 +150,7 @@ void CheckRHS(SEXP v)
     }
 }
 
-/* ExtractVars - Recursively extract the variables */
+/* ExtractVars recursively extracts the variables */
 /* in a model formula.  It calls InstallVar to do */
 /* the installation.  The code takes care of unary */
 /* + and minus.  No checks are made of the other */
@@ -173,7 +160,6 @@ static void ExtractVars(SEXP formula, int checkonly)
 {
     int len, i;
     SEXP v;
-
     if (isNull(formula) || isZeroOne(formula))
         return;
     if (isSymbol(formula))
@@ -275,7 +261,7 @@ static void ExtractVars(SEXP formula, int checkonly)
     error("invalid model formula\n");
 }
 
-/* AllocTerm - allocate an integer array for */
+/* AllocTerm allocates an integer array for */
 /* bit string representation of a model term */
 
 static SEXP AllocTerm()
@@ -287,7 +273,7 @@ static SEXP AllocTerm()
     return term;
 }
 
-/* SetBit - set bit ``whichBit'' to value ``value'' */
+/* SetBit sets bit ``whichBit'' to value ``value'' */
 /* in the bit string representation of a term. */
 
 static void SetBit(SEXP term, int whichBit, int value)
@@ -304,7 +290,7 @@ static void SetBit(SEXP term, int whichBit, int value)
     tmp = ((unsigned *)INTEGER(term))[word];
 }
 
-/* GetBit - get bit ``whichBit'' from the */
+/* GetBit gets bit ``whichBit'' from the */
 /* bit string representation of a term. */
 
 static int GetBit(SEXP term, int whichBit)
@@ -315,35 +301,33 @@ static int GetBit(SEXP term, int whichBit)
     return ((((unsigned *)INTEGER(term))[word]) >> offset) & 1;
 }
 
-/* OrBits - compute a new (bit string) term */
-/* which contains the logcial Or of the bits */
+/* OrBits computes a new (bit string) term */
+/* which contains the logical OR of the bits */
 /* in ``term1'' and ``term2''. */
 
 static SEXP OrBits(SEXP term1, SEXP term2)
 {
     SEXP term;
     int i;
-
     term = AllocTerm();
     for (i = 0; i < nwords; i++)
         INTEGER(term)[i] = INTEGER(term1)[i] | INTEGER(term2)[i];
     return term;
 }
 
-/* BitCount - count the number of ``on'' */
+/* BitCount counts the number of ``on'' */
 /* bits in a term */
 
 static int BitCount(SEXP term)
 {
     int i, sum;
-
     sum = 0;
     for (i = 1; i <= nvar; i++)
         sum += GetBit(term, i);
     return sum;
 }
 
-/* TermZero - test whether a (bit string) term is zero */
+/* TermZero tests whether a (bit string) term is zero */
 
 static int TermZero(SEXP term)
 {
@@ -354,7 +338,7 @@ static int TermZero(SEXP term)
     return val;
 }
 
-/* TermEqual - test two (bit string) terms for equality. */
+/* TermEqual tests two (bit string) terms for equality. */
 
 static int TermEqual(SEXP term1, SEXP term2)
 {
@@ -365,13 +349,12 @@ static int TermEqual(SEXP term1, SEXP term2)
     return val;
 }
 
-/* StripTerm - strip the specified term from */
+/* StripTerm strips the specified term from */
 /* the given list.  This mutates the list. */
 
 static SEXP StripTerm(SEXP term, SEXP list)
 {
     SEXP tail;
-
     if (TermZero(term))
         intercept = 0;
     if (list == R_NilValue)
@@ -383,9 +366,9 @@ static SEXP StripTerm(SEXP term, SEXP list)
     return list;
 }
 
-/* TrimRepeats - removes duplicates of (bit string) terms */
+/* TrimRepeats removes duplicates of (bit string) terms */
 /* in a model formula by repeated use of ``StripTerm''. */
-/* Also drops zero terms */
+/* Also drops zero terms. */
 
 static SEXP TrimRepeats(SEXP list)
 {
@@ -405,7 +388,7 @@ static SEXP TrimRepeats(SEXP list)
 
 static SEXP EncodeVars(SEXP); /* defined below */
 
-/* PlusTerms - expands ``left'' and ``right'' and */
+/* PlusTerms expands ``left'' and ``right'' and */
 /* concatenates their terms (removing duplicates). */
 
 static SEXP PlusTerms(SEXP left, SEXP right)
@@ -416,7 +399,7 @@ static SEXP PlusTerms(SEXP left, SEXP right)
     return TrimRepeats(listAppend(left, right));
 }
 
-/* InteractTerms - expands ``left'' and ``right'' */
+/* InteractTerms expands ``left'' and ``right'' */
 /* and forms a new list of terms containing the bitwise */
 /* OR of each term in ``left'' with each term in ``right''. */
 
@@ -437,7 +420,7 @@ static SEXP InteractTerms(SEXP left, SEXP right)
     return TrimRepeats(term);
 }
 
-/* CrossTerms - expands ``left'' and ``right'' */
+/* CrossTerms expands ``left'' and ``right'' */
 /* and forms the ``cross'' of the list of terms.  */
 /* Duplicates are removed. */
 
@@ -460,7 +443,7 @@ static SEXP CrossTerms(SEXP left, SEXP right)
     return TrimRepeats(left);
 }
 
-/* PowerTerms - Expands the ``left'' form and then */
+/* PowerTerms expands the ``left'' form and then */
 /* raises it to the power specified by the right term. */
 /* Allocation here is wasteful, but so what ... */
 
@@ -491,7 +474,7 @@ static SEXP PowerTerms(SEXP left, SEXP right)
     return term;
 }
 
-/* InTerms - expands ``left'' and ``right'' and */
+/* InTerms expands ``left'' and ``right'' and */
 /* forms the ``nest'' of the the left in the */
 /* interaction of the right */
 
@@ -516,7 +499,7 @@ static SEXP InTerms(SEXP left, SEXP right)
     return TrimRepeats(left);
 }
 
-/* NestTerms - expands ``left'' and ``right'' */
+/* NestTerms expands ``left'' and ``right'' */
 /* and forms the ``nest'' of the list of terms.  */
 /* Duplicates are removed. */
 
@@ -542,7 +525,7 @@ static SEXP NestTerms(SEXP left, SEXP right)
     return TrimRepeats(left);
 }
 
-/* DeleteTerms - expands ``left'' and ``right'' */
+/* DeleteTerms expands ``left'' and ``right'' */
 /* and then removes any terms which appear in */
 /* ``right'' from ``left''. */
 
@@ -559,7 +542,7 @@ static SEXP DeleteTerms(SEXP left, SEXP right)
     return left;
 }
 
-/* EncodeVars - model expansion and bit string encoding. */
+/* EncodeVars performs  model expansion and bit string encoding. */
 /* This is the real workhorse of model expansion. */
 
 static SEXP EncodeVars(SEXP formula)
@@ -663,7 +646,7 @@ static SEXP EncodeVars(SEXP formula)
     return R_NilValue; /*NOTREACHED*/
 }
 
-/* TermCode - decide on the encoding of a model term. */
+/* TermCode decides on the encoding of a model term. */
 /* Returns 1 if variable ``whichBit'' in ``thisTerm'' */
 /* is to be encoded by contrasts and 2 if it is to be */
 /* encoded by dummy variables.  This is decided using */
@@ -711,7 +694,7 @@ static int TermCode(SEXP termlist, SEXP thisterm, int whichbit, SEXP term)
     return 2;
 }
 
-/* SortTerms - sort a ``vector'' of terms */
+/* SortTerms sorts a ``vector'' of terms */
 
 static int TermGT(SEXP s, SEXP t)
 {
@@ -769,6 +752,7 @@ static void SortTerms(SEXP *x, int n)
 /* of useful attributes. */
 
 /* .Internal(terms.formula(x, new.specials, abb, data, keep.order)) */
+
 SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, ans, v, pattern, formula, varnames, term, termlabs;
@@ -970,9 +954,15 @@ SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         n++;
     }
+#ifdef NEWLIST
+    PROTECT(v = allocVector(VECSXP, 2));
+    VECTOR(v)[0] = varnames;
+    VECTOR(v)[1] = termlabs;
+#else
     PROTECT(v = allocList(2));
     CAR(v) = varnames;
     CADR(v) = termlabs;
+#endif
     if (nterm > 0)
         setAttrib(pattern, R_DimNamesSymbol, v);
 
@@ -1255,6 +1245,27 @@ SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
  *  Q: Is this really needed, or can we get by with less info?
  */
 
+#ifdef NEWLIST
+static SEXP ProcessDots(SEXP dots, char *buf)
+{
+    SEXP names;
+    int i, n;
+    names = getAttrib(dots, R_NamesSymbol);
+    if (names == R_NilValue)
+        goto unnamed;
+    n = length(names);
+    for (i = 0; i < n; i++)
+    {
+        if (CHAR(STRING(names)[i])[0] == '\0')
+            goto unnamed;
+        sprintf(buf, "(%s)", CHAR(STRING(names)[i]));
+        STRING(names)[i] = mkChar(buf);
+    }
+    return dots;
+unnamed:
+    error("unnamed list element in model.frame.default");
+}
+#else
 static SEXP ProcessDots(SEXP dots, char *buf)
 {
     if (dots == R_NilValue)
@@ -1266,6 +1277,7 @@ static SEXP ProcessDots(SEXP dots, char *buf)
     TAG(dots) = install(buf);
     return dots;
 }
+#endif
 
 /* .Internal(model.frame(formula, data, dots, subset, na.action)) */
 
@@ -1308,16 +1320,36 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "Invalid data argument\n");
     PROTECT(envir);
     data = eval(variables, envir);
+#ifdef NEWLIST
+    if (!isNewList(data))
+        errorcall(call, "variables not in list form\n");
+#else
+    if (!isList(data))
+        errorcall(call, "variables not in list form\n");
+#endif
     UNPROTECT(2);
     PROTECT(envir);
     PROTECT(data);
 
-    /* Create the names for the variables. */
-    /* To do this construct a call to */
-    /* as.character(substitute(list(...))) */
-    /* and ignore the first element of the */
-    /* resulting character string vector. */
+    /* Create the names for the variables.  To do this construct */
+    /* a call to as.character(substitute(list(...)))  and ignore */
+    /* the first element of the resulting character string vector. */
 
+#ifdef NEWLIST
+    PROTECT(tmp = lang2(install("substitute"), variables));
+    PROTECT(tmp = lang2(install("as.character"), tmp));
+    tmp = eval(tmp, rho);
+    UNPROTECT(2);
+    if (length(tmp) > 1)
+    {
+        PROTECT(tmp);
+        PROTECT(ans = allocVector(STRSXP, length(tmp) - 1));
+        for (i = 1; i < length(tmp); i++)
+            STRING(ans)[i - 1] = STRING(tmp)[i];
+        setAttrib(data, R_NamesSymbol, ans);
+        UNPROTECT(2);
+    }
+#else
     PROTECT(tmp = lang2(install("substitute"), variables));
     PROTECT(tmp = lang2(install("as.character"), tmp));
     tmp = eval(tmp, rho);
@@ -1332,13 +1364,26 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         i = i + 1;
     }
     UNPROTECT(1);
+#endif
 
-    /* Sanity checks to ensure that the */
-    /* the answer can become a data frame. */
-    /* Be deeply suspicious here! */
+    /* Sanity checks to ensure that the the answer can become */
+    /* a data frame.  Be deeply suspicious here! */
 
-    if (!isList(data))
-        errorcall(call, "variables not in list form\n");
+#ifdef NEWLIST
+    nc = length(data);
+    if (!isNull(data))
+    {
+        nr = nrows(VECTOR(data)[0]);
+        for (i = 0; i < nc; i++)
+        {
+            ans = VECTOR(data)[i];
+            if (TYPEOF(ans) < LGLSXP || TYPEOF(ans) > REALSXP)
+                errorcall(call, "invalid variable type\n");
+            if (nrows(ans) != nr)
+                errorcall(call, "variable lengths differ\n");
+        }
+    }
+#else
     nc = 0;
     if (!isNull(data))
     {
@@ -1352,6 +1397,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
             nc++;
         }
     }
+#endif
 
     /* Evaluate the additional frame components. */
     /* Things like weights, subset, offset, etc. */
@@ -1361,16 +1407,42 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     dots = eval(dots, envir);
     PROTECT(dots);
 
-    /* Glue the data object and the dots objects */
-    /* together, checking that dimensions and */
-    /* types are sensible.  Note that any "subset" */
-    /* component in the dots object is treated */
-    /* specially.  It will be used for subsetting */
-    /* not returned in the data frame. */
+    /* Glue the data object and the dots objects together, */
+    /* checking that dimensions and types are sensible.  */
+    /* Note that any "subset" component in the dots object */
+    /* is treated specially.  It will be used for subsetting */
+    /* and not returned in the data frame. */
 
+#ifdef NEWLIST
+    if (!isNewList(dots))
+        errorcall(call, "variables not in list form\n");
+    if (!isNull(dots))
+    {
+        int ndots = length(dots);
+        if (nr == 0)
+            nr = nrows(VECTOR(dots)[0]);
+        for (i = 0; i < ndots; i++)
+        {
+            ans = VECTOR(dots)[i];
+            if (TYPEOF(ans) < LGLSXP || TYPEOF(ans) > REALSXP)
+                errorcall(call, "invalid variable type\n");
+            if (nrows(ans) != nr)
+                errorcall(call, "variable lengths differ\n");
+        }
+        dots = ProcessDots(dots, buf);
+        if (!isNull(data))
+        {
+            ans = data;
+            while (CDR(ans) != R_NilValue)
+                ans = CDR(ans);
+            CDR(ans) = dots;
+        }
+        else
+            data = dots;
+    }
+#else
     if (!isList(dots))
         errorcall(call, "variables not in list form\n");
-
     if (!isNull(dots))
     {
         if (nr == 0)
@@ -1393,6 +1465,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             data = dots;
     }
+#endif
     UNPROTECT(3);
     PROTECT(data);
     PROTECT(subset);
@@ -1581,12 +1654,10 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (response == NA_INTEGER)
         response = 0;
 
-    /* Get the factor pattern matrix.  We duplicate */
-    /* this because we may want to alter it if we */
-    /* are in the no-intercept case. */
-    /* Note: the values of "nvar" and "nterms" are the */
-    /* REAL number of variables in the model data frame */
-    /* and the number of model terms. */
+    /* Get the factor pattern matrix.  We duplicate this because */
+    /* we may want to alter it if we are in the no-intercept case. */
+    /* Note: the values of "nvar" and "nterms" are the REAL number of */
+    /* variables in the model data frame and the number of model terms. */
 
     PROTECT(factors = duplicate(getAttrib(terms, install("factors"))));
     if (length(factors) == 0)
@@ -1604,18 +1675,32 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         errorcall(call, "invalid terms argument\n");
 
-    /* Get the variable names from the factor matrix */
+        /* Get the variable names from the factor matrix */
 
+#ifdef NEWLIST
+    vnames = getAttrib(factors, R_DimNamesSymbol);
+    if (length(vnames) < 1 || (nvar - intercept > 0 && !isString(VECTOR(vnames)[0])))
+        errorcall(call, "invalid terms argument\n");
+    vnames = VECTOR(vnames)[0];
+#else
     vnames = CAR(getAttrib(factors, R_DimNamesSymbol));
     if (nvar - intercept > 0 && !isString(vnames))
         errorcall(call, "invalid terms argument\n");
+#endif
 
-    /* Get the variables from the model frame. */
-    /* First perform elementary sanity checks. */
-    /* Notes: 1) We need at least one variable */
-    /* (lhs or rhs) to compute the number of cases. */
+    /* Get the variables from the model frame.  First perform */
+    /* elementary sanity checks.  Notes:  1) We need at least */
+    /* one variable (lhs or rhs) to compute the number of cases. */
     /* 2) We don't type-check the response. */
 
+#ifdef NEWLIST
+    vars = CADR(args);
+    if (!isNewList(vars) || length(vars) < nvar)
+        errorcall(call, "invalid model frame\n");
+    if (length(vars) == 0)
+        errorcall(call, "don't know how many cases\n");
+    n = nrows(VECTOR(vars)[0]);
+#else
     vars = CADR(args);
     if (!(isList(vars) || isFrame(vars)) || length(vars) < nvar)
         errorcall(call, "invalid model frame\n");
@@ -1623,19 +1708,11 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "don't know how many cases\n");
     n = nrows(CAR(vars));
     rnames = getAttrib(vars, R_RowNamesSymbol);
+#endif
 
-    /* VECTOR ME */
-    /* We want random access to the variables */
-    /* so we transfer the variables to a generic */
-    /* vector as we type check them.  When we */
-    /* switch to generic vectors this transfer */
-    /* can be taken out */
-
-    /* This section of the code checks the */
-    /* types of the variables in the model */
-    /* frame.  Note that it should really */
-    /* only check the variables if they appear */
-    /* in a term in the model. */
+    /* This section of the code checks the types of the variables */
+    /* in the model frame.  Note that it should really only check */
+    /* the variables if they appear in a term in the model. */
 
     PROTECT(variable = allocVector(VECSXP, nvar));
     PROTECT(nlevs = allocVector(INTSXP, nvar));
@@ -1645,7 +1722,11 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     v = vars;
     for (i = 0; i < nvar; i++)
     {
+#ifdef NEWLIST
+        var_i = VECTOR(variable)[i] = VECTOR(vars)[i];
+#else
         var_i = VECTOR(variable)[i] = CAR(v);
+#endif
         if (nrows(var_i) != n)
             errorcall(call, "variable lengths differ\n");
         if (i == response - 1)
@@ -1676,13 +1757,14 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else
             errorcall(call, "invalid variable type\n");
+#ifndef NEWLIST
         v = CDR(v);
+#endif
     }
 
-    /* If there is no intercept we look through the */
-    /* factor pattern matrix and adjust the code */
-    /* for the first factor found so that it will be */
-    /* coded by dummy variables rather than contrasts. */
+    /* If there is no intercept we look through the factor pattern */
+    /* matrix and adjust the code for the first factor found so that */
+    /* it will be coded by dummy variables rather than contrasts. */
 
     if (!intercept)
     {
@@ -1700,12 +1782,10 @@ SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 alldone:;
 
-    /* Compute the required contrast or dummy */
-    /* variable matrices.  We set up a symbolic */
-    /* expression to evaluate these, substituting */
-    /* the required arguments at call time. */
-    /* The calls have the following form: */
-    /* (contrast.type nlevs contrasts) */
+    /* Compute the required contrast or dummy variable matrices. */
+    /* We set up a symbolic expression to evaluate these, substituting */
+    /* the required arguments at call time.  The calls have the following */
+    /* form: (contrast.type nlevs contrasts) */
 
     PROTECT(contr1 = allocVector(VECSXP, nvar));
     PROTECT(contr2 = allocVector(VECSXP, nvar));
@@ -1715,12 +1795,11 @@ alldone:;
     CAR(expr) = install("contrasts");
     CADDR(expr) = allocVector(LGLSXP, 1);
 
-    /* FIXME: We need to allow a third argument */
-    /* to this function which allows us to specify */
-    /* contrasts directly.  That argument would be used */
-    /* here in exactly the same way as the below */
-    /* I.e. we would search the list of constrast */
-    /* specs before we try the evaluation below. */
+    /* FIXME: We need to allow a third argument to this function */
+    /* which allows us to specify contrasts directly.  That argument */
+    /* would be used here in exactly the same way as the below. */
+    /* I.e. we would search the list of constrast specs before */
+    /* we try the evaluation below. */
 
     for (i = 0; i < nvar; i++)
     {
@@ -1931,9 +2010,15 @@ alldone:;
         }
         jstart = jnext;
     }
+#ifdef NEWLIST
+    PROTECT(tnames = allocVector(VECSXP, 2));
+    VECTOR(tnames)[0] = rnames;
+    VECTOR(tnames)[1] = xnames;
+#else
     PROTECT(tnames = allocList(2));
     CAR(tnames) = rnames;
     CADR(tnames) = xnames;
+#endif
     setAttrib(x, R_DimNamesSymbol, tnames);
     setAttrib(x, install("assign"), assign);
     UNPROTECT(13);

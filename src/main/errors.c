@@ -17,6 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* File processed for NEWLIST */
+
 #include "Defn.h"
 
 void jump_to_toplevel();
@@ -53,10 +55,8 @@ void errorcall(SEXP call, char *format, ...)
 {
     va_list(ap);
     char *dcall;
-
     if (inError)
         jump_now();
-
     dcall = CHAR(STRING(deparse1(call, 0))[0]);
     REprintf("Error in %s : ", dcall);
     va_start(ap, format);
@@ -67,11 +67,21 @@ void errorcall(SEXP call, char *format, ...)
 
 void error(const char *format, ...)
 {
+#ifdef NEWERROR
+    char *dcall;
+#endif
     va_list(ap);
-
     if (inError)
         jump_now();
+#ifdef NEWERROR
+    if (R_GlobalContext->call == R_NilValue)
+        dcall = CHAR(STRING(deparse1(R_CurrentExpr, 0))[0]);
+    else
+        dcall = CHAR(STRING(deparse1(R_GlobalContext->call, 0))[0]);
+    REprintf("Error in %s : ", dcall);
+#else
     REprintf("Error: ");
+#endif
     va_start(ap, format);
     REvprintf(format, ap);
     va_end(ap);
@@ -87,7 +97,6 @@ void jump_to_toplevel()
     RCNTXT *c;
     SEXP s, t;
     int nback = 0;
-
     inError = 1;
     if (R_Inputfile != NULL)
         fclose(R_Inputfile);
@@ -109,7 +118,6 @@ void jump_to_toplevel()
         R_Outputfile = R_Sinkfile;
     else
         R_Outputfile = R_Consolefile;
-
     PROTECT(s = allocList(nback));
     t = s;
     for (c = R_GlobalContext; c; c = c->nextcontext)
@@ -120,7 +128,6 @@ void jump_to_toplevel()
         }
     setVar(install(".Traceback"), s, R_GlobalEnv);
     UNPROTECT(1);
-
     jump_now();
 }
 

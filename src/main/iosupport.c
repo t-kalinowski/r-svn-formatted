@@ -15,7 +15,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  I/O Support Code
+ *
+ *  This is a general IO support package to provide R with a uniform
+ *  interface to reading data from the console, files and internal
+ *  text strings.
+ *
+ *  This is probably overkill, but it works much better than the
+ *  previous anarchy.
  */
+
+/* This file processed for NEWLIST */
 
 #include "IOStuff.h"
 

@@ -21,6 +21,8 @@
 #include "Mathlib.h"
 #include "Graphics.h"
 
+/* This file processed for NEWLIST */
+
 static int StrMatch(char *s, char *t)
 {
     for (;;)
@@ -65,7 +67,8 @@ static void setpalette(char **palette)
     ColorTableSize = i;
 }
 
-/* FIXME */
+/* FIXME: These should be in a header file */
+
 char *col2name(unsigned int);
 char *RGB2rgb(unsigned int, unsigned int, unsigned int);
 

@@ -17,17 +17,15 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* File processed for NEWLIST */
+
 #include "Defn.h"
 #include "Graphics.h"
 #include "IOStuff.h"
 #include "Parse.h"
 
-/*--- The `real'  main() program is in	../<SYSTEM>/system.c,
- *---		  ======	e.g.,	../unix/system.c
- */
-
-/* Heap and Pointer Protection Stack Sizes. */
-/* These have moved to Defn.h and Platform.h */
+/* The `real' main() program is in ../<SYSTEM>/system.c */
+/* e.g. ../unix/system.c */
 
 /* Global Variables:  For convenience all interpeter */
 /* global symbols are declared here.  This does not */
@@ -112,13 +110,14 @@ SEXP R_CommentSymbol;   /* "comment" */
 
 /* Arithmetic Values */
 
-double R_tmp;    /* Temporary Value */
-double R_NaN;    /* NaN or -DBL_MAX */
-double R_PosInf; /* IEEE Inf or DBL_MAX */
-double R_NegInf; /* IEEE -Inf or -DBL_MAX */
-int R_NaInt;     /* NA_INTEGER */
-double R_NaReal; /* NA_REAL */
-SEXP R_NaString; /* NA_STRING */
+double R_tmp;       /* Temporary Value */
+double R_NaN;       /* NaN or -DBL_MAX */
+double R_PosInf;    /* IEEE Inf or DBL_MAX */
+double R_NegInf;    /* IEEE -Inf or -DBL_MAX */
+int R_NaInt;        /* NA_INTEGER */
+double R_NaReal;    /* NA_REAL */
+SEXP R_NaString;    /* NA_STRING */
+SEXP R_BlankString; /* "" as a CHARSXP */
 
 /* Image Dump/Restore */
 
@@ -282,22 +281,21 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
     }
 }
 
-/* Main Loop: It is assumed that at this point that */
-/* operating system specific tasks (dialog window */
-/* creation etc) have been performed.  We can now */
-/* print a greeting, run the .First function and then */
-/* enter the read-eval-print loop. */
+/* Main Loop: It is assumed that at this point that operating system */
+/* specific tasks (dialog window creation etc) have been performed. */
+/* We can now print a greeting, run the .First function and then enter */
+/* the read-eval-print loop. */
 
-/* The following variable must be external to mainloop */
-/* because gcc -O seems to eliminate a local one? */
+/* The following variable must be external to mainloop because gcc -O */
+/* seems to eliminate a local one? */
+
+static int doneit;
 
 #ifndef Macintosh
 FILE *R_OpenSysInitFile(void);
 FILE *R_OpenSiteFile(void);
 FILE *R_OpenInitFile(void);
 #endif
-
-static int doneit;
 
 static void R_LoadProfile(FILE *fp)
 {
@@ -332,7 +330,7 @@ void mainloop()
 #ifdef HAVE_LOCALE_H
     setlocale(LC_CTYPE, "");   /*- make ISO-latin1 etc. work LOCALE users */
     setlocale(LC_COLLATE, ""); /*- alphabetically sorting */
-                               /* setlocale(LC_MESSAGES,""); */
+    /* setlocale(LC_MESSAGES,""); */
 #endif
     InitMemory();
     InitNames();
@@ -462,7 +460,6 @@ int R_BrowseLevel = 0;
 static int ParseBrowser(SEXP CExpr, SEXP rho)
 {
     int rval = 0;
-
     if (isSymbol(CExpr))
     {
         if (!strcmp(CHAR(PRINTNAME(CExpr)), "n"))

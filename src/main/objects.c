@@ -25,7 +25,6 @@
 static SEXP GetObject(RCNTXT *cptr)
 {
     SEXP s;
-
     s = CAR(cptr->promargs);
     if (TYPEOF(s) == PROMSXP)
     {
@@ -43,7 +42,6 @@ static SEXP GetObject(RCNTXT *cptr)
 static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
 {
     SEXP ans;
-
     if (TYPEOF(op) == SPECIALSXP)
     {
         int save = R_PPStackTop;
@@ -75,11 +73,11 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
     return ans;
 }
 
-/*  newintoold	-  a destructive matching of arguments;
- *  newargs comes first; any element of oldargs with
- *  a name that matches a named newarg is deleted; the
- *  two resulting lists are appended and returned S
- *  says they do this (white book) but doesn't seem to. */
+/* "newintoold" -  a destructive matching of arguments; */
+/* newargs comes first; any element of oldargs with */
+/* a name that matches a named newarg is deleted; the */
+/* two resulting lists are appended and returned. */
+/* S claims to do this (white book) but doesn't seem to. */
 
 static SEXP newintoold(SEXP new, SEXP old)
 {
@@ -214,9 +212,9 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
     return 0;
 }
 
-/*  do_usemethod is not the only entry point to usemethod,
- *  things like [ and [[ call usemethod directly, hence
- *  do_usemethod should just be an interface to usemethod. */
+/* Note: "do_usemethod" is not the only entry point to */
+/* "usemethod". Things like [ and [[ call usemethod directly, */
+/* hence do_usemethod should just be an interface to usemethod. */
 
 SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -265,12 +263,10 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue; /* NOT Used */
 }
 
-/*
-   if NextMethod has any arguments the first must be the generic
-   the second the object and any remaining are matched with the
-   formals of the chosen method
+/* If NextMethod has any arguments the first must be the generic */
+/* the second the object and any remaining are matched with the */
+/* formals of the chosen method. */
 
-*/
 #define ARGUSED(x) LEVELS(x)
 
 SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -307,7 +303,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     actuals = matchArgs(formals, cptr->promargs);
 
     /* we can't duplicate because it would force the promises */
-    /* so we do our own duplication of the promargs		  */
+    /* so we do our own duplication of the promargs */
     PROTECT(matchedarg = allocList(length(cptr->promargs)));
     for (t = matchedarg, s = cptr->promargs; t != R_NilValue; t = CDR(t), s = CDR(s))
     {
@@ -333,12 +329,12 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             }
     }
     /*
-        Now see if there were any other arguments passed in
+      Now see if there were any other arguments passed in
 
-        .Class is used to determine the next method; if it doesn't
-        exist the first argument to the current method is used
-        the second argument to NextMethod is another option but
-        isn't currently used).
+      .Class is used to determine the next method; if it doesn't
+      exist the first argument to the current method is used
+      the second argument to NextMethod is another option but
+      isn't currently used).
     */
     s = CADDR(args); /* this is ... and we need to see if it's bound */
     if (s == R_DotsSymbol)
@@ -372,7 +368,6 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         if (generic == R_UnboundValue)
             generic = mkString(CHAR(PRINTNAME(CAR(cptr->call))));
     }
-
     PROTECT(generic);
 
     if (!isString(generic) || length(generic) > 1)
@@ -472,13 +467,12 @@ SEXP do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-/*  InheritsClass  -  does an object inherit from a class */
+/* InheritsClass  -  does an object inherit from a class */
 
 int InheritsClass(SEXP x, char *name)
 {
     SEXP class;
     int i, nclass;
-
     if (isObject(x))
     {
         class = getAttrib(x, R_ClassSymbol);

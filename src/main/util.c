@@ -207,10 +207,17 @@ int isUserBinop(SEXP s)
     return 0;
 }
 
+#ifdef NEWLIST
+int isNull(SEXP s)
+{
+    return (s == R_NilValue || (TYPEOF(s) == VECSXP && LENGTH(s) == 0));
+}
+#else
 int isNull(SEXP s)
 {
     return s == R_NilValue;
 }
+#endif
 
 int isFunction(SEXP s)
 {
@@ -223,6 +230,11 @@ int isList(SEXP s)
 }
 
 #ifdef NEWLIST
+int isNewList(SEXP s)
+{
+    return (s == R_NilValue || TYPEOF(s) == VECSXP);
+}
+
 int isPairList(SEXP s)
 {
     int ans;
@@ -275,13 +287,6 @@ int isVectorObject(SEXP s)
         break;
     }
     return ans;
-}
-#endif
-
-#ifdef NEWLIST
-int isNewList(SEXP s)
-{
-    return (TYPEOF(s) == VECSXP);
 }
 #endif
 
@@ -577,14 +582,12 @@ static struct
 SEXPTYPE str2type(char *s)
 {
     int i;
-
     for (i = 0; TypeTable[i].str; i++)
     {
         if (!strcmp(s, TypeTable[i].str))
             return TypeTable[i].type;
     }
-    /*NOTREACHED :*/
-    return TypeTable[0].type;
+    return -1;
 }
 
 SEXP type2str(SEXPTYPE t)
@@ -598,6 +601,14 @@ SEXP type2str(SEXPTYPE t)
     }
     UNIMPLEMENTED("type2str");
     return R_NilValue; /* for -Wall */
+}
+
+int StringBlank(SEXP x)
+{
+    if (x == R_NilValue)
+        return 1;
+    else
+        return CHAR(x)[0] == '\0';
 }
 
 /* Function to test whether a string is a true value */
@@ -712,9 +723,7 @@ havebinding:
     {
         LOGICAL(rval)[0] = 0;
         return rval;
-        /*
-          errorcall(call, "non-promise bound to argument\n");
-        */
+        /* errorcall(call, "non-promise bound to argument\n"); */
     }
 
     if (!isSymbol(PREXPR(t)))
@@ -780,4 +789,61 @@ SEXP dcar(SEXP l)
 SEXP dcdr(SEXP l)
 {
     return (CDR(l));
+}
+
+SEXP OldToNewList(SEXP x)
+{
+    SEXP xptr, xnew, xnames, blank;
+    int i, len = 0, named = 0;
+    for (xptr = x; xptr != R_NilValue; xptr = CDR(xptr))
+    {
+        named = (TAG(xptr) != R_NilValue);
+        len++;
+    }
+    PROTECT(x);
+    PROTECT(xnew = allocVector(VECSXP, len));
+    if (named)
+    {
+        blank = mkChar("");
+        PROTECT(xnames = allocVector(STRSXP, len));
+    }
+    xptr = x;
+    for (i = 0; i < len; i++)
+    {
+        VECTOR(xnew)[i] = CAR(xptr);
+        if (named)
+        {
+            if (TAG(xptr) == R_NilValue)
+                STRING(xnames)[i] = blank;
+            else
+                STRING(xnames)[i] = PRINTNAME(TAG(xptr));
+            xptr = CDR(xptr);
+        }
+    }
+    setAttrib(xnew, R_NamesSymbol, xnames);
+    copyMostAttrib(x, xnew);
+    UNPROTECT(2 + named);
+    return xnew;
+}
+
+SEXP NewToOldList(SEXP x)
+{
+    SEXP xptr, xnew, xnames;
+    int i, len, named;
+    len = length(x);
+    PROTECT(x);
+    PROTECT(xnew = allocList(len));
+    PROTECT(xnames = getAttrib(x, R_NamesSymbol));
+    named = (xnames != R_NilValue);
+    xptr = xnew;
+    for (i = 0; i < len; i++)
+    {
+        CAR(xptr) = VECTOR(x)[i];
+        if (named && CHAR(STRING(xnames)[i])[0] != '\0')
+            TAG(xptr) = install(CHAR(STRING(xnames)[i]));
+        xptr = CDR(xptr);
+    }
+    copyMostAttrib(x, xnew);
+    UNPROTECT(3);
+    return xnew;
 }

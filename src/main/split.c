@@ -30,23 +30,17 @@ SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
     f = CADR(args);
     if (!isVector(x))
         errorcall(call, "first argument must be a vector\n");
-
     if (!isFactor(f))
         errorcall(call, "second argument must be a factor\n");
     nlevs = nlevels(f);
-
     nfac = LENGTH(CADR(args));
     nobs = LENGTH(CAR(args));
-
     if (nobs <= 0)
         return R_NilValue;
-
     if (nfac <= 0)
         errorcall(call, "Group length is 0 but data length > 0");
-
     if (nobs != nfac)
         warningcall(call, "argument lengths differ\n");
-
     PROTECT(counts = allocVector(INTSXP, nlevs));
     for (i = 0; i < nlevs; i++)
         INTEGER(counts)[i] = 0;
@@ -58,11 +52,9 @@ SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
             INTEGER(counts)[j - 1] += 1;
         }
     }
-
     /* Allocate a generic vector to hold the results. */
     /* The i-th element will hold the split-out data */
     /* for the ith group. */
-
     PROTECT(vec = allocVector(VECSXP, nlevs));
     for (i = 0; i < nlevs; i++)
     {
@@ -96,11 +88,14 @@ SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
             INTEGER(counts)[j - 1] += 1;
         }
     }
-
     /* Now transfer the results from the vector */
     /* into a dotted-pair list.  When structures */
     /* are full based on vectors this won't be needed. */
-
+#ifdef NEWLIST
+    setAttrib(vec, R_NamesSymbol, getAttrib(f, R_LevelsSymbol));
+    UNPROTECT(2);
+    return vec;
+#else
     PROTECT(ans = allocList(nlevs));
     x = ans;
     for (i = 0; i < nlevs; i++)
@@ -121,4 +116,5 @@ SEXP do_split(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     return ans;
+#endif
 }

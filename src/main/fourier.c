@@ -17,6 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* File processed for NEWLIST */
+
 #include "Defn.h"
 #include "FFDecl.h"
 
@@ -63,8 +65,7 @@ SEXP do_fft(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         vmax = vmaxget();
         if (isNull(d = getAttrib(z, R_DimSymbol)))
-        {
-            /* temporal transform */
+        { /* temporal transform */
             n = length(z);
             fft_factor(n, &maxf, &maxp);
             if (maxf == 0)
@@ -74,8 +75,7 @@ SEXP do_fft(SEXP call, SEXP op, SEXP args, SEXP env)
             fft_work(&(COMPLEX(z)[0].r), &(COMPLEX(z)[0].i), 1, n, 1, inv, work, iwork);
         }
         else
-        {
-            /* spatial transform */
+        { /* spatial transform */
             maxmaxf = 1;
             maxmaxp = 1;
             ndims = LENGTH(d);
@@ -116,6 +116,7 @@ SEXP do_fft(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* Fourier Transform for Vector-Valued Series */
+/* Not to be confused with the spatial case. */
 
 SEXP do_mvfft(SEXP call, SEXP op, SEXP args, SEXP env)
 {

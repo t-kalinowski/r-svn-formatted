@@ -657,7 +657,7 @@ static void deparse2buff(SEXP s)
             if (CDR(s) != R_NilValue)
             {
                 /* we have a lambda expression and need
-                    to print the args */
+                   to print the args */
                 print2buff("(");
                 args2buff(CDR(s), 0, 0);
                 print2buff(")");
@@ -772,32 +772,6 @@ static void vector2buff(SEXP vector)
     }
 }
 
-#ifdef NotUsed
-static void factor2buff(SEXP vector, int ordered)
-{
-    int tlen, i;
-    char *strp;
-
-    tlen = length(vector);
-    if (ordered)
-        print2buff("ordered(c(");
-    else
-        print2buff("factor(c(");
-    for (i = 0; i < tlen; i++)
-    {
-        strp = EncodeInteger(INTEGER(vector)[i], 0);
-        print2buff(strp);
-        if (i < (tlen - 1))
-            print2buff(", ");
-        if (len > cutoff)
-            writeline();
-    }
-    print2buff("), levels=1:");
-    strp = EncodeInteger(LEVELS(vector), 0);
-    print2buff(strp);
-    print2buff(")");
-}
-#endif
 /* vec2buff : New Code */
 /* Deparse vectors of S-expressions. */
 /* In particular, this deparses objects of mode expression. */
@@ -878,7 +852,7 @@ static void printtab2buff(int ntab)
 
     for (i = 1; i <= ntab; i++)
         if (i <= 4)
-            print2buff("	    ");
+            print2buff("    ");
         else
-            print2buff(" ");
+            print2buff("  ");
 }

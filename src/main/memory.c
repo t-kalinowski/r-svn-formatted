@@ -47,6 +47,8 @@
  *	setvmax.
  */
 
+/* File processed for NEWLIST */
+
 #include "Defn.h"
 #include "Graphics.h"
 
@@ -88,17 +90,10 @@ Handle gStackH;
 Handle gNHeapH;
 Handle gVHeapH;
 
-/*
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    CleanUpRMemory
-
-    This routine releases the memory that R has allocated.
-    This is only needed for the Mac because the memory
-    is in system memory so not naturally cleaned up at the
-    end of the application execution.
-
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-*/
+/* CleanUpRMemory : This routine releases the memory that R has */
+/* allocated.  This is only needed for the Mac because the memory */
+/* is in system memory so not naturally cleaned up at the end of */
+/* the application execution. */
 
 void CleanUpMemory(void)
 {
@@ -113,18 +108,9 @@ void CleanUpMemory(void)
 
 #endif
 
-/*
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    InitMemory
-
-    Initialise the memory to be used in R:
-
-    - stack space
-    - node space
-    - vector space
-
-    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-*/
+/* InitMemory : Initialise the memory to be used in R. */
+/* This includes: stack space, node space and vector space */
+/* This is a ghastly mess and the Mac code needs to be separated. */
 
 void InitMemory()
 {
@@ -225,11 +211,9 @@ char *S_realloc(char *p, long new, long old, int size)
 {
     int i, nold;
     char *q;
-
     /* shrinking is a no-op */
     if (new <= old)
         return p;
-
     q = R_alloc(new, size);
     nold = old * size;
     for (i = 0; i < nold; i++)
@@ -243,7 +227,6 @@ char *S_realloc(char *p, long new, long old, int size)
 SEXP allocSExp(SEXPTYPE t)
 {
     SEXP s;
-
     if (R_FreeSEXP == NULL)
     {
         gc();
@@ -269,10 +252,8 @@ SEXP allocString(int length)
 {
     SEXP s;
     long size;
-
     /* number of vector cells to allocate */
     size = 1 + BYTE2VEC(length + 1);
-
     /* we need to do the gc here so allocSExp doesn't! */
     if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
@@ -282,7 +263,6 @@ SEXP allocString(int length)
         if (R_VMax - R_VTop < size)
             mem_err_heap();
     }
-
     s = allocSExp(CHARSXP);
     CHAR(s) = (char *)(R_VTop + 1);
     LENGTH(s) = length;
@@ -298,10 +278,8 @@ SEXP allocVector(SEXPTYPE type, int length)
     SEXP s;
     int i;
     long size = 0;
-
     if (length < 0)
         errorcall(R_GlobalContext->call, "negative length vectors are not allowed\n");
-
     /* number of vector cells to allocate */
     switch (type)
     {
@@ -348,7 +326,6 @@ SEXP allocVector(SEXPTYPE type, int length)
     default:
         error("invalid type/length (%d/%d) in vector allocation\n", type, length);
     }
-
     /* we need to do the gc here so allocSExp doesn't! */
     if (R_FreeSEXP == NULL || R_VMax - R_VTop < size)
     {
@@ -358,7 +335,6 @@ SEXP allocVector(SEXPTYPE type, int length)
         if (R_VMax - R_VTop < size)
             mem_err_heap();
     }
-
     s = allocSExp(type);
     LENGTH(s) = length;
     NAMED(s) = 0;
@@ -371,10 +347,8 @@ SEXP allocVector(SEXPTYPE type, int length)
     }
     else
         CHAR(s) = (char *)0;
-
     /* The following prevents disaster in the case */
     /* that an uninitialised string vector is marked */
-
     if (type == STRSXP || type == EXPRSXP || type == VECSXP)
     {
         for (i = 0; i < length; i++)
@@ -387,7 +361,6 @@ SEXP allocList(int n)
 {
     int i;
     SEXP result;
-
     result = R_NilValue;
     for (i = 0; i < n; i++)
     {
@@ -401,7 +374,6 @@ SEXP allocList(int n)
 void gc(void)
 {
     sigset_t mask, omask;
-
     int vcells, vfrac;
     if (gc_reporting)
         REprintf("Garbage collection ...");
@@ -441,6 +413,7 @@ void markPhase(void)
 
     markSExp(R_NilValue); /* Builtin constants */
     markSExp(NA_STRING);
+    markSExp(R_BlankString);
     markSExp(R_UnboundValue);
     markSExp(R_MissingArg);
     markSExp(R_CommentSxp);

@@ -28,28 +28,28 @@
 #define MAX_EXPRESSIONS 100000
 
 /*
-"prompt"
-"continue"
-"editor"
-"expressions"
-"width"
-"digits"
-"contrasts"
-
-"echo"
-"error"
-"free"
-"keep"
-"length"
-"memory"
-"object.size"
-"pager"
-"reference"
-"scrap"
-"show"
-"ts.eps"
-"warn"
-*/
+ *  "prompt"
+ *  "continue"
+ *  "editor"
+ *  "expressions"
+ *  "width"
+ *  "digits"
+ *  "contrasts"
+ *
+ *  "echo"
+ *  "error"
+ *  "free"
+ *  "keep"
+ *  "length"
+ *  "memory"
+ *  "object.size"
+ *  "pager"
+ *  "reference"
+ *  "scrap"
+ *  "show"
+ *  "ts.eps"
+ *  "warn"
+ */
 
 static SEXP Options(void)
 {
@@ -99,7 +99,6 @@ SEXP GetOption(SEXP tag, SEXP rho)
 int GetOptionWidth(SEXP rho)
 {
     int w;
-
     w = asInteger(GetOption(install("width"), rho));
     if (w < MIN_WIDTH || w > MAX_WIDTH)
     {
@@ -112,7 +111,6 @@ int GetOptionWidth(SEXP rho)
 int GetOptionDigits(SEXP rho)
 {
     int d;
-
     d = asInteger(GetOption(install("digits"), rho));
     if (d < MIN_DIGITS || d > MAX_DIGITS)
     {
@@ -122,14 +120,12 @@ int GetOptionDigits(SEXP rho)
     return d;
 }
 
-/* change the value of an option or add a new option or,
-   if called with value R_NilValue remove that option ;
+/* Change the value of an option or add a new option or, */
+/* if called with value R_NilValue, remove that option. */
 
-*/
 static SEXP SetOption(SEXP tag, SEXP value)
 {
     SEXP opt, old, t;
-
     t = opt = SYMVALUE(Options());
     if (!isList(opt))
         error("corrupted options list\n");
@@ -146,7 +142,6 @@ static SEXP SetOption(SEXP tag, SEXP value)
             }
         return R_NilValue;
     }
-
     /* if the option is new a new slot is added to the end of .Options */
     if (opt == R_NilValue)
     {
@@ -164,9 +159,7 @@ static SEXP SetOption(SEXP tag, SEXP value)
 void InitOptions(void)
 {
     SEXP t, val, v;
-
     PROTECT(v = val = allocList(7));
-
     TAG(v) = install("prompt");
     CAR(v) = mkString("> ");
     v = CDR(v);
@@ -193,7 +186,6 @@ void InitOptions(void)
     STRING(t)[0] = mkChar("unordered");
     STRING(t)[1] = mkChar("ordered");
     namesgets(CAR(v), t);
-
     SYMVALUE(install(".Options")) = val;
     UNPROTECT(2);
 }
@@ -203,18 +195,14 @@ SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP a, opt, s, t;
     char *what;
     int k;
-
     opt = SYMVALUE(Options());
-
     if (args == R_NilValue)
     {
         NAMED(opt) = 1;
         return opt;
     }
-
     if (isList(CAR(args)) && length(args) == 1)
         args = CAR(args);
-
     for (a = args; a != R_NilValue; a = CDR(a))
     {
         if (isNull(t = TAG(a)))

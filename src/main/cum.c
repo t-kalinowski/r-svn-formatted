@@ -18,13 +18,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* This file processed for NEWLIST */
+
 #include "Defn.h"
 
 static SEXP cumsum(SEXP x, SEXP s)
 {
     int i;
     double sum;
-
     sum = 0.0;
     for (i = 0; i < length(x); i++)
     {
@@ -42,7 +43,6 @@ static SEXP ccumsum(SEXP x, SEXP s)
 {
     int i;
     complex sum;
-
     sum.r = 0;
     sum.i = 0;
     for (i = 0; i < length(x); i++)
@@ -63,7 +63,6 @@ static SEXP cumprod(SEXP x, SEXP s)
 {
     int i;
     double prod;
-
     prod = 1.0;
     for (i = 0; i < length(x); i++)
     {
@@ -81,7 +80,6 @@ static SEXP ccumprod(SEXP x, SEXP s)
 {
     complex prod, tmp;
     int i;
-
     prod.r = 1;
     prod.i = 0;
     for (i = 0; i < length(x); i++)
@@ -104,7 +102,6 @@ static SEXP cummax(SEXP x, SEXP s)
 {
     int i;
     double max;
-
     max = REAL(x)[0];
     for (i = 0; i < length(x); i++)
     {
@@ -125,7 +122,6 @@ static SEXP cummin(SEXP x, SEXP s)
 {
     int i;
     double min;
-
     min = REAL(x)[0];
     for (i = 0; i < length(x); i++)
     {
@@ -146,12 +142,9 @@ SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, ans;
     int i;
-
     checkArity(op, args);
-
     if (DispatchGroup("Math", call, op, args, env, &ans))
         return ans;
-
     if (isComplex(CAR(args)))
     {
         t = CAR(args);

@@ -17,6 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* File processed for NEWLIST */
+
 #include "Defn.h"
 
 static SEXP lunary(SEXP, SEXP, SEXP);
@@ -29,7 +31,6 @@ SEXP do_logic(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (DispatchGroup("Ops", call, op, args, env, &ans))
         return ans;
-
     switch (length(args))
     {
     case 1:
@@ -46,14 +47,11 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
 {
     SEXP x, y, dims, tsp, class, xnames, ynames;
     int mismatch, nx, ny, xarray, yarray, xts, yts;
-
     mismatch = 0;
     x = CAR(args);
     y = CADR(args);
-
     if (!isNumeric(x) || !isNumeric(y))
         errorcall(call, "operations are possible only for numeric or logical types\n");
-
     xarray = isArray(x);
     yarray = isArray(y);
     xts = isTs(x);

@@ -43,7 +43,6 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP index, SEXP call)
 {
     int i, ii, n, nx, mode;
     SEXP tmp, tmp2;
-
     mode = TYPEOF(x);
     n = LENGTH(index);
     nx = length(x);
@@ -151,7 +150,7 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
     PROTECT(result = ExtractSubset(x, result, index, call));
     if (result != R_NilValue &&
         (((attrib = getAttrib(x, R_NamesSymbol)) != R_NilValue) ||
-         ((attrib = getAttrib(x, R_DimNamesSymbol)) != R_NilValue && (attrib = CAR(attrib)) != R_NilValue)))
+         ((attrib = getAttrib(x, R_DimNamesSymbol)) != R_NilValue && (attrib = GetRowNames(attrib)) != R_NilValue)))
     {
         nattrib = allocVector(TYPEOF(attrib), n);
         PROTECT(nattrib);
@@ -253,34 +252,32 @@ SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
         UNPROTECT(1);
     }
 
-    /* The matrix elements have been transferred. */
-    /* Now we need to transfer the attributes. */
-    /* Most importantly, we need to subset the */
-    /* dimnames of the returned value. */
+    /* The matrix elements have been transferred.  Now we need to */
+    /* transfer the attributes.  Most importantly, we need to subset */
+    /* the dimnames of the returned value. */
 
-    a = ATTRIB(x);
-    while (a != R_NilValue)
+    if (nrs >= 0 && ncs >= 0)
     {
-        if (TAG(a) == R_DimNamesSymbol)
+        SEXP dimnames, newdimnames;
+        dimnames = getAttrib(x, R_DimNamesSymbol);
+        if (!isNull(dimnames))
         {
-            if (nrs >= 0 && ncs >= 0)
+            PROTECT(newdimnames = allocVector(VECSXP, 2));
+            if (TYPEOF(dimnames) == VECSXP)
             {
-                PROTECT(attr = allocList(2));
-                CAR(attr) = allocVector(STRSXP, nrs);
-                CADR(attr) = allocVector(STRSXP, ncs);
-                p = CAR(a);
-                CAR(attr) = ExtractSubset(CAR(p), CAR(attr), sr, call);
-                CADR(attr) = ExtractSubset(CADR(p), CADR(attr), sc, call);
-                setAttrib(result, R_DimNamesSymbol, attr);
-                UNPROTECT(1);
+                VECTOR(newdimnames)[0] = ExtractSubset(VECTOR(dimnames)[0], allocVector(STRSXP, nrs), sr, call);
+                VECTOR(newdimnames)[1] = ExtractSubset(VECTOR(dimnames)[1], allocVector(STRSXP, ncs), sc, call);
             }
+            else
+            {
+                VECTOR(newdimnames)[0] = ExtractSubset(CAR(dimnames), allocVector(STRSXP, nrs), sr, call);
+                VECTOR(newdimnames)[1] = ExtractSubset(CADR(dimnames), allocVector(STRSXP, ncs), sc, call);
+            }
+            setAttrib(result, R_DimNamesSymbol, newdimnames);
+            UNPROTECT(1);
         }
-        if (TAG(a) == R_LevelsSymbol)
-        {
-            setAttrib(result, R_LevelsSymbol, CAR(a));
-        }
-        a = CDR(a);
     }
+    copyMostAttrib(x, result);
     if (drop)
         DropDims(result);
     UNPROTECT(3);
@@ -291,7 +288,7 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
 {
     int i, j, k, ii, jj, mode, n;
     int **subs, *index, *offset, *bound;
-    SEXP attr, a, p, q, r, result, xdims;
+    SEXP dimnames, p, q, r, result, xdims;
     char *vmaxsave;
 
     mode = TYPEOF(x);
@@ -317,13 +314,6 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
         r = CDR(r);
     }
     PROTECT(result = allocVector(mode, n));
-
-    /* Construct the subscripting information. */
-    /* NO ALLOCATION CAN TAKE PLACE FROM HERE TO */
-    /* THE END OF THE ARRAY ELEMENT TRANSFER LOOP. */
-    /* A HEAP COMPACTION COULD MOVE THE VALUES */
-    /* WHICH SUBS IS POINTING AT. */
-
     r = s;
     for (i = 0; i < k; i++)
     {
@@ -403,10 +393,10 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
         }
     }
 
-    PROTECT(attr = allocVector(INTSXP, k));
+    PROTECT(xdims = allocVector(INTSXP, k));
     for (i = 0; i < k; i++)
-        INTEGER(attr)[i] = bound[i];
-    setAttrib(result, R_DimSymbol, attr);
+        INTEGER(xdims)[i] = bound[i];
+    setAttrib(result, R_DimSymbol, xdims);
     UNPROTECT(1);
 
     /* The array elements have been transferred. */
@@ -414,13 +404,28 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
     /* Most importantly, we need to subset the */
     /* dimnames of the returned value. */
 
-    a = ATTRIB(x);
-    while (a != R_NilValue)
+    dimnames = getAttrib(x, R_DimNamesSymbol);
+    if (dimnames != R_NilValue)
     {
-        if (TAG(a) == R_DimNamesSymbol)
+        SEXP xdims;
+        int j = 0;
+        PROTECT(xdims = allocVector(VECSXP, k));
+        if (TYPEOF(dimnames) == VECSXP)
         {
-            PROTECT(xdims = allocList(k));
-            p = CAR(a);
+            r = s;
+            for (i = 0; i < k; i++)
+            {
+                if (bound[i] > 0)
+                {
+                    VECTOR(xdims)
+                    [j++] = ExtractSubset(VECTOR(dimnames)[i], allocVector(STRSXP, bound[i]), CAR(r), call);
+                }
+                r = CDR(r);
+            }
+        }
+        else
+        {
+            p = dimnames;
             q = xdims;
             r = s;
             for (i = 0; i < k; i++)
@@ -431,15 +436,11 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
                 q = CDR(q);
                 r = CDR(r);
             }
-            setAttrib(result, R_DimNamesSymbol, xdims);
-            UNPROTECT(1);
         }
-        if (TAG(a) == R_LevelsSymbol)
-        {
-            setAttrib(result, R_LevelsSymbol, CAR(a));
-        }
-        a = CDR(a);
+        setAttrib(result, R_DimNamesSymbol, xdims);
+        UNPROTECT(1);
     }
+    copyMostAttrib(x, result);
     /* Free temporary memory */
     vmaxset(vmaxsave);
     if (drop)
@@ -503,15 +504,15 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
     nsubs = length(subs);
 
 #ifdef NEWLIST
+    type = TYPEOF(x);
     PROTECT(dim = getAttrib(x, R_DimSymbol));
     ndim = length(dim);
 
-    /* Here we need to coerce pair-based objects into */
-    /* generic vectors, before we attempt to subset. */
+    /* Here coerce pair-based objects into generic vectors. */
+    /* All subsetting takes place on the generic vector form. */
 
     if (isPairList(x))
     {
-        type = TYPEOF(x);
         if (ndim > 1)
         {
             PROTECT(ax = allocArray(VECSXP, dim));
@@ -529,39 +530,47 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         PROTECT(ax = x);
 
-    if (!isVectorObject(x))
+    if (!isVectorObject(ax))
         errorcall(call, "object is not subsetable\n");
 
     /* This is the actual subsetting code. */
-    /* The separation of arrays and matrices is an optimisation. */
+    /* The separation of arrays and matrices */
+    /* is purely an optimization. */
 
     if (nsubs == 1)
-        ans = VectorSubset(x, CAR(subs), call);
+        ans = VectorSubset(ax, CAR(subs), call);
     else
     {
         if (nsubs != length(dim))
             errorcall(call, "incorrect number of dimensions\n");
-        else if (nsubs == 2)
-            ans = MatrixSubset(x, subs, call, drop);
+        if (nsubs == 2)
+            ans = MatrixSubset(ax, subs, call, drop);
         else
-            ans = ArraySubset(x, subs, call, drop);
+            ans = ArraySubset(ax, subs, call, drop);
     }
+    PROTECT(ans);
 
     /* Note: we do not coerce back to pair-based lists. */
     /* They are "defunct" in this version of R. */
 
     if (type == LANGSXP)
     {
+        ax = ans;
         PROTECT(ans = allocList(LENGTH(ax)));
         for (px = ans, i = 0; px != R_NilValue; px = CDR(px))
-            CAR(px) = STRING(ax)[i++];
+            CAR(px) = VECTOR(ax)[i++];
         setAttrib(ans, R_DimSymbol, getAttrib(ax, R_DimSymbol));
         setAttrib(ans, R_DimNamesSymbol, getAttrib(ax, R_DimNamesSymbol));
         setAttrib(ans, R_NamesSymbol, getAttrib(ax, R_NamesSymbol));
     }
+    else
+    {
+        PROTECT(ans);
+    }
     setAttrib(ans, R_TspSymbol, R_NilValue);
     setAttrib(ans, R_ClassSymbol, R_NilValue);
-    UNPROTECT(3);
+    UNPROTECT(5);
+    return ans;
 #else
     if (isVector(x) || isList(x) || isLanguage(x))
     {
@@ -611,8 +620,8 @@ SEXP do_subset(SEXP call, SEXP op, SEXP args, SEXP rho)
     setAttrib(ans, R_TspSymbol, R_NilValue);
     setAttrib(ans, R_ClassSymbol, R_NilValue);
     UNPROTECT(1);
-#endif
     return ans;
+#endif
 }
 
 /* The [[ subset operator.  It needs to be fast. */
@@ -669,10 +678,15 @@ SEXP do_subset2(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 /* a bold attempt to get the same */
                 /* behaviour for $ and [[ */
-                if (offset < 0 && (isList(x) || isLanguage(x)))
+#ifdef NEWLIST
+                if (offset < 0 && (isNewList(x) ||
+#else
+                if (offset < 0 && (
+#endif
+                                   isExpression(x) || isList(x) || isLanguage(x)))
                 {
                     UNPROTECT(1);
-                    return (R_NilValue);
+                    return R_NilValue;
                 }
                 else
                     errorcall(call, "subscript out of bounds\n");
@@ -824,6 +838,7 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP xmatch;
         int havematch;
         UNPROTECT(1);
+        havematch = 0;
         for (y = x; y != R_NilValue; y = CDR(y))
         {
             switch (pstrmatch(TAG(y), input, slen))
@@ -889,6 +904,7 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP xmatch;
         int havematch;
         UNPROTECT(1);
+        havematch = 0;
         for (y = x; y != R_NilValue; y = CDR(y))
         {
             switch (pstrmatch(TAG(y), input, slen))

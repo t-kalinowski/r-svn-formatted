@@ -403,7 +403,6 @@ SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i, k, n;
     int *l;
-
     checkArity(op, args);
 
     if (!isVector(CAR(args)))

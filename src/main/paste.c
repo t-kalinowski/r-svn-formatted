@@ -126,7 +126,7 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                 sprintf(buf, "%s", s);
                 buf += LENGTH(STRING(VECTOR(x)[j])[i % k]);
             }
-            if (CDR(px) != R_NilValue && sepw != 0)
+            if (j != nx - 1 && sepw != 0)
             {
                 sprintf(buf, "%s", CHAR(sep));
                 buf += sepw;

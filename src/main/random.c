@@ -82,7 +82,6 @@ static void random1(double (*f)(), double *a, int na, double *x, int n)
 {
     double ai;
     int i;
-
     errno = 0;
     for (i = 0; i < n; i++)
     {
@@ -103,21 +102,16 @@ static void random1(double (*f)(), double *a, int na, double *x, int n)
         random1(name, REAL(a), na, REAL(x), n);                                                                        \
         break
 
-/**********************************************************/
-/* do_random1 - random sampling from 1 parameter families */
-/* see switch below for distributions.			  */
-/**********************************************************/
+/* "do_random1" - random sampling from 1 parameter families. */
+/* See switch below for distributions. */
 
 SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a;
     int i, n, na;
-
     checkArity(op, args);
-
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)))
         invalid(call);
-
     if (LENGTH(CAR(args)) == 1)
     {
         n = asInteger(CAR(args));
@@ -126,15 +120,12 @@ SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         n = LENGTH(CAR(args));
-
     PROTECT(x = allocVector(REALSXP, n));
-
     if (n == 0)
     {
         UNPROTECT(1);
         return (x);
     }
-
     na = LENGTH(CADR(args));
     if (na < 1)
     {
@@ -170,7 +161,6 @@ static void random2(double (*f)(), double *a, int na, double *b, int nb, double 
 {
     double ai, bi;
     int i;
-
     errno = 0;
     for (i = 0; i < n; i++)
     {
@@ -192,21 +182,16 @@ static void random2(double (*f)(), double *a, int na, double *b, int nb, double 
         random2(name, REAL(a), na, REAL(b), nb, REAL(x), n);                                                           \
         break
 
-/**********************************************************/
-/* do_random2 - random sampling from 2 parameter families */
-/* see switch below for distributions.			  */
-/**********************************************************/
+/* "do_random2" - random sampling from 2 parameter families. */
+/* See switch below for distributions. */
 
 SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b;
     int i, n, na, nb;
-
     checkArity(op, args);
-
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)) || !isNumeric(CADDR(args)))
         invalid(call);
-
     if (LENGTH(CAR(args)) == 1)
     {
         n = asInteger(CAR(args));
@@ -215,15 +200,12 @@ SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         n = LENGTH(CAR(args));
-
     PROTECT(x = allocVector(REALSXP, n));
-
     if (n == 0)
     {
         UNPROTECT(1);
         return (x);
     }
-
     na = LENGTH(CADR(args));
     nb = LENGTH(CADDR(args));
     if (na < 1 || nb < 1)
@@ -268,13 +250,12 @@ static void random3(double (*f)(), double *a, int na, double *b, int nb, double 
 {
     double ai, bi, ci;
     int i;
-
     errno = 0;
     for (i = 0; i < n; i++)
     {
         ai = a[i % na];
         bi = b[i % nb];
-        ci = c[i % nc]; /* not i % nb */
+        ci = c[i % nc];
         if (FINITE(ai) && FINITE(bi) && FINITE(ci))
         {
             x[i] = MATH_CHECK(f(ai, bi, ci));
@@ -291,21 +272,16 @@ static void random3(double (*f)(), double *a, int na, double *b, int nb, double 
         random3(name, REAL(a), na, REAL(b), nb, REAL(c), nc, REAL(x), n);                                              \
         break
 
-/**********************************************************/
-/* do_random3 - random sampling from 3 parameter families */
-/* see switch below for distributions.			  */
-/**********************************************************/
+/* "do_random3" - random sampling from 3 parameter families. */
+/* See switch below for distributions. */
 
 SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b, c;
     int i, n, na, nb, nc;
-
     checkArity(op, args);
-
     if (!isVector(CAR(args)))
         invalid(call);
-
     if (LENGTH(CAR(args)) == 1)
     {
         n = asInteger(CAR(args));
@@ -314,7 +290,6 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
         n = LENGTH(CAR(args));
-
     PROTECT(x = allocVector(REALSXP, n));
     if (n == 0)
     {
@@ -330,7 +305,6 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
     c = CAR(args);
     if (!isNumeric(a) || !isNumeric(b) || !isNumeric(c))
         invalid(call);
-
     na = LENGTH(a);
     nb = LENGTH(b);
     nc = LENGTH(c);
@@ -362,22 +336,18 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
     return x;
 }
 
-/*******************************************************************/
-/* do_sample - equal probability sampling with/without replacement */
-/* Implements sample(n, k, r) - choose k elements from 1 to n	   */
-/* with/without replacement according to r.			   */
-/*******************************************************************/
+/* do_sample - equal probability sampling with/without replacement. */
+/* Implements sample(n, k, r) - choose k elements from 1 to n */
+/* with/without replacement according to r. */
 
 SEXP do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, y;
     int i, j, k, n, r;
     checkArity(op, args);
-
     n = asInteger(CAR(args));
     k = asInteger(CADR(args));
     r = asLogical(CADDR(args));
-
     if (r == NA_LOGICAL)
         errorcall(call, "invalid third argument\n");
     if (n == NA_INTEGER || n < 1)
@@ -386,7 +356,6 @@ SEXP do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "invalid second argument\n");
     if (!r && k > n)
         errorcall(call, "can't take a sample larger than the population\n when replace = FALSE\n");
-
     GetSeeds();
     PROTECT(y = allocVector(INTSXP, k));
     if (r)

@@ -157,6 +157,7 @@ void copyMostAttrib(SEXP inp, SEXP ans)
             installAttrib(ans, TAG(s), CAR(s));
         }
     }
+    OBJECT(ans) = OBJECT(inp);
     UNPROTECT(2);
 }
 
@@ -312,8 +313,13 @@ SEXP classgets(SEXP vec, SEXP class)
         }
         else
         {
+#ifdef NEWLIST
+            if (streql(CHAR(STRING(class)[0]), "data.frame") && !isNewList(vec))
+                error("attempt to make non-list a data frame\n");
+#else
             if (streql(CHAR(STRING(class)[0]), "data.frame") && !isList(vec))
                 error("attempt to make non-list a data frame\n");
+#endif
             installAttrib(vec, R_ClassSymbol, class);
             OBJECT(vec) = 1;
         }
@@ -618,6 +624,10 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
         if (namesattr != R_NilValue)
             nvalues++;
     }
+    /* FIXME */
+    if (nvalues <= 0)
+        return R_NilValue;
+    /* FIXME */
     PROTECT(value = allocVector(VECSXP, nvalues));
     PROTECT(names = allocVector(STRSXP, nvalues));
     PROTECT(blank = mkChar(""));
@@ -675,8 +685,8 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP object, attrs, names;
     int i, nattrs;
 
-    /* If there are multiple references to the */
-    /* object being mutated, we must duplicate. */
+    /* If there are multiple references to the object being mutated, */
+    /* we must duplicate so that the other references are unchanged. */
 
     if (NAMED(CAR(args)) == 2)
         CAR(args) = duplicate(CAR(args));
@@ -684,50 +694,60 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Extract the arguments from the argument list */
 
     object = CAR(args);
+    attrs = CADR(args);
     if (object == R_NilValue)
     {
-        warning("attempt to set attributes on NULL\n");
-        return (R_NilValue);
+        if (attrs == R_NilValue)
+            return R_NilValue;
+        else
+            PROTECT(object = allocVector(VECSXP, 0));
     }
-    attrs = CADR(args);
+    else
+        PROTECT(object);
+
     if (!isNewList(attrs))
         errorcall(call, "attributes must be in a list\n");
-    names = getAttrib(attrs, R_NamesSymbol);
-    if (names == R_NilValue)
-        errorcall(call, "attributes must be named\n");
 
     /* Empty the existing attribute list */
-    /* FIXME: the code below treats pair-based */
-    /* structures in a special way.  This can */
-    /* probably be dropped down the road. */
-    /* Users should never encounter pair-based lists. */
+
+    /* FIXME: the code below treats pair-based structures */
+    /* in a special way.  This can probably be dropped down */
+    /* the road (users should never encounter pair-based lists). */
+    /* Of course, if we want backward compatibility we can't */
+    /* make the change. :-( */
 
     if (isList(object))
         setAttrib(object, R_NamesSymbol, R_NilValue);
     ATTRIB(object) = R_NilValue;
     OBJECT(object) = 0;
 
-    /* We do two passes through the attributes */
-    /* the first finding and transferring "dims" */
-    /* and the second transferring the rest. */
-    /* This is to ensure that "dim" occurs */
-    /* in the attribute list before "dimnames". */
+    /* We do two passes through the attributes; the first */
+    /* finding and transferring "dims" and the second */
+    /* transferring the rest.  This is to ensure that */
+    /* "dim" occurs in the attribute list before "dimnames". */
 
     nattrs = length(attrs);
-    for (i = 0; i < nattrs; i++)
+    if (nattrs > 0)
     {
-        if (STRING(names)[i] == R_NilValue && CHAR(STRING(names)[i])[0] == '\0')
+        names = getAttrib(attrs, R_NamesSymbol);
+        if (names == R_NilValue)
+            errorcall(call, "attributes must be named\n");
+        for (i = 0; i < nattrs; i++)
         {
-            error("all attributes must have names\n");
+            if (STRING(names)[i] == R_NilValue && CHAR(STRING(names)[i])[0] == '\0')
+            {
+                error("all attributes must have names\n");
+            }
+            if (!strcmp(CHAR(STRING(names)[i]), "dim"))
+                setAttrib(object, R_DimSymbol, VECTOR(attrs)[i]);
         }
-        if (!strcmp(CHAR(STRING(names)[i]), "dim"))
-            setAttrib(object, R_DimSymbol, VECTOR(attrs)[i]);
+        for (i = 0; i < nattrs; i++)
+        {
+            if (strcmp(CHAR(STRING(attrs)[i]), "dim"))
+                setAttrib(object, install(CHAR(STRING(names)[i])), VECTOR(attrs)[i]);
+        }
     }
-    for (i = 0; i < nattrs; i++)
-    {
-        if (strcmp(CHAR(STRING(attrs)[i]), "dim"))
-            setAttrib(object, install(CHAR(STRING(names)[i])), VECTOR(attrs)[i]);
-    }
+    UNPROTECT(1);
     return object;
 }
 #else

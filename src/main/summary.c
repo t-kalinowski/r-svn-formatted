@@ -36,9 +36,11 @@
 
 /* These GLOBALS are set/initialized in do_summary: */
 static int narm;
-static int updated; /* := 1 as soon as (i)tmp (do_summary), or
-                     *		      *value ([ir]min / max) is assigned
-                     */
+
+static int updated;
+/* updates is assigned 1 as soon as (i)tmp (do_summary), */
+/* or *value ([ir]min / max) is assigned */
+
 static void isum(int *x, int n, int *value)
 {
     double s;
@@ -374,15 +376,13 @@ static void cprod(complex *x, int n, complex *value)
     value->i = s.i;
 }
 
+/* do_summary provides a variety of data summaries */
+/* op : 0 = sum, 1 = mean, 2 = min, 3 = max, 4 = prod */
+/* NOTE: mean() [op = 1]  is no longer processed by this code. */
+/* (NEVER was correct for multiple arguments!) */
+
 SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* do_summary provides a variety of data summaries */
-
-    /* op :	  0 = sum, 1 = mean, 2 = min, 3 = max, 4 = prod */
-
-    /* NOTE: mean() [op = 1]  is no longer processed by this code.
-     * ----			  (NEVER was correct for multiple arguments!)
-     */
     SEXP ans, a;
     double tmp;
     complex z, ztmp, zcum;
@@ -683,7 +683,7 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (s = args; s != R_NilValue; s = CDR(s))
     {
-        if (isList(CAR(s)) || isFrame(CAR(s)))
+        if (isList(CAR(s)) /* || isFrame(CAR(s)) */)
         {
             for (t = CAR(s); t != R_NilValue; t = CDR(t))
                 if (isMatrix(CAR(t)))
@@ -704,6 +704,36 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                 else
                     goto bad_mode;
         }
+#ifdef NEWLIST
+        /* FIXME : Need to be careful with the use of isVector() */
+        /* since this includes the new list structure and expressions. */
+        else if (isNewList(CAR(s)))
+        {
+            int it, nt;
+            t = CAR(s);
+            nt = length(t);
+            for (it = 0; it < nt; it++)
+            {
+                if (isMatrix(VECTOR(t)[it]))
+                {
+                    u = getAttrib(VECTOR(t)[it], R_DimSymbol);
+                    if (len < 0)
+                        len = INTEGER(u)[0];
+                    else if (len != INTEGER(u)[0])
+                        goto bad;
+                }
+                else if (isVector(VECTOR(t)[it]))
+                {
+                    if (len < 0)
+                        len = LENGTH(VECTOR(t)[it]);
+                    else if (len != LENGTH(VECTOR(t)[it]))
+                        goto bad;
+                }
+                else
+                    goto bad_mode;
+            }
+        }
+#endif
         else if (isMatrix(CAR(s)))
         {
             u = getAttrib(CAR(s), R_DimSymbol);
@@ -725,15 +755,21 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(rval = allocVector(LGLSXP, len));
     for (i = 0; i < len; i++)
         INTEGER(rval)[i] = 1;
+    /* FIXME : there is a lot of shared code here for vectors. */
+    /* It should be abstracted out and optimized. */
     for (s = args; s != R_NilValue; s = CDR(s))
     {
-        if (isList(CAR(s)) || isFrame(CAR(s)))
+        if (isList(CAR(s)) /* || isFrame(CAR(s))*/)
         {
-            /* now we only need to worry about vectors, use mod to handle arrays */
+            /* Now we only need to worry about vectors */
+            /* since we use mod to handle arrays. */
+            /* FIXME : using mod like this causes */
+            /* a potential performance hit. */
             for (t = CAR(s); t != R_NilValue; t = CDR(t))
-                for (i = 0; i < LENGTH(CAR(t)); i++)
+            {
+                u = CAR(t);
+                for (i = 0; i < LENGTH(u); i++)
                 {
-                    u = CAR(t);
                     switch (TYPEOF(u))
                     {
                     case INTSXP:
@@ -758,7 +794,46 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         goto bad_mode;
                     }
                 }
+            }
         }
+#ifdef NEWLIST
+        if (isNewList(CAR(s)))
+        {
+            int it, nt;
+            t = CAR(s);
+            nt = length(t);
+            for (it = 0; it < nt; it++)
+            {
+                u = VECTOR(t)[it];
+                for (i = 0; i < LENGTH(u); i++)
+                {
+                    switch (TYPEOF(u))
+                    {
+                    case INTSXP:
+                    case LGLSXP:
+                        if (INTEGER(u)[i] == NA_INTEGER)
+                            INTEGER(rval)[i % len] = 0;
+                        break;
+                    case REALSXP:
+                        if (ISNAN(REAL(u)[i]))
+                            INTEGER(rval)[i % len] = 0;
+                        break;
+                    case CPLXSXP:
+                        if (ISNAN(COMPLEX(u)[i].r) || ISNAN(COMPLEX(u)[i].i))
+                            INTEGER(rval)[i % len] = 0;
+                        break;
+                    case STRSXP:
+                        if (STRING(u)[i] == NA_STRING)
+                            INTEGER(rval)[i % len] = 0;
+                        break;
+                    default:
+                        UNPROTECT(1);
+                        goto bad_mode;
+                    }
+                }
+            }
+        }
+#endif
         else
         {
             for (i = 0; i < LENGTH(CAR(s)); i++)
@@ -795,7 +870,9 @@ SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 bad:
     error("complete.cases: not all arguments have the same length\n");
+
 bad_mode:
     error("complete.cases: invalid mode of argument\n");
+
     return R_NilValue; /* NOTREACHED; for -Wall */
 }

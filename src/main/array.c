@@ -20,6 +20,32 @@
 #include "Defn.h"
 #include "Mathlib.h"
 
+/* "GetRowNames" and "GetColNames" are utility routines which */
+/* locate and return the row names and column names from the */
+/* dimnames attribute of a matrix.  They are useful because */
+/* old versions of R used pair-based lists for dimnames */
+/* whereas recent versions use vector bassed lists */
+
+SEXP GetRowNames(SEXP dimnames)
+{
+    if (TYPEOF(dimnames) == VECSXP)
+        return VECTOR(dimnames)[0];
+    else if (TYPEOF(dimnames) == LISTSXP)
+        return CAR(dimnames);
+    else
+        return R_NilValue;
+}
+
+SEXP GetColNames(SEXP dimnames)
+{
+    if (TYPEOF(dimnames) == VECSXP)
+        return VECTOR(dimnames)[1];
+    else if (TYPEOF(dimnames) == LISTSXP)
+        return CADR(dimnames);
+    else
+        return R_NilValue;
+}
+
 SEXP do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP vals, snr, snc;
@@ -112,11 +138,10 @@ SEXP allocArray(SEXPTYPE mode, SEXP dims)
 
 SEXP DropDims(SEXP x)
 {
-    SEXP p, q, r, dims, dimnames;
-    int i, n;
+    SEXP p, q, dims, dimnames;
+    int i, n, ndims;
 
     PROTECT(x);
-
     dims = getAttrib(x, R_DimSymbol);
     dimnames = getAttrib(x, R_DimNamesSymbol);
 
@@ -128,45 +153,50 @@ SEXP DropDims(SEXP x)
         UNPROTECT(1);
         return x;
     }
+    ndims = LENGTH(dims);
 
-    /* (2) Check that there are redundant extents */
+    /* (2) Check whether there are redundant extents */
     n = 0;
-    for (i = 0; i < LENGTH(dims); i++)
+    for (i = 0; i < ndims; i++)
         if (INTEGER(dims)[i] != 1)
             n++;
-    if (n == LENGTH(dims))
+    if (n == ndims)
     {
         UNPROTECT(1);
         return x;
     }
 
     if (n <= 1)
-    { /* vector */
+    {
+        /* We have reduced to a vector result. */
         SEXP newnames = R_NilValue;
         if (dimnames != R_NilValue)
         {
             n = length(dims);
-#ifdef NEWLIST
-            for (i = 0; i < n; i++)
+            if (TYPEOF(dimnames) == VECSXP)
             {
-                if (INTEGER(dims)[i] != 1)
+                for (i = 0; i < n; i++)
                 {
-                    newnames = VECTOR(dimnames)[i];
-                    break;
+                    if (INTEGER(dims)[i] != 1)
+                    {
+                        newnames = VECTOR(dimnames)[i];
+                        break;
+                    }
                 }
             }
-#else
-            q = dimnames;
-            for (i = 0; i < n; i++)
+            else
             {
-                if (INTEGER(dims)[i] != 1)
+                q = dimnames;
+                for (i = 0; i < n; i++)
                 {
-                    newnames = CAR(q);
-                    break;
+                    if (INTEGER(dims)[i] != 1)
+                    {
+                        newnames = CAR(q);
+                        break;
+                    }
+                    q = CDR(q);
                 }
-                q = CDR(q);
             }
-#endif
         }
         PROTECT(newnames);
         setAttrib(x, R_DimNamesSymbol, R_NilValue);
@@ -175,40 +205,37 @@ SEXP DropDims(SEXP x)
         UNPROTECT(1);
     }
     else
-    { /* array */
+    {
+        /* We have a lower dimensional array. */
         SEXP newdims, newdimnames;
-        PROTECT(newdims = allocVector(INTSXP, n));
+        int j = 0;
         n = 0;
-        for (i = 0; i < LENGTH(dims); i++)
+        PROTECT(newdims = allocVector(INTSXP, n));
+        for (i = 0; i < ndims; i++)
             if (INTEGER(dims)[i] != 1)
                 INTEGER(newdims)[n++] = INTEGER(dims)[i];
-        if (dimnames != R_NilValue)
+        if (TYPEOF(dimnames) == VECSXP)
         {
-#ifdef NEWLIST
-            int j = 0;
             PROTECT(newdimnames = allocVector(VECSXP, n));
-            for (i = 0; i < LENGTH(dims); i++)
+            for (i = 0; i < ndims; i++)
             {
                 if (INTEGER(dims)[i] != 1)
-                {
                     VECTOR(newdimnames)[j++] = VECTOR(dimnames)[i];
-                }
             }
-#else
-            PROTECT(newdimnames = allocList(n));
+        }
+        else if (TYPEOF(dimnames) == LISTSXP)
+        {
+            PROTECT(newdimnames = allocVector(VECSXP, n));
             q = dimnames;
-            r = newdimnames;
-            for (i = 0; i < LENGTH(dims); i++)
+            for (i = 0; i < ndims; i++)
             {
                 if (INTEGER(dims)[i] != 1)
-                {
-                    CAR(r) = CAR(q);
-                    r = CDR(r);
-                }
+                    VECTOR(newdimnames)[j++] = CAR(q);
                 q = CDR(q);
             }
-#endif
         }
+        else
+            newdimnames = R_NilValue;
         setAttrib(x, R_DimNamesSymbol, R_NilValue);
         setAttrib(x, R_DimSymbol, newdims);
         if (dimnames != R_NilValue)
@@ -749,6 +776,12 @@ SEXP do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
             STRING(r)[j] = STRING(a)[i];
         }
         break;
+    case VECSXP:
+        for (i = 0; i < len; i++)
+        {
+            j = swap(i, dimsa, dimsr, perm, ind1, ind2);
+            VECTOR(r)[j] = VECTOR(a)[i];
+        }
     default:
         errorcall(call, "invalid argument\n");
     }

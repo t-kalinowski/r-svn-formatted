@@ -15,67 +15,69 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-/*--------------------------------------------------------------
  *
- * Environments:
  *
- * All the action of associating values with symbols happens
- * in this code.  An environment is (essentially) a list of
- * environment "frames" of the form
+ *
+ *  Environments:
+ *
+ *  All the action of associating values with symbols happens
+ *  in this code.  An environment is (essentially) a list of
+ *  environment "frames" of the form
  *
  *	CAR(envir) = FRAME(envir) = environment frame
  *	CDR(envir) = ENCLOS(envir) = parent environment
  *
- * In addition, environments which are created by binding a
- * function's (=closure's) formals to its actuals have a value
+ *  In addition, environments which are created by binding a
+ *  function's (=closure's) formals to its actuals have a value
  *
  *	NARGs(envir)
  *
- * which records the actual number of arguments passed in the
- * function call.  This is the value returned by the function nargs().
+ *  which records the actual number of arguments passed in the
+ *  function call.  This is the value returned by the function nargs().
  *
- * Each frame is a (tagged) list with
+ *  Each frame is a (tagged) list with
  *
  *	TAG(item) = symbol
  *	CAR(item) = value bound to symbol in this frame
  *	CDR(item) = next value on the list
  *
- * When the value of a symbol is required, the environment is
- * traversed frame-by-frame until a value is found.
+ *  When the value of a symbol is required, the environment is
+ *  traversed frame-by-frame until a value is found.
  *
- * If a value is not found during the traversal, the symbol's
- * "value" slot is inspected for a value.  This "top-level"
- * environment is where system functions and variables reside.
- * Assignment in this environment is carried out with the :=
- * assignment operator.
+ *  If a value is not found during the traversal, the symbol's
+ *  "value" slot is inspected for a value.  This "top-level"
+ *  environment is where system functions and variables reside.
+ *  Assignment in this environment is carried out with the :=
+ *  assignment operator.
  *
- * Note that: mkEnv can be found in dstruct.c
+ *  Note that: mkEnv can be found in dstruct.c
  *
- *--------------------------------------------------------------*/
+ */
 
 #include "Defn.h"
 
 extern int R_DirtyImage;
 
-/* emptyEnv - return an environment with no bindings */
+/* Return an environment with no bindings */
+
 SEXP emptyEnv()
 {
     return mkEnv(R_NilValue, R_NilValue, R_NilValue);
 }
 
-/* extendEnv - extend environment rho by binding vars to vals */
+/* Extend an environment "rho" by binding "vars" to "vals" */
+
 SEXP extendEnv(SEXP rho, SEXP vars, SEXP vals)
 {
     return mkEnv(vars, vals, rho);
 }
 
-/* NEED: this should also unbind the symbol value slot */
+/* FIXME ? should this also unbind the symbol value slot */
 /* when rho is R_NilValue */
 
-/* unbindVar - remove a value from an environment */
-/* this happens only in the current environment frame */
+/* Remove a value from an environment */
+/* This happens only in the current environment frame */
+
 void unbindVar(SEXP symbol, SEXP rho)
 {
     SEXP *v = &(FRAME(rho));
@@ -91,10 +93,9 @@ void unbindVar(SEXP symbol, SEXP rho)
     }
 }
 
-/* getVarInFrame - return an object whose car contains the */
-/* value of "symbol" in the specified environment frame. */
-/* This is called the symbol's "slot" below. */
-/* If the symbol is unbound in the frame, returns R_NilValue */
+/* Return an object whose car contains the value of "symbol" in the */
+/* specified environment frame.  This is called the symbol's "slot" */
+/* below.  If the symbol is unbound in the frame, returns R_NilValue. */
 
 SEXP getVarInFrame(SEXP frame, SEXP symbol)
 {
@@ -107,11 +108,11 @@ SEXP getVarInFrame(SEXP frame, SEXP symbol)
     return R_NilValue;
 }
 
-/* getVar - return the slot for a symbol in an environment */
+/* Return the slot for a symbol in an environment */
+
 SEXP getVar(SEXP symbol, SEXP rho)
 {
     SEXP vl;
-
     while (rho != R_NilValue)
     {
         vl = getVarInFrame(FRAME(rho), symbol);
@@ -122,11 +123,11 @@ SEXP getVar(SEXP symbol, SEXP rho)
     return (symbol);
 }
 
-/* findVar - look up a symbol in an environment */
+/* Look up a symbol in an environment */
+
 SEXP findVar(SEXP symbol, SEXP rho)
 {
     SEXP vl;
-
     while (rho != R_NilValue)
     {
         vl = findVarInFrame(FRAME(rho), symbol);
@@ -137,13 +138,12 @@ SEXP findVar(SEXP symbol, SEXP rho)
     return (SYMVALUE(symbol));
 }
 
-/* return R_UnboundValue if the symbol isn't located and the calling
-   function needs to handle the errors
-*/
+/* Return R_UnboundValue if the symbol isn't located and the calling */
+/* function needs to handle the errors. */
+
 SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
 {
     SEXP vl;
-
     while (cptr != R_ToplevelContext)
     {
         if (cptr->callflag == CTXT_RETURN)
@@ -157,12 +157,10 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
     return (R_UnboundValue);
 }
 
-/* findFun - search for a function in an environment */
-/* This is a specially modified version of findVar which */
-/* ignores values its finds if they are not functions. */
-/* NEEDED: modify this so that a search for an arbitrary */
-/* mode can be made.  Then findVar and findFun could become */
-/* same function */
+/* Search for a function in an environment This is a specially modified */
+/* version of findVar which ignores values its finds if they are not */
+/* functions.  NEEDED: modify this so that a search for an arbitrary mode */
+/* can be made.  Then findVar and findFun could become same function */
 
 SEXP findFun(SEXP symbol, SEXP rho)
 {
@@ -192,7 +190,8 @@ SEXP findFun(SEXP symbol, SEXP rho)
     return (SYMVALUE(symbol));
 }
 
-/* findVarInFrame - look up name in a single environment frame */
+/* Look up name in a single environment frame. */
+
 SEXP findVarInFrame(SEXP frame, SEXP symbol)
 {
     while (frame != R_NilValue)
@@ -204,11 +203,11 @@ SEXP findVarInFrame(SEXP frame, SEXP symbol)
     return R_UnboundValue;
 }
 
-/* defineVar - assign a value in a specific environment frame */
+/* Assign a value in a specific environment frame. */
+
 void defineVar(SEXP symbol, SEXP value, SEXP rho)
 {
     SEXP frame;
-
     R_DirtyImage = 1;
     if (rho != R_NilValue)
     {
@@ -230,11 +229,11 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
     SYMVALUE(symbol) = value;
 }
 
-/* setVar - assign a new value to bound symbol */
+/* Assign a new value to bound symbol. */
+
 void setVar(SEXP symbol, SEXP value, SEXP rho)
 {
     SEXP vl;
-
     while (rho != R_NilValue)
     {
         R_DirtyImage = 1;
@@ -248,21 +247,17 @@ void setVar(SEXP symbol, SEXP value, SEXP rho)
     defineVar(symbol, value, R_GlobalEnv);
 }
 
-/* assignment in the system environment */
-/* Functions here all have the system environment as their environment. */
-/* This means that redefinition c, t etc will not break a system function. */
+/* Assignment in the system environment. */
+
 void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 {
     R_DirtyImage = 1;
-#ifdef EXPT
-    if (TYPEOF(value) == CLOSXP)
-        CLOENV(value) = R_NilValue;
-#endif
     SYMVALUE(symbol) = value;
 }
 
-/* setVarInFrame - assign a new value to a symbol in a frame */
-/* return the symbol if successful */
+/* Assign a new value to a symbol in a frame. */
+/* Return the symbol if successful. */
+
 SEXP setVarInFrame(SEXP frame, SEXP symbol, SEXP value)
 {
     while (frame != R_NilValue)
@@ -291,7 +286,6 @@ SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP name, s, t, x;
     int pos;
-
     checkArity(op, args);
 
     if (!isList(CAR(args)))
@@ -441,10 +435,10 @@ SEXP do_builtins(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+/* ls(envir, all.names) */
+
 SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    /* ls(envir, all.names) */
-
     SEXP ans, env, envp, s;
     int all, i, k;
 
@@ -458,9 +452,7 @@ SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
     all = asLogical(CADR(args));
     if (all == NA_LOGICAL)
         all = 0;
-
     /* Step 1 : Compute the Vector Size */
-
     k = 0;
     for (envp = env; envp != R_NilValue; envp = CDR(envp))
     {
@@ -488,9 +480,7 @@ SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             error("invalid envir= argument\n");
     }
-
     /* Step 2 : Allocate and Fill the Result */
-
     ans = allocVector(STRSXP, k);
     k = 0;
     for (envp = env; envp != R_NilValue; envp = CDR(envp))
@@ -545,7 +535,6 @@ SEXP do_libfixup(SEXP call, SEXP op, SEXP args, SEXP rho)
 static SEXP pos2env(int pos, SEXP call)
 {
     SEXP env;
-
     if (pos == NA_INTEGER || pos < -1 || pos == 0)
     {
         errorcall(call, "invalid argument\n");
@@ -576,14 +565,24 @@ SEXP do_pos2env(SEXP call, SEXP op, SEXP args, SEXP rho)
     npos = length(pos);
     if (npos <= 0)
         errorcall(call, "invalid \"pos\" argument\n");
+#ifdef NEWLIST
+    PROTECT(env = allocVector(VECSXP, npos));
+    for (i = 0; i < npos; i++)
+    {
+        VECTOR(env)[i] = pos2env(INTEGER(pos)[i], call);
+    }
+    if (npos == 1)
+        env = VECTOR(env)[0];
+#else
     PROTECT(envp = env = allocList(npos));
     for (i = 0; i < npos; i++)
     {
         CAR(envp) = pos2env(INTEGER(pos)[i], call);
         envp = CDR(envp);
     }
-    UNPROTECT(2);
     if (npos == 1)
         env = CAR(env);
+#endif
+    UNPROTECT(2);
     return env;
 }

@@ -32,30 +32,31 @@ static int ValidFileSpec(SEXP f)
     return 0;
 }
 
-/*  do_parse - the user interface input/output to files.  */
-/*  See parse, below, for the internal function.  The     */
-/*  arguments are "file", "number", "text", "prompt".     */
-/*  If there is text then that is read and the other      */
-/*  arguments are ignored.                                */
+/* "do_parse" - the user interface input/output to files. */
+/* See parse, below, for the internal function.  The */
+/* arguments are "file", "number", "text", "prompt". */
+/* If there is text then that is read and the other */
+/* arguments are ignored. */
 
 SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP file, text, prompt, s;
     FILE *fp;
     int num, pstacktop, status;
-
     checkArity(op, args);
-
     pstacktop = R_PPStackTop;
     R_ParseError = 0;
     R_ParseCnt = 0;
 
     PROTECT(file = coerceVector(CAR(args), STRSXP));
     args = CDR(args);
+
     num = asInteger(CAR(args));
     args = CDR(args);
+
     PROTECT(text = coerceVector(CAR(args), STRSXP));
     args = CDR(args);
+
     prompt = CAR(args);
     if (prompt == R_NilValue)
         PROTECT(prompt);

@@ -1108,7 +1108,7 @@ static void PerspBox(int front, double *x, double *y, double *z, DevDesc *dd)
         TransVector(u3, VT, v3);
 
         /* Visibility test */
-        /* Determine whether the surface normal is toward the eye? */
+        /* Determine whether the surface normal is toward the eye. */
 
         for (i = 0; i < 3; i++)
         {

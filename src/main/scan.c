@@ -475,10 +475,10 @@ done:
         REprintf("Read %d lines\n", n);
 
     /*
-    if (n == maxitems ) {
-        UNPROTECT(1);
-        return ans;
-    }
+      if (n == maxitems) {
+      UNPROTECT(1);
+      return ans;
+      }
     */
 
     a = ans;
@@ -911,7 +911,9 @@ SEXP do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
         bufp++;
     first = LENGTH(CAR(args)) + 1;
     if (isdigit(*bufp))
+    {
         first = strtod(buffer, NULL);
+    }
     else
     {
         for (j = 0; j < LENGTH(CAR(args)); j++)

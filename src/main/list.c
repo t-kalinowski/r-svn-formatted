@@ -15,15 +15,23 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *
+ *  Basic List Handling Features
+ *
+ *  These remain here to show that R is truly descended from Lisp :-).
+ *  There is one real function "allnames" shich should probably be
+ *  elsewhere.
  */
+
+/* This file processed for NEWLIST */
 
 #include "Defn.h"
 
-/*-----------------------*/
-/* Basic List Constructs */
-/*-----------------------*/
+/* Return a dotted pair with the given CAR and CDR. */
+/* The (R) TAG slot on the cell is set to NULL. */
 
-/* cons - return a dotted pair with the given car and cdr */
 SEXP cons(SEXP car, SEXP cdr)
 {
     SEXP e;
@@ -33,11 +41,10 @@ SEXP cons(SEXP car, SEXP cdr)
     UNPROTECT(2);
     CAR(e) = car;
     SETCDR(e, cdr);
-#ifdef oldmem
-    TAG(e) = R_NilValue;
-#endif
     return e;
 }
+
+/* Shorthands for creating small lists */
 
 SEXP list1(SEXP s)
 {
@@ -68,8 +75,8 @@ SEXP list4(SEXP s, SEXP t, SEXP u, SEXP v)
     return s;
 }
 
-/* listAppend - Destructive list append */
-/* See also ``append'' */
+/* Destructive list append : See also ``append'' */
+
 SEXP listAppend(SEXP s, SEXP t)
 {
     SEXP r;
@@ -82,11 +89,11 @@ SEXP listAppend(SEXP s, SEXP t)
     return s;
 }
 
-/*--------------------------------*/
-/* Language based list constructs */
-/*--------------------------------*/
+/* Language based list constructs.  These are identical to the list */
+/* constructs, but the results can be evaluated. */
 
-/* lcons - return a (language) dotted pair with the given car and cdr */
+/* Return a (language) dotted pair with the given car and cdr */
+
 SEXP lcons(SEXP car, SEXP cdr)
 {
     SEXP e;
@@ -128,6 +135,9 @@ SEXP lang4(SEXP s, SEXP t, SEXP u, SEXP v)
     UNPROTECT(1);
     return s;
 }
+
+/* The following code is used to recursive traverse a block */
+/* of code and extract all the symbols present in that code. */
 
 static SEXP ans;
 static int UniqueNames;

@@ -48,7 +48,7 @@ char *col2name(unsigned int);
 
 static void par_error(char *what)
 {
-    error("attempt to set invalid value for graphics parameter \"%s\".\n", what);
+    error("invalid value specified for graphics parameter \"%s\".\n", what);
 }
 
 static void lengthCheck(char *what, SEXP v, int n)
@@ -93,14 +93,12 @@ static void BoundsCheck(double x, double a, double b, char *s)
         par_error(s);
 }
 
-/* when any one of the layout parameters (which can only be set via par(...))
- * is modified, must call GReset()
- * to update the layout and the transformations between coordinate systems
- */
+/* When any one of the layout parameters (which can only be set via */
+/* par(...)) is modified, must call GReset() to update the layout and */
+/* the transformations between coordinate systems */
 
-/* If you ADD a NEW par then do NOT forget to update
- * the code in ../library/base/R/par.R
- */
+/* If you ADD a NEW par then do NOT forget to update the code in */
+/* ../library/base/R/par.R */
 
 static int Specify(char *what, SEXP value, DevDesc *dd)
 {
@@ -532,8 +530,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         /* currentFigure is 1-based */
         dd->dp.currentFigure = (col - 1) * nrow + row;
         /*
-        if (dd->dp.currentFigure == 0)
-            dd->dp.currentFigure = dd->dp.lastFigure;
+          if (dd->dp.currentFigure == 0)
+          dd->dp.currentFigure = dd->dp.lastFigure;
         */
         dd->gp.currentFigure = dd->dp.currentFigure;
         dd->gp.defaultFigure = dd->dp.defaultFigure = 1;
@@ -713,12 +711,10 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         else
             par_error(what);
     }
-    /* NOTE: tck and tcl must be treated in parallel.
-     * If one is NA, the other must be non NA.
-     * If tcl is NA then setting tck to NA will reset tck to
-     * its initial default value.
-     * See also graphics.c
-     */
+    /* NOTE: tck and tcl must be treated in parallel. */
+    /* If one is NA, the other must be non NA.  If tcl */
+    /* is NA then setting tck to NA will reset tck to its */
+    /* initial default value.  See also graphics.c. */
     else if (streql(what, "tck"))
     {
         lengthCheck(what, value, 1);
@@ -903,6 +899,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
 }
 
 /* Specify2 -- parameters as arguments from higher-level graphics functions */
+
 void Specify2(char *what, SEXP value, DevDesc *dd)
 {
     double x;
@@ -1313,9 +1310,10 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     }
     else
         warning("parameter \"%s\" couldn't be set in high-level plot() function\n", what);
-} /* end Specify2(.) */
+}
 
-/* Do NOT forget to update  ../library/base/R/par.R if you  ADD a NEW  par !! */
+/* Do NOT forget to update  ../library/base/R/par.R */
+/* if you  ADD a NEW  par !! */
 
 static SEXP Query(char *what, DevDesc *dd)
 {
@@ -1525,8 +1523,7 @@ static SEXP Query(char *what, DevDesc *dd)
         REAL(value)[0] = dd->dp.mex;
     }
     /* NOTE that if a complex layout has been specified */
-    /* then this simple information may not be very useful */
-
+    /* then this simple information may not be very useful. */
     else if (streql(what, "mfrow") || streql(what, "mfcol"))
     {
         value = allocVector(INTSXP, 2);
@@ -1762,8 +1759,10 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ap, vp, value;
     SEXP originalArgs = args;
     DevDesc *dd;
-    int new_spec;
+    int new_spec, nargs;
 
+    checkArity(op, args);
+    gcall = call;
     if (NoDevices())
     {
         SEXP defdev = GetOption(install("device"), R_NilValue);
@@ -1776,16 +1775,55 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
         eval(defdev, R_GlobalEnv);
         UNPROTECT(1);
     }
-
-    gcall = call;
-    checkArity(op, args);
-
-    if (!isList(CAR(args)))
-        errorcall(call, "invalid parameter passed to \"par\"\n");
-
     dd = CurrentDevice();
-    args = CAR(args);
     new_spec = 0;
+    args = CAR(args);
+    nargs = length(args);
+#ifdef NEWLIST
+    if (isNewList(args))
+    {
+        SEXP oldnames, newnames, tag, val;
+        int i;
+        PROTECT(newnames = allocVector(STRSXP, nargs));
+        PROTECT(value = allocVector(VECSXP, nargs));
+        oldnames = getAttrib(args, R_NamesSymbol);
+        for (i = 0; i < nargs; i++)
+        {
+            if (oldnames != R_NilValue)
+                tag = STRING(oldnames)[i];
+            else
+                tag = R_NilValue;
+            val = VECTOR(args)[i];
+            if (tag != R_NilValue && CHAR(tag)[0])
+            {
+                new_spec = 1;
+                VECTOR(value)[i] = Query(CHAR(tag), dd);
+                STRING(newnames)[i] = tag;
+                Specify(CHAR(tag), val, dd);
+            }
+            else if (isString(val) && length(val) > 0)
+            {
+                tag = STRING(val)[0];
+                if (tag != R_NilValue && CHAR(tag)[0])
+                {
+                    VECTOR(value)[i] = Query(CHAR(tag), dd);
+                    STRING(newnames)[i] = tag;
+                }
+            }
+            else
+            {
+                VECTOR(value)[i] = R_NilValue;
+                STRING(newnames)[i] = R_NilValue;
+            }
+        }
+        setAttrib(value, R_NamesSymbol, newnames);
+        UNPROTECT(2);
+    }
+    else
+        errorcall(call, "invalid parameter passed to \"par\"\n");
+#else
+    if (!isList(args))
+        errorcall(call, "invalid parameter passed to \"par\"\n");
     PROTECT(value = allocList(length(args)));
     for (vp = value, ap = args; ap != R_NilValue; vp = CDR(vp), ap = CDR(ap))
     {
@@ -1803,6 +1841,7 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     UNPROTECT(1);
+#endif
     /* should really only do this if specifying new pars ?
      * yes! [MM] */
     if (new_spec && call != R_NilValue)

@@ -30,7 +30,7 @@
 
 static DevDesc *mathDevice;
 
-/* return maximum of two doubles */
+/* Return maximum of two doubles. */
 
 static double max(double x, double y)
 {
@@ -40,15 +40,15 @@ static double max(double x, double y)
         return y;
 }
 
-/* determine match between symbol name and string */
+/* Determine match between symbol name and string. */
 
 static int symbolMatch(SEXP expr, char *aString)
 {
     return !strcmp(CHAR(PRINTNAME(expr)), aString);
 }
 
-/* code to determine the ascii code corresponding */
-/* to an element of a mathematical expression */
+/* Code to determine the ascii code corresponding */
+/* to an element of a mathematical expression. */
 
 static int hatAscii()
 {
@@ -68,21 +68,18 @@ static int accentAscii(SEXP expr)
         result = hatAscii();
     else if (symbolMatch(expr, "tilde"))
         result = tildeAscii();
-
     return result;
 }
 
 static int operatorAscii(SEXP expr)
 {
     int result = 0;
-
     if (symbolMatch(expr, "sum"))
         result = 229;
     else if (symbolMatch(expr, "integral"))
         result = 242;
     else if (symbolMatch(expr, "product"))
         result = 213;
-
     return result;
 }
 
@@ -148,7 +145,6 @@ static struct
 static int greekAscii(SEXP expr)
 {
     int i;
-
     for (i = 0; GreekTable[i].code; i++)
         if (symbolMatch(expr, GreekTable[i].name))
             return GreekTable[i].code;
@@ -160,7 +156,7 @@ static int relAscii()
     return 61;
 }
 
-/* initialisation code for mathematical notation */
+/* Initialisation code for mathematical notation. */
 
 static double ratioScale = 0.8;
 static double scriptScale = 0.65;
@@ -188,7 +184,7 @@ static void initFormulaSymbols()
     groupSymbol = install("(");
 }
 
-/* code to determine the nature of an expression */
+/* Code to determine the nature of an expression. */
 
 static int formulaExpression(SEXP expr)
 {
@@ -202,7 +198,7 @@ static int symbolAtom(SEXP expr)
 
 static int numberAtom(SEXP expr)
 {
-    return (TYPEOF(expr) == REALSXP) || (TYPEOF(expr) == INTSXP) || (TYPEOF(expr) == CPLXSXP);
+    return ((TYPEOF(expr) == REALSXP) || (TYPEOF(expr) == INTSXP) || (TYPEOF(expr) == CPLXSXP));
 }
 
 static int stringAtom(SEXP expr)
@@ -335,7 +331,7 @@ static int greekSymbol(SEXP expr)
     return 0;
 }
 
-/* code to determine a font from the */
+/* Code to determine a font from the */
 /* nature of the expression */
 
 static int currentFont = 3;
@@ -394,7 +390,6 @@ static int atomFontFace(SEXP expr)
 static double fontHeight();
 
 /* some forward declarations */
-
 typedef struct
 {
     double height;
@@ -524,7 +519,7 @@ static double operatorSpace(int i)
     return OperatorSpace[i] * fontHeight();
 }
 
-/* should only be called when font=5 (symbol) */
+/* Should only be called when font=5 (symbol) */
 
 static double radicalExWidth()
 {
@@ -847,9 +842,9 @@ static double operatorHShiftAll(SEXP operator, SEXP lower, SEXP upper)
         return 0;
 }
 
-/* code to generate bounding boxes and draw formulae */
+/* Code to generate bounding boxes and draw formulae. */
 
-/* Bounding box basics */
+/* Bounding box basics. */
 
 static BBOX makeBBox(double height, double depth, double width)
 {
@@ -899,10 +894,9 @@ static double currentAngle;
 static double cosAngle;
 static double sinAngle;
 
-/*
-   // convert currentX and currentY from 0 angle
-   // to and currentAngle
- */
+/* Convert currentX and currentY from 0 angle */
+/* to and currentAngle */
+
 static double convertedX()
 {
     double rotatedX = referenceX + (currentX - referenceX) * cosAngle - (currentY - referenceY) * sinAngle;
@@ -931,10 +925,10 @@ static void moveTo(double x, double y)
     currentY = y;
 }
 
-/* code for ascii atoms */
+/* Code for ascii atoms. */
 
-/* NOTE that i assume that all symbols which have */
-/* been converted to ascii are in the symbol font */
+/* NOTE that I assume that all symbols which have */
+/* been converted to ascii are in the symbol font. */
 
 static BBOX asciiBBox(int ascii)
 {
@@ -959,7 +953,7 @@ static void drawAscii(int ascii)
     moveAcross(GStrWidth(asciiStr, metricUnit, mathDevice));
 }
 
-/* code for character atoms */
+/* Code for character atoms. */
 
 static BBOX charBBox(char *str, SEXP expr)
 {
@@ -1140,9 +1134,10 @@ static void drawSmallGap(double gap)
     mathDevice->gp.cex = cexSaved;
 }
 
-/* code for binary operator (+, -, *, /) expressions */
+/* Code for binary operator (+, -, *, /) expressions */
 
-/* NOTE that gaps are specified as proportions of the current font height */
+/* NOTE that gaps are specified as proportions */
+/* of the current font height */
 
 static double binGapBefore(SEXP beforeOperand)
 {
@@ -1216,7 +1211,7 @@ static void drawBin(SEXP expr)
     }
 }
 
-/* code for superscript and subscript expressions */
+/* Code for superscript and subscript expressions */
 
 static BBOX supsubBBox(SEXP body, SEXP superscript, SEXP subscript);
 
@@ -1440,7 +1435,7 @@ static void drawAccent(SEXP expr)
     }
 }
 
-/* code for fraction expressions (over) */
+/* Code for fraction expressions (over) */
 
 static BBOX fractionBBox(SEXP expr)
 {
@@ -1691,7 +1686,7 @@ static void drawOperator(SEXP expr)
     drawElement(body);
 }
 
-/* code for radical expressions (root) */
+/* Code for radical expressions (root) */
 
 static BBOX customRadicalBBox(SEXP body)
 {
@@ -1747,7 +1742,7 @@ static void drawRadical(SEXP expr)
     drawCustomRadical(body);
 }
 
-/* code for absolute expressions (abs) */
+/* Code for absolute expressions (abs). */
 
 static BBOX absBBox(SEXP expr)
 {
@@ -1784,8 +1779,8 @@ static void drawAbs(SEXP expr)
     moveUp(-height);
 }
 
-/* code for general expressions with no special meaning in */
-/* mathematical notation syntax (e.g., f(x)) */
+/* Code for general expressions with no special meaning */
+/* in mathematical notation syntax (e.g., f(x)) */
 
 static BBOX expressionBBox(SEXP expr)
 {
@@ -1833,7 +1828,7 @@ static void drawExpression(SEXP expr)
     drawAscii(groupCloseAscii());
 }
 
-/* code for curly expressions (i.e., { ... } ) */
+/* Code for curly expressions (i.e., { ... } ) */
 
 static BBOX curlyBBox(SEXP expr)
 {
@@ -2017,7 +2012,7 @@ static void drawConcatenate(SEXP expr)
     }
 }
 
-/* dispatching procedure which determines nature of expression */
+/* Dispatching procedure which determines nature of expression. */
 
 static BBOX formulaBBox(SEXP expr)
 {
@@ -2146,7 +2141,7 @@ double GExpressionHeight(SEXP expr, int units, DevDesc *dd)
         return GConvertYUnits(h, INCHES, units, dd);
 }
 
-/* functions forming the API */
+/* Functions forming the API */
 
 void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, double rot, DevDesc *dd)
 {

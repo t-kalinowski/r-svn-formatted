@@ -17,6 +17,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* The fileprocessed for NEWLIST */
+
 #include "Defn.h"
 #include "Mathlib.h"
 
@@ -26,7 +28,6 @@ static void cov_pairwise1(int n, int ncx, double *x, double *ans, int cor)
 {
     double sum, xmean, ymean, xsd, ysd, *xx, *yy;
     int i, j, k, nobs;
-
     for (i = 0; i < ncx; i++)
     {
         for (j = 0; j <= i; j++)
@@ -90,7 +91,6 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
 {
     double sum, xmean, ymean, xsd, ysd, *xx, *yy;
     int i, j, k, nobs;
-
     for (i = 0; i < ncx; i++)
     {
         for (j = 0; j < ncy; j++)
@@ -156,7 +156,6 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
 {
     double sum, xxm, yym, *xx, *yy;
     int i, j, k, nobs;
-
     /* total number of complete observations */
     nobs = 0;
     for (k = 0; k < n; k++)
@@ -171,7 +170,6 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                 ans[i + j * ncx] = NA_REAL;
         return;
     }
-
     /* variable means */
     for (i = 0; i < ncx; i++)
     {
@@ -226,7 +224,6 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
 {
     double sum, xxm, yym, *xx, *yy;
     int i, j, k, nobs;
-
     /* total number of complete observations */
     nobs = 0;
     for (k = 0; k < n; k++)
@@ -241,7 +238,6 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                 ans[i + j * ncx] = NA_REAL;
         return;
     }
-
     /* variable means */
     for (j = 0; j < ncx; j++)
     {
@@ -375,12 +371,9 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y, ans, xm, ym, ind;
     int ansmat, cor, method, n, ncx, ncy, pair;
-
     checkArity(op, args);
     cor = PRIMVAL(op);
-
     /* Argument-1: x */
-
     x = CAR(args) = coerceVector(CAR(args), REALSXP);
     if ((ansmat = isMatrix(x)))
     {
@@ -393,9 +386,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         ncx = 1;
     }
     args = CDR(args);
-
     /* Argument-2: y */
-
     if (isNull(CAR(args)))
     {
         y = R_NilValue;
@@ -419,9 +410,7 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         ansmat = (ansmat || isMatrix(y));
     }
     args = CDR(args);
-
     /* Argument-3: method */
-
     method = asInteger(CAR(args));
     switch (method)
     {
@@ -443,14 +432,11 @@ SEXP do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (pair == NA_INTEGER)
         pair = 0;
-
     if (ansmat)
         PROTECT(ans = allocMatrix(REALSXP, ncx, ncy));
     else
         PROTECT(ans = allocVector(REALSXP, ncx * ncy));
-
     ZeroSD = 0;
-
     if (isNull(y))
     {
         if (pair == 0)

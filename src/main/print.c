@@ -56,7 +56,6 @@ void PrintDefaults(SEXP rho)
 SEXP do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     FILE *fp;
-
     if (isNull(CAR(args)))
     {
         if (R_Sinkfile)
@@ -94,11 +93,8 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int quote, right;
     SEXP a, x, rowlab, collab, oldnames;
-
     checkArity(op, args);
-
     PrintDefaults(rho);
-
     a = args;
     x = CAR(a);
     a = CDR(a);
@@ -109,7 +105,6 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     quote = asInteger(CAR(a));
     a = CDR(a);
     right = asInteger(CAR(a));
-
 #ifdef OLD
     PROTECT(oldnames = getAttrib(x, R_DimNamesSymbol));
     /* fix up the dimnames */
@@ -138,19 +133,15 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     return x;
 }
 
+/* .Internal(print.default(x, digits, quote, na.print, print.gap)) */
+/* Should now also dispatch to e.g., print.matrix(..) */
+/* The 'digits' must be "stored" here, since print.matrix */
+/* (aka prmatrix) does NOT accept a digits argument ... */
+
 SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    /* .Internal(print.default(x, digits, quote, na.print, print.gap)) */
-    /*
-     * Should now also dispatch to e.g.,	print.matrix(..)
-     * The 'digits' must be "stored" here, since print.matrix (aka prmatrix)
-     * does NOT accept a digits argument...
-     *
-     */
     SEXP x, naprint;
-
     checkArity(op, args);
-
     PrintDefaults(rho);
 
     x = CAR(args);

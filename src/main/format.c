@@ -15,14 +15,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  Object Formatting
+ *
+ *  See ./printutils.c for general remarks on Printing and the Encode.. utils.
+ *  See ./paste.c for do_paste() , do_format() and  do_formatinfo()
+ *  These  formatFOO() functions determine the proper width, digits, etc.
  */
 
-/*== see ./printutils.c	 for general remarks on Printing and the Encode.. utils.
- *== see ./paste.c	 for do_paste() , do_format() and  do_formatinfo()
- *
- * These  formatFOO (.)	 functions determine the proper	 width, digits, etc:
- *
- */
+/* File processed for NEWLIST */
 
 #include "Defn.h"
 #include "Mathlib.h"
@@ -291,7 +293,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     /* F Format (NEW):  use "F" format
      *	    WHENEVER we use not more space than 'E'
      *		and still satisfy 'print_digits'
-
+     *
      * E Format has the form   [S]X[.XXX]E+XX[X]
      *
      * This is indicated by setting *e to non-zero (usually 1)

@@ -19,6 +19,8 @@
 
 /* Code to handle list / vector switch */
 
+#include "Defn.h"
+
 #ifdef NEWLIST
 #define LIST_ASSIGN(x)                                                                                                 \
     {                                                                                                                  \
@@ -34,8 +36,6 @@
     }
 #define LIST_MODE LISTSXP
 #endif
-
-#include "Defn.h"
 
 static SEXP cbind(SEXP, SEXP, SEXPTYPE);
 static SEXP rbind(SEXP, SEXP, SEXPTYPE);
@@ -97,6 +97,7 @@ static void AnswerType(SEXP x, int recurse, int usenames)
         break;
 #ifdef NEWLIST
     case VECSXP:
+    case EXPRSXP:
         if (recurse)
         {
             int i, n;
@@ -112,7 +113,10 @@ static void AnswerType(SEXP x, int recurse, int usenames)
         }
         else
         {
-            ans_flags |= 128;
+            if (TYPEOF(x) == EXPRSXP)
+                ans_flags |= 256;
+            else
+                ans_flags |= 128;
             ans_length += length(x);
         }
         break;
@@ -193,7 +197,9 @@ static void ListAnswer(SEXP x, int recurse)
         for (i = 0; i < LENGTH(x); i++)
             LIST_ASSIGN(ScalarString(STRING(x)[i]));
         break;
+#ifdef NEWLIST
     case VECSXP:
+    case EXPRSXP:
         if (recurse)
         {
             for (i = 0; i < LENGTH(x); i++)
@@ -205,6 +211,7 @@ static void ListAnswer(SEXP x, int recurse)
                 LIST_ASSIGN(duplicate(VECTOR(x)[i]));
         }
         break;
+#endif
     case LISTSXP:
         if (recurse)
         {
@@ -717,8 +724,15 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     /* we use the natural coercion for vector types. */
 
     mode = NILSXP;
+#ifdef NEWLIST
+    if (ans_flags & 256)
+        mode = EXPRSXP;
+    else if (ans_flags & 128)
+        mode = VECSXP;
+#else
     if (ans_flags & 128)
         mode = LIST_MODE;
+#endif
     else if (ans_flags & 64)
         mode = STRSXP;
     else if (ans_flags & 32)
@@ -738,7 +752,7 @@ SEXP do_c(SEXP call, SEXP op, SEXP args, SEXP env)
     ans_length = 0;
     t = args;
 
-    if (mode == LIST_MODE)
+    if (mode == VECSXP || mode == EXPRSXP)
     {
         if (!recurse)
         {
@@ -962,7 +976,7 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
            This should obviously do something useful, but
            currently breaks [cr]bind() if one arg is a df
            while (a != R_NilValue) {
-               if(t == R_NilValue)
+               if (t == R_NilValue)
                    errorcall(call, "corrupt data frame args!\n");
                p = mkPROMISE(CAR(t), rho);
                PRVALUE(p) = CAR(a);
@@ -1045,6 +1059,22 @@ SEXP do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 static int imax(int i, int j)
 {
     return (i > j) ? i : j;
+}
+
+static void SetRowNames(SEXP dimnames, SEXP x)
+{
+    if (TYPEOF(dimnames) == VECSXP)
+        VECTOR(dimnames)[0] = x;
+    else if (TYPEOF(dimnames) == LISTSXP)
+        CAR(dimnames) = x;
+}
+
+static SEXP SetColNames(SEXP dimnames, SEXP x)
+{
+    if (TYPEOF(dimnames) == VECSXP)
+        VECTOR(dimnames)[1] = x;
+    else if (TYPEOF(dimnames) == LISTSXP)
+        return CADR(dimnames) = x;
 }
 
 static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
@@ -1192,42 +1222,63 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode)
             }
         }
     }
+    /* Adjustment of dimnames attributes. */
     if (have_cnames | have_rnames)
     {
+        SEXP cn, cnu;
         PROTECT(blank = mkChar(""));
+#ifdef NEWLIST
+        PROTECT(dn = allocVector(VECSXP, 2));
+        if (have_cnames)
+            cn = VECTOR(dn)[1] = allocVector(STRSXP, cols);
+#else
         PROTECT(dn = allocList(2));
         if (have_cnames)
-            CADR(dn) = allocVector(STRSXP, cols);
+            cn = CADR(dn) = allocVector(STRSXP, cols);
+#endif
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
             if (length(CAR(t)) >= 0)
             {
+
                 if (isMatrix(CAR(t)))
                 {
+
                     u = getAttrib(CAR(t), R_DimNamesSymbol);
-                    if (have_rnames && CAR(dn) == R_NilValue && CAR(u) != R_NilValue)
-                        CAR(dn) = duplicate(CAR(u));
-                    if (CADR(u) != R_NilValue)
+                    cnu = GetColNames(u);
+
+                    if (have_rnames && GetRowNames(dn) == R_NilValue && GetRowNames(u) != R_NilValue)
+                        SetRowNames(dn, duplicate(GetRowNames(u)));
+
+                    if (cnu != R_NilValue)
                     {
-                        for (i = 0; i < length(CADR(u)); i++)
-                            STRING(CADR(dn))[j++] = STRING(CADR(u))[i];
+                        for (i = 0; i < length(cnu); i++)
+                            STRING(cn)[j++] = STRING(cnu)[i];
                     }
                     else if (have_cnames)
                     {
                         for (i = 0; i < ncols(CAR(t)); i++)
-                            STRING(CADR(dn))[j++] = blank;
+                            STRING(cn)[j++] = blank;
                     }
                 }
                 else if (length(CAR(t)) > 0)
                 {
+
                     u = getAttrib(CAR(t), R_NamesSymbol);
-                    if (have_rnames && CAR(dn) == R_NilValue && u != R_NilValue && length(u) == rows)
-                        CAR(dn) = duplicate(u);
+                    cnu = u;
+
+                    if (have_rnames && GetRowNames(dn) == R_NilValue && u != R_NilValue && length(u) == rows)
+                        SetRowNames(dn, duplicate(u));
+
                     if (TAG(t) != R_NilValue)
-                        STRING(CADR(dn))[j++] = PRINTNAME(TAG(t));
+                    {
+                        STRING(cn)[j++] = PRINTNAME(TAG(t));
+                    }
                     else if (have_cnames)
-                        STRING(CADR(dn))[j++] = blank;
+                    {
+                        STRING(cn)[j++] = blank;
+                    }
                 }
             }
         }
@@ -1369,9 +1420,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
         {
             u = CAR(t);
             k = LENGTH(u);
-            /*
-              mrows = (isMatrix(u)) ? nrows(u) : 1;
-            */
+            /* mrows = (isMatrix(u)) ? nrows(u) : 1; */
             if (isMatrix(u))
             {
                 mrows = nrows(u);
@@ -1414,43 +1463,59 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode)
     }
     if (have_rnames | have_cnames)
     {
+        SEXP rn, rnu;
         PROTECT(blank = mkChar(""));
+#ifdef NEWLIST
+        PROTECT(dn = allocVector(VECSXP, 2));
+        if (have_rnames)
+            rn = VECTOR(dn)[0] = allocVector(STRSXP, rows);
+#else
         PROTECT(dn = allocList(2));
         if (have_rnames)
             CAR(dn) = allocVector(STRSXP, rows);
+#endif
         j = 0;
         for (t = args; t != R_NilValue; t = CDR(t))
         {
             if (length(CAR(t)) >= 0)
             {
+
                 if (isMatrix(CAR(t)))
                 {
+
                     u = getAttrib(CAR(t), R_DimNamesSymbol);
-                    if (have_cnames && CADR(dn) == R_NilValue && CADR(u) != R_NilValue)
-                        CADR(dn) = duplicate(CADR(u));
+                    rnu = GetRowNames(u);
+
+                    if (have_cnames && GetColNames(dn) == R_NilValue && GetColNames(u) != R_NilValue)
+                        SetColNames(dn, duplicate(GetColNames(u)));
+
                     if (have_rnames)
                     {
-                        if (CAR(u) != R_NilValue)
+                        if (rnu != R_NilValue)
                         {
-                            for (i = 0; i < length(CAR(u)); i++)
-                                STRING(CAR(dn))[j++] = STRING(CAR(u))[i];
+                            for (i = 0; i < length(rnu); i++)
+                                STRING(rn)[j++] = STRING(rnu)[i];
                         }
                         else
                         {
                             for (i = 0; i < nrows(CAR(t)); i++)
-                                STRING(CAR(dn))[j++] = blank;
+                                STRING(rn)[j++] = blank;
                         }
                     }
                 }
                 else if (length(CAR(t)) > 0)
                 {
+
                     u = getAttrib(CAR(t), R_NamesSymbol);
-                    if (have_cnames && CADR(dn) == R_NilValue && u != R_NilValue && length(u) == cols)
-                        CADR(dn) = duplicate(u);
+                    rnu = u;
+
+                    if (have_cnames && GetColNames(dn) == R_NilValue && u != R_NilValue && length(u) == cols)
+                        SetColNames(dn, duplicate(u));
+
                     if (TAG(t) != R_NilValue)
-                        STRING(CAR(dn))[j++] = PRINTNAME(TAG(t));
+                        STRING(rn)[j++] = PRINTNAME(TAG(t));
                     else if (have_rnames)
-                        STRING(CAR(dn))[j++] = blank;
+                        STRING(rn)[j++] = blank;
                 }
             }
         }

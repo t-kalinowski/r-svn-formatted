@@ -15,16 +15,21 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-#include "Defn.h"
-
-/*
- * This code will perform partial matching for list tags.  When
- * exact is 1, and exact match is required (typically after ...)
- * otherwise partial matching is performed.
  *
- * Examples:
+ *
+ *  Matching and Partial Matching for Strings
+ *
+ *  In theory all string matching code should be placed in this file
+ *  At present there are still a couple of rogue matchers about.
+ *
+ *
+ *  psmatch(char *, char *, int);
+ *
+ *  This code will perform partial matching for list tags.  When
+ *  exact is 1, and exact match is required (typically after ...)
+ *  otherwise partial matching is performed.
+ *
+ *  Examples:
  *
  *	psmatch("aaa", "aaa", 0) -> 1
  *	psmatch("aaa", "aa", 0) -> 1
@@ -32,9 +37,16 @@
  *
  */
 
-/******************************************/
-/* Basic gizmo - called by wrappers below */
-/******************************************/
+/* File processed for NEWLIST */
+#include "Defn.h"
+
+int NonNullStringMatch(SEXP s, SEXP t)
+{
+    if (CHAR(s)[0] && CHAR(t)[0] && strcmp(CHAR(s), CHAR(t)) == 0)
+        return 1;
+    else
+        return 0;
+}
 
 int psmatch(char *f, char *t, int exact)
 {
@@ -59,14 +71,11 @@ int psmatch(char *f, char *t, int exact)
     }
 }
 
-/**********************************/
 /* Matching formals and arguments */
-/**********************************/
 
 int pmatch(SEXP formal, SEXP tag, int exact)
 {
     char *f, *t;
-
     switch (TYPEOF(formal))
     {
     case SYMSXP:
@@ -81,7 +90,6 @@ int pmatch(SEXP formal, SEXP tag, int exact)
     default:
         goto fail;
     }
-
     switch (TYPEOF(tag))
     {
     case SYMSXP:
@@ -96,19 +104,15 @@ int pmatch(SEXP formal, SEXP tag, int exact)
     default:
         goto fail;
     }
-
     return psmatch(f, t, exact);
-
 fail:
     error("invalid partial string match\n");
     return 0; /* for -Wall */
 }
 
-/**************************************************/
-/* Destructively Extract A Named List Element     */
-/* Returns the first partially matching tag found */
-/* Pattern is a C string                          */
-/**************************************************/
+/* Destructively Extract A Named List Element. */
+/* Returns the first partially matching tag found. */
+/* Pattern is a C string. */
 
 SEXP matchPar(char *tag, SEXP *list)
 {
@@ -124,25 +128,21 @@ SEXP matchPar(char *tag, SEXP *list)
     return R_MissingArg;
 }
 
-/**************************************************/
-/* Destructively Extract A Named List Element     */
-/* Returns the first partially matching tag found */
-/* Pattern is a symbol                            */
-/**************************************************/
+/* Destructively Extract A Named List Element. */
+/* Returns the first partially matching tag found. */
+/* Pattern is a symbol. */
 
 SEXP matchArg(SEXP tag, SEXP *list)
 {
     return matchPar(CHAR(PRINTNAME(tag)), list);
 }
 
-/*****************************************************/
-/* match the supplied arguments with the formals and */
-/* return the matched arguments in actuals.          */
-/*****************************************************/
+/* Match the supplied arguments with the formals and */
+/* return the matched arguments in actuals. */
 
 #define ARGUSED(x) LEVELS(x)
 
-/* we need to leave supplied unchanged in case we call UseMethod */
+/* We need to leave supplied unchanged in case we call UseMethod */
 
 SEXP matchArgs(SEXP formals, SEXP supplied)
 {

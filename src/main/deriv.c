@@ -15,12 +15,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ *  Symbolic Differentiation
+ *
+ *  Note: the code below makes use of "expression" objects.
+ *  Maybe it is time for us to introduce mode "expression".
  */
 
-/* Symbolic Differentiation */
-
-/* note: the code below makes use of "expression" objects */
-/* maybe it is time for us to introduce mode "expression" */
+/* This file processed for NEWLIST */
 
 #include "Defn.h"
 
@@ -97,6 +100,8 @@ static int isUminus(SEXP s)
     else
         return 0;
 }
+
+/* Pointer protect and return the argument */
 
 static SEXP PP(SEXP s)
 {
@@ -267,7 +272,7 @@ static SEXP simplify(SEXP fun, SEXP arg1, SEXP arg2)
     }
     else
         ans = Constant(NA_REAL);
-
+        /* FIXME */
 #ifdef NOTYET
     if (length(ans) == 2 && isAtomic(CADR(ans)) && CAR(ans) != MinusSymbol)
         c = eval(c, rho);
@@ -280,7 +285,6 @@ static SEXP simplify(SEXP fun, SEXP arg1, SEXP arg2)
 static SEXP D(SEXP expr, SEXP var)
 {
     SEXP ans, expr1, expr2;
-
     switch (TYPEOF(expr))
     {
     case LGLSXP:
@@ -463,7 +467,6 @@ static int isPowerForm(SEXP expr)
 static SEXP AddParens(SEXP expr)
 {
     SEXP e;
-
     if (TYPEOF(expr) == LANGSXP)
     {
         e = CDR(expr);
@@ -473,7 +476,6 @@ static SEXP AddParens(SEXP expr)
             e = CDR(e);
         }
     }
-
     if (isPlusForm(expr))
     {
         if (isPlusForm(CADDR(expr)))
@@ -530,9 +532,7 @@ static SEXP AddParens(SEXP expr)
 SEXP do_D(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP expr, var;
-
     checkArity(op, args);
-
     if (isExpression(CAR(args)))
         expr = VECTOR(CAR(args))[0];
     else
@@ -704,7 +704,6 @@ static SEXP CreateGrad(SEXP names)
 {
     SEXP p, q, data, dim, dimnames;
     int i, n;
-
     n = length(names);
     PROTECT(dimnames = lang3(R_NilValue, R_NilValue, R_NilValue));
     CAR(dimnames) = install("list");
@@ -718,16 +717,13 @@ static SEXP CreateGrad(SEXP names)
         STRING(CAR(q))[0] = STRING(names)[i];
         q = CDR(q);
     }
-
     PROTECT(dim = lang3(R_NilValue, R_NilValue, R_NilValue));
     CAR(dim) = install("c");
     CADR(dim) = lang2(install("length"), install(".value"));
     CADDR(dim) = allocVector(REALSXP, 1);
     REAL(CADDR(dim))[0] = length(names);
-
     PROTECT(data = allocVector(REALSXP, 1));
     REAL(data)[0] = 0;
-
     PROTECT(p = lang4(install("array"), data, dim, dimnames));
     p = lang3(install("<-"), install(".grad"), p);
     UNPROTECT(4);
@@ -737,7 +733,6 @@ static SEXP CreateGrad(SEXP names)
 static SEXP DerivAssign(SEXP name, SEXP expr)
 {
     SEXP ans, newname;
-
     PROTECT(ans = lang3(install("<-"), R_NilValue, expr));
     PROTECT(newname = allocVector(STRSXP, 1));
     STRING(newname)[0] = name;
@@ -747,6 +742,7 @@ static SEXP DerivAssign(SEXP name, SEXP expr)
 }
 
 /* attr(.value, "gradient") <- .grad */
+
 static SEXP AddGrad()
 {
     SEXP ans;
@@ -774,37 +770,28 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
     int f_index, *d_index;
     int i, nexpr, nderiv;
     char *vmax;
-
     checkArity(op, args);
     vmax = vmaxget();
-
     InitDerivSymbols();
     PROTECT(exprlist = LCONS(install("{"), R_NilValue));
-
     if (isExpression(CAR(args)))
         PROTECT(expr = VECTOR(CAR(args))[0]);
     else
         PROTECT(expr = CAR(args));
     args = CDR(args);
-
     names = CAR(args);
     if (!isString(names) || (nderiv = length(names)) < 1)
         errorcall(call, "invalid variable names\n");
     args = CDR(args);
-
     PROTECT(funarg = duplicate(CAR(args)));
     args = CDR(args);
-
     tag = CAR(args);
     if (!isString(tag) || length(tag) < 1 || length(STRING(tag)[0]) < 1 || length(STRING(tag)[0]) > 60)
         errorcall(call, "invalid tag\n");
-
     /* NOTE: FindSubexprs is destructive, hence the duplication */
-
     PROTECT(ans = duplicate(expr));
     f_index = FindSubexprs(ans);
     UNPROTECT(1);
-
     d_index = (int *)R_alloc(nderiv, sizeof(int));
     for (i = 0; i < nderiv; i++)
     {
@@ -824,9 +811,7 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         Accumulate2(expr);
         UNPROTECT(1);
     }
-
     Accumulate2(R_NilValue);
-
     for (i = 0; i < nderiv; i++)
     {
         if (d_index[i])
@@ -858,39 +843,26 @@ SEXP do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         i = i + 1;
         ans = CDR(ans);
     }
-
     /* .value <- ... */
-
     CAR(ans) = lang3(install("<-"), install(".value"), AddParens(CAR(ans)));
     ans = CDR(ans);
-
     /* .grad <- ... */
-
     CAR(ans) = CreateGrad(names);
     ans = CDR(ans);
-
     /* .grad[, "..."] <- ... */
-
     for (i = 0; i < nderiv; i++)
     {
         CAR(ans) = DerivAssign(STRING(names)[i], AddParens(CAR(ans)));
         ans = CDR(ans);
     }
-
     /* attr(.value, "gradient") <- .grad */
-
     CAR(ans) = AddGrad();
     ans = CDR(ans);
-
     /* .value */
-
     CAR(ans) = install(".value");
-
     /* Prune the expression list */
     /* removing eliminated sub-expressions */
-
     CDR(exprlist) = Prune(CDR(exprlist));
-
     if (TYPEOF(funarg) == CLOSXP)
     {
         BODY(funarg) = exprlist;

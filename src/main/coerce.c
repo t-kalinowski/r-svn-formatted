@@ -27,13 +27,15 @@ static SEXP coerceToReal(SEXP v);
 static SEXP coerceToComplex(SEXP v);
 static SEXP coerceToString(SEXP v);
 static SEXP coerceToExpression(SEXP v);
+#ifdef NEWLIST
+static SEXP coerceToGenericVector(SEXP v);
+#endif
 static SEXP coerceToList(SEXP v);
 
 SEXP CreateTag(SEXP x)
 {
     if (isNull(x) || isSymbol(x))
         return x;
-
     if (isString(x) && length(x) >= 1 && length(STRING(x)[0]) >= 1)
         x = install(CHAR(STRING(x)[0]));
     else
@@ -45,13 +47,10 @@ static SEXP asFunction(SEXP x)
 {
     SEXP f, pf;
     int n;
-
     if (isFunction(x))
         return x;
-
     PROTECT(f = allocSExp(CLOSXP));
     CLOENV(f) = R_GlobalEnv;
-
     if (NAMED(x))
         PROTECT(x = duplicate(x));
     else
@@ -190,6 +189,9 @@ SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     case CPLXSXP:
     case STRSXP:
     case EXPRSXP:
+#ifdef NEWLIST
+    case VECSXP:
+#endif
     case LISTSXP:
     case CLOSXP:
     case ANYSXP:
@@ -204,21 +206,52 @@ SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP s;
-
+#ifdef NEWLIST
+    SEXP ap, ans, names;
+    int i, n;
     checkArity(op, args);
-
+    args = CAR(args);
+    switch (TYPEOF(args))
+    {
+    case LANGSXP:
+        ans = args;
+        break;
+    case VECSXP:
+    case EXPRSXP:
+        names = getAttrib(args, R_NamesSymbol);
+        n = length(args);
+        PROTECT(ap = ans = allocList(n));
+        for (i = 0; i < n; i++)
+        {
+            CAR(ap) = VECTOR(args)[i];
+            if (names != R_NilValue && !StringBlank(STRING(names)[i]))
+                TAG(ap) = install(CHAR(STRING(names)[i]));
+            ap = CDR(ap);
+        }
+        UNPROTECT(1);
+        break;
+    case LISTSXP:
+        ans = duplicate(args);
+        break;
+    default:
+        errorcall(call, "invalid argument list\n");
+        ans = R_NilValue;
+    }
+    TYPEOF(ans) = LANGSXP;
+    TAG(ans) = R_NilValue;
+    return ans;
+#else
+    SEXP s;
+    checkArity(op, args);
     if (isLanguage(CAR(args)))
         return CAR(args);
-
     if (!isList(CAR(args)) || length(CAR(args)) < 1)
         errorcall(call, "invalid argument list\n");
-
     s = duplicate(args);
     TYPEOF(CAR(s)) = LANGSXP;
     TAG(CAR(s)) = R_NilValue;
-
     return CAR(s);
+#endif
 }
 
 /* return the type of the SEXP */
@@ -235,15 +268,16 @@ SEXP do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
-
     checkArity(op, args);
-
     PROTECT(ans = allocVector(LGLSXP, 1));
-
     switch (PRIMVAL(op))
     {
     case NILSXP: /* is.null */
+#ifdef NEWLIST
+        LOGICAL(ans)[0] = isNull(CAR(args));
+#else
         LOGICAL(ans)[0] = (CAR(args) == R_NilValue);
+#endif
         break;
     case LGLSXP: /* is.logical */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == LGLSXP);
@@ -366,14 +400,10 @@ SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, a;
-
     checkArity(op, args);
-
     if (!isString(CADR(args)) || LENGTH(CADR(args)) <= 0)
         errorcall(call, "invalid \"mode\" of argument\n");
-
     PROTECT(ans = allocVector(LGLSXP, 1));
-
     if (streql(CHAR(STRING(CADR(args))[0]), "any"))
     {
         LOGICAL(ans)[0] = isVector(CAR(args));
@@ -385,10 +415,7 @@ SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         LOGICAL(ans)[0] = 0;
     UNPROTECT(1);
-
     /* We allow a "names" attribute on any vector. */
-    /* "class" and "levels" attributes on factors are also ok. */
-
     if (ATTRIB(CAR(args)) != R_NilValue)
     {
         a = ATTRIB(CAR(args));
@@ -409,13 +436,10 @@ SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, dims, names, x;
     int i, n;
-
     if (DispatchOrEval(call, op, args, rho, &ans, 1))
         return (ans);
-
     PROTECT(args = ans);
     checkArity(op, args);
-
 #ifdef stringent_is
     if (!isList(CAR(args)) && !isVector(CAR(args)))
         errorcall(call, "is.na applies only to lists and vectors\n");
@@ -727,14 +751,11 @@ SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP coerceVector(SEXP v, SEXPTYPE type)
 {
-    SEXP ans = R_NilValue /* -Wall */;
-
+    SEXP ans = R_NilValue;
     if (TYPEOF(v) == type)
         return v;
-
     /* is this dangerous ??? */
     /* should we duplicate here */
-
     if (TYPEOF(v) == LANGSXP && type == LISTSXP)
     {
         TYPEOF(v) = LISTSXP;
@@ -744,16 +765,12 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     {
         return coerceToExpression(v);
     }
-
     if (isList(v) || isLanguage(v))
         return coerceList(v, type);
-
-    if ((type < LGLSXP || STRSXP < type) && (type != EXPRSXP) && (type != LISTSXP))
+    if ((type < LGLSXP || STRSXP < type) && (type != EXPRSXP) && (type != VECSXP) && (type != LISTSXP))
         error("attempt to coerce a vector to non-vector type\n");
-
     if (!isVector(v))
         error("attempt to type-coerce non-vector\n");
-
     PROTECT(v);
     switch (type)
     {
@@ -775,6 +792,11 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     case EXPRSXP:
         ans = coerceToExpression(v);
         break;
+#ifdef NEWLIST
+    case VECSXP:
+        ans = coerceToGenericVector(v);
+        break;
+#endif
     case LISTSXP:
         ans = coerceToList(v);
         break;
@@ -864,7 +886,6 @@ static SEXP coerceToLogical(SEXP v)
 {
     SEXP ans;
     int i, n;
-
     ans = allocVector(LGLSXP, n = length(v));
     PROTECT(ans);
     ATTRIB(ans) = duplicate(ATTRIB(v));
@@ -920,7 +941,6 @@ static SEXP coerceToInteger(SEXP v)
     int i, n, warn;
     double out;
     char *endp;
-
     warn = 0;
     PROTECT(ans = allocVector(INTSXP, n = LENGTH(v)));
     PROTECT(ATTRIB(ans) = duplicate(ATTRIB(v)));
@@ -1009,7 +1029,6 @@ static SEXP coerceToReal(SEXP v)
     int i, n;
     double out;
     char *endp;
-
     n = LENGTH(v);
     PROTECT(ans = allocVector(REALSXP, n));
     ATTRIB(ans) = duplicate(ATTRIB(v));
@@ -1060,7 +1079,6 @@ static SEXP coerceToComplex(SEXP v)
     double outr, outi;
     char *endp;
     int i, n;
-
     n = LENGTH(v);
     PROTECT(ans = allocVector(CPLXSXP, n));
     PROTECT(ATTRIB(ans) = duplicate(ATTRIB(v)));
@@ -1190,8 +1208,6 @@ static SEXP coerceToExpression(SEXP v)
 {
     SEXP ans, tmp;
     int i, n, newtype;
-
-    /* ATTRIB(ans) = duplicate(ATTRIB(v)); */
     if (isVector(v))
     {
         n = LENGTH(v);
@@ -1238,17 +1254,19 @@ static SEXP coerceToExpression(SEXP v)
             break;
         }
     }
-#if 0
-/* This code believed to be WRONG */
-	else if(TYPEOF(v) == LANGSXP) {
-		n = length(v);
-		PROTECT(ans = allocVector(EXPRSXP, n));
-		tmp = v;
-		for(i=0 ; i<n ; i++) {
-			VECTOR(ans)[i] = CAR(tmp);
-			tmp = CDR(tmp);
-		}
-	}
+#ifdef OLD
+    /* This code believed to be WRONG */
+    else if (TYPEOF(v) == LANGSXP)
+    {
+        n = length(v);
+        PROTECT(ans = allocVector(EXPRSXP, n));
+        tmp = v;
+        for (i = 0; i < n; i++)
+        {
+            VECTOR(ans)[i] = CAR(tmp);
+            tmp = CDR(tmp);
+        }
+    }
 #endif
     else
     {
@@ -1263,11 +1281,9 @@ static SEXP coerceToList(SEXP v)
 {
     SEXP ans, tmp;
     int i, n;
-
     n = LENGTH(v);
     ans = allocList(n);
     tmp = ans;
-
     PROTECT(ans);
     for (i = 0; i < n; i++)
     {
@@ -1302,6 +1318,51 @@ static SEXP coerceToList(SEXP v)
     return (ans);
 }
 
+#ifdef NEWLIST
+static SEXP coerceToGenericVector(SEXP v)
+{
+    SEXP ans, tmp;
+    int i, n;
+    n = length(v);
+    PROTECT(ans = allocVector(VECSXP, n));
+    switch (TYPEOF(v))
+    {
+    case LGLSXP:
+    case INTSXP:
+        for (i = 0; i < n; i++)
+            VECTOR(ans)[i] = ScalarInteger(INTEGER(v)[i]);
+        break;
+    case REALSXP:
+        for (i = 0; i < n; i++)
+            VECTOR(ans)[i] = ScalarReal(REAL(v)[i]);
+        break;
+    case CPLXSXP:
+        for (i = 0; i < n; i++)
+            VECTOR(ans)[i] = ScalarComplex(COMPLEX(v)[i]);
+        break;
+    case STRSXP:
+        for (i = 0; i < n; i++)
+            VECTOR(ans)[i] = ScalarString(STRING(v)[i]);
+        break;
+    case LISTSXP:
+        tmp = v;
+        for (i = 0; i < n; i++)
+        {
+            VECTOR(ans)[i] = CAR(tmp);
+            tmp = CDR(tmp);
+        }
+        break;
+    default:
+        UNIMPLEMENTED("coerceToList");
+    }
+    tmp = getAttrib(v, R_NamesSymbol);
+    if (tmp != R_NilValue)
+        setAttrib(ans, R_NamesSymbol, tmp);
+    UNPROTECT(1);
+    return (ans);
+}
+#endif
+
 SEXP do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rest, evargs, rfun;
@@ -1320,35 +1381,49 @@ SEXP do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+#ifdef NEWLIST
+    SEXP c;
+    int i, n;
+#endif
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 0 || streql(CHAR(STRING(CAR(args))[0]), ""))
         errorcall(call, "first argument must be a string\n");
     if (!isNull(CADR(args)) && !isList(CADR(args)))
         errorcall(call, "second argument must be a list\n");
+#ifdef NEWLIST
+    n = length(CADR(args));
+    PROTECT(call = allocList(n + 1));
+    CAR(call = install(CHAR(STRING(CAR(args))[0])));
+    args = CADR(args);
+    c = CDR(call);
+    for (i = 0; i < n; i++)
+    {
+        CAR(c) = VECTOR(args)[i];
+        c = CDR(c);
+    }
+    UNPROTECT(1);
+#else
     call = install(CHAR(STRING(CAR(args))[0]));
     PROTECT(call = LCONS(call, CADR(args)));
     call = eval(call, rho);
     UNPROTECT(1);
+#endif
     return call;
 }
 
-/*
- * do_substitute has two arguments, an expression and an environment
- * (optional). Symbols found in the expression are substituted with their
- * values as found in the environment. There is no inheritance so only the
- * supplied environment is searched. If no environment is specified the
- * environment in which substitute was called is used. If the specified
- * environment is R_NilValue then R_GlobalEnv is used.
- *
- * Arguments to do_substitute should not be evaluated.
- */
+/* do_substitute has two arguments, an expression and an environment */
+/* (optional).  Symbols found in the expression are substituted with their */
+/* values as found in the environment.  There is no inheritance so only */
+/* the supplied environment is searched. If no environment is specified */
+/* the environment in which substitute was called is used.  If the */
+/* specified environment is R_NilValue then R_GlobalEnv is used. */
+/* Arguments to do_substitute should not be evaluated. */
 
 SEXP substituteList(SEXP, SEXP);
 
 SEXP substitute(SEXP lang, SEXP rho)
 {
     SEXP t;
-
     switch (TYPEOF(lang))
     {
     case PROMSXP:
@@ -1364,10 +1439,10 @@ SEXP substitute(SEXP lang, SEXP rho)
                     t = PREXPR(t);
                 } while (TYPEOF(t) == PROMSXP);
                 return t;
-                /*
-                                return substitute(PREXPR(t), rho);
-                                return PREXPR(t);
-                */
+#ifdef OLD
+                return substitute(PREXPR(t), rho);
+                return PREXPR(t);
+#endif
             }
             else if (TYPEOF(t) == DOTSXP)
             {
@@ -1392,7 +1467,6 @@ SEXP substituteList(SEXP el, SEXP rho)
     SEXP h, t;
     if (isNull(el))
         return el;
-
     if (CAR(el) == R_DotsSymbol)
     {
         h = findVar(CAR(el), rho);
@@ -1410,11 +1484,12 @@ SEXP substituteList(SEXP el, SEXP rho)
         UNPROTECT(2);
         return t;
     }
-    /*
-        else if (CAR(el) == R_MissingArg) {
-            return substituteList(CDR(el), rho);
-        }
-    */
+#ifdef OLD
+    else if (CAR(el) == R_MissingArg)
+    {
+        return substituteList(CDR(el), rho);
+    }
+#endif
     else
     {
         PROTECT(h = substitute(CAR(el), rho));
@@ -1432,16 +1507,13 @@ SEXP substituteList(SEXP el, SEXP rho)
 SEXP do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP env, s, t;
-
     /* set up the environment for substitution */
-
     if (length(args) == 1)
         env = rho;
     else
         env = eval(CADR(args), rho);
     if (env == R_NilValue)
         env = R_GlobalEnv;
-
     if (TYPEOF(env) == LISTSXP)
     {
         PROTECT(s = duplicate(env));
@@ -1449,10 +1521,8 @@ SEXP do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
         FRAME(env) = s;
         UNPROTECT(2);
     }
-
     if (TYPEOF(env) != ENVSXP)
         errorcall(call, "invalid environment specified\n");
-
     PROTECT(env);
     PROTECT(t = duplicate(args));
     CDR(t) = R_NilValue;

@@ -18,6 +18,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* This file processed for NEWLIST */
+
 #include "Defn.h"
 #include "Mathlib.h"
 #include <string.h>
@@ -25,22 +27,19 @@
 
 typedef int (*DL_FUNC)();
 
+/* These are set during each call to do_dotCode() below. */
+
 static SEXP NaokSymbol = NULL;
 static SEXP DupSymbol = NULL;
 
+/* This is a per-platform function which looks up */
+/* entry points in DLLs in a platform specific way. */
+
 DL_FUNC R_FindSymbol(char *);
 
-#ifdef OLD
-void InitFunctionHashing()
-{
-    NaokSymbol = install("NAOK");
-    DupSymbol = install("DUP");
-}
-#endif
-
-/* Convert an R object to a non-moveable C object */
-/* and return a pointer to it.  This leaves pointers */
-/* for anything other than vectors and lists unaltered. */
+/* Convert an R object to a non-moveable C object and return */
+/* a pointer to it.  This leaves pointers for anything other */
+/* than vectors and lists unaltered. */
 
 static void *RObjToCPtr(SEXP s, int naok, int dup, int narg)
 {
@@ -48,8 +47,8 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg)
     double *rptr;
     char **cptr;
     complex *zptr;
+    SEXP *lptr;
     int i, l, n;
-
     switch (TYPEOF(s))
     {
     case LGLSXP:
@@ -114,7 +113,20 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg)
         }
         return (void *)cptr;
         break;
+#ifdef NEWLIST
+    case VECSXP:
+        if (!dup)
+            return (void *)VECTOR(s);
+        n = length(s);
+        lptr = (SEXP *)R_alloc(n, sizeof(SEXP));
+        for (i = 0; i < n; i++)
+        {
+            lptr[i] = VECTOR(s)[i];
+        }
+        return (void *)lptr;
+        break;
     case LISTSXP:
+        /* Warning : The following looks like it could bite ... */
         if (!dup)
             return (void *)s;
         n = length(s);
@@ -125,6 +137,24 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg)
             s = CDR(s);
         }
         return (void *)cptr;
+        break;
+#else
+    case LISTSXP:
+        /* FIXME : This looks wrong!  Shouldn'y we copy into */
+        /* a vector here, rather than leaving things alone. */
+        /* On the other hand, this is defunct now ... */
+        if (!dup)
+            return (void *)s;
+        n = length(s);
+        cptr = (char **)R_alloc(n, sizeof(char *));
+        for (i = 0; i < n; i++)
+        {
+            cptr[i] = (char *)s;
+            s = CDR(s);
+        }
+        return (void *)cptr;
+        break;
+#endif
     default:
         return (void *)s;
     }
@@ -139,7 +169,6 @@ static SEXP CPtrToRObj(void *p, int n, SEXPTYPE type)
     SEXP *lptr;
     int i;
     SEXP s, t;
-
     switch (type)
     {
     case LGLSXP:
@@ -176,6 +205,17 @@ static SEXP CPtrToRObj(void *p, int n, SEXPTYPE type)
         }
         UNPROTECT(1);
         break;
+#ifdef NEWLIST
+    case VECSXP:
+        PROTECT(s = allocVector(VECSXP, n));
+        lptr = (SEXP *)p;
+        for (i = 0; i < n; i++)
+        {
+            VECTOR(s)[i] = lptr[i];
+        }
+        UNPROTECT(1);
+        break;
+#endif
     case LISTSXP:
         PROTECT(t = s = allocList(n));
         lptr = (SEXP *)p;
@@ -191,14 +231,12 @@ static SEXP CPtrToRObj(void *p, int n, SEXPTYPE type)
     return s;
 }
 
-/* Foreign Function Interface.  This code allows a */
-/* user to call C or Fortran code which is either */
-/* statically or dynamically linked into R. */
+/* Foreign Function Interface.  This code allows a user to call C */
+/* or Fortran code which is either statically or dynamically linked. */
 
 static SEXP naoktrim(SEXP s, int *len, int *naok, int *dup)
 {
     SEXP value;
-
     if (s == R_NilValue)
     {
         value = R_NilValue;
@@ -229,11 +267,9 @@ static SEXP naoktrim(SEXP s, int *len, int *naok, int *dup)
 SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[128], *p, *q;
-
     checkArity(op, args);
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
         errorcall(call, "invalid argument\n");
-
     p = CHAR(STRING(CAR(args))[0]);
     q = buf;
     while ((*q = *p) != '\0')
@@ -248,7 +284,6 @@ SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
         *q = '\0';
     }
 #endif
-
     return mkString(buf);
 }
 
@@ -262,7 +297,6 @@ SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(CAR(args)) || length(CAR(args)) < 1)
         errorcall(call, "invalid argument\n");
     sym = CHAR(STRING(CAR(args))[0]);
-
     val = 1;
     if (!(fun = R_FindSymbol(sym)))
         val = 0;
@@ -274,11 +308,13 @@ SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     void **cargs;
-    int dup, naok, nargs, which;
+    int dup, havenames, naok, nargs, which;
     DL_FUNC fun;
     SEXP pargs, s;
+#ifdef NEWLIST
+    SEXP ans;
+#endif
     char buf[128], *p, *q, *vmax;
-
     if (NaokSymbol == NULL || DupSymbol == NULL)
     {
         NaokSymbol = install("NAOK");
@@ -286,7 +322,6 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     vmax = vmaxget();
     which = PRIMVAL(op);
-
     op = CAR(args);
     if (!isString(op))
         errorcall(call, "function name must be a string\n");
@@ -298,7 +333,6 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     args = naoktrim(CDR(args), &nargs, &naok, &dup);
     if (naok == NA_LOGICAL)
         errorcall(call, "invalid naok value\n");
-
     if (nargs > MAX_ARGS)
         errorcall(call, "too many arguments in foreign function call\n");
     cargs = (void **)R_alloc(nargs, sizeof(void *));
@@ -315,7 +349,7 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         nargs++;
     }
 
-    /* make up load symbol & look it up */
+    /* Make up the load symbol and look it up. */
 
     p = CHAR(STRING(op)[0]);
     q = buf;
@@ -324,21 +358,19 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         p++;
         q++;
     }
-
 #ifdef HAVE_F77_UNDERSCORE
     if (which)
         *q++ = '_';
     *q = '\0';
 #endif
-
     if (!(fun = R_FindSymbol(buf)))
         errorcall(call, "C/Fortran function not in load table\n");
 
     switch (nargs)
     {
     case 0:
-        /* Silicon graphics C chokes if there is */
-        /* no argument to fun */
+        /* Silicon graphics C chokes here */
+        /* if there is no argument to fun. */
         fun(0);
         break;
     case 1:
@@ -735,7 +767,54 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     default:
         errorcall(call, "too many arguments, sorry\n");
     }
-
+#ifdef NEWLIST
+    PROTECT(ans = allocVector(VECSXP, nargs));
+    havenames = 0;
+    if (dup)
+    {
+        nargs = 0;
+        for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
+        {
+            PROTECT(s = CPtrToRObj(cargs[nargs], LENGTH(CAR(pargs)), TYPEOF(CAR(pargs))));
+            ATTRIB(s) = duplicate(ATTRIB(CAR(pargs)));
+            if (TAG(pargs) != R_NilValue)
+                havenames = 1;
+            VECTOR(ans)[nargs] = s;
+            nargs++;
+            UNPROTECT(1);
+        }
+    }
+    else
+    {
+        nargs = 0;
+        for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
+        {
+            if (TAG(pargs) != R_NilValue)
+                havenames = 1;
+            VECTOR(ans)[nargs] = CAR(pargs);
+            nargs++;
+        }
+    }
+    if (havenames)
+    {
+        SEXP names, blank;
+        PROTECT(names = allocVector(STRSXP, nargs));
+        blank = mkChar("");
+        nargs = 0;
+        for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
+        {
+            if (TAG(pargs) == R_NilValue)
+                STRING(names)[nargs++] = blank;
+            else
+                STRING(names)[nargs++] = PRINTNAME(TAG(pargs));
+        }
+        setAttrib(ans, R_NamesSymbol, names);
+        UNPROTECT(1);
+    }
+    UNPROTECT(1);
+    vmaxset(vmax);
+    return (ans);
+#else
     if (dup)
     {
         nargs = 0;
@@ -750,7 +829,11 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     vmaxset(vmax);
     return (args);
+#endif
 }
+
+/* FIXME : Must work out what happens here when */
+/* we replace LISTSXP by VECSXP. */
 
 static struct
 {
@@ -761,7 +844,11 @@ static struct
                 {"double", REALSXP},
                 {"complex", CPLXSXP},
                 {"character", STRSXP},
+#ifdef NEWLIST
+                {"list", VECSXP},
+#else
                 {"list", LISTSXP},
+#endif
                 {NULL, 0}};
 
 static int string2type(char *s)
@@ -784,7 +871,6 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     SEXP call, pcall, s;
     SEXPTYPE type;
     int i, j, n;
-
     if (!isFunction((SEXP)func))
         error("invalid function in call_R\n");
     if (nargs < 0)
@@ -794,7 +880,6 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     PROTECT(pcall = call = allocList(nargs + 1));
     TYPEOF(call) = LANGSXP;
     CAR(pcall) = (SEXP)func;
-
     for (i = 0; i < nargs; i++)
     {
         pcall = CDR(pcall);
@@ -828,6 +913,17 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
                 STRING(CAR(pcall))[i] = s;
             }
             break;
+#ifdef NEWLIST
+            /* FIXME : This copy is unnecessary! */
+        case VECSXP:
+            n = lengths[i];
+            CAR(pcall) = allocVector(VECSXP, n);
+            for (j = 0; j < n; j++)
+            {
+                VECTOR(s)[i] = (SEXP)(arguments[i]);
+            }
+            break;
+#else
         case LISTSXP:
             n = lengths[i];
             CAR(pcall) = allocList(n);
@@ -838,14 +934,13 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
                 s = CDR(s);
             }
             break;
+#endif
         }
         if (names && names[i])
             TAG(pcall) = install(names[i]);
         NAMED(CAR(pcall)) = 2;
     }
-
     PROTECT(s = eval(call, R_GlobalEnv));
-
     switch (TYPEOF(s))
     {
     case LGLSXP:
@@ -856,6 +951,16 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
         if (nres > 0)
             results[0] = RObjToCPtr(s, 1, 1, 0);
         break;
+#ifdef NEWLIST
+    case VECSXP:
+        n = length(s);
+        if (nres < n)
+            n = nres;
+        for (i = 0; i < n; i++)
+        {
+            results[i] = RObjToCPtr(VECTOR(s)[i], 1, 1, 0);
+        }
+        break;
     case LISTSXP:
         n = length(s);
         if (nres < n)
@@ -865,6 +970,19 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             results[i] = RObjToCPtr(s, 1, 1, 0);
             s = CDR(s);
         }
+        break;
+#else
+    case LISTSXP:
+        n = length(s);
+        if (nres < n)
+            n = nres;
+        for (i = 0; i < n; i++)
+        {
+            results[i] = RObjToCPtr(s, 1, 1, 0);
+            s = CDR(s);
+        }
+        break;
+#endif
     }
     UNPROTECT(2);
     return;
