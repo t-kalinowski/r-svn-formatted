@@ -561,7 +561,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     double *x, *typsiz, fscale, gradtl, stepmx, steptol, *xpls, *gpls, fpls, *a, *wrk, dlt;
 
-    int code, i, j, k, ipr, itnlim, method, iexp, omsg, msg, n, ndigit, iagflg, iahflg, want_hessian, itncnt;
+    int code, i, j, k, itnlim, method, iexp, omsg, msg, n, ndigit, iagflg, iahflg, want_hessian, itncnt;
 
     char *vmax;
 
