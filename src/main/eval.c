@@ -718,7 +718,7 @@ SEXP R_execMethod(SEXP op, SEXP rho)
             error("Could not find symbol \"%s\" in environment of the generic function", CHAR(PRINTNAME(symbol)));
         missing = R_GetVarLocMISSING(loc);
         val = R_GetVarLocValue(loc);
-        SET_FRAME(newrho, CONS(val, FRAME(rho)));
+        SET_FRAME(newrho, CONS(val, FRAME(newrho)));
         SET_TAG(FRAME(newrho), symbol);
         if (missing)
         {
