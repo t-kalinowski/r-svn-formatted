@@ -431,7 +431,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, nx, ny, nc, ncol, nlty;
     int ltysave, colsave;
     double atom, zmin, zmax;
-    char *vmax;
+    char *vmax, *vmax0;
 
     GCheckState();
 
@@ -517,7 +517,11 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     atom = DBL_EPSILON * (zmax - zmin);
 
     /* Initialize the segment data base */
+    /* Note we must be careful about resetting */
+    /* the top of the stack, otherwise we run out of */
+    /* memory after a sequence of displaylist replays */
 
+    vmax0 = vmaxget();
     SegDB = (SEGP *)R_alloc(nx * ny, sizeof(SEGP));
 
     for (i = 0; i < nx; i++)
@@ -540,6 +544,7 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
         contour(x, nx, y, ny, z, REAL(c)[i], atom);
         vmaxset(vmax);
     }
+    vmaxset(vmax0);
     GP->lty = ltysave;
     GP->col = colsave;
     UNPROTECT(2);
