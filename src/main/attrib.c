@@ -1068,8 +1068,8 @@ SEXP R_do_slot(SEXP obj, SEXP name)
         SEXP input = name, classString;
         classString = GET_CLASS(obj);
         if (isNull(classString))
-            error("Trying to get a slot at the C level with a pointer that has no class (maybe not an S object)");
-
+            error("Can't get a slot (\"%s\") from an object of type \"%s\"", CHAR(asChar(classString)),
+                  CHAR(asChar(type2str(TYPEOF(obj)))));
         if (isSymbol(name))
         {
             input = PROTECT(allocVector(STRSXP, 1));
