@@ -56,7 +56,7 @@ static void AllocBuffer(int len)
 {
     if (len >= 0)
     {
-        if (len < bufsize)
+        if (len * sizeof(char) < bufsize)
             return;
         len = (len + 1) * sizeof(char);
         if (len < MAXELTSIZE)
