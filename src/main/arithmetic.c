@@ -1053,7 +1053,7 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return math2(op, CAR(args), CADR(args), qsignrank);
 
     case 24:
-        return math2(op, CAR(args), CADR(args), bessel_i);
+        return math2(op, CAR(args), CADR(args), bessel_j);
     case 25:
         return math2(op, CAR(args), CADR(args), bessel_y);
 
@@ -1378,7 +1378,7 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
     case 43:
         return math3(op, CAR(args), CADR(args), CADDR(args), bessel_i);
     case 44:
-        return math3(op, CAR(args), CADR(args), CADDR(args), bessel_y);
+        return math3(op, CAR(args), CADR(args), CADDR(args), bessel_k);
 
     default:
         errorcall(call, "unimplemented real function\n");
