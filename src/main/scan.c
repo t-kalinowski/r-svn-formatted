@@ -525,7 +525,7 @@ done:
 #define scan_sep_check                                                                                                 \
     if (isString(sep) || isNull(sep))                                                                                  \
     {                                                                                                                  \
-        if (LENGTH(sep) == 0)                                                                                          \
+        if (length(sep) == 0)                                                                                          \
             sepchar = 0;                                                                                               \
         else                                                                                                           \
             sepchar = CHAR(STRING(sep)[0])[0];                                                                         \
