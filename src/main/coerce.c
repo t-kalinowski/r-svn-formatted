@@ -125,15 +125,10 @@ int IntegerFromReal(double x, int *warn)
 {
     if (ISNAN(x))
         return NA_INTEGER;
-    else if (x > INT_MAX)
+    else if (x > INT_MAX || x <= INT_MIN)
     {
-        *warn |= WARN_INACC;
-        return INT_MAX;
-    }
-    else if (x <= INT_MIN)
-    {
-        *warn |= WARN_INACC;
-        return INT_MIN + 1;
+        *warn |= WARN_NA;
+        return NA_INTEGER;
     }
     return x;
 }
@@ -142,15 +137,11 @@ int IntegerFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_INTEGER;
-    else if (x.r > INT_MAX)
+    else if (x.r > INT_MAX || x.r <= INT_MIN)
     {
-        *warn |= WARN_INACC;
-        return INT_MAX;
-    }
-    else if (x.r <= INT_MIN)
-    {
-        *warn |= WARN_INACC;
-        return INT_MIN + 1;
+        *warn |= WARN_NA;
+        return NA_INTEGER;
+        ;
     }
     if (x.i != 0)
         *warn |= WARN_IMAG;
@@ -201,7 +192,7 @@ double RealFromInteger(int x, int *warn)
 double RealFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
-        return NA_INTEGER;
+        return NA_REAL;
     if (x.i != 0)
         *warn |= WARN_IMAG;
     return x.r;
