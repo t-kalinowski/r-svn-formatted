@@ -53,12 +53,12 @@ static int c__1 = 1;
 static int c__11 = 11;
 
 /*
-extern double F77_CALL(ddot)(int *, double *, int *, double *, int *);
-extern void F77_CALL(dscal)(int *, double *, double *, int *);
-extern void F77_CALL(dcopy)(int *, double *, int *, double *, int *);
-extern void F77_CALL(daxpy)(int *, double *, double *, int *, double *, int *);
-extern void F77_CALL(dpofa)(double *, int *, int *, int *);
-extern void F77_CALL(dtrsl)(double *, int *, int *, double *, int *, int *);
+extern double F77_NAME(ddot)(int *, double *, int *, double *, int *);
+extern void F77_NAME(dscal)(int *, double *, double *, int *);
+extern void F77_NAME(dcopy)(int *, double *, int *, double *, int *);
+extern void F77_NAME(daxpy)(int *, double *, double *, int *, double *, int *);
+extern void F77_NAME(dpofa)(double *, int *, int *, int *);
+extern void F77_NAME(dtrsl)(double *, int *, int *, double *, int *, int *);
 */
 
 static void active(int, double *, double *, int *, double *, int *, int, int *, int *, int *);
