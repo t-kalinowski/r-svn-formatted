@@ -352,8 +352,10 @@ static long file_seek(Rconnection con, int where, int origin, int rw)
     {
     case 2:
         whence = SEEK_CUR;
+        break;
     case 3:
         whence = SEEK_END;
+        break;
     default:
         whence = SEEK_SET;
     }
