@@ -339,7 +339,9 @@ static void complexanswer(SEXP x)
 */
 static SEXP TagName(SEXP tag, SEXP base, int i)
 {
-    SEXP ans;
+    SEXP ans, t;
+
+    PROTECT(t = mkChar(""));
 
     switch (TYPEOF(tag))
     {
@@ -351,6 +353,7 @@ static SEXP TagName(SEXP tag, SEXP base, int i)
         break;
     case CHARSXP:
     case NILSXP:
+        tag = t;
         break;
     default:
         error("wrong tag argument to TagName\n");
@@ -396,6 +399,7 @@ static SEXP TagName(SEXP tag, SEXP base, int i)
             sprintf(CHAR(ans), "%s.%s", CHAR(base), CHAR(tag));
         }
     }
+    UNPROTECT(1);
     return ans;
 }
 
