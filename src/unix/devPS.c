@@ -20,7 +20,7 @@
 
 #include "Defn.h"
 #include "Graphics.h"
-#include "Errormsg.h"
+#include "Error.h"
 #include "Fileio.h"
 #include "Platform.h"
 #include <stdio.h>
