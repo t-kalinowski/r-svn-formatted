@@ -77,7 +77,6 @@ void Raqua_ResetConsole(void);
 void Raqua_FlushConsole(void);
 void Raqua_ClearerrConsole(void);
 
-#define kRAboutWinCmd 'abou'
 #define kRVersionInfoID 132
 
 static const EventTypeSpec REvents[] = {{kEventClassTextInput, kEventTextInputUnicodeForKeyEvent}};
@@ -103,7 +102,7 @@ void Raqua_StartConsole(void)
     OSErr err = noErr;
     CFURLRef bundleURL = NULL;
     CFBundleRef RBundle = NULL;
-    MenuRef demoMenuRef = NULL;
+    MenuRef rootMenu = NULL;
     /*    char                buf[300]; */
 
     /*    sprintf(buf,"%s/aqua.bundle",R_HomeDir());
@@ -131,13 +130,17 @@ void Raqua_StartConsole(void)
     err = SetMenuBarFromNib(nibRef, CFSTR("MenuBar"));
     if (err != noErr)
         goto fine;
-
+    /* Tying to change the Main Menu name. Does not work.
+       rootMenu = AcquireRootMenu();
+       if(rootMenu==NULL)
+        fprintf(stderr,"\n no root menu ref");
+       SetMenuTitleWithCFString(rootMenu, CFSTR("Shell"));
+   */
     err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &ConsoleWindow);
     if (err != noErr)
         goto fine;
 
     err = CreateWindowFromNib(nibRef, CFSTR("AboutWindow"), &RAboutWindow);
-    fprintf(stderr, "\n AboutWin err=%d", err);
     if (err != noErr)
         goto fine;
 
@@ -453,8 +456,8 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                     TXNCopy(RConsoleInObject);
                 }
                 break;
+
             case kHICommandAbout:
-                fprintf(stderr, "\nabout");
                 RAboutHandler(RAboutWindow);
                 break;
 
