@@ -46,11 +46,7 @@ void editorcleanall(); /* from editor.c */
 R_size_t R_max_memory = INT_MAX;
 Rboolean UseInternet2 = FALSE;
 
-SA_TYPE SaveAction = SA_DEFAULT;
-SA_TYPE RestoreAction = SA_RESTORE;
-Rboolean LoadSiteFile = TRUE;
-Rboolean LoadInitFile = TRUE;
-Rboolean DebugInitFile = FALSE;
+extern SA_TYPE SaveAction; /* from ../main/startup.c */
 Rboolean DebugMenuitem = FALSE;
 
 __declspec(dllexport) UImode CharacterMode;
@@ -989,7 +985,7 @@ int cmdlineoptions(int ac, char **av)
      *  Since users' expectations for save/no-save will differ, we decided
      *  that they should be forced to specify in the non-interactive case.
      */
-    if (!R_Interactive && SaveAction != SA_SAVE && SaveAction != SA_NOSAVE)
+    if (!R_Interactive && Rp->SaveAction != SA_SAVE && Rp->SaveAction != SA_NOSAVE)
         R_Suicide("you must specify `--save', `--no-save' or `--vanilla'");
 
     if (InThreadReadConsole &&
