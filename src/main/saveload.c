@@ -30,6 +30,9 @@
 #define R_MAGIC_ASCII_V1 1001
 #define R_MAGIC_BINARY_V1 1002
 #define R_MAGIC_XDR_V1 1003
+#define R_MAGIC_EMPTY 999
+#define R_MAGIC_CORRUPT 998
+#define R_MAGIC_MAYBE_TOONEW 997
 
 /* Static Globals, DIE, DIE, DIE! */
 
@@ -1760,8 +1763,17 @@ static void R_WriteMagic(FILE *fp, int number)
 static int R_ReadMagic(FILE *fp)
 {
     unsigned char buf[6];
-    int d1, d2, d3, d4;
-    fread((char *)buf, sizeof(char), 5, fp);
+    int d1, d2, d3, d4, count;
+
+    count = fread((char *)buf, sizeof(char), 5, fp);
+    if (count != 5)
+    {
+        if (count == 0)
+            return R_MAGIC_EMPTY;
+        else
+            return R_MAGIC_CORRUPT;
+    }
+
     if (strncmp((char *)buf, "RDA1\n", 5) == 0)
     {
         return R_MAGIC_ASCII_V1;
@@ -1774,6 +1786,9 @@ static int R_ReadMagic(FILE *fp)
     {
         return R_MAGIC_XDR_V1;
     }
+    else if (strncmp((char *)buf, "RD", 2) == 0)
+        return R_MAGIC_MAYBE_TOONEW;
+
     /* Intel gcc seems to screw up a single expression here */
     d1 = (buf[3] - '0') % 10;
     d2 = (buf[2] - '0') % 10;
@@ -1805,8 +1820,11 @@ void R_SaveToFile(SEXP obj, FILE *fp, int ascii)
 
 SEXP R_LoadFromFile(FILE *fp, int startup)
 {
+    int magic;
     DLstartup = startup; /* different handling of errors */
-    switch (R_ReadMagic(fp))
+
+    magic = R_ReadMagic(fp);
+    switch (magic)
     {
 #ifdef HAVE_XDR
     case R_MAGIC_XDR:
@@ -1830,7 +1848,17 @@ SEXP R_LoadFromFile(FILE *fp, int startup)
 #endif /* HAVE_XDR */
     default:
         fclose(fp);
-        error("restore file corrupted -- no data loaded");
+        switch (magic)
+        {
+        case R_MAGIC_EMPTY:
+            error("restore file may be empty -- no data loaded");
+        case R_MAGIC_MAYBE_TOONEW:
+            error("restore file may be from a newer version of R"
+                  " -- no data loaded");
+        default:
+            error("bad restore file magic number (file may be corrupted)"
+                  "-- no data loaded");
+        }
         return (R_NilValue); /* for -Wall */
     }
 }
