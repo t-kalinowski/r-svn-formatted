@@ -235,8 +235,8 @@ static void RNG_Init(RNGtype kind, Int32 seed)
                 warning("seed length must be in 0...625; ignored");
                 break;
             }
-            RNG_Table[RNG_kind].n_seed = ns;
-            RNG_Table[RNG_kind].i_seed = (Int32 *)User_unif_seedloc();
+            RNG_Table[kind].n_seed = ns;
+            RNG_Table[kind].i_seed = (Int32 *)User_unif_seedloc();
         }
         break;
     }
