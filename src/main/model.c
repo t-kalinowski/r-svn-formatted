@@ -581,6 +581,8 @@ static SEXP EncodeVars(SEXP formula)
     {
         if (parity)
             intercept = 0;
+        else
+            intercept = 1;
         return R_NilValue;
     }
     if (isSymbol(formula))
