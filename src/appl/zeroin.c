@@ -2,16 +2,16 @@
    details hacked in by Peter Dalgaard */
 
 /*************************************************************************
- *	    		    C math library
+ *			    C math library
  * function ZEROIN - obtain a function zero within the given range
  *
  * Input
  *	double zeroin(ax,bx,f,info,Tol,Maxit)
- *	double ax; 			Root will be seeked for within
- *	double bx;  			a range [ax,bx]
+ *	double ax;			Root will be seeked for within
+ *	double bx;			a range [ax,bx]
  *	double (*f)(double x, void *info); Name of the function whose zero
  *					will be seeked for
- *      void *info;                     Add'l info passed to f
+ *	void *info;			Add'l info passed to f
  *	double *Tol;			Acceptable tolerance for the root
  *					value.
  *					May be specified as 0.0 to cause
@@ -24,8 +24,8 @@
  * Output
  *	Zeroin returns an estimate for the root with accuracy
  *	4*EPSILON*abs(x) + tol
- *      *Tol returns estimated precision
- *      *Maxit returns actual # of iterations
+ *	*Tol returns estimated precision
+ *	*Maxit returns actual # of iterations
  *
  * Algorithm
  *	G.Forsythe, M.Malcolm, C.Moler, Computer methods for mathematical
@@ -56,18 +56,16 @@
 #include "Mathlib.h"
 #define EPSILON DBL_EPSILON
 
-double zeroin(ax, bx, f, info, Tol, Maxit) /* An estimate to the root	*/
-    double ax;                             /* Left border | of the range	*/
-double bx;                                 /* Right border| the root is seeked*/
-double (*f)(double x, void *info);         /* Function under investigation	*/
-void *info;                                /* Add'l info passed on to f    */
-double *Tol;                               /* Acceptable tolerance		*/
-int *Maxit;                                /* Max # of iterations */
+double zeroin(                                   /* An estimate of the root */
+              double ax,                         /* Left border | of the range	*/
+              double bx,                         /* Right border| the root is seeked*/
+              double (*f)(double x, void *info), /* Function under investigation	*/
+              void *info,                        /* Add'l info passed on to f	*/
+              double *Tol,                       /* Acceptable tolerance		*/
+              int *Maxit)                        /* Max # of iterations */
 {
-    double a, b, c; /* Abscissae, descr. see above	*/
-    double fa;      /* f(a)				*/
-    double fb;      /* f(b)				*/
-    double fc;      /* f(c)				*/
+    double a, b, c, /* Abscissae, descr. see above	*/
+        fa, fb, fc; /* f(a), f(b), f(c) */
     double tol;
     int maxit;
 
@@ -82,17 +80,17 @@ int *Maxit;                                /* Max # of iterations */
 
     while (maxit--) /* Main iteration loop	*/
     {
-        double prev_step = b - a; /* Distance from the last but one*/
-                                  /* to the last approximation	*/
+        double prev_step = b - a; /* Distance from the last but one
+                         to the last approximation	*/
         double tol_act;           /* Actual tolerance		*/
         double p;                 /* Interpolation step is calcu- */
-        double q;                 /* lated in the form p/q; divi- */
-                                  /* sion operations is delayed   */
-                                  /* until the last moment	*/
-        double new_step;          /* Step at this iteration       */
+        double q;                 /* lated in the form p/q; divi-
+                                   * sion operations is delayed
+                                   * until the last moment	*/
+        double new_step;          /* Step at this iteration	*/
 
         if (fabs(fc) < fabs(fb))
-        { /* Swap data for b to be the 	*/
+        { /* Swap data for b to be the	*/
             a = b;
             b = c;
             c = a; /* best approximation		*/
@@ -112,18 +110,21 @@ int *Maxit;                                /* Max # of iterations */
 
         /* Decide if the interpolation can be tried	*/
         if (fabs(prev_step) >= tol_act /* If prev_step was large enough*/
-            && fabs(fa) > fabs(fb))    /* and was in true direction,	*/
-        {                              /* Interpolatiom may be tried	*/
+            && fabs(fa) > fabs(fb))
+        { /* and was in true direction,
+           * Interpolatiom may be tried	*/
             register double t1, cb, t2;
             cb = c - b;
-            if (a == c)       /* If we have only two distinct	*/
-            {                 /* points linear interpolation 	*/
+            if (a == c)
+            {                 /* If we have only two distinct	*/
+                              /* points linear interpolation	*/
                 t1 = fb / fa; /* can only be applied		*/
                 p = cb * t1;
                 q = 1.0 - t1;
             }
-            else /* Quadric inverse interpolation*/
-            {
+            else
+            { /* Quadric inverse interpolation*/
+
                 q = fa / fc;
                 t1 = fb / fc;
                 t2 = fb / fa;
@@ -137,27 +138,29 @@ int *Maxit;                                /* Max # of iterations */
 
             if (p < (0.75 * cb * q - fabs(tol_act * q) / 2) /* If b+p/q falls in [b,c]*/
                 && p < fabs(prev_step * q / 2))             /* and isn't too large	*/
-                new_step = p / q;                           /* it is accepted	*/
-                                                            /* If p/q is too large then the	*/
-                                                            /* bissection procedure can 	*/
-                                                            /* reduce [b,c] range to more	*/
-                                                            /* extent			*/
+                new_step = p / q;                           /* it is accepted
+                                                             * If p/q is too large then the
+                                                             * bissection procedure can
+                                                             * reduce [b,c] range to more
+                                                             * extent */
         }
 
-        if (fabs(new_step) < tol_act) /* Adjust the step to be not less*/
+        if (fabs(new_step) < tol_act)
+        {                             /* Adjust the step to be not less*/
             if (new_step > (double)0) /* than tolerance		*/
                 new_step = tol_act;
             else
                 new_step = -tol_act;
-
+        }
         a = b;
-        fa = fb; /* Save the previous approx.	*/
+        fa = fb; /* Save the previous approx. */
         b += new_step;
-        fb = (*f)(b, info); /* Do step to a new approxim.	*/
+        fb = (*f)(b, info); /* Do step to a new approxim. */
         if ((fb > 0 && fc > 0) || (fb < 0 && fc < 0))
-        { /* Adjust c for it to have a sign*/
+        {
+            /* Adjust c for it to have a sign opposite to that of b */
             c = a;
-            fc = fa; /* opposite to that of b	*/
+            fc = fa;
         }
     }
     /* failed! */
