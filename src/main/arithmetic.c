@@ -303,7 +303,7 @@ SEXP do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         return binary(op, args);
     default:
-        error("operator with more than two arguments");
+        error("operator needs one or two arguments");
     }
     return ans; /* never used; to keep -Wall happy */
 }
