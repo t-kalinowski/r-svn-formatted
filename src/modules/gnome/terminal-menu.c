@@ -139,17 +139,17 @@ static void help_html_index_cb(GtkWidget *widget, gpointer data)
 
 static void help_text_index_cb(GtkWidget *widget, gpointer data)
 {
-    R_gtk_terminal_run("help()\n");
+    R_gtk_terminal_run("help(help, htmlhelp=FALSE)\n");
 }
 
 static void help_license_cb(GtkWidget *widget, gpointer data)
 {
-    R_gtk_terminal_run("?license\n");
+    R_gtk_terminal_run("license()\n");
 }
 
 static void help_contributors_cb(GtkWidget *widget, gpointer data)
 {
-    R_gtk_terminal_run("?contributors\n");
+    R_gtk_terminal_run("contributors()\n");
 }
 
 static void help_demos_index_cb(GtkWidget *widget, gpointer data)
@@ -171,23 +171,7 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
     gchar *version;
     gchar *copyright;
 
-    const gchar *authors[] = {"Douglas Bates",
-                              "John Chambers",
-                              "Peter Dalgaard",
-                              "Robert Gentleman",
-                              "Kurt Hornik",
-                              "Ross Ihaka",
-                              "Friedrich Leisch",
-                              "Thomas Lumley",
-                              "Martin Maechler",
-                              "Guido Masarotto",
-                              "Paul Murrell",
-                              "Brian Ripley",
-                              "Heiner Schwarte",
-                              "Duncan Temple Lang",
-                              "Luke Tierney",
-                              "Lyndon Drake, GNOME interface",
-                              NULL};
+    const gchar *authors[] = {NULL};
 
     version = g_strdup_printf("%s.%s %s", R_MAJOR, R_MINOR, R_STATUS);
     copyright = g_strdup_printf("Copyright (C) %s R Development Core Team", R_YEAR);
@@ -197,10 +181,12 @@ static void help_about_cb(GtkWidget *widget, gpointer data)
 
     about_box = gnome_about_new(
         "R", version, copyright, authors,
-        "R is a system for statistical computation and graphics.  It is a dialect of the S programming language from "
-        "Bell Labs.  R is free software and comes with ABSOLUTELY NO WARRANTY.  You are welcome to redistribute it "
-        "under certain conditions.  Type	?license or ?licence for distribution details.  R is a collaborative "
-        "project with many contributors.  Type ?contributors for a list.",
+        "`GNU S' - A language and environment for statistical computing and graphics. R is similar to S, which was "
+        "developed at Bell Laboratories by John Chambers et al. It provides a wide variety of statistical and "
+        "graphical techniques (linear and nonlinear modelling, statistical tests, time series analysis, "
+        "classification, clustering, ...).\n \nR is designed as a true computer language with control-flow "
+        "constructions for iteration and alternation, and it allows users to add additional functionality by defining "
+        "new functions. For computationally intensive tasks, C and Fortran code can be linked and called at run time.",
         "R-logo-sm.xpm");
 
     hbox = gtk_hbox_new(TRUE, 0);
