@@ -89,10 +89,9 @@ static R_FortranMethodDef FortEntries[] = {
     {"bvalus", (DL_FUNC)&F77_SUB(bvalus), 7},  {"supsmu", (DL_FUNC)&F77_SUB(supsmu), 10},
     {"hclust", (DL_FUNC)&F77_SUB(hclust), 11}, {"hcass2", (DL_FUNC)&F77_SUB(hcass2), 6},
     {"kmns", (DL_FUNC)&F77_SUB(kmns), 17},     {NULL, NULL, 0}};
-/*
+
 void R_init_stats(DllInfo *dll)
 {
     R_useDynamicSymbols(dll, FALSE);
     R_registerRoutines(dll, CEntries, CallEntries, FortEntries, NULL);
 }
-*/
