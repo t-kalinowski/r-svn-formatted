@@ -1411,7 +1411,7 @@ SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
     x = CAR(args);
     n = length(x);
-    ans = allocVector(LGLSXP, n);
+    PROTECT(ans = allocVector(LGLSXP, n));
     if (isVector(x))
     {
         PROTECT(dims = getAttrib(x, R_DimSymbol));
@@ -1497,6 +1497,7 @@ SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isVector(x))
         UNPROTECT(2);
     UNPROTECT(1);
+    UNPROTECT(1); /*ans*/
     return ans;
 }
 
@@ -1517,7 +1518,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
     x = CAR(args);
     n = length(x);
-    ans = allocVector(LGLSXP, n);
+    PROTECT(ans = allocVector(LGLSXP, n));
     if (isVector(x))
     {
         PROTECT(dims = getAttrib(x, R_DimSymbol));
@@ -1599,6 +1600,7 @@ SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isVector(x))
         UNPROTECT(2);
     UNPROTECT(1);
+    UNPROTECT(1); /*ans*/
     return ans;
 }
 
