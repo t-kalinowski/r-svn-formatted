@@ -309,7 +309,8 @@ void lqs_fitlots(double *x, double *y, int *n, int *p, int *qn, int *lts, int *a
                 bestcoef[i] = coef[i];
             bestcoef[0] += a;
         }
-    }
+    } /* for(trial in 0:ntrials) */
+
     *crit = best;
     if (*sample)
         PutRNGstate();
