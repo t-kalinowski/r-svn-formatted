@@ -145,6 +145,9 @@ void GraphicCopy(WindowPtr window);
 #define kRGUISep 1001
 #define kRGUIText 1002
 
+#define kRCustomEventClass 'revt'
+#define kRWakeUpPlease 'wake'
+
 OSStatus InitMLTE(void);
 TXNObject RConsoleOutObject = NULL;
 TXNObject RConsoleInObject = NULL;
@@ -171,7 +174,7 @@ WindowRef RAboutWindow = NULL;
 WindowRef RPrefsWindow = NULL;
 WindowRef ConsoleWindow = NULL;
 
-ProcessSerialNumber AquaPSN;
+ProcessSerialNumber AquaPSN, RPSN;
 void RAqua2Front(void);
 void SendReturnKey(void);
 
@@ -345,10 +348,13 @@ static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyDow
 static const EventTypeSpec RCmdEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                            {kEventClassCommand, kEventCommandUpdateStatus}};
 
-static const EventTypeSpec RGlobalWinEvents[] = {
-    {kEventClassWindow, kEventWindowBoundsChanged},   {kEventClassWindow, kEventWindowFocusAcquired},
-    {kEventClassWindow, kEventWindowFocusRelinquish}, {kEventClassFont, kEventFontPanelClosed},
-    {kEventClassFont, kEventFontSelection},           {kEventClassMouse, kEventMouseDown}};
+static const EventTypeSpec RGlobalWinEvents[] = {{kEventClassWindow, kEventWindowBoundsChanged},
+                                                 {kEventClassWindow, kEventWindowFocusAcquired},
+                                                 {kEventClassWindow, kEventWindowFocusRelinquish},
+                                                 {kEventClassFont, kEventFontPanelClosed},
+                                                 {kEventClassFont, kEventFontSelection},
+                                                 {kEventClassMouse, kEventMouseDown},
+                                                 {kRCustomEventClass, kRWakeUpPlease}};
 
 static const EventTypeSpec RCloseWinEvent[] = {{kEventClassWindow, kEventWindowClose}};
 
@@ -406,6 +412,8 @@ TXNControlData REditData[] = {kTXNNoAutoWrap};
 TXNControlTag txnControlTag[1];
 TXNControlData txnControlData[1];
 TXNMargins txnMargins;
+
+static pascal void RIdleTimer(EventLoopTimerRef inTimer, EventLoopIdleTimerMessage inState, void *inUserData);
 
 static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData);
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData);
@@ -603,6 +611,9 @@ void Raqua_StartConsole(Rboolean OpenConsole)
             Raqua_read_history(R_HistoryFile);
     }
 
+    InstallEventLoopIdleTimer(GetMainEventLoop(), kEventDurationMillisecond, kEventDurationMillisecond * 2,
+                              (EventLoopIdleTimerUPP)RIdleTimer, NULL, NULL);
+
     InstallEventLoopTimer(GetMainEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, NULL);
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond / 5, NewEventLoopTimerUPP(ReadStdoutTimer), NULL,
                           NULL);
@@ -695,6 +706,15 @@ void SetUpRAquaMenu(void)
     EnableMenuCommand(NULL, kHICommandPreferences);
 
     DrawMenuBar();
+}
+
+static pascal void RIdleTimer(EventLoopTimerRef inTimer, EventLoopIdleTimerMessage inState, void *inUserData)
+{
+    EventRef REvent;
+    OSErr err1, err2;
+
+    err1 = CreateEvent(NULL, kRCustomEventClass, kRWakeUpPlease, 0, kEventAttributeNone, &REvent);
+    err2 = PostEventToQueue(GetMainEventQueue(), REvent, kEventPriorityHigh);
 }
 
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData)
@@ -2157,6 +2177,10 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     switch (eventClass)
     {
 
+    case kRCustomEventClass:
+        err = noErr;
+        break;
+
     case kEventClassMouse:
         if (eventKind == kEventMouseDown)
         {
@@ -3356,6 +3380,10 @@ pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, l
     return noErr;
 }
 
+void DoNothing(void)
+{
+    return;
+}
 void Raqua_ProcessEvents(void)
 {
     EventRef theEvent;
@@ -3367,10 +3395,11 @@ void Raqua_ProcessEvents(void)
          if(otherPolledEventHandler)
           otherPolledEventHandler();
     */
+
     if (CheckEventQueueForUserCancel())
         onintr();
 
-    if (ReceiveNextEvent(0, NULL, 1 / 5 /*kEventDurationForever kEventDurationNoWait*/, true, &theEvent) == noErr)
+    if (ReceiveNextEvent(0, NULL, kEventDurationForever, true, &theEvent) == noErr)
     {
         conv = ConvertEventRefToEventRecord(theEvent, &outEvent);
 
@@ -3380,6 +3409,7 @@ void Raqua_ProcessEvents(void)
         SendEventToEventTarget(theEvent, theTarget);
         ReleaseEvent(theEvent);
     }
+    //    fprintf(stderr,"\n process events");
 }
 
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
