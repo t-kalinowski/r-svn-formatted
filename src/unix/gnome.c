@@ -21,8 +21,8 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
-#include "R_ext/Rdynpriv.h"
+#include <Defn.h>
+#include <Rdynpriv.h>
 
 #include "Runix.h"
 #include <sys/types.h>

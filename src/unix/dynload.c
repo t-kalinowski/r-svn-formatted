@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 
-#include "Defn.h"
-#include "R_ext/Rdynpriv.h"
+#include <Defn.h>
+#include <Rdynpriv.h>
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
