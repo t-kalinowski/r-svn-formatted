@@ -158,10 +158,8 @@ char *EncodeReal(double x, int w, int d, int e)
     {
         if (ISNA(x))
             sprintf(buffer->data, "%*s", w, CHAR(R_print.na_string));
-#ifdef IEEE_754
         else if (ISNAN(x))
             sprintf(buffer->data, "%*s", w, "NaN");
-#endif
         else if (x > 0)
             sprintf(buffer->data, "%*s", w, "Inf");
         else

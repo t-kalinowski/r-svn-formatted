@@ -2379,7 +2379,6 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y)
 #define Math1(which) Builtin1(do_math1, which)
 #define Relop2(opval, opsym) NewBuiltin2(cmp_relop, opval, opsym)
 
-#ifdef IEEE_754
 #define DO_FAST_BINOP(op, a, b)                                                                                        \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -2407,9 +2406,6 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y)
         }                                                                                                              \
         Arith2(opval, opsym);                                                                                          \
     } while (0)
-#else
-#define FastBinary(op, opval, opsym) Arith2(opval, opsym)
-#endif
 
 #define BCNPUSH(v)                                                                                                     \
     do                                                                                                                 \

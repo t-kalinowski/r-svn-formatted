@@ -395,7 +395,6 @@ SEXP do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, double *z)
-#ifdef IEEE_754
 {
     char *transa = "N", *transb = "N";
     int i, j, k;
@@ -438,38 +437,6 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
         for (i = 0; i < nrx * ncy; i++)
             z[i] = 0;
 }
-#else
-{
-    /* FIXME - What about non-IEEE overflow ??? */
-    /* Does it really matter? */
-
-    int i, j, k;
-    double xij, yjk, sum;
-
-    if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
-    {
-        for (i = 0; i < nrx; i++)
-            for (k = 0; k < ncy; k++)
-            {
-                z[i + k * nrx] = NA_REAL;
-                sum = 0.0;
-                for (j = 0; j < ncx; j++)
-                {
-                    xij = x[i + j * nrx];
-                    yjk = y[j + k * nry];
-                    if (ISNAN(xij) || ISNAN(yjk))
-                        goto next_ik;
-                    sum += xij * yjk;
-                }
-                z[i + k * nrx] = sum;
-            next_ik:;
-            }
-    }
-    else /* zero-extent operations should return zeroes */
-        for (i = 0; i < nrx * ncy; i++)
-            z[i] = 0;
-}
-#endif
 
 #ifdef HAVE_DOUBLE_COMPLEX
 /* ZGEMM - perform one of the matrix-matrix operations    */
@@ -481,7 +448,7 @@ extern void F77_NAME(zgemm)(const char *transa, const char *transb, const int *m
 
 static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int ncy, Rcomplex *z)
 {
-#if defined(HAVE_DOUBLE_COMPLEX) && defined(IEEE_754)
+#ifdef HAVE_DOUBLE_COMPLEX
     char *transa = "N", *transb = "N";
     int i;
     Rcomplex one, zero;
@@ -547,7 +514,6 @@ static void symcrossprod(double *x, int nr, int nc, double *z)
 
 static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, double *z)
 {
-#ifdef IEEE_754
     char *transa = "T", *transb = "N";
     double one = 1.0, zero = 0.0;
     if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
@@ -560,32 +526,10 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
         for (i = 0; i < ncx * ncy; i++)
             z[i] = 0;
     }
-#else
-    int i, j, k;
-    double xji, yjk, sum;
-
-    for (i = 0; i < ncx; i++)
-        for (k = 0; k < ncy; k++)
-        {
-            z[i + k * ncx] = NA_REAL;
-            sum = 0.0;
-            for (j = 0; j < nrx; j++)
-            {
-                xji = x[j + i * nrx];
-                yjk = y[j + k * nry];
-                if (ISNAN(xji) || ISNAN(yjk))
-                    goto next_ik;
-                sum += xji * yjk;
-            }
-            z[i + k * ncx] = sum;
-        next_ik:;
-        }
-#endif
 }
 
 static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int ncy, Rcomplex *z)
 {
-#ifdef IEEE_754
     char *transa = "T", *transb = "N";
     Rcomplex one, zero;
 
@@ -601,37 +545,6 @@ static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int 
         for (i = 0; i < ncx * ncy; i++)
             z[i].r = z[i].i = 0;
     }
-#else
-    int i, j, k;
-    double xji_r, xji_i, yjk_r, yjk_i, sum_r, sum_i;
-
-    for (i = 0; i < ncx; i++)
-        for (k = 0; k < ncy; k++)
-        {
-            z[i + k * ncx].r = NA_REAL;
-            z[i + k * ncx].i = NA_REAL;
-            sum_r = 0.0;
-            sum_i = 0.0;
-            for (j = 0; j < nrx; j++)
-            {
-                xji_r = x[j + i * nrx].r;
-                xji_i = x[j + i * nrx].i;
-                yjk_r = y[j + k * nry].r;
-                yjk_i = y[j + k * nry].i;
-#ifndef IEEE_754
-                if (ISNAN(xji_r) || ISNAN(xji_i) || ISNAN(yjk_r) || ISNAN(yjk_i))
-                    goto next_ik;
-#endif
-                sum_r += (xji_r * yjk_r - xji_i * yjk_i);
-                sum_i += (xji_r * yjk_i + xji_i * yjk_r);
-            }
-            z[i + k * ncx].r = sum_r;
-            z[i + k * ncx].i = sum_i;
-#ifndef IEEE_754
-        next_ik:;
-#endif
-        }
-#endif
 }
 /* "%*%" (op = 0)  or  crossprod (op = 1) : */
 SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -817,14 +730,8 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ccrossprod(COMPLEX(CAR(args)), nrx, ncx, COMPLEX(CADR(args)), nry, ncy, COMPLEX(ans));
         else
         {
-#ifdef IEEE_754
             if (sym)
                 symcrossprod(REAL(CAR(args)), nrx, ncx, REAL(ans));
-            else
-                crossprod(REAL(CAR(args)), nrx, ncx, REAL(CADR(args)), nry, ncy, REAL(ans));
-#endif
-            if (sym)
-                crossprod(REAL(CAR(args)), nrx, ncx, REAL(CAR(args)), nry, ncy, REAL(ans));
             else
                 crossprod(REAL(CAR(args)), nrx, ncx, REAL(CADR(args)), nry, ncy, REAL(ans));
         }
@@ -1217,7 +1124,6 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
             case REALSXP:
                 rx = REAL(x) + n * j;
-#ifdef IEEE_754
                 if (keepNA)
                     for (sum = 0., i = 0; i < n; i++)
                         sum += *rx++;
@@ -1235,19 +1141,6 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                             break;
                         }
                 }
-#else
-                for (cnt = 0, sum = 0., i = 0; i < n; i++, rx++)
-                    if (!ISNAN(*rx))
-                    {
-                        cnt++;
-                        sum += *rx;
-                    }
-                    else if (keepNA)
-                    {
-                        sum = NA_REAL;
-                        break;
-                    }
-#endif
                 break;
             case INTSXP:
                 ix = INTEGER(x) + n * j;
@@ -1294,7 +1187,6 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         cnt = p;
         PROTECT(ans = allocVector(REALSXP, n));
 
-#ifdef IEEE_754
         /* reverse summation order to improve cache hits */
         if (type == REALSXP)
         {
@@ -1337,15 +1229,13 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             UNPROTECT(1);
             return ans;
         }
-#endif
 
         for (i = 0; i < n; i++)
         {
             switch (type)
             {
-            case REALSXP:
+            case REALSXP: /* this cannot be reached */
                 rx = REAL(x) + i;
-#ifdef IEEE_754
                 if (keepNA)
                     for (sum = 0., j = 0; j < p; j++, rx += n)
                         sum += *rx;
@@ -1363,19 +1253,6 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                             break;
                         }
                 }
-#else
-                for (cnt = 0, sum = 0., j = 0; j < p; j++, rx += n)
-                    if (!ISNAN(*rx))
-                    {
-                        cnt++;
-                        sum += *rx;
-                    }
-                    else if (keepNA)
-                    {
-                        sum = NA_REAL;
-                        break;
-                    }
-#endif
                 break;
             case INTSXP:
                 ix = INTEGER(x) + i;

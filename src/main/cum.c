@@ -32,10 +32,8 @@ static SEXP cumsum(SEXP x, SEXP s)
     sum = 0.0;
     for (i = 0; i < length(x); i++)
     {
-#ifndef IEEE_754
         if (ISNAN(REAL(x)[i]))
             break;
-#endif
         sum += REAL(x)[i];
         REAL(s)[i] = sum;
     }
@@ -50,10 +48,6 @@ static SEXP ccumsum(SEXP x, SEXP s)
     sum.i = 0;
     for (i = 0; i < length(x); i++)
     {
-#ifndef IEEE_754
-        if (ISNAN(COMPLEX(x)[i].r) || ISNAN(COMPLEX(x)[i].i))
-            break;
-#endif
         sum.r += COMPLEX(x)[i].r;
         sum.i += COMPLEX(x)[i].i;
         COMPLEX(s)[i].r = sum.r;
@@ -69,10 +63,6 @@ static SEXP cumprod(SEXP x, SEXP s)
     prod = 1.0;
     for (i = 0; i < length(x); i++)
     {
-#ifndef IEEE_754
-        if (ISNAN(REAL(x)[i]))
-            break;
-#endif
         prod *= REAL(x)[i];
         REAL(s)[i] = prod;
     }
@@ -87,10 +77,6 @@ static SEXP ccumprod(SEXP x, SEXP s)
     prod.i = 0;
     for (i = 0; i < length(x); i++)
     {
-#ifndef IEEE_754
-        if (ISNAN(COMPLEX(x)[i].r) || ISNAN(COMPLEX(x)[i].i))
-            break;
-#endif
         tmp.r = prod.r;
         tmp.i = prod.i;
         prod.r = COMPLEX(x)[i].r * tmp.r - COMPLEX(x)[i].i * tmp.i;
@@ -105,19 +91,11 @@ static SEXP cummax(SEXP x, SEXP s)
 {
     int i;
     double max;
-#ifdef IEEE_754
     max = R_NegInf;
-#else
-    max = 0.999 * R_NegInf; /* not NA */
-#endif
     for (i = 0; i < length(x); i++)
     {
         if (ISNAN(REAL(x)[i]) || ISNAN(max))
-#ifdef IEEE_754
             max = max + REAL(x)[i]; /* propagate NA and NaN */
-#else
-            break;
-#endif
         else
             max = (max > REAL(x)[i]) ? max : REAL(x)[i];
         REAL(s)[i] = max;
@@ -133,11 +111,7 @@ static SEXP cummin(SEXP x, SEXP s)
     for (i = 0; i < length(x); i++)
     {
         if (ISNAN(REAL(x)[i]) || ISNAN(min))
-#ifdef IEEE_754
             min = min + REAL(x)[i]; /* propagate NA and NaN */
-#else
-            break;
-#endif
         else
             min = (min < REAL(x)[i]) ? min : REAL(x)[i];
         REAL(s)[i] = min;
