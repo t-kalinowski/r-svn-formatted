@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include "Defn.h"
 #include "Fileio.h"
-#include <io.h>
 #include <direct.h>
 #include <time.h>
 #include <windows.h>
@@ -62,27 +61,6 @@ char *R_tmpnam(const char *prefix, const char *tempdir)
     res = (char *)malloc((strlen(tm) + 1) * sizeof(char));
     strcpy(res, tm);
     return res;
-}
-
-SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP path, ans;
-    char *p, dir[MAX_PATH];
-    int res;
-
-    checkArity(op, args);
-    path = CAR(args);
-    if (!isString(path) || length(path) != 1)
-        errorcall(call, "invalid path argument");
-    strcpy(dir, CHAR(STRING_ELT(path, 0)));
-    for (p = dir; *p != '\0'; p++)
-        if (*p == '/')
-            *p = '\\';
-    res = mkdir(dir);
-    PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = (res == 0);
-    UNPROTECT(1);
-    return (ans);
 }
 
 #include <sys/types.h>
