@@ -355,6 +355,7 @@ SEXP do_class(SEXP call, SEXP op, SEXP args, SEXP env)
     return getAttrib(CAR(args), R_ClassSymbol);
 }
 
+/* names(object) <- name */
 SEXP do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
@@ -637,13 +638,14 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
     return value;
 }
 
-/* NOTE: The following code ensures that when an attribute list */
-/* is attached to an object, that the "dim" attibute is always */
-/* brought to the front of the list.  This ensures that when both */
-/* "dim" and "dimnames" are set that the "dim" is attached first. */
-
+/* attributes(object) <- attrs */
 SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* NOTE: The following code ensures that when an attribute list */
+    /* is attached to an object, that the "dim" attibute is always */
+    /* brought to the front of the list.  This ensures that when both */
+    /* "dim" and "dimnames" are set that the "dim" is attached first. */
+
     SEXP object, attrs, names;
     int i, nattrs;
 
@@ -684,7 +686,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     OBJECT(object) = 0;
 
     /* We do two passes through the attributes; the first */
-    /* finding and transferring "dims" and the second */
+    /* finding and transferring "dim"s and the second */
     /* transferring the rest.  This is to ensure that */
     /* "dim" occurs in the attribute list before "dimnames". */
 
@@ -713,6 +715,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     return object;
 }
 
+#ifdef USE_do_attr
 SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t;
@@ -723,6 +726,7 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
         error("attribute name must be of mode character");
     return getAttrib(s, install(CHAR(STRING(t)[0])));
 }
+#endif
 
 SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
