@@ -1334,6 +1334,7 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
 {
     menu m;
     int iw, ih;
+    int cw, ch;
     double dw, dw0, dh, d;
 
     xd->kind = SCREEN;
@@ -1345,25 +1346,37 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
         dh = (int)(w * user_ypinch);
     else
         dh = (int)(h / pixelHeight(NULL));
+
+    if (ismdi())
+    {
+        cw = RgetMDIwidth();
+        ch = RgetMDIheight();
+    }
+    else
+    {
+        cw = devicewidth(NULL);
+        ch = deviceheight(NULL);
+    }
+
     if (resize != 3)
     {
-        if ((dw / devicewidth(NULL)) > 0.85)
+        if ((dw / cw) > 0.85)
         {
             d = dh / dw;
-            dw = 0.85 * devicewidth(NULL);
+            dw = 0.85 * cw;
             dh = d * dw;
         }
-        if ((dh / deviceheight(NULL)) > 0.85)
+        if ((dh / ch) > 0.85)
         {
             d = dw / dh;
-            dh = 0.85 * deviceheight(NULL);
+            dh = 0.85 * ch;
             dw = d * dh;
         }
     }
     else
     {
-        dw = min(dw, 0.85 * devicewidth(NULL));
-        dh = min(dh, 0.85 * deviceheight(NULL));
+        dw = min(dw, 0.85 * cw);
+        dh = min(dh, 0.85 * ch);
     }
     iw = dw + 0.5;
     ih = dh + 0.5;
@@ -1374,9 +1387,9 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
         grx = (xpos == NA_INTEGER) ? graphicsx : xpos;
         gry = (ypos == NA_INTEGER) ? graphicsy : ypos;
         if (grx < 0)
-            grx = devicewidth(NULL) - iw + grx;
+            grx = cw - iw + grx;
         if (gry < 0)
-            gry = deviceheight(NULL) - ih + gry;
+            gry = ch - ih + gry;
         if (!(xd->gawin = newwindow("R Graphics", rect(grx, gry, iw, ih),
                                     Document | StandardWindow | Menubar | VScrollbar | HScrollbar)))
             return 0;
@@ -1528,7 +1541,7 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     setdata(xd->mfix, (void *)dd);
     show(xd->gawin); /* twice, for a Windows bug */
     show(xd->gawin);
-    BringToTop(xd->gawin);
+    BringToTop(xd->gawin, 0);
     sethit(xd->gawin, devga_sbf);
     setresize(xd->gawin, HelpResize);
     setredraw(xd->gawin, HelpExpose);
@@ -2795,16 +2808,18 @@ extern UImode CharacterMode;
 
 SEXP do_bringtotop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int dev;
+    int dev, stay;
     GEDevDesc *gdd;
     gadesc *xd;
 
     checkArity(op, args);
     dev = asInteger(CAR(args));
+    stay = asInteger(CADR(args));
+
     if (dev == -1)
     { /* console */
         if (CharacterMode == RGui)
-            BringToTop(RConsole);
+            BringToTop(RConsole, stay);
     }
     else
     {
@@ -2816,7 +2831,9 @@ SEXP do_bringtotop(SEXP call, SEXP op, SEXP args, SEXP env)
         xd = (gadesc *)gdd->dev->deviceSpecific;
         if (!xd)
             errorcall(call, "invalid device");
-        BringToTop(xd->gawin);
+        if (stay && ismdi())
+            error("requires SDI mode");
+        BringToTop(xd->gawin, stay);
     }
     return R_NilValue;
 }

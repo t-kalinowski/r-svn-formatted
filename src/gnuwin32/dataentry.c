@@ -1469,7 +1469,7 @@ static Rboolean initwin(void)
     gchangescrollbar(de, HWINSB, 0, xmaxused / xScrollbarScale, max(nwide / xScrollbarScale, 1), 0);
     show(de);
     show(de); /* a precaution, as PD reports transparent windows */
-    BringToTop(de);
+    BringToTop(de, 0);
     R_de_up = TRUE;
     return FALSE;
 }
