@@ -1069,14 +1069,6 @@ SEXP do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         SET_STRING_ELT(ans, 0, mkChar(""));
     UNPROTECT(1);
-#ifndef Win32
-#ifdef HAVE_LANGINFO_CODESET
-    utf8locale = strcmp(nl_langinfo(CODESET), "UTF-8") == 0;
-#endif
-#ifdef SUPPORT_MBCS
-    mbcslocale = MB_CUR_MAX > 1;
-#endif
-#endif
     return ans;
 #else
     return R_NilValue;
@@ -1127,6 +1119,14 @@ SEXP do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         warningcall(call, "OS reports request cannot be honored");
     }
     UNPROTECT(1);
+#ifndef Win32
+#ifdef HAVE_LANGINFO_CODESET
+    utf8locale = strcmp(nl_langinfo(CODESET), "UTF-8") == 0;
+#endif
+#ifdef SUPPORT_MBCS
+    mbcslocale = MB_CUR_MAX > 1;
+#endif
+#endif
     return ans;
 #else
     return R_NilValue;
