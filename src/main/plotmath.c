@@ -1923,6 +1923,7 @@ static BBOX RenderDelim(int which, double dist, int draw)
     switch (which)
     {
     case '.':
+        SetFont(prev);
         return NullBBox();
         break;
     case '|':
