@@ -367,6 +367,8 @@ typedef struct structConsoleData *ConsoleData;
         gbitblt(c, p->bm, topleft(r), r);                                                                              \
     }
 
+static rgb consolebg = White, consolefg = Black, consoleuser = Red, pagerhighlight = Red;
+
 static ConsoleData newconsoledata(font f, int rows, int cols, rgb fg, rgb ufg, rgb bg, int kind)
 {
     ConsoleData p;
@@ -506,7 +508,7 @@ static int writeline(ConsoleData p, int i, int j)
     }
     else if (USER(i) == -2)
     {
-        WLHELPER(0, col1, DarkRed, p->bg);
+        WLHELPER(0, col1, pagerhighlight, p->bg);
     }
     else
         WLHELPER(0, col1, p->fg, p->bg);
@@ -1440,10 +1442,9 @@ static int fontsty, pointsize;
 static int consoler = 25, consolec = 80;
 static int pagerrow = 25, pagercol = 80;
 static int pagerMultiple = 1;
-static rgb consolebg = White, consolefg = Black, consoleuser = Red;
 
-void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols, rgb nfg, rgb nufg, rgb nbg, int pgr,
-                       int pgc, int multiplewindows, int widthonresize)
+void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols, rgb nfg, rgb nufg, rgb nbg, rgb high,
+                       int pgr, int pgc, int multiplewindows, int widthonresize)
 {
     char msg[LF_FACESIZE + 128];
     strncpy(fontname, fnname, LF_FACESIZE);
@@ -1472,6 +1473,7 @@ void setconsoleoptions(char *fnname, int fnsty, int fnpoints, int rows, int cols
     consolefg = nfg;
     consoleuser = nufg;
     consolebg = nbg;
+    pagerhighlight = high;
     pagerrow = pgr;
     pagercol = pgc;
     pagerMultiple = multiplewindows;
