@@ -1309,6 +1309,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(envir);
     data = eval(variables, envir);
     UNPROTECT(2);
+    PROTECT(envir);
     PROTECT(data);
 
     /* Create the names for the variables. */
@@ -1392,7 +1393,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             data = dots;
     }
-    UNPROTECT(2);
+    UNPROTECT(3);
     PROTECT(data);
     PROTECT(subset);
 
