@@ -27,6 +27,10 @@
 #include "Graphics.h"
 #include "Print.h"
 
+#ifndef HAVE_HYPOT
+#define hypot pythag
+#endif
+
 /* Conversion of degrees to radians */
 
 #define DegToRad(x) (0.01745329251994329576 * x)
