@@ -1,6 +1,11 @@
 #define NULL 0
 #include <limits.h>
-#include "Rsock.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <unistd.h>
+#include "sock.h"
 
 #ifndef OPEN_MAX
 #define OPEN_MAX 64
@@ -126,6 +131,7 @@ void Rsockwrite(int *sock, char **buf, int *start, int *end, int *len)
     *len = (int)n;
 }
 
+#ifndef Win32
 #include <signal.h>
 #include <sys/wait.h>
 static void sig_child(int sig)
@@ -151,3 +157,4 @@ void Rsockfork(int *pidno)
     pid = fork();
     *pidno = (int)pid;
 }
+#endif
