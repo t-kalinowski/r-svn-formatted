@@ -330,9 +330,9 @@ int Rstrlen(SEXP s, int quote)
         { /* beginning of multibyte char */
             size_t res;
             wchar_t wc;
-            used = Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            res = Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
             len += iswprint((int)wc) ? 1 : 8;
-            i += (used - 1);
+            i += (res - 1);
 #endif
         }
         else
@@ -455,7 +455,7 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             int j;
             size_t res;
             wchar_t wc;
-            res = Mbrtowc(&wc, p, clen, NULL);
+            res = Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
             if (iswprint(wc))
             {
                 for (j = 0; j < res; j++)
