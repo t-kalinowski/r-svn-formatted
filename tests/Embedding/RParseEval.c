@@ -1,19 +1,16 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <Rdefines.h>
+#include <R_ext/Parse.h>
 
 #include "embeddedRCall.h"
-
-/* See the no-exported header file ${R_HOME}/src/include/Parse.h */
-
-SEXP R_ParseVector(SEXP, int, int *);
 
 int main(int argc, char *argv[])
 {
     SEXP fun, arg, seq, pch, tmp;
     SEXP e, e1;
-    int i, n;
-    int status, hadError;
+    int i, n, hadError;
+    ParseStatus status;
 
     init_R(argc, argv);
 
