@@ -395,7 +395,7 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
             while (++index[j] >= bound[j])
             {
                 index[j] = 0;
-                j = ++j % k;
+                j = (j + 1) % k;
             }
         }
     }
