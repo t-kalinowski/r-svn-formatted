@@ -1414,6 +1414,12 @@ static SEXP Query(char *what, DevDesc *dd)
         value = allocVector(REALSXP, 1);
         REAL(value)[0] = GConvertYUnits(1.0, CHARS, INCHES, dd);
     }
+    else if (streql(what, "din"))
+    {
+        value = allocVector(REALSXP, 2);
+        REAL(value)[0] = GConvertXUnits(1.0, NDC, INCHES, dd);
+        REAL(value)[1] = GConvertYUnits(1.0, NDC, INCHES, dd);
+    }
     else if (streql(what, "err"))
     {
         value = allocVector(INTSXP, 1);
