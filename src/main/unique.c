@@ -281,8 +281,11 @@ SEXP duplicated(SEXP x)
     return ans;
 }
 
-/* .Internal(duplicated(x)) [op=0]  and
-   .Internal(unique(x))	    [op=1] :
+SEXP duplicated_list(SEXP x); /* in identical.c */
+
+/* .Internal(duplicated(x))       [op=0]
+   .Internal(unique(x))	          [op=1]
+   .Internal(duplicated.list(x)) [op=2]
 */
 SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -292,8 +295,11 @@ SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     x = CAR(args);
     /* handle zero length vectors */
-    if (length(x) == 0)
-        return (allocVector(PRIMVAL(op) == 0 ? LGLSXP : TYPEOF(x), 0));
+    if ((n = LENGTH(x)) == 0)
+        return (allocVector(PRIMVAL(op) != 1 ? LGLSXP : TYPEOF(x), 0));
+
+    if (PRIMVAL(op) == 2)
+        return duplicated_list(x);
 
     if (!(isVectorAtomic(x)))
         error("%s() applies only to atomic vectors", (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
@@ -303,7 +309,6 @@ SEXP do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
         return dup;
     /*	ELSE
     use the results of "duplicated" to get "unique" */
-    n = LENGTH(x);
 
     /* count unique entries */
     k = 0;
