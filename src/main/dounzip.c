@@ -160,6 +160,8 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP *p
                 break;
 #ifdef Win32
             R_ProcessEvents();
+#else
+            R_CheckUserInterrupt();
 #endif
         }
     }
@@ -173,6 +175,8 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP *p
                 break;
 #ifdef Win32
             R_ProcessEvents();
+#else
+            R_CheckUserInterrupt();
 #endif
         }
     }
