@@ -716,7 +716,7 @@ static SEXP switchList(SEXP el, SEXP rho)
     }
     else
     {
-        error(_("invalid parameter in switch()"));
+        error(_("invalid parameter in 'switch()'"));
         return R_NilValue; /* for -Wall */
     }
 }

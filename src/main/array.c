@@ -200,7 +200,7 @@ SEXP allocArray(SEXPTYPE mode, SEXP dims)
     {
         dn *= INTEGER(dims)[i];
         if (dn > INT_MAX)
-            error(_("allocArray: too many elements specified by dims"));
+            error(_("allocArray: too many elements specified by 'dims'"));
         n *= INTEGER(dims)[i];
     }
 
