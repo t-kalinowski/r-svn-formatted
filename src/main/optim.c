@@ -652,6 +652,8 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
             if (0.1 * fabs(Bvec[i]) > step)
                 step = 0.1 * fabs(Bvec[i]);
         }
+        if (step == 0.0)
+            step = 0.1;
         if (trace)
             Rprintf("Stepsize computed as %f\n", step);
         for (j = 2; j <= n1; j++)
