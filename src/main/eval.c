@@ -97,6 +97,9 @@ SEXP eval(SEXP e, SEXP rho)
     case ENVSXP:
     case CLOSXP:
     case VECSXP:
+#ifndef OLD
+    case EXPRSXP:
+#endif
         tmp = e;
         break;
     case SYMSXP:
@@ -152,6 +155,7 @@ SEXP eval(SEXP e, SEXP rho)
         }
         tmp = PRVALUE(e);
         break;
+#ifdef OLD
     case EXPRSXP: {
         int i, n;
         n = LENGTH(e);
@@ -159,6 +163,7 @@ SEXP eval(SEXP e, SEXP rho)
             tmp = eval(VECTOR(e)[i], rho);
     }
     break;
+#endif
     case LANGSXP:
         if (TYPEOF(CAR(e)) == SYMSXP)
             PROTECT(op = findFun(CAR(e), rho));
@@ -1035,7 +1040,7 @@ void CheckFormals(SEXP ls)
 
 SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP expr, env, encl;
+    SEXP expr, env, encl, tmp;
     int nback;
     RCNTXT cntxt;
 
@@ -1082,6 +1087,19 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
             expr = eval(expr, env);
         endcontext(&cntxt);
         UNPROTECT(1);
+    }
+    if (isExpression(expr))
+    {
+        int i, n;
+        PROTECT(expr);
+        n = LENGTH(expr);
+        begincontext(&cntxt, CTXT_RETURN, call, env, rho, args);
+        if (!SETJMP(cntxt.cjmpbuf))
+            for (i = 0; i < n; i++)
+                tmp = eval(VECTOR(expr)[i], env);
+        endcontext(&cntxt);
+        UNPROTECT(1);
+        expr = tmp;
     }
     if (PRIMVAL(op))
     {
