@@ -29,7 +29,7 @@
 
 SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int i, nargs, cnt, v;
+    int i, nargs, cnt, v, thislen;
     char *formatString;
     char fmt[MAXLINE + 1], bit[MAXLINE + 1], outputString[MAXLINE + 1];
     size_t n, cur, chunk;
@@ -134,8 +134,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                     this = a[nthis];
 
                     /* Now let us see if some minimal coercion would be sensible.
-                       Do not need to PROTECT as no R allocation takes place.
-                    */
+                     */
                     switch (tolower(fmt[strlen(fmt) - 1]))
                     {
                     case 'd':
@@ -166,11 +165,15 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                     default:
                         break;
                     }
+                    PROTECT(this);
+                    thislen = length(this);
+                    if (thislen == 0)
+                        error(_("coercion has changed vector length to 0"));
 
                     switch (TYPEOF(this))
                     {
                     case LGLSXP: {
-                        int x = LOGICAL(this)[ns % lens[nthis]];
+                        int x = LOGICAL(this)[ns % thislen];
                         if (strcspn(fmt, "di") >= strlen(fmt))
                             error("%s", _("use format %d or %i for logical objects"));
                         if (x == NA_LOGICAL)
@@ -183,7 +186,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         break;
                     }
                     case INTSXP: {
-                        int x = INTEGER(this)[ns % lens[nthis]];
+                        int x = INTEGER(this)[ns % thislen];
                         if (strcspn(fmt, "dixX") >= strlen(fmt))
                             error("%s", _("use format %d, %i, %x or %X for integer objects"));
                         if (x == NA_INTEGER)
@@ -196,7 +199,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         break;
                     }
                     case REALSXP: {
-                        double x = REAL(this)[ns % lens[nthis]];
+                        double x = REAL(this)[ns % thislen];
                         if (strcspn(fmt, "feEgG") >= strlen(fmt))
                             error("%s", _("use format %f, %e or %g for numeric objects"));
                         if (R_FINITE(x))
@@ -245,15 +248,16 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         /* NA_STRING will be printed as `NA' */
                         if (strcspn(fmt, "s") >= strlen(fmt))
                             error("%s", _("use format %s for character objects"));
-                        if (strlen(CHAR(STRING_ELT(this, ns % lens[nthis]))) > MAXLINE)
+                        if (strlen(CHAR(STRING_ELT(this, ns % thislen))) > MAXLINE)
                             warning(_("Likely truncation of character string"));
-                        snprintf(bit, MAXLINE, fmt, CHAR(STRING_ELT(this, ns % lens[nthis])));
+                        snprintf(bit, MAXLINE, fmt, CHAR(STRING_ELT(this, ns % thislen)));
                         bit[MAXLINE] = '\0';
                         break;
                     default:
                         errorcall(call, _("unsupported type"));
                         break;
                     }
+                    UNPROTECT(1);
                 }
             }
             else
