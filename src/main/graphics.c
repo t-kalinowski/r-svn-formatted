@@ -4805,8 +4805,12 @@ void hsv2rgb(double *h, double *s, double *v, double *r, double *g, double *b)
  */
 
 /* Default Color Palette */
+/* Paul Murrell 05/06/02
+ * Changed "white" to "grey" in the default palette
+ * in response to user suggestion
+ */
 
-char *DefaultPalette[] = {"black", "red", "green3", "blue", "cyan", "magenta", "yellow", "white", NULL};
+char *DefaultPalette[] = {"black", "red", "green3", "blue", "cyan", "magenta", "yellow", "grey", NULL};
 
 /* The Table of Known Color Names */
 /* Adapted from the X11 RGB database */
