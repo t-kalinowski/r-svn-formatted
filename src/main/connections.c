@@ -1390,7 +1390,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             case sizeof(signed char):
             case sizeof(short):
             case sizeof(int):
-#if SIZE_LONG == 8
+#if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
             case sizeof(long long):
@@ -1413,7 +1413,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             case sizeof(signed char):
             case sizeof(short):
             case sizeof(int):
-#if SIZE_LONG == 8
+#if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
             case sizeof(long long):
@@ -1435,7 +1435,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             {
             case sizeof(double):
             case sizeof(float):
-#if SIZE_LONG_DOUBLE > 8
+#if SIZEOF_LONG_DOUBLE > 8
             case sizeof(long double):
 #endif
                 break;
@@ -1475,7 +1475,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                     case sizeof(short):
                         INTEGER(ans)[i] = (int)*((short *)buf);
                         break;
-#if SIZE_LONG == 8
+#if SIZEOF_LONG == 8
                     case sizeof(long):
                         INTEGER(ans)[i] = (int)*((long *)buf);
                         break;
@@ -1503,7 +1503,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                     case sizeof(float):
                         REAL(ans)[i] = (double)*((float *)buf);
                         break;
-#if SIZE_LONG_DOUBLE > 8
+#if SIZEOF_LONG_DOUBLE > 8
                     case sizeof(long double):
                         REAL(ans)[i] = (double)*((long double *)buf);
                         break;
@@ -1582,7 +1582,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             case sizeof(signed char):
             case sizeof(short):
             case sizeof(int):
-#if SIZE_LONG == 8
+#if SIZEOF_LONG == 8
             case sizeof(long):
 #elif SIZEOF_LONG_LONG == 8
             case sizeof(long long):
@@ -1599,7 +1599,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             {
             case sizeof(double):
             case sizeof(float):
-#if SIZE_LONG_DOUBLE > 8
+#if SIZEOF_LONG_DOUBLE > 8
             case sizeof(long double):
 #endif
                 break;
@@ -1626,7 +1626,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             case sizeof(int):
                 memcpy(buf, INTEGER(object), size * len);
                 break;
-#if SIZE_LONG == 8
+#if SIZEOF_LONG == 8
             case sizeof(long): {
                 long l1;
                 for (i = 0, j = 0; i < len; i++, j += size)
@@ -1677,7 +1677,7 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 break;
             }
-#if SIZE_LONG_DOUBLE > 8
+#if SIZEOF_LONG_DOUBLE > 8
             case sizeof(long double): {
                 long double ld1;
                 for (i = 0, j = 0; i < len; i++, j += size)
