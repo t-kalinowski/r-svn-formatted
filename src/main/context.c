@@ -59,7 +59,8 @@
  *                      closure.
  *
  *      Code (such as the sys.xxx) that looks for CTXT_RETURN must also
- *      look for a CTXT_RESTART. The mechanism used by restart is to change
+ *      look for a CTXT_RESTART and CTXT_GENERIC.
+ *      The mechanism used by restart is to change
  *      the context type; error/errorcall then looks for a RESTART and does
  *      a long jump there if it finds one.
  *
@@ -185,7 +186,7 @@ SEXP R_sysframe(int n, RCNTXT *cptr)
 
     while (cptr->nextcontext != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             if (n == 0)
             { /* we need to detach the enclosing env */
@@ -217,12 +218,12 @@ int R_sysparent(int n, RCNTXT *cptr)
         errorcall(R_ToplevelContext->call, "only positive arguments are allowed");
     while (cptr->nextcontext != NULL && n > 1)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
             n--;
         cptr = cptr->nextcontext;
     }
     /* make sure we're looking at a return context */
-    while (cptr->nextcontext != NULL && cptr->callflag != CTXT_RETURN && cptr->callflag != CTXT_RESTART)
+    while (cptr->nextcontext != NULL && !(cptr->callflag & CTXT_FUNCTION))
         cptr = cptr->nextcontext;
     s = cptr->sysparent;
     if (s == R_GlobalEnv)
@@ -230,7 +231,7 @@ int R_sysparent(int n, RCNTXT *cptr)
     j = 0;
     while (cptr != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             j++;
             if (cptr->cloenv == s)
@@ -249,7 +250,7 @@ int framedepth(RCNTXT *cptr)
     int nframe = 0;
     while (cptr->nextcontext != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
             nframe++;
         cptr = cptr->nextcontext;
     }
@@ -268,7 +269,7 @@ SEXP R_syscall(int n, RCNTXT *cptr)
         errorcall(R_GlobalContext->call, "illegal frame number");
     while (cptr->nextcontext != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             if (n == 0)
                 return (duplicate(cptr->call));
@@ -294,7 +295,7 @@ SEXP R_sysfunction(int n, RCNTXT *cptr)
         errorcall(R_GlobalContext->call, "illegal frame number");
     while (cptr->nextcontext != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             if (n == 0)
             {
@@ -330,7 +331,7 @@ SEXP do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
         return (R_NilValue);
     for (cptr = R_GlobalContext->nextcontext; cptr != R_ToplevelContext; cptr = cptr->nextcontext)
     {
-        if (cptr->callflag == CTXT_RETURN)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             cptr->callflag = CTXT_RESTART;
             break;
@@ -357,7 +358,7 @@ SEXP do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     t = cptr->sysparent;
     while (cptr != R_ToplevelContext)
     {
-        if (cptr->callflag == CTXT_RETURN || cptr->callflag == CTXT_RESTART)
+        if (cptr->callflag & CTXT_FUNCTION)
             if (cptr->cloenv == t)
                 break;
         cptr = cptr->nextcontext;

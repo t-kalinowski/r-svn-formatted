@@ -132,7 +132,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
     /* Get the context which UseMethod was called from. */
 
     cptr = R_GlobalContext;
-    if (cptr->callflag != CTXT_RETURN || cptr->cloenv != rho)
+    if (!(cptr->callflag & CTXT_FUNCTION) || cptr->cloenv != rho)
         error("UseMethod used in an inappropriate fashion");
 
     /* Create a new environment without any */
@@ -244,7 +244,7 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         cptr = R_GlobalContext;
         while (cptr != NULL)
         {
-            if (cptr->callflag == CTXT_RETURN && cptr->cloenv == env)
+            if ((cptr->callflag & CTXT_FUNCTION) && cptr->cloenv == env)
                 break;
             cptr = cptr->nextcontext;
         }
@@ -325,7 +325,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     sysp = R_GlobalContext->sysparent;
     while (cptr != NULL)
     {
-        if (cptr->callflag == CTXT_RETURN && cptr->cloenv == sysp)
+        if (cptr->callflag & CTXT_FUNCTION && cptr->cloenv == sysp)
             break;
         cptr = cptr->nextcontext;
     }

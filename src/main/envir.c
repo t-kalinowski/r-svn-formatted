@@ -692,7 +692,7 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
     SEXP vl;
     while (cptr != R_ToplevelContext)
     {
-        if (cptr->callflag == CTXT_RETURN)
+        if (cptr->callflag & CTXT_FUNCTION)
         {
             vl = findVarInFrame(cptr->cloenv, symbol);
             if (vl != R_UnboundValue)

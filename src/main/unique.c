@@ -594,7 +594,7 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
         cptr = R_GlobalContext;
         while (cptr != NULL)
         {
-            if (cptr->callflag == CTXT_RETURN && cptr->cloenv == sysp)
+            if (cptr->callflag & CTXT_FUNCTION && cptr->cloenv == sysp)
                 break;
             cptr = cptr->nextcontext;
         }
