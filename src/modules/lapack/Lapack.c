@@ -26,6 +26,13 @@
 #include <config.h>
 #endif
 
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) gettext(String)
+#else
+#define _(String) (String)
+#endif
+
 #include "Lapack.h"
 
 static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP method)
@@ -36,14 +43,14 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
     char *meth;
 
     if (!(isString(jobu) && isString(jobv)))
-        error("jobu and jobv must be character objects");
+        error(_("jobu and jobv must be character objects"));
     if (!isString(method))
-        error("method must be a character object");
+        error(_("method must be a character object"));
     meth = CHAR(STRING_ELT(method, 0));
-#ifndef IEEE_754
-    if (strcmp(meth, "dgesdd") == 0)
+    /*#ifndef IEEE_754
+        if (strcmp(meth, "dgesdd") == 0)
         error("method = \"dgesdd\" requires IEEE 754 arithmetic");
-#endif
+    #endif*/
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     p = xdims[1];
@@ -59,7 +66,7 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
          INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), &tmp, &lwork, &info);
         if (info != 0)
-            error("error code %d from Lapack routine dgesvd", info);
+            error(_("error code %d from Lapack routine %s"), info, "dgesvd");
         lwork = (int)tmp;
 
         work = (double *)R_alloc(lwork, sizeof(double));
@@ -67,7 +74,7 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, xvals, &n, REAL(s), REAL(u),
          INTEGER(getAttrib(u, R_DimSymbol)), REAL(v), INTEGER(getAttrib(v, R_DimSymbol)), work, &lwork, &info);
         if (info != 0)
-            error("error code %d from Lapack routine dgesvd", info);
+            error(_("error code %d from Lapack routine %s"), info, "dgesvd");
     }
     else
     {
@@ -80,14 +87,14 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
         (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, &tmp, &lwork, iwork,
          &info);
         if (info != 0)
-            error("error code %d from Lapack routine dgesdd", info);
+            error(_("error code %d from Lapack routine %s"), info, "dgesdd");
         lwork = (int)tmp;
         work = (double *)R_alloc(lwork, sizeof(double));
         F77_CALL(dgesdd)
         (CHAR(STRING_ELT(jobu, 0)), &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(v), &ldvt, work, &lwork, iwork,
          &info);
         if (info != 0)
-            error("error code %d from Lapack routine dgesdd", info);
+            error(_("error code %d from Lapack routine %s"), info, "dgesdd");
     }
 
     val = PROTECT(allocVector(VECSXP, 3));
@@ -112,25 +119,24 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
     char *meth;
 
     if (!isString(method))
-        error("method must be a character object");
+        error(_("method must be a character object"));
     meth = CHAR(STRING_ELT(method, 0));
-#ifndef IEEE_754
-    if (strcmp(meth, "dsyevr") == 0)
-    {
+    /* #ifndef IEEE_754
+        if (strcmp(meth, "dsyevr") == 0) {
         warning("method = \"dseyvr\" requires IEEE 754 arithmetic: using \"dsyev\"");
         meth = "dsyev";
-    }
-#endif
+        }
+    #endif */
     PROTECT(x = duplicate(xin));
     rx = REAL(x);
     uplo[0] = 'L';
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     if (n != xdims[1])
-        error("x must be a square numeric matrix");
+        error(_("x must be a square numeric matrix"));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error("invalid `only.values'");
+        error(_("invalid 'only.values'"));
     if (ov)
         jobv[0] = 'N';
     else
@@ -148,7 +154,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
         F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, &info);
 #endif
         if (info != 0)
-            error("error code %d from Lapack routine dsyev", info);
+            error(_("error code %d from Lapack routine %s"), info, "dsyev");
         lwork = (int)tmp;
         if (lwork < 3 * n - 1)
             lwork = 3 * n - 1; /* Sanity check */
@@ -159,7 +165,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
         F77_CALL(rsyev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, &info);
 #endif
         if (info != 0)
-            error("error code %d from Lapack routine dsyev", info);
+            error(_("error code %d from Lapack routine %s"), info, "dsyev");
     }
     else
     {
@@ -186,7 +192,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
          &itmp, &liwork, &info);
 #endif
         if (info != 0)
-            error("error code %d from Lapack routine dsyevr", info);
+            error(_("error code %d from Lapack routine %s"), info, "dsyevr");
         lwork = (int)tmp;
         liwork = itmp;
 
@@ -202,7 +208,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
          iwork, &liwork, &info);
 #endif
         if (info != 0)
-            error("error code %d from Lapack routine dsyevr", info);
+            error(_("error code %d from Lapack routine %s"), info, "dsyevr");
     }
 
     if (!ov)
@@ -272,14 +278,14 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     if (n != xdims[1])
-        error("x must be a square numeric matrix");
+        error(_("x must be a square numeric matrix"));
 
     xvals = (double *)R_alloc(n * n, sizeof(double));
     /* work on a copy of x */
     Memcpy(xvals, REAL(x), (size_t)(n * n));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error("invalid `only.values'");
+        error(_("invalid 'only.values'"));
     vectors = !ov;
     jobVL[0] = jobVR[0] = 'N';
     left = right = (double *)0;
@@ -298,7 +304,7 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     F77_CALL(rgeev)(jobVL, jobVR, &n, xvals, &n, wR, wI, left, &n, right, &n, &tmp, &lwork, &info);
 #endif
     if (info != 0)
-        error("error code %d from Lapack routine dgeev", info);
+        error(_("error code %d from Lapack routine %s"), info, "dgeev");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
 #ifdef HAVE_LAPACK
@@ -307,7 +313,7 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     F77_CALL(rgeev)(jobVL, jobVR, &n, xvals, &n, wR, wI, left, &n, right, &n, work, &lwork, &info);
 #endif
     if (info != 0)
-        error("error code %d from Lapack routine dgeev", info);
+        error(_("error code %d from Lapack routine %s"), info, "dgeev");
 
     complexValues = FALSE;
     for (i = 0; i < n; i++)
@@ -363,22 +369,22 @@ static SEXP modLa_zgesv(SEXP A, SEXP Bin)
     SEXP B;
 
     if (!(isMatrix(A) && isComplex(A)))
-        error("A must be a complex matrix");
+        error(_("A must be a complex matrix"));
     if (!(isMatrix(Bin) && isComplex(Bin)))
-        error("B must be a complex matrix");
+        error(_("B must be a complex matrix"));
     PROTECT(B = duplicate(Bin));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     n = Adims[0];
     if (n == 0)
-        error("A is 0-diml");
+        error(_("A is 0-diml"));
     p = Bdims[1];
     if (p == 0)
-        error("no rhs in B");
+        error(_("no rhs in B"));
     if (Adims[1] != n)
-        error("A (%d x %d) must be square", n, Adims[1]);
+        error(_("A (%d x %d) must be square"), n, Adims[1]);
     if (Bdims[0] != n)
-        error("B (%d x %d) must be compatible with A (%d x %d)", Bdims[0], p, n, n);
+        error(_("B (%d x %d) must be compatible with A (%d x %d)"), Bdims[0], p, n, n);
     ipiv = (int *)R_alloc(n, sizeof(int));
 
     avals = (Rcomplex *)R_alloc(n * n, sizeof(Rcomplex));
@@ -386,13 +392,13 @@ static SEXP modLa_zgesv(SEXP A, SEXP Bin)
     Memcpy(avals, COMPLEX(A), (size_t)(n * n));
     F77_CALL(zgesv)(&n, &p, avals, &n, ipiv, COMPLEX(B), &n, &info);
     if (info < 0)
-        error("argument %d of Lapack routine zgesv had illegal value", -info);
+        error(_("argument %d of Lapack routine zgesv had illegal value"), -info);
     if (info > 0)
-        error("Lapack routine zgesv: system is exactly singular");
+        error(("Lapack routine zgesv: system is exactly singular"));
     UNPROTECT(1);
     return B;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -406,7 +412,7 @@ static SEXP modLa_zgeqp3(SEXP Ain)
     SEXP val, nm, jpvt, tau, rank, A;
 
     if (!(isMatrix(Ain) && isComplex(Ain)))
-        error("A must be a complex matrix");
+        error(_("A must be a complex matrix"));
     PROTECT(A = duplicate(Ain));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = Adims[0];
@@ -420,12 +426,12 @@ static SEXP modLa_zgeqp3(SEXP Ain)
     lwork = -1;
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgeqp3", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgeqp3");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), work, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgeqp3", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
     rank = PROTECT(allocVector(INTSXP, 1));
@@ -442,7 +448,7 @@ static SEXP modLa_zgeqp3(SEXP Ain)
     UNPROTECT(6);
     return val;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -456,31 +462,31 @@ static SEXP modqr_coef_cmplx(SEXP Q, SEXP Bin)
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isComplex(Bin)))
-        error("B must be a complex matrix");
+        error(_("B must be a complex matrix"));
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(Bin, R_DimSymbol), INTSXP));
     if (Bdims[0] != n)
-        error("rhs should have %d not %d rows", n, Bdims[0]);
+        error(_("rhs should have %d not %d rows"), n, Bdims[0]);
     nrhs = Bdims[1];
     lwork = -1;
     F77_CALL(zunmqr)("L", "C", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zunmqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zunmqr)("L", "C", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, work, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zunmqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
     F77_CALL(ztrtrs)("U", "N", "N", &k, &nrhs, COMPLEX(qr), &n, COMPLEX(B), &n, &info);
     if (info != 0)
-        error("error code %d from Lapack routine ztrtrs", info);
+        error(_("error code %d from Lapack routine %s"), info, "ztrtrs");
     UNPROTECT(1);
     return B;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -494,33 +500,33 @@ static SEXP modqr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isComplex(Bin)))
-        error("B must be a complex matrix");
+        error(_("B must be a complex matrix"));
     tr = asLogical(trans);
     if (tr == NA_LOGICAL)
-        error("invalid `trans' parameter");
+        error(_("invalid 'trans' parameter"));
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     if (Bdims[0] != n)
-        error("rhs should have %d not %d rows", n, Bdims[0]);
+        error(_("rhs should have %d not %d rows"), n, Bdims[0]);
     nrhs = Bdims[1];
     lwork = -1;
     F77_CALL(zunmqr)
     ("L", tr ? "C" : "N", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zunmqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zunmqr)
     ("L", tr ? "C" : "N", &n, &nrhs, &k, COMPLEX(qr), &n, COMPLEX(tau), COMPLEX(B), &n, work, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zunmqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "zunmqr");
     UNPROTECT(1);
     return B;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -534,7 +540,7 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP xin, SEXP s, SEXP u, SEXP
     SEXP x, val, nm;
 
     if (!(isString(jobu) && isString(jobv)))
-        error("jobu and jobv must be character objects");
+        error(_("jobu and jobv must be character objects"));
     PROTECT(x = duplicate(xin));
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
@@ -546,14 +552,14 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP xin, SEXP s, SEXP u, SEXP
     (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, COMPLEX(x), &n, REAL(s), COMPLEX(u),
      INTEGER(getAttrib(u, R_DimSymbol)), COMPLEX(v), INTEGER(getAttrib(v, R_DimSymbol)), &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgesvd", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgesvd");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgesvd)
     (CHAR(STRING_ELT(jobu, 0)), CHAR(STRING_ELT(jobv, 0)), &n, &p, COMPLEX(x), &n, REAL(s), COMPLEX(u),
      INTEGER(getAttrib(u, R_DimSymbol)), COMPLEX(v), INTEGER(getAttrib(v, R_DimSymbol)), work, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgesvd", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgesvd");
     val = PROTECT(allocVector(VECSXP, 3));
     nm = PROTECT(allocVector(STRSXP, 3));
     SET_STRING_ELT(nm, 0, mkChar("d"));
@@ -566,7 +572,7 @@ static SEXP modLa_svd_cmplx(SEXP jobu, SEXP jobv, SEXP xin, SEXP s, SEXP u, SEXP
     UNPROTECT(3);
     return val;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -586,10 +592,10 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     if (n != xdims[1])
-        error("x must be a square numeric matrix");
+        error(_("x must be a square numeric matrix"));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error("invalid `only.values'");
+        error(_("invalid 'only.values'"));
     if (ov)
         jobv[0] = 'N';
     else
@@ -602,12 +608,12 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
     lwork = -1;
     F77_CALL(zheev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zheev", info);
+        error(_("error code %d from Lapack routine %s"), info, "zheev");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zheev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zheev", info);
+        error(_("error code %d from Lapack routine %s"), info, "zheev");
     if (!ov)
     {
         ret = PROTECT(allocVector(VECSXP, 2));
@@ -626,7 +632,7 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
     UNPROTECT(4);
     return ret;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -643,14 +649,14 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
     if (n != xdims[1])
-        error("x must be a square numeric matrix");
+        error(_("x must be a square numeric matrix"));
 
     xvals = (Rcomplex *)R_alloc(n * n, sizeof(Rcomplex));
     /* work on a copy of x */
     Memcpy(xvals, COMPLEX(x), (size_t)(n * n));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error("invalid `only.values'");
+        error(_("invalid 'only.values'"));
     jobVL[0] = jobVR[0] = 'N';
     left = right = (Rcomplex *)0;
     if (!ov)
@@ -665,12 +671,12 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
     lwork = -1;
     F77_CALL(zgeev)(jobVL, jobVR, &n, xvals, &n, COMPLEX(values), left, &n, right, &n, &tmp, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgeev", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgeev");
     lwork = (int)tmp.r;
     work = (Rcomplex *)R_alloc(lwork, sizeof(Rcomplex));
     F77_CALL(zgeev)(jobVL, jobVR, &n, xvals, &n, COMPLEX(values), left, &n, right, &n, work, &lwork, rwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine zgeev", info);
+        error(_("error code %d from Lapack routine %s"), info, "zgeev");
 
     if (!ov)
     {
@@ -690,7 +696,7 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
     UNPROTECT(ov ? 3 : 4);
     return ret;
 #else
-    error("Fortran complex functions are not available on this platform");
+    error(_("Fortran complex functions are not available on this platform"));
     return R_NilValue; /* -Wall */
 #endif
 }
@@ -708,9 +714,9 @@ static SEXP modLa_chol(SEXP A)
         int i, j;
 
         if (m != n)
-            error("A must be a square matrix");
+            error(_("A must be a square matrix"));
         if (m <= 0)
-            error("A must have dims > 0");
+            error(_("A must have dims > 0"));
         for (j = 0; j < n; j++)
         { /* zero the lower triangle */
             for (i = j + 1; i < n; i++)
@@ -723,14 +729,14 @@ static SEXP modLa_chol(SEXP A)
         if (i != 0)
         {
             if (i > 0)
-                error("the leading minor of order %d is not positive definite", i);
-            error("argument no. %d to Lapack routine dpotrf is illegal", -i);
+                error(_("the leading minor of order %d is not positive definite"), i);
+            error(_("argument no. %d to Lapack routine dpotrf is illegal"), -i);
         }
         unprotect(1);
         return ans;
     }
     else
-        error("A must be a numeric matrix");
+        error(_("A must be a numeric matrix"));
     return R_NilValue; /* -Wall */
 }
 
@@ -738,7 +744,7 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
 {
     int sz = asInteger(size);
     if (sz == NA_INTEGER || sz < 1)
-        error("size argument must be a positive integer");
+        error(_("size argument must be a positive integer"));
     if (isMatrix(A))
     {
         SEXP Amat = PROTECT(coerceVector(A, REALSXP));
@@ -749,9 +755,9 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
         int i, j;
 
         if (sz > n)
-            error("size cannot exceed ncol(x) = %d", n);
+            error(_("size cannot exceed ncol(x) = %d"), n);
         if (sz > m)
-            error("size cannot exceed nrow(x) = %d", m);
+            error(_("size cannot exceed nrow(x) = %d"), m);
         ans = PROTECT(allocMatrix(REALSXP, sz, sz));
         for (j = 0; j < sz; j++)
         {
@@ -762,8 +768,8 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
         if (i != 0)
         {
             if (i > 0)
-                error("element (%d, %d) is zero, so the inverse cannot be computed", i, i);
-            error("argument no. %d to Lapack routine dpotri is illegal", -i);
+                error(_("element (%d, %d) is zero, so the inverse cannot be computed"), i, i);
+            error(_("argument no. %d to Lapack routine dpotri is illegal"), -i);
         }
         for (j = 0; j < sz; j++)
         {
@@ -774,7 +780,7 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
         return ans;
     }
     else
-        error("A must be a numeric matrix");
+        error(_("A must be a numeric matrix"));
     return R_NilValue; /* -Wall */
 }
 
@@ -787,22 +793,22 @@ static SEXP modLa_dgesv(SEXP A, SEXP Bin, SEXP tolin)
     SEXP B;
 
     if (!(isMatrix(A) && isReal(A)))
-        error("A must be a numeric matrix");
+        error(_("A must be a numeric matrix"));
     if (!(isMatrix(Bin) && isReal(Bin)))
-        error("B must be a numeric matrix");
+        error(_("B must be a numeric matrix"));
     PROTECT(B = duplicate(Bin));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     n = Adims[0];
     if (n == 0)
-        error("A is 0-diml");
+        error(_("A is 0-diml"));
     p = Bdims[1];
     if (p == 0)
-        error("no rhs in B");
+        error(_("no rhs in B"));
     if (Adims[1] != n)
-        error("A (%d x %d) must be square", n, Adims[1]);
+        error(_("A (%d x %d) must be square"), n, Adims[1]);
     if (Bdims[0] != n)
-        error("B (%d x %d) must be compatible with A (%d x %d)", Bdims[0], p, n, n);
+        error(_("B (%d x %d) must be compatible with A (%d x %d)"), Bdims[0], p, n, n);
     ipiv = (int *)R_alloc(n, sizeof(int));
 
     avals = (double *)R_alloc(n * n, sizeof(double));
@@ -810,14 +816,14 @@ static SEXP modLa_dgesv(SEXP A, SEXP Bin, SEXP tolin)
     Memcpy(avals, REAL(A), (size_t)(n * n));
     F77_CALL(dgesv)(&n, &p, avals, &n, ipiv, REAL(B), &n, &info);
     if (info < 0)
-        error("argument %d of Lapack routine dgesv had illegal value", -info);
+        error(_("argument %d of Lapack routine dgesv had illegal value"), -info);
     if (info > 0)
-        error("Lapack routine dgesv: system is exactly singular");
+        error(_("Lapack routine dgesv: system is exactly singular"));
     anorm = F77_CALL(dlange)("1", &n, &n, REAL(A), &n, (double *)NULL);
     work = (double *)R_alloc(4 * n, sizeof(double));
     F77_CALL(dgecon)("1", &n, avals, &n, &anorm, &rcond, work, ipiv, &info);
     if (rcond < tol)
-        error("system is computationally singular: reciprocal condition number = %g", rcond);
+        error(_("system is computationally singular: reciprocal condition number = %g"), rcond);
     UNPROTECT(1);
     return B;
 }
@@ -829,7 +835,7 @@ static SEXP modLa_dgeqp3(SEXP Ain)
     SEXP val, nm, jpvt, tau, rank, A;
 
     if (!(isMatrix(Ain) && isReal(Ain)))
-        error("A must be a numeric matrix");
+        error(_("A must be a numeric matrix"));
     PROTECT(A = duplicate(Ain));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = Adims[0];
@@ -842,12 +848,12 @@ static SEXP modLa_dgeqp3(SEXP Ain)
     lwork = -1;
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), &tmp, &lwork, &info);
     if (info < 0)
-        error("error code %d from Lapack routine dgeqp3", info);
+        error(_("error code %d from Lapack routine %s"), info, "dgeqp3");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), work, &lwork, &info);
     if (info < 0)
-        error("error code %d from Lapack routine dgeqp3", info);
+        error(_("error code %d from Lapack routine %s"), info, "dgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
     rank = PROTECT(allocVector(INTSXP, 1));
@@ -873,27 +879,27 @@ static SEXP modqr_coef_real(SEXP Q, SEXP Bin)
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isReal(Bin)))
-        error("B must be a numeric matrix");
+        error(_("B must be a numeric matrix"));
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     if (Bdims[0] != n)
-        error("rhs should have %d not %d rows", n, Bdims[0]);
+        error(_("rhs should have %d not %d rows"), n, Bdims[0]);
     nrhs = Bdims[1];
     lwork = -1;
     F77_CALL(dormqr)("L", "T", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine dormqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "dormqr");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dormqr)("L", "T", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, work, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine dormqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "dormqr");
     F77_CALL(dtrtrs)("U", "N", "N", &k, &nrhs, REAL(qr), &n, REAL(B), &n, &info);
     if (info != 0)
-        error("error code %d from Lapack routine dtrtrs", info);
+        error(_("error code %d from Lapack routine %s"), info, "dtrtrs");
     UNPROTECT(1);
     return B;
 }
@@ -906,27 +912,27 @@ static SEXP modqr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isReal(Bin)))
-        error("B must be a numeric matrix");
+        error(_("B must be a numeric matrix"));
     tr = asLogical(trans);
     if (tr == NA_LOGICAL)
-        error("invalid `trans' parameter");
+        error(_("invalid 'trans' parameter"));
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     if (Bdims[0] != n)
-        error("rhs should have %d not %d rows", n, Bdims[0]);
+        error(_("rhs should have %d not %d rows"), n, Bdims[0]);
     nrhs = Bdims[1];
     lwork = -1;
     F77_CALL(dormqr)("L", tr ? "T" : "N", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, &tmp, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine dormqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "dormqr");
     lwork = (int)tmp;
     work = (double *)R_alloc(lwork, sizeof(double));
     F77_CALL(dormqr)("L", tr ? "T" : "N", &n, &nrhs, &k, REAL(qr), &n, REAL(tau), REAL(B), &n, work, &lwork, &info);
     if (info != 0)
-        error("error code %d from Lapack routine dormqr", info);
+        error(_("error code %d from Lapack routine %s"), info, "dormqr");
     UNPROTECT(1);
     return B;
 }
@@ -938,20 +944,20 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
     SEXP val, nm, A;
 
     if (!(isMatrix(Ain) && isReal(Ain)))
-        error("A must be a real matrix");
+        error(_("A must be a real matrix"));
     useLog = asLogical(logarithm);
     if (useLog == NA_LOGICAL)
-        error("argument logarithm must be logical");
+        error(_("argument logarithm must be logical"));
     PROTECT(A = duplicate(Ain));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     n = Adims[0];
     if (Adims[1] != n)
-        error("A must be a square matrix");
+        error(_("A must be a square matrix"));
     jpvt = (int *)R_alloc(n, sizeof(int));
     F77_CALL(dgetrf)(&n, &n, REAL(A), &n, jpvt, &info);
     sign = 1;
     if (info < 0)
-        error("error code %d from Lapack routine dgetrf", info);
+        error(_("error code %d from Lapack routine %s"), info, "dgetrf");
     else if (info > 0)
     { /* Singular matrix:  U[i,i] (i := info) is 0 */
         /*warning("Lapack dgetrf(): singular matrix: U[%d,%d]=0", info,info);*/
