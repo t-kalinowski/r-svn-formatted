@@ -1,6 +1,7 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1997--1998  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,20 +18,21 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "Defn.h"
-#include "Graphics.h"
 #include <stdio.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/cursorfont.h>
-#include <X11/Intrinsic.h>/*->  Xlib.h  Xutil.h Xresource.h .. */
-#include "rotated.h"
-#include "devX11.h" /* 'Public' routines from here */
+#include <X11/Intrinsic.h>/*->	Xlib.h	Xutil.h Xresource.h .. */
+
+#include "Defn.h"
+#include "Graphics.h"
+#include "devX11.h"
+#include "rotated.h" /* 'Public' routines from here */
 
 /********************************************************/
 /* This device driver has been documented so that it be	*/
-/* used as a template for new drivers 			*/
+/* used as a template for new drivers			*/
 /********************************************************/
 
 #define CURSOR XC_crosshair /* Default cursor */
@@ -39,8 +41,8 @@
 /********************************************************/
 /* Each driver can have its own device-specic graphical */
 /* parameters and resources.  these should be wrapped	*/
-/* in a structure (like the x11Desc structure below)    */
-/* and attached to the overall device description via 	*/
+/* in a structure (like the x11Desc structure below)	*/
+/* and attached to the overall device description via	*/
 /* the dd->deviceSpecific pointer			*/
 /* NOTE that there are generic graphical parameters	*/
 /* which must be set by the device driver, but are	*/
@@ -92,8 +94,8 @@ typedef struct
 /* parameters structure (especially if they are large !)*/
 /********************************************************/
 
-/* X11 Driver Specific */
-/* parameters with only one copy for all x11 devices */
+/* X11 Driver Specific parameters
+ * with only one copy for all x11 devices */
 
 static Display *display;                /* Display */
 static int screen;                      /* Screen */
@@ -111,25 +113,21 @@ static int numX11Devices = 0;
 
 /********************************************************/
 /* There must be an entry point for the device driver	*/
-/* which will create device-specific resources, 	*/
-/* initialise the device-specific parameters structure 	*/
+/* which will create device-specific resources,		*/
+/* initialise the device-specific parameters structure	*/
 /* and return whether the setup succeeded		*/
 /* This is called by the graphics engine when the user	*/
 /* creates a new device of this type			*/
 /********************************************************/
 
-/* Device Driver Entry Point */
-
-int X11DeviceDriver(DevDesc *, char *, double, double, double);
-
 /********************************************************/
-/* There are a number of actions that every device 	*/
+/* There are a number of actions that every device	*/
 /* driver is expected to perform (even if, in some	*/
-/* cases it does nothing - just so long as it doesn't 	*/
+/* cases it does nothing - just so long as it doesn't	*/
 /* crash !).  this is how the graphics engine interacts */
-/* with each device. ecah action will be documented 	*/
-/* individually. 					*/
-/* hooks for these actions must be set up when the 	*/
+/* with each device. ecah action will be documented	*/
+/* individually.					*/
+/* hooks for these actions must be set up when the	*/
 /* device is first created				*/
 /********************************************************/
 
@@ -155,7 +153,7 @@ static void X11_Text(double, double, int, char *, double, double, double, DevDes
 static void X11_MetricInfo(int, double *, double *, double *, DevDesc *);
 
 /********************************************************/
-/* end of list of required device driver actions 	*/
+/* end of list of required device driver actions	*/
 /********************************************************/
 
 /* Support Routines */
@@ -450,9 +448,9 @@ static void SetColor(int color, DevDesc *dd)
             b = R_BLUE(color);
         }
 
-        /* Note that X11 uses 16 bits to describe the   */
+        /* Note that X11 uses 16 bits to describe the	*/
         /* level of the RGB primaries and this explains */
-        /* the additional * 257 below.                  */
+        /* the additional * 257 below.			*/
         /* 257 = (2^16-1)/(2^8-1)			*/
 
         xd->fgcolor.red = r * 257;
@@ -556,15 +554,15 @@ static void SetLinetype(int newlty, double nlwd, DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Open is not usually called directly by the 	*/
-/* graphics engine;  it is usually only called from 	*/
+/* device_Open is not usually called directly by the	*/
+/* graphics engine;  it is usually only called from	*/
 /* the device-driver entry point.			*/
 /* this function should set up all of the device-	*/
 /* specific resources for a new device			*/
 /* this function is given a new	structure for device-	*/
-/* specific information AND it must FREE the structure 	*/
+/* specific information AND it must FREE the structure	*/
 /* if anything goes seriously wrong			*/
-/* NOTE that it is perfectly acceptable for this 	*/
+/* NOTE that it is perfectly acceptable for this	*/
 /* function to set generic graphics parameters too	*/
 /* (i.e., override the generic parameter settings	*/
 /* which GInit sets up) all at the author's own risk	*/
@@ -701,7 +699,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
 /********************************************************/
 /* device_StrWidth should return the width of the given */
 /* string in DEVICE units (GStrWidth is responsible for */
-/* converting from DEVICE to whatever units the user 	*/
+/* converting from DEVICE to whatever units the user	*/
 /* asked for						*/
 /********************************************************/
 
@@ -715,7 +713,7 @@ static double X11_StrWidth(char *str, DevDesc *dd)
 }
 
 /********************************************************/
-/* device_MetricInfo should return height, depth, and 	*/
+/* device_MetricInfo should return height, depth, and	*/
 /* width information for the given character in DEVICE	*/
 /* units (GMetricInfo does the necessary conversions)	*/
 /* This is used for formatting mathematical expressions	*/
@@ -755,8 +753,8 @@ static void X11_MetricInfo(int c, double *ascent, double *descent, double *width
 }
 
 /********************************************************/
-/* device_Clip is given the left, right, bottom, and 	*/
-/* top of a rectangle (in DEVICE coordinates).  it 	*/
+/* device_Clip is given the left, right, bottom, and	*/
+/* top of a rectangle (in DEVICE coordinates).	it	*/
 /* should have the side-effect that subsequent output	*/
 /* is clipped to the given rectangle			*/
 /********************************************************/
@@ -790,9 +788,9 @@ static void X11_Clip(double x0, double x1, double y0, double y1, DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Resize is called whenever the device is 	*/
-/* resized.  the function must update the GPar 		*/
-/* parameters (left, right, bottom, and top) for the 	*/
+/* device_Resize is called whenever the device is	*/
+/* resized.  the function must update the GPar		*/
+/* parameters (left, right, bottom, and top) for the	*/
 /* new device size					*/
 /* this is not usually called directly by the graphics	*/
 /* engine because the detection of device resizes	*/
@@ -816,7 +814,7 @@ static void X11_Resize(DevDesc *dd)
 
 /********************************************************/
 /* device_NewPage is called whenever a new plot requires*/
-/* a new page.  a new page might mean just clearing the	*/
+/* a new page.	a new page might mean just clearing the	*/
 /* device (as in this case) or moving to a new page	*/
 /* (e.g., postscript)					*/
 /********************************************************/
@@ -846,7 +844,7 @@ static void X11_NewPage(DevDesc *dd)
 
 /********************************************************/
 /* device_Close is called when the device is killed	*/
-/* this function is responsible for destroying any 	*/
+/* this function is responsible for destroying any	*/
 /* device-specific resources that were created in	*/
 /* device_Open and for FREEing the device-specific	*/
 /* parameters structure					*/
@@ -887,10 +885,10 @@ static void X11_Close(DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Activate is called when a device becomes the 	*/
+/* device_Activate is called when a device becomes the	*/
 /* active device.  in this case it is used to change the*/
-/* title of a window to indicate the active status of 	*/
-/* the device to the user.  not all device types will 	*/
+/* title of a window to indicate the active status of	*/
+/* the device to the user.  not all device types will	*/
 /* do anything						*/
 /********************************************************/
 
@@ -913,7 +911,7 @@ static void X11_Activate(DevDesc *dd)
 
 /********************************************************/
 /* device_Deactivate is called when a device becomes	*/
-/* inactive.  in this case it is used to change the 	*/
+/* inactive.  in this case it is used to change the	*/
 /* title of a window to indicate the inactive status of */
 /* the device to the user.  not all device types will	*/
 /* do anything						*/
@@ -935,13 +933,13 @@ static void X11_Deactivate(DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Rect should have the side-effect that a 	*/
-/* rectangle is drawn with the given locations for its 	*/
+/* device_Rect should have the side-effect that a	*/
+/* rectangle is drawn with the given locations for its	*/
 /* opposite corners.  the border of the rectangle	*/
 /* should be in the given "fg" colour and the rectangle	*/
 /* should be filled with the given "bg" colour		*/
 /* if "fg" is NA_INTEGER then no border should be drawn */
-/* if "bg" is NA_INTEGER then the rectangle should not 	*/
+/* if "bg" is NA_INTEGER then the rectangle should not	*/
 /* be filled						*/
 /* the locations are in an arbitrary coordinate system	*/
 /* and this function is responsible for converting the	*/
@@ -993,9 +991,9 @@ static void X11_Rect(double x0, double y0, double x1, double y1, int coords, int
 /* if "col" is NA_INTEGER then no border should be drawn*/
 /* if "border" is NA_INTEGER then the circle should not */
 /* be filled						*/
-/* the location is in arbitrary coordinates and the 	*/
+/* the location is in arbitrary coordinates and the	*/
 /* function is responsible for converting this to	*/
-/* DEVICE coordinates.  the radius is given in DEVICE	*/
+/* DEVICE coordinates.	the radius is given in DEVICE	*/
 /* coordinates						*/
 /********************************************************/
 
@@ -1092,14 +1090,14 @@ static void X11_Polyline(int n, double *x, double *y, int coords, DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Polygon should have the side-effect that a 	*/
+/* device_Polygon should have the side-effect that a	*/
 /* polygon is drawn using the given x and y values	*/
-/* the polygon border should be drawn in the "fg" 	*/
+/* the polygon border should be drawn in the "fg"	*/
 /* colour and filled with the "bg" colour		*/
 /* if "fg" is NA_INTEGER don't draw the border		*/
 /* if "bg" is NA_INTEGER don't fill the polygon		*/
-/* the x and y values are in arbitrary coordinates and 	*/
-/* the function is responsible for converting them to 	*/
+/* the x and y values are in arbitrary coordinates and	*/
+/* the function is responsible for converting them to	*/
 /* DEVICE coordinates using GConvert			*/
 /********************************************************/
 
@@ -1144,7 +1142,7 @@ static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
 }
 
 /********************************************************/
-/* device_Text should have the side-effect that the 	*/
+/* device_Text should have the side-effect that the	*/
 /* given text is drawn at the given location		*/
 /* the text should be justified according to "xc" and	*/
 /* "yc" (0 = left, 0.5 = centre, 1 = right)		*/
@@ -1154,7 +1152,7 @@ static void X11_Polygon(int n, double *x, double *y, int coords, int bg, int fg,
 /* location to DEVICE coordinates using GConvert	*/
 /********************************************************/
 
-static double deg2rad = 0.01745329251994329576;
+double deg2rad = 0.01745329251994329576;
 
 static void X11_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
 {
@@ -1180,7 +1178,7 @@ static void X11_Text(double x, double y, int coords, char *str, double xc, doubl
 
 /********************************************************/
 /* device_Locator should return the location of the next*/
-/* mouse click (in DEVICE coordinates;  GLocator is	*/
+/* mouse click (in DEVICE coordinates;	GLocator is	*/
 /* responsible for any conversions)			*/
 /* not all devices will do anythin (e.g., postscript)	*/
 /********************************************************/
@@ -1228,7 +1226,7 @@ static int X11_Locator(double *x, double *y, DevDesc *dd)
 }
 
 /********************************************************/
-/* device_Mode is called whenever the graphics engine 	*/
+/* device_Mode is called whenever the graphics engine	*/
 /* starts drawing (mode=1) or stops drawing (mode=1)	*/
 /* the device is not required to do anything		*/
 /********************************************************/
@@ -1252,8 +1250,8 @@ static void X11_Hold(DevDesc *dd)
 }
 
 /********************************************************/
-/* the device-driver entry point is given a device 	*/
-/* description structure that it must set up.  this 	*/
+/* the device-driver entry point is given a device	*/
+/* description structure that it must set up.  this	*/
 /* involves several important jobs ...			*/
 /* (1) it must ALLOCATE a new device-specific parameters*/
 /* structure and FREE that structure if anything goes	*/
@@ -1263,7 +1261,7 @@ static void X11_Hold(DevDesc *dd)
 /* resources or parameters)				*/
 /* (2) it must initialise the device-specific resources */
 /* and parameters (mostly done by calling device_Open)	*/
-/* (3) it must initialise the generic graphical 	*/
+/* (3) it must initialise the generic graphical		*/
 /* parameters that are not initialised by GInit (because*/
 /* only the device knows what values they should have)	*/
 /* see Graphics.h for the official list of these	*/
@@ -1273,26 +1271,26 @@ static void X11_Hold(DevDesc *dd)
 /* (5) it must attach the device-specific parameters	*/
 /* structure to the device description structure	*/
 /* e.g., dd->deviceSpecfic = (void *) xd;		*/
-/* (6) it must FREE the overall device description if 	*/
+/* (6) it must FREE the overall device description if	*/
 /* it wants to bail out to the top-level		*/
-/* the graphics engine is responsible for allocating 	*/
+/* the graphics engine is responsible for allocating	*/
 /* the device description and freeing it in most cases	*/
-/* but if the device driver freaks out it needs to do 	*/
+/* but if the device driver freaks out it needs to do	*/
 /* the clean-up itself					*/
 /********************************************************/
 
-/*  X11 Device Driver Arguments               */
+/*  X11 Device Driver Arguments		      */
 
-/*  cpars[0] = display name                   */
+/*  cpars[0] = display name		      */
 /*  cpars[1] = paper type (a4, letter, none)  */
 
-/*  npars[0] = width (inches)                 */
-/*  npars[1] = height (inches)                */
-/*  npars[2] = base pointsize                 */
-/*  npars[3] = paper orientation              */
-/*	       1 - portrait                   */
-/*	       2 - landscape                  */
-/*	       3 - flexible                   */
+/*  npars[0] = width (inches)		      */
+/*  npars[1] = height (inches)		      */
+/*  npars[2] = base pointsize		      */
+/*  npars[3] = paper orientation	      */
+/*	       1 - portrait		      */
+/*	       2 - landscape		      */
+/*	       3 - flexible		      */
 
 int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize)
 {
@@ -1309,7 +1307,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     /* from here on, if need to bail out with "error", must also */
     /* free(xd) */
 
-    /*  Font will load at first use  */
+    /*	Font will load at first use  */
 
     ps = pointsize;
     if (ps < 6 || ps > 24)
@@ -1320,7 +1318,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
     dd->dp.font = 1;
     dd->dp.ps = ps;
 
-    /*  Start the Device Driver and Hardcopy.  */
+    /*	Start the Device Driver and Hardcopy.  */
 
     if (!X11_Open(dd, xd, display, width, height))
     {
@@ -1328,7 +1326,7 @@ int X11DeviceDriver(DevDesc *dd, char *display, double width, double height, dou
         return 0;
     }
 
-    /*  Set up Data Structures  */
+    /*	Set up Data Structures	*/
 
     dd->dp.open = X11_Open;
     dd->dp.close = X11_Close;
