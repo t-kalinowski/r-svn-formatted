@@ -47,6 +47,8 @@
     here is used to handle event (high or low level event.)
 */
 
+#include <RCarbon.h>
+
 #include <AppleEvents.h>
 
 #ifndef __AEREGISTRY__
@@ -1046,33 +1048,6 @@ void R_startBrowser(char *fileName)
     strncpy((char *)(&name[1]), fileName, name[0]);
     FSMakeFSSpec(0, 0, name, &HelpFile);
     OpenSelection(&HelpFile);
-}
-
-/*
-**  Alloc memory and init it
-**
-*/
-char *StrCalloc(unsigned short size)
-{
-    char *strPtr = NULL;
-
-    strPtr = calloc(size, sizeof(char));
-    return strPtr;
-}
-
-/*
-**  Release only non NULL pointers
-**
-*/
-char *StrFree(char *strPtr)
-{
-
-    if (strPtr != NULL)
-    {
-        free(strPtr);
-    }
-
-    return NULL;
 }
 
 /*
