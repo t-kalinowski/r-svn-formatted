@@ -160,7 +160,7 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
     /* The room for an alias was dynamically allocated.  Free it now.  */
 #ifndef WIN32 /* not used on Windows */
     if (alias_value != NULL)
-        free(alias_value); /* R bug fix */
+        free(locale);
 #endif
 
     /* The space for normalized_codeset is dynamically allocated.  Free it.  */
