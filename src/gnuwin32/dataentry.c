@@ -20,9 +20,6 @@
  */
 
 /* TODO
-   - why does maximize button do nothing useful?
-   - implement copyarea and use for re-drawing
-   - check Windows vs graphapp ideas of RGB coding
    - is END useful here?
    - ctrl-home ctrl-end etc?
  */
@@ -68,7 +65,7 @@ static void drawcol(int);
 static void de_drawline(int, int, int, int);
 static void de_drawtext(int, int, char *);
 static void drawrectangle(int, int, int, int, int, int);
-/* static void drawrow(int); */
+static void drawrow(int);
 static void find_coords(int, int, int *, int *);
 static void handlechar(char *);
 static void highlightrect();
@@ -78,7 +75,7 @@ static void jumpwin(int, int);
 static void de_popupmenu(int, int, int);
 static void printlabs();
 static void printrect(int, int);
-static void printstring(char *, int, int, int);
+static void printstring(char *, int, int, int, int);
 static void printelt(SEXP, int, int, int);
 
 static SEXP inputlist; /* each element is a vector for that row */
@@ -280,9 +277,6 @@ void drawwindow()
 {
     int i;
 
-    /* if there is an active cell enter the data in it */
-    closerect();
-
     /* might have resized */
     windowWidth = WIDTH;
     windowHeight = HEIGHT;
@@ -410,11 +404,11 @@ void drawcol(int whichcol)
     {
         tmp = nthcdr(inputlist, whichcol - 1);
         if (TAG(tmp) != R_NilValue)
-            printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, col);
+            printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, col, 0);
         else
         {
             sprintf(clab, "var%d", whichcol);
-            printstring(clab, strlen(clab), 0, col);
+            printstring(clab, strlen(clab), 0, col, 0);
         }
         if (CAR(tmp) != R_NilValue)
         {
@@ -426,39 +420,38 @@ void drawcol(int whichcol)
     else
     {
         sprintf(clab, "var%d", whichcol);
-        printstring(clab, strlen(clab), 0, col);
+        printstring(clab, strlen(clab), 0, col, 0);
     }
     show(de);
 }
 
-#if 0
+/* whichrow is absolute row no */
 void drawrow(int whichrow)
 {
-    int i, src_x, src_y, lenip;
+    int i, src_x, src_y, lenip, row = whichrow - rowmin + 1;
     char rlab[15];
     SEXP tvec;
 
-    find_coords(whichrow, 0, &src_x, &src_y);
-    cleararea(src_x, src_y, windowWidth, box_h, (whichrow > 0)?p->bg:bbg);
+    find_coords(row, 0, &src_x, &src_y);
+    cleararea(src_x, src_y, windowWidth, box_h, (whichrow > 0) ? p->bg : bbg);
     for (i = 0; i <= nwide; i++)
-	drawrectangle(i * box_w, src_y, box_w, box_h, 1, 1);
+        drawrectangle(i * box_w, src_y, box_w, box_h, 1, 1);
 
-    sprintf(rlab, "R %d", rowmin + whichrow - 1);
-    printstring(rlab, strlen(rlab), whichrow, 0);
+    sprintf(rlab, "R %d", whichrow);
+    printstring(rlab, strlen(rlab), row, 0, 0);
 
     lenip = length(inputlist);
-    for (i = colmin; i <= colmax; i++) {
-	if (i > lenip)
-	    break;
-	tvec = CAR(nthcdr(inputlist, i - 1));
-	if (tvec != R_NilValue)
-	    if (whichrow + rowmin - 1 <= (int)LEVELS(tvec))
-		printelt(tvec, whichrow + rowmin - 2, 
-			 whichrow, i - colmin + 1);
+    for (i = colmin; i <= colmax; i++)
+    {
+        if (i > lenip)
+            break;
+        tvec = CAR(nthcdr(inputlist, i - 1));
+        if (tvec != R_NilValue)
+            if (whichrow <= (int)LEVELS(tvec))
+                printelt(tvec, whichrow - 1, row, i - colmin + 1);
     }
     show(de);
 }
-#endif
 
 /* printelt: print the correct value from vector[vrow] into the
    spreadsheet in row ssrow and col sscol */
@@ -475,7 +468,7 @@ void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         if (REAL(invec)[vrow] != ssNA_REAL)
         {
             strp = EncodeElement(invec, vrow, 0);
-            printstring(strp, strlen(strp), ssrow, sscol);
+            printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
     else if (TYPEOF(invec) == STRSXP)
@@ -483,7 +476,7 @@ void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         if (!streql(CHAR(STRING(invec)[vrow]), CHAR(STRING(ssNA_STRING)[0])))
         {
             strp = EncodeElement(invec, vrow, 0);
-            printstring(strp, strlen(strp), ssrow, sscol);
+            printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
     else
@@ -500,23 +493,27 @@ static void drawelt(int whichrow, int whichcol)
     {
         tmp = nthcdr(inputlist, whichcol + colmin - 2);
         if (whichrow == 0)
+        {
             if (TAG(tmp) != R_NilValue)
-                printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol);
+            {
+                printstring(CHAR(PRINTNAME(TAG(tmp))), strlen(CHAR(PRINTNAME(TAG(tmp)))), 0, whichcol, 0);
+            }
             else
             {
                 sprintf(clab, "var%d", whichcol + colmin - 1);
-                printstring(clab, strlen(clab), 0, whichcol);
+                printstring(clab, strlen(clab), 0, whichcol, 0);
             }
+        }
         else if (CAR(tmp) != R_NilValue && (i = rowmin + whichrow - 2) < (int)LEVELS(CAR(tmp)))
             printelt(CAR(tmp), i, whichrow, whichcol);
     }
     else if (whichrow == 0)
     {
         sprintf(clab, "var%d", whichcol + colmin - 1);
-        printstring(clab, strlen(clab), 0, whichcol);
+        printstring(clab, strlen(clab), 0, whichcol, 0);
     }
     else
-        printstring("", 0, whichrow, whichcol);
+        printstring("", 0, whichrow, whichcol, 0);
 
     show(de);
 }
@@ -528,52 +525,28 @@ void jumppage(int dir)
     case UP:
         rowmin--;
         rowmax--;
+        copyarea(0, hwidth + box_h, 0, hwidth + 2 * box_h);
+        drawrow(rowmin);
         break;
     case DOWN:
         rowmin++;
         rowmax++;
         copyarea(0, hwidth + 2 * box_h, 0, hwidth + box_h);
+        drawrow(rowmax);
         break;
     case LEFT:
         colmin--;
         colmax--;
+        copyarea(box_w, hwidth, 2 * box_w, hwidth);
+        drawcol(colmin);
         break;
     case RIGHT:
         colmin++;
         colmax++;
+        copyarea(2 * box_w, hwidth, box_w, hwidth);
+        drawcol(colmax);
         break;
     }
-    drawwindow();
-    /*    switch (dir) {
-        case UP:
-        rowmin--;
-        rowmax--;
-        copyarea(0, hwidth + box_h, 0, hwidth + 2 * box_h);
-        drawrow(1);
-        break;
-        case DOWN:
-        rowmin++;
-        rowmax++;
-        copyarea(0, hwidth + 2 * box_h, 0, hwidth + box_h);
-        drawrow((nhigh - 1));
-        if (2 * bwidth + box_h * nhigh + hwidth != windowHeight)
-            drawrow(nhigh);
-        break;
-        case LEFT:
-        colmin--;
-        colmax--;
-        copyarea(box_w, hwidth, 2 * box_w, hwidth);
-        drawcol(1);
-        break;
-        case RIGHT:
-        colmin++;
-        colmax++;
-        copyarea(2 * box_w, hwidth, box_w, hwidth);
-        drawcol((nwide - 1));
-        if (2 * bwidth + nwide * box_w != windowWidth)
-            drawcol(nwide);
-        break;
-        } */
 }
 /* draw a rectangle, used to highlight/downlight the current box */
 
@@ -647,14 +620,13 @@ void closerect()
 
     *bufp = '\0';
 
-    /* first check to see if anything has been entered */
     if (CellModified)
     {
         cvec = getccol();
+        if ((crow + rowmin - 1) > (int)LEVELS(cvec))
+            LEVELS(cvec) = (crow + rowmin - 1);
         if (clength != 0)
         {
-            if ((crow + rowmin - 1) > (int)LEVELS(cvec))
-                LEVELS(cvec) = (crow + rowmin - 1);
             if (TYPEOF(cvec) == STRSXP)
             {
                 tvec = allocString(strlen(buf));
@@ -666,14 +638,12 @@ void closerect()
         }
         else
         {
-            if ((crow + rowmin - 1) > (int)LEVELS(cvec))
-                LEVELS(cvec) = (crow + rowmin - 1);
             if (TYPEOF(cvec) == STRSXP)
                 STRING(cvec)[(rowmin + crow - 2)] = NA_STRING;
             else
                 REAL(cvec)[(rowmin + crow - 2)] = NA_REAL;
-            drawelt(crow, ccol);
         }
+        drawelt(crow, ccol); /* to get the scrolling right */
     }
     CellModified = 0;
 
@@ -692,7 +662,7 @@ void closerect()
    the print area and print it, left adjusted if necessary; clear the
    area of previous text; */
 
-void printstring(char *ibuf, int buflen, int row, int col)
+void printstring(char *ibuf, int buflen, int row, int col, int left)
 {
     int x_pos, y_pos;
     char buf[45], *pc = buf;
@@ -703,8 +673,16 @@ void printstring(char *ibuf, int buflen, int row, int col)
     buf[buflen] = '\0';
     if (buflen > FIELDWIDTH)
     {
-        pc += buflen - FIELDWIDTH;
-        *pc = '<';
+        if (left)
+        {
+            pc += buflen - FIELDWIDTH;
+            *pc = '<';
+        }
+        else
+        {
+            *(pc + FIELDWIDTH - 1) = '>';
+            *(pc + FIELDWIDTH) = '\0';
+        }
     }
     de_drawtext(x_pos + text_xoffset, y_pos - text_yoffset, pc);
     show(de);
@@ -785,7 +763,7 @@ void handlechar(char *text)
                 goto donehc;
             break;
         default:
-            if (!isdigit(text[0]))
+            if (!isdigit((int)text[0]))
                 goto donehc;
             break;
         }
@@ -810,7 +788,7 @@ void handlechar(char *text)
     }
 
     *bufp++ = text[0];
-    printstring(buf, clength, crow, ccol);
+    printstring(buf, clength, crow, ccol, 1);
     return;
 
 donehc:
@@ -831,18 +809,18 @@ void printlabs()
     for (i = colmin; i <= colmax; i++)
         if (TAG(tppoint) != R_NilValue)
         {
-            printstring(CHAR(PRINTNAME(TAG(tppoint))), strlen(CHAR(PRINTNAME(TAG(tppoint)))), 0, i - colmin + 1);
+            printstring(CHAR(PRINTNAME(TAG(tppoint))), strlen(CHAR(PRINTNAME(TAG(tppoint)))), 0, i - colmin + 1, 0);
             tppoint = CDR(tppoint);
         }
         else
         {
             sprintf(clab, "var%d", i);
-            printstring(clab, strlen(clab), 0, i - colmin + 1);
+            printstring(clab, strlen(clab), 0, i - colmin + 1, 0);
         }
     for (i = rowmin; i <= rowmax; i++)
     {
         sprintf(clab, "R %d", i);
-        printstring(clab, strlen(clab), i - rowmin + 1, 0);
+        printstring(clab, strlen(clab), i - rowmin + 1, 0, 0);
     }
 }
 
@@ -854,10 +832,6 @@ static void bell()
 static void cleararea(int xpos, int ypos, int width, int height, rgb col)
 {
     gfillrect(de, col, rect(xpos, ypos, width, height));
-}
-
-static void copyarea(int src_x, int src_y, int dest_x, int dest_y)
-{
 }
 
 static void clearwindow()
@@ -908,10 +882,9 @@ void de_normalkeyin(control c, int k)
         case 'H':
             if (clength > 0)
             {
-                buf[clength - 1] = ' ';
-                printstring(buf, clength, crow, ccol);
                 clength--;
                 bufp--;
+                printstring(buf, clength, crow, ccol, 1);
             }
             else
                 bell();
@@ -931,10 +904,9 @@ void de_normalkeyin(control c, int k)
     {
         if (clength > 0)
         {
-            buf[clength - 1] = ' ';
-            printstring(buf, clength, crow, ccol);
             clength--;
             bufp--;
+            printstring(buf, clength, crow, ccol, 1);
         }
         else
             bell();
@@ -994,10 +966,9 @@ void de_ctrlkeyin(control c, int key)
     case DEL:
         if (clength > 0)
         {
-            buf[clength - 1] = ' ';
-            printstring(buf, clength, crow, ccol);
             clength--;
             bufp--;
+            printstring(buf, clength, crow, ccol, 1);
         }
         else
             bell();
@@ -1015,7 +986,7 @@ void de_mousedown(control c, int buttons, point xy)
 {
     int xw, yw, wcol, wrow;
 
-    if (buttons & LeftButton)
+    if (buttons)
     {
         xw = xy.x;
         yw = xy.y;
@@ -1055,7 +1026,7 @@ void de_mousedown(control c, int buttons, point xy)
                 bell();
             }
         }
-        else if (wcol != ccol || wrow != crow)
+        else if (LeftButton)
         {
             ccol = wcol;
             crow = wrow;
@@ -1078,6 +1049,13 @@ void de_closewin()
 }
 
 #include <windows.h>
+extern HDC get_context(dataeditor);
+
+static void copyarea(int src_x, int src_y, int dest_x, int dest_y)
+{
+    HDC dc = get_context(de);
+    BitBlt(dc, dest_x, dest_y, windowWidth - src_x, windowHeight - src_y, dc, src_x, src_y, SRCCOPY);
+}
 
 static int initwin()
 {
@@ -1096,7 +1074,7 @@ static int initwin()
     nhigh = (windowHeight - 2 * bwidth - hwidth) / box_h;
     windowWidth = nwide * box_w + 2 * bwidth;
     windowHeight = nhigh * box_h + 2 * bwidth - hwidth;
-    bbg = GetSysColor(COLOR_BTNFACE);
+    bbg = myGetSysColor(COLOR_BTNFACE);
     r = getrect(de);
     r.width = windowWidth + 3;
     r.height = windowHeight + 3;

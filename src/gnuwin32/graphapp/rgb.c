@@ -854,3 +854,11 @@ int rgbtonum(rgb in)
             return i;
     return -1;
 }
+
+#include <windows.h>
+/* Windows uses 0x00bbggrr ! */
+rgb myGetSysColor(int x)
+{
+    int col = GetSysColor(x);
+    return rgb((col)&0xFFUL, (col >> 8) & 0xFFUL, (col >> 16) & 0x00FFUL);
+}
