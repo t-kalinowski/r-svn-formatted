@@ -465,10 +465,6 @@ void DoGrow(Point hitPt, WindowRef window)
 
     //	remember original text rectangle
 
-    /* if(isGraphicWindow(window))
-      hideTextRect(&oldTextRect);
-     else
-     */
     CalcTextRect(window, &oldTextRect);
 
     //	resize the window
@@ -517,12 +513,7 @@ void DoZoom(SInt16 partCode, WindowRef window)
     partCode = IsWindowInStandardState(window, &idealSize, nil) ? inZoomIn : inZoomOut;
 
     //	remember original text rectangle
-    /*	if(isGraphicWindow(window))
-         hideTextRect(&oldTextRect);
-        else
-      */
     CalcTextRect(window, &oldTextRect);
-    // CalcTextRect ( window, & oldTextRect ) ;
 
     //	zoom the window
     ZoomWindowIdeal(window, partCode, &idealSize);

@@ -573,6 +573,7 @@ void DoOSEvent(const EventRecord *event)
     case suspendResumeMessage: {
         if ((window = FrontWindow()) != nil)
         {
+
             DoActivate((event->message & resumeFlag) != 0, window);
         }
         break;
@@ -635,6 +636,8 @@ void DoWindowEvent(const EventRecord *event)
     }
 
     case activateEvt: {
+        if (window != Console_Window)
+            BringToFront(Console_Window);
         DoActivate((event->modifiers & activeFlag) != 0, window);
         break;
     }
@@ -671,17 +674,13 @@ void ProcessEvent(void)
         dd = (NewDevDesc *)gGReference[gExpose].newdevdesc;
         gedd = (GEDevDesc *)gGReference[gExpose].gedevdesc;
         xd = (MacDesc *)dd->deviceSpecific;
-        dd->size(&left, &right, &bottom, &top, dd);
-        dd->left = left;
-        dd->right = right;
-        dd->top = top;
-        dd->bottom = bottom;
-        xd->resize = TRUE;
+        gExpose = false; /* gExpose should be set to false    */
+                         /* before calling GEplayDisplayList  */
+                         /* otherwise you'll have an infinite */
+                         /* loop                              */
         GEplayDisplayList(gedd);
-        xd = (MacDesc *)dd->deviceSpecific;
         xd->resize = false;
         haveResize = true;
-        gExpose = false;
     }
     if (fstart)
     {
