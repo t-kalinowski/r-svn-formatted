@@ -58,7 +58,7 @@ char *tmpnam(char *str)
 SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
-    char *tmp, *tn, tm[MAX_PATH];
+    char *tmp, *tn, tm[MAX_PATH], tmp1[MAX_PATH];
     unsigned int n, done = 0;
 
     WIN32_FIND_DATA fd;
@@ -72,11 +72,12 @@ SEXP do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!tmp)
         tmp = getenv("TEMP");
     if (!tmp)
-        tmp = getenv("R_USER");
+        tmp = getenv("R_USER");            /* this one will succeed */
+    GetShortPathName(tmp, tmp1, MAX_PATH); /* make sure no spaces in path */
     for (n = 0; n < 100; n++)
     {
         /* try a random number at the end */
-        sprintf(tm, "%s\\%s%d", tmp, tn, rand());
+        sprintf(tm, "%s\\%s%d", tmp1, tn, rand());
         if ((h = FindFirstFile(tm, &fd)) == INVALID_HANDLE_VALUE)
         {
             done = 1;
