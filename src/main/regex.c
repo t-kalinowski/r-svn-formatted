@@ -9534,4 +9534,16 @@ int last_node, last_str_idx, check_subexp;
     sctx->cls_subexp_idx = -1;
     re_node_set_init_empty(&sctx->limits);
 }
+
+int Rregexec(const regex_t *__restrict preg, const char *__restrict string, size_t nmatch, regmatch_t pmatch[],
+             int eflags, int offset)
+{
+    reg_errcode_t err;
+    int length = strlen(string);
+    if (preg->no_sub)
+        err = re_search_internal(preg, string, length, offset, length - offset, length, 0, NULL, eflags);
+    else
+        err = re_search_internal(preg, string, length, offset, length - offset, length, nmatch, pmatch, eflags);
+    return err != REG_NOERROR;
+}
 #endif /* not USE_SYSTEM_REGEX */
