@@ -511,9 +511,8 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
 {
     RCNTXT cntxt;
     RCNTXT *c;
-    SEXP s, t;
+    SEXP s;
     int haveHandler, oldInError;
-    int nback = 0;
 
     /* set up a context to restore inError value on exit */
     begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
@@ -579,8 +578,6 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
     {
         for (c = R_GlobalContext; c; c = c->nextcontext)
         {
-            if (c->callflag & CTXT_FUNCTION)
-                nback++;
             if (IS_RESTART_BIT_SET(c->callflag))
             {
                 inError = 0;
@@ -614,14 +611,7 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
 
     if (traceback)
     {
-        PROTECT(s = allocList(nback));
-        t = s;
-        for (c = R_GlobalContext; c != NULL && c->callflag != CTXT_TOPLEVEL; c = c->nextcontext)
-            if (c->callflag & CTXT_FUNCTION)
-            {
-                SETCAR(t, deparse1(c->call, 0));
-                t = CDR(t);
-            }
+        PROTECT(s = R_GetTraceback(0));
         setVar(install(".Traceback"), s, R_GlobalEnv);
         UNPROTECT(1);
     }
@@ -787,7 +777,6 @@ void WarningMessage(SEXP call, R_WARNING which_warn, ...)
 
 void R_ReturnOrRestart(SEXP val, SEXP env, Rboolean restart);
 void R_PrintDeferredWarnings(void);
-SEXP R_GetTraceback(int);
 void R_SetErrmessage(char *s);
 void R_SetErrorHook(void (*hook)(SEXP, char *));
 void R_SetWarningHook(void (*hook)(SEXP, char *));
