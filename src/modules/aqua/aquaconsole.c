@@ -388,7 +388,7 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     Handle DataHandle;
     TXNOffset oStartOffset;
     TXNOffset oEndOffset;
-    int i, lg = 0, pptlen;
+    int i, lg = 0, pptlen, txtlen;
 
     if (!InputFinished)
         Aqua_RWrite(prompt);
@@ -400,9 +400,9 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
 
     if (InputFinished)
     {
-        TXNGetSelection(RConsoleInObject, &oStartOffset, &oEndOffset);
-        err = TXNGetDataEncoded(RConsoleInObject, 0, oEndOffset, &DataHandle, kTXNTextData);
-        lg = min(len, oEndOffset);
+        txtlen = TXNDataSize(RConsoleInObject) / 2;
+        err = TXNGetDataEncoded(RConsoleInObject, 0, txtlen, &DataHandle, kTXNTextData);
+        lg = min(len, txtlen + 1); /* has to txtlen+1 as the string is no terminated */
         HLock(DataHandle);
         for (i = 0; i < lg - 1; i++)
         {
@@ -468,18 +468,25 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
         switch (GetEventKind(REvent))
         {
         case kEventRawKeyUp:
-            err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
-            if (RKeyCode == 36)
-            { /* we check wheter return key is released */
-                InputFinished = true;
-                QuitApplicationEventLoop();
-            }
+            //    err = GetEventParameter (REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL,
+            //    &RKeyCode); if( RKeyCode == 36 ){ /* we check wheter return key is released */
+            //     InputFinished = true;
+            //      QuitApplicationEventLoop();
+            //
+            //    }
             break;
 
         case kEventRawKeyDown:
             err = GetEventParameter(REvent, kEventParamKeyCode, typeUInt32, NULL, sizeof(RKeyCode), NULL, &RKeyCode);
             switch (RKeyCode)
             {
+
+            case 36:
+                InputFinished = true;
+                QuitApplicationEventLoop();
+                err = noErr;
+                break;
+
             case 126: /* key up - history back */
                 HistBack();
                 break;
@@ -540,7 +547,7 @@ pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event,
 
 static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon)
 {
-    consolecmd("q()\r");
+    consolecmd("q()");
 }
 
 /* Changes font size in both Console In and Out
@@ -596,7 +603,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 if (result != noErr)
                     return err;
                 result = FSMakePath(tempfss.vRefNum, tempfss.parID, tempfss.name, buf, 300);
-                sprintf(cmd, "source(\"%s\")\r", buf);
+                sprintf(cmd, "source(\"%s\")", buf);
                 consolecmd(cmd);
                 break;
 
@@ -605,7 +612,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 if (result != noErr)
                     return err;
                 result = FSMakePath(tempfss.vRefNum, tempfss.parID, tempfss.name, buf, 300);
-                sprintf(cmd, "file.show(\"%s\")\r", buf);
+                sprintf(cmd, "file.show(\"%s\")", buf);
                 consolecmd(cmd);
                 break;
 
@@ -645,35 +652,35 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 
                 /* Tools menu */
             case kRCmdShowWSpace:
-                consolecmd("ls()\r");
+                consolecmd("ls()");
                 break;
 
             case kRCmdClearWSpace:
-                consolecmd("rm(list=ls())\r");
+                consolecmd("rm(list=ls())");
                 break;
 
             case kRCmdBrowseWSpace:
-                consolecmd("browseEnv(html=FALSE)\r");
+                consolecmd("browseEnv(html=FALSE)");
                 break;
 
             case kRCmdLoadWSpace:
-                consolecmd("load(\".RData\")\r");
+                consolecmd("load(\".RData\")");
                 break;
 
             case kRCmdSaveWSpace:
-                consolecmd("save.image()\r");
+                consolecmd("save.image()");
                 break;
 
             case kRCmdLoadHistory:
-                consolecmd("loadhistory()\r");
+                consolecmd("loadhistory()");
                 break;
 
             case kRCmdSaveHistory:
-                consolecmd("savehistory()\r");
+                consolecmd("savehistory()");
                 break;
 
             case kRCmdShowHistory:
-                consolecmd("history()\r");
+                consolecmd("history()");
                 break;
 
             case kRCmdChangeWorkDir:
@@ -681,21 +688,21 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 break;
 
             case kRCmdShowWorkDir:
-                consolecmd("getwd()\r");
+                consolecmd("getwd()");
                 break;
 
             case kRCmdResetWorkDir:
-                consolecmd("setwd(\"~/\")\r");
+                consolecmd("setwd(\"~/\")");
                 break;
 
                 /* Packages menu */
 
             case kRCmdInstalledPkgs:
-                consolecmd("library()\r");
+                consolecmd("library()");
                 break;
 
             case kRCmdAvailDatsets:
-                consolecmd("data()\r");
+                consolecmd("data()");
                 break;
 
             case kRCmdInstallFromCRAN:
@@ -715,7 +722,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
 
                 /* Help Menu */
             case kRHelpStart:
-                consolecmd("help.start()\r");
+                consolecmd("help.start()");
                 break;
 
             case kRHelpOnTopic:
@@ -839,14 +846,14 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
         /* Are we closing the R Console window ? */
         if (EventWindow == ConsoleWindow)
         {
-            consolecmd("q()\r");
+            consolecmd("q()");
             err = noErr;
         }
 
         /* Are we closing any quartz device window ? */
         if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum) == noErr)
         {
-            sprintf(cmd, "dev.off(%d)\r", 1 + devnum);
+            sprintf(cmd, "dev.off(%d)", 1 + devnum);
             consolecmd(cmd);
             err = noErr;
         }
@@ -867,9 +874,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
 }
 
 /* consolecmd: is used to write in the input R console
-               to send R command via menus. Its argument
-               must be a terminated string, possibly with
-               '\r'. We don't check for this.
+               to send R command via menus.
 */
 void consolecmd(char *cmd)
 {
@@ -880,7 +885,7 @@ void consolecmd(char *cmd)
         return;
 
     TXNSetData(RConsoleInObject, kTXNTextData, cmd, strlen(cmd), 0, TXNDataSize(RConsoleInObject));
-    CreateEvent(NULL, kEventClassKeyboard, kEventRawKeyUp, 0, kEventAttributeNone, &REvent);
+    CreateEvent(NULL, kEventClassKeyboard, kEventRawKeyDown, 0, kEventAttributeNone, &REvent);
     SetEventParameter(REvent, kEventParamKeyCode, typeUInt32, sizeof(RKeyCode), &RKeyCode);
     SendEventToEventTarget(REvent, GetApplicationEventTarget());
 }
