@@ -108,7 +108,7 @@ static void AnswerType(SEXP x, int recurse, int usenames, struct BindData *data)
         {
             int i, n;
             n = length(x);
-            if (usenames && !data->ans_names && !isNull(getAttrib(x, R_NamesSymbol)))
+            if (usenames && !data->ans_nnames && !isNull(getAttrib(x, R_NamesSymbol)))
                 data->ans_nnames = 1;
             for (i = 0; i < n; i++)
             {
