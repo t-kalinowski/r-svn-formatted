@@ -94,7 +94,7 @@ void allocateKnownWidths(SEXP layout, int *relativeWidths, double parentWidthCM,
     for (i = 0; i < layoutNCol(layout); i++)
         if (!relativeWidths[i])
         {
-            npcWidths[i] = transformWidth(widths, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd) /
+            npcWidths[i] = transformWidth(widths, i, parentContext, parentgc, parentWidthCM, parentHeightCM, 0, 0, dd) /
                            (parentWidthCM / 2.54);
             *widthLeftCM -= npcWidths[i] * parentWidthCM;
         }
@@ -109,8 +109,9 @@ void allocateKnownHeights(SEXP layout, int *relativeHeights, double parentWidthC
     for (i = 0; i < layoutNRow(layout); i++)
         if (!relativeHeights[i])
         {
-            npcHeights[i] = transformHeight(heights, i, parentContext, parentgc, parentWidthCM, parentHeightCM, dd) /
-                            (parentHeightCM / 2.54);
+            npcHeights[i] =
+                transformHeight(heights, i, parentContext, parentgc, parentWidthCM, parentHeightCM, 0, 0, dd) /
+                (parentHeightCM / 2.54);
             *heightLeftCM -= npcHeights[i] * parentHeightCM;
         }
 }
@@ -156,8 +157,6 @@ double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentConte
     int i;
     SEXP widths = layoutWidths(layout);
     double totalWidth = 0;
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
             totalWidth += transformWidth(widths, i, parentContext, parentgc,
@@ -166,8 +165,7 @@ double totalWidth(SEXP layout, int *relativeWidths, LViewportContext parentConte
                                           * because we are only
                                           * obtaining "null" units
                                           */
-                                         0, 0, dd);
-    L_nullLayoutMode = 0;
+                                         0, 0, 1, 0, dd);
     return totalWidth;
 }
 
@@ -177,8 +175,6 @@ double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentCon
     int i;
     SEXP heights = layoutHeights(layout);
     double totalHeight = 0;
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
             totalHeight += transformHeight(heights, i, parentContext, parentgc,
@@ -187,8 +183,7 @@ double totalHeight(SEXP layout, int *relativeHeights, LViewportContext parentCon
                                             * because we are only
                                             * obtaining "null" units
                                             */
-                                           0, 0, dd);
-    L_nullLayoutMode = 0;
+                                           0, 0, 1, 0, dd);
     return totalHeight;
 }
 
@@ -241,8 +236,9 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                     /* Build a unit SEXP with a single value and no data
                      */
                     PROTECT(width = unit(pureNullUnitValue(widths, i) / denom * mult, L_CM));
-                    npcWidths[i] = transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
-                                   (tempWidthCM / 2.54);
+                    npcWidths[i] =
+                        transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, 0, 0, dd) /
+                        (tempWidthCM / 2.54);
                     *reducedWidthCM -= npcWidths[i] * tempWidthCM;
                     npcWidths[i] = npcWidths[i] * hmult;
                     UNPROTECT(1);
@@ -266,8 +262,9 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                         mult = tempHeightCM;
                     }
                     PROTECT(height = unit(pureNullUnitValue(heights, i) / denom * mult, L_CM));
-                    npcHeights[i] = transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
-                                    (tempHeightCM / 2.54);
+                    npcHeights[i] =
+                        transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, 0, 0, dd) /
+                        (tempHeightCM / 2.54);
                     *reducedHeightCM -= npcHeights[i] * tempHeightCM;
                     npcHeights[i] = npcHeights[i] * vmult;
                     UNPROTECT(1);
@@ -283,8 +280,6 @@ double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext 
     int i;
     SEXP widths = layoutWidths(layout);
     double totalWidth = 0;
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
             if (!colRespected(i, layout))
@@ -294,8 +289,7 @@ double totalUnrespectedWidth(SEXP layout, int *relativeWidths, LViewportContext 
                                               * because we are only
                                               * obtaining "null" units
                                               */
-                                             0, 0, dd);
-    L_nullLayoutMode = 0;
+                                             0, 0, 1, 0, dd);
     return totalWidth;
 }
 
@@ -305,8 +299,6 @@ double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContex
     int i;
     SEXP heights = layoutHeights(layout);
     double totalHeight = 0;
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
             if (!rowRespected(i, layout))
@@ -316,8 +308,7 @@ double totalUnrespectedHeight(SEXP layout, int *relativeHeights, LViewportContex
                                                 * because we are only
                                                 * obtaining "null" units
                                                 */
-                                               0, 0, dd);
-    L_nullLayoutMode = 0;
+                                               0, 0, 1, 0, dd);
     return totalHeight;
 }
 
@@ -326,9 +317,8 @@ void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier,
 {
     int i;
     SEXP widths = layoutWidths(layout);
-    double sumWidth = totalUnrespectedWidth(layout, relativeWidths, parentContext, parentgc, dd);
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
+    double sumWidth;
+    sumWidth = totalUnrespectedWidth(layout, relativeWidths, parentContext, parentgc, dd);
     for (i = 0; i < layoutNCol(layout); i++)
         if (relativeWidths[i])
             if (!colRespected(i, layout))
@@ -339,9 +329,8 @@ void allocateRemainingWidth(SEXP layout, int *relativeWidths, double multiplier,
                                                * because we are only
                                                * obtaining "null" units
                                                */
-                                              0, 0, dd) /
+                                              0, 0, 1, 0, dd) /
                                sumWidth;
-    L_nullLayoutMode = 0;
 }
 
 void allocateRemainingHeight(SEXP layout, int *relativeHeights, double multiplier, LViewportContext parentContext,
@@ -349,9 +338,8 @@ void allocateRemainingHeight(SEXP layout, int *relativeHeights, double multiplie
 {
     int i;
     SEXP heights = layoutHeights(layout);
-    double sumHeight = totalUnrespectedHeight(layout, relativeHeights, parentContext, parentgc, dd);
-    /* We are calculating "null" units for a layout */
-    L_nullLayoutMode = 1;
+    double sumHeight;
+    sumHeight = totalUnrespectedHeight(layout, relativeHeights, parentContext, parentgc, dd);
     for (i = 0; i < layoutNRow(layout); i++)
         if (relativeHeights[i])
             if (!rowRespected(i, layout))
@@ -362,9 +350,8 @@ void allocateRemainingHeight(SEXP layout, int *relativeHeights, double multiplie
                                                  * because we are only
                                                  * obtaining "null" units
                                                  */
-                                                0, 0, dd) /
+                                                0, 0, 1, 0, dd) /
                                 sumHeight;
-    L_nullLayoutMode = 0;
 }
 
 static double sumDims(double dims[], int from, int to)

@@ -195,20 +195,15 @@ int unitLength(SEXP u)
  * (ii) the sort of arithmetic that is being performed
  *      (in which case, an "identity" value is returned)
  */
-/* This declared in lattice.h
- */
-int L_nullLayoutMode = 0;
-
-int L_nullArithmeticMode;
 
 /*
  * Evaluate a "null" _value_ dependent on the evaluation context
  */
-static double evaluateNullUnit(double value, double thisCM)
+static double evaluateNullUnit(double value, double thisCM, int nullLayoutMode, int nullArithmeticMode)
 {
     double result = value;
-    if (!L_nullLayoutMode)
-        switch (L_nullArithmeticMode)
+    if (!nullLayoutMode)
+        switch (nullArithmeticMode)
         {
         case L_plain:
         case L_adding:
@@ -453,7 +448,8 @@ int pureNullUnitArithmetic(SEXP unit, int index, GEDevDesc *dd)
  * variables in here so that the overall effect is NULL.
  */
 
-double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, GEDevDesc *dd)
+double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
+                             GEDevDesc *dd)
 {
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
@@ -543,7 +539,7 @@ double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, GED
      */
     if (pureNullUnit(width, 0, dd))
     {
-        result = evaluateNullUnit(pureNullUnitValue(width, 0), vpWidthCM);
+        result = evaluateNullUnit(pureNullUnitValue(width, 0), vpWidthCM, nullLMode, nullAMode);
     }
     else
     {
@@ -567,7 +563,8 @@ double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, GED
 
 /* See evaluateGrobWidthUnit for detailed comments
  */
-double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GEDevDesc *dd)
+double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
+                              GEDevDesc *dd)
 {
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
@@ -654,7 +651,7 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GE
      */
     if (pureNullUnit(height, 0, dd))
     {
-        result = evaluateNullUnit(pureNullUnitValue(height, 0), vpHeightCM);
+        result = evaluateNullUnit(pureNullUnitValue(height, 0), vpHeightCM, nullLMode, nullAMode);
     }
     else
     {
@@ -689,7 +686,7 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, GE
  * Otherwise it is an INCHES value
  */
 double transform(double value, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc, double thisCM,
-                 double otherCM, GEDevDesc *dd)
+                 double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result = value;
     switch (unit)
@@ -762,13 +759,13 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
             result = result * fromDeviceHeight(GEStrHeight(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd);
         break;
     case L_GROBWIDTH:
-        result = value * evaluateGrobWidthUnit(data, otherCM, thisCM, dd);
+        result = value * evaluateGrobWidthUnit(data, otherCM, thisCM, nullLMode, nullAMode, dd);
         break;
     case L_GROBHEIGHT:
-        result = value * evaluateGrobHeightUnit(data, thisCM, otherCM, dd);
+        result = value * evaluateGrobHeightUnit(data, thisCM, otherCM, nullLMode, nullAMode, dd);
         break;
     case L_NULL:
-        result = evaluateNullUnit(result, thisCM);
+        result = evaluateNullUnit(result, thisCM, nullLMode, nullAMode);
         break;
     default:
         error("Illegal unit or unit not yet implemented");
@@ -778,7 +775,7 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
 
 /* FIXME:  scales are only linear at the moment */
 double transformLocation(double location, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc,
-                         double thisCM, double otherCM, GEDevDesc *dd)
+                         double thisCM, double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result = location;
     switch (unit)
@@ -787,67 +784,77 @@ double transformLocation(double location, int unit, SEXP data, double scalemin, 
         result = ((result - scalemin) / (scalemax - scalemin)) * thisCM / 2.54;
         break;
     default:
-        result = transform(location, unit, data, scalemin, scalemax, gc, thisCM, otherCM, dd);
+        result = transform(location, unit, data, scalemin, scalemax, gc, thisCM, otherCM, nullLMode, nullAMode, dd);
     }
     return result;
 }
 
 double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            GEDevDesc *dd);
+                            int nullLMode, GEDevDesc *dd);
 
 double transformX(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                  GEDevDesc *dd)
+                  int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result;
     int unit;
     SEXP data;
     if (isUnitArithmetic(x))
-        result = transformXArithmetic(x, index, vpc, gc, widthCM, heightCM, dd);
+        result = transformXArithmetic(x, index, vpc, gc, widthCM, heightCM, nullLMode, dd);
     else if (isUnitList(x))
     {
         int n = unitLength(x);
-        result = transformX(VECTOR_ELT(x, index % n), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformX(VECTOR_ELT(x, index % n), 0, vpc, gc, widthCM, heightCM, nullLMode, nullAMode, dd);
     }
     else
     { /* Just a plain unit */
-        L_nullArithmeticMode = L_plain;
+        int nullamode;
+        if (nullAMode == 0)
+            nullamode = L_plain;
+        else
+            nullamode = nullAMode;
         result = unitValue(x, index);
         unit = unitUnit(x, index);
         data = unitData(x, index);
-        result = transformLocation(result, unit, data, vpc.xscalemin, vpc.xscalemax, gc, widthCM, heightCM, dd);
+        result = transformLocation(result, unit, data, vpc.xscalemin, vpc.xscalemax, gc, widthCM, heightCM, nullLMode,
+                                   nullamode, dd);
     }
     return result;
 }
 
 double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            GEDevDesc *dd);
+                            int nullLMode, GEDevDesc *dd);
 
 double transformY(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                  GEDevDesc *dd)
+                  int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result;
     int unit;
     SEXP data;
     if (isUnitArithmetic(y))
-        result = transformYArithmetic(y, index, vpc, gc, widthCM, heightCM, dd);
+        result = transformYArithmetic(y, index, vpc, gc, widthCM, heightCM, nullLMode, dd);
     else if (isUnitList(y))
     {
         int n = unitLength(y);
-        result = transformY(VECTOR_ELT(y, index % n), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformY(VECTOR_ELT(y, index % n), 0, vpc, gc, widthCM, heightCM, nullLMode, nullAMode, dd);
     }
     else
     { /* Just a unit object */
-        L_nullArithmeticMode = L_plain;
+        int nullamode;
+        if (nullAMode == 0)
+            nullamode = L_plain;
+        else
+            nullamode = nullAMode;
         result = unitValue(y, index);
         unit = unitUnit(y, index);
         data = unitData(y, index);
-        result = transformLocation(result, unit, data, vpc.yscalemin, vpc.yscalemax, gc, heightCM, widthCM, dd);
+        result = transformLocation(result, unit, data, vpc.yscalemin, vpc.yscalemax, gc, heightCM, widthCM, nullLMode,
+                                   nullamode, dd);
     }
     return result;
 }
 
 double transformDimension(double dim, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc,
-                          double thisCM, double otherCM, GEDevDesc *dd)
+                          double thisCM, double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result = dim;
     switch (unit)
@@ -856,96 +863,104 @@ double transformDimension(double dim, int unit, SEXP data, double scalemin, doub
         result = ((dim) / (scalemax - scalemin)) * thisCM / 2.54;
         break;
     default:
-        result = transform(dim, unit, data, scalemin, scalemax, gc, thisCM, otherCM, dd);
+        result = transform(dim, unit, data, scalemin, scalemax, gc, thisCM, otherCM, nullLMode, nullAMode, dd);
     }
     return result;
 }
 
 double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                double heightCM, GEDevDesc *dd);
+                                double heightCM, int nullLMode, GEDevDesc *dd);
 
 double transformWidth(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                      GEDevDesc *dd)
+                      int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result;
     int unit;
     SEXP data;
     if (isUnitArithmetic(width))
-        result = transformWidthArithmetic(width, index, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidthArithmetic(width, index, vpc, gc, widthCM, heightCM, nullLMode, dd);
     else if (isUnitList(width))
     {
         int n = unitLength(width);
-        result = transformWidth(VECTOR_ELT(width, index % n), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidth(VECTOR_ELT(width, index % n), 0, vpc, gc, widthCM, heightCM, nullLMode, nullAMode, dd);
     }
     else
     { /* Just a unit object */
-        L_nullArithmeticMode = L_plain;
+        int nullamode;
+        if (nullAMode == 0)
+            nullamode = L_plain;
+        else
+            nullamode = nullAMode;
         result = unitValue(width, index);
         unit = unitUnit(width, index);
         data = unitData(width, index);
-        result = transformDimension(result, unit, data, vpc.xscalemin, vpc.xscalemax, gc, widthCM, heightCM, dd);
+        result = transformDimension(result, unit, data, vpc.xscalemin, vpc.xscalemax, gc, widthCM, heightCM, nullLMode,
+                                    nullamode, dd);
     }
     return result;
 }
 
 double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                 double heightCM, GEDevDesc *dd);
+                                 double heightCM, int nullLMode, GEDevDesc *dd);
 
 double transformHeight(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                       GEDevDesc *dd)
+                       int nullLMode, int nullAMode, GEDevDesc *dd)
 {
     double result;
     int unit;
     SEXP data;
     if (isUnitArithmetic(height))
-        result = transformHeightArithmetic(height, index, vpc, gc, widthCM, heightCM, dd);
+        result = transformHeightArithmetic(height, index, vpc, gc, widthCM, heightCM, nullLMode, dd);
     else if (isUnitList(height))
     {
         int n = unitLength(height);
-        result = transformHeight(VECTOR_ELT(height, index % n), 0, vpc, gc, widthCM, heightCM, dd);
+        result =
+            transformHeight(VECTOR_ELT(height, index % n), 0, vpc, gc, widthCM, heightCM, nullLMode, nullAMode, dd);
     }
     else
     { /* Just a unit object */
-        L_nullArithmeticMode = L_plain;
+        int nullamode;
+        if (nullAMode == 0)
+            nullamode = L_plain;
+        else
+            nullamode = nullAMode;
         result = unitValue(height, index);
         unit = unitUnit(height, index);
         data = unitData(height, index);
-        result = transformDimension(result, unit, data, vpc.yscalemin, vpc.yscalemax, gc, heightCM, widthCM, dd);
+        result = transformDimension(result, unit, data, vpc.yscalemin, vpc.yscalemax, gc, heightCM, widthCM, nullLMode,
+                                    nullamode, dd);
     }
     return result;
 }
 
 double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            GEDevDesc *dd)
+                            int nullLMode, GEDevDesc *dd)
 {
     int i;
     double result = 0;
     if (addOp(x))
     {
-        L_nullArithmeticMode = L_adding;
-        result = transformX(arg1(x), index, vpc, gc, widthCM, heightCM, dd) +
-                 transformX(arg2(x), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformX(arg1(x), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd) +
+                 transformX(arg2(x), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd);
     }
     else if (minusOp(x))
     {
-        L_nullArithmeticMode = L_subtracting;
-        result = transformX(arg1(x), index, vpc, gc, widthCM, heightCM, dd) -
-                 transformX(arg2(x), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformX(arg1(x), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd) -
+                 transformX(arg2(x), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd);
     }
     else if (timesOp(x))
     {
-        L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(x))[index % LENGTH(arg1(x))] * transformX(arg2(x), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(x))[index % LENGTH(arg1(x))] *
+                 transformX(arg2(x), index, vpc, gc, widthCM, heightCM, nullLMode, L_multiplying, dd);
     }
     else if (minFunc(x))
     {
         int n = unitLength(arg1(x));
         double temp = DBL_MAX;
-        L_nullArithmeticMode = L_minimising;
-        result = transformX(arg1(x), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformX(arg1(x), 0, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformX(arg1(x), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformX(arg1(x), i, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
             if (temp < result)
                 result = temp;
         }
@@ -954,11 +969,10 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gconte
     {
         int n = unitLength(arg1(x));
         double temp = DBL_MIN;
-        L_nullArithmeticMode = L_maximising;
-        result = transformX(arg1(x), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformX(arg1(x), 0, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformX(arg1(x), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformX(arg1(x), i, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
             if (temp > result)
                 result = temp;
         }
@@ -967,10 +981,9 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gconte
     {
         int n = unitLength(arg1(x));
         result = 0.0;
-        L_nullArithmeticMode = L_summing;
         for (i = 0; i < n; i++)
         {
-            result += transformX(arg1(x), i, vpc, gc, widthCM, heightCM, dd);
+            result += transformX(arg1(x), i, vpc, gc, widthCM, heightCM, nullLMode, L_summing, dd);
         }
     }
     else
@@ -979,36 +992,33 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gconte
 }
 
 double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            GEDevDesc *dd)
+                            int nullLMode, GEDevDesc *dd)
 {
     int i;
     double result = 0;
     if (addOp(y))
     {
-        L_nullArithmeticMode = L_adding;
-        result = transformY(arg1(y), index, vpc, gc, widthCM, heightCM, dd) +
-                 transformY(arg2(y), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformY(arg1(y), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd) +
+                 transformY(arg2(y), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd);
     }
     else if (minusOp(y))
     {
-        L_nullArithmeticMode = L_subtracting;
-        result = transformY(arg1(y), index, vpc, gc, widthCM, heightCM, dd) -
-                 transformY(arg2(y), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformY(arg1(y), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd) -
+                 transformY(arg2(y), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd);
     }
     else if (timesOp(y))
     {
-        L_nullArithmeticMode = L_multiplying;
-        result = REAL(arg1(y))[index % LENGTH(arg1(y))] * transformY(arg2(y), index, vpc, gc, widthCM, heightCM, dd);
+        result = REAL(arg1(y))[index % LENGTH(arg1(y))] *
+                 transformY(arg2(y), index, vpc, gc, widthCM, heightCM, nullLMode, L_multiplying, dd);
     }
     else if (minFunc(y))
     {
         int n = unitLength(arg1(y));
         double temp = DBL_MAX;
-        L_nullArithmeticMode = L_minimising;
-        result = transformY(arg1(y), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformY(arg1(y), 0, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformY(arg1(y), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformY(arg1(y), i, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
             if (temp < result)
                 result = temp;
         }
@@ -1017,11 +1027,10 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gconte
     {
         int n = unitLength(arg1(y));
         double temp = DBL_MIN;
-        L_nullArithmeticMode = L_maximising;
-        result = transformY(arg1(y), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformY(arg1(y), 0, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformY(arg1(y), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformY(arg1(y), i, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
             if (temp > result)
                 result = temp;
         }
@@ -1029,11 +1038,10 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gconte
     else if (sumFunc(y))
     {
         int n = unitLength(arg1(y));
-        L_nullArithmeticMode = L_summing;
         result = 0.0;
         for (i = 0; i < n; i++)
         {
-            result += transformY(arg1(y), i, vpc, gc, widthCM, heightCM, dd);
+            result += transformY(arg1(y), i, vpc, gc, widthCM, heightCM, nullLMode, L_summing, dd);
         }
     }
     else
@@ -1042,37 +1050,33 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gconte
 }
 
 double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                double heightCM, GEDevDesc *dd)
+                                double heightCM, int nullLMode, GEDevDesc *dd)
 {
     int i;
     double result = 0;
     if (addOp(width))
     {
-        L_nullArithmeticMode = L_adding;
-        result = transformWidth(arg1(width), index, vpc, gc, widthCM, heightCM, dd) +
-                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidth(arg1(width), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd) +
+                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd);
     }
     else if (minusOp(width))
     {
-        L_nullArithmeticMode = L_subtracting;
-        result = transformWidth(arg1(width), index, vpc, gc, widthCM, heightCM, dd) -
-                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidth(arg1(width), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd) -
+                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd);
     }
     else if (timesOp(width))
     {
-        L_nullArithmeticMode = L_multiplying;
         result = REAL(arg1(width))[index % LENGTH(arg1(width))] *
-                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, dd);
+                 transformWidth(arg2(width), index, vpc, gc, widthCM, heightCM, nullLMode, L_multiplying, dd);
     }
     else if (minFunc(width))
     {
         int n = unitLength(arg1(width));
         double temp = DBL_MAX;
-        L_nullArithmeticMode = L_minimising;
-        result = transformWidth(arg1(width), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidth(arg1(width), 0, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
             if (temp < result)
                 result = temp;
         }
@@ -1081,11 +1085,10 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_G
     {
         int n = unitLength(arg1(width));
         double temp = DBL_MIN;
-        L_nullArithmeticMode = L_maximising;
-        result = transformWidth(arg1(width), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformWidth(arg1(width), 0, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
             if (temp > result)
                 result = temp;
         }
@@ -1094,10 +1097,9 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_G
     {
         int n = unitLength(arg1(width));
         result = 0.0;
-        L_nullArithmeticMode = L_summing;
         for (i = 0; i < n; i++)
         {
-            result += transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, dd);
+            result += transformWidth(arg1(width), i, vpc, gc, widthCM, heightCM, nullLMode, L_summing, dd);
         }
     }
     else
@@ -1106,37 +1108,33 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_G
 }
 
 double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                 double heightCM, GEDevDesc *dd)
+                                 double heightCM, int nullLMode, GEDevDesc *dd)
 {
     int i;
     double result = 0;
     if (addOp(height))
     {
-        L_nullArithmeticMode = L_adding;
-        result = transformHeight(arg1(height), index, vpc, gc, widthCM, heightCM, dd) +
-                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformHeight(arg1(height), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd) +
+                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, nullLMode, L_adding, dd);
     }
     else if (minusOp(height))
     {
-        L_nullArithmeticMode = L_subtracting;
-        result = transformHeight(arg1(height), index, vpc, gc, widthCM, heightCM, dd) -
-                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, dd);
+        result = transformHeight(arg1(height), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd) -
+                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, nullLMode, L_subtracting, dd);
     }
     else if (timesOp(height))
     {
-        L_nullArithmeticMode = L_multiplying;
         result = REAL(arg1(height))[index % LENGTH(arg1(height))] *
-                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, dd);
+                 transformHeight(arg2(height), index, vpc, gc, widthCM, heightCM, nullLMode, L_multiplying, dd);
     }
     else if (minFunc(height))
     {
         int n = unitLength(arg1(height));
         double temp = DBL_MAX;
-        L_nullArithmeticMode = L_minimising;
-        result = transformHeight(arg1(height), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformHeight(arg1(height), 0, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, nullLMode, L_minimising, dd);
             if (temp < result)
                 result = temp;
         }
@@ -1145,11 +1143,10 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
     {
         int n = unitLength(arg1(height));
         double temp = DBL_MIN;
-        L_nullArithmeticMode = L_maximising;
-        result = transformHeight(arg1(height), 0, vpc, gc, widthCM, heightCM, dd);
+        result = transformHeight(arg1(height), 0, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
         for (i = 1; i < n; i++)
         {
-            temp = transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, dd);
+            temp = transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, nullLMode, L_maximising, dd);
             if (temp > result)
                 result = temp;
         }
@@ -1157,11 +1154,10 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
     else if (sumFunc(height))
     {
         int n = unitLength(arg1(height));
-        L_nullArithmeticMode = L_summing;
         result = 0.0;
         for (i = 0; i < n; i++)
         {
-            result += transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, dd);
+            result += transformHeight(arg1(height), i, vpc, gc, widthCM, heightCM, nullLMode, L_summing, dd);
         }
     }
     else
@@ -1197,13 +1193,13 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
 double transformXtoINCHES(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
                           GEDevDesc *dd)
 {
-    return transformX(x, index, vpc, gc, widthCM, heightCM, dd);
+    return transformX(x, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
 double transformYtoINCHES(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
                           GEDevDesc *dd)
 {
-    return transformY(y, index, vpc, gc, widthCM, heightCM, dd);
+    return transformY(y, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
 void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
@@ -1224,13 +1220,13 @@ void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontex
 double transformWidthtoINCHES(SEXP w, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
                               double heightCM, GEDevDesc *dd)
 {
-    return transformWidth(w, index, vpc, gc, widthCM, heightCM, dd);
+    return transformWidth(w, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
 double transformHeighttoINCHES(SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
                                double heightCM, GEDevDesc *dd)
 {
-    return transformHeight(h, index, vpc, gc, widthCM, heightCM, dd);
+    return transformHeight(h, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
 void transformDimn(SEXP w, SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
