@@ -1970,7 +1970,12 @@ DevDesc *GNewPlot(Rboolean recording)
     if (recording)                                                                                                     \
         invalidError(msg, dd);                                                                                         \
     else                                                                                                               \
-        GText(0.5, 0.5, NFC, msg, 0.5, 0.5, 0, dd)
+    {                                                                                                                  \
+        int xpdsaved = Rf_gpptr(dd)->xpd;                                                                              \
+        Rf_gpptr(dd)->xpd = 2;                                                                                         \
+        GText(0.5, 0.5, NFC, msg, 0.5, 0.5, 0, dd);                                                                    \
+        Rf_gpptr(dd)->xpd = xpdsaved;                                                                                  \
+    }
 
     Rf_dpptr(dd)->valid = Rf_gpptr(dd)->valid = FALSE;
     if (!validOuterMargins(dd))
