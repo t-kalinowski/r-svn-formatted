@@ -343,6 +343,8 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans
 #else
     sxp = findVar(method, rho);
 #endif
+    if (TYPEOF(sxp) == PROMSXP)
+        sxp = eval(sxp, rho);
     if (isFunction(sxp))
     {
         defineVar(install(".Generic"), mkString(generic), newrho);
@@ -738,6 +740,8 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(class, i)));
 #ifdef EXPERIMENTAL_NAMESPACES
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
+        if (TYPEOF(nextfun) == PROMSXP)
+            nextfun = eval(nextfun, env);
         if (isFunction(nextfun))
             break;
         if (group != R_UnboundValue)
@@ -745,6 +749,8 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             /* if not Generic.foo, look for Group.foo */
             sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(class, i)));
             nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
+            if (TYPEOF(nextfun) == PROMSXP)
+                nextfun = eval(nextfun, env);
             if (isFunction(nextfun))
                 break;
         }
@@ -762,6 +768,8 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
         nextfun = findVar(install(buf), env);
 #endif
+        if (TYPEOF(nextfun) == PROMSXP)
+            nextfun = eval(nextfun, env);
         if (!isFunction(nextfun))
         {
             t = install(CHAR(STRING_ELT(generic, 0)));
