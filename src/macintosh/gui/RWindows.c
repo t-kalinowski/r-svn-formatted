@@ -917,8 +917,10 @@ void DoKey(SInt16 key, const EventRecord *event)
 
 /* DoUpdate:
 
-   Based on WASTE DEMO. However, when you update a graphic window,
-   you need to do something more than Text window.
+   Fixed on Dec 2001. Update of graphics windows is
+   now implemented correctly, and only one time.
+   Text windows update as before.
+   Jago Dec 2001, Stefano M. Iacus
  */
 
 void DoUpdate(WindowRef window)
@@ -937,6 +939,22 @@ void DoUpdate(WindowRef window)
         return;
     }
 
+    if ((WinIndex = isGraphicWindow(window)) != 0)
+    {
+        dd = (NewDevDesc *)gGReference[WinIndex].newdevdesc;
+        gedd = (GEDevDesc *)gGReference[WinIndex].gedevdesc;
+        dd->size(&left, &right, &bottom, &top, dd);
+        dd->left = left;
+        dd->right = right;
+        dd->top = top;
+        dd->bottom = bottom;
+        BeginUpdate(window);
+        EndUpdate(window);
+
+        GEplayDisplayList(gedd);
+        return;
+    }
+
     // save the old drawing port
     GetPort(&savePort);
     SetPortWindowPort(window);
@@ -952,35 +970,13 @@ void DoUpdate(WindowRef window)
     RectRgn(updateRgn, GetWindowPortBounds(window, &portRect));
 
     // erase the update region
-    if (!isGraphicWindow(window))
-        EraseRgn(updateRgn);
+    EraseRgn(updateRgn);
 
     //	draw scroll bars
-    if (!isGraphicWindow(window))
-        UpdateControls(window, updateRgn);
+    UpdateControls(window, updateRgn);
 
     //	draw text
-    if (!isGraphicWindow(window))
-    {
-        WEUpdate(updateRgn, GetWindowWE(window));
-        // tell everything we're done updating
-    }
-    else
-    {
-        //    if (QDIsPortBuffered(GetWindowPort(window)))
-        //    QDFlushPortBuffer(GetWindowPort(window), NULL);
-        /* This way of refreshing windows is rather slow */
-        WinIndex = isGraphicWindow(window);
-        dd = (NewDevDesc *)gGReference[WinIndex].newdevdesc;
-        gedd = (GEDevDesc *)gGReference[WinIndex].gedevdesc;
-        dd->size(&left, &right, &bottom, &top, dd);
-        dd->left = left;
-        dd->right = right;
-        dd->top = top;
-        dd->bottom = bottom;
-
-        GEplayDisplayList(gedd);
-    }
+    WEUpdate(updateRgn, GetWindowWE(window));
 
     EndUpdate(window);
     DisposeRgn(updateRgn);
