@@ -165,7 +165,7 @@ SEXP do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "invalid filename argument");
     append_mode = asLogical(CADR(args));
     dinterval = asReal(CADDR(args));
-    filename = CHAR(STRING_ELT(CAR(args), 0));
+    filename = R_ExpandFileName(CHAR(STRING_ELT(CAR(args), 0)));
     if (strlen(filename))
         R_InitProfiling(filename, append_mode, dinterval);
     else
@@ -576,6 +576,7 @@ static SEXP replaceCall(SEXP fun, SEXP val, SEXP args, SEXP rhs)
     while (args != R_NilValue)
     {
         SETCAR(ptmp, CAR(args));
+        SET_TAG(ptmp, TAG(args));
         ptmp = CDR(ptmp);
         args = CDR(args);
     }
