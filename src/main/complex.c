@@ -637,7 +637,7 @@ SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
 
     case 0:
-        errorcall(call, "'abs' unimplemented for complex; use Mod(.)\n");
+        errorcall(call, "abs() unimplemented for complex; use Mod()\n");
         break;
     case 3:
         cmath1(z_sqrt, COMPLEX(x), COMPLEX(y), n);
