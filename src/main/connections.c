@@ -2310,10 +2310,8 @@ int Rconn_getline(Rconnection con, char *buf, int bufsize)
 
     while ((c = Rconn_fgetc(con)) != R_EOF)
     {
-        if (nbuf >= bufsize)
-        {
+        if (nbuf + 1 >= bufsize)
             error("Line longer than buffer size");
-        }
         if (c != '\n')
         {
             buf[++nbuf] = c;
@@ -2323,6 +2321,15 @@ int Rconn_getline(Rconnection con, char *buf, int bufsize)
             buf[++nbuf] = '\0';
             break;
         }
+    }
+    /* Make sure it is null-terminated and count is correct, even if
+     *  file did not end with newline.
+     */
+    if (nbuf >= 0 && buf[nbuf])
+    {
+        if (nbuf + 1 >= bufsize)
+            error("Line longer than buffer size");
+        buf[++nbuf] = '\0';
     }
     return (nbuf);
 }
