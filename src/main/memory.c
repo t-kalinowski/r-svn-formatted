@@ -2026,7 +2026,7 @@ void *R_chk_calloc(size_t nelem, size_t elsize)
 #endif
     p = calloc(nelem, elsize);
     if (!p)
-        error("Calloc could not allocate memory");
+        error("Calloc could not allocate (%d of %d) memory", nelem, elsize);
     return (p);
 }
 void *R_chk_realloc(void *ptr, size_t size)
@@ -2034,7 +2034,7 @@ void *R_chk_realloc(void *ptr, size_t size)
     void *p;
     p = realloc(ptr, size);
     if (!p)
-        error("Realloc could not re-allocate memory");
+        error("Realloc could not re-allocate (size %d) memory", size);
     return (p);
 }
 void R_chk_free(void *ptr)
