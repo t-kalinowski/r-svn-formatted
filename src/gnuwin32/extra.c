@@ -932,7 +932,7 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP rho)
     preselect = CADR(args);
     if (!isNull(preselect) && (!isString(preselect) || length(preselect) != 1))
         error("invalid `preselect' argument");
-    if (isNull(preselect))
+    if (!isNull(preselect))
         cps = CHAR(STRING_ELT(preselect, 0));
     else
         cps = "";
