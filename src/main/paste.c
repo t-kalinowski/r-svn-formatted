@@ -147,6 +147,9 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+/* format.default(x, trim) : ../library/base/R/format.R
+ * --------------   See "FIXME" in that file !
+ */
 SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP l, x, y;
@@ -234,7 +237,8 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(1);
         break;
 
-    case STRSXP:
+    case STRSXP: /* this is *UN*used now (1.2) */
+
         formatString(STRING_PTR(x), n, &w, 0);
         if (trim)
             w = 0;
