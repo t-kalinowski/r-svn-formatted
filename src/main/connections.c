@@ -2233,6 +2233,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
     void *p = NULL;
     Rboolean wasopen;
     Rconnection con = NULL;
+    char *vmax = vmaxget();
 
     checkArity(op, args);
     i = asInteger(CAR(args));
@@ -2441,6 +2442,7 @@ SEXP do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+    vmaxset(vmax);
     if (!wasopen)
         con->close(con);
     if (m < n)
@@ -2722,6 +2724,7 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     char *s, *buf, *ssep = "";
     Rboolean wasopen, usesep;
     Rconnection con = NULL;
+    char *vmax = vmaxget();
 
     checkArity(op, args);
     object = CAR(args);
@@ -2785,6 +2788,7 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+    vmaxset(vmax);
     if (!wasopen)
         con->close(con);
     return R_NilValue;
