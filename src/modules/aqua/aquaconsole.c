@@ -731,11 +731,7 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, kTXNEndOffset);
 
     while (!InputFinished & !HaveBigBuffer)
-#ifdef NEWAQUAELOOP
         ProcessOneEvent();
-#else
-        RunApplicationEventLoop();
-#endif
 
     if (!HaveBigBuffer)
     {
@@ -845,9 +841,6 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
 
             case 36:
                 InputFinished = true;
-#ifndef NEWAQUAELOOP
-                QuitApplicationEventLoop();
-#endif
                 err = noErr;
                 break;
 
@@ -1477,6 +1470,7 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
         }
     }
 
+    HiliteMenu(0);
     return err;
 }
 
@@ -1641,9 +1635,12 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
     case kEventClassMouse:
         if (eventKind == kEventMouseDown)
         {
-            fprintf(stderr, "\n coversion=%d", ConvertEventRefToEventRecord(inEvent, &outEvent));
-            if (FindWindow(outEvent.where, &mywin) == inMenuBar)
-                fprintf(stderr, "\nmenu bar");
+            if (ConvertEventRefToEventRecord(inEvent, &outEvent))
+                if (FindWindow(outEvent.where, &mywin) == inMenuBar)
+                {
+                    MenuSelect(outEvent.where);
+                    err = noErr;
+                }
         }
         break;
 
@@ -1774,9 +1771,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
         {
             CloseBrowsePkg();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
-#ifndef NEWAQUAELOOP
-            QuitApplicationEventLoop();
-#endif
             BrowsePkgFinished = true;
             err = noErr;
         }
@@ -1786,9 +1780,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
             CloseDataManager();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
             DataManagerFinished = true;
-#ifndef NEWAQUAELOOP
-            QuitApplicationEventLoop();
-#endif
             err = noErr;
         }
 
@@ -1797,9 +1788,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
             ClosePackageManager();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
             PackageManagerFinished = true;
-#ifndef NEWAQUAELOOP
-            QuitApplicationEventLoop();
-#endif
             err = noErr;
         }
 
@@ -1808,9 +1796,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
             CloseDataEntry();
             TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
             DataEntryFinished = true;
-#ifndef NEWAQUAELOOP
-            QuitApplicationEventLoop();
-#endif
             err = noErr;
         }
 
@@ -1833,9 +1818,6 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
                 RemEditWindow(EventWindow);
                 TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadWriteTag, RReadWriteData);
                 EditingFinished = true;
-#ifndef NEWAQUAELOOP
-                QuitApplicationEventLoop();
-#endif
             }
             err = noErr;
         }
@@ -1912,13 +1894,8 @@ int Raqua_Edit(char *filename)
 
     rc = NewEditWindow(filename);
 
-#ifdef NEWAQUAELOOP
     while (!EditingFinished)
         ProcessOneEvent();
-#else
-    QuitApplicationEventLoop();
-    RunApplicationEventLoop();
-#endif
 
     return 0;
 }
@@ -2668,7 +2645,13 @@ void Raqua_ProcessEvents(void)
 
     if (ReceiveNextEvent(0, NULL, kEventDurationNoWait, true, &theEvent) == noErr)
     {
-        SendEventToEventTarget(theEvent, theTarget);
+
+        if ((GetEventClass(theEvent) == kEventClassMouse) && (GetEventKind(theEvent) == kEventMouseDown))
+        {
+        }
+        else
+            SendEventToEventTarget(theEvent, theTarget);
+
         ReleaseEvent(theEvent);
     }
 }

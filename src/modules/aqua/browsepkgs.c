@@ -489,13 +489,8 @@ SEXP Raqua_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
     TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadOnlyTag, RReadOnlyData);
     BrowsePkgFinished = false;
     OpenBrowsePkg();
-#ifdef NEWAQUAELOOP
     while (!BrowsePkgFinished)
         ProcessOneEvent();
-#else
-    QuitApplicationEventLoop();
-    RunApplicationEventLoop();
-#endif
 
     PROTECT(ans = NEW_LOGICAL(NumOfPkgs));
 
