@@ -8,7 +8,7 @@
 
 void nscor1(double *s, int *n, int *n2, double *work, int *ifault)
 {
-    /*	Algorithm AS 177   Appl. Statist. (1982) Vol. 31, No. 2
+    /*	Algorithm AS 177   Appl. Statist. (1982) Vol. 31, No. 2, 161-165
 
         Exact calculation of Normal Scores
     */
@@ -40,7 +40,7 @@ void nscor1(double *s, int *n, int *n2, double *work, int *ifault)
     *ifault = 0;
     if (*n > 2000)
     {
-        *ifault = 2;
+        *ifault = 2; /* non-fatal potential accuracy loss */
     }
 
     an = (double)(*n);
