@@ -465,6 +465,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
     long value;
     char *p, **av = argv, msg[1024];
 
+    R_RestoreHistory = 1;
     while (--ac)
     {
         if (**++av == '-')
@@ -501,6 +502,10 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 Rp->RestoreAction = SA_NORESTORE;
             }
+            else if (!strcmp(*av, "--no-restore-history"))
+            {
+                R_RestoreHistory = 0;
+            }
             else if (!strcmp(*av, "--silent") || !strcmp(*av, "--quiet") || !strcmp(*av, "-q"))
             {
                 Rp->R_Quiet = True;
@@ -511,6 +516,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 Rp->RestoreAction = SA_NORESTORE; /* --no-restore */
                 Rp->LoadSiteFile = False;         /* --no-site-file */
                 Rp->LoadInitFile = False;         /* --no-init-file */
+                R_RestoreHistory = 0;             /* --no-restore-history */
             }
             else if (!strcmp(*av, "--verbose"))
             {

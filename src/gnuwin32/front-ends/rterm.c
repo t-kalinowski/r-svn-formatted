@@ -36,6 +36,7 @@ extern UImode CharacterMode;
 extern int UserBreak;
 extern int R_Interactive;
 extern int R_HistorySize;
+extern int R_RestoreHistory;
 extern char *R_HistoryFile;
 
 extern char *getDLLVersion();
@@ -73,7 +74,8 @@ int AppMain(int argc, char **argv)
     if (R_Interactive)
     {
         gl_hist_init(R_HistorySize, 1);
-        gl_loadhistory(R_HistoryFile);
+        if (R_RestoreHistory)
+            gl_loadhistory(R_HistoryFile);
         SetConsoleTitle("Rterm");
     }
     Rf_mainloop();
