@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1999, the R Development Core Group.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,8 +25,9 @@
  *  in this code.  An environment is (essentially) a list of
  *  environment "frames" of the form
  *
- *	CAR(envir) = FRAME(envir) = environment frame
- *	CDR(envir) = ENCLOS(envir) = parent environment
+ *	FRAME(envir) = environment frame
+ *	ENCLOS(envir) = parent environment
+ *      HASHTAB(envir) = (optional) hash table
  *
  *  In addition, environments which are created by binding a
  *  function's (=closure's) formals to its actuals have a value
@@ -52,18 +54,29 @@
 
 #include "Defn.h"
 
-/* ----------- HASH TABLE -----------
-   The hash table consists of SEXP (vector) which contains
-   a number of SEXPs (lists).
+/*----------------------------------------------------------------------
+
+  Hash Tables
+
+  We use a basic se[parate chaining algorithm.  A hash table consists
+  of SEXP (vector) which contains a number of SEXPs (lists).
 
 */
 
-#define HASHSIZE(x) LENGTH(x)    /* (( x )->u.vecsxp.length ) */
-#define HASHPRI(x) TRUELENGTH(x) /* (( x )->u.vecsxp.truelength ) */
+#define HASHSIZE(x) LENGTH(x)
+#define HASHPRI(x) TRUELENGTH(x)
 #define HASHTABLEGROWTHRATE 1.2
 #define HASHMINSIZE 29
 
-/* string hashing */
+/*----------------------------------------------------------------------
+
+  String Hashing
+
+  This is taken from the second edition of the "Dragon Book" by
+  Aho, Ullman and Sethi.
+
+*/
+
 static int newhashpjw(char *s)
 {
     char *p;
@@ -82,12 +95,14 @@ static int newhashpjw(char *s)
 
 /*----------------------------------------------------------------------
 
-  Hashtable set function.
-  Sets 'symbol' in 'table' to be 'value'.
-  'hashcode' must be provided by user.
-  Allocates some memory for list entries.
+  R_HashSet
 
-------------------------------------------------------------------------*/
+  Hashtable set function.  Sets 'symbol' in 'table' to be 'value'.
+  'hashcode' must be provided by user.  Allocates some memory for list
+  entries.
+
+*/
+
 void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
 {
     SEXP chain;
@@ -97,19 +112,16 @@ void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
     {
         error("3rd arg (table) not of type VECSXP, from R_HashSet\n");
     }
-
     if (isNull(table))
     {
         error("Table is null, from R_HashSet\n");
     }
-
     /* Grab the chain from the hashtable */
     chain = VECTOR(table)[hashcode];
     if (isNull(chain))
     {
         HASHPRI(table)++;
     }
-
     /* Add the value into the chain */
     for (; !isNull(chain); chain = CDR(chain))
     {
@@ -119,21 +131,20 @@ void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value)
             return;
         }
     }
-
     VECTOR(table)[hashcode] = CONS(value, VECTOR(table)[hashcode]);
     TAG(VECTOR(table)[hashcode]) = symbol;
-
     return;
-} /* end R_HashSet */
+}
 
 /*----------------------------------------------------------------------
 
-  Hashtable get function.
-  Returns 'value' from 'table' indexed by 'symbol'.
-  'hashcode' must be provided by user.
-  Returns 'R_UnboundValue' if value is not present.
+  R_HashGet
 
--------------------------------------------------------------------------*/
+  Hashtable get function.  Returns 'value' from 'table' indexed by
+  'symbol'.  'hashcode' must be provided by user.  Returns
+  'R_UnboundValue' if value is not present.
+
+*/
 
 SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
 {
@@ -142,18 +153,14 @@ SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
     /* Do type checking */
     if (TYPEOF(table) != VECSXP)
     {
-        /* error( "3rd arg (table) not of type VECSXP, from R_HashGet\n" ); */
         printf("3rd arg (table) not of type VECSXP, from R_HashGet\n");
     }
-
     if (isNull(table))
     {
         error("Table is null, from R_HashGet\n");
     }
-
     /* Grab the chain from the hashtable */
     chain = VECTOR(table)[hashcode];
-
     /* Retrieve the value from the chain */
     for (; !isNull(chain); chain = CDR(chain))
     {
@@ -164,16 +171,16 @@ SEXP R_HashGet(int hashcode, SEXP symbol, SEXP table)
     }
     /* If not found */
     return R_UnboundValue;
-} /* end R_HashGet */
+}
 
 /*----------------------------------------------------------------------
 
-  Hash table initialisation function.
-  Creates a table of size 'size' that increases
-  in size by 'growth_rate' after a threshold
-  is met.
+  R_NewHashTable
 
-------------------------------------------------------------------------*/
+  Hash table initialisation function.  Creates a table of size 'size'
+  that increases in size by 'growth_rate' after a threshold is met.
+
+*/
 
 SEXP R_NewHashTable(int size, int growth_rate)
 {
@@ -188,41 +195,40 @@ SEXP R_NewHashTable(int size, int growth_rate)
     {
         size = HASHMINSIZE;
     }
-
     /* Allocate hash table in the form of a vector */
     PROTECT(table = allocVector(VECSXP, size));
     HASHSIZE(table) = size;
     HASHPRI(table) = 0;
     UNPROTECT(1);
-
     return (table);
-} /* end R_NewHashTable */
+}
 
 /*----------------------------------------------------------------------
 
-  Hash table delete function.
-  Symbols are not removed from the table.
+  R_HashDelete
+
+  Hash table delete function.  Symbols are not removed from the table.
   They have their value set to 'R_UnboundValue'.
 
-------------------------------------------------------------------------*/
+*/
 
 void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
 {
     /* Call R_HashSet with Unbound value */
     R_HashSet(hashcode, symbol, table, R_UnboundValue);
     return;
-} /* end R_HashDelete */
+}
 
 /*----------------------------------------------------------------------
 
-  Hash table resizing funstion
-  Increase the size of the hash table by
-  the growth_rate of the table.
-  The vector is reallocated, however the
-  lists with in the hash table have there
-  poiters shuffled around so that they are not reallocated.
+  R_HashResize
 
-------------------------------------------------------------------------*/
+  Hash table resizing function Increase the size of the hash table by
+  the growth_rate of the table.  The vector is reallocated, however
+  the lists with in the hash table have there poiters shuffled around
+  so that they are not reallocated.
+
+*/
 
 SEXP R_HashResize(SEXP table)
 {
@@ -237,11 +243,10 @@ SEXP R_HashResize(SEXP table)
 
     /* This may have to change.  The growth rate should
        be independent of the size (not implemented yet) */
-    /* hash_grow = HASHSIZE( table ); */
+    /* hash_grow = HASHSIZE(table); */
 
     /* Allocate the new hash table */
     new_table = R_NewHashTable(HASHSIZE(table) * HASHTABLEGROWTHRATE, HASHTABLEGROWTHRATE);
-
     for (counter = 0; counter < length(table); counter++)
     {
         chain = VECTOR(table)[counter];
@@ -249,21 +254,19 @@ SEXP R_HashResize(SEXP table)
         {
             new_hashcode = newhashpjw(CHAR(PRINTNAME(TAG(chain)))) % HASHSIZE(new_table);
             new_chain = VECTOR(new_table)[new_hashcode];
-
             /* If using a primary slot then increase HASHPRI */
             if (isNull(new_chain))
                 HASHPRI(new_table)++;
-
             tmp_chain = chain;
             chain = CDR(chain);
             CDR(tmp_chain) = new_chain;
             VECTOR(new_table)[new_hashcode] = tmp_chain;
-            /* Debugging code */
-            /* fprintf( stdout, "HASHSIZE = %d\nHASHPRI = %d\ncounter = %d\nHASHCODE = %d\n", HASHSIZE( table ),
-             * HASHPRI( table ), counter, new_hashcode); */
+#ifdef MIKE_DEBUG
+            fprintf(stdout, "HASHSIZE = %d\nHASHPRI = %d\ncounter = %d\nHASHCODE = %d\n", HASHSIZE(table),
+                    HASHPRI(table), counter, new_hashcode);
+#endif
         }
     }
-
     /* Some debugging statements */
 #ifdef MIKE_DEBUG
     fprintf(stdout, "Resized O.K.\n");
@@ -275,12 +278,13 @@ SEXP R_HashResize(SEXP table)
 
 /*----------------------------------------------------------------------
 
-  Hash table size rechecking function.
-  Compares the load factor (size/# of primary slots used).
-  to a praticular threshhold value.
+  R_HashSizeCheck
+
+  Hash table size rechecking function.  Compares the load factor
+  (size/# of primary slots used).  to a praticular threshhold value.
   Returns true if the table needs to be resized.
 
-------------------------------------------------------------------------*/
+*/
 
 int R_HashSizeCheck(SEXP table)
 {
@@ -292,13 +296,21 @@ int R_HashSizeCheck(SEXP table)
     {
         error("1st arg (table) not of type VECSXP, R_HashSizeCheck\n");
     }
-
     resize = 0;
     thresh_val = 0.85;
     if ((double)HASHPRI(table) > (double)HASHSIZE(table) * thresh_val)
         resize = 1;
     return resize;
 }
+
+/*----------------------------------------------------------------------
+
+  R_HashEnv2Hash
+
+  Hashing for environments frames.  This function ensures that the
+  first frame in the given environment hash been hashed.
+
+*/
 
 SEXP R_HashEnv2Hash(SEXP rho)
 {
@@ -310,41 +322,41 @@ SEXP R_HashEnv2Hash(SEXP rho)
     {
         error("1st arg (table) not of type ENVSXP, from R_HashVector2Hash\n");
     }
-
     table = HASHTAB(rho);
     frame = FRAME(rho);
-
     while (!isNull(frame))
     {
         hashcode = newhashpjw(CHAR(PRINTNAME(TAG(frame)))) % HASHSIZE(table);
         chain = VECTOR(table)[hashcode];
-
         /* If using a primary slot then increase HASHPRI */
         if (isNull(chain))
             HASHPRI(table)++;
-
         tmp_chain = frame;
         frame = CDR(frame);
         CDR(tmp_chain) = chain;
         VECTOR(table)[hashcode] = tmp_chain;
     }
-
     FRAME(rho) = R_NilValue;
     return rho;
 }
 
-/* ------------ END OF HASH TABLE --------------- */
+/*----------------------------------------------------------------------
+
+  Environments
+
+  The following code implements variable searching for environments.
+
+*/
 
 /*----------------------------------------------------------------------
 
-    NewEnvironment
+  NewEnvironment
 
-    Create an environment by extending "rho" with a frame obtained by
-    pairing the variable names given by the tags on "namelist" with
-    the values given by the elements of "valuelist".
+  Create an environment by extending "rho" with a frame obtained by
+  pairing the variable names given by the tags on "namelist" with
+  the values given by the elements of "valuelist".
 
-
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
 {
@@ -369,17 +381,17 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    InitGlobalEnv :
+  InitGlobalEnv
 
-    Create the initial global environment.  The global environment is
-    no longer a linked list of environment frames.  Instead it is a
-    vector of environments which is searched from beginning to end.
+  Create the initial global environment.  The global environment is
+  no longer a linked list of environment frames.  Instead it is a
+  vector of environments which is searched from beginning to end.
 
-    Note that only the first frame of each of these environments is
-    searched.  This is intended to make it possible to implement
-    namespaces at some (indeterminate) point in the future.
+  Note that only the first frame of each of these environments is
+  searched.  This is intended to make it possible to implement
+  namespaces at some (indeterminate) point in the future.
 
-  ----------------------------------------------------------------------*/
+*/
 
 void InitGlobalEnv()
 {
@@ -388,15 +400,15 @@ void InitGlobalEnv()
 
 /*----------------------------------------------------------------------
 
-    unbindVar :
+  unbindVar
 
-    Remove a value from an environment. This happens only in the frame
-    of the specified frame.
+  Remove a value from an environment. This happens only in the frame
+  of the specified frame.
 
-    FIXME ? should this also unbind the symbol value slot when rho is
-    R_NilValue.
+  FIXME ? should this also unbind the symbol value slot when rho is
+  R_NilValue.
 
-  ----------------------------------------------------------------------*/
+*/
 
 void unbindVar(SEXP symbol, SEXP rho)
 {
@@ -415,8 +427,9 @@ void unbindVar(SEXP symbol, SEXP rho)
             v = &CDR(*v);
         }
     }
-    else /* Do the hash table thing */
+    else
     {
+        /* Do the hash table thing */
         hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
         /* Should be changed to remove */
         return (R_HashDelete(hashcode, symbol, HASHTAB(rho)));
@@ -425,14 +438,14 @@ void unbindVar(SEXP symbol, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    findVarInFrame :
+  findVarInFrame
 
-    Look up the value of a symbol in a single environment frame.  This
-    is the basic building block of all variable lookups.
+  Look up the value of a symbol in a single environment frame.  This
+  is the basic building block of all variable lookups.
 
-    It is important that this be as efficient as possible.
+  It is important that this be as efficient as possible.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP findVarInFrame(SEXP rho, SEXP symbol)
 {
@@ -460,16 +473,14 @@ SEXP findVarInFrame(SEXP rho, SEXP symbol)
 
 /*----------------------------------------------------------------------
 
-    findVar :
+  findVar
 
-    Look up a symbol in an environment.
+  Look up a symbol in an environment.
 
-    Changes :
+  This needs to be changed so that the environment chain is searched
+  and then the searchpath is traversed.
 
-    This needs to be changed so that the environment chain is searched
-    and then the searchpath is traversed.
-
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP findVar(SEXP symbol, SEXP rho)
 {
@@ -486,17 +497,15 @@ SEXP findVar(SEXP symbol, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    findVar1 :
+  findVar1
 
-    Look up a symbol in an environment.  Ignore any values which are
-    not of the specified type.
+  Look up a symbol in an environment.  Ignore any values which are
+  not of the specified type.
 
-    Changes :
+  This needs to be changed so that the environment chain is searched
+  and then the searchpath is traversed.
 
-    This needs to be changed so that the environment chain is searched
-    and then the searchpath is traversed.
-
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
 {
@@ -521,24 +530,23 @@ SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
 
 /*----------------------------------------------------------------------
 
-    ddfindVar :
+  ddfindVar
 
-    This function fetches the variables ..1, ..2, etc from the first
-    frame of the environment passed as the second argument to
-    ddfindVar.  These variables are implicitly defined whenever a
-    ... object is created.
+  This function fetches the variables ..1, ..2, etc from the first
+  frame of the environment passed as the second argument to ddfindVar.
+  These variables are implicitly defined whenever a ... object is
+  created.
 
-    To determine values for the variables we first search for an
-    explicit definition of the symbol, them we look for a ... object
-    in the frame and then walk through it to find the appropriate
-    values.
+  To determine values for the variables we first search for an
+  explicit definition of the symbol, them we look for a ... object in
+  the frame and then walk through it to find the appropriate values.
 
-    If no value is obtained we return R_UnboundValue.
+  If no value is obtained we return R_UnboundValue.
 
-    It is an error to specify a .. index longer than the length of
-    the ... object the value is sought in.
+  It is an error to specify a .. index longer than the length of the
+  ... object the value is sought in.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP ddfindVar(SEXP symbol, SEXP rho)
 {
@@ -569,15 +577,15 @@ SEXP ddfindVar(SEXP symbol, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    dynamicFindVar :
+  dynamicFindVar
 
-    This function does a variable lookup, but uses dynamic scoping rules
-    rather than the lexical scoping rules used in findVar.
+  This function does a variable lookup, but uses dynamic scoping rules
+  rather than the lexical scoping rules used in findVar.
 
-    Return R_UnboundValue if the symbol isn't located and the calling
-    function needs to handle the errors.
+  Return R_UnboundValue if the symbol isn't located and the calling
+  function needs to handle the errors.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
 {
@@ -586,13 +594,7 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
     {
         if (cptr->callflag == CTXT_RETURN)
         {
-
-            /*#ifdef USE_HASHTAB*/
             vl = findVarInFrame(cptr->cloenv, symbol);
-            /* Old */
-            /* vl = findVarInFrame(FRAME(cptr->cloenv), symbol); */
-            /*#endif  USE_HASHTAB */
-
             if (vl != R_UnboundValue)
                 return vl;
         }
@@ -603,18 +605,17 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
 
 /*----------------------------------------------------------------------
 
-    findFun :
+  findFun
 
-    Search for a function in an environment This is a specially
-    modified version of findVar which ignores values its finds if they
-    are not functions.
+  Search for a function in an environment This is a specially modified
+  version of findVar which ignores values its finds if they are not
+  functions.
 
-    NEEDED: This needs to be modified so that an object of arbitrary mode
-    is searmodify this so that a search for an
-    arbitrary mode can be made.  Then findVar and findFun could become
-    same function
+  NEEDED: This needs to be modified so that an object of arbitrary
+  mode is searmodify this so that a search for an arbitrary mode can
+  be made.  Then findVar and findFun could become same function
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP findFun(SEXP symbol, SEXP rho)
 {
@@ -647,12 +648,12 @@ SEXP findFun(SEXP symbol, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    defineVar :
+  defineVar
 
-    Assign a value in a specific environment frame.
-    This needs to be rethought when it comes time to add a search path.
+  Assign a value in a specific environment frame.  This needs to be
+  rethought when it comes time to add a search path.
 
-  ----------------------------------------------------------------------*/
+*/
 
 void defineVar(SEXP symbol, SEXP value, SEXP rho)
 {
@@ -680,8 +681,9 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
         }
         SYMVALUE(symbol) = value;
     }
-    else /* Do the hash table thing */
+    else
     {
+        /* Do the hash table thing */
         hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
         R_HashSet(hashcode, symbol, HASHTAB(rho), value);
     }
@@ -689,12 +691,12 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    setVarInFrame :
+  setVarInFrame
 
-    Assign a new value to a symbol in a frame.  Return the symbol if
-    successful and R_NilValue if not.
+  Assign a new value to a symbol in a frame.  Return the symbol if
+  successful and R_NilValue if not.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 {
@@ -713,8 +715,9 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
             frame = CDR(frame);
         }
     }
-    else /* Do the hash table thing */
+    else
     {
+        /* Do the hash table thing */
         hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
         R_HashSet(hashcode, symbol, HASHTAB(rho), value);
     }
@@ -723,14 +726,14 @@ SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 
 /*----------------------------------------------------------------------
 
-    setVar :
+    setVar
 
     Assign a new value to bound symbol.  Note this does the "inherits"
     case.  I.e. it searches frame-by-frame for an symbol and binds the
-    given value to the first symbol encountered.  If no symbol is found
-    then a binding is created in the global environment.
+    given value to the first symbol encountered.  If no symbol is
+    found then a binding is created in the global environment.
 
-  ----------------------------------------------------------------------*/
+*/
 
 void setVar(SEXP symbol, SEXP value, SEXP rho)
 {
@@ -750,12 +753,12 @@ void setVar(SEXP symbol, SEXP value, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    gsetVar :
+  gsetVar
 
-    Assignment in the system environment.  Here we assign directly into
-    the system environment.
+  Assignment in the system environment.  Here we assign directly into
+  the system environment.
 
-  ----------------------------------------------------------------------*/
+*/
 
 void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 {
@@ -765,13 +768,13 @@ void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    mfindVarInFrame :
+  mfindVarInFrame
 
-    Look up a symbol in a single environment frame.  This differs from
-    findVarInFrame in that it returns the list whose CAR is the value
-    of the symbol, rather than the value of the symbol.
+  Look up a symbol in a single environment frame.  This differs from
+  findVarInFrame in that it returns the list whose CAR is the value of
+  the symbol, rather than the value of the symbol.
 
-  ----------------------------------------------------------------------*/
+*/
 
 static SEXP mfindVarInFrame(SEXP rho, SEXP symbol)
 {
@@ -787,14 +790,25 @@ static SEXP mfindVarInFrame(SEXP rho, SEXP symbol)
             frame = CDR(frame);
         }
     }
-    else /* Do the hash table thing */
+    else
     {
+        /* Do the hash table thing */
         hashcode = newhashpjw(CHAR(PRINTNAME(symbol))) % HASHSIZE(HASHTAB(rho));
         /* Will return 'R_UnboundValue' if not found */
         return (R_HashGet(hashcode, symbol, HASHTAB(rho)));
     }
     return R_NilValue;
 }
+
+/*----------------------------------------------------------------------
+
+  do_missing
+
+  This function tests whether the symbol passed as its first argument
+  is ia "missing argument to the current closure.  rho is the
+  environment that missing was called from.
+
+*/
 
 static int isMissing(SEXP symbol, SEXP rho)
 {
@@ -825,8 +839,6 @@ static int isMissing(SEXP symbol, SEXP rho)
     }
     return 0;
 }
-
-/* in do_missing rho is the environment that missing was called from */
 
 SEXP do_missing(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -885,11 +897,11 @@ havebinding:
 
 /*----------------------------------------------------------------------
 
-    do_globalenv
+  do_globalenv
 
-    Returns the current global environment.
+  Returns the current global environment.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP do_globalenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -899,13 +911,13 @@ SEXP do_globalenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-    do_attach :
+  do_attach
 
-    To attach a list we make up an environment and insert components
-    of the list in as the values of this env and install the tags from
-    the list as the names.
+  To attach a list we make up an environment and insert components
+  of the list in as the values of this env and install the tags from
+  the list as the names.
 
-  ----------------------------------------------------------------------*/
+*/
 
 SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -965,6 +977,15 @@ SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
     return s;
 }
 
+/*----------------------------------------------------------------------
+
+  do_detach
+
+  detach the specified environment.  Detachment only takes place by
+  position.
+
+*/
+
 SEXP do_detach(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, x;
@@ -991,23 +1012,27 @@ SEXP do_detach(SEXP call, SEXP op, SEXP args, SEXP env)
     return FRAME(s);
 }
 
+/*----------------------------------------------------------------------
+
+  do_search
+
+  Print out the current search path.
+
+*/
+
 SEXP do_search(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, name, t;
     int i, n;
 
     checkArity(op, args);
-
     n = 2;
     for (t = ENCLOS(R_GlobalEnv); t != R_NilValue; t = ENCLOS(t))
         n++;
     PROTECT(ans = allocVector(STRSXP, n));
-
     /* TODO - what should the name of this be? */
-
     STRING(ans)[0] = mkChar(".GlobalEnv");
     STRING(ans)[n - 1] = mkChar("package:base");
-
     i = 1;
     for (t = ENCLOS(R_GlobalEnv); t != R_NilValue; t = ENCLOS(t))
     {
@@ -1021,6 +1046,15 @@ SEXP do_search(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(1);
     return ans;
 }
+
+/*----------------------------------------------------------------------
+
+  do_builtins
+
+  Return the names of all the built in functions.  These are fetched
+  directly from the symbol table.
+
+*/
 
 static SEXP FetchBuiltins(int intern, int all)
 {
@@ -1077,7 +1111,14 @@ SEXP do_builtins(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* ls(envir, all.names) */
+/*----------------------------------------------------------------------
+
+  do_ls
+
+  This code implements the functionality of the "ls" and "objects"
+  functions.  [ ls(envir, all.names) ]
+
+*/
 
 SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1159,6 +1200,17 @@ SEXP do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+/*----------------------------------------------------------------------
+
+  do_libfixup
+
+  This function performs environment reparaenting for libraries to make
+  sure that elements are parented by the global environment.
+
+  This routine will hopefull die at some point.
+
+*/
+
 SEXP do_libfixup(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP lib, env, p;
@@ -1177,6 +1229,14 @@ SEXP do_libfixup(SEXP call, SEXP op, SEXP args, SEXP rho)
     return lib;
 }
 
+/*----------------------------------------------------------------------
+
+  do_pos2env
+
+  This function returns the environment at a specified position in the
+  search path.  It will does soon.
+
+ */
 static SEXP pos2env(int pos, SEXP call)
 {
     SEXP env;
