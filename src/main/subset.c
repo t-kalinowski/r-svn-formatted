@@ -455,6 +455,10 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
                     SET_VECTOR_ELT(xdims, j++,
                                    ExtractSubset(VECTOR_ELT(dimnames, i), allocVector(STRSXP, bound[i]), CAR(r), call));
                 }
+                else
+                { /* 0-length dims have NULL dimnames */
+                    SET_VECTOR_ELT(xdims, j++, R_NilValue);
+                }
                 r = CDR(r);
             }
         }
