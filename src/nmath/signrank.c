@@ -69,6 +69,7 @@ static void w_free(int n)
         }
     free((void *)w);
     w = 0;
+    allocated_n = 0;
 }
 
 void signrank_free()

@@ -63,6 +63,7 @@ static void w_free(int m, int n)
     }
     free((void *)w);
     w = 0;
+    allocated_m = allocated_n = 0;
 }
 
 static void w_init_maybe(int m, int n)
