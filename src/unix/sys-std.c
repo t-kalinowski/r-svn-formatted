@@ -785,7 +785,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
     {
         if (pager == NULL || strlen(pager) == 0)
             pager = "more";
-        filename = R_tmpnam(NULL, R_TempDir);
+        filename = R_tmpnam(NULL, R_TempDir); /* mallocs result */
         if ((tfp = fopen(filename, "w")) != NULL)
         {
             for (i = 0; i < nfile; i++)
@@ -809,6 +809,7 @@ int Rstd_ShowFiles(int nfile,      /* number of files */
         snprintf(buf, 1024, "%s < %s", pager, filename);
         res = R_system(buf);
         unlink(filename);
+        free(filename);
         return (res != 0);
     }
     return 1;
