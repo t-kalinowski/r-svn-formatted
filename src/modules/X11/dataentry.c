@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* <UTF8-FIXME> works at byte not character level */
+/* <UTF8> used XTextWidth and XDrawText, so need to use fontsets */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -159,7 +159,7 @@ static Rboolean newcol, CellModified;
 static int nboxchars;
 static int xmaxused, ymaxused;
 static int box_coords[6];
-static char copycontents[30] = "";
+static char copycontents[sizeof(buf) + 1];
 static int labdigs = 4;
 static char labform[6];
 
@@ -169,8 +169,14 @@ static Display *iodisplay;
 static Window iowindow, menuwindow, menupanes[4];
 static GC iogc;
 static XSizeHints iohint;
-static char *font_name = "9x15";
 static XFontStruct *font_info;
+static char *font_name = "9x15";
+#ifdef SUPPORT_UTF8
+static XFontSet font_set;
+static XFontStruct **fs_list;
+static int font_set_cnt;
+static char *fontset_name = "-alias-fixed-medium-r-normal--10-";
+#endif
 
 #define mouseDown ButtonPress
 #define keyDown KeyPress
@@ -1512,16 +1518,50 @@ static Rboolean initwin(void) /* TRUE = Error */
     XSetWindowAttributes winattr;
     XWindowAttributes attribs;
 
+    strcpy(copycontents, "");
+
+#ifdef SUPPORT_UTF8
+    if (!XSupportsLocale())
+        warning("locale not supported by Xlib: some X ops will operate in C locale");
+    if (!XSetLocaleModifiers(""))
+        warning("X cannot set locale modifiers");
+#endif
+
     if ((iodisplay = XOpenDisplay(NULL)) == NULL)
+    {
+        warning("unable to open display");
         return TRUE;
+    }
     XSetErrorHandler(R_X11Err);
     XSetIOErrorHandler(R_X11IOErr);
 
     /* Get Font Loaded if we can */
 
-    font_info = XLoadQueryFont(iodisplay, font_name);
-    if (font_info == NULL)
-        return TRUE; /* ERROR */
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+    {
+        int missing_charset_count;
+        char **missing_charset_list;
+        char *def_string;
+        font_set = XCreateFontSet(iodisplay, fontset_name, &missing_charset_list, &missing_charset_count, &def_string);
+        if (missing_charset_count)
+            XFreeStringList(missing_charset_list);
+        if (font_set == NULL)
+        {
+            warning("unable to create fontset %s", fontset_name);
+            return TRUE; /* ERROR */
+        }
+    }
+    else
+#endif
+    {
+        font_info = XLoadQueryFont(iodisplay, font_name);
+        if (font_info == NULL)
+        {
+            warning("unable to losd font %s", font_name);
+            return TRUE; /* ERROR */
+        }
+    }
 
     /* find out how wide the input boxes should be and set up the
        window size defaults */
@@ -1534,8 +1574,21 @@ static Rboolean initwin(void) /* TRUE = Error */
     if (nboxchars > 0)
         twidth = (twidth * nboxchars) / 10;
     box_w = twidth + 4;
-    box_h = font_info->max_bounds.ascent + font_info->max_bounds.descent + 4;
-    text_offset = 2 + font_info->max_bounds.descent;
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+    {
+        XFontSetExtents *extent = XExtentsOfFontSet(font_set);
+        char **ml;
+        box_h = (extent->max_logical_extent.height) + (extent->max_logical_extent.height / 5) + 4;
+        font_set_cnt = XFontsOfFontSet(font_set, &fs_list, &ml);
+        text_offset = 2 + fs_list[0]->max_bounds.descent;
+    }
+    else
+#endif
+    {
+        box_h = font_info->max_bounds.ascent + font_info->max_bounds.descent + 4;
+        text_offset = 2 + font_info->max_bounds.descent;
+    }
     windowHeight = 26 * box_h + hwidth + 2;
     /* this used to presume 4 chars sufficed for row numbering */
     labdigs = max(3, 1 + floor(log10((double)ymaxused)));
@@ -1576,7 +1629,10 @@ static Rboolean initwin(void) /* TRUE = Error */
 
     if ((iowindow = XCreateSimpleWindow(iodisplay, root, iohint.x, iohint.y, iohint.width, iohint.height, bwidth,
                                         ioblack, iowhite)) == 0)
+    {
+        warning("unable to open window for data editor");
         return TRUE;
+    }
 
     XSetStandardProperties(iodisplay, iowindow, ioname, ioname, None, (char **)NULL, 0, &iohint);
 
@@ -1590,7 +1646,15 @@ static Rboolean initwin(void) /* TRUE = Error */
     XSetWMProtocols(iodisplay, iowindow, &protocol, 1);
 
     iogc = XCreateGC(iodisplay, iowindow, 0, 0);
-    XSetFont(iodisplay, iogc, font_info->fid);
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+    {
+        for (i = 0; i < font_set_cnt; i++)
+            XSetFont(iodisplay, iogc, fs_list[i]->fid);
+    }
+    else
+#endif
+        XSetFont(iodisplay, iogc, font_info->fid);
     XSetBackground(iodisplay, iogc, iowhite);
     XSetForeground(iodisplay, iogc, BlackPixel(iodisplay, DefaultScreen(iodisplay)));
     XSetLineAttributes(iodisplay, iogc, 1, LineSolid, CapRound, JoinRound);
@@ -1685,7 +1749,12 @@ static void drawrectangle(int xpos, int ypos, int width, int height, int lwd, in
 
 static void drawtext(int xpos, int ypos, char *text, int len)
 {
-    XDrawImageString(iodisplay, iowindow, iogc, xpos, ypos, text, len);
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+        Xutf8DrawImageString(iodisplay, iowindow, font_set, iogc, xpos, ypos, text, len);
+    else
+#endif
+        XDrawImageString(iodisplay, iowindow, iogc, xpos, ypos, text, len);
     Rsync();
 }
 
@@ -1696,10 +1765,11 @@ static void Rsync()
 
 static int textwidth(char *text, int nchar)
 {
-    int t1;
-
-    t1 = XTextWidth(font_info, text, nchar);
-    return t1;
+#ifdef SUPPORT_UTF8
+    if (utf8locale)
+        return Xutf8TextEscapement(font_set, text, nchar);
+#endif
+    return XTextWidth(font_info, text, nchar);
 }
 
 /* Menus */
