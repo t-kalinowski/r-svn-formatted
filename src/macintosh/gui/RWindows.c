@@ -488,6 +488,9 @@ void DoZoom(SInt16 partCode, WindowRef window)
     SInt32 idealHeight;
     Point idealSize;
 
+    if (we == nil)
+        return;
+
     //	determine the ideal size for this window
     //	the ideal height is the number of pixels needed to see the whole text
     WEGetDestRect(&destRect, we);
@@ -577,6 +580,9 @@ static void WindowResized(const Rect *oldTextRect, WindowRef window)
     LongPt topCharPosition;
     Boolean rewrapText = true;
     SInt16 NumofChar;
+
+    if (we == nil)
+        return;
 
     //	create temporary regions for calculations
     tempRgn = NewRgn();
@@ -779,6 +785,9 @@ Boolean DoContent(Point hitPt, const EventRecord *event, WindowRef window)
     GrafPtr savePort;
     Boolean isMyClick = false;
 
+    if (we == nil)
+        return (false);
+
     //	set up the port
     GetPort(&savePort);
     SetPortWindowPort(window);
@@ -925,7 +934,7 @@ void DoUpdate(WindowRef window)
     Rect portRect;
 
     // if we have no windows, there's nothing to update!
-    if (window == nil)
+    if ((window == nil) || (GetWindowWE(window) == nil))
     {
         return;
     }
@@ -1051,6 +1060,9 @@ void DoIdle(UInt32 *sleepTime, WindowRef window)
     FSSpec spec;
 
     //	blink the caret if necessary
+    if (we == NULL)
+        return;
+
     WEIdle(sleepTime, we);
 
     //	update the window modification state according to the text modification count
