@@ -17,7 +17,7 @@
  *  Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
  *  MA 02111-1307, USA
  *
- *  $Id: rproxy_dev.c,v 1.2 2001/04/05 09:42:35 ripley Exp $
+ *  $Id: rproxy_dev.c,v 1.3 2001/12/06 01:47:57 murrell Exp $
  */
 
 // virtual device size
@@ -37,7 +37,7 @@
 
 extern SC_GraphicsDevice *__graphics_device;
 
-static void R_Proxy_Graphics_Activate(DevDesc *pDD)
+static void R_Proxy_Graphics_Activate(NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -51,25 +51,50 @@ static void R_Proxy_Graphics_Activate(DevDesc *pDD)
 #endif
 #define MessageBox(a, b, c, d)
 
+static void R_Proxy_Graphics_Activate(NewDevDesc *dd);
+static void R_Proxy_Graphics_Circle(double x, double y, double r, int col, int fill, double gamma, int lty, double lwd,
+                                    NewDevDesc *dd);
+static void R_Proxy_Graphics_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
+static void R_Proxy_Graphics_Close(NewDevDesc *dd);
+static void R_Proxy_Graphics_Deactivate(NewDevDesc *dd);
+static void R_Proxy_Graphics_Hold(NewDevDesc *dd);
+static Rboolean R_Proxy_Graphics_Locator(double *x, double *y, NewDevDesc *dd);
+static void R_Proxy_Graphics_Line(double x1, double y1, double x2, double y2, int col, double gamma, int lty,
+                                  double lwd, NewDevDesc *dd);
+static void R_Proxy_Graphics_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent,
+                                        double *width, NewDevDesc *dd);
+static void R_Proxy_Graphics_Mode(int mode, NewDevDesc *dd);
+static void R_Proxy_Graphics_NewPage(int fill, double gamma, NewDevDesc *dd);
+static void R_Proxy_Graphics_Polygon(int n, double *x, double *y, int col, int fill, double gamma, int lty, double lwd,
+                                     NewDevDesc *dd);
+static void R_Proxy_Graphics_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd,
+                                      NewDevDesc *dd);
+static void R_Proxy_Graphics_Rect(double x0, double y0, double x1, double y1, int col, int fill, double gamma, int lty,
+                                  double lwd, NewDevDesc *dd);
+static void R_Proxy_Graphics_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
+static void R_Proxy_Graphics_Resize(NewDevDesc *dd);
+static double R_Proxy_Graphics_StrWidth(char *str, int font, double cex, double ps, NewDevDesc *dd);
+static void R_Proxy_Graphics_Text(double x, double y, char *str, double rot, double hadj, int col, double gamma,
+                                  int font, double cex, double ps, NewDevDesc *dd);
+static Rboolean R_Proxy_Graphics_Open(NewDevDesc *pDD, void *pAXD, char *pDisplay, double pWidth, double pHeight,
+                                      Rboolean pRecording, int pResize);
+
 // 00-06-22 | baier | added line type and width
-static void R_Proxy_Graphics_Circle(double pX, double pY, int pCoords, double pRad, int pColor, int pBorder,
-                                    DevDesc *pDD)
+static void R_Proxy_Graphics_Circle(double pX, double pY, double pRad, int pCol, int pFill, double pGamma, int pLty,
+                                    double pLwd, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
         // convert coordinates here
         double lTmp = 0.0;
 
-        GConvert(&pX, &pY, pCoords, DEVICE, pDD);
-        GConvert(&pRad, &lTmp, pCoords, DEVICE, pDD);
-
-        __graphics_device->vtbl->circle(__graphics_device, pX, pY, pRad, pColor, pBorder, pDD->gp.lty, pDD->gp.lwd);
+        __graphics_device->vtbl->circle(__graphics_device, pX, pY, pRad, pFill, pCol, pLty, pLwd);
         return;
     }
 
     MessageBox(GetDesktopWindow(), "Circle()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_Clip(double pX0, double pX1, double pY0, double pY1, DevDesc *pDD)
+static void R_Proxy_Graphics_Clip(double pX0, double pX1, double pY0, double pY1, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -79,7 +104,7 @@ static void R_Proxy_Graphics_Clip(double pX0, double pX1, double pY0, double pY1
 
     MessageBox(GetDesktopWindow(), "Clip()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_Close(DevDesc *pDD)
+static void R_Proxy_Graphics_Close(NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -89,7 +114,7 @@ static void R_Proxy_Graphics_Close(DevDesc *pDD)
 
     MessageBox(GetDesktopWindow(), "Close()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_Deactivate(DevDesc *pDD)
+static void R_Proxy_Graphics_Deactivate(NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -99,7 +124,7 @@ static void R_Proxy_Graphics_Deactivate(DevDesc *pDD)
 
     MessageBox(GetDesktopWindow(), "Deactivate()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_Hold(DevDesc *pDD)
+static void R_Proxy_Graphics_Hold(NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -110,22 +135,20 @@ static void R_Proxy_Graphics_Hold(DevDesc *pDD)
     MessageBox(GetDesktopWindow(), "Hold()", "R_Proxy_Graphics", MB_OK);
 }
 // 00-06-22 | baier | added color, line type and width
-static void R_Proxy_Graphics_Line(double pX0, double pY0, double pX1, double pY1, int pCoords, DevDesc *pDD)
+static void R_Proxy_Graphics_Line(double pX0, double pY0, double pX1, double pY1, int pCol, double pGamma, int pLty,
+                                  double pLwd, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
-        // convert coordinates here
-        GConvert(&pX0, &pY0, pCoords, DEVICE, pDD);
-        GConvert(&pX1, &pY1, pCoords, DEVICE, pDD);
 
-        __graphics_device->vtbl->line(__graphics_device, pX0, pY0, pX1, pY1, pDD->gp.col, pDD->gp.lty, pDD->gp.lwd);
+        __graphics_device->vtbl->line(__graphics_device, pX0, pY0, pX1, pY1, pCol, pLty, pLwd);
         return;
     }
 
     MessageBox(GetDesktopWindow(), "Line()", "R_Proxy_Graphics", MB_OK);
 }
 // 01-01-25 | changed return type
-static Rboolean R_Proxy_Graphics_Locator(double *pX, double *pY, DevDesc *pDD)
+static Rboolean R_Proxy_Graphics_Locator(double *pX, double *pY, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -135,7 +158,7 @@ static Rboolean R_Proxy_Graphics_Locator(double *pX, double *pY, DevDesc *pDD)
     MessageBox(GetDesktopWindow(), "Locator()", "R_Proxy_Graphics", MB_OK);
     return 0;
 }
-static void R_Proxy_Graphics_Mode(int pMode)
+static void R_Proxy_Graphics_Mode(int pMode, NewDevDesc *dd)
 {
     if (__graphics_device)
     {
@@ -145,7 +168,7 @@ static void R_Proxy_Graphics_Mode(int pMode)
 
     MessageBox(GetDesktopWindow(), "Mode()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_NewPage(DevDesc *pDD)
+static void R_Proxy_Graphics_NewPage(int pFill, double pGamma, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -156,7 +179,7 @@ static void R_Proxy_Graphics_NewPage(DevDesc *pDD)
     MessageBox(GetDesktopWindow(), "NewPage()", "R_Proxy_Graphics", MB_OK);
 }
 // 01-01-25 | baier | added new parameters "recording", "resize"
-static Rboolean R_Proxy_Graphics_Open(DevDesc *pDD, void *pAXD, char *pDisplay, double pWidth, double pHeight,
+static Rboolean R_Proxy_Graphics_Open(NewDevDesc *pDD, void *pAXD, char *pDisplay, double pWidth, double pHeight,
                                       Rboolean pRecording, int pResize)
 {
     if (__graphics_device)
@@ -167,7 +190,9 @@ static Rboolean R_Proxy_Graphics_Open(DevDesc *pDD, void *pAXD, char *pDisplay, 
     MessageBox(GetDesktopWindow(), "Open()", "R_Proxy_Graphics", MB_OK);
     return 1;
 }
-static void R_Proxy_Graphics_Polygon(int pCount, double *pX, double *pY, int pCoords, int pBG, int pFG, DevDesc *pDD)
+
+static void R_Proxy_Graphics_Polygon(int pCount, double *pX, double *pY, int pCol, int pFill, double pGamma, int pLty,
+                                     double pLwd, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -182,13 +207,11 @@ static void R_Proxy_Graphics_Polygon(int pCount, double *pX, double *pY, int pCo
         {
             lX[i] = pX[i];
             lY[i] = pY[i];
-
-            GConvert(&(lX[i]), &(lY[i]), pCoords, DEVICE, pDD);
         }
 
-        sprintf(x, "device::Polygon: bg is %08x, fg is %08x\n", pBG, pFG);
+        sprintf(x, "device::Polygon: bg is %08x, fg is %08x\n", pFill, pCol);
         OutputDebugString(x);
-        __graphics_device->vtbl->polygon(__graphics_device, pCount, lX, lY, pBG, pFG);
+        __graphics_device->vtbl->polygon(__graphics_device, pCount, lX, lY, pFill, pCol);
 
         free(lX);
         free(lY);
@@ -199,7 +222,8 @@ static void R_Proxy_Graphics_Polygon(int pCount, double *pX, double *pY, int pCo
     MessageBox(GetDesktopWindow(), "Polygon()", "R_Proxy_Graphics", MB_OK);
 }
 // 01-01-23 | baier | added "col" parameter
-static void R_Proxy_Graphics_Polyline(int pCount, double *pX, double *pY, int pCoords, DevDesc *pDD)
+static void R_Proxy_Graphics_Polyline(int pCount, double *pX, double *pY, int pCol, double pGamma, int pLty,
+                                      double pLwd, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -215,13 +239,11 @@ static void R_Proxy_Graphics_Polyline(int pCount, double *pX, double *pY, int pC
             lX[i] = pX[i];
             lY[i] = pY[i];
 
-            GConvert(&(lX[i]), &(lY[i]), pCoords, DEVICE, pDD);
-
             sprintf(x, "Polyline: coord %d is %f/%f (was %f/%f)\n", i, lX[i], lY[i], pX[i], pY[i]);
             //	  OutputDebugString (x);
         }
 
-        __graphics_device->vtbl->polyline(__graphics_device, pCount, lX, lY, pDD->gp.col);
+        __graphics_device->vtbl->polyline(__graphics_device, pCount, lX, lY, pCol);
 
         free(lX);
         free(lY);
@@ -232,22 +254,26 @@ static void R_Proxy_Graphics_Polyline(int pCount, double *pX, double *pY, int pC
     MessageBox(GetDesktopWindow(), "Polyline()", "R_Proxy_Graphics", MB_OK);
 }
 // 00-06-22 | baier | added line type and width
-static void R_Proxy_Graphics_Rect(double pX0, double pY0, double pX1, double pY1, int pCoords, int pBG, int pFG,
-                                  DevDesc *pDD)
+static void R_Proxy_Graphics_Rect(double pX0, double pY0, double pX1, double pY1, int pCol, int pFill, double pGamma,
+                                  int pLty, double pLwd, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
-        // convert to device coordinates
-        GConvert(&pX0, &pY0, pCoords, DEVICE, pDD);
-        GConvert(&pX1, &pY1, pCoords, DEVICE, pDD);
 
-        __graphics_device->vtbl->rect(__graphics_device, pX0, pY0, pX1, pY1, pBG, pFG, pDD->dp.lty, pDD->dp.lwd);
+        __graphics_device->vtbl->rect(__graphics_device, pX0, pY0, pX1, pY1, pFill, pCol, pLty, pLwd);
         return;
     }
 
     MessageBox(GetDesktopWindow(), "Rect()", "R_Proxy_Graphics", MB_OK);
 }
-static void R_Proxy_Graphics_Resize(DevDesc *pDD)
+static void R_Proxy_Graphics_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *pDD)
+{
+    *left = pDD->left;
+    *right = pDD->right;
+    *bottom = pDD->bottom;
+    *top = pDD->top;
+}
+static void R_Proxy_Graphics_Resize(NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
@@ -258,12 +284,12 @@ static void R_Proxy_Graphics_Resize(DevDesc *pDD)
     MessageBox(GetDesktopWindow(), "Resize()", "R_Proxy_Graphics", MB_OK);
 }
 // 00-06-22 | baier | added font and size parameters
-static double R_Proxy_Graphics_StrWidth(char *pString, DevDesc *pDD)
+static double R_Proxy_Graphics_StrWidth(char *pString, int pFont, double pCex, double pPs, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
-        int lSize = pDD->gp.cex * pDD->gp.ps + 0.5;
-        return __graphics_device->vtbl->strwidth(__graphics_device, pString, pDD->gp.font, lSize);
+        int lSize = pCex * pPs + 0.5;
+        return __graphics_device->vtbl->strwidth(__graphics_device, pString, pFont, lSize);
     }
 
     MessageBox(GetDesktopWindow(), "StrWidth()", "R_Proxy_Graphics", MB_OK);
@@ -271,18 +297,14 @@ static double R_Proxy_Graphics_StrWidth(char *pString, DevDesc *pDD)
 }
 
 // 00-06-22 | baier | added color, font and size
-static void R_Proxy_Graphics_Text(double pX, double pY, int pCoords, char *pString, double pRot, double pHadj,
-                                  DevDesc *pDD)
+static void R_Proxy_Graphics_Text(double pX, double pY, char *pString, double pRot, double pHadj, int pCol,
+                                  double pGamma, int pFont, double pCex, double pPs, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
-        int lSize = pDD->gp.cex * pDD->gp.ps + 0.5;
+        int lSize = pCex * pPs + 0.5;
 
-        // convert to device coordinates
-        GConvert(&pX, &pY, pCoords, DEVICE, pDD);
-
-        __graphics_device->vtbl->text(__graphics_device, pX, pY, pString, pRot, pHadj, pDD->gp.col, pDD->gp.font,
-                                      lSize);
+        __graphics_device->vtbl->text(__graphics_device, pX, pY, pString, pRot, pHadj, pCol, pFont, lSize);
         return;
     }
 
@@ -290,12 +312,15 @@ static void R_Proxy_Graphics_Text(double pX, double pY, int pCoords, char *pStri
 }
 
 // 00-06-22 | baier | added font and size parameters
-static void R_Proxy_Graphics_MetricInfo(int pC, double *pAscent, double *pDescent, double *pWidth, DevDesc *pDD)
+static void R_Proxy_Graphics_MetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent,
+                                        double *width, NewDevDesc *dd);
+static void R_Proxy_Graphics_MetricInfo(int pC, int pFont, double pCex, double pPs, double *pAscent, double *pDescent,
+                                        double *pWidth, NewDevDesc *pDD)
 {
     if (__graphics_device)
     {
-        int lSize = pDD->gp.cex * pDD->gp.ps + 0.5;
-        __graphics_device->vtbl->metricinfo(__graphics_device, pC, pAscent, pDescent, pWidth, pDD->gp.font, lSize);
+        int lSize = pCex * pPs + 0.5;
+        __graphics_device->vtbl->metricinfo(__graphics_device, pC, pAscent, pDescent, pWidth, pFont, lSize);
         return;
     }
 
@@ -303,11 +328,15 @@ static void R_Proxy_Graphics_MetricInfo(int pC, double *pAscent, double *pDescen
 }
 
 // 01-01-25 | baier | new paramters
-int R_Proxy_Graphics_Driver(DevDesc *pDD, char *pDisplay, double pWidth, double pHeight, double pPointSize,
+int R_Proxy_Graphics_Driver(NewDevDesc *pDD, char *pDisplay, double pWidth, double pHeight, double pPointSize,
                             Rboolean pRecording, int pResize, struct _SC_GraphicsDevice *pDevice)
 {
-    pDD->dp.font = 1;
-    pDD->dp.ps = pPointSize;
+    pDD->startfont = 1;
+    pDD->startps = pPointSize;
+    pDD->startcol = 0;
+    pDD->startfill = NA_INTEGER;
+    pDD->startlty = LTY_SOLID;
+    pDD->startgamma = 1;
 
     /* init the device-specific functionality here */
     pDD->deviceSpecific = (void *)NULL;
@@ -319,57 +348,59 @@ int R_Proxy_Graphics_Driver(DevDesc *pDD, char *pDisplay, double pWidth, double 
     }
     /* Set up Data Structures  */
 
-    pDD->dp.open = R_Proxy_Graphics_Open;
-    pDD->dp.close = R_Proxy_Graphics_Close;
-    pDD->dp.activate = R_Proxy_Graphics_Activate;
-    pDD->dp.deactivate = R_Proxy_Graphics_Deactivate;
-    pDD->dp.resize = R_Proxy_Graphics_Resize;
-    pDD->dp.newPage = R_Proxy_Graphics_NewPage;
-    pDD->dp.clip = R_Proxy_Graphics_Clip;
-    pDD->dp.strWidth = R_Proxy_Graphics_StrWidth;
-    pDD->dp.text = R_Proxy_Graphics_Text;
-    pDD->dp.rect = R_Proxy_Graphics_Rect;
-    pDD->dp.circle = R_Proxy_Graphics_Circle;
-    pDD->dp.line = R_Proxy_Graphics_Line;
-    pDD->dp.polyline = R_Proxy_Graphics_Polyline;
-    pDD->dp.polygon = R_Proxy_Graphics_Polygon;
-    pDD->dp.locator = R_Proxy_Graphics_Locator;
-    pDD->dp.mode = R_Proxy_Graphics_Mode;
-    pDD->dp.hold = R_Proxy_Graphics_Hold;
-    pDD->dp.metricInfo = R_Proxy_Graphics_MetricInfo;
+    pDD->newDevStruct = 1;
+
+    pDD->open = R_Proxy_Graphics_Open;
+    pDD->close = R_Proxy_Graphics_Close;
+    pDD->activate = R_Proxy_Graphics_Activate;
+    pDD->deactivate = R_Proxy_Graphics_Deactivate;
+    pDD->size = R_Proxy_Graphics_Size;
+    pDD->newPage = R_Proxy_Graphics_NewPage;
+    pDD->clip = R_Proxy_Graphics_Clip;
+    pDD->strWidth = R_Proxy_Graphics_StrWidth;
+    pDD->text = R_Proxy_Graphics_Text;
+    pDD->rect = R_Proxy_Graphics_Rect;
+    pDD->circle = R_Proxy_Graphics_Circle;
+    pDD->line = R_Proxy_Graphics_Line;
+    pDD->polyline = R_Proxy_Graphics_Polyline;
+    pDD->polygon = R_Proxy_Graphics_Polygon;
+    pDD->locator = R_Proxy_Graphics_Locator;
+    pDD->mode = R_Proxy_Graphics_Mode;
+    pDD->hold = R_Proxy_Graphics_Hold;
+    pDD->metricInfo = R_Proxy_Graphics_MetricInfo;
 
     /* set graphics parameters that must be set by device driver */
     /* Window Dimensions in Pixels */
-    pDD->dp.left = 0;       /* left */
-    pDD->dp.right = DEV_X;  /* right */
-    pDD->dp.top = 0;        /* top */
-    pDD->dp.bottom = DEV_Y; /* bottom */
+    pDD->left = 0;       /* left */
+    pDD->right = DEV_X;  /* right */
+    pDD->top = 0;        /* top */
+    pDD->bottom = DEV_Y; /* bottom */
 
     /* Nominal Character Sizes in Pixels */
-    pDD->dp.cra[0] = 10;
-    pDD->dp.cra[1] = 10;
+    pDD->cra[0] = 10;
+    pDD->cra[1] = 10;
     /* Character Addressing Offsets */
     /* These are used to plot a single plotting character */
     /* so that it is exactly over the plotting point */
 
-    pDD->dp.xCharOffset = 0.50;
-    pDD->dp.yCharOffset = 0.40;
-    pDD->dp.yLineBias = 0.1;
+    pDD->xCharOffset = 0.50;
+    pDD->yCharOffset = 0.40;
+    pDD->yLineBias = 0.1;
 
     /* Inches per raster unit */
 
-    pDD->dp.ipr[0] = 1.0 / 72.0;
-    pDD->dp.ipr[1] = 1.0 / 72.0;
+    pDD->ipr[0] = 1.0 / 72.0;
+    pDD->ipr[1] = 1.0 / 72.0;
 
     /* Device capabilities */
     /* Clipping is problematic for X11 */
     /* Graphics is clipped, text is not */
 
-    pDD->dp.canResizePlot = 1;
-    pDD->dp.canChangeFont = 0;
-    pDD->dp.canRotateText = 1;
-    pDD->dp.canResizeText = 1;
-    pDD->dp.canClip = 1;
+    pDD->canResizePlot = 1;
+    pDD->canChangeFont = 0;
+    pDD->canRotateText = 1;
+    pDD->canResizeText = 1;
+    pDD->canClip = 1;
 
     /* initialise x11 device description (most of the work */
     /* has been done in X11_Open) */
