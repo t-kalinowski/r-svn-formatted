@@ -18,18 +18,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*
-
-   This file is an add-on  to GraphApp, a cross-platform C graphics library.
-
-   You can redistribute it and/or modify it
-   under the terms of the GNU Library General Public License.
-   GraphApp is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY.
-
-   See the file COPYLIB.TXT for details.
-*/
-
 #include <windows.h>
 #include <string.h>
 #include <ctype.h>
@@ -268,7 +256,7 @@ struct structConsoleData
 
     font f; /* font */
     int fw, fh;
-    int top, right;              /*borders */
+    int top, right;              /* borders */
     rgb bg, fg, ufg;             /* colours */
     int fv, fc;                  /* first line and first char visible */
     int r, c;                    /* cursor position */
@@ -1301,11 +1289,17 @@ if (FV != pos)
     setfirstvisible(c, pos);
 FVOIDEND
 
-void Rconsolecmd(char *);
-static int setWidthOnResize = 1;
+void Rconsolesetwidth(int);
+int setWidthOnResize = 0;
+
+int consolecols(console c)
+{
+    ConsoleData p = getdata(c);
+
+    return p->cols;
+}
 
 static void consoleresize(console c, rect r) FBEGIN int rr, pcols = COLS;
-char cmd[30];
 
 if (((WIDTH == r.width) && (HEIGHT == r.height)) || (r.width == 0) || (r.height == 0)) /* minimize */
     FVOIDRETURN;
@@ -1347,10 +1341,7 @@ clear(c);
 p->needredraw = 1;
 setfirstvisible(c, rr);
 if (setWidthOnResize && p->kind == CONSOLE && COLS != pcols)
-{
-    sprintf(cmd, "options(width = %d)", COLS);
-    Rconsolecmd(cmd);
-}
+    Rconsolesetwidth(COLS);
 FVOIDEND
 
 void consolesetbrk(console c, actionfn fn, char ch, char mod) FBEGIN p->chbrk = ch;
