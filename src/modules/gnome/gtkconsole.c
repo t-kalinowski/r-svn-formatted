@@ -49,6 +49,7 @@ enum
 enum
 {
     CONSOLE_LINE_READY,
+    CONSOLE_LINE_READY_WITH_VALUE,
     CONSOLE_CHAR_READY,
     CONSOLE_INPUT_ENABLED,
     CONSOLE_INPUT_DISABLED,
@@ -115,11 +116,16 @@ static void gtk_console_class_init(GtkConsoleClass *klass)
 
     /* New signals */
     console_signals[CONSOLE_LINE_READY] = gtk_signal_new("console_line_ready", GTK_RUN_LAST, object_class->type,
-                                                         GTK_SIGNAL_OFFSET(GtkConsoleClass, console_char_ready),
+                                                         GTK_SIGNAL_OFFSET(GtkConsoleClass, console_line_ready),
                                                          gtk_marshal_NONE__NONE, GTK_TYPE_NONE, 0);
 
+    console_signals[CONSOLE_LINE_READY_WITH_VALUE] =
+        gtk_signal_new("console_line_ready_with_value", GTK_RUN_LAST, object_class->type,
+                       GTK_SIGNAL_OFFSET(GtkConsoleClass, console_line_ready_with_value), gtk_marshal_NONE__STRING,
+                       GTK_TYPE_NONE, 1, GTK_TYPE_STRING);
+
     console_signals[CONSOLE_CHAR_READY] = gtk_signal_new("console_char_ready", GTK_RUN_LAST, object_class->type,
-                                                         GTK_SIGNAL_OFFSET(GtkConsoleClass, console_line_ready),
+                                                         GTK_SIGNAL_OFFSET(GtkConsoleClass, console_char_ready),
                                                          gtk_marshal_NONE__NONE, GTK_TYPE_NONE, 0);
 
     console_signals[CONSOLE_INPUT_ENABLED] = gtk_signal_new("console_input_enabled", GTK_RUN_LAST, object_class->type,
@@ -137,6 +143,7 @@ static void gtk_console_class_init(GtkConsoleClass *klass)
 
     klass->console_char_ready = NULL;
     klass->console_line_ready = NULL;
+    klass->console_line_ready_with_value = NULL;
     klass->console_input_enabled = NULL;
     klass->console_input_disabled = NULL;
 
@@ -314,6 +321,9 @@ static void _write_buffer(GtkConsole *object, gchar *str, guint str_len)
        then it is split into multiple writes */
 
     int str_written = 0;
+
+    if (str_len < 0 && str)
+        str_len = strlen(str);
 
     /* Run out of buffer space? Then flush buffer */
     if ((object->buffer_index > 0) && (object->buffer_index + str_len > CONSOLE_MAX_BUF - 1))
@@ -813,6 +823,10 @@ static void gtk_console_changed_post(GtkConsole *console)
 
     if (console->line_available == TRUE)
     {
+        char *line;
+        line = gtk_editable_get_chars(GTK_EDITABLE(console), console->input_start_index, -1);
+        gtk_signal_emit(GTK_OBJECT(console), console_signals[CONSOLE_LINE_READY_WITH_VALUE], line);
+        g_free(line);
         gtk_signal_emit(GTK_OBJECT(console), console_signals[CONSOLE_LINE_READY]);
         console->line_available = FALSE;
     }
