@@ -908,7 +908,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
             }
             if (!n)
                 error("log - axis(), 'at' creation, _LARGE_ range: "
-                      "illegal {xy}axp or par; nint=%d\n"
+                      "invalid {xy}axp or par; nint=%d\n"
                       "	 axp[0:1]=(%g,%g), usr[0:1]=(%g,%g); i=%d, ni=%d",
                       nint, axp[0], axp[1], umin, umax, i, ne);
             at = allocVector(REALSXP, n);
@@ -937,7 +937,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
             }
             if (!n)
                 error("log - axis(), 'at' creation, _MEDIUM_ range: "
-                      "illegal {xy}axp or par;\n"
+                      "invalid {xy}axp or par;\n"
                       "	 axp[0]= %g, usr[0:1]=(%g,%g)",
                       axp[0], umin, umax);
 
@@ -979,7 +979,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
             }
             if (!n)
                 error("log - axis(), 'at' creation, _SMALL_ range: "
-                      "illegal {xy}axp or par;\n"
+                      "invalid {xy}axp or par;\n"
                       "	 axp[0]= %g, usr[0:1]=(%g,%g)",
                       axp[0], umin, umax);
             at = allocVector(REALSXP, n);
@@ -1004,7 +1004,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
             }
             break;
         default:
-            error("log - axis(), 'at' creation: ILLEGAL {xy}axp[3] = %g", axp[2]);
+            error("log - axis(), 'at' creation: INVALID {xy}axp[3] = %g", axp[2]);
         }
     }
     return at;

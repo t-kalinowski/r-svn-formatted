@@ -392,7 +392,7 @@ static SEXP modLa_zgesv(SEXP A, SEXP Bin)
     Memcpy(avals, COMPLEX(A), (size_t)(n * n));
     F77_CALL(zgesv)(&n, &p, avals, &n, ipiv, COMPLEX(B), &n, &info);
     if (info < 0)
-        error(_("argument %d of Lapack routine %s had illegal value"), -info, "zgesv");
+        error(_("argument %d of Lapack routine %s had invalid value"), -info, "zgesv");
     if (info > 0)
         error(("Lapack routine zgesv: system is exactly singular"));
     UNPROTECT(1);
@@ -730,7 +730,7 @@ static SEXP modLa_chol(SEXP A)
         {
             if (i > 0)
                 error(_("the leading minor of order %d is not positive definite"), i);
-            error(_("argument %d of Lapack routine %s had illegal value"), -i, "dpotrf");
+            error(_("argument %d of Lapack routine %s had invalid value"), -i, "dpotrf");
         }
         unprotect(1);
         return ans;
@@ -769,7 +769,7 @@ static SEXP modLa_chol2inv(SEXP A, SEXP size)
         {
             if (i > 0)
                 error(_("element (%d, %d) is zero, so the inverse cannot be computed"), i, i);
-            error(_("argument %d of Lapack routine %s had illegal value"), -i, "dpotri");
+            error(_("argument %d of Lapack routine %s had invalid value"), -i, "dpotri");
         }
         for (j = 0; j < sz; j++)
         {
@@ -816,7 +816,7 @@ static SEXP modLa_dgesv(SEXP A, SEXP Bin, SEXP tolin)
     Memcpy(avals, REAL(A), (size_t)(n * n));
     F77_CALL(dgesv)(&n, &p, avals, &n, ipiv, REAL(B), &n, &info);
     if (info < 0)
-        error(_("argument %d of Lapack routine %s had illegal value"), -info, "dgesv");
+        error(_("argument %d of Lapack routine %s had invalid value"), -info, "dgesv");
     if (info > 0)
         error(_("Lapack routine dgesv: system is exactly singular"));
     anorm = F77_CALL(dlange)("1", &n, &n, REAL(A), &n, (double *)NULL);
