@@ -176,7 +176,7 @@ SEXP dotTcl(SEXP args)
 SEXP dotTclObjv(SEXP args)
 {
     SEXP t, avec = CADR(args), nm = getAttrib(avec, R_NamesSymbol);
-    int objc, i;
+    int objc, i, result;
     Tcl_Obj **objv;
 
     for (objc = 0, i = 0; i < length(avec); i++)
@@ -204,7 +204,13 @@ SEXP dotTclObjv(SEXP args)
             objv[objc++] = (Tcl_Obj *)R_ExternalPtrAddr(t);
     }
 
-    if (Tcl_EvalObjv(RTcl_interp, objc, objv, 0) == TCL_ERROR)
+    for (i = objc; i--;)
+        Tcl_IncrRefCount(objv[i]);
+    result = Tcl_EvalObjv(RTcl_interp, objc, objv, 0);
+    for (i = objc; i--;)
+        Tcl_DecrRefCount(objv[i]);
+
+    if (result == TCL_ERROR)
     {
         char p[512];
         if (strlen(Tcl_GetStringResult(RTcl_interp)) > 500)
