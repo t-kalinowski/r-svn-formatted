@@ -31,7 +31,7 @@ double qlogis(double x, double location, double scale)
         return ML_NAN;
     }
     if (x <= 0)
-        return location;
+        return ML_NEGINF;
     if (x == 1)
         return ML_POSINF;
     return location + scale * log(x / (1.0 - x));
