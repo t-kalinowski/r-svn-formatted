@@ -1493,7 +1493,6 @@ OSErr DoClose(ClosingOption closing, SavingOption saving, WindowPtr window)
     {
 
         GetWTitle(Help_Windows[win_num], Cur_Title);
-        // SelectWindow(Help_Windows[win_num]);
         RemWinMenuItem(window);
         adjustHelpPtr(win_num);
         DestroyWindow(window);
@@ -1803,7 +1802,6 @@ void DoAppleChoice(SInt16 menuItem)
  */
 void DoFileChoice(SInt16 menuItem, WindowPtr window)
 {
-    //    WindowPtr	window = FrontWindow();
     OSErr osError, err;
     EventRecord myEvent;
     SInt16 WinIndex;
