@@ -28,6 +28,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "win-nls.h"
 
 #include <wchar.h>
 
@@ -222,7 +223,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     tnames = getAttrib(work, R_NamesSymbol);
 
     if (TYPEOF(work) != VECSXP || TYPEOF(colmodes) != VECSXP)
-        errorcall(call, _("invalid argument"));
+        errorcall(call, G_("invalid argument"));
 
     /* initialize the constants */
 
@@ -279,7 +280,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
             SET_VECTOR_ELT(work, i, ssNewVector(type, 100));
         }
         else if (!isVector(VECTOR_ELT(work, i)))
-            errorcall(call, _("invalid type for value"));
+            errorcall(call, G_("invalid type for value"));
         else
         {
             if (TYPEOF(VECTOR_ELT(work, i)) != type)
@@ -295,7 +296,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* start up the window, more initializing in here */
     if (initwin())
-        errorcall(call, _("invalid device"));
+        errorcall(call, G_("invalid device"));
 
     /* set up a context which will close the window if there is an error */
     begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
@@ -355,7 +356,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
                         SET_STRING_ELT(tvec2, j, NA_STRING);
                 }
                 else
-                    error(_("dataentry: internal memory problem"));
+                    error(G_("dataentry: internal memory problem"));
             }
             SET_VECTOR_ELT(work2, i, tvec2);
         }
@@ -686,7 +687,7 @@ static void printelt(SEXP invec, int vrow, int ssrow, int sscol)
         }
     }
     else
-        error(_("dataentry: internal memory error"));
+        error(G_("dataentry: internal memory error"));
 }
 
 static void drawelt(int whichrow, int whichcol)
@@ -810,7 +811,7 @@ static void getccol()
         INTEGER(lens)[wcol - 1] = 0;
     }
     if (!isVector(tmp = VECTOR_ELT(work, wcol - 1)))
-        error(_("internal type error in dataentry"));
+        error(G_("internal type error in dataentry"));
     len = INTEGER(lens)[wcol - 1];
     type = TYPEOF(tmp);
     if (len < wrow)
@@ -824,7 +825,7 @@ static void getccol()
             else if (type == STRSXP)
                 SET_STRING_ELT(tmp2, i, STRING_ELT(tmp, i));
             else
-                error(_("internal type error in dataentry"));
+                error(G_("internal type error in dataentry"));
         SET_VECTOR_ELT(work, wcol - 1, tmp2);
     }
 }
@@ -1012,7 +1013,7 @@ static void handlechar(char *text)
 
     if (clength++ > 199)
     {
-        warning(_("dataentry: expression too long"));
+        warning(G_("dataentry: expression too long"));
         clength--;
         goto donehc;
     }
@@ -1226,7 +1227,7 @@ static char *get_cell_text(void)
                     prev = EncodeElement(tvec, wrow, 0);
             }
             else
-                error(_("dataentry: internal memory error"));
+                error(G_("dataentry: internal memory error"));
         }
     }
     return prev;
@@ -1661,13 +1662,13 @@ static void de_popup_vw(void)
 {
     char blah[25];
 
-    devw = newwindow(_("Cell width(s)"), rect(0, 0, 250, 60), Titlebar | Centered | Closebox | Modal);
+    devw = newwindow(G_("Cell width(s)"), rect(0, 0, 250, 60), Titlebar | Centered | Closebox | Modal);
     setclose(devw, vw_close);
     setbackground(devw, bbg);
-    lwhat = newlabel(_("Cell width"), rect(10, 20, 70, 20), AlignLeft);
+    lwhat = newlabel(G_("Cell width"), rect(10, 20, 70, 20), AlignLeft);
     sprintf(blah, "%d", nboxchars);
     varname = newfield(blah, rect(80, 20, 40, 20));
-    varwidths = newcheckbox(_("variable"), rect(150, 20, 80, 20), vw_callback);
+    varwidths = newcheckbox(G_("variable"), rect(150, 20, 80, 20), vw_callback);
     if (nboxchars == 0)
     {
         check(varwidths);
@@ -1705,25 +1706,25 @@ static void deresize(console c, rect r)
 
 static void menudehelp(control m)
 {
-    char s[] = N_(
+    char s[] = GN_(
         "Navigation.\n  Keyboard: cursor keys move selection\n\tTab move right, Shift+Tab moves left\n\tPgDn or "
         "Ctrl+F: move down one screenful\n\tPgUp or Ctrl+B: move up one screenful\n\tHome: move to (1,1) cell\n\tEnd: "
         "show last rows of last column.\n   Mouse: left-click in a cell, use the scrollbar(s).\n\nEditing.\n  Type in "
         "the currently hightlighted cell\n  Double-click in a cell for an editable field\n\nMisc.\n  Ctrl-L redraws "
         "the screen, auto-resizing the columns\n  Ctrl-C copies selected cell\n  Ctrl-V pastes to selected cell\n  "
         "Right-click menu for copy, paste, autosize currently selected column\n\n");
-    askok(_(s));
+    askok(G_(s));
 }
 
-static MenuItem DePopup[28] = {{N_("Help"), menudehelp, 0},
+static MenuItem DePopup[28] = {{GN_("Help"), menudehelp, 0},
                                {"-", 0, 0},
-                               {N_("Copy selected cell"), de_copy, 0},
-                               {N_("Paste to selected cell"), de_paste, 0},
-                               {N_("Autosize column"), de_autosize, 0},
+                               {GN_("Copy selected cell"), de_copy, 0},
+                               {GN_("Paste to selected cell"), de_paste, 0},
+                               {GN_("Autosize column"), de_autosize, 0},
                                {"-", 0, 0},
-                               {N_("Stay on top"), de_stayontop, 0},
+                               {GN_("Stay on top"), de_stayontop, 0},
                                {"-", 0, 0},
-                               {N_("Close"), declose, 0},
+                               {GN_("Close"), declose, 0},
                                LASTMENUITEM};
 
 static void demenuact(control m)
@@ -1781,7 +1782,7 @@ static dataeditor newdataeditor(void)
         x = (devicewidth(NULL) - w) / 3;
         y = (deviceheight(NULL) - h) / 3;
     }
-    c = (dataeditor)newwindow(_("Data Editor"), rect(x, y, w, h),
+    c = (dataeditor)newwindow(G_("Data Editor"), rect(x, y, w, h),
                               Document | StandardWindow | Menubar | VScrollbar | HScrollbar | TrackMouse);
     if (!c)
     {
@@ -1810,18 +1811,18 @@ static dataeditor newdataeditor(void)
     }
     MCHECK(gpopup(depopupact, DePopup));
     MCHECK(m = newmenubar(demenuact));
-    MCHECK(newmenu(_("File")));
+    MCHECK(newmenu(G_("File")));
     /*    MCHECK(m = newmenuitem("-", 0, NULL));*/
-    MCHECK(m = newmenuitem(_("Close"), 0, declose));
+    MCHECK(m = newmenuitem(G_("Close"), 0, declose));
     newmdimenu();
-    MCHECK(newmenu(_("Edit")));
-    MCHECK(m = newmenuitem(_("Copy  \tCTRL+C"), 0, de_copy));
-    MCHECK(m = newmenuitem(_("Paste \tCTRL+V"), 0, de_paste));
-    MCHECK(m = newmenuitem(_("Delete\tDEL"), 0, de_delete));
+    MCHECK(newmenu(G_("Edit")));
+    MCHECK(m = newmenuitem(G_("Copy  \tCTRL+C"), 0, de_copy));
+    MCHECK(m = newmenuitem(G_("Paste \tCTRL+V"), 0, de_paste));
+    MCHECK(m = newmenuitem(G_("Delete\tDEL"), 0, de_delete));
     MCHECK(m = newmenuitem("-", 0, NULL));
-    MCHECK(de_mvw = newmenuitem(_("Cell widths ..."), 0, menudecellwidth));
-    MCHECK(m = newmenu(_("Help")));
-    MCHECK(newmenuitem(_("Data editor"), 0, menudehelp));
+    MCHECK(de_mvw = newmenuitem(G_("Cell widths ..."), 0, menudecellwidth));
+    MCHECK(m = newmenu(G_("Help")));
+    MCHECK(newmenuitem(G_("Data editor"), 0, menudehelp));
 
     setdata(c, p);
     setresize(c, deresize);

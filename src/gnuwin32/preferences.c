@@ -222,14 +222,15 @@ static void do_apply()
             consolefn = FixedFont;
         if (!consolefn)
         {
-            sprintf(msg, _("Font %s-%d-%d  not found.\nUsing system fixed font"), fontname, fontsty | FixedWidth,
+            sprintf(msg, G_("Font %s-%d-%d  not found.\nUsing system fixed font"), fontname, fontsty | FixedWidth,
                     pointsize);
             R_ShowMessage(msg);
             consolefn = FixedFont;
         }
         if (!ghasfixedwidth(consolefn))
         {
-            sprintf(msg, _("Font %s-%d-%d has variable width.\nUsing system fixed font"), fontname, fontsty, pointsize);
+            sprintf(msg, G_("Font %s-%d-%d has variable width.\nUsing system fixed font"), fontname, fontsty,
+                    pointsize);
             R_ShowMessage(msg);
             consolefn = FixedFont;
         }
