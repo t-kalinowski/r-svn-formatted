@@ -151,6 +151,7 @@ static double DescDepth()
     return depth;
 }
 
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
 static double AscHeight()
 {
     double height, depth, width, save;
@@ -159,7 +160,7 @@ static double AscHeight()
     GMetricInfo('a', &height, &depth, &width, MetricUnit, MathDevice);
     return save - height;
 }
-
+#endif
 /* Thickness of rules */
 static double RuleThickness()
 {
@@ -242,7 +243,6 @@ typedef enum
 
 static double TeX(TEXPAR which)
 {
-    double value;
     switch (which)
     {
     case sigma2: /* space */
@@ -563,6 +563,7 @@ static double CenterShift(BBOX bbox)
     return 0.5 * (bboxHeight(bbox) - bboxDepth(bbox));
 }
 
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
 static BBOX DrawBBox(BBOX bbox, double xoffset, double yoffset)
 {
     double xsaved = CurrentX;
@@ -588,6 +589,7 @@ static BBOX DrawBBox(BBOX bbox, double xoffset, double yoffset)
     MathDevice->gp.col = TextColor;
     return bbox;
 }
+#endif
 
 typedef struct
 {
@@ -1078,6 +1080,7 @@ static int StringAtom(SEXP expr)
     return (TYPEOF(expr) == STRSXP);
 }
 
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
 static int symbolAtom(SEXP expr)
 {
     int i;
@@ -1089,12 +1092,13 @@ static int symbolAtom(SEXP expr)
     }
     return 0;
 }
-
+#endif
 /* Code to determine a font from the */
 /* nature of the expression */
 
+#ifdef NOT_used_currently /*-- out 'def'  (-Wall) --*/
 static FontType CurrentFont = 3;
-
+#endif
 static FontType GetFont()
 {
     return MathDevice->gp.font;
@@ -1275,7 +1279,7 @@ static BBOX RenderStr(char *str, int draw)
 static BBOX RenderSymbol(SEXP expr, int draw)
 {
     int code;
-    if (code = TranslatedSymbol(expr))
+    if ((code = TranslatedSymbol(expr)))
         return RenderSymbolChar(code, draw);
     else
         return RenderSymbolStr(CHAR(PRINTNAME(expr)), draw);
@@ -1284,7 +1288,7 @@ static BBOX RenderSymbol(SEXP expr, int draw)
 static BBOX RenderSymbolString(SEXP expr, int draw)
 {
     int code;
-    if (code = TranslatedSymbol(expr))
+    if ((code = TranslatedSymbol(expr)))
         return RenderSymbolChar(code, draw);
     else
         return RenderStr(CHAR(PRINTNAME(expr)), draw);
@@ -1375,7 +1379,7 @@ static int SpaceAtom(SEXP expr)
 
 static BBOX RenderSpace(SEXP expr, int draw)
 {
-    SEXP arg1, arg2;
+
     BBOX opBBox, arg1BBox, arg2BBox;
     int nexpr = length(expr);
 
@@ -1554,7 +1558,7 @@ static BBOX RenderSub(SEXP expr, int draw)
     STYLE style = GetStyle();
     double savedX = CurrentX;
     double savedY = CurrentY;
-    double shift, v, s5, s16;
+    double v, s5, s16;
     bodyBBox = RenderElement(body, draw);
     bodyBBox = RenderItalicCorr(bodyBBox, draw);
     v = bboxSimple(bodyBBox) ? 0 : bboxDepth(bodyBBox) + TeX(sigma19);
@@ -1677,7 +1681,7 @@ static BBOX RenderWideTilde(SEXP expr, int draw)
     double savedY = CurrentY;
     BBOX bbox = RenderElement(CADR(expr), draw);
     double height = bboxHeight(bbox);
-    double width = bboxWidth(bbox);
+    /*double width = bboxWidth(bbox);*/
     double totalwidth = bboxWidth(bbox) + bboxItalic(bbox);
     double delta = totalwidth * (1 - 2 * DELTA) / NTILDE;
     double start = DELTA * totalwidth;
@@ -1759,7 +1763,7 @@ static BBOX RenderBar(SEXP expr, int draw)
     double savedY = CurrentY;
     BBOX bbox = RenderElement(CADR(expr), draw);
     double accentGap = ACCENT_GAP * XHeight();
-    double hatHeight = HAT_HEIGHT * XHeight();
+    /*double hatHeight = HAT_HEIGHT * XHeight();*/
     double height = bboxHeight(bbox);
     double width = bboxWidth(bbox);
     double offset = bboxItalic(bbox);
@@ -1895,7 +1899,7 @@ static BBOX RenderFraction(SEXP expr, int rule, int draw)
 {
     SEXP numerator = CADR(expr);
     SEXP denominator = CADDR(expr);
-    BBOX numBBox, denomBBox, ansBBox;
+    BBOX numBBox, denomBBox;
     double nHShift, dHShift;
     double nVShift, dVShift;
     double width, x[2], y[2];
@@ -2204,7 +2208,7 @@ static BBOX RenderDelim(int which, double dist, int draw)
 static BBOX RenderBGroup(SEXP expr, int draw)
 {
     double dist;
-    BBOX bbox, bodyBBox;
+    BBOX bbox;
     double axisHeight = TeX(sigma22);
     double extra = 0.2 * xHeight();
     int delim1, delim2;
@@ -2353,8 +2357,8 @@ static BBOX RenderOpSymbol(SEXP op, int draw)
 {
     BBOX bbox;
     double cexSaved = MathDevice->gp.cex;
-    double savedX = CurrentX;
-    double savedY = CurrentY;
+    /*double savedX = CurrentX;*/
+    /*double savedY = CurrentY;*/
     double shift;
     int display = (GetStyle() > STYLE_T);
     int opId = OpAtom(op);
@@ -2481,7 +2485,7 @@ static BBOX RenderRadical(SEXP expr, int draw)
 {
     SEXP body = CADR(expr);
     SEXP order = CADDR(expr);
-    BBOX bodyBBox, orderBBox, ansBBox;
+    BBOX bodyBBox, orderBBox;
     double radWidth, radHeight, radDepth;
     double leadWidth, leadHeight, twiddleHeight;
     double hshift, vshift;
@@ -2917,7 +2921,6 @@ static int ListAtom(SEXP expr)
 
 static BBOX RenderList(SEXP expr, int draw)
 {
-    BBOX bbox;
     return RenderCommaList(CDR(expr), draw);
 }
 
