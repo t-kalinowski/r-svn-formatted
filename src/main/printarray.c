@@ -352,6 +352,7 @@ void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SE
 
 static void printArrayGeneral(SEXP x, SEXP dim, int quote, SEXP dimnames)
 {
+    /* == printArray(.) */
     SEXP ii, nn, dn;
     int i, j, k, l, b, nb, ndim;
     int nr, nc;

@@ -27,7 +27,6 @@
  */
 
 #include "Mathlib.h"
-#include "Error.h"
 
 double pwilcox(double x, double m, double n)
 {
@@ -52,12 +51,12 @@ double pwilcox(double x, double m, double n)
     }
     if (m >= WILCOX_MMAX)
     {
-        warning("m should be less than %d\n", WILCOX_MMAX);
+        MATHLIB_WARNING("m should be less than %d\n", WILCOX_MMAX);
         return ML_NAN;
     }
     if (n >= WILCOX_NMAX)
     {
-        warning("n should be less than %d\n", WILCOX_NMAX);
+        MATHLIB_WARNING("n should be less than %d\n", WILCOX_NMAX);
         return ML_NAN;
     }
     x = floor(x + 0.5);

@@ -23,7 +23,6 @@
  *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
 #include "Mathlib.h"
-#include "Error.h"
 
 static double exparg = 709.; /* maximal x for UNscaled answer, see below */
 
@@ -44,9 +43,11 @@ double bessel_i(double x, double alpha, double expo)
     if (ncalc != nb)
     { /* error input */
         if (ncalc < 0)
-            warning("bessel_i(%g): ncalc (=%d) != nb (=%d); alpha=%g.%s\n", x, ncalc, nb, alpha, " Arg. out of range?");
+            MATHLIB_WARNING4("bessel_i(%g): ncalc (=%d) != nb (=%d); alpha=%g."
+                             " Arg. out of range?\n",
+                             x, ncalc, nb, alpha);
         else
-            warning("bessel_i(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
+            MATHLIB_WARNING2("bessel_i(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
     }
     x = bi[nb - 1];
     free(bi);

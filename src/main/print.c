@@ -20,6 +20,25 @@
  *  print.default()  ->	 do_printdefault & its sub-functions.
  *			 do_printmatrix, do_sink, do_invisible
  *
+ *  do_printdefault
+ *	-> PrintDefaults
+ *	-> CustomPrintValue
+ *	    -> PrintValueRec
+ *		-> __ITSELF__  (recursion)
+ *		-> PrintGenericVector	-> PrintValueRec  (recursion)
+ *		-> PrintList		-> PrintValueRec  (recursion)
+ *		-> printAttributes	-> PrintValueRec  (recursion)
+ *		-> PrintExpression
+ *		-> printVector		>>>>> ./printvector.c
+ *		-> printNamedVector	>>>>> ./printvector.c
+ *		-> printMatrix		>>>>> ./printarray.c
+ *		-> printArray		>>>>> ./printarray.c
+ *
+ *  do_printmatrix
+ *	-> PrintDefaults
+ *	-> printMatrix			>>>>> ./printarray.c
+ *
+ *
  *  See ./printutils.c	 for general remarks on Printing
  *			 and the Encode.. utils.
  *
@@ -39,6 +58,7 @@ int R_print_width;
 SEXP print_na_string;
 int print_na_width;
 int print_quote;
+int print_right;
 int print_digits;
 int print_gap;
 
@@ -50,6 +70,7 @@ void PrintDefaults(SEXP rho)
     print_na_string = NA_STRING;
     print_na_width = strlen(CHAR(print_na_string));
     print_quote = 1;
+    print_right = 0;
     print_digits = GetOptionDigits(rho);
     print_gap = 1;
     R_print_width = GetOptionWidth(rho);
@@ -93,7 +114,7 @@ SEXP do_invisible(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int quote, right;
+    int quote;
     SEXP a, x, rowlab, collab;
 #ifdef OLD
     SEXP oldnames;
@@ -109,7 +130,7 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     a = CDR(a);
     quote = asInteger(CAR(a));
     a = CDR(a);
-    right = asInteger(CAR(a));
+    print_right = asInteger(CAR(a));
 #ifdef OLD
     PROTECT(oldnames = getAttrib(x, R_DimNamesSymbol));
     /* fix up the dimnames */
@@ -132,21 +153,24 @@ SEXP do_printmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(collab) == 0)
         collab = R_NilValue;
 #endif
-    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, right, rowlab, collab);
+    printMatrix(x, 0, getAttrib(x, R_DimSymbol), quote, print_right, rowlab, collab);
 #ifdef OLD
     setAttrib(x, R_DimNamesSymbol, oldnames);
     UNPROTECT(1);
 #endif
     return x;
-}
+} /* do_printmatrix */
 
 /* .Internal(print.default(x, digits, quote, na.print, print.gap)) */
-/* Should now also dispatch to e.g., print.matrix(..) */
-/* The 'digits' must be "stored" here, since print.matrix */
-/* (aka prmatrix) does NOT accept a digits argument ... */
-
 SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+
+    /* FIXME:
+     * Should now also dispatch to e.g., print.matrix(..)
+     * The 'digits' must be "stored" here, since print.matrix
+     * (aka prmatrix) does NOT accept a digits argument ...
+     */
+
     SEXP x, naprint;
     checkArity(op, args);
     PrintDefaults(rho);
@@ -183,10 +207,16 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (print_gap == NA_INTEGER || print_gap < 1 || print_gap > 10)
             errorcall(call, "invalid gap parameter\n");
     }
+    args = CDR(args);
+
+    print_right = asLogical(CAR(args));
+    if (print_right == NA_LOGICAL)
+        errorcall(call, "invalid right parameter\n");
+    args = CDR(args);
 
     CustomPrintValue(x, rho);
     return x;
-}
+} /* do_printdefault */
 
 /* FIXME : We need a general mechanism for "rendering" symbols. */
 /* It should make sure that it quotes when there are special */
@@ -240,7 +270,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
         {
             SEXP rl, cl;
             GetMatrixDimnames(s, &rl, &cl);
-            printMatrix(t, 0, dims, 0, 0, rl, cl);
+            printMatrix(t, 0, dims, print_quote, print_right, rl, cl);
         }
         else
         {
@@ -357,7 +387,7 @@ static void printList(SEXP s, SEXP env)
         {
             SEXP rl, cl;
             GetMatrixDimnames(s, &rl, &cl);
-            printMatrix(t, 0, dims, 0, 0, rl, cl);
+            printMatrix(t, 0, dims, print_quote, print_right, rl, cl);
         }
         else
         {
@@ -431,9 +461,10 @@ static void PrintExpression(SEXP s)
         Rprintf("%s\n", CHAR(STRING(u)[i]));
 }
 
-/* PrintValueRec - recursively print an SEXP */
-/* This is the "dispatching" function for  print.default() */
+/* PrintValueRec -- recursively print an SEXP
 
+ * This is the "dispatching" function for  print.default()
+ */
 void PrintValueRec(SEXP s, SEXP env)
 {
     int i;
@@ -508,7 +539,7 @@ void PrintValueRec(SEXP s, SEXP env)
             {
                 SEXP rl, cl;
                 GetMatrixDimnames(s, &rl, &cl);
-                printMatrix(s, 0, t, print_quote, 0, rl, cl);
+                printMatrix(s, 0, t, print_quote, print_right, rl, cl);
             }
             else
             {

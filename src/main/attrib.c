@@ -675,7 +675,7 @@ SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (STRING(names)[i] == R_NilValue || CHAR(STRING(names)[i])[0] == '\0')
             {
-                error("all attributes must have names\n");
+                errorcall(call, "all attributes must have names [%d]\n", i);
             }
             if (!strcmp(CHAR(STRING(names)[i]), "dim"))
                 setAttrib(object, R_DimSymbol, VECTOR(attrs)[i]);

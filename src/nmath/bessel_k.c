@@ -23,7 +23,6 @@
  *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
 #include "Mathlib.h"
-#include "Error.h"
 
 static double xmax = 705.342; /* maximal x for UNscaled answer, see below */
 
@@ -37,16 +36,17 @@ double bessel_k(double x, double alpha, double expo)
         return x + alpha;
 #endif
     ize = (long)expo;
-    nb = 1 + (long)floor(alpha); /* nb-1 <= alpha < nb */
+    nb = 1 + (long)floor(fabs(alpha)); /* nb-1 <= alpha < nb */
     alpha -= (nb - 1);
     bk = (double *)calloc(nb, sizeof(double));
     K_bessel(&x, &alpha, &nb, &ize, bk, &ncalc);
     if (ncalc != nb)
     { /* error input */
         if (ncalc < 0)
-            warning("bessel_k(%g): ncalc (=%d) != nb (=%d); alpha=%g.%s\n", x, ncalc, nb, alpha, " Arg. out of range?");
+            MATHLIB_WARNING4("bessel_k(%g): ncalc (=%d) != nb (=%d); alpha=%g. Arg. out of range?\n", x, ncalc, nb,
+                             alpha);
         else
-            warning("bessel_k(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
+            MATHLIB_WARNING2("bessel_k(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);
     }
     x = bk[nb - 1];
     free(bk);
@@ -58,7 +58,7 @@ void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *n
     /*-------------------------------------------------------------------
 
       This routine calculates modified Bessel functions
-      of the second kind, K_(N+ALPHA) (X), for non-negative
+      of the third kind, K_(N+ALPHA) (X), for non-negative
       argument X, and non-negative order N+ALPHA, with or without
       exponential scaling.
 

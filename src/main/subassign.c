@@ -202,6 +202,7 @@ static void SubassignTypeFix(SEXP *x, SEXP *y, int which, int stretch, int level
         *x = coerceVector(*x, STRSXP);
         break;
 
+    case 1906: /* vector     <- language   */
     case 1910: /* vector     <- logical    */
     case 1913: /* vector     <- integer    */
     case 1914: /* vector     <- real       */

@@ -27,7 +27,6 @@
  */
 
 #include "Mathlib.h"
-#include "Error.h"
 
 double psignrank(double x, double n)
 {
@@ -51,7 +50,7 @@ double psignrank(double x, double n)
     }
     else if (n >= SIGNRANK_NMAX)
     {
-        warning("n should be less than %d\n", SIGNRANK_NMAX);
+        MATHLIB_WARNING("n should be less than %d\n", SIGNRANK_NMAX);
         return ML_NAN;
     }
     x = floor(x + 0.5);

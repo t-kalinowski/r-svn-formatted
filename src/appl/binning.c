@@ -28,59 +28,28 @@
      There would have to be 'n' extra "if" evaluations only ... ?
 
 */
-void bincode(double *x, int *pn, double *breaks, int *pnb, int *code, int *include_border, int *naok)
+void bincode(double *x, int *pn, double *breaks, int *pnb, int *code, int *right, int *include_border, int *naok)
 {
     int i, lo, hi;
-    int n, nb1, new;
+    int n, nb1, new, lft;
 
     n = *pn;
     nb1 = *pnb - 1;
+    lft = !(*right);
 
     for (i = 0; i < n; i++)
         if (FINITE(x[i]))
         {
             lo = 0;
             hi = nb1;
-            if (x[i] < breaks[lo] || breaks[hi] < x[i] || (x[i] == breaks[hi] && !*include_border))
+            if (x[i] < breaks[lo] || breaks[hi] < x[i] || (x[i] == breaks[lft ? hi : lo] && !*include_border))
                 code[i] = NA_INTEGER;
             else
             {
                 while (hi - lo >= 2)
                 {
                     new = (hi + lo) / 2;
-                    if (x[i] >= breaks[new])
-                        lo = new;
-                    else
-                        hi = new;
-                }
-                code[i] = lo + 1;
-            }
-        }
-        else if (!*naok)
-            error("NA's in .C(\"bincode\",... NAOK=FALSE)\n");
-}
-
-void bincode2(double *x, int *pn, double *breaks, int *pnb, int *code, int *include_border, int *naok)
-{
-    int i, lo, hi;
-    int n, nb1, new;
-
-    n = *pn;
-    nb1 = *pnb - 1;
-
-    for (i = 0; i < n; i++)
-        if (FINITE(x[i]))
-        {
-            lo = 0;
-            hi = nb1;
-            if (x[i] < breaks[lo] || breaks[hi] < x[i] || (x[i] == breaks[lo] && !*include_border))
-                code[i] = NA_INTEGER;
-            else
-            {
-                while (hi - lo >= 2)
-                {
-                    new = (hi + lo) / 2;
-                    if (x[i] > breaks[new])
+                    if (x[i] > breaks[new] || (lft && x[i] == breaks[new]))
                         lo = new;
                     else
                         hi = new;
@@ -96,13 +65,15 @@ void bincode2(double *x, int *pn, double *breaks, int *pnb, int *code, int *incl
  *
  * bincount *counts* like bincode2, i.e. half open intervals defined as (a,b]
  */
-void bincount(double *x, int *pn, double *breaks, int *pnb, int *count, int *include_border, int *naok)
+
+void bincount(double *x, int *pn, double *breaks, int *pnb, int *count, int *right, int *include_border, int *naok)
 {
     int i, lo, hi;
-    int n, nb1, new;
+    int n, nb1, new, lft;
 
     n = *pn;
     nb1 = *pnb - 1;
+    lft = !(*right);
 
     for (i = 0; i < nb1; i++)
         count[i] = 0;
@@ -117,7 +88,7 @@ void bincount(double *x, int *pn, double *breaks, int *pnb, int *count, int *inc
                 while (hi - lo >= 2)
                 {
                     new = (hi + lo) / 2;
-                    if (x[i] > breaks[new])
+                    if (x[i] > breaks[new] || (lft && x[i] == breaks[new]))
                         lo = new;
                     else
                         hi = new;
@@ -126,5 +97,40 @@ void bincount(double *x, int *pn, double *breaks, int *pnb, int *count, int *inc
             }
         }
         else if (!*naok)
-            error("NA's in .C(\"bincode\",... NAOK=FALSE)\n");
+            error("NA's in .C(\"bincount\",... NAOK=FALSE)\n");
+}
+
+/*-- UNUSED, but still in  ./ROUTINES --- eliminate both at once ! */
+void bincode2(double *x, int *pn, double *breaks, int *pnb, int *code, int *include_border, int *naok)
+{
+    int i, lo, hi;
+    int n, nb1, new;
+
+    n = *pn;
+    nb1 = *pnb - 1;
+
+    for (i = 0; i < n; i++)
+        if (FINITE(x[i]))
+        {
+            lo = 0;
+            hi = nb1;
+            if (x[i] < breaks[lo] || breaks[hi] < x[i] || (x[i] == breaks[lo] && !*include_border))
+                /*             == */
+                code[i] = NA_INTEGER;
+            else
+            {
+                while (hi - lo >= 2)
+                {
+                    new = (hi + lo) / 2;
+                    if (x[i] > breaks[new])
+                        /*  == */
+                        lo = new;
+                    else
+                        hi = new;
+                }
+                code[i] = lo + 1;
+            }
+        }
+        else if (!*naok)
+            error("NA's in .C(\"bincode2\",... NAOK=FALSE)\n");
 }

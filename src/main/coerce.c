@@ -681,6 +681,8 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
     int i, n = 0;
     SEXP rval = R_NilValue, vp, names;
 
+    if (type == LISTSXP)
+        return v; /* IS pairlist */
     names = v;
     if (type == EXPRSXP)
     {
@@ -944,6 +946,7 @@ static SEXP asFunction(SEXP x)
 
 static SEXP ascommon(SEXP call, SEXP u, int type)
 {
+    /* coerce 'u' to 'type' : */
     SEXP v;
 #ifdef OLD
     if (type == SYMSXP)

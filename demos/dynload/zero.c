@@ -1,13 +1,13 @@
-#include <math.h>
+#include <S.h>
 
 static void *func;
 
 static double zfun(double z)
 {
-    void *args[1], *values[1];
-    double zz[1], *result;
-    char *mode[1];
+    void *args[1];
+    char *mode[1], *values[1];
     long length[1];
+    double zz[1], *result;
 
     mode[0] = "double";
     length[0] = 1;
@@ -54,8 +54,9 @@ static double zero_approx(double (*f)(), double x0, double x1, double tol)
     }
 }
 
-zero_find(void *f, double *x, double *tol)
+void zero_find(void *f, double *x, double *tol)
 {
     func = f;
     x[0] = zero_approx(zfun, x[0], x[1], tol[0]);
+    return;
 }

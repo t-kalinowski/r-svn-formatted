@@ -2773,7 +2773,9 @@ void GPretty(double *lo, double *up, int *ndiv)
     double dx, cell, unit, base, U;
     int ns, nu, nd0;
     short i_small;
-    double x1, x2; /* for checking only */
+#ifdef DEBUG_PLOT
+    double x1, x2;
+#endif
 
     if (*ndiv <= 0)
         error("invalid axis extents [GPretty(.,.,n=%d)\n", *ndiv);
@@ -3188,8 +3190,10 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
     double angle, xadj, yadj;
     int coords;
 
-    angle = xadj = yadj = 0; /* to keep -Wall happy */
-    coords = 0;              /* to keep -Wall happy */
+    angle = xadj = yadj = 0.; /* to keep -Wall happy */
+    coords = 0;               /* -Wall */
+
+    xadj = dd->gp.adj; /* ALL cases */
     if (outer)
     {
         switch (side)
@@ -3197,26 +3201,22 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
         case 1:
             /* line = line+1; */
             angle = 0;
-            xadj = dd->gp.adj;
             yadj = 0;
             coords = OMA1;
             break;
         case 2:
             angle = 90;
-            xadj = dd->gp.adj;
             yadj = 0;
             coords = OMA2;
             break;
         case 3:
             angle = 0;
-            xadj = dd->gp.adj;
             yadj = 0;
             coords = OMA3;
             break;
         case 4:
             /* line = line+1; */
             angle = 90;
-            xadj = dd->gp.adj;
             yadj = 0;
             coords = OMA4;
             break;
@@ -3233,14 +3233,12 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
                 at = at + GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line - dd->gp.yLineBias;
                 angle = 90;
-                xadj = dd->gp.adj;
                 yadj = 0.5;
             }
             else
             {
                 line = line + 1 - dd->gp.yLineBias;
                 angle = 0;
-                xadj = dd->gp.adj;
                 yadj = 0;
             }
             coords = MAR1;
@@ -3258,7 +3256,6 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
             {
                 line = line + dd->gp.yLineBias;
                 angle = 90;
-                xadj = dd->gp.adj;
                 yadj = 0;
             }
             coords = MAR2;
@@ -3269,14 +3266,12 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
                 at = at - GConvertXUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line + dd->gp.yLineBias;
                 angle = 90;
-                xadj = dd->gp.adj;
                 yadj = 0.5;
             }
             else
             {
                 line = line + dd->gp.yLineBias;
                 angle = 0;
-                xadj = dd->gp.adj;
                 yadj = 0;
             }
             coords = MAR3;
@@ -3287,14 +3282,12 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
                 at = at + GConvertYUnits(dd->gp.yLineBias, LINES, USER, dd);
                 line = line + dd->gp.yLineBias;
                 angle = 0;
-                xadj = 0;
                 yadj = 0.5;
             }
             else
             {
                 line = line + 1 - dd->gp.yLineBias;
                 angle = 90;
-                xadj = dd->gp.adj;
                 yadj = 0;
             }
             coords = MAR4;

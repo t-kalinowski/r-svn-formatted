@@ -83,12 +83,13 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP tvec2, tvec, colmodes, indata;
     SEXPTYPE type;
-    int i, j, len, nprotect = 0;
+    int i, j, len, nprotect;
     RCNTXT cntxt;
 
-    PROTECT(indata = CAR(args));
+    nprotect = 0; /* count the PROTECT()s */
+    PROTECT(indata = VectorToPairList(CAR(args)));
     nprotect++;
-    PROTECT(colmodes = CADR(args));
+    PROTECT(colmodes = VectorToPairList(CADR(args)));
     nprotect++;
 
     if (!isList(indata) || !isList(colmodes))
@@ -226,7 +227,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     UNPROTECT(nprotect);
-    return inputlist;
+    return PairToVectorList(inputlist);
 }
 
 /* Event Loop Functions */

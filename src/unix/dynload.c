@@ -223,7 +223,9 @@ DL_FUNC R_FindSymbol(char const *name)
 
 static void GetFullDLLPath(SEXP call, char *buf, char *path)
 {
-    if (path[0] != '/')
+    if (path[0] == '~')
+        strcpy(buf, R_ExpandFileName(path));
+    else if (path[0] != '/')
     {
 #ifdef HAVE_UNISTD_H
         if (!getcwd(buf, MAXPATHLEN))

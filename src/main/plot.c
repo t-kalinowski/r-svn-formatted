@@ -840,7 +840,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     dd->gp.xpd = 1;
     dd->gp.adj = 0.5;
     dd->gp.font = dd->gp.fontaxis;
-    dd->gp.cex = dd->gp.cex * dd->gp.cexbase;
+    dd->gp.cex = dd->gp.cexbase * dd->gp.cexaxis;
     col = dd->gp.col;
     fg = dd->gp.fg;
 

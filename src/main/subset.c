@@ -277,7 +277,8 @@ SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
             UNPROTECT(1);
         }
     }
-    copyMostAttrib(x, result);
+    /*  Probably should not do this:
+    copyMostAttrib(x, result); */
     if (drop)
         DropDims(result);
     UNPROTECT(3);
@@ -776,14 +777,12 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 return y;
                 break;
             case PARTIAL_MATCH:
-                if (havematch)
-                    return R_NilValue;
-                havematch = 1;
+                havematch++;
                 xmatch = y;
                 break;
             }
         }
-        if (havematch)
+        if (havematch == 1)
         {
             y = CAR(xmatch);
             NAMED(y) = NAMED(x);
@@ -808,14 +807,12 @@ SEXP do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
                 return y;
                 break;
             case PARTIAL_MATCH:
-                if (havematch)
-                    return R_NilValue;
-                havematch = 1;
+                havematch++;
                 imatch = i;
                 break;
             }
         }
-        if (havematch)
+        if (havematch == 1)
         {
             y = VECTOR(x)[imatch];
             NAMED(y) = NAMED(x);

@@ -27,7 +27,6 @@
  */
 
 #include "Mathlib.h"
-#include "Error.h"
 
 double qwilcox(double x, double m, double n)
 {
@@ -52,12 +51,12 @@ double qwilcox(double x, double m, double n)
     }
     else if (m >= WILCOX_MMAX)
     {
-        warning("m should be less than %d\n", WILCOX_MMAX);
+        MATHLIB_WARNING("m should be less than %d\n", WILCOX_MMAX);
         return ML_NAN;
     }
     else if (n >= WILCOX_NMAX)
     {
-        warning("n should be less than %d\n", WILCOX_NMAX);
+        MATHLIB_WARNING("n should be less than %d\n", WILCOX_NMAX);
         return ML_NAN;
     }
 
