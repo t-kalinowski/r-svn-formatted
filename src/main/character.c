@@ -20,8 +20,7 @@
  */
 
 /* <UTF8-FIXME>
-   abbreviate needs to be fixed.
-   regexpr returns match length in bytes not chars.
+   abbreviate needs to be fixed, if possible.
    chartr/tolower/toupper work at byte not char level.
 
    Changes already made:
@@ -31,6 +30,8 @@
    make.names worked at byte not char level.
    substr() should work at char not byte level.
    Semantics of nchar() have been fixed.
+   regexpr returns match length in bytes not chars.
+   tolower/toupper added warnings.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -120,7 +121,8 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
-#ifdef HAVE_WCSWIDTH
+#if defined SUPPORT_UTF8 && defined HAVE_WCSWIDTH
+                /* FIXME: need to convert to wide first */
                 INTEGER(s)[i] = wcswidth(CHAR(STRING_ELT(x, i)), 2147483647);
 #else
                 INTEGER(s)[i] = NA_INTEGER;
@@ -1185,7 +1187,6 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* <UTF8-FIXME> match length is in bytes not chars */
 SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ans, matchlen;
@@ -1241,7 +1242,12 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 st = fgrep_one(spat, CHAR(STRING_ELT(text, i)));
                 INTEGER(ans)[i] = (st > -1) ? (st + 1) : -1;
-                INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? strlen(spat) : -1;
+#ifdef SUPPORT_UTF8
+                if (utf8locale)
+                    INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? mbstowcs(NULL, spat, 0) : -1;
+                else
+#endif
+                    INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? strlen(spat) : -1;
             }
             else
             {
@@ -1249,13 +1255,26 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     st = regmatch[0].rm_so;
                     INTEGER(ans)[i] = st + 1; /* index from one */
-                    INTEGER(matchlen)[i] = regmatch[0].rm_eo - st;
+#ifdef SUPPORT_UTF8
+                    if (utf8locale)
+                    {
+                        /* we need the matched string. */
+                        int mlen = regmatch[0].rm_eo - st;
+                        AllocBuffer(mlen + 1);
+                        memcpy(buff, CHAR(STRING_ELT(text, i)) + st, mlen);
+                        buff[mlen] = '\0';
+                        INTEGER(matchlen)[i] = mbstowcs(NULL, buff, 0);
+                    }
+                    else
+#endif
+                        INTEGER(matchlen)[i] = regmatch[0].rm_eo - st;
                 }
                 else
                     INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
             }
         }
     }
+    AllocBuffer(-1);
     if (!fixed_opt)
         regfree(&reg);
     setAttrib(ans, install("match.length"), matchlen);
@@ -1263,11 +1282,17 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+/* <UTF8-FIXME>  There does not seem to be a portable way to do this
+   in wchar.  Both Tcl/Tk and Perl use the UnicodeData table. */
+
 SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int i, n;
-    char *p;
+    char *p, *xi;
+#ifdef SUPPORT_UTF8
+    Rboolean warn = FALSE;
+#endif
 
     checkArity(op, args);
     x = CAR(args);
@@ -1277,8 +1302,13 @@ SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(y = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
-        SET_STRING_ELT(y, i, allocString(strlen(CHAR(STRING_ELT(x, i)))));
-        strcpy(CHAR(STRING_ELT(y, i)), CHAR(STRING_ELT(x, i)));
+        xi = CHAR(STRING_ELT(x, i));
+#ifdef SUPPORT_UTF8
+        if (utf8locale && !utf8strIsASCII(xi))
+            warn = TRUE;
+#endif
+        SET_STRING_ELT(y, i, allocString(strlen(xi)));
+        strcpy(CHAR(STRING_ELT(y, i)), xi);
     }
 
     for (i = 0; i < n; i++)
@@ -1289,6 +1319,10 @@ SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
             for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
                 *p = tolower(*p);
     }
+#ifdef SUPPORT_UTF8
+    if (utf8locale && warn)
+        warningcall(call, "tolower operates byte-wise even in a UTF-8 locale");
+#endif
     UNPROTECT(1);
     return (y);
 }
@@ -1297,7 +1331,10 @@ SEXP do_toupper(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int i, n;
-    char *p;
+    char *p, *xi;
+#ifdef SUPPORT_UTF8
+    Rboolean warn = FALSE;
+#endif
 
     checkArity(op, args);
     x = CAR(args);
@@ -1307,8 +1344,13 @@ SEXP do_toupper(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(y = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
-        SET_STRING_ELT(y, i, allocString(strlen(CHAR(STRING_ELT(x, i)))));
-        strcpy(CHAR(STRING_ELT(y, i)), CHAR(STRING_ELT(x, i)));
+        xi = CHAR(STRING_ELT(x, i));
+#ifdef SUPPORT_UTF8
+        if (utf8locale && !utf8strIsASCII(xi))
+            warn = TRUE;
+#endif
+        SET_STRING_ELT(y, i, allocString(strlen(xi)));
+        strcpy(CHAR(STRING_ELT(y, i)), xi);
     }
 
     for (i = 0; i < n; i++)
@@ -1319,9 +1361,15 @@ SEXP do_toupper(SEXP call, SEXP op, SEXP args, SEXP env)
             for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
                 *p = toupper(*p);
     }
+#ifdef SUPPORT_UTF8
+    if (utf8locale && warn)
+        warningcall(call, "toupper operates byte-wise even in a UTF-8 locale");
+#endif
     UNPROTECT(1);
     return (y);
 }
+
+/* <UTF8-FIXME> We could use a wchar version to do chars not bytes */
 
 struct tr_spec
 {
