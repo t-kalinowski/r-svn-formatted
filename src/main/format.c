@@ -236,10 +236,11 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     int left, right, sleft;
     int mnl, mxl, rt, mxsl, mxns, mF;
     int neg, sgn, kpower, nsig;
-    int i, naflag, posinf, neginf;
+    int i, naflag, nanflag, posinf, neginf;
 
     eps = pow(10.0, -(double)print_digits);
 
+    nanflag = 0;
     naflag = 0;
     posinf = 0;
     neginf = 0;
@@ -251,13 +252,17 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     {
         if (!FINITE(x[i]))
         {
-            if (NAN(x[i]))
-                naflag = 1;
 #ifdef IEEE_754
+            if (ISNA(x[i]))
+                naflag = 1;
+            else if (ISNAN(x[i]))
+                nanflag = 1;
             else if (x[i] > 0)
                 posinf = 1;
             else
                 neginf = 1;
+#else
+            nanflag = 1;
 #endif
         }
         else
@@ -320,6 +325,8 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
     if (naflag && *m < print_na_width)
         *m = print_na_width;
 #ifdef IEEE_754
+    if (nanflag && *m < 3)
+        *m = 3;
     if (posinf && *m < 3)
         *m = 3;
     if (neginf && *m < 4)
@@ -327,7 +334,6 @@ void formatReal(double *x, int l, int *m, int *n, int *e)
 #endif
 }
 
-#ifdef COMPLEX_DATA
 void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *ni, int *ei)
 {
     int left, right, sleft;
@@ -337,14 +343,19 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     int i, kpower, nsig;
     int naflag;
 #ifdef IEEE_754
-    int posinf;
+    int rnanflag, rposinf, rneginf, inanflag, iposinf, ineginf;
 #endif
 
     eps = pow(10.0, -(double)print_digits);
 
     naflag = 0;
 #ifdef IEEE_754
-    posinf;
+    rnanflag = 0;
+    rposinf = 0;
+    rneginf = 0;
+    inanflag = 0;
+    iposinf = 0;
+    ineginf = 0;
 #endif
     neg = 0;
 
@@ -355,139 +366,170 @@ void formatComplex(complex *x, int l, int *mr, int *nr, int *er, int *mi, int *n
     for (i = 0; i < l; i++)
     {
 
-        /* real part */
-
-        if (!FINITE(x[i].r))
+        if (ISNA(x[i].r) || ISNA(x[i].i))
         {
-            if (NAN(x[i].r))
-                naflag = 1;
-#ifdef IEEE_754
-            else
-                posinf = 1;
-#endif
-            goto done;
+            naflag = 1;
         }
         else
         {
 
-            scientific(&(x[i].r), &sgn, &kpower, &nsig);
+            /* real part */
 
-            left = kpower + 1;
-            sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
-            right = nsig - left;                    /* #{digits} right of '.' ( > 0 often)*/
-            if (sgn)
-                neg = 1; /* if any < 0, need extra space for sign */
-
-            if (right > rt)
-                rt = right; /* max digits to right of . */
-            if (left > mxl)
-                mxl = left; /* max digits to left of . */
-            if (left < mnl)
-                mnl = left; /* min digits to left of . */
-            if (sleft > mxsl)
-                mxsl = sleft; /* max left including sign(s) */
-            if (nsig > mxns)
-                mxns = nsig; /* max sig digits */
-        }
-        /* imaginary part */
-
-        /* this is always unsigned */
-        /* we explicitly put the sign in when we print */
-
-        if (!FINITE(x[i].i))
-        {
-            if (NAN(x[i].i))
-                naflag = 1;
 #ifdef IEEE_754
+            if (!FINITE(x[i].r))
+            {
+                if (ISNAN(x[i].r))
+                    rnanflag = 1;
+                else if (x[i].r > 0)
+                    rposinf = 1;
+                else
+                    rneginf = 1;
+            }
             else
-                posinf = 1;
+            {
 #endif
-            goto done;
+
+                scientific(&(x[i].r), &sgn, &kpower, &nsig);
+
+                left = kpower + 1;
+                sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
+                right = nsig - left;                    /* #{digits} right of '.' ( > 0 often)*/
+                if (sgn)
+                    neg = 1; /* if any < 0, need extra space for sign */
+
+                if (right > rt)
+                    rt = right; /* max digits to right of . */
+                if (left > mxl)
+                    mxl = left; /* max digits to left of . */
+                if (left < mnl)
+                    mnl = left; /* min digits to left of . */
+                if (sleft > mxsl)
+                    mxsl = sleft; /* max left including sign(s) */
+                if (nsig > mxns)
+                    mxns = nsig; /* max sig digits */
+            }
+            /* imaginary part */
+
+            /* this is always unsigned */
+            /* we explicitly put the sign in when we print */
+
+#ifdef IEEE_754
+            if (!FINITE(x[i].i))
+            {
+                if (ISNAN(x[i].i))
+                    inanflag = 1;
+                else
+                    iposinf = 1;
+            }
+            else
+            {
+#endif
+
+                scientific(&(x[i].i), &sgn, &kpower, &nsig);
+
+                left = kpower + 1;
+                sleft = ((left <= 0) ? 1 : left);
+                right = nsig - left;
+
+                if (right > i_rt)
+                    i_rt = right;
+                if (left > i_mxl)
+                    i_mxl = left;
+                if (left < i_mnl)
+                    i_mnl = left;
+                if (sleft > i_mxsl)
+                    i_mxsl = sleft;
+                if (nsig > i_mxns)
+                    i_mxns = nsig;
+            }
+        done:;
         }
-        else
-        {
-
-            scientific(&(x[i].i), &sgn, &kpower, &nsig);
-
-            left = kpower + 1;
-            sleft = ((left <= 0) ? 1 : left);
-            right = nsig - left;
-
-            if (right > i_rt)
-                i_rt = right;
-            if (left > i_mxl)
-                i_mxl = left;
-            if (left < i_mnl)
-                i_mnl = left;
-            if (sleft > i_mxsl)
-                i_mxsl = sleft;
-            if (nsig > i_mxns)
-                i_mxns = nsig;
-        }
-    done:;
     }
+
+    /* see comments in formatReal() for details on this */
 
     /* overall format for real part	*/
-    /* see comments see in formatReal() */
 
-    if (mnl == INT_MAX)
+    if (mxl != INT_MIN)
+    {
+        if (mxl < 0)
+            mxsl = 1 + neg;
+        if (rt < 0)
+            rt = 0;
+        mF = mxsl + rt + (rt != 0);
+
+        if (mxl > 100 || mnl < -99)
+            *er = 2;
+        else
+            *er = 1;
+        *nr = mxns - 1;
+        *mr = neg + (*nr > 0) + *nr + 4 + *er;
+        if (mF <= *mr)
+        { /* IFF it needs less space : "F" (Fixpoint) format */
+            *er = 0;
+            *nr = rt;
+            *mr = mF;
+        }
+    }
+    else
     {
         *er = 0;
-        *ei = 0;
-        if (naflag)
-            *mr = print_na_width - 2;
-        else
-            *mr = 1; /* 3 - 2 */
-        *mi = 0;
+        *mr = 0;
         *nr = 0;
-        *ni = 0;
-        return;
     }
-
-    if (mxl < 0)
-        mxsl = 1 + neg;
-    if (rt < 0)
-        rt = 0;
-    mF = mxsl + rt + (rt != 0);
-
-    if (mxl > 100 || mnl < -99)
-        *er = 2;
-    else
-        *er = 1;
-    *nr = mxns - 1;
-    *mr = neg + (*nr > 0) + *nr + 4 + *er;
-    if (mF <= *mr)
-    { /* IFF it needs less space : "F" (Fixpoint) format */
-        *er = 0;
-        *nr = rt;
-        *mr = mF;
-    }
+#ifdef IEEE_754
+    if (rnanflag && *mr < 3)
+        *mr = 3;
+    if (rposinf && *mr < 3)
+        *mr = 3;
+    if (rneginf && *mr < 4)
+        *mr = 4;
+#endif
 
     /* overall format for imaginary part */
 
-    if (i_mxl < 0)
-        i_mxsl = 1;
-    if (i_rt < 0)
-        i_rt = 0;
-    mF = i_mxsl + i_rt + (i_rt != 0);
+    if (i_mxl != INT_MIN)
+    {
+        if (i_mxl < 0)
+            i_mxsl = 1;
+        if (i_rt < 0)
+            i_rt = 0;
+        mF = i_mxsl + i_rt + (i_rt != 0);
 
-    if (i_mxl > 100 || i_mnl < -99)
-        *ei = 2;
-    else
-        *ei = 1;
-    *ni = i_mxns - 1;
-    *mi = (*ni > 0) + *ni + 4 + *ei;
-    if (mF <= *mi)
-    { /* IFF it needs less space : "F" (Fixpoint) format */
-        *ei = 0;
-        *ni = i_rt;
-        *mi = mF;
+        if (i_mxl > 100 || i_mnl < -99)
+            *ei = 2;
+        else
+            *ei = 1;
+        *ni = i_mxns - 1;
+        *mi = (*ni > 0) + *ni + 4 + *ei;
+        if (mF <= *mi)
+        { /* IFF it needs less space : "F" (Fixpoint) format */
+            *ei = 0;
+            *ni = i_rt;
+            *mi = mF;
+        }
     }
-    if (naflag && *mr < print_na_width)
-        *mr = print_na_width;
+    else
+    {
+        *ei = 0;
+        *mi = 0;
+        *ni = 0;
+    }
 #ifdef IEEE_754
-    if (posinf && *mr < 3)
-        *mr = 3;
+    if (inanflag && *mr < 3)
+        *mi = 3;
+    if (iposinf && *mr < 3)
+        *mi = 3;
+    if (ineginf && *mr < 4)
+        *mi = 4;
 #endif
+    if (*mr < 0)
+        *mr = 0;
+    if (*mi < 0)
+        *mi = 0;
+
+    /* finally, ensure that there is space for NA */
+
+    if (naflag && *mr + *mi + 2 < print_na_width)
+        *mr += (print_na_width - (*mr + *mi + 2));
 }
-#endif

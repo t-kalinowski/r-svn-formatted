@@ -351,7 +351,7 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
                 xij = x[i + j * nrx];
                 yjk = y[j + k * nry];
 #ifndef IEEE_754
-                if (NAN(xij) || NAN(yjk))
+                if (ISNAN(xij) || ISNAN(yjk))
                     goto next_ik;
 #endif
                 sum += xij * yjk;
@@ -380,7 +380,7 @@ static void cmatprod(complex *x, int nrx, int ncx, complex *y, int nry, int ncy,
                 yjk_r = y[j + k * nry].r;
                 yjk_i = y[j + k * nry].i;
 #ifndef IEEE_754
-                if (NAN(xij_r) || NAN(xij_i) || NAN(yjk_r) || NAN(yjk_i))
+                if (ISNAN(xij_r) || ISNAN(xij_i) || ISNAN(yjk_r) || ISNAN(yjk_i))
                     goto next_ik;
 #endif
                 sum_r += (xij_r * yjk_r - xij_i * yjk_i);
@@ -407,7 +407,7 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
                 xji = x[j + i * nrx];
                 yjk = y[j + k * nry];
 #ifndef IEEE_754
-                if (NAN(xji) || NAN(yjk))
+                if (ISNAN(xji) || ISNAN(yjk))
                     goto next_ik;
 #endif
                 sum += xji * yjk;
@@ -437,7 +437,7 @@ static void ccrossprod(complex *x, int nrx, int ncx, complex *y, int nry, int nc
                 yjk_r = y[j + k * nry].r;
                 yjk_i = y[j + k * nry].i;
 #ifndef IEEE_754
-                if (NAN(xji_r) || NAN(xji_i) || NAN(yjk_r) || NAN(yjk_i))
+                if (ISNAN(xji_r) || ISNAN(xji_i) || ISNAN(yjk_r) || ISNAN(yjk_i))
                     goto next_ik;
 #endif
                 sum_r += (xji_r * yjk_r - xji_i * yjk_i);

@@ -22,7 +22,7 @@
 
 /* Error Handling for Floating Point Errors */
 
-#ifndef HAVE_ISNAN
+#ifndef IEEE_754
 #include <signal.h>
 
 static RETSIGTYPE handle_fperror(int dummy)
@@ -57,19 +57,70 @@ int matherr(struct exception *exc)
 }
 #endif
 
-/* Arithmetic Initialization */
-
-#ifdef HAVE_ISNAN
+#ifdef IEEE_754
 double R_Zero_Hack = 0.0; /* Silence the Sun compiler */
 #endif
+
+#ifdef IEEE_754
+typedef union {
+    double value;
+    unsigned int word[2];
+} ieee_double;
+
+static little_endian;
+static int hw;
+static int lw;
+
+static establish_endianness()
+{
+    ieee_double x;
+    x.value = 1;
+    if (x.word[0] == 0x3ff00000)
+    {
+        little_endian = 0;
+        hw = 0;
+        lw = 1;
+    }
+    else if (x.word[1] == 0x3ff00000)
+    {
+        little_endian = 1;
+        hw = 1;
+        lw = 0;
+    }
+    else
+        R_Suicide("couldn't determine endianness for IEEE 754!\n");
+}
+
+static double R_ValueOfNA(void)
+{
+    ieee_double x;
+    x.word[hw] = 0x7ff00000;
+    x.word[lw] = 1954;
+    return x.value;
+}
+
+int R_IsNA(double x)
+{
+    if (x != x)
+    {
+        ieee_double y;
+        y.value = x;
+        return (y.word[lw] == 1954);
+    }
+    return 0;
+}
+#endif
+
+/* Arithmetic Initialization */
 
 void InitArithmetic()
 {
     R_NaInt = INT_MIN;
 
-#ifdef HAVE_ISNAN
+#ifdef IEEE_754
+    establish_endianness();
     R_NaN = 0.0 / R_Zero_Hack;
-    R_NaReal = R_NaN;
+    R_NaReal = R_ValueOfNA();
     R_PosInf = 1.0 / R_Zero_Hack;
     R_NegInf = -1.0 / R_Zero_Hack;
 #else
@@ -408,7 +459,7 @@ static SEXP real_unary(int code, SEXP s1)
             REAL(ans)[i] = -REAL(s1)[i];
 #else
             x = REAL(s1)[i];
-            REAL(ans)[i] = NAN(x) ? NA_REAL : ((x == 0.0) ? 0.0 : -x);
+            REAL(ans)[i] = ISNA(x) ? NA_REAL : ((x == 0.0) ? 0.0 : -x);
 #endif
         }
         return ans;
@@ -575,7 +626,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNA(x1) || ISNA(x2))
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(x1 + x2);
@@ -590,7 +641,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNA(x1) || ISNA(x2))
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(x1 - x2);
@@ -605,7 +656,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) && NAN(x2))
+            if (ISNA(x1) && ISNA(x2))
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(x1 * x2);
@@ -620,7 +671,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2) || x2 == 0)
+            if (ISNA(x1) || ISNA(x2) || x2 == 0)
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(x1 / x2);
@@ -635,7 +686,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNA(x1) || ISNA(x2))
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(pow(x1, x2));
@@ -650,7 +701,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2) || x2 == 0)
+            if (ISNA(x1) || ISNA(x2) || x2 == 0)
                 REAL(ans)[i] = NA_REAL;
             else
                 REAL(ans)[i] = MATH_CHECK(myfmod(x1, x2));
@@ -665,7 +716,7 @@ static SEXP real_binary(int code, SEXP s1, SEXP s2)
 #else
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNA(x1) || ISNA(x2))
                 REAL(ans)[i] = NA_REAL;
             else
             {
@@ -714,12 +765,12 @@ static SEXP math1(SEXP op, SEXP sa, double (*f)())
         naflag = 0;
         for (i = 0; i < n; i++)
         {
-            if (NAN(a[i]))
-                y[i] = NA_REAL;
+            if (ISNAN(a[i]))
+                y[i] = a[i];
             else
             {
                 y[i] = MATH_CHECK(f(a[i]));
-                if (NAN(y[i]))
+                if (ISNAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
@@ -840,12 +891,19 @@ static SEXP math2(SEXP op, SEXP sa, SEXP sb, double (*f)())
         {
             ai = a[ia];
             bi = b[ib];
-            if (NAN(ai) || NAN(bi))
+            if (ISNAN(ai) || ISNAN(bi))
+            {
+#ifdef IEEE_754
+                y[i] = ai + bi;
+#else
+
                 y[i] = NA_REAL;
+#endif
+            }
             else
             {
                 y[i] = MATH_CHECK(f(ai, bi));
-                if (NAN(y[i]))
+                if (ISNAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
@@ -1054,12 +1112,18 @@ static SEXP math3(SEXP op, SEXP sa, SEXP sb, SEXP sc, double (*f)())
             ai = a[ia];
             bi = b[ib];
             ci = c[ic];
-            if (NAN(ai) || NAN(bi) || NAN(ci))
+            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci))
+            {
+#ifdef IEEE_754
+                y[i] = ai + bi + ci;
+#else
                 y[i] = NA_REAL;
+#endif
+            }
             else
             {
                 y[i] = MATH_CHECK(f(ai, bi, ci));
-                if (NAN(y[i]))
+                if (ISNAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;
@@ -1234,12 +1298,18 @@ static SEXP math4(SEXP op, SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)())
             bi = b[ib];
             ci = c[ic];
             di = d[id];
-            if (NAN(ai) || NAN(bi) || NAN(ci) || NAN(di))
+            if (ISNAN(ai) || ISNAN(bi) || ISNAN(ci) || ISNAN(di))
+            {
+#ifdef IEEE_754
+                y[i] = ai + bi + ci + di;
+#else
                 y[i] = NA_REAL;
+#endif
+            }
             else
             {
                 y[i] = MATH_CHECK(f(ai, bi, ci, di));
-                if (NAN(y[i]))
+                if (ISNAN(y[i]))
                 {
                     y[i] = NA_REAL;
                     naflag = 1;

@@ -211,26 +211,14 @@ void printComplexVector(complex *x, int n, int index)
             else
                 width = 0;
         }
-#define TESTING
-#ifdef TESTING
-        if (FINITE(x[i].r) && FINITE(x[i].i))
+        if (ISNA(x[i].r) || ISNA(x[i].i))
         {
-            Rprintf("%*s%s", PRINT_GAP, "", EncodeReal(x[i].r, wr, dr, er));
-            if (x[i].i >= 0)
-                Rprintf("+%si", EncodeReal(x[i].i, wi, di, ei));
-            else
-                Rprintf("-%si", EncodeReal(-x[i].i, wi, di, ei));
+            Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
         }
         else
         {
-            if (NAN(x[i].r) || NAN(x[i].i))
-                Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
-            else
-                Rprintf("%*s", w, "Inf");
+            Rprintf("%s", EncodeComplex(x[i], wr + PRINT_GAP, dr, er, wi, di, ei));
         }
-#else
-        Rprintf("%s", EncodeComplex(x[i], wr, dr, er, wi, di, ei));
-#endif
         width += w;
     }
     Rprintf("\n");
@@ -499,16 +487,23 @@ static void printNamedComplexVector(complex *x, int n, SEXP *names)
         Rprintf("\n");
         for (j = 0; j < nperline && (k = i * nperline + j) < n; j++)
         {
-            if (FINITE(x[k].r) && FINITE(x[k].i))
+            if (ISNA(x[i].r) || ISNA(x[i].i))
             {
-                Rprintf("%*s%s", PRINT_GAP, "", EncodeReal(x[k].r, wr, dr, er));
-                if (x[k].i >= 0)
-                    Rprintf("+%si", EncodeReal(x[k].i, wi, di, ei));
-                else
-                    Rprintf("-%si", EncodeReal(-x[k].i, wi, di, ei));
+                Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
             }
             else
-                Rprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
+            {
+                Rprintf("%*s%s", PRINT_GAP, "", EncodeReal(x[i].r, wr, dr, er));
+#ifdef IEEE_754
+                if (ISNAN(x[i].i))
+                    Rprintf("+%si", "NaN");
+                else
+#endif
+                    if (x[i].i >= 0)
+                    Rprintf("+%si", EncodeReal(x[i].i, wi, di, ei));
+                else
+                    Rprintf("-%si", EncodeReal(-x[i].i, wi, di, ei));
+            }
         }
     }
     Rprintf("\n");

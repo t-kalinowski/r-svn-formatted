@@ -38,7 +38,7 @@ static void cov_pairwise1(int n, int ncx, double *x, double *ans, int cor)
             ymean = 0;
             for (k = 0; k < n; k++)
             {
-                if (!(NAN(xx[k]) || NAN(yy[k])))
+                if (!(ISNAN(xx[k]) || ISNAN(yy[k])))
                 {
                     nobs += 1;
                     xmean += xx[k];
@@ -54,7 +54,7 @@ static void cov_pairwise1(int n, int ncx, double *x, double *ans, int cor)
                 sum = 0.0;
                 for (k = 0; k < n; k++)
                 {
-                    if (!(NAN(xx[k]) || NAN(yy[k])))
+                    if (!(ISNAN(xx[k]) || ISNAN(yy[k])))
                     {
                         sum += (xx[k] - xmean) * (yy[k] - ymean);
                         if (cor)
@@ -102,7 +102,7 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
             ymean = 0;
             for (k = 0; k < n; k++)
             {
-                if (!(NAN(xx[k]) || NAN(yy[k])))
+                if (!(ISNAN(xx[k]) || ISNAN(yy[k])))
                 {
                     nobs += 1;
                     xmean += xx[k];
@@ -118,7 +118,7 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
                 sum = 0.0;
                 for (k = 0; k < n; k++)
                 {
-                    if (!(NAN(xx[k]) || NAN(yy[k])))
+                    if (!(ISNAN(xx[k]) || ISNAN(yy[k])))
                     {
                         sum += (xx[k] - xmean) * (yy[k] - ymean);
                         if (cor)
@@ -329,7 +329,7 @@ static void complete1(int n, int ncx, double *x, int *ind)
     {
         z = &x[j * n];
         for (i = 0; i < n; i++)
-            if (NAN(z[i]))
+            if (ISNAN(z[i]))
             {
                 if (NaFail)
                     error("missing observations in cov/cor\n");
@@ -349,7 +349,7 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind)
     {
         z = &x[j * n];
         for (i = 0; i < n; i++)
-            if (NAN(z[i]))
+            if (ISNAN(z[i]))
             {
                 if (NaFail)
                     error("missing observations in cov/cor\n");
@@ -361,7 +361,7 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind)
     {
         z = &y[j * n];
         for (i = 0; i < n; i++)
-            if (NAN(z[i]))
+            if (ISNAN(z[i]))
             {
                 if (NaFail)
                     error("missing observations in cov/cor\n");

@@ -249,7 +249,6 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl)
     }
 }
 
-#ifdef COMPLEX_DATA
 static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl)
 {
     SEXP sdr, ser, swr, sdi, sei, swi, sw;
@@ -314,23 +313,21 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
             MatrixRowLabel(rl, i, rlabw);
             for (j = jmin; j < jmax; j++)
             {
-                if (FINITE(x[i + j * r].r) && FINITE(x[i + j * r].i))
-                {
-                    Rprintf("%*s%s", PRINT_GAP, "", EncodeReal(x[i + j * r].r, wr[j], dr[j], er[j]));
-                    if (x[i + j * r].i >= 0)
-                        Rprintf("+%si", EncodeReal(x[i + j * r].i, wi[j], di[j], ei[j]));
-                    else
-                        Rprintf("-%si", EncodeReal(-x[i + j * r].i, wi[j], di[j], ei[j]));
-                }
-                else
+                if (ISNA(x[i + j * r].r) || ISNA(x[i + j * r].i))
                     Rprintf("%s", EncodeReal(NA_REAL, w[j], 0, 0));
+                else
+#ifdef OLD
+                    Rprintf("%*s%s", PRINT_GAP, "",
+                            EncodeComplex(x[i + j * r], wr[j], dr[j], er[j], wi[j], dr[j], er[j]));
+#else
+                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + PRINT_GAP, dr[j], er[j], wi[j], dr[j], er[j]));
+#endif
             }
         }
         Rprintf("\n");
         jmin = jmax;
     }
 }
-#endif
 
 static void printStringMatrix(SEXP sx, int offset, int r, int c, int quote, SEXP rl, SEXP cl)
 {

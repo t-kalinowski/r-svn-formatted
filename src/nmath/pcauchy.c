@@ -30,16 +30,17 @@
 
 double pcauchy(double x, double location, double scale)
 {
-    if (
 #ifdef IEEE_754
-        isnan(x) || !finite(location) || !finite(scale) ||
+    if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
+        return x + location + scale;
 #endif
-        scale <= 0)
+    if (scale <= 0)
     {
         ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
     x = (x - location) / scale;
+#ifdef IEEE_754
     if (!finite(x))
     {
         if (x < 0)
@@ -47,5 +48,6 @@ double pcauchy(double x, double location, double scale)
         else
             return 1;
     }
+#endif
     return 0.5 + atan(x) / M_PI;
 }

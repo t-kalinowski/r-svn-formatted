@@ -214,14 +214,12 @@ SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
         y = CADR(args) = coerceVector(y, STRSXP);
         x = string_relop(PRIMVAL(op), x, y);
     }
-#ifdef COMPLEX_DATA
     else if (isComplex(x) || isComplex(y))
     {
         x = CAR(args) = coerceVector(x, CPLXSXP);
         y = CADR(args) = coerceVector(y, CPLXSXP);
         x = complex_relop(PRIMVAL(op), x, y);
     }
-#endif
     else if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
     {
         x = CAR(args) = coerceVector(x, REALSXP);
@@ -366,7 +364,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 == x2);
@@ -377,7 +375,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 != x2);
@@ -388,7 +386,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 < x2);
@@ -399,7 +397,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 > x2);
@@ -410,7 +408,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 <= x2);
@@ -421,7 +419,7 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = REAL(s1)[i % n1];
             x2 = REAL(s2)[i % n2];
-            if (NAN(x1) || NAN(x2))
+            if (ISNAN(x1) || ISNAN(x2))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 >= x2);
@@ -432,7 +430,6 @@ static SEXP real_relop(int code, SEXP s1, SEXP s2)
     return ans;
 }
 
-#ifdef COMPLEX_DATA
 static SEXP complex_relop(int code, SEXP s1, SEXP s2)
 {
     int i, n, n1, n2;
@@ -458,7 +455,7 @@ static SEXP complex_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
+            if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1.r == x2.r && x1.i == x2.i);
@@ -469,7 +466,7 @@ static SEXP complex_relop(int code, SEXP s1, SEXP s2)
         {
             x1 = COMPLEX(s1)[i % n1];
             x2 = COMPLEX(s2)[i % n2];
-            if (NAN(x1.r) || NAN(x1.i) || NAN(x2.r) || NAN(x2.i))
+            if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1.r != x2.r || x1.i != x2.i);
@@ -479,7 +476,6 @@ static SEXP complex_relop(int code, SEXP s1, SEXP s2)
     UNPROTECT(2);
     return ans;
 }
-#endif
 
 static SEXP string_relop(int code, SEXP s1, SEXP s2)
 {

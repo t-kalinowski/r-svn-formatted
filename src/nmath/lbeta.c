@@ -44,6 +44,11 @@ double lbeta(double a, double b)
     if (b > q)
         q = b;
 
+#ifdef IEEE_754
+    if (ISNAN(a) || ISNAN(b))
+        return a + b;
+#endif
+
     /* both arguments must be > 0 */
 
     if (p <= 0)

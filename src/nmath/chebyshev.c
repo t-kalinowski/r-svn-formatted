@@ -43,6 +43,8 @@
 
 #include "Mathlib.h"
 
+/* NaNs propagated correctly */
+
 int chebyshev_init(double *dos, int nos, double eta)
 {
     int i, ii;
