@@ -90,7 +90,7 @@ static void BoundsCheck(double x, double a, double b, char *s)
 /* layout and the transformations between coordinate systems */
 
 /* If you ADD a NEW par then do NOT forget to update */
-/* the code in ../library/base/R/par */
+/* the code in ../library/base/R/par.R */
 
 static int Specify(char *what, SEXP value, DevDesc *dd)
 {
@@ -1745,6 +1745,7 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ap, vp, value;
     SEXP originalArgs = args;
     DevDesc *dd;
+    int new_spec;
 
     if (NoDevices())
     {
@@ -1767,11 +1768,13 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
 
     dd = CurrentDevice();
     args = CAR(args);
+    new_spec = 0;
     PROTECT(value = allocList(length(args)));
     for (vp = value, ap = args; ap != R_NilValue; vp = CDR(vp), ap = CDR(ap))
     {
         if (TAG(ap) != R_NilValue)
         {
+            new_spec = 1;
             CAR(vp) = Query(CHAR(PRINTNAME(TAG(ap))), dd);
             TAG(vp) = TAG(ap);
             Specify(CHAR(PRINTNAME(TAG(ap))), CAR(ap), dd);
@@ -1783,65 +1786,87 @@ SEXP do_par(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     UNPROTECT(1);
-    /* should really only do this if specifying new pars ? */
-    if (call != R_NilValue)
+    /* should really only do this if specifying new pars ?
+     * yes! [MM] */
+    if (new_spec && call != R_NilValue)
         recordGraphicOperation(op, originalArgs, dd);
     return value;
 }
 
 SEXP do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* layout(num.rows, num.cols, mat,
+          num.figures,
+          col.widths,	row.heights,
+          cm.widths,	 cm.heights,
+          respect,	respect.mat)
+     */
+
     int i, j, nrow, ncol, ncmrow, ncmcol;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    DevDesc *dd;
 
     if (NoDevices())
-        errorcall(call, "No device is active\n");
+    {
+        SEXP defdev = GetOption(install("device"), R_NilValue);
+        if (isString(defdev) && length(defdev) > 0)
+        {
+            PROTECT(defdev = lang1(install(CHAR(STRING(defdev)[0]))));
+        }
+        else
+            errorcall(call, "No active or default device\n");
+        eval(defdev, R_GlobalEnv);
+        UNPROTECT(1);
+    }
 
     checkArity(op, args);
+    dd = CurrentDevice();
 
+    /* num.rows: */
     nrow = dd->dp.numrows = dd->gp.numrows = INTEGER(CAR(args))[0];
     args = CDR(args);
-
+    /* num.cols: */
     ncol = dd->dp.numcols = dd->gp.numcols = INTEGER(CAR(args))[0];
     args = CDR(args);
-
+    /* mat[i,j] == order[i][j] : */
     for (i = 0; i < nrow; i++)
         for (j = 0; j < ncol; j++)
-            dd->dp.order[i][j] = dd->gp.order[i][j] = REAL(CAR(args))[i + j * nrow];
+            dd->dp.order[i][j] = dd->gp.order[i][j] = INTEGER(CAR(args))[i + j * nrow];
     args = CDR(args);
 
+    /* num.figures: */
     dd->dp.currentFigure = dd->gp.currentFigure = dd->dp.lastFigure = dd->gp.lastFigure = INTEGER(CAR(args))[0];
     args = CDR(args);
-
+    /* col.widths: */
     for (j = 0; j < ncol; j++)
         dd->dp.widths[j] = dd->gp.widths[j] = REAL(CAR(args))[j];
     args = CDR(args);
-
+    /* row.heights: */
     for (i = 0; i < nrow; i++)
         dd->dp.heights[i] = dd->gp.heights[i] = REAL(CAR(args))[i];
     args = CDR(args);
-
+    /* cm.widths: */
     ncmcol = length(CAR(args));
     for (j = 0; j < ncol; j++)
         dd->dp.cmWidths[j] = dd->gp.cmWidths[j] = 0;
     for (j = 0; j < ncmcol; j++)
         dd->dp.cmWidths[INTEGER(CAR(args))[j] - 1] = dd->gp.cmWidths[INTEGER(CAR(args))[j] - 1] = 1;
     args = CDR(args);
-
+    /* cm.heights: */
     ncmrow = length(CAR(args));
     for (i = 0; i < nrow; i++)
         dd->dp.cmHeights[i] = dd->gp.cmHeights[i] = 0;
     for (i = 0; i < ncmrow; i++)
         dd->dp.cmHeights[INTEGER(CAR(args))[i] - 1] = dd->gp.cmHeights[INTEGER(CAR(args))[i] - 1] = 1;
     args = CDR(args);
-
+    /* respect =  0 (FALSE), 1 (TRUE), or 2 (matrix) : */
     dd->dp.rspct = dd->gp.rspct = INTEGER(CAR(args))[0];
     args = CDR(args);
-
+    /* respect.mat */
     for (i = 0; i < nrow; i++)
         for (j = 0; j < ncol; j++)
-            dd->dp.respect[i][j] = dd->gp.respect[i][j] = REAL(CAR(args))[i + j * nrow];
+            dd->dp.respect[i][j] = dd->gp.respect[i][j] = INTEGER(CAR(args))[i + j * nrow];
+    /*------------------------------------------------------*/
 
     if (nrow > 2 || ncol > 2)
     {
