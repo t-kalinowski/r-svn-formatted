@@ -2319,7 +2319,7 @@ Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double heig
     /* Font will load at first use  */
 
     ps = pointsize;
-    if (ps < 6 || ps > 24)
+    if (ps < 6 || ps > 48)
         ps = 12;
     ps = 2 * (ps / 2);
     xd->fontface = -1;
