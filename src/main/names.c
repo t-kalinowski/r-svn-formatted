@@ -31,26 +31,51 @@ SEXP do_sysfile(SEXP, SEXP, SEXP, SEXP);
 SEXP do_getenv(SEXP, SEXP, SEXP, SEXP);
 #endif
 
-/*
- *	printname  c-entry  offset  eval  arity	 pp-info  mark
+/* Table of  .Internal(.) and .Primitive(.)  R functions
+ * =====     =========	      ==========
  *
- *	Note: [New Apr 9/96, before only had "YZ"]
- *		We now consider  'eval'  to be made up of three digits XYZ :
- *              X=1 says that we should switch R_Visible off
+ * Each entry is a line with
+ *
+ * printname	c-entry		offset	eval	arity	pp-info		mark
+ * ---------	-------		------	----	-----	-------		----
+ *
+ * printname:	The function name in R
+ *
+ * c-entry:	The name of the corresponding C function,
+ *		actually declared in names.h.
+ *		Convention:
+ *		 - all start with "do_",
+ *		 - all return SEXP.
+ *		 - all have argument list
+ *			 (SEXP call, SEXP op, SEXP args, SEXP env)
+ *
+ * offset:	the 'op' (offset pointer) above; used for C functions
+ *		which deal with more than one R function...
+ *
+ * eval:	[New Apr 9/96, before only had "YZ"]
+ *		We now consider	 'eval'	 to be made up of three digits XYZ :
+ *		X=1 says that we should switch R_Visible off
  *		    (the least common situation).
  *		Y=1 says that this is an internal function which must
- *		    be accessed with a  .Internal(.) call, any other value is
+ *		    be accessed with a	.Internal(.) call, any other value is
  *		    accessable directly.
  *		Z=1 says evaluate arguments before calling and
  *		Z=0 says don't evaluate.
  *
- * E.g:		SEXP do_cat(SEXP, SEXP, SEXP, SEXP);
+ * arity:	How many arguments are required/allowed;  "-1"	meaning ``any''
+ *
+ * pp-info:	Deparsing Info (-> names.h )
+ *
+ * mark:	?? always = 0, i.e. completely superfluous (?). [MM]
  *
  */
 
 FUNTAB R_FunTab[] = {
+
     /* Language Related Constructs */
 
+    /* printname	c-entry		offset	eval	arity	pp-info		mark
+     * ---------	-------		------	----	-----	-------		---- */
     {"if", do_if, 0, 0, -1, PP_IF, 0},
     {"while", do_while, 0, 0, -1, PP_WHILE, 0},
     {"for", do_for, 0, 0, -1, PP_FOR, 0},
@@ -115,6 +140,8 @@ FUNTAB R_FunTab[] = {
 
     /* Vectors, Matrices and Arrays */
 
+    /* printname	c-entry		offset	eval	arity	pp-info		mark
+     * ---------	-------		------	----	-----	-------		---- */
     {"vector", do_makevector, 0, 11, 2, PP_FUNCALL, 0},
     {"complex", do_complex, 0, 11, 3, PP_FUNCALL, 0},
     {"matrix", do_matrix, 0, 11, 4, PP_FUNCALL, 0},
@@ -200,9 +227,6 @@ FUNTAB R_FunTab[] = {
     /* Mathematical Functions of Two Variables */
 
     {"atan2", do_math2, 0, 11, 2, PP_FUNCALL, 0},
-    /* KH
-       {"signif",	do_math2,	1,	1,	2,	PP_FUNCALL,	0},
-       */
 
     {"lbeta", do_math2, 2, 11, 2, PP_FUNCALL, 0},
     {"beta", do_math2, 3, 11, 2, PP_FUNCALL, 0},
