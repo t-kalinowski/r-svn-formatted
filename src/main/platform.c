@@ -782,7 +782,7 @@ SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifndef HAVE_STAT
     if (recursive)
     {
-        warningcall(call, "`recursive = TRUE' is not supported on this platform");
+        warningcall(call, "'recursive = TRUE' is not supported on this platform");
         recursive = FALSE;
     }
 #endif
@@ -992,7 +992,7 @@ SEXP do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     cat = asInteger(CAR(args));
     if (cat == NA_INTEGER || cat < 0)
-        error("invalid `category' argument");
+        error("invalid 'category' argument");
     switch (cat)
     {
     case 1:
@@ -1040,9 +1040,9 @@ SEXP do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     cat = asInteger(CAR(args));
     if (cat == NA_INTEGER || cat < 0)
-        error("invalid `category' argument");
+        error("invalid 'category' argument");
     if (!isString(locale) || LENGTH(locale) != 1)
-        error("invalid `locale' argument");
+        error("invalid 'locale' argument");
     switch (cat)
     {
     case 1:
@@ -1312,7 +1312,7 @@ SEXP do_nsl(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (hp == NULL)
     { /* cannot resolve the address */
-        warning("nsl() was unable to resolve host `%s'", name);
+        warning("nsl() was unable to resolve host '%s'", name);
     }
     else
     {
@@ -1364,7 +1364,7 @@ SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     show = asLogical(CADR(args));
     if (show == NA_LOGICAL)
         show = 0;
-    res = mkdir(CHAR(STRING_ELT(path, 0)), 0777);
+    res = mkdir(R_ExpandFileName(CHAR(STRING_ELT(path, 0))), 0777);
     if (show && res && errno == EEXIST)
         warning("'%s' already exists", CHAR(STRING_ELT(path, 0)));
     PROTECT(ans = allocVector(LGLSXP, 1));
