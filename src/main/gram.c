@@ -330,7 +330,7 @@ static const short yycheck[] = {
     -1,  -1, 21,  22,  23, 24, 25,  26,  -1,  -1, -1, -1, 12, -1, -1,  -1, 35, 36, 37, 38, 39, 40, -1, -1, 43,  44, 45,
     46,  -1, -1,  -1,  -1, -1, -1,  53,  35,  36, 37, 38, 39, 40, -1,  -1, 43, 44, 45, 46, -1, -1, -1, -1, -1,  -1, 53};
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/share/bison/bison.simple"
+#line 3 "/usr/lib/bison.simple"
 /* This file comes from bison-1.28.  */
 
 /* Skeleton output parser for bison,
@@ -546,7 +546,7 @@ static void __yy_memcpy(char *to, char *from, unsigned int count)
 #endif
 #endif
 
-#line 217 "/usr/share/bison/bison.simple"
+#line 217 "/usr/lib/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -1377,7 +1377,7 @@ yyreduce:
     }
     }
     /* the action file gets copied in in place of this dollarsign */
-#line 543 "/usr/share/bison/bison.simple"
+#line 543 "/usr/lib/bison.simple"
 
     yyvsp -= yylen;
     yyssp -= yylen;
@@ -3005,31 +3005,21 @@ int isValidName(char *name)
     if (c != '.' && !isalpha(c))
         return 0;
 
-    for (i = 0; keywords[i].name; i++)
-        if (strcmp(keywords[i].name, name) == 0 && !(strcmp(name, "...") == 0))
-            return 0;
+    if (c == '.' && isdigit(*p))
+        return 0;
 
-    if (c == '.')
-    {
-        if (strlen(name) == 1)
-            return 1;
-        while ((c = *p++))
-            if (!isdigit(c))
-            {
-                if (!isalpha(c))
-                    return 0;
-                else
-                    break;
-            };
-        if (c == '\0')
-            return 0;
-    }
     while (c = *p++, (isalnum(c) || c == '.'))
         ;
-    if (c == '\0')
-        return 1;
-    else
+
+    if (c != '\0')
         return 0;
+
+    if (strcmp(name, "...") == 0)
+        return 1;
+
+    for (i = 0; keywords[i].name != NULL; i++)
+        if (strcmp(keywords[i].name, name) == 0)
+            return 0;
 }
 
 static int SymbolValue(int c)
