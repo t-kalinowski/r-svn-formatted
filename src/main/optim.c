@@ -170,6 +170,39 @@ static void fmingr(int n, double *p, double *df, void *ex)
     }
 }
 
+static void genptry(int n, double *p, double *ptry, double scale, void *ex)
+{
+    SEXP s, x;
+    int i;
+    OptStruct OS = (OptStruct)ex;
+    PROTECT_INDEX ipx;
+
+    if (!isNull(OS->R_gcall))
+    {
+        /* user defined generation of candidate point */
+        PROTECT(x = allocVector(REALSXP, n));
+        for (i = 0; i < n; i++)
+        {
+            if (!R_FINITE(p[i]))
+                error("non-finite value supplied by optim");
+            REAL(x)[i] = p[i] * (OS->parscale[i]);
+        }
+        SETCADR(OS->R_gcall, x);
+        PROTECT_WITH_INDEX(s = eval(OS->R_gcall, OS->R_env), &ipx);
+        REPROTECT(s = coerceVector(s, REALSXP), ipx);
+        if (LENGTH(s) != n)
+            error("candidate point in optim evaluated to length %d not %d", LENGTH(s), n);
+        for (i = 0; i < n; i++)
+            ptry[i] = REAL(s)[i] / (OS->parscale[i]);
+        UNPROTECT(2);
+    }
+    else
+    { /* default Gaussian Markov kernel */
+        for (i = 0; i < n; i++)
+            ptry[i] = p[i] + scale * norm_rand(); /* new candidate point */
+    }
+}
+
 /* par fn gr method options */
 SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -247,11 +280,22 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         temp = asReal(getListElement(options, "temp"));
         if (tmax == NA_INTEGER)
             error("tmax is not an integer");
+        if (!isNull(gr))
+        {
+            if (!isFunction(gr))
+                error("gr is not a function");
+            PROTECT(OS->R_gcall = lang2(gr, R_NilValue));
+        }
+        else
+        {
+            PROTECT(OS->R_gcall = R_NilValue); /* for balance */
+        }
         samin(npar, dpar, &val, fminfn, maxit, tmax, temp, trace, (void *)OS);
         for (i = 0; i < npar; i++)
             REAL(par)[i] = dpar[i] * (OS->parscale[i]);
         fncount = maxit;
         grcount = NA_INTEGER;
+        UNPROTECT(1); /* OS->R_gcall */
     }
     else if (strcmp(tn, "BFGS") == 0)
     {
@@ -1236,7 +1280,7 @@ void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, d
    the function func).  Author: Adrian Trapletti
 */
 {
-    long i, j;
+    long j;
     int k, its, itdoc;
     double t, y, dy, ytry, scale;
     double *p, *dp, *ptry;
@@ -1264,10 +1308,7 @@ void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, d
         k = 1;
         while ((k <= tmax) && (its < maxit)) /* iterate at constant temperature */
         {
-            for (i = 0; i < n; i++)
-                dp[i] = scale * t * norm_rand(); /* random perturbation */
-            for (i = 0; i < n; i++)
-                ptry[i] = p[i] + dp[i]; /* new candidate point */
+            genptry(n, p, ptry, scale * t, ex); /* generate new candidate point */
             ytry = fminfn(n, ptry, ex);
             if (!R_FINITE(ytry))
                 ytry = big;
