@@ -31,7 +31,9 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Changes for R:
+/* Copyright (C) 2004 	The R Foundation
+
+   Changes for R:
 
    set the system font for labels
    add newscrollbar, field_no_border
@@ -40,6 +42,7 @@
  */
 
 #include "internal.h"
+#include "ga.h"
 
 #define SHADOW_WIDTH 1
 
@@ -828,16 +831,14 @@ radiobutton newradiobutton(char *text, rect r, actionfn fn)
 }
 #endif
 
-#if 0
-void undotext(control obj)
+void undotext(control obj) /* Why was this previously commented out? CJ */
 {
-	if (! obj)
-		return;
-	if ((obj->kind != FieldObject) && (obj->kind != TextboxObject))
-		return;
-	sendmessage(obj->handle, EM_UNDO, 0, 0L);
+    if (!obj)
+        return;
+    if ((obj->kind != FieldObject) && (obj->kind != TextboxObject))
+        return;
+    sendmessage(obj->handle, EM_UNDO, 0, 0L);
 }
-#endif
 
 void cuttext(control obj)
 {
@@ -973,6 +974,22 @@ textbox newtextarea(char *text, rect r)
     textbox obj = newchildwin(
         "edit", NULL, WS_HSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | ES_AUTOVSCROLL | WS_BORDER | ES_LEFT | ES_MULTILINE, r,
         NULL);
+    if (obj)
+    {
+        obj->kind = TextboxObject;
+        settext(obj, text);
+    }
+    return obj;
+}
+
+textbox newrichtextarea(char *text, rect r)
+{
+    textbox obj;
+    if (!LoadLibrary("riched20.dll")) /* RichEdit version 2.0, not included in Win95 */
+        LoadLibrary("riched32.dll");  /* RichEdit version 1.0 */
+    obj = newchildwin(RICHEDIT_CLASS, NULL,
+                      WS_HSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_NOHIDESEL,
+                      r, NULL);
     if (obj)
     {
         obj->kind = TextboxObject;
@@ -1283,8 +1300,15 @@ void handle_control(HWND hwnd, UINT message)
 
     case FieldObject:
     case TextboxObject:
-        /* For the moment we ignore all but killfocus. */
-        if (message != EN_KILLFOCUS)
+        if (message == EN_MAXTEXT)
+        {
+            /* increase the character limit in the editor by 50%
+               if the limit is reached, but this should not
+               happen */
+            setlimittext(obj, 1.5 * getlimittext(obj));
+        }
+        /* Ignore everything else but killfocus. */
+        else if (message != EN_KILLFOCUS)
             return;
         break;
 

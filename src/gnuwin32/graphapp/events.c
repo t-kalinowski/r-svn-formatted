@@ -23,6 +23,15 @@
    See the file COPYLIB.TXT for details.
 */
 
+/* Copyright (C) 2004 	The R Foundation
+
+   Changes for R, Chris Jackson, 2004
+   Handle find-and-replace modeless dialogs
+   Menu shortcut keys re-enabled
+   Handle WM_CONTEXTMENU events for right-clicking on a (rich) edit control
+   Handle mouse wheel scrolling
+ */
+
 #include "internal.h"
 
 /*
@@ -50,6 +59,8 @@ TIMERPROC app_timer_proc;
 WNDPROC app_control_proc;
 
 static object frontwindow = NULL; /* the window receiving events */
+
+static UINT uFindReplaceMsg; // message identifier for FINDMSGSTRING
 
 /*
  *  Call the relevent mouse handler function.
@@ -323,6 +334,8 @@ static void handle_focus(object obj, int gained_focus)
         obj->state &= ~Focus;
     if ((!USE_NATIVE_BUTTONS) && (obj->kind == ButtonObject))
         InvalidateRect(obj->handle, NULL, 0);
+    if (obj->call && obj->call->focus)
+        obj->call->focus(obj);
 }
 
 /*
@@ -450,6 +463,28 @@ static void handle_drop(object obj, HANDLE dropstruct)
     }
 }
 
+/* Handle a right-click context menu in non-window objects such as text areas */
+
+static void handle_context_menu(object obj, HWND hwnd, int x, int y)
+{
+    menu m = obj->popup;
+    HWND hw = hwnd;
+    POINT wp;
+    if (!m)
+    {
+        m = obj->parent->popup;
+        hw = (HWND)obj->parent->handle;
+    }
+    if (m)
+    {
+        wp.x = x;
+        wp.y = y;
+        if (m->action)
+            m->action(m);
+        TrackPopupMenu(m->handle, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON, wp.x, wp.y, 0, hw, NULL);
+    }
+}
+
 /*
  *  Shared window procedure code. The pass variable is initially zero.
  *  It can be set to non-zero in this procedure if we wish to pass
@@ -458,6 +493,7 @@ static void handle_drop(object obj, HANDLE dropstruct)
 static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, int *pass)
 {
     object obj;
+    WPARAM upDown;
 
     /* Find the library object associated with the hwnd. */
     obj = find_by_handle(hwnd);
@@ -480,6 +516,12 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
     /* Handle other messages. */
     switch (message)
     {
+    case WM_MOUSEWHEEL: /* convert MOUSEWHEEL messages to VSCROLL. Scroll by pairs of lines   */
+        upDown = (short)HIWORD(wParam) > 0 ? SB_LINEUP : SB_LINEDOWN;
+        PostMessage(hwnd, WM_VSCROLL, upDown, 0);
+        PostMessage(hwnd, WM_VSCROLL, upDown, 0);
+        break;
+
     case WM_KEYDOWN: /* record state of shift and control keys */
         handle_keydown(LOWORD(wParam));
         handle_virtual_keydown(obj, LOWORD(wParam));
@@ -719,6 +761,7 @@ long FAR PASCAL _export app_control_procedure(HWND hwnd, UINT message, WPARAM wP
     case WM_KEYDOWN:
         if (obj->kind == TextboxObject)
         {
+            handle_virtual_keydown(obj, key); /* call user's virtual key handler */
             if ((key == VK_TAB) && (keystate & CtrlKey))
             {
                 SetFocus(next->handle);
@@ -742,6 +785,7 @@ long FAR PASCAL _export app_control_procedure(HWND hwnd, UINT message, WPARAM wP
         switch (obj->kind)
         {
         case TextboxObject:
+            send_char(obj, key); /* call user's key handler */
             break;
         case LabelObject:
         case ButtonObject:
@@ -790,6 +834,17 @@ long FAR PASCAL _export app_control_procedure(HWND hwnd, UINT message, WPARAM wP
 #endif /* WIN32 */
         }
         break;
+
+    case WM_CONTEXTMENU:
+        handle_context_menu(obj, hwnd, LOWORD(lParam),
+                            HIWORD(lParam)); /* Handles right-click menus in, for example, edit controls */
+        break;
+    }
+
+    if (message == uFindReplaceMsg)
+    {
+        handle_findreplace(hwnd, (LPFINDREPLACE)lParam);
+        return 0;
     }
 
     result = CallWindowProc((obj->winproc), hwnd, message, wParam, lParam);
@@ -933,19 +988,17 @@ static int TranslateMenuKeys(MSG *msg)
         msg->message = WM_KEYDOWN;
 
     /* Check for menu control keys. */
-    /* disabled : Alt-Gr bug*/
-    return 0;
-    if ((keystate & CtrlKey) && (msg->message == WM_KEYDOWN))
+    /* disabled : Alt-Gr bug*/ /* Re-enabled for the moment, CJ */
+
+    if ((GetKeyState(VK_CONTROL) < 0) && (msg->message == WM_KEYDOWN))
     {
         /* ctrl-letter or ctrl-number is a menu key */
         if (((key >= 'A') && (key <= 'Z')) || ((key >= '0') && (key <= '9')))
         {
-            if (menus_active)
-                handle_menu_key(key);
-            return 1;
+            if (menus_active && handle_menu_key(key))
+                return 1;
         }
     }
-
     return 0; /* 0 = pass to TranslateMessage and DispatchMessage */
 }
 
@@ -963,6 +1016,7 @@ int peekevent(void)
 int doevent(void)
 {
     int result = PeekMessage(&msg, 0, 0, 0, PM_REMOVE);
+    HWND modeless = get_modeless();
 
     if (result)
     {
@@ -972,6 +1026,8 @@ int doevent(void)
         if ((hwndClient) && TranslateMDISysAccel(hwndClient, &msg))
             return result;
         if ((hwndFrame) && (hAccel) && TranslateAccelerator(hwndFrame, hAccel, &msg))
+            return result;
+        if ((modeless) && IsDialogMessage(modeless, &msg))
             return result;
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -1008,6 +1064,7 @@ void drawall(void)
 PROTECTED
 void init_events(void)
 {
+    uFindReplaceMsg = RegisterWindowMessage(FINDMSGSTRING);
     app_timer_proc = (TIMERPROC)MakeProcInstance((FARPROC)app_timer_procedure, this_instance);
     setmousetimer(100); /* start 1/10 second mouse-down auto-repeat */
 

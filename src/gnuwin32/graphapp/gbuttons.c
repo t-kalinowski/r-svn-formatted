@@ -1,4 +1,5 @@
 /* Copyright (C) 1999, 2000 Guido Masarotto
+   Copyright (C) 2004, The R Foundation
 
    Generalized version of widgets in buttons.c
 
@@ -111,4 +112,128 @@ int ggetkeystate()
     if (GetKeyState(VK_SHIFT) & 0x8000)
         k |= ShiftKey;
     return k;
+}
+
+/* Extra text editing functions for R, Chris Jackson */
+
+/* Move the editor caret position lines down. If lines is negative moves caret up.
+   Stops at the top or the bottom if lines is too big or small */
+
+void scrollcaret(textbox t, int lines)
+{
+    long currentline, charindex;
+    int linecount = sendmessage(t->handle, EM_GETLINECOUNT, 0, 0);
+    currentline = sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
+    lines = (currentline + lines > linecount - 1 ? linecount - currentline - 1 : lines);
+    lines = (currentline + lines < 0 ? -currentline : lines);
+    charindex = sendmessage(t->handle, EM_LINEINDEX, currentline + lines, 0);
+    sendmessage(t->handle, EM_SETSEL, charindex, charindex);
+}
+
+/* Modification flags for the text editor */
+
+void gsetmodified(textbox t, int modified)
+{
+    sendmessage(t->handle, EM_SETMODIFY, (WPARAM)modified, 0);
+}
+
+int ggetmodified(textbox t)
+{
+    return sendmessage(t->handle, EM_GETMODIFY, 0, 0);
+}
+
+/* Get the length of the current line in an editing control */
+
+int getlinelength(textbox t)
+{
+    long charindex = sendmessage(t->handle, EM_LINEINDEX, -1, 0);
+    return sendmessage(t->handle, EM_LINELENGTH, charindex, 0);
+}
+
+/* Copy the current line in the editor to a buffer */
+
+void getcurrentline(textbox t, char *line, int length)
+{
+    long currentline = sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
+    *((LPWORD)line) = length; /* set first word of buffer to line length in TCHARs as required by EM_GETLINE */
+    sendmessage(t->handle, EM_GETLINE, currentline, line);
+    line[length] = 0;
+}
+
+/* Copy the current selection in the editor to a buffer */
+
+void getseltext(textbox t, char *text)
+{
+    sendmessage(t->handle, EM_GETSELTEXT, 0, text);
+}
+
+/* Change the maximum number of characters (in bytes) allowed in an editor */
+
+void setlimittext(textbox t, long limit)
+{
+    sendmessage(t->handle, EM_EXLIMITTEXT, 0, limit);
+}
+
+long getlimittext(textbox t)
+{
+    return sendmessage(t->handle, EM_GETLIMITTEXT, 0, 0);
+}
+
+/* Test whether the text limit needs to be increased to accommodate
+   some new text of length n. If so increase it by required amount
+   plus 32K.  */
+
+void checklimittext(textbox t, long n)
+{
+    long limit = getlimittext(t);
+    long len = GetWindowTextLength(t->handle);
+    if (len + n >= limit)
+        setlimittext(t, len + n + 0x8000);
+}
+
+/* Length of text in the clipboard */
+
+long getpastelength()
+{
+    HGLOBAL hglb;
+    char *text;
+    long pastelen;
+    if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) && (text = (char *)GlobalLock(hglb)))
+        pastelen = strlen(text);
+    else
+        pastelen = 0;
+    GlobalUnlock(hglb);
+    CloseClipboard();
+    return pastelen;
+}
+
+/* Modification of the text selection functions in buttons.c to work
+   with the EX messages used in rich edit controls. The selection
+   messages without EX cannot handle more than 64K of text */
+
+void textselectionex(control obj, long *start, long *end)
+{
+    CHARRANGE sel;
+    if (!obj)
+        return;
+    if ((obj->kind != FieldObject) && (obj->kind != TextboxObject))
+        return;
+    sendmessage(obj->handle, EM_EXGETSEL, 0, &sel);
+    *start = sel.cpMin;
+    *end = sel.cpMax;
+}
+
+void selecttextex(control obj, long start, long end)
+{
+    CHARRANGE sel;
+    long length;
+
+    if (!obj)
+        return;
+    if ((obj->kind != FieldObject) && (obj->kind != TextboxObject))
+        return;
+    length = GetWindowTextLength(obj->handle);
+    sel.cpMin = (start < 0) ? length : start;
+    sel.cpMax = (end < 0) ? length : end;
+    sendmessage(obj->handle, EM_EXSETSEL, 0, &sel);
 }

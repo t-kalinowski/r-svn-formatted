@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  file preferences.c
  *  Copyright (C) 2000  Guido Masarotto and Brian Ripley
- *                2003  R Core Development Team
+ *                2004  R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <windows.h>
 #include <ctype.h> /* isspace */
 #include "graphapp/ga.h"
+#include "graphapp/graphapp.h"
 #include "console.h"
 #include "consolestructs.h"
 #include "rui.h"
@@ -36,6 +37,7 @@
 extern char fontname[LF_FACESIZE + 1];    /* from console.c */
 extern int consolex, consoley;            /* from console.c */
 extern int pagerMultiple, haveusedapager; /* from pager.c */
+void editorsetfont(font f);
 
 /*                configuration editor                        */
 
@@ -78,7 +80,7 @@ static char *PointsList[] = {"6", "7", "8", "9", "10", "11", "12", "14", "16", "
 static char *FontsList[] = {"Courier", "Courier New", "FixedSys", "FixedFont", "Lucida Console", "Terminal", NULL};
 
 static window wconfig;
-static button bApply, bSave, bFinish, bCancel;
+static button bApply, bSave, bOK, bCancel;
 static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_grx, l_gry,
     l_cols, l_bgcol, l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
 static radiobutton rb_mdi, rb_sdi, rb_mwin, rb_swin;
@@ -175,12 +177,12 @@ static void cleanup()
     delobj(highlightcol);
     delobj(bApply);
     delobj(bSave);
-    delobj(bFinish);
+    delobj(bOK);
     delobj(bCancel);
     delobj(wconfig);
 }
 
-static void apply(button b)
+static void do_apply()
 {
     rect r = getrect(RConsole);
     ConsoleData p = (ConsoleData)getdata(RConsole);
@@ -233,6 +235,7 @@ static void apply(button b)
         FH = fontheight(p->f);
         FW = fontwidth(p->f);
         havenewfont = 1;
+        editorsetfont(consolefn);
     }
 
     /* resize console, possibly with new font */
@@ -347,20 +350,22 @@ static void save(button b)
     fclose(fp);
 }
 
+static void apply(button b) /* button callback */
+{
+    do_apply(); /* to be used outside button callbacks */
+}
+
 static void cancel(button b)
 {
     cleanup();
     show(RConsole);
 }
 
-static void finish(button b)
+static void ok(button b)
 {
     getGUIstate(&newGUI);
-    if (has_changed())
-    {
-        if (askokcancel("Changes have been made and not applied\nProceed?") == CANCEL)
-            return;
-    }
+    do_apply(); /* It is more usual to have an OK button which applies the new preferences and exits, rather than
+                   prompting first */
     cleanup();
     show(RConsole);
 }
@@ -506,7 +511,7 @@ void Rgui_configure()
 
     bApply = newbutton("Apply", rect(50, 410, 70, 25), apply);
     bSave = newbutton("Save", rect(130, 410, 70, 25), save);
-    bFinish = newbutton("Finish", rect(350, 410, 70, 25), finish);
+    bOK = newbutton("OK", rect(350, 410, 70, 25), ok);
     bCancel = newbutton("Cancel", rect(430, 410, 70, 25), cancel);
     show(wconfig);
     getGUIstate(&curGUI);

@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1998--1999  Guido Masarotto
+ *  Copyright (C) 2004 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -122,7 +123,7 @@ static int addmenuitemarray(menu m, MenuItem a[])
         }
         else
         {
-            if (!(a[i].m = newmenuitem(a[i].nm, 0, a[i].fn)))
+            if (!(a[i].m = newmenuitem(a[i].nm, a[i].key, a[i].fn)))
                 return 0;
         }
         i += 1;

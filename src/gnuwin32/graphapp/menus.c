@@ -30,6 +30,11 @@
  *  menuitems are added to the current_menu.
  */
 
+/* Copyright (C) 2004 	The R Foundation
+
+   Change for R - Chris Jackson.  Enabled menu shortcut keys, don't
+   execute shortcut if menu item is grayed out */
+
 #include "internal.h"
 
 /*
@@ -345,6 +350,7 @@ menuitem newmenuitem(char *name, int key, menufn fn)
         obj->action = fn;
         obj->value = 0;
         obj->text = new_string(name);
+        obj->state |= Enabled;
 
         if (name[0] == '-')
         {
@@ -449,13 +455,23 @@ static void adjust_menus_top_down(object obj)
         activatecontrol(obj);
 }
 
+/* Only search for the key within the menus of the focused window.
+   If key is not found fall through to user's key handler. CJ */
+
 PROTECTED
-void handle_menu_key(WPARAM wParam)
+int handle_menu_key(WPARAM wParam)
 {
-    object obj = find_by_key(wParam);
+    object win, obj;
+    win = find_by_handle(GetFocus());
+    if (win->kind != WindowObject)
+        win = win->parent;
+    obj = find_by_key(win, wParam);
     if (obj)
     {
         adjust_menus_top_down(obj);
-        activatecontrol(obj);
+        if (isenabled(obj)) /* Don't do menu actions which are greyed out. CJ */
+            activatecontrol(obj);
+        return 1;
     }
+    return 0;
 }
