@@ -1459,10 +1459,11 @@ int RxmlNanoFTPRead(void *ctx, void *dest, int len)
         }
         /* one or more fd is ready */
 #ifdef Unix
-        if (!FD_ISSET(ctxt->dataFd, &rfd))
-        { /* was one of the extras */
+        if (!FD_ISSET(ctxt->dataFd, &rfd) || res > 1)
+        {
+            /* was one of the extras */
             what = getSelectedHandler(R_InputHandlers, &rfd);
-            if (!what)
+            if (what != NULL)
                 what->handler((void *)NULL);
             continue;
         }

@@ -612,10 +612,11 @@ static int RxmlNanoHTTPRecv(RxmlNanoHTTPCtxtPtr ctxt)
             }
 
 #ifdef Unix
-            if (!FD_ISSET(ctxt->fd, &rfd))
-            { /* was one of the extras */
+            if (!FD_ISSET(ctxt->fd, &rfd) || howmany > 1)
+            {
+                /* was one of the extras */
                 what = getSelectedHandler(R_InputHandlers, &rfd);
-                if (!what)
+                if (what != NULL)
                     what->handler((void *)NULL);
                 continue;
             }
@@ -964,7 +965,7 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
         else
         { /* some other handler needed */
             what = getSelectedHandler(R_InputHandlers, &rfd);
-            if (!what)
+            if (what != NULL)
                 what->handler((void *)NULL);
             continue;
 #endif
