@@ -127,6 +127,15 @@ SEXP do_body(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (TYPEOF(CAR(args)) == CLOSXP)
+        return duplicate(BODY_EXPR(CAR(args)));
+    else
+        return R_NilValue;
+}
+
+SEXP do_bodyCode(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    checkArity(op, args);
+    if (TYPEOF(CAR(args)) == CLOSXP)
         return duplicate(BODY(CAR(args)));
     else
         return R_NilValue;
