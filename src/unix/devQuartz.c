@@ -574,7 +574,7 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
 
     /* There is the place for you to set the default value of the MAC Devices */
     xd->cex = 1.0;
-    xd->resize = 0;
+    xd->resize = true;
     xd->Text_Font = 4;             /* initial is monaco */
     xd->fontface = 0;              /* initial is plain text */
     xd->fontsize = 12;             /* initial is 12 size */
@@ -609,26 +609,34 @@ OSStatus SetCGContext(QuartzDesc *xd)
     CGRect cgRect;
 
     if (xd->context)
+    {
         CGContextRelease(xd->context);
+        xd->context = NULL;
+    }
 
     if (xd->auxcontext)
+    {
         CGContextRelease(xd->auxcontext);
+        xd->auxcontext = NULL;
+    }
+    if (xd->window)
+        err = CreateCGContextForPort(GetWindowPort(xd->window), &xd->context);
 
-    err = CreateCGContextForPort(GetWindowPort(xd->window), &xd->context);
+    if (xd->window)
+        GetPortBounds(GetWindowPort(xd->window), &rect);
 
-    /*  Translate to QuickDraw coordinate system */
+    if (xd->context)
+    {
+        CGContextTranslateCTM(xd->context, 0, (float)(rect.bottom - rect.top));
 
-    GetPortBounds(GetWindowPort(xd->window), &rect);
-    CGContextTranslateCTM(xd->context, 0, (float)(rect.bottom - rect.top));
+        /* Be aware that by performing a negative scale in the following line of
+           code, your text will also be flipped
+        */
+        CGContextScaleCTM(xd->context, 1, -1);
 
-    /* Be aware that by performing a negative scale in the following line of
-       code, your text will also be flipped
-    */
-    CGContextScaleCTM(xd->context, 1, -1);
-
-    /* We apply here Antialiasing if necessary */
-    CGContextSetShouldAntialias(xd->context, xd->Antialias);
-
+        /* We apply here Antialiasing if necessary */
+        CGContextSetShouldAntialias(xd->context, xd->Antialias);
+    }
     return err;
 }
 
@@ -728,7 +736,6 @@ static void Quartz_Close(NewDevDesc *dd)
 
     if (xd->context)
         CGContextRelease(xd->context);
-
     if (xd->auxcontext)
         CGContextRelease(xd->auxcontext);
 
@@ -781,15 +788,14 @@ static void Quartz_Size(double *left, double *right, double *bottom, double *top
     *bottom = portRect.bottom;
     *top = 0.0;
 
-    xd->windowWidth = *right - *left;
-    xd->windowHeight = *bottom - *top;
-    SetCGContext(xd);
-
+    if (xd->resize)
+    {
+        xd->windowWidth = *right - *left;
+        xd->windowHeight = *bottom - *top;
+        SetCGContext(xd);
+        xd->resize = false;
+    }
     return;
-}
-
-void Quartz_ReSizeWin(NewDevDesc *dd)
-{
 }
 
 static CGContextRef GetContext(QuartzDesc *xd)
@@ -1359,7 +1365,9 @@ OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, voi
             GetWindowPortBounds(xd->window, &portRect);
             if ((xd->windowWidth != portRect.right) || (xd->windowHeight != portRect.bottom))
             {
+                xd->resize = true;
                 dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
+                xd->resize = false;
                 GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
             }
             err = noErr;
