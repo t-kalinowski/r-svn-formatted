@@ -371,9 +371,11 @@ void PrepareMenus(void)
         EnableMenuItem(menu, kItemClose);
         if (!isHelpWindow(window))
         {
-            //  EnableMenuItem (menu, kItemSaveAs);
+            EnableMenuItem(menu, kItemSaveAs);
             EnableMenuItem(menu, kItemSave);
         }
+        if (isGraphicWindow(window) || isHelpWindow(window))
+            DisableMenuItem(menu, kItemSave);
     }
 
     /* *** EDIT MENU ***
@@ -521,7 +523,6 @@ OSErr DoNew(Boolean editable)
     return CreateWindow(nil, editable);
 }
 
-const FSSpec defaultLocationfss;
 /* This routine returns a FSSpec with corresponding error. The second
    argument is ignored for the moment. This routine is used to Source
    files and Show files.
@@ -531,7 +532,6 @@ const FSSpec defaultLocationfss;
 OSErr MyOpenDocument(FSSpec *documentFSSpec, SFTypeList *typeList)
 {
     NavDialogOptions dialogOptions;
-    AEDesc defaultLocation;
     NavEventUPP eventProc = nil;
     NavObjectFilterUPP filterProc = nil;
     OSErr anErr = noErr;
@@ -556,12 +556,10 @@ OSErr MyOpenDocument(FSSpec *documentFSSpec, SFTypeList *typeList)
             NavTypeListHandle deftypeList = (NavTypeListHandle)GetResource('open', 128);
             deftypeList = nil; /* we apply no filter for the moment */
 
-            anErr = AECreateDesc(typeFSS, &defaultLocationfss, sizeof(defaultLocationfss), &defaultLocation);
-
             /* Call NavGetFile() with specified options and
                         declare our app-defined functions and type list
                       */
-            anErr = NavGetFile(&defaultLocation, &reply, &dialogOptions, nil, nil, nil, deftypeList, nil);
+            anErr = NavGetFile(nil, &reply, &dialogOptions, nil, nil, nil, deftypeList, nil);
 
             if (anErr == noErr && reply.validRecord)
             {
@@ -593,7 +591,6 @@ OSErr MyOpenDocument(FSSpec *documentFSSpec, SFTypeList *typeList)
             {
                 ReleaseResource((Handle)typeList);
             }
-            (void)AEDisposeDesc(&defaultLocation);
         }
     }
 
@@ -701,6 +698,8 @@ OSErr DoOpenText(Boolean editable)
     UniqueWinTitle();
     if (Edit_Window > 2)
         RepositionWindow(Edit_Windows[Edit_Window - 1], Edit_Windows[Edit_Window - 2], kWindowCascadeOnParentWindow);
+
+    SetWindowProxyFSSpec(Edit_Windows[Edit_Window - 1], &myfss);
 
     return err;
 }
@@ -817,6 +816,26 @@ OSErr SaveWindow(const FSSpec *pFileSpec, WindowPtr window)
     return err;
 }
 
+OSStatus DoSave(WindowPtr window)
+{
+    FSSpec spec;
+    OSStatus err;
+
+    //	get the file spec associated with this window, if any
+    if ((err = GetWindowProxyFSSpec(window, &spec)) == noErr)
+    {
+        err = SaveWindow(&spec, window);
+    }
+    else
+    {
+        //	if no file was previously associated with this window, or if the
+        //	alias resolution failed, prompt the user for a new destination
+        err = DoSaveAs(nil, window);
+    }
+
+    return err;
+}
+
 /* DoSaveAs
  */
 OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
@@ -831,6 +850,7 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
     OSType fileTypeToSave = 'TEXT';
     OSType creatorType = 'ttxt';
     FSSpec mytarget;
+    FInfo finderInfo;
 
     hPrompt = GetString(kPromptStringID);
     HLockHi((Handle)hPrompt);
@@ -880,15 +900,8 @@ OSErr DoSaveAs(const FSSpec *suggestedTarget, WindowPtr window)
 
     HUnlock((Handle)hPrompt);
 
-    return err;
-}
-
-OSErr DoSave(WindowPtr window)
-{
-    FSSpecPtr suggestedTarget = nil;
-    OSErr err;
-
-    err = DoSaveAs(suggestedTarget, window);
+    if (err == noErr)
+        SetWindowProxyFSSpec(window, &mytarget);
 
     return err;
 }
@@ -1293,6 +1306,10 @@ void DoFileChoice(SInt16 menuItem, WindowPtr window)
         break;
 
     case kItemSave:
+        DoSave(window);
+        break;
+
+    case kItemSaveAs:
         if (isGraphicWindow(window))
             doSaveAsGraCommand();
         else
