@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -157,7 +157,7 @@ void formatInteger(int *x, int n, int *fieldwidth)
  *    kpower+1+sgn	including sign
  */
 
-#define MAXDIG print_digits
+/*old #define MAXDIG print_digits */
 
 static double tbl[] = {0.e0, 1.e0, 1.e1, 1.e2, 1.e3, 1.e4, 1.e5, 1.e6, 1.e7, 1.e8, 1.e9};
 
