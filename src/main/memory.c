@@ -901,7 +901,7 @@ static SEXP NewWeakRef(SEXP key, SEXP val, SEXP fin, Rboolean onexit)
     case EXTPTRSXP:
         break;
     default:
-        error("can only weakly reference/finalize reference objects");
+        error(_("can only weakly reference/finalize reference objects"));
     }
 
     PROTECT(key);
@@ -938,7 +938,7 @@ SEXP R_MakeWeakRef(SEXP key, SEXP val, SEXP fin, Rboolean onexit)
     case SPECIALSXP:
         break;
     default:
-        error("finalizer must be a function or NULL");
+        error(_("finalizer must be a function or NULL"));
     }
     return NewWeakRef(key, val, fin, onexit);
 }
@@ -988,7 +988,7 @@ static R_CFinalizer_t GetCFinalizer(SEXP fun)
 SEXP R_WeakRefKey(SEXP w)
 {
     if (TYPEOF(w) != WEAKREFSXP)
-        error("not a weak reference");
+        error(_("not a weak reference"));
     return WEAKREF_KEY(w);
 }
 
@@ -996,7 +996,7 @@ SEXP R_WeakRefValue(SEXP w)
 {
     SEXP v;
     if (TYPEOF(w) != WEAKREFSXP)
-        error("not a weak reference");
+        error(_("not a weak reference"));
     v = WEAKREF_VALUE(w);
     if (v != R_NilValue && NAMED(v) != 2)
         SET_NAMED(v, 2);
@@ -1007,7 +1007,7 @@ void R_RunWeakRefFinalizer(SEXP w)
 {
     SEXP key, fun, e;
     if (TYPEOF(w) != WEAKREFSXP)
-        error("not a weak reference");
+        error(_("not a weak reference"));
     key = WEAKREF_KEY(w);
     fun = WEAKREF_FINALIZER(w);
     SET_WEAKREF_KEY(w, R_NilValue);
@@ -1121,9 +1121,9 @@ SEXP do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (TYPEOF(CAR(args)) != ENVSXP && TYPEOF(CAR(args)) != EXTPTRSXP)
-        errorcall(call, "1st arg must be environment or external pointer");
+        errorcall(call, _("1st arg must be environment or external pointer"));
     if (TYPEOF(CADR(args)) != CLOSXP)
-        errorcall(call, "2nd arg must be a function");
+        errorcall(call, _("2nd arg must be a function"));
 
     R_RegisterFinalizer(CAR(args), CADR(args));
     return R_NilValue;
@@ -1468,12 +1468,12 @@ SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static void mem_err_heap(R_size_t size)
 {
-    errorcall(R_NilValue, "vector memory exhausted (limit reached?)");
+    errorcall(R_NilValue, _("vector memory exhausted (limit reached?)"));
 }
 
 static void mem_err_cons()
 {
-    errorcall(R_NilValue, "cons memory exhausted (limit reached?)");
+    errorcall(R_NilValue, _("cons memory exhausted (limit reached?)"));
 }
 
 /* InitMemory : Initialise the memory to be used in R. */
@@ -1781,7 +1781,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
     int node_class;
 
     if (length < 0)
-        errorcall(R_GlobalContext->call, "negative length vectors are not allowed");
+        errorcall(R_GlobalContext->call, _("negative length vectors are not allowed"));
     /* number of vector cells to allocate */
     switch (type)
     {
@@ -1800,7 +1800,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         else
         {
             if (length > R_SIZE_T_MAX / sizeof(int))
-                errorcall(R_GlobalContext->call, "cannot allocate vector of length %d", length);
+                errorcall(R_GlobalContext->call, _("cannot allocate vector of length %d"), length);
             size = INT2VEC(length);
         }
         break;
@@ -1810,7 +1810,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         else
         {
             if (length > R_SIZE_T_MAX / sizeof(double))
-                errorcall(R_GlobalContext->call, "cannot allocate vector of length %d", length);
+                errorcall(R_GlobalContext->call, _("cannot allocate vector of length %d"), length);
             size = FLOAT2VEC(length);
         }
         break;
@@ -1820,7 +1820,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         else
         {
             if (length > R_SIZE_T_MAX / sizeof(Rcomplex))
-                errorcall(R_GlobalContext->call, "cannot allocate vector of length %d", length);
+                errorcall(R_GlobalContext->call, _("cannot allocate vector of length %d"), length);
             size = COMPLEX2VEC(length);
         }
         break;
@@ -1832,7 +1832,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         else
         {
             if (length > R_SIZE_T_MAX / sizeof(SEXP))
-                errorcall(R_GlobalContext->call, "cannot allocate vector of length %d", length);
+                errorcall(R_GlobalContext->call, _("cannot allocate vector of length %d"), length);
             size = PTR2VEC(length);
         }
         break;
@@ -1845,7 +1845,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
     case LISTSXP:
         return allocList(length);
     default:
-        error("invalid type/length (%d/%d) in vector allocation", type, length);
+        error(_("invalid type/length (%d/%d) in vector allocation"), type, length);
     }
 
     if (size <= NodeClassSize[1])
@@ -1898,7 +1898,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
             {
                 /* reset the vector heap limit */
                 R_VSize = old_R_VSize;
-                errorcall(R_NilValue, "cannot allocate vector of size %lu Kb", (size * sizeof(VECREC)) / 1024);
+                errorcall(R_NilValue, _("cannot allocate vector of size %lu Kb"), (size * sizeof(VECREC)) / 1024);
             }
             s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
             SET_NODE_CLASS(s, LARGE_NODE_CLASS);
@@ -1982,7 +1982,7 @@ SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
 #else  /* not _R_HAVE_TIMING_ */
 SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    error("gc.time is not implemented on this system");
+    error(_("gc.time is not implemented on this system"));
     return R_NilValue; /* -Wall */
 }
 #endif /* not _R_HAVE_TIMING_ */
@@ -2175,7 +2175,7 @@ SEXP protect(SEXP s)
 
         if (R_PPStackSize < R_RealPPStackSize)
             R_PPStackSize = R_RealPPStackSize;
-        errorcall(R_NilValue, "protect(): stack overflow");
+        errorcall(R_NilValue, _("protect(): protection stack overflow"));
 
         endcontext(&cntxt); /* not reached */
     }
@@ -2190,7 +2190,7 @@ void unprotect(int l)
     if (R_PPStackTop >= l)
         R_PPStackTop -= l;
     else
-        error("unprotect(): stack imbalance");
+        error(_("unprotect(): stack imbalance"));
 }
 
 /* "unprotect_ptr" remove pointer from somewhere in R_PPStack */
@@ -2204,7 +2204,7 @@ void unprotect_ptr(SEXP s)
     do
     {
         if (i == 0)
-            error("unprotect_ptr: pointer not found");
+            error(_("unprotect_ptr: pointer not found"));
     } while (R_PPStack[--i] != s);
 
     /* OK, got it, and  i  is indexing its location */
@@ -2247,7 +2247,7 @@ void *R_chk_calloc(size_t nelem, size_t elsize)
 #endif
     p = calloc(nelem, elsize);
     if (!p)
-        error("Calloc could not allocate (%d of %d) memory", nelem, elsize);
+        error(_("Calloc could not allocate (%d of %d) memory"), nelem, elsize);
     return (p);
 }
 void *R_chk_realloc(void *ptr, size_t size)
@@ -2259,7 +2259,7 @@ void *R_chk_realloc(void *ptr, size_t size)
     else
         p = malloc(size);
     if (!p)
-        error("Realloc could not re-allocate (size %d) memory", size);
+        error(_("Realloc could not re-allocate (size %d) memory"), size);
     return (p);
 }
 void R_chk_free(void *ptr)
@@ -2438,7 +2438,7 @@ SEXP *(STRING_PTR)(SEXP x)
 }
 SEXP *(VECTOR_PTR)(SEXP x)
 {
-    error("not safe to return vector pointer");
+    error(_("not safe to return vector pointer"));
     return NULL;
 }
 
@@ -2520,7 +2520,7 @@ void(SET_TAG)(SEXP x, SEXP v)
 SEXP(SETCAR)(SEXP x, SEXP y)
 {
     if (x == NULL || x == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     CHECK_OLD_TO_NEW(x, y);
     CAR(x) = y;
     return y;
@@ -2529,7 +2529,7 @@ SEXP(SETCAR)(SEXP x, SEXP y)
 SEXP(SETCDR)(SEXP x, SEXP y)
 {
     if (x == NULL || x == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     CHECK_OLD_TO_NEW(x, y);
     CDR(x) = y;
     return y;
@@ -2539,7 +2539,7 @@ SEXP(SETCADR)(SEXP x, SEXP y)
 {
     SEXP cell;
     if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     cell = CDR(x);
     CHECK_OLD_TO_NEW(cell, y);
     CAR(cell) = y;
@@ -2551,7 +2551,7 @@ SEXP(SETCADDR)(SEXP x, SEXP y)
     SEXP cell;
     if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue || CDDR(x) == NULL ||
         CDDR(x) == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     cell = CDDR(x);
     CHECK_OLD_TO_NEW(cell, y);
     CAR(cell) = y;
@@ -2565,7 +2565,7 @@ SEXP(SETCADDDR)(SEXP x, SEXP y)
     SEXP cell;
     if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue || CDDR(x) == NULL ||
         CDDR(x) == R_NilValue || CDDDR(x) == NULL || CDDDR(x) == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     cell = CDDDR(x);
     CHECK_OLD_TO_NEW(cell, y);
     CAR(cell) = y;
@@ -2579,7 +2579,7 @@ SEXP(SETCAD4R)(SEXP x, SEXP y)
     SEXP cell;
     if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue || CDDR(x) == NULL ||
         CDDR(x) == R_NilValue || CDDDR(x) == NULL || CDDDR(x) == R_NilValue || CD4R(x) == NULL || CD4R(x) == R_NilValue)
-        error("bad value");
+        error(_("bad value"));
     cell = CD4R(x);
     CHECK_OLD_TO_NEW(cell, y);
     CAR(cell) = y;

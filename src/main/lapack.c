@@ -56,7 +56,7 @@ static void La_Init(void)
     if (!res)
         return;
     if (!ptr->svd)
-        error("lapack routines cannot be accessed in module");
+        error(_("lapack routines cannot be accessed in module"));
     initialized = 1;
     return;
 }
@@ -69,7 +69,7 @@ SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP method)
         return (*ptr->svd)(jobu, jobv, x, s, u, v, method);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -82,7 +82,7 @@ SEXP La_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
         return (*ptr->svd_cmplx)(jobu, jobv, x, s, u, v);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -95,7 +95,7 @@ SEXP La_rs(SEXP x, SEXP only_values, SEXP method)
         return (*ptr->rs)(x, only_values, method);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -108,7 +108,7 @@ SEXP La_rs_cmplx(SEXP x, SEXP only_values)
         return (*ptr->rs_cmplx)(x, only_values);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -121,7 +121,7 @@ SEXP La_rg(SEXP x, SEXP only_values)
         return (*ptr->rg)(x, only_values);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -134,7 +134,7 @@ SEXP La_rg_cmplx(SEXP x, SEXP only_values)
         return (*ptr->rg_cmplx)(x, only_values);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -147,7 +147,7 @@ SEXP La_chol(SEXP A)
         return (*ptr->chol)(A);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -160,7 +160,7 @@ SEXP La_chol2inv(SEXP x, SEXP size)
         return (*ptr->chol2inv)(x, size);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -173,7 +173,7 @@ SEXP La_zgesv(SEXP A, SEXP B)
         return (*ptr->zgesv)(A, B);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -186,7 +186,7 @@ SEXP La_zgeqp3(SEXP A)
         return (*ptr->zgeqp3)(A);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -199,7 +199,7 @@ SEXP qr_coef_cmplx(SEXP Q, SEXP B)
         return (*ptr->qr_coef_cmplx)(Q, B);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -212,7 +212,7 @@ SEXP qr_qy_cmplx(SEXP Q, SEXP B, SEXP trans)
         return (*ptr->qr_qy_cmplx)(Q, B, trans);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -225,7 +225,7 @@ SEXP La_dgesv(SEXP A, SEXP B, SEXP tol)
         return (*ptr->dgesv)(A, B, tol);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -238,7 +238,7 @@ SEXP La_dgeqp3(SEXP A)
         return (*ptr->dgeqp3)(A);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -251,7 +251,7 @@ SEXP qr_coef_real(SEXP Q, SEXP B)
         return (*ptr->qr_coef_real)(Q, B);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -264,7 +264,7 @@ SEXP qr_qy_real(SEXP Q, SEXP B, SEXP trans)
         return (*ptr->qr_qy_real)(Q, B, trans);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }
@@ -277,7 +277,7 @@ SEXP det_ge_real(SEXP A, SEXP logarithm)
         return (*ptr->det_ge_real)(A, logarithm);
     else
     {
-        error("lapack routines cannot be loaded");
+        error(_("lapack routines cannot be loaded"));
         return R_NilValue;
     }
 }

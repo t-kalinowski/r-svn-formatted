@@ -53,7 +53,7 @@ static double fcn1(double x, struct callinfo *info)
             goto badvalue;
         if (INTEGER(s)[0] == NA_INTEGER)
         {
-            warning("NA replaced by maximum positive value");
+            warning(_("NA replaced by maximum positive value"));
             return DBL_MAX;
         }
         else
@@ -64,7 +64,7 @@ static double fcn1(double x, struct callinfo *info)
             goto badvalue;
         if (!R_FINITE(REAL(s)[0]))
         {
-            warning("NA/Inf replaced by maximum positive value");
+            warning(_("NA/Inf replaced by maximum positive value"));
             return DBL_MAX;
         }
         else
@@ -74,7 +74,7 @@ static double fcn1(double x, struct callinfo *info)
         goto badvalue;
     }
 badvalue:
-    error("invalid function value in 'optimize'");
+    error(_("invalid function value in 'optimize'"));
     return 0; /* for -Wall */
 }
 
@@ -92,30 +92,30 @@ SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     v = CAR(args);
     if (!isFunction(v))
-        errorcall(call, "attempt to minimize non-function");
+        errorcall(call, _("attempt to minimize non-function"));
     args = CDR(args);
 
     /* xmin */
 
     xmin = asReal(CAR(args));
     if (!R_FINITE(xmin))
-        errorcall(call, "invalid xmin value");
+        errorcall(call, _("invalid xmin value"));
     args = CDR(args);
 
     /* xmax */
 
     xmax = asReal(CAR(args));
     if (!R_FINITE(xmax))
-        errorcall(call, "invalid xmax value");
+        errorcall(call, _("invalid xmax value"));
     if (xmin >= xmax)
-        errorcall(call, "xmin not less than xmax");
+        errorcall(call, _("xmin not less than xmax"));
     args = CDR(args);
 
     /* tol */
 
     tol = asReal(CAR(args));
     if (!R_FINITE(tol) || tol <= 0.0)
-        errorcall(call, "invalid tol value");
+        errorcall(call, _("invalid tol value"));
 
     info.R_env = rho;
     PROTECT(info.R_fcall = lang2(v, R_NilValue));
@@ -140,7 +140,7 @@ static double fcn2(double x, struct callinfo *info)
             goto badvalue;
         if (INTEGER(s)[0] == NA_INTEGER)
         {
-            warning("NA replaced by maximum positive value");
+            warning(_("NA replaced by maximum positive value"));
             return DBL_MAX;
         }
         else
@@ -151,7 +151,7 @@ static double fcn2(double x, struct callinfo *info)
             goto badvalue;
         if (!R_FINITE(REAL(s)[0]))
         {
-            warning("NA/Inf replaced by maximum positive value");
+            warning(_("NA/Inf replaced by maximum positive value"));
             return DBL_MAX;
         }
         else
@@ -161,7 +161,7 @@ static double fcn2(double x, struct callinfo *info)
         goto badvalue;
     }
 badvalue:
-    error("invalid function value in 'zeroin'");
+    error(_("invalid function value in 'zeroin'"));
     return 0; /* for -Wall */
 }
 
@@ -180,36 +180,36 @@ SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     v = CAR(args);
     if (!isFunction(v))
-        errorcall(call, "attempt to minimize non-function");
+        errorcall(call, _("attempt to minimize non-function"));
     args = CDR(args);
 
     /* xmin */
 
     xmin = asReal(CAR(args));
     if (!R_FINITE(xmin))
-        errorcall(call, "invalid xmin value");
+        errorcall(call, _("invalid xmin value"));
     args = CDR(args);
 
     /* xmax */
 
     xmax = asReal(CAR(args));
     if (!R_FINITE(xmax))
-        errorcall(call, "invalid xmax value");
+        errorcall(call, _("invalid xmax value"));
     if (xmin >= xmax)
-        errorcall(call, "xmin not less than xmax");
+        errorcall(call, _("xmin not less than xmax"));
     args = CDR(args);
 
     /* tol */
 
     tol = asReal(CAR(args));
     if (!R_FINITE(tol) || tol <= 0.0)
-        errorcall(call, "invalid tol value");
+        errorcall(call, _("invalid tol value"));
     args = CDR(args);
 
     /* maxiter */
     iter = asInteger(CAR(args));
     if (iter <= 0)
-        errorcall(call, "maxiter must be positive");
+        errorcall(call, _("maxiter must be positive"));
 
     info.R_env = rho;
     PROTECT(info.R_fcall = lang2(v, R_NilValue)); /* the info used in fcn2() */
@@ -364,7 +364,7 @@ static void fcn(int n, const double x[], double *f, function_info *state)
     for (i = 0; i < n; i++)
     {
         if (!R_FINITE(x[i]))
-            error("non-finite value supplied by nlm");
+            error(_("non-finite value supplied by nlm"));
         REAL(s)[i] = x[i];
     }
     s = eval(state->R_fcall, state->R_env);
@@ -375,7 +375,7 @@ static void fcn(int n, const double x[], double *f, function_info *state)
             goto badvalue;
         if (INTEGER(s)[0] == NA_INTEGER)
         {
-            warning("NA replaced by maximum positive value");
+            warning(_("NA replaced by maximum positive value"));
             *f = DBL_MAX;
         }
         else
@@ -386,7 +386,7 @@ static void fcn(int n, const double x[], double *f, function_info *state)
             goto badvalue;
         if (!R_FINITE(REAL(s)[0]))
         {
-            warning("NA/Inf replaced by maximum positive value");
+            warning(_("NA/Inf replaced by maximum positive value"));
             *f = DBL_MAX;
         }
         else
@@ -407,7 +407,7 @@ static void fcn(int n, const double x[], double *f, function_info *state)
     return;
 
 badvalue:
-    error("invalid function value in 'nlm' optimizer");
+    error(_("invalid function value in 'nlm' optimizer"));
 }
 
 static void Cd1fcn(int n, const double x[], double *g, function_info *state)
@@ -419,7 +419,7 @@ static void Cd1fcn(int n, const double x[], double *g, function_info *state)
         fcn(n, x, g, state);
         if ((ind = FT_lookup(n, x, state)) < 0)
         {
-            error("function value caching for optimization is seriously confused.\n");
+            error(_("function value caching for optimization is seriously confused"));
         }
     }
     Memcpy(g, state->Ftable[ind].grad, n);
@@ -434,7 +434,7 @@ static void Cd2fcn(int nr, int n, const double x[], double *h, function_info *st
         fcn(n, x, h, state);
         if ((ind = FT_lookup(n, x, state)) < 0)
         {
-            error("function value caching for optimization is seriously confused.\n");
+            error(_("function value caching for optimization is seriously confused"));
         }
     }
     for (j = 0; j < n; j++)
@@ -449,17 +449,17 @@ static double *fixparam(SEXP p, int *n, SEXP call)
     int i;
 
     if (!isNumeric(p))
-        errorcall(call, "numeric parameter expected");
+        errorcall(call, _("numeric parameter expected"));
 
     if (*n)
     {
         if (LENGTH(p) != *n)
-            errorcall(call, "conflicting parameter lengths");
+            errorcall(call, _("conflicting parameter lengths"));
     }
     else
     {
         if (LENGTH(p) <= 0)
-            errorcall(call, "invalid parameter length");
+            errorcall(call, _("invalid parameter length"));
         *n = LENGTH(p);
     }
 
@@ -471,7 +471,7 @@ static double *fixparam(SEXP p, int *n, SEXP call)
         for (i = 0; i < *n; i++)
         {
             if (INTEGER(p)[i] == NA_INTEGER)
-                errorcall(call, "missing value in parameter");
+                errorcall(call, _("missing value in parameter"));
             x[i] = INTEGER(p)[i];
         }
         break;
@@ -479,19 +479,19 @@ static double *fixparam(SEXP p, int *n, SEXP call)
         for (i = 0; i < *n; i++)
         {
             if (!R_FINITE(REAL(p)[i]))
-                errorcall(call, "missing value in parameter");
+                errorcall(call, _("missing value in parameter"));
             x[i] = REAL(p)[i];
         }
         break;
     default:
-        errorcall(call, "invalid parameter type");
+        errorcall(call, _("invalid parameter type"));
     }
     return x;
 }
 
 static void invalid_na(SEXP call)
 {
-    errorcall(call, "invalid NA value in parameter");
+    errorcall(call, _("invalid NA value in parameter"));
 }
 
 /* Fatal errors - we don't deliver an answer */
@@ -501,25 +501,25 @@ static void opterror(int nerr)
     switch (nerr)
     {
     case -1:
-        error("non-positive number of parameters in nlm");
+        error(_("non-positive number of parameters in nlm"));
     case -2:
-        error("nlm is inefficient for 1-d problems");
+        error(_("nlm is inefficient for 1-d problems"));
     case -3:
-        error("illegal gradient tolerance in nlm");
+        error(_("illegal gradient tolerance in nlm"));
     case -4:
-        error("illegal iteration limit in nlm");
+        error(_("illegal iteration limit in nlm"));
     case -5:
-        error("minimization function has no good digits in nlm");
+        error(_("minimization function has no good digits in nlm"));
     case -6:
-        error("no analytic gradient to check in nlm!");
+        error(_("no analytic gradient to check in nlm!"));
     case -7:
-        error("no analytic Hessian to check in nlm!");
+        error(_("no analytic Hessian to check in nlm!"));
     case -21:
-        error("probable coding error in analytic gradient");
+        error(_("probable coding error in analytic gradient"));
     case -22:
-        error("probable coding error in analytic Hessian");
+        error(_("probable coding error in analytic Hessian"));
     default:
-        error("*** unknown error message (msg = %d) in nlm()\n*** should not happen!", nerr);
+        error(_("*** unknown error message (msg = %d) in nlm()\n*** should not happen!"), nerr);
     }
 }
 
@@ -530,28 +530,28 @@ static void optcode(int code)
     switch (code)
     {
     case 1:
-        Rprintf("Relative gradient close to zero.\n");
-        Rprintf("Current iterate is probably solution.\n");
+        Rprintf(_("Relative gradient close to zero.\n"));
+        Rprintf(_("Current iterate is probably solution.\n"));
         break;
     case 2:
-        Rprintf("Successive iterates within tolerance.\n");
-        Rprintf("Current iterate is probably solution.\n");
+        Rprintf(_("Successive iterates within tolerance.\n"));
+        Rprintf(_("Current iterate is probably solution.\n"));
         break;
     case 3:
-        Rprintf("Last global step failed to locate a point lower than x.\n");
-        Rprintf("Either x is an approximate local minimum of the function,\n");
-        Rprintf("the function is too non-linear for this algorithm,\n");
-        Rprintf("or steptol is too large.\n");
+        Rprintf(_("Last global step failed to locate a point lower than x.\n"));
+        Rprintf(_("Either x is an approximate local minimum of the function,\n\
+the function is too non-linear for this algorithm,\n\
+or steptol is too large.\n"));
         break;
     case 4:
-        Rprintf("Iteration limit exceeded.  Algorithm failed.\n");
+        Rprintf(_("Iteration limit exceeded.  Algorithm failed.\n"));
         break;
     case 5:
-        Rprintf("Maximum step size exceeded 5 consecutive times.\n");
-        Rprintf("Either the function is unbounded below,\n");
-        Rprintf("becomes asymptotic to a finite value\n");
-        Rprintf("from above in some direction,\n");
-        Rprintf("or stepmx is too small.\n");
+        Rprintf(_("Maximum step size exceeded 5 consecutive times.\n\
+Either the function is unbounded below,\n\
+becomes asymptotic to a finite value\n\
+from above in some direction,\n"
+                  "or stepmx is too small.\n"));
         break;
     }
     Rprintf("\n");
@@ -586,7 +586,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     state->R_env = rho;
     v = CAR(args);
     if (!isFunction(v))
-        error("attempt to minimize non-function");
+        error(_("attempt to minimize non-function"));
     PROTECT(state->R_fcall = lang2(v, R_NilValue));
     args = CDR(args);
 
@@ -681,13 +681,13 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
                 }
                 else
                 {
-                    warning("hessian supplied is of the wrong length or mode, so ignored");
+                    warning(_("hessian supplied is of the wrong length or mode, so ignored"));
                 }
             }
         }
         else
         {
-            warning("gradient supplied is of the wrong length or mode, so ignored");
+            warning(_("gradient supplied is of the wrong length or mode, so ignored"));
         }
     }
     if (((msg / 4) % 2) && !iahflg)
