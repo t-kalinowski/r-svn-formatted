@@ -1392,7 +1392,7 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
         xd->kind = (dsp[0] == 'p') ? PNG : BMP;
         if (!Load_Rbitmap_Dll())
         {
-            warning("Impossible to load Rbitmap.dll");
+            warning("Unable to load Rbitmap.dll");
             return FALSE;
         }
         /*
@@ -1400,14 +1400,16 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
           irrelevant,i.e., depth of the bitmap is the one of graphic card
           if required depth > 1
         */
-        if (((xd->gawin = newbitmap(w, h, 256)) == NULL) || ((xd->fp = fopen(&dsp[4], "wb")) == NULL))
-        {
-            if (xd->gawin != NULL)
-                del(xd->gawin);
-            if (xd->fp != NULL)
-                fclose(xd->fp);
+    if(((xd->gawin = newbitmap(w, h, 256)) == NULL) {
+            warning("Unable to allocate bitmap");
             return FALSE;
-        }
+	}  
+	if (((xd->fp = fopen(&dsp[4],"wb")) == NULL )) {
+            del(xd->gawin);
+            warning("Unable to open file `%s' for writing", &dsp[4]);
+            fclose(xd->fp);
+            return FALSE;
+	}
     }
     else if (!strncmp(dsp, "jpeg:", 5))
     {
@@ -1417,18 +1419,22 @@ static Rboolean GA_Open(DevDesc *dd, gadesc *xd, char *dsp, double w, double h, 
             return FALSE;
         if (!Load_Rbitmap_Dll())
         {
-            warning("Impossible to load Rbitmap.dll");
+            warning("Unable to load Rbitmap.dll");
             return FALSE;
         }
         *p = '\0';
         xd->quality = atoi(&dsp[5]);
         *p = ':';
-        if (((xd->gawin = newbitmap(w, h, 256)) == NULL) || ((xd->fp = fopen(p + 1, "wb")) == NULL))
+        if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
         {
-            if (xd->gawin != NULL)
-                del(xd->gawin);
-            if (xd->fp != NULL)
-                fclose(xd->fp);
+            warning("Unable to allocate bitmap");
+            return FALSE;
+        }
+        if (((xd->fp = fopen(p + 1, "wb")) == NULL))
+        {
+            del(xd->gawin);
+            warning("Unable to open file `%s' for writing", p + 1);
+            fclose(xd->fp);
             return FALSE;
         }
     }
