@@ -1,6 +1,6 @@
 /*  R : A Computer Language for Statistical Data Analysis
  *
- *  Copyright (C) 1999-2001	The R Development Core Team
+ *  Copyright (C) 1999-2002	The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,10 +32,7 @@
 
 /* Internal */
 static void partrans(int np, double *raw, double *new);
-static void dotrans(double *raw, double *new, int trans);
-
-/* Globals for `starma' : */
-static Starma G;
+static void dotrans(Starma G, double *raw, double *new, int trans);
 
 /* cor is the autocorrelations starting from 0 lag*/
 void uni_pacf(double *cor, double *p, int *pnlag)
@@ -67,9 +64,27 @@ void uni_pacf(double *cor, double *p, int *pnlag)
     }
 }
 
+/* Use an external reference to store the structure we keep allocated
+   memory in */
+static SEXP Starma_tag;
+#define CHECK_STARMA(s)                                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (TYPEOF(s) != EXTPTRSXP || R_ExternalPtrTag(s) != Starma_tag)                                               \
+            error("bad Starma struct");                                                                                \
+    } while (0)
+
+#define GET_STARMA                                                                                                     \
+    Starma G;                                                                                                          \
+    if (TYPEOF(pG) != EXTPTRSXP || R_ExternalPtrTag(pG) != Starma_tag)                                                 \
+        error("bad Starma struct");                                                                                    \
+    G = (Starma)R_ExternalPtrAddr(pG)
+
 SEXP setup_starma(SEXP na, SEXP x, SEXP pn, SEXP xreg, SEXP pm, SEXP dt, SEXP ptrans)
 {
+    Starma G;
     int i, n, m, ip, iq, ir, np;
+    SEXP res;
 
     G = Calloc(1, starma_struct);
     G->mp = INTEGER(na)[0];
@@ -104,11 +119,15 @@ SEXP setup_starma(SEXP na, SEXP x, SEXP pn, SEXP xreg, SEXP pm, SEXP dt, SEXP pt
         G->w[i] = G->wkeep[i] = REAL(x)[i];
     for (i = 0; i < n * m; i++)
         G->reg[i] = REAL(xreg)[i];
-    return R_NilValue;
+    Starma_tag = install("STARMA_TAG");
+    res = R_MakeExternalPtr(G, Starma_tag, R_NilValue);
+    return res;
 }
 
-SEXP free_starma(void)
+SEXP free_starma(SEXP pG)
 {
+    GET_STARMA;
+
     Free(G->params);
     Free(G->a);
     Free(G->P);
@@ -127,26 +146,39 @@ SEXP free_starma(void)
     return R_NilValue;
 }
 
-SEXP Dotrans(SEXP x)
+SEXP Starma_method(SEXP pG, SEXP method)
+{
+    GET_STARMA;
+
+    G->method = asInteger(method);
+    return R_NilValue;
+}
+
+SEXP Dotrans(SEXP pG, SEXP x)
 {
     SEXP y = allocVector(REALSXP, LENGTH(x));
-    dotrans(REAL(x), REAL(y), 1);
+    GET_STARMA;
+
+    dotrans(G, REAL(x), REAL(y), 1);
     return y;
 }
 
-SEXP set_trans(SEXP ptrans)
+SEXP set_trans(SEXP pG, SEXP ptrans)
 {
+    GET_STARMA;
+
     G->trans = asInteger(ptrans);
     return R_NilValue;
 }
 
-SEXP arma0fa(SEXP inparams)
+SEXP arma0fa(SEXP pG, SEXP inparams)
 {
-    int i, j, ifault, it, streg;
-    double sumlog, ssq, tmp;
+    int i, j, ifault = 0, it, streg;
+    double sumlog, ssq, tmp, ans;
     SEXP res;
+    GET_STARMA;
 
-    dotrans(REAL(inparams), G->params, G->trans);
+    dotrans(G, REAL(inparams), G->params, G->trans);
 
     if (G->ns > 0)
     {
@@ -192,43 +224,74 @@ SEXP arma0fa(SEXP inparams)
         }
     }
 
-    starma(G->p, G->q, G->r, G->np, G->phi, G->theta, G->a, G->P, G->V, G->thetab, G->xnext, G->xrow, G->rbar, G->nrbar,
-           &ifault);
-    sumlog = 0.0;
-    ssq = 0.0;
-    it = 0;
-    karma(G->p, G->q, G->r, G->np, G->phi, G->theta, G->a, G->P, G->V, G->n, G->w, G->resid, &sumlog, &ssq, 1, G->delta,
-          &it);
-    G->s2 = ssq / (double)G->n;
+    if (G->method == 1)
+    {
+        int p = G->mp + G->ns * G->msp, q = G->mq + G->ns * G->msq, nu = 0;
+        ssq = 0.0;
+        for (i = 0; i < p; i++)
+            G->resid[i] = 0.0;
+        for (i = p; i < G->n; i++)
+        {
+            tmp = G->w[i];
+            for (j = 0; j < p; j++)
+                tmp -= G->phi[j] * G->w[i - j - 1];
+            for (j = 0; j < q; j++)
+                tmp -= G->theta[j] * G->resid[i - j - 1];
+            G->resid[i] = tmp;
+            if (!ISNAN(tmp))
+            {
+                nu++;
+                ssq += tmp * tmp;
+            }
+        }
+        G->s2 = ssq / (double)(nu);
+        ans = 0.5 * log(G->s2);
+    }
+    else
+    {
+        starma(G, &ifault);
+        if (ifault)
+            error("starma error code %d", ifault);
+        sumlog = 0.0;
+        ssq = 0.0;
+        it = 0;
+        karma(G, &sumlog, &ssq, 1, &it);
+        G->s2 = ssq / (double)G->n;
+        ans = 0.5 * (log(ssq / (double)G->n) + sumlog / (double)G->n);
+    }
     res = allocVector(REALSXP, 1);
-    REAL(res)[0] = 0.5 * (log(ssq / (double)G->n) + sumlog / (double)G->n);
+    REAL(res)[0] = ans;
     return res;
 }
 
-SEXP get_s2(void)
+SEXP get_s2(SEXP pG)
 {
     SEXP res = allocVector(REALSXP, 1);
+    GET_STARMA;
 
     REAL(res)[0] = G->s2;
     return res;
 }
 
-SEXP get_resid(void)
+SEXP get_resid(SEXP pG)
 {
-    SEXP res = allocVector(REALSXP, G->n);
+    SEXP res;
     int i;
+    GET_STARMA;
 
+    res = allocVector(REALSXP, G->n);
     for (i = 0; i < G->n; i++)
         REAL(res)[i] = G->resid[i];
     return res;
 }
 
-SEXP arma0_kfore(SEXP pd, SEXP psd, SEXP nahead)
+SEXP arma0_kfore(SEXP pG, SEXP pd, SEXP psd, SEXP nahead)
 {
     int dd = asInteger(pd);
     int d, il = asInteger(nahead), ifault = 0, i, j;
     double *del, *del2;
     SEXP res, x, var;
+    GET_STARMA;
 
     PROTECT(res = allocVector(VECSXP, 2));
     SET_VECTOR_ELT(res, 0, x = allocVector(REALSXP, il));
@@ -258,8 +321,9 @@ SEXP arma0_kfore(SEXP pd, SEXP psd, SEXP nahead)
     for (i = 1; i <= d; i++)
         del[i] *= -1;
 
-    forkal(G->p, G->q, G->r, G->np, d, il, G->n, G->nrbar, G->phi, G->theta, del + 1, G->w, REAL(x), REAL(var), G->V,
-           G->resid, G->xnext, G->xrow, G->rbar, G->thetab, &ifault);
+    forkal(G, d, il, del + 1, REAL(x), REAL(var), &ifault);
+    if (ifault)
+        error("forkal error code %d", ifault);
     UNPROTECT(1);
     return res;
 }
@@ -293,7 +357,7 @@ static void partrans(int np, double *raw, double *new)
 }
 
 /* raw is overwritten */
-static void dotrans(double *raw, double *new, int trans)
+static void dotrans(Starma G, double *raw, double *new, int trans)
 {
     int i, v;
 
