@@ -654,11 +654,7 @@ static int StringMatch(SEXP expr, char *aString)
 
 /* The Full Adobe Symbol Font */
 
-static struct
-{
-    char *name;
-    int code;
-} SymbolTable[] = {
+static SymTab SymbolTable[] = {
     {"space", 32},
     {"exclam", 33},
     {"universal", 34},
@@ -693,7 +689,7 @@ static struct
     {"question", 63},
     {"congruent", 64},
 
-    {"Alpha", 65}, /* Upper Case Greek Characters */
+    {"Alpha", /* 0101= */ 65}, /* Upper Case Greek Characters */
     {"Beta", 66},
     {"Chi", 67},
     {"Delta", 68},
@@ -718,7 +714,7 @@ static struct
     {"Omega", 87},
     {"Xi", 88},
     {"Psi", 89},
-    {"Zeta", 90},
+    {"Zeta", /* 0132 = */ 90},
 
     {"bracketleft", 91}, /* Miscellaneous Special Characters */
     {"therefore", 92},
@@ -727,7 +723,7 @@ static struct
     {"underscore", 95},
     {"radicalex", 96},
 
-    {"alpha", 97}, /* Lower Case Greek Characters */
+    {"alpha", /* 0141= */ 97}, /* Lower Case Greek Characters */
     {"beta", 98},
     {"chi", 99},
     {"delta", 100},
@@ -752,7 +748,7 @@ static struct
     {"omega", 119},
     {"xi", 120},
     {"psi", 121},
-    {"zeta", 122},
+    {"zeta", /* 0172= */ 122},
 
     {"braceleft", 123}, /* Miscellaneous Special Characters */
     {"bar", 124},
@@ -797,8 +793,8 @@ static struct
     {"circlemultiply", 196},
     {"circleplus", 197},
     {"emptyset", 198},
-    {"intersection", 199},
-    {"union", 200},
+    {"intersection", 199}, /* = 0307 */
+    {"union", 200},        /* = 0310 */
     {"propersuperset", 201},
     {"reflexsuperset", 202},
     {"notsubset", 203},
@@ -869,7 +865,7 @@ static int TranslatedSymbol(SEXP expr)
     int code = SymbolCode(expr);
     if ((0101 <= code && code <= 0132) || /* Greek */
         (0141 <= code && code <= 0172) || /* Greek */
-        code == 0241 ||                   /* Greek */
+        code == 0241 ||                   /* Upsilon1 */
         code == 0242 ||                   /* minute */
         code == 0245 ||                   /* infinity */
         code == 0260 ||                   /* degree */

@@ -3260,7 +3260,7 @@ double GStrHeight(char *str, int units, DevDesc *dd)
     h = n * GConvertYUnits(1, CHARS, DEVICE, dd);
     /*  Add in the ascent of the font, if available */
     GMetricInfo('M', &asc, &dsc, &wid, DEVICE, dd);
-    if (asc == 0.0 & dsc == 0.0 & wid == 0.0)
+    if ((asc == 0.0) && (dsc == 0.0) && (wid == 0.0))
         asc = GConvertYUnits(1, CHARS, DEVICE, dd);
     h += asc;
     if (units != DEVICE)
@@ -3379,8 +3379,8 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
                         }
                         else
                         {
-                            double maxHeight;
-                            double maxDepth;
+                            double maxHeight = 0.0;
+                            double maxDepth = 0.0;
                             char *ss;
                             int charNum = 0;
                             for (ss = sbuf; *ss; ss++)

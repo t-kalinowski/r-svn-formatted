@@ -521,7 +521,7 @@ int isLogical(SEXP s)
 
 int isInteger(SEXP s)
 {
-    return (TYPEOF(s) == INTSXP);
+    return (TYPEOF(s) == INTSXP && !inherits(s, "factor"));
 }
 
 int isReal(SEXP s)
@@ -536,17 +536,17 @@ int isComplex(SEXP s)
 
 int isUnordered(SEXP s)
 {
-    return (isInteger(s) && inherits(s, "factor") && !inherits(s, "ordered"));
+    return (TYPEOF(s) == INTSXP && inherits(s, "factor") && !inherits(s, "ordered"));
 }
 
 int isOrdered(SEXP s)
 {
-    return (isInteger(s) && inherits(s, "factor") && inherits(s, "ordered"));
+    return (TYPEOF(s) == INTSXP && inherits(s, "factor") && inherits(s, "ordered"));
 }
 
 int isFactor(SEXP s)
 {
-    return (isInteger(s) && inherits(s, "factor"));
+    return (TYPEOF(s) == INTSXP && inherits(s, "factor"));
 }
 
 int isObject(SEXP s)

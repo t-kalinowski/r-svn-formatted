@@ -614,7 +614,7 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(ydims = getAttrib(CADR(args), R_DimNamesSymbol));
         if (xdims != R_NilValue || ydims != R_NilValue)
         {
-            SEXP dimnames, dimnamesnames, dnx, dny;
+            SEXP dimnames, dimnamesnames, dnx = R_NilValue, dny = R_NilValue;
             PROTECT(dimnames = allocVector(VECSXP, 2));
             PROTECT(dimnamesnames = allocVector(STRSXP, 2));
             if (xdims != R_NilValue)
