@@ -921,7 +921,7 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
     double G1, G2, G3, gradproj;
     int funcount = 0, gradcount = 0, i;
     double newstep, oldstep, setstep, steplength = 1.0;
-    double tol, TEMP;
+    double tol;
 
     if (trace)
     {
