@@ -1016,9 +1016,9 @@ static int findcell()
     XQueryPointer(iodisplay, iowindow, &root, &child, &xr, &yr, &xw, &yw, &keys);
 
     if (keys & Button1Mask)
-    { /* left click
+    { /* left click */
 
-/* check to see if the click was in the header */
+        /* check to see if the click was in the header */
 
         if (yw < hwidth + bwidth)
         {
