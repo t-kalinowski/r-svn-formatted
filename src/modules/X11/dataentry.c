@@ -190,7 +190,7 @@ static XFontSet font_set;
 static XFontStruct **fs_list;
 static int font_set_cnt;
 static char *fontset_name = "-alias-fixed-medium-r-normal--10-";
-static XIC ic;
+static XIC ioic;
 #endif
 
 #define mouseDown ButtonPress
@@ -1496,9 +1496,9 @@ static char *GetCharP(DEEvent *event)
     if (utf8locale)
     {
 #ifdef HAVE_XUTF8LOOKUPSTRING
-        Xutf8LookupString(ic, (XKeyEvent *)event, text, 8, &iokey, NULL);
+        Xutf8LookupString(ioic, (XKeyEvent *)event, text, 8, &iokey, NULL);
 #else
-        XmbLookupString(ic, (XKeyEvent *)event, text, 8, &iokey, NULL);
+        XmbLookupString(ioic, (XKeyEvent *)event, text, 8, &iokey, NULL);
 #endif
         /* FIXME check the return code */
     }
@@ -1737,9 +1737,8 @@ static Rboolean initwin(void) /* TRUE = Error */
     XSelectInput(iodisplay, iowindow, ButtonPressMask | KeyPressMask | ExposureMask | StructureNotifyMask);
     XMapRaised(iodisplay, iowindow);
 #ifdef SUPPORT_UTF8
-    /* FIXME  create ic by something like
-    ic = XCreateIC(IM);
-    */
+    /* FIXME  create ic by something like */
+    ioic = XCreateIC(XOpenIM(iodisplay, NULL, NULL, NULL));
 #endif
 
     /* now set up the menu-window, for now use the same text
