@@ -120,7 +120,7 @@ double canberra(double *x, int nr, int nc, int i1, int i2)
     return dist;
 }
 
-double binary(double *x, int nr, int nc, int i1, int i2)
+double dist_binary(double *x, int nr, int nc, int i1, int i2)
 {
     int total, count, dist;
     int j;
@@ -175,7 +175,7 @@ void distance(double *x, int *nr, int *nc, double *d, int *diag, int *method)
         distfun = canberra;
         break;
     case BINARY:
-        distfun = binary;
+        distfun = dist_binary;
         break;
     default:
         error("distance(): invalid distance\n");

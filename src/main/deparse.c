@@ -163,12 +163,13 @@ SEXP deparse1(SEXP call, int abbrev)
 SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     FILE *fp;
-    SEXP tval;
-    SEXP saveenv;
+    SEXP file, saveenv, tval;
     int i;
 
     checkArity(op, args);
+
     tval = CAR(args);
+    saveenv = R_NilValue; /* -Wall */
     if (TYPEOF(tval) == CLOSXP)
     {
         PROTECT(saveenv = CLOENV(tval));
@@ -180,10 +181,12 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
         CLOENV(CAR(args)) = saveenv;
         UNPROTECT(1);
     }
+    file = CADR(args);
+
     fp = NULL;
-    if (strlen(CHAR(STRING(CADR(args))[0])) > 0)
+    if (strlen(CHAR(STRING(file)[0])) > 0)
     {
-        fp = R_fopen(CHAR(STRING(CADR(args))[0]), "w");
+        fp = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "w");
         if (!fp)
             errorcall(call, "unable to open file\n");
     }
@@ -199,7 +202,7 @@ SEXP do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP names, file, o, objs, tval;
+    SEXP file, names, o, objs, tval;
     int i, j, nobjs;
     FILE *fp;
 
@@ -213,6 +216,8 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (nobjs < 1 || length(file) < 1)
         errorcall(call, "zero length argument\n");
 
+    fp = NULL;
+
     PROTECT(o = objs = allocList(nobjs));
 
     for (i = 0; i < nobjs; i++)
@@ -222,7 +227,7 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     o = objs;
-    if (strlen(CHAR(STRING(CADR(args))[0])) == 0)
+    if (strlen(CHAR(STRING(file)[0])) == 0)
     {
         for (i = 0; i < nobjs; i++)
         {
@@ -237,7 +242,7 @@ SEXP do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        if (!(fp = R_fopen(CHAR(STRING(CADR(args))[0]), "w")))
+        if (!(fp = R_fopen(R_ExpandFileName(CHAR(STRING(file)[0])), "w")))
             errorcall(call, "unable to open file\n");
         for (i = 0; i < nobjs; i++)
         {
@@ -367,7 +372,7 @@ static void printcomment(SEXP s)
 
 static void deparse2buff(SEXP s)
 {
-    int fop, lookahead, lbreak = 0;
+    int fop, lookahead = 0, lbreak = 0;
     SEXP op, t;
     char tpb[120];
 
@@ -381,9 +386,10 @@ static void deparse2buff(SEXP s)
         print2buff(CHAR(PRINTNAME(s)));
 #else
         /* I'm pretty sure this is WRONG:
-           Blindly putting special symbols in ""s causes more trouble than it solves
-            --pd
-        */
+           Blindly putting special symbols in ""s causes more trouble
+           than it solves
+           --pd
+           */
         if (isValidName(CHAR(PRINTNAME(s))))
             print2buff(CHAR(PRINTNAME(s)));
         else
