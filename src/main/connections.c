@@ -124,11 +124,6 @@ Rconnection getConnection_no_err(int n)
     return con;
 }
 
-/* from sysutils.c */
-void *Riconv_open(const char *tocode, const char *fromcode);
-size_t Riconv(void *cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
-int Riconv_close(void *cd);
-
 void set_iconv(Rconnection con)
 {
     void *tmp;

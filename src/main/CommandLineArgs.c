@@ -104,16 +104,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 argv[newac++] = *av;
                 processing = FALSE;
             }
-#if 0
-	    else if(!strcmp(*av, "--print-nsize")) {
-		Rprintf("%d\n", R_NSize);
-		exit(0);
-	    }
-	    else if(!strcmp(*av, "--print-vsize")) {
-		Rprintf("%d\n", R_VSize);
-		exit(0);
-	    }
-#endif
             else if (!strcmp(*av, "--save"))
             {
                 Rp->SaveAction = SA_SAVE;
@@ -178,6 +168,27 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 Rp->DebugInitFile = TRUE;
             }
+            else if (!strncmp(*av, "--encoding", 10))
+            {
+                if (strlen(*av) < 12)
+                {
+                    ac--;
+                    av++;
+                    p = *av;
+                }
+                else
+                    p = &(*av)[11];
+                if (p == NULL)
+                {
+                    R_ShowMessage("WARNING: no value given for --encoding given\n");
+                }
+                else
+                {
+                    strncpy(R_StdinEnc, p, 30);
+                    R_StdinEnc[31] = '\0';
+                    break;
+                }
+            }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
                      !strcmp(*av, "-nsize") || !strcmp(*av, "-vsize") || !strcmp(*av, "-V") || !strcmp(*av, "-n") ||
@@ -237,7 +248,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     p = &(*av)[13];
                 if (p == NULL)
                 {
-                    R_ShowMessage("WARNING: no value given for -max-ppsize given\n");
+                    R_ShowMessage("WARNING: no value given for --max-ppsize given\n");
                     break;
                 }
                 lval = strtol(p, &p, 10);
