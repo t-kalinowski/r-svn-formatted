@@ -1470,7 +1470,6 @@ no_more_lines:
     { /* incomplete last line */
         if (con->text && con->blocking)
         {
-            nread++;
             warning("incomplete final line found by readTableHeader on `%s'", con->description);
         }
         else
