@@ -1135,6 +1135,8 @@ SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 
     case 10:
         return MATH1(exp);
+    case 11:
+        return MATH1(expm1);
     case 12:
         return MATH1(log1p);
     case 20:

@@ -214,6 +214,7 @@ FUNTAB R_FunTab[] = {
     {"trunc", do_math1, 5, 1, 1, PP_FUNCALL},
 
     {"exp", do_math1, 10, 1, 1, PP_FUNCALL},
+    {"expm1", do_math1, 11, 11, 1, PP_FUNCALL},
     {"log1p", do_math1, 12, 11, 1, PP_FUNCALL},
 
     {"cos", do_math1, 20, 1, 1, PP_FUNCALL},
