@@ -23,8 +23,8 @@
 #include "Print.h"
 #include "Fileio.h"
 
-static void printAttributes(SEXP);
-void PrintValueRec(SEXP);
+static void printAttributes(SEXP, SEXP);
+void PrintValueRec(SEXP, SEXP);
 
 int R_print_width;
 SEXP print_na_string;
@@ -172,11 +172,11 @@ SEXP do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, "invalid gap parameter\n");
     }
 
-    CustomPrintValue(x);
+    CustomPrintValue(x, rho);
     return x;
 }
 
-static void printList(SEXP s)
+static void printList(SEXP s, SEXP env)
 {
     int i, taglen;
     SEXP dims, t, newcall;
@@ -257,10 +257,10 @@ static void printList(SEXP s)
             if (isObject(CAR(s)))
             {
                 CADR(newcall) = CAR(s);
-                eval(newcall, R_NilValue);
+                eval(newcall, env);
             }
             else
-                PrintValueRec(CAR(s));
+                PrintValueRec(CAR(s), env);
             *ptag = '\0';
             s = CDR(s);
             i += 1;
@@ -268,12 +268,12 @@ static void printList(SEXP s)
         if (s != R_NilValue)
         {
             Rprintf("\n. \n\n");
-            PrintValueRec(s);
+            PrintValueRec(s, env);
         }
         Rprintf("\n");
         UNPROTECT(1);
     }
-    printAttributes(s);
+    printAttributes(s, env);
 }
 
 static void PrintExpression(SEXP s)
@@ -312,7 +312,7 @@ static void PrintExpression(SEXP s)
  * This is the "dispatching" function for  print.default()
  */
 
-void PrintValueRec(SEXP s)
+void PrintValueRec(SEXP s, SEXP env)
 {
     int i;
     SEXP t;
@@ -360,7 +360,7 @@ void PrintValueRec(SEXP s)
         Rprintf("<...>\n");
         break;
     case LISTSXP:
-        printList(s);
+        printList(s, env);
         break;
     case LGLSXP:
     case INTSXP:
@@ -398,10 +398,10 @@ void PrintValueRec(SEXP s)
     default:
         UNIMPLEMENTED("PrintValueRec");
     }
-    printAttributes(s);
+    printAttributes(s, env);
 }
 
-static void printAttributes(SEXP s)
+static void printAttributes(SEXP s, SEXP env)
 {
     SEXP a;
     SEXP R_LevelsSymbol;
@@ -444,7 +444,7 @@ static void printAttributes(SEXP s)
                 Rprintf("\n");
             sprintf(ptag, "attr(,\"%s\")", EncodeString(CHAR(PRINTNAME(TAG(a))), 0, 0, adj_left));
             Rprintf("%s\n", tagbuf);
-            PrintValueRec(CAR(a));
+            PrintValueRec(CAR(a), env);
         nextattr:
             *ptag = '\0';
             a = CDR(a);
@@ -472,7 +472,7 @@ void PrintValueEnv(SEXP s, SEXP env)
     }
     else
     {
-        PrintValueRec(s);
+        PrintValueRec(s, env);
     }
     UNPROTECT(1);
 }
@@ -484,8 +484,8 @@ void PrintValue(SEXP s)
     PrintValueEnv(s, R_NilValue);
 }
 
-void CustomPrintValue(SEXP s)
+void CustomPrintValue(SEXP s, SEXP env)
 {
     tagbuf[0] = '\0';
-    PrintValueRec(s);
+    PrintValueRec(s, env);
 }
