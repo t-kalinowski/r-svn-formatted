@@ -205,15 +205,19 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
             PROTECT(tvec);
             for (j = 0; j < len; j++)
                 if (TYPEOF(CAR(tvec)) == REALSXP)
+                {
                     if (REAL(CAR(tvec))[j] != ssNA_REAL)
                         REAL(tvec2)[j] = REAL(CAR(tvec))[j];
                     else
                         REAL(tvec2)[j] = NA_REAL;
+                }
                 else if (TYPEOF(CAR(tvec)) == STRSXP)
+                {
                     if (!streql(CHAR(STRING(CAR(tvec))[j]), CHAR(STRING(ssNA_STRING)[0])))
                         STRING(tvec2)[j] = STRING(CAR(tvec))[j];
                     else
                         STRING(tvec2)[j] = NA_STRING;
+                }
                 else
                     error("spreadsheet: internal memory problem");
             CAR(tvec) = tvec2;
@@ -440,10 +444,12 @@ void advancerect(int which)
     {
     case UP:
         if (crow == 1)
+        {
             if (rowmin == 1)
                 bell();
             else
                 jumppage(UP);
+        }
         else
             crow--;
         break;
@@ -461,10 +467,12 @@ void advancerect(int which)
         break;
     case LEFT:
         if (ccol == 1)
+        {
             if (colmin == 1)
                 bell();
             else
                 jumppage(LEFT);
+        }
         else
             ccol--;
         break;
@@ -660,11 +668,12 @@ int findsquare()
     /* check to see if the click was in the header */
 
     if (yw < hwidth + bwidth)
+    {
         if (checkquit(xw))
             return 1;
         else
             return 0;
-
+    }
     /* translate to box coordinates */
 
     wcol = (xw - bwidth) / box_w;
@@ -681,6 +690,7 @@ int findsquare()
     /* next check to see if it is in the column labels */
 
     if (yw < hwidth + bwidth + box_h)
+    {
         if (xw > bwidth + box_w)
             popupmenu(xr, yr, wcol, wrow);
         else
@@ -688,6 +698,7 @@ int findsquare()
             highlightrect();
             bell();
         }
+    }
     else if (wcol != ccol || wrow != crow)
     {
         ccol = wcol;
@@ -886,10 +897,12 @@ void handlechar(char *text)
         if (isspace(c))
             goto donehc;
         if (clength == 0)
+        {
             if (c != '.' && !isalpha(c))
                 goto donehc;
             else if (c != '.' && !isalnum(c))
                 goto donehc;
+        }
     }
 
     if (clength++ > 29)
