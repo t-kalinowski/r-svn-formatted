@@ -483,8 +483,8 @@ static int findGapDown(double *xxx, double *yyy, int ns, double labelDistance, D
         return -n;
 }
 
-static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, int drawLabels, int method, int vectorFonts,
-                    int typeface, int fontindex, double atom, DevDesc *dd)
+static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labels, int cnum, int drawLabels,
+                    int method, int vectorFonts, int typeface, int fontindex, double atom, DevDesc *dd)
 {
     double f, xl, xh, yl, yh, zll, zhl, zlh, zhh, xx[4], yy[4];
     double xend, yend;
@@ -509,6 +509,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, int drawL
     double labelHeight;
     SEXP label1 = allocVector(REALSXP, 8);
     SEXP label2;
+    SEXP lab;
     int gotLabel = 0;
     int ddl; /** Don't draw label */
 
@@ -782,8 +783,24 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, int drawL
                 yyy[ns++] = s->y1;
                 GMode(1, dd);
 
-                /* Need to send labels in from interpreted R code ? */
-                sprintf(buffer, " %.00f ", zc);
+                /* If user supplied labels, use i'th one of them
+                   Otherwise stringify the z-value of the contour */
+                buffer[0] = ' ';
+                if (!isNull(labels))
+                {
+                    int numl = length(labels);
+                    strcpy(&buffer[1], CHAR(STRING(labels)[cnum % numl]));
+                }
+                else
+                {
+                    PROTECT(lab = allocVector(REALSXP, 1));
+                    REAL(lab)[0] = zc;
+                    lab = labelformat(lab);
+                    strcpy(&buffer[1], CHAR(STRING(lab)[0]));
+                    UNPROTECT(1);
+                }
+                buffer[strlen(buffer) + 1] = '\0';
+                buffer[strlen(buffer)] = ' ';
 
                 if (vectorFonts)
                 {
@@ -1077,7 +1094,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, int drawL
 
 SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP oargs, c, x, y, z, vfont, col, lty, lwd;
+    SEXP oargs, c, x, y, z, vfont, col, lty, lwd, labels;
     int i, j, nx, ny, nc, ncol, nlty, nlwd;
     int ltysave, colsave, lwdsave;
     double cexsave;
@@ -1115,6 +1132,11 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     c = CAR(args);
     internalTypeCheck(call, c, REALSXP);
     nc = LENGTH(c);
+    args = CDR(args);
+
+    labels = CAR(args);
+    if (!isNull(labels))
+        internalTypeCheck(call, labels, STRSXP);
     args = CDR(args);
 
     labcex = asReal(CAR(args));
@@ -1235,7 +1257,8 @@ SEXP do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
         if (dd->gp.lwd == NA_REAL)
             dd->gp.lwd = lwdsave;
         dd->gp.cex = labcex;
-        contour(x, nx, y, ny, z, REAL(c)[i], drawLabels, method - 1, vectorFonts, typeface, fontindex, atom, dd);
+        contour(x, nx, y, ny, z, REAL(c)[i], labels, i, drawLabels, method - 1, vectorFonts, typeface, fontindex, atom,
+                dd);
         vmaxset(vmax);
     }
     GMode(0, dd);
