@@ -145,6 +145,7 @@ static Atom _XA_WM_PROTOCOLS, protocol;
 
 static int displayOpen = 0;
 static int numX11Devices = 0;
+static int inclose = 0;
 
 /********************************************************/
 /* There must be an entry point for the device driver	*/
@@ -650,7 +651,7 @@ static void handleEvent(XEvent event)
         xd->resize = 1;
     }
     else if ((event.type == ClientMessage) && (event.xclient.message_type == _XA_WM_PROTOCOLS))
-        if (event.xclient.data.l[0] == protocol)
+        if (!inclose && event.xclient.data.l[0] == protocol)
         {
             XFindContext(display, event.xclient.window, devPtrContext, &temp);
             dd = (DevDesc *)temp;
@@ -1084,6 +1085,20 @@ static void SetLinetype(int newlty, double nlwd, DevDesc *dd)
 /* of course :)						*/
 /********************************************************/
 
+static int R_X11Err(Display *dsp, XErrorEvent *event)
+{
+    char buff[1000];
+    XGetErrorText(dsp, event->error_code, buff, 1000);
+    warning("X11 protocol error: %s", buff);
+    return 0;
+}
+
+static int R_X11IOErr(Display *dsp)
+{
+    error("X11 fatal IO error: please save work and shut down R");
+    return 0; /* but should never get here */
+}
+
 static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, double gamma, int colormodel, int maxcube)
 {
     /* if have to bail out with "error" then must */
@@ -1119,6 +1134,9 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h, dou
         devPtrContext = XUniqueContext();
         displayOpen = 1;
         DisplayOpened = 1;
+        /* set error handlers */
+        XSetErrorHandler(R_X11Err);
+        XSetIOErrorHandler(R_X11IOErr);
     }
     whitepixel = GetX11Pixel(255, 255, 255);
     blackpixel = GetX11Pixel(0, 0, 0);
@@ -1365,6 +1383,8 @@ static void X11_Close(DevDesc *dd)
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
 
     /* process pending events */
+    /* set block on destroy events */
+    inclose = 1;
     R_ProcessEvents((void *)NULL);
 
     XFreeCursor(display, xd->gcursor);
@@ -1399,6 +1419,7 @@ static void X11_Close(DevDesc *dd)
     }
 
     free(xd);
+    inclose = 0;
 }
 
 /********************************************************/
