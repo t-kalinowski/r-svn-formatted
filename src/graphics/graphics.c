@@ -36,15 +36,15 @@
 
 /********************************************************/
 /*							*/
-/* 	TRANSFORMATIONS are concerned with converting 	*/
-/*	locations between coordinate systems and 	*/
+/*	TRANSFORMATIONS are concerned with converting	*/
+/*	locations between coordinate systems and	*/
 /*	dimensions between different units		*/
 /*							*/
 /********************************************************/
 
 int GMapUnits(int);
 /* Convert an R unit (e.g., "user") into */
-/* an internal unit (e.g., USER) 	 */
+/* an internal unit (e.g., USER)	 */
 
 void GConvert(double *, double *, int, int, DevDesc *);
 /* Convert a location from one coordinate */
@@ -57,8 +57,8 @@ double GConvertYUnits(double, int, int, DevDesc *);
 
 void GReset(DevDesc *);
 /* Set up the different regions on a device */
-/* (i.e., inner region, figure region,      */
-/* plot region) and transformations for     */
+/* (i.e., inner region, figure region,	    */
+/* plot region) and transformations for	    */
 /* associated coordinate systems	    */
 /* (called whenever anything that affects   */
 /* the coordinate transformations changes)  */
@@ -86,17 +86,17 @@ void currentFigureLocation(int *, int *, DevDesc *);
 
 /********************************************************/
 /*							*/
-/*	GPAR FUNCTIONS are concerned with operations 	*/
-/*	on the entire set of graphics parameters for 	*/
-/* 	a device (e.g., initialisation, saving, and	*/
-/* 	restoring)					*/
+/*	GPAR FUNCTIONS are concerned with operations	*/
+/*	on the entire set of graphics parameters for	*/
+/*	a device (e.g., initialisation, saving, and	*/
+/*	restoring)					*/
 /*							*/
 /********************************************************/
 
 void GInit(GPar *);
-/* Default the settings for general     */
+/* Default the settings for general	*/
 /* graphical parameters (i.e., defaults */
-/* that do not depend on the device     */
+/* that do not depend on the device	*/
 /* type */
 
 void GRestore(DevDesc *);
@@ -113,10 +113,10 @@ void GRestorePars(DevDesc *);
 
 /********************************************************/
 /*							*/
-/* 	DEVICE STATE FUNCTIONS are concerned with 	*/
-/* 	getting and setting the current state of 	*/
-/* 	the device;  is it ready to be drawn into ?	*/
-/* 	(i.e., has plot.new been called yet ?)		*/
+/*	DEVICE STATE FUNCTIONS are concerned with	*/
+/*	getting and setting the current state of	*/
+/*	the device;  is it ready to be drawn into ?	*/
+/*	(i.e., has plot.new been called yet ?)		*/
 /*							*/
 /********************************************************/
 
@@ -130,16 +130,16 @@ void GSetState(int, DevDesc *);
 
 /********************************************************/
 /*							*/
-/* 	GRAPHICAL PRIMITIVES are the generic front-end	*/
-/* 	for the functions that every device driver must */
-/* 	provide						*/
-/* 	NOTE that locations supplied to these functions */
+/*	GRAPHICAL PRIMITIVES are the generic front-end	*/
+/*	for the functions that every device driver must */
+/*	provide						*/
+/*	NOTE that locations supplied to these functions */
 /*	may be in any of the valid coordinate systems	*/
-/* 	(each function takes a "coords" parameter to 	*/
+/*	(each function takes a "coords" parameter to	*/
 /*	indicate the coordinate system);  the device-	*/
-/* 	specific version of the function is responsible */
-/* 	for calling GConvert to get the location into 	*/
-/* 	device coordinates				*/
+/*	specific version of the function is responsible */
+/*	for calling GConvert to get the location into	*/
+/*	device coordinates				*/
 /*							*/
 /********************************************************/
 
@@ -196,14 +196,14 @@ void GText(double, double, int, char *, double, double, double, DevDesc *);
 
 /********************************************************/
 /*							*/
-/* 	GRAPHICAL UTILITIES are functions that produce	*/
-/* 	graphical output using the graphical primitives */
-/* 	(i.e., they are generic - NOT device-specific)	*/
+/*	GRAPHICAL UTILITIES are functions that produce	*/
+/*	graphical output using the graphical primitives */
+/*	(i.e., they are generic - NOT device-specific)	*/
 /*							*/
 /********************************************************/
 
 void GArrow(double, double, double, double, int, double, double, int, DevDesc *);
-/* draw a line from (x1,y1) to (x2,y2)  */
+/* draw a line from (x1,y1) to (x2,y2)	*/
 /* with an arrow head at either or both */
 /* ends */
 
@@ -230,8 +230,8 @@ void GSymbol(double, double, int, int, DevDesc *);
 
 /********************************************************/
 /*							*/
-/* 	COLOUR CODE is concerned with the internals of 	*/
-/* 	R colour representation 			*/
+/*	COLOUR CODE is concerned with the internals of	*/
+/*	R colour representation				*/
 /*							*/
 /********************************************************/
 
@@ -242,7 +242,7 @@ unsigned RGBpar(SEXP, int, DevDesc *);
 
 /********************************************************/
 /*							*/
-/* 	LINE TEXTURE CODE is concerned with the		*/
+/*	LINE TEXTURE CODE is concerned with the		*/
 /*	internals of R line texture representation	*/
 /*							*/
 /********************************************************/
@@ -251,7 +251,7 @@ unsigned int LTYpar(SEXP, int);
 
 /********************************************************/
 /*							*/
-/* 	DEVICE FUNCTIONS are concerned with the		*/
+/*	DEVICE FUNCTIONS are concerned with the		*/
 /*	creation and destruction of devices		*/
 /*							*/
 /********************************************************/
@@ -286,8 +286,8 @@ int StartDevice(SEXP, SEXP, int, SEXP, int);
 
 /********************************************************/
 /*							*/
-/* 	DEVICE UTILITIES are concerned with providing  	*/
-/* 	information for R interpreted functions		*/
+/*	DEVICE UTILITIES are concerned with providing	*/
+/*	information for R interpreted functions		*/
 /*							*/
 /********************************************************/
 
@@ -318,7 +318,7 @@ void killDevice(int);
  *    the figure region, which defaults from the current
  *    layout (mfrow, mfcol, layout) unless the user specifies
  *    it directly (fig, fin);  the figure margins, which
- *    "stick" to the edges of the plot region;  and thed
+ *    "stick" to the edges of the plot region;	and thed
  *    plot region, which is the figure region less the figure
  *    margins by default unless the user specifies it directly
  *    (plt, pin)
@@ -344,8 +344,8 @@ void killDevice(int);
  *
  *    All of the above, except OMA1..4 and MAR1..4, plus ...
  *
- *      LINES = line coordinates (lines of margin;  based on mex)
- *      CHARS = char coordinates (lines of text;  based on cex)
+ *	LINES = line coordinates (lines of margin;  based on mex)
+ *	CHARS = char coordinates (lines of text;  based on cex)
  *
  *    The function Convert(value, from, to) is provided
  *    to transform between any pair of coordinate systems
@@ -370,7 +370,7 @@ double Log10(double x)
 }
 
 /* In interpreted R, units are as follows:   */
-/* 	1 = "user"			     */
+/*	1 = "user"			     */
 /*	2 = "figure"			     */
 /*	3 = "inches"			     */
 /* the function GMapUnits provides a mapping */
@@ -716,7 +716,7 @@ double GConvertYUnits(double y, int fromUnits, int toUnits, DevDesc *dd)
 }
 
 /* functions to convert locations from one coordinate system */
-/* to another                                                */
+/* to another						     */
 
 /* forward declarations */
 
@@ -1627,7 +1627,7 @@ static void updateOuterMargins(DevDesc *dd)
 }
 
 /*  mapInner2Dev -- transformation from NIC to Dev  */
-/*  Use this coordinate system for setting up multiple figures  */
+/*  Use this coordinate system for setting up multiple figures	*/
 /*  This is also used when specifying the figure region directly  */
 /*  Note that this is incompatible with S which uses then entire  */
 /*  device surface for such a plot  */
@@ -1912,7 +1912,7 @@ DevDesc *GNewPlot(int recording, int ask)
     int asksave;
 
     /* If there are no active devices */
-    /* check the options for a "default device".  */
+    /* check the options for a "default device".	*/
     /* If there is one, start it up. */
 
     if (NoDevices())
@@ -2168,11 +2168,11 @@ void GSetupAxis(int axis, DevDesc *dd)
 
 void GInit(GPar *gp)
 {
-    /*  Set default graphics parameter values in  */
-    /*  a GPar This initialises the plot state,   */
-    /*  plus the other graphical parameters that  */
-    /*  are not the responsibility of the device  */
-    /*  initialisation                            */
+    /*  Set default graphics parameter values in	*/
+    /*  a GPar This initialises the plot state,	*/
+    /*  plus the other graphical parameters that	*/
+    /*  are not the responsibility of the device	*/
+    /*  initialisation				*/
 
     gp->state = 0;
 
@@ -2313,10 +2313,10 @@ void GRestore(DevDesc *dd)
     copyGPar(&(dd->dp), &(dd->gp));
 }
 
-/*  Saving and restoring of "inline" graphical  */
-/*  parameters.  These are the ones which can be  */
+/*  Saving and restoring of "inline" graphical	*/
+/*  parameters.	 These are the ones which can be  */
 /*  specified as a arguments to high-level  */
-/*  graphics functions.  */
+/*  graphics functions.	 */
 
 static double adjsave;     /* adj */
 static int annsave;        /* ann */
@@ -2417,7 +2417,7 @@ void GSavePars(DevDesc *dd)
 
 void GRestorePars(DevDesc *dd)
 {
-    /*  Restore temorarily saved inline parameter values  */
+    /*  Restore temorarily saved inline parameter values	*/
 
     dd->gp.adj = adjsave;
     dd->gp.ann = annsave;
@@ -2482,7 +2482,7 @@ void GSetState(int newstate, DevDesc *dd)
 
 void GCheckState(DevDesc *dd)
 {
-    /*  Enquire whether GNewPlot has been called  */
+    /*  Enquire whether GNewPlot has been called	*/
 
     if (dd->gp.state == 0)
         error("plot.new has not been called yet\n");
@@ -2491,12 +2491,12 @@ void GCheckState(DevDesc *dd)
 }
 
 /********************************************************/
-/* GRAPHICAL PRIMITIVES 				*/
+/* GRAPHICAL PRIMITIVES					*/
 /********************************************************/
 
 void GCircle(double x, double y, int coords, double radius, int col, int border, DevDesc *dd)
 {
-    /*  Draw a circle (radius is given in inches)  */
+    /*  Draw a circle (radius is given in inches)	 */
 
     double ir;
 #ifdef POINTS
@@ -2748,7 +2748,7 @@ void GMode(DevDesc *dd, int mode)
     /*  mode = 0, graphics off */
     /*  mode = 1, graphics on */
     /*  mode = 2, graphical input on */
-    /*  (Ignored by most drivers)  */
+    /*  (Ignored by most drivers)	 */
 
     if (NoDevices())
         error("No graphics device is active\n");
@@ -2786,7 +2786,7 @@ void GPolyline(int n, double *x, double *y, int coords, DevDesc *dd)
 
 void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int fg, DevDesc *dd)
 {
-    /*  Draw a rectangle  */
+    /*  Draw a rectangle	*/
     /*  Filled with color bg and outlined with color fg  */
     /*  These may both be NA_INTEGER  */
     /*  This should be adjusted so that rectangles are clipped */
@@ -3056,7 +3056,7 @@ void GLPretty(double *ul, double *uh, int *n)
 void GPretty(double *lo, double *up, int *ndiv)
 {
     /*  Set scale and ticks for linear scales.
-     *  Pre:         x1 = lo < up = x2
+     *  Pre:	   x1 = lo < up = x2
      *  Post: x1 <= y1 := lo < up =: y2 <= x2;  ndiv >= 1
      */
 
@@ -3075,7 +3075,7 @@ void GPretty(double *lo, double *up, int *ndiv)
     dx = *up - *lo;
     /* cell := "scale"  here */
     if (dx == 0 && *up == 0)
-    { /*  up == lo == 0  */
+    { /*	up == lo == 0  */
         cell = i_small = 1;
     }
     else
@@ -3093,7 +3093,7 @@ void GPretty(double *lo, double *up, int *ndiv)
 
     base = pow(10, floor(log10(cell))); /* base <= cell < 10*base */
 
-    /* unit :=  arg min _u { |u - cell| ;  u = c(1,2,5,10) * base } */
+    /* unit :=  arg min _u { |u - cell| ;	 u = c(1,2,5,10) * base } */
     unit = base;
     if (fabs((U = 2 * base) - cell) < fabs(unit - cell))
         unit = U;
@@ -3127,12 +3127,9 @@ void GPretty(double *lo, double *up, int *ndiv)
     *ndiv = nu - ns;
 
     if (*ndiv <= 0)
-        printf("Gpretty(%g,%g,%d): cell=%g,  ndiv= %d <=0;\t\t(ns,nu)=(%d,%d);
-               dx = % g,
-               unit = % 3e,
-               ismall = % 1d.\n ",
-                        x1,
-               x2, nd0, cell, *ndiv, ns, nu, dx, unit, (int)i_small);
+        printf("Gpretty(%g,%g,%d): cell=%g,	 ndiv= %d <=0;\t\t(ns,nu)=(%d,%d);"
+               "dx=%g, unit=%3e, ismall=%1d.\n",
+               x1, x2, nd0, cell, *ndiv, ns, nu, dx, unit, (int)i_small);
 }
 
 #define SMALL 0.25
@@ -3150,7 +3147,7 @@ void GPretty(double *lo, double *up, int *ndiv)
 
 void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
 {
-    /*  Draw one of the R special symbols  */
+    /*  Draw one of the R special symbols	 */
 
     double r, xc, yc;
     double xx[4], yy[4];
@@ -3453,7 +3450,7 @@ void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
 
 void GMtext(char *str, int side, double line, int outer, double at, int las, DevDesc *dd)
 {
-    /*  Draw text in plot margins  */
+    /*  Draw text in plot margins	 */
 
     double a, xadj, yadj;
     int coords;
@@ -3635,11 +3632,11 @@ void hsv2rgb(double h, double s, double v, double *r, double *g, double *b)
  *	Color Specification
  *
  *	Colors are stored internally in integers.  Each integer is
- *	broken into four bytes.  The three least significant bytes
+ *	broken into four bytes.	 The three least significant bytes
  *	are used to contain levels of red, green and blue.  These
  *	levels are integers in the range [0,255].
  *
- *      Externally, colors are specified either
+ *	Externally, colors are specified either
  *	a) by name, using a large table of color names,
  *	b) by RGB values using a string of the form "#rrggbb"
  *	   where rr, gg and bb are hex integers giving the level
