@@ -21,6 +21,8 @@
 #include <Rconnections.h>
 #include "Rregex.h"
 
+static SEXP allocMatrixNA(SEXPTYPE, int, int);
+
 SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int nwhat, nret, nc, nr, m, k, lastm, need, skip;
@@ -52,7 +54,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 
     nret = 20;
     /* it is easier if we first have a record per column */
-    PROTECT(retval = allocMatrix(STRSXP, LENGTH(what), nret));
+    PROTECT(retval = allocMatrixNA(STRSXP, LENGTH(what), nret));
 
     regcomp(&blankline, "^[[:blank:]]*$", REG_NOSUB & REG_EXTENDED);
     regcomp(&trailblank, "[[:blank:]]+$", REG_EXTENDED);
@@ -72,7 +74,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (k > nret - 1)
                 {
                     nret *= 2;
-                    PROTECT(retval2 = allocMatrix(STRSXP, LENGTH(what), nret));
+                    PROTECT(retval2 = allocMatrixNA(STRSXP, LENGTH(what), nret));
                     copyMatrix(retval2, retval, 0);
                     UNPROTECT_PTR(retval);
                     retval = retval2;
@@ -123,7 +125,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (dynwhat && (lastm == -1))
                     {
                         PROTECT(what2 = allocVector(STRSXP, nwhat + 1));
-                        PROTECT(retval2 = allocMatrix(STRSXP, nrows(retval) + 1, ncols(retval)));
+                        PROTECT(retval2 = allocMatrixNA(STRSXP, nrows(retval) + 1, ncols(retval)));
                         if (nwhat > 0)
                         {
                             copyVector(what2, what);
@@ -170,7 +172,7 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
         k++;
 
     /* and now transpose the whole matrix */
-    PROTECT(retval2 = allocMatrix(STRSXP, k, LENGTH(what)));
+    PROTECT(retval2 = allocMatrixNA(STRSXP, k, LENGTH(what)));
     copyMatrix(retval2, retval, 1);
 
     PROTECT(dimnames = allocVector(VECSXP, 2));
@@ -182,4 +184,18 @@ SEXP do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     setAttrib(retval2, R_DimNamesSymbol, dimnames);
     UNPROTECT(5);
     return (retval2);
+}
+
+static SEXP allocMatrixNA(SEXPTYPE mode, int nrow, int ncol)
+{
+    int k;
+    SEXP retval;
+
+    PROTECT(retval = allocMatrix(mode, nrow, ncol));
+    for (k = 0; k < LENGTH(retval); k++)
+    {
+        SET_STRING_ELT(retval, k, NA_STRING);
+    }
+    UNPROTECT(1);
+    return (retval);
 }
