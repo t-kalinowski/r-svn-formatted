@@ -595,7 +595,11 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "one of \"yes\", \"no\", \"ask\" or \"default\" expected.\n");
     tmp = CHAR(STRING(CAR(args))[0]);
     if (!strcmp(tmp, "ask"))
+    {
         ask = SA_SAVEASK;
+        if (!R_Interactive)
+            warningcall(call, "save=\"ask\" in non-interactive use: command-line default will be used");
+    }
     else if (!strcmp(tmp, "no"))
         ask = SA_NOSAVE;
     else if (!strcmp(tmp, "yes"))
@@ -603,7 +607,7 @@ SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (!strcmp(tmp, "default"))
         ask = SA_DEFAULT;
     else
-        errorcall(call, "unrecognized value of ask\n");
+        errorcall(call, "unrecognized value of save\n");
     /* run the .Last function. If it gives an error, will drop back to main
        loop. */
     R_CleanUp(ask);
