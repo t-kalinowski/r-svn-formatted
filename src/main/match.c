@@ -321,7 +321,7 @@ SEXP matchArgs(SEXP formals, SEXP supplied)
         /* Check that all arguments are used */
         for (b = supplied; b != R_NilValue; b = CDR(b))
             if (!ARGUSED(b) && CAR(b) != R_MissingArg)
-                errorcall(R_GlobalContext->call, "unused argument to function");
+                errorcall(R_GlobalContext->call, "unused argument(s) (%s ...)", CHAR(PRINTNAME(TAG(b))));
     }
     UNPROTECT(1);
     return (actuals);
