@@ -87,6 +87,7 @@ WindowPtr Help_Windows[MAX_NUM_H_WIN + 1];
 AEIdleUPP gAEIdleUPP;
 EventRecord gERecord;
 Boolean gQuit, gInBackground;
+extern Boolean OnOpenSource;
 
 #define kResumeMask 1 /* bit of message field for resume vs. suspend */
 
@@ -107,6 +108,10 @@ extern RGBColor gTypeColour;
 
 #define kCMDEventClass 'DCMD' /* Event class command for MacZip */
 #define kCMDEvent 'DCMD'      /* Event command                  */
+#define CMDLineSize 2048
+
+char *StrCalloc(unsigned short size);
+char *StrFree(char *strPtr);
 
 void DoGenKeyDown(const EventRecord *event, Boolean Console);
 extern pascal OSErr FSpGetFullPath(const FSSpec *, short *, Handle *);
@@ -846,7 +851,7 @@ static pascal OSErr HandleOpenDocument(const AppleEvent *ae, AppleEvent *reply, 
     }
     if (fileInfo.fdType == 'TEXT')
     {
-        if (strncmp("TRUE", mac_getenv("OnOpenSource"), 4) == 0)
+        if (OnOpenSource)
             SourceFile(&fileSpec);
         else
         {
@@ -949,6 +954,38 @@ cleanup:
     return err;
 }
 
+/* HandleDoCommandLine routine :
+   Description :
+   This event will be execute when the applcation exit normally
+ */
+pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, long handlerRefCon)
+{
+    OSErr err = 0;
+    DescType returnedType;
+    Size actualSize;
+    char *CMDString;
+
+    reply = reply;
+    handlerRefCon = handlerRefCon;
+
+    CMDString = StrCalloc(CMDLineSize);
+
+    if ((err = AEGetParamPtr(theAppleEvent, keyDirectObject, typeChar, &returnedType, CMDString, CMDLineSize,
+                             &actualSize)) != noErr)
+        return err;
+
+    /* check for missing parameters   */
+
+    if (actualSize <= CMDLineSize)
+        CMDString[actualSize] = 0; /* Terminate the C string    */
+
+    consolecmd(CMDString);
+
+    CMDString = StrFree(CMDString);
+
+    return 0;
+}
+
 /* InitializeEvents: modified to let R interact with other processes
                      such as UnZip tools, Browsers, etc.
                      AppleEvents handlers are now installed only if
@@ -986,6 +1023,11 @@ OSErr InitializeEvents(void)
     if ((err = WEInstallTSMHandlers()) != noErr)
         goto cleanup;
 
+    /* install Handler for CFommandline-Application-Event ('do_CMD')   */
+    if ((err = AEInstallEventHandler(kCMDEventClass, kCMDEvent, NewAEEventHandlerUPP(HandleDoCommandLine), 0, false)) !=
+        noErr)
+        goto cleanup;
+
     gAEIdleUPP = NewAEIdleUPP(idleProc);
 
 cleanup:
@@ -1004,4 +1046,58 @@ void R_startBrowser(char *fileName)
     strncpy((char *)(&name[1]), fileName, name[0]);
     FSMakeFSSpec(0, 0, name, &HelpFile);
     OpenSelection(&HelpFile);
+}
+
+/*
+**  Alloc memory and init it
+**
+*/
+char *StrCalloc(unsigned short size)
+{
+    char *strPtr = NULL;
+
+    strPtr = calloc(size, sizeof(char));
+    return strPtr;
+}
+
+/*
+**  Release only non NULL pointers
+**
+*/
+char *StrFree(char *strPtr)
+{
+
+    if (strPtr != NULL)
+    {
+        free(strPtr);
+    }
+
+    return NULL;
+}
+
+/*
+**  Alloc memory and init it
+**
+*/
+char *StrCalloc(unsigned short size)
+{
+    char *strPtr = NULL;
+
+    strPtr = calloc(size, sizeof(char));
+    return strPtr;
+}
+
+/*
+**  Release only non NULL pointers
+**
+*/
+char *StrFree(char *strPtr)
+{
+
+    if (strPtr != NULL)
+    {
+        free(strPtr);
+    }
+
+    return NULL;
 }

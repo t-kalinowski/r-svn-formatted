@@ -31,7 +31,6 @@
 #include "Graphics.h"
 #include "RIntf.h"
 #include "RFLaunch.h"
-//#include "TFLaunch.h"
 #include <Rdevices.h>
 #include <CFBundle.h>
 #include <Folders.h>
@@ -53,18 +52,27 @@ int pclose(FILE *fp)
 
 void R_Suicide(char *s);
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
 #include <errno.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifndef __MRC__
 #include <unix.h>
+#endif
+
 #include <Files.h>
 #include <Folders.h>
 
+#ifndef __MRC__
 #include <sioux.h>
+#endif
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -123,6 +131,18 @@ extern Boolean Have_Console;
 char *mac_getenv(const char *name);
 
 void R_setStartTime(void);
+
+#ifdef __MRC__
+int mkdir(char *, int);
+int mkdir(char *x, int a)
+{
+    return 0;
+}
+
+extern int chdir(char *);
+extern int getcwd(char *, int);
+
+#endif
 
 int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 {
@@ -259,8 +279,11 @@ FILE *R_OpenLibraryFile(char *file)
 {
     char buf[256];
     FILE *fp;
-
+#ifdef __MRC__
+    sprintf(buf, ":library:base:R:%s", file);
+#else
     sprintf(buf, "%s:library:base:R:%s", R_Home, file);
+#endif
     fp = R_fopen(buf, "r");
     return fp;
 }
@@ -297,18 +320,29 @@ Rboolean R_HiddenFile(char *filename)
 /* NOTE: The timing code below will have to be adpated */
 /* to use the macintosh specific timing code. */
 
-#include <sioux.h>
+char *strdup(char *str);
 
 int Mac_initialize_R(int ac, char **av);
-
+#ifndef __MRC__
 int main(int ac, char **av)
+#else
+int ac;
+char **av;
+int main(void)
+#endif
 {
     int value;
     char *p;
     SInt16 a;
+#ifdef __MRC__
+    ac = 1;
+    av = (char **)calloc(ac, sizeof(char *));
+    av[0] = strdup("R");
+#endif
 
     gc_inhibit_torture = 1;
 
+#ifndef __MRC__
     SIOUXSettings.standalone = false;   // I only use SIOUX to have command line
     SIOUXSettings.setupmenus = false;   // I'll set up the menus
     SIOUXSettings.initializeTB = false; // I manage the ToolBox
@@ -316,6 +350,8 @@ int main(int ac, char **av)
     SIOUXSettings.autocloseonquit = true;
 
     ac = ccommand(&av); // This must be the first  command after variables initializations !!!
+
+#endif
 
     /* FIXME HERE: record the time at which the program started. */
     /* This is probably zero on the mac as we have direct */
@@ -1166,7 +1202,9 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP fn, ans;
     char *p, tmp[PATH_MAX], dir[PATH_MAX];
     int i, nfiles, failures = 0;
+#ifndef __MRC__
     struct stat sb;
+#endif
 
     checkArity(op, args);
     fn = CAR(args);
@@ -1180,7 +1218,7 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         for (p = tmp; *p != '\0'; p++)
             if (*p == '/')
                 *p = ':';
-
+#ifndef __MRC__
         if (stat(tmp, &sb) == 0)
             /* Is this a directory? */
             if (sb.st_mode & S_IFDIR)
@@ -1189,6 +1227,7 @@ SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
                     failures++;
                 continue;
             }
+#endif
         /* Regular file (or more) */
         strcpy(dir, tmp);
         if ((p = strrchr(dir, ':')))
@@ -1309,8 +1348,6 @@ char **CommandLineArgs = NULL;
 
 #ifdef HAVE_STAT
 #include <types.h>
-#include <stat.h>
-
 #include <stat.h>
 
 Rboolean R_FileExists(char *path)

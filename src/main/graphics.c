@@ -3762,6 +3762,8 @@ void GText(double x, double y, int coords, char *str, double xc, double yc, doub
                     else if (dd->dp.canHAdj == 1)
                     {
                         hadj = 0.5 * floor(2 * xc + 0.5);
+                        /* limit to 0, 0.5, 1 */
+                        hadj = (hadj > 1.0) ? 1.0 : ((hadj < 0.0) ? 0.0 : hadj);
                     }
                     else
                         hadj = 0.0;

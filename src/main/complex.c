@@ -51,7 +51,7 @@ SEXP complex_unary(ARITHOP_TYPE code, SEXP s1)
         for (i = 0; i < n; i++)
         {
             x = COMPLEX(s1)[i];
-#ifdef IEEE_745
+#ifdef IEEE_754
             COMPLEX(ans)[i].r = -x.r;
             COMPLEX(ans)[i].i = -x.i;
 #else
