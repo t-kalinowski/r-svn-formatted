@@ -1328,7 +1328,7 @@ SEXP do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-#ifdef HAVE_LIBREADLINE
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
         extern Rboolean UsingReadline;
         if (R_Interactive && UsingReadline)
             LOGICAL(ans)[i] = TRUE;
