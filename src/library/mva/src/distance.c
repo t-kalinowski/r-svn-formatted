@@ -2,7 +2,8 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998, 2001  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *			      R Development Core Team
+ *  Copyright (C) 2002	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +29,13 @@
 #include <R_ext/Error.h>
 #include "mva.h"
 
+#define both_FINITE(a, b) (R_FINITE(a) && R_FINITE(b))
+#ifdef R_160_and_older
+#define both_non_NA both_FINITE
+#else
+#define both_non_NA(a, b) (!ISNAN(a) && !ISNAN(b))
+#endif
+
 double R_euclidean(double *x, int nr, int nc, int i1, int i2)
 {
     double dev, dist;
@@ -37,7 +45,7 @@ double R_euclidean(double *x, int nr, int nc, int i1, int i2)
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
+        if (both_non_NA(x[i1], x[i2]))
         {
             dev = (x[i1] - x[i2]);
             dist += dev * dev;
@@ -62,7 +70,7 @@ double R_maximum(double *x, int nr, int nc, int i1, int i2)
     dist = -DBL_MAX;
     for (j = 0; j < nc; j++)
     {
-        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
+        if (both_non_NA(x[i1], x[i2]))
         {
             dev = fabs(x[i1] - x[i2]);
             if (dev > dist)
@@ -86,7 +94,7 @@ double R_manhattan(double *x, int nr, int nc, int i1, int i2)
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
+        if (both_non_NA(x[i1], x[i2]))
         {
             dist += fabs(x[i1] - x[i2]);
             count++;
@@ -103,20 +111,26 @@ double R_manhattan(double *x, int nr, int nc, int i1, int i2)
 
 double R_canberra(double *x, int nr, int nc, int i1, int i2)
 {
-    double dist, sum, diff;
+    double dist, sum, diff, q;
     int count, j;
 
     count = 0;
     dist = 0;
     for (j = 0; j < nc; j++)
     {
-        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
+        if (both_non_NA(x[i1], x[i2]))
         {
             sum = fabs(x[i1] + x[i2]);
             diff = fabs(x[i1] - x[i2]);
             if (sum > DBL_MIN || diff > DBL_MIN)
             {
-                dist += diff / sum;
+                q = diff / sum;
+                if (ISNAN(q))
+                { /* maybe use Inf = lim x -> oo */
+                    if (!R_FINITE(diff) && diff == sum)
+                        q = 1.;
+                }
+                dist += q;
                 count++;
             }
         }
@@ -141,7 +155,7 @@ double R_dist_binary(double *x, int nr, int nc, int i1, int i2)
 
     for (j = 0; j < nc; j++)
     {
-        if (R_FINITE(x[i1]) && R_FINITE(x[i2]))
+        if (both_non_NA(x[i1], x[i2]))
         {
             if (x[i1] || x[i2])
             {
