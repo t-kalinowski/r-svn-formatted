@@ -2117,14 +2117,13 @@ static void optchk(int n, double *x, double *typsiz, double *sx, double *fscale,
         sx[i] = 1. / typsiz[i];
     }
 
-    /*	compute maximum step size if not provided */
+    /*	compute default maximum step size if not provided */
     if (*stepmx <= 0.)
     {
         stpsiz = 0.;
         for (i = 0; i < n; ++i)
             stpsiz += x[i] * x[i] * sx[i] * sx[i];
-        stpsiz = sqrt(stpsiz);
-        *stepmx = fmax2(stpsiz, 1) * 1e3;
+        *stepmx = 1000. * fmax2(sqrt(stpsiz), 1);
     }
 
     /*	check function scale */
@@ -2153,7 +2152,7 @@ static void optchk(int n, double *x, double *typsiz, double *sx, double *fscale,
         *msg = -5;
         return; /* 825 write(ipr,905) ndigit */
     }
-    else if (*ndigit < 0) /* use default */
+    else if (*ndigit < 0) /* use default, = 15 for IEEE double */
         *ndigit = (int)(-log10(epsm));
 
     /*	check trust region radius */
@@ -2598,8 +2597,8 @@ static void dfault(int n, double *x, double *typsiz, double *fscale, int *method
     epsm = d1mach(4);             /* for IEEE : = 2^-52	  ~= 2.22  e-16 */
     *gradtl = pow(epsm, 1. / 3.); /* for IEEE : = 2^(-52/3) ~= 6.055 e-6 */
     *steptl = sqrt(epsm);         /* for IEEE : = 2^-26	  ~= 1.490 e-8 */
-    *stepmx = 0.;
-    *dlt = -1.; /* (not needed for method 1) */
+    *stepmx = 0.;                 /* -> compute default in optchk() */
+    *dlt = -1.;                   /* (not needed for method 1) */
 
     /* set flags */
 
@@ -2698,7 +2697,8 @@ void optif9(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2fcn, voi
      *	xpls(n)	    <--> on exit:  xpls is local minimum
      *	fpls	    <--> on exit:  function value at solution, xpls
      *	gpls(n)	    <--> on exit:  gradient at solution xpls
-     *	itrmcd	    <--	 termination code
+     *	itrmcd	    <--	 termination code (in 0..5 ; 0 is "perfect");
+     *			see optcode() in ../main/optimize.c for meaning
      *	a(n,n)	     --> workspace for hessian (or estimate)
      *			 and its cholesky decomposition
      *	wrk(n,8)     --> workspace
