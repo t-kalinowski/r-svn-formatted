@@ -340,7 +340,7 @@ static void iconv_Init(void)
 #define iconvlist (*ptr_iconvlist)
 #endif
 
-#ifdef HAVE_DECL_ICONVLIST
+#if defined(HAVE_DECL_ICONVLIST) && HAVE_DECL_ICONVLIST
 static unsigned int cnt;
 
 static int count_one(unsigned int namescount, char **names, void *data)
@@ -365,7 +365,7 @@ static int write_one(unsigned int namescount, char **names, void *data)
 /* iconv(x, from, to) */
 SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#ifdef HAVE_DECL_ICONV
+#if defined(HAVE_DECL_ICONV) && HAVE_DECL_ICONV
     SEXP ans, x = CAR(args);
     iconv_t obj;
     int i;
@@ -379,7 +379,7 @@ SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     if (isNull(x))
     { /* list locales */
-#ifdef HAVE_DECL_ICONVLIST
+#if defined(HAVE_DECL_ICONVLIST) && HAVE_DECL_ICONVLIST
         cnt = 0;
         iconvlist(count_one, NULL);
         PROTECT(ans = allocVector(STRSXP, cnt));
@@ -429,7 +429,7 @@ SEXP do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_DECL_ICONV) && HAVE_DECL_ICONV
 void *Riconv_open(const char *tocode, const char *fromcode)
 {
 #ifdef Win32
