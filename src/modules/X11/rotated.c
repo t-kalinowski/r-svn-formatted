@@ -32,6 +32,9 @@
 
 #ifdef SUPPORT_UTF8
 #define USE_FONTSET 1
+#define HAVE_XUTF8DRAWIMAGESTRING 1
+#define HAVE_XUTF8DRAWSTRING 1
+#define HAVE_XUTF8TEXTEXTENTS 1
 extern int utf8locale;
 #endif
 
@@ -1416,32 +1419,38 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
 static RotatedTextItem *XmbRotRetrieveFromCache(Display *dpy, XFontSet font, double angle, char *text, int align);
 static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double angle, char *text, int align);
 
-void XSetFontSet(Display *display, GC gc, XFontSet font);
-XFontStruct *XFontStructOfFontSet(XFontSet font);
+void RXSetFontSet(Display *display, GC gc, XFontSet font);
+XFontStruct *RXFontStructOfFontSet(XFontSet font);
 
 static int XRfTextExtents(XFontSet font_set, char *string, int num_bytes, XRectangle *overall_ink_return,
                           XRectangle *overall_logical_return)
 {
+#ifdef HAVE_XUTF8TEXTEXTENTS
     if (utf8locale)
         return Xutf8TextExtents(font_set, string, num_bytes, overall_ink_return, overall_logical_return);
+#endif
     return XmbTextExtents(font_set, string, num_bytes, overall_ink_return, overall_logical_return);
 }
 
 static void XRfDrawString(Display *display, Drawable d, XFontSet font_set, GC gc, int x, int y, char *string,
                           int num_bytes)
 {
+#ifdef HAVE_XUTF8DRAWSTRING
     if (utf8locale)
         Xutf8DrawString(display, d, font_set, gc, x, y, string, num_bytes);
     else
+#endif
         XmbDrawString(display, d, font_set, gc, x, y, string, num_bytes);
 }
 
 static void XRfDrawImageString(Display *display, Drawable d, XFontSet font_set, GC gc, int x, int y, char *string,
                                int num_bytes)
 {
+#ifdef HAVE_XUTF8DRAWIMAGESTRING
     if (utf8locale)
         Xutf8DrawImageString(display, d, font_set, gc, x, y, string, num_bytes);
     else
+#endif
         XmbDrawImageString(display, d, font_set, gc, x, y, string, num_bytes);
 }
 
@@ -1509,7 +1518,7 @@ static int XmbRotPaintAlignedString(Display *dpy, XFontSet font, double angle, D
        coincides with user's specified point? */
 
     /* y position */
-    fs = XFontStructOfFontSet(font);
+    fs = RXFontStructOfFontSet(font);
 
     if (align == TLEFT || align == TCENTRE || align == TRIGHT)
         hot_y = (double)item->rows_in / 2 * style.magnify;
@@ -1711,7 +1720,7 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
             GCForeground | GCBackground | GCFunction | GCStipple | GCFillStyle | GCTileStipXOrigin | GCTileStipYOrigin |
                 GCPlaneMask | GCClipMask,
             my_gc);
-    XSetFontSet(dpy, my_gc, font);
+    RXSetFontSet(dpy, my_gc, font);
 
     /* count number of sections in string */
     if (align != NONE)
@@ -1726,15 +1735,15 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
         str2 = str2_b;
 
     /* overall font height */
-    height = XFontStructOfFontSet(font)->ascent + XFontStructOfFontSet(font)->descent;
+    height = RXFontStructOfFontSet(font)->ascent + RXFontStructOfFontSet(font)->descent;
 
     /* y position */
     if (align == TLEFT || align == TCENTRE || align == TRIGHT)
-        yp = y + XFontStructOfFontSet(font)->ascent;
+        yp = y + RXFontStructOfFontSet(font)->ascent;
     else if (align == MLEFT || align == MCENTRE || align == MRIGHT)
-        yp = y - nl * height / 2 + XFontStructOfFontSet(font)->ascent;
+        yp = y - nl * height / 2 + RXFontStructOfFontSet(font)->ascent;
     else if (align == BLEFT || align == BCENTRE || align == BRIGHT)
-        yp = y - nl * height + XFontStructOfFontSet(font)->ascent;
+        yp = y - nl * height + RXFontStructOfFontSet(font)->ascent;
     else
         yp = y;
 
@@ -1793,7 +1802,7 @@ static RotatedTextItem *XmbRotRetrieveFromCache(Display *dpy, XFontSet font, dou
     RotatedTextItem *i1 = first_text_item;
 
     /* get font name, if it exists */
-    if (XGetFontProperty(XFontStructOfFontSet(font), XA_FONT, &name_value))
+    if (XGetFontProperty(RXFontStructOfFontSet(font), XA_FONT, &name_value))
     {
         DEBUG_PRINT1("got font name OK\n");
         font_name = XGetAtomName(dpy, name_value);
@@ -2000,7 +2009,7 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
     free(str1);
 
     /* overall font height */
-    height = XFontStructOfFontSet(font)->ascent + XFontStructOfFontSet(font)->descent;
+    height = RXFontStructOfFontSet(font)->ascent + RXFontStructOfFontSet(font)->descent;
 
     /* dimensions horizontal text will have */
     item->cols_in = item->max_width;
@@ -2018,7 +2027,7 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
     /* create a GC for the bitmap */
     font_gc = XCreateGC(dpy, canvas, (unsigned long)0, 0);
     XSetBackground(dpy, font_gc, 0);
-    XSetFontSet(dpy, font_gc, font);
+    RXSetFontSet(dpy, font_gc, font);
 
     /* make sure the bitmap is blank */
     XSetForeground(dpy, font_gc, 0);
@@ -2041,7 +2050,7 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
     /* draw text horizontally */
 
     /* start at top of bitmap */
-    yp = XFontStructOfFontSet(font)->ascent;
+    yp = RXFontStructOfFontSet(font)->ascent;
 
     str1 = strdup(text);
     if (str1 == NULL)
@@ -2069,7 +2078,7 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
         /* keep a note of corner positions of this string */
         item->corners_x[ic] = ((double)xp - (double)item->cols_in / 2) * style.magnify;
         item->corners_y[ic] =
-            ((double)(yp - XFontStructOfFontSet(font)->ascent) - (double)item->rows_in / 2) * style.magnify;
+            ((double)(yp - RXFontStructOfFontSet(font)->ascent) - (double)item->rows_in / 2) * style.magnify;
         item->corners_x[ic + 1] = item->corners_x[ic];
         item->corners_y[ic + 1] = item->corners_y[ic] + (double)height * style.magnify;
         item->corners_x[item->nl * 4 - 1 - ic] = item->corners_x[ic] + (double)r_log.width * style.magnify;
@@ -2279,7 +2288,7 @@ XPoint *XmbRotTextExtents(Display *dpy, XFontSet font, double angle, int x, int 
     free(str1);
 
     /* overall font height */
-    height = XFontStructOfFontSet(font)->ascent + XFontStructOfFontSet(font)->descent;
+    height = RXFontStructOfFontSet(font)->ascent + RXFontStructOfFontSet(font)->descent;
 
     /* dimensions horizontal text will have */
     cols_in = max_width;
@@ -2297,7 +2306,7 @@ XPoint *XmbRotTextExtents(Display *dpy, XFontSet font, double angle, int x, int 
     else if (align == BLEFT || align == BCENTRE || align == BRIGHT)
         hot_y = -(double)rows_in / 2 * style.magnify;
     else
-        hot_y = -((double)rows_in / 2 - (double)XFontStructOfFontSet(font)->descent) * style.magnify;
+        hot_y = -((double)rows_in / 2 - (double)RXFontStructOfFontSet(font)->descent) * style.magnify;
 
     /* x position */
     if (align == TLEFT || align == MLEFT || align == BLEFT || align == NONE)
@@ -2341,23 +2350,23 @@ XPoint *XmbRotTextExtents(Display *dpy, XFontSet font, double angle, int x, int 
     return xp_out;
 }
 
-void XSetFontSet(Display *display, GC gc, XFontSet font)
+void RXSetFontSet(Display *display, GC gc, XFontSet font)
 {
+    /* FIXME: PD says all the fonts have fid=0 */
     char **ml;
     XFontStruct **fs_list;
-    int i;
-    int cnt;
+    int i, cnt;
 
     cnt = XFontsOfFontSet(font, &fs_list, &ml);
     for (i = 0; i < cnt; i++)
         XSetFont(display, gc, fs_list[i]->fid);
 }
 
-XFontStruct *XFontStructOfFontSet(XFontSet font)
+XFontStruct *RXFontStructOfFontSet(XFontSet font)
 {
     char **ml;
     XFontStruct **fs_list;
     XFontsOfFontSet(font, &fs_list, &ml);
-    return (fs_list[0]);
+    return fs_list[0];
 }
 #endif
