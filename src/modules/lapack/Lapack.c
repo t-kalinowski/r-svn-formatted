@@ -216,7 +216,8 @@ static SEXP unscramble(const double *imaginary, int n, const double *vecs)
 
 static SEXP modLa_rg(SEXP x, SEXP only_values)
 {
-    int i, n, lwork, info, vectors, complexValues, *xdims, ov;
+    Rboolean vectors, complexValues;
+    int i, n, lwork, info, *xdims, ov;
     double *work, *wR, *wI, *left, *right, *xvals, tmp;
     char jobVL[1], jobVR[1];
     SEXP ret, nm, val;
@@ -232,14 +233,13 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
         error("invalid `only.values'");
+    vectors = !ov;
     jobVL[0] = jobVR[0] = 'N';
     left = right = (double *)0;
-    vectors = 0;
-    if (!ov)
+    if (vectors)
     {
         jobVR[0] = 'V';
         right = (double *)R_alloc(n * n, sizeof(double));
-        vectors = 1;
     }
     wR = (double *)R_alloc(n, sizeof(double));
     wI = (double *)R_alloc(n, sizeof(double));
@@ -252,10 +252,13 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     if (info != 0)
         error("error code %d from Lapack routine dgeev", info);
 
-    complexValues = 0;
+    complexValues = FALSE;
     for (i = 0; i < n; i++)
         if (wI[i] != 0.0)
-            complexValues = 1;
+        {
+            complexValues = TRUE;
+            break;
+        }
     ret = PROTECT(allocVector(VECSXP, 2));
     nm = PROTECT(allocVector(STRSXP, 2));
     SET_STRING_ELT(nm, 0, mkChar("values"));
@@ -281,10 +284,13 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
         for (i = 0; i < n; i++)
             REAL(val)[i] = wR[i];
         SET_VECTOR_ELT(ret, 0, val);
-        val = allocMatrix(REALSXP, n, n);
-        for (i = 0; i < (n * n); i++)
-            REAL(val)[i] = right[i];
-        SET_VECTOR_ELT(ret, 1, val);
+        if (vectors)
+        {
+            val = allocMatrix(REALSXP, n, n);
+            for (i = 0; i < (n * n); i++)
+                REAL(val)[i] = right[i];
+            SET_VECTOR_ELT(ret, 1, val);
+        }
     }
     UNPROTECT(2);
     return ret;
@@ -552,7 +558,7 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
 static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
 {
 #ifdef HAVE_DOUBLE_COMPLEX
-    int n, lwork, info, vectors, *xdims, ov;
+    int n, lwork, info, *xdims, ov;
     Rcomplex *work, *left, *right, *xvals, tmp;
     double *rwork;
     char jobVL[1], jobVR[1];
@@ -571,13 +577,11 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
         error("invalid `only.values'");
     jobVL[0] = jobVR[0] = 'N';
     left = right = (Rcomplex *)0;
-    vectors = 0;
     if (!ov)
     {
         jobVR[0] = 'V';
         PROTECT(val = allocMatrix(CPLXSXP, n, n));
         right = COMPLEX(val);
-        vectors = 1;
     }
     PROTECT(values = allocVector(CPLXSXP, n));
     rwork = (double *)R_alloc(2 * n, sizeof(double));
