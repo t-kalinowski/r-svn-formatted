@@ -62,7 +62,8 @@ static void nmmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
 static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, double abstol, double intol, OptStruct OS,
                   int type, int trace, int *fncount, int *grcount, int maxit);
 static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, int *fail, OptStruct OS,
-                   double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg);
+                   double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg, int trace,
+                   int nREPORT);
 static void samin(int n, double *pb, double *yb, int maxit, int tmax, double ti, int trace, OptStruct OS);
 
 static double fminfn(int n, double *p, OptStruct OS)
@@ -70,6 +71,7 @@ static double fminfn(int n, double *p, OptStruct OS)
     SEXP s, x;
     int i;
     double val;
+    PROTECT_INDEX ipx;
 
     PROTECT(x = allocVector(REALSXP, n));
     for (i = 0; i < n; i++)
@@ -79,7 +81,8 @@ static double fminfn(int n, double *p, OptStruct OS)
         REAL(x)[i] = p[i] * (OS->parscale[i]);
     }
     SETCADR(OS->R_fcall, x);
-    PROTECT(s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP));
+    PROTECT_WITH_INDEX(s = eval(OS->R_fcall, OS->R_env), &ipx);
+    REPROTECT(s = coerceVector(s, REALSXP), ipx);
     val = REAL(s)[0] / (OS->fnscale);
     UNPROTECT(2);
     return val;
@@ -90,6 +93,7 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
     SEXP s, x;
     int i;
     double val1, val2, eps, epsused, tmp;
+    PROTECT_INDEX ipx;
 
     if (!isNull(OS->R_gcall))
     { /* analytical derivatives */
@@ -101,7 +105,8 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
             REAL(x)[i] = p[i] * (OS->parscale[i]);
         }
         SETCADR(OS->R_gcall, x);
-        PROTECT(s = coerceVector(eval(OS->R_gcall, OS->R_env), REALSXP));
+        PROTECT_WITH_INDEX(s = eval(OS->R_gcall, OS->R_env), &ipx);
+        REPROTECT(s = coerceVector(s, REALSXP), ipx);
         for (i = 0; i < n; i++)
             df[i] = REAL(s)[i] * (OS->parscale[i]) / (OS->fnscale);
         UNPROTECT(2);
@@ -119,11 +124,13 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 eps = OS->ndeps[i];
                 REAL(x)[i] = (p[i] + eps) * (OS->parscale[i]);
                 SETCADR(OS->R_fcall, x);
-                s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
+                PROTECT_WITH_INDEX(s = eval(OS->R_fcall, OS->R_env), &ipx);
+                REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val1 = REAL(s)[0] / (OS->fnscale);
                 REAL(x)[i] = (p[i] - eps) * (OS->parscale[i]);
                 SETCADR(OS->R_fcall, x);
-                s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
+                REPROTECT(s = eval(OS->R_fcall, OS->R_env), ipx);
+                REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (2 * eps);
 #define DO_df_x                                                                                                        \
@@ -132,6 +139,7 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
     REAL(x)[i] = p[i] * (OS->parscale[i])
 
                 DO_df_x;
+                UNPROTECT(1);
             }
         }
         else
@@ -147,7 +155,8 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 }
                 REAL(x)[i] = tmp * (OS->parscale[i]);
                 SETCADR(OS->R_fcall, x);
-                s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
+                PROTECT_WITH_INDEX(s = eval(OS->R_fcall, OS->R_env), &ipx);
+                REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val1 = REAL(s)[0] / (OS->fnscale);
                 tmp = p[i] - eps;
                 if (tmp < OS->lower[i])
@@ -157,11 +166,13 @@ static void fmingr(int n, double *p, double *df, OptStruct OS)
                 }
                 REAL(x)[i] = tmp * (OS->parscale[i]);
                 SETCADR(OS->R_fcall, x);
-                s = coerceVector(eval(OS->R_fcall, OS->R_env), REALSXP);
+                REPROTECT(s = eval(OS->R_fcall, OS->R_env), ipx);
+                REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (epsused + eps);
 
                 DO_df_x;
+                UNPROTECT(1);
             }
         }
         UNPROTECT(1); /* x */
@@ -318,6 +329,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         double factr, pgtol;
         char msg[60];
 
+        nREPORT = asInteger(getListElement(options, "REPORT"));
         factr = asReal(getListElement(options, "factr"));
         pgtol = asReal(getListElement(options, "pgtol"));
         lmm = asInteger(getListElement(options, "lmm"));
@@ -365,7 +377,8 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         OS->usebounds = 1;
         OS->lower = lower;
         OS->upper = upper;
-        lbfgsb(npar, lmm, dpar, lower, upper, nbd, &val, &ifail, OS, factr, pgtol, &fncount, &grcount, maxit, msg);
+        lbfgsb(npar, lmm, dpar, lower, upper, nbd, &val, &ifail, OS, factr, pgtol, &fncount, &grcount, maxit, msg,
+               trace, nREPORT);
         for (i = 0; i < npar; i++)
             REAL(par)[i] = dpar[i] * (OS->parscale[i]);
         UNPROTECT(1); /* OS->R_gcall */
@@ -1105,11 +1118,35 @@ void setulb(int n, int m, double *x, double *l, double *u, int *nbd, double *f, 
             double *wa, int *iwa, char *task, int iprint, int *lsave, int *isave, double *dsave);
 
 static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, int *fail, OptStruct OS,
-                   double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg)
+                   double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg, int trace, int nREPORT)
 {
     char task[60];
     double f, *g, dsave[29], *wa;
-    int iter = 0, *iwa, isave[44], lsave[4];
+    int tr = -1, iter = 0, *iwa, isave[44], lsave[4];
+
+    if (nREPORT <= 0)
+        error("REPORT must be > 0 (method = \"L-BFGS-B\")");
+    switch (trace)
+    {
+    case 2:
+        tr = 0;
+        break;
+    case 3:
+        tr = nREPORT;
+        break;
+    case 4:
+        tr = 99;
+        break;
+    case 5:
+        tr = 100;
+        break;
+    case 6:
+        tr = 101;
+        break;
+    default:
+        tr = -1;
+        break;
+    }
 
     *fail = 0;
     g = vect(n);
@@ -1118,7 +1155,7 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
     strcpy(task, "START");
     while (1)
     {
-        setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, 0, lsave, isave, dsave);
+        setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, tr, lsave, isave, dsave);
         /*	Rprintf("in lbfgsb - %s\n", task);*/
         if (strncmp(task, "FG", 2) == 0)
         {
@@ -1129,6 +1166,10 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
         }
         else if (strncmp(task, "NEW_X", 5) == 0)
         {
+            if (trace == 1 && (iter % nREPORT == 0))
+            {
+                Rprintf("iter %4d value %f\n", iter, f);
+            }
             if (++iter > maxit)
             {
                 *fail = 1;
@@ -1149,9 +1190,22 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
             *fail = 52;
             break;
         }
+        else
+        { /* some other condition that is not supposed to happen */
+            *fail = 52;
+            break;
+        }
     }
     *Fmin = f;
     *fncount = *grcount = isave[33];
+    if (trace)
+    {
+        Rprintf("final  value %f \n", *Fmin);
+        if (iter < maxit && *fail == 0)
+            Rprintf("converged\n");
+        else
+            Rprintf("stopped after %i iterations\n", iter);
+    }
     strcpy(msg, task);
 }
 
