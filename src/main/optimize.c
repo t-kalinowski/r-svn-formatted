@@ -247,8 +247,8 @@ static int have_hessian;
 #define FT_SIZE                                                                                                        \
     5               /* size of table to store computed                                                                 \
                function values */
-static int xdim;    /* length of the parameter (x) vector */
 static int FT_last; /* Newest entry in the table */
+/*static int xdim;		-* length of the parameter (x) vector */
 
 static struct
 {
@@ -306,9 +306,9 @@ static void FT_free()
 
 /* Store an entry in the table of computed function values */
 
-static int FT_store(int n, double f, double *x, double *grad, double *hess)
+static void FT_store(int n, double f, double *x, double *grad, double *hess)
 {
-    int ind, i;
+    int ind;
 
     ind = (++FT_last) % FT_SIZE;
     Ftable[ind].fval = f;
