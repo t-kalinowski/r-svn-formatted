@@ -147,6 +147,8 @@ static int nboxchars;
 static int xmaxused, ymaxused;
 static int box_coords[6];
 static char copycontents[30] = "";
+static int labdigs = 4;
+static char labform[6];
 
 /* Xwindows Globals */
 
@@ -696,7 +698,7 @@ static void drawrow(int whichrow)
     cleararea(src_x, src_y, windowWidth, box_h);
     drawrectangle(src_x, src_y, boxw[0], box_h, 1, 1);
 
-    sprintf(rlab, "%4d", whichrow);
+    sprintf(rlab, labform, whichrow);
     printstring(rlab, strlen(rlab), row, 0, 0);
 
     w = bwidth + boxw[0];
@@ -1140,7 +1142,7 @@ static void printlabs(void)
     }
     for (i = rowmin; i <= rowmax; i++)
     {
-        sprintf(clab, "%4d", i);
+        sprintf(clab, labform, i);
         printstring(clab, strlen(clab), i - rowmin + 1, 0, 0);
     }
 }
@@ -1519,7 +1521,10 @@ static Rboolean initwin(void) /* TRUE = Error */
     box_h = font_info->max_bounds.ascent + font_info->max_bounds.descent + 4;
     text_offset = 2 + font_info->max_bounds.descent;
     windowHeight = 26 * box_h + hwidth + 2;
-    boxw[0] = textwidth("1234 ", 5) + 8;
+    /* this used to presume 4 chars sufficed for row numbering */
+    labdigs = max(3, 1 + floor(log10((double)ymaxused)));
+    sprintf(labform, "%%%dd", labdigs);
+    boxw[0] = 0.1 * labdigs * textwidth("0123456789", 10) + textwidth(" ", 1) + 8;
     for (i = 1; i < 100; i++)
         boxw[i] = get_col_width(i);
     /* try for a window width that covers all the columns, or is around
