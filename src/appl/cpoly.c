@@ -34,22 +34,23 @@
  *      February 1997
  */
 
+#include <float.h>
 #include "Fortran.h"
 
-static double cauchy_();
-static double cmod_(double *, double *);
-static double errev_(int *, double *, double *, double *, double *, double *, double *);
-static double scale_();
-static int calct_(int *);
-static int cdivid_(double *, double *, double *, double *, double *, double *);
-static int fxshft_();
-static int mcon_(double *, double *, double *, double *);
-static int nexth_(int *);
-static int noshft_(int);
-static int polyev_(int *, double *, double *, double *, double *, double *, double *, double *, double *);
-static int vrshft_(int, double *, double *, int *);
+static int calct(int *);
+static int fxshft(int *, double *, double *, int *);
+static int vrshft(int, double *, double *, int *);
+static int nexth(int *);
+static int noshft(int);
 
-/* Global Variables */
+void polyev(int *, double *, double *, double *, double *, double *, double *, double *, double *);
+double errev(int *, double *, double *, double *, double *, double *, double *);
+double cauchy(int *, double *, double *);
+void scale(int *, double *, double *, double *, double *, double *, double *);
+void cdivid(double *, double *, double *, double *, double *, double *);
+double cmod(double *, double *);
+
+/* Global Variables (too many!) */
 
 #define NMAX 50
 
@@ -71,21 +72,21 @@ static double pvr;
 static double pvi;
 static double are;
 static double mre;
-static double eta;
-static double infin;
+static double eta = DBL_EPSILON;
+static double infin = DBL_MAX;
 static int nn;
 
 int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, double *zeroi, int *fail)
 {
     int i__1;
     double d__1, d__2;
-    static double base;
+    static double base = (double)FLT_RADIX;
     static int conv;
     static double cosr, sinr;
     static int idnn2, i;
     static double zi;
     static double zr;
-    static double xx, yy, smalno;
+    static double xx, yy, smalno = DBL_MIN;
     static double bnd, xxx;
     static int cnt1, cnt2;
     --zeroi;
@@ -93,7 +94,6 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
     --opi;
     --opr;
 
-    mcon_(&eta, &infin, &smalno, &base);
     are = eta;
     mre = sqrt(2.0) * 2.0 * eta;
 
@@ -128,25 +128,24 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
         nn = nn - 1;
     }
 
-    /* make a copy of the coefficients. */
-
-    for (i = 1; i <= nn; i++)
+    /* make a copy of the coefficients and shr[] = | p[] | */
+    for (i = 0; i < nn; i++)
     {
-        pr[i - 1] = opr[i];
-        pi[i - 1] = opi[i];
-        shr[i - 1] = hypot(pr[i - 1], pi[i - 1]);
+        pr[i] = opr[i + 1];
+        pi[i] = opi[i + 1];
+        shr[i] = hypot(pr[i], pi[i]);
     }
 
-    /* scale the polynomial. */
+    /* scale the polynomial with factor 'bnd'. */
 
-    bnd = scale_(&nn, shr, &eta, &infin, &smalno, &base);
+    scale(&nn, shr, &eta, &infin, &smalno, &base, &bnd);
 
     if (bnd != 1.0)
     {
-        for (i = 1; i <= nn; i++)
+        for (i = 0; i < nn; i++)
         {
-            pr[i - 1] = bnd * pr[i - 1];
-            pi[i - 1] = bnd * pi[i - 1];
+            pr[i] *= bnd;
+            pi[i] *= bnd;
         }
     }
 
@@ -157,10 +156,10 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
 
         /* calculate bnd, a lower bound on the modulus of the zeros. */
 
-        for (i = 1; i <= nn; i++)
-            shr[i - 1] = cmod_(&pr[i - 1], &pi[i - 1]);
+        for (i = 0; i < nn; i++)
+            shr[i] = cmod(&pr[i], &pi[i]);
 
-        bnd = cauchy_(&nn, shr, shi);
+        bnd = cauchy(&nn, shr, shi);
 
         /* outer loop to control 2 major passes */
         /* with different sequences of shifts */
@@ -170,7 +169,7 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
 
             /* first stage calculation, no shift */
 
-            noshft_(5);
+            noshft(5);
 
             /*  inner loop to select a shift */
             for (cnt2 = 1; cnt2 <= 9; cnt2++)
@@ -189,7 +188,7 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
                 /*  second stage calculation, fixed shift */
 
                 i__1 = cnt2 * 10;
-                fxshft_(&i__1, &zr, &zi, &conv);
+                fxshft(&i__1, &zr, &zi, &conv);
 
                 if (conv)
                     goto L10;
@@ -211,25 +210,25 @@ int F77_SYMBOL(cpoly)(double *opr, double *opi, int *degree, double *zeror, doub
         zeror[idnn2] = zr;
         zeroi[idnn2] = zi;
         --nn;
-        for (i = 1; i <= nn; i++)
+        for (i = 0; i < nn; i++)
         {
-            pr[i - 1] = qpr[i - 1];
-            pi[i - 1] = qpi[i - 1];
+            pr[i] = qpr[i];
+            pi[i] = qpi[i];
         }
-    }
+    } /*while*/
 
     /*  calculate the final zero and return */
 
     d__1 = -pr[1];
     d__2 = -pi[1];
-    cdivid_(&d__1, &d__2, pr, pi, &zeror[*degree], &zeroi[*degree]);
+    cdivid(&d__1, &d__2, pr, pi, &zeror[*degree], &zeroi[*degree]);
     return 0;
 }
 
 /*  Computes the derivative polynomial as the initial
  *  polynomial and computes l1 no-shift h polynomials.  */
 
-static int noshft_(int l1)
+static int noshft(int l1)
 {
     double d__1, d__2;
     static int i, j, n;
@@ -251,7 +250,7 @@ static int noshft_(int l1)
     for (jj = 1; jj <= l1; jj++)
     {
 
-        if (cmod_(&hr[n - 1], &hi[n - 1]) <= eta * 10.0 * cmod_(&pr[n - 1], &pi[n - 1]))
+        if (cmod(&hr[n - 1], &hi[n - 1]) <= eta * 10.0 * cmod(&pr[n - 1], &pi[n - 1]))
         {
 
             /*  If the constant term is essentially zero, */
@@ -270,7 +269,7 @@ static int noshft_(int l1)
         {
             d__1 = -pr[nn - 1];
             d__2 = -pi[nn - 1];
-            cdivid_(&d__1, &d__2, &hr[n - 1], &hi[n - 1], &tr, &ti);
+            cdivid(&d__1, &d__2, &hr[n - 1], &hi[n - 1], &tr, &ti);
             for (i = 1; i <= nm1; i++)
             {
                 j = nn - i;
@@ -294,7 +293,7 @@ static int noshft_(int l1)
  *  zr,zi - approximate zero if conv is .true.
  *  conv  - int indicating convergence of stage 3 iteration  */
 
-static int fxshft_(int *l2, double *zr, double *zi, int *conv)
+static int fxshft(int *l2, double *zr, double *zi, int *conv)
 {
     double d__1, d__2;
     static int pasd, bool, test;
@@ -306,14 +305,14 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
 
     /* evaluate p at s. */
 
-    polyev_(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
+    polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
 
     test = TRUE;
     pasd = FALSE;
 
     /* calculate first t = -p(s)/h(s). */
 
-    calct_(&bool);
+    calct(&bool);
 
     /* main loop for one second stage step. */
 
@@ -325,8 +324,8 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
 
         /* compute next h polynomial and new t. */
 
-        nexth_(&bool);
-        calct_(&bool);
+        nexth(&bool);
+        calct(&bool);
         *zr = sr + tr;
         *zi = si + ti;
 
@@ -337,7 +336,7 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
         {
             d__1 = tr - otr;
             d__2 = ti - oti;
-            if (cmod_(&d__1, &d__2) >= cmod_(zr, zi) * 0.5)
+            if (cmod(&d__1, &d__2) >= cmod(zr, zi) * 0.5)
             {
                 pasd = FALSE;
             }
@@ -360,7 +359,7 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
                 }
                 svsr = sr;
                 svsi = si;
-                vrshft_(10, zr, zi, conv);
+                vrshft(10, zr, zi, conv);
                 if (*conv)
                 {
                     return 0;
@@ -378,8 +377,8 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
                 }
                 sr = svsr;
                 si = svsi;
-                polyev_(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
-                calct_(&bool);
+                polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
+                calct(&bool);
             }
         }
     }
@@ -387,7 +386,7 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
     /* attempt an iteration with final h polynomial */
     /* from second stage. */
 
-    vrshft_(10, zr, zi, conv);
+    vrshft(10, zr, zi, conv);
     return 0;
 }
 
@@ -398,7 +397,7 @@ static int fxshft_(int *l2, double *zr, double *zi, int *conv)
  *            on exit.
  *  conv    - .true. if iteration converges  */
 
-static int vrshft_(int l3, double *zr, double *zi, int *conv)
+static int vrshft(int l3, double *zr, double *zi, int *conv)
 {
     static int bool, b;
     static int i, j;
@@ -417,12 +416,12 @@ static int vrshft_(int l3, double *zr, double *zi, int *conv)
 
         /* evaluate p at s and test for convergence. */
 
-        polyev_(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
-        mp = cmod_(&pvr, &pvi);
-        ms = cmod_(&sr, &si);
-        if (mp <= errev_(&nn, qpr, qpi, &ms, &mp, &are, &mre) * 20.0)
+        polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
+        mp = cmod(&pvr, &pvi);
+        ms = cmod(&sr, &si);
+        if (mp <= errev(&nn, qpr, qpi, &ms, &mp, &are, &mre) * 20.0)
         {
-            goto L20;
+            goto L_conv;
         }
 
         /* polynomial value is smaller in value than */
@@ -448,11 +447,11 @@ static int vrshft_(int l3, double *zr, double *zi, int *conv)
                 r2 = sr * (r1 + 1.) - si * r1;
                 si = sr * r1 + si * (r1 + 1.);
                 sr = r2;
-                polyev_(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
+                polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
                 for (j = 1; j <= 5; ++j)
                 {
-                    calct_(&bool);
-                    nexth_(&bool);
+                    calct(&bool);
+                    nexth(&bool);
                 }
                 omp = infin;
                 goto L10;
@@ -472,18 +471,18 @@ static int vrshft_(int l3, double *zr, double *zi, int *conv)
         /* calculate next iterate. */
 
     L10:
-        calct_(&bool);
-        nexth_(&bool);
-        calct_(&bool);
+        calct(&bool);
+        nexth(&bool);
+        calct(&bool);
         if (!bool)
         {
-            relstp = cmod_(&tr, &ti) / cmod_(&sr, &si);
+            relstp = cmod(&tr, &ti) / cmod(&sr, &si);
             sr += tr;
             si += ti;
         }
     }
     return 0;
-L20:
+L_conv:
     *conv = TRUE;
     *zr = sr;
     *zi = si;
@@ -493,7 +492,7 @@ L20:
 /* computes  t = -p(s)/h(s).
  * bool   - logical, set true if h(s) is essentially zero.  */
 
-static int calct_(int *bool)
+static int calct(int *bool)
 {
     double d__1, d__2;
     static int n;
@@ -503,13 +502,13 @@ static int calct_(int *bool)
 
     /* evaluate h(s). */
 
-    polyev_(&n, &sr, &si, hr, hi, qhr, qhi, &hvr, &hvi);
-    *bool = cmod_(&hvr, &hvi) <= are * 10. * cmod_(&hr[n - 1], &hi[n - 1]);
+    polyev(&n, &sr, &si, hr, hi, qhr, qhi, &hvr, &hvi);
+    *bool = cmod(&hvr, &hvi) <= are * 10. * cmod(&hr[n - 1], &hi[n - 1]);
     if (!*bool)
     {
         d__1 = -pvr;
         d__2 = -pvi;
-        cdivid_(&d__1, &d__2, &hvr, &hvi, &tr, &ti);
+        cdivid(&d__1, &d__2, &hvr, &hvi, &tr, &ti);
     }
     else
     {
@@ -522,7 +521,7 @@ static int calct_(int *bool)
 /* calculates the next shifted h polynomial. */
 /* bool   -  logical, if .true. h(s) is essentially zero */
 
-static int nexth_(int *bool)
+static int nexth(int *bool)
 {
     static int j, n;
     static int nm1;
@@ -558,89 +557,69 @@ static int nexth_(int *bool)
     return 0;
 }
 
-/* evaluates a polynomial  p  at  s  by the horner recurrence */
-/* placing the partial sums in q and the computed value in pv. */
+/*--------------------- Independent Complex Polynomial Utilities ----------*/
 
-static int polyev_(int *nn, double *sr, double *si, double *pr, double *pi, double *qr, double *qi, double *pvr,
-                   double *pvi)
+void polyev(int *nn, double *sr, double *si, double *pr, double *pi, double *qr, double *qi, double *pvr, double *pvi)
 {
-    static int i;
-    static double t;
+    /* evaluates a polynomial  p  at  s  by the horner recurrence
+     * placing the partial sums in q and the computed value in pv.
+     */
+    int i;
+    double t;
 
-    /* Parameter adjustments */
-    --qi;
-    --qr;
-    --pi;
-    --pr;
-
-    /* Function Body */
-    qr[1] = pr[1];
-    qi[1] = pi[1];
-    *pvr = qr[1];
-    *pvi = qi[1];
-    for (i = 2; i <= *nn; i++)
+    qr[0] = pr[0];
+    qi[0] = pi[0];
+    *pvr = qr[0];
+    *pvi = qi[0];
+    for (i = 1; i < *nn; i++)
     {
         t = *pvr * *sr - *pvi * *si + pr[i];
-        *pvi = *pvr * *si + *pvi * *sr + pi[i];
-        *pvr = t;
-        qr[i] = *pvr;
-        qi[i] = *pvi;
+        qi[i] = *pvi = *pvr * *si + *pvi * *sr + pi[i];
+        qr[i] = *pvr = t;
     }
-    return 0;
 }
 
-/*  bounds the error in evaluating the polynomial by the horner
- *  recurrence.
- *
- *  qr,qi    - the partial sums
- *  ms       - modulus of the point
- *  mp       - modulus of polynomial value
- *  are, mre - error bounds on complex addition and multiplication  */
-
-static double errev_(int *nn, double *qr, double *qi, double *ms, double *mp, double *are, double *mre)
+double errev(int *nn, double *qr, double *qi, double *ms, double *mp, double *are, double *mre)
 {
-    static double e;
-    static int i;
+    /*  bounds the error in evaluating the polynomial by the horner
+     *  recurrence.
+     *
+     *  qr,qi    - the partial sums
+     *  ms       - modulus of the point
+     *  mp       - modulus of polynomial value
+     *  are, mre - error bounds on complex addition and multiplication
+     */
+    double e;
+    int i;
 
-    /* Parameter adjustments */
-    --qi;
-    --qr;
-
-    /* Function Body */
-    e = cmod_(&qr[1], &qi[1]) * *mre / (*are + *mre);
-    for (i = 1; i <= *nn; i++)
+    e = cmod(&qr[0], &qi[0]) * *mre / (*are + *mre);
+    for (i = 0; i < *nn; i++)
     {
-        e = e * *ms + cmod_(&qr[i], &qi[i]);
+        e *= (*ms + cmod(&qr[i], &qi[i]));
     }
     return e * (*are + *mre) - *mp * *mre;
 }
 
-/* cauchy computes a lower bound on the moduli of the zeros of a */
-/* polynomial - pt is the modulus of the coefficients. */
-
-static double cauchy_(int *nn, double *pt, double *q)
+double cauchy(int *nn, double *pt, double *q)
 {
-    static double f;
-    static int i, n;
-    static double x, df, dx, xm;
+    /* Computes a lower bound on the moduli of the zeros of a polynomial
+     * pt[1:nn] is the modulus of the coefficients.
+     */
+    double f, x, df, dx, xm;
+    int i, n;
 
-    /* Parameter adjustments */
-    --q;
-    --pt;
-
-    /* Function Body */
-    pt[*nn] = -pt[*nn];
+    n = *nn - 1;
+    pt[n] = -pt[n];
 
     /* compute upper estimate of bound. */
 
-    n = *nn - 1;
-    x = exp((log(-pt[*nn]) - log(pt[1])) / (double)n);
+    x = exp((log(-pt[n]) - log(pt[0])) / (double)n);
 
     /* if newton step at the origin is better, use it. */
 
-    if (pt[n] != 0.)
+    if (pt[n - 1] != 0.)
     {
-        xm = -pt[*nn] / pt[n];
+        xm = -pt[n] / pt[n - 1];
         if (xm < x)
             x = xm;
     }
@@ -650,8 +629,8 @@ static double cauchy_(int *nn, double *pt, double *q)
     for (;;)
     {
         xm = x * 0.1;
-        f = pt[1];
-        for (i = 2; i <= *nn; i++)
+        f = pt[0];
+        for (i = 1; i < *nn; i++)
             f = f * xm + pt[i];
         if (f <= 0.0)
         {
@@ -666,14 +645,14 @@ static double cauchy_(int *nn, double *pt, double *q)
 
     while (fabs(dx / x) > 0.005)
     {
-        q[1] = pt[1];
-        for (i = 2; i <= *nn; i++)
+        q[0] = pt[0];
+        for (i = 1; i < *nn; i++)
         {
             q[i] = q[i - 1] * x + pt[i];
         }
-        f = q[*nn];
-        df = q[1];
-        for (i = 2; i <= n; i++)
+        f = q[n];
+        df = q[0];
+        for (i = 1; i < n; i++)
         {
             df = df * x + q[i];
         }
@@ -683,31 +662,28 @@ static double cauchy_(int *nn, double *pt, double *q)
     return x;
 }
 
-/* returns a scale factor to multiply the coefficients of the */
-/* polynomial. the scaling is done to avoid overflow and to avoid */
-/* undetected underflow interfering with the convergence */
-/* criterion.  the factor is a power of the base. */
-/* pt - modulus of coefficients of p */
-/* eta,infin,smalno,base - constants describing the */
-/* floating point arithmetic. */
-
-static double scale_(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base)
+void scale(int *nn, double *pt, double *eta, double *infin, double *smalno, double *base, double *fact)
 {
-    /* Local variables */
-    static int i, l;
-    static double x, hi, sc, lo, min_, max_;
+    /* Returns a scale factor to multiply the coefficients of the polynomial.
+     * The scaling is done to avoid overflow and to avoid
+     *	undetected underflow interfering with the convergence criterion.
+     * The factor is a power of the base.
 
-    /* Parameter adjustments */
-    --pt;
+     * pt [1:nn] : modulus of coefficients of p
+     * eta,infin,
+     * smalno,base - constants describing the floating point arithmetic.
+     * fact : scale factor
+     */
 
-    /* Function Body */
+    int i, ell;
+    double x, hi, sc, lo, min_, max_;
+
     /* find largest and smallest moduli of coefficients. */
-
     hi = sqrt(*infin);
     lo = *smalno / *eta;
     max_ = 0.;
     min_ = *infin;
-    for (i = 1; i <= *nn; i++)
+    for (i = 0; i < *nn; i++)
     {
         x = pt[i];
         if (x > max_)
@@ -727,31 +703,25 @@ static double scale_(int *nn, double *pt, double *eta, double *infin, double *sm
         {
             sc = x;
             if (*infin / sc > max_)
-            {
                 sc = 1.0;
-            }
         }
-        l = (int)(log(sc) / log(*base) + 0.5);
-        return POW_DI(base, &l);
+        ell = (int)(log(sc) / log(*base) + 0.5);
+        *fact = POW_DI(base, &ell);
     }
     else
-        return 1.0;
+        *fact = 1.0;
 }
 
-/* complex division c = a/b, avoiding overflow. */
-
-static int cdivid_(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
+void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, double *ci)
 {
-    static double d, r, t, infin;
+    /* complex division c = a/b, avoiding overflow. */
+
+    static double d, r;
 
     if (*br == 0. && *bi == 0.)
     {
-
         /* division by zero, c = infinity. */
-
-        mcon_(&t, &infin, &t, &t);
-        *cr = infin;
-        *ci = infin;
+        *cr = *ci = DBL_MAX;
     }
     else if (fabs(*br) >= fabs(*bi))
     {
@@ -767,14 +737,12 @@ static int cdivid_(double *ar, double *ai, double *br, double *bi, double *cr, d
         *cr = (*ar * r + *ai) / d;
         *ci = (*ai * r - *ar) / d;
     }
-    return 0;
 }
 
-/* modulus of a complex number avoiding overflow. */
-
-static double cmod_(double *r, double *i)
+double cmod(double *r, double *i)
 {
-    static double ai, ar, d1;
+    /* modulus of a complex number avoiding overflow. */
+    double ai, ar, d1;
 
     ar = fabs(*r);
     ai = fabs(*i);
@@ -793,67 +761,3 @@ static double cmod_(double *r, double *i)
         return ar * sqrt(d1 * d1 + 1.0);
     }
 }
-
-/*  mcon provides machine constants used in various parts of the
- *  program. the user may either set them directly or use the
- *  statements below to compute them. the meaning of the four
- *  constants are -
- *
- *  eta       the maximum relative representation error
- *            which can be described as the smallest positive
- *            floating-point number such that 1.0d0 + eta is
- *            greater than 1.0d0.
- *  infiny    the largest floating-point number
- *  smalno    the smallest positive floating-point number
- *  base      the base of the floating-point number system used
- *
- *  let t be the number of base-digits in each floating-point
- *  number(double precision). then eta is either .5*b**(1-t)
- *  or b**(1-t) depending on whether rounding or truncation
- *  is used.
- *
- *  let m be the largest exponent and n the smallest exponent
- *  in the number system. then infiny is (1-base**(-t))*base**m
- *  and smalno is base**n.
- *
- *  the values for base,t,m,n below correspond to the ibm/360.  */
-
-#ifdef OLD
-static int mcon_(double *eta, double *infiny, double *smalno, double *base)
-{
-    /* System generated locals */
-    int i__1, i__2;
-    double d__1, d__2;
-
-    /* Local variables */
-    static int m, n, t;
-
-    *base = 16.;
-    t = 14;
-    m = 63;
-    n = -65;
-    i__1 = 1 - t;
-    *eta = POW_DI(base, &i__1);
-    i__1 = -t;
-    i__2 = m - 1;
-    *infiny = *base * (1. - POW_DI(base, &i__1)) * POW_DI(base, &i__2);
-    i__1 = n + 3;
-
-    /* Computing 3rd power */
-
-    d__1 = *base, d__2 = d__1;
-    *smalno = POW_DI(base, &i__1) / (d__2 * (d__1 * d__1));
-    return 0;
-}
-#else
-#include <float.h>
-
-static int mcon_(double *eta, double *infiny, double *smalno, double *base)
-{
-    *base = (double)FLT_RADIX;
-    *eta = DBL_EPSILON;
-    *infiny = DBL_MAX;
-    *smalno = DBL_MIN;
-    return 0;
-}
-#endif
