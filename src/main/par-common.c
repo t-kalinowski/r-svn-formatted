@@ -314,7 +314,7 @@ else if (streql(what, "xaxp"))
     lengthCheck(what, value, 3, call);
     naRealCheck(REAL(value)[0], what);
     naRealCheck(REAL(value)[1], what);
-    if (R_DEV__(xlog))
+    if ((R_DEV__(xlog)))
         logAxpCheck((int)(REAL(value)[2]), what);
     else
         posIntCheck((int)(REAL(value)[2]), what);
@@ -357,7 +357,7 @@ else if (streql(what, "yaxp"))
     lengthCheck(what, value, 3, call);
     naRealCheck(REAL(value)[0], what);
     naRealCheck(REAL(value)[1], what);
-    if (R_DEV__(ylog))
+    if ((R_DEV__(ylog)))
         logAxpCheck((int)(REAL(value)[2]), what);
     else
         posIntCheck((int)(REAL(value)[2]), what);
