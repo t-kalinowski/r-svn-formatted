@@ -1061,11 +1061,11 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 /* Mathematical Functions of One Argument */
 
 #if !defined(HAVE_ASINH) || !defined(HAVE_ACOSH) || !defined(HAVE_ATANH)
-static double unavailable(double x)
+static double dummy(double x)
 {
-    errorcall(lcall, "function unavailable in this R");
-    return 0.; /* to keep -Wall happy */
+    return R_NaN;
 }
+#define unavailable (errorcall(call, "function unavailable in this R"), dummy)
 #ifndef HAVE_ASINH
 #define asinh unavailable
 #endif
