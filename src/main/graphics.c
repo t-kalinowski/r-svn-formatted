@@ -3251,7 +3251,7 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, Dev
                 at = at /* + GConvertYUnits(dd->gp.yLineBias, LINES, USER, dd)*/;
                 line = line + dd->gp.yLineBias;
                 angle = 0;
-                xadj = 1;
+                xadj = dd->gp.adj;
                 yadj = 0.5;
             }
             else
