@@ -1797,6 +1797,7 @@ alldone:;
     {
         if (j == rhs_response)
         {
+            warning("the response appeared on the rhs and was dropped");
             INTEGER(count)[j] = 0; /* need this initialised */
             continue;
         }
