@@ -307,6 +307,7 @@ static SEXP positiveSubscript(SEXP s, int ns, int nx)
 static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
 {
     int i, ii, min, max, canstretch;
+    Rboolean isna = FALSE;
     canstretch = *stretch;
     *stretch = 0;
     min = 0;
@@ -321,6 +322,8 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
             if (ii > max)
                 max = ii;
         }
+        else
+            isna = TRUE;
     }
     if (min < -nx)
         error("subscript out of bounds");
@@ -333,7 +336,7 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch)
     }
     if (min < 0)
     {
-        if (max == 0)
+        if (max == 0 && !isna)
             return negativeSubscript(s, ns, nx);
         else
             error("only 0's may mix with negative subscripts");
