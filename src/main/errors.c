@@ -897,13 +897,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
 #endif
-    {
-        char *m1 = CHAR(STRING_ELT(msg1, 0)), *m2 = CHAR(STRING_ELT(msg2, 0));
-        PROTECT(ans = allocVector(STRSXP, 1));
-        SET_STRING_ELT(ans, 0, mkChar(n == 1 ? m1 : m2));
-        UNPROTECT(1);
-        return ans;
-    }
+        return n == 1 ? msg1 : msg2;
 }
 
 /* bindtextdomain(domain, dirname) */
