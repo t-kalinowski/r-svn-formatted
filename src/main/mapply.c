@@ -10,7 +10,7 @@ SEXP do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
 {
 
     int i, j, m, nc, *lengths, *counters, named, longest = 0;
-    SEXP vnames, cnames, fcall, mindex, nindex, tmp1, tmp2, ans;
+    SEXP vnames, fcall, mindex, nindex, tmp1, tmp2, ans;
 
     m = length(varyingArgs);
     nc = length(constantArgs);
@@ -70,7 +70,6 @@ SEXP do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
             counters[j] = (++counters[j] > lengths[j]) ? 1 : counters[j];
             INTEGER(VECTOR_ELT(nindex, j))[0] = counters[j];
         }
-
         SET_VECTOR_ELT(ans, i, eval(fcall, rho));
     }
 
