@@ -22,7 +22,7 @@
 /* From http://www.netlib.org/specfun/rjbesl	Fortran translated by f2c,...
  *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
-#include "Mathlib.h"
+#include "nmath.h"
 
 double bessel_j(double x, double alpha)
 {
@@ -45,7 +45,7 @@ double bessel_j(double x, double alpha)
     if (ncalc != nb)
     { /* error input */
         if (ncalc < 0)
-            MATHLIB_WARNING4("bessel_j(%g): ncalc (=%d) != nb (=%d); alpha=%g. Arg. out of range?\n", x, ncalc, nb,
+            MATHLIB_WARNING4("bessel_j(%g): ncalc (=%ld) != nb (=%ld); alpha=%g. Arg. out of range?\n", x, ncalc, nb,
                              alpha);
         else
             MATHLIB_WARNING2("bessel_j(%g,nu=%g): precision lost in result\n", x, alpha + nb - 1);

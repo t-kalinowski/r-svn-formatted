@@ -48,7 +48,7 @@ static double fact[10] = {1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.
 
 #define repeat for (;;)
 
-#include "Mathlib.h"
+#include "nmath.h"
 
 double rpois(double mu)
 {

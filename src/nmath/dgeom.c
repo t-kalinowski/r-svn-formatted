@@ -22,7 +22,7 @@
  *    The density of the geometric distribution.
  */
 
-#include "Mathlib.h"
+#include "nmath.h"
 #include "dpq.h"
 
 double dgeom(double x, double p, int give_log)
@@ -36,7 +36,7 @@ double dgeom(double x, double p, int give_log)
 
     if (fabs(x - floor(x + 0.5)) > 1e-7)
     {
-        warning("non-integer x = %f", x);
+        MATHLIB_WARNING("non-integer x = %f", x);
         return R_D__0;
     }
     if (x < 0)

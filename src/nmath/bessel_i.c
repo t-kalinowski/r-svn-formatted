@@ -22,7 +22,7 @@
 /* From http://www.netlib.org/specfun/ribesl	Fortran translated by f2c,...
  *	------------------------------=#----	Martin Maechler, ETH Zurich
  */
-#include "Mathlib.h"
+#include "nmath.h"
 
 static double exparg = 709.; /* maximal x for UNscaled answer, see below */
 
@@ -43,7 +43,7 @@ double bessel_i(double x, double alpha, double expo)
     if (ncalc != nb)
     { /* error input */
         if (ncalc < 0)
-            MATHLIB_WARNING4("bessel_i(%g): ncalc (=%d) != nb (=%d); alpha=%g."
+            MATHLIB_WARNING4("bessel_i(%g): ncalc (=%ld) != nb (=%ld); alpha=%g."
                              " Arg. out of range?\n",
                              x, ncalc, nb, alpha);
         else
