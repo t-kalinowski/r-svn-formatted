@@ -739,7 +739,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
         GScale(ymin - yadd, ymax + yadd, 2, dd);
     }
     else
-    {
+    { /* asp <= 0 or not finite -- includes logscale ! */
         GScale(xmin, xmax, 1, dd);
         GScale(ymin, ymax, 2, dd);
     }
@@ -872,7 +872,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
     else
     { /* ------ log axis ----- */
         n = (axp[2] + 0.5);
-        /* {xy}axp[2] for 'log': GLpretty() [../graphics.c] sets
+        /* {xy}axp[2] for 'log': GLpretty() [./graphics.c] sets
            n < 0: very small scale ==> linear axis, above, or
            n = 1,2,3.  see switch() below */
         umin = usr[0];
@@ -883,7 +883,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
                     "usr[0] = %g > %g = usr[1] !",
                     umin, umax);
         dn = axp[0];
-        if (dn < 1e-300)
+        if (dn < DBL_MIN) /* was 1e-300; now seems too cautious */
             warning("CreateAtVector \"log\"(from axis()): axp[0] = %g !", dn);
 
         /* You get the 3 cases below by
