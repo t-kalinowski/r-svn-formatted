@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--1999  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1410,7 +1410,8 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
 #define REF2STRING_CONV "ref->string"
 #define ROWNAMES "row.names"
 
-static herr_t ref_string(hid_t sid, hid_t did, H5T_cdata_t *cdata, size_t count, void *buf, void *bkg)
+static herr_t ref_string(hid_t sid, hid_t did, H5T_cdata_t *cdata, size_t count, size_t stride, void *buf, void *bkg,
+                         hid_t dset_xfer_plid)
 {
     if (cdata->command == H5T_CONV_CONV)
     {
@@ -1432,7 +1433,8 @@ static herr_t ref_string(hid_t sid, hid_t did, H5T_cdata_t *cdata, size_t count,
     return 0;
 }
 
-static herr_t string_ref(hid_t sid, hid_t did, H5T_cdata_t *cdata, size_t count, void *buf, void *bkg)
+static herr_t string_ref(hid_t sid, hid_t did, H5T_cdata_t *cdata, size_t count, size_t stride, void *buf, void *bkg,
+                         hid_t dset_xfer_plid)
 {
     if (cdata->command == H5T_CONV_CONV)
     {
@@ -1645,6 +1647,9 @@ static void hdf5_save_attributes(SEXP call, hid_t loc_id, SEXP val)
         unsigned count = LENGTH(attr);
         SEXPREC *stringptrs[count];
 
+        if (TAG(l) == R_RowNamesSymbol || TAG(l) == R_ClassSymbol || TAG(l) == R_NamesSymbol ||
+            TAG(l) == R_DimNamesSymbol)
+            continue;
         {
             hsize_t dims[1];
 
@@ -1946,6 +1951,7 @@ static void hdf5_save_object(SEXP call, hid_t fid, const char *symname, SEXP val
                 if (H5Dwrite(dataset, ctid, dataspace, dataspace, H5P_DEFAULT, buf) < 0)
                     errorcall(call, "Unable to write dataframe");
             }
+            hdf5_save_attributes(call, dataset, val);
             {
                 SEXP rownames = getAttrib(val, R_RowNamesSymbol);
 
@@ -2070,7 +2076,7 @@ SEXP do_hdf5save(SEXP call, SEXP op, SEXP args, SEXP env)
 
     H5dont_atexit();
 
-    if (H5Tregister_soft(REF2STRING_CONV, H5T_REFERENCE, H5T_STRING, ref_string) < 0)
+    if (H5Tregister(H5T_PERS_SOFT, REF2STRING_CONV, H5T_STD_REF_OBJ, H5T_C_S1, ref_string) < 0)
         errorcall(call, "Unable to register ref->string converter");
 
     if ((fid = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT)) < 0)
@@ -2082,7 +2088,7 @@ SEXP do_hdf5save(SEXP call, SEXP op, SEXP args, SEXP env)
     if (H5Fclose(fid) < 0)
         errorcall(call, "unable to close HDF file: %s", path);
 
-    if (H5Tunregister(ref_string) < 0)
+    if (H5Tunregister(H5T_PERS_SOFT, REF2STRING_CONV, -1, -1, ref_string) < 0)
         errorcall(call, "Unable to unregister ref->string converter");
 
     return R_NilValue;
@@ -2238,11 +2244,11 @@ static herr_t hdf5_process_attribute(hid_t loc_id, const char *attrName, void *d
                 {
                 case H5T_INTEGER:
                     type = (tid_size == 1) ? LGLSXP : INTSXP;
-                    memtid = H5T_NATIVE_INT;
+                    memtid = H5Tcopy(H5T_NATIVE_INT);
                     break;
                 case H5T_FLOAT:
                     type = REALSXP;
-                    memtid = H5T_NATIVE_DOUBLE;
+                    memtid = H5Tcopy(H5T_NATIVE_DOUBLE);
                     break;
                 case H5T_STRING:
                     type = STRSXP;
@@ -2292,6 +2298,19 @@ done:
     return 0;
 }
 
+static void hdf5_load_attributes(SEXP call, hid_t id, SEXP obj, const char *name)
+{
+    unsigned idx = 0;
+    struct hdf5_attribute_info ainfo;
+
+    ainfo.call = call;
+    ainfo.obj = obj;
+    ainfo.name = name;
+
+    if (H5Aiterate(id, &idx, hdf5_process_attribute, &ainfo) < 0)
+        errorcall(call, "unable to iterate over attributes");
+}
+
 static herr_t hdf5_process_object(hid_t id, const char *name, void *client_data)
 {
     struct hdf5_iterate_info *iinfo = client_data;
@@ -2312,17 +2331,7 @@ static herr_t hdf5_process_object(hid_t id, const char *name, void *client_data)
         PROTECT(l = collect(iinfo->call, gid, hdf5_process_object, iinfo->env));
         iinfo->add(iinfo, name, l);
 
-        {
-            unsigned idx;
-            struct hdf5_attribute_info ainfo;
-
-            ainfo.call = iinfo->call;
-            ainfo.obj = l;
-            ainfo.name = name;
-
-            if (H5Aiterate(gid, &idx, hdf5_process_attribute, &ainfo) < 0)
-                errorcall(iinfo->call, "unable to iterate over attributes");
-        }
+        hdf5_load_attributes(iinfo->call, gid, l, name);
         UNPROTECT(1);
 
         if (H5Gclose(gid) < 0)
@@ -2410,7 +2419,7 @@ static herr_t hdf5_process_object(hid_t id, const char *name, void *client_data)
         for (ri = 0; ri < rowcount; ri++)                                                                              \
         {                                                                                                              \
             memcpy(itembuf, &buf[ri][coffset], csize);                                                                 \
-            if (H5Tconvert(ctid, dtid, 1, itembuf, NULL) < 0)                                                          \
+            if (H5Tconvert(ctid, dtid, 1, itembuf, NULL, H5P_DEFAULT) < 0)                                             \
                 errorcall(iinfo->call, "type conversion failed");                                                      \
             memcpy(&vecref(*rowptr)[ri], itembuf, dsize);                                                              \
         }                                                                                                              \
@@ -2448,6 +2457,7 @@ static herr_t hdf5_process_object(hid_t id, const char *name, void *client_data)
                 UNPROTECT(1);
                 setAttrib(vec, R_ClassSymbol, mkString("data.frame"));
                 iinfo->add(iinfo, name, vec);
+                hdf5_load_attributes(iinfo->call, dataset, vec, name);
                 UNPROTECT(1);
                 if (H5Tclose(rtid) < 0)
                     errorcall(iinfo->call, "could not close reference type");
@@ -2459,6 +2469,7 @@ static herr_t hdf5_process_object(hid_t id, const char *name, void *client_data)
                 PROTECT(obj = ((rank == 1) ? allocVector(type, dims[0]) : allocMatrix(type, dims[0], dims[1])));
                 vector_io(iinfo->call, FALSE, dataset, space, obj);
                 iinfo->add(iinfo, name, obj);
+                hdf5_load_attributes(iinfo->call, dataset, obj, name);
                 UNPROTECT(1);
             }
         }
@@ -2511,7 +2522,7 @@ SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
     if ((fid = H5Fopen(path, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
         errorcall(call, "unable to open HDF file: %s", path);
 
-    if (H5Tregister_soft(STRING2REF_CONV, H5T_STRING, H5T_REFERENCE, string_ref) < 0)
+    if (H5Tregister(H5T_PERS_SOFT, STRING2REF_CONV, H5T_C_S1, H5T_STD_REF_OBJ, string_ref) < 0)
         errorcall(call, "Unable to register string->ref converter");
 
     iinfo.call = call;
@@ -2522,7 +2533,7 @@ SEXP do_hdf5load(SEXP call, SEXP op, SEXP args, SEXP env)
     if (H5Giterate(fid, "/", NULL, hdf5_process_object, &iinfo) < 0)
         errorcall(call, "unable to iterate over HDF file: %s", path);
 
-    if (H5Tunregister(string_ref) < 0)
+    if (H5Tunregister(H5T_PERS_SOFT, STRING2REF_CONV, -1, -1, string_ref) < 0)
         errorcall(call, "Unable to unregister string->ref converter");
 
     if (H5Fclose(fid) < 0)
