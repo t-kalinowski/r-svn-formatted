@@ -141,7 +141,7 @@ SEXP allocArray(SEXPTYPE mode, SEXP dims)
 
 SEXP DropDims(SEXP x)
 {
-    SEXP p, q, dims, dimnames;
+    SEXP q, dims, dimnames;
     int i, n, ndims;
 
     PROTECT(x);
@@ -211,7 +211,6 @@ SEXP DropDims(SEXP x)
     {
         /* We have a lower dimensional array. */
         SEXP newdims, newdimnames;
-        int j = 0;
         PROTECT(newdims = allocVector(INTSXP, n));
         for (i = 0, n = 0; i < ndims; i++)
             if (INTEGER(dims)[i] != 1)

@@ -1241,7 +1241,6 @@ static SEXP ConvertEnvironment(SEXP env)
 static SEXP ConvertPairToVector(SEXP obj)
 {
     int i, n;
-    SEXP nobj;
     switch (TYPEOF(obj))
     {
     case LISTSXP:
