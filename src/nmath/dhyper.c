@@ -27,9 +27,13 @@
  *    items without replacement. The hypergeometric probability is the
  *    probability of x successes:
  *
- *                   dbinom(x,r,p) * dbinom(n-x,b,p)
- *      p(x;r,b,n) = ---------------------------------
- *                             dbinom(n,r+b,p)
+ *		       choose(r, x) * choose(b, n-x)
+ *	p(x; r,b,n) =  -----------------------------  =
+ *			       choose(r+b, n)
+ *
+ *		      dbinom(x,r,p) * dbinom(n-x,b,p)
+ *		    = --------------------------------
+ *			       dbinom(n,r+b,p)
  *
  *    for any p. For numerical stability, we take p=n/(r+b); with this choice,
  *    the denominator is not exponentially small.
@@ -47,11 +51,11 @@ double dhyper(double x, double r, double b, double n, int give_log)
         return x + r + b + n;
 #endif
 
-    if (R_D_notnnegint(r) || R_D_notnnegint(b) || R_D_notnnegint(n) || n > r + b)
+    if (R_D_negInonint(r) || R_D_negInonint(b) || R_D_negInonint(n) || n > r + b)
         ML_ERR_return_NAN;
-
-    if (R_D_notnnegint(x))
+    if (R_D_negInonint(x))
         return (R_D__0);
+
     x = R_D_forceint(x);
     r = R_D_forceint(r);
     b = R_D_forceint(b);

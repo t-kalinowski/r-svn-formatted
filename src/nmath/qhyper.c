@@ -27,10 +27,9 @@
 
 double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_p)
 {
-    /* This is basically the same code as  ./phyper.c -- keep in sync! */
+    /* This is basically the same code as  ./phyper.c  *used* to be --> FIXME! */
     double N, xstart, xend, xr, xb, sum, term;
     int small_N;
-
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(NR) || ISNAN(NB) || ISNAN(n))
         return p + NR + NB + n;
@@ -43,8 +42,12 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
     NB = floor(NB + 0.5);
     N = NR + NB;
     n = floor(n + 0.5);
-    if (NR < 0 || NR < 0 || n < 0 || n > N)
+    if (NR < 0 || NB < 0 || n < 0 || n > N)
         ML_ERR_return_NAN;
+
+    /* Goal:  Find  xr (= #{red balls in sample}) such that
+     *   phyper(xr,  NR,NB, n) >= p > phyper(xr - 1,  NR,NB, n)
+     */
 
     xstart = fmax2(0, n - NB);
     xend = fmin2(n, NR);
@@ -54,7 +57,7 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
         return xend;
 
     xr = xstart;
-    xb = n - xr;
+    xb = n - xr; /* always ( = #{black balls in sample} ) */
 
     small_N = (N < 1000); /* won't have underflow in product below */
     /* if N is small,  term := product.ratio( bin.coef );
@@ -65,7 +68,6 @@ double qhyper(double p, double NR, double NB, double n, int lower_tail, int log_
     NR -= xr;
     NB -= xb;
 
-    sum = term;
     if (!lower_tail || log_p)
     {
         p = R_DT_qIv(p);

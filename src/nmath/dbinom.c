@@ -77,7 +77,7 @@ double dbinom(double x, double n, double p, int give_log)
         return x + n + p;
 #endif
 
-    if (p < 0 || p > 1 || R_D_notnnegint(n))
+    if (p < 0 || p > 1 || R_D_negInonint(n))
         ML_ERR_return_NAN;
     R_D_nonint_check(x);
 
