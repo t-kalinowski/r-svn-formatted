@@ -2154,7 +2154,7 @@ static int class2type(char *s)
         if (!strcmp(s, si))
             return i;
     }
-    return -1;
+    /* cannot get here return -1; */
 }
 
 /* set the class to value, and return the modified object.  This is
