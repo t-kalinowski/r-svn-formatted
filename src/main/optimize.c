@@ -27,7 +27,7 @@
 #include "Print.h" /*for printRealVector()*/
 #include "Mathlib.h"
 #include "Applic.h"
-#include "S.h" /*for Calloc and Free */
+#include "S.h" /*for Memcpy */
 
 /* WARNING : As things stand, these routines should not be called
  *	     recursively because of the way global variables are used.
@@ -277,7 +277,7 @@ static void FT_init(int n, int FT_size, function_info *state)
             Ftable[i].grad = (double *)R_alloc(n, sizeof(double));
             if (have_hessian)
             {
-                Ftable[i].hess = (double *)R_alloc(n, sizeof(double));
+                Ftable[i].hess = (double *)R_alloc(n * n, sizeof(double));
             }
         }
     }
@@ -288,11 +288,12 @@ static void FT_init(int n, int FT_size, function_info *state)
 
 /* Store an entry in the table of computed function values */
 
-static void FT_store(int n, double f, const double *x, const double *grad, const double *hess, function_info *state)
+static void FT_store(int n, const double f, const double *x, const double *grad, const double *hess,
+                     function_info *state)
 {
     int ind;
 
-    ind = (++(state->FT_last)) % FT_SIZE;
+    ind = (++(state->FT_last)) % (state->FT_size);
     state->Ftable[ind].fval = f;
     Memcpy(state->Ftable[ind].x, x, n);
     if (grad)
@@ -665,11 +666,11 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     if (((msg / 4) % 2) && !iahflg)
-    { /* don't check of analytic Hessian */
+    { /* skip check of analytic Hessian */
         msg -= 4;
     }
     if (((msg / 2) % 2) && !iagflg)
-    { /* don't check of analytic gradient */
+    { /* skip check of analytic gradient */
         msg -= 2;
     }
     FT_init(n, FT_SIZE, state);
