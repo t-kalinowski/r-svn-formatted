@@ -60,10 +60,6 @@
    written as UNDE, which is a glyph consisting of several horizontal
    lines.
 
-PAUL MURRELL
-We will not be using control sequences to specify characters so point
-1. below is irrelevant.
-
    1. the characters onesuperior, twosuperior, threesuperior, ordmasculine,
    ordfeminine.  These are written as 0, which means an empty glyph.  That
    is because they not implemented as conventional glyphs at all: the
@@ -278,8 +274,12 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          4185,
          4186,
          0,
-         0,
-         0,
+         /* PAUL MURRELL
+        Added accents for "Oslash" and "oslash"
+         */
+         //      0, 0, 0, 0, 0, 0, 0, 0,
+         802,
+         220,
          0,
          0,
          0,
@@ -351,7 +351,11 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          ACC1,
          ACC1,
          727,
-         2015,
+         /* PAUL MURRELL
+        Changed coding for "Oslash"
+         */
+         //      2015, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0,
+         ACC0,
          ACC1,
          ACC1,
          ACC1,
@@ -383,7 +387,11 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          ACC0,
          ACC0,
          2237,
-         2115,
+         /* PAUL MURRELL
+        Changed coding for "oslash"
+         */
+         //      2115, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0,
+         ACC0,
          ACC0,
          ACC0,
          ACC0,
@@ -2697,8 +2705,12 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          4185,
          4186,
          0,
-         0,
-         0,
+         /* PAUL MURRELL
+        Added accents for "Oslash" and "oslash"
+         */
+         //      0, 0, 0, 0, 0, 0, 0, 0,
+         802,
+         220,
          0,
          0,
          0,
@@ -2770,7 +2782,11 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          ACC1,
          ACC1,
          727,
-         515,
+         /* PAUL MURRELL
+        Changed coding for "Oslash"
+         */
+         //      515, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0,
+         ACC0,
          ACC1,
          ACC1,
          ACC1,
@@ -2802,7 +2818,11 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          ACC0,
          ACC0,
          2237,
-         615,
+         /* PAUL MURRELL
+        Changed coding for "oslash"
+         */
+         //      615, ACC0, ACC0, ACC0, ACC0, ACC0, UNDE, ACC0,
+         ACC0,
          ACC0,
          ACC0,
          ACC0,
@@ -4688,27 +4708,31 @@ const struct plHersheyAccentedCharInfoStruct _hershey_accented_char_info[] = {
     {0243, 0305, 0212}, /* edieresis */
     {0263, 0345, 0212}, /* Edieresis */
     /* for ISO-Latin-1 accented characters */
-    {0300, 'A', 0211},  /* Agrave */
-    {0301, 'A', 0210},  /* Aacute */
-    {0302, 'A', 0213},  /* Acircumflex */
-    {0303, 'A', 0215},  /* Atilde */
-    {0304, 'A', 0212},  /* Adieresis */
-    {0305, 'A', 0216},  /* Aring */
-    {0307, 'C', 0217},  /* Ccedilla */
-    {0310, 'E', 0211},  /* Egrave */
-    {0311, 'E', 0210},  /* Eacute */
-    {0312, 'E', 0213},  /* Ecircumflex */
-    {0313, 'E', 0212},  /* Edieresis */
-    {0314, 'I', 0210},  /* Igrave */
-    {0315, 'I', 0211},  /* Iacute */
-    {0316, 'I', 0214},  /* Icircumflex (note narrow circ.) */
-    {0317, 'I', 0212},  /* Idieresis */
-    {0321, 'N', 0215},  /* Ntilde */
-    {0322, 'O', 0211},  /* Ograve */
-    {0323, 'O', 0210},  /* Oacute */
-    {0324, 'O', 0213},  /* Ocircumflex */
-    {0325, 'O', 0215},  /* Otilde */
-    {0326, 'O', 0212},  /* Odieresis */
+    {0300, 'A', 0211}, /* Agrave */
+    {0301, 'A', 0210}, /* Aacute */
+    {0302, 'A', 0213}, /* Acircumflex */
+    {0303, 'A', 0215}, /* Atilde */
+    {0304, 'A', 0212}, /* Adieresis */
+    {0305, 'A', 0216}, /* Aring */
+    {0307, 'C', 0217}, /* Ccedilla */
+    {0310, 'E', 0211}, /* Egrave */
+    {0311, 'E', 0210}, /* Eacute */
+    {0312, 'E', 0213}, /* Ecircumflex */
+    {0313, 'E', 0212}, /* Edieresis */
+    {0314, 'I', 0210}, /* Igrave */
+    {0315, 'I', 0211}, /* Iacute */
+    {0316, 'I', 0214}, /* Icircumflex (note narrow circ.) */
+    {0317, 'I', 0212}, /* Idieresis */
+    {0321, 'N', 0215}, /* Ntilde */
+    {0322, 'O', 0211}, /* Ograve */
+    {0323, 'O', 0210}, /* Oacute */
+    {0324, 'O', 0213}, /* Ocircumflex */
+    {0325, 'O', 0215}, /* Otilde */
+    {0326, 'O', 0212}, /* Odieresis */
+    /* PAUL MURRELL
+       Added "Oslash"
+    */
+    {0330, 'O', 0220},
     {0331, 'U', 0211},  /* Ugrave */
     {0332, 'U', 0210},  /* Uacute */
     {0333, 'U', 0213},  /* Ucircumflex */
@@ -4735,12 +4759,16 @@ const struct plHersheyAccentedCharInfoStruct _hershey_accented_char_info[] = {
     {0364, 'o', 0214},  /* ocircumflex */
     {0365, 'o', 0215},  /* otilde */
     {0366, 'o', 0212},  /* odieresis */
-    {0371, 'u', 0211},  /* ugrave */
-    {0372, 'u', 0210},  /* uacute */
-    {0373, 'u', 0214},  /* ucircumflex */
-    {0374, 'u', 0212},  /* udieresis */
-    {0375, 'y', 0210},  /* yacute */
-    {0377, 'y', 0212},  /* ydieresis */
+    /* PAUL MURRELL
+       Added "oslash"
+    */
+    {0370, 'o', 0221},
+    {0371, 'u', 0211}, /* ugrave */
+    {0372, 'u', 0210}, /* uacute */
+    {0373, 'u', 0214}, /* ucircumflex */
+    {0374, 'u', 0212}, /* udieresis */
+    {0375, 'y', 0210}, /* yacute */
+    {0377, 'y', 0212}, /* ydieresis */
     {0, 0, 0}};
 
 /* known Hershey vector font typefaces.  Each plTypefaceInfoStruct contains
