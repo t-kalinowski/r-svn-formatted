@@ -348,7 +348,7 @@ static gint expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
 
     if (gtkd->resize != 0)
     {
-        // FIXME GTK_resize(dd);
+        /* FIXME GTK_resize(dd); */
     }
 
     gdk_draw_pixmap(gtkd->drawing->window, gtkd->wgc, gtkd->pixmap, event->area.x, event->area.y, event->area.x,
@@ -960,12 +960,11 @@ Rboolean GTKDeviceDriver(DevDesc *odd, char *display, double width, double heigh
     ps = 2 * (ps / 2);
     gtkd->fontface = -1;
     gtkd->fontsize = -1;
-    // dd->startfont = 1;
+    /* dd->startfont = 1; */
     dd->startps = ps;
     dd->startcol = 0;
     dd->startfill = NA_INTEGER;
-    // dd->startlty = LTY_SOLID;
-    // dd->startfont = 1;
+    /* dd->startlty = LTY_SOLID; */
 
     /* device driver start */
     if (!GTK_Open(dd, gtkd, display, width, height))
@@ -994,7 +993,7 @@ Rboolean GTKDeviceDriver(DevDesc *odd, char *display, double width, double heigh
     dd->locator = GTK_Locator;
     dd->mode = GTK_Mode;
     dd->hold = GTK_Hold;
-    dd->metricinfo = GTK_MetricInfo;
+    dd->metricInfo = GTK_MetricInfo;
 
     dd->left = 0;
     dd->right = gtkd->windowWidth;

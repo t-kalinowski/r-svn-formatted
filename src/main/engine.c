@@ -1852,7 +1852,7 @@ void GEPretty(double *lo, double *up, int *ndiv)
  */
 void GEMetricInfo(int c, int font, double cex, double ps, double *ascent, double *descent, double *width, GEDevDesc *dd)
 {
-    dd->dev->metricinfo(c & 0xFF, font, cex, ps, ascent, descent, width, dd->dev);
+    dd->dev->metricInfo(c & 0xFF, font, cex, ps, ascent, descent, width, dd->dev);
 }
 
 /****************************************************************

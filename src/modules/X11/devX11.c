@@ -1857,7 +1857,7 @@ int Rf_setNewX11DeviceData(NewDevDesc *dd, newX11Desc *xd)
     dd->locator = newX11_Locator;
     dd->mode = newX11_Mode;
     dd->hold = newX11_Hold;
-    dd->metricinfo = newX11_MetricInfo;
+    dd->metricInfo = newX11_MetricInfo;
 
     /* Set required graphics parameters. */
 
