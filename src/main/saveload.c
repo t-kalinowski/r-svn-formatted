@@ -112,7 +112,6 @@ typedef struct
     R_StringBuffer buffer;
     char smbuf[512]; /* Small buffer for temp use */
                      /* smbuf is only used by Ascii. */
-
     XDR xdrs;
 
 } SaveLoadData;
