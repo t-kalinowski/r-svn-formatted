@@ -2588,6 +2588,7 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
      outer = TRUE,
      at = NA,
      adj = NA,
+     padj = NA,
      cex = NA,
      col = NA,
      font = NA,
@@ -2669,7 +2670,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = nadj;
     args = CDR(args);
 
-    /* Arg6b : padj= */
+    /* Arg7 : padj= */
     PROTECT(padj = coerceVector(CAR(args), REALSXP));
     npadj = length(padj);
     if (npadj <= 0)
@@ -2678,7 +2679,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = npadj;
     args = CDR(args);
 
-    /* Arg7 : cex */
+    /* Arg8 : cex */
     PROTECT(cex = FixupCex(CAR(args), 1.0));
     ncex = length(cex);
     if (ncex <= 0)
@@ -2687,7 +2688,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = ncex;
     args = CDR(args);
 
-    /* Arg8 : col */
+    /* Arg9 : col */
     rawcol = CAR(args);
     PROTECT(col = FixupCol(rawcol, R_TRANWHITE));
     ncol = length(col);
@@ -2697,7 +2698,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = ncol;
     args = CDR(args);
 
-    /* Arg9 : font */
+    /* Arg10 : font */
     PROTECT(font = FixupFont(CAR(args), NA_INTEGER));
     nfont = length(font);
     if (nfont <= 0)
@@ -2706,7 +2707,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = nfont;
     args = CDR(args);
 
-    /* Arg10 : vfont */
+    /* Arg11 : vfont */
     PROTECT(vfont = FixupVFont(CAR(args)));
     if (!isNull(vfont))
         vectorFonts = TRUE;

@@ -3367,6 +3367,11 @@ void GMtext(char *str, int side, double line, int outer, double at, int las, dou
     }
     /* Note: I changed Rf_gpptr(dd)->yLineBias to 0.3 here. */
     /* Purely visual tuning. RI */
+    /* This has been replaced by a new argument padj (=yadj here) to axis()
+       and mtext() and that can either be set manually or is determined in
+       a somehow fuzzy manner in repsect to current side and las settings.
+       Uwe L.
+    */
     switch (side)
     {
     case 1:
