@@ -126,7 +126,7 @@ static void PicTeX_Polyline(int, double *, double *, int, DevDesc *);
 static void PicTeX_Rect(double, double, double, double, int, int, int, DevDesc *);
 static void PicTeX_Resize(DevDesc *);
 static double PicTeX_StrWidth(char *, DevDesc *);
-static void PicTeX_Text(double, double, int, char *, double, double, double, DevDesc *);
+static void PicTeX_Text(double, double, int, char *, double, DevDesc *);
 static void PicTeX_MetricInfo(int, double *, double *, double *, DevDesc *);
 
 /* Support routines */
@@ -179,14 +179,10 @@ static void PicTeX_Deactivate(DevDesc *dd)
 
 static void PicTeX_MetricInfo(int c, double *ascent, double *descent, double *width, DevDesc *dd)
 {
-#ifdef BUG61
-    error("Metric information not yet available for this device");
-#else
     /* metric information not available => return 0,0,0 */
     *ascent = 0.0;
     *descent = 0.0;
     *width = 0.0;
-#endif
 }
 
 /* Initialize the device */
@@ -515,7 +511,7 @@ static void textext(char *str, picTeXDesc *ptd)
 
 /* Rotated Text */
 
-static void PicTeX_Text(double x, double y, int coords, char *str, double xc, double yc, double rot, DevDesc *dd)
+static void PicTeX_Text(double x, double y, int coords, char *str, double rot, DevDesc *dd)
 {
     int size;
     double xoff = 0.0, yoff = 0.0, xl, yl, xctemp;
@@ -526,25 +522,10 @@ static void PicTeX_Text(double x, double y, int coords, char *str, double xc, do
     GConvert(&x, &y, coords, DEVICE, dd);
     if (ptd->debug)
         fprintf(ptd->texfp, "%% Writing string of length %.2f, at %.2f %.2f, xc = %.2f yc = %.2f\n",
-                (double)PicTeX_StrWidth(str, dd), x, y, xc, yc);
+                (double)PicTeX_StrWidth(str, dd), x, y, 0.0, 0.0);
     if (ptd->debug)
         fprintf(ptd->texfp, "%% Writing string of length %.2f, at %.2f %.2f, xc = %.2f yc = %.2f\n",
-                (double)PicTeX_StrWidth(str, dd), x, y, xc, yc);
-    if (xc != 0.0 || yc != 0.0)
-    {
-        if (rot == 90 || rot == 270)
-        {
-            xctemp = xc;
-            xc = yc;
-            yc = xctemp;
-            yc = 1.0 - yc;
-        }
-        xl = PicTeX_StrWidth(str, dd);
-        yl = GConvertXUnits(1, CHARS, DEVICE, dd);
-        /* yl = GP->cex * GP->cra[0]; */
-        xoff = -xc * xl;
-        yoff = -yc * yl;
-    }
+                (double)PicTeX_StrWidth(str, dd), x, y, 0.0, 0.0);
 
     fprintf(ptd->texfp, "\\put ");
     textext(str, ptd);
@@ -608,6 +589,8 @@ int PicTeXDeviceDriver(DevDesc *dd, char *filename, char *bg, char *fg, double w
     dd->dp.right = 72.27 * width; /* right */
     dd->dp.bottom = 0;            /* bottom */
     dd->dp.top = 72.27 * height;  /* top */
+    ptd->width = width;
+    ptd->height = height;
 
     if (!PicTeX_Open(dd, ptd))
         return 0;
