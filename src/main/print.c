@@ -503,10 +503,7 @@ static void PrintExpression(SEXP s)
     u = deparse1(s, 0);
     n = LENGTH(u);
     for (i = 0; i < n; i++)
-    {
-        Rprintf(CHAR(STRING_ELT(u, i)));
-        Rprintf("\n");
-    }
+        Rprintf("%s\n", CHAR(STRING_ELT(u, i)));
 }
 
 /* PrintValueRec -- recursively print an SEXP
