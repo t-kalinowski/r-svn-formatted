@@ -1383,7 +1383,7 @@ SEXP R_do_new_object(SEXP class_def)
         error("Trying to generate an object in C from a virtual class (\"%s\")", CHAR(asChar(e)));
     }
     e = R_do_slot(class_def, s_className);
-    value = R_do_slot(class_def, s_prototype);
+    value = duplicate(R_do_slot(class_def, s_prototype));
     setAttrib(value, R_ClassSymbol, e);
     return value;
 }
