@@ -505,5 +505,6 @@ pager newpager(char *title, char *filename, char *header, int deleteonexit)
     else
         c = newpagerNwin(wtitle, filename, deleteonexit);
     haveusedapager++;
+    BringToTop(c);
     return c;
 }
