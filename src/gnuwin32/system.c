@@ -37,7 +37,7 @@
 #include "run.h"
 #include "Startup.h"
 
-int R_max_memory = INT_MAX;
+unsigned int R_max_memory = INT_MAX;
 
 SA_TYPE SaveAction = SA_DEFAULT;
 SA_TYPE RestoreAction = SA_RESTORE;
@@ -645,6 +645,7 @@ int cmdlineoptions(int ac, char **av)
     char s[1024];
     structRstart rstart;
     Rstart Rp = &rstart;
+    MEMORYSTATUS ms;
 
 #ifdef HAVE_TIMES
     R_setStartTime();
@@ -657,6 +658,11 @@ int cmdlineoptions(int ac, char **av)
        R_common_command_line().
      */
     R_set_command_line_arguments(ac, av, Rp);
+
+    /* set defaults for R_max_memory. This is set here so that
+       embedded applications get no limit */
+    GlobalMemoryStatus(&ms);
+    R_max_memory = min(256 * Mega, ms.dwTotalPhys);
 
     R_DefParams(Rp);
     Rp->CharacterMode = CharacterMode;
