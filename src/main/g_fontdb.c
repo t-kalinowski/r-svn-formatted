@@ -31,8 +31,8 @@
    I have deleted the PS fonts stuff to leave just the Hershey font stuff
 */
 
-/* The Hershey vector fonts we support.  Each character in a Hershey font
-   is an index into the glyph array in g_her_glyphs.c.  Each
+/* The Hershey vector fonts we support.	 Each character in a Hershey font
+   is an index into the glyph array in g_her_glyphs.c.	Each
    plHersheyFontInfoStruct includes these elements:
 
    (1) PS-style name for the font
@@ -44,7 +44,7 @@
    (7) an `obliquing requested' flag (set if glyphs should be sheared)
    (8) an `iso8859-1' flag
    (9) a `visible' flag (false for the two Kana fonts,
-        which are only used internally) */
+    which are only used internally) */
 
 /* Each Hershey font below may contain up to 256 Hershey glyphs, each of
    which is specified by a number that indexes into the array in
@@ -56,12 +56,12 @@
    glyphs.  They are:
 
    0. undefined characters: thorn, eth, the guillemets, the mysterious
-   `currency' symbol, and the European 'euro' currency symbol.  These are
+   `currency' symbol, and the European 'euro' currency symbol.	These are
    written as UNDE, which is a glyph consisting of several horizontal
    lines.
 
    1. the characters onesuperior, twosuperior, threesuperior, ordmasculine,
-   ordfeminine.  These are written as 0, which means an empty glyph.  That
+   ordfeminine.	 These are written as 0, which means an empty glyph.  That
    is because they not implemented as conventional glyphs at all: the
    corresponding entries in this table are never accessed.  In the file
    g_cntrlify.c these characters are mapped to sequences of control
@@ -121,7 +121,9 @@
    code by number.  If you change the numbering of Hershey fonts, i.e., the
    order in which they appear in this array, be sure to update, e.g., the
    definitions DEFAULT_HERSHEY_FONT_INDEX, HERSHEY_SERIF, HERSHEY_EUC
-   etc. in extern.h. */
+   etc. in ./g_extern.h. */
+
+/* LIST them by  (occur "^ *\"Hershey.*#" nil)  <<C-x C-e in Emacs */
 
 const struct plHersheyFontInfoStruct _hershey_font_info[] = {
     {"HersheySerif", /* #0 */
@@ -354,7 +356,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "Oslash"
          */
-         /*      2015, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0, */
+         /*      2015, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,	   0, */
          ACC0,
          ACC1,
          ACC1,
@@ -2785,7 +2787,7 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
          /* PAUL MURRELL
         Changed coding for "Oslash"
          */
-         /*      515, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,    0, */
+         /*      515, ACC1, ACC1, ACC1, ACC1, ACC1, UNDE,	  0, */
          ACC0,
          ACC1,
          ACC1,
@@ -4496,8 +4498,8 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
      false,
      true,
      true},
-    {"HersheySerifSymbol",  /* #18 */
-     "HersheySerif-Symbol", /* for backward compatibility */
+    {"HersheySerifSymbol", /* #18 */
+     "HersheySerif-Symbol",
      "Complex Greek",
      {/* The range 00..037 isn't accessible except through macros, since in
      the standard symbol encoding, it's empty.  We store misc. non-font
@@ -4620,8 +4622,8 @@ const struct plHersheyFontInfoStruct _hershey_font_info[] = {
      true,
      false,
      true},
-    {"HersheySansSymbol",  /* #22 */
-     "HersheySans-Symbol", /* for backward compatibility */
+    {"HersheySansSymbol", /* #22 */
+     "HersheySans-Symbol",
      "Simplex Greek",
      {/* The range 00..037 isn't accessible except through macros, since in
      the standard symbol encoding, it's empty.  We store misc. non-font
@@ -4771,7 +4773,7 @@ const struct plHersheyAccentedCharInfoStruct _hershey_accented_char_info[] = {
     {0377, 'y', 0212}, /* ydieresis */
     {0, 0, 0}};
 
-/* known Hershey vector font typefaces.  Each plTypefaceInfoStruct contains
+/* known Hershey vector font typefaces.	 Each plTypefaceInfoStruct contains
    the following information:
 
    (1) number of valid fonts [should be >= 2, since every typeface
