@@ -428,7 +428,6 @@ int main(int ac, char **av)
     structRstart rstart;
     Rstart Rp = &rstart;
 
-    gc_inhibit_torture = 1;
 #ifdef HAVE_TIMES
     setStartTime();
 #endif
