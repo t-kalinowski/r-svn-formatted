@@ -2779,7 +2779,7 @@ int cross(Edge b, double x1, double y1, double x2, double y2, GClipRect *clip)
 
 void intersect(Edge b, double x1, double y1, double x2, double y2, double *ix, double *iy, GClipRect *clip)
 {
-    double m;
+    double m = 0;
 
     if (x1 != x2)
         m = (y1 - y2) / (x1 - x2);

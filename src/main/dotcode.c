@@ -289,10 +289,10 @@ SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC fun;
-    char buf[128], *p, *q, *vmax;
+    char buf[128], *p, *q;
     SEXP retval;
 
-    /* I don't like this messing with vmax <TSL>*/
+    /* I don't like this messing with vmax <TSL> */
     /* vmax = vmaxget(); */
     op = CAR(args);
     if (!isString(op))
@@ -310,7 +310,7 @@ SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!(fun = R_FindSymbol(buf)))
         errorcall(call, "C-R function not in load table\n");
 
-    retval = fun(args);
+    retval = (SEXP)fun(args);
 
     /* vmaxset(vmax); */
     return retval;
@@ -822,8 +822,8 @@ SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
-/* FIXME : Must work out what happens here when */
-/* we replace LISTSXP by VECSXP. */
+/* FIXME : Must work out what happens here when we replace LISTSXP by
+   VECSXP. */
 
 static struct
 {

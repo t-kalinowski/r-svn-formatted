@@ -801,10 +801,9 @@ void *R_chk_realloc(void *ptr, size_t size)
         error("Realloc could not re-allocate memory");
     return (p);
 }
-void *R_chk_free(void *ptr)
+void R_chk_free(void *ptr)
 {
     if (!ptr)
         warning("attempt to free NULL pointer by Free");
     free(ptr);
-    return;
 }

@@ -1349,7 +1349,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
     double *x0, *x1, *y0, *y1;
     double xx[2], yy[2];
-    int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd, xpd;
+    int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd;
     SEXP originalArgs = args;
     DevDesc *dd = CurrentDevice();
 

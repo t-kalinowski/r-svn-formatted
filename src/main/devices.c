@@ -88,6 +88,7 @@ SEXP do_Macintosh(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     gcall = call;
     DeviceUnavailable("Macintosh");
+    return R_NilValue; /* -Wall */
 }
 #endif
 
