@@ -435,9 +435,11 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     DllInfo *info;
 
     info = &LoadedDLL[CountDLL];
-    info->useDynamicLookup = TRUE; /* default is to use old-style dynamic lookup. Library's
-                                      initialization routine can limit access by setting this to FALSE.
-                                    */
+    /* default is to use old-style dynamic lookup. Library's
+       initialization routine can limit access by setting this to FALSE.
+    */
+    info->useDynamicLookup = TRUE;
+
     dpath = malloc(strlen(path) + 1);
     if (dpath == NULL)
     {
@@ -450,15 +452,28 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     if (R_osDynSymbol->fixPath)
         R_osDynSymbol->fixPath(dpath);
 
+    /* keep only basename from path */
     p = strrchr(dpath, FILESEP[0]);
     if (!p)
         p = dpath;
     else
         p++;
     strcpy(DLLname, p);
+
+    /* FIXME: didn't work on Mac, unsafe
     p = strchr(DLLname, '.');
-    if (p)
+    if(p) *p = '\0'; */
+
+    /* remove SHLIB_EXT if present */
+    p = DLLname + strlen(DLLname) - strlen(SHLIB_EXT);
+#ifdef Win32 /* case-insensitive file system */
+    if (p > DLLname && stricmp(p, SHLIB_EXT) == 0)
         *p = '\0';
+#else
+    if (p > DLLname && strcmp(p, SHLIB_EXT) == 0)
+        *p = '\0';
+#endif
+
     name = malloc(strlen(DLLname) + 1);
     if (name == NULL)
     {
@@ -753,11 +768,7 @@ int moduleCdynload(char *module, int local, int now)
 #endif
     if (!p)
         return 0;
-#ifndef Macintosh
-    sprintf(dllpath, "%s%smodules%s%s.%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
-#else /* no "dot" in DLL names under MacOS */
     sprintf(dllpath, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
-#endif
     return AddDLL(dllpath, local, now);
 }
 
