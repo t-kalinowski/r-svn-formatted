@@ -24,7 +24,7 @@
 #define R_INT_MIN 1 + INT_MIN
 #define Int2Real(i) (i == NA_INTEGER) ? NA_REAL : (double)i;
 
-#ifdef Debug
+#ifdef DEBUG_sum
 #define DbgP1(s) REprintf(s)
 #define DbgP2(s, a) REprintf(s, a)
 #define DbgP3(s, a, b) REprintf(s, a, b)
@@ -376,10 +376,10 @@ static void cprod(complex *x, int n, complex *value)
     value->i = s.i;
 }
 
-/* do_summary provides a variety of data summaries */
-/* op : 0 = sum, 1 = mean, 2 = min, 3 = max, 4 = prod */
-/* NOTE: mean() [op = 1]  is no longer processed by this code. */
-/* (NEVER was correct for multiple arguments!) */
+/* do_summary provides a variety of data summaries
+    op : 0 = sum, 1 = mean, 2 = min, 3 = max, 4 = prod */
+/* NOTE: mean() [op = 1]  is no longer processed by this code.
+        (NEVER was correct for multiple arguments!) */
 
 SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -436,14 +436,14 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
 
     default:
-        errorcall(call, "internal error ('op' in do_summary).	Call a Guru\n");
+        errorcall(call, "internal error ('op' in do_summary).\t Call a Guru\n");
     }
 
     /*-- now loop over all arguments.  Do the 'op' switch INSIDE : */
     while (args != R_NilValue)
     {
         a = CAR(args);
-        int_a = 0; /* int_a = 1  <-->	a is INTEGER */
+        int_a = 0; /* int_a = 1	<-->	a is INTEGER */
 
         if (length(a) > 0)
         {
@@ -498,11 +498,13 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                             tmp = Int2Real(itmp);
                         DbgP3(" REAL: (old)cum= %g, tmp=%g\n", zcum.r, tmp);
                         if (ISNAN(tmp))
+                        {
 #ifdef IEEE_754
                             zcum.r += tmp; /* NA or NaN */
 #else
                             goto na_answer;
 #endif
+                        }
                         else if (
 #ifndef IEEE_754
                             ISNAN(zcum.r) ||
@@ -637,6 +639,9 @@ SEXP do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     } /*-- while(..) loop over args */
 
     /*-------------------------------------------------------*/
+    if (empty && (iop == 2 || iop == 3))
+        warningcall(call, "only non-finite arguments to min/max; "
+                          "returning extreme.\n");
 
     ans = allocVector(ans_type, 1);
     switch (ans_type)
