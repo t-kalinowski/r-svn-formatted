@@ -40,10 +40,11 @@ int main(int argc, char **argv)
        find R_HOME
        set PATH to include R_HOME\bin
        set PERL5LIB to %R_HOME%/share/perl;%Perl5LIB%
+       set TEXINPUTS to %R_HOME%/share/texmf;%TEXINPUTS%
        launch %R_HOME%\bin\$*
      */
     int i, iused, res, status = 0;
-    char *RHome, PERL5LIB[MAX_PATH], PATH[10000], RHOME[MAX_PATH], *p, cmd[10000], Rversion[25];
+    char *RHome, PERL5LIB[MAX_PATH], TEXINPUTS[MAX_PATH], PATH[10000], RHOME[MAX_PATH], *p, cmd[10000], Rversion[25];
 
     if (argc > 1 && strcmp(argv[1], "BATCH") == 0)
     {
@@ -193,6 +194,13 @@ int main(int argc, char **argv)
         if ((p = getenv("PERL5LIB")))
             strcat(PERL5LIB, p);
         putenv(PERL5LIB);
+
+        strcpy(TEXINPUTS, "TEXINPUTS=");
+        strcat(TEXINPUTS, RHome);
+        strcat(TEXINPUTS, "\\share\\texmf;");
+        if ((p = getenv("TEXINPUTS")))
+            strcat(TEXINPUTS, p);
+        putenv(TEXINPUTS);
 
         if (argc > 1)
         {
