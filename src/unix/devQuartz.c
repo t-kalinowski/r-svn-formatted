@@ -37,6 +37,7 @@
 #define R_RED(col) (((col)) & 255)
 #define R_GREEN(col) (((col) >> 8) & 255)
 #define R_BLUE(col) (((col) >> 16) & 255)
+#define kRAppSignature '0FFF'
 
 /***************************************************************************/
 /* Each driver can have its own device-specic graphical                    */
@@ -79,6 +80,8 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
 
 Rboolean QuartzDeviceDriver(DevDesc *dd, char *display, double width, double height, double pointsize, char *family,
                             Rboolean antialias, Rboolean autorefresh);
+
+OSStatus SetCGContext(QuartzDesc *xd);
 
 /* Device primitives */
 
@@ -304,9 +307,31 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
     else
         xd->family = NULL;
 
+    err = SetCGContext(xd);
+
+    /* This scale factor is needed in MetricInfo */
+    xd->xscale = width / 72.0;
+    xd->yscale = height / 72.0;
+
+    dd->deviceSpecific = (void *)xd;
+    dd->displayListOn = TRUE;
+
+    return 1;
+}
+
+OSStatus SetCGContext(QuartzDesc *xd)
+{
+    Rect rect;
+    OSStatus err = noErr;
+    CGRect cgRect;
+
+    if (xd->context)
+        CGContextRelease(xd->context);
+
     err = CreateCGContextForPort(GetWindowPort(xd->window), &xd->context);
 
     /*  Translate to QuickDraw coordinate system */
+
     GetPortBounds(GetWindowPort(xd->window), &rect);
     CGContextTranslateCTM(xd->context, 0, (float)(rect.bottom - rect.top));
 
@@ -318,14 +343,7 @@ Rboolean innerQuartzDeviceDriver(NewDevDesc *dd, char *display, double width, do
     /* We apply here Antialiasing if necessary */
     CGContextSetShouldAntialias(xd->context, xd->Antialias);
 
-    /* This scale factor is needed in MetricInfo */
-    xd->xscale = width / 72.0;
-    xd->yscale = height / 72.0;
-
-    dd->deviceSpecific = (void *)xd;
-    dd->displayListOn = TRUE;
-
-    return 1;
+    return err;
 }
 
 static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wid, double hgt)
@@ -341,6 +359,7 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     xd->windowWidth = wid * 72;
     xd->windowHeight = hgt * 72;
     xd->window = NULL;
+    xd->context = NULL;
     dd->startfill = R_RGB(255, 255, 255);
     dd->startcol = R_RGB(0, 0, 0);
     /* Create a new window with the specified size */
@@ -348,7 +367,8 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
     SetRect(&devBounds, 400, 400, 400 + xd->windowWidth, 400 + xd->windowHeight);
 
     err = CreateNewWindow(kDocumentWindowClass,
-                          kWindowStandardHandlerAttribute | kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute,
+                          kWindowStandardHandlerAttribute | kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute |
+                              kWindowResizableAttribute,
                           &devBounds, &devWindow);
 
     sprintf(buffer, "Quartz (%d) - Active", devnum + 1);
@@ -378,7 +398,8 @@ static void Quartz_Close(NewDevDesc *dd)
     if (xd->family)
         free(xd->family);
 
-    CGContextRelease(xd->context);
+    if (xd->context)
+        CGContextRelease(xd->context);
 
     free(xd);
 }
@@ -389,10 +410,18 @@ static void Quartz_Activate(NewDevDesc *dd)
     char buffer[250];
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
     int devnum = devNumber((DevDesc *)dd);
+    OSStatus err;
 
     sprintf(buffer, "Quartz (%d) - Active", devnum + 1);
     CopyCStringToPascal(buffer, Title);
     SetWTitle(xd->window, Title);
+
+    /*
+       We add a property to the Window each time we activate it.
+       We should only make this the first time we open the device.
+    */
+    err = SetWindowProperty(xd->window, kRAppSignature, 1, sizeof(int), &devnum);
+
     ShowWindow(xd->window);
 }
 
@@ -411,6 +440,20 @@ static void Quartz_Deactivate(NewDevDesc *dd)
 
 static void Quartz_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd)
 {
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    Rect portRect;
+
+    GetWindowPortBounds(xd->window, &portRect);
+
+    *left = 0.0;
+    *right = portRect.right;
+    *bottom = portRect.bottom;
+    *top = 0.0;
+
+    xd->windowWidth = *right - *left;
+    xd->windowHeight = *bottom - *top;
+    SetCGContext(xd);
+
     return;
 }
 
@@ -783,6 +826,7 @@ static void Quartz_MetricInfo(int c, int font, double cex, double ps, double *as
 
     return;
 }
+
 #else
 SEXP do_Quartz(SEXP call, SEXP op, SEXP args, SEXP env)
 {
