@@ -132,11 +132,14 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
 #ifdef SUPPORT_MBCS
-                nc = mbstowcs(NULL, CHAR(STRING_ELT(x, i)), 0);
-                INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
-#else
-                INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
+                if (mbcslocale)
+                {
+                    nc = mbstowcs(NULL, CHAR(STRING_ELT(x, i)), 0);
+                    INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
+                }
+                else
 #endif
+                    INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
             }
         }
         else
@@ -148,24 +151,27 @@ SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
 #ifdef SUPPORT_MBCS
-                xi = CHAR(STRING_ELT(x, i));
-                nc = mbstowcs(NULL, xi, 0);
-#ifdef HAVE_WCSWIDTH
-                if (nc >= 0)
+                if (mbcslocale)
                 {
-                    AllocBuffer((nc + 1) * sizeof(wchar_t));
-                    wc = (wchar_t *)cbuff.data;
-                    mbstowcs(wc, xi, nc + 1);
-                    INTEGER(s)[i] = wcswidth(wc, 2147483647);
-                    if (INTEGER(s)[i] < 1)
-                        INTEGER(s)[i] = nc;
+                    xi = CHAR(STRING_ELT(x, i));
+                    nc = mbstowcs(NULL, xi, 0);
+#ifdef HAVE_WCSWIDTH
+                    if (nc >= 0)
+                    {
+                        AllocBuffer((nc + 1) * sizeof(wchar_t));
+                        wc = (wchar_t *)cbuff.data;
+                        mbstowcs(wc, xi, nc + 1);
+                        INTEGER(s)[i] = wcswidth(wc, 2147483647);
+                        if (INTEGER(s)[i] < 1)
+                            INTEGER(s)[i] = nc;
+                    }
+                    else
+#endif
+                        INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
                 }
                 else
 #endif
-                    INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
-#else
-                INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
-#endif
+                    INTEGER(s)[i] = strlen(CHAR(STRING_ELT(x, i)));
             }
         }
     }
