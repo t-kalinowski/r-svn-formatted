@@ -110,13 +110,13 @@ void fdhess(int n, double *x, double fval, fcn_p fun, void *state, double *h, in
     }
 } /* fdhess */
 
-static void d1fcn(int n, double *x, double *g, void *state)
+static void d1fcn_dum(int n, double *x, double *g, void *state)
 {
     /*	dummy routine to prevent unsatisfied external diagnostic
      *	when specific analytic gradient function not supplied. */
 }
 
-static void d2fcn(int nr, int n, double *x, double *h, void *state)
+static void d2fcn_dum(int nr, int n, double *x, double *h, void *state)
 {
     /*	dummy routine to prevent unsatisfied external diagnostic
      *	when specific analytic hessian function not supplied. */
@@ -2925,8 +2925,8 @@ void optif0(int nr, int n, double *x, fcn_p fcn, void *state, double *xpls, doub
     /* Function Body */
     dfault(n, x, &wrk[nr], &fscale, &method, &iexp, &msg, &ndigit, &itnlim, &iagflg, &iahflg, &dlt, &gradtl, &stepmx,
            &steptl);
-    optdrv(nr, n, x, (fcn_p)fcn, (fcn_p)d1fcn, (d2fcn_p)d2fcn, state, &wrk[nr * 3], fscale, method, iexp, &msg, ndigit,
-           itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, wrk, &wrk[nr],
+    optdrv(nr, n, x, (fcn_p)fcn, (fcn_p)d1fcn_dum, (d2fcn_p)d2fcn_dum, state, &wrk[nr * 3], fscale, method, iexp, &msg,
+           ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, wrk, &wrk[nr],
            &wrk[nr * 2], &wrk[nr * 4], &wrk[nr * 5], &wrk[nr * 6], &wrk[nr * 7], &wrk[nr * 8], &itncnt);
 } /* optif0 */
 
