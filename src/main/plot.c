@@ -545,8 +545,12 @@ static SEXP labelformat(SEXP labels)
         PROTECT(ans = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
+#ifdef OLD
             strp = EncodeString(CHAR(STRING(labels)[i]), 0, 0, adj_left);
             STRING(ans)[i] = mkChar(strp);
+#else
+            STRING(ans)[i] = STRING(labels)[i];
+#endif
         }
         UNPROTECT(1);
         break;
@@ -778,7 +782,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     args = CDR(args);
 
-    /* retrieve relevant "par" values */
+    /* Retrieve relevant "par" values. */
 
     switch (side)
     {
@@ -804,10 +808,9 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
     }
 
-    /* determine the tick mark positions */
+    /* Determine the tick mark positions.  Note that these may fall */
+    /* outside the plot window. We will clip them in the code below. */
 
-    /* note that these may fall outside the plot window */
-    /* we will clip them in the code below */
     if (length(at) == 0)
     {
         PROTECT(at = CreateAtVector(axp, usr, nint, logflag));
@@ -844,8 +847,9 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     col = dd->gp.col;
     fg = dd->gp.fg;
 
-    /* Check the axis type parameter */
-    /* If it is 'n', there is nothing to do */
+    /* Check the axis type parameter, if it is 'n', */
+    /* there is nothing to do */
+
     if (side == 1 || side == 3)
     {
         if (dd->gp.xaxt == 'n')
@@ -956,7 +960,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     labw = GStrWidth(CHAR(STRING(lab)[i]), NFC, dd);
                     tnew = tempx - 0.5 * labw;
-                    /* Check room for  perpendicular labels: */
+                    /* Check that there is space */
+                    /* for  perpendicular labels. */
                     if (dd->gp.las == 2 || dd->gp.las == 3 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[i]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
@@ -1725,14 +1730,14 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     if (isNull(adj) || (isNumeric(adj) && length(adj) == 0))
     {
         adjx = dd->gp.adj;
-        adjy = dd->gp.yCharOffset;
+        adjy = NA_REAL;
     }
     else if (isReal(adj))
     {
         if (LENGTH(adj) == 1)
         {
             adjx = REAL(adj)[0];
-            adjy = dd->gp.yCharOffset;
+            adjy = NA_REAL;
         }
         else
         {
