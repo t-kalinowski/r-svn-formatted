@@ -290,6 +290,8 @@ void GetRNGstate()
                 error(".Random.seed[1] = 5 but no user-supplied generator");
             break;
         default:
+            RNG_kind = RNG_DEFAULT;
+            N01_kind = 0;
             error(".Random.seed[1] is NOT a valid RNG kind (code)");
         }
         len_seed = RNG_Table[RNG_kind].n_seed;
@@ -315,6 +317,7 @@ void PutRNGstate()
 {
     int len_seed, j;
     SEXP seeds;
+
     len_seed = RNG_Table[RNG_kind].n_seed;
 
     PROTECT(seeds = allocVector(INTSXP, len_seed + 1));
