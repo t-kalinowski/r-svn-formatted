@@ -1376,7 +1376,7 @@ static void Quartz_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
     CGContextSaveGState(GetContext(xd));
 
     CGContextBeginPath(GetContext(xd));
-    //   Quartz_SetLineProperties(gc, dd);
+    /*  Quartz_SetLineProperties(gc, dd); */
 
     lines = (CGPoint *)malloc(sizeof(CGPoint) * (n + 1));
 
