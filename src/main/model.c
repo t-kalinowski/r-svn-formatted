@@ -1854,7 +1854,7 @@ alldone:;
                     if (!first)
                         bufp = AppendString(bufp, ":");
                     first = 0;
-                    if (isFactor(var_i))
+                    if (isFactor(var_i) || isLogical(var_i))
                     {
                         if (ll == 1)
                         {
@@ -1964,8 +1964,9 @@ alldone:;
                 {
                     if (INTEGER(nlevs)[i] > 0)
                     {
+                        int adj = isLogical(var_i) ? 1 : 0;
                         firstfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
-                                    ncols(contrast), INTEGER(var_i));
+                                    ncols(contrast), INTEGER(var_i) + adj);
                         jnext = jnext + ncols(contrast);
                     }
                     else
@@ -1978,8 +1979,9 @@ alldone:;
                 {
                     if (INTEGER(nlevs)[i] > 0)
                     {
+                        int adj = isLogical(var_i) ? 1 : 0;
                         addfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
-                                  ncols(contrast), INTEGER(var_i));
+                                  ncols(contrast), INTEGER(var_i) + adj);
                         jnext = jnext + (jnext - jstart) * (ncols(contrast) - 1);
                     }
                     else
