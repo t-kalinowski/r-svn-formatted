@@ -501,6 +501,11 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             else if (!strcmp(*av, "--no-restore"))
             {
                 Rp->RestoreAction = SA_NORESTORE;
+                R_RestoreHistory = 0;
+            }
+            else if (!strcmp(*av, "--no-restore-data"))
+            {
+                Rp->RestoreAction = SA_NORESTORE;
             }
             else if (!strcmp(*av, "--no-restore-history"))
             {
