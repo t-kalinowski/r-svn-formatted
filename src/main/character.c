@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -424,8 +424,8 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP pat, rep, vec, ans;
     regex_t reg;
     regmatch_t regmatch[10];
-    int i, j, n, ns, nsubexp, nmatch, offset;
-    int global, igcase_opt, extended_opt, value_opt, eflags;
+    int i, j, n, ns, nmatch, offset;
+    int global, igcase_opt, extended_opt, eflags;
     char *s, *t, *u;
 
     checkArity(op, args);

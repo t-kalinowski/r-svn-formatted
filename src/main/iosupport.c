@@ -222,7 +222,6 @@ int R_TextBufferFree(TextBuffer *txtb)
 
 int R_TextBufferGetc(TextBuffer *txtb)
 {
-    int c;
     if (txtb->buf == NULL)
         return EOF;
     if (*(txtb->bufp) == '\0')

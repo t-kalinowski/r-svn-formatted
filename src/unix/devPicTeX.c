@@ -25,6 +25,8 @@
 #include "Graphics.h"
 #include "Fileio.h"
 
+unsigned int str2col(char *);
+
 /*void error(char*);*/
 int ValidColor(unsigned int);
 
@@ -145,7 +147,6 @@ static void SetFont(int face, int size)
 
 static int PicTeX_Open(void)
 {
-    int i;
     fontsize = 0;
     fontface = 0;
     if (!(texfp = R_fopen(filename, "w")))
@@ -304,8 +305,8 @@ static double PicTeX_StrWidth(char *str)
     size = GP->cex * GP->ps + 0.5;
     SetFont(GP->font, size);
     sum = 0;
-    for (p = str; *p; *p++)
-        sum += charwidth[fontface - 1][*p];
+    for (p = str; *p; p++)
+        sum += charwidth[fontface - 1][(int)*p];
     return sum * fontsize;
 }
 
@@ -388,7 +389,7 @@ static double deg2rad = 0.01745329251994329576;
 static void PicTeX_Text(double x, double y, char *str, double xc, double yc, double rot)
 {
     int size;
-    double xoff = 0.0, yoff = 0.0, xl, yl, xltemp, xctemp, xlast, ylast;
+    double xoff = 0.0, yoff = 0.0, xl, yl, xctemp;
 
     size = GP->cex * GP->ps + 0.5;
     SetFont(GP->font, size);
@@ -440,8 +441,6 @@ static void PicTeX_Hold()
 
 int PicTeXDeviceDriver(char **cpars, int ncpars, double *npars, int nnpars)
 {
-    double xoff, yoff;
-    char *pagetype;
     DevInit = 0;
 
     if (ncpars != 3 || nnpars != 3)

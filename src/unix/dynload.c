@@ -122,7 +122,7 @@ static struct
 /* Returns 1 if the DLL was found and removed from */
 /* the list and returns 0 otherwise. */
 
-static DeleteDLL(char *path)
+static int DeleteDLL(char *path)
 {
     int i, loc;
     for (i = 0; i < CountDLL; i++)
@@ -152,7 +152,7 @@ found:
 /* and returns 0 if there library table is full or */
 /* or if dlopen fails for some reason. */
 
-static AddDLL(char *path)
+static int AddDLL(char *path)
 {
     void *handle;
     char *dpath;
@@ -218,7 +218,7 @@ DL_FUNC R_FindSymbol(char const *name)
     return (DL_FUNC)0;
 }
 
-static GetFullDLLPath(SEXP call, char *buf, char *path)
+static void GetFullDLLPath(SEXP call, char *buf, char *path)
 {
     if (path[0] != '/')
     {

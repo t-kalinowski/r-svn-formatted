@@ -61,7 +61,6 @@ static void printLogicalVector(int *x, int n, int index)
 static void printFactorVector(int *x, int n, int index, SEXP levels, int nlev)
 {
     int i, j, w, labwidth, width;
-    char *lev;
 
     if (index)
     {

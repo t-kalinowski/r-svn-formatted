@@ -1,5 +1,5 @@
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -73,7 +73,7 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
     return ans;
 }
 
-/*  newintoold  -  a destructive matching of arguments;
+/*  newintoold	-  a destructive matching of arguments;
  *  newargs comes first; any element of oldargs with
  *  a name that matches a named newarg is deleted; the
  *  two resulting lists are appended and returned S
@@ -103,23 +103,23 @@ static SEXP matchmethargs(SEXP oldargs, SEXP newargs)
 }
 
 /*  usemethod  -  calling functions need to evaluate the object
- *  (== 2nd argument).  They also need to ensure that the
+ *  (== 2nd argument).	They also need to ensure that the
  *  argument list is set up in the correct manner.
  *
  *    1. find the context for the calling function (i.e. the generic)
  *	 this gives us the unevaluated arguments for the original call
  *
  *    2. create an environment for evaluating the method and insert
- *       a handful of variables (.Generic, .Class and .Method) into
- *       that environment. Also copy any variables in the env of the
- *       generic that are not formal (or actual) arguments.
+ *	 a handful of variables (.Generic, .Class and .Method) into
+ *	 that environment. Also copy any variables in the env of the
+ *	 generic that are not formal (or actual) arguments.
  *
  *    3. fix up the argument list; it should be the arguments to the
- *       generic matched to the formals of the method to be invoked */
+ *	 generic matched to the formals of the method to be invoked */
 
 int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP *ans)
 {
-    SEXP class, method, sxp, t, s, cloenv, matchedarg;
+    SEXP class, method, sxp, t, s, matchedarg;
     SEXP op, formals, newrho, newcall;
     char buf[512];
     int i, j, nclass, matched;
@@ -272,11 +272,11 @@ SEXP do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    char buf[128], *pt, *pb;
+    char buf[128];
     SEXP ans, s, t, class, method, matchedarg, generic, nextfun;
     SEXP sysp, m, formals, actuals, tmp, newcall;
     RCNTXT *cptr;
-    int nargs, i, j;
+    int i, j;
     SEXP group, realgroup;
 
     cptr = R_GlobalContext;
@@ -304,7 +304,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     actuals = matchArgs(formals, cptr->promargs);
 
     /* we can't duplicate because it would force the promises */
-    /* so we do our own duplication of the promargs           */
+    /* so we do our own duplication of the promargs		  */
     PROTECT(matchedarg = allocList(length(cptr->promargs)));
     for (t = matchedarg, s = cptr->promargs; t != R_NilValue; t = CDR(t), s = CDR(s))
     {
