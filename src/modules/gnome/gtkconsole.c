@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1998-1999   Lyndon Drake
+ *  Copyright (C) 1998-2001   Lyndon Drake
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,15 @@
 
 enum
 {
+    ARG_0, /* Skip 0, an invalid argument ID */
+    ARG_INPUT_COLOR_GDK,
+    ARG_OUTPUT_COLOR_GDK,
+    ARG_BG_COLOR_GDK,
+    ARG_FONT
+};
+
+enum
+{
     CONSOLE_LINE_READY,
     CONSOLE_CHAR_READY,
     CONSOLE_INPUT_ENABLED,
@@ -37,6 +46,13 @@ enum
 static void gtk_console_class_init(GtkConsoleClass *klass);
 static void gtk_console_init(GtkConsole *console);
 static void gtk_console_destroy(GtkObject *object);
+static void gtk_console_set_arg(GtkObject *object, GtkArg *arg, guint arg_id);
+
+/* object arguments */
+static void gtk_console_set_bg_color(GtkConsole *console, GdkColor const *color);
+static void gtk_console_set_input_color(GtkConsole *console, GdkColor const *color);
+static void gtk_console_set_output_color(GtkConsole *console, GdkColor const *color);
+static void gtk_console_set_font(GtkConsole *console, gchar const *font);
 
 /* events */
 static gint gtk_console_key_press(GtkWidget *widget, GdkEventKey *event);
@@ -109,6 +125,14 @@ static void gtk_console_class_init(GtkConsoleClass *klass)
     klass->console_line_ready = NULL;
     klass->console_input_enabled = NULL;
     klass->console_input_disabled = NULL;
+
+    /* Object arguments */
+    gtk_object_add_arg_type("GtkConsole::input_color_gdk", GTK_TYPE_GDK_COLOR, GTK_ARG_WRITABLE, ARG_INPUT_COLOR_GDK);
+    gtk_object_add_arg_type("GtkConsole::output_color_gdk", GTK_TYPE_GDK_COLOR, GTK_ARG_WRITABLE, ARG_OUTPUT_COLOR_GDK);
+    gtk_object_add_arg_type("GtkConsole::bg_color_gdk", GTK_TYPE_GDK_COLOR, GTK_ARG_WRITABLE, ARG_BG_COLOR_GDK);
+    gtk_object_add_arg_type("GtkConsole::font", GTK_TYPE_STRING, GTK_ARG_WRITABLE, ARG_FONT);
+
+    object_class->set_arg = gtk_console_set_arg;
 }
 
 static void gtk_console_init(GtkConsole *console)
@@ -125,7 +149,9 @@ static void gtk_console_init(GtkConsole *console)
     console->buffer_type = CONSOLE_BUF_NONE;
     console->buffer_index = 0;
 
-    /* to keep track of changes*/
+    /* register object arguments */
+
+    /* to keep track of changes */
     gtk_signal_connect(GTK_OBJECT(console), "insert_text", GTK_SIGNAL_FUNC(gtk_console_insert_text), NULL);
     gtk_signal_connect(GTK_OBJECT(console), "delete_text", GTK_SIGNAL_FUNC(gtk_console_delete_text), NULL);
     gtk_signal_connect(GTK_OBJECT(console), "changed", GTK_SIGNAL_FUNC(gtk_console_changed_post), NULL);
@@ -149,6 +175,33 @@ static void gtk_console_destroy(GtkObject *object)
     g_return_if_fail(GTK_IS_CONSOLE(object));
 
     GTK_OBJECT_CLASS(parent_class)->destroy(object);
+}
+
+static void gtk_console_set_arg(GtkObject *object, GtkArg *arg, guint arg_id)
+{
+    GtkConsole *console;
+    GdkColor *pcolor;
+
+    console = GTK_CONSOLE(object);
+    pcolor = GTK_VALUE_BOXED(*arg);
+
+    switch (arg_id)
+    {
+    case ARG_INPUT_COLOR_GDK:
+        gtk_console_set_input_color(console, pcolor);
+        break;
+    case ARG_OUTPUT_COLOR_GDK:
+        gtk_console_set_output_color(console, pcolor);
+        break;
+    case ARG_BG_COLOR_GDK:
+        gtk_console_set_bg_color(console, pcolor);
+        break;
+    case ARG_FONT:
+        gtk_console_set_font(console, GTK_VALUE_STRING(*arg));
+        break;
+    default:
+        break;
+    }
 }
 
 /* ************************************** *
@@ -234,70 +287,66 @@ void gtk_console_enable_input(GtkConsole *object, gchar *prompt, guint prompt_le
 /* Disable input */
 void gtk_console_disable_input(GtkConsole *object)
 {
-    g_return_if_fail(object != NULL);
+    g_return_if_fail(object);
     g_return_if_fail(GTK_IS_CONSOLE(object));
 
     object->input_enabled = FALSE;
 }
 
-/* Write buf out.
- * gtk_console_write also disables input.
- * Buffers output a line at a time, up to 1Kb
- *
- * FIXME: if buf_len is greater than CONSOLE_MAX_BUF, the excess
- * is silently discarded.  We should split such buf's into
- * multiple writes.
- */
+static void _write_buffer(GtkConsole *object, gchar *str, guint str_len)
+{
+    /* Write str to output buffer of object.  If str is too long,
+       then it is split into multiple writes */
+
+    int str_written = 0;
+
+    /* Run out of buffer space? Then flush buffer */
+    if ((object->buffer_index > 0) && (object->buffer_index + str_len > CONSOLE_MAX_BUF - 1))
+    {
+        gtk_console_flush(object);
+    }
+
+    /* Copy str to output buffer */
+    strncpy(object->out_buf + object->buffer_index, str, CONSOLE_MAX_BUF - object->buffer_index - 1);
+
+    str_written = MIN(CONSOLE_MAX_BUF - object->buffer_index - 1, str_len);
+    object->buffer_index += str_written;
+    object->out_buf[object->buffer_index] = '\0';
+
+    /* Didn't write whole of str? Then try again */
+    if (str_written < str_len)
+        _write_buffer(object, str + str_written, str_len - str_written);
+}
+
 void gtk_console_write(GtkConsole *object, gchar *buf, guint buf_len)
 {
+    /* NOTE: This also disables input.
+       It must be enabled somewhere. Where? - MTP */
+
     g_return_if_fail(object != NULL);
     g_return_if_fail(GTK_IS_CONSOLE(object));
 
     gtk_console_disable_input(object);
 
+    _write_buffer(object, buf, buf_len);
     switch (object->buffer_type)
     {
+    case CONSOLE_BUF_NONE:
+        /* Always flush */
+        gtk_console_flush(object);
+        break;
     case CONSOLE_BUF_LINE:
-        /* run out of buffer space - flush the buffer to free some space */
-        if ((object->buffer_index > 0) && (object->buffer_index + buf_len > CONSOLE_MAX_BUF - 1))
-        {
-            gtk_console_flush(object);
-        }
-
-        /* copy */
-        strncpy(object->out_buf + object->buffer_index, buf, CONSOLE_MAX_BUF - object->buffer_index - 1);
-
-        object->buffer_index = MIN(CONSOLE_MAX_BUF - 1, object->buffer_index + buf_len);
-        object->out_buf[object->buffer_index] = '\0';
-
-        /* check for newline */
+        /* Flush if output contains a newline character  */
         if (strchr(object->out_buf, '\n') != NULL)
         {
             gtk_console_flush(object);
         }
         break;
-
     case CONSOLE_BUF_BLOCK:
-        /* run out of buffer space - flush the buffer to free some space */
-        if ((object->buffer_index > 0) && (object->buffer_index + buf_len > CONSOLE_MAX_BUF - 1))
-        {
-            gtk_console_flush(object);
-        }
-
-        /* copy */
-        strncpy(object->out_buf + object->buffer_index, buf, CONSOLE_MAX_BUF - object->buffer_index - 1);
-
-        object->buffer_index = MIN(CONSOLE_MAX_BUF - 1, object->buffer_index + buf_len);
-        object->out_buf[object->buffer_index] = '\0';
+        /* Don't flush until buffer is full (handled by _write_buffer) */
         break;
-
-    default: /* no buffering */
-        strncpy(object->out_buf, buf, CONSOLE_MAX_BUF - 1);
-        object->out_buf[CONSOLE_MAX_BUF - 1] = '\0';
-        gtk_console_flush(object);
-        object->buffer_index = 0;
-        object->out_buf[0] = '\0';
-        break;
+    default:
+        g_assert_not_reached();
     }
 }
 
@@ -308,15 +357,11 @@ void gtk_console_flush(GtkConsole *object)
 
     gtk_text_freeze(GTK_TEXT(object));
 
-    /* FIXME: Update text properties */
-
     /* Append up to buf_len characters from buf to end of text box */
     gtk_text_set_point(GTK_TEXT(object), gtk_text_get_length(GTK_TEXT(object)));
-    gtk_text_insert(GTK_TEXT(object), NULL, NULL, NULL, object->out_buf, strlen(object->out_buf));
+    gtk_text_insert(GTK_TEXT(object), NULL, &(object->output_color), NULL, object->out_buf, strlen(object->out_buf));
     /* Move point to end of text box */
     gtk_text_set_point(GTK_TEXT(object), gtk_text_get_length(GTK_TEXT(object)));
-
-    /* FIXME: Update text properties */
 
     gtk_text_thaw(GTK_TEXT(object));
 
@@ -441,6 +486,49 @@ gboolean gtk_console_get_input_enabled(GtkConsole *object)
     return object->input_enabled;
 }
 
+static void gtk_console_set_bg_color(GtkConsole *console, GdkColor const *color)
+{
+    GtkStyle *new_style;
+
+    g_return_if_fail(GTK_IS_CONSOLE(console));
+
+    console->bg_color = *color;
+
+    new_style = gtk_style_copy(gtk_widget_get_style(GTK_WIDGET(console)));
+    new_style->base[GTK_STATE_NORMAL] = *color;
+    gtk_widget_set_style(GTK_WIDGET(console), new_style);
+}
+
+static void gtk_console_set_input_color(GtkConsole *console, GdkColor const *color)
+{
+    GtkStyle *new_style;
+
+    g_return_if_fail(GTK_IS_CONSOLE(console));
+
+    console->input_color = *color;
+
+    new_style = gtk_style_copy(gtk_widget_get_style(GTK_WIDGET(console)));
+    new_style->text[GTK_STATE_NORMAL] = *color;
+    gtk_widget_set_style(GTK_WIDGET(console), new_style);
+}
+
+static void gtk_console_set_output_color(GtkConsole *console, GdkColor const *color)
+{
+    g_return_if_fail(GTK_IS_CONSOLE(console));
+
+    console->output_color = *color;
+}
+
+static void gtk_console_set_font(GtkConsole *console, gchar const *font)
+{
+    GtkStyle *new_style;
+
+    new_style = gtk_style_copy(gtk_widget_get_style(GTK_WIDGET(console)));
+    gdk_font_unref(new_style->font);
+    new_style->font = gdk_font_load(font);
+    gtk_widget_set_style(GTK_WIDGET(console), new_style);
+}
+
 /* *************** *
  * Signal handlers *
  * *************** */
@@ -503,23 +591,118 @@ static void key_gdk_down(GtkConsole *console)
     }
 }
 
+static void _extend_selection_back(GtkWidget *widget, int start, int pos)
+{
+    /* Utility function for extending selection (backwards only) */
+    GtkEditable *editable;
+
+    g_return_if_fail(widget);
+    g_return_if_fail(GTK_IS_EDITABLE(widget));
+
+    editable = GTK_EDITABLE(widget);
+    if (editable->has_selection)
+    {
+        if (pos == editable->selection_start_pos)
+        /* Sanity check */
+        {
+            gtk_editable_select_region(editable, start, editable->selection_end_pos);
+        }
+    }
+    else
+    {
+        gtk_editable_select_region(editable, start, pos);
+    }
+}
+
 /* FIXME: Completion will have to be accomplished by a callback.
    The callback should have the same syntax as the readline
    completion callback. */
 static gint gtk_console_key_press(GtkWidget *widget, GdkEventKey *event)
 {
+    gint pos, start;
+
     g_return_val_if_fail(widget != NULL, FALSE);
     g_return_val_if_fail(event != NULL, FALSE);
     g_return_val_if_fail(GTK_IS_CONSOLE(widget), FALSE);
 
+    if (GTK_CONSOLE(widget)->input_enabled == FALSE)
+        return FALSE;
+
+    pos = gtk_editable_get_position(GTK_EDITABLE(widget));
+    start = GTK_CONSOLE(widget)->input_start_index;
+
+    if (pos >= start)
     /* stuff that we only change if the point is in the input area */
-    if (gtk_editable_get_position(GTK_EDITABLE(widget)) >= GTK_CONSOLE(widget)->input_start_index)
     {
-        if (GTK_CONSOLE(widget)->input_enabled == TRUE)
+        gboolean signal_caught = FALSE;
+        if (event->state & GDK_CONTROL_MASK)
         {
             switch (event->keyval)
             {
+            case 'A':
+            case 'a':
+                /* Beginning of line */
+                gtk_editable_set_position(GTK_EDITABLE(widget), start);
+                if (event->state & GDK_SHIFT_MASK)
+                {
+                    _extend_selection_back(widget, start, pos);
+                }
+                signal_caught = TRUE;
+                break;
 
+            case 'B':
+            case 'b':      /* Backward one character */
+            case GDK_Left: /* Backward one word */
+            case 'H':
+            case 'h': /* Delete backward character */
+            case 'W':
+            case 'w': /* Delete backwards word */
+                if (pos == start)
+                {
+                    signal_caught = TRUE;
+                }
+                break;
+
+            case 'N':
+            case 'n':
+                /* Next line => next history item*/
+                key_gdk_down(GTK_CONSOLE(widget));
+                signal_caught = TRUE;
+                break;
+
+            case 'P':
+            case 'p':
+                /* Previous line => previous history item */
+                key_gdk_up(GTK_CONSOLE(widget));
+                signal_caught = TRUE;
+                break;
+
+            case 'U':
+            case 'u':
+                /* Delete line */
+                gtk_editable_delete_text(GTK_EDITABLE(widget), start, gtk_text_get_length(GTK_TEXT(widget)));
+                signal_caught = TRUE;
+                break;
+            }
+        }
+        else if (event->state & GDK_MOD1_MASK)
+        {
+            switch (event->keyval)
+            {
+            case 'B':
+            case 'b':
+                /* Back one word */
+                if (pos == start)
+                {
+                    signal_caught = TRUE;
+                }
+                break;
+            }
+        }
+        else /* No control or alt key */
+        {
+            switch (event->keyval)
+            {
             case GDK_Tab:
                 /* do completion */
                 break;
@@ -527,40 +710,40 @@ static gint gtk_console_key_press(GtkWidget *widget, GdkEventKey *event)
             case GDK_Up:
                 /* previous history item */
                 key_gdk_up(GTK_CONSOLE(widget));
-                gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "key_press_event");
-                return TRUE;
+                signal_caught = TRUE;
                 break;
 
             case GDK_Down:
                 /* next history item */
                 key_gdk_down(GTK_CONSOLE(widget));
-                gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "key_press_event");
-                return TRUE;
+                signal_caught = TRUE;
                 break;
 
             case GDK_Left:
-                if (!(event->state & GDK_CONTROL_MASK) && !(event->state & GDK_SHIFT_MASK) &&
-                    (gtk_editable_get_position(GTK_EDITABLE(widget)) == GTK_CONSOLE(widget)->input_start_index))
+                if (pos == start)
                 {
-                    gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "key_press_event");
-                    return TRUE;
+                    signal_caught = TRUE;
                 }
                 break;
 
             case GDK_Home:
-                if (!(event->state & GDK_CONTROL_MASK) && !(event->state & GDK_SHIFT_MASK))
+                if (!(event->state & GDK_SHIFT_MASK))
                 {
-                    gtk_editable_set_position(GTK_EDITABLE(widget), GTK_CONSOLE(widget)->input_start_index);
-                    gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "key_press_event");
-                    return TRUE;
+                    gtk_editable_set_position(GTK_EDITABLE(widget), start);
+                    signal_caught = TRUE;
                 }
                 break;
             }
         }
+        if (signal_caught)
+        {
+            gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "key_press_event");
+            return TRUE;
+        }
     }
 
-    /* things that apply wherever the point is */
     if (GTK_CONSOLE(widget)->input_enabled == TRUE)
+    /* things that apply wherever the point is */
     {
         switch (event->keyval)
         {

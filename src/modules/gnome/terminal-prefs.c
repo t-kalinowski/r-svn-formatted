@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1998-1999   Lyndon Drake
+ *  Copyright (C) 1998-2001   Lyndon Drake
  *                            and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -32,17 +32,18 @@ typedef struct _gui_preferences gui_preferences;
 struct _gui_preferences
 {
     int restoreact;
-
     int saveact;
 
     gchar *console_font;
-    GdkColor console_textcolor;
-    GdkColor console_bgcolor;
+    GdkColor console_input_color; /* was console_textcolor */
+    GdkColor console_output_color;
+    GdkColor console_bg_color;
 
     gchar *pager_title_font;
     GdkColor pager_title_textcolor;
     GdkColor pager_title_bgcolor;
     gchar *pager_text_font;
+
     gchar *pager_em_font;
     GdkColor pager_text_textcolor;
     GdkColor pager_text_bgcolor;
@@ -53,29 +54,38 @@ static gui_preferences user_prefs;
 void R_gnome_prefs_gui_load(void)
 {
     gchar *tmp;
-    GdkColor text, bg;
+    GdkColor text_color, bg_color;
 
     /* Text settings */
     gnome_config_push_prefix("/R/Console/");
-    /*  -misc-fixed-medium-r-semicondensed-*-*-120-*-*-c-*-iso8859-1
-        -*-fixed-*-*-*-*-*-*-*-*-*-*-*-*    */
-    /*  user_prefs.console_font = gnome_config_get_string("font=fixed");*/
-    user_prefs.console_font =
-        gnome_config_get_string("font=-misc-fixed-medium-*-semicondensed-*-*-120-*-*-*-*-iso8859-1");
 
-    tmp = gnome_config_get_string("textcolor=black");
-    if (gdk_color_parse(tmp, &text) == 0)
+    user_prefs.console_font =
+        gnome_config_get_string("font=-misc-fixed-medium-r-semicondensed-*-*-120-*-*-*-*-iso8859-1");
+    /* FIXME: What to do if default font is not available? */
+
+    tmp = gnome_config_get_string("textcolor=red");
+    if (gdk_color_parse(tmp, &text_color) == 0)
     {
-        gdk_color_parse("black", &text);
+        gdk_color_parse("black", &text_color);
     }
-    user_prefs.console_textcolor = text;
+    g_free(tmp);
+    user_prefs.console_input_color = text_color;
+
+    tmp = gnome_config_get_string("outputcolor=black");
+    if (gdk_color_parse(tmp, &text_color) == 0)
+    {
+        gdk_color_parse("black", &text_color);
+    }
+    g_free(tmp);
+    user_prefs.console_output_color = text_color;
 
     tmp = gnome_config_get_string("bgcolor=white");
-    if (gdk_color_parse(tmp, &bg) == 0)
+    if (gdk_color_parse(tmp, &bg_color) == 0)
     {
-        gdk_color_parse("white", &bg);
+        gdk_color_parse("white", &bg_color);
     }
-    user_prefs.console_bgcolor = bg;
+    g_free(tmp);
+    user_prefs.console_bg_color = bg_color;
 
     gnome_config_pop_prefix();
 
@@ -86,40 +96,40 @@ void R_gnome_prefs_gui_load(void)
         gnome_config_get_string("title_font=-adobe-helvetica-bold-r-normal-*-*-100-*-*-p-*-iso8859-1");
 
     tmp = gnome_config_get_string("title_textcolor=black");
-    if (gdk_color_parse(tmp, &text) == 0)
+    if (gdk_color_parse(tmp, &text_color) == 0)
     {
-        gdk_color_parse("black", &text);
+        gdk_color_parse("black", &text_color);
     }
     g_free(tmp);
-    user_prefs.pager_title_textcolor = text;
+    user_prefs.pager_title_textcolor = text_color;
 
     tmp = gnome_config_get_string("title_bgcolor=white");
-    if (gdk_color_parse(tmp, &bg) == 0)
+    if (gdk_color_parse(tmp, &bg_color) == 0)
     {
-        gdk_color_parse("white", &bg);
+        gdk_color_parse("white", &bg_color);
     }
     g_free(tmp);
-    user_prefs.pager_title_bgcolor = bg;
+    user_prefs.pager_title_bgcolor = bg_color;
 
     user_prefs.pager_text_font =
         gnome_config_get_string("text_font=-misc-fixed-medium-r-normal-*-*-120-*-*-c-*-iso8859-1");
     user_prefs.pager_em_font = gnome_config_get_string("em_font=-misc-fixed-bold-r-normal-*-*-120-*-*-c-*-iso8859-1");
 
     tmp = gnome_config_get_string("text_textcolor=black");
-    if (gdk_color_parse(tmp, &text) == 0)
+    if (gdk_color_parse(tmp, &text_color) == 0)
     {
-        gdk_color_parse("black", &text);
+        gdk_color_parse("black", &text_color);
     }
     g_free(tmp);
-    user_prefs.pager_text_textcolor = text;
+    user_prefs.pager_text_textcolor = text_color;
 
     tmp = gnome_config_get_string("text_bgcolor=white");
-    if (gdk_color_parse(tmp, &bg) == 0)
+    if (gdk_color_parse(tmp, &bg_color) == 0)
     {
-        gdk_color_parse("white", &bg);
+        gdk_color_parse("white", &bg_color);
     }
     g_free(tmp);
-    user_prefs.pager_text_bgcolor = bg;
+    user_prefs.pager_text_bgcolor = bg_color;
 
     gnome_config_pop_prefix();
 }
@@ -181,12 +191,17 @@ void R_gnome_prefs_save(void)
 
     gnome_config_set_string("font", user_prefs.console_font);
 
-    color = user_prefs.console_textcolor;
+    color = user_prefs.console_input_color;
     tmp = g_strdup_printf("rgb:%04x/%04x/%04x", color.red, color.green, color.blue);
     gnome_config_set_string("textcolor", tmp);
     g_free(tmp);
 
-    color = user_prefs.console_bgcolor;
+    color = user_prefs.console_output_color;
+    tmp = g_strdup_printf("rgb:%04x/%04x/%04x", color.red, color.green, color.blue);
+    gnome_config_set_string("outputcolor", tmp);
+    g_free(tmp);
+
+    color = user_prefs.console_bg_color;
     tmp = g_strdup_printf("rgb:%04x/%04x/%04x", color.red, color.green, color.blue);
     gnome_config_set_string("bgcolor", tmp);
     g_free(tmp);
@@ -259,14 +274,19 @@ gchar *prefs_get_console_font(void)
     return user_prefs.console_font;
 }
 
-GdkColor prefs_get_console_textcolor(void)
+const GdkColor *prefs_get_console_textcolor(void)
 {
-    return user_prefs.console_textcolor;
+    return &user_prefs.console_input_color;
 }
 
-GdkColor prefs_get_console_bgcolor(void)
+const GdkColor *prefs_get_console_outputcolor(void)
 {
-    return user_prefs.console_bgcolor;
+    return &user_prefs.console_output_color;
+}
+
+const GdkColor *prefs_get_console_bgcolor(void)
+{
+    return &user_prefs.console_bg_color;
 }
 
 gchar *prefs_get_pager_title_font(void)
@@ -335,188 +355,188 @@ static void color_picker_changed_cb(GtkWidget *widget, guint r, guint g, guint b
     gnome_property_box_changed(GNOME_PROPERTY_BOX(user_data));
 }
 
+static void _set_font(GtkWidget *font_picker, gchar *font_name, GtkWidget *prefs_dialog)
+{
+    /*
+       Sets the initial value of font_picker to font and sets up the
+       callback for when font_picker is changed
+    */
+
+    gnome_font_picker_set_font_name(GNOME_FONT_PICKER(font_picker), font_name);
+    gtk_signal_connect(GTK_OBJECT(font_picker), "font-set", font_picker_changed_cb, prefs_dialog);
+}
+
+static void _set_color(GtkWidget *color_picker, GdkColor *color, GtkWidget *prefs_dialog)
+{
+    /*
+       Sets the initial value of color_picker to color and sets up the
+       callback for when color_picker is changed
+    */
+    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(color_picker), color->red, color->green, color->blue, 0);
+    gtk_signal_connect(GTK_OBJECT(color_picker), "color-set", color_picker_changed_cb, prefs_dialog);
+}
+
 static void console_page_init(GtkWidget *prefs_dialog, GladeXML *prefs_xml)
 {
-    GtkWidget *console_font, *console_text_color, *console_bg_color;
+    GtkWidget *font_picker, *color_picker;
 
-    console_font = glade_xml_get_widget(prefs_xml, "prefs_console_font");
-    console_text_color = glade_xml_get_widget(prefs_xml, "prefs_console_text_color");
-    console_bg_color = glade_xml_get_widget(prefs_xml, "prefs_console_bg_color");
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_console_font");
+    _set_font(font_picker, user_prefs.console_font, prefs_dialog);
 
-    gnome_font_picker_set_font_name(GNOME_FONT_PICKER(console_font), user_prefs.console_font);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(console_text_color), user_prefs.console_textcolor.red,
-                               user_prefs.console_textcolor.green, user_prefs.console_textcolor.blue, 0);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(console_bg_color), user_prefs.console_bgcolor.red,
-                               user_prefs.console_bgcolor.green, user_prefs.console_bgcolor.blue, 0);
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_input_color");
+    _set_color(color_picker, &user_prefs.console_input_color, prefs_dialog);
 
-    gtk_signal_connect(GTK_OBJECT(console_font), "font-set", font_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(console_text_color), "color-set", color_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(console_bg_color), "color-set", color_picker_changed_cb, prefs_dialog);
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_output_color");
+    _set_color(color_picker, &user_prefs.console_output_color, prefs_dialog);
+
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_bg_color");
+    _set_color(color_picker, &user_prefs.console_bg_color, prefs_dialog);
+}
+
+static gboolean _update_color(GtkWidget *color_picker, GdkColor *color)
+{
+    /*
+       Sets color to the value of color_picker.
+       Returns TRUE if color is changed from its previous value
+    */
+    gushort r, g, b, a;
+
+    g_return_val_if_fail(color_picker, FALSE);
+    g_return_val_if_fail(color, FALSE);
+    g_return_val_if_fail(GNOME_IS_COLOR_PICKER(color_picker), FALSE);
+
+    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(color_picker), &r, &g, &b, &a);
+    if ((color->red != r) || (color->green != g) || (color->blue != b))
+    {
+        color->red = r;
+        color->green = g;
+        color->blue = b;
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+static gboolean _update_font(GtkWidget *font_picker, gchar **font_name_ptr)
+{
+    /*
+       Sets the string pointed to by font_name_ptr to the name
+       of the font selected by font_picker.  Returns TRUE if
+       the value of the string is changed.
+    */
+    gchar *new_font_name;
+
+    new_font_name = gnome_font_picker_get_font_name(GNOME_FONT_PICKER(font_picker));
+
+    if (strcmp(*font_name_ptr, new_font_name))
+    {
+        g_free(*font_name_ptr);
+        *font_name_ptr = g_strdup(new_font_name);
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 
 static void console_page_apply(GladeXML *prefs_xml)
 {
-    GtkWidget *console_font, *console_text_color, *console_bg_color;
-    gchar *font_name;
-    gushort r, g, b, a;
-    gboolean change;
+    GtkWidget *font_picker, *color_picker;
+    gboolean changed = FALSE;
 
-    change = FALSE;
-
-    console_font = glade_xml_get_widget(prefs_xml, "prefs_console_font");
-    console_text_color = glade_xml_get_widget(prefs_xml, "prefs_console_text_color");
-    console_bg_color = glade_xml_get_widget(prefs_xml, "prefs_console_bg_color");
-
-    font_name = gnome_font_picker_get_font_name(GNOME_FONT_PICKER(console_font));
-    if (strcmp(user_prefs.console_font, font_name))
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_console_font");
+    if (_update_font(font_picker, &(user_prefs.console_font)))
     {
-        g_free(user_prefs.console_font);
-        user_prefs.console_font = g_strdup(font_name);
-        change = TRUE;
+        changed = TRUE;
     }
 
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(console_text_color), &r, &g, &b, &a);
-    if ((user_prefs.console_textcolor.red != r) || (user_prefs.console_textcolor.green != g) ||
-        (user_prefs.console_textcolor.blue != b))
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_output_color");
+    if (_update_color(color_picker, &(user_prefs.console_output_color)))
     {
-        user_prefs.console_textcolor.red = r;
-        user_prefs.console_textcolor.green = g;
-        user_prefs.console_textcolor.blue = b;
-        change = TRUE;
+        changed = TRUE;
     }
 
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(console_bg_color), &r, &g, &b, &a);
-    if ((user_prefs.console_bgcolor.red != r) || (user_prefs.console_bgcolor.green != g) ||
-        (user_prefs.console_bgcolor.blue != b))
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_bg_color");
+    if (_update_color(color_picker, &(user_prefs.console_bg_color)))
     {
-        user_prefs.console_bgcolor.red = r;
-        user_prefs.console_bgcolor.green = g;
-        user_prefs.console_bgcolor.blue = b;
-        change = TRUE;
+        changed = TRUE;
     }
 
-    if (change == TRUE)
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_console_input_color");
+    if (_update_color(color_picker, &(user_prefs.console_input_color)))
     {
-        terminal_set_style();
+        changed = TRUE;
+    }
+
+    if (changed)
+    {
+        gtk_object_set(GTK_OBJECT(R_gtk_terminal_text), "input_color_gdk", &user_prefs.console_input_color,
+                       "bg_color_gdk", &user_prefs.console_bg_color, "output_color_gdk",
+                       &user_prefs.console_output_color, "font", user_prefs.console_font, NULL);
     }
 }
 
 static void pager_page_init(GtkWidget *prefs_dialog, GladeXML *prefs_xml)
 {
-    GtkWidget *title_font, *title_text_color, *title_bg_color;
-    GtkWidget *body_font, *body_emphasis_font, *body_text_color, *body_bg_color;
+    GtkWidget *font_picker, *color_picker;
 
-    title_font = glade_xml_get_widget(prefs_xml, "prefs_title_font");
-    title_text_color = glade_xml_get_widget(prefs_xml, "prefs_title_text_color");
-    title_bg_color = glade_xml_get_widget(prefs_xml, "prefs_title_bg_color");
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_title_font");
+    _set_font(font_picker, user_prefs.pager_title_font, prefs_dialog);
 
-    body_font = glade_xml_get_widget(prefs_xml, "prefs_body_font");
-    body_emphasis_font = glade_xml_get_widget(prefs_xml, "prefs_body_emphasis_font");
-    body_text_color = glade_xml_get_widget(prefs_xml, "prefs_body_text_color");
-    body_bg_color = glade_xml_get_widget(prefs_xml, "prefs_body_bg_color");
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_title_text_color");
+    _set_color(color_picker, &user_prefs.pager_title_textcolor, prefs_dialog);
 
-    gnome_font_picker_set_font_name(GNOME_FONT_PICKER(title_font), user_prefs.pager_title_font);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(title_text_color), user_prefs.pager_title_textcolor.red,
-                               user_prefs.pager_title_textcolor.green, user_prefs.pager_title_textcolor.blue, 0);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(title_bg_color), user_prefs.pager_title_bgcolor.red,
-                               user_prefs.pager_title_bgcolor.green, user_prefs.pager_title_bgcolor.blue, 0);
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_title_bg_color");
+    _set_color(color_picker, &user_prefs.pager_title_bgcolor, prefs_dialog);
 
-    gnome_font_picker_set_font_name(GNOME_FONT_PICKER(body_font), user_prefs.pager_text_font);
-    gnome_font_picker_set_font_name(GNOME_FONT_PICKER(body_emphasis_font), user_prefs.pager_em_font);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(body_text_color), user_prefs.pager_text_textcolor.red,
-                               user_prefs.pager_text_textcolor.green, user_prefs.pager_text_textcolor.blue, 0);
-    gnome_color_picker_set_i16(GNOME_COLOR_PICKER(body_bg_color), user_prefs.pager_text_bgcolor.red,
-                               user_prefs.pager_text_bgcolor.green, user_prefs.pager_text_bgcolor.blue, 0);
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_body_font");
+    _set_font(font_picker, user_prefs.pager_text_font, prefs_dialog);
 
-    gtk_signal_connect(GTK_OBJECT(title_font), "font-set", font_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(title_text_color), "color-set", color_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(title_bg_color), "color-set", color_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(body_font), "font-set", font_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(body_emphasis_font), "font-set", font_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(body_text_color), "color-set", color_picker_changed_cb, prefs_dialog);
-    gtk_signal_connect(GTK_OBJECT(body_bg_color), "color-set", color_picker_changed_cb, prefs_dialog);
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_body_emphasis_font");
+    _set_font(font_picker, user_prefs.pager_em_font, prefs_dialog);
+
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_body_text_color");
+    _set_color(color_picker, &user_prefs.pager_text_textcolor, prefs_dialog);
+
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_body_bg_color");
+    _set_color(color_picker, &user_prefs.pager_text_bgcolor, prefs_dialog);
 }
 
 static void pager_page_apply(GladeXML *prefs_xml)
 {
-    GtkWidget *title_font, *title_text_color, *title_bg_color;
-    GtkWidget *body_font, *body_emphasis_font, *body_text_color, *body_bg_color;
-    gchar *font_name;
-    gushort r, g, b, a;
-    gboolean change;
+    GtkWidget *font_picker, *color_picker;
+    gboolean change = FALSE;
 
-    change = FALSE;
-
-    title_font = glade_xml_get_widget(prefs_xml, "prefs_title_font");
-    title_text_color = glade_xml_get_widget(prefs_xml, "prefs_title_text_color");
-    title_bg_color = glade_xml_get_widget(prefs_xml, "prefs_title_bg_color");
-
-    body_font = glade_xml_get_widget(prefs_xml, "prefs_body_font");
-    body_emphasis_font = glade_xml_get_widget(prefs_xml, "prefs_body_emphasis_font");
-    body_text_color = glade_xml_get_widget(prefs_xml, "prefs_body_text_color");
-    body_bg_color = glade_xml_get_widget(prefs_xml, "prefs_body_bg_color");
-
-    font_name = gnome_font_picker_get_font_name(GNOME_FONT_PICKER(title_font));
-    if (strcmp(user_prefs.pager_title_font, font_name))
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_title_font");
+    if (_update_font(font_picker, &(user_prefs.pager_title_font)))
     {
-        g_free(user_prefs.pager_title_font);
-        user_prefs.pager_title_font = g_strdup(font_name);
         change = TRUE;
     }
 
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(title_text_color), &r, &g, &b, &a);
-    if ((user_prefs.pager_title_textcolor.red != r) || (user_prefs.pager_title_textcolor.green != g) ||
-        (user_prefs.pager_title_textcolor.blue != b))
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_title_text_color");
+    if (_update_color(color_picker, &(user_prefs.pager_title_textcolor)))
     {
-        user_prefs.pager_title_textcolor.red = r;
-        user_prefs.pager_title_textcolor.green = g;
-        user_prefs.pager_title_textcolor.blue = b;
         change = TRUE;
     }
 
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(title_bg_color), &r, &g, &b, &a);
-    if ((user_prefs.pager_title_bgcolor.red != r) || (user_prefs.pager_title_bgcolor.green != g) ||
-        (user_prefs.pager_title_bgcolor.blue != b))
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_title_bg_color");
+    if (_update_color(color_picker, &user_prefs.pager_title_bgcolor))
     {
-        user_prefs.pager_title_bgcolor.red = r;
-        user_prefs.pager_title_bgcolor.green = g;
-        user_prefs.pager_title_bgcolor.blue = b;
         change = TRUE;
     }
 
-    font_name = gnome_font_picker_get_font_name(GNOME_FONT_PICKER(body_font));
-    if (strcmp(user_prefs.pager_text_font, font_name))
+    font_picker = glade_xml_get_widget(prefs_xml, "prefs_body_font");
+    if (_update_font(font_picker, &user_prefs.pager_text_font))
     {
-        g_free(user_prefs.pager_text_font);
-        user_prefs.pager_text_font = g_strdup(font_name);
         change = TRUE;
     }
 
-    font_name = gnome_font_picker_get_font_name(GNOME_FONT_PICKER(body_emphasis_font));
-    if (strcmp(user_prefs.pager_em_font, font_name))
+    color_picker = glade_xml_get_widget(prefs_xml, "prefs_body_bg_color");
+    if (_update_color(color_picker, &user_prefs.pager_text_bgcolor))
     {
-        g_free(user_prefs.pager_em_font);
-        user_prefs.pager_em_font = g_strdup(font_name);
-        change = TRUE;
-    }
-
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(body_text_color), &r, &g, &b, &a);
-    if ((user_prefs.pager_text_textcolor.red != r) || (user_prefs.pager_text_textcolor.green != g) ||
-        (user_prefs.pager_text_textcolor.blue != b))
-    {
-        user_prefs.pager_text_textcolor.red = r;
-        user_prefs.pager_text_textcolor.green = g;
-        user_prefs.pager_text_textcolor.blue = b;
-        change = TRUE;
-    }
-
-    gnome_color_picker_get_i16(GNOME_COLOR_PICKER(body_bg_color), &r, &g, &b, &a);
-    if ((user_prefs.pager_text_bgcolor.red != r) || (user_prefs.pager_text_bgcolor.green != g) ||
-        (user_prefs.pager_text_bgcolor.blue != b))
-    {
-        user_prefs.pager_text_bgcolor.red = r;
-        user_prefs.pager_text_bgcolor.green = g;
-        user_prefs.pager_text_bgcolor.blue = b;
         change = TRUE;
     }
 
@@ -539,7 +559,7 @@ static void startup_page_init(GtkWidget *prefs_dialog, GladeXML *prefs_xml)
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(never_ws_radio), TRUE);
         break;
 
-    case SA_RESTORE:
+    case SA_RESTORE: /* Falling through */
     default:
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(always_ws_radio), TRUE);
         break;
@@ -557,9 +577,13 @@ static void startup_page_apply(GladeXML *prefs_xml)
     never_ws_radio = glade_xml_get_widget(prefs_xml, "prefs_never_restore_ws_radio");
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(always_ws_radio)))
+    {
         user_prefs.restoreact = SA_RESTORE;
+    }
     else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(never_ws_radio)))
+    {
         user_prefs.restoreact = SA_NORESTORE;
+    }
 }
 
 static void exit_page_init(GtkWidget *prefs_dialog, GladeXML *prefs_xml)
@@ -601,11 +625,17 @@ static void exit_page_apply(GladeXML *prefs_xml)
     never_ws_radio = glade_xml_get_widget(prefs_xml, "prefs_never_save_ws_radio");
 
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(prompt_ws_radio)))
+    {
         user_prefs.saveact = SA_SAVEASK;
+    }
     else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(always_ws_radio)))
+    {
         user_prefs.saveact = SA_SAVE;
+    }
     else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(never_ws_radio)))
+    {
         user_prefs.saveact = SA_NOSAVE;
+    }
 
     R_set_SaveAction(user_prefs.saveact);
 }
