@@ -521,7 +521,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
     while (a != R_NilValue && CDR(a) != R_NilValue)
     {
         n = TAG(CDR(a));
-        if (n != R_NilValue && pmatch(r, n, 0))
+        if (n != R_NilValue && pmatch(r, n, 1))
         {
             if ((v = asLogical(CADR(a))) != NA_INTEGER)
             {
@@ -529,7 +529,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
             }
             CDR(a) = CDDR(a);
         }
-        else if (n != R_NilValue && pmatch(u, n, 0))
+        else if (n != R_NilValue && pmatch(u, n, 1))
         {
             if ((v = asLogical(CADR(a))) != NA_INTEGER)
             {

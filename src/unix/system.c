@@ -112,7 +112,8 @@
 #endif
 
 static int UsingReadline = 1;
-static int DefaultSaveAction = 3;
+static int DefaultSaveAction = 0;
+static int DefaultRestoreAction = 1;
 
 /*--- I/O Support Code ---*/
 
@@ -294,6 +295,14 @@ int main(int ac, char **av)
             {
                 DefaultSaveAction = 2;
             }
+            if (!strcmp(*av, "-restore"))
+            {
+                DefaultRestoreAction = 1;
+            }
+            else if (!strcmp(*av, "-norestore"))
+            {
+                DefaultRestoreAction = 0;
+            }
             else if (!strcmp(*av, "-noreadline"))
             {
                 UsingReadline = 0;
@@ -357,6 +366,9 @@ int main(int ac, char **av)
     R_Consolefile = stdout;
     R_Outputfile = stdout;
     R_Sinkfile = NULL;
+
+    if (!R_Interactive && DefaultSaveAction == 0)
+        R_Suicide("you must specify -save or -nosave");
 
 #ifdef __FreeBSD__
     fpsetmask(0);
@@ -467,14 +479,17 @@ void R_SaveGlobalEnv(void)
 void R_RestoreGlobalEnv(void)
 {
     FILE *fp;
-    if (!(fp = R_fopen(".RData", "r")))
+    if (DefaultRestoreAction)
     {
-        /* warning here perhaps */
-        return;
+        if (!(fp = R_fopen(".RData", "r")))
+        {
+            /* warning here perhaps */
+            return;
+        }
+        if (!R_Quiet)
+            Rprintf("[Previously saved workspace restored]\n\n");
+        FRAME(R_GlobalEnv) = R_LoadFromFile(fp);
     }
-    if (!R_Quiet)
-        Rprintf("[Previously saved workspace restored]\n\n");
-    FRAME(R_GlobalEnv) = R_LoadFromFile(fp);
 }
 
 /*--- Platform Dependent Functions ---*/
