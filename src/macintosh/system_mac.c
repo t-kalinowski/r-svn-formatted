@@ -2149,7 +2149,7 @@ cleanup:
     if (err != noErr)
         R_Suicide("Can't mkdir R_TempDir");
     len = strlen(tm);
-    p = (char *)malloc(len);
+    p = (char *)malloc(len + 1);
     if (!p)
         R_Suicide("Can't allocate R_TempDir");
     else
