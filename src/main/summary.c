@@ -171,7 +171,8 @@ static void rmin(double *x, int n, double *value)
         { /* Na(N) */
             if (!narm)
             {
-                s = NA_REAL; /* was s += x[i];*/
+                if (s != NA_REAL)
+                    s = x[i]; /* was s += x[i];*/
                 if (!updated)
                     updated = 1;
             }
@@ -247,7 +248,8 @@ static void rmax(double *x, int n, double *value)
         { /* Na(N) */
             if (!narm)
             {
-                s = NA_REAL; /* was s += x[i];*/
+                if (s != NA_REAL)
+                    s = x[i]; /* was s += x[i];*/
                 if (!updated)
                     updated = 1;
             }
