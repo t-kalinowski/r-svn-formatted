@@ -71,7 +71,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, S
     *trL = 0;
 
     loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, setLf);
-    v[1] = *cell;
+    v[1] = *cell; /* = v(2) in Fortran (!) */
     if (!strcmp(*surf_stat, "interpolate/none"))
     {
         F77_CALL(lowesb)(x, y, robust, &zero, &zero, iv, &liv, &lv, v);
