@@ -306,11 +306,11 @@ static XFontStruct *RLoadFont(int face, int size)
             sprintf(buf, symbolname, 10 * size);
         else
             sprintf(buf, fontname, weight[(face - 1) % 2], slant[((face - 1) / 2) % 2], 10 * size);
-#ifdef DEBUGGING
+#ifdef DEBUG_X11
         Rprintf("loading:\n%s\n", buf);
 #endif
         tmp = XLoadQueryFont(display, buf);
-#ifdef DEBUGGING
+#ifdef DEBUG_X11
         if (tmp)
             Rprintf("success\n");
         else
