@@ -1310,10 +1310,10 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (!isNewList(dots))
         errorcall(call, "invalid extra variables");
-    if (!isString(dotnames))
-        errorcall(call, "invalid extra variable names");
     if ((ndots = length(dots)) != length(dotnames))
         errorcall(call, "number of variables != number of variable names");
+    if (ndots && !isString(dotnames))
+        errorcall(call, "invalid extra variable names");
 
     /*  check for NULL extra arguments -- moved from interpreted code*/
 
@@ -1329,18 +1329,16 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(data = allocVector(VECSXP, nvars + nactualdots));
     PROTECT(names = allocVector(STRSXP, nvars + nactualdots));
 
-    tmp = getAttrib(variables, R_NamesSymbol);
     for (i = 0; i < nvars; i++)
     {
         SET_VECTOR_ELT(data, i, VECTOR_ELT(variables, i));
         SET_STRING_ELT(names, i, STRING_ELT(varnames, i));
     }
-    tmp = getAttrib(dots, R_NamesSymbol);
     for (i = 0, j = 0; i < ndots; i++)
     {
         if (VECTOR_ELT(dots, i) == R_NilValue)
             continue;
-        sprintf(buf, "(%s)", CHAR(STRING_ELT(tmp, i)));
+        sprintf(buf, "(%s)", CHAR(STRING_ELT(dotnames, i)));
         SET_VECTOR_ELT(data, nvars + j, VECTOR_ELT(dots, i));
         SET_STRING_ELT(names, nvars + j, mkChar(buf));
         j++;
@@ -1442,14 +1440,19 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_tilde(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP class;
-    PROTECT(call = duplicate(call));
-    PROTECT(class = allocVector(STRSXP, 1));
-    SET_STRING_ELT(class, 0, mkChar("formula"));
-    setAttrib(call, R_ClassSymbol, class);
-    setAttrib(call, R_DotEnvSymbol, rho);
-    UNPROTECT(2);
-    return call;
+    if (isObject(call))
+        return duplicate(call);
+    else
+    {
+        SEXP class;
+        PROTECT(call = duplicate(call));
+        PROTECT(class = allocVector(STRSXP, 1));
+        SET_STRING_ELT(class, 0, mkChar("formula"));
+        setAttrib(call, R_ClassSymbol, class);
+        setAttrib(call, R_DotEnvSymbol, rho);
+        UNPROTECT(2);
+        return call;
+    }
 }
 
 /* The code below is related to model expansion */

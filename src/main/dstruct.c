@@ -115,7 +115,7 @@ static int ddVal(SEXP name)
         if (*endp != '\0')
             return 0;
         else
-            return rval;
+            return 1;
     }
     return 0;
 }

@@ -49,7 +49,7 @@ static int ParseBrowser(SEXP, SEXP);
 
 static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 {
-    int status;
+    int status, count = 0;
 
     for (;;)
     {
@@ -63,6 +63,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
         case PARSE_OK:
             R_Visible = 0;
             R_EvalDepth = 0;
+            count++;
             PROTECT(R_CurrentExpr);
             R_CurrentExpr = eval(R_CurrentExpr, rho);
             SET_SYMVALUE(R_LastvalueSymbol, R_CurrentExpr);
@@ -73,7 +74,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
                 PrintWarnings();
             break;
         case PARSE_ERROR:
-            error("syntax error");
+            error("syntax error: evaluating expression %d", count);
             break;
         case PARSE_EOF:
             return;
