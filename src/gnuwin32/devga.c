@@ -410,7 +410,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     if (PSDeviceDriver((DevDesc *)ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
-                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, "", "R Graphics Output"))
+                       ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, "", "R Graphics Output", R_NilValue))
         /* horizontal=F, onefile=F, pagecentre=T, print.it=F */
         PrivateCopyDevice(dd, ndd, "postscript");
 }
