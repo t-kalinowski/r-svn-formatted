@@ -7,6 +7,12 @@
 #define EINTR 15
 #endif
 
+#ifdef _AIX
+#warning __undefining XOPEN_SOURCE_EXTENDED -- for sock.c only --
+#undef _XOPEN_SOURCE_EXTENDED
+/* since netinet/{tcp.h|in.h} ..?.. are broken (in some AIX 4.2) */
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
