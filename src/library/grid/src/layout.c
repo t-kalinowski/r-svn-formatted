@@ -226,9 +226,20 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
             if (relativeWidths[i])
                 if (colRespected(i, layout))
                 {
+                    SEXP width;
+                    /*
+                     * Special case of respect, but sumHeight = 0.
+                     * Action is to allocate widths as if unrespected.
+                     * Ok to test == 0 because will only be 0 if
+                     * all relative heights are actually exactly 0.
+                     */
+                    if (sumHeight == 0)
+                    {
+                        denom = sumWidth;
+                        mult = tempWidthCM;
+                    }
                     /* Build a unit SEXP with a single value and no data
                      */
-                    SEXP width;
                     PROTECT(width = unit(pureNullUnitValue(widths, i) / denom * mult, L_CM));
                     npcWidths[i] = transformWidth(width, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
                                    (tempWidthCM / 2.54);
@@ -243,6 +254,17 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
                 if (rowRespected(i, layout))
                 {
                     SEXP height;
+                    /*
+                     * Special case of respect, but sumWidth = 0.
+                     * Action is to allocate widths as if unrespected.
+                     * Ok to test == 0 because will only be 0 if
+                     * all relative heights are actually exactly 0.
+                     */
+                    if (sumWidth == 0)
+                    {
+                        denom = sumHeight;
+                        mult = tempHeightCM;
+                    }
                     PROTECT(height = unit(pureNullUnitValue(heights, i) / denom * mult, L_CM));
                     npcHeights[i] = transformHeight(height, 0, parentContext, parentgc, tempWidthCM, tempHeightCM, dd) /
                                     (tempHeightCM / 2.54);
