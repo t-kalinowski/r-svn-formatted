@@ -545,8 +545,6 @@ void InitAquaIO(void)
 {
     StdoutFName = R_tmpnam("RStdout", R_TempDir);
     StderrFName = R_tmpnam("RStderr", R_TempDir);
-    OpenStdoutPipe();
-    OpenStderrPipe();
 }
 
 void Raqua_StartConsole(Rboolean OpenConsole)
