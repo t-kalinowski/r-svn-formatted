@@ -325,7 +325,7 @@ int Rf_initialize_R(int ac, char **av)
     {
         value = R_Decode2Long(p, &ierr);
         if (ierr != 0 || value < 0)
-            REprintf("WARNING: invalid R_HISTSIZE ignored;");
+            R_ShowMessage("WARNING: invalid R_HISTSIZE ignored;");
         else
             R_HistorySize = value;
     }
