@@ -862,6 +862,9 @@ SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
     SETCAR(a, v = allocVector(INTSXP, k));
     if (k > 0)
     {
+        for (l = response, k = 0; l < nvar; l++)
+            if (!strncmp(CHAR(STRING_ELT(varnames, l)), "offset(", 7))
+                INTEGER(v)[k++] = l + 1;
         call = formula; /* call is to be the previous value */
         for (l = response, k = 0; l < length(formula) + response; l++)
         {
@@ -878,7 +881,6 @@ SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (have_offset)
             {
-                INTEGER(v)[k++] = l + 1;
                 if (l == response)
                     call = formula = CDR(formula);
                 else
