@@ -395,8 +395,12 @@ static void Quartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
 
 static void Quartz_SetFill(int fill, double gamma, NewDevDesc *dd);
 static void Quartz_SetStroke(int color, double gamma, NewDevDesc *dd);
+static void Quartz_SetLineProperties(R_GE_gcontext *gc, NewDevDesc *dd);
 static void Quartz_SetLineDash(int lty, double lwd, NewDevDesc *dd);
 static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd);
+static void Quartz_SetLineEnd(R_GE_lineend lend, NewDevDesc *dd);
+static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd);
+static void Quartz_SetLineMitre(double lmitre, NewDevDesc *dd);
 static void Quartz_SetFont(int style, double cex, double ps, NewDevDesc *dd);
 static CGContextRef GetContext(QuartzDesc *xd);
 
@@ -1079,8 +1083,7 @@ static void Quartz_Rect(double x0, double y0, double x1, double y1, R_GE_gcontex
 
     CGContextSaveGState(GetContext(xd));
 
-    Quartz_SetLineWidth(gc->lwd, dd);
-    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineProperties(gc, dd);
 
     Quartz_SetFill(gc->fill, gc->gamma, dd);
     CGContextFillRect(GetContext(xd), rect);
@@ -1099,8 +1102,7 @@ static void Quartz_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDe
 
     CGContextBeginPath(GetContext(xd));
 
-    Quartz_SetLineWidth(gc->lwd, dd);
-    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineProperties(gc, dd);
 
     CGContextAddArc(GetContext(xd), (float)x, (float)y, (float)r, 3.141592654 * 2.0, 0.0, 0);
     Quartz_SetFill(gc->fill, gc->gamma, dd);
@@ -1128,8 +1130,7 @@ static void Quartz_Line(double x1, double y1, double x2, double y2, R_GE_gcontex
     lines[1].x = (float)x2;
     lines[1].y = (float)y2;
 
-    Quartz_SetLineWidth(gc->lwd, dd);
-    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineProperties(gc, dd);
 
     CGContextAddLines(GetContext(xd), &lines[0], 2);
 
@@ -1160,8 +1161,7 @@ static void Quartz_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewD
 
     CGContextSaveGState(GetContext(xd));
 
-    Quartz_SetLineWidth(gc->lwd, dd);
-    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineProperties(gc, dd);
 
     CGContextBeginPath(GetContext(xd));
     CGContextAddLines(GetContext(xd), &lines[0], n);
@@ -1169,6 +1169,15 @@ static void Quartz_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewD
     CGContextStrokePath(GetContext(xd));
 
     CGContextRestoreGState(GetContext(xd));
+}
+
+static void Quartz_SetLineProperties(R_GE_gcontext *gc, NewDevDesc *dd)
+{
+    Quartz_SetLineWidth(gc->lwd, dd);
+    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineEnd(gc->lend, dd);
+    Quartz_SetLineJoin(gc->ljoin, dd);
+    Quartz_SetLineMitre(gc->lmitre, dd);
 }
 
 static void Quartz_SetLineDash(int newlty, double lwd, NewDevDesc *dd)
@@ -1199,6 +1208,56 @@ static void Quartz_SetLineWidth(double lwd, NewDevDesc *dd)
     CGContextSetLineWidth(GetContext(xd), lwd);
 }
 
+static void Quartz_SetLineEnd(R_GE_lineend lend, NewDevDesc *dd)
+{
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    CGLineCap linecap;
+    switch (lend)
+    {
+    case GE_ROUND_CAP:
+        linecap = kCGLineCapRound;
+        break;
+    case GE_BUTT_CAP:
+        linecap = kCGLineCapButt;
+        break;
+    case GE_SQUARE_CAP:
+        linecap = kCGLineCapSquare;
+        break;
+    default:
+        error("Invalid line end");
+    }
+    CGContextSetLineCap(GetContext(xd), linecap);
+}
+
+static void Quartz_SetLineJoin(R_GE_linejoin ljoin, NewDevDesc *dd)
+{
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    CGLineJoin linejoin;
+    switch (ljoin)
+    {
+    case GE_ROUND_JOIN:
+        linecap = kCGLineJoinRound;
+        break;
+    case GE_MITRE_JOIN:
+        linecap = kCGLineJoinMiter;
+        break;
+    case GE_BEVEL_JOIN:
+        linecap = kCGLineJoinBevel;
+        break;
+    default:
+        error("Invalid line join");
+    }
+    CGContextSetLineCap(GetContext(xd), linejoin);
+}
+
+static void Quartz_SetLineMitre(R_GE_linemitre lmitre, NewDevDesc *dd)
+{
+    QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+    if (lmitre < 1)
+        error("Invalid line mitre");
+    CGContextSetMiterLimit(GetContext(xd), lmitre);
+}
+
 static void Quartz_SetStroke(int color, double gamma, NewDevDesc *dd)
 {
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
@@ -1224,8 +1283,7 @@ static void Quartz_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
     CGContextSaveGState(GetContext(xd));
 
     CGContextBeginPath(GetContext(xd));
-    Quartz_SetLineWidth(gc->lwd, dd);
-    Quartz_SetLineDash(gc->lty, gc->lwd, dd);
+    Quartz_SetLineProperties(gc, dd);
 
     lines = (CGPoint *)malloc(sizeof(CGPoint) * (n + 1));
 
