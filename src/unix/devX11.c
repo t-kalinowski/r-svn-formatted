@@ -415,6 +415,7 @@ static struct
 } Colors[256];
 
 static int NColors;
+static int LimitedColors;
 
 static void SetColor(int color, DevDesc *dd)
 {
@@ -423,12 +424,15 @@ static void SetColor(int color, DevDesc *dd)
 
     if (color != xd->col)
     {
-        for (i = 0; i < NColors; i++)
+        if (LimitedColors)
         {
-            if (color == Colors[i].rcolor)
+            for (i = 0; i < NColors; i++)
             {
-                xd->fgcolor.pixel = Colors[i].pixel;
-                goto found;
+                if (color == Colors[i].rcolor)
+                {
+                    xd->fgcolor.pixel = Colors[i].pixel;
+                    goto found;
+                }
             }
         }
 
@@ -457,11 +461,14 @@ static void SetColor(int color, DevDesc *dd)
         xd->fgcolor.green = g * 257;
         xd->fgcolor.blue = b * 257;
 
-        if (NColors == 255 || XAllocColor(display, cmap, &(xd->fgcolor)) == 0)
-            error("color allocation error\n");
-        Colors[NColors].rcolor = color;
-        Colors[NColors].pixel = xd->fgcolor.pixel;
-        NColors++;
+        if (LimitedColors)
+        {
+            if (NColors == 255 || XAllocColor(display, cmap, &(xd->fgcolor)) == 0)
+                error("color allocation error\n");
+            Colors[NColors].rcolor = color;
+            Colors[NColors].pixel = xd->fgcolor.pixel;
+            NColors++;
+        }
     found:
         blackpixel = xd->fgcolor.pixel;
         xd->col = color;
@@ -472,9 +479,12 @@ static void SetColor(int color, DevDesc *dd)
 static void FreeColors()
 {
     int i;
-    for (i = 0; i < NColors; i++)
-        XFreeColors(display, cmap, &(Colors[i].pixel), 1, 0);
-    NColors = 0;
+    if (LimitedColors)
+    {
+        for (i = 0; i < NColors; i++)
+            XFreeColors(display, cmap, &(Colors[i].pixel), 1, 0);
+        NColors = 0;
+    }
 }
 
 /*
@@ -594,12 +604,13 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
         screen = XDefaultScreen(display);
         rootWindow = XDefaultRootWindow(display);
         depth = XDefaultDepth(display, screen);
-
+        if (DefaultVisual(display, screen)->class == TrueColor)
+            LimitedColors = 0;
+        else
+            LimitedColors = 1;
         cmap = DefaultColormap(display, screen);
         NColors = 0;
-
         devPtrContext = XUniqueContext();
-
         displayOpen = 1;
     }
 
