@@ -317,7 +317,7 @@ static Rboolean unz_open(Rconnection con)
     else
         con->text = TRUE;
     con->save = -1000;
-    return FALSE;
+    return TRUE;
 }
 
 static void unz_close(Rconnection con)
