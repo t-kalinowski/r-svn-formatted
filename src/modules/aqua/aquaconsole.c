@@ -860,7 +860,7 @@ void SetUpRAquaMenu(void)
         SetMenuItemCommandID(HelpMenu, RHelpMenuItem, kRHelpStart);
         SetMenuItemCommandKey(HelpMenu, RHelpMenuItem, false, '?');
 
-        CopyCStringToPascal("R with aqua FAQ", menuStr);
+        CopyCStringToPascal("R Mac OS X FAQ", menuStr);
         AppendMenu(HelpMenu, menuStr);
 
         RAquaFAQMenuItem = CountMenuItems(HelpMenu);
