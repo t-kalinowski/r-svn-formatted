@@ -83,7 +83,8 @@ enum DeviceKinds
     PRINTER,
     METAFILE,
     PNG,
-    JPEG
+    JPEG,
+    BMP
 };
 
 typedef struct
@@ -113,7 +114,7 @@ typedef struct
     button stoploc;
     menubar mbar, mbarloc;
     menu msubsave;
-    menuitem mpng, mjpeg50, mjpeg75, mjpeg100;
+    menuitem mpng, mbmp, mjpeg50, mjpeg75, mjpeg100;
     menuitem mps, mwm, mclpbm, mclpwm, mprint, mclose;
     menuitem mrec, madd, mreplace, mprev, mnext, mclear, msvar, mgvar;
     int recording, replaying, needsave;
@@ -199,6 +200,7 @@ static int Load_Rbitmap_Dll();
 void Unload_Rbitmap_Dll();
 static void SaveAsPng(DevDesc *dd, char *fn);
 static void SaveAsJpeg(DevDesc *dd, int quality, char *fn);
+static void SaveAsBmp(DevDesc *dd, char *fn);
 static void SaveAsBitmap(DevDesc *dd);
 void ProcessEvents();
 
@@ -421,7 +423,7 @@ static void SetFont(int face, int size, double rot, DevDesc *dd)
 
     if (face < 1 || face > fontnum)
         face = 1;
-    size = MulDiv(12, xd->wanteddpi, xd->truedpi);
+    size = MulDiv(size, xd->wanteddpi, xd->truedpi);
     if (size < SMALLEST)
         size = SMALLEST;
     if (size > LARGEST)
@@ -612,7 +614,12 @@ static void menufilebitmap(control m)
     if (m == xd->mpng)
     {
         setuserfilter("Png files (*.png)\0*.png\0\0");
-        fn = askfilesave("Png file", "");
+        fn = askfilesave("Portable network graphics file", "");
+    }
+    else if (m == xd->mbmp)
+    {
+        setuserfilter("Windows bitmap files (*.bmp)\0*.bmp\0\0");
+        fn = askfilesave("Windows bitmap file", "");
     }
     else
     {
@@ -626,6 +633,8 @@ static void menufilebitmap(control m)
     show(xd->gawin);
     if (m == xd->mpng)
         SaveAsPng(dd, fn);
+    else if (m == xd->mbmp)
+        SaveAsBmp(dd, fn);
     else if (m == xd->mjpeg50)
         SaveAsJpeg(dd, 50, fn);
     else if (m == xd->mjpeg75)
@@ -1010,12 +1019,14 @@ static void mbarf(control m)
         enable(xd->madd);
         enable(xd->mprint);
         enable(xd->mpng);
+        enable(xd->mbmp);
         enable(xd->mjpeg50);
         enable(xd->mjpeg75);
         enable(xd->mjpeg100);
         enable(xd->mwm);
         enable(xd->mps);
         enable(xd->mclpwm);
+        enable(xd->mclpbm);
     }
     else
     {
@@ -1023,12 +1034,14 @@ static void mbarf(control m)
         disable(xd->mprint);
         disable(xd->msubsave);
         disable(xd->mpng);
+        disable(xd->mbmp);
         disable(xd->mjpeg50);
         disable(xd->mjpeg75);
         disable(xd->mjpeg100);
         disable(xd->mwm);
         disable(xd->mps);
         disable(xd->mclpwm);
+        disable(xd->mclpbm);
     }
     draw(xd->mbar);
 }
@@ -1144,6 +1157,7 @@ static int setupScreenDevice(DevDesc *dd, x11Desc *xd, int w, int h)
     MCHECK(xd->mwm = newmenuitem("Metafile", 0, menuwm));
     MCHECK(xd->mps = newmenuitem("Postscript", 0, menups));
     MCHECK(xd->mpng = newmenuitem("Png", 0, menufilebitmap));
+    MCHECK(xd->mbmp = newmenuitem("Bmp", 0, menufilebitmap));
     MCHECK(newsubmenu(xd->msubsave, "Jpeg"));
     MCHECK(xd->mjpeg50 = newmenuitem("50% quality", 0, menufilebitmap));
     MCHECK(xd->mjpeg75 = newmenuitem("75% quality", 0, menufilebitmap));
@@ -1192,6 +1206,7 @@ static int setupScreenDevice(DevDesc *dd, x11Desc *xd, int w, int h)
     addto(xd->gawin);
     setdata(xd->mbar, (void *)dd);
     setdata(xd->mpng, (void *)dd);
+    setdata(xd->mbmp, (void *)dd);
     setdata(xd->mjpeg50, (void *)dd);
     setdata(xd->mjpeg75, (void *)dd);
     setdata(xd->mjpeg100, (void *)dd);
@@ -1248,9 +1263,9 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
         if (!xd->gawin)
             return 0;
     }
-    else if (!strncmp(dsp, "png:", 4))
+    else if (!strncmp(dsp, "png:", 4) || !strncmp(dsp, "bmp:", 4))
     {
-        xd->kind = PNG;
+        xd->kind = (dsp[0] == 'p') ? PNG : BMP;
         if (!Load_Rbitmap_Dll())
         {
             warning("Impossible to load Rbitmap.dll");
@@ -1283,6 +1298,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
         }
         *p = '\0';
         xd->quality = atoi(&dsp[5]);
+        *p = ':';
         if (((xd->gawin = newbitmap(w, h, 256)) == NULL) || ((xd->fp = fopen(p + 1, "wb")) == NULL))
         {
             if (xd->gawin != NULL)
@@ -1325,7 +1341,7 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
     xd->windowHeight = rr.height;
     xd->clip = rr;
     xd->truedpi = devicepixelsy(xd->gawin);
-    if ((xd->kind == PNG) || (xd->kind == JPEG))
+    if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
         xd->wanteddpi = 72;
     else
         xd->wanteddpi = xd->truedpi;
@@ -1446,6 +1462,8 @@ static void X11_NewPage(DevDesc *dd)
         error("A png file can store only one figure.");
     if ((xd->kind == JPEG) && xd->needsave)
         error("A jpeg file can store only one figure.");
+    if ((xd->kind == BMP) && xd->needsave)
+        error("A bmp file can store only one figure.");
     if (xd->kind == SCREEN)
     {
         if (xd->recording && xd->needsave)
@@ -1486,7 +1504,7 @@ static void X11_Close(DevDesc *dd)
         hide(xd->gawin);
         del(xd->bm);
     }
-    else if ((xd->kind == PNG) || (xd->kind == JPEG))
+    else if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
     {
         SaveAsBitmap(dd);
     }
@@ -2038,6 +2056,10 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         SaveAsPng(dd, fn);
     }
+    else if (!strcmp(tp, "bmp"))
+    {
+        SaveAsBmp(dd, fn);
+    }
     else if (!strcmp(tp, "jpeg") || !strcmp(tp, "jpg"))
     {
         /*Default quality suggested in libjpeg*/
@@ -2060,7 +2082,7 @@ SEXP do_saveDevga(SEXP call, SEXP op, SEXP args, SEXP env)
 /* Rbitmap  */
 #define BITMAP_DLL_NAME "\\BIN\\RBITMAP.DLL\0"
 typedef int (*R_SaveAsBitmap)();
-static R_SaveAsBitmap R_SaveAsPng, R_SaveAsJpeg;
+static R_SaveAsBitmap R_SaveAsPng, R_SaveAsJpeg, R_SaveAsBmp;
 static int RbitmapAlreadyLoaded = 0;
 static HINSTANCE hRbitmapDll;
 
@@ -2073,6 +2095,7 @@ static int Load_Rbitmap_Dll()
         strcat(szFullPath, BITMAP_DLL_NAME);
         if (((hRbitmapDll = LoadLibrary(szFullPath)) != NULL) &&
             ((R_SaveAsPng = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsPng")) != NULL) &&
+            ((R_SaveAsBmp = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsBmp")) != NULL) &&
             ((R_SaveAsJpeg = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsJpeg")) != NULL))
         {
             RbitmapAlreadyLoaded = 1;
@@ -2102,18 +2125,25 @@ static unsigned long privategetpixel(void *d, int i, int j)
 /* This is the device version */
 static void SaveAsBitmap(DevDesc *dd)
 {
+    rect r;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+    r = ggetcliprect(xd->gawin);
+    gsetcliprect(xd->gawin, getrect(xd->gawin));
     if (xd->kind == PNG)
         R_SaveAsPng(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->fp);
-    else
+    else if (xd->kind == JPEG)
         R_SaveAsJpeg(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->quality, xd->fp);
+    else
+        R_SaveAsBmp(xd->gawin, xd->windowWidth, xd->windowHeight, privategetpixel, 0, xd->fp);
+    gsetcliprect(xd->gawin, r);
     fclose(xd->fp);
 }
 
-/* This is the menu item version */
+/* This are the menu item version */
 static void SaveAsPng(DevDesc *dd, char *fn)
 {
     FILE *fp;
+    rect r;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
     if (!Load_Rbitmap_Dll())
     {
@@ -2129,13 +2159,17 @@ static void SaveAsPng(DevDesc *dd, char *fn)
         R_ShowMessage(msg);
         return;
     }
+    r = ggetcliprect(xd->bm);
+    gsetcliprect(xd->bm, getrect(xd->bm));
     R_SaveAsPng(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
+    gsetcliprect(xd->bm, r);
     fclose(fp);
 }
 
 static void SaveAsJpeg(DevDesc *dd, int quality, char *fn)
 {
     FILE *fp;
+    rect r;
     x11Desc *xd = (x11Desc *)dd->deviceSpecific;
     if (!Load_Rbitmap_Dll())
     {
@@ -2150,6 +2184,35 @@ static void SaveAsJpeg(DevDesc *dd, int quality, char *fn)
         R_ShowMessage(msg);
         return;
     }
+    r = ggetcliprect(xd->bm);
+    gsetcliprect(xd->bm, getrect(xd->bm));
     R_SaveAsJpeg(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, quality, fp);
+    gsetcliprect(xd->bm, r);
+    fclose(fp);
+}
+
+static void SaveAsBmp(DevDesc *dd, char *fn)
+{
+    FILE *fp;
+    rect r;
+    x11Desc *xd = (x11Desc *)dd->deviceSpecific;
+    if (!Load_Rbitmap_Dll())
+    {
+        R_ShowMessage("Impossible to load Rbitmap.dll");
+        return;
+    }
+    if ((fp = fopen(fn, "wb")) == NULL)
+    {
+        char msg[MAX_PATH + 32];
+
+        strcpy(msg, "Impossible to open ");
+        strncat(msg, fn, MAX_PATH);
+        R_ShowMessage(msg);
+        return;
+    }
+    r = ggetcliprect(xd->bm);
+    gsetcliprect(xd->bm, getrect(xd->bm));
+    R_SaveAsBmp(xd->bm, xd->windowWidth, xd->windowHeight, privategetpixel, 0, fp);
+    gsetcliprect(xd->bm, r);
     fclose(fp);
 }
