@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#define PS_minus                                                                                                       \
+    175 /* wrongly was 177 (plusminus);                                                                                \
+hyphen = 45 or 173;  (n-dash not available as code!) */
 #undef DEBUG
 
 /* Part 0.  AFM File Names */
@@ -420,7 +423,7 @@ double PostScriptStringWidth(unsigned char *p, FontMetricInfo *metrics)
     for (; *p; p++)
     {
         if (*p == '-' && isdigit(p[1]))
-            sum += metrics->CharInfo[173].WX; /* hyphen (n-dash not avail.!) */
+            sum += metrics->CharInfo[PS_minus].WX;
         else
             sum += metrics->CharInfo[*p].WX;
     }
@@ -625,7 +628,7 @@ static void PostScriptWriteString(FILE *fp, char *str)
             break;
         case '-':
             if (isdigit(str[1]))
-                fputc(173, fp);
+                fputc(PS_minus, fp);
             else
                 fputc(*str, fp);
             break;
