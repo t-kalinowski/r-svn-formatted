@@ -161,7 +161,8 @@ SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *sym
                 errorcall(call, "cannot resolve native routine");
             }
         }
-        else if (!(*fun = R_FindSymbol(buf, dll.DLLname, symbol)))
+
+        if (!*fun && !(*fun = R_FindSymbol(buf, dll.DLLname, symbol)))
         {
             if (strlen(dll.DLLname))
                 errorcall(call, "%s function name not in DLL for package %s",
