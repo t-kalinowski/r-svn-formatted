@@ -884,8 +884,14 @@ OSStatus QuartzEventHandler(EventHandlerCallRef inCallRef, EventRef inEvent, voi
     case kEventWindowBoundsChanged:
         if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
         {
-            dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
-            GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
+            QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;
+            Rect portRect;
+            GetWindowPortBounds(xd->window, &portRect);
+            if ((xd->windowWidth != portRect.right) || (xd->windowHeight != portRect.bottom))
+            {
+                dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
+                GEplayDisplayList((GEDevDesc *)GetDevice(devnum));
+            }
             err = noErr;
         }
         break;
