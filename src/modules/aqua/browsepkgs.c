@@ -86,8 +86,10 @@ ControlRef BrowsePkgControl = NULL;
 
 #define MaxRows 65000
 #define MaxCols 65000
-DataBrowserItemID NumOfPkgs = 0;
+
+int NumOfPkgs = 0;
 DataBrowserItemID *PkgID;
+
 Boolean *InstallPkg;
 
 extern bool EditingFinished;
@@ -97,7 +99,7 @@ extern TXNControlData RReadOnlyData[];
 
 extern TXNObject RConsoleInObject;
 
-SEXP cpkgs, cvers, ivers;
+SEXP cpkgs, cvers, ivers, wwwhere, install_dflt, binary_dflt;
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -118,6 +120,7 @@ Boolean OpenBrowsePkg(void)
 {
     OSStatus err = noErr;
     int i, j, k;
+    CFStringRef wintitle;
     Rect bounds;
     EventTypeSpec bpEvents[] = {{kEventClassCommand, kEventCommandProcess},
                                 {kEventClassCommand, kEventCommandUpdateStatus},
@@ -137,7 +140,10 @@ Boolean OpenBrowsePkg(void)
     InstallWindowEventHandler(BrowsePkgWindow, NewEventHandlerUPP(DoCloseHandler), 1, RCloseWinEvent,
                               (void *)BrowsePkgWindow, NULL);
 
-    SetWindowTitleWithCFString(BrowsePkgWindow, CFSTR("R BrowsePkgWindow"));
+    wintitle =
+        CFStringCreateWithCString(CFAllocatorGetDefault(), CHAR(STRING_ELT(wwwhere, 0)), kCFStringEncodingMacRoman);
+
+    SetWindowTitleWithCFString(BrowsePkgWindow, wintitle);
 
     /* Create the DataBrowser */
     CreateBrowsePkg(BrowsePkgWindow, &BrowsePkgControl);
@@ -161,13 +167,18 @@ Boolean OpenBrowsePkg(void)
     }
 
     NumOfPkgs = LENGTH(cpkgs);
-    PkgID = (DataBrowserItemID *)malloc(NumOfPkgs * sizeof(DataBrowserItemID));
-    InstallPkg = (Boolean *)malloc(NumOfPkgs * sizeof(Boolean));
+    PkgID = malloc(NumOfPkgs * sizeof(DataBrowserItemID));
+    InstallPkg = malloc(NumOfPkgs * sizeof(Boolean));
+
     for (i = 1; i <= NumOfPkgs; i++)
     {
         PkgID[i - 1] = i;
-        InstallPkg[i - 1] = false;
+        if (LOGICAL(install_dflt)[i - 1])
+            InstallPkg[i - 1] = true;
+        else
+            InstallPkg[i - 1] = false;
     }
+
     AddDataBrowserItems(BrowsePkgControl, kDataBrowserNoItem, NumOfPkgs, PkgID, kDataBrowserItemNoProperty);
 
     ShowWindow(BrowsePkgWindow);
@@ -218,7 +229,7 @@ static void CreateBrowsePkg(WindowRef window, ControlRef *browser)
                    &frameAndFocus);
 }
 
-char *bpNames[] = {"Install/Update", "CRAN PACKAGES", "CRAN version", "Installed version"};
+char *bpNames[] = {"Install/Update", "Available Packages", "Available version", "Installed version"};
 
 static void ConfigureBrowsePkg(ControlRef browser)
 {
@@ -283,6 +294,7 @@ static void ConfigureBrowsePkg(ControlRef browser)
         columnDesc.propertyDesc.propertyType = kDataBrowserTextType;
 
         columnDesc.propertyDesc.propertyFlags = kDataBrowserPropertyIsMutable | kDataBrowserListViewDefaultColumnFlags;
+
         for (i = 1; i <= 3; i++)
         {
 
@@ -336,6 +348,7 @@ static pascal OSStatus bpGetSetItemData(ControlRef browser, DataBrowserItemID it
     OSStatus err = noErr;
     CFStringRef text, value;
     SEXP tmp;
+
     int i, col, row;
     char buf[1000];
 
@@ -370,11 +383,10 @@ static pascal OSStatus bpGetSetItemData(ControlRef browser, DataBrowserItemID it
             CFRelease(text);
         }
 
-        //     if(property == 10000){
-        //     Boolean issel;
-        //     err = GetDataBrowserItemDataBooleanValue(itemData,&issel);
-        //       fprintf(stderr,"\n row=%d, install=%d",row,issel);
-        //     }
+        if (property == 10000)
+        {
+            err = SetDataBrowserItemDataBooleanValue(itemData, InstallPkg[row - 1]);
+        }
     }
     else
     {
@@ -463,8 +475,13 @@ SEXP Raqua_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     ivers = CAR(args);
     args = CDR(args);
+    wwwhere = CAR(args);
+    args = CDR(args);
+    install_dflt = CAR(args);
 
-    if (!isString(cpkgs) | !isString(cvers) | !isString(ivers))
+    if (!isString(cpkgs) | !isString(cvers) | !isString(ivers) | !isString(wwwhere))
+        errorcall(call, "invalid arguments");
+    if (!isLogical(install_dflt))
         errorcall(call, "invalid arguments");
 
     TXNSetTXNObjectControls(RConsoleInObject, false, 1, RReadOnlyTag, RReadOnlyData);
@@ -474,14 +491,21 @@ SEXP Raqua_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
 
     RunApplicationEventLoop(); /* waits till the user closes the dataentry window */
     PROTECT(ans = NEW_LOGICAL(NumOfPkgs));
+
     for (i = 1; i <= NumOfPkgs; i++)
+    {
         LOGICAL(ans)[i - 1] = InstallPkg[i - 1];
+    }
 
     vmaxset(vm);
 
     if (InstallPkg)
+    {
         free(InstallPkg);
-    UNPROTECT(1);
+        InstallPkg = NULL;
+    }
+
+    UNPROTECT(1); /*ans*/
     return ans;
 }
 
