@@ -377,6 +377,13 @@ static void deparse2buff(SEXP s)
         print2buff("NULL");
         break;
     case SYMSXP:
+#if 1
+        print2buff(CHAR(PRINTNAME(s)));
+#else
+        /* I'm pretty sure this is WRONG:
+           Blindly putting special symbols in ""s causes more trouble than it solves
+            --pd
+        */
         if (isValidName(CHAR(PRINTNAME(s))))
             print2buff(CHAR(PRINTNAME(s)));
         else
@@ -394,6 +401,7 @@ static void deparse2buff(SEXP s)
                 print2buff(tpb);
             }
         }
+#endif
         break;
     case CHARSXP:
         print2buff(CHAR(s));
