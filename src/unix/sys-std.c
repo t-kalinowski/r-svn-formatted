@@ -669,7 +669,7 @@ static int OldTimeout;
 static void (*OldHandler)(void);
 
 #ifdef HAVE_TIMES
-#include <times.h>
+#include <time.h>
 #include <sys/times.h>
 #ifndef CLK_TCK
 /* this is in ticks/second, generally 60 on BSD style Unix, 100? on SysV */
