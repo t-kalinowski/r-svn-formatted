@@ -27,9 +27,9 @@
  *         sqrt(n/2) / ((n+1)/2) * Gamma((n+3)/2) / Gamma((n+2)/2).
  *             * (1+x^2/n)^(-n/2)
  *             / sqrt( 2 pi (1+x^2/n) )
+ *
  *    This form leads to a stable computation for all
  *    values of n, including n -> 0 and n -> infinity.
- *
  */
 
 #include "nmath.h"
