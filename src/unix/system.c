@@ -278,7 +278,14 @@ int Rf_initialize_R(int ac, char **av)
             }
             else
             {
-                snprintf(msg, 1024, "WARNING: unknown option %s\n", *av);
+#ifdef HAVE_AQUA
+                if (!strncmp(*av, "-psn", 4))
+                {
+                    break;
+                }
+                else
+#endif
+                    snprintf(msg, 1024, "WARNING: unknown option %s\n", *av);
                 R_ShowMessage(msg);
             }
         }
