@@ -458,7 +458,11 @@ static SEXP D(SEXP expr, SEXP var)
             UNPROTECT(4);
         }
         else
-            error("Function %s is not in the derivatives table", PRINTNAME(CAR(expr)));
+        {
+            SEXP u = deparse1(CAR(expr), 0);
+            error("Function `%s' is not in the derivatives table", CHAR(STRING_ELT(u, 0)));
+        }
+
         break;
     default:
         ans = Constant(NA_REAL);
