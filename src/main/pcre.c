@@ -268,7 +268,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, vec, ans;
     int i, j, n, ns, nns, nmatch, offset, re_nsub;
-    int global, igcase_opt, erroffset, eflag, last_match;
+    int global, igcase_opt, erroffset, eflag;
     int options = 0;
     char *s, *t, *u, *uu;
     const char *errorptr;
@@ -363,22 +363,38 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
         }
 #endif
         eflag = 0;
-        last_match = 0;
         while (pcre_exec(re_pcre, re_pe, s, nns, offset, eflag, ovector, 30) >= 0)
         {
             nmatch += 1;
             ns += length_adj(t, ovector, re_nsub);
             offset = ovector[1];
             /* If we have a 0-length match, move on a char */
-            /* <MBCS FIXME> advance by a char not a byte */
             if (ovector[1] == ovector[0])
             {
-                offset++;
+#ifdef SUPPORT_UTF8
+                if (mbcslocale)
+                {
+                    wchar_t wc;
+                    int used, pos = 0;
+                    mbstate_t mb_st;
+                    mbs_init(&mb_st);
+                    while ((used = Mbrtowc(&wc, s + pos, MB_CUR_MAX, &mb_st)))
+                    {
+                        pos += used;
+                        if (pos > offset)
+                        {
+                            offset = pos;
+                            break;
+                        }
+                    }
+                }
+                else
+#endif
+                    offset++;
             }
             if (s[offset] == '\0' || !global)
                 break;
             eflag = PCRE_NOTBOL;
-            last_match = ovector[1];
         }
         if (nmatch == 0)
             SET_STRING_ELT(ans, i, STRING_ELT(vec, i));
@@ -390,7 +406,6 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             t = CHAR(STRING_ELT(rep, 0));
             uu = u = CHAR(STRING_ELT(ans, i));
             eflag = 0;
-            last_match = 0;
             while (pcre_exec(re_pcre, re_pe, s, nns, offset, eflag, ovector, 30) >= 0)
             {
                 /* printf("%s, %d, %d %d\n", s, offset,
@@ -399,14 +414,36 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     *u++ = s[j];
                 u = string_adj(u, s, t, ovector);
                 offset = ovector[1];
-                /* <MBCS FIXME> advance by a char */
                 if (ovector[1] == ovector[0])
-                    *u++ = s[offset++];
+                {
+                    /* advance by a char */
+#ifdef SUPPORT_UTF8
+                    if (mbcslocale)
+                    {
+                        wchar_t wc;
+                        int used, pos = 0;
+                        mbstate_t mb_st;
+                        mbs_init(&mb_st);
+                        while ((used = Mbrtowc(&wc, s + pos, MB_CUR_MAX, &mb_st)))
+                        {
+                            pos += used;
+                            if (pos > offset)
+                            {
+                                for (j = offset; j < pos; j++)
+                                    *u++ = s[j];
+                                offset = pos;
+                                break;
+                            }
+                        }
+                    }
+                    else
+#endif
+                        *u++ = s[offset++];
+                }
 
                 if (s[offset] == '\0' || !global)
                     break;
                 eflag = PCRE_NOTBOL;
-                last_match = ovector[1];
             }
             for (j = offset; s[j]; j++)
                 *u++ = s[j];
