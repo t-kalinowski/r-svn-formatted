@@ -149,9 +149,9 @@ void next1(button b)
         sprintf(str, "This installer is for version %s\nIt may not work for %s", Rversion, Rver);
         askok(str);
     }
-    if (FullInstall && strcmp(Rver, "rw0900") < 0)
+    if (FullInstall && strcmp(Rver, "rw0990") < 0)
     {
-        sprintf(str, "This installer is for version rw0900 and later only");
+        sprintf(str, "This installer is for version rw0990 and later only");
         askok(str);
         settext(fRver, Rversion);
         return;
@@ -566,11 +566,12 @@ void page1()
     redraw(w);
     header();
 
+    /* NOTE: this depends on R_MINOR < 10 */
     if (!strlen(Rver))
     {
         strcpy(tmp, R_MINOR);
-        tmp[2] = '\0';
-        sprintf(Rver, "rw%s%s%s", R_MAJOR, tmp, tmp + 3);
+        tmp[1] = '\0';
+        sprintf(Rver, "rw%s0%s%s", R_MAJOR, tmp, tmp + 2);
     }
     strcpy(Rversion, Rver);
 
