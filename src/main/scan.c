@@ -617,7 +617,7 @@ done:
         n++;
     }
     if (!quiet)
-        REprintf("Read %d lines\n", n);
+        REprintf("Read %d records\n", n);
     if (ttyflag)
         ConsolePrompt[0] = '\0';
 
