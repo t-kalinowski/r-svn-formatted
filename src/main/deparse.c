@@ -174,6 +174,12 @@ void R_AllocStringBuffer(int blen, DeparseBuffer *buf)
     }
 }
 
+void R_FreeStringBuffer(DeparseBuffer *buf)
+{
+    if (buf->data != NULL)
+        free(buf->data);
+}
+
 SEXP do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ca1;
@@ -249,6 +255,7 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff)
         svec = mkString(buffer->data);
     }
     R_print.digits = savedigits;
+    R_FreeStringBuffer(buffer);
     return svec;
 }
 
