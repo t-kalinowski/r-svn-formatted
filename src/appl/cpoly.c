@@ -43,9 +43,6 @@
 #include "Arith.h"
 #include "Applic.h"
 
-#define True (1)
-#define False (0)
-
 static void calct(int *);
 static void fxshft(int *, double *, double *, int *);
 static void vrshft(int, double *, double *, int *);
@@ -56,7 +53,6 @@ static double errev(int *, double *, double *, double *, double *, double *, dou
 static double cpoly_cauchy(int *, double *, double *);
 static void cpoly_scale(int *, double *, double *, double *, double *, double *, double *);
 static void cdivid(double *, double *, double *, double *, double *, double *);
-static double cpoly_cmod(double *, double *);
 
 /* Global Variables (too many!) */
 
@@ -109,7 +105,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
     sinr = (float).99756405;
     xx = (float).70710678;
     yy = -xx;
-    *fail = False;
+    *fail = LFALSE;
 
     nn = *degree;
     d1 = nn - 1;
@@ -118,7 +114,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
 
     if (opr[0] == 0.0 && opi[0] == 0.0)
     {
-        *fail = True;
+        *fail = LTRUE;
         return 0;
     }
 
@@ -163,7 +159,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
         /* calculate bnd, a lower bound on the modulus of the zeros. */
 
         for (i = 0; i < nn; i++)
-            shr[i] = cpoly_cmod(&pr[i], &pi[i]);
+            shr[i] = pythag(pr[i], pi[i]);
 
         bnd = cpoly_cauchy(&nn, shr, shi);
 
@@ -204,7 +200,7 @@ int R_cpoly(double *opr, double *opi, int *degree, double *zeror, double *zeroi,
         /* the zerofinder has failed on two major passes */
         /* return empty handed */
 
-        *fail = True;
+        *fail = LTRUE;
         return 0;
 
     /* the second stage jumps directly to the third stage iteration.
@@ -255,7 +251,7 @@ static void noshft(int l1)
     for (jj = 1; jj <= l1; jj++)
     {
 
-        if (cpoly_cmod(&hr[n - 1], &hi[n - 1]) <= eta * 10.0 * cpoly_cmod(&pr[n - 1], &pi[n - 1]))
+        if (pythag(hr[n - 1], hi[n - 1]) <= eta * 10.0 * pythag(pr[n - 1], pi[n - 1]))
         {
 
             /*	If the constant term is essentially zero, */
@@ -311,8 +307,8 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
 
     polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
 
-    test = True;
-    pasd = False;
+    test = LTRUE;
+    pasd = LFALSE;
 
     /* calculate first t = -p(s)/h(s). */
 
@@ -340,13 +336,13 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
         {
             d__1 = tr - otr;
             d__2 = ti - oti;
-            if (cpoly_cmod(&d__1, &d__2) >= cpoly_cmod(zr, zi) * 0.5)
+            if (pythag(tr - otr, ti - oti) >= pythag(*zr, *zi) * 0.5)
             {
-                pasd = False;
+                pasd = LFALSE;
             }
             else if (!pasd)
             {
-                pasd = True;
+                pasd = LTRUE;
             }
             else
             {
@@ -373,7 +369,7 @@ static void fxshft(int *l2, double *zr, double *zi, int *conv)
                 /* turn off testing and restore */
                 /* h, s, pv and t. */
 
-                test = False;
+                test = LFALSE;
                 for (i = 1; i <= n; i++)
                 {
                     hr[i - 1] = shr[i - 1];
@@ -407,8 +403,8 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
     static double r1, r2, mp, ms, tp, relstp;
     static double omp;
 
-    *conv = False;
-    b = False;
+    *conv = LFALSE;
+    b = LFALSE;
     sr = *zr;
     si = *zi;
 
@@ -420,8 +416,8 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
         /* evaluate p at s and test for convergence. */
 
         polyev(&nn, &sr, &si, pr, pi, qpr, qpi, &pvr, &pvi);
-        mp = cpoly_cmod(&pvr, &pvi);
-        ms = cpoly_cmod(&sr, &si);
+        mp = pythag(pvr, pvi);
+        ms = pythag(sr, si);
         if (mp <= 20. * errev(&nn, qpr, qpi, &ms, &mp, &are, &mre))
         {
             goto L_conv;
@@ -443,7 +439,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
                 /* one zero to dominate. */
 
                 tp = relstp;
-                b = True;
+                b = LTRUE;
                 if (relstp < eta)
                     tp = eta;
                 r1 = sqrt(tp);
@@ -479,7 +475,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
         calct(&bool);
         if (!bool)
         {
-            relstp = cpoly_cmod(&tr, &ti) / cpoly_cmod(&sr, &si);
+            relstp = pythag(tr, ti) / pythag(sr, si);
             sr += tr;
             si += ti;
         }
@@ -487,7 +483,7 @@ static void vrshft(int l3, double *zr, double *zi, int *conv)
     return;
 
 L_conv:
-    *conv = True;
+    *conv = LTRUE;
     *zr = sr;
     *zi = si;
 }
@@ -506,7 +502,7 @@ static void calct(int *bool)
     /* evaluate h(s). */
 
     polyev(&n, &sr, &si, hr, hi, qhr, qhi, &hvr, &hvi);
-    *bool = cpoly_cmod(&hvr, &hvi) <= are * 10. * cpoly_cmod(&hr[n - 1], &hi[n - 1]);
+    *bool = pythag(hvr, hvi) <= are * 10. * pythag(hr[n - 1], hi[n - 1]);
     if (!*bool)
     {
         d__1 = -pvr;
@@ -594,10 +590,10 @@ static double errev(int *nn, double *qr, double *qi, double *ms, double *mp, dou
     double e;
     int i;
 
-    e = cpoly_cmod(&qr[0], &qi[0]) * *mre / (*are + *mre);
+    e = pythag(qr[0], qi[0]) * *mre / (*are + *mre);
     for (i = 0; i < *nn; i++)
     {
-        e *= (*ms + cpoly_cmod(&qr[i], &qi[i]));
+        e *= (*ms + pythag(qr[i], qi[i]));
     }
     return e * (*are + *mre) - *mp * *mre;
 }
@@ -742,25 +738,6 @@ static void cdivid(double *ar, double *ai, double *br, double *bi, double *cr, d
     }
 }
 
-static double cpoly_cmod(double *r, double *i)
-{
-    /* modulus of a complex number avoiding overflow. */
-    double ai, ar, d1;
-
-    ar = fabs(*r);
-    ai = fabs(*i);
-    if (ar < ai)
-    {
-        d1 = ar / ai;
-        return ai * sqrt(d1 * d1 + 1.0);
-    }
-    else if (ar <= ai)
-    {
-        return ar * sqrt(2.0);
-    }
-    else
-    {
-        d1 = ai / ar;
-        return ar * sqrt(d1 * d1 + 1.0);
-    }
-}
+/* static double cpoly_cmod(double *r, double *i)
+ * --> replaced by pythag() everywhere
+ */
