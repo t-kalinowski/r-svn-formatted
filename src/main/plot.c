@@ -972,13 +972,56 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
     return at;
 }
 
+static double ComputePAdjValue(double padj, int side, int las)
+{
+    if (!R_FINITE(padj))
+    {
+        switch (las)
+        {
+        case 0: /* parallel to axis */
+            padj = 0.0;
+            break;
+        case 1: /* horizontal */
+            switch (side)
+            {
+            case 1:
+            case 3:
+                padj = 0.0;
+                break;
+            case 2:
+            case 4:
+                padj = 0.5;
+                break;
+            }
+            break;
+        case 2: /* perpendicular to axis */
+            padj = 0.5;
+            break;
+        case 3: /* vertical */
+            switch (side)
+            {
+            case 1:
+            case 3:
+                padj = 0.5;
+                break;
+            case 2:
+            case 4:
+                padj = 0.0;
+                break;
+            }
+            break;
+        }
+    }
+    return padj;
+}
+
 SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* axis(side, at, labels, tick, line, pos,
-     *	    outer, font, vfont, lty, lwd, col, ...) */
+     *	    outer, font, vfont, lty, lwd, col, padj, ...) */
 
-    SEXP at, lab, vfont;
-    int col, font, lty;
+    SEXP at, lab, vfont, padj;
+    int col, font, lty, npadj;
     int i, n, nint = 0, ntmp, side, *ind, outer, lineoff = 0;
     int istart, iend, incr;
     Rboolean dolabels, doticks, logflag = FALSE;
@@ -1107,6 +1150,15 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     col = asInteger(FixupCol(CAR(args), Rf_gpptr(dd)->fg));
     args = CDR(args);
 
+    /* Optional argument: "padj" */
+    PROTECT(padj = coerceVector(CAR(args), REALSXP));
+    npadj = length(padj);
+    if (npadj <= 0)
+        errorcall(call, "zero length \"padj\" specified");
+    if (n < npadj)
+        n = npadj;
+    args = CDR(args);
+
     /* Retrieve relevant "par" values. */
 
     switch (side)
@@ -1195,7 +1247,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         ((side == 2 || side == 4) && Rf_gpptr(dd)->yaxt == 'n'))
     {
         GRestorePars(dd);
-        UNPROTECT(4);
+        UNPROTECT(5);
         return R_NilValue;
     }
 
@@ -1324,6 +1376,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         for (i = istart; i != iend; i += incr)
         {
+            double padjval = REAL(padj)[i % npadj];
+            padjval = ComputePAdjValue(padjval, side, Rf_gpptr(dd)->las);
             x = REAL(at)[i];
             if (!R_FINITE(x))
                 continue;
@@ -1335,7 +1389,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     if (isExpression(lab))
                     {
-                        GMMathText(VECTOR_ELT(lab, ind[i]), side, axis_lab, 0, x, Rf_gpptr(dd)->las, dd);
+                        GMMathText(VECTOR_ELT(lab, ind[i]), side, axis_lab, 0, x, Rf_gpptr(dd)->las, padjval, dd);
                     }
                     else
                     {
@@ -1347,7 +1401,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                             /* Check room for perpendicular labels. */
                             if (Rf_gpptr(dd)->las == 2 || Rf_gpptr(dd)->las == 3 || tnew - tlast >= gap)
                             {
-                                GMtext(CHAR(label), side, axis_lab, 0, x, Rf_gpptr(dd)->las, dd);
+                                GMtext(CHAR(label), side, axis_lab, 0, x, Rf_gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw;
                             }
                         }
@@ -1464,6 +1518,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         for (i = istart; i != iend; i += incr)
         {
+            double padjval = REAL(padj)[i % npadj];
+            padjval = ComputePAdjValue(padjval, side, Rf_gpptr(dd)->las);
             y = REAL(at)[i];
             if (!R_FINITE(y))
                 continue;
@@ -1475,7 +1531,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     if (isExpression(lab))
                     {
-                        GMMathText(VECTOR_ELT(lab, ind[i]), side, axis_lab, 0, y, Rf_gpptr(dd)->las, dd);
+                        GMMathText(VECTOR_ELT(lab, ind[i]), side, axis_lab, 0, y, Rf_gpptr(dd)->las, padjval, dd);
                     }
                     else
                     {
@@ -1488,7 +1544,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                             /* Check room for perpendicular labels. */
                             if (Rf_gpptr(dd)->las == 1 || Rf_gpptr(dd)->las == 2 || tnew - tlast >= gap)
                             {
-                                GMtext(CHAR(label), side, axis_lab, 0, y, Rf_gpptr(dd)->las, dd);
+                                GMtext(CHAR(label), side, axis_lab, 0, y, Rf_gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw;
                             }
                         }
@@ -1498,7 +1554,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         break;
     }             /* end  switch(side, ..) */
-    UNPROTECT(4); /* lab, vfont, at, lab again */
+    UNPROTECT(5); /* lab, vfont, at, lab, padj again */
     GMode(0, dd);
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
@@ -2540,9 +2596,9 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
 
 SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP text, side, line, outer, at, adj, cex, col, font, vfont, string;
+    SEXP text, side, line, outer, at, adj, padj, cex, col, font, vfont, string;
     SEXP rawcol;
-    int ntext, nside, nline, nouter, nat, nadj, ncex, ncol, nfont;
+    int ntext, nside, nline, nouter, nat, nadj, npadj, ncex, ncol, nfont;
     Rboolean dirtyplot = FALSE, gpnewsave = FALSE, dpnewsave = FALSE;
     Rboolean vectorFonts = FALSE;
     int i, n, fontsave, colsave;
@@ -2613,6 +2669,15 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         n = nadj;
     args = CDR(args);
 
+    /* Arg6b : padj= */
+    PROTECT(padj = coerceVector(CAR(args), REALSXP));
+    npadj = length(padj);
+    if (npadj <= 0)
+        errorcall(call, "zero length \"padj\" specified");
+    if (n < npadj)
+        n = npadj;
+    args = CDR(args);
+
     /* Arg7 : cex */
     PROTECT(cex = FixupCex(CAR(args), 1.0));
     ncex = length(cex);
@@ -2678,6 +2743,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         double atval = REAL(at)[i % nat];
         double adjval = REAL(adj)[i % nadj];
+        double padjval = REAL(padj)[i % npadj];
         double cexval = REAL(cex)[i % ncex];
         double lineval = REAL(line)[i % nline];
         int outerval = INTEGER(outer)[i % nouter];
@@ -2700,6 +2766,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             Rf_gpptr(dd)->col = colval;
         Rf_gpptr(dd)->adj = ComputeAdjValue(adjval, sideval, Rf_gpptr(dd)->las);
+        padjval = ComputePAdjValue(padjval, sideval, Rf_gpptr(dd)->las);
         atval = ComputeAtValue(atval, Rf_gpptr(dd)->adj, sideval, Rf_gpptr(dd)->las, outerval, dd);
 
         if (vectorFonts)
@@ -2708,20 +2775,20 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef GMV_implemented
             if (string != NA_STRING)
                 GMVText(CHAR(string), INTEGER(vfont)[0], INTEGER(vfont)[1], sideval, lineval, outerval, atval,
-                        Rf_gpptr(dd)->las, dd);
+                        Rf_gpptr(dd)->las, padjval, dd);
 #else
             warningcall(call, "Hershey fonts not yet implemented for mtext()");
             if (string != NA_STRING)
-                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, padjval, dd);
 #endif
         }
         else if (isExpression(text))
-            GMMathText(VECTOR_ELT(text, i % ntext), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+            GMMathText(VECTOR_ELT(text, i % ntext), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, padjval, dd);
         else
         {
             string = STRING_ELT(text, i % ntext);
             if (string != NA_STRING)
-                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, dd);
+                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, padjval, dd);
         }
 
         if (outerval == 0)
@@ -2735,7 +2802,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         Rf_gpptr(dd)->new = gpnewsave;
         Rf_dpptr(dd)->new = dpnewsave;
     }
-    UNPROTECT(10);
+    UNPROTECT(11);
 
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call))
@@ -2880,7 +2947,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             where = 0;
         }
         if (isExpression(sub))
-            GMMathText(VECTOR_ELT(sub, 0), 1, vpos, where, hpos, 0, dd);
+            GMMathText(VECTOR_ELT(sub, 0), 1, vpos, where, hpos, 0, 0.0, dd);
         else
         {
             n = length(sub);
@@ -2888,7 +2955,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(sub, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 1, vpos, where, hpos, 0, dd);
+                    GMtext(CHAR(string), 1, vpos, where, hpos, 0, 0.0, dd);
             }
         }
     }
@@ -2916,7 +2983,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             where = 0;
         }
         if (isExpression(xlab))
-            GMMathText(VECTOR_ELT(xlab, 0), 1, vpos, where, hpos, 0, dd);
+            GMMathText(VECTOR_ELT(xlab, 0), 1, vpos, where, hpos, 0, 0.0, dd);
         else
         {
             n = length(xlab);
@@ -2924,7 +2991,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(xlab, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 1, vpos + i, where, hpos, 0, dd);
+                    GMtext(CHAR(string), 1, vpos + i, where, hpos, 0, 0.0, dd);
             }
         }
     }
@@ -2952,7 +3019,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             where = 0;
         }
         if (isExpression(ylab))
-            GMMathText(VECTOR_ELT(ylab, 0), 2, vpos, where, hpos, 0, dd);
+            GMMathText(VECTOR_ELT(ylab, 0), 2, vpos, where, hpos, 0, 0.0, dd);
         else
         {
             n = length(ylab);
@@ -2960,7 +3027,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(ylab, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 2, vpos - i, where, hpos, 0, dd);
+                    GMtext(CHAR(string), 2, vpos - i, where, hpos, 0, 0.0, dd);
             }
         }
     }
@@ -2970,7 +3037,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-}
+} /* do_title */
 
 /*  abline(a, b, h, v, col, lty, lwd, ...)
     draw lines in intercept/slope form.	 */
@@ -3216,7 +3283,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GRecording(call))
         recordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-}
+} /* do_title */
 
 SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
 {

@@ -3077,10 +3077,10 @@ void GMathText(double x, double y, int coords, SEXP expr, double xc, double yc, 
     GEMathText(x, y, expr, xc, yc, rot, &gc, (GEDevDesc *)dd);
 }
 
-void GMMathText(SEXP str, int side, double line, int outer, double at, int las, DevDesc *dd)
+void GMMathText(SEXP str, int side, double line, int outer, double at, int las, double yadj, DevDesc *dd)
 {
     int coords = 0, subcoords;
-    double xadj, yadj = 0, angle = 0;
+    double xadj, angle = 0;
 
 #ifdef BUG61
 #else
@@ -3099,6 +3099,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
      * different situations.
      * Paul
      */
+    /* changed to unify behaviour with changes in GMText. Uwe */
     if (outer)
     {
         switch (side)
@@ -3149,7 +3150,6 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
         if (las == 2 || las == 3)
         {
             angle = 90;
-            yadj = 0.5;
         }
         else
         {
@@ -3158,14 +3158,12 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
                 yadj = NA_REAL; */
             line = line + 1;
             angle = 0;
-            yadj = 0;
         }
         break;
     case 2:
         if (las == 1 || las == 2)
         {
             angle = 0;
-            yadj = 0.5;
         }
         else
         {
@@ -3173,14 +3171,12 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
                 angle = 90;
                 yadj = NA_REAL; */
             angle = 90;
-            yadj = 0;
         }
         break;
     case 3:
         if (las == 2 || las == 3)
         {
             angle = 90;
-            yadj = 0.5;
         }
         else
         {
@@ -3188,14 +3184,12 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
              angle = 0;
              yadj = NA_REAL; */
             angle = 0;
-            yadj = 0;
         }
         break;
     case 4:
         if (las == 1 || las == 2)
         {
             angle = 0;
-            yadj = 0.5;
         }
         else
         {
@@ -3204,7 +3198,6 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
              yadj = NA_REAL; */
             line = line + 1;
             angle = 90;
-            yadj = 0;
         }
         break;
     }
