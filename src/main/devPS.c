@@ -808,7 +808,8 @@ static void PSEncodeFont(FILE *fp, char *encname)
 /* region box is for the rotated page. */
 
 static void PSFileHeader(FILE *fp, char *encname, char *papername, double paperwidth, double paperheight,
-                         Rboolean landscape, int EPSFheader, double left, double bottom, double right, double top)
+                         Rboolean landscape, int EPSFheader, Rboolean paperspecial, double left, double bottom,
+                         double right, double top)
 {
     int i;
     SEXP prolog;
@@ -826,13 +827,12 @@ static void PSFileHeader(FILE *fp, char *encname, char *papername, double paperw
     fprintf(fp, "%%%%Title: R Graphics Output\n");
     fprintf(fp, "%%%%Creator: R Software\n");
     fprintf(fp, "%%%%Pages: (atend)\n");
-    if (landscape)
-    {
-        fprintf(fp, "%%%%Orientation: Landscape\n");
-    }
-    else
-    {
-        fprintf(fp, "%%%%Orientation: Portrait\n");
+    if (!EPSFheader && !paperspecial)
+    { /* gs gets confused by this */
+        if (landscape)
+            fprintf(fp, "%%%%Orientation: Landscape\n");
+        else
+            fprintf(fp, "%%%%Orientation: Portrait\n");
     }
     fprintf(fp, "%%%%BoundingBox: %.0f %.0f %.0f %.0f\n", left, bottom, right, top);
     fprintf(fp, "%%%%EndComments\n");
@@ -998,7 +998,8 @@ typedef struct
 
     FILE *psfp; /* output file */
 
-    Rboolean onefile; /* EPSF header etc*/
+    Rboolean onefile;      /* EPSF header etc*/
+    Rboolean paperspecial; /* suppress %%Orientation */
 
     /* This group of variables track the current device status.
      * They should only be set by routines that emit PostScript code. */
@@ -1119,6 +1120,7 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
 
     /* Deal with paper and plot size and orientation */
 
+    pd->paperspecial = FALSE;
     if (!strcmp(pd->papername, "Default") || !strcmp(pd->papername, "default"))
     {
         SEXP s = STRING_ELT(GetOption(install("papersize"), R_NilValue), 0);
@@ -1159,6 +1161,7 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
             pd->pagewidth = width;
             pd->pageheight = height;
         }
+        pd->paperspecial = TRUE;
     }
     else
     {
@@ -1425,10 +1428,10 @@ static Rboolean PS_Open(NewDevDesc *dd, PostScriptDesc *pd)
 
     if (pd->landscape)
         PSFileHeader(pd->psfp, pd->encname, pd->papername, pd->paperwidth, pd->paperheight, pd->landscape,
-                     !(pd->onefile), dd->bottom, dd->left, dd->top, dd->right);
+                     !(pd->onefile), pd->paperspecial, dd->bottom, dd->left, dd->top, dd->right);
     else
         PSFileHeader(pd->psfp, pd->encname, pd->papername, pd->paperwidth, pd->paperheight, pd->landscape,
-                     !(pd->onefile), dd->left, dd->bottom, dd->right, dd->top);
+                     !(pd->onefile), pd->paperspecial, dd->left, dd->bottom, dd->right, dd->top);
 
     return TRUE;
 }
