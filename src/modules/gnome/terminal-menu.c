@@ -321,7 +321,7 @@ static GnomeUIInfo main_menu[] = {GNOMEUIINFO_MENU_FILE_TREE(file_menu),
    is working!
 */
 
-static blank_menu_item(GnomeUIInfo *item, int *index)
+static void blank_menu_item(GnomeUIInfo *item, int *index)
 {
     int i;
 
@@ -333,7 +333,7 @@ static blank_menu_item(GnomeUIInfo *item, int *index)
     }
 }
 
-static blank_inactive_items()
+static void blank_inactive_items()
 {
     int file_menu_inactive[3] = {4, 5, -1};
     int data_menu_inactive[4] = {0, 1, 2, -1};

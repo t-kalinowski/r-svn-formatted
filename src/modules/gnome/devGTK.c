@@ -590,7 +590,6 @@ static void GTK_NewPage(int fill, NewDevDesc *dd)
 
     if (gtkd->fill != fill && R_OPAQUE(fill))
     {
-        printf("Setting bg color to %d in GTK_NewPage\n", fill);
         SetColor(&gtkd->gcol_bg, fill);
         gtkd->fill = fill;
         gdk_window_set_background(gtkd->drawing->window, &gtkd->gcol_bg);
