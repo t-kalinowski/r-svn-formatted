@@ -1282,7 +1282,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
 
             /* put the levels in lexicographic order */
 
-            sortVector(levs);
+            sortVector(levs, FALSE);
 
             PROTECT(a = match(levs, cvec, NA_INTEGER));
             for (i = 0; i < len; i++)

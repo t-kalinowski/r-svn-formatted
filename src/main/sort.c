@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2001   The R Development Core Team.
+ *  Copyright (C) 1998-2002   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 
 static int icmp(int x, int y, Rboolean nalast)
 {
+    if (x == NA_INTEGER && y == NA_INTEGER)
+        return 0;
     if (x == NA_INTEGER)
         return nalast ? 1 : -1;
     if (y == NA_INTEGER)
@@ -41,9 +43,12 @@ static int icmp(int x, int y, Rboolean nalast)
 
 static int rcmp(double x, double y, Rboolean nalast)
 {
-    if (ISNAN(x))
+    int nax = ISNAN(x), nay = ISNAN(y);
+    if (nax && nay)
+        return 0;
+    if (nax)
         return nalast ? 1 : -1;
-    if (ISNAN(y))
+    if (nay)
         return nalast ? -1 : 1;
     if (x < y)
         return -1;
@@ -54,19 +59,26 @@ static int rcmp(double x, double y, Rboolean nalast)
 
 static int ccmp(Rcomplex x, Rcomplex y, Rboolean nalast)
 {
+    int nax = ISNAN(x.r), nay = ISNAN(y.r);
     /* compare real parts */
-    if (ISNAN(x.r))
+    if (nax && nay)
+        return 0;
+    if (nax)
         return nalast ? 1 : -1;
-    if (ISNAN(y.r))
+    if (nay)
         return nalast ? -1 : 1;
     if (x.r < y.r)
         return -1;
     if (x.r > y.r)
         return 1;
     /* compare complex parts */
-    if (ISNAN(x.i))
+    nax = ISNAN(x.i);
+    nay = ISNAN(y.i);
+    if (nax && nay)
+        return 0;
+    if (nax)
         return nalast ? 1 : -1;
-    if (ISNAN(y.i))
+    if (nay)
         return nalast ? -1 : 1;
     if (x.i < y.i)
         return -1;
@@ -78,6 +90,12 @@ static int ccmp(Rcomplex x, Rcomplex y, Rboolean nalast)
 
 static int scmp(SEXP x, SEXP y, Rboolean nalast)
 {
+    if (x == NA_STRING && y == NA_STRING)
+        return 0;
+    if (x == NA_STRING)
+        return nalast ? 1 : -1;
+    if (y == NA_STRING)
+        return nalast ? -1 : 1;
 #ifdef HAVE_STRCOLL
     return strcoll(CHAR(x), CHAR(y));
 #else
@@ -276,46 +294,185 @@ void revsort(double *a, int *ib, int n)
     }
 }
 
-void sortVector(SEXP s)
+#if 0
+void sortVector0(SEXP s)
 {
     int n = LENGTH(s);
     if (n >= 2 && isUnsorted(s))
-        switch (TYPEOF(s))
-        {
-        case LGLSXP:
-        case INTSXP:
-            R_isort(INTEGER(s), n);
-            break;
-        case REALSXP:
-            R_rsort(REAL(s), n);
-            break;
-        case CPLXSXP:
-            R_csort(COMPLEX(s), n);
-            break;
-        case STRSXP:
-            ssort(STRING_PTR(s), n);
-            break;
-        }
+	switch (TYPEOF(s)) {
+	case LGLSXP:
+	case INTSXP:
+	    R_isort(INTEGER(s), n);
+	    break;
+	case REALSXP:
+	    R_rsort(REAL(s), n);
+	    break;
+	case CPLXSXP:
+	    R_csort(COMPLEX(s), n);
+	    break;
+	case STRSXP:
+	    ssort(STRING_PTR(s), n);
+	    break;
+	}
 }
+#endif
 
 SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
+    Rboolean decreasing;
 
     checkArity(op, args);
 
+    decreasing = asLogical(CADR(args));
+    if (decreasing == NA_LOGICAL)
+        error("`decreasing' is invalid");
     if (CAR(args) == R_NilValue)
         return R_NilValue;
     if (!isVectorAtomic(CAR(args)))
         errorcall(call, "only atomic vectors can be sorted");
-    if (isUnsorted(CAR(args)))
+    if (decreasing || isUnsorted(CAR(args)))
     { /* do not duplicate if sorted */
         ans = duplicate(CAR(args));
-        sortVector(ans);
+        sortVector(ans, decreasing);
         return (ans);
     }
     else
         return (CAR(args));
+}
+
+/* faster versions of shellsort, following Sedgewick (1986) */
+
+#define hinit(n) (n >= 4) ? n / 4 : 1
+
+static void R_isort2(int *x, int n, Rboolean decreasing)
+{
+    int v;
+    int i, j, h, t;
+
+    for (t = 1; 4 * t * t <= n; t += t)
+        ;
+    for (h = hinit(n); t > 0; t /= 2, h = t * t - (3 * t) / 2 + 1)
+        for (i = h; i < n; i++)
+        {
+            v = x[i];
+            j = i;
+            if (decreasing)
+                while (j >= h && x[j - h] < v)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            else
+                while (j >= h && x[j - h] > v)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            x[j] = v;
+        }
+}
+
+static void R_rsort2(double *x, int n, Rboolean decreasing)
+{
+    double v;
+    int i, j, h, t;
+
+    for (t = 1; 4 * t * t <= n; t += t)
+        ;
+    for (h = hinit(n); t > 0; t /= 2, h = t * t - (3 * t) / 2 + 1)
+        for (i = h; i < n; i++)
+        {
+            v = x[i];
+            j = i;
+            if (decreasing)
+                while (j >= h && x[j - h] < v)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            else
+                while (j >= h && x[j - h] > v)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            x[j] = v;
+        }
+}
+
+static void R_csort2(Rcomplex *x, int n, Rboolean decreasing)
+{
+    Rcomplex v;
+    int i, j, h, t;
+
+    for (t = 1; 4 * t * t <= n; t += t)
+        ;
+    for (h = hinit(n); t > 0; t /= 2, h = t * t - (3 * t) / 2 + 1)
+        for (i = h; i < n; i++)
+        {
+            v = x[i];
+            j = i;
+            if (decreasing)
+                while (j >= h && (x[j - h].r < v.r || (x[j - h].r == v.r && x[j - h].i < v.i)))
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            else
+                while (j >= h && (x[j - h].r > v.r || (x[j - h].r == v.r && x[j - h].i > v.i)))
+                    x[j] = v;
+        }
+}
+
+void ssort2(SEXP *x, int n, Rboolean decreasing)
+{
+    SEXP v;
+    int i, j, h, t;
+
+    for (t = 1; 4 * t * t <= n; t += t)
+        ;
+    for (h = hinit(n); t > 0; t /= 2, h = t * t - (3 * t) / 2 + 1)
+        for (i = h; i < n; i++)
+        {
+            v = x[i];
+            j = i;
+            if (decreasing)
+                while (j >= h && scmp(x[j - h], v, TRUE) < 0)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            else
+                while (j >= h && scmp(x[j - h], v, TRUE) > 0)
+                {
+                    x[j] = x[j - h];
+                    j -= h;
+                }
+            x[j] = v;
+        }
+}
+
+void sortVector(SEXP s, Rboolean decreasing)
+{
+    int n = LENGTH(s);
+    if (n >= 2 && (decreasing || isUnsorted(s)))
+        switch (TYPEOF(s))
+        {
+        case LGLSXP:
+        case INTSXP:
+            R_isort2(INTEGER(s), n, decreasing);
+            break;
+        case REALSXP:
+            R_rsort2(REAL(s), n, decreasing);
+            break;
+        case CPLXSXP:
+            R_csort2(COMPLEX(s), n, decreasing);
+            break;
+        case STRSXP:
+            ssort2(STRING_PTR(s), n, decreasing);
+            break;
+        }
 }
 
 /*--- Part III: Partial Sorting ---*/
@@ -458,7 +615,7 @@ static int equal(int i, int j, SEXP x, Rboolean nalast)
     return 0;
 }
 
-static int greater(int i, int j, SEXP x, Rboolean nalast)
+static int greater(int i, int j, SEXP x, Rboolean nalast, Rboolean decreasing)
 {
     int c = -1;
 
@@ -478,13 +635,15 @@ static int greater(int i, int j, SEXP x, Rboolean nalast)
         c = scmp(STRING_ELT(x, i), STRING_ELT(x, j), nalast);
         break;
     }
-    if (c > 0)
+    if (!decreasing && c > 0)
+        return 1;
+    if (decreasing && c < 0)
         return 1;
     return 0;
 }
 
 /* listgreater(): used as greater_sub in orderVector() in do_order(...) */
-static int listgreater(int i, int j, SEXP key, Rboolean nalast)
+static int listgreater(int i, int j, SEXP key, Rboolean nalast, Rboolean decreasing)
 {
     SEXP x;
     int c = -1;
@@ -508,6 +667,8 @@ static int listgreater(int i, int j, SEXP key, Rboolean nalast)
             c = scmp(STRING_ELT(x, i), STRING_ELT(x, j), nalast);
             break;
         }
+        if (decreasing)
+            c = -c;
         if (c > 0)
             return 1;
         if (c < 0)
@@ -519,35 +680,25 @@ static int listgreater(int i, int j, SEXP key, Rboolean nalast)
     return 1;
 }
 
-static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, int greater_sub())
+static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasing, int greater_sub())
 {
-    int i, j, h;
+    int i, j, h, t;
     int itmp;
 
-    h = 1;
-    do
-    {
-        h = 3 * h + 1;
-    } while (h <= n);
-
-    do
-    {
-        h = h / 3;
+    for (t = 1; 4 * t * t <= n; t += t)
+        ;
+    for (h = hinit(n); t > 0; t /= 2, h = t * t - (3 * t) / 2 + 1)
         for (i = h; i < n; i++)
         {
             itmp = indx[i];
             j = i;
-            while (greater_sub(indx[j - h], itmp, key, nalast))
+            while (j >= h && greater_sub(indx[j - h], itmp, key, nalast, decreasing))
             {
                 indx[j] = indx[j - h];
-                j = j - h;
-                if (j < h)
-                    goto next_h;
+                j -= h;
             }
-        next_h:
             indx[j] = itmp;
         }
-    } while (h != 1);
 }
 
 /* FUNCTION order(...) */
@@ -555,11 +706,16 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ap, ans;
     int i, n = -1, narg = 0;
-    Rboolean nalast;
+    Rboolean nalast, decreasing;
 
     nalast = asLogical(CAR(args));
     if (nalast == NA_LOGICAL)
         error("`na.last' is invalid");
+    args = CDR(args);
+    decreasing = asLogical(CAR(args));
+    if (decreasing == NA_LOGICAL)
+        error("`decreasing' is invalid");
+    nalast ^= decreasing;
     args = CDR(args);
     if (args == R_NilValue)
         return R_NilValue;
@@ -578,9 +734,9 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = i;
-        orderVector(INTEGER(ans), n, args, nalast, listgreater);
+        orderVector(INTEGER(ans), n, args, nalast, decreasing, listgreater);
         for (i = 0; i < n; i++)
-            INTEGER(ans)[i] += 1;
+            INTEGER(ans)[i]++;
     }
     return ans;
 }
@@ -609,7 +765,7 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
         rk = REAL(rank);
         for (i = 0; i < n; i++)
             in[i] = i;
-        orderVector(in, n, x, TRUE, greater);
+        orderVector(in, n, x, TRUE, FALSE, greater);
         i = 0;
         while (i < n)
         {
