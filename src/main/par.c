@@ -1338,8 +1338,9 @@ static SEXP Query(char *what, DevDesc *dd)
     }
     else if (streql(what, "bg"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.bg));
+        UNPROTECT(1);
     }
     else if (streql(what, "bty"))
     {
@@ -1383,28 +1384,33 @@ static SEXP Query(char *what, DevDesc *dd)
     }
     else if (streql(what, "col"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.col));
+        UNPROTECT(1);
     }
     else if (streql(what, "col.main"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.colmain));
+        UNPROTECT(1);
     }
     else if (streql(what, "col.lab"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.collab));
+        UNPROTECT(1);
     }
     else if (streql(what, "col.sub"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.colsub));
+        UNPROTECT(1);
     }
     else if (streql(what, "col.axis"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.colaxis));
+        UNPROTECT(1);
     }
     else if (streql(what, "cra"))
     {
@@ -1435,8 +1441,9 @@ static SEXP Query(char *what, DevDesc *dd)
     }
     else if (streql(what, "fg"))
     {
-        value = allocVector(STRSXP, 1);
+        PROTECT(value = allocVector(STRSXP, 1));
         STRING(value)[0] = mkChar(col2name(dd->dp.fg));
+        UNPROTECT(1);
     }
     else if (streql(what, "fig"))
     {
