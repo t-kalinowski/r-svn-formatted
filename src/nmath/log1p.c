@@ -84,7 +84,9 @@ double log1p(double x)
 
     if (x == 0.)
         return 0.; /* speed */
-    if (x <= -1)
+    if (x == -1)
+        return (R_NegInf);
+    if (x < -1)
         ML_ERR_return_NAN;
 
     if (x < xmin)
