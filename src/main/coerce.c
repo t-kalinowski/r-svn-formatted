@@ -164,7 +164,7 @@ int IntegerFromString(SEXP x, int *warn)
     if (x != R_NaString)
     {
         xdouble = strtod(CHAR(x), &endp);
-        if (isBlankString(endp))
+        if (isBlankString((unsigned char *)endp))
         {
             if (xdouble > INT_MAX)
             {
@@ -214,7 +214,7 @@ double RealFromString(SEXP x, int *warn)
     if (x != R_NaString)
     {
         xdouble = strtod(CHAR(x), &endp);
-        if (isBlankString(endp))
+        if (isBlankString((unsigned char *)endp))
             return xdouble;
         else
             *warn |= WARN_NA;
@@ -280,7 +280,7 @@ Rcomplex ComplexFromString(SEXP x, int *warn)
     if (x != R_NaString)
     {
         xr = strtod(endp, &endp);
-        if (isBlankString(endp))
+        if (isBlankString((unsigned char *)endp))
         {
             z.r = xr;
             z.i = 0.0;
@@ -288,7 +288,7 @@ Rcomplex ComplexFromString(SEXP x, int *warn)
         else if (*endp == '+' || *endp == '-')
         {
             xi = strtod(endp, &endp);
-            if (*endp++ == 'i' && isBlankString(endp))
+            if (*endp++ == 'i' && isBlankString((unsigned char *)endp))
             {
                 z.r = xr;
                 z.i = xi;

@@ -473,7 +473,7 @@ SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 
 extern DL_FUNC ptr_X11DeviceDriver, ptr_dataentry, ptr_R_loadhistory, ptr_R_savehistory;
 
-void R_load_X11_shlib()
+void R_load_X11_shlib(void)
 {
     char X11_DLL[PATH_MAX], buf[1000], *p;
     void *handle;
@@ -513,7 +513,7 @@ extern DL_FUNC ptr_R_Suicide, ptr_R_ShowMessage, ptr_R_ReadConsole, ptr_R_WriteC
     ptr_R_FlushConsole, ptr_R_ClearerrConsole, ptr_R_Busy, ptr_R_CleanUp, ptr_R_ShowFiles, ptr_R_ChooseFile,
     ptr_gnome_start, ptr_GnomeDeviceDriver, ptr_GTKDeviceDriver;
 
-void R_load_gnome_shlib()
+void R_load_gnome_shlib(void)
 {
     char gnome_DLL[PATH_MAX], buf[1000], *p;
     void *handle;

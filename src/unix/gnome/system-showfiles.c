@@ -140,7 +140,7 @@ static GnomeUIInfo pager_toolbar[] = {
     GNOMEUIINFO_ITEM_STOCK("Close", "Close pager", pagertb_close, GNOME_STOCK_PIXMAP_CLOSE),
     GNOMEUIINFO_END};
 
-int Rgnome_ShowFiles(int nfile, char **file, char **title, char *wtitle, int del, char *pager)
+int Rgnome_ShowFiles(int nfile, char **file, char **title, char *wtitle, Rboolean del, char *pager)
 {
     pager_data_t *pager_data;
     GtkWidget *table, *vscrollbar;

@@ -30,23 +30,24 @@
 
 #include "Defn.h"
 #include "Fileio.h"
+#include "Startup.h"
 
 #include <string.h>
 #ifndef HAVE_STRDUP
 extern char *strdup();
 #endif
 
-extern int SaveAction;
-extern int RestoreAction;
-extern int LoadSiteFile;
-extern int LoadInitFile;
-extern int DebugInitFile;
+extern SA_TYPE SaveAction;
+extern SA_TYPE RestoreAction;
+extern Rboolean LoadSiteFile;
+extern Rboolean LoadInitFile;
+extern Rboolean DebugInitFile;
 
 /* Permanent copy of the command line arguments and the number
    of them passed to the application.
    These are populated via the routine R_set_command_line_arguments()
    called from R_common_command_line().
- */
+*/
 int NumCommandLineArgs = 0;
 char **CommandLineArgs = NULL;
 
@@ -170,13 +171,13 @@ void R_SaveGlobalEnv(void)
 #include <sys/types.h>
 #include <sys/stat.h>
 
-int R_FileExists(char *path)
+Rboolean R_FileExists(char *path)
 {
     struct stat sb;
     return stat(R_ExpandFileName(path), &sb) == 0;
 }
 #else
-int R_FileExists(char *path)
+Rboolean R_FileExists(char *path)
 {
     error("file existence is not available on this system");
 }
@@ -186,7 +187,7 @@ int R_FileExists(char *path)
  *  Unix file names which begin with "." are invisible.
  */
 
-int R_HiddenFile(char *name)
+Rboolean R_HiddenFile(char *name)
 {
     if (name && name[0] != '.')
         return 0;
@@ -298,10 +299,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP rval;
 
     rval = allocVector(LGLSXP, 1);
-    if (R_Interactive)
-        LOGICAL(rval)[0] = 1;
-    else
-        LOGICAL(rval)[0] = 0;
+    LOGICAL(rval)[0] = (R_Interactive) ? 1 : 0;
     return rval;
 }
 
@@ -309,7 +307,6 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
  *  INITIALIZATION HELPER CODE
  */
 
-#include "Startup.h"
 extern void R_ShowMessage(char *);
 
 void R_DefParams(Rstart Rp)

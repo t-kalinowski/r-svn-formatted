@@ -25,17 +25,6 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
-#include "Fileio.h"
-#include "Devices.h" /* KillAllDevices() [nothing else?] */
-
-#define __SYSTEM__
-#include "devUI.h"
-#undef __SYSTEM__
-
-#include "Startup.h"
-#include "Runix.h"
-
 /* necessary for some (older, i.e., ~ <= 1997) Linuxen, and apparently
    also some AIX systems.
    */
@@ -47,10 +36,19 @@
 
 #include <unistd.h> /* isatty() */
 
-void fpu_setup(int); /* in sys-unix.c */
+#include "Defn.h"
+#include "Fileio.h"
+#include "Devices.h" /* KillAllDevices() [nothing else?] */
 
-int SaveAction = SA_SAVEASK;
-int RestoreAction = SA_RESTORE;
+#define __SYSTEM__
+#include "devUI.h"
+#undef __SYSTEM__
+
+#include "Startup.h"
+#include "Runix.h"
+
+SA_TYPE SaveAction = SA_SAVEASK;
+SA_TYPE RestoreAction = SA_RESTORE;
 Rboolean UsingReadline = TRUE;
 Rboolean LoadSiteFile = TRUE;
 Rboolean LoadInitFile = TRUE;
@@ -74,15 +72,15 @@ void R_WriteConsole(char *buf, int len)
 {
     ptr_R_WriteConsole(buf, len);
 }
-void R_ResetConsole()
+void R_ResetConsole(void)
 {
     ptr_R_ResetConsole();
 }
-void R_FlushConsole()
+void R_FlushConsole(void)
 {
     ptr_R_FlushConsole();
 }
-void R_ClearerrConsole()
+void R_ClearerrConsole(void)
 {
     ptr_R_ClearerrConsole();
 }
@@ -90,11 +88,11 @@ void R_Busy(int which)
 {
     ptr_R_Busy(which);
 }
-void R_CleanUp(int saveact, int status, int runLast)
+void R_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
     ptr_R_CleanUp(saveact, status, runLast);
 }
-int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, int del, char *pager)
+int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean del, char *pager)
 {
     return ptr_R_ShowFiles(nfile, file, headers, wtitle, del, pager);
 }
@@ -102,11 +100,12 @@ int R_ChooseFile(int new, char *buf, int len)
 {
     return ptr_R_ChooseFile(new, buf, len);
 }
+
 void (*ptr_gnome_start)(int ac, char **av, Rstart Rp);
 
-void R_setStartTime();     /* in sys-unix.c */
-void R_load_X11_shlib();   /* in dynload.c */
-void R_load_gnome_shlib(); /* in dynload.c */
+void R_setStartTime(void);     /* in sys-unix.c */
+void R_load_X11_shlib(void);   /* in dynload.c */
+void R_load_gnome_shlib(void); /* in dynload.c */
 
 int Rf_initialize_R(int ac, char **av);
 

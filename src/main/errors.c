@@ -24,6 +24,7 @@
 
 #include "Defn.h"
 /* -> Errormsg.h */
+#include "Startup.h" /* rather cleanup ..*/
 
 /* limit on call length at which errorcall/warningcall is split over
    two lines */

@@ -885,11 +885,11 @@ static void NewMakeLists(SEXP obj, SEXP *sym_list, SEXP *env_list)
 #define OutVec(fp, obj, accessor, outfunc)                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
-        int count;                                                                                                     \
-        for (count = 0; count < LENGTH(obj); ++count)                                                                  \
+        int cnt;                                                                                                       \
+        for (cnt = 0; cnt < LENGTH(obj); ++cnt)                                                                        \
         {                                                                                                              \
             OutSpace(fp, 1);                                                                                           \
-            outfunc(fp, accessor(obj, count));                                                                         \
+            outfunc(fp, accessor(obj, cnt));                                                                           \
             OutNewline(fp);                                                                                            \
         }                                                                                                              \
     } while (0)
@@ -1054,9 +1054,9 @@ static void NewDataSave(SEXP s, FILE *fp)
 #define InVec(fp, obj, accessor, infunc, length)                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        int count;                                                                                                     \
-        for (count = 0; count < length; ++count)                                                                       \
-            accessor(obj, count, infunc(fp));                                                                          \
+        int cnt;                                                                                                       \
+        for (cnt = 0; cnt < length; ++cnt)                                                                             \
+            accessor(obj, cnt, infunc(fp));                                                                            \
     } while (0)
 
 #define SET_LOGICAL_ELT(x, __i__, v) (LOGICAL_ELT(x, __i__) = (v))
@@ -1854,7 +1854,7 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-void R_LoadSavedData(FILE *fp, SEXP aenv)
+static void R_LoadSavedData(FILE *fp, SEXP aenv)
 {
     SEXP a, ans;
     ans = R_LoadFromFile(fp, 0);
