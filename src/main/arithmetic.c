@@ -1414,11 +1414,11 @@ SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef UNIMP
     case 10:
         return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), dtukey);
-#endif
     case 11:
         return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), ptukey);
     case 12:
         return math4(op, CAR(args), CADR(args), CADDR(args), CADDDR(args), qtukey);
+#endif
     default:
         errorcall(lcall, "unimplemented real function\n");
     }
