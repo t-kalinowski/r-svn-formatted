@@ -624,10 +624,7 @@ static SEXP subDots(SEXP rho)
     for (a = dots, b = rval, i = 1; i <= len; a = CDR(a), b = CDR(b), i++)
     {
         sprintf(tbuf, "..%d", i);
-        if (TAG(a) != R_NilValue)
-            SET_TAG(b, TAG(a));
-        else
-            SET_TAG(b, install(tbuf));
+        SET_TAG(b, TAG(a));
         if (isSymbol(PREXPR(CAR(a))) || isLanguage(PREXPR(CAR(a))))
         {
             SETCAR(b, mkSYMSXP(mkChar(tbuf), R_UnboundValue));
@@ -718,15 +715,6 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             t2 = subDots(sysp);
             break;
-#ifdef NEWDOTS
-            t2 = findVarInFrame(sysp, R_DotsSymbol);
-            b = allocList(length(t2));
-            for (f = b; f != R_NilValue; f = CDR(f))
-            {
-                CAR(b) = PREXPR(CAR(t2));
-                t2 = CDR(t2);
-            }
-#endif
         }
     }
     /* now to splice t2 into the correct spot in actuals */
@@ -752,7 +740,27 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
-
+    else
+    { /* get rid of it */
+        if (CAR(actuals) == R_DotsSymbol)
+        {
+            UNPROTECT(1);
+            actuals = CDR(actuals);
+            PROTECT(actuals);
+        }
+        else
+        {
+            for (t1 = actuals; t1 != R_NilValue; t1 = CDR(t1))
+            {
+                if (CADR(t1) == R_DotsSymbol)
+                {
+                    tail = CDDR(t1);
+                    SETCDR(t1, tail);
+                    break;
+                }
+            }
+        }
+    }
     rlist = matchArgs(formals, actuals);
 
     /* Attach the argument names as tags */
