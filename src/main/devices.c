@@ -29,8 +29,7 @@
 
 /* Return a non-relocatable copy of a string */
 
-static SEXP gcall;
-static char *SaveString(SEXP sxp, int offset)
+static char *SaveString(SEXP sxp, int offset, SEXP gcall)
 {
     char *s;
     if (!isString(sxp) || length(sxp) <= offset)
@@ -69,34 +68,33 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     double height, width, ps;
     SEXP fam;
 
-    gcall = call;
     vmax = vmaxget();
-    file = SaveString(CAR(args), 0);
+    file = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    paper = SaveString(CAR(args), 0);
+    paper = SaveString(CAR(args), 0, call);
     args = CDR(args);
 
     /* `family' can be either one string or a 5-vector of afmpaths. */
     fam = CAR(args);
     args = CDR(args);
     if (length(fam) == 1)
-        family = SaveString(fam, 0);
+        family = SaveString(fam, 0, call);
     else if (length(fam) == 5)
     {
         if (!isString(fam))
             errorcall(call, "invalid `family' parameter");
         family = "User";
         for (i = 0; i < 5; i++)
-            afms[i] = SaveString(fam, i);
+            afms[i] = SaveString(fam, i, call);
     }
     else
         errorcall(call, "invalid `family' parameter");
 
-    encoding = SaveString(CAR(args), 0);
+    encoding = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    bg = SaveString(CAR(args), 0);
+    bg = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    fg = SaveString(CAR(args), 0);
+    fg = SaveString(CAR(args), 0, call);
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -114,7 +112,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     printit = asLogical(CAR(args));
     args = CDR(args);
-    cmd = SaveString(CAR(args), 0);
+    cmd = SaveString(CAR(args), 0, call);
 
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
@@ -162,13 +160,12 @@ SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
     double height, width;
     Rboolean debug;
 
-    gcall = call;
     vmax = vmaxget();
-    file = SaveString(CAR(args), 0);
+    file = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    bg = SaveString(CAR(args), 0);
+    bg = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    fg = SaveString(CAR(args), 0);
+    fg = SaveString(CAR(args), 0, call);
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -228,17 +225,17 @@ SEXP do_XFig(SEXP call, SEXP op, SEXP args, SEXP env)
     char *file, *paper, *family, *bg, *fg;
     int horizontal, onefile, pagecentre;
     double height, width, ps;
-    gcall = call;
+
     vmax = vmaxget();
-    file = SaveString(CAR(args), 0);
+    file = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    paper = SaveString(CAR(args), 0);
+    paper = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    family = SaveString(CAR(args), 0);
+    family = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    bg = SaveString(CAR(args), 0);
+    bg = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    fg = SaveString(CAR(args), 0);
+    fg = SaveString(CAR(args), 0, call);
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -302,17 +299,16 @@ SEXP do_PDF(SEXP call, SEXP op, SEXP args, SEXP env)
     double height, width, ps;
     int onefile;
 
-    gcall = call;
     vmax = vmaxget();
-    file = SaveString(CAR(args), 0);
+    file = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    family = SaveString(CAR(args), 0);
+    family = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    encoding = SaveString(CAR(args), 0);
+    encoding = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    bg = SaveString(CAR(args), 0);
+    bg = SaveString(CAR(args), 0, call);
     args = CDR(args);
-    fg = SaveString(CAR(args), 0);
+    fg = SaveString(CAR(args), 0, call);
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);

@@ -27,15 +27,14 @@
 #include <R_ext/Random.h>
 #include <Rmath.h> /* for rxxx functions, MATH_CHECK  */
 
-static int naflag = 0;
-
 static void invalid(SEXP call)
 {
     errorcall(call, "invalid arguments");
 }
 
-static void random1(double (*f)(), double *a, int na, double *x, int n)
+static Rboolean random1(double (*f)(), double *a, int na, double *x, int n)
 {
+    Rboolean naflag = FALSE;
     double ai;
     int i;
     errno = 0;
@@ -51,11 +50,12 @@ static void random1(double (*f)(), double *a, int na, double *x, int n)
         else
             x[i] = NA_REAL;
     }
+    return (naflag);
 }
 
 #define RAND1(num, name)                                                                                               \
     case num:                                                                                                          \
-        random1(name, REAL(a), na, REAL(x), n);                                                                        \
+        naflag = random1(name, REAL(a), na, REAL(x), n);                                                               \
         break
 
 /* "do_random1" - random sampling from 1 parameter families. */
@@ -65,6 +65,7 @@ SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a;
     int i, n, na;
+    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)))
         invalid(call);
@@ -91,7 +92,7 @@ SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
     {
         PROTECT(a = coerceVector(CADR(args), REALSXP));
-        naflag = 0;
+        naflag = FALSE;
         GetRNGstate();
         switch (PRIMVAL(op))
         {
@@ -114,10 +115,11 @@ SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
     return x;
 }
 
-static void random2(double (*f)(), double *a, int na, double *b, int nb, double *x, int n)
+static Rboolean random2(double (*f)(), double *a, int na, double *b, int nb, double *x, int n)
 {
     double ai, bi;
     int i;
+    Rboolean naflag = FALSE;
     errno = 0;
     for (i = 0; i < n; i++)
     {
@@ -132,6 +134,7 @@ static void random2(double (*f)(), double *a, int na, double *b, int nb, double 
         else
             x[i] = NA_REAL;
     }
+    return (naflag);
 }
 
 #define RAND2(num, name)                                                                                               \
@@ -146,6 +149,7 @@ SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b;
     int i, n, na, nb;
+    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)) || !isNumeric(CADDR(args)))
         invalid(call);
@@ -203,10 +207,11 @@ SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
     return x;
 }
 
-static void random3(double (*f)(), double *a, int na, double *b, int nb, double *c, int nc, double *x, int n)
+static Rboolean random3(double (*f)(), double *a, int na, double *b, int nb, double *c, int nc, double *x, int n)
 {
     double ai, bi, ci;
     int i;
+    Rboolean naflag = FALSE;
     errno = 0;
     for (i = 0; i < n; i++)
     {
@@ -217,11 +222,12 @@ static void random3(double (*f)(), double *a, int na, double *b, int nb, double 
         {
             x[i] = MATH_CHECK(f(ai, bi, ci));
             if (!R_FINITE(x[i]))
-                naflag = 1;
+                naflag = TRUE;
         }
         else
             x[i] = NA_REAL;
     }
+    return (naflag);
 }
 
 #define RAND3(num, name)                                                                                               \
@@ -236,6 +242,7 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b, c;
     int i, n, na, nb, nc;
+    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)))
         invalid(call);

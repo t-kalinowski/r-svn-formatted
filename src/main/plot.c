@@ -106,16 +106,16 @@ SEXP do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
 /* ProcessInLinePars handles inline par specifications in graphics functions.
  * It does this by calling Specify2() from ./par.c */
 
-void ProcessInlinePars(SEXP s, DevDesc *dd)
+void ProcessInlinePars(SEXP s, DevDesc *dd, SEXP call)
 {
     if (isList(s))
     {
         while (s != R_NilValue)
         {
             if (isList(CAR(s)))
-                ProcessInlinePars(CAR(s), dd);
+                ProcessInlinePars(CAR(s), dd, call);
             else if (TAG(s) != R_NilValue)
-                Specify2(CHAR(PRINTNAME(TAG(s))), CAR(s), dd);
+                Specify2(CHAR(PRINTNAME(TAG(s))), CAR(s), dd, call);
             s = CDR(s);
         }
     }
@@ -571,8 +571,7 @@ SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     if (isInteger(xlim))
     {
@@ -1085,8 +1084,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     /* First we process all the inline par values. */
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     /* At this point we know the value of "xaxt" and "yaxt",
      * so we test to see whether the relevant one is "n".
@@ -1446,8 +1444,7 @@ SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Miscellaneous Graphical Parameters -- e.g., lwd */
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     x = REAL(sx);
     y = REAL(sy);
@@ -1704,8 +1701,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     x0 = REAL(sx0);
     y0 = REAL(sy0);
@@ -2018,8 +2014,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     if (xpd == NA_INTEGER)
         Rf_gpptr(dd)->xpd = 2;
@@ -2176,8 +2171,7 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     ntxt = LENGTH(txt);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     Rf_gpptr(dd)->xpd = (xpd == NA_INTEGER) ? 2 : xpd;
 
@@ -2507,8 +2501,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     /* If we only scribble in the outer margins, */
     /* we don't want to mark the plot as dirty. */
@@ -2640,8 +2633,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     /* override par("xpd") and force clipping to figure region */
     /* NOTE: don't override to _reduce_ clipping region */
@@ -2902,7 +2894,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GSavePars(dd);
 
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     nlines = 0;
 
@@ -3052,8 +3044,7 @@ SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     Rf_gpptr(dd)->col = NA_INTEGER;
     fg = Rf_gpptr(dd)->col;
     Rf_gpptr(dd)->fg = NA_INTEGER;
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
     if (Rf_gpptr(dd)->col == NA_INTEGER)
     {
         if (Rf_gpptr(dd)->fg == NA_INTEGER)
@@ -3662,8 +3653,7 @@ SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
     Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * Rf_gpptr(dd)->cex;
     dnd_offset = GConvertYUnits(GStrWidth("m", INCHES, dd), INCHES, USER, dd);
 
@@ -3724,8 +3714,7 @@ SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     llabels = CAR(args);
     args = CDR(args);
     GSavePars(dd);
-    RecordGraphicsCall(call);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
     Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * Rf_gpptr(dd)->cex;
     dnd_offset = GStrWidth("m", INCHES, dd);
     vmax = vmaxget();
@@ -4019,7 +4008,7 @@ SEXP do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     nfg = LENGTH(fg);
 
     GSavePars(dd);
-    ProcessInlinePars(args, dd);
+    ProcessInlinePars(args, dd, call);
 
     GMode(1, dd);
     switch (type)

@@ -32,8 +32,6 @@
 #define hypot pythag
 #endif
 
-static int naflag;
-
 SEXP complex_unary(ARITHOP_TYPE code, SEXP s1)
 {
     int i, n;
@@ -630,9 +628,10 @@ static void z_tanh(Rcomplex *r, Rcomplex *z)
     r->i = -a.r;
 }
 
-static void cmath1(void (*f)(), Rcomplex *x, Rcomplex *y, int n)
+static Rboolean cmath1(void (*f)(), Rcomplex *x, Rcomplex *y, int n)
 {
     int i;
+    Rboolean naflag = FALSE;
     for (i = 0; i < n; i++)
     {
         if (ISNA(x[i].r) || ISNA(x[i].i))
@@ -648,72 +647,74 @@ static void cmath1(void (*f)(), Rcomplex *x, Rcomplex *y, int n)
             {
                 y[i].r = NA_REAL;
                 y[i].i = NA_REAL;
-                naflag = 1;
+                naflag = TRUE;
             }
 #endif
         }
     }
+
+    return (naflag);
 }
 
 SEXP complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int n;
+    Rboolean naflag = FALSE;
     PROTECT(x = CAR(args));
     n = length(x);
     PROTECT(y = allocVector(CPLXSXP, n));
-    naflag = 0;
 
     switch (PRIMVAL(op))
     {
     case 10002:
-        cmath1(z_atan, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_atan, COMPLEX(x), COMPLEX(y), n);
         break;
     case 10003:
-        cmath1(z_log, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_log, COMPLEX(x), COMPLEX(y), n);
         break;
 
     case 3:
-        cmath1(z_sqrt, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_sqrt, COMPLEX(x), COMPLEX(y), n);
         break;
 
     case 10:
-        cmath1(z_exp, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_exp, COMPLEX(x), COMPLEX(y), n);
         break;
 
     case 20:
-        cmath1(z_cos, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_cos, COMPLEX(x), COMPLEX(y), n);
         break;
     case 21:
-        cmath1(z_sin, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_sin, COMPLEX(x), COMPLEX(y), n);
         break;
     case 22:
-        cmath1(z_tan, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_tan, COMPLEX(x), COMPLEX(y), n);
         break;
     case 23:
-        cmath1(z_acos, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_acos, COMPLEX(x), COMPLEX(y), n);
         break;
     case 24:
-        cmath1(z_asin, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_asin, COMPLEX(x), COMPLEX(y), n);
         break;
 
     case 30:
-        cmath1(z_cosh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_cosh, COMPLEX(x), COMPLEX(y), n);
         break;
     case 31:
-        cmath1(z_sinh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_sinh, COMPLEX(x), COMPLEX(y), n);
         break;
     case 32:
-        cmath1(z_tanh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_tanh, COMPLEX(x), COMPLEX(y), n);
         break;
     case 33:
-        cmath1(z_acosh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_acosh, COMPLEX(x), COMPLEX(y), n);
         break;
     case 34:
-        cmath1(z_asinh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_asinh, COMPLEX(x), COMPLEX(y), n);
         break;
     case 35:
-        cmath1(z_atanh, COMPLEX(x), COMPLEX(y), n);
+        naflag = cmath1(z_atanh, COMPLEX(x), COMPLEX(y), n);
         break;
 
 #ifdef NOTYET
@@ -739,7 +740,7 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
     int i, n, na, nb;
     Rcomplex ai, bi, *a, *b, *y;
     SEXP sy;
-
+    int naflag = 0;
     na = length(sa);
     nb = length(sb);
     if ((na == 0) || (nb == 0))

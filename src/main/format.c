@@ -170,12 +170,14 @@ void formatInteger(int *x, int n, int *fieldwidth)
  * Using GLOBAL	 R_print.digits	 -- had	 #define MAXDIG R_print.digits
  */
 
-static double tbl[] = {0.e0, 1.e0, 1.e1, 1.e2, 1.e3, 1.e4, 1.e5, 1.e6, 1.e7, 1.e8, 1.e9};
+static const double tbl[] = {0.e0, 1.e0, 1.e1, 1.e2, 1.e3, 1.e4, 1.e5, 1.e6, 1.e7, 1.e8, 1.e9};
 
-static double eps; /* = 10^{- R_print.digits};
-             set in formatReal/Complex,  used in scientific() */
+#if 0
+static double eps;/* = 10^{- R_print.digits};
+			set in formatReal/Complex,  used in scientific() */
+#endif
 
-static void scientific(double *x, int *sgn, int *kpower, int *nsig)
+static void scientific(double *x, int *sgn, int *kpower, int *nsig, double eps)
 {
     /* for 1 number	 x , return
      *	sgn    = 1_{x < 0}  {0/1}
@@ -249,7 +251,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e, int nsmall)
     int neg, sgn, kpower, nsig;
     int i, naflag, nanflag, posinf, neginf;
 
-    eps = pow(10.0, -(double)R_print.digits);
+    double eps = pow(10.0, -(double)R_print.digits);
 
     nanflag = 0;
     naflag = 0;
@@ -274,7 +276,7 @@ void formatReal(double *x, int l, int *m, int *n, int *e, int nsmall)
         }
         else
         {
-            scientific(&x[i], &sgn, &kpower, &nsig);
+            scientific(&x[i], &sgn, &kpower, &nsig, eps);
 
             left = kpower + 1;
             sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
@@ -350,7 +352,7 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
     int naflag;
     int rnanflag, rposinf, rneginf, inanflag, iposinf;
 
-    eps = pow(10.0, -(double)R_print.digits);
+    double eps = pow(10.0, -(double)R_print.digits);
 
     naflag = 0;
     rnanflag = 0;
@@ -387,7 +389,7 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
             }
             else
             {
-                scientific(&(x[i].r), &sgn, &kpower, &nsig);
+                scientific(&(x[i].r), &sgn, &kpower, &nsig, eps);
 
                 left = kpower + 1;
                 sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
@@ -420,7 +422,7 @@ void formatComplex(Rcomplex *x, int l, int *mr, int *nr, int *er, int *mi, int *
             }
             else
             {
-                scientific(&(x[i].i), &sgn, &kpower, &nsig);
+                scientific(&(x[i].i), &sgn, &kpower, &nsig, eps);
 
                 left = kpower + 1;
                 sleft = ((left <= 0) ? 1 : left);

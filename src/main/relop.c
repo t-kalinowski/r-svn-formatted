@@ -27,10 +27,8 @@
 
 static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
 static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
-static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
+static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call);
 static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
-
-static SEXP rcall; /* global, for error messages */
 
 SEXP do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -98,7 +96,6 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         return allocVector(LGLSXP, 0);
     }
 
-    rcall = call;
     mismatch = FALSE;
     xarray = isArray(x);
     yarray = isArray(y);
@@ -171,7 +168,7 @@ SEXP do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
     {
         REPROTECT(x = coerceVector(x, CPLXSXP), xpi);
         REPROTECT(y = coerceVector(y, CPLXSXP), ypi);
-        x = complex_relop(PRIMVAL(op), x, y);
+        x = complex_relop(PRIMVAL(op), x, y, call);
     }
     else if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
     {
@@ -383,7 +380,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     return ans;
 }
 
-static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
+static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
 {
     int i, n, n1, n2;
     Rcomplex x1, x2;
@@ -391,7 +388,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 
     if (code != EQOP && code != NEOP)
     {
-        errorcall(rcall, "illegal comparison with complex values");
+        errorcall(call, "illegal comparison with complex values");
     }
 
     n1 = LENGTH(s1);
