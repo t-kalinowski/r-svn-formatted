@@ -553,8 +553,10 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 labw = GStrWidth(CHAR(STRING(lab)[i]), 2);
                 tnew = x - 0.5 * labw;
-                if (tnew - tlast >= gap)
-                { /* there's room */
+                /* check that there's room */
+                /* for labels */
+                if (GP->las == 2 || tnew - tlast >= gap)
+                {
                     GMtext(CHAR(STRING(lab)[i]), which, GP->mgp[1], 0, xt(REAL(at)[i]), GP->las);
                     tlast = x + 0.5 * labw;
                 }
@@ -600,7 +602,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 labw = GStrWidth(CHAR(STRING(lab)[i]), 2);
                 labw = yInchtoFig(xFigtoInch(labw));
                 tnew = y - 0.5 * labw;
-                if (tnew - tlast >= gap)
+                if (GP->las > 0 || tnew - tlast >= gap)
                 {
                     GMtext(CHAR(STRING(lab)[i]), which, GP->mgp[1], 0, yt(REAL(at)[i]), GP->las);
                     tlast = y + 0.5 * labw;
