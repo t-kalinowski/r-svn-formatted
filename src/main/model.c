@@ -276,7 +276,7 @@ static void ExtractVars(SEXP formula, int checkonly)
 }
 
 /* AllocTerm - allocate an integer array for */
-/* bit string representation of a modl term */
+/* bit string representation of a model term */
 
 static SEXP AllocTerm()
 {
@@ -397,11 +397,13 @@ static SEXP TrimRepeats(SEXP list)
     return list;
 }
 
+/*==========================================================================*/
+
 /* Model Formula Manipulation */
 /* These functions take a numerically coded */
 /* formula and fully expand it. */
 
-static SEXP EncodeVars(SEXP);
+static SEXP EncodeVars(SEXP); /* defined below */
 
 /* PlusTerms - expands ``left'' and ``right'' and */
 /* concatenates their terms (removing duplicates). */
@@ -557,9 +559,8 @@ static SEXP DeleteTerms(SEXP left, SEXP right)
     return left;
 }
 
-/* EncodeVars - model expansion and bit string */
-/* encoding.  This is the real workhorse of model */
-/* expansion. */
+/* EncodeVars - model expansion and bit string encoding. */
+/* This is the real workhorse of model expansion. */
 
 static SEXP EncodeVars(SEXP formula)
 {
@@ -767,6 +768,7 @@ static void SortTerms(SEXP *x, int n)
 /* The value is a formula with an assortment */
 /* of useful attributes. */
 
+/* .Internal(terms.formula(x, new.specials, abb, data, keep.order)) */
 SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, ans, v, pattern, formula, varnames, term, termlabs;
@@ -1045,8 +1047,7 @@ SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* Update a model formula by the replacement of "." */
-/* templates. */
+/* Update a model formula by the replacement of "." templates. */
 
 static SEXP ExpandDots(SEXP object, SEXP value)
 {
@@ -1250,10 +1251,9 @@ SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
  *
  *  Note that the "terms" argument is glued to the model frame as an
  *  attribute.  Code downstream appears to need this.
+ *
  *  Q: Is this really needed, or can we get by with less info?
  */
-
-/* .Internal(model.frame(formula, data, dots, envir, na.action)) */
 
 static SEXP SubsetSymbol;
 
@@ -1268,6 +1268,8 @@ static SEXP ProcessDots(SEXP dots, char *buf)
     TAG(dots) = install(buf);
     return dots;
 }
+
+/* .Internal(model.frame(formula, data, dots, subset, na.action)) */
 
 SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
