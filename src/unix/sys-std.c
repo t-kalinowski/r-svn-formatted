@@ -120,7 +120,6 @@ int R_SelectEx(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, stru
         volatile sel_intr_handler_t myintr = intr != NULL ? intr : onintr;
         if (SIGSETJMP(seljmpbuf, 1))
         {
-            R_interrupts_pending = 0;
             myintr();
             error("interrupt handler must not return");
             return 0; /* not reached */
@@ -137,10 +136,7 @@ int R_SelectEx(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, stru
                for and handle any pending interrupt registered by the
                standard handler. */
             if (R_interrupts_pending)
-            {
-                R_interrupts_pending = 0;
-                intr();
-            }
+                myintr();
 
             /* now do the (possibly blocking) select, restore the
                signal handler, and return the result of the select. */

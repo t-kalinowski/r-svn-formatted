@@ -78,15 +78,20 @@ void R_CheckUserInterrupt(void)
     R_ProcessEvents();
 #else
     if (R_interrupts_pending)
-    {
-        R_interrupts_pending = 0;
         onintr();
-    }
 #endif /* Win32 */
 }
 
 void onintr()
 {
+    if (R_interrupts_suspended)
+    {
+        R_interrupts_pending = 1;
+        return;
+    }
+    else
+        R_interrupts_pending = 0;
+
     REprintf("\n");
     /* Attempt to run user error option, save a traceback, show
        warnings, and reset console; also stop at restart (try/browser)
