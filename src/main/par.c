@@ -865,9 +865,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     /* else errorcall(gcall, "parameter \"%s\" is not setable\n", what); */
 }
 
-/* Specify2 -- parameters as arguments from higher-level */
-/*             graphics functions, incl.  par2(..) */
-
+/* Specify2 -- parameters as arguments from higher-level graphics functions */
 void Specify2(char *what, SEXP value, DevDesc *dd)
 {
     double x;
