@@ -5210,7 +5210,7 @@ unsigned int LTYpar(SEXP value, int index)
     else if (isInteger(value))
     {
         code = INTEGER(value)[index];
-        if (code == NA_INTEGER || code <= 0)
+        if (code == NA_INTEGER || code < 0)
             return NA_INTEGER;
         if (code > 0)
             code = (code - 1) % nlinetype + 1;
