@@ -525,7 +525,7 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP arg, ans;
     int i, l, n;
     char *p, *this;
-    Rboolean need_prefix = FALSE;
+    Rboolean need_prefix;
 
     checkArity(op, args);
     arg = CAR(args);
@@ -539,6 +539,7 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
         l = strlen(this);
         /* need to prefix names not beginning with alpha or ., as
            well as . followed by a number */
+        need_prefix = FALSE;
         if (this[0] == '.')
         {
             if (l >= 1 && isdigit((int)this[1]))
