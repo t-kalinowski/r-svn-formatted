@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2003  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2004  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -131,7 +131,7 @@ static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
 static void newX11_Mode(int mode, NewDevDesc *dd);
 static void newX11_NewPage(R_GE_gcontext *gc, NewDevDesc *dd);
 Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double h, double gamma_fac,
-                     X_COLORTYPE colormodel, int maxcube, int canvascolor);
+                     X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor);
 static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
@@ -910,7 +910,7 @@ static int R_X11IOErr(Display *dsp)
 }
 
 Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double h, double gamma_fac,
-                     X_COLORTYPE colormodel, int maxcube, int canvascolor)
+                     X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor)
 {
     /* if we have to bail out with "error", then must free(dd) and free(xd) */
     /* That means the *caller*: the X11DeviceDriver code frees xd, for example */
@@ -1008,7 +1008,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
 
     /* Foreground and Background Colors */
 
-    xd->fill = 0xffffffff; /* transparent, was R_RGB(255, 255, 255); */
+    xd->fill = bgcolor; /* was transparent */
     xd->col = R_RGB(0, 0, 0);
     xd->canvas = canvascolor;
     if (type == JPEG && !R_OPAQUE(xd->canvas))
@@ -1649,7 +1649,8 @@ static void newX11_Hold(NewDevDesc *dd)
 /*	7) maxcube			*/
 
 Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double height, double pointsize,
-                            double gamma_fac, X_COLORTYPE colormodel, int maxcube, int canvascolor, SEXP sfonts)
+                            double gamma_fac, X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor,
+                            SEXP sfonts)
 {
     newX11Desc *xd;
     char *fn;
@@ -1671,13 +1672,17 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
 
     /*	Start the Device Driver and Hardcopy.  */
 
-    if (!newX11_Open((NewDevDesc *)(dd), xd, disp_name, width, height, gamma_fac, colormodel, maxcube, canvascolor))
+    if (!newX11_Open((NewDevDesc *)(dd), xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor,
+                     canvascolor))
     {
         free(xd);
         return FALSE;
     }
 
     Rf_setNewX11DeviceData((NewDevDesc *)(dd), gamma_fac, xd);
+    xd->fill = 0xffffffff; /* this is needed to ensure that the
+                  first newpage does set whitecolor
+                  if par("bg") is not transparent */
 
 #if BUG
     R_ProcessEvents((void *)NULL);
@@ -1893,7 +1898,7 @@ static char *SaveString(SEXP sxp, int offset)
 }
 
 static DevDesc *Rf_addX11Device(char *display, double width, double height, double ps, double gamma, int colormodel,
-                                int maxcubesize, int canvascolor, char *devname, SEXP sfonts)
+                                int maxcubesize, int bgcolor, int canvascolor, char *devname, SEXP sfonts)
 {
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
@@ -1914,7 +1919,7 @@ static DevDesc *Rf_addX11Device(char *display, double width, double height, doub
          * R base graphics parameters.
          * This is supposed to happen via addDevice now.
          */
-        if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize,
+        if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor,
                                 canvascolor, sfonts))
         {
             free(dev);
@@ -1934,9 +1939,10 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char *display, *vmax, *cname, *devname;
     double height, width, ps, gamma;
-    int colormodel, maxcubesize, canvascolor;
+    int colormodel, maxcubesize, bgcolor, canvascolor;
     SEXP sc, sfonts;
 
+    checkArity(op, args);
     gcall = call;
     vmax = vmaxget();
 
@@ -1981,6 +1987,11 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     sc = CAR(args);
     if (!isString(sc) && !isInteger(sc) && !isLogical(sc) && !isReal(sc))
+        errorcall(call, "invalid value of `bg'");
+    bgcolor = RGBpar(sc, 0);
+    args = CDR(args);
+    sc = CAR(args);
+    if (!isString(sc) && !isInteger(sc) && !isLogical(sc) && !isReal(sc))
         errorcall(call, "invalid value of `canvas'");
     canvascolor = RGBpar(sc, 0);
     args = CDR(args);
@@ -1996,7 +2007,7 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (!strcmp(display, "XImage"))
         devname = "XImage";
 
-    Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, canvascolor, devname, sfonts);
+    Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor, devname, sfonts);
     vmaxset(vmax);
     return R_NilValue;
 }
