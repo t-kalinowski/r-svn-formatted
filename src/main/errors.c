@@ -63,7 +63,7 @@ static int inWarning = 0;
 
   ErrorMessage()-> errorcall   (but with message from ErrorDB[])
 
-  WarningMessage-> warningcall (but with message from WarningDB[]).
+  WarningMessage()-> warningcall (but with message from WarningDB[]).
 */
 
 void onintr()
@@ -78,7 +78,6 @@ void onintr()
 void onsigusr1()
 {
     RCNTXT *c;
-    int nback = 0;
 
     inError = 1;
 
@@ -96,15 +95,22 @@ void onsigusr1()
     R_FlushConsole();
     R_ClearerrConsole();
     R_ParseError = 0;
-    vmaxset(NULL);
-    if (R_GlobalContext->cend != NULL)
-        (R_GlobalContext->cend)();
     for (c = R_GlobalContext; c; c = c->nextcontext)
     {
+        void (*cend)() = c->cend;
+        if (cend != NULL)
+        {
+            c->cend = NULL; /* prevent recursion */
+            cend();
+        }
         if (c->cloenv != R_NilValue && c->conexit != R_NilValue)
-            eval(c->conexit, c->cloenv);
-        if (c->callflag == CTXT_RETURN || c->callflag == CTXT_GENERIC)
-            nback++;
+        {
+            SEXP s = c->conexit;
+            c->conexit = R_NilValue; /* prevent recursion */
+            PROTECT(s);
+            eval(s, c->cloenv);
+            UNPROTECT(1);
+        }
         if (c->callflag == CTXT_RESTART)
         {
             inError = 0;
@@ -132,7 +138,6 @@ void onsigusr2()
     R_FlushConsole();
     R_ClearerrConsole();
     R_ParseError = 0;
-    vmaxset(NULL);
     R_CleanUp(SA_SAVE, 0, 0);
 }
 
@@ -416,12 +421,22 @@ void jump_to_toplevel()
     R_FlushConsole();
     R_ClearerrConsole();
     R_ParseError = 0;
-    if (R_GlobalContext->cend != NULL)
-        (R_GlobalContext->cend)();
     for (c = R_GlobalContext; c; c = c->nextcontext)
     {
+        void (*cend)() = c->cend;
+        if (cend != NULL)
+        {
+            c->cend = NULL; /* prevent recursion */
+            cend();
+        }
         if (c->cloenv != R_NilValue && c->conexit != R_NilValue)
-            eval(c->conexit, c->cloenv);
+        {
+            SEXP s = c->conexit;
+            c->conexit = R_NilValue; /* prevent recursion */
+            PROTECT(s);
+            eval(s, c->cloenv);
+            UNPROTECT(1);
+        }
         if (c->callflag == CTXT_RETURN || c->callflag == CTXT_GENERIC)
             nback++;
         if (c->callflag == CTXT_RESTART)
