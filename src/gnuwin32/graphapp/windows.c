@@ -688,6 +688,11 @@ int ismdi()
     return (hwndClient != NULL);
 }
 
+int isiconic(window w)
+{
+    return IsIconic(w->handle);
+}
+
 PROTECTED
 rect GetCurrentWinPos(object obj)
 {
