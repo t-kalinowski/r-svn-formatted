@@ -282,11 +282,11 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
         strcpy(isNT, "win32s");
         break;
     default:
-        sprintf(isNT, "ID=%d", verinfo.dwPlatformId);
+        sprintf(isNT, "ID=%d", (int)verinfo.dwPlatformId);
         break;
     }
 
-    sprintf(ver, "Windows %s %d.%d (build %d) %s", isNT, verinfo.dwMajorVersion, verinfo.dwMinorVersion,
+    sprintf(ver, "Windows %s %d.%d (build %d) %s", isNT, (int)verinfo.dwMajorVersion, (int)verinfo.dwMinorVersion,
             LOWORD(verinfo.dwBuildNumber), verinfo.szCSDVersion);
 
     PROTECT(ans = allocVector(STRSXP, 1));

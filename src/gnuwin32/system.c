@@ -208,7 +208,7 @@ static DWORD CALLBACK threadedfgets(LPVOID unused)
 static int PipeReadConsole(char *prompt, char *buf, int len, int addhistory)
 {
     HANDLE rH;
-    int id;
+    DWORD id;
 
     if (!R_Slave)
     {
