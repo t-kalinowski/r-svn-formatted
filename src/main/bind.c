@@ -345,9 +345,16 @@ static void ComplexAnswer(SEXP x)
         {
             xi = INTEGER(x)[i];
             if (xi == NA_INTEGER)
-                REAL(ans_ptr)[ans_length++] = NA_REAL;
+            {
+                COMPLEX(ans_ptr)[ans_length].r = NA_REAL;
+                COMPLEX(ans_ptr)[ans_length].i = NA_REAL;
+            }
             else
-                REAL(ans_ptr)[ans_length++] = xi;
+            {
+                COMPLEX(ans_ptr)[ans_length].r = xi;
+                COMPLEX(ans_ptr)[ans_length].i = 0.0;
+            }
+            ans_length++;
         }
         break;
     }
