@@ -662,7 +662,10 @@ SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
                 crossprod(REAL(CAR(args)), nrx, ncx, REAL(CADR(args)), nry, ncy, REAL(ans));
         }
         PROTECT(xdims = getAttrib(CAR(args), R_DimNamesSymbol));
-        PROTECT(ydims = getAttrib(CADR(args), R_DimNamesSymbol));
+        if (sym)
+            PROTECT(ydims = xdims);
+        else
+            PROTECT(ydims = getAttrib(CADR(args), R_DimNamesSymbol));
         if (xdims != R_NilValue || ydims != R_NilValue)
         {
             SEXP dimnames, dimnamesnames, dnx = R_NilValue, dny = R_NilValue;
