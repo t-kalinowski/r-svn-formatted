@@ -1,20 +1,22 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 2002	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  A copy of the GNU General Public License is available via WWW at
+ *  http://www.gnu.org/copyleft/gpl.html.  You can also obtain it by
+ *  writing to the Free Software Foundation, Inc., 59 Temple Place,
+ *  Suite 330, Boston, MA  02111-1307  USA.
  */
 
 /*  This module contains support for S-style generic */
@@ -817,7 +819,7 @@ SEXP do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-/* ___unused___  InheritsClass() and RemoveClass() */
+/* ___unused___	 InheritsClass() and RemoveClass() */
 Rboolean InheritsClass(SEXP x, char *name)
 {
     /* does an object inherit from a class ? */
@@ -955,7 +957,7 @@ SEXP R_isMethodsDispatchOn(SEXP onOff)
             PROTECT(call = allocList(2));
             SETCAR(call, install("initMethodsDispatch"));
             eval(call, R_GlobalEnv); /* only works with
-                        methods  attached */
+                        methods	 attached */
         }
     }
     return value;
@@ -1255,7 +1257,7 @@ static SEXP get_this_generic(SEXP args)
     return (rval);
 }
 
-/* Could there be methods for this op?  Checks
+/* Could there be methods for this op?	Checks
    only whether methods are currently being dispatched and, if so,
    whether methods are currently defined for this op. */
 Rboolean R_has_methods(SEXP op)
@@ -1287,7 +1289,7 @@ void R_set_quick_method_check(R_stdGen_ptr_t value)
     quick_method_check_ptr = value;
 }
 /* try to dispatch the formal method for this primitive op, by calling
-   the stored generic function corresponding to the op.  Requires that
+   the stored generic function corresponding to the op.	 Requires that
    the methods be set up to return a special object rather than trying
    to evaluate the default (which would get us into a loop). */
 SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1305,7 +1307,7 @@ SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (current == NEEDS_RESET)
     {
         /* get the methods and store them in the in-core primitive
-       method table.  The entries will be preserved via
+       method table.	The entries will be preserved via
        R_preserveobject, so later we can just grab mlist from
        prim_mlist */
         PROTECT(mlist = get_primitive_methods(op, rho));
