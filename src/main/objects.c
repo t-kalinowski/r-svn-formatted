@@ -360,8 +360,7 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (a = CAR(s); a != R_NilValue; a = CDR(a), i++, m = CDR(m))
                 {
                     sprintf(tbuf, "..%d", i);
-                    TAG(m) = mkSYMSXP(PROTECT(mkChar(tbuf)), R_UnboundValue);
-                    UNPROTECT(1);
+                    TAG(m) = mkSYMSXP(mkChar(tbuf), R_UnboundValue);
                     CAR(m) = CAR(a);
                 }
             }
@@ -371,8 +370,10 @@ SEXP do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
                 CAR(m) = CAR(s);
             }
         }
+        UNPROTECT(1);
         actuals = t;
     }
+    PROTECT(actuals);
 
     /* we can't duplicate because it would force the promises */
     /* so we do our own duplication of the promargs */
