@@ -523,6 +523,7 @@ void markPhase(void)
 {
     int i;
     DevDesc *dd;
+    RCNTXT *ctxt;
 
     markSExp(R_NilValue); /* Builtin constants */
     markSExp(NA_STRING);
@@ -546,6 +547,9 @@ void markPhase(void)
         if (dd)
             markSExp(dd->displayList);
     }
+
+    for (ctxt = R_GlobalContext; ctxt != NULL; ctxt = ctxt->nextcontext)
+        markSExp(ctxt->conexit); /* on.exit expressions */
 
     markSExp(framenames); /* used for interprocedure
                communication in model.c */
