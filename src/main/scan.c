@@ -1190,7 +1190,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < len; i++)
     {
         tmp = CHAR(STRING_ELT(cvec, i));
-        if (!(strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp)))
+        if (!(STRING_ELT(cvec, i) == NA_STRING || strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp)))
             break;
     }
     if (i < len)
@@ -1215,7 +1215,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < len; i++)
         {
             tmp = CHAR(STRING_ELT(cvec, i));
-            if (strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
+            if (STRING_ELT(cvec, i) == NA_STRING || strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
                 LOGICAL(rval)[i] = NA_LOGICAL;
             else
             {
@@ -1242,7 +1242,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < len; i++)
         {
             tmp = CHAR(STRING_ELT(cvec, i));
-            if (strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
+            if (STRING_ELT(cvec, i) == NA_STRING || strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
                 INTEGER(rval)[i] = NA_INTEGER;
             else
             {
@@ -1266,7 +1266,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < len; i++)
         {
             tmp = CHAR(STRING_ELT(cvec, i));
-            if (strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
+            if (STRING_ELT(cvec, i) == NA_STRING || strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
                 REAL(rval)[i] = NA_REAL;
             else
             {
@@ -1290,7 +1290,7 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < len; i++)
         {
             tmp = CHAR(STRING_ELT(cvec, i));
-            if (strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
+            if (STRING_ELT(cvec, i) == NA_STRING || strlen(tmp) == 0 || isNAstring(tmp, 1, &data) || isBlankString(tmp))
                 COMPLEX(rval)[i].r = COMPLEX(rval)[i].i = NA_REAL;
             else
             {
@@ -1321,6 +1321,9 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
             j = 0;
             for (i = 0; i < len; i++)
             {
+                /* <NA> is never to be a level here */
+                if (STRING_ELT(cvec, i) == NA_STRING)
+                    continue;
                 if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i)), 1, &data))
                     j++;
             }
@@ -1328,8 +1331,12 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(levs = allocVector(STRSXP, j));
             j = 0;
             for (i = 0; i < len; i++)
+            {
+                if (STRING_ELT(cvec, i) == NA_STRING)
+                    continue;
                 if (LOGICAL(dup)[i] == 0 && !isNAstring(CHAR(STRING_ELT(cvec, i)), 1, &data))
                     SET_STRING_ELT(levs, j++, STRING_ELT(cvec, i));
+            }
 
             /* put the levels in lexicographic order */
 
