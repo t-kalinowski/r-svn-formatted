@@ -246,9 +246,15 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
+#ifdef HAVE_AQUA
+        R_Busy(1);
+#endif
         tlist = allocVector(INTSXP, 1);
         fflush(stdout);
         INTEGER(tlist)[0] = system(CHAR(STRING_ELT(CAR(args), 0)));
+#ifdef HAVE_AQUA
+        R_Busy(0);
+#endif
         R_Visible = 0;
         return tlist;
     }
