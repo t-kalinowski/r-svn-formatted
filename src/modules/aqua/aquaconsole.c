@@ -1559,7 +1559,8 @@ int NewHelpWindow(char *fileName, char *title, char *WinTitle)
         fclose(fp);
     }
 
-    TXNSetSelection(RHelpObject, 0, 0);
+    TXNSetSelection(RHelpObject, 1, 1);
+    TXNShowSelection(RHelpObject, false);
 
     ShowWindow(HelpWindow);
     BeginUpdate(HelpWindow);
