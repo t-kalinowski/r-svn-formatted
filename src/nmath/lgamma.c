@@ -61,6 +61,12 @@ double lgamma(double x)
         return x;
 #endif
 
+    if (x <= 0 && x == (int)x)
+    { /* Negative integer argument */
+        ML_ERROR(ME_RANGE);
+        return ML_POSINF; /* +Inf, since lgamma(x) = log|gamma(x)| */
+    }
+
     y = fabs(x);
 
     if (y <= 10)
@@ -68,7 +74,7 @@ double lgamma(double x)
         return log(fabs(gamma(x)));
     }
     else
-    {
+    { /* y = |x| > 10  */
 
         if (y > xmax)
         {
@@ -79,10 +85,13 @@ double lgamma(double x)
         if (x > 0)
             return M_LN_SQRT_2PI + (x - 0.5) * log(x) - x + lgammacor(y);
 
+        /* else: x < -10 */
         sinpiy = fabs(sin(M_PI * y));
 
         if (sinpiy == 0)
-        { /* Negative integer argument */
+        { /* Negative integer argument ===
+     Now UNNECESSARY: caught above */
+            warning(" **this  should NEVER happen! *** [lgamma.c: Neg.int]\n");
             ML_ERROR(ME_DOMAIN);
             return ML_NAN;
         }
