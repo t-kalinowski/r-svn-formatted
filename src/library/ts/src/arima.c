@@ -49,6 +49,12 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
     double sumlog = 0.0, ssq = 0, resid0, gain, tmp, *anew, *mm, *M;
     int i, j, k, l;
 
+    /* It would be better to check types before using LENGTH and REAL
+       on these, but should still work this way.  LT */
+    if (TYPEOF(sy) != REALSXP || TYPEOF(sZ) != REALSXP || TYPEOF(sa) != REALSXP || TYPEOF(sP) != REALSXP ||
+        TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
+        error("invalid argument type");
+
     anew = (double *)R_alloc(p, sizeof(double));
     M = (double *)R_alloc(p, sizeof(double));
     mm = (double *)R_alloc(p * p, sizeof(double));
@@ -149,6 +155,12 @@ SEXP KalmanSmooth(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh,
     double *at, *rt, *Pt, *gains, *resids, *Mt, *L, gn, *Nt;
     int i, j, k, l;
     Rboolean var = TRUE;
+
+    /* It would be better to check types before using LENGTH and REAL
+       on these, but should still work this way.  LT */
+    if (TYPEOF(sy) != REALSXP || TYPEOF(sZ) != REALSXP || TYPEOF(sa) != REALSXP || TYPEOF(sP) != REALSXP ||
+        TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
+        error("invalid argument type");
 
     PROTECT(ssa = duplicate(sa));
     a = REAL(ssa);
@@ -343,6 +355,12 @@ SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP
     double *Z = REAL(sZ), *a = REAL(sa0), *P = REAL(sP0), *T = REAL(sT), *V = REAL(sV), h = asReal(sh);
     int i, j, k, l;
     double fc, tmp, *mm, *anew, *Pnew;
+
+    /* It would be better to check types before using LENGTH and REAL
+       on these, but should still work this way.  LT */
+    if (TYPEOF(sZ) != REALSXP || TYPEOF(sa0) != REALSXP || TYPEOF(sP0) != REALSXP || TYPEOF(sT) != REALSXP ||
+        TYPEOF(sV) != REALSXP)
+        error("invalid argument type");
 
     anew = (double *)R_alloc(p, sizeof(double));
     Pnew = (double *)R_alloc(p * p, sizeof(double));
