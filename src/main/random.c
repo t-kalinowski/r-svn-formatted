@@ -43,14 +43,9 @@ static Rboolean random1(double (*f)(), double *a, int na, double *x, int n)
     for (i = 0; i < n; i++)
     {
         ai = a[i % na];
-        if (R_FINITE(ai))
-        {
-            x[i] = MATH_CHECK(f(ai));
-            if (!R_FINITE(x[i]))
-                naflag = 1;
-        }
-        else
-            x[i] = NA_REAL;
+        x[i] = MATH_CHECK(f(ai));
+        if (!R_FINITE(x[i]))
+            naflag = 1;
     }
     return (naflag);
 }
@@ -127,14 +122,9 @@ static Rboolean random2(double (*f)(), double *a, int na, double *b, int nb, dou
     {
         ai = a[i % na];
         bi = b[i % nb];
-        if (R_FINITE(ai) && R_FINITE(bi))
-        {
-            x[i] = MATH_CHECK(f(ai, bi));
-            if (!R_FINITE(x[i]))
-                naflag = 1;
-        }
-        else
-            x[i] = NA_REAL;
+        x[i] = MATH_CHECK(f(ai, bi));
+        if (!R_FINITE(x[i]))
+            naflag = 1;
     }
     return (naflag);
 }
@@ -221,14 +211,9 @@ static Rboolean random3(double (*f)(), double *a, int na, double *b, int nb, dou
         ai = a[i % na];
         bi = b[i % nb];
         ci = c[i % nc];
-        if (R_FINITE(ai) && R_FINITE(bi) && R_FINITE(ci))
-        {
-            x[i] = MATH_CHECK(f(ai, bi, ci));
-            if (!R_FINITE(x[i]))
-                naflag = TRUE;
-        }
-        else
-            x[i] = NA_REAL;
+        x[i] = MATH_CHECK(f(ai, bi, ci));
+        if (!R_FINITE(x[i]))
+            naflag = TRUE;
     }
     return (naflag);
 }

@@ -69,6 +69,9 @@ double rpois(double mu)
     double pois = -1.;
     int k, kflag, big_mu, new_big_mu = FALSE;
 
+    if (!R_FINITE(mu))
+        ML_ERR_return_NAN;
+
     if (mu <= 0.)
         return 0.;
 

@@ -1076,7 +1076,7 @@ int winaddmenu(char *name, char *errmsg)
         usermenus[nmenus] = m;
         strcpy(usermenunames[nmenus], name);
         nmenus++;
-        /*	show(RConsole); */
+        show(RConsole);
         return 0;
     }
     else
@@ -1176,7 +1176,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
             return 1;
         }
     }
-    /*    show(RConsole); */
+    show(RConsole);
     return 0;
 }
 
@@ -1201,7 +1201,7 @@ int windelmenu(char *menu, char *errmsg)
         usermenus[j] = usermenus[j + 1];
         strcpy(usermenunames[j], usermenunames[j + 1]);
     }
-    /*    show(RConsole); */
+    show(RConsole);
     return 0;
 }
 
@@ -1231,6 +1231,6 @@ int windelmenuitem(char *item, char *menu, char *errmsg)
     delobj(umitems[i]->m);
     strcpy(umitems[i]->name, "invalid");
     free(umitems[i]->action);
-    /*    show(RConsole); */
+    show(RConsole);
     return 0;
 }
