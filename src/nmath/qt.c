@@ -34,7 +34,7 @@
 
 #include "Mathlib.h"
 
-static double eps = 1.e-12;
+const static double eps = 1.e-12;
 
 double qt(double p, double ndf)
 {
@@ -86,7 +86,7 @@ double qt(double p, double ndf)
     else if (ndf < 1 + eps)
     {
         /* df ~= 1 */
-        prob = P * M_PI_half;
+        prob = P * M_PI_2;
         q = cos(prob) / sin(prob);
     }
     else
@@ -95,7 +95,7 @@ double qt(double p, double ndf)
         a = 1 / (ndf - 0.5);
         b = 48 / (a * a);
         c = ((20700 * a / b - 98) * a - 16) * a + 96.36;
-        d = ((94.5 / (b + c) - 3) / b + 1) * sqrt(a * M_PI_half) * ndf;
+        d = ((94.5 / (b + c) - 3) / b + 1) * sqrt(a * M_PI_2) * ndf;
         y = pow(d * P, 2 / ndf);
 
         if (y > 0.05 + a)

@@ -520,7 +520,7 @@ static void z_acos(Rcomplex *r, Rcomplex *z)
 {
     Rcomplex asin;
     z_asin(&asin, z);
-    r->r = M_PI_half - asin.r;
+    r->r = M_PI_2 - asin.r;
     r->i = -asin.i;
 }
 
@@ -548,7 +548,7 @@ static void z_atan2(Rcomplex *r, Rcomplex *csn, Rcomplex *ccs)
         }
         else
         {
-            r->r = fsign(M_PI_half, csn->r);
+            r->r = fsign(M_PI_2, csn->r);
             r->i = 0;
         }
     }
