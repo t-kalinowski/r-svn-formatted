@@ -726,19 +726,27 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
 
     n1 = LENGTH(s1);
     n2 = LENGTH(s2);
-    n = (n1 > n2) ? n1 : n2;
+    /* S4-compatibility change: if n1 or n2 is 0, result is of length 0 */
+    if (n1 == 0 || n2 == 0)
+        n = 0;
+    else
+        n = (n1 > n2) ? n1 : n2;
 
     if (code == DIVOP || code == POWOP)
         ans = allocVector(REALSXP, n);
     else
         ans = allocVector(INTSXP, n);
+    if (n1 == 0 || n2 == 0)
+        return (ans);
+    /* note: code below was surely wrong in DIVOP and POWOP cases,
+       since ans was a REALSXP.
+     */
 
-    if (n1 < 1 || n2 < 1)
-    {
+    /*    if (n1 < 1 || n2 < 1) {
         for (i = 0; i < n; i++)
             INTEGER(ans)[i] = NA_INTEGER;
         return ans;
-    }
+        } */
 
     switch (code)
     {
@@ -866,7 +874,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
         break;
     }
 
-    /* Copy attributes from longest argument. */
+    /* Copy attributes from longer argument. */
 
     if (n1 > n2)
         copyMostAttrib(s1, ans);
@@ -892,15 +900,19 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     /* Note: "s1" and "s2" are protected above. */
     n1 = LENGTH(s1);
     n2 = LENGTH(s2);
+
+    /* S4-compatibility change: if n1 or n2 is 0, result is of length 0 */
+    if (n1 == 0 || n2 == 0)
+        return (allocVector(REALSXP, 0));
+
     n = (n1 > n2) ? n1 : n2;
     ans = allocVector(REALSXP, n);
 
-    if (n1 < 1 || n2 < 1)
-    {
-        for (i = 0; i < n; i++)
-            REAL(ans)[i] = NA_REAL;
-        return ans;
-    }
+    /*    if (n1 < 1 || n2 < 1) {
+          for (i = 0; i < n; i++)
+          REAL(ans)[i] = NA_REAL;
+          return ans;
+          } */
 
     switch (code)
     {
@@ -1016,7 +1028,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         break;
     }
 
-    /* Copy attributes from longest argument. */
+    /* Copy attributes from longer argument. */
 
     if (n1 > n2)
         copyMostAttrib(s1, ans);
