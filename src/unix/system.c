@@ -295,7 +295,7 @@ int main(int ac, char **av)
             {
                 DefaultSaveAction = 2;
             }
-            if (!strcmp(*av, "-restore"))
+            else if (!strcmp(*av, "-restore"))
             {
                 DefaultRestoreAction = 1;
             }
