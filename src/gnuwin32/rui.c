@@ -394,7 +394,7 @@ static void menupkgupdate(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "update.packages()");
+    consolecmd(RConsole, "update.packages(ask='graphics')");
     /*    show(RConsole); */
 }
 
