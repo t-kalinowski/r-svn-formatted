@@ -91,7 +91,6 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 }
 
 /* Read-Eval-Print loop with interactive input */
-
 static int prompt_type;
 static char BrowsePrompt[20];
 
@@ -120,113 +119,174 @@ char *R_PromptString(int browselevel, int type)
     }
 }
 
-static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
+/*
+  This is a reorganization of the REPL (Read-Eval-Print Loop) to separate
+  the loop from the actions of the body. The motivation is to make the iteration
+  code (Rf_ReplIteration) available as a separately callable routine
+  to avoid cutting and pasting it when one wants a single iteration
+  of the loop. This is needed as we allow different implementations
+  of event loops. Currently (summer 2002), we have a package in
+  preparation that uses Rf_ReplIteration within either the
+  Tcl or Gtk event loop and allows either (or both) loops to
+  be used as a replacement for R's loop and take over the event
+  handling for the R process.
+
+  The modifications here are intended to leave the semantics of the REPL
+  unchanged, just separate into routines. So the variables that maintain
+  the state across iterations of the loop are organized into a structure
+  and passed to Rf_ReplIteration() from Rf_ReplConsole().
+*/
+
+/**
+  (local) Structure for maintaining and exchanging the state between
+  Rf_ReplConsole and its worker routine Rf_ReplIteration which is the
+  implementation of the body of the REPL.
+
+  In the future, we may need to make this accessible to packages
+  and so put it into one of the public R header files.
+ */
+typedef struct
 {
-    int c, status, browsevalue;
-    unsigned char *bufp, buf[1025];
+    int status;
+    int prompt_type;
+    int browselevel;
+    unsigned char buf[1025];
+    unsigned char *bufp;
+} R_ReplState;
+
+/**
+  This is the body of the REPL.
+  It attempts to parse the first line or expression of its input,
+  and optionally request input from the user if none is available.
+  If the input can be parsed correctly,
+     i) the resulting expression is evaluated,
+    ii) the result assigned to .Last.Value,
+   iii) top-level task handlers are invoked.
+
+ If the input cannot be parsed, i.e. there is a syntax error,
+ it is incomplete, or we encounter an end-of-file, then we
+ change the prompt accordingly.
+
+ The "cursor" for the input buffer is moved to the next starting
+ point, i.e. the end of the first line or after the first ;.
+ */
+int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *state)
+{
+    int c, browsevalue;
     SEXP value;
     Rboolean wasDisplayed = FALSE;
 
+    if (!*state->bufp)
+    {
+        R_Busy(0);
+        if (R_ReadConsole(R_PromptString(browselevel, state->prompt_type), state->buf, 1024, 1) == 0)
+            return (-1);
+        state->bufp = state->buf;
+    }
+#ifdef SHELL_ESCAPE
+    if (*state->bufp == '!')
+    {
+#ifdef HAVE_SYSTEM
+        system(&(state->buf[1]));
+#else
+        Rprintf("error: system commands are not supported in this version of R.\n");
+#endif /* HAVE_SYSTEM */
+        state->buf[0] = '\0';
+        return (0);
+    }
+#endif /* SHELL_ESCAPE */
+    while ((c = *state->bufp++))
+    {
+        R_IoBufferPutc(c, &R_ConsoleIob);
+        if (c == ';' || c == '\n')
+            break;
+    }
+
+    R_PPStackTop = savestack;
+    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &state->status);
+
+    switch (state->status)
+    {
+
+    case PARSE_NULL:
+
+        if (browselevel)
+            return (-1);
+        R_IoBufferWriteReset(&R_ConsoleIob);
+        state->prompt_type = 1;
+        return (1);
+
+    case PARSE_OK:
+
+        R_IoBufferReadReset(&R_ConsoleIob);
+        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &state->status);
+        if (browselevel)
+        {
+            browsevalue = ParseBrowser(R_CurrentExpr, rho);
+            if (browsevalue == 1)
+                return (-1);
+            if (browsevalue == 2)
+            {
+                R_IoBufferWriteReset(&R_ConsoleIob);
+                return (0);
+            }
+        }
+        R_Visible = 0;
+        R_EvalDepth = 0;
+        PROTECT(R_CurrentExpr);
+        R_Busy(1);
+        value = eval(R_CurrentExpr, rho);
+        SET_SYMVALUE(R_LastvalueSymbol, value);
+        wasDisplayed = R_Visible;
+        if (R_Visible)
+            PrintValueEnv(value, rho);
+        if (R_CollectWarnings)
+            PrintWarnings();
+        Rf_callToplevelHandlers(R_CurrentExpr, value, TRUE, wasDisplayed);
+        R_CurrentExpr = value; /* Necessary? Doubt it. */
+        UNPROTECT(1);
+        R_IoBufferWriteReset(&R_ConsoleIob);
+        state->prompt_type = 1;
+        return (1);
+
+    case PARSE_ERROR:
+
+        state->prompt_type = 1;
+        error("syntax error");
+        R_IoBufferWriteReset(&R_ConsoleIob);
+        return (1);
+
+    case PARSE_INCOMPLETE:
+
+        R_IoBufferReadReset(&R_ConsoleIob);
+        state->prompt_type = 2;
+        return (2);
+
+    case PARSE_EOF:
+
+        return (-1);
+        break;
+    }
+
+    return (0);
+}
+
+static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
+{
+    int status;
+    R_ReplState state = {0, 1, 0, "", NULL};
+
     R_IoBufferWriteReset(&R_ConsoleIob);
-    prompt_type = 1;
-    buf[0] = '\0';
-    buf[1025] = '\0'; /* stopgap measure if line > 1024 chars */
-    bufp = buf;
+    state.buf[0] = '\0';
+    state.buf[1025] = '\0'; /* stopgap measure if line > 1024 chars */
+    state.bufp = state.buf;
     if (R_Verbose)
         REprintf(" >R_ReplConsole(): before \"for(;;)\" {main.c}\n");
     for (;;)
     {
-        if (!*bufp)
-        {
-            R_Busy(0);
-            if (R_ReadConsole(R_PromptString(browselevel, prompt_type), buf, 1024, 1) == 0)
-                return;
-            bufp = buf;
-        }
-#ifdef SHELL_ESCAPE
-        if (*bufp == '!')
-        {
-#ifdef HAVE_SYSTEM
-            system(&buf[1]);
-#else
-            Rprintf("error: system commands are not supported in this version of R.\n");
-#endif
-            buf[0] = '\0';
-            continue;
-        }
-#endif
-        while ((c = *bufp++))
-        {
-            R_IoBufferPutc(c, &R_ConsoleIob);
-            if (c == ';' || c == '\n')
-                break;
-        }
-
-        R_PPStackTop = savestack;
-        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status);
-
-        switch (status)
-        {
-
-        case PARSE_NULL:
-
-            if (browselevel)
-                return;
-            R_IoBufferWriteReset(&R_ConsoleIob);
-            prompt_type = 1;
-            break;
-
-        case PARSE_OK:
-
-            R_IoBufferReadReset(&R_ConsoleIob);
-            R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status);
-            if (browselevel)
-            {
-                browsevalue = ParseBrowser(R_CurrentExpr, rho);
-                if (browsevalue == 1)
-                    return;
-                if (browsevalue == 2)
-                {
-                    R_IoBufferWriteReset(&R_ConsoleIob);
-                    break;
-                }
-            }
-            R_Visible = 0;
-            R_EvalDepth = 0;
-            PROTECT(R_CurrentExpr);
-            R_Busy(1);
-            value = eval(R_CurrentExpr, rho);
-            SET_SYMVALUE(R_LastvalueSymbol, value);
-            wasDisplayed = R_Visible;
-            if (R_Visible)
-                PrintValueEnv(value, rho);
-            if (R_CollectWarnings)
-                PrintWarnings();
-            Rf_callToplevelHandlers(R_CurrentExpr, value, TRUE, wasDisplayed);
-            R_CurrentExpr = value; /* Necessary? Doubt it. */
-            UNPROTECT(1);
-            R_IoBufferWriteReset(&R_ConsoleIob);
-            prompt_type = 1;
-            break;
-
-        case PARSE_ERROR:
-
-            error("syntax error");
-            R_IoBufferWriteReset(&R_ConsoleIob);
-            prompt_type = 1;
-            break;
-
-        case PARSE_INCOMPLETE:
-
-            R_IoBufferReadReset(&R_ConsoleIob);
-            prompt_type = 2;
-            break;
-
-        case PARSE_EOF:
-
+        status = Rf_ReplIteration(rho, savestack, browselevel, &state);
+        if (status < 0)
             return;
-            break;
-        }
     }
 }
 
@@ -974,6 +1034,8 @@ SEXP R_getTaskCallbackNames()
   We currently do not pass this to the handler.
  */
 
+/* Flag to ensure that the top-level handlers aren't called recursively.
+   Simple state to indicate that they are currently being run. */
 static Rboolean Rf_RunningToplevelHandlers = FALSE;
 
 void Rf_callToplevelHandlers(SEXP expr, SEXP value, Rboolean succeeded, Rboolean visible)
