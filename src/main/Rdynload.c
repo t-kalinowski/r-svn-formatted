@@ -371,7 +371,7 @@ DL_FUNC Rf_lookupCachedSymbol(const char *name, const char *pkg, int all)
     return ((DL_FUNC)NULL);
 }
 
-#ifdef WIN32
+#ifdef Win32
 #define DLLerrBUFSIZE 4000
 #else /* Not Windows */
 #define DLLerrBUFSIZE 1000
