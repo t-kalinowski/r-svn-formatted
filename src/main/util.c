@@ -22,8 +22,6 @@
 #include "Mathlib.h"
 #include "Print.h"
 
-SEXP mkChar(char *);
-
 SEXP ScalarLogical(int x)
 {
     SEXP ans = allocVector(LGLSXP, 1);
