@@ -340,15 +340,14 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         return len;
     }
 
+    /* Here w appears to be the minimum field width */
     char *EncodeString(char *s, int w, int quote, int right)
     {
         int b, i;
         char *p, *q;
 
         i = Rstrlen(s);
-        AllocBuffer(w);
-        if (w >= BUFSIZE)
-            w = BUFSIZE - 1; /* just so we don't fall off */
+        AllocBuffer((i + 2 >= w) ? (i + 2) : w); /* +2 allows for quotes */
         q = Encodebuf;
         if (right)
         { /* Right justifying */
@@ -446,7 +445,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         if (!right)
         { /* Left justifying */
             *q = '\0';
-            b = w - strlen(Encodebuf) - 1;
+            b = w - strlen(Encodebuf);
             for (i = 0; i < b; i++)
                 *q++ = ' ';
         }
