@@ -808,9 +808,9 @@ void ShowWorkingDir(void)
 }
 
 /*  This sets the initial working directory according to the
-    Preferences settings. If the selected directory does not
-    exists, the startup working dir is set to the the user's
-    home.
+Preferences settings. If the selected directory does not
+exists, the startup working dir is set to the the user's
+home.
 */
 void ChangeStartupDir(void)
 {
@@ -3249,7 +3249,7 @@ fail:
     return 1;
 }
 
-OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory) /* can be NULL */
+OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory)
 {
     OSStatus result;
     FSRef ref;
@@ -3406,13 +3406,14 @@ Boolean g_Stop = false;
 Boolean g_down = true;
 Boolean g_not_first = false;
 
-/* do_Down_Array
-This procedure used to maintain the reponse when you click the down array key. (about display
-                                                                                previous command in console window) */
+/*
+    do_Down_Array:
+    This procedure used to maintain the reponse when you click the down array key.
+    (about display previous command in console window)
+ */
 void HistBack(void)
 {
     SInt32 textLength;
-    char mybuf[40];
 
     if (g_start_Cmd != g_end_Cmd)
     {
@@ -3824,8 +3825,8 @@ pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, l
 OSErr GotRequiredParams(const AppleEvent *ae);
 
 /*  isImageData:
-    returns -1 on error, 0 if the file is RDX2 or RDX1,
-    1 otherwise.
+returns -1 on error, 0 if the file is RDX2 or RDX1,
+1 otherwise.
 */
 int isImageData(char *fname);
 int isImageData(char *fname)
@@ -3853,11 +3854,11 @@ int isImageData(char *fname)
 }
 
 /* HandleOpenDocument routine :
-   Description :
-   This Event will be generated when you click on a R file icon.
-   This event can only be depatched by the ProcessEvent routine.
-   Thus, even you click on the file icon of R to start R, this event
-   will not be catch until the R_readConsole start.
+Description :
+This Event will be generated when you click on a R file icon.
+This event can only be depatched by the ProcessEvent routine.
+Thus, even you click on the file icon of R to start R, this event
+will not be catch until the R_readConsole start.
 */
 pascal OSErr HandleOpenDocument(const AppleEvent *ae, AppleEvent *reply, SInt32 refCon)
 {

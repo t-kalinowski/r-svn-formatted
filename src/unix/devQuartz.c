@@ -670,6 +670,7 @@ static Rboolean Quartz_Open(NewDevDesc *dd, QuartzDesc *xd, char *dsp, double wi
                           kWindowStandardHandlerAttribute | kWindowVerticalZoomAttribute | kWindowCollapseBoxAttribute |
                               kWindowResizableAttribute | kWindowCloseBoxAttribute,
                           &devBounds, &devWindow);
+    SetWindowBounds(devWindow, kWindowContentRgn, &devBounds);
     mainRect = (*GetMainDevice())->gdRect;
     switch (xd->QuartzPos)
     {
