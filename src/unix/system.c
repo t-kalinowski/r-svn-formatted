@@ -353,7 +353,7 @@ int R_EditFiles(int nfile, char **file, char **title, char *editor)
         {
 #endif
             /* Quote path if necessary */
-            if (editor[0] != '"' && strchr(editor, ' '))
+            if (editor[0] != '"' && Rf_strchr(editor, ' '))
                 snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[0]);
             else
                 snprintf(buf, 1024, "%s \"%s\"", editor, file[0]);
