@@ -3174,7 +3174,11 @@ static int StringValue(int c)
         if (c == '\n')
         {
             xxungetc(c);
-            return ERROR;
+            /* Fix by Mark Bravington to allow multiline strings
+             * by pretending we've seen a backslash. Was:
+             * return ERROR;
+             */
+            c = '\\';
         }
         if (c == '\\')
         {
