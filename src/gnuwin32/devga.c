@@ -65,6 +65,8 @@ extern Rboolean AllDevicesKilled;
     }
 #define SHOW gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
 
+#define SF 20 /* scrollbar resolution */
+
 /********************************************************/
 /* Each driver can have its own device-specic graphical */
 /* parameters and resources.  these should be wrapped	*/
@@ -428,7 +430,7 @@ static int SetBaseFont(gadesc *xd)
 /* 2 = oblique, 3 = bold-oblique */
 
 #define SMALLEST 2
-#define LARGEST 64
+#define LARGEST 100
 
 static void SetFont(int face, int size, double rot, DevDesc *dd)
 {
@@ -1131,12 +1133,13 @@ static void devga_sbf(control c, int pos)
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     if (pos < 0)
     {
-        pos = min(-pos - 1, xd->origWidth - xd->windowWidth);
+        pos = -pos - 1;
+        pos = min(pos * SF, (xd->origWidth - xd->windowWidth + SF - 1));
         xd->xshift = -pos;
     }
     else
     {
-        pos = min(pos, xd->origHeight - xd->windowHeight);
+        pos = min(pos * SF, (xd->origHeight - xd->windowHeight + SF - 1));
         xd->yshift = -pos;
     }
     xd->resize = 1;
@@ -1152,17 +1155,25 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     xd->kind = SCREEN;
     dw = dw0 = w / pixelWidth(NULL);
     dh = h / pixelHeight(NULL);
-    if ((dw / devicewidth(NULL)) > 0.85)
+    if (resize != 3)
     {
-        d = dh / dw;
-        dw = 0.85 * devicewidth(NULL);
-        dh = d * dw;
+        if ((dw / devicewidth(NULL)) > 0.85)
+        {
+            d = dh / dw;
+            dw = 0.85 * devicewidth(NULL);
+            dh = d * dw;
+        }
+        if ((dh / deviceheight(NULL)) > 0.85)
+        {
+            d = dw / dh;
+            dh = 0.85 * deviceheight(NULL);
+            dw = d * dh;
+        }
     }
-    if ((dh / deviceheight(NULL)) > 0.85)
+    else
     {
-        d = dw / dh;
-        dh = 0.85 * deviceheight(NULL);
-        dw = d * dh;
+        dw = min(dw, 0.85 * devicewidth(NULL));
+        dh = min(dh, 0.85 * deviceheight(NULL));
     }
     iw = dw + 0.5;
     ih = dh + 0.5;
@@ -1173,8 +1184,8 @@ static int setupScreenDevice(DevDesc *dd, gadesc *xd, int w, int h, Rboolean rec
     {
         return 0;
     }
-    gchangescrollbar(xd->gawin, VWINSB, 0, ih - 1, ih, 0);
-    gchangescrollbar(xd->gawin, HWINSB, 0, iw - 1, iw, 0);
+    gchangescrollbar(xd->gawin, VWINSB, 0, ih / SF - 1, ih / SF, 0);
+    gchangescrollbar(xd->gawin, HWINSB, 0, iw / SF - 1, iw / SF, 0);
 
     addto(xd->gawin);
     gsetcursor(xd->gawin, ArrowCursor);
@@ -1577,7 +1588,7 @@ static void GA_Resize(DevDesc *dd)
             dd->dp.left = dd->gp.left = shift;
             dd->dp.right = dd->gp.right = iw0 + shift;
             xd->xshift = shift;
-            gchangescrollbar(xd->gawin, HWINSB, max(-shift, 0), xd->origWidth - 1, xd->windowWidth, 0);
+            gchangescrollbar(xd->gawin, HWINSB, max(-shift, 0) / SF, xd->origWidth / SF - 1, xd->windowWidth / SF, 0);
             if (ih0 < ih)
                 shift = (ih - ih0) / 2.0;
             else
@@ -1585,7 +1596,9 @@ static void GA_Resize(DevDesc *dd)
             dd->dp.top = dd->gp.top = shift;
             dd->dp.bottom = dd->gp.bottom = ih0 + shift;
             xd->yshift = shift;
-            gchangescrollbar(xd->gawin, VWINSB, max(-shift, 0), xd->origHeight - 1, xd->windowHeight, 0);
+            gchangescrollbar(xd->gawin, VWINSB, max(-shift, 0) / SF, xd->origHeight / SF - 1, xd->windowHeight / SF, 0);
+            xd->showWidth = xd->origWidth + min(0, xd->xshift);
+            xd->showHeight = xd->origHeight + min(0, xd->yshift);
         }
         xd->resize = FALSE;
         if (xd->kind == SCREEN)
@@ -1644,7 +1657,7 @@ static void GA_NewPage(DevDesc *dd)
     else
     {
         xd->clip = getregion(xd);
-        DRAW(gfillrect(_d, xd->bgcolor, getregion(xd)));
+        DRAW(gfillrect(_d, xd->bgcolor, xd->clip));
     }
 }
 
@@ -2138,6 +2151,13 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
     dd->dp.top = (xd->kind == PRINTER) ? rr.y : 0;  /* top */
     dd->dp.bottom = dd->dp.top + rr.height;         /* bottom */
 
+    if (resize == 3)
+    { /* might have got a shrunken window */
+        int iw = width / pixelWidth(NULL) + 0.5, ih = height / pixelHeight(NULL) + 0.5;
+        xd->origWidth = dd->dp.right = iw;
+        xd->origHeight = dd->dp.bottom = ih;
+    }
+
     /* Nominal Character Sizes in Pixels */
     gcharmetric(xd->gawin, xd->font, -1, &a, &d, &w);
     dd->dp.cra[0] = w * xd->rescale_factor;
@@ -2170,7 +2190,7 @@ Rboolean GADeviceDriver(DevDesc *dd, char *display, double width, double height,
     /* initialise device description (most of the work */
     /* has been done in GA_Open) */
 
-    xd->resize = FALSE;
+    xd->resize = (resize == 3);
     xd->locator = FALSE;
     dd->deviceSpecific = (void *)xd;
     dd->displayListOn = TRUE;

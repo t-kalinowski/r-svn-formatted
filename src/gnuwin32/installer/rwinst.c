@@ -473,15 +473,19 @@ void cPkg(button b)
     disable(fRver);
     if (!tried_to_find_rhome)
     {
+        tried_to_find_rhome = 1;
         p = getenv("R_HOME");
-        if (!p)
+        if (p)
+            strcpy(rhomelib, p);
+        else
         {
             char buf[MAX_PATH], *q, buf2[20];
             strcpy(buf2, Rver);
             strcat(buf2, "\\bin");
             for (p = getenv("PATH"); p;)
             {
-                strcpy(buf, p);
+                strncpy(buf, p, MAX_PATH);
+                buf[MAX_PATH - 1] = '\0';
                 if ((q = strchr(buf, ';')))
                     *q = '\0';
                 dosslash(buf);
@@ -498,14 +502,11 @@ void cPkg(button b)
                 return;
             strcpy(rhomelib, buf);
         }
-        else
-            strcpy(rhomelib, p);
         strcat(rhomelib, "/library");
         dosslash(rhomelib);
         strcpy(dest, rhomelib);
         settext(fDest, rhomelib);
     }
-    tried_to_find_rhome = 1;
 }
 
 char selfile[50];
@@ -1187,7 +1188,7 @@ void pagepkg1()
     }
     else
     {
-        lwarn5 = newlabel("No zip files found", rect(100, 150, 200, 20), Center);
+        lwarn5 = newlabel("No zip or ZIP files found", rect(100, 150, 200, 20), Center);
         enable(bBack);
         setaction(bBack, backpkg1);
         show(bBack);

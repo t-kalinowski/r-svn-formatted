@@ -27,7 +27,7 @@
  *	    -> PrintValueRec
  *		-> __ITSELF__  (recursion)
  *		-> PrintGenericVector	-> PrintValueRec  (recursion)
- *		-> PrintList		-> PrintValueRec  (recursion)
+ *		-> printList		-> PrintValueRec  (recursion)
  *		-> printAttributes	-> PrintValueRec  (recursion)
  *		-> PrintExpression
  *		-> printVector		>>>>> ./printvector.c
@@ -77,21 +77,26 @@ void PrintDefaults(SEXP rho)
 
 SEXP do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP file;
-    int append_, ifile;
-    Rconnection con;
+    int append_, ifile, closeOnExit;
 
-    file = CAR(args);
+    ifile = asInteger(CAR(args));
     append_ = asLogical(CADR(args));
-    if (append_ == NA_LOGICAL)
-        errorcall(call, "invalid append specification");
-
-    ifile = asInteger(file);
-    con = getConnection(R_SinkCon);
+    closeOnExit = asLogical(CADDR(args));
+    if (closeOnExit == NA_LOGICAL)
+        error("invalid value for closeOnExit");
     switch_stdout(ifile); /* will open new connection if required */
     if (R_SinkCon >= 3)
-        con->destroy(con);
+    {
+        if (R_SinkCon_to_close == 1)
+            con_close(R_SinkCon);
+        else if (R_SinkCon_to_close == 2)
+        {
+            Rconnection con = getConnection(R_SinkCon);
+            con->close(con);
+        }
+    }
     R_SinkCon = R_OutputCon = ifile;
+    R_SinkCon_to_close = closeOnExit;
     return R_NilValue;
 }
 
@@ -239,7 +244,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
 {
     int i, taglen, ns;
     SEXP dims, t, names, newcall, tmp;
-    char *pbuf, *ptag, *rn, *cn;
+    char *pbuf, *ptag, *rn, *cn, save[TAGBUFLEN + 5];
 
     ns = length(s);
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
@@ -330,8 +335,11 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 Rprintf("%s\n", tagbuf);
                 if (isObject(VECTOR_ELT(s, i)))
                 {
+                    /* need to preserve tagbuf */
+                    strcpy(save, tagbuf);
                     SETCADR(newcall, VECTOR_ELT(s, i));
                     eval(newcall, env);
+                    strcpy(tagbuf, save);
                 }
                 else
                     PrintValueRec(VECTOR_ELT(s, i), env);
@@ -598,14 +606,23 @@ void PrintValueRec(SEXP s, SEXP env)
     printAttributes(s, env);
 }
 
+/* 2000-12-30 PR#715: remove list tags from tagbuf here
+   to avoid $a$battr("foo").  Need to save and restore, since
+   attributes might be lists with attributes or just have attributes ...
+ */
 static void printAttributes(SEXP s, SEXP env)
 {
     SEXP a;
     char *ptag;
+    char save[TAGBUFLEN + 5] = "\0";
 
     a = ATTRIB(s);
     if (a != R_NilValue)
     {
+        strcpy(save, tagbuf);
+        /* remove the tag if it looks like a list not an attribute */
+        if (strlen(tagbuf) > 0 && *(tagbuf + strlen(tagbuf) - 1) != ')')
+            tagbuf[0] = '\0';
         ptag = tagbuf + strlen(tagbuf);
         while (a != R_NilValue)
         {
@@ -641,6 +658,7 @@ static void printAttributes(SEXP s, SEXP env)
             *ptag = '\0';
             a = CDR(a);
         }
+        strcpy(tagbuf, save);
     }
 } /* printAttributes */
 

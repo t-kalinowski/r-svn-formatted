@@ -1066,6 +1066,9 @@ static void *findRegion(void *start_address, unsigned long size)
     return NULL;
 }
 
+extern int R_Is_Running;
+void Rf_warning(const char *, ...);
+
 /* BDR 2000-10-28: add loop count as this infinitely looped */
 void *wsbrk(long size)
 {
@@ -1078,7 +1081,11 @@ void *wsbrk(long size)
     {
         /* will this take us over the limit? */
         if (totalAllocated + size > R_max_memory)
+        {
+            if (R_Is_Running)
+                Rf_warning("Reached total allocation of %dMb: see help(memory.size)", R_max_memory / 1048576);
             return (void *)-1;
+        }
 
         /* first check if request fits in reserved space, and if not
            try to reserve the address space (never unreserved) */

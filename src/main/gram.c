@@ -1994,9 +1994,9 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
                     nc = p - p0;
                     if (*p != '\n')
                         nc++;
-                    strncpy(SourceLine, p0, nc);
+                    strncpy((char *)SourceLine, (char *)p0, nc);
                     SourceLine[nc] = '\0';
-                    SET_STRING_ELT(source, lines++, mkChar(SourceLine));
+                    SET_STRING_ELT(source, lines++, mkChar((char *)SourceLine));
                     p0 = p + 1;
                 }
             /* PrintValue(source); */
@@ -2119,7 +2119,7 @@ static SEXP GrowList(SEXP l, SEXP s)
     return l;
 }
 
-#if 0 
+#if 0
 /* Comment Handling :R_CommentSxp is of the same form as an expression */
 /* list, each time a new { is encountered a new element is placed in the */
 /* R_CommentSxp and when a } is encountered it is removed. */
@@ -2450,14 +2450,21 @@ SEXP R_ParseFile(FILE *fp, int n, int *status)
 #include "Rconnections.h"
 static Rconnection con_parse;
 
+/* need to handle incomplete last line */
 static int con_getc(void)
 {
-    return con_parse->fgetc(con_parse);
+    int c;
+    static int last = -1000;
+
+    c = Rconn_fgetc(con_parse);
+    if (c == EOF && last != '\n')
+        c = '\n';
+    return (last = c);
 }
 
 static int con_ungetc(int c)
 {
-    return con_parse->ungetc(c, con_parse);
+    return Rconn_ungetc(c, con_parse);
 }
 
 SEXP R_ParseConn(Rconnection con, int n, int *status)
@@ -2531,7 +2538,7 @@ SEXP R_ParseBuffer(IoBuffer *buffer, int n, int *status, SEXP prompt)
         try_again:
             if (!*bufp)
             {
-                if (R_ReadConsole(Prompt(prompt, prompt_type), buf, 1024, 1) == 0)
+                if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
                     return R_NilValue;
                 bufp = buf;
             }
@@ -2570,7 +2577,7 @@ SEXP R_ParseBuffer(IoBuffer *buffer, int n, int *status, SEXP prompt)
         {
             if (!*bufp)
             {
-                if (R_ReadConsole(Prompt(prompt, prompt_type), buf, 1024, 1) == 0)
+                if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
                     return R_NilValue;
                 bufp = buf;
             }
@@ -3042,7 +3049,7 @@ static int SymbolValue(int c)
         {
             if (FunctionLevel++ == 0 && GenerateCode)
             {
-                strcpy(FunctionSource, "function");
+                strcpy((char *)FunctionSource, "function");
                 SourcePtr = FunctionSource + 8;
             }
             FunctionStart[FunctionLevel] = SourcePtr - 8;

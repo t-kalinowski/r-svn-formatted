@@ -1,5 +1,5 @@
 /*
- *  $Id: nls.c,v 1.8 2000/11/24 16:37:03 hornik Exp $
+ *  $Id: nls.c,v 1.9 2001/01/15 14:52:00 pd Exp $
  *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
@@ -201,7 +201,6 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 
 SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
 {
-
     SEXP ans, gradient, pars;
     double eps = sqrt(DOUBLE_EPS);
     int start, i, j, k, lengthTheta = 0;
@@ -220,6 +219,11 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
         temp = coerceVector(ans, REALSXP);
         UNPROTECT(1);
         PROTECT(ans = temp);
+    }
+    for (i = 0; i < LENGTH(ans); i++)
+    {
+        if (!R_finite(REAL(ans)[i]))
+            error("Missing value or an Infinity produced when evaluating the model");
     }
     for (i = 0; i < LENGTH(theta); i++)
     {
@@ -244,7 +248,11 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
                 ans_del = coerceVector(ans_del, REALSXP);
             UNPROTECT(1);
             for (k = 0; k < LENGTH(ans); k++)
+            {
+                if (!R_finite(REAL(ans_del)[k]))
+                    error("Missing value or an Infinity produced when evaluating the model");
                 REAL(gradient)[start + k] = (REAL(ans_del)[k] - REAL(ans)[k]) / delta;
+            }
             REAL(VECTOR_ELT(pars, i))[j] = origPar;
         }
     }

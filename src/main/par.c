@@ -703,7 +703,10 @@ static void Specify(char *what, SEXP value, DevDesc *dd)
             par_error(what);
         ix = CHAR(STRING_ELT(value, 0))[0];
         if (ix == 'm' || ix == 's')
+        {
             dd->dp.pty = dd->gp.pty = ix;
+            dd->dp.defaultPlot = dd->gp.defaultPlot = TRUE;
+        }
         else
             par_error(what);
     }

@@ -238,7 +238,7 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
     GConvert(&currX, &currY, g_unit, INCHES, dd);
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, s, typeface, fontindex);
+    codestring = _controlify(dd, (unsigned char *)s, typeface, fontindex);
 
     /* PAUL MURRELL
        Justification changed from char (e.g., 'l', 'c', 'r') to

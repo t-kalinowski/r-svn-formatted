@@ -634,10 +634,10 @@ SEXP type2str(SEXPTYPE t)
     return R_NilValue; /* for -Wall */
 }
 
-Rboolean isBlankString(unsigned char *s)
+Rboolean isBlankString(char *s)
 {
     while (*s)
-        if (!isspace(*s++))
+        if (!isspace((int)*s++))
             return FALSE;
     return TRUE;
 }
@@ -783,6 +783,46 @@ SEXP dcdr(SEXP l)
     return (CDR(l));
 }
 
+SEXP do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP xi, yi, ansx, ansy, ans, ansnames;
+    int y, nx = 0, ny = 0, i, j, k, nans = 0;
+
+    checkArity(op, args);
+    xi = CAR(args);
+    if (!isInteger(xi) || !(nx = LENGTH(xi)))
+        error("invalid `xinds' argument");
+    yi = CADR(args);
+    if (!isInteger(yi) || !(ny = LENGTH(yi)))
+        error("invalid `yinds' argument");
+    for (j = 0; j < ny; j++)
+        if ((y = INTEGER(yi)[j]) > 0)
+            for (i = 0; i < nx; i++)
+            {
+                if (INTEGER(xi)[i] == y)
+                    nans++;
+            }
+    PROTECT(ans = allocVector(VECSXP, 2));
+    ansx = allocVector(INTSXP, nans);
+    SET_VECTOR_ELT(ans, 0, ansx);
+    ansy = allocVector(INTSXP, nans);
+    SET_VECTOR_ELT(ans, 1, ansy);
+    for (j = 0, k = 0; j < ny; j++)
+        if ((y = INTEGER(yi)[j]) > 0)
+            for (i = 0; i < nx; i++)
+                if (INTEGER(xi)[i] == y)
+                {
+                    INTEGER(ansx)[k] = i + 1;
+                    INTEGER(ansy)[k++] = j + 1;
+                }
+    PROTECT(ansnames = allocVector(STRSXP, 2));
+    SET_STRING_ELT(ansnames, 0, mkChar("xi"));
+    SET_STRING_ELT(ansnames, 1, mkChar("yi"));
+    setAttrib(ans, R_NamesSymbol, ansnames);
+    UNPROTECT(2);
+    return ans;
+}
+
 /* Functions for getting and setting the working directory. */
 #ifdef Win32
 #include <windows.h>
@@ -821,6 +861,7 @@ SEXP do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* remove portion of path before file separator if one exists */
+
 SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s = R_NilValue; /* -Wall */
@@ -848,6 +889,7 @@ SEXP do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* remove portion of path after last file separator if one exists, else
    return "."
    */
+
 SEXP do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s = R_NilValue; /* -Wall */

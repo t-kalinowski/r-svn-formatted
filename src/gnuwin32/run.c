@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  file run.c: a simple 'reading' pipe (and a command executor)
- *  Copyright (C) 1999  Guido Masarotto  and Brian Ripley
+ *  Copyright (C) 1999, 2000  Guido Masarotto  and Brian Ripley
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -114,6 +114,14 @@ static char *expandcmd(char *cmd)
     return s;
 }
 
+/*
+   finput is either NULL or the name of a file from which to
+     redirect stdin for the child.
+   newconsole != 0 to use a new console (if not waiting)
+   visible = -1, 0, 1 for hide, minimized, default
+   inpipe != 0 to duplicate I/O handles
+*/
+
 static HANDLE pcreate(char *cmd, char *finput, int newconsole, int visible, int inpipe)
 {
     DWORD ret;
@@ -204,6 +212,7 @@ static int pwait(HANDLE p)
     return ret;
 }
 
+/* used in rpipeOpen */
 static DWORD CALLBACK threadedwait(LPVOID param)
 {
     rpipe *p = (rpipe *)param;
@@ -220,10 +229,17 @@ char *runerror()
     return RunError;
 }
 
+/*
+   wait != 0 says wait for child to terminate before returning.
+   visible = -1, 0, 1 for hide, minimized, default
+   finput is either NULL or the name of a file from which to
+     redirect stdin for the child.
+ */
 int runcmd(char *cmd, int wait, int visible, char *finput)
 {
     HANDLE p;
     int ret;
+
     /* I hope no program will use this as an error code */
     if (!(p = pcreate(cmd, finput, !wait, visible, 0)))
         return NOLAUNCH;
@@ -235,11 +251,21 @@ int runcmd(char *cmd, int wait, int visible, char *finput)
     return ret;
 }
 
-rpipe *rpipeOpen(char *cmd, int visible, char *finput)
+/*
+   finput is either NULL or the name of a file from which to
+     redirect stdin for the child.
+   newconsole != 0 to use a new console (if not waiting)
+   visible = -1, 0, 1 for hide, minimized, default
+   io = 0 to read from pipe, 1 to write to pipe.
+ */
+rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
 {
     rpipe *r;
-    HANDLE hOUT, hERR, hThread, hTHIS, hTemp;
+    HANDLE hIN, hOUT, hERR, hThread, hTHIS, hTemp;
     DWORD id;
+    BOOL res;
+
+    //    if(io) return NULL;
 
     if (!(r = (rpipe *)malloc(sizeof(struct structRPIPE))))
     {
@@ -247,10 +273,34 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput)
         return NULL;
     }
     r->process = NULL;
-    if (CreatePipe(&hTemp, &(r->write), NULL, 0) == FALSE)
+    if (io)
+    { /* pipe to write to */
+        res = CreatePipe(&(r->read), &hTemp, NULL, 0);
+        if (res == FALSE)
+        {
+            rpipeClose(r);
+            strcpy(RunError, "Impossible to create pipe");
+            return NULL;
+        }
+        hTHIS = GetCurrentProcess();
+        DuplicateHandle(hTHIS, GetStdHandle(STD_INPUT_HANDLE), hTHIS, &hIN, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        DuplicateHandle(hTHIS, hTemp, hTHIS, &r->write, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        CloseHandle(hTemp);
+        CloseHandle(hTHIS);
+        SetStdHandle(STD_INPUT_HANDLE, r->read);
+        r->process = pcreate(cmd, NULL, 1, visible, 1);
+        r->active = 1;
+        SetStdHandle(STD_INPUT_HANDLE, hIN);
+        if (!r->process)
+            return NULL;
+        else
+            return r;
+    }
+    res = CreatePipe(&hTemp, &(r->write), NULL, 0);
+    if (res == FALSE)
     {
         rpipeClose(r);
-        strcpy(RunError, "Inpossible to create pipe");
+        strcpy(RunError, "Impossible to create pipe");
         return NULL;
     }
     hTHIS = GetCurrentProcess();
@@ -270,7 +320,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput)
     if (!(hThread = CreateThread(NULL, 0, threadedwait, r, 0, &id)))
     {
         rpipeClose(r);
-        strcpy(RunError, "Inpossible to create thread/pipe");
+        strcpy(RunError, "Impossible to create thread/pipe");
         return NULL;
     }
     CloseHandle(hThread);
@@ -353,4 +403,205 @@ int rpipeClose(rpipe *r)
     i = r->exitcode;
     free(r);
     return i;
+}
+
+/* ------------------- Windows pipe connections --------------------- */
+
+#include <Defn.h>
+#include <Fileio.h>
+#include <Rconnections.h>
+
+typedef struct Wpipeconn
+{
+    rpipe *rp;
+} * RWpipeconn;
+
+static void Wpipe_open(Rconnection con)
+{
+    rpipe *rp;
+    int visible = -1, io;
+
+    io = con->mode[0] == 'w';
+    if (io)
+        visible = 1; /* Somewhere to put the output */
+    rp = rpipeOpen(con->description, visible, NULL, io);
+    if (!rp)
+        error("cannot open cmd `%s'", con->description);
+    ((RWpipeconn)(con->private))->rp = rp;
+    con->isopen = TRUE;
+    con->canwrite = io;
+    con->canread = !con->canwrite;
+    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
+        con->text = FALSE;
+    else
+        con->text = TRUE;
+    con->save = -1000;
+}
+
+static void Wpipe_close(Rconnection con)
+{
+    rpipeClose(((RWpipeconn)con->private)->rp);
+    con->isopen = FALSE;
+}
+
+static void Wpipe_destroy(Rconnection con)
+{
+    free(con->private);
+}
+
+static int Wpipe_fgetc(Rconnection con)
+{
+    rpipe *rp = ((RWpipeconn)con->private)->rp;
+    int c;
+
+    if (con->save != -1000)
+    {
+        c = con->save;
+        con->save = -1000;
+    }
+    else
+    {
+        c = rpipeGetc(rp);
+    }
+    return c == NOLAUNCH ? R_EOF : c;
+}
+
+static int Wpipe_ungetc(int c, Rconnection con)
+{
+    con->save = c;
+    return c;
+}
+
+static long null_seek(Rconnection con, int where)
+{
+    error("seek not enabled for this connection");
+    return 0; /* -Wall */
+}
+
+static int Wpipe_fflush(Rconnection con)
+{
+    BOOL res;
+
+    rpipe *rp = ((RWpipeconn)con->private)->rp;
+    res = FlushFileBuffers(rp->write);
+    return res ? 0 : EOF;
+}
+
+static size_t Wpipe_read(void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    rpipe *rp = ((RWpipeconn)con->private)->rp;
+    DWORD ntoread, read;
+
+    while (PeekNamedPipe(rp->read, NULL, 0, NULL, &ntoread, NULL))
+    {
+        if (!ntoread && !rp->active)
+        {
+            /* I got a case in which process terminated after Peek.. */
+            PeekNamedPipe(rp->read, NULL, 0, NULL, &ntoread, NULL);
+            if (!ntoread)
+                return 0; /* end of pipe */
+        }
+        if (ntoread)
+        {
+            if (ReadFile(rp->read, ptr, nitems * size, &read, NULL) == TRUE)
+                return read / size;
+            else
+                return 0; /* error */
+        }
+    }
+    return 0;
+}
+
+static size_t Wpipe_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
+{
+    rpipe *rp = ((RWpipeconn)con->private)->rp;
+    DWORD towrite = nitems * size, write, ret;
+
+    if (!rp->active)
+        return 0;
+    GetExitCodeProcess(rp->process, &ret);
+    if (ret != STILL_ACTIVE)
+    {
+        rp->active = 0;
+        warning("broken Windows pipe");
+        return 0;
+    }
+    if (WriteFile(rp->write, ptr, towrite, &write, NULL) != 0)
+        return write / size;
+    else
+        return 0;
+}
+
+#define BUFSIZE 1000
+static int Wpipe_vfprintf(Rconnection con, const char *format, va_list ap)
+{
+    char buf[BUFSIZE], *b = buf, *vmax = vmaxget();
+    int res = 0, usedRalloc = FALSE;
+
+    res = vsnprintf(b, BUFSIZE, format, ap);
+    if (res < 0)
+    { /* a failure indication, so try again */
+        usedRalloc = TRUE;
+        b = R_alloc(10 * BUFSIZE, sizeof(char));
+        res = vsnprintf(b, 10 * BUFSIZE, format, ap);
+        if (res < 0)
+        {
+            *(b + 10 * BUFSIZE) = '\0';
+            warning("printing of extremely long output is truncated");
+            res = 10 * BUFSIZE;
+        }
+    }
+    res = Wpipe_write(buf, res, 1, con);
+    if (usedRalloc)
+        vmaxset(vmax);
+    return res;
+}
+
+Rconnection newWpipe(char *description, char *mode)
+{
+    Rconnection new;
+    new = (Rconnection)malloc(sizeof(struct Rconn));
+    if (!new)
+        error("allocation of pipe connection failed");
+    new->class = (char *)malloc(strlen("pipe") + 1);
+    if (!new->class)
+    {
+        free(new);
+        error("allocation of pipe connection failed");
+    }
+    strcpy(new->class, "pipe");
+    new->description = (char *)malloc(strlen(description) + 1);
+    if (!new->description)
+    {
+        free(new->class);
+        free(new);
+        error("allocation of pipe connection failed");
+    }
+    strcpy(new->description, description);
+    strncpy(new->mode, mode, 4);
+    new->mode[4] = '\0';
+    new->isopen = new->incomplete = FALSE;
+    new->canread = new->canwrite = TRUE; /* in principle */
+    new->canseek = FALSE;
+    new->text = TRUE;
+    new->open = &Wpipe_open;
+    new->close = &Wpipe_close;
+    new->destroy = &Wpipe_destroy;
+    new->vfprintf = &Wpipe_vfprintf;
+    new->fgetc = &Wpipe_fgetc;
+    new->ungetc = &Wpipe_ungetc;
+    new->seek = &null_seek;
+    new->fflush = &Wpipe_fflush;
+    new->read = &Wpipe_read;
+    new->write = &Wpipe_write;
+    new->nPushBack = 0;
+    new->private = (void *)malloc(sizeof(struct Wpipeconn));
+    if (!new->private)
+    {
+        free(new->description);
+        free(new->class);
+        free(new);
+        error("allocation of pipe connection failed");
+    }
+    return new;
 }
