@@ -115,6 +115,7 @@ static SEXP ascommon(SEXP call, SEXP u, int type)
             v = coerceVector(v, type);
             UNPROTECT(1);
         }
+#ifdef OLD
         PROTECT(v);
         PROTECT(n = getAttrib(u, R_NamesSymbol));
         ATTRIB(v) = R_NilValue;
@@ -122,6 +123,10 @@ static SEXP ascommon(SEXP call, SEXP u, int type)
             setAttrib(v, R_NamesSymbol, n);
         OBJECT(v) = 0;
         UNPROTECT(2);
+#else
+        ATTRIB(v) = R_NilValue;
+        OBJECT(v) = 0;
+#endif
         return v;
     }
     else if (isSymbol(u) && type == STRSXP)
