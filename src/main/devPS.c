@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2002  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2003  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -926,9 +926,19 @@ static void PostScriptMoveTo(FILE *fp, double x, double y)
     fprintf(fp, "%.2f %.2f m\n", x, y);
 }
 
-static void PostScriptLineTo(FILE *fp, double x, double y)
+static void PostScriptRLineTo(FILE *fp, double x0, double y0, double x1, double y1)
 {
-    fprintf(fp, "%.2f %.2f l\n", x, y);
+    double x = x1 - x0, y = y1 - y0;
+
+    if (x == 0)
+        fprintf(fp, "0");
+    else
+        fprintf(fp, "%.2f", x);
+    if (y == 0)
+        fprintf(fp, " 0");
+    else
+        fprintf(fp, " %.2f", y);
+    fprintf(fp, " l\n");
 }
 
 static void PostScriptStartPath(FILE *fp)
@@ -943,7 +953,7 @@ static void PostScriptEndPath(FILE *fp)
 
 static void PostScriptRectangle(FILE *fp, double x0, double y0, double x1, double y1)
 {
-    fprintf(fp, "%.2f %.2f %.2f %.2f r ", x0, y0, x1, y1);
+    fprintf(fp, "%.2f %.2f %.2f %.2f r ", x0, y0, x1 - x0, y1 - y0);
 }
 
 static void PostScriptCircle(FILE *fp, double x, double y, double r)
@@ -986,7 +996,33 @@ static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, d
 {
     fprintf(fp, "%.2f %.2f ", x, y);
     PostScriptWriteString(fp, str);
-    fprintf(fp, " %.2f %.2f %.2f t\n", xc, yc, rot);
+
+    if (xc == 0)
+        fprintf(fp, " 0");
+    else if (xc == 0.5)
+        fprintf(fp, " .5");
+    else if (xc == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.2f", xc);
+
+    if (yc == 0)
+        fprintf(fp, " 0");
+    else if (yc == 0.5)
+        fprintf(fp, " .5");
+    else if (yc == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.2f", yc);
+
+    if (rot == 0)
+        fprintf(fp, " 0");
+    else if (rot == 90)
+        fprintf(fp, " 90");
+    else
+        fprintf(fp, " %.2f", rot);
+
+    fprintf(fp, " t\n");
 }
 
 /* Part 3.  Device Driver State. */
@@ -1068,12 +1104,49 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, int 
 
 static void PostScriptSetCol(FILE *fp, double r, double g, double b)
 {
-    fprintf(fp, "%.4f %.4f %.4f rgb\n", r, g, b);
+    if (r == 0)
+        fprintf(fp, "0");
+    else if (r == 1)
+        fprintf(fp, "1");
+    else
+        fprintf(fp, "%.4f", r);
+    if (g == 0)
+        fprintf(fp, " 0");
+    else if (g == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.4f", g);
+    if (b == 0)
+        fprintf(fp, " 0");
+    else if (b == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.4f", b);
+    fprintf(fp, " rgb\n");
 }
 
 static void PostScriptSetFill(FILE *fp, double r, double g, double b)
 {
-    fprintf(fp, "/bg { %.4f %.4f %.4f } def\n", r, g, b);
+    fprintf(fp, "/bg { ");
+    if (r == 0)
+        fprintf(fp, "0");
+    else if (r == 1)
+        fprintf(fp, "1");
+    else
+        fprintf(fp, "%.4f", r);
+    if (g == 0)
+        fprintf(fp, " 0");
+    else if (g == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.4f", g);
+    if (b == 0)
+        fprintf(fp, " 0");
+    else if (b == 1)
+        fprintf(fp, " 1");
+    else
+        fprintf(fp, " %.4f", b);
+    fprintf(fp, " } def\n");
 }
 
 /* Driver Support Routines */
@@ -1691,7 +1764,8 @@ static void PS_Line(double x1, double y1, double x2, double y2, int col, double 
         SetLineStyle(lty, lwd, dd);
         PostScriptStartPath(pd->psfp);
         PostScriptMoveTo(pd->psfp, x1, y1);
-        PostScriptLineTo(pd->psfp, x2, y2);
+        PostScriptRLineTo(pd->psfp, x1, y1, x2, y2);
+        /* fprintf(pd->psfp, "%.2f %.2f rl\n", x2 - x1, y2 - y1);*/
         PostScriptEndPath(pd->psfp);
     }
 }
@@ -1700,7 +1774,6 @@ static void PS_Polygon(int n, double *x, double *y, int col, int fill, double ga
                        NewDevDesc *dd)
 {
     PostScriptDesc *pd;
-    double xx, yy;
     int i, code;
 
     pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -1723,15 +1796,9 @@ static void PS_Polygon(int n, double *x, double *y, int col, int fill, double ga
             SetLineStyle(lty, lwd, dd);
         }
         fprintf(pd->psfp, "np\n");
-        xx = x[0];
-        yy = y[0];
-        fprintf(pd->psfp, "  %.2f %.2f m\n", xx, yy);
+        fprintf(pd->psfp, " %.2f %.2f m\n", x[0], y[0]);
         for (i = 1; i < n; i++)
-        {
-            xx = x[i];
-            yy = y[i];
-            fprintf(pd->psfp, "	 %.2f %.2f l\n", xx, yy);
-        }
+            PostScriptRLineTo(pd->psfp, x[i - 1], y[i - 1], x[i], y[i]);
         fprintf(pd->psfp, "cp p%d\n", code);
     }
 }
@@ -1739,7 +1806,6 @@ static void PS_Polygon(int n, double *x, double *y, int col, int fill, double ga
 static void PS_Polyline(int n, double *x, double *y, int col, double gamma, int lty, double lwd, NewDevDesc *dd)
 {
     PostScriptDesc *pd;
-    double xx, yy;
     int i;
 
     pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -1748,15 +1814,9 @@ static void PS_Polyline(int n, double *x, double *y, int col, double gamma, int 
         SetColor(col, dd);
         SetLineStyle(lty, lwd, dd);
         fprintf(pd->psfp, "np\n");
-        xx = x[0];
-        yy = y[0];
-        fprintf(pd->psfp, "%.2f %.2f m\n", xx, yy);
+        fprintf(pd->psfp, "%.2f %.2f m\n", x[0], y[0]);
         for (i = 1; i < n; i++)
-        {
-            xx = x[i];
-            yy = y[i];
-            fprintf(pd->psfp, "%.2f %.2f l\n", xx, yy);
-        }
+            PostScriptRLineTo(pd->psfp, x[i - 1], y[i - 1], x[i], y[i]);
         fprintf(pd->psfp, "o\n");
     }
 }
