@@ -40,8 +40,9 @@ Rboolean deviceChanged(double devWidthCM, double devHeightCM, GEDevDesc *dd)
 
 /* Register grid with R's graphics engine
  */
-SEXP L_initGrid()
+SEXP L_initGrid(SEXP GridEvalEnv)
 {
+    R_gridEvalEnv = GridEvalEnv;
     GEregisterSystem(gridCallback, &gridRegisterIndex);
     return R_NilValue;
 }

@@ -3,7 +3,7 @@
 #include <R_ext/Rdynload.h>
 #include "grid.h"
 
-static const R_CallMethodDef callMethods[] = {{"L_initGrid", (DL_FUNC)&L_initGrid, 0},
+static const R_CallMethodDef callMethods[] = {{"L_initGrid", (DL_FUNC)&L_initGrid, 1},
                                               {"L_killGrid", (DL_FUNC)&L_killGrid, 0},
                                               {"L_gridDirty", (DL_FUNC)&L_gridDirty, 0},
                                               {"L_currentViewport", (DL_FUNC)&L_currentViewport, 0},
