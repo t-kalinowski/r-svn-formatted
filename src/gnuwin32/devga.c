@@ -178,12 +178,12 @@ typedef struct
                      /* SCREEN section*/
     popup locpopup, grpopup;
     button stoploc;
-    menubar mbar, mbarloc;
+    menubar mbar, mbarloc, mbarconfirm;
     menu msubsave;
     menuitem mpng, mbmp, mjpeg50, mjpeg75, mjpeg100;
     menuitem mps, mpdf, mwm, mclpbm, mclpwm, mprint, mclose;
     menuitem mrec, madd, mreplace, mprev, mnext, mclear, msvar, mgvar;
-    menuitem mR, mfit, mfix, grmenustayontop;
+    menuitem mR, mfit, mfix, grmenustayontop, mnextplot;
     Rboolean recording, replaying, needsave;
     bitmap bm;
     /* PNG and JPEG section */
@@ -204,7 +204,7 @@ typedef struct
     font font;
     char fontfamily[50];
 
-    Rboolean locator;
+    Rboolean locator, confirmation;
     int clicked; /* {0,1,2} */
     int px, py, lty, lwd;
     int resizing; /* {1,2,3} */
@@ -218,6 +218,7 @@ typedef struct
     R_GE_lineend lend;
     R_GE_linejoin ljoin;
     float lmitre;
+    Rboolean enterkey; /* Set true when enter key is hit */
 } gadesc;
 
 rect getregion(gadesc *xd)
@@ -298,6 +299,8 @@ static Rboolean GA_Open(NewDevDesc *, gadesc *, char *, double, double, Rboolean
 /********************************************************/
 /* end of list of required device driver actions 	*/
 /********************************************************/
+
+Rboolean winNewFrameConfirm();
 
 /* Support Routines */
 
@@ -859,11 +862,11 @@ static void HelpMouseClick(window w, int button, point pt)
         NewDevDesc *dd = (NewDevDesc *)getdata(w);
         gadesc *xd = (gadesc *)dd->deviceSpecific;
 
-        if (!xd->locator)
+        if (!xd->locator && !xd->confirmation)
             return;
         if (button & LeftButton)
         {
-            int useBeep = asLogical(GetOption(install("locatorBell"), R_NilValue));
+            int useBeep = xd->locator && asLogical(GetOption(install("locatorBell"), R_NilValue));
             if (useBeep)
                 gabeep();
             xd->clicked = 1;
@@ -881,6 +884,13 @@ static void menustop(control m)
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     if (!xd->locator)
         return;
+    xd->clicked = 2;
+}
+
+static void menunextplot(control m)
+{
+    NewDevDesc *dd = (NewDevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
     xd->clicked = 2;
 }
 
@@ -1333,6 +1343,9 @@ static void CHelpKeyIn(control w, int key)
     case PGDN:
         menunext(xd->mnext);
         break;
+    case ENTER:
+        xd->enterkey = TRUE;
+        break;
     }
 }
 
@@ -1343,6 +1356,11 @@ static void NHelpKeyIn(control w, int key)
 
     if (xd->replaying)
         return;
+    if (key == '\n')
+    { /* ENTER has been translated to newline */
+        xd->enterkey = TRUE;
+        return;
+    }
     if (ggetkeystate() != CtrlKey)
         return;
     key = 'A' + key - 1;
@@ -1352,7 +1370,7 @@ static void NHelpKeyIn(control w, int key)
         return;
     if (key == 'W')
         menuclpwm(xd->mclpwm);
-    if (key == 'P')
+    else if (key == 'P')
         menuprint(xd->mprint);
 }
 
@@ -1580,6 +1598,12 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     MCHECK(m = newmenuitem("Stop", 0, menustop));
     setdata(m, (void *)dd);
     MCHECK(newmenuitem("Continue", 0, NULL));
+
+    /* Next the 'Click for next plot' menubar */
+    MCHECK(xd->mbarconfirm = newmenubar(NULL));
+    MCHECK(newmenu("Next"));
+    MCHECK(m = newmenuitem("Next plot", 0, menunextplot));
+    setdata(m, (void *)dd);
 
     /* Normal menubar */
     MCHECK(xd->mbar = newmenubar(mbarf));
@@ -3036,4 +3060,47 @@ menu getGraphMenu(char *menuname)
         return (xd->grpopup);
     else
         return (NULL);
+}
+
+Rboolean winNewFrameConfirm()
+{
+    char savetitle[50];
+    gadesc *xd;
+    GEDevDesc *dd = GEcurrentDevice();
+
+    /* FIXME: Many of these checks would not be necessary if this were a standard device function */
+
+    if (!dd || dd->newDevStruct != 1 || !(dd->dev) || dd->dev->open != GA_Open)
+        return FALSE;
+    xd = dd->dev->deviceSpecific;
+
+    if (!xd || xd->kind != SCREEN)
+        return FALSE;
+
+    xd->confirmation = TRUE;
+    xd->clicked = 0;
+    xd->enterkey = 0;
+    show(xd->gawin);
+    addto(xd->gawin);
+    gchangemenubar(xd->mbarconfirm);
+    gchangepopup(xd->gawin, NULL);
+    setstatus("Waiting to confirm page change");
+    strncpy(savetitle, gettext(xd->gawin), sizeof(savetitle));
+    settext(xd->gawin, "Click or hit ENTER for next page");
+    while (!xd->clicked && !xd->enterkey)
+    {
+        if (xd->buffered)
+            SHOW;
+        WaitMessage();
+        R_ProcessEvents();
+    }
+    addto(xd->gawin);
+    gchangemenubar(xd->mbar);
+    gchangepopup(xd->gawin, xd->grpopup);
+    addto(xd->gawin);
+    setstatus("R Graphics");
+    settext(xd->gawin, savetitle);
+
+    xd->confirmation = FALSE;
+    return TRUE;
 }

@@ -35,10 +35,19 @@
 #define hypot pythag
 #endif
 
+/* FIXME:  NewFrameConfirm should be a standard device function */
+
+#ifdef Win32
+extern Rboolean winNewFrameConfirm();
+#endif
+
 void NewFrameConfirm(void)
 {
     unsigned char buf[16];
-    R_ReadConsole("Hit <Return> to see next plot: ", buf, 16, 0);
+#ifdef Win32
+    if (!winNewFrameConfirm())
+#endif
+        R_ReadConsole("Hit <Return> to see next plot: ", buf, 16, 0);
 }
 
 /* Remember: +1 and/or -1 because C arrays are */
