@@ -1059,6 +1059,7 @@ static void handlechar(char *text)
     {
         CellModified = FALSE;
         clength = 0;
+        bufp = buf;
         drawelt(crow, ccol);
         return;
     }
