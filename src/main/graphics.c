@@ -4435,7 +4435,8 @@ unsigned int RGBpar(SEXP x, int i)
  */
 Rboolean isNAcol(SEXP col, int index, int ncol)
 {
-    Rboolean result;
+    Rboolean result = TRUE; /* -Wall */
+
     if (isNull(col))
         result = TRUE;
     else
