@@ -21,6 +21,7 @@
 
 #include "Defn.h"
 #include "Rdefines.h" /* for CREATE_STRING_VECTOR */
+#include "Random.h"   /* for the random number generation in samin() */
 
 static SEXP getListElement(SEXP list, char *str)
 {
@@ -68,6 +69,7 @@ static void cgmin(int n, double *Bvec, double *X, double *Fmin, int *fail, doubl
                   int type, int trace, int *fncount, int *grcount, int maxit);
 static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, int *fail, OptStruct OS,
                    double factr, double pgtol, int *fncount, int *grcount, int maxit, char *msg);
+static void samin(int n, double *pb, double *yb, int maxit, int tmax, double ti, int trace, OptStruct OS);
 
 static double fminfn(int n, double *p, OptStruct OS)
 {
@@ -167,9 +169,9 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP par, fn, gr, method, options, tmp, slower, supper;
     SEXP res, value, counts, conv;
-    int i, npar = 0, *mask, trace, maxit, fncount, grcount, nREPORT;
+    int i, npar = 0, *mask, trace, maxit, fncount, grcount, nREPORT, tmax;
     int ifail = 0;
-    double *dpar, *opar, val, abstol, reltol;
+    double *dpar, *opar, val, abstol, reltol, temp;
     char *tn;
     OptStruct OS;
     char *vmax;
@@ -232,9 +234,22 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
             REAL(par)[i] = opar[i] * (OS->parscale[i]);
         grcount = NA_INTEGER;
     }
+    else if (strcmp(tn, "SANN") == 0)
+    {
+        tmax = asInteger(getListElement(options, "tmax"));
+        temp = asReal(getListElement(options, "temp"));
+        if (tmax == NA_INTEGER)
+            error("tmax is not an integer");
+        samin(npar, dpar, &val, maxit, tmax, temp, trace, OS);
+        for (i = 0; i < npar; i++)
+            REAL(par)[i] = dpar[i] * (OS->parscale[i]);
+        fncount = maxit;
+        grcount = NA_INTEGER;
+    }
     else if (strcmp(tn, "BFGS") == 0)
     {
         SEXP ndeps;
+
         nREPORT = asInteger(getListElement(options, "REPORT"));
         if (!isNull(gr))
         {
@@ -1141,3 +1156,83 @@ static void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, doub
     *fncount = *grcount = isave[33];
     strcpy(msg, task);
 }
+
+#define E1 1.7182818 /* exp(1.0)-1.0 */
+#define STEPS 100
+
+static void samin(int n, double *pb, double *yb, int maxit, int tmax, double ti, int trace, OptStruct OS)
+
+/* Given a starting point pb[0..n-1], simulated annealing minimization
+   is performed on the function fminfn. The starting temperature
+   is input as ti. To make sann work silently set trace to zero.
+   sann makes in total maxit function evaluations, tmax
+   evaluations at each temperature. Returned quantities are pb
+   (the location of the minimum), and yb (the minimum value of
+   the function func).  Author: Adrian Trapletti
+*/
+{
+    long i, j;
+    int k, its, itdoc;
+    double t, y, dy, ytry, scale;
+    double *p, *dp, *ptry;
+
+    p = vect(n);
+    dp = vect(n);
+    ptry = vect(n);
+    GetRNGstate();
+    *yb = fminfn(n, pb, OS); /* init best system state pb, *yb */
+    if (!R_FINITE(*yb))
+        *yb = big;
+    for (j = 0; j < n; j++)
+        p[j] = pb[j];
+    y = *yb; /* init system state p, y */
+    if (trace)
+    {
+        Rprintf("sann objective function values\n");
+        Rprintf("initial       value %f\n", *yb);
+    }
+    scale = 1.0 / ti;
+    its = itdoc = 1;
+    while (its < maxit)
+    {                                   /* cool down system */
+        t = ti / log((double)its + E1); /* temperature annealing schedule */
+        k = 1;
+        while ((k <= tmax) && (its < maxit)) /* iterate at constant temperature */
+        {
+            for (i = 0; i < n; i++)
+                dp[i] = scale * t * norm_rand(); /* random perturbation */
+            for (i = 0; i < n; i++)
+                ptry[i] = p[i] + dp[i]; /* new candidate point */
+            ytry = fminfn(n, ptry, OS);
+            if (!R_FINITE(ytry))
+                ytry = big;
+            dy = ytry - y;
+            if ((dy <= 0.0) || (unif_rand() < exp(-dy / t)))
+            { /* accept new point? */
+                for (j = 0; j < n; j++)
+                    p[j] = ptry[j];
+                y = ytry;     /* update system state p, y */
+                if (y <= *yb) /* if system state is best, then update best system state pb, *yb */
+                {
+                    for (j = 0; j < n; j++)
+                        pb[j] = p[j];
+                    *yb = y;
+                }
+            }
+            its++;
+            k++;
+        }
+        if ((trace) && ((itdoc % STEPS) == 0))
+            Rprintf("iter %8d value %f\n", its - 1, *yb);
+        itdoc++;
+    }
+    if (trace)
+    {
+        Rprintf("final         value %f\n", *yb);
+        Rprintf("sann stopped after %d iterations\n", its - 1);
+    }
+    PutRNGstate();
+}
+
+#undef E1
+#undef STEPS
