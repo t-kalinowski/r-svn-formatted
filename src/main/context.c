@@ -163,6 +163,12 @@ void R_restore_globals(RCNTXT *cptr)
     R_HandlerStack = cptr->handlerstack;
     R_RestartStack = cptr->restartstack;
 #endif
+#ifdef BYTECODE
+    R_BCNodeStackTop = cptr->nodestack;
+#ifdef BC_INT_STACK
+    R_BCIntStackTop = cptr->intstack;
+#endif
+#endif
 }
 
 /* jumpfun - jump to the named context */
@@ -212,6 +218,12 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
 #ifdef NEW_CONDITION_HANDLING
     cptr->handlerstack = R_HandlerStack;
     cptr->restartstack = R_RestartStack;
+#endif
+#ifdef BYTECODE
+    cptr->nodestack = R_BCNodeStackTop;
+#ifdef BC_INT_STACK
+    cptr->intstack = R_BCIntStackTop;
+#endif
 #endif
     R_GlobalContext = cptr;
 }
