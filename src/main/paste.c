@@ -102,12 +102,13 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             if (k > 0)
             {
                 s = CHAR(STRING_ELT(VECTOR_ELT(x, j), i % k));
-                sprintf(buf, "%s", s);
+                strcpy(buf, s);
+
                 buf += LENGTH(STRING_ELT(VECTOR_ELT(x, j), i % k));
             }
             if (j != nx - 1 && sepw != 0)
             {
-                sprintf(buf, "%s", CHAR(sep));
+                strcpy(buf, CHAR(sep));
                 buf += sepw;
             }
         }
@@ -130,11 +131,11 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (i > 0)
             {
-                sprintf(buf, "%s", CHAR(sep));
+                strcpy(buf, CHAR(sep));
                 buf += sepw;
             }
             s = CHAR(STRING_ELT(ans, i));
-            sprintf(buf, "%s", s);
+            strcpy(buf, s);
             while (*buf)
                 buf++;
         }
