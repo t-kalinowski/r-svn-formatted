@@ -47,6 +47,20 @@ static int nterm;       /* # of model terms */
 static SEXP varlist;    /* variables in the model */
 static SEXP framenames; /* variables names for specified frame */
 
+static int isZeroOne(SEXP x)
+{
+    if (!isNumeric(x))
+        return 0;
+    return (asReal(x) == 0.0 || asReal(x) == 1.0);
+}
+
+static int isZero(SEXP x)
+{
+    if (!isNumeric(x))
+        return 0;
+    return asReal(x) == 0.0;
+}
+
 static int isOne(SEXP x)
 {
     if (!isNumeric(x))
@@ -97,7 +111,7 @@ static int InstallVar(SEXP var)
 
     /* Check that variable is legitimate */
 
-    if (!isSymbol(var) && !isLanguage(var) && !isOne(var))
+    if (!isSymbol(var) && !isLanguage(var) && !isZeroOne(var))
         error("invalid term in model formula\n");
 
     /* Lookup/Install it */
@@ -160,7 +174,7 @@ static void ExtractVars(SEXP formula, int checkonly)
     int len, i;
     SEXP v;
 
-    if (isNull(formula) || isOne(formula))
+    if (isNull(formula) || isZeroOne(formula))
         return;
     if (isSymbol(formula))
     {
@@ -560,6 +574,12 @@ static SEXP EncodeVars(SEXP formula)
         if (parity)
             intercept = 1;
         else
+            intercept = 0;
+        return R_NilValue;
+    }
+    else if (isZero(formula))
+    {
+        if (parity)
             intercept = 0;
         return R_NilValue;
     }
