@@ -26,7 +26,7 @@
 #endif
 
 #include "Defn.h"
-#include "Mathlib.h" /* imax2 */
+#include "R_ext/Mathlib.h" /* imax2 */
 
 #define LIST_ASSIGN(x)                                                                                                 \
     {                                                                                                                  \
