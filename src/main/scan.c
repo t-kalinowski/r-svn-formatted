@@ -1314,7 +1314,10 @@ SEXP do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (asIs)
         {
-            PROTECT(rval = cvec); /* just to balance */
+            PROTECT(rval = duplicate(cvec));
+            for (i = 0; i < len; i++)
+                if (isNAstring(CHAR(STRING_ELT(rval, i)), 1, &data))
+                    SET_STRING_ELT(rval, i, NA_STRING);
         }
         else
         {
