@@ -242,7 +242,10 @@ SEXP KalmanSmooth(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh,
         else
         {
             for (i = 0; i < p; i++)
+            {
                 a[i] = anew[i];
+                Mt[l + n * i] = 0.0;
+            }
             for (i = 0; i < p * p; i++)
                 P[i] = Pnew[i];
             gains[l] = NA_REAL;
