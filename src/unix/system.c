@@ -123,13 +123,6 @@
 #endif
 #endif
 
-#ifdef HAVE_LIBGTK
-
-#include "terminal.h"
-#include "gtkconsole.h"
-
-#endif // HAVE_LIBGTK
-
 static int UsingReadline = 1;
 static int DefaultSaveAction = 0;
 static int DefaultRestoreAction = 1;
@@ -218,7 +211,7 @@ static void readline_handler(char *line)
 
 int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
-    if (!R_Interactive)
+    if (!isatty(0))
     {
         if (!R_Quiet)
             fputs(prompt, stdout);
@@ -230,9 +223,6 @@ int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
     }
     else
     {
-#ifdef HAVE_LIBGTK
-
-#else
 #ifdef HAVE_LIBREADLINE
         if (UsingReadline)
         {
@@ -278,19 +268,15 @@ int R_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
                 }
             }
         }
-#endif // HAVE_LIBGTK
     }
 }
 
 /* Write a text buffer to the console. */
 /* All system output is filtered through this routine. */
+
 void R_WriteConsole(char *buf, int len)
 {
-#ifdef HAVE_LIBGTK
-    gtk_console_write(GTK_CONSOLE(R_gtk_terminal_text), buf, len);
-#else
     printf("%s", buf);
-#endif
 }
 
 /* Indicate that input is coming from the console */
@@ -303,18 +289,14 @@ void R_ResetConsole()
 
 void R_FlushConsole()
 {
-#ifndef HAVE_LIBGTK
     fflush(stdin);
-#endif
 }
 
 /* Reset stdin if the user types EOF on the console. */
 
 void R_ClearerrConsole()
 {
-#ifndef HAVE_LIBGTK
     clearerr(stdin);
-#endif
 }
 
 /*--- File Handling Code ---*/
@@ -420,10 +402,6 @@ int main(int ac, char **av)
 {
     int value;
     char *p;
-
-#ifdef HAVE_LIBGTK
-    gtk_init(&ac, &av);
-#endif
 
     gc_inhibit_torture = 1;
 #ifdef HAVE_TIMES
@@ -587,10 +565,7 @@ int main(int ac, char **av)
 
     R_Interactive = isatty(0);
     R_Consolefile = stdout;
-#ifndef HAVE_LIBGTK
-    // This ensures that normal output is sent through R_Writeconsole
     R_Outputfile = stdout;
-#endif
     R_Sinkfile = NULL;
 
     if (!R_Interactive && DefaultSaveAction == 0)
@@ -606,18 +581,12 @@ int main(int ac, char **av)
 
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-    if (R_Interactive && UsingReadline)
+    if (isatty(0) && UsingReadline)
         read_history(".Rhistory");
 #endif
 #endif
-
-#ifdef HAVE_LIBGTK
-    R_gtk_terminal_new();
-#endif
-
     mainloop();
     /*++++++  in ../main/main.c */
-
     return 0;
 
 badargs:
@@ -648,7 +617,7 @@ void R_CleanUp(int ask)
     qask:
         R_ClearerrConsole();
         R_FlushConsole();
-        if (!R_Interactive && ask == 1)
+        if (!isatty(0) && ask == 1)
             ask = DefaultSaveAction;
 
         if (ask == 1)
@@ -667,7 +636,7 @@ void R_CleanUp(int ask)
             R_SaveGlobalEnv();
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-            if (R_Interactive && UsingReadline)
+            if (isatty(0) && UsingReadline)
                 write_history(".Rhistory");
 #endif
 #endif
@@ -848,7 +817,7 @@ SEXP do_interactive(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP rval;
 
     rval = allocVector(LGLSXP, 1);
-    if (R_Interactive)
+    if (isatty(0))
         LOGICAL(rval)[0] = 1;
     else
         LOGICAL(rval)[0] = 0;
