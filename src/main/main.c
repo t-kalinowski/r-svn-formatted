@@ -573,6 +573,9 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
         }
         if (!strcmp(CHAR(PRINTNAME(CExpr)), "Q"))
         {
+            /* run onexit/cend code for everything on the stack (for now) */
+            R_run_onexits(NULL);
+            /* this is really dynamic state that should be managed as such */
             R_BrowseLevel = 0;
             LONGJMP(R_Toplevel.cjmpbuf, CTXT_TOPLEVEL);
         }
