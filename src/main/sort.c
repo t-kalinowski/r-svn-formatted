@@ -85,7 +85,7 @@ static int scmp(SEXP x, SEXP y)
 #endif
 }
 
-Rboolean isunsorted(SEXP x)
+Rboolean isUnsorted(SEXP x)
 {
     int n, i;
 
@@ -121,7 +121,7 @@ Rboolean isunsorted(SEXP x)
                     return TRUE;
             break;
         default:
-            error("unknown atomic type in isunsorted() -- should not happen");
+            error("unknown atomic type in isUnsorted() -- should not happen");
         }
     return FALSE; /* sorted */
 }
@@ -132,7 +132,7 @@ SEXP do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     ans = allocVector(LGLSXP, 1);
-    LOGICAL(ans)[0] = isunsorted(CAR(args));
+    LOGICAL(ans)[0] = isUnsorted(CAR(args));
     return ans;
 }
 
@@ -278,7 +278,7 @@ void revsort(double *a, int *ib, int n)
 void sortVector(SEXP s)
 {
     int n = LENGTH(s);
-    if (n >= 2 && isunsorted(s))
+    if (n >= 2 && isUnsorted(s))
         switch (TYPEOF(s))
         {
         case LGLSXP:
@@ -307,7 +307,7 @@ SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue;
     if (!isVectorAtomic(CAR(args)))
         errorcall(call, "only atomic vectors can be sorted");
-    if (isunsorted(CAR(args)))
+    if (isUnsorted(CAR(args)))
     { /* do not duplicate if sorted */
         ans = duplicate(CAR(args));
         sortVector(ans);
