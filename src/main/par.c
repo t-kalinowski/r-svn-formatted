@@ -68,6 +68,12 @@ static void posIntCheck(int x, char *s)
         par_error(s);
 }
 
+static void naIntCheck(int x, char *s)
+{
+    if (x == NA_INTEGER)
+        par_error(s);
+}
+
 static void posRealCheck(double x, char *s)
 {
     if (!FINITE(x) || x <= 0)
@@ -88,6 +94,7 @@ static void naRealCheck(double x, char *s)
 
 static void BoundsCheck(double x, double a, double b, char *s)
 {
+    /* Check if   a <= x <= b */
     if (!FINITE(x) || (FINITE(a) && x < a) || (FINITE(b) && x > b))
         par_error(s);
 }
@@ -123,10 +130,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (0.0 <= x && x <= 1.0)
-            dd->dp.adj = dd->gp.adj = x;
-        else
-            par_error(what);
+        BoundsCheck(x, 0.0, 1.0, what);
+        dd->dp.adj = dd->gp.adj = x;
     }
     else if (streql(what, "ann"))
     {
@@ -144,13 +149,9 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-        {
-            dd->dp.bg = dd->gp.bg = ix;
-            dd->dp.new = dd->gp.new = 0;
-        }
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.bg = dd->gp.bg = ix;
+        dd->dp.new = dd->gp.new = 0;
     }
     else if (streql(what, "bty"))
     {
@@ -180,103 +181,78 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-        {
-            dd->dp.cex = dd->gp.cex = 1.0;
-            dd->dp.cexbase = dd->gp.cexbase = x;
-        }
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.cex = dd->gp.cex = 1.0;
+        dd->dp.cexbase = dd->gp.cexbase = x;
     }
     else if (streql(what, "cex.main"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->dp.cexmain = dd->gp.cexmain = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.cexmain = dd->gp.cexmain = x;
     }
     else if (streql(what, "cex.lab"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->dp.cexlab = dd->gp.cexlab = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.cexlab = dd->gp.cexlab = x;
     }
     else if (streql(what, "cex.sub"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->dp.cexsub = dd->gp.cexsub = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.cexsub = dd->gp.cexsub = x;
     }
     else if (streql(what, "cex.axis"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (x != NA_INTEGER && 0.0 < x)
-            dd->dp.cexaxis = dd->gp.cexaxis = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.cexaxis = dd->gp.cexaxis = x;
     }
     else if (streql(what, "col"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.col = dd->gp.col = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.col = dd->gp.col = ix;
     }
     else if (streql(what, "col.main"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.colmain = dd->gp.colmain = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.colmain = dd->gp.colmain = ix;
     }
     else if (streql(what, "col.lab"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.collab = dd->gp.collab = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.collab = dd->gp.collab = ix;
     }
     else if (streql(what, "col.sub"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.colsub = dd->gp.colsub = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.colsub = dd->gp.colsub = ix;
     }
     else if (streql(what, "col.axis"))
     {
         lengthCheck(what, value, 1);
-        ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.colaxis = dd->gp.colaxis = ix;
-        else
-            par_error(what);
+        naIntCheck(ix = RGBpar(value, 0, dd), what);
+        dd->dp.colaxis = dd->gp.colaxis = ix;
     }
     else if (streql(what, "crt"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->dp.crt = dd->gp.crt = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->dp.crt = dd->gp.crt = x;
     }
     else if (streql(what, "err"))
     {
@@ -291,10 +267,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->dp.col = dd->gp.col = dd->dp.fg = dd->gp.fg = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->dp.col = dd->gp.col = dd->dp.fg = dd->gp.fg = ix;
     }
     else if (streql(what, "fig"))
     {
@@ -348,63 +322,51 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->dp.font = dd->gp.font = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->dp.font = dd->gp.font = ix;
     }
     else if (streql(what, "font.main"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->dp.fontmain = dd->gp.fontmain = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->dp.fontmain = dd->gp.fontmain = ix;
     }
     else if (streql(what, "font.lab"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->dp.fontlab = dd->gp.fontlab = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->dp.fontlab = dd->gp.fontlab = ix;
     }
     else if (streql(what, "font.sub"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->dp.fontsub = dd->gp.fontsub = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->dp.fontsub = dd->gp.fontsub = ix;
     }
     else if (streql(what, "font.axis"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->dp.fontaxis = dd->gp.fontaxis = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->dp.fontaxis = dd->gp.fontaxis = ix;
     }
     else if (streql(what, "gamma"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && x > 0)
-            dd->dp.gamma = dd->gp.gamma = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.gamma = dd->gp.gamma = x;
     }
     else if (streql(what, "lab"))
     {
         value = coerceVector(value, INTSXP);
         lengthCheck(what, value, 3);
-        nonnegIntCheck(INTEGER(value)[0], what);
-        nonnegIntCheck(INTEGER(value)[0], what);
-        nonnegIntCheck(INTEGER(value)[0], what);
+        posIntCheck(INTEGER(value)[0], what);
+        posIntCheck(INTEGER(value)[1], what);
+        nonnegIntCheck(INTEGER(value)[2], what);
         dd->dp.lab[0] = dd->gp.lab[0] = INTEGER(value)[0];
         dd->dp.lab[1] = dd->gp.lab[1] = INTEGER(value)[1];
         dd->dp.lab[2] = dd->gp.lab[2] = INTEGER(value)[2];
@@ -427,10 +389,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->dp.lwd = dd->gp.lwd = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->dp.lwd = dd->gp.lwd = x;
     }
     else if (streql(what, "mai"))
     {
@@ -668,8 +628,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
         else if (isNumeric(value))
         {
             ix = asInteger(value);
-            if (ix == NA_INTEGER || ix < 0)
-                par_error(what);
+            nonnegIntCheck(ix, what);
         }
         else
             par_error(what);
@@ -707,10 +666,8 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix >= 0)
-            dd->dp.ps = dd->gp.ps = ix;
-        else
-            par_error(what);
+        nonnegIntCheck(ix, what);
+        dd->dp.ps = dd->gp.ps = ix;
     }
     else if (streql(what, "pty"))
     {
@@ -726,18 +683,15 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix == NA_INTEGER || ix <= 0)
-            par_error(what);
+        nonnegIntCheck(ix, what);
         dd->dp.smo = dd->gp.smo = ix;
     }
     else if (streql(what, "srt"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->dp.srt = dd->gp.srt = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->dp.srt = dd->gp.srt = x;
     }
     /* NOTE: tck and tcl must be treated in parallel. */
     /* If one is NA, the other must be non NA.	If tcl */
@@ -878,8 +832,7 @@ static int Specify(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix == NA_INTEGER)
-            par_error(what);
+        naIntCheck(ix, what);
         dd->dp.xpd = dd->gp.xpd = (ix != 0);
     }
     else if (streql(what, "yaxp"))
@@ -940,10 +893,8 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (0.0 <= x && x <= 1.0)
-            dd->gp.adj = x;
-        else
-            par_error(what);
+        BoundsCheck(x, 0.0, 1.0, what);
+        dd->gp.adj = x;
     }
     else if (streql(what, "ann"))
     {
@@ -955,10 +906,8 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.bg = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.bg = ix;
     }
     else if (streql(what, "bty"))
     {
@@ -988,103 +937,79 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-        {
-            dd->gp.cex = x;
-            /* dd->gp.cexbase = x; */
-        }
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.cex = x;
+        /* dd->gp.cexbase = x; */
     }
     else if (streql(what, "cex.main"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->gp.cexmain = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.cexmain = x;
     }
     else if (streql(what, "cex.lab"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->gp.cexlab = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.cexlab = x;
     }
     else if (streql(what, "cex.sub"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->gp.cexsub = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.cexsub = x;
     }
     else if (streql(what, "cex.axis"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (x != NA_INTEGER && 0.0 < x)
-            dd->gp.cexaxis = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.cexaxis = x;
     }
     else if (streql(what, "col"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.col = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.col = ix;
     }
     else if (streql(what, "col.main"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.colmain = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.colmain = ix;
     }
     else if (streql(what, "col.lab"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.collab = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.collab = ix;
     }
     else if (streql(what, "col.sub"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.colsub = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.colsub = ix;
     }
     else if (streql(what, "col.axis"))
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.colaxis = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.colaxis = ix;
     }
     else if (streql(what, "crt"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->gp.crt = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->gp.crt = x;
     }
     else if (streql(what, "err"))
     {
@@ -1099,72 +1024,58 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = RGBpar(value, 0, dd);
-        if (ix != NA_INTEGER)
-            dd->gp.fg = ix;
-        else
-            par_error(what);
+        naIntCheck(ix, what);
+        dd->gp.fg = ix;
     }
     else if (streql(what, "font"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->gp.font = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->gp.font = ix;
     }
     else if (streql(what, "font.main"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->gp.fontmain = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->gp.fontmain = ix;
     }
     else if (streql(what, "font.lab"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->gp.fontlab = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->gp.fontlab = ix;
     }
     else if (streql(what, "font.sub"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->gp.fontsub = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->gp.fontsub = ix;
     }
     else if (streql(what, "font.axis"))
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix != NA_INTEGER && ix > 0)
-            dd->gp.fontaxis = ix;
-        else
-            par_error(what);
+        posIntCheck(ix, what);
+        dd->gp.fontaxis = ix;
     }
     else if (streql(what, "gamma"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && x > 0)
-            dd->gp.gamma = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.gamma = x;
     }
     else if (streql(what, "lab"))
     {
         value = coerceVector(value, INTSXP);
         lengthCheck(what, value, 3);
-        nonnegIntCheck(INTEGER(value)[0], what);
-        nonnegIntCheck(INTEGER(value)[0], what);
-        nonnegIntCheck(INTEGER(value)[0], what);
+        posIntCheck(INTEGER(value)[0], what);
+        posIntCheck(INTEGER(value)[1], what);
+        nonnegIntCheck(INTEGER(value)[2], what);
         dd->gp.lab[0] = INTEGER(value)[0];
         dd->gp.lab[1] = INTEGER(value)[1];
         dd->gp.lab[2] = INTEGER(value)[2];
@@ -1187,10 +1098,8 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x) && 0.0 < x)
-            dd->gp.lwd = x;
-        else
-            par_error(what);
+        posRealCheck(x, what);
+        dd->gp.lwd = x;
     }
     else if (streql(what, "mgp"))
     {
@@ -1221,8 +1130,7 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
         else if (isNumeric(value))
         {
             ix = asInteger(value);
-            if (ix == NA_INTEGER || ix < 0)
-                par_error(what);
+            nonnegIntCheck(ix, what);
         }
         else
             par_error(what);
@@ -1232,36 +1140,29 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix == NA_INTEGER || ix <= 0)
-            par_error(what);
+        posIntCheck(ix, what);
         dd->gp.smo = ix;
     }
     else if (streql(what, "srt"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->gp.srt = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->gp.srt = x;
     }
     else if (streql(what, "tck"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->gp.tck = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->gp.tck = x;
     }
     else if (streql(what, "tcl"))
     {
         lengthCheck(what, value, 1);
         x = asReal(value);
-        if (FINITE(x))
-            dd->gp.tcl = x;
-        else
-            par_error(what);
+        naRealCheck(x, what);
+        dd->gp.tcl = x;
     }
     else if (streql(what, "tmag"))
     {
@@ -1327,8 +1228,7 @@ void Specify2(char *what, SEXP value, DevDesc *dd)
     {
         lengthCheck(what, value, 1);
         ix = asInteger(value);
-        if (ix == NA_INTEGER)
-            par_error(what);
+        naIntCheck(ix, what);
         dd->gp.xpd = (ix != 0);
     }
     else if (streql(what, "yaxp"))
