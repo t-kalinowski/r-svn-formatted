@@ -662,9 +662,19 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
     switch (TYPEOF(f))
     {
     case CLOSXP:
+#define IGNORE_LEXICAL_SCOPE
+#ifdef IGNORE_LEXICAL_SCOPE
         PROTECT(val = BODY(f));
         nprotect++;
         val = eval(val, ev);
+#else
+    {
+        SEXP R_execMethod(SEXP, SEXP);
+        PROTECT(f);
+        nprotect++; /* is this needed?? */
+        val = R_execMethod(f, ev);
+    }
+#endif
         break;
     case SPECIALSXP:
     case BUILTINSXP:
