@@ -927,9 +927,8 @@ static SEXP modqr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
 static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
 {
     int i, n, *Adims, info, *jpvt, sign, useLog;
-    double *work, tmp;
     double modulus;
-    SEXP val, nm, tau, rank, A;
+    SEXP val, nm, A;
 
     if (!(isMatrix(Ain) && isReal(Ain)))
         error("A must be a real matrix");
@@ -946,7 +945,9 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
     for (i = 0; i < n; i++)
         if (jpvt[i] != (i + 1))
             sign = -sign;
-    useLog = LOGICAL(coerceVector(logarithm, LGLSXP))[0];
+    useLog = asLogical(logarithm);
+    if (useLog == NA_LOGICAL)
+        error("argument logarithm must be logical");
     if (useLog)
     {
         modulus = 0.0;
