@@ -26,7 +26,9 @@ static int gl_tab(); /* forward reference needed for gl_tab_hook */
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef __unix__
 #include <signal.h>
+#endif
 
 extern int isatty();
 extern void *malloc();
@@ -127,8 +129,8 @@ extern void exit();
 #ifdef Win32
 /* guido masarotto (3/12/98)*/
 #include <windows.h>
-HANDLE Win32InputStream = NULL;
-DWORD OldWin32Mode;
+static HANDLE Win32InputStream = NULL;
+static DWORD OldWin32Mode;
 #endif
 
 #ifdef __unix__
@@ -361,10 +363,10 @@ static int gl_getc()
         {
             a = 0;
             /*   while(!a) {
-                  PeekConsoleInput(Win32InputStream,&r,1,&a);
-                  if (gl_events_hook)
-                         gl_events_hook();
-                     }*/
+                 PeekConsoleInput(Win32InputStream, &r, 1, &a);
+                 if (gl_events_hook)
+                 gl_events_hook();
+                 }*/
             ReadConsoleInput(Win32InputStream, &r, 1, &a);
             if (!(r.EventType == KEY_EVENT))
                 break;

@@ -162,8 +162,15 @@ static char LastLine[512], *gl = NULL;
 static int lineavailable;
 static DWORD id;
 
+static void pipe_onintr()
+{
+    UserBreak = 1;
+    PostThreadMessage(mainThreadId, 0, 0, 0);
+}
+
 static DWORD CALLBACK threadedgetline(LPVOID unused)
 {
+    signal(SIGINT, pipe_onintr);
     gl = getline(LastLine);
     lineavailable = 1;
     PostThreadMessage(mainThreadId, 0, 0, 0);
@@ -184,9 +191,21 @@ int CharReadConsole(char *prompt, char *buf, int len, int addtohistory)
         while (1)
         {
             WaitMessage();
-            if (lineavailable)
+            if (lineavailable || UserBreak)
                 break;
             doevent();
+        }
+        if (UserBreak)
+        {
+            UserBreak = 0;
+            lineavailable = 0;
+            TerminateThread(rH, 1);
+            CloseHandle(rH);
+            gl = NULL;
+            /* raise(SIGINT);  just clean up ourselves */
+            printf("^C\n");
+            strcpy(buf, "\n");
+            return 1;
         }
         CloseHandle(rH);
         LastLine[0] = '\0';
@@ -223,6 +242,7 @@ static char *inputbuffer;
 
 static DWORD CALLBACK threadedfgets(LPVOID unused)
 {
+    signal(SIGINT, pipe_onintr);
     inputbuffer = fgets(inputbuffer, lengthofbuffer, stdin);
     lineavailable = 1;
     PostThreadMessage(mainThreadId, 0, 0, 0);
@@ -263,9 +283,11 @@ static int PipeReadConsole(char *prompt, char *buf, int len, int addhistory)
             CloseHandle(rH);
     }
     if (!inputbuffer)
-        return 0;
-    else
-        return 1;
+    {
+        strcpy(buf, "\n");
+        printf("^C\n");
+    }
+    return 1;
 }
 
 /*4: non-interactive
