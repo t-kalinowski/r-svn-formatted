@@ -166,6 +166,23 @@ char *realloc();
 
 /* Get the interface, including the syntax bits.  */
 #include "Rregex.h"
+/* Compile a fastmap for the compiled pattern in BUFFER; used to
+   accelerate searches.  Return 0 if successful and -2 if was an
+   internal error.  */
+static int re_compile_fastmap _RE_ARGS((struct re_pattern_buffer * buffer));
+/* Search in the string STRING (with length LENGTH) for the pattern
+   compiled into BUFFER.  Start searching at position START, for RANGE
+   characters.  Return the starting position of the match, -1 for no
+   match, or -2 for an internal error.  Also return register
+   information in REGS (if REGS and BUFFER->no_sub are nonzero).  */
+static int re_search _RE_ARGS((struct re_pattern_buffer * buffer, const char *string, int length, int start, int range,
+                               struct re_registers *regs));
+
+/* Like `re_search', but search in the concatenation of STRING1 and
+   STRING2.  Also, stop searching at index START + STOP.  */
+static int re_search_2 _RE_ARGS((struct re_pattern_buffer * buffer, const char *string1, int length1,
+                                 const char *string2, int length2, int start, int range, struct re_registers *regs,
+                                 int stop));
 
 /* isalpha etc. are used for the character classes.  */
 #include <ctype.h>
@@ -954,7 +971,9 @@ void printchar(c) int c;
    syntax, so it can be changed between regex compilations.  */
 /* This has no initializer because initialized variables in Emacs
    become read-only after dumping.  */
-reg_syntax_t re_syntax_options;
+#if 0
+static reg_syntax_t re_syntax_options;
+#endif
 
 /* Specify the precise syntax of regexps for compilation.  This provides
    for compatibility for various utilities which historically have
@@ -963,21 +982,25 @@ reg_syntax_t re_syntax_options;
    The argument SYNTAX is a bit mask comprised of the various bits
    defined in regex.h.  We return the old syntax.  */
 
-reg_syntax_t re_set_syntax(syntax) reg_syntax_t syntax;
+#if 0
+static reg_syntax_t
+re_set_syntax (syntax)
+    reg_syntax_t syntax;
 {
-    reg_syntax_t ret = re_syntax_options;
+  reg_syntax_t ret = re_syntax_options;
 
-    re_syntax_options = syntax;
+  re_syntax_options = syntax;
 #ifdef DEBUG
-    if (syntax & RE_DEBUG)
-        debug = 1;
-    else if (debug) /* was on but now is not */
-        debug = 0;
+  if (syntax & RE_DEBUG)
+    debug = 1;
+  else if (debug) /* was on but now is not */
+    debug = 0;
 #endif /* DEBUG */
-    return ret;
+  return ret;
 }
 #ifdef _LIBC
-weak_alias(__re_set_syntax, re_set_syntax)
+weak_alias (__re_set_syntax, re_set_syntax)
+#endif
 #endif
 
 /* This table gives an error message for each of the error codes listed
@@ -1011,7 +1034,7 @@ weak_alias(__re_set_syntax, re_set_syntax)
   N_("Unmatched ) or \\)") /* REG_ERPAREN */
 #endif
 
-    static const char re_error_msgid[] = "\
+static const char re_error_msgid[] = "\
 Success\0\
 No match\0\
 Invalid regular expression\0\
@@ -1111,9 +1134,9 @@ static const size_t re_error_msgid_idx[] = {
 #if defined MATCH_MAY_ALLOCATE
 /* 4400 was enough to cause a crash on Alpha OSF/1,
    whose default stack limit is 2mb.  */
-const long int re_max_failures = 4000;
+static const long int re_max_failures = 4000;
 #else
-const long int re_max_failures = 2000;
+static const long int re_max_failures = 2000;
 #endif
 
 union fail_stack_elt {
@@ -1135,9 +1158,9 @@ typedef struct
 #if defined MATCH_MAY_ALLOCATE
 /* 4400 was enough to cause a crash on Alpha OSF/1,
    whose default stack limit is 2mb.  */
-const int re_max_failures = 20000;
+static const int re_max_failures = 20000;
 #else
-const int re_max_failures = 2000;
+static const int re_max_failures = 2000;
 #endif
 
 union fail_stack_elt {
@@ -3029,7 +3052,7 @@ unsigned char *b;
 
    Returns 0 if we succeed, -2 if an internal error.   */
 
-int re_compile_fastmap(bufp) struct re_pattern_buffer *bufp;
+static int re_compile_fastmap(bufp) struct re_pattern_buffer *bufp;
 {
     int j, k;
 #ifdef MATCH_MAY_ALLOCATE
@@ -3301,40 +3324,44 @@ done:
 weak_alias(__re_compile_fastmap, re_compile_fastmap)
 #endif
 
-    /* Set REGS to hold NUM_REGS registers, storing them in STARTS and
-       ENDS.  Subsequent matches using PATTERN_BUFFER and REGS will use
-       this memory for recording register information.  STARTS and ENDS
-       must be allocated using the malloc library routine, and must each
-       be at least NUM_REGS * sizeof (regoff_t) bytes long.
+/* Set REGS to hold NUM_REGS registers, storing them in STARTS and
+   ENDS.  Subsequent matches using PATTERN_BUFFER and REGS will use
+   this memory for recording register information.  STARTS and ENDS
+   must be allocated using the malloc library routine, and must each
+   be at least NUM_REGS * sizeof (regoff_t) bytes long.
 
-       If NUM_REGS == 0, then subsequent matches should allocate their own
-       register data.
+   If NUM_REGS == 0, then subsequent matches should allocate their own
+   register data.
 
-       Unless this function is called, the first search or match using
-       PATTERN_BUFFER will allocate its own register data, without
-       freeing the old data.  */
+   Unless this function is called, the first search or match using
+   PATTERN_BUFFER will allocate its own register data, without
+   freeing the old data.  */
 
-    void re_set_registers(bufp, regs, num_regs, starts, ends) struct re_pattern_buffer *bufp;
-struct re_registers *regs;
-unsigned num_regs;
-regoff_t *starts, *ends;
+#if 0
+static void
+re_set_registers (bufp, regs, num_regs, starts, ends)
+    struct re_pattern_buffer *bufp;
+    struct re_registers *regs;
+    unsigned num_regs;
+    regoff_t *starts, *ends;
 {
-    if (num_regs)
+  if (num_regs)
     {
-        bufp->regs_allocated = REGS_REALLOCATE;
-        regs->num_regs = num_regs;
-        regs->start = starts;
-        regs->end = ends;
+      bufp->regs_allocated = REGS_REALLOCATE;
+      regs->num_regs = num_regs;
+      regs->start = starts;
+      regs->end = ends;
     }
-    else
+  else
     {
-        bufp->regs_allocated = REGS_UNALLOCATED;
-        regs->num_regs = 0;
-        regs->start = regs->end = (regoff_t *)0;
+      bufp->regs_allocated = REGS_UNALLOCATED;
+      regs->num_regs = 0;
+      regs->start = regs->end = (regoff_t *) 0;
     }
 }
 #ifdef _LIBC
-weak_alias(__re_set_registers, re_set_registers)
+weak_alias (__re_set_registers, re_set_registers)
+#endif
 #endif
 
     /* Searching routines.  */
@@ -3342,7 +3369,7 @@ weak_alias(__re_set_registers, re_set_registers)
     /* Like re_search_2, below, but only one string is specified, and
        doesn't let you say where to stop matching. */
 
-    int re_search(bufp, string, size, startpos, range, regs) struct re_pattern_buffer *bufp;
+    static int re_search(bufp, string, size, startpos, range, regs) struct re_pattern_buffer *bufp;
 const char *string;
 int size, startpos, range;
 struct re_registers *regs;
@@ -3374,7 +3401,8 @@ weak_alias(__re_search, re_search)
        found, -1 if no match, or -2 if error (such as failure
        stack overflow).  */
 
-    int re_search_2(bufp, string1, size1, string2, size2, startpos, range, regs, stop) struct re_pattern_buffer *bufp;
+    static int re_search_2(bufp, string1, size1, string2, size2, startpos, range, regs,
+                           stop) struct re_pattern_buffer *bufp;
 const char *string1, *string2;
 int size1, size2;
 int startpos;
@@ -3581,26 +3609,31 @@ weak_alias(__re_search_2, re_search_2)
 
 /* Matching routines.  */
 
+#if 0
 #ifndef emacs /* Emacs never uses this.  */
-    /* re_match is like re_match_2 except it takes only a single string.  */
+/* re_match is like re_match_2 except it takes only a single string.  */
 
-    int re_match(bufp, string, size, pos, regs) struct re_pattern_buffer *bufp;
-const char *string;
-int size, pos;
-struct re_registers *regs;
+static int
+re_match (bufp, string, size, pos, regs)
+     struct re_pattern_buffer *bufp;
+     const char *string;
+     int size, pos;
+     struct re_registers *regs;
 {
-    int result = re_match_2_internal(bufp, NULL, 0, string, size, pos, regs, size);
+  int result = re_match_2_internal (bufp, NULL, 0, string, size,
+				    pos, regs, size);
 #ifndef REGEX_MALLOC
 #ifdef C_ALLOCA
-    alloca(0);
+  alloca (0);
 #endif
 #endif
-    return result;
+  return result;
 }
 #ifdef _LIBC
-weak_alias(__re_match, re_match)
+weak_alias (__re_match, re_match)
 #endif
 #endif /* not emacs */
+#endif
 
     static boolean group_match_null_string_p
     _RE_ARGS((unsigned char **p, unsigned char *end, register_info_type *reg_info));
@@ -3622,29 +3655,33 @@ static int bcmp_translate _RE_ARGS((const char *s1, const char *s2, int len, cha
    failure stack overflowing).  Otherwise, we return the length of the
    matched substring.  */
 
-int re_match_2(bufp, string1, size1, string2, size2, pos, regs, stop) struct re_pattern_buffer *bufp;
-const char *string1, *string2;
-int size1, size2;
-int pos;
-struct re_registers *regs;
-int stop;
+#if 0
+static int
+re_match_2 (bufp, string1, size1, string2, size2, pos, regs, stop)
+     struct re_pattern_buffer *bufp;
+     const char *string1, *string2;
+     int size1, size2;
+     int pos;
+     struct re_registers *regs;
+     int stop;
 {
-    int result = re_match_2_internal(bufp, string1, size1, string2, size2, pos, regs, stop);
+  int result = re_match_2_internal (bufp, string1, size1, string2, size2,
+				    pos, regs, stop);
 #ifndef REGEX_MALLOC
 #ifdef C_ALLOCA
-    alloca(0);
+  alloca (0);
 #endif
 #endif
-    return result;
+  return result;
 }
 #ifdef _LIBC
-weak_alias(__re_match_2, re_match_2)
+weak_alias (__re_match_2, re_match_2)
+#endif
 #endif
 
-    /* This is a separate function so that we can force an alloca cleanup
-       afterwards.  */
-    static int re_match_2_internal(bufp, string1, size1, string2, size2, pos, regs,
-                                   stop) struct re_pattern_buffer *bufp;
+/* This is a separate function so that we can force an alloca cleanup
+   afterwards.  */
+static int re_match_2_internal(bufp, string1, size1, string2, size2, pos, regs, stop) struct re_pattern_buffer *bufp;
 const char *string1, *string2;
 int size1, size2;
 int pos;
@@ -5215,32 +5252,36 @@ RE_TRANSLATE_TYPE translate;
 
    We call regex_compile to do the actual compilation.  */
 
-const char *re_compile_pattern(pattern, length, bufp) const char *pattern;
-size_t length;
-struct re_pattern_buffer *bufp;
+#if 0
+static const char *
+re_compile_pattern (pattern, length, bufp)
+     const char *pattern;
+     size_t length;
+     struct re_pattern_buffer *bufp;
 {
-    reg_errcode_t ret;
+  reg_errcode_t ret;
 
-    /* GNU code is written to assume at least RE_NREGS registers will be set
-       (and at least one extra will be -1).  */
-    bufp->regs_allocated = REGS_UNALLOCATED;
+  /* GNU code is written to assume at least RE_NREGS registers will be set
+     (and at least one extra will be -1).  */
+  bufp->regs_allocated = REGS_UNALLOCATED;
 
-    /* And GNU code determines whether or not to get register information
-       by passing null for the REGS argument to re_match, etc., not by
-       setting no_sub.  */
-    bufp->no_sub = 0;
+  /* And GNU code determines whether or not to get register information
+     by passing null for the REGS argument to re_match, etc., not by
+     setting no_sub.  */
+  bufp->no_sub = 0;
 
-    /* Match anchors at newline.  */
-    bufp->newline_anchor = 1;
+  /* Match anchors at newline.  */
+  bufp->newline_anchor = 1;
 
-    ret = regex_compile(pattern, length, re_syntax_options, bufp);
+  ret = regex_compile (pattern, length, re_syntax_options, bufp);
 
-    if (!ret)
-        return NULL;
-    return gettext(re_error_msgid + re_error_msgid_idx[(int)ret]);
+  if (!ret)
+    return NULL;
+  return gettext (re_error_msgid + re_error_msgid_idx[(int) ret]);
 }
 #ifdef _LIBC
-weak_alias(__re_compile_pattern, re_compile_pattern)
+weak_alias (__re_compile_pattern, re_compile_pattern)
+#endif
 #endif
 
 /* Entry points compatible with 4.2 BSD regex library.  We don't define
@@ -5248,8 +5289,8 @@ weak_alias(__re_compile_pattern, re_compile_pattern)
 
 #if defined _REGEX_RE_COMP || defined _LIBC
 
-    /* BSD has one and only one pattern buffer.  */
-    static struct re_pattern_buffer re_comp_buf;
+/* BSD has one and only one pattern buffer.  */
+static struct re_pattern_buffer re_comp_buf;
 
 char *
 #ifdef _LIBC
