@@ -17,9 +17,14 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include <windows.h>
 #include <string.h> /* for strrchr(...) */
 #include <stdio.h>
+#include <ctype.h>
 #include "Rversion.h"
 
 static char rhomebuf[MAX_PATH];
@@ -37,10 +42,20 @@ char *getRHOME()
 {
     DWORD nc;
     char *p;
+    int hasspace = 0;
 
     nc = GetModuleFileName(NULL, rhomebuf, MAX_PATH);
     GOBACKONESLASH;
     GOBACKONESLASH;
+    /* make sure no spaces in path */
+    for (p = rhomebuf; *p; p++)
+        if (isspace(*p))
+        {
+            hasspace = 1;
+            break;
+        }
+    if (hasspace)
+        GetShortPathName(rhomebuf, rhomebuf, MAX_PATH);
     return (rhomebuf);
 }
 
