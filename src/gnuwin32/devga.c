@@ -42,6 +42,13 @@ extern console RConsole;
 extern window RFrame;
 extern Rboolean AllDevicesKilled;
 
+/* Drivers used by devga.c */
+
+Rboolean PSDeviceDriver(NewDevDesc *, char *, char *, char *, char **, char *, char *, char *, double, double, Rboolean,
+                        double, Rboolean, Rboolean, Rboolean, char *, char *, SEXP);
+
+Rboolean PDFDeviceDriver(NewDevDesc *dd, char *, char *, char *, char *, char *, double, double, double, int, char *,
+                         SEXP, int, int);
 static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
                                Rboolean buffered, SEXP psenv);
@@ -422,7 +429,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (PSDeviceDriver((DevDesc *)ndd, fn, paper, family, afmpaths, encoding, bg, fg,
+    if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, "", "R Graphics Output", R_NilValue))
@@ -482,7 +489,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (PDFDeviceDriver((DevDesc *)ndd, fn, family, encoding, bg, fg,
+    if (PDFDeviceDriver(ndd, fn, family, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         ((gadesc *)dd->deviceSpecific)->basefontsize, 1, "R Graphics Output", R_NilValue, 1, 4))

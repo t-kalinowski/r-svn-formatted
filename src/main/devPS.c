@@ -2109,10 +2109,9 @@ static void SetLineStyle(R_GE_gcontext *, NewDevDesc *dd);
 static void Invalidate(NewDevDesc *);
 static int MatchFamily(char *name);
 
-static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char **afmpaths,
-                                    char *encoding, char *bg, char *fg, double width, double height,
-                                    Rboolean horizontal, double ps, Rboolean onefile, Rboolean pagecentre,
-                                    Rboolean printit, char *cmd, char *title, SEXP fonts)
+Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char **afmpaths, char *encoding,
+                        char *bg, char *fg, double width, double height, Rboolean horizontal, double ps,
+                        Rboolean onefile, Rboolean pagecentre, Rboolean printit, char *cmd, char *title, SEXP fonts)
 {
     /* If we need to bail out with some sort of "error"
        then we must free(dd) */
@@ -2417,18 +2416,6 @@ static Rboolean innerPSDeviceDriver(NewDevDesc *dd, char *file, char *paper, cha
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
     return TRUE;
-}
-
-/* Do this to avoid having to change Rdevices.h
- * This will be cleaned up when GraphicsDevice.h replaces
- * Rdevices.h
- */
-Rboolean PSDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char **afmpaths, char *encoding, char *bg,
-                        char *fg, double width, double height, Rboolean horizontal, double ps, Rboolean onefile,
-                        Rboolean pagecentre, Rboolean printit, char *cmd, char *title, SEXP fonts)
-{
-    return innerPSDeviceDriver((NewDevDesc *)dd, file, paper, family, afmpaths, encoding, bg, fg, width, height,
-                               horizontal, ps, onefile, pagecentre, printit, cmd, title, fonts);
 }
 
 static int MatchFamily(char *name)
@@ -3096,9 +3083,9 @@ static const int XFig_basenums[] = {4, 8, 12, 16, 20, 24, 28, 0};
 
 /* Driver Support Routines */
 
-static Rboolean innerXFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg,
-                                      double width, double height, Rboolean horizontal, double ps, Rboolean onefile,
-                                      Rboolean pagecentre)
+static Rboolean XFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg,
+                                 double width, double height, Rboolean horizontal, double ps, Rboolean onefile,
+                                 Rboolean pagecentre)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -3321,13 +3308,6 @@ static Rboolean innerXFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, c
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
     return 1;
-}
-
-Rboolean XFigDeviceDriver(DevDesc *dd, char *file, char *paper, char *family, char *bg, char *fg, double width,
-                          double height, Rboolean horizontal, double ps, Rboolean onefile, Rboolean pagecentre)
-{
-    return innerXFigDeviceDriver((NewDevDesc *)dd, file, paper, family, bg, fg, width, height, horizontal, ps, onefile,
-                                 pagecentre);
 }
 
 static Rboolean XFig_Open(NewDevDesc *dd, XFigDesc *pd)
@@ -3820,9 +3800,9 @@ static Rboolean addPDFfont(type1fontfamily family, PDFDesc *pd, int *fontIndex)
     return result;
 }
 
-static Rboolean innerPDFDeviceDriver(NewDevDesc *dd, char *file, char *family, char *encoding, char *bg, char *fg,
-                                     double width, double height, double ps, int onefile, char *title, SEXP fonts,
-                                     int versionMajor, int versionMinor)
+Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *family, char *encoding, char *bg, char *fg, double width,
+                         double height, double ps, int onefile, char *title, SEXP fonts, int versionMajor,
+                         int versionMinor)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -4080,14 +4060,6 @@ static void PDF_Invalidate(NewDevDesc *dd)
     pd->current.col = INVALID_COL;
     pd->current.fill = INVALID_COL;
     pd->current.bg = INVALID_COL;
-}
-
-Rboolean PDFDeviceDriver(DevDesc *dd, char *file, char *family, char *encoding, char *bg, char *fg, double width,
-                         double height, double ps, int onefile, char *title, SEXP fonts, int versionMajor,
-                         int versionMinor)
-{
-    return innerPDFDeviceDriver((NewDevDesc *)dd, file, family, encoding, bg, fg, width, height, ps, onefile, title,
-                                fonts, versionMajor, versionMinor);
 }
 
 /*
@@ -5131,8 +5103,8 @@ SEXP PostScript(SEXP args)
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!PSDeviceDriver((DevDesc *)dev, file, paper, family, afms, encoding, bg, fg, width, height,
-                            (double)horizontal, ps, onefile, pagecentre, printit, cmd, title, fonts))
+        if (!PSDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, (double)horizontal, ps,
+                            onefile, pagecentre, printit, cmd, title, fonts))
         {
             free(dev);
             error("unable to start device PostScript");
@@ -5167,7 +5139,7 @@ SEXP XFig(SEXP args)
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
-    char *file, *paper, *family, *bg, *fg, call[] = "XFig";
+    char *file, *paper, *family, *bg, *fg;
     int horizontal, onefile, pagecentre;
     double height, width, ps;
 
@@ -5208,8 +5180,8 @@ SEXP XFig(SEXP args)
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!XFigDeviceDriver((DevDesc *)dev, file, paper, family, bg, fg, width, height, (double)horizontal, ps,
-                              onefile, pagecentre))
+        if (!XFigDeviceDriver(dev, file, paper, family, bg, fg, width, height, (double)horizontal, ps, onefile,
+                              pagecentre))
         {
             free(dev);
             error("unable to start device xfig");
@@ -5292,8 +5264,8 @@ SEXP PDF(SEXP args)
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!PDFDeviceDriver((DevDesc *)dev, file, family, encoding, bg, fg, width, height, ps, onefile, title, fonts,
-                             major, minor))
+        if (!PDFDeviceDriver(dev, file, family, encoding, bg, fg, width, height, ps, onefile, title, fonts, major,
+                             minor))
         {
             free(dev);
             error("unable to start device pdf");
