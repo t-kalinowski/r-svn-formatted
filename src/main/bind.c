@@ -464,7 +464,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
         saveseqno = 0;
 
     n = length(v);
-    names = getAttrib(v, R_NamesSymbol);
+    PROTECT(names = getAttrib(v, R_NamesSymbol));
 
     switch (TYPEOF(v))
     {
@@ -473,7 +473,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
     case LISTSXP:
         for (i = 0; i < n; i++)
         {
-            namei = ItemName(names, i);
+            PROTECT(namei = ItemName(names, i));
             if (recurse)
             {
                 NewExtractNames(CAR(v), base, namei, recurse, data, nameData);
@@ -487,6 +487,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
                 SET_STRING_ELT(data->ans_names, (data->ans_nnames)++, namei);
             }
             v = CDR(v);
+            UNPROTECT(1); /*namei*/
         }
         break;
     case VECSXP:
@@ -538,6 +539,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
         nameData->count = savecount;
         UNPROTECT(1);
     }
+    UNPROTECT(1); /*names*/
     nameData->seqno = nameData->seqno + saveseqno;
 }
 
