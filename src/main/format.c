@@ -53,7 +53,7 @@ void formatString(SEXP *x, int n, int *fieldwidth, int quote)
             naflag = 1;
         else
         {
-            l = Rstrlen(CHAR(x[i]));
+            l = Rstrlen(CHAR(x[i]), quote);
             if (l > xmax)
                 xmax = l;
         }

@@ -50,6 +50,9 @@
  * a single R-vector element.  This is mainly used in gizmos like deparse.
  */
 
+/* if ESC_BARE_QUOTE is defined, " in an unquoted string is replaced
+   by \".  " in a quoted string is always replaced by \". */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -290,7 +293,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 #endif
 
     /* strlen() using escaped rather than literal form */
-    int Rstrlen(char *s)
+    int Rstrlen(char *s, int quote)
     {
         char *p;
         int len;
@@ -306,9 +309,15 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 #ifdef ESCquote
                 case '\'':
 #endif
+#ifdef ESC_BARE_QUOTE
                 case '\"':
                     len += 2;
                     break;
+#else
+            case '\"':
+                len += quote ? 2 : 1;
+                break;
+#endif
                 default:
                     len += 1;
                     break;
@@ -346,7 +355,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         int b, i;
         char *p, *q;
 
-        i = Rstrlen(s);
+        i = Rstrlen(s, quote);
         AllocBuffer((i + 2 >= w) ? (i + 2) : w); /* +2 allows for quotes */
         q = Encodebuf;
         if (right)
@@ -380,10 +389,17 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
                     *q++ = '\'';
                     break;
 #endif
+#ifdef ESC_BARE_QUOTE
                 case '\"':
-                    *q++ = '\\';
                     *q++ = '\"';
                     break;
+#else
+            case '\"':
+                if (quote)
+                    *q++ = '\\';
+                *q++ = '\"';
+                break;
+#endif
                 default:
                     *q++ = *p;
                     break;
@@ -616,7 +632,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
             Rprintf("%*s%s", w - l, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left));
         }
         else
@@ -631,7 +647,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
             Rprintf("%*s", R_print.gap + w, EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_right));
         }
         else
@@ -646,7 +662,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(cl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(cl, j)));
+            l = Rstrlen(CHAR(STRING_ELT(cl, j)), 0);
             Rprintf("%*s%s%*s", R_print.gap, "", EncodeString(CHAR(STRING_ELT(cl, j)), l, 0, Rprt_adj_left), w - l, "");
         }
         else
@@ -661,7 +677,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
         if (!isNull(rl))
         {
-            l = Rstrlen(CHAR(STRING_ELT(rl, i)));
+            l = Rstrlen(CHAR(STRING_ELT(rl, i)), 0);
             Rprintf("\n%*s%s%*s", lbloff, "", EncodeString(CHAR(STRING_ELT(rl, i)), l, 0, Rprt_adj_left),
                     rlabw - l - lbloff, "");
         }
