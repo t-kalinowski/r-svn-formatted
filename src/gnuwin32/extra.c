@@ -1290,14 +1290,17 @@ SEXP do_setTitle(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     case RTerm:
-        strcpy(buf, "Rterm");
-        if (strlen(ptitle))
+        if (R_Interactive)
         {
-            strcat(buf, ": ");
-            strncat(buf, ptitle, 506);
-            buf[511] = '\0';
+            strcpy(buf, "Rterm");
+            if (strlen(ptitle))
+            {
+                strcat(buf, ": ");
+                strncat(buf, ptitle, 506);
+                buf[511] = '\0';
+            }
+            SetConsoleTitle(buf);
         }
-        SetConsoleTitle(buf);
         break;
     default:
         /* do nothing */
