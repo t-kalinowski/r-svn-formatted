@@ -107,6 +107,7 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
         /* NOTREACHED */
     }
 
+#ifndef WIN32 /* not used on Windows */
     /* See whether the locale value is an alias.  If yes its value
        *overwrites* the alias name.  No test for the original value is
        done.  */
@@ -126,6 +127,7 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
         memcpy(locale, alias_value, len);
 #endif
     }
+#endif
 
     /* Now we determine the single parts of the locale name.  First
        look for the language.  Termination symbols are `_' and `@' if
