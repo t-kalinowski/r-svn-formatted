@@ -157,6 +157,7 @@ SEXP do_PS(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
     gcall = call;
     DeviceUnavailable("postscript");
+    return R_NilValue; /* -Wall */
 #endif
 }
 
@@ -210,6 +211,7 @@ SEXP do_PicTeX(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
     gcall = call;
     DeviceUnavailable("pictex");
+    return R_NilValue; /* -Wall */
 #endif
 }
 
@@ -328,10 +330,12 @@ SEXP do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     gcall = call;
     DeviceUnavailable("X11");
+    return R_NilValue; /* -Wall */
 }
 SEXP do_Gnome(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     gcall = call;
     DeviceUnavailable("Gnome");
+    return R_NilValue; /* -Wall */
 }
 #endif
