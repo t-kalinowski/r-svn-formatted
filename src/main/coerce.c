@@ -1174,17 +1174,18 @@ static SEXP coerceToExpression(SEXP v)
             break;
         }
     }
-    else if (TYPEOF(v) == LANGSXP)
-    {
-        n = length(v);
-        PROTECT(ans = allocVector(EXPRSXP, n));
-        tmp = v;
-        for (i = 0; i < n; i++)
-        {
-            VECTOR(ans)[i] = CAR(tmp);
-            tmp = CDR(tmp);
-        }
-    }
+#if 0
+/* This code believed to be WRONG */
+	else if(TYPEOF(v) == LANGSXP) {
+		n = length(v);
+		PROTECT(ans = allocVector(EXPRSXP, n));
+		tmp = v;
+		for(i=0 ; i<n ; i++) {
+			VECTOR(ans)[i] = CAR(tmp);
+			tmp = CDR(tmp);
+		}
+	}
+#endif
     else
     {
         PROTECT(ans = allocVector(EXPRSXP, 1));
