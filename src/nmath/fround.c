@@ -83,7 +83,7 @@ static double private_rint(double x)
     }
 
     if (x < (double)LONG_MAX)
-    {
+    { /* in <limits.h> is architecture dependent */
         ltmp = x + 0.5;
         /* implement round to even */
         if (fabs(x + 0.5 - ltmp) < 10 * DBL_EPSILON && (ltmp % 2 == 1))
@@ -105,16 +105,9 @@ static double private_rint(double x)
 
 double fround(double x, double digits)
 {
-#define maxdigits (DBL_DIG - 1)
-    /* FIXME: Hmm, have quite a host of these:
-
-       1) ./fprec.c   uses  MAXPLACES = DLB_DIG	 ``instead''
-       2) ../main/coerce.c   & ../main/deparse.c have  DBL_DIG	directly
-       3) ../main/options.c has	  #define MAX_DIGITS 22	 for options(digits)
-
-       Really should decide on a (config.h dependent?) global MAX_DIGITS.
-       --MM--
-     */
+#define MAX_DIGITS DBL_MAX_10_EXP
+    /* = 308 (IEEE); was till R 0.99: (DBL_DIG - 1) */
+    /* Note that large digits make sense for very small numbers */
     double pow10, sgn, intx;
     int dig;
 
@@ -125,24 +118,24 @@ double fround(double x, double digits)
         return x;
 #endif
 
-    if (dig > maxdigits)
-        dig = maxdigits;
+    if (digits > MAX_DIGITS)
+        digits = MAX_DIGITS;
     dig = (int)floor(digits + 0.5);
     pow10 = R_pow_di(10., dig);
-    sgn = 1.;
     if (x < 0.)
     {
-        sgn = -sgn;
+        sgn = -1.;
         x = -x;
     }
+    else
+        sgn = 1.;
     if (dig > 0)
     {
         intx = floor(x);
-        x = x - intx;
+        x -= intx;
     }
     else
-    {
         intx = 0.;
-    }
+
     return sgn * (intx + R_rint(x * pow10) / pow10);
 }
