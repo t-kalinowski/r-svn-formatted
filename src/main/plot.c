@@ -2715,11 +2715,9 @@ SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
+/* FIXME : Shouldn't we use  pythag() "everywhere" instead of hypot() ?? */
 #ifdef Macintosh
-double hypot(double x, double y)
-{
-    return sqrt(x * x + y * y);
-}
+#define hypot pythag
 #endif
 
 #define THRESHOLD 0.25

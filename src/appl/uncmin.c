@@ -434,7 +434,7 @@ static void qraux2(int nr, int n, double *r, int i, double a, double b)
     double y, z, den;
     double *r1, *r2;
 
-    den = sqrt(a * a + b * b);
+    den = pythag(a, b);
     c = a / den;
     s = b / den;
 
@@ -497,7 +497,7 @@ static void qrupdt(int nr, int n, double *a, double *u, double *v)
             else
             {
                 qraux2(nr, n, a, i, u[i], -u[ii]);
-                u[i] = sqrt(u[i] * u[i] + u[ii] * u[ii]);
+                u[i] = pythag(u[i], u[ii]);
             }
             ii = i;
         }
