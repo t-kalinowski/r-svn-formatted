@@ -403,9 +403,14 @@ int main(int ac, char **av)
     {
         if (**++av == '-')
         {
-            if (!strcmp(*av, "-V") || !strcmp(*av, "--version"))
+            if (!strcmp(*av, "--version"))
             {
                 Rprintf("Version %s.%s %s (%s %s, %s)\n", R_MAJOR, R_MINOR, R_STATUS, R_MONTH, R_DAY, R_YEAR);
+                Rprintf("Copyright (C) %s R Core Team\n", R_YEAR);
+                Rprintf("R is free software and comes with ABSOLUTELY NO WARRANTY.\n");
+                Rprintf("You are welcome to redistribute it under the terms of the\n");
+                Rprintf("GNU General Public License.  For more information about\n");
+                Rprintf("these matters, see http://www.gnu.org/copyleft/gpl.html.\n");
                 exit(0);
             }
             else if (!strcmp(*av, "--save"))
@@ -428,9 +433,13 @@ int main(int ac, char **av)
             {
                 UsingReadline = 0;
             }
-            else if (!strcmp(*av, "--quiet") || !strcmp(*av, "-q"))
+            else if (!strcmp(*av, "--silent") || !strcmp(*av, "--quiet") || !strcmp(*av, "-q"))
             {
                 R_Quiet = 1;
+            }
+            else if (!strcmp(*av, "--verbose"))
+            {
+                R_Verbose = 1;
             }
             else if (!strcmp(*av, "--slave") || !strcmp(*av, "-s"))
             {
@@ -447,12 +456,15 @@ int main(int ac, char **av)
                 LoadInitFile = 0;
             }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
-                     !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet"))
+                     !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
+                     !strcmp(*av, "-V"))
             {
                 REprintf("WARNING: option %s no longer supported\n", *av);
             }
             else if ((*av)[1] == 'v')
             {
+                REprintf("WARNING: option `-v' is deprecated.  ");
+                REprintf("Use `--vsize' instead.\n");
                 if ((*av)[2] == '\0')
                 {
                     ac--;
@@ -469,8 +481,23 @@ int main(int ac, char **av)
                 else
                     R_VSize = value * 1048576; /* 1 MByte := 2^20 Bytes*/
             }
+            else if (!strcmp(*av, "--vsize"))
+            {
+                ac--;
+                av++;
+                p = *av;
+                value = strtol(p, &p, 10);
+                if (*p)
+                    goto badargs;
+                if (value < 1 || value > 1000)
+                    REprintf("WARNING: invalid vector heap size ignored\n");
+                else
+                    R_VSize = value * 1048576; /* 1 MByte := 2^20 Bytes*/
+            }
             else if ((*av)[1] == 'n')
             {
+                REprintf("WARNING: option `-n' is deprecated.  ");
+                REprintf("Use `--nsize' instead.\n");
                 if ((*av)[2] == '\0')
                 {
                     ac--;
@@ -479,6 +506,19 @@ int main(int ac, char **av)
                 }
                 else
                     p = &(*av)[2];
+                value = strtol(p, &p, 10);
+                if (*p)
+                    goto badargs;
+                if (value < R_NSize || value > 1000000)
+                    REprintf("WARNING: invalid language heap size ignored\n");
+                else
+                    R_NSize = value;
+            }
+            else if (!strcmp(*av, "--nsize"))
+            {
+                ac--;
+                av++;
+                p = *av;
                 value = strtol(p, &p, 10);
                 if (*p)
                     goto badargs;
