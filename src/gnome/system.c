@@ -256,20 +256,13 @@ void R_ShowMessage(char *s)
 
 /*--- Initialization Code ---*/
 
-int arg_no_environ = 0;
-
-static const struct poptOption popt_options[] = {{"no-environ", '\0', POPT_ARG_NONE, &arg_no_environ, 0, "", NULL},
-                                                 {NULL, '\0', 0, NULL, 0, NULL, NULL}};
+static const struct poptOption popt_options[] = {
+    /*  { "no-environ", '\0', POPT_ARG_NONE, &arg_no_environ, 0, "", NULL }, */
+    {NULL, '\0', 0, NULL, 0, NULL, NULL}};
 
 void handle_args()
 {
-    int value, ierr;
-    /* handle command line options */
-
-    if (arg_no_environ)
-    {
-        /* what does this do?  */
-    }
+    /* handle gnome-specific command line options */
 }
 
 void setStartTime(); /* in sys-unix.c */
