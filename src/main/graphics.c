@@ -5465,6 +5465,7 @@ SEXP LTYget(unsigned int lty)
     {
         CHAR(STRING_ELT(ans, 0))[i] = HexDigits[dash[i]];
     }
+    CHAR(STRING_ELT(ans, 0))[ndash] = '\0';
     UNPROTECT(1);
     return ans;
 }
