@@ -21,6 +21,8 @@
 #include "Mathlib.h"
 #include "Fileio.h"
 
+/* FIXME : the fixed size buffer here is an abomination */
+
 /* Static Globals */
 
 static char buf[MAXELTSIZE]; /* Buffer for character strings */
@@ -57,21 +59,13 @@ static complex (*InComplex)(FILE *);
 static char *(*InString)(FILE *);
 static void (*InTerm)(FILE *);
 
-/*********************************/
-/*				 */
-/*   Dummy Placeholder Routine   */
-/*				 */
-/*********************************/
+/* Dummy Placeholder Routine */
 
 static void Dummy(FILE *fp)
 {
 }
 
-/************************************/
-/*				    */
-/*   Functions for Ascii Pickling   */
-/*				    */
-/************************************/
+/* Functions for Ascii Pickling */
 
 static void AsciiOutInteger(FILE *fp, int i)
 {
@@ -167,7 +161,7 @@ static void AsciiOutNewline(FILE *fp)
     fputc('\n', fp);
 }
 
-/* TODO: To make saved files completely portable, the output */
+/* FIXME : To make saved files completely portable, the output */
 /* representation of strings should be completely ascii.  This */
 /* includes control characters and non-ascii characters. */
 /* This could be done with \ooo escapes. */
@@ -329,11 +323,7 @@ SEXP AsciiLoadOld(FILE *fp, int version)
 
 #ifdef HAVE_RPC_XDR_H
 
-/***********************************************/
-/*					       */
-/*   Functions for Binary Pickling Using XDR   */
-/*					       */
-/***********************************************/
+/* Functions for Binary Pickling Using XDR */
 
 #include <rpc/rpc.h>
 
@@ -401,7 +391,7 @@ static double XdrInReal(FILE *fp)
 
 static void XdrOutComplex(FILE *fp, complex x)
 {
-    if (!xdr_double(&xdrs, &(x.r)) | !xdr_double(&xdrs, &(x.i)))
+    if (!xdr_double(&xdrs, &(x.r)) || !xdr_double(&xdrs, &(x.i)))
     {
         xdr_destroy(&xdrs);
         error("a write error occured\n");
@@ -411,7 +401,7 @@ static void XdrOutComplex(FILE *fp, complex x)
 static complex XdrInComplex(FILE *fp)
 {
     complex x;
-    if (!xdr_double(&xdrs, &(x.r)) | !xdr_double(&xdrs, &(x.i)))
+    if (!xdr_double(&xdrs, &(x.r)) || !xdr_double(&xdrs, &(x.i)))
     {
         xdr_destroy(&xdrs);
         error("a read error occured\n");
@@ -465,11 +455,7 @@ static SEXP XdrLoad(FILE *fp)
 }
 #endif
 
-/*************************************/
-/*				     */
-/*   Functions for Binary Pickling   */
-/*				     */
-/*************************************/
+/* Functions for Binary Pickling */
 
 static void BinaryOutInteger(FILE *fp, int i)
 {
@@ -567,11 +553,7 @@ SEXP BinaryLoadOld(FILE *fp, int version)
     return DataLoad(fp);
 }
 
-/*******************************************/
-/*					   */
 /*   Magic Numbers for R Save File Types   */
-/*					   */
-/*******************************************/
 
 void R_WriteMagic(FILE *fp, int number)
 {
@@ -1181,11 +1163,7 @@ SEXP R_LoadFromFile(FILE *fp)
     }
 }
 
-/***************************************/
-/*				       */
-/*   Interpreter Interface Functions   */
-/*				       */
-/***************************************/
+/* Interpreter Interface Functions */
 
 SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1223,6 +1201,64 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
+/* These functions convert old (pairlist) lists into new */
+/* (vectorlist) lists.  The conversion can be defeated by */
+/* hiding things inside closures, but it is doubtful that */
+/* anyone has done this. */
+
+SEXP PairToVectorList(SEXP);
+static SEXP ConvertPairToVector(SEXP);
+
+static SEXP ConvertAttributes(SEXP attrs)
+{
+    SEXP ap = attrs;
+    while (ap != R_NilValue)
+    {
+        if (TYPEOF(CAR(ap)) == LISTSXP)
+            CAR(ap) = ConvertPairToVector(CAR(ap));
+        ap = CDR(ap);
+    }
+    return attrs;
+}
+
+#ifdef NOTYET
+/* It may be that there are LISTXP hiding in closures. */
+/* This will convert them. */
+
+static SEXP ConvertEnvironment(SEXP env)
+{
+    SEXP frame = FRAME(env);
+    while (frame != R_NilValue)
+    {
+        if (TYPEOF(CAR(frame)) == LISTSXP)
+            CAR(frame) = ConvertPairToVector(CAR(frame));
+        frame = CDR(frame);
+    }
+    return env;
+}
+#endif
+
+static SEXP ConvertPairToVector(SEXP obj)
+{
+    int i, n;
+    SEXP nobj;
+    switch (TYPEOF(obj))
+    {
+    case LISTSXP:
+        PROTECT(obj = PairToVectorList(obj));
+        n = length(obj);
+        for (i = 0; i < n; i++)
+            VECTOR(obj)[i] = ConvertPairToVector(VECTOR(obj)[i]);
+        UNPROTECT(1);
+        break;
+    case VECSXP:
+        break;
+    default:;
+    }
+    ATTRIB(obj) = ConvertAttributes(ATTRIB(obj));
+    return obj;
+}
+
 SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP a, ans, e;
@@ -1235,17 +1271,21 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, "first argument must be a string\n");
     i = INTEGER(CADR(args))[0];
 
+    /* Process the saved file to obtain a list of saved objects. */
+
     fp = R_fopen(CHAR(STRING(CAR(args))[0]), "rb");
     if (!fp)
         errorcall(call, "unable to open file\n");
-
     ans = R_LoadFromFile(fp);
-
     fclose(fp);
 
-    /* store the components of the list in the Global Env */
+    /* Store the components of the list in the Global Env */
+    /* We either replace the existing objects in the Global */
+    /* Environment or establish new bindings for them. */
+    /* Note that we try to convert old "pairlist" objects */
+    /* to new "pairlist" objects. */
 
-    a = ans;
+    PROTECT(a = ans);
     while (a != R_NilValue)
     {
         for (e = FRAME(R_GlobalEnv); e != R_NilValue; e = CDR(e))
@@ -1254,14 +1294,19 @@ SEXP do_load(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 CAR(e) = CAR(a);
                 a = CDR(a);
+                CAR(a) = ConvertPairToVector(CAR(a)); /* PAIRLIST conv */
                 goto NextItem;
             }
         }
         e = a;
         a = CDR(a);
+        UNPROTECT(1);
+        PROTECT(a);
         CDR(e) = FRAME(R_GlobalEnv);
         FRAME(R_GlobalEnv) = e;
+        CAR(e) = ConvertPairToVector(CAR(e)); /* PAIRLIST conv */
     NextItem:;
     }
+    UNPROTECT(1);
     return R_NilValue;
 }
