@@ -520,21 +520,33 @@ void Raqua_ProcessEvents(void);
 Boolean AlreadyRunning = false;
 
 FILE *RAquaStdout;
+FILE *RAquaStdoutOrig;
+
 FILE *RAquaStdoutBack;
 FILE *RAquaStderr;
+FILE *RAquaStderrOrig;
 FILE *RAquaStderrBack;
 const char *StdoutFName;
 const char *StderrFName;
 
+int stderr_fd = -1;
+int stderr_dup_fd = -1;
+
+void OpenStdoutPipe(void);
+void CloseStdoutPipe(void);
+void OpenStderrPipe(void);
+void CloseStderrPipe(void);
+extern RSetPipes(void);
+
 void InitAquaIO(void);
+void CloseAquaIO(void);
+
 void InitAquaIO(void)
 {
     StdoutFName = R_tmpnam("RStdout", R_TempDir);
     StderrFName = R_tmpnam("RStderr", R_TempDir);
-    RAquaStdout = freopen(StdoutFName, "w", stdout);
-    RAquaStdoutBack = fopen(StdoutFName, "r");
-    RAquaStderr = freopen(StderrFName, "w", stderr);
-    RAquaStderrBack = fopen(StderrFName, "r");
+    OpenStdoutPipe();
+    OpenStderrPipe();
 }
 
 void Raqua_StartConsole(Rboolean OpenConsole)
@@ -546,7 +558,6 @@ void Raqua_StartConsole(Rboolean OpenConsole)
 
     char buf[300];
     FSRef ref;
-    // OpenConsole = FALSE;
 
     if (OpenConsole)
     {
@@ -556,6 +567,7 @@ void Raqua_StartConsole(Rboolean OpenConsole)
         InitAboutWindow();
 
         GetRPrefs();
+        RSetPipes();
 
         InitCursor();
 
@@ -703,14 +715,54 @@ void CloseRAquaConsole(void)
 
     TXNTerminateTextension();
 
+    CloseAquaIO();
+}
+
+void OpenStdoutPipe(void)
+{
+    //  fprintf(stderr,"\nstdout=%x, aquaout=%x",stdout,RAquaStdout);
+    RAquaStdout = freopen(StdoutFName, "w", stdout);
+    RAquaStdoutBack = fopen(StdoutFName, "r");
+    //  fprintf(stderr,"\nstdout=%x, aquaout=%x",stdout,RAquaStdout);
+}
+
+void OpenStderrPipe(void)
+{
+    RAquaStderr = freopen(StderrFName, "w", stderr);
+    RAquaStderrBack = fopen(StderrFName, "r");
+}
+
+void CloseStdoutPipe(void)
+{
     if (RAquaStdout)
+    {
         fclose(RAquaStdout);
+    }
+    RAquaStdout = (FILE *)NULL;
     if (RAquaStdoutBack)
         fclose(RAquaStdoutBack);
+    RAquaStdoutBack = (FILE *)NULL;
+}
+
+void CloseStderrPipe(void)
+{
     if (RAquaStderr)
+    {
+        //    freopen ("/dev/null", "w", stderr);
         fclose(RAquaStderr);
+    }
+    RAquaStderr = (FILE *)NULL;
     if (RAquaStderrBack)
         fclose(RAquaStderrBack);
+    RAquaStderrBack = (FILE *)NULL;
+}
+
+void CloseAquaIO(void)
+{
+    CloseStdoutPipe();
+    CloseStderrPipe();
+    unlink(StdoutFName);
+    unlink(StderrFName);
 }
 
 void Aqua_RWrite(char *buf);
@@ -3322,50 +3374,52 @@ static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
     int len;
     char *tmpbuf;
 
-    if (RAquaStdoutBack != NULL)
+    if (CurrentPrefs.GrabStdout)
     {
-        fseek(RAquaStdoutBack, 0L, SEEK_END);
-        len = ftell(RAquaStdoutBack);
-        if (len >= 1)
+        if (RAquaStdoutBack != NULL)
         {
-            rewind(RAquaStdoutBack);
-            if ((tmpbuf = malloc(len + 2)) != NULL)
+            fseek(RAquaStdoutBack, 0L, SEEK_END);
+            len = ftell(RAquaStdoutBack);
+            if (len > 1)
             {
-                fread(tmpbuf + 1, 1, len, RAquaStdoutBack);
-                tmpbuf[0] = '\n';
-                tmpbuf[len + 1] = '\0';
-                Raqua_WriteConsole(tmpbuf, len + 1);
-                Aqua_FlushBuffer();
-                free(tmpbuf);
-                fclose(RAquaStdout);
-                fclose(RAquaStdoutBack);
-                RAquaStdout = freopen(StdoutFName, "w", stdout);
-                RAquaStdoutBack = fopen(StdoutFName, "r");
-                SendReturnKey();
+                rewind(RAquaStdoutBack);
+                if ((tmpbuf = malloc(len + 2)) != NULL)
+                {
+                    fread(tmpbuf + 1, 1, len, RAquaStdoutBack);
+                    tmpbuf[0] = '\n';
+                    tmpbuf[len + 1] = '\0';
+                    Raqua_WriteConsole(tmpbuf, len + 1);
+                    Aqua_FlushBuffer();
+                    free(tmpbuf);
+                    CloseStdoutPipe();
+                    OpenStdoutPipe();
+                    SendReturnKey();
+                }
             }
         }
     }
 
-    if (RAquaStderrBack != NULL)
+    if (CurrentPrefs.GrabStderr)
     {
-        fseek(RAquaStderrBack, 0L, SEEK_END);
-        len = ftell(RAquaStderrBack);
-        if (len >= 1)
+        if (RAquaStderrBack != NULL)
         {
-            rewind(RAquaStderrBack);
-            if ((tmpbuf = malloc(len + 2)) != NULL)
+            fseek(RAquaStderrBack, 0L, SEEK_END);
+            len = ftell(RAquaStderrBack);
+            if (len > 1)
             {
-                fread(tmpbuf + 1, 1, len, RAquaStderrBack);
-                tmpbuf[0] = '\n';
-                tmpbuf[len + 1] = '\0';
-                Raqua_WriteConsole(tmpbuf, len + 1);
-                Aqua_FlushBuffer();
-                free(tmpbuf);
-                fclose(RAquaStderr);
-                fclose(RAquaStderrBack);
-                RAquaStdout = freopen(StderrFName, "w", stderr);
-                RAquaStderrBack = fopen(StderrFName, "r");
-                SendReturnKey();
+                rewind(RAquaStderrBack);
+                if ((tmpbuf = malloc(len + 2)) != NULL)
+                {
+                    fread(tmpbuf + 1, 1, len, RAquaStderrBack);
+                    tmpbuf[0] = '\n';
+                    tmpbuf[len + 1] = '\0';
+                    Raqua_WriteConsole(tmpbuf, len + 1);
+                    Aqua_FlushBuffer();
+                    free(tmpbuf);
+                    CloseStderrPipe();
+                    OpenStderrPipe();
+                    SendReturnKey();
+                }
             }
         }
     }
