@@ -1216,24 +1216,16 @@ SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static SEXP SubsetSymbol;
 
-static SEXP ProcessDots(SEXP dots, SEXP *subset, char *buf)
+static SEXP ProcessDots(SEXP dots, char *buf)
 {
     if (dots == R_NilValue)
         return dots;
     if (TAG(dots) == R_NilValue)
         error("unnamed list element in model.frame.default");
-    CDR(dots) = ProcessDots(CDR(dots), subset, buf);
-    if (TAG(dots) == SubsetSymbol)
-    {
-        *subset = CAR(dots);
-        return CDR(dots);
-    }
-    else
-    {
-        sprintf(buf, "(%s)", CHAR(PRINTNAME(TAG(dots))));
-        TAG(dots) = install(buf);
-        return dots;
-    }
+    CDR(dots) = ProcessDots(CDR(dots), buf);
+    sprintf(buf, "(%s)", CHAR(PRINTNAME(TAG(dots))));
+    TAG(dots) = install(buf);
+    return dots;
 }
 
 SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1246,35 +1238,35 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     terms = CAR(args);
     args = CDR(args);
-    data = CAR(args);
+    envir = CAR(args);
     args = CDR(args);
     dots = CAR(args);
     args = CDR(args);
-    envir = CAR(args);
+    subset = CAR(args);
     args = CDR(args);
     na_action = CAR(args);
     args = CDR(args);
 
     /* Save the row names for later use. */
 
-    PROTECT(row_names = getAttrib(data, R_RowNamesSymbol));
+    PROTECT(row_names = getAttrib(envir, R_RowNamesSymbol));
 
     /* Assemble the base data frame. */
 
     PROTECT(variables = getAttrib(terms, install("variables")));
     if (isNull(variables) || !isLanguage(variables))
         errorcall(call, "invalid terms object\n");
-    if (isList(data))
+    if (isList(envir))
     {
         tmp = emptyEnv();
-        FRAME(tmp) = data;
+        FRAME(tmp) = envir;
         ENCLOS(tmp) = R_GlobalEnv;
-        data = tmp;
+        envir = tmp;
     }
-    else if (!isEnvironment(data))
+    else if (!isEnvironment(envir))
         errorcall(call, "Invalid data argument\n");
-    PROTECT(data);
-    data = eval(variables, data);
+    PROTECT(envir);
+    data = eval(variables, envir);
     UNPROTECT(2);
     PROTECT(data);
 
@@ -1324,18 +1316,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isNull(dots) || !isLanguage(dots))
         errorcall(call, "invalid dots object\n");
-    if (isList(envir))
-    {
-        tmp = emptyEnv();
-        FRAME(tmp) = envir;
-        ENCLOS(tmp) = R_GlobalEnv;
-        envir = tmp;
-    }
-    else if (!isEnvironment(envir))
-        errorcall(call, "invalid envir argument\n");
-    PROTECT(envir);
     dots = eval(dots, envir);
-    UNPROTECT(1);
     PROTECT(dots);
 
     /* Glue the data object and the dots objects */
@@ -1347,7 +1328,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (!isList(dots))
         errorcall(call, "variables not in list form\n");
-    subset = R_NilValue;
+
     if (!isNull(dots))
     {
         if (nr == 0)
@@ -1359,8 +1340,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (nrows(CAR(ans)) != nr)
                 errorcall(call, "variable lengths differ\n");
         }
-        SubsetSymbol = install("subset");
-        dots = ProcessDots(dots, &subset, buf);
+        dots = ProcessDots(dots, buf);
         if (!isNull(data))
         {
             ans = data;
@@ -1396,7 +1376,6 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     /* Do the subsetting if required. */
-    /* First find the "subset" variable. */
 
     if (subset != R_NilValue)
     {
