@@ -258,7 +258,6 @@ static R_CallMethodDef callMethods[] = {
     CALLDEF(R_stopbcprof, 0),
 #endif
 
-    CALLDEF(Type1FontInUse, 1),
     {NULL, NULL, 0}};
 
 #define EXTDEF(name)                                                                                                   \
@@ -266,8 +265,7 @@ static R_CallMethodDef callMethods[] = {
 #name, (DL_FUNC)&name, -1                                                                                      \
     }
 
-static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags), EXTDEF(call_dqagi), EXTDEF(PostScript),
-                                                EXTDEF(XFig),       EXTDEF(PDF),        {NULL, NULL, 0}};
+static R_ExternalMethodDef externalMethods[] = {EXTDEF(call_dqags), EXTDEF(call_dqagi), {NULL, NULL, 0}};
 
 #define FDEF(name)                                                                                                     \
     {                                                                                                                  \

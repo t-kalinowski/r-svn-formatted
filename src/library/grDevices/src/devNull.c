@@ -188,3 +188,10 @@ static Rboolean nullDeviceDriver(NewDevDesc *dev)
     dev->newDevStruct = 1;
     return TRUE;
 }
+
+/* formerly in grid.c */
+SEXP L_nullDevice()
+{
+    GEnullDevice();
+    return R_NilValue;
+}

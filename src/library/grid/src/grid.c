@@ -2364,9 +2364,3 @@ SEXP L_locnBounds(SEXP x, SEXP y)
     }
     return result;
 }
-
-SEXP L_nullDevice()
-{
-    GEnullDevice();
-    return R_NilValue;
-}
