@@ -416,7 +416,7 @@ typedef struct Wpipeconn
     rpipe *rp;
 } * RWpipeconn;
 
-static void Wpipe_open(Rconnection con)
+static Rboolean Wpipe_open(Rconnection con)
 {
     rpipe *rp;
     int visible = -1, io;
@@ -426,7 +426,10 @@ static void Wpipe_open(Rconnection con)
         visible = 1; /* Somewhere to put the output */
     rp = rpipeOpen(con->description, visible, NULL, io);
     if (!rp)
-        error("cannot open cmd `%s'", con->description);
+    {
+        warning("cannot open cmd `%s'", con->description);
+        return FALSE;
+    }
     ((RWpipeconn)(con->private))->rp = rp;
     con->isopen = TRUE;
     con->canwrite = io;
@@ -436,6 +439,7 @@ static void Wpipe_open(Rconnection con)
     else
         con->text = TRUE;
     con->save = -1000;
+    return TRUE;
 }
 
 static void Wpipe_close(Rconnection con)
