@@ -671,20 +671,20 @@ int setupui()
     MCHECK(m = newmenu("Help"));
     MCHECK(newmenuitem("Console", 0, menuconsolehelp));
     MCHECK(mhelp = newmenuitem("R language (standard)", 0, menuhelp));
-    MCHECK(mhelpstart = newmenuitem("R language (html)", 0, menuhelpstart));
+    MCHECK(mhelpstart = newmenuitem("R language (&HTML)", 0, menuhelpstart));
     lhelpstart = check_doc_file("doc/html/rwin.html");
     if (!lhelpstart)
         disable(mhelpstart);
     MCHECK(mman = newsubmenu(m, "Manuals"));
-    MCHECK(mmanintro = newmenuitem("An Introduction to R", 0, menumainman));
+    MCHECK(mmanintro = newmenuitem("An &Introduction to R", 0, menumainman));
     lmanintro = check_doc_file("doc/manual/R-intro.pdf");
     if (!lmanintro)
         disable(mmanintro);
-    MCHECK(mmanref = newmenuitem("R Reference Manual", 0, menumainref));
+    MCHECK(mmanref = newmenuitem("R &Reference Manual", 0, menumainref));
     lmanref = check_doc_file("doc/manual/refman.pdf");
     if (!lmanref)
         disable(mmanref);
-    MCHECK(mmanext = newmenuitem("R Extension Writer's Manual", 0, menumainext));
+    MCHECK(mmanext = newmenuitem("R Extension &Writer's Manual", 0, menumainext));
     lmanext = check_doc_file("doc/manual/R-exts.pdf");
     if (!lmanext)
         disable(mmanext);
