@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998--1998  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,13 +21,14 @@
 #include "Defn.h"
 #include "Print.h" /*for printRealVector()*/
 #include "Mathlib.h"
+#include "Applic.h"
 
-/* WARNING : As things stand, these routines should not be called */
-/* recursively because of the way global variables are used.  This */
-/* could be fixed by saving and restoring these global variables. */
+/* WARNING : As things stand, these routines should not be called
+ *	     recursively because of the way global variables are used.
+ *	     This could be fixed by saving and restoring these global variables.
+ */
 
-/* One Dimensional Minimization */
-/* This is just wrapper code for Brent's "fmin" */
+/* One Dimensional Minimization --- just wrapper code for Brent's "fmin" */
 
 static SEXP R_fcall1;
 static SEXP R_env1;
@@ -69,9 +71,6 @@ badvalue:
 }
 
 /* fmin(f, xmin, xmax tol) */
-
-extern double F77_SYMBOL(fmin)();
-
 SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     double xmin, xmax, tol;
@@ -117,8 +116,7 @@ SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     return CADR(R_fcall1);
 }
 
-/* One Dimensional Root Finding */
-/* This is just wrapper code for Brent's "zeroin" */
+/* One Dimensional Root Finding --  just wrapper code for Brent's "zeroin" */
 
 static SEXP R_fcall2;
 static SEXP R_env2;
@@ -161,9 +159,6 @@ badvalue:
 }
 
 /* zeroin(f, xmin, xmax, tol) */
-
-extern double F77_SYMBOL(zeroin)();
-
 SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     double xmin, xmax, tol;
@@ -395,9 +390,6 @@ static void optcode(int code)
     }
     Rprintf("\n");
 }
-
-extern int F77_SYMBOL(fdhess)();
-extern int F77_SYMBOL(optif9)();
 
 SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
