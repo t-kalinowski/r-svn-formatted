@@ -561,6 +561,7 @@ void markSExp(SEXP s)
         case ENVSXP:
             markSExp(FRAME(s));
             markSExp(ENCLOS(s));
+            markSExp(HASHTAB(s));
             break;
         case CLOSXP:
         case PROMSXP:
