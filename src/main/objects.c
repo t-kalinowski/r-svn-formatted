@@ -914,7 +914,7 @@ R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t val)
     return old;
 }
 
-static SEXP dispatchNonGeneric(SEXP name, SEXP env)
+static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
 {
     /* dispatch the non-generic definition of `name'.  Used to trap
        calls to standardGeneric during the loading of the methods package */
@@ -976,9 +976,11 @@ static void load_methods_package()
 }
 #endif
 
+static SEXP get_this_generic(SEXP args);
+
 SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP arg, value;
+    SEXP arg, value, fdef;
     R_stdGen_ptr_t ptr = R_get_standardGeneric_ptr();
     if (!ptr)
     {
@@ -990,13 +992,13 @@ SEXP do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env)
            error("Something went wrong:  the internal pointer for
            standardGeneric was not set"); */
     }
-    checkArity(op, args);
 
     PROTECT(arg = CAR(args));
+    PROTECT(fdef = get_this_generic(args));
 
-    value = (*ptr)(arg, env);
+    value = (*ptr)(arg, env, fdef);
 
-    UNPROTECT(1);
+    UNPROTECT(2);
     return value;
 }
 
@@ -1024,6 +1026,18 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
     return (fname);
 }
 
+SEXP R_primitive_methods(SEXP op)
+{
+    int offset = PRIMOFFSET(op);
+    if (offset < 0 || offset >= curMaxOffset)
+        return R_NilValue;
+    else
+    {
+        SEXP value = prim_mlist[offset];
+        return value ? value : R_NilValue;
+    }
+}
+
 SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
 {
     int offset = 0;
@@ -1038,7 +1052,7 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     case 'r': /* reset */
         code = NEEDS_RESET;
         break;
-    case 's': /* set */
+    case 's': /* set or suppress */
         switch (code_string[1])
         {
         case 'e':
@@ -1109,7 +1123,10 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
        change while it's still defined! (the stored methods list can,
        however) */
     value = prim_generics[offset];
-    if (code == NO_METHODS && prim_generics[offset])
+    if (code == SUPPRESSED)
+    {
+    } /* leave the structure alone */
+    else if (code == NO_METHODS && prim_generics[offset])
     {
         R_ReleaseObject(prim_generics[offset]);
         prim_generics[offset] = 0;
@@ -1126,11 +1143,16 @@ SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist)
     if (code == HAS_METHODS)
     {
         if (!mlist || isNull(mlist))
-            error("Call tried to set primitive function methods with a null methods list");
-        if (prim_mlist[offset])
-            R_ReleaseObject(prim_mlist[offset]);
-        R_PreserveObject(mlist);
-        prim_mlist[offset] = mlist;
+        {
+            /* turning methods back on after a SUPPRESSED */
+        }
+        else
+        {
+            if (prim_mlist[offset])
+                R_ReleaseObject(prim_mlist[offset]);
+            R_PreserveObject(mlist);
+            prim_mlist[offset] = mlist;
+        }
     }
     return value;
 }
@@ -1149,6 +1171,22 @@ static SEXP get_primitive_methods(SEXP op, SEXP rho)
     e = eval(e, rho);
     UNPROTECT(nprotect);
     return e;
+}
+
+/* get the generic function, defined to be the function definition for
+the call to standardGeneric(), or for primitives, passed as the second
+argument to standardGeneric.
+*/
+static SEXP get_this_generic(SEXP args)
+{
+    SEXP rval = NULL, t;
+    RCNTXT *cptr;
+    /* a second argument to the call, if any, is taken as the function */
+    if (CDR(args) != R_NilValue)
+        return CAR(CDR(args));
+    /* else use sys.function(0):  TO DO: should check that this is a generic? */
+    cptr = R_GlobalContext;
+    return R_sysfunction(0, cptr);
 }
 
 /* Could there be methods for this op?  Checks
@@ -1211,7 +1249,7 @@ SEXP R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rho)
     mlist = prim_mlist[offset];
     if (mlist && !isNull(mlist) && quick_method_check_ptr)
     {
-        value = (*quick_method_check_ptr)(args, mlist);
+        value = (*quick_method_check_ptr)(args, mlist, op);
         if (isPrimitive(value))
             return (NULL);
         if (isFunction(value))
