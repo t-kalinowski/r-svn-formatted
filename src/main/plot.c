@@ -2106,8 +2106,11 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
         if (outerval == NA_INTEGER)
             outerval = 0;
+        /* Note : we ignore any shrinking produced */
+        /* by mfrow / mfcol specs here.  I.e. don't */
+        /* dd->gp.cexbase. */
         if (R_FINITE(cexval))
-            dd->gp.cex = dd->gp.cexbase * cexval;
+            dd->gp.cex = cexval;
         else
             cexval = cexsave;
         dd->gp.font = (fontval == NA_INTEGER) ? fontsave : fontval;
