@@ -208,9 +208,7 @@ static Rboolean checkNativeType(int targetType, int actualType)
     return (TRUE);
 }
 
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
+#include <R_ext/Riconv.h>
 
 static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const char *name, R_toCConverter **converter,
                         int targetType, char *encname)
@@ -340,8 +338,8 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
 #ifdef HAVE_ICONV
                 char *inbuf, *outbuf;
                 size_t inb, outb, outb0, res;
-                iconv_t obj = Riconv_open("", encname); /* (to, from) */
-                if (obj == (iconv_t)(-1))
+                void *obj = Riconv_open("", encname); /* (to, from) */
+                if (obj == (void *)-1)
                     error(_("unsupported encoding '%s'"), encname);
                 for (i = 0; i < n; i++)
                 {
@@ -476,8 +474,8 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
 #ifdef HAVE_ICONV
                 char *inbuf, *outbuf, *p;
                 size_t inb, outb, outb0, res;
-                iconv_t obj = Riconv_open(encname, ""); /* (to, from) */
-                if (obj == (iconv_t)(-1))
+                void *obj = Riconv_open(encname, ""); /* (to, from) */
+                if (obj == (void *)(-1))
                     error(_("unsupported encoding '%s'"), encname);
                 for (i = 0; i < n; i++)
                 {
