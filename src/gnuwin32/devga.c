@@ -878,6 +878,23 @@ static void menuclpbm(control m)
     gsetcursor(xd->gawin, ArrowCursor);
 }
 
+static void menustayontop(control m)
+{
+    NewDevDesc *dd = (NewDevDesc *)getdata(m);
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    if (ischecked(m))
+    {
+        uncheck(m);
+        BringToTop(xd->gawin, 0);
+    }
+    else
+    {
+        check(m);
+        BringToTop(xd->gawin, 1);
+    }
+}
+
 static void menuprint(control m)
 {
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
@@ -1514,6 +1531,12 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     setdata(m, (void *)dd);
     MCHECK(m = newmenuitem("Save as postscript...", 0, menups));
     setdata(m, (void *)dd);
+    if (!ismdi())
+    {
+        MCHECK(newmenuitem("-", 0, NULL));
+        MCHECK(m = newmenuitem("Stay on top", 0, menustayontop));
+        setdata(m, (void *)dd);
+    }
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(m = newmenuitem("Print...", 0, menuprint));
     setdata(m, (void *)dd);

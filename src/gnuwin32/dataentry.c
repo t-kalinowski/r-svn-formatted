@@ -1604,6 +1604,20 @@ static void de_autosize(control c)
     }
 }
 
+static void de_stayontop(control c)
+{
+    if (ischecked(c))
+    {
+        uncheck(c);
+        BringToTop(de, 0);
+    }
+    else
+    {
+        check(c);
+        BringToTop(de, 1);
+    }
+}
+
 static void de_sbf(control c, int pos)
 {
     if (pos < 0)
@@ -1720,6 +1734,8 @@ static MenuItem DePopup[28] = {{"Help", menudehelp, 0},
                                {"Paste to selected cell", de_paste, 0},
                                {"Autosize column", de_autosize, 0},
                                {"-", 0, 0},
+                               {"Stay on top", de_stayontop, 0},
+                               {"-", 0, 0},
                                {"Close", declose, 0},
                                LASTMENUITEM};
 
@@ -1731,6 +1747,10 @@ static void demenuact(control m)
 static void depopupact(control m)
 {
     /* use this to customize the menu */
+    if (ismdi())
+        disable(DePopup[6].m);
+    else
+        enable(DePopup[6].m);
 }
 
 #define MCHECK(a)                                                                                                      \

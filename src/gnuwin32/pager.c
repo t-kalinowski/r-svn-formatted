@@ -203,6 +203,22 @@ static void pagerselectall(control m)
     consoleselectall(c);
 }
 
+static void pagerstayontop(control m)
+{
+    control c = getdata(m);
+
+    if (ischecked(m))
+    {
+        uncheck(m);
+        BringToTop(c, 0);
+    }
+    else
+    {
+        check(m);
+        BringToTop(c, 1);
+    }
+}
+
 static void pagerconsole(control m)
 {
     show(RConsole);
@@ -280,6 +296,8 @@ static MenuItem PagerPopup[] = {{"Copy", pagercopy, 0},
                                 {"Paste to console", pagerpaste, 0},
                                 {"Select all", pagerselectall, 0},
                                 {"-", 0, 0},
+                                {"Stay on top", pagerstayontop, 0},
+                                {"-", 0, 0},
                                 {"Close", pagerclose, 0},
                                 LASTMENUITEM};
 
@@ -304,6 +322,10 @@ static void pagermenuact(control m)
         disable(p->mpaste);
         disable(p->mpoppaste);
     }
+    if (ismdi())
+        disable(PagerPopup[4].m);
+    else
+        enable(PagerPopup[4].m);
 }
 
 #define MCHECK(a)                                                                                                      \
