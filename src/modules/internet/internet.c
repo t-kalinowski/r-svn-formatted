@@ -26,6 +26,14 @@
 #include <Rconnections.h>
 #include <R_ext/R-ftp-http.h>
 
+static void *in_R_HTTPOpen(const char *url);
+static int in_R_HTTPRead(void *ctx, char *dest, int len);
+static void in_R_HTTPClose(void *ctx);
+
+static void *in_R_FTPOpen(const char *url);
+static int in_R_FTPRead(void *ctx, char *dest, int len);
+static void in_R_FTPClose(void *ctx);
+
 #include <R_ext/Rinternet.h>
 
 #ifdef HAVE_UNISTD_H
@@ -56,13 +64,13 @@ static void url_open(Rconnection con)
     switch (type)
     {
     case HTTPsh:
-        ctxt = R_HTTPOpen(url);
+        ctxt = in_R_HTTPOpen(url);
         if (ctxt == NULL)
             error("cannot open URL `%s'", url);
         ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     case FTPsh:
-        ctxt = R_FTPOpen(url);
+        ctxt = in_R_FTPOpen(url);
         if (ctxt == NULL)
             error("cannot open URL `%s'", url);
         ((Rurlconn)(con->private))->ctxt = ctxt;
@@ -87,10 +95,10 @@ static void url_close(Rconnection con)
     switch (type)
     {
     case HTTPsh:
-        R_HTTPClose(((Rurlconn)(con->private))->ctxt);
+        in_R_HTTPClose(((Rurlconn)(con->private))->ctxt);
         break;
     case FTPsh:
-        R_FTPClose(((Rurlconn)(con->private))->ctxt);
+        in_R_FTPClose(((Rurlconn)(con->private))->ctxt);
         break;
     }
     con->isopen = FALSE;
@@ -106,10 +114,10 @@ static int url_fgetc(Rconnection con)
     switch (type)
     {
     case HTTPsh:
-        n = R_HTTPRead(ctxt, (char *)&c, 1);
+        n = in_R_HTTPRead(ctxt, (char *)&c, 1);
         break;
     case FTPsh:
-        n = R_FTPRead(ctxt, (char *)&c, 1);
+        n = in_R_FTPRead(ctxt, (char *)&c, 1);
         break;
     }
     return (n == 1) ? c : R_EOF;
@@ -124,10 +132,10 @@ static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
     switch (type)
     {
     case HTTPsh:
-        n = R_HTTPRead(ctxt, ptr, size * nitems);
+        n = in_R_HTTPRead(ctxt, ptr, size * nitems);
         break;
     case FTPsh:
-        n = R_FTPRead(ctxt, ptr, size * nitems);
+        n = in_R_FTPRead(ctxt, ptr, size * nitems);
         break;
     }
     return n / size;
@@ -280,7 +288,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
         R_FlushConsole();
 #endif
-        ctxt = R_HTTPOpen(url);
+        ctxt = in_R_HTTPOpen(url);
         if (ctxt == NULL)
             status = 1;
         else
@@ -306,7 +314,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             pb = newprogressbar(rect(20, 50, 500, 20), 0, guess, 1024, 1);
             show(wprog);
 #endif
-            while ((len = R_HTTPRead(ctxt, buf, sizeof(buf))) > 0)
+            while ((len = in_R_HTTPRead(ctxt, buf, sizeof(buf))) > 0)
             {
                 fwrite(buf, 1, len, out);
                 nbytes += len;
@@ -323,7 +331,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                     putdots(&ndots, nnew);
 #endif
             }
-            R_HTTPClose(ctxt);
+            in_R_HTTPClose(ctxt);
             fclose(out);
             if (!quiet)
             {
@@ -370,7 +378,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
         R_FlushConsole();
 #endif
-        ctxt = R_FTPOpen(url);
+        ctxt = in_R_FTPOpen(url);
         if (ctxt == NULL)
             status = 1;
         else
@@ -396,7 +404,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             pb = newprogressbar(rect(20, 50, 500, 20), 0, guess, 1024, 1);
             show(wprog);
 #endif
-            while ((len = R_FTPRead(ctxt, buf, sizeof(buf))) > 0)
+            while ((len = in_R_FTPRead(ctxt, buf, sizeof(buf))) > 0)
             {
                 fwrite(buf, 1, len, out);
                 nbytes += len;
@@ -413,7 +421,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                     putdots(&ndots, nnew);
 #endif
             }
-            R_FTPClose(ctxt);
+            in_R_FTPClose(ctxt);
             fclose(out);
             if (!quiet)
             {
