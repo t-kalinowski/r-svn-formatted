@@ -41,7 +41,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 
     nargs = length(args);
     format = CAR(args);
-    if (!isString(format) || LENGTH(format) == 0)
+    if (!isString(format) || length(format) == 0)
         errorcall(call, _("'fmt' is not a non-empty character vector"));
     args = CDR(args);
     nargs--;
@@ -52,17 +52,17 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < nargs; i++, args = CDR(args))
         a[i] = CAR(args);
 
-    maxlen = LENGTH(format);
+    maxlen = length(format);
 
     for (i = 0; i < nargs; i++)
     {
-        lens[i] = LENGTH(a[i]);
+        lens[i] = length(a[i]);
         if (lens[i] == 0)
             errorcall(call, _("zero-length argument"));
         if (maxlen < lens[i])
             maxlen = lens[i];
     }
-    if (maxlen % LENGTH(format))
+    if (maxlen % length(format))
         errorcall(call, _("arguments cannot be recycled to the same length"));
     for (i = 0; i < nargs; i++)
     {
@@ -75,7 +75,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         cnt = 0;
         outputString[0] = '\0';
-        formatString = CHAR(STRING_ELT(format, ns % LENGTH(format)));
+        formatString = CHAR(STRING_ELT(format, ns % length(format)));
         n = strlen(formatString);
         if (n > MAXLINE)
             errorcall(call, _("'fmt' length exceeds maximal buffer length %d"), MAXLINE);
