@@ -59,13 +59,14 @@
 #ifdef HAVE_AQUA
 #define __DEBUGGING__
 #include <Carbon/Carbon.h>
-
+#include <sys/fcntl.h>
 #include "Raqua.h"
 
 /* Cocoa bundle stuff */
 static OSStatus appCommandHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *userData);
 EventTypeSpec cmdEvent = {kEventClassCommand, kEventCommandProcess};
 
+/* character coding tables for true 8-bit chars */
 unsigned char Lat2Mac[] = {
     32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  245, 96,  171, 246, 247, 248,
     249, 250, 172, 32,  251, 252, 32,  253, 254, 255, 32,  193, 162, 163, 32,  180, 32,  164, 172, 169, 187, 199,
@@ -156,6 +157,10 @@ void GraphicCopy(WindowPtr window);
 #define kRCustomEventClass 'revt'
 #define kRWakeUpPlease 'wake'
 
+#define kEventClassRead 'rrdc'
+#define kEventRead 'rrde'
+#define kEventParamRead 'rrdp'
+
 OSStatus InitMLTE(void);
 TXNObject RConsoleOutObject = NULL;
 TXNObject RConsoleInObject = NULL;
@@ -168,9 +173,15 @@ bool PackageManagerFinished = false;
 bool DataEntryFinished = false;
 bool BrowsePkgFinished = false;
 bool InputDialogFinished = false;
+bool WeHaveCocoa = false;
 
 Boolean HaveContent = false;
 Boolean HaveBigBuffer = false;
+
+/* this input buffer is filled by the userInput function (Cocoa callback) and processed in ReadConsole. This effectively
+ * limits the size of an input string to 32k. We should make this more flexible at some point FIXME! */
+#define inputBufferSize 32768
+static char inputBuffer[inputBufferSize];
 
 void Raqua_helpsearchbrowser(void);
 
@@ -193,6 +204,50 @@ static char CMDString[CMDLineSize + 1];
 
 pascal OSErr HandleDoCommandLine(AppleEvent *theAppleEvent, AppleEvent *reply, long handlerRefCon);
 
+/*
+ -------------------------------------------------------- Cocoa interface functions ------
+ */
+
+/* feature constants - return value of cocoaInitializeBundle (if positive) is a bit mask of those constants, which
+ * define the functionality provided by the bundle */
+#define cocoa_basic 0x0001 /* basic functionality */
+#define cocoa_loop 0x0002  /* event loop functionality */
+#define cocoa_menu 0x0004  /* if set, Cocoa provides its own menu, Carbon should skip menu creation */
+
+int cocoaFeatures = 0; /* defines the capabilities of the currently loaded bundle */
+
+CFBundleRef cocoaBundleRef = NULL; /* reference to the currently loaded bundle */
+
+/* Cocoa functions - if the function is optional you (in aquaconsole) must check for its presence before calling! */
+
+/*===feature group: cocoa_basic (mandatory group - all Cocoa bundles must implement this group) */
+/* - initialize Cocoa; takes userInput callback function as argument; returns bitmask for cocoaFeatures */
+int (*cocoaInitializeBundle)(int (*callBack)(const char *));
+
+/* the following functions return 0 on success and !=0 on failure */
+/* - makes Cocoa window active; the window number should be 0 since we have only the main window atm. */
+int (*cocoaSelectWindow)(int);
+/* - writes string to the console (usually R output) */
+int (*cocoaWriteConsole)(CFStringRef);
+/* - writes the prompt to the console */
+int (*cocoaWritePrompt)(CFStringRef);
+/* - writes echo of the input in the console; if not provided, cocoaWriteConsole is used instead */
+int (*cocoaWriteUserInput)(CFStringRef); /* optional - use WriteConsole if this one is NULL */
+/* - tells Cocoa whether R is busy (parameter=1) or idle (parameter=0) */
+int (*cocoaRisBusy)(int); /* optional */
+
+/*===feature group: cocoa_loop */
+/* - if defined, this function is called in the internal R event loop; parameter is always 0 atm */
+int (*cocoaProcessEvents)(int);
+
+/*===feature group: cocoa_menu */
+/* - this function is called after initialization such as that Cocoa may build the application menu */
+int (*cocoaSetupMenu)(int); /* optional - menu may already have been created in initializeBundle */
+
+/*
+ -------------------------------------------------------- END OF Cocoa IF ------
+ */
+
 /* external symbols from aquaprefs.c */
 extern pascal void RPrefsHandler(WindowRef window);
 extern void ActivatePrefsWindow(void);
@@ -214,6 +269,7 @@ void Raqua_Suicide(char *s);
 void Raqua_ShowMessage(char *msg);
 void CloseAllHelpWindows(void);
 void CloseAllEditWindows(void);
+void Raqua_WritePrompt(char *prompt);
 
 #define MAX_NUM_OF_WINS 1000
 WindowRef EditWindowsList[MAX_NUM_OF_WINS];
@@ -339,6 +395,7 @@ static const EventTypeSpec inputSpec[] = {
 
 static pascal OSErr QuitAppleEventHandler(const AppleEvent *appleEvt, AppleEvent *reply, UInt32 refcon);
 static pascal OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
+static pascal OSStatus ReadHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 static pascal OSStatus RAboutWinHandler(EventHandlerCallRef handlerRef, EventRef event, void *userData);
 static OSStatus RInputDialogHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
@@ -353,6 +410,8 @@ extern void ClosePackageManager(void);
 static OSStatus GenContEventHandlerProc(EventHandlerCallRef inCallRef, EventRef inEvent, void *inUserData);
 
 static const EventTypeSpec KeybEvents[] = {{kEventClassKeyboard, kEventRawKeyDown}};
+
+static const EventTypeSpec RReadEvents[] = {{kEventClassRead, kEventRead}};
 
 EventRef WakeUpEvent;
 
@@ -425,18 +484,19 @@ TXNControlTag txnControlTag[1];
 TXNControlData txnControlData[1];
 TXNMargins txnMargins;
 
-static pascal void RIdleTimer(EventLoopTimerRef inTimer, EventLoopIdleTimerMessage inState, void *inUserData);
 static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData);
 static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData);
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData);
 
-EventLoopTimerRef Inst_RIdleTimer;
 EventLoopTimerRef Inst_OtherEventLoops;
 EventLoopTimerRef Inst_ReadStdoutTimer;
 EventLoopTimerRef Inst_FlushConsoleTimer;
 
 extern void SaveConsolePosToPrefs(void);
 extern Rect ConsoleWindowBounds;
+
+static void loadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundlePtr);
+static int userInput(const char *text);
 
 void SetUpRAquaMenu(void);
 OSStatus InstallAppHandlers(void);
@@ -456,14 +516,32 @@ OSStatus SetUpGUI(void)
     if ((err = CreateNibReferenceWithCFBundle(RBundle, CFSTR("main"), &nibRef)) != noErr)
         goto guifailure;
 
-    /*   if( (err = CreateNibReference(CFSTR("main"), &nibRef)) != noErr)
-           goto guifailure;
-    */
-    if ((err = SetMenuBarFromNib(nibRef, CFSTR("MenuBar"))) != noErr)
-        goto guifailure;
-
+    /* we need at least one Carbon window before loading Cocoa, otherwise Carbon stuff itn's set up properly */
     if ((err = CreateWindowFromNib(nibRef, CFSTR("MainWindow"), &ConsoleWindow)) != noErr)
         goto guifailure;
+
+    loadPrivateFrameworkBundle(CFSTR("CocoaBundle.bundle"), &cocoaBundleRef);
+
+    /* if the bundle is loaded and at least basic features are provided, we can use the bundle instead of the Carbon
+     * window */
+    if (cocoaBundleRef && ((cocoaFeatures & cocoa_basic) > 0))
+        WeHaveCocoa = true;
+
+    /*   if( (err = CreateNibReference(CFSTR("main"), &nibRef)) != noErr) goto guifailure; */
+
+    if ((cocoaFeatures & cocoa_menu) == 0)
+    { /* if Cocoa bundle doesn't provide the menu, we create it */
+        if ((err = SetMenuBarFromNib(nibRef, CFSTR("MenuBar"))) != noErr)
+            goto guifailure;
+    }
+    else
+    {
+        if (cocoaSetupMenu)
+            cocoaSetupMenu(0);
+    }
+
+    if (WeHaveCocoa && cocoaSelectWindow)
+        cocoaSelectWindow(0);
 
     if ((err = CreateWindowFromNib(nibRef, CFSTR("AboutWindow"), &RAboutWindow)) != noErr)
         goto guifailure;
@@ -542,8 +620,13 @@ OSStatus SetUPConsole(void)
     TXNSetTXNObjectControls(RConsoleOutObject, false, 1, txnControlTag, txnControlData);
     TXNSetTXNObjectControls(RConsoleInObject, false, 1, txnControlTag, txnControlData);
 
-    err = InstallWindowEventHandler(ConsoleWindow, NewEventHandlerUPP(KeybHandler), GetEventTypeCount(KeybEvents),
-                                    KeybEvents, (void *)ConsoleWindow, NULL);
+    if (!WeHaveCocoa)
+    {
+        err = InstallWindowEventHandler(ConsoleWindow, NewEventHandlerUPP(KeybHandler), GetEventTypeCount(KeybEvents),
+                                        KeybEvents, (void *)ConsoleWindow, NULL);
+    }
+    err = InstallWindowEventHandler(ConsoleWindow, NewEventHandlerUPP(ReadHandler), GetEventTypeCount(RReadEvents),
+                                    RReadEvents, (void *)ConsoleWindow, NULL);
 
     err = InstallWindowEventHandler(ConsoleWindow, NewEventHandlerUPP(DoCloseHandler),
                                     GetEventTypeCount(RCloseWinEvent), RCloseWinEvent, (void *)ConsoleWindow, NULL);
@@ -634,11 +717,13 @@ void Raqua_StartConsole(Rboolean OpenConsole)
     {
         if (ConsoleWindow != NULL)
         {
-            SelectWindow(ConsoleWindow);
+            if (!WeHaveCocoa)
+                SelectWindow(ConsoleWindow);
             RSetTab();
             RSetFontSize();
             RSetFont();
-            SetUpRAquaMenu();
+            if ((cocoaFeatures & cocoa_menu) == 0)
+                SetUpRAquaMenu(); /* if Cocoa provides no menu, we should */
         }
 
         chdir(R_ExpandFileName("~/"));
@@ -647,21 +732,22 @@ void Raqua_StartConsole(Rboolean OpenConsole)
             Raqua_read_history(R_HistoryFile);
     }
 
-    InstallEventLoopIdleTimer(GetMainEventLoop(), kEventDurationMillisecond, kEventDurationMillisecond * 2,
-                              (EventLoopIdleTimerUPP)RIdleTimer, NULL, &Inst_RIdleTimer);
-
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationMillisecond * 10, NewEventLoopTimerUPP(OtherEventLoops),
                           NULL, &Inst_OtherEventLoops);
     InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond / 5, NewEventLoopTimerUPP(ReadStdoutTimer), NULL,
                           &Inst_ReadStdoutTimer);
-    InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationSecond * 5, NewEventLoopTimerUPP(FlushConsoleTimer),
-                          NULL, &Inst_FlushConsoleTimer);
+    InstallEventLoopTimer(GetMainEventLoop(), 0, kEventDurationMillisecond * 50,
+                          NewEventLoopTimerUPP(FlushConsoleTimer), NULL, &Inst_FlushConsoleTimer);
 
     RAqua2Front();
 
     if (ConsoleWindow != NULL)
-        SelectWindow(ConsoleWindow);
+        if (!WeHaveCocoa)
+            SelectWindow(ConsoleWindow);
     InitCursor();
+
+    if (WeHaveCocoa)
+        HideWindow(ConsoleWindow);
 
     return;
 
@@ -747,12 +833,6 @@ void SetUpRAquaMenu(void)
     DrawMenuBar();
 }
 
-static pascal void RIdleTimer(EventLoopTimerRef inTimer, EventLoopIdleTimerMessage inState, void *inUserData)
-{
-
-    PostEventToQueue(GetMainEventQueue(), WakeUpEvent, kEventPriorityHigh);
-}
-
 static pascal void FlushConsoleTimer(EventLoopTimerRef inTimer, void *inUserData)
 {
     Aqua_FlushBuffer();
@@ -778,7 +858,6 @@ void CloseRAquaConsole(void)
     TXNTerminateTextension();
 
     ReleaseEvent(WakeUpEvent);
-    RemoveEventLoopTimer(Inst_RIdleTimer);
     RemoveEventLoopTimer(Inst_OtherEventLoops);
     RemoveEventLoopTimer(Inst_ReadStdoutTimer);
     RemoveEventLoopTimer(Inst_FlushConsoleTimer);
@@ -846,17 +925,82 @@ TXNTypeAttributes ROutAttr[] = {{kTXNQDFontColorAttribute, kTXNQDFontColorAttrib
 /* Buffered output code by Thomas Lumley */
 
 /* buffer whose last character is \0 at index end_of_buffer */
-#define AQUA_MAXBUFLEN 32000
+#define AQUA_MAXBUFLEN 32766
 static char outputbuffer[AQUA_MAXBUFLEN + 2];
 static int end_of_buffer = 0;
-static int WeAreBuffering = 0;
+static int WeAreBuffering = 1;
 
+/* Writes the prompt in the console. It calls implicitly FlushConsole to make sure the prompt is placed in-sync. */
+void Raqua_WritePrompt(char *prompt)
+{
+    Raqua_FlushConsole();
+    if (WeHaveCocoa)
+    {
+        if (cocoaWritePrompt)
+        {
+            CFStringRef text = CFStringCreateWithCString(NULL, prompt, kCFStringEncodingMacRoman);
+            cocoaWritePrompt(text);
+            CFRelease(text);
+        }
+    }
+    else
+    {
+        Aqua_RWrite(prompt);
+    }
+}
+
+/* This function is used to echo user input into the console. Currently it uses Raqua_WriteConsole if Cocoa's
+   writeUserInput is not available. It may implicitly flush the console before sending the user input to make
+   sure it arrives in-sync.
+*/
+void Raqua_WriteUserInput(char *str)
+{
+    if (WeHaveCocoa && cocoaWriteUserInput)
+    {
+        Raqua_FlushConsole();
+        CFStringRef text = CFStringCreateWithCString(NULL, str, kCFStringEncodingMacRoman);
+        cocoaWriteUserInput(text);
+        CFRelease(text);
+    }
+    else
+        Raqua_WriteConsole(str, strlen(str));
+}
+
+/* writes specified string as-is (no recoding) to console, using events or Cocoa bundle API.
+   FIXME! curerntly the event system has a fixed buffer of 32k, therefore any larger data are truncated.
+   This implies that the string sent via WriteEvent should not exceed 32k. Currently that's not an issue,
+   since the console buffer is only 32k big, but in the future we should split the string into multiple
+   events if it exceeds the limit ... This restriction doesn't apply to cocoaWriteConsole, though.
+*/
+void Raqua_WriteEvent(char *str, int len)
+{
+    if (WeHaveCocoa)
+    {
+        if (cocoaWriteConsole)
+        {
+            CFStringRef text = CFStringCreateWithCString(NULL, str, kCFStringEncodingMacRoman);
+            cocoaWriteConsole(text);
+            CFRelease(text);
+        }
+    }
+    else
+    {
+        EventRef ReadEvent;
+        CreateEvent(NULL, kEventClassRead, kEventRead, 0, kEventAttributeNone, &ReadEvent);
+        SetEventParameter(ReadEvent, kEventParamRead, typeChar, len, str);
+        SendEventToEventTarget(ReadEvent, GetWindowEventTarget(ConsoleWindow));
+    }
+}
+
+/* Aqua's WriteConsole. Uses internally Raqua_WriteEvent,
+   but performs the following tasks: re-codes the string (Lat2Mac),
+   buffers the output
+*/
 void Raqua_WriteConsole(char *str, int len)
 {
     OSStatus err;
     TXNOffset oStartOffset;
     TXNOffset oEndOffset;
-    EventRef REvent;
     unsigned char tmp;
     int i;
     char *buf = NULL;
@@ -878,37 +1022,27 @@ void Raqua_WriteConsole(char *str, int len)
 
     if (WeHaveConsole)
     {
-
-        if (WeAreBuffering != CurrentPrefs.Buffering)
-        {
-            Aqua_FlushBuffer();
-            WeAreBuffering = CurrentPrefs.Buffering;
-        }
-
         if (WeAreBuffering)
         {
-            if (strlen(buf) + 1 + end_of_buffer >= CurrentPrefs.BufferSize)
-            {
-                TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
+            if (strlen(buf) + 1 + end_of_buffer >= inputBufferSize)
+            { // CurrentPrefs.BufferSize){
                 if (end_of_buffer > 0)
-                    err = TXNSetData(RConsoleOutObject, kTXNTextData, outputbuffer, end_of_buffer, kTXNEndOffset,
-                                     kTXNEndOffset);
-                err = TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
-                outputbuffer[0] = '\0';
-                end_of_buffer = 0;
+                    Raqua_WriteEvent(outputbuffer, end_of_buffer);
+                strcpy(outputbuffer, buf);
+                end_of_buffer = strlen(buf);
             }
             else
             {
+                /* we perform only one WriteEvent per call for performance reasons. If there it still something left in
+                 * the buffer, leave it for the next WriteConsole or FlushBuffer call. */
                 strcpy(outputbuffer + end_of_buffer, buf);
                 end_of_buffer += strlen(buf);
             }
         }
         else
         {
-            TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
-            err = TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
+            Raqua_WriteEvent(buf, strlen(buf));
         }
-        Raqua_ProcessEvents();
     }
     else
     {
@@ -918,16 +1052,15 @@ void Raqua_WriteConsole(char *str, int len)
     free(buf);
 }
 
+/*Flushes the console output buffer. This is a no-op if buffering is disabled. */
 static void Aqua_FlushBuffer(void)
 {
-    Rect bounds;
     if (WeHaveConsole)
     {
         if (WeAreBuffering)
         {
-            TXNSetTypeAttributes(RConsoleOutObject, 1, ROutAttr, 0, kTXNEndOffset);
             if (end_of_buffer > 0)
-                TXNSetData(RConsoleOutObject, kTXNTextData, outputbuffer, end_of_buffer, kTXNEndOffset, kTXNEndOffset);
+                Raqua_WriteEvent(outputbuffer, end_of_buffer);
             outputbuffer[0] = '\0';
             end_of_buffer = 0;
         }
@@ -998,7 +1131,11 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
     unsigned char tmp;
 
     if (!InputFinished)
-        Aqua_RWrite(prompt);
+    {
+        Raqua_WritePrompt(prompt);
+        /* Aqua_RWrite(prompt); */
+    }
+
     TXNFocus(RConsoleInObject, true);
     TXNSetTypeAttributes(RConsoleInObject, 1, RInAttr, 0, kTXNEndOffset);
 
@@ -1007,33 +1144,54 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
 
     if (!HaveBigBuffer)
     {
-        txtlen = TXNDataSize(RConsoleInObject) / 2;
-        finalBufPos = txtlen;
-        curBufPos = 0;
-        if (BufDataHandle)
+        if (WeHaveCocoa)
         {
-            HUnlock(BufDataHandle);
-            DisposeHandle(BufDataHandle);
-            BufDataHandle = NULL;
+            txtlen = strlen(inputBuffer);
+            finalBufPos = txtlen;
+            curBufPos = 0;
+            HaveBigBuffer = true;
         }
-        err = TXNGetDataEncoded(RConsoleInObject, 0, txtlen, &BufDataHandle, kTXNTextData);
-        TXNSetData(RConsoleInObject, kTXNTextData, NULL, 0, kTXNStartOffset, kTXNEndOffset);
-        lg = min(len, txtlen + 1); /* has to txtlen+1 as the string is not terminated */
-        HLock(BufDataHandle);
-        HaveBigBuffer = true;
+        else
+        {
+            txtlen = TXNDataSize(RConsoleInObject) / 2;
+            finalBufPos = txtlen;
+            curBufPos = 0;
+            if (BufDataHandle)
+            {
+                HUnlock(BufDataHandle);
+                DisposeHandle(BufDataHandle);
+                BufDataHandle = NULL;
+            }
+            err = TXNGetDataEncoded(RConsoleInObject, 0, txtlen, &BufDataHandle, kTXNTextData);
+            TXNSetData(RConsoleInObject, kTXNTextData, NULL, 0, kTXNStartOffset, kTXNEndOffset);
+            lg = min(len, txtlen + 1); /* has to txtlen+1 as the string is not terminated */
+            HLock(BufDataHandle);
+            HaveBigBuffer = true;
+        }
     }
     if (HaveBigBuffer)
     {
         for (i = curBufPos; i <= finalBufPos; i++)
         {
-            TempBuf = (*BufDataHandle)[i];
-            if ((TempBuf == '\r') || (i == finalBufPos))
+            if (WeHaveCocoa)
+                TempBuf = inputBuffer[i];
+            else
+                TempBuf = (*BufDataHandle)[i];
+
+            if ((TempBuf == '\r') || (TempBuf == '\n') || (i == finalBufPos))
             {
-                strncpy(buf, *(BufDataHandle) + curBufPos, i - curBufPos + 1);
+                if (WeHaveCocoa)
+                    strncpy(buf, inputBuffer + curBufPos, i - curBufPos + 1);
+                else
+                    strncpy(buf, *(BufDataHandle) + curBufPos, i - curBufPos + 1);
                 buf[i - curBufPos] = '\n';
                 buf[i - curBufPos + 1] = '\0';
-                Raqua_WriteConsole(buf, strlen(buf));
-                if (strlen(buf) > 1)
+                fprintf(stderr, ">>%s<<", buf);
+                if (WeHaveCocoa)
+                    Raqua_WriteUserInput(buf);
+                else
+                    Raqua_WriteConsole(buf, strlen(buf));
+                if (!WeHaveCocoa && strlen(buf) > 1)
                     maintain_cmd_History(buf);
                 for (j = 0; j < strlen(buf); j++)
                 {
@@ -1041,6 +1199,8 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
                     if (tmp > 127)
                         buf[j] = (char)Mac2Lat[tmp - 127 - 1];
                 }
+                if (i == finalBufPos - 1)
+                    i++;
                 curBufPos = i + 1;
                 break;
             }
@@ -1053,12 +1213,16 @@ int Raqua_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistor
         }
         else
         {
-
             HaveBigBuffer = false;
             InputFinished = false;
-            HUnlock(BufDataHandle);
-            DisposeHandle(BufDataHandle);
-            BufDataHandle = NULL;
+            if (!WeHaveCocoa)
+            {
+                HUnlock(BufDataHandle);
+                DisposeHandle(BufDataHandle);
+                BufDataHandle = NULL;
+            }
+            else
+                maintain_cmd_History(inputBuffer);
         }
     } /* HaveBigBuffer */
 
@@ -1069,7 +1233,6 @@ void Aqua_RWrite(char *buf)
 {
     if (WeHaveConsole)
     {
-        Aqua_FlushBuffer();
         TXNSetData(RConsoleOutObject, kTXNTextData, buf, strlen(buf), kTXNEndOffset, kTXNEndOffset);
     }
 }
@@ -1137,6 +1300,36 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
             }
             break;
 
+            break;
+
+        default:
+            break;
+        }
+    }
+    return err;
+}
+
+/** this buffer is used by ReadHandler to store received string before passing it to Aqua_RWrite */
+static char readHandlerBuffer[32769];
+
+/** ReadHandler handless event kEventRead of the class kEventClassRead. Those are generated by Raqua_WriteEvent which is
+ * usually called by Raqua_WriteConsole. The handler writes the received string into the console as R output. */
+static OSStatus ReadHandler(EventHandlerCallRef inCallRef, EventRef REvent, void *inUserData)
+{
+    OSStatus err = eventNotHandledErr;
+    char c;
+    UInt32 len;
+
+    /* make sure that we're processing a "read" event */
+    if (GetEventClass(REvent) == kEventClassRead)
+    {
+        switch (GetEventKind(REvent))
+        {
+        case kEventRead:
+            err = GetEventParameter(REvent, kEventParamRead, typeChar, NULL, 32768, &len, readHandlerBuffer);
+            readHandlerBuffer[len] = 0;
+            Aqua_RWrite(readHandlerBuffer);
+            err = noErr;
             break;
 
         default:
@@ -1367,8 +1560,14 @@ DialogItemIndex WantToSave(WindowRef window, char *title, char *msg)
 
 void RAqua2Front(void)
 {
-    if (ConsoleWindow != NULL)
-        SelectWindow(ConsoleWindow);
+    if (WeHaveCocoa)
+    {
+    }
+    else
+    {
+        if (ConsoleWindow != NULL)
+            SelectWindow(ConsoleWindow);
+    }
 
     if (GetCurrentProcess(&AquaPSN) == noErr)
         (void)SetFrontProcess(&AquaPSN);
@@ -2183,10 +2382,18 @@ void Raqua_Busy(int which);
 
 void Raqua_Busy(int which)
 {
-    if (which == 1)
-        Raqua_showarrow();
+    if (WeHaveCocoa)
+    {
+        if (cocoaRisBusy)
+            (*cocoaRisBusy)(which);
+    }
     else
-        Raqua_hidearrow();
+    {
+        if (which == 1)
+            Raqua_showarrow();
+        else
+            Raqua_hidearrow();
+    }
 }
 
 void RescaleInOut(double prop)
@@ -2445,8 +2652,15 @@ void consolecmd(char *cmd)
     if (strlen(cmd) < 1)
         return;
 
-    TXNSetData(RConsoleInObject, kTXNTextData, cmd, strlen(cmd), 0, TXNDataSize(RConsoleInObject));
-    SendReturnKey();
+    if (WeHaveCocoa)
+    {
+        userInput(cmd);
+    }
+    else
+    {
+        TXNSetData(RConsoleInObject, kTXNTextData, cmd, strlen(cmd), 0, TXNDataSize(RConsoleInObject));
+        SendReturnKey();
+    }
 }
 
 void SendReturnKey(void)
@@ -3463,6 +3677,9 @@ void Raqua_ProcessEvents(void)
     if (CheckEventQueueForUserCancel())
         onintr();
 
+    if (cocoaProcessEvents)
+        cocoaProcessEvents(0);
+
     if (ReceiveNextEvent(0, NULL, kEventDurationForever, true, &theEvent) == noErr)
     {
         conv = ConvertEventRefToEventRecord(theEvent, &outEvent);
@@ -3535,45 +3752,23 @@ static pascal void ReadStdoutTimer(EventLoopTimerRef inTimer, void *inUserData)
 
 enum
 {
-    kEventButtonPressed = 1 /* Button pressed in Cocoa window */
-};
-
-enum
-{
     kOpenCocoaWindow = 'COCO'
 };
 
-CFBundleRef MybundleRef = NULL;
-
-static OSStatus handleBundleCommand(int commandID)
+static int userInput(const char *text)
 {
-    OSStatus osStatus = noErr;
-    if (commandID == kEventButtonPressed)
-    {
-        OSStatus (*funcPtr)(CFStringRef message);
-
-        funcPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("changeText"));
-        if (funcPtr == NULL)
-        {
-            fprintf(stderr, "\n CantFindFunction");
-            goto CantFindFunction;
-        }
-        osStatus = (*funcPtr)(CFSTR("button pressed!"));
-        if (osStatus != noErr)
-        {
-            fprintf(stderr, "\n CantCallFunction");
-            goto CantCallFunction;
-        }
-    }
-CantFindFunction:
-CantCallFunction:
-    return osStatus;
+    fprintf(stderr, "userInput: \"%s\"\n", text);
+    /* !!!! */
+    strncpy(inputBuffer, text, inputBufferSize - 2);
+    InputFinished = true;
+    return 0;
 }
 
-static void myLoadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundlePtr)
+static void loadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bundlePtr)
 {
     CFURLRef baseURL = NULL;
     CFURLRef CocoabundleURL = NULL;
+    OSStatus (*funcPtr)(void *);
 
     baseURL = CFBundleCopyPrivateFrameworksURL(RBundle);
 
@@ -3582,6 +3777,7 @@ static void myLoadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bun
         fprintf(stderr, "\n CantCopyURL");
         goto CantCopyURL;
     }
+
     CocoabundleURL =
         CFURLCreateCopyAppendingPathComponent(kCFAllocatorSystemDefault, baseURL, CFSTR("RCocoaBundle.bundle"), false);
     if (CocoabundleURL == NULL)
@@ -3589,7 +3785,40 @@ static void myLoadPrivateFrameworkBundle(CFStringRef framework, CFBundleRef *bun
         fprintf(stderr, "\n CantCreateCocoaBundleURL");
         goto CantCreateBundleURL;
     }
-    MybundleRef = CFBundleCreate(NULL, CocoabundleURL);
+    *bundlePtr = CFBundleCreate(NULL, CocoabundleURL);
+    if (*bundlePtr)
+    {
+        /* set pointers to all known Cocoa functions. unsupported functions will be 0 */
+        cocoaInitializeBundle = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("initializeBundle"));
+        cocoaSelectWindow = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("selectWindow"));
+        cocoaWriteConsole = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("writeConsole"));
+        cocoaWritePrompt = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("writePrompt"));
+        cocoaWriteUserInput = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("writeUserInput"));
+        cocoaRisBusy = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("RisBusy"));
+        cocoaSetupMenu = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("setupMenu"));
+        cocoaProcessEvents = CFBundleGetFunctionPointerForName(*bundlePtr, CFSTR("processEvents"));
+
+        if (!cocoaInitializeBundle)
+            fprintf(stderr,
+                    "Cocoa bundle found, but initializeBundle function is not present. The bundle won't be used.\n");
+        else
+            cocoaFeatures = (*cocoaInitializeBundle)(userInput);
+
+        /* we perform sanity checks for each feature set to prevent segfaults due to undefined functions */
+        if (((cocoaFeatures & cocoa_basic) > 0) && ((!cocoaWriteConsole) || (!cocoaWritePrompt)))
+        {
+            fprintf(
+                stderr,
+                "Cocoa bundle advertizes basic features, but at least one feature was not found! Disabling bundle.\n");
+            cocoaFeatures = 0;
+        }
+        if (((cocoaFeatures & cocoa_loop) > 0) && ((!cocoaProcessEvents)))
+        {
+            fprintf(stderr, "Cocoa bundle advertizes event loop features, but at least one feature was not found! "
+                            "Disabling bundle.\n");
+            cocoaFeatures = 0;
+        }
+    }
 
     CFRelease(CocoabundleURL);
 CantCreateBundleURL:
@@ -3602,8 +3831,6 @@ CantFindMainBundle:
 static OSStatus appCommandHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *userData)
 {
     HICommand command;
-    OSStatus (*funcPtr)(void *);
-    OSStatus (*showPtr)(void);
     OSStatus err = eventNotHandledErr;
 
     if (GetEventKind(inEvent) == kEventCommandProcess)
@@ -3612,50 +3839,13 @@ static OSStatus appCommandHandler(EventHandlerCallRef inCallRef, EventRef inEven
         switch (command.commandID)
         {
         case kOpenCocoaWindow:
-
-            myLoadPrivateFrameworkBundle(CFSTR("CocoaBundle.bundle"), &MybundleRef);
-            if (MybundleRef == NULL)
-            {
-                fprintf(stderr, "\n CantCreateBundle");
-                goto CantCreateBundle;
-            }
-
-            /* call function to initialize bundle */
-            funcPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("initializeBundle"));
-            if (funcPtr == NULL)
-            {
-                fprintf(stderr, "\n CantFindFunction (funcPtr)");
-                goto CantFindFunction;
-            }
-            err = (*funcPtr)(handleBundleCommand);
-            if (err != 0)
-            {
-                fprintf(stderr, "\n err=%d, CantInitializeBundle", err);
-                goto CantInitializeBundle;
-            }
-            /* call function to show window */
-            showPtr = CFBundleGetFunctionPointerForName(MybundleRef, CFSTR("orderWindowFront"));
-            if (showPtr == NULL)
-            {
-                fprintf(stderr, "\n CantFindFunction (showPtr)");
-                goto CantFindFunction;
-            }
-            err = (*showPtr)();
-            if (err != 0)
-            {
-                fprintf(stderr, "\n err=%d, CantCallFunction", err);
-                goto CantCallFunction;
-            }
-        CantCreateBundle:
-        CantCallFunction:
-        CantInitializeBundle:
-        CantFindFunction:
+            fprintf(stderr, "appcommandHandler: kOpenCocoaWindow received\n");
+            err = noErr;
             break;
         default:
             break;
         }
     }
-
     return err;
 }
 
