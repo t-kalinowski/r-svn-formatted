@@ -18,6 +18,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <Rconfig.h>
+#endif
+
 #include "Defn.h"
 #include "Graphics.h"
 #include <stdio.h>
@@ -585,7 +589,7 @@ static void menups(control m)
     if (!fn)
         return;
     fixslash(fn);
-    sprintf(cmd, "dev.print(device=postscript,file=\"%s\")", fn);
+    sprintf(cmd, "dev.print(device=postscript, file=\"%s\", horizontal=FALSE)", fn);
     private_devcopy(dd, cmd);
 }
 
