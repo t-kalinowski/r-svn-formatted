@@ -1729,7 +1729,7 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
                                 char *ss = sbuf;
                                 int charNum = 0;
 #ifdef SUPPORT_MBCS
-                                if (utf8locale && !utf8strIsASCII(ss))
+                                if (mbcslocale && !utf8strIsASCII(ss))
                                 {
                                     int n = strlen(ss), used;
                                     wchar_t wc;
@@ -2296,7 +2296,7 @@ void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, dou
     }
     else
 #ifdef SUPPORT_MBCS
-        if (utf8locale)
+        if (mbcslocale)
         dd->dev->metricInfo(c, gc, ascent, descent, width, dd->dev);
     else
 #endif

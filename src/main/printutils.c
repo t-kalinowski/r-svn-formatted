@@ -270,7 +270,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
     return buffer->data;
 }
 
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
 #include <wchar.h>
 #include <wctype.h>
 #endif
@@ -324,9 +324,9 @@ int Rstrlen(SEXP s, int quote)
                     break;
                 }
             p++;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
         }
-        else if (utf8locale)
+        else if (mbcslocale)
         { /* beginning of multibyte char */
             int res;
             wchar_t wc;
@@ -458,9 +458,9 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                     break;
                 }
             p++;
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
         }
-        else if (utf8locale)
+        else if (mbcslocale)
         { /* beginning of multibyte char */
             int j, res;
             wchar_t wc;

@@ -3360,7 +3360,7 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             s = CHAR(STRING_ELT(object, i));
             lenb = lenc = strlen(s);
 #ifdef SUPPORT_MBCS
-            if (utf8locale)
+            if (mbcslocale)
                 lenc = mbstowcs(NULL, s, 0);
 #endif
             /* As from 1.8.1, zero-pad if too many chars are requested. */
@@ -3372,7 +3372,7 @@ SEXP do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             if (len < lenc)
             {
 #ifdef SUPPORT_MBCS
-                if (utf8locale)
+                if (mbcslocale)
                 {
                     /* find out how many bytes we need to write */
                     int i, used;
