@@ -332,7 +332,10 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
 #ifdef IEEE_754
     char *transa = "N", *transb = "N";
     double one = 1.0, zero = 0.0;
-    F77_CALL(dgemm)(transa, transb, &nrx, &ncy, &ncx, &one, x, &nrx, y, &nry, &zero, z, &nrx);
+    if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
+    {
+        F77_CALL(dgemm)(transa, transb, &nrx, &ncy, &ncx, &one, x, &nrx, y, &nry, &zero, z, &nrx);
+    }
 #else
 
     /* FIXME - What about non-IEEE overflow ??? */
@@ -398,7 +401,10 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
 #ifdef IEEE_754
     char *transa = "T", *transb = "N";
     double one = 1.0, zero = 0.0;
-    F77_CALL(dgemm)(transa, transb, &ncx, &ncy, &nrx, &one, x, &nrx, y, &nry, &zero, z, &ncx);
+    if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
+    {
+        F77_CALL(dgemm)(transa, transb, &ncx, &ncy, &nrx, &one, x, &nrx, y, &nry, &zero, z, &ncx);
+    }
 #else
     int i, j, k;
     double xji, yjk, sum;
