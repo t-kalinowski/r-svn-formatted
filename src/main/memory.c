@@ -241,7 +241,7 @@ void vmaxset(char *ovmax)
 char *R_alloc(long nelem, int eltsize)
 {
     unsigned int size = BYTE2VEC(nelem * eltsize);
-    if (size != 0)
+    if (size > 0)
     {
         if (FORCE_GC || R_VMax - R_VTop < size)
         {
@@ -250,8 +250,10 @@ char *R_alloc(long nelem, int eltsize)
                 mem_err_heap(size);
         }
         R_VMax -= size;
+        return (char *)R_VMax;
     }
-    return (char *)R_VMax;
+    else
+        return NULL;
 }
 
 /* S COMPATIBILITY */
