@@ -1021,7 +1021,7 @@ static void SetColor(int color, NewDevDesc *dd)
     }
 }
 
-/* --> See "Notes on Line Textures" in ../include/Graphics.h
+/* --> See "Notes on Line Textures" in ../../include/Rgraphics.h
  *
  *	27/5/98 Paul - change to allow lty and lwd to interact:
  *	the line texture is now scaled by the line width so that,
@@ -1033,10 +1033,10 @@ static void SetColor(int color, NewDevDesc *dd)
 static void SetLinetype(int newlty, double nlwd, NewDevDesc *dd)
 {
     static char dashlist[8];
-    int i, ndash, newlwd;
+    int i, newlwd;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
-    newlwd = nlwd;
+    newlwd = nlwd;  /*cast*/
     if (newlwd < 1) /* not less than 1 pixel */
         newlwd = 1;
     if (newlty != xd->lty || newlwd != xd->lwd)
@@ -1044,12 +1044,11 @@ static void SetLinetype(int newlty, double nlwd, NewDevDesc *dd)
         xd->lty = newlty;
         xd->lwd = newlwd;
         if (newlty == 0)
-        { /* special hack for  lty = 0 -- only for X11 */
+        { /* special hack for lty = 0 -- only for X11 */
             XSetLineAttributes(display, xd->wgc, newlwd, LineSolid, CapRound, JoinRound);
         }
         else
         {
-            ndash = 0;
             for (i = 0; i < 8 && (newlty != 0); i++)
             {
                 int j = newlty & 15;
@@ -1061,10 +1060,10 @@ static void SetLinetype(int newlty, double nlwd, NewDevDesc *dd)
                 /* does not exceed X11 storage limits */
                 if (j > 255)
                     j = 255;
-                dashlist[ndash++] = j;
+                dashlist[i] = j;
                 newlty = newlty >> 4;
             }
-            XSetDashes(display, xd->wgc, 0, dashlist, ndash);
+            XSetDashes(display, xd->wgc, 0, dashlist, i);
             XSetLineAttributes(display, xd->wgc, newlwd, LineOnOffDash, CapButt, JoinRound);
         }
     }
