@@ -18,6 +18,7 @@
  */
 
 /* <UTF8> char here is either ASCII or handled as a whole */
+/* <UTF8-FIXME> except metric info */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1722,6 +1723,7 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
                                 double maxDepth = 0.0;
                                 char *ss;
                                 int charNum = 0;
+                                /* <UTF8-FIXME> by char, not by byte */
                                 for (ss = sbuf; *ss; ss++)
                                 {
                                     GEMetricInfo((unsigned char)*ss, gc, &h, &d, &w, dd);
@@ -1746,6 +1748,7 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
                                             maxDepth = d;
                                     }
                                 }
+                                /* </UTF8-FIXME> */
                                 height = maxHeight - maxDepth;
                                 yc = 0.5;
                             }
@@ -2231,6 +2234,10 @@ void GEPretty(double *lo, double *up, int *ndiv)
  * GEMetricInfo
  ****************************************************************
  */
+/*
+  We need to decide what c is.  In an 8-bit locale it is char,
+  otherwise it had better be wchar_t.  Something like uint32 would be better.
+ */
 void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, GEDevDesc *dd)
 {
     /*
@@ -2248,6 +2255,11 @@ void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, dou
         *width = 0;
     }
     else
+#ifdef SUPPORT_UTF8
+        if (utf8locale)
+        dd->dev->metricInfo(c, gc, ascent, descent, width, dd->dev);
+    else
+#endif
         dd->dev->metricInfo(c & 0xFF, gc, ascent, descent, width, dd->dev);
 }
 
