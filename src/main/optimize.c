@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--1998  Robert Gentleman, Ross Ihaka and the R core team
+ *  Copyright (C) 1998--1999  Robert Gentleman, Ross Ihaka and the R core team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -407,7 +407,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value, names, v;
 
-    double *x, *typsiz, fscale, gradtl, stepmx, steptl, *xpls, *gpls, fpls, *a, *wrk, dlt;
+    double *x, *typsiz, fscale, gradtl, stepmx, steptol, *xpls, *gpls, fpls, *a, *wrk, dlt;
 
     int code, i, j, k, ipr, itnlim, method, iexp, omsg, msg, n, ndigit, iagflg, iahflg, want_hessian, itncnt;
 
@@ -471,8 +471,8 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
         invalid_na(call);
     args = CDR(args);
 
-    steptl = asReal(CAR(args));
-    if (R_IsNA(steptl))
+    steptol = asReal(CAR(args));
+    if (R_IsNA(steptol))
         invalid_na(call);
     args = CDR(args);
 
@@ -500,7 +500,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
      *
      *	  SUBROUTINE OPTIF9(NR,N,X,FCN,D1FCN,D2FCN,TYPSIZ,FSCALE,
      *	 +	   METHOD,IEXP,MSG,NDIGIT,ITNLIM,IAGFLG,IAHFLG,IPR,
-     *	 +	   DLT,GRADTL,STEPMX,STEPTL,
+     *	 +	   DLT,GRADTL,STEPMX,STEPTOL,
      *	 +	   XPLS,FPLS,GPLS,ITRMCD,A,WRK)
      *
      *
@@ -517,7 +517,7 @@ SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     F77_SYMBOL(optif9)
     (&n, &n, x, F77_SYMBOL(fcn), F77_SYMBOL(d1fcn), F77_SYMBOL(d2fcn), typsiz, &fscale, &method, &iexp, &msg, &ndigit,
-     &itnlim, &iagflg, &iahflg, &ipr, &dlt, &gradtl, &stepmx, &steptl, xpls, &fpls, gpls, &code, a, wrk, &itncnt);
+     &itnlim, &iagflg, &iahflg, &ipr, &dlt, &gradtl, &stepmx, &steptol, xpls, &fpls, gpls, &code, a, wrk, &itncnt);
 
     if (msg < 0)
         opterror(msg);
