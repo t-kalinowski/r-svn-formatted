@@ -582,7 +582,14 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 
     void REvprintf(const char *format, va_list arg)
     {
-        if (R_Consolefile)
+        if (R_ErrorCon != 2)
+        {
+            Rconnection con = getConnection(R_ErrorCon);
+
+            con->vfprintf(con, format, arg);
+            con->fflush(con);
+        }
+        else if (R_Consolefile)
         {
             vfprintf(R_Consolefile, format, arg);
         }
@@ -590,6 +597,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
         {
             char buf[BUFSIZE];
             int slen;
+
             vsprintf(buf, format, arg);
             slen = strlen(buf);
             R_WriteConsole(buf, slen);
