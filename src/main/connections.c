@@ -2806,7 +2806,7 @@ void *R_HTTPOpen(const char *url)
     return con;
 }
 
-int R_HTTPRead(void *ctx, void *dest, int len)
+int R_HTTPRead(void *ctx, char *dest, int len)
 {
     return RxmlNanoHTTPRead(((inetconn *)ctx)->ctxt, dest, len);
 }
@@ -2854,7 +2854,7 @@ void *R_FTPOpen(const char *url)
     return con;
 }
 
-int R_FTPRead(void *ctx, void *dest, int len)
+int R_FTPRead(void *ctx, char *dest, int len)
 {
     return RxmlNanoFTPRead(((inetconn *)ctx)->ctxt, dest, len);
 }
@@ -3003,7 +3003,7 @@ void *R_HTTPOpen(const char *url)
     return (void *)wictxt;
 }
 
-int R_HTTPRead(void *ctx, void *dest, int len)
+int R_HTTPRead(void *ctx, char *dest, int len)
 {
     DWORD nread;
 
@@ -3099,7 +3099,7 @@ void *R_FTPOpen(const char *url)
     return (void *)wictxt;
 }
 
-int R_FTPRead(void *ctx, void *dest, int len)
+int R_FTPRead(void *ctx, char *dest, int len)
 {
     int nread = R_HTTPRead(ctx, dest, len);
     R_ProcessEvents();
@@ -3118,7 +3118,7 @@ void *R_HTTPOpen(const char *url)
     return NULL;
 }
 
-int R_HTTPRead(void *ctx, void *dest, int len)
+int R_HTTPRead(void *ctx, char *dest, int len)
 {
     return -1;
 }
@@ -3132,7 +3132,7 @@ void *R_FTPOpen(const char *url)
     return NULL;
 }
 
-int R_FTPRead(void *ctx, void *dest, int len)
+int R_FTPRead(void *ctx, char *dest, int len)
 {
     return -1;
 }
