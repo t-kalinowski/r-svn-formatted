@@ -769,58 +769,67 @@ SEXP do_range(SEXP call, SEXP op, SEXP args, SEXP env)
 /* which.min(x) : The index (starting at 1), of the first min(x) in x */
 SEXP do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP sx, ans;
-    double s;
-    int i, n, indx;
-
-    checkArity(op, args);
-
-    PROTECT(sx = coerceVector(CAR(args), REALSXP));
-    if (!isNumeric(sx))
-        errorcall(call, "non-numeric argument");
-    n = LENGTH(sx);
+#define Beg_do_first                                                                                                   \
+    SEXP sx, ans;                                                                                                      \
+    double s;                                                                                                          \
+    int i, n, indx;                                                                                                    \
+                                                                                                                       \
+    checkArity(op, args);                                                                                              \
+                                                                                                                       \
+    PROTECT(sx = coerceVector(CAR(args), REALSXP));                                                                    \
+    if (!isNumeric(sx))                                                                                                \
+        errorcall(call, "non-numeric argument");                                                                       \
+    n = LENGTH(sx);                                                                                                    \
     indx = NA_INTEGER;
-    s = R_PosInf;
+
+    Beg_do_first
+
+        s = R_PosInf;
     for (i = 0; i < n; i++)
         if (!ISNAN(REAL(sx)[i]) && REAL(sx)[i] < s)
         {
             s = REAL(sx)[i];
             indx = i;
         }
-    UNPROTECT(1);
-    ans = allocVector(INTSXP, (i = (indx != NA_INTEGER)) ? 1 : 0);
-    if (i)
-        INTEGER(ans)[0] = indx + 1;
+
+#define End_do_first                                                                                                   \
+    i = (indx != NA_INTEGER);                                                                                          \
+    ans = allocVector(INTSXP, i ? 1 : 0);                                                                              \
+    if (i)                                                                                                             \
+    {                                                                                                                  \
+        INTEGER(ans)[0] = indx + 1;                                                                                    \
+        if (getAttrib(sx, R_NamesSymbol) != R_NilValue)                                                                \
+        { /* keep name */                                                                                              \
+            SEXP ansnam;                                                                                               \
+            PROTECT(ansnam = allocVector(STRSXP, 1));                                                                  \
+            SET_STRING_ELT(ansnam, 0, STRING_ELT(getAttrib(sx, R_NamesSymbol), indx));                                 \
+            setAttrib(ans, R_NamesSymbol, ansnam);                                                                     \
+            UNPROTECT(1);                                                                                              \
+        }                                                                                                              \
+    }                                                                                                                  \
+    UNPROTECT(1);                                                                                                      \
     return ans;
+
+    End_do_first
 }
 
 /* which.max(x) : The index (starting at 1), of the first max(x) in x */
 SEXP do_first_max(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP sx, ans;
-    double s;
-    int i, n, indx;
+    Beg_do_first
 
-    checkArity(op, args);
-
-    PROTECT(sx = coerceVector(CAR(args), REALSXP));
-    if (!isNumeric(sx))
-        errorcall(call, "non-numeric argument");
-    n = LENGTH(sx);
-    indx = NA_INTEGER;
-    s = R_NegInf;
+        s = R_NegInf;
     for (i = 0; i < n; i++)
         if (!ISNAN(REAL(sx)[i]) && REAL(sx)[i] > s)
         {
             s = REAL(sx)[i];
             indx = i;
         }
-    UNPROTECT(1);
-    ans = allocVector(INTSXP, (i = (indx != NA_INTEGER)) ? 1 : 0);
-    if (i)
-        INTEGER(ans)[0] = indx + 1;
-    return ans;
+
+    End_do_first
 }
+#undef Beg_do_first
+#undef End_do_first
 
 /* complete.cases(.) */
 SEXP do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
