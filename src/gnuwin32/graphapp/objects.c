@@ -578,6 +578,9 @@ static void print_objects(FILE *f, object obj, int indent)
     case ListboxObject:
         s = "ListboxObject";
         break;
+    case ProgressbarObject:
+        s = "ProgressbarObject";
+        break;
     case MultilistObject:
         s = "MultilistObject";
         break;
