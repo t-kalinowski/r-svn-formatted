@@ -291,7 +291,7 @@ int conformable(SEXP x, SEXP y)
     PROTECT(x = getAttrib(x, R_DimSymbol));
     y = getAttrib(y, R_DimSymbol);
     UNPROTECT(1);
-    if ((n = LENGTH(x)) != LENGTH(y))
+    if ((n = length(x)) != length(y))
         return 0;
     for (i = 0; i < n; i++)
         if (INTEGER(x)[i] != INTEGER(y)[i])
@@ -334,6 +334,13 @@ int ncols(SEXP s)
     }
     else
         error("object is not a matrix\n");
+}
+
+int nlevels(SEXP f)
+{
+    if (!isFactor(f))
+        return 0;
+    return LENGTH(getAttrib(f, R_LevelsSymbol));
 }
 
 int isNumeric(SEXP s)
@@ -390,13 +397,6 @@ int isOrdered(SEXP s)
 int isFactor(SEXP s)
 {
     return (isInteger(s) && inherits(s, "factor"));
-}
-
-int nlevels(SEXP f)
-{
-    if (!isFactor(f))
-        return 0;
-    return LENGTH(getAttrib(f, R_LevelsSymbol));
 }
 
 int isObject(SEXP s)
