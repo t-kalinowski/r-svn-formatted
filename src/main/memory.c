@@ -527,6 +527,7 @@ void markSExp(SEXP s)
 {
     int i;
 
+tailcall_entry:
     if (s && !MARK(s))
     {
         MARK(s) = 1;
@@ -562,8 +563,8 @@ void markSExp(SEXP s)
         case SYMSXP:
             markSExp(TAG(s));
             markSExp(CAR(s));
-            markSExp(CDR(s));
-            break;
+            s = CDR(s);
+            goto tailcall_entry;
         default:
             abort();
         }
