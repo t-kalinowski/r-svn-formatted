@@ -2305,6 +2305,8 @@ SEXP R_LoadFromFile(FILE *fp, int startup)
 
 SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* save(list, file, ascii, oldstyle) */
+
     SEXP s, t;
     int len, j;
     FILE *fp;
@@ -2313,12 +2315,12 @@ SEXP do_save(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(CAR(args)) != STRSXP)
         errorcall(call, "first argument must be a character vector");
-    if (TYPEOF(CADR(args)) != STRSXP)
-        errorcall(call, "second argument must be a string");
+    if (!isValidStringF(CADR(args)))
+        errorcall(call, "`file' must be non-empty string");
     if (TYPEOF(CADDR(args)) != LGLSXP)
-        errorcall(call, "third argument must be a logical vector");
+        errorcall(call, "`ascii' must be logical");
     if (TYPEOF(CADDDR(args)) != LGLSXP)
-        errorcall(call, "fourth argument must be a logical vector");
+        errorcall(call, "`oldstyle' must be logical");
 
     fp = R_fopen(R_ExpandFileName(CHAR(STRING(CADR(args))[0])), "wb");
     if (!fp)
