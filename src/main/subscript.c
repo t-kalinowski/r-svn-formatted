@@ -268,13 +268,16 @@ static SEXP negativeSubscript(SEXP s, int ns, int nx)
 {
     SEXP indx;
     int stretch = 0;
-    int i;
+    int i, ix;
     PROTECT(indx = allocVector(INTSXP, nx));
     for (i = 0; i < nx; i++)
         INTEGER(indx)[i] = 1;
     for (i = 0; i < ns; i++)
-        if (INTEGER(s)[i] != 0)
-            INTEGER(indx)[-INTEGER(s)[i] - 1] = 0;
+    {
+        ix = INTEGER(s)[i];
+        if (ix != 0 && ix != NA_INTEGER && -ix <= nx)
+            INTEGER(indx)[-ix - 1] = 0;
+    }
     s = logicalSubscript(indx, nx, nx, &stretch);
     UNPROTECT(1);
     return s;
