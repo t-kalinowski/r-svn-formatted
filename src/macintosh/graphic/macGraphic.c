@@ -1296,7 +1296,10 @@ static void SetFont(int face, int size, DevDesc *dd)
     if (face == 4)
         realFace = 3; /* bold & italic */
 #if TARGET_API_MAC_CARBON
-    postFontId = FMGetFontFamilyFromName(PostFont);
+    if (systemVersion > kMinSystemVersion)
+        postFontId = FMGetFontFamilyFromName(PostFont);
+    else
+        GetFNum(PostFont, &postFontId);
 #else
     GetFNum(PostFont, &postFontId);
 #endif
@@ -1304,7 +1307,10 @@ static void SetFont(int face, int size, DevDesc *dd)
     {
         realFace = 0; /* plain symbol */
 #if TARGET_API_MAC_CARBON
-        postFontId = FMGetFontFamilyFromName(MacSymbolFont);
+        if (systemVersion > kMinSystemVersion)
+            postFontId = FMGetFontFamilyFromName(MacSymbolFont);
+        else
+            GetFNum(MacSymbolFont, &postFontId);
 #else
         GetFNum(MacSymbolFont, &postFontId);
 #endif
