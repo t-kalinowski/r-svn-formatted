@@ -29,13 +29,12 @@ static SEXP HashTable;
 
 static int nomatch;
 
-/*
- *    Integer keys are hashed via a random number generator
- *      based on Knuth's recommendations.  The high order K bits
- *      are used as the hash code.
- *      WARNING: this doesn't work if K=0 so some fixes/warnings
- *      probably need to be installed somewhere. (RG)
- */
+/* Integer keys are hashed via a random number generator */
+/* based on Knuth's recommendations.  The high order K bits */
+/* are used as the hash code. */
+
+/* WARNING / FIXME : this doesn't work if K = 0 so some */
+/* fixes/warnings probably need to be installed somewhere. (RG) */
 
 static int scatter(unsigned int key)
 {
@@ -58,7 +57,7 @@ static int ihash(SEXP x, int index)
 
 static int rhash(SEXP x, int index)
 {
-    /* There is a problem with signed 0s */
+    /* There is a problem with signed 0s under IEEE */
     double tmp = (REAL(x)[index] == 0.0) ? 0.0 : REAL(x)[index];
     return scatter(*((unsigned int *)(&tmp)));
 }
@@ -517,10 +516,8 @@ static SEXP StripUnmatched(SEXP s)
 static SEXP ExpandDots(SEXP s, int expdots)
 {
     SEXP r;
-
     if (s == R_NilValue)
         return s;
-
     if (TYPEOF(CAR(s)) == DOTSXP)
     {
         TYPEOF(CAR(s)) = LISTSXP; /* a safe mutation */
@@ -547,7 +544,6 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     f = CADR(args);
-
     if (TYPEOF(f) != LANGSXP)
     {
         b = deparse1(f, 1);
@@ -558,8 +554,8 @@ SEXP do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (TYPEOF(CAR(args)) == NILSXP)
     {
-        /* get the env that the function containing matchcall was
-           called from */
+        /* Get the env that the function containing */
+        /* matchcall was called from. */
         cptr = R_GlobalContext;
         sysp = R_GlobalContext->sysparent;
         while (cptr != NULL)
