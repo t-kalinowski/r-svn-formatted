@@ -146,6 +146,24 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     default:
         UNIMPLEMENTED("rep2");
     }
+    if (inherits(s, "factor"))
+    {
+        SEXP tmp;
+        if (inherits(s, "ordered"))
+        {
+            PROTECT(tmp = allocVector(STRSXP, 2));
+            STRING(tmp)[0] = mkChar("ordered");
+            STRING(tmp)[1] = mkChar("factor");
+        }
+        else
+        {
+            PROTECT(tmp = allocVector(STRSXP, 1));
+            STRING(tmp)[0] = mkChar("factor");
+        }
+        setAttrib(a, R_ClassSymbol, tmp);
+        UNPROTECT(1);
+        setAttrib(a, R_LevelsSymbol, getAttrib(s, R_LevelsSymbol));
+    }
     UNPROTECT(2);
     return a;
 }
@@ -207,6 +225,24 @@ SEXP rep(SEXP s, SEXP ncopy)
         break;
     default:
         UNIMPLEMENTED("rep");
+    }
+    if (inherits(s, "factor"))
+    {
+        SEXP tmp;
+        if (inherits(s, "ordered"))
+        {
+            PROTECT(tmp = allocVector(STRSXP, 2));
+            STRING(tmp)[0] = mkChar("ordered");
+            STRING(tmp)[1] = mkChar("factor");
+        }
+        else
+        {
+            PROTECT(tmp = allocVector(STRSXP, 1));
+            STRING(tmp)[0] = mkChar("factor");
+        }
+        setAttrib(a, R_ClassSymbol, tmp);
+        UNPROTECT(1);
+        setAttrib(a, R_LevelsSymbol, getAttrib(s, R_LevelsSymbol));
     }
     UNPROTECT(1);
     return a;
