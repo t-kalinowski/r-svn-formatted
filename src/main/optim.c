@@ -516,6 +516,13 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
     double D1, D2;
     int n, *l;
 
+    if (maxit <= 0)
+    {
+        *Fmin = fminfn(n0, b, ex);
+        *fncount = *grcount = 0;
+        return;
+    }
+
     if (nREPORT <= 0)
         error("REPORT must be > 0 (method = \"BFGS\")");
     l = (int *)R_alloc(n0, sizeof(int));
@@ -523,20 +530,19 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
     for (i = 0; i < n0; i++)
         if (mask[i])
             l[n++] = i;
-
     g = vect(n0);
     t = vect(n);
     X = vect(n);
     c = vect(n);
     B = Lmatrix(n);
-    f = fminfn(n, b, ex);
+    f = fminfn(n0, b, ex);
     if (!R_FINITE(f))
         error("initial value in vmmin is not finite");
     if (trace)
         Rprintf("initial  value %f \n", f);
     *Fmin = f;
     funcount = gradcount = 1;
-    fmingr(n, b, g, ex);
+    fmingr(n0, b, g, ex);
     iter++;
     ilast = gradcount;
 
@@ -583,7 +589,7 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
                 }
                 if (count < n)
                 {
-                    f = fminfn(n, b, ex);
+                    f = fminfn(n0, b, ex);
                     funcount++;
                     accpoint = R_FINITE(f) && (f <= *Fmin + gradproj * steplength * acctol);
                     if (!accpoint)
@@ -602,7 +608,7 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
             if (count < n)
             { /* making progress */
                 *Fmin = f;
-                fmingr(n, b, g, ex);
+                fmingr(n0, b, g, ex);
                 gradcount++;
                 iter++;
                 D1 = 0.0;
@@ -692,6 +698,13 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
     char tstr[6];
     double VH, VL, VR;
 
+    if (maxit <= 0)
+    {
+        *Fmin = fminfn(n, Bvec, ex);
+        *fncount = 0;
+        *fail = FALSE;
+        return;
+    }
     if (trace)
         Rprintf("  Nelder-Mead direct search function minimizer\n");
     P = matrix(n, n + 1);
@@ -924,6 +937,13 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
     double newstep, oldstep, setstep, steplength = 1.0;
     double tol;
 
+    if (maxit <= 0)
+    {
+        *Fmin = fminfn(n, Bvec, ex);
+        *fncount = *grcount = 0;
+        *fail = FALSE;
+        return;
+    }
     if (trace)
     {
         Rprintf("  Conjugate gradients function minimiser\n");
