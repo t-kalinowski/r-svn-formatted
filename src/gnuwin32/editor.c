@@ -300,7 +300,8 @@ int editorchecksave(editor c)
         case NO:
             break;
         case CANCEL:
-            return 1; /* used in rui.c (closeconsole) to abort closing the whole of Rgui */
+            return 1; /* used in rui.c (closeconsole) to abort closing
+                 the whole of Rgui */
         }
     }
     return 0;
