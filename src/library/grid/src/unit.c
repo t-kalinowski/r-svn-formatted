@@ -422,9 +422,9 @@ double evaluateGrobWidthUnit(SEXP grob, char *vpfontfamily, int vpfont, double v
      */
     /* Special case for "null" units
      */
-    if (unitUnit(width, 0) == L_NULL)
+    if (pureNullUnit(width, 0))
     {
-        result = evaluateNullUnit(unitValue(width, 0));
+        result = evaluateNullUnit(pureNullUnitValue(width, 0));
     }
     else
     {
@@ -518,9 +518,9 @@ double evaluateGrobHeightUnit(SEXP grob, char *vpfontfamily, int vpfont, double 
      */
     /* Special case for "null" units
      */
-    if (unitUnit(height, 0) == L_NULL)
+    if (pureNullUnit(height, 0))
     {
-        result = evaluateNullUnit(unitValue(height, 0));
+        result = evaluateNullUnit(pureNullUnitValue(height, 0));
     }
     else
     {
