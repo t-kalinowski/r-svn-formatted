@@ -998,7 +998,7 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
 
 /* ------------------------------------------------------------ */
 
-#include <R_ext/Rlapack.h>
+#include <Rmodules/Rlapack.h>
 #include <R_ext/Rdynload.h>
 
 void R_init_lapack(DllInfo *info)
