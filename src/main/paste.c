@@ -70,6 +70,8 @@ SEXP do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         if (length(CAR(px)) > maxlen)
             maxlen = length(CAR(px));
     }
+    if (maxlen == 0)
+        return mkString("");
 
     PROTECT(ans = allocVector(STRSXP, maxlen));
 
