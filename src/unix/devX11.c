@@ -55,8 +55,8 @@
 typedef struct
 {
     /* R Graphics Parameters */
-    /* local device copy so that we can detect */
-    /* when parameter changes */
+    /* Local device copy so that we can detect */
+    /* when parameter changes. */
 
     double cex; /* Character expansion */
     double srt; /* String rotation */
@@ -69,7 +69,7 @@ typedef struct
     int fontsize; /* Size in points */
 
     /* X11 Driver Specific */
-    /* parameters with copy per x11 device */
+    /* Parameters with copy per X11 device. */
 
     int windowWidth;                 /* Window width (pixels) */
     int windowHeight;                /* Window height (pixels) */
@@ -171,23 +171,13 @@ static void SetColor(int, DevDesc *);
 static void SetFont(int, int, DevDesc *);
 static void SetLinetype(int, double, DevDesc *);
 
-/*****************************************/
-/* Unified X11 Color Management Software */
-/*****************************************/
+/************************/
+/* X11 Color Management */
+/************************/
 
-#undef GAMMA
-#ifdef GAMMA
-static double RedGamma = 0.75;
-static double GreenGamma = 0.75;
-static double BlueGamma = 0.75;
-#endif
-#ifdef GAMMA
-static unsigned short ColorLevel(int level, int maxlevel, double gamma)
-{
-    double tmp = (level * 0xffff) / ((maxlevel - 1) * 65536.0);
-    return 65536.0 * pow(tmp, gamma);
-}
-#endif
+static double RedGamma = 0.6;
+static double GreenGamma = 0.6;
+static double BlueGamma = 0.6;
 
 /* Variables Used To Store Colormap Information */
 static struct
@@ -406,6 +396,9 @@ static void SetupTrueColor()
 
 static unsigned GetTrueColorPixel(int r, int g, int b)
 {
+    r = pow((r / 255.0), RedGamma) * 255;
+    g = pow((g / 255.0), GreenGamma) * 255;
+    b = pow((b / 255.0), BlueGamma) * 255;
     return (((r * RMask) / 255) << RShift) | (((g * GMask) / 255) << GShift) | (((b * BMask) / 255) << BShift);
 }
 
@@ -831,6 +824,11 @@ static int X11_Open(DevDesc *dd, x11Desc *xd, char *dsp, double w, double h)
     {
         if ((display = XOpenDisplay(dsp)) == NULL)
             return 0;
+#ifdef SETGAMMA
+        RedGamma = dd->gp.gamma;
+        GreenGamma = dd->gp.gamma;
+        BlueGamma = dd->gp.gamma;
+#endif
         screen = DefaultScreen(display);
         rootwin = DefaultRootWindow(display);
         depth = DefaultDepth(display, screen);
