@@ -316,9 +316,9 @@ int Rstrlen(SEXP s, int quote)
 }
 
 /* Here w appears to be the minimum field width */
-char *EncodeString(SEXP s, int w, int quote, int right)
+char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
-    int b, i, j, cnt;
+    int b, b0, i, j, cnt;
     char *p, *q, buf[5];
 
     if (s == NA_STRING)
@@ -334,13 +334,15 @@ char *EncodeString(SEXP s, int w, int quote, int right)
         cnt = LENGTH(s);
     }
 
-    R_AllocStringBuffer((i + 2 >= w) ? (i + 2) : w, buffer); /* +2 allows for quotes */
+    R_AllocStringBuffer(imax2(i + 2, w), buffer); /* +2 allows for quotes */
     q = buffer->data;
-    if (right)
-    { /* Right justifying */
-        b = w - i - (quote ? 2 : 0);
-        for (i = 0; i < b; i++)
+    b = w - i - (quote ? 2 : 0); /* total amount of padding */
+    if (b > 0 && justify != Rprt_adj_left)
+    {
+        b0 = (justify == Rprt_adj_centre) ? b / 2 : b;
+        for (i = 0; i < b0; i++)
             *q++ = ' ';
+        b -= b0;
     }
     if (quote)
         *q++ = quote;
@@ -430,10 +432,8 @@ char *EncodeString(SEXP s, int w, int quote, int right)
     }
     if (quote)
         *q++ = quote;
-    if (!right)
-    { /* Left justifying */
-        *q = '\0';
-        b = w - strlen(buffer->data);
+    if (b > 0 && justify != Rprt_adj_right)
+    {
         for (i = 0; i < b; i++)
             *q++ = ' ';
     }
