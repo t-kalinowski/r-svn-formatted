@@ -860,7 +860,6 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(at) == 0)
     {
         PROTECT(at = CreateAtVector(axp, usr, nint, logflag));
-        n = length(at);
     }
     else
     {
@@ -868,8 +867,8 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(at = duplicate(at));
         else
             PROTECT(at = coerceVector(at, REALSXP));
-        n = length(at);
     }
+    n = length(at);
 
     if (dolabels)
     {
@@ -999,6 +998,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         dd->gp.col = dd->gp.colaxis;
         /* labels */
+        gap = GStrWidth("m", NFC, dd); /* FIXUP x/y distance */
         tlast = -1.0;
         if (dd->gp.las == 2 || dd->gp.las == 3)
         {
@@ -1010,7 +1010,6 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             dd->gp.adj = 0.5;
 
-        gap = GStrWidth("m", NFC, dd); /* FIXUP x/y distance */
         for (i = 0; i < n; i++)
         {
             x = REAL(at)[i];
@@ -1027,8 +1026,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), NFC, dd);
                     tnew = tempx - 0.5 * labw;
-                    /* Check that there is space */
-                    /* for  perpendicular labels. */
+                    /* Check room for perpendicular labels: */
                     if (dd->gp.las == 2 || dd->gp.las == 3 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, x, dd->gp.las, dd);
@@ -1091,6 +1089,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
+            /* The R(ight) way of doing ticks (using "tcl", not "tck") */
             for (i = 0; i < n; i++)
             {
                 y = REAL(at)[i];
@@ -1101,6 +1100,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         dd->gp.col = dd->gp.colaxis;
+        /* labels */
         gap = GStrWidth("m", INCHES, dd);
         gap = GConvertYUnits(gap, INCHES, NFC, dd);
         tlast = -1.0;
@@ -1113,6 +1113,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
             dd->gp.adj = 0.5;
+
         for (i = 0; i < n; i++)
         {
             y = REAL(at)[i];
@@ -1130,7 +1131,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                     labw = GStrWidth(CHAR(STRING(lab)[ind[i]]), INCHES, dd);
                     labw = GConvertYUnits(labw, INCHES, NFC, dd);
                     tnew = tempy - 0.5 * labw;
-                    /* Check room for  perpendicular labels: */
+                    /* Check room for perpendicular labels: */
                     if (dd->gp.las == 1 || dd->gp.las == 2 || tnew - tlast >= gap)
                     {
                         GMtext(CHAR(STRING(lab)[ind[i]]), side, dd->gp.mgp[1], 0, y, dd->gp.las, dd);
@@ -1140,7 +1141,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         break;
-    }
+    } /* end  switch(side, ..) */
 
     GMode(0, dd);
     GRestorePars(dd);
