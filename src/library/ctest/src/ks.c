@@ -10,12 +10,17 @@
 
 void pkstwo(Sint *n, double *x, double *tol)
 {
+    /* x[1:n] is input and output
+     *
+     * res_i := \sum_{k = -\infty}^\infty  (-1)^k e^{-2 k^2 {x_i}^2}
+     *        = 1 + 2 \sum_{k = 1}^\infty  (-1)^k e^{-2 k^2 {x_i}^2}
+     */
     double new, old, s, z;
     Sint i, k;
 
     for (i = 0; i < *n; i++)
     {
-        z = 2 * *x * *x;
+        z = -2 * x[i] * x[i];
         s = -1;
         k = 1;
         old = 0;
@@ -23,9 +28,9 @@ void pkstwo(Sint *n, double *x, double *tol)
         while (fabs(old - new) > *tol)
         {
             old = new;
-            new += 2 * s / exp(z * k * k);
+            new += 2 * s *exp(z * k * k);
             s *= -1;
-            k += 1;
+            k++;
         }
         x[i] = new;
     }
