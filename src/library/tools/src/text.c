@@ -6,7 +6,9 @@
 #include "tools.h"
 
 #ifdef SUPPORT_MBCS
+#include <wchar.h>
 LibExtern Rboolean mbcslocale;
+size_t Rf_mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps);
 #endif
 
 SEXP delim_match(SEXP x, SEXP delims)
@@ -32,17 +34,23 @@ SEXP delim_match(SEXP x, SEXP delims)
       Nevertheless, this is already useful for parsing Rd.
     */
 
-    char c, *s, *s0, delim_start, delim_end;
+    char c, *s, *s0, *delim_start, *delim_end;
     Sint n, i, pos, start, end, delim_depth;
+    int lstart, lend;
     Rboolean is_escaped, equal_start_and_end_delims;
     SEXP ans, matchlen;
-
+#ifdef SUPPORT_MBCS
+    mbstate_t mb_st;
+    int used;
+#endif
     if (!isString(x) || !isString(delims) || (length(delims) != 2))
         error("invalid argument type");
 
-    delim_start = CHAR(STRING_ELT(delims, 0))[0];
-    delim_end = CHAR(STRING_ELT(delims, 1))[0];
-    equal_start_and_end_delims = (delim_start == delim_end);
+    delim_start = CHAR(STRING_ELT(delims, 0));
+    delim_end = CHAR(STRING_ELT(delims, 1));
+    lstart = strlen(delim_start);
+    lend = strlen(delim_end);
+    equal_start_and_end_delims = strcmp(delim_start, delim_end) == 0;
 
     n = length(x);
     PROTECT(ans = allocVector(INTSXP, n));
@@ -50,12 +58,16 @@ SEXP delim_match(SEXP x, SEXP delims)
 
     for (i = 0; i < n; i++)
     {
+#ifdef SUPPORT_MBCS
+        memset(&mb_st, 0, sizeof(mbstate_t));
+#endif
         start = end = -1;
         s0 = s = CHAR(STRING_ELT(x, i));
-        /* if(*s == '\0') continue; */
         pos = is_escaped = delim_depth = 0;
-        while ((c = *s++) != '\0')
+        for (; *s; pos++)
         {
+            /* Rprintf("%s, %d:%d\n", s, start, end);*/
+            c = *s;
             if (c == '\n')
             {
                 is_escaped = FALSE;
@@ -72,11 +84,19 @@ SEXP delim_match(SEXP x, SEXP delims)
             {
                 while ((c != '\0') && (c != '\n'))
                 {
-                    c = *s++;
+#ifdef SUPPORT_MBCS
+                    used = Rf_mbrtowc(NULL, s, MB_CUR_MAX, &mb_st);
+                    if (used == 0)
+                        break;
+                    s += used;
+                    c = *s;
+#else
+                    c = *++s;
+#endif
                     pos++;
                 }
             }
-            else if (c == delim_end)
+            else if (strncmp(s, delim_end, end) == 0)
             {
                 if (delim_depth > 1)
                     delim_depth--;
@@ -91,13 +111,20 @@ SEXP delim_match(SEXP x, SEXP delims)
                     delim_depth++;
                 }
             }
-            else if (c == delim_start)
+            else if (strncmp(s, delim_start, lstart) == 0)
             {
                 if (delim_depth == 0)
                     start = pos;
                 delim_depth++;
             }
-            pos++;
+#ifdef SUPPORT_MBCS
+            used = Rf_mbrtowc(NULL, s, MB_CUR_MAX, &mb_st);
+            if (used == 0)
+                break;
+            s += used;
+#else
+            s++;
+#endif
         }
         if (end > -1)
         {
