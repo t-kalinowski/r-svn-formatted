@@ -214,10 +214,25 @@ SEXP doSetViewport(SEXP vp,
      */
     calcViewportTransform(vp, viewportParent(vp),
                           !topLevelVP && !deviceChanged(devWidthCM, devHeightCM, viewportParent(vp)), dd);
+    /*
+     * We must "turn off" clipping
+     * We set the clip region to be the entire device
+     * (actually, as for the top-level viewport, we set it
+     *  to be slightly larger than the device to avoid
+     *  "edge effects")
+     */
+    if (viewportClip(vp) == NA_LOGICAL)
+    {
+        xx1 = toDeviceX(-0.5 * devWidthCM / 2.54, GE_INCHES, dd);
+        yy1 = toDeviceY(-0.5 * devHeightCM / 2.54, GE_INCHES, dd);
+        xx2 = toDeviceX(1.5 * devWidthCM / 2.54, GE_INCHES, dd);
+        yy2 = toDeviceY(1.5 * devHeightCM / 2.54, GE_INCHES, dd);
+        GESetClip(xx1, yy1, xx2, yy2, dd);
+    }
     /* If we are supposed to clip to this viewport ...
      * NOTE that we will only clip if there is no rotation
      */
-    if (viewportClip(vp))
+    else if (viewportClip(vp))
     {
         double rotationAngle = REAL(viewportRotation(vp))[0];
         if (rotationAngle != 0)
