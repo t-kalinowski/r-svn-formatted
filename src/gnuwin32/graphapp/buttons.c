@@ -60,11 +60,11 @@ static void ensure_window(void)
  */
 static void set_new_winproc(object obj)
 {
-#if 0
-	HWND hwnd;
-	hwnd = obj->handle;
-	obj->winproc = (WNDPROC) GetWindowLong(hwnd, GWL_WNDPROC);
-	SetWindowLong(hwnd, GWL_WNDPROC, (LONG) app_control_proc);
+#if TRUE
+    HWND hwnd;
+    hwnd = obj->handle;
+    obj->winproc = (WNDPROC)GetWindowLong(hwnd, GWL_WNDPROC);
+    SetWindowLong(hwnd, GWL_WNDPROC, (LONG)app_control_proc);
 #endif
 }
 
@@ -1068,7 +1068,8 @@ listbox newmultilist(char *list[], rect r, scrollfn fn)
 {
     listbox obj;
 
-    obj = newchildwin("listbox", NULL, LBS_NOTIFY | LBS_MULTIPLESEL | WS_BORDER | WS_VSCROLL | WS_HSCROLL, r, NULL);
+    obj = newchildwin("listbox", NULL,
+                      LBS_NOTIFY | LBS_MULTIPLESEL | LBS_EXTENDEDSEL | WS_BORDER | WS_VSCROLL | WS_HSCROLL, r, NULL);
     if (!obj)
         return obj;
     obj->kind = MultilistObject;
@@ -1281,8 +1282,9 @@ void handle_control(HWND hwnd, UINT message)
         if (message != LBN_SELCHANGE)
             return;
         index = sendmessage(hwnd, LB_GETCARETINDEX, 0, 0L);
-        if (!sendmessage(hwnd, LB_GETSEL, index, 0L))
-            return;
+        /* We do want to see de-selection events too
+        if (! sendmessage(hwnd, LB_GETSEL, index, 0L))
+          return;*/
         obj->value = index;
         break;
 

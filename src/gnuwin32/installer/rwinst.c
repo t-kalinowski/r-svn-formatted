@@ -20,7 +20,7 @@
 
 #include "graphapp.h"
 #include "ga.h"
-#include "Platform.h"
+#include "Version.h"
 #include <windows.h>
 #include <string.h>
 
@@ -52,8 +52,8 @@ field fRver, fSrc, fDest;
 
 int FullInstall = 1, over;
 char Rver[20] = RVER, src[MAX_PATH], dest[MAX_PATH];
-char selpkg[30], *pkglist[100];
-int npkgs, rwb = 1, rwh = 1, rww = 1, rwl = 1, rwwh = 0, rwsp = 0;
+char selpkg[80], *pkglist[100], *selpkglist[100];
+int npkgs, nspkgs, ispkgs, rwb = 1, rwh = 1, rww = 1, rwl = 1, rwwh = 0, rwsp = 0;
 int prwb = 1, prww = 1, prwl = 1, prwwh = 0;
 
 /* SHELLsort -- corrected from R. Sedgewick `Algorithms in C' */
@@ -307,11 +307,31 @@ void backpkg1(button b)
 
 void nextpkg1(button b)
 {
-    if (getlistitem(packages) >= 0)
+    int i;
+    char *p;
+
+    if (nspkgs > 0)
+        for (i = 0; i < nspkgs; i++)
+            free(selpkglist[i]);
+
+    ispkgs = nspkgs = 0;
+    for (i = 0; i < npkgs; i++)
+        if (isselected(packages, i))
+        {
+            p = pkglist[i];
+            selpkglist[nspkgs] = (char *)malloc((strlen(p) + 1) * sizeof(char));
+            strcpy(selpkglist[nspkgs], p);
+            nspkgs++;
+        }
+    if (nspkgs > 0)
     {
-        strcpy(selpkg, pkglist[getlistitem(packages)]);
+        strcpy(selpkg, selpkglist[0]);
         cleanpagepkg1();
         pagepkg2();
+    }
+    else
+    {
+        disable(bNext);
     }
 }
 
@@ -337,7 +357,76 @@ void nextpkg2(button b)
 void backpkg3(button b)
 {
     cleanpagepkg3();
-    pagepkg2();
+    pagepkg1();
+}
+
+void nextpkg3(button b)
+{
+    cleanpagepkg3();
+    pagepkg3();
+}
+
+void key1(control c, int ch)
+{
+    if (ch == '\n')
+        next1(NULL);
+    if (ch == ESC)
+        cancel(NULL);
+}
+
+void key2(control c, int ch)
+{
+    if (ch == '\n')
+        next2(NULL);
+    if (ch == 'b')
+        back2(NULL);
+    if (ch == ESC)
+        cancel(NULL);
+}
+
+void key3(control c, int ch)
+{
+    if (ch == '\n')
+        finish(NULL);
+    if (ch == 'b')
+        back2(NULL);
+    if (ch == ESC)
+        cancel(NULL);
+}
+
+void keypkg1(control c, int ch)
+{
+    if (ch == '\n')
+        nextpkg1(NULL);
+    if (ch == 'b')
+        backpkg1(NULL);
+    if (ch == ESC)
+        cancel(NULL);
+}
+
+void keypkg2(control c, int ch)
+{
+    if (ch == '\n')
+        nextpkg2(NULL);
+    if (ch == 'b')
+        backpkg2(NULL);
+    if (ch == ESC)
+        cancel(NULL);
+}
+
+void keypkg3(control c, int ch)
+{
+    if (ch == '\n')
+    {
+        if (ispkgs < nspkgs)
+            nextpkg3(NULL);
+        else
+            finish(NULL);
+    }
+    if (ch == 'b')
+        backpkg3(NULL);
+    if (ch == ESC)
+        cancel(NULL);
 }
 
 void cSys(button b)
@@ -486,6 +575,7 @@ void page1()
     enable(bNext);
     setaction(bNext, next1);
     show(bNext);
+    setkeydown(w, key1);
     show(w);
 }
 
@@ -576,6 +666,7 @@ void page2()
     {
         uncheck(winhelp);
         disable(winhelp);
+        hide(winhelp);
     }
     else
     {
@@ -638,6 +729,7 @@ void page2()
     }
     overwrite = newcheckbox("overwrite existing files?", rect(30, 230, 150, 20), NULL);
     check(overwrite);
+    setkeydown(w, key2);
     show(w);
 }
 
@@ -793,16 +885,21 @@ void page3()
     delobj(lres3);
     strcat(lab, "installed");
     lres3 = newlabel(lab, rect(30, 240, 350, 20), AlignLeft);
+    setkeydown(w, key3);
     show(w);
 }
 
 void list1(listbox l, int item)
 {
-    if (item >= 0)
-    {
+    int i, sum = 0;
+
+    for (i = 0; i < npkgs; i++)
+        if (isselected(packages, i))
+            sum++;
+    if (sum > 0)
         enable(bNext);
-        show(bNext);
-    }
+    else
+        disable(bNext);
 }
 
 #include <dirent.h>
@@ -836,15 +933,22 @@ void pagepkg1()
             strcpy(pkglist[npkgs], p);
             *(pkglist[npkgs] + strlen(p) - 4) = '\0';
             npkgs++;
+            if (npkgs >= 100)
+            {
+                askok("Only first 100 packages shown");
+                break;
+            }
         }
     }
     if (npkgs)
     {
-        lwarn5 = newlabel("zip files found:\n\nThese may be packages", rect(10, 50, 150, 80), Center);
+        lwarn5 = newlabel("zip files found:\nThese may be packages\n\nSelect one or more items:\nuse SHIFT or CTRL for "
+                          "more than one item",
+                          rect(10, 50, 150, 80), Center);
         ssort(pkglist, npkgs);
         pkglist[npkgs] = (char *)NULL;
         boxht = min(200, npkgs * 20);
-        packages = newlistbox(pkglist, rect(200, 50, 150, boxht), list1);
+        packages = newmultilist(pkglist, rect(200, 50, 150, boxht), list1);
         if ((ns = strlen(selfile)))
         {
             *(selfile + ns - 4) = '\0';
@@ -881,7 +985,7 @@ void pagepkg1()
         disable(bNext);
         show(bNext);
     }
-
+    setkeydown(w, keypkg1);
     show(w);
 }
 
@@ -922,6 +1026,7 @@ void pagepkg2()
     else
         uncheck(winhelp);
     disable(winhelp);
+    hide(winhelp);
 
     overwrite = newcheckbox("overwrite existing files?", rect(30, 220, 150, 20), NULL);
     uncheck(overwrite);
@@ -935,6 +1040,8 @@ void pagepkg2()
     show(bCancel);
     setaction(bNext, nextpkg2);
     show(bNext);
+    setkeydown(w, keypkg2);
+    show(w);
 }
 
 void pagepkg3()
@@ -948,12 +1055,24 @@ void pagepkg3()
 
     enable(bCancel);
     show(bCancel);
-    hide(bNext);
     disable(bBack);
     setaction(bBack, backpkg3);
     show(bBack);
-    disable(bFinish);
-    show(bFinish);
+    strcpy(selpkg, selpkglist[ispkgs++]);
+    if (ispkgs < nspkgs)
+    {
+        hide(bFinish);
+        disable(bNext);
+        setaction(bNext, nextpkg3);
+        show(bNext);
+    }
+    else
+    {
+        hide(bNext);
+        disable(bFinish);
+        show(bFinish);
+    }
+
     if (!nunztext)
     {
         unztext = (char *)malloc(NTEXT);
@@ -984,11 +1103,14 @@ void pagepkg3()
             strcpy(p, selpkg);
             strcat(p, "/latex/*");
         }
-        if (!prwwh)
+        if (FALSE)
         {
-            p = xfiles[nxfiles++] = (char *)malloc(50);
-            strcpy(p, selpkg);
-            strcat(p, "/winhlp/*");
+            if (!prwwh)
+            {
+                p = xfiles[nxfiles++] = (char *)malloc(50);
+                strcpy(p, selpkg);
+                strcat(p, "/winhlp/*");
+            }
         }
     }
     else
@@ -1005,20 +1127,30 @@ void pagepkg3()
             strcpy(p, selpkg);
             strcat(p, "/latex/*");
         }
-        if (prwwh)
+        if (FALSE)
         {
-            p = files[nfiles++] = (char *)malloc(50);
-            strcpy(p, selpkg);
-            strcat(p, "/winhlp/*");
+            if (prwwh)
+            {
+                p = files[nfiles++] = (char *)malloc(50);
+                strcpy(p, selpkg);
+                strcat(p, "/winhlp/*");
+            }
         }
     }
-    rc = do_unzip(selpkg, dest, nfiles, files, nxfiles, xfiles, over);
-    strcpy(cmd, "Package ");
-    strcat(cmd, selpkg);
-    strcat(cmd, " installed");
-    lresp2 = newlabel(cmd, rect(50, 220, 300, 20), Center);
+    rc = do_unzip(zipname, dest, nfiles, files, nxfiles, xfiles, over);
+    if (!rc)
+    {
+        strcpy(cmd, "Package ");
+        strcat(cmd, selpkg);
+        strcat(cmd, " installed");
+        lresp2 = newlabel(cmd, rect(50, 220, 300, 20), Center);
+    }
     enable(bBack);
-    enable(bFinish);
+    if (ispkgs < nspkgs)
+        enable(bNext);
+    else
+        enable(bFinish);
+    setkeydown(w, keypkg3);
     show(w);
 }
 
