@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2002  The R Development Core Team
+ *  Copyright (C) 1997--2004  The R Development Core Team
  *  Copyright (C) 2003	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,8 @@ static SEXP NaokSymbol = NULL;
 static SEXP DupSymbol = NULL;
 static SEXP PkgSymbol = NULL;
 
-/* Global variable that should go. Should actually be doing this in a much more straightforward manner. */
+/* Global variable that should go. Should actually be doing this in
+   a much more straightforward manner. */
 #include <Rdynpriv.h>
 enum
 {
@@ -62,8 +63,6 @@ typedef struct
 } DllReference;
 
 /* This looks up entry points in DLLs in a platform specific way. */
-#include <Rdynpriv.h>
-
 #define MAX_ARGS 65
 
 static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_RegisteredNativeSymbol *symbol);
@@ -86,17 +85,12 @@ static int checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun)
 
     else if ((TYPEOF(op) == EXTPTRSXP && R_ExternalPtrTag(op) == Rf_install("native symbol")))
     {
-
         if ((*fun = R_ExternalPtrAddr(op)) == NULL)
             errorcall(call, "NULL value passed as symbol address.");
         return (0);
     }
     else if (inherits(op, "NativeSymbolInfo"))
-    {
-
         return (checkValidSymbolId(VECTOR_ELT(op, 1), call, fun));
-    }
-
     errorcall(call, "function name must be a string (of length 1) or native symbol reference.");
     return (0);
 }
@@ -469,7 +463,7 @@ static Rboolean comparePrimitiveTypes(R_NativePrimitiveArgType type, SEXP s, Rbo
 /* Foreign Function Interface.  This code allows a user to call C */
 /* or Fortran code which is either statically or dynamically linked. */
 
-/* NB: despite its name, this leaves NAOK and DUP arguments on the list */
+/* NB: this leaves NAOK and DUP arguments on the list */
 
 /* find NAOK and DUP, find and remove PACKAGE */
 static SEXP naokfind(SEXP args, int *len, int *naok, int *dup, DllReference *dll)
