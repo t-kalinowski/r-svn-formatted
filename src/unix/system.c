@@ -43,6 +43,8 @@
 #endif
 #endif
 
+#include <unistd.h> /* isatty() */
+
 void fpu_setup(int); /* in sys-unix.c */
 
 int UsingReadline = 1;
