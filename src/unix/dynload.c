@@ -461,7 +461,7 @@ static int AddDLL(char *path, int asLocal, int now)
         DL_FUNC f;
         tmp = (char *)malloc(sizeof(char) * (strlen("R_init_") + strlen(name) + 1));
         sprintf(tmp, "%s%s", "R_init_", name);
-        f = dlsym(LoadedDLL[CountDLL].handle, tmp);
+        f = (DL_FUNC)dlsym(LoadedDLL[CountDLL].handle, tmp);
         if (f)
             f(LoadedDLL + CountDLL);
     }
@@ -592,7 +592,7 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name)
         Rf_DotCSymbol *sym;
         sym = Rf_lookupRegisteredCSymbol(info, name);
         if (sym)
-            return (sym->fun);
+            return ((DL_FUNC)sym->fun);
         fail = 1;
     }
 
@@ -601,7 +601,7 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name)
         Rf_DotFortranSymbol *sym;
         sym = Rf_lookupRegisteredFortranSymbol(info, name);
         if (sym)
-            return (sym->fun);
+            return ((DL_FUNC)sym->fun);
         fail = 1;
     }
 
@@ -610,7 +610,7 @@ static DL_FUNC R_dlsym(DllInfo *info, char const *name)
         Rf_DotCallSymbol *sym;
         sym = Rf_lookupRegisteredCallSymbol(info, name);
         if (sym)
-            return (sym->fun);
+            return ((DL_FUNC)sym->fun);
         fail = 1;
     }
 
