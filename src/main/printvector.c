@@ -65,7 +65,7 @@ void printLogicalVector(int *x, int n, int indx)
 
     for (i = 0; i < n; i++)
     {
-        if (width + w > R_print.width)
+        if (i > 0 && width + w > R_print.width)
         {
             DO_newline;
         }
@@ -85,7 +85,7 @@ void printIntegerVector(int *x, int n, int indx)
 
     for (i = 0; i < n; i++)
     {
-        if (width + w > R_print.width)
+        if (i > 0 && width + w > R_print.width)
         {
             DO_newline;
         }
@@ -105,7 +105,7 @@ void printRealVector(double *x, int n, int indx)
 
     for (i = 0; i < n; i++)
     {
-        if (width + w > R_print.width)
+        if (i > 0 && width + w > R_print.width)
         {
             DO_newline;
         }
@@ -127,7 +127,7 @@ void printComplexVector(Rcomplex *x, int n, int indx)
 
     for (i = 0; i < n; i++)
     {
-        if (width + w > R_print.width)
+        if (i > 0 && width + w > R_print.width)
         {
             DO_newline;
         }
