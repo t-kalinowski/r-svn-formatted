@@ -316,7 +316,9 @@ static void R_LoadProfile(FILE *fparg, SEXP env)
         if (!SETJMP(R_Toplevel.cjmpbuf))
         {
             R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+#ifndef __MRC__
             signal(SIGINT, onintr);
+#endif
 #ifdef OLD
             R_ReplFile(fp, R_NilValue, 0, 0);
 #else
@@ -422,9 +424,11 @@ void setup_Rmainloop(void)
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+#ifndef __MRC__
     signal(SIGINT, onintr);
     signal(SIGUSR1, onsigusr1);
     signal(SIGUSR2, onsigusr2);
+#endif
     if (!doneit)
     {
         doneit = 1;
@@ -451,9 +455,11 @@ void setup_Rmainloop(void)
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+#ifndef __MRC__
     signal(SIGINT, onintr);
     signal(SIGUSR1, onsigusr1);
     signal(SIGUSR2, onsigusr2);
+#endif
     if (!doneit)
     {
         doneit = 1;
@@ -469,7 +475,9 @@ void setup_Rmainloop(void)
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+#ifndef __MRC__
     signal(SIGINT, onintr);
+#endif
     if (!doneit)
     {
         doneit = 1;
@@ -502,10 +510,11 @@ void run_Rmainloop(void)
     R_IoBufferInit(&R_ConsoleIob);
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+#ifndef __MRC__
     signal(SIGINT, onintr);
     signal(SIGUSR1, onsigusr1);
     signal(SIGUSR2, onsigusr2);
-
+#endif
     R_ReplConsole(R_GlobalEnv, 0, 0);
     end_Rmainloop(); /* must go here */
 }
@@ -640,9 +649,13 @@ SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
             R_Visible = 0;
         }
         R_GlobalContext = &thiscontext;
+#ifndef __MRC__
         signal(SIGINT, onintr);
+#endif
         R_BrowseLevel = savebrowselevel;
+#ifndef __MRC__
         signal(SIGINT, onintr);
+#endif
         R_ReplConsole(rho, savestack, R_BrowseLevel);
         endcontext(&thiscontext);
     }
