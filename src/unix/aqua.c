@@ -76,6 +76,8 @@ extern DL_FUNC ptr_R_ReadConsole, ptr_R_WriteConsole, ptr_R_ResetConsole, ptr_R_
 DL_FUNC ptr_do_wsbrowser, ptr_DoCloseHandler, ptr_GetQuartzParameters, ptr_Raqua_Edit, ptr_do_dataentry,
     ptr_do_browsepkgs;
 
+void R_ProcessEvents(void);
+
 /* This is called too early to use moduleCdynload */
 void R_load_aqua_shlib(void)
 {
@@ -178,6 +180,20 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     return (ptr_do_browsepkgs(call, op, args, env));
+}
+
+void R_ProcessEvents(void)
+{
+    EventRef theEvent;
+    EventTargetRef theTarget = GetEventDispatcherTarget();
+
+    if (CheckEventQueueForUserCancel())
+    {
+        Rprintf("\n");
+        error("user break");
+        raise(SIGINT);
+        return;
+    }
 }
 
 #else
