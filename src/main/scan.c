@@ -265,7 +265,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch, LocalData *d, R_Stri
             filled = c;
             goto donefill;
         }
-        if (type == STRSXP && strchr(d->quoteset, c))
+        if ((type == STRSXP || type == NILSXP) && strchr(d->quoteset, c))
         {
             quote = c;
             while ((c = scanchar(TRUE, d)) != R_EOF && c != quote)
@@ -327,7 +327,7 @@ static char *fillBuffer(SEXPTYPE type, int strip, int *bch, LocalData *d, R_Stri
                         goto donefill;
                     }
             /* CSV style quoted string handling */
-            if (type == STRSXP && strchr(d->quoteset, c))
+            if ((type == STRSXP || type == NILSXP) && strchr(d->quoteset, c))
             {
                 quote = c;
             inquote:
