@@ -683,8 +683,8 @@ static XFontSet RXLoadQueryFontSet(Display *display, const char *fontset_name)
     fontset = XCreateFontSet(display, fs_name, &missing_charset_list, &missing_charset_count, &def_string);
     if (missing_charset_count)
     {
-        for (i = 0; i < missing_charset_count; i++)
-            warning("font for charset %s is lacking.", missing_charset_list[i]);
+        /* for(i = 0; i < missing_charset_count; i++)
+       warning("font for charset %s is lacking.", missing_charset_list[i]); */
         XFreeStringList(missing_charset_list);
     }
     return fontset;
@@ -874,6 +874,7 @@ static void *RLoadFont(newX11Desc *xd, char *family, int face, int size)
     return tmp;
 }
 
+/* I think this will never be used for a Symbol face */
 static int SetBaseFont(newX11Desc *xd)
 {
     xd->fontface = xd->basefontface;
