@@ -790,7 +790,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
             strcpy(tmp, this);
             /* strip leading and trailing white spaces and
                add back after translation */
-            for (p = tmp; *p && (*p == ' ' || *p == '\t'); p++, ihead++)
+            for (p = tmp; *p && (*p == ' ' || *p == '\t' || *p == '\n'); p++, ihead++)
                 ;
             if (ihead > 0)
             {
@@ -800,7 +800,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 tmp += ihead;
             }
             if (strlen(tmp))
-                for (p = tmp + strlen(tmp) - 1; p >= tmp && (*p == ' ' || *p == '\t'); p--, itail++)
+                for (p = tmp + strlen(tmp) - 1; p >= tmp && (*p == ' ' || *p == '\t' || *p == '\n'); p--, itail++)
                     ;
             if (itail > 0)
             {
@@ -808,17 +808,22 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 strcpy(tail, tmp + strlen(tmp) - itail);
                 tmp[strlen(tmp) - itail] = '\0';
             }
+            if (strlen(tmp))
+            {
 #ifdef DEBUG_GETTEXT
-            REprintf("translating '%s' in domain '%s'\n", tmp, domain);
+                REprintf("translating '%s' in domain '%s'\n", tmp, domain);
 #endif
-            tr = dgettext(domain, tmp);
-            tmp = alloca(strlen(tr) + ihead + itail + 1);
-            tmp[0] = '\0';
-            if (ihead > 0)
-                strcat(tmp, head);
-            strcat(tmp, tr);
-            if (itail > 0)
-                strcat(tmp, tail);
+                tr = dgettext(domain, tmp);
+                tmp = alloca(strlen(tr) + ihead + itail + 1);
+                tmp[0] = '\0';
+                if (ihead > 0)
+                    strcat(tmp, head);
+                strcat(tmp, tr);
+                if (itail > 0)
+                    strcat(tmp, tail);
+            }
+            else
+                tmp = this;
             SET_STRING_ELT(ans, i, mkChar(tmp));
         }
         UNPROTECT(1);
