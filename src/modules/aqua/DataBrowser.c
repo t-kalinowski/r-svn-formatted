@@ -49,6 +49,9 @@
 #ifndef kDataBrowserListViewAppendColumn
 #define kDataBrowserListViewAppendColumn ULONG_MAX
 #endif
+#include "Raqua.h"
+
+extern RAquaPrefs CurrentPrefs;
 
 static void ConfigureDataBrowser(ControlRef);
 static void CreateDataBrowser(WindowRef, ControlRef *);
@@ -113,8 +116,8 @@ e		9			0
 */
 
 int NumOfRoots = 0;
-int *RootItems = NULL;
-int **SubItemsID;
+DataBrowserItemID *RootItems = NULL;
+DataBrowserItemID **SubItemsID;
 int CurrentID = 0;
 void InitContainers(void);
 void SetSubItems(int i);
@@ -285,8 +288,8 @@ void InitContainers(void)
     if (RootItems)
         free(RootItems);
 
-    RootItems = (int)malloc(sizeof(int) * NumOfRoots);
-    SubItemsID = (int **)malloc(NumOfID * sizeof(int *));
+    RootItems = malloc(sizeof(DataBrowserItemID) * NumOfRoots);
+    SubItemsID = (DataBrowserItemID **)malloc(NumOfID * sizeof(DataBrowserItemID *));
 
     for (i = 0; i < NumOfID; i++)
     {
@@ -298,7 +301,7 @@ void InitContainers(void)
         if (IsContainer[i])
         {
             l = 0;
-            SubItemsID[i] = malloc(sizeof(int) * NumberOfItems[i]);
+            SubItemsID[i] = malloc(sizeof(DataBrowserItemID) * NumberOfItems[i]);
             for (j = 0; j < NumOfID; j++)
             {
                 if (ParentID[j] == IDNum[i])
@@ -471,9 +474,6 @@ static void CreateDataBrowser(WindowRef window, ControlRef *browser)
     SetControlData(*browser, kControlNoPart, kControlDataBrowserIncludesFrameAndFocusTag, sizeof(frameAndFocus),
                    &frameAndFocus);
 }
-#include "Raqua.h"
-
-extern RAquaPrefs CurrentPrefs;
 
 static void ConfigureDataBrowser(ControlRef browser)
 {

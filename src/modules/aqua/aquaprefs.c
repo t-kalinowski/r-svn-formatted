@@ -326,6 +326,7 @@ void GetRPrefs(void)
 {
 
     CFNumberRef value;
+    CFStringRef text;
     int tabsize, fontsize, pointsize;
     double devheight, devwidth;
     CFDataRef color;
@@ -367,12 +368,12 @@ void GetRPrefs(void)
 
     /* Console Font Name */
 
-    value = CFPreferencesCopyAppValue(consolefontKey, appName);
-    if (value)
+    text = CFPreferencesCopyAppValue(consolefontKey, appName);
+    if (text)
     {
-        if (!CFStringGetCString(value, consolefont, 255, kCFStringEncodingMacRoman))
+        if (!CFStringGetCString(text, consolefont, 255, kCFStringEncodingMacRoman))
             strcpy(consolefont, DefaultPrefs.ConsoleFontName);
-        CFRelease(value);
+        CFRelease(text);
     }
     else
         strcpy(consolefont, DefaultPrefs.ConsoleFontName); /* set default value */
@@ -381,12 +382,12 @@ void GetRPrefs(void)
 
     /* Initial Working Directory */
 
-    value = CFPreferencesCopyAppValue(InitialWorkingDirKey, appName);
-    if (value)
+    text = CFPreferencesCopyAppValue(InitialWorkingDirKey, appName);
+    if (text)
     {
-        if (!CFStringGetCString(value, workingdir, 500, kCFStringEncodingMacRoman))
+        if (!CFStringGetCString(text, workingdir, 500, kCFStringEncodingMacRoman))
             strcpy(workingdir, DefaultPrefs.WorkingDir);
-        CFRelease(value);
+        CFRelease(text);
     }
     else
         strcpy(workingdir, DefaultPrefs.WorkingDir); /* set default value */
@@ -408,12 +409,12 @@ void GetRPrefs(void)
 
     /* Device Font Name */
 
-    value = CFPreferencesCopyAppValue(devicefontKey, appName);
-    if (value)
+    text = CFPreferencesCopyAppValue(devicefontKey, appName);
+    if (text)
     {
-        if (!CFStringGetCString(value, devicefont, 255, kCFStringEncodingMacRoman))
+        if (!CFStringGetCString(text, devicefont, 255, kCFStringEncodingMacRoman))
             strcpy(devicefont, DefaultPrefs.DeviceFontName);
-        CFRelease(value);
+        CFRelease(text);
     }
     else
         strcpy(devicefont, DefaultPrefs.DeviceFontName); /* set default value */
@@ -489,7 +490,7 @@ void GetRPrefs(void)
     color = CFPreferencesCopyAppValue(outfgKey, appName);
     if (color)
     {
-        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &fgout);
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), (UInt8 *)&fgout);
     }
     else
     {
@@ -505,7 +506,7 @@ void GetRPrefs(void)
     color = CFPreferencesCopyAppValue(outbgKey, appName);
     if (color)
     {
-        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &bgout);
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), (UInt8 *)&bgout);
     }
     else
     {
@@ -521,7 +522,7 @@ void GetRPrefs(void)
     color = CFPreferencesCopyAppValue(infgKey, appName);
     if (color)
     {
-        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &fgin);
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), (UInt8 *)&fgin);
     }
     else
     {
@@ -537,7 +538,7 @@ void GetRPrefs(void)
     color = CFPreferencesCopyAppValue(inbgKey, appName);
     if (color)
     {
-        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), &bgin);
+        CFDataGetBytes(color, CFRangeMake(0, CFDataGetLength(color)), (UInt8 *)&bgin);
     }
     else
     {
@@ -625,6 +626,7 @@ void SetUpPrefsWindow(RAquaPrefsPointer Settings)
 void SaveRPrefs(void)
 {
     CFNumberRef value;
+    CFStringRef text;
     int tabsize, fontsize, pointsize;
     double devwidth, devheight;
     CFDataRef color;
@@ -660,9 +662,9 @@ void SaveRPrefs(void)
     CFRelease(value);
 
     /* Console Font Name */
-    value = CFStringCreateWithCString(NULL, consolefont, kCFStringEncodingMacRoman);
-    CFPreferencesSetAppValue(consolefontKey, value, appName);
-    CFRelease(value);
+    text = CFStringCreateWithCString(NULL, consolefont, kCFStringEncodingMacRoman);
+    CFPreferencesSetAppValue(consolefontKey, text, appName);
+    CFRelease(text);
 
     /* Device Point Size */
     value = CFNumberCreate(NULL, kCFNumberIntType, &pointsize);
@@ -670,14 +672,14 @@ void SaveRPrefs(void)
     CFRelease(value);
 
     /* Device Font Name */
-    value = CFStringCreateWithCString(NULL, devicefont, kCFStringEncodingMacRoman);
-    CFPreferencesSetAppValue(devicefontKey, value, appName);
-    CFRelease(value);
+    text = CFStringCreateWithCString(NULL, devicefont, kCFStringEncodingMacRoman);
+    CFPreferencesSetAppValue(devicefontKey, text, appName);
+    CFRelease(text);
 
     /* Initial Working Directory */
-    value = CFStringCreateWithCString(NULL, workingdir, kCFStringEncodingMacRoman);
-    CFPreferencesSetAppValue(InitialWorkingDirKey, value, appName);
-    CFRelease(value);
+    text = CFStringCreateWithCString(NULL, workingdir, kCFStringEncodingMacRoman);
+    CFPreferencesSetAppValue(InitialWorkingDirKey, text, appName);
+    CFRelease(text);
 
     /* Device Width */
     value = CFNumberCreate(NULL, kCFNumberDoubleType, &devwidth);
@@ -704,28 +706,28 @@ void SaveRPrefs(void)
     CFPreferencesSetAppValue(devOverrideRDefKey, value, appName);
     CFRelease(value);
 
-    color = CFDataCreate(NULL, &fgout, sizeof(fgout));
+    color = CFDataCreate(NULL, (UInt8 *)&fgout, sizeof(fgout));
     if (color)
     {
         CFPreferencesSetAppValue(outfgKey, color, appName);
         CFRelease(color);
     }
 
-    color = CFDataCreate(NULL, &bgout, sizeof(bgout));
+    color = CFDataCreate(NULL, (UInt8 *)&bgout, sizeof(bgout));
     if (color)
     {
         CFPreferencesSetAppValue(outbgKey, color, appName);
         CFRelease(color);
     }
 
-    color = CFDataCreate(NULL, &fgin, sizeof(fgin));
+    color = CFDataCreate(NULL, (UInt8 *)&fgin, sizeof(fgin));
     if (color)
     {
         CFPreferencesSetAppValue(infgKey, color, appName);
         CFRelease(color);
     }
 
-    color = CFDataCreate(NULL, &bgin, sizeof(bgin));
+    color = CFDataCreate(NULL, (UInt8 *)&bgin, sizeof(bgin));
     if (color)
     {
         CFPreferencesSetAppValue(inbgKey, color, appName);

@@ -351,7 +351,7 @@ void Raqua_StartConsole(void)
             err = InstallApplicationEventHandler(NewEventHandlerUPP(RWinHandler), GetEventTypeCount(RGlobalWinEvents),
                                                  RGlobalWinEvents, 0, NULL);
             err = AEInstallEventHandler(kCoreEventClass, kAEQuitApplication,
-                                        NewAEEventHandlerUPP(QuitAppleEventHandler), 0, false);
+                                        NewAEEventHandlerUPP((AEEventHandlerProcPtr)QuitAppleEventHandler), 0, false);
 
             TXNFocus(RConsoleOutObject, true);
             InstallWindowEventHandler(RAboutWindow, NewEventHandlerUPP(RAboutWinHandler), 1, &aboutSpec,
@@ -632,7 +632,7 @@ static OSStatus KeybHandler(EventHandlerCallRef inCallRef, EventRef REvent, void
 pascal void RAboutHandler(WindowRef window)
 {
     CFStringRef text;
-    CFStringRef appBundle;
+    CFBundleRef appBundle;
     ControlID versionInfoID = {kRAppSignature, kRVersionInfoID};
     ControlRef versionControl;
     ControlFontStyleRec controlStyle;
@@ -978,7 +978,7 @@ static pascal OSStatus RWinHandler(EventHandlerCallRef inCallRef, EventRef inEve
                     err = noErr;
                 }
 
-                if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum) == noErr)
+                if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), NULL, &devnum) == noErr)
                     if ((dd = ((GEDevDesc *)GetDevice(devnum))->dev))
                     {
                         dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
@@ -1042,7 +1042,7 @@ OSStatus DoCloseHandler(EventHandlerCallRef inCallRef, EventRef inEvent, void *i
         }
 
         /* Are we closing any quartz device window ? */
-        if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), devsize, &devnum) == noErr)
+        if (GetWindowProperty(EventWindow, kRAppSignature, 1, sizeof(int), NULL, &devnum) == noErr)
         {
             sprintf(cmd, "dev.off(%d)", 1 + devnum);
             consolecmd(cmd);
