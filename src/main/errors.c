@@ -46,7 +46,7 @@ static int inWarning = 0;
                  /
             warning /
 
-  ErrorMessage   : similar to errorcall()   but with message from ErrorDB[]
+  ErrorMessage	 : similar to errorcall()   but with message from ErrorDB[]
 
   WarningMessage : similar to warningcall() but with message from WarningDB[].
 */
@@ -124,7 +124,7 @@ void warningcall(SEXP call, char *format, ...)
             dcall = CHAR(STRING(deparse1(call, 0))[0]);
             REprintf("Warning in %s : ", dcall);
             if (strlen(dcall) > LONGCALL)
-                REprintf("\n   ");
+                REprintf("\n	 ");
         }
         else
             REprintf("Warning: ");
@@ -219,7 +219,7 @@ void errorcall(SEXP call, char *format, ...)
         dcall = CHAR(STRING(deparse1(call, 0))[0]);
         sprintf(buf, "Error in %s : ", dcall);
         if (strlen(dcall) > LONGCALL)
-            strcat(buf, "\n   ");
+            strcat(buf, "\n	");
     }
     else
         sprintf(buf, "Error: ");
@@ -388,6 +388,8 @@ void do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (CAR(args) != R_NilValue)
     {
         CAR(args) = coerceVector(CAR(args), STRSXP);
+        if (!isValidString(CAR(args)))
+            errorcall(cptr->call, " [invalid string in stop(.)]");
         errorcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
     }
     else
@@ -405,7 +407,10 @@ SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (CAR(args) != R_NilValue)
     {
         CAR(args) = coerceVector(CAR(args), STRSXP);
-        warningcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
+        if (!isValidString(CAR(args)))
+            warningcall(cptr->call, " [invalid string in warning(.)]");
+        else
+            warningcall(cptr->call, "%s", CHAR(STRING(CAR(args))[0]));
     }
     else
         warningcall(cptr->call, "");
