@@ -289,7 +289,7 @@ SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             RAND3(0, rhyper);
         default:
-            error("internal error in do_random2");
+            error("internal error in do_random3");
         }
         if (naflag)
             warningcall(call, "NAs produced");
