@@ -570,13 +570,7 @@ Rconnection newWpipe(char *description, char *mode)
         free(new);
         error("allocation of pipe connection failed");
     }
-    strcpy(new->description, description);
-    strncpy(new->mode, mode, 4);
-    new->mode[4] = '\0';
-    new->isopen = new->incomplete = FALSE;
-    new->canread = new->canwrite = TRUE; /* in principle */
-    new->canseek = FALSE;
-    new->text = TRUE;
+    init_con(new, description, mode);
     new->open = &Wpipe_open;
     new->close = &Wpipe_close;
     new->destroy = &Wpipe_destroy;
@@ -587,7 +581,6 @@ Rconnection newWpipe(char *description, char *mode)
     new->fflush = &Wpipe_fflush;
     new->read = &Wpipe_read;
     new->write = &Wpipe_write;
-    new->nPushBack = 0;
     new->private = (void *)malloc(sizeof(struct Wpipeconn));
     if (!new->private)
     {
