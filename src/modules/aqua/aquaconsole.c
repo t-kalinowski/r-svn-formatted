@@ -132,6 +132,7 @@ void GraphicCopy(WindowPtr window);
 #define kRHelpOnTopic 'rhot'
 #define kRSearchHelpOn 'rsho'
 #define kRExampleRun 'rexr'
+#define kRAquaFAQ 'rfaq'
 
 #define kRDlog 'RDLG'
 #define kRDlogMsg 1000
@@ -367,6 +368,7 @@ static void Aqua_FlushBuffer(void);
 
 MenuRef HelpMenu = NULL; /* Will be the Reference to Apple's Help Menu */
 static short RHelpMenuItem = -1;
+static short RAquaFAQMenuItem = -1;
 static short RTopicHelpItem = -1;
 static short RunExampleItem = -1;
 static short SearchHelpItem = -1;
@@ -669,6 +671,11 @@ void SetUpRAquaMenu(void)
         RHelpMenuItem = CountMenuItems(HelpMenu);
         SetMenuItemCommandID(HelpMenu, RHelpMenuItem, kRHelpStart);
         SetMenuItemCommandKey(HelpMenu, RHelpMenuItem, false, '?');
+
+        CopyCStringToPascal("RAqua FAQ", menuStr);
+        AppendMenu(HelpMenu, menuStr);
+        RAquaFAQMenuItem = CountMenuItems(HelpMenu);
+        SetMenuItemCommandID(HelpMenu, RAquaFAQMenuItem, kRAquaFAQ);
 
         CopyCStringToPascal("Help On Topic...", menuStr);
         AppendMenu(HelpMenu, menuStr);
@@ -1772,6 +1779,10 @@ static pascal OSStatus RCmdHandler(EventHandlerCallRef inCallRef, EventRef inEve
                 /* Help Menu */
             case kRHelpStart:
                 consolecmd("help.start()");
+                break;
+
+            case kRAquaFAQ:
+                consolecmd("system(\"open http://cran.r-project.org/bin/macos/rmac-FAQ.html\")");
                 break;
 
             case kRHelpOnTopic:
