@@ -1485,10 +1485,10 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
         if (!setupScreenDevice(dd, xd, w, h, recording, resize))
             return FALSE;
     }
-    else if (!strcmp(dsp, "win.print"))
+    else if (!strncmp(dsp, "win.print:", 10))
     {
         xd->kind = PRINTER;
-        xd->gawin = newprinter(MM_PER_INCH * w, MM_PER_INCH * h);
+        xd->gawin = newprinter(MM_PER_INCH * w, MM_PER_INCH * h, &dsp[10]);
         if (!xd->gawin)
             return FALSE;
     }

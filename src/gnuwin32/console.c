@@ -1351,7 +1351,7 @@ font f;
 char *s = "", lc = '\0', msg[LF_FACESIZE + 128], title[60];
 char buf[1024];
 cursor cur;
-if (!(lpr = newprinter(0.0, 0.0)))
+if (!(lpr = newprinter(0.0, 0.0, "")))
     FVOIDRETURN;
 show(c);
 /*
