@@ -216,6 +216,13 @@ static void Specify(char *what, SEXP value, DevDesc *dd, SEXP call)
         else
             par_error(what);
     }
+    else if (streql(what, "family"))
+    {
+        value = coerceVector(value, STRSXP);
+        lengthCheck(what, value, 1, call);
+        strcpy(Rf_dpptr(dd)->family, CHAR(STRING_ELT(value, 0)));
+        strcpy(Rf_gpptr(dd)->family, CHAR(STRING_ELT(value, 0)));
+    }
     else if (streql(what, "fin"))
     {
         value = coerceVector(value, REALSXP);
@@ -237,7 +244,32 @@ static void Specify(char *what, SEXP value, DevDesc *dd, SEXP call)
         GReset(dd);
     }
     /* -- */
-
+    else if (streql(what, "lend"))
+    {
+        lengthCheck(what, value, 1, call);
+        R_DEV__(lend) = LENDpar(value, 0);
+    }
+    else if (streql(what, "lheight"))
+    {
+        lengthCheck(what, value, 1, call);
+        x = asReal(value);
+        posRealCheck(x, what);
+        R_DEV__(lheight) = x;
+    }
+    else if (streql(what, "ljoin"))
+    {
+        lengthCheck(what, value, 1, call);
+        R_DEV__(ljoin) = LJOINpar(value, 0);
+    }
+    else if (streql(what, "lmitre"))
+    {
+        lengthCheck(what, value, 1, call);
+        x = asReal(value);
+        posRealCheck(x, what);
+        if (x < 1)
+            par_error(what);
+        R_DEV__(lmitre) = x;
+    }
     else if (streql(what, "mai"))
     {
         value = coerceVector(value, REALSXP);
@@ -770,6 +802,12 @@ static SEXP Query(char *what, DevDesc *dd)
         value = allocVector(INTSXP, 1);
         INTEGER(value)[0] = Rf_dpptr(dd)->err;
     }
+    else if (streql(what, "family"))
+    {
+        PROTECT(value = allocVector(STRSXP, 1));
+        SET_STRING_ELT(value, 0, mkChar(Rf_dpptr(dd)->family));
+        UNPROTECT(1);
+    }
     else if (streql(what, "fg"))
     {
         PROTECT(value = allocVector(STRSXP, 1));
@@ -831,6 +869,24 @@ static SEXP Query(char *what, DevDesc *dd)
     {
         value = allocVector(INTSXP, 1);
         INTEGER(value)[0] = Rf_dpptr(dd)->las;
+    }
+    else if (streql(what, "lend"))
+    {
+        value = LENDget(Rf_dpptr(dd)->lend);
+    }
+    else if (streql(what, "lheight"))
+    {
+        value = allocVector(REALSXP, 1);
+        REAL(value)[0] = Rf_dpptr(dd)->lheight;
+    }
+    else if (streql(what, "ljoin"))
+    {
+        value = LJOINget(Rf_dpptr(dd)->ljoin);
+    }
+    else if (streql(what, "lmitre"))
+    {
+        value = allocVector(REALSXP, 1);
+        REAL(value)[0] = Rf_dpptr(dd)->lmitre;
     }
     else if (streql(what, "lty"))
     {
