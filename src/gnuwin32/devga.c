@@ -3065,6 +3065,7 @@ menu getGraphMenu(char *menuname)
 Rboolean winNewFrameConfirm()
 {
     char savetitle[50];
+    char msg[] = "Waiting to confirm page change...";
     gadesc *xd;
     GEDevDesc *dd = GEcurrentDevice();
 
@@ -3084,7 +3085,10 @@ Rboolean winNewFrameConfirm()
     addto(xd->gawin);
     gchangemenubar(xd->mbarconfirm);
     gchangepopup(xd->gawin, NULL);
-    setstatus("Waiting to confirm page change");
+    setstatus(msg);
+    R_WriteConsole(msg, strlen(msg));
+    R_WriteConsole("\n", 1);
+    R_FlushConsole();
     strncpy(savetitle, gettext(xd->gawin), sizeof(savetitle));
     settext(xd->gawin, "Click or hit ENTER for next page");
     while (!xd->clicked && !xd->enterkey)
