@@ -3149,6 +3149,7 @@ static int typeofnext(void)
             k = 2;
         else
             k = 3;
+        /* <FIXME> is it clear multiple ungets are allowed? */
         for (i = clen - 1; i > 0; i--)
             xxungetc(s[i]);
     }
@@ -3651,6 +3652,7 @@ static int SymbolValue(int c)
                 for (i = 1; i < clen; i++)
                     s[i] = xxgetc();
                 Mbrtowc(&wc, s, clen, NULL);
+                /* <FIXME> is it clear multiple ungets are allowed? */
                 for (i = clen - 1; i > 0; i--)
                     xxungetc(s[i]);
                 if (!iswalnum(wc))
@@ -3742,6 +3744,7 @@ static int token()
         for (i = 1; i < clen; i++)
             s[i] = xxgetc();
         Mbrtowc(&wc, s, clen, NULL);
+        /* <FIXME> is it clear multiple ungets are allowed? */
         for (i = clen - 1; i > 0; i--)
             xxungetc(s[i]);
         if (iswdigit(wc))
@@ -3779,6 +3782,7 @@ symbol:
         for (i = 1; i < clen; i++)
             s[i] = xxgetc();
         Mbrtowc(&wc, s, clen, NULL);
+        /* <FIXME> is it clear multiple ungets are allowed? */
         for (i = clen - 1; i > 0; i--)
             xxungetc(s[i]);
         if (iswalpha(wc))

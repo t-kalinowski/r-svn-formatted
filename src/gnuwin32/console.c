@@ -47,6 +47,7 @@ extern char *alloca(size_t);
 extern UImode CharacterMode;
 
 #ifdef SUPPORT_MBCS
+#define mbs_init(x) memset(x, 0, sizeof(mbstate_t))
 static int wcwidth(wchar_t ucs)
 {
     return 1 +
@@ -74,7 +75,7 @@ int mb_char_len(char *buf, int clength)
 {
     int i, mb_len = 0;
 
-    memset(&mb_st, 0, sizeof(mbstate_t));
+    mbs_init(&mb_st);
     for (i = 0; i <= clength; i += mb_len)
         mb_len = mbrlen(buf + i, MB_CUR_MAX, &mb_st);
     return mb_len;
@@ -86,7 +87,7 @@ int mbswidth(char *buf)
     int res = 0, used;
     wchar_t wc;
 
-    memset(&mb_st, 0, sizeof(mbstate_t));
+    mbs_init(&mb_st);
     while (*p)
     {
         used = mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
@@ -436,7 +437,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
         leftedge = FC && (fch == 0);
         if (leftedge)
             fch++;
-        memset(&mb_st, 0, sizeof(mbstate_t));
+        mbs_init(&mb_st);
         for (w0 = -FC; w0 < fch && *P;)
         { /* should have enough ... */
             P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
@@ -532,7 +533,7 @@ static int writeline(ConsoleData p, int i, int j)
             int w0, used = 0, ii;
             wchar_t wc;
             char *P = s, nn[10];
-            memset(&mb_st, 0, sizeof(mbstate_t));
+            mbs_init(&mb_st);
             for (w0 = 0; w0 <= CURCOL;)
             {
                 used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
@@ -1029,7 +1030,7 @@ static void consoletoclipboardHelper(control c, int x0, int y0, int x1, int y1)
     while (i <= y1)
     {
         P = LINE(i);
-        memset(&mb_st, 0, sizeof(mbstate_t));
+        mbs_init(&mb_st);
         for (w0 = 0; w0 < x00 && *P;)
         {
             P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
@@ -1085,7 +1086,7 @@ static void consoletoclipboardHelper(control c, int x0, int y0, int x1, int y1)
     while (i <= y1)
     {
         P = LINE(i);
-        memset(&mb_st, 0, sizeof(mbstate_t));
+        mbs_init(&mb_st);
         for (w0 = 0; w0 < x00 && *P;)
         {
             P += mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);

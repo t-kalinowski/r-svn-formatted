@@ -1733,7 +1733,9 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
                                 {
                                     int n = strlen(ss), used;
                                     wchar_t wc;
-                                    while ((used = mbrtowc(&wc, ss, n, NULL)) > 0)
+                                    mbstate_t mb_st;
+                                    mbs_init(&mb_st);
+                                    while ((used = mbrtowc(&wc, ss, n, &mb_st)) > 0)
                                     {
                                         GEMetricInfo((int)wc, gc, &h, &d, &w, dd);
                                         h = fromDeviceHeight(h, GE_INCHES, dd);

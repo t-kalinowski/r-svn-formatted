@@ -188,11 +188,13 @@ static void substr(char *buf, char *str, int sa, int so)
     if (utf8locale && !utf8strIsASCII(buf))
     {
         int j, used;
+        mbstate_t mb_st;
+        mbs_init(&mb_st);
         for (i = 1; i < sa; i++)
-            str += Mbrtowc(NULL, str, MB_CUR_MAX, NULL);
+            str += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
         for (i = sa; i <= so; i++)
         {
-            used = Mbrtowc(NULL, str, MB_CUR_MAX, NULL);
+            used = Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
             for (j = 0; j < used; j++)
                 *buf++ = *str++;
         }
@@ -260,8 +262,9 @@ SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void substrset(char *buf, char *str, int sa, int so)
 {
-/* Replace the substring str [sa:so] in buf[] */
+/* Replace the substring buf [sa:so] by str[] */
 #ifdef SUPPORT_MBCS
+    /* This cannot work for stateful encodings */
     if (utf8locale)
     { /* probably not worth optimizing for non-utf8 strings */
         int i, in = 0, out = 0;
@@ -575,6 +578,7 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 char bf[20 /* > MB_CUR_MAX */], *p = buf;
                 int used;
+                mbstate_t mb_st;
 
                 ntok = mbstowcs(NULL, buf, 0);
                 if (ntok < 0)
@@ -584,11 +588,12 @@ SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
+                    mbs_init(&mb_st);
                     PROTECT(t = allocVector(STRSXP, ntok));
                     for (j = 0; j < ntok; j++, p += used)
                     {
                         /* This is valid as we have already checked */
-                        used = mbrtowc(NULL, p, MB_CUR_MAX, NULL);
+                        used = mbrtowc(NULL, p, MB_CUR_MAX, &mb_st);
                         memcpy(bf, p, used);
                         bf[used] = '\0';
                         SET_STRING_ELT(t, j, mkChar(bf));
@@ -818,15 +823,18 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             int nc = l, used;
             wchar_t wc;
+            mbstate_t mb_st;
+
             p = this;
-            used = Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            mbs_init(&mb_st);
+            used = Mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
             p += used;
             nc -= used;
             if (wc == L'.')
             {
                 if (nc > 0)
                 {
-                    Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+                    Mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
                     if (iswdigit(wc))
                         need_prefix = TRUE;
                 }
@@ -2160,6 +2168,7 @@ SEXP do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
     char *p, *q;
     int w0, wsum, k, nb;
     wchar_t wc;
+    mbstate_t mb_st;
 #endif
 
     checkArity(op, args);
@@ -2188,9 +2197,10 @@ SEXP do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
         AllocBuffer(nc);
 #if defined(SUPPORT_MBCS) && defined(HAVE_WCWIDTH)
         wsum = 0;
+        mbs_init(&mb_st);
         for (p = this, w0 = 0, q = cbuff.data; *p;)
         {
-            nb = Mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            nb = Mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
             w0 = wcwidth(wc);
             if (w0 < 0)
             {
