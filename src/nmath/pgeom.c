@@ -32,7 +32,7 @@ double pgeom(double x, double p, int lower_tail, int log_p)
         return x + p;
 #endif
     x = floor(x);
-    if (p <= 0 || p >= 1)
+    if (p <= 0 || p > 1)
         ML_ERR_return_NAN;
 
     if (x < 0.)
