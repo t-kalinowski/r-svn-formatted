@@ -54,6 +54,8 @@
 
 #include "../../unix/Runix.h"
 
+#include <R_ext/eventloop.h>
+
 #ifdef HAVE_AQUA
 #include <Carbon/Carbon.h>
 
@@ -341,6 +343,8 @@ TXNControlTag txnControlTag[1];
 TXNControlData txnControlData[1];
 TXNMargins txnMargins;
 
+static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData);
+
 Boolean AlreadyRunning = false;
 void Raqua_StartConsole(void)
 {
@@ -509,12 +513,20 @@ void Raqua_StartConsole(void)
     if (R_RestoreHistory)
         Raqua_read_history(R_HistoryFile);
 
+    InstallEventLoopTimer(GetCurrentEventLoop(), 0, 1, NewEventLoopTimerUPP(OtherEventLoops), NULL, NULL);
+    fprintf(stderr, "\ntimer just installed");
+
 noconsole:
     if (bundleURL)
         CFRelease(bundleURL);
     if (RBundle)
         CFRelease(RBundle);
     return;
+}
+
+static pascal void OtherEventLoops(EventLoopTimerRef inTimer, void *inUserData)
+{
+    R_runHandlers(R_InputHandlers, R_checkActivity(10, 1));
 }
 
 /* BEWARE: before quitting R via ExitToShell() call TXNTerminateTextension() */
@@ -949,20 +961,16 @@ NavUserAction YesOrNot(char *title, char *msg, char *actionlab, char *canclab)
 
     if ((err = NavGetDefaultDialogCreationOptions(&dialogOptions)) == noErr)
     {
+
         if (msg != NULL)
             dialogOptions.message = CFStringCreateWithCString(NULL, msg, kCFStringEncodingASCII);
+
         if (title != NULL)
-        {
-            if (dialogOptions.windowTitle)
-                CFRelease(dialogOptions.windowTitle);
             dialogOptions.windowTitle = CFStringCreateWithCString(NULL, title, kCFStringEncodingASCII);
-        }
+
         if (actionlab != NULL)
-        {
-            if (dialogOptions.actionButtonLabel)
-                CFRelease(dialogOptions.actionButtonLabel);
             dialogOptions.actionButtonLabel = CFStringCreateWithCString(NULL, actionlab, kCFStringEncodingASCII);
-        }
+
         if (canclab != NULL)
             dialogOptions.cancelButtonLabel = CFStringCreateWithCString(NULL, canclab, kCFStringEncodingASCII);
 
@@ -2181,19 +2189,15 @@ OSStatus FSPathMakeFSSpec(const UInt8 *path, FSSpec *spec, Boolean *isDirectory)
     FSRef ref;
 
     /* check parameters */
-    require_action(NULL != spec, BadParameter, result = paramErr);
+    if (spec == NULL)
+        return (paramErr);
 
     /* convert the POSIX path to an FSRef */
-    result = FSPathMakeRef(path, &ref, isDirectory);
-    require_noerr(result, FSPathMakeRef);
+    if ((result = FSPathMakeRef(path, &ref, isDirectory)) != noErr)
+        return (result);
 
     /* and then convert the FSRef to an FSSpec */
     result = FSGetCatalogInfo(&ref, kFSCatInfoNone, NULL, NULL, spec, NULL);
-    require_noerr(result, FSGetCatalogInfo);
-
-FSGetCatalogInfo:
-FSPathMakeRef:
-BadParameter:
 
     return (result);
 }
@@ -2204,19 +2208,15 @@ OSStatus FSMakePath(SInt16 volRefNum, SInt32 dirID, ConstStr255Param name, UInt8
     FSRef ref;
 
     /* check parameters */
-    require_action(NULL != path, BadParameter, result = paramErr);
+    if (path == NULL)
+        return (paramErr);
 
     /* convert the inputs to an FSRef */
-    result = FSMakeFSRef(volRefNum, dirID, name, &ref);
-    require_noerr(result, FSMakeFSRef);
+    if ((result = FSMakeFSRef(volRefNum, dirID, name, &ref)) != noErr)
+        return (result);
 
     /* and then convert the FSRef to a path */
     result = FSRefMakePath(&ref, path, maxPathSize);
-    require_noerr(result, FSRefMakePath);
-
-FSRefMakePath:
-FSMakeFSRef:
-BadParameter:
 
     return (result);
 }
@@ -2227,17 +2227,14 @@ OSErr FSMakeFSRef(FSVolumeRefNum volRefNum, SInt32 dirID, ConstStr255Param name,
     FSRefParam pb;
 
     /* check parameters */
-    require_action(NULL != ref, BadParameter, result = paramErr);
+    if (ref == NULL)
+        return (paramErr);
 
     pb.ioVRefNum = volRefNum;
     pb.ioDirID = dirID;
     pb.ioNamePtr = (StringPtr)name;
     pb.newRef = ref;
     result = PBMakeFSRefSync(&pb);
-    require_noerr(result, PBMakeFSRefSync);
-
-PBMakeFSRefSync:
-BadParameter:
 
     return (result);
 }
