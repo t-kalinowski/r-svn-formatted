@@ -587,7 +587,7 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1)
         }
         return ans;
     default:
-        error(_("illegal unary operator"));
+        error(_("invalid unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -608,7 +608,7 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
             REAL(ans)[i] = -REAL(s1)[i];
         return ans;
     default:
-        errorcall(lcall, _("illegal unary operator"));
+        errorcall(lcall, _("invalid unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -1294,7 +1294,7 @@ SEXP do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (length(CADR(args)) == 0)
-        errorcall(call, _("illegal second argument of length 0"));
+        errorcall(call, _("invalid second argument of length 0"));
     return do_math2(call, op, args, env);
 }
 
