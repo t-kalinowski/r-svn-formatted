@@ -662,7 +662,7 @@ static void HelpExpose(window w, rect r)
         {
             GA_Resize(dd);
             xd->replaying = TRUE;
-            GEplayDisplayList((DevDesc *)gdd);
+            GEplayDisplayList(gdd);
             xd->replaying = FALSE;
             R_ProcessEvents();
         }
@@ -818,15 +818,14 @@ static void menuclose(control m)
 
 #ifdef PLOTHISTORY
 
-void copyGPar(GPar *, GPar *);
-extern SEXP savedDisplayList;
-extern GPar savedGPar;
 extern SEXP savedSnapshot;
 
+/* NB: this puts .SavedPlots in package:base */
 #define GROWTH 4
 #define GETDL SEXP vDL = findVar(install(".SavedPlots"), R_NilValue)
 #define SETDL gsetVar(install(".SavedPlots"), vDL, R_NilValue)
-#define PLOTHISTORYMAGIC 31415
+/* altered in 1.4.0, as incompatible format */
+#define PLOTHISTORYMAGIC 31416
 #define pMAGIC (INTEGER(VECTOR_ELT(vDL, 0))[0])
 #define pNUMPLOTS (INTEGER(VECTOR_ELT(vDL, 1))[0])
 #define pMAXPLOTS (INTEGER(VECTOR_ELT(vDL, 2))[0])
@@ -864,7 +863,7 @@ extern SEXP savedSnapshot;
 
 static SEXP NewPlotHistory(int n)
 {
-    SEXP vDL;
+    SEXP vDL, class;
     int i;
 
     PROTECT(vDL = allocVector(VECSXP, 5));
@@ -877,8 +876,11 @@ static SEXP NewPlotHistory(int n)
     pCURRENTPOS = -1;
     for (i = 0; i < n; i++)
         SET_VECTOR_ELT(pHISTORY, i, R_NilValue);
+    PROTECT(class = allocVector(STRSXP, 1));
+    SET_STRING_ELT(class, 0, mkChar("SavedPlots"));
+    classgets(vDL, class);
     SETDL;
-    UNPROTECT(6);
+    UNPROTECT(7);
     return vDL;
 }
 
