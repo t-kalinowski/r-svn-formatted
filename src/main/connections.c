@@ -2783,6 +2783,7 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+#ifndef Win32
 static void putdots(int *pold, int new)
 {
     int i, old = *pold;
@@ -2797,10 +2798,8 @@ static void putdots(int *pold, int new)
     }
     if (R_Consolefile)
         fflush(R_Consolefile);
-#ifdef Win32
-    R_FlushConsole();
-#endif
 }
+#endif
 
 /* note, ALL the possible structures have the first two elements */
 typedef struct
