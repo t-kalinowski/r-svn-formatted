@@ -17,19 +17,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA.
  *
- *  SYNOPSIS
- *
- *    #include "Mathlib.h"
- *    double qt(double p, double ndf);
- *
  *  DESCRIPTION
  *
- *    The "Student" t distribution quantile function.
+ *	The "Student" t distribution quantile function.
  *
  *  NOTES
  *
- *    This is a C translation of the Fortran routine given in:
- *    Algorithm 396: Student's t-quantiles by
+ *	This is a C translation of the Fortran routine given in:
+ *	Algorithm 396: Student's t-quantiles by
  *	G.W. Hill CACM 13(10), 619-620, October 1970
  */
 
@@ -37,7 +32,7 @@
 
 const static double eps = 1.e-12;
 
-double qt(double p, double ndf)
+double qt(double p, double ndf, int lower_tail, int log_p)
 {
     double a, b, c, d, prob, P, q, x, y;
     int neg;
@@ -45,31 +40,30 @@ double qt(double p, double ndf)
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(ndf))
         return p + ndf;
-    if (ndf < 1 || p > 1 || p < 0)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
-    if (p == 0)
+    if (p == R_DT_0)
         return ML_NEGINF;
-    if (p == 1)
+    if (p == R_DT_1)
         return ML_POSINF;
-#else
-    if (ndf < 1 || p > 1 || p < 0)
+#endif
+    R_Q_P01_check(p);
+    if (ndf < 1)
+        ML_ERR_return_NAN;
+
+    /* FIXME: This test should depend on  ndf  AND p  !!
+     * -----  and in fact should be replaced by
+     * something like Abramowitz & Stegun 26.7.5 (p.949)
+     */
+    if (ndf > 1e20)
+        return qnorm(p, 0., 1., lower_tail, log_p);
+
+    /* FIXME */
+    if (!lower_tail || log_p)
     {
-        ML_ERROR(ME_DOMAIN);
+        warning("lower_tail & log_p not yet implemented in ptukey()");
         return ML_NAN;
     }
-#endif
-        /* FIXME: This test should depend on  ndf  AND p  !!
-         * -----  and in fact should be replaced by
-         * something like Abramowitz & Stegun 26.7.5 (p.949)
-         */
-#define LOWER (1)
-#define LOG_P (0)
-    if (ndf > 1e20)
-        return qnorm(p, 0., 1., LOWER, LOG_P);
 
+    /* combine lower_tail and "neg" !! : */
     if (p > 0.5)
     {
         neg = 0;
@@ -104,7 +98,7 @@ double qt(double p, double ndf)
         if (y > 0.05 + a)
         {
             /* Asymptotic inverse expansion about normal */
-            x = qnorm(0.5 * P, 0.0, 1.0, LOWER, LOG_P);
+            x = qnorm(0.5 * P, 0.0, 1.0, /*lower_tail*/ LTRUE, /*log_p*/ LFALSE);
             y = x * x;
             if (ndf < 5)
                 c += 0.3 * (ndf - 4.5) * (x + 0.6);

@@ -1201,25 +1201,25 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math2(args, choose);
 
     case 6:
-        return Math2(args, dchisq);
+        return Math2_1(args, dchisq);
     case 7:
-        return Math2(args, pchisq);
+        return Math2_2(args, pchisq);
     case 8:
-        return Math2(args, qchisq);
+        return Math2_2(args, qchisq);
 
     case 9:
-        return Math2(args, dexp);
+        return Math2_1(args, dexp);
     case 10:
-        return Math2(args, pexp);
+        return Math2_2(args, pexp);
     case 11:
-        return Math2(args, qexp);
+        return Math2_2(args, qexp);
 
     case 12:
-        return Math2(args, dgeom);
+        return Math2_1(args, dgeom);
     case 13:
-        return Math2(args, pgeom);
+        return Math2_2(args, pgeom);
     case 14:
-        return Math2(args, qgeom);
+        return Math2_2(args, qgeom);
 
     case 15:
         return Math2_1(args, dpois);
@@ -1229,18 +1229,18 @@ SEXP do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math2_2(args, qpois);
 
     case 18:
-        return Math2(args, dt);
+        return Math2_1(args, dt);
     case 19:
-        return Math2(args, pt);
+        return Math2_2(args, pt);
     case 20:
-        return Math2(args, qt);
+        return Math2_2(args, qt);
 
     case 21:
-        return Math2(args, dsignrank);
+        return Math2_1(args, dsignrank);
     case 22:
-        return Math2(args, psignrank);
+        return Math2_2(args, psignrank);
     case 23:
-        return Math2(args, qsignrank);
+        return Math2_2(args, qsignrank);
 
     case 24:
         return Math2(args, bessel_j);
@@ -1526,39 +1526,39 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
     {
 
     case 1:
-        return Math3(args, dbeta);
+        return Math3_1(args, dbeta);
     case 2:
-        return Math3(args, pbeta);
+        return Math3_2(args, pbeta);
     case 3:
-        return Math3(args, qbeta);
+        return Math3_2(args, qbeta);
 
     case 4:
-        return Math3(args, dbinom);
+        return Math3_1(args, dbinom);
     case 5:
-        return Math3(args, pbinom);
+        return Math3_2(args, pbinom);
     case 6:
-        return Math3(args, qbinom);
+        return Math3_2(args, qbinom);
 
     case 7:
-        return Math3(args, dcauchy);
+        return Math3_1(args, dcauchy);
     case 8:
-        return Math3(args, pcauchy);
+        return Math3_2(args, pcauchy);
     case 9:
-        return Math3(args, qcauchy);
+        return Math3_2(args, qcauchy);
 
     case 10:
-        return Math3(args, df);
+        return Math3_1(args, df);
     case 11:
-        return Math3(args, pf);
+        return Math3_2(args, pf);
     case 12:
-        return Math3(args, qf);
+        return Math3_2(args, qf);
 
     case 13:
-        return Math3(args, dgamma);
+        return Math3_1(args, dgamma);
     case 14:
-        return Math3(args, pgamma);
+        return Math3_2(args, pgamma);
     case 15:
-        return Math3(args, qgamma);
+        return Math3_2(args, qgamma);
 
     case 16:
         return Math3_1(args, dlnorm);
@@ -1568,18 +1568,18 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3_2(args, qlnorm);
 
     case 19:
-        return Math3(args, dlogis);
+        return Math3_1(args, dlogis);
     case 20:
-        return Math3(args, plogis);
+        return Math3_2(args, plogis);
     case 21:
-        return Math3(args, qlogis);
+        return Math3_2(args, qlogis);
 
     case 22:
-        return Math3(args, dnbinom);
+        return Math3_1(args, dnbinom);
     case 23:
-        return Math3(args, pnbinom);
+        return Math3_2(args, pnbinom);
     case 24:
-        return Math3(args, qnbinom);
+        return Math3_2(args, qnbinom);
 
     case 25:
         return Math3_1(args, dnorm);
@@ -1589,45 +1589,45 @@ SEXP do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3_2(args, qnorm);
 
     case 28:
-        return Math3(args, dunif);
+        return Math3_1(args, dunif);
     case 29:
-        return Math3(args, punif);
+        return Math3_2(args, punif);
     case 30:
-        return Math3(args, qunif);
+        return Math3_2(args, qunif);
 
     case 31:
-        return Math3(args, dweibull);
+        return Math3_1(args, dweibull);
     case 32:
-        return Math3(args, pweibull);
+        return Math3_2(args, pweibull);
     case 33:
-        return Math3(args, qweibull);
+        return Math3_2(args, qweibull);
 
     case 34:
-        return Math3(args, dnchisq);
+        return Math3_1(args, dnchisq);
     case 35:
-        return Math3(args, pnchisq);
+        return Math3_2(args, pnchisq);
 #ifdef UNIMP
     case 36:
-        return Math3(args, qnchisq);
+        return Math3_2(args, qnchisq);
 #endif
 
 #ifdef UNIMP
     case 37:
-        return Math3(args, dnt);
+        return Math3_1(args, dnt);
 #endif
     case 38:
-        return Math3(args, pnt);
+        return Math3_2(args, pnt);
 #ifdef UNIMP
     case 39:
-        return Math3(args, qnt);
+        return Math3_2(args, qnt);
 #endif
 
     case 40:
-        return Math3(args, dwilcox);
+        return Math3_1(args, dwilcox);
     case 41:
-        return Math3(args, pwilcox);
+        return Math3_2(args, pwilcox);
     case 42:
-        return Math3(args, qwilcox);
+        return Math3_2(args, qwilcox);
 
     case 43:
         return Math3(args, bessel_i);
@@ -1791,11 +1791,11 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ, double
 
 #define CAD3R CADDDR
 /* This is not (yet) in Rinternals.h : */
-#define CAD5R(e)	CAR(CDR(CDR(CDR(CDR(CDR(e)))))
+#define CAD5R(e) CAR(CDR(CDR(CDR(CDR(CDR(e))))))
 
 #define Math4(A, FUN) math4(CAR(A), CADR(A), CADDR(A), CAD3R(A), FUN)
-#define Math4_1(A, FUN) math4(CAR(A), CADR(A), CADDR(A), CAD3R(A), CAD4R(A), FUN)
-#define Math4_2(A, FUN) math4(CAR(A), CADR(A), CADDR(A), CAD3R(A), CAD4R(A), CAD5R(A), FUN)
+#define Math4_1(A, FUN) math4_1(CAR(A), CADR(A), CADDR(A), CAD3R(A), CAD4R(A), FUN)
+#define Math4_2(A, FUN) math4_2(CAR(A), CADR(A), CADDR(A), CAD3R(A), CAD4R(A), CAD5R(A), FUN)
 
 SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1804,38 +1804,44 @@ SEXP do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
 
     switch (PRIMVAL(op))
     {
-    case 1:
+
+    /* Completely dummy for -Wall -- math4() at all! : */
+    case -99:
         return Math4(args, dhyper);
+
+    case 1:
+        return Math4_1(args, dhyper);
     case 2:
-        return Math4(args, phyper);
+        return Math4_2(args, phyper);
     case 3:
-        return Math4(args, qhyper);
+        return Math4_2(args, qhyper);
+
     case 4:
-        return Math4(args, dnbeta);
+        return Math4_1(args, dnbeta);
     case 5:
-        return Math4(args, pnbeta);
+        return Math4_2(args, pnbeta);
 #ifdef UNIMP
     case 6:
-        return Math4(args, qnbeta);
+        return Math4_2(args, qnbeta);
 #endif
 #ifdef UNIMP
     case 7:
-        return Math4(args, dnf);
+        return Math4_1(args, dnf);
 #endif
     case 8:
-        return Math4(args, pnf);
+        return Math4_2(args, pnf);
 #ifdef UNIMP
     case 9:
-        return Math4(args, qnf);
+        return Math4_2(args, qnf);
 #endif
 #ifdef UNIMP
     case 10:
-        return Math4(args, dtukey);
+        return Math4_1(args, dtukey);
 #endif
     case 11:
-        return Math4(args, ptukey);
+        return Math4_2(args, ptukey);
     case 12:
-        return Math4(args, qtukey);
+        return Math4_2(args, qtukey);
     default:
         errorcall(call, "unimplemented real function of 4 numeric arg.s");
     }
@@ -1958,38 +1964,16 @@ SEXP do_math5(SEXP call, SEXP op, SEXP args, SEXP env)
 
     switch (PRIMVAL(op))
     {
-    case 1:
+
+    /* Completely dummy for -Wall -- use math5() at all! : */
+    case -99:
         return Math5(args, dhyper);
+#ifdef UNIMP
     case 2:
-        return Math5(args, phyper);
+        return Math5(args, p...);
     case 3:
-        return Math5(args, qhyper);
-    case 4:
-        return Math5(args, dnbeta);
-    case 5:
-        return Math5(args, pnbeta);
-#ifdef UNIMP
-    case 6:
-        return Math5(args, qnbeta);
+        return Math5(args, q...);
 #endif
-#ifdef UNIMP
-    case 7:
-        return Math5(args, dnf);
-#endif
-    case 8:
-        return Math5(args, pnf);
-#ifdef UNIMP
-    case 9:
-        return Math5(args, qnf);
-#endif
-#ifdef UNIMP
-    case 10:
-        return Math5(args, dtukey);
-#endif
-    case 11:
-        return Math5(args, ptukey);
-    case 12:
-        return Math5(args, qtukey);
     default:
         errorcall(call, "unimplemented real function of 5 numeric arg.s");
     }

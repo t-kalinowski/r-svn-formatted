@@ -52,35 +52,30 @@
 #include "PrtUtil.h"
 #endif
 
-double pnt(double t, double df, double delta)
+double pnt(double t, double df, double delta, int lower_tail, int log_p)
 {
     double a, albeta, b, del, errbd, geven, godd, lambda, p, q, rxb, s, tnc, tt, x, xeven, xodd;
     int it, negdel;
 
     /* note - itrmax and errmax may be changed to suit one's needs. */
 
-    static int itrmax = 1000;
-    static double errmax = 1.e-12;
+    const static int itrmax = 1000;
+    const static double errmax = 1.e-12;
 
-    static double zero = 0.0;
-    static double half = 0.5;
-    static double one = 1.0;
-    static double two = 2.0;
+    if (df <= 0.)
+        ML_ERR_return_NAN;
 
-    tnc = zero; /* tnc will be the result */
-    if (df <= zero)
+    if (t >= 0.)
     {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
+        negdel = LFALSE;
+        tt = t;
+        del = delta;
     }
-    tt = t;
-    del = delta;
-    negdel = LFALSE;
-    if (t < zero)
+    else
     {
         negdel = LTRUE;
-        tt = -tt;
-        del = -del;
+        tt = -t;
+        del = -delta;
     }
 
     if (df > 4e5 || del * del > 2 * M_LN2 * (-(DBL_MIN_EXP)))
@@ -88,9 +83,9 @@ double pnt(double t, double df, double delta)
         /*-- 2nd part: if del > 37.62, then p=0 below
           FIXME: test should depend on `df', `tt' AND `del' ! */
         /* Approx. from	 Abramowitz & Stegun 26.7.10 (p.949) */
-        s = one / (4. * df);
-        del = -(tt * (1. - s) - del) / sqrt(1. + tt * tt * 2. * s);
-        goto finis; /* pnorm(-del, 1,0) */
+        s = 1. / (4. * df);
+
+        return pnorm(tt * (1. - s), del, sqrt(1. + tt * tt * 2. * s), lower_tail != negdel, log_p);
     }
 
     /* initialize twin series */
@@ -101,10 +96,10 @@ double pnt(double t, double df, double delta)
 #ifdef DEBUG_pnt
     REprintf("pnt(t=%7g, df=%7g, delta=%7g) ==> x= %10g:", t, df, delta, x);
 #endif
-    if (x > zero)
+    if (x > 0.)
     { /* <==>  t != 0 */
         lambda = del * del;
-        p = half * exp(-half * lambda);
+        p = .5 * exp(-.5 * lambda);
 #ifdef DEBUG_pnt
         REprintf("\t p=%10g\n", p);
 #endif
@@ -114,7 +109,7 @@ double pnt(double t, double df, double delta)
             /*========== really use an other algorithm for this case !!! */
             ML_ERROR(ME_UNDERFLOW);
             ML_ERROR(ME_RANGE); /* |delta| too large */
-            return zero;
+            return R_DT_0;
         }
 #ifdef DEBUG_pnt
         REprintf("it  1e5*(godd,  geven)       p	 q	    s	 "
@@ -123,25 +118,25 @@ double pnt(double t, double df, double delta)
         /* 1..4..7..0..3..6 1..4..7.9*/
 #endif
         q = M_SQRT_2dPI * p * del;
-        s = half - p;
-        a = half;
-        b = half * df;
-        rxb = pow(one - x, b);
-        albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(half + b);
-        xodd = pbeta(x, a, b);
-        godd = two * rxb * exp(a * log(x) - albeta);
-        xeven = one - rxb;
+        s = .5 - p;
+        a = .5;
+        b = .5 * df;
+        rxb = pow(1. - x, b);
+        albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(.5 + b);
+        xodd = pbeta(x, a, b, /*lower*/ LTRUE, /*log_p*/ LFALSE);
+        godd = 2. * rxb * exp(a * log(x) - albeta);
+        xeven = 1. - rxb;
         geven = b * x * rxb;
         tnc = p * xodd + q * xeven;
 
         /* repeat until convergence or iteration limit */
         for (it = 1; it <= itrmax; it++)
         {
-            a += one;
+            a += 1.;
             xodd -= godd;
             xeven -= geven;
-            godd *= x * (a + b - one) / a;
-            geven *= x * (a + b - half) / (a + half);
+            godd *= x * (a + b - 1.) / a;
+            geven *= x * (a + b - .5) / (a + .5);
             p *= lambda / (2 * it);
             q *= lambda / (2 * it + 1);
             tnc += p * xodd + q * xeven;
@@ -154,7 +149,7 @@ double pnt(double t, double df, double delta)
 #endif
                 goto finis;
             }
-            errbd = two * s * (xodd - godd);
+            errbd = 2. * s * (xodd - godd);
 #ifdef DEBUG_pnt
             REprintf("%3d %#9.4g %#9.4g	 %#9.4g %#9.4g %#9.4g %#14.10g %#9.4g\n", it, 1e5 * godd, 1e5 * geven, p, q, s,
                      tnc, errbd);
@@ -165,11 +160,13 @@ double pnt(double t, double df, double delta)
         /* non-convergence:*/
         ML_ERROR(ME_PRECISION);
     }
+    else
+    { /* x = t = 0 */
+        tnc = 0.;
+    }
 finis:
-#define LOWER (1)
-#define LOG_P (0)
-    tnc += pnorm(-del, zero, one, LOWER, LOG_P);
-    if (negdel)
-        tnc = one - tnc;
-    return tnc;
+    tnc += pnorm(-del, 0., 1., /*lower*/ LTRUE, /*log_p*/ LFALSE);
+
+    lower_tail = lower_tail != negdel; /* xor */
+    return R_DT_val(tnc);
 }

@@ -1,6 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
+ *  Copyright (C) 2000 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,9 +37,7 @@ double rexp(double scale)
         !R_FINITE(scale) ||
 #endif
         scale <= 0.0)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
+
     return scale * sexp();
 }

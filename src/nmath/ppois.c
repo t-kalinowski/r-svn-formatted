@@ -31,10 +31,8 @@ double ppois(double x, double lambda, int lower_tail, int log_p)
         return x + lambda;
 #endif
     if (lambda <= 0.0)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
+
     x = floor(x + 1e-7);
     if (x < 0)
         return R_DT_0;
@@ -43,9 +41,5 @@ double ppois(double x, double lambda, int lower_tail, int log_p)
         return R_DT_1;
 #endif
 
-#ifdef FUTURE
     return pgamma(lambda, x + 1, 1., !lower_tail, log_p);
-#else
-    return R_DT_Cval(pgamma(lambda, x + 1, 1.));
-#endif
 }

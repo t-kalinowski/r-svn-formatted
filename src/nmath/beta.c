@@ -1,6 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
+ *  Copyright (C) 2000 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,14 +56,10 @@ double beta(double a, double b)
 #endif
 
     if (a < 0 || b < 0)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
-    else if (a == 0 || b == 0)
-    {
-        return ML_POSINF;
-    }
+        ML_ERR_return_NAN else if (a == 0 || b == 0)
+        {
+            return ML_POSINF;
+        }
 #ifdef IEEE_754
     else if (!R_FINITE(a) || !R_FINITE(b))
     {

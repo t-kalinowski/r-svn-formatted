@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 2000 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +20,7 @@
 
 #include "Mathlib.h"
 
-double dlogis(double x, double location, double scale)
+double dlogis(double x, double location, double scale, int give_log)
 {
     double e, f;
 #ifdef IEEE_754
@@ -27,11 +28,10 @@ double dlogis(double x, double location, double scale)
         return x + location + scale;
 #endif
     if (scale <= 0.0)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
-    e = exp(-(x - location) / scale);
+        ML_ERR_return_NAN;
+
+    x = (x - location) / scale;
+    e = exp(-x);
     f = 1.0 + e;
-    return e / (scale * f * f);
+    return give_log ? -(x + log(scale * f * f)) : e / (scale * f * f);
 }

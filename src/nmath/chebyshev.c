@@ -73,16 +73,10 @@ double chebyshev_eval(double x, double *a, int n)
     int i;
 
     if (n < 1 || n > 1000)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
 
     if (x < -1.1 || x > 1.1)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
 
     twox = x * 2;
     b2 = b1 = 0;

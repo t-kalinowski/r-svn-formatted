@@ -24,7 +24,7 @@
  *
  *  DESCRIPTION
  *
- *    Compute the relative error logarithm.
+ *	Compute the relative error logarithm.
  *
  *			log(1 + x)
  *
@@ -85,10 +85,7 @@ double logrelerr(double x)
     if (x == 0.)
         return 0.; /* speed */
     if (x <= -1)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
 
     if (x < xmin)
     {

@@ -50,10 +50,8 @@ double lchoose(double n, double k)
         return n + k;
 #endif
     if (k < 0 || n < k)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
+
     return lfastchoose(n, k);
 }
 
@@ -67,9 +65,7 @@ double choose(double n, double k)
         return n + k;
 #endif
     if (k < 0 || n < k)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
+        ML_ERR_return_NAN;
+
     return floor(exp(lfastchoose(n, k)) + 0.5);
 }

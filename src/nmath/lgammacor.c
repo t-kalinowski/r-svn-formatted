@@ -1,6 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
+ *  Copyright (C) 2000 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,17 +60,12 @@ double lgammacor(double x)
         xmax = exp(fmin2(log(d1mach(2) / 12), -log(12 * d1mach(1))));
         /* ~= 3.745 e306 for IEEE double */
     }
-
     if (x < 10)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
-    else if (x >= xmax)
-    {
-        ML_ERROR(ME_UNDERFLOW);
-        return ML_UNDERFLOW;
-    }
+        ML_ERR_return_NAN else if (x >= xmax)
+        {
+            ML_ERROR(ME_UNDERFLOW);
+            return ML_UNDERFLOW;
+        }
     else if (x < xbig)
     {
         tmp = 10 / x;

@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--1999  The R Development Core Team
+ *  Copyright (C) 1998--2000  The R Development Core Team
  *  based on code (C) 1979 and later Royal Statistical Society
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -29,8 +29,6 @@
 
 #include "Mathlib.h"
 
-#define zero 0.0
-
 /* set the exponent of accu to -2r-2 for r digits of accuracy */
 #ifdef OLD
 #define acu 1.0e-32
@@ -55,10 +53,10 @@
 
 static volatile double xtrunc;
 
-double qbeta(double alpha, double p, double q)
+double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
 {
     int swap_tail, i_pb, i_inn;
-    double a, adj, logbeta, g, h, pp, prev, qq, r, s, t, tx, w, y, yprev;
+    double a, adj, logbeta, g, h, pp, p_, prev, qq, r, s, t, tx, w, y, yprev;
     double acu;
     volatile double xinbta;
 
@@ -72,27 +70,29 @@ double qbeta(double alpha, double p, double q)
     if (ISNAN(p) || ISNAN(q) || ISNAN(alpha))
         return p + q + alpha;
 #endif
-    if (p < zero || q < zero || alpha < zero || alpha > 1)
-    {
-        ML_ERROR(ME_DOMAIN);
-        return ML_NAN;
-    }
-    if (alpha == zero || alpha == 1)
-        return alpha;
+    R_Q_P01_check(alpha);
+
+    if (p < 0. || q < 0.)
+        ML_ERR_return_NAN;
+
+    p_ = R_DT_qIv(alpha); /* lower_tail prob (in any case) */
+
+    if (p_ == 0. || p_ == 1.)
+        return p_;
 
     logbeta = lbeta(p, q);
 
     /* change tail if necessary;  afterwards   0 < a <= 1/2	 */
-    if (alpha <= 0.5)
+    if (p_ <= 0.5)
     {
-        a = alpha;
+        a = p_;
         pp = p;
         qq = q;
         swap_tail = 0;
     }
     else
     { /* change tail, swap  p <-> q :*/
-        a = 1 - alpha;
+        a = (!lower_tail && !log_p) ? alpha : 1 - p_;
         pp = q;
         qq = p;
         swap_tail = 1;
@@ -116,7 +116,7 @@ double qbeta(double alpha, double p, double q)
         r = qq + qq;
         t = 1 / (9 * qq);
         t = r * pow(1 - t + y * sqrt(t), 3);
-        if (t <= zero)
+        if (t <= 0.)
             xinbta = 1 - exp((log((1 - a) * qq) + logbeta) / qq);
         else
         {
@@ -133,7 +133,7 @@ double qbeta(double alpha, double p, double q)
 
     r = 1 - pp;
     t = 1 - qq;
-    yprev = zero;
+    yprev = 0.;
     adj = 1;
     if (xinbta < lower)
         xinbta = lower;
@@ -151,23 +151,21 @@ double qbeta(double alpha, double p, double q)
 
      */
     acu = fmax2(acu_min, pow(10., -13 - 2.5 / (pp * pp) - 0.5 / (a * a)));
-    tx = prev = zero; /* keep -Wall happy */
+    tx = prev = 0.; /* keep -Wall happy */
 
     for (i_pb = 0; i_pb < 1000; i_pb++)
     {
-        y = pbeta_raw(xinbta, pp, qq);
+        y = pbeta_raw(xinbta, pp, qq, /*lower_tail = */ LTRUE);
         /* y = pbeta_raw2(xinbta, pp, qq, logbeta) -- to SAVE CPU; */
 #ifdef IEEE_754
         if (!R_FINITE(y))
 #else
         if (errno)
 #endif
-        {
-            ML_ERROR(ME_DOMAIN);
-            return ML_NAN;
-        }
+            ML_ERR_return_NAN;
+
         y = (y - a) * exp(logbeta + r * log(xinbta) + t * log(1 - xinbta));
-        if (y * yprev <= zero)
+        if (y * yprev <= 0.)
             prev = fmax2(fabs(adj), fpu);
         g = 1;
         for (i_inn = 0; i_inn < 1000; i_inn++)
@@ -176,13 +174,13 @@ double qbeta(double alpha, double p, double q)
             if (fabs(adj) < prev)
             {
                 tx = xinbta - adj; /* trial new x */
-                if (tx >= zero && tx <= 1)
+                if (tx >= 0. && tx <= 1)
                 {
                     if (prev <= acu)
                         goto L_converged;
                     if (fabs(y) <= acu)
                         goto L_converged;
-                    if (tx != zero && tx != 1)
+                    if (tx != 0. && tx != 1)
                         break;
                 }
             }
@@ -200,6 +198,6 @@ double qbeta(double alpha, double p, double q)
 
 L_converged:
     if (swap_tail)
-        xinbta = 1 - xinbta;
+        return 1 - xinbta;
     return xinbta;
 }
