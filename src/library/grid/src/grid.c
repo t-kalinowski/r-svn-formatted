@@ -2214,9 +2214,18 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
             if (R_FINITE(symbolSize))
             {
                 if (isString(pch))
+                {
                     ipch = CHAR(STRING_ELT(pch, i % npch))[0];
+                    /*
+                     * special case for pch = "."
+                     */
+                    if (ipch == 46)
+                        symbolSize = gpCex(currentgp, i);
+                }
                 else
+                {
                     ipch = INTEGER(pch)[i % npch];
+                }
                 GESymbol(xx[i], yy[i], ipch, symbolSize, &gc, dd);
             }
         }
