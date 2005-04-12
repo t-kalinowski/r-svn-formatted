@@ -3192,8 +3192,18 @@ SEXP do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
         }
 
         if (swap && size > 1)
-            for (i = 0; i < len; i++)
-                swapb(buf + size * i, size);
+        {
+            if (TYPEOF(object) == CPLXSXP)
+                for (i = 0; i < len; i++)
+                {
+                    int sz = size / 2;
+                    swapb(buf + sz * 2 * i, sz);
+                    swapb(buf + sz * (2 * i + 1), sz);
+                }
+            else
+                for (i = 0; i < len; i++)
+                    swapb(buf + size * i, size);
+        }
 
         /* write it now */
         n = con->write(buf, size, len, con);
