@@ -25,6 +25,8 @@
 #include <config.h>
 #endif
 
+#include "win-nls.h"
+
 #include <stdio.h>
 #include "Defn.h"
 #include "Fileio.h"
@@ -988,8 +990,8 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP rho)
                     break;
                 }
     }
-    bFinish = newbutton(_("OK"), rect(xmax - 160, ymax - 40, 70, 25), finish);
-    bCancel = newbutton(_("Cancel"), rect(xmax - 80, ymax - 40, 70, 25), cancel);
+    bFinish = newbutton(G_("OK"), rect(xmax - 160, ymax - 40, 70, 25), finish);
+    bCancel = newbutton(G_("Cancel"), rect(xmax - 80, ymax - 40, 70, 25), cancel);
     setkeydown(wselect, key1);
     show(wselect);
     done = 0;
