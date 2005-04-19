@@ -3537,6 +3537,24 @@ SEXP do_pushbacklength(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+SEXP do_clearpushback(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    int i, j;
+    Rconnection con = NULL;
+
+    i = asInteger(CAR(args));
+    if (i == NA_INTEGER || !(con = Connections[i]))
+        error(_("invalid connection"));
+
+    if (con->nPushBack > 0)
+    {
+        for (j = 0; j < con->nPushBack; j++)
+            free(con->PushBack[j]);
+        free(con->PushBack);
+    }
+    return R_NilValue;
+}
+
 /* ------------------- sink functions  --------------------- */
 
 /* Switch output to connection number icon, or popd stack if icon < 0
