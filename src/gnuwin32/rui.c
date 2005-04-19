@@ -64,8 +64,8 @@ static menubar RMenuBar;
 static popup RConsolePopup;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
     mlazy, mconfig, mls, mrm, msearch, mhelp, mmanintro, mmanref, mmandata, mmanext, mmanlang, mmanadmin, mman0,
-    mapropos, mhelpstart, mhelpsearch, mFAQ, mrwFAQ, mpkgl, mpkgm, mpkgi, mpkgil, mpkgu, /*mpkgb, mpkgbu,*/
-    mde, mCRAN, mrepos;
+    mapropos, mhelpstart, mhelpsearch, msearchRsite, mFAQ, mrwFAQ, mpkgl, mpkgm, mpkgi, mpkgil, mpkgu, mde, mCRAN,
+    mrepos;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext, lmanadmin;
 static menu m, mman;
 static char cmd[1024];
@@ -518,6 +518,24 @@ static void menuhelpsearch(control m)
     }
 }
 
+static void menusearchRsite(control m)
+{
+    char *s;
+    static char olds[256] = "";
+
+    if (!ConsoleAcceptCmd)
+        return;
+    s = askstring(G_("Search for words in help list archives and documentation"), olds);
+    if (s && strlen(s))
+    {
+        snprintf(cmd, 1024, "RSiteSearch(\"%s\")", s);
+        if (strlen(s) > 255)
+            s[255] = '\0';
+        strcpy(olds, s);
+        consolecmd(RConsole, cmd);
+    }
+}
+
 static void menuapropos(control m)
 {
     char *s;
@@ -601,13 +619,13 @@ static void menuact(control m)
         enable(msearch);
         enable(mhelp);
         enable(mhelpsearch);
+        enable(msearchRsite);
         enable(mapropos);
         enable(mpkgl);
         enable(mpkgm);
         enable(mpkgi);
         enable(mpkgil);
         enable(mpkgu);
-        /* enable(mpkgb); enable(mpkgbu); */
         enable(mde);
         enable(mCRAN);
         enable(mrepos);
@@ -622,13 +640,13 @@ static void menuact(control m)
         disable(msearch);
         disable(mhelp);
         disable(mhelpsearch);
+        disable(msearchRsite);
         disable(mapropos);
         disable(mpkgl);
         disable(mpkgm);
         disable(mpkgi);
         disable(mpkgil);
         disable(mpkgu);
-        /* disable(mpkgb); disable(mpkgbu); */
         disable(mde);
         disable(mCRAN);
         disable(mrepos);
@@ -1104,6 +1122,7 @@ int RguiCommonHelp(menu m)
     if (!check_doc_file("doc\\html\\rwin.html"))
         disable(mhelpstart);
     MCHECK(mhelpsearch = newmenuitem(G_("Search help..."), 0, menuhelpsearch));
+    MCHECK(msearchRsite = newmenuitem(G_("search.r-project.org ..."), 0, menusearchRsite));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mapropos = newmenuitem(G_("Apropos..."), 0, menuapropos));
     MCHECK(newmenuitem("-", 0, NULL));
