@@ -1056,7 +1056,7 @@ int RguiPackageMenu()
     MCHECK(mpkgm = newmenuitem(G_("Set CRAN mirror..."), 0, menupkgcranmirror));
     MCHECK(mrepos = newmenuitem(G_("Select repositories..."), 0, menupkgrepos));
     MCHECK(mpkgi = newmenuitem(G_("Install package(s)..."), 0, menupkginstallpkgs));
-    MCHECK(mpkgu = newmenuitem(G_("Update packages"), 0, menupkgupdate));
+    MCHECK(mpkgu = newmenuitem(G_("Update packages..."), 0, menupkgupdate));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mpkgil = newmenuitem(G_("Install package(s) from local zip files..."), 0, menupkginstalllocal));
     /*    MCHECK(newmenuitem("-", 0, NULL));
