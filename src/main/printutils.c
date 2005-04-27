@@ -275,7 +275,9 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei)
 #include <wctype.h>
 #endif
 /* strlen() using escaped rather than literal form,
-   and allows for embedded nuls */
+   and allows for embedded nuls.
+   In MBCS locales it works in characters.
+ */
 int Rstrlen(SEXP s, int quote)
 {
     char *p;
@@ -730,7 +732,10 @@ void RightMatrixColumnLabel(SEXP cl, int j, int w)
             l = R_print.na_width_noquote;
         else
             l = Rstrlen(tmp, 0);
-        Rprintf("%*s", R_print.gap + w, EncodeString(tmp, l, 0, Rprt_adj_right));
+        /* This does not work correctly at least on FC3
+        Rprintf("%*s", R_print.gap+w,
+            EncodeString(tmp, l, 0, Rprt_adj_right)); */
+        Rprintf("%*s%s", R_print.gap + w - l, "", EncodeString(tmp, l, 0, Rprt_adj_right));
     }
     else
     {
