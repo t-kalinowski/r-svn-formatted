@@ -102,7 +102,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "BATCH") == 0)
     {
         /* handle Rcmd BATCH internally */
-        char infile[MAX_PATH], outfile[MAX_PATH], cmd[MAX_PATH];
+        char infile[MAX_PATH], outfile[MAX_PATH];
         DWORD ret;
         SECURITY_ATTRIBUTES sa;
         PROCESS_INFORMATION pi;
@@ -145,6 +145,11 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             }
             if (argv[i][0] == '-')
             {
+                if (strlen(cmd) + strlen(argv[i]) > 9900)
+                {
+                    fprintf(stderr, "command line too long\n");
+                    return (27);
+                }
                 strcat(cmd, " ");
                 strcat(cmd, argv[i]);
                 iused = i;
