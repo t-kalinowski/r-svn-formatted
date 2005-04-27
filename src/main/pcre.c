@@ -268,7 +268,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, vec, ans;
     int i, j, n, ns, nns, nmatch, offset, re_nsub;
-    int global, igcase_opt, erroffset, eflag, last_end;
+    int global, igcase_opt, useBytes, erroffset, eflag, last_end;
     int options = 0;
     char *s, *t, *u, *uu;
     const char *errorptr;
@@ -290,15 +290,21 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
+    useBytes = asLogical(CAR(args));
+    args = CDR(args);
+    if (useBytes == NA_INTEGER)
+        useBytes = 0;
 
 #ifdef SUPPORT_UTF8
-    if (utf8locale)
+    if (useBytes)
+        ;
+    else if (utf8locale)
         options = PCRE_UTF8;
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
-    if (mbcslocale && !mbcsValid(CHAR(STRING_ELT(pat, 0))))
+    if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(pat, 0))))
         errorcall(call, _("'pattern' is invalid in this locale"));
-    if (mbcslocale && !mbcsValid(CHAR(STRING_ELT(rep, 0))))
+    if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(rep, 0))))
         errorcall(call, _("'replacement' is invalid in this locale"));
 #endif
     if (length(pat) < 1 || length(rep) < 1)
@@ -357,7 +363,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
         nns = ns = strlen(s);
 
 #ifdef SUPPORT_UTF8
-        if (mbcslocale && !mbcsValid(s))
+        if (!useBytes && mbcslocale && !mbcsValid(s))
         {
             errorcall(call, _("input string %d is invalid in this locale"), i + 1);
         }
@@ -383,7 +389,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
             if (ovector[1] == ovector[0])
             {
 #ifdef SUPPORT_UTF8
-                if (mbcslocale)
+                if (!useBytes && mbcslocale)
                 {
                     wchar_t wc;
                     int used, pos = 0;
@@ -434,7 +440,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     /* advance by a char */
 #ifdef SUPPORT_UTF8
-                    if (mbcslocale)
+                    if (!useBytes && mbcslocale)
                     {
                         wchar_t wc;
                         int used, pos = 0;
