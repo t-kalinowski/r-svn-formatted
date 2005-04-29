@@ -2146,6 +2146,8 @@ static void GA_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
             del(xd->gawin);
             snprintf(buf, 600, xd->filename, xd->npage);
             xd->gawin = newmetafile(buf, xd->w, xd->h);
+            if (!xd->gawin)
+                error(_("metafile '%s' could not be created"), buf);
         }
     }
     if ((xd->kind == PNG || xd->kind == JPEG || xd->kind == BMP) && xd->needsave)
