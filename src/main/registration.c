@@ -89,7 +89,7 @@ static R_NativePrimitiveArgType loglin_t[] = {INTSXP,  INTSXP, INTSXP,  INTSXP, 
 static R_NativePrimitiveArgType lowess_t[] = {REALSXP, REALSXP, INTSXP,  REALSXP, INTSXP,
                                               REALSXP, REALSXP, REALSXP, REALSXP};
 
-static R_NativePrimitiveArgType massdist_t[] = {REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP};
+static R_NativePrimitiveArgType massdist_t[] = {REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP};
 
 static R_NativePrimitiveArgType R_max_col_t[] = {REALSXP, INTSXP, INTSXP, INTSXP};
 
