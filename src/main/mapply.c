@@ -21,8 +21,8 @@
 #include <config.h>
 #endif
 
-#include "R.h"
-#include "Rinternals.h"
+#include <R.h>
+#include <Rinternals.h>
 
 SEXP do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
 {

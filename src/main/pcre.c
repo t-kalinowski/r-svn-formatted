@@ -32,7 +32,7 @@
 #include <sys/types.h>
 
 #include "Defn.h"
-#include "Rmath.h" /* imax2 */
+#include <Rmath.h> /* imax2 */
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
