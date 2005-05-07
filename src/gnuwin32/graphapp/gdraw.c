@@ -217,10 +217,21 @@ void gdrawpolyline(drawing d, int width, int style, rgb c, point p[], int n, int
             gpen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | lend | ljoin, width, &lb, 0, NULL);
         SelectObject(dc, gpen);
         SetROP2(dc, R2_COPYPEN);
+        npieces = 0;
         BeginPath(dc);
         MoveToEx(dc, p[0].x, p[0].y, NULL);
         for (i = 1; i < n; i++)
+        {
             LineTo(dc, p[i].x, p[i].y);
+            npieces++;
+            if (npieces > 1000)
+            {
+                EndPath(dc);
+                StrokePath(dc);
+                npieces = 0;
+                BeginPath(dc);
+            }
+        }
         if (closepath)
             LineTo(dc, p[0].x, p[0].y);
         EndPath(dc);
@@ -262,7 +273,8 @@ void gdrawpolyline(drawing d, int width, int style, rgb c, point p[], int n, int
                 a.curx = p[i].x;
                 a.cury = p[i].y;
             }
-            if (npieces > 5000)
+            npieces++;
+            if (npieces > 1000)
             {
                 EndPath(dc);
                 StrokePath(dc);
