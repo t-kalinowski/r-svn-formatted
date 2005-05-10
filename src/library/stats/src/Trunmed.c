@@ -138,7 +138,7 @@ static void inittree(int n, int k, int k2, const double *data, double *window, i
     if (big < fabs(window[1]))
         big = fabs(window[1]);
     /* big := max | X[1..k] | */
-    for (i = k + 1; i < n; i++)
+    for (i = k; i < n; i++)
         if (big < fabs(data[i]))
             big = fabs(data[i]);
     /* big == max(|data_i|,  i = 1,..,n) */
