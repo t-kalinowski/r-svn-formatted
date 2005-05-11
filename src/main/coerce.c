@@ -92,6 +92,50 @@ void CoercionWarning(int warn)
         warning(_("out-of-range values treated as 0 in coercion to raw"));
 }
 
+/* allows integers including hex representations */
+static double R_strtol(const char *nptr, char **endptr)
+{
+    double ret = 0, sign = +1;
+    const char *p = nptr;
+
+    if (strlen(p) >= 2 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+    {
+        /* a hex number */
+        p += 2;
+        for (; p; p++)
+        {
+            if ('0' <= *p && *p <= '9')
+                ret = 16 * ret + (*p - '0');
+            else if ('a' <= *p && *p <= 'f')
+                ret = 16 * ret + (*p - 'a' + 10);
+            else if ('A' <= *p && *p <= 'F')
+                ret = 16 * ret + (*p - 'A' + 10);
+            else
+                goto done;
+        }
+    }
+
+    for (p = nptr; p; p++)
+    {
+        if (*p == '+')
+            continue;
+        if (*p == '-')
+        {
+            sign = -1;
+            continue;
+        }
+        if ('0' <= *p && *p <= '9')
+            ret = 10 * ret + (*p - '0');
+        else
+            goto done;
+    }
+
+done:
+    if (endptr)
+        *endptr = (char *)p;
+    return sign * ret;
+}
+
 double R_strtod(const char *c, char **end)
 {
     double x;
@@ -115,6 +159,10 @@ double R_strtod(const char *c, char **end)
     {
         x = R_NegInf;
         *end = (char *)c + 4;
+    }
+    else if (!strncmp(c, "0x", 2) || !strncmp(c, "0x", 2))
+    {
+        x = R_strtol(c, end);
     }
     else
         x = strtod(c, end);
@@ -189,7 +237,7 @@ int IntegerFromString(SEXP x, int *warn)
     char *endp;
     if (x != R_NaString && !isBlankString(CHAR(x)))
     {
-        xdouble = strtod(CHAR(x), &endp);
+        xdouble = R_strtod(CHAR(x), &endp);
         if (isBlankString(endp))
         {
             if (xdouble > INT_MAX)
