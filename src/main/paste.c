@@ -224,7 +224,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(y = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            strp = EncodeReal(REAL(x)[i], w, d, e);
+            strp = EncodeReal(REAL(x)[i], w, d, e, OutDec);
             SET_STRING_ELT(y, i, mkChar(strp));
         }
         UNPROTECT(1);
@@ -237,7 +237,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(y = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            strp = EncodeComplex(COMPLEX(x)[i], w, d, e, wi, di, ei);
+            strp = EncodeComplex(COMPLEX(x)[i], w, d, e, wi, di, ei, OutDec);
             SET_STRING_ELT(y, i, mkChar(strp));
         }
         UNPROTECT(1);

@@ -666,7 +666,7 @@ static int get_col_width(int col)
         w = textwidth(strp, strlen(strp));
         for (i = 0; i < INTEGER(lens)[col - 1]; i++)
         {
-            strp = EncodeElement(tmp, i, 0);
+            strp = EncodeElement(tmp, i, 0, '.');
             w1 = textwidth(strp, strlen(strp));
             if (w1 > w)
                 w = w1;
@@ -774,7 +774,7 @@ static void printelt(SEXP invec, int vrow, int ssrow, int sscol)
     {
         if (REAL(invec)[vrow] != ssNA_REAL)
         {
-            strp = EncodeElement(invec, vrow, 0);
+            strp = EncodeElement(invec, vrow, 0, '.');
             printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
@@ -782,7 +782,7 @@ static void printelt(SEXP invec, int vrow, int ssrow, int sscol)
     {
         if (!streql(CHAR(STRING_ELT(invec, vrow)), CHAR(STRING_ELT(ssNA_STRING, 0))))
         {
-            strp = EncodeElement(invec, vrow, 0);
+            strp = EncodeElement(invec, vrow, 0, '.');
             printstring(strp, strlen(strp), ssrow, sscol, 0);
         }
     }
@@ -2022,12 +2022,12 @@ static void copycell(void)
                 if (TYPEOF(tmp) == REALSXP)
                 {
                     if (REAL(tmp)[i] != ssNA_REAL)
-                        strcpy(copycontents, EncodeElement(tmp, i, 0));
+                        strcpy(copycontents, EncodeElement(tmp, i, 0, '.'));
                 }
                 else if (TYPEOF(tmp) == STRSXP)
                 {
                     if (!streql(CHAR(STRING_ELT(tmp, i)), CHAR(STRING_ELT(ssNA_STRING, 0))))
-                        strcpy(copycontents, EncodeElement(tmp, i, 0));
+                        strcpy(copycontents, EncodeElement(tmp, i, 0, '.'));
                 }
             }
         }

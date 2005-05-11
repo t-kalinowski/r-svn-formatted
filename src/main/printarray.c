@@ -290,7 +290,7 @@ static void printRealMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP cl,
             MatrixRowLabel(rl, i, rlabw, lbloff);
             for (j = jmin; j < jmax; j++)
             {
-                Rprintf("%s", EncodeReal(x[i + j * r], w[j], d[j], e[j]));
+                Rprintf("%s", EncodeReal(x[i + j * r], w[j], d[j], e[j], OutDec));
             }
         }
         Rprintf("\n");
@@ -393,9 +393,10 @@ static void printComplexMatrix(SEXP sx, int offset, int r, int c, SEXP rl, SEXP 
             for (j = jmin; j < jmax; j++)
             {
                 if (ISNA(x[i + j * r].r) || ISNA(x[i + j * r].i))
-                    Rprintf("%s", EncodeReal(NA_REAL, w[j], 0, 0));
+                    Rprintf("%s", EncodeReal(NA_REAL, w[j], 0, 0, OutDec));
                 else
-                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + R_print.gap, dr[j], er[j], wi[j], di[j], ei[j]));
+                    Rprintf("%s", EncodeComplex(x[i + j * r], wr[j] + R_print.gap, dr[j], er[j], wi[j], di[j], ei[j],
+                                                OutDec));
             }
         }
         Rprintf("\n");

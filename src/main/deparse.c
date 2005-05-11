@@ -1240,7 +1240,7 @@ static void print2buff(char *strng, LocalParseData *d)
 static void scalar2buff(SEXP inscalar, LocalParseData *d)
 {
     char *strp;
-    strp = EncodeElement(inscalar, 0, '"');
+    strp = EncodeElement(inscalar, 0, '"', '.');
     print2buff(strp, d);
 }
 
@@ -1295,7 +1295,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
         print2buff("c(", d);
         for (i = 0; i < tlen; i++)
         {
-            strp = EncodeElement(vector, i, quote);
+            strp = EncodeElement(vector, i, quote, '.');
             print2buff(strp, d);
             if (i < (tlen - 1))
                 print2buff(", ", d);

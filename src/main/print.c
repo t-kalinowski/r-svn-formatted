@@ -292,7 +292,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 if (LENGTH(tmp) == 1)
                 {
                     formatReal(REAL(tmp), 1, &w, &d, &e, 0);
-                    pbuf = Rsprintf("%s", EncodeReal(REAL(tmp)[0], w, d, e));
+                    pbuf = Rsprintf("%s", EncodeReal(REAL(tmp)[0], w, d, e, OutDec));
                 }
                 else
                     pbuf = Rsprintf("Numeric,%d", LENGTH(tmp));
@@ -303,9 +303,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     Rcomplex *x = COMPLEX(tmp);
                     formatComplex(x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
                     if (ISNA(x[0].r) || ISNA(x[0].i))
-                        pbuf = Rsprintf("%s", EncodeReal(NA_REAL, w, 0, 0));
+                        pbuf = Rsprintf("%s", EncodeReal(NA_REAL, w, 0, 0, OutDec));
                     else
-                        pbuf = Rsprintf("%s", EncodeComplex(x[0], wr, dr, er, wi, di, ei));
+                        pbuf = Rsprintf("%s", EncodeComplex(x[0], wr, dr, er, wi, di, ei, OutDec));
                 }
                 else
                     pbuf = Rsprintf("Complex,%d", LENGTH(tmp));

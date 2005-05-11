@@ -820,7 +820,7 @@ SEXP labelformat(SEXP labels)
         PROTECT(ans = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            strp = EncodeReal(REAL(labels)[i], 0, d, e);
+            strp = EncodeReal(REAL(labels)[i], 0, d, e, OutDec);
             SET_STRING_ELT(ans, i, mkChar(strp));
         }
         UNPROTECT(1);
@@ -830,7 +830,7 @@ SEXP labelformat(SEXP labels)
         PROTECT(ans = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            strp = EncodeComplex(COMPLEX(labels)[i], 0, d, e, 0, di, ei);
+            strp = EncodeComplex(COMPLEX(labels)[i], 0, d, e, 0, di, ei, OutDec);
             SET_STRING_ELT(ans, i, mkChar(strp));
         }
         UNPROTECT(1);
