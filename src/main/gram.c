@@ -3148,7 +3148,11 @@ SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status, SEXP prompt)
 static void IfPush(void)
 {
     if (*contextp == LBRACE || *contextp == '[' || *contextp == '(' || *contextp == 'i')
+    {
+        if (contextp - contextstack >= 50)
+            error("contextstack overflow");
         *++contextp = 'i';
+    }
 }
 
 static void ifpop(void)
@@ -4173,20 +4177,28 @@ again:
         /* Handle brackets, braces and parentheses */
 
     case LBB:
+        if (contextp - contextstack >= 49)
+            error("contextstack overflow");
         *++contextp = '[';
         *++contextp = '[';
         break;
 
     case '[':
+        if (contextp - contextstack >= 50)
+            error("contextstack overflow");
         *++contextp = tok;
         break;
 
     case LBRACE:
+        if (contextp - contextstack >= 50)
+            error("contextstack overflow");
         *++contextp = tok;
         EatLines = 1;
         break;
 
     case '(':
+        if (contextp - contextstack >= 50)
+            error("contextstack overflow");
         *++contextp = tok;
         break;
 
