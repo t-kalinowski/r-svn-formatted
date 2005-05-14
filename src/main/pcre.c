@@ -47,6 +47,11 @@ extern char *alloca(size_t);
 #include <pcre.h>
 #endif
 
+#ifdef SUPPORT_UTF8
+#include <wchar.h>
+#include <wctype.h>
+#endif
+
 SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
@@ -200,10 +205,12 @@ SEXP do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
  * either once or globally.
  * The functions are loosely patterned on the "sub" and "gsub" in "nawk". */
 
-static int length_adj(char *repl, int *ovec, int nsubexpr)
+static int length_adj(char *orig, char *repl, int *ovec, int nsubexpr, Rboolean useBytes)
 {
-    int k, n;
+    int k, n, nb;
     char *p = repl;
+    Rboolean upper = FALSE, lower = FALSE;
+
     n = strlen(repl) - (ovec[1] - ovec[0]);
     while (*p)
     {
@@ -214,18 +221,46 @@ static int length_adj(char *repl, int *ovec, int nsubexpr)
                 k = p[1] - '0';
                 if (k > nsubexpr)
                     error(_("invalid backreference %d in regular expression"), k);
-                n += (ovec[2 * k + 1] - ovec[2 * k]) - 2;
+                nb = ovec[2 * k + 1] - ovec[2 * k];
+#ifdef SUPPORT_UTF8
+                if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
+                {
+                    wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
+                    int j, nc;
+                    char *xi, *p;
+                    wchar_t *wc;
+                    p = xi = (char *)alloca((nb + 1) * sizeof(char));
+                    for (j = 0; j < nb; j++)
+                        *p++ = orig[ovec[2 * k] + j];
+                    *p = '\0';
+                    nc = mbstowcs(NULL, xi, 0);
+                    if (nc >= 0)
+                    {
+                        wc = (wchar_t *)alloca((nc + 1) * sizeof(wchar_t));
+                        mbstowcs(wc, xi, nc + 1);
+                        for (j = 0; j < nc; j++)
+                            wc[j] = towctrans(wc[j], tr);
+                        nb = wcstombs(NULL, wc, 0);
+                    }
+                    n += nb - 2;
+                }
+#endif
+                n += nb - 2;
                 p++;
             }
             else if (p[1] == 'U')
             {
                 p++;
                 n -= 2;
+                upper = TRUE;
+                lower = FALSE;
             }
             else if (p[1] == 'L')
             {
                 p++;
                 n -= 2;
+                upper = FALSE;
+                lower = TRUE;
             }
             else if (p[1] == 0)
             {
@@ -243,11 +278,12 @@ static int length_adj(char *repl, int *ovec, int nsubexpr)
     return n;
 }
 
-static char *string_adj(char *target, char *orig, char *repl, int *ovec)
+static char *string_adj(char *target, char *orig, char *repl, int *ovec, Rboolean useBytes)
 {
-    int i, k;
+    int i, k, nb;
     char *p = repl, *t = target, c;
     Rboolean upper = FALSE, lower = FALSE;
+
     while (*p)
     {
         if (*p == '\\')
@@ -255,11 +291,39 @@ static char *string_adj(char *target, char *orig, char *repl, int *ovec)
             if ('1' <= p[1] && p[1] <= '9')
             {
                 k = p[1] - '0';
-                for (i = ovec[2 * k]; i < ovec[2 * k + 1]; i++)
+                /* Here we need to work in chars */
+                nb = ovec[2 * k + 1] - ovec[2 * k];
+#ifdef SUPPORT_UTF8
+                if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
                 {
-                    c = orig[i];
-                    *t++ = upper ? toupper(c) : (lower ? tolower(c) : c);
+                    wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
+                    int j, nc;
+                    char *xi, *p;
+                    wchar_t *wc;
+                    p = xi = (char *)alloca((nb + 1) * sizeof(char));
+                    for (j = 0; j < nb; j++)
+                        *p++ = orig[ovec[2 * k] + j];
+                    *p = '\0';
+                    nc = mbstowcs(NULL, xi, 0);
+                    if (nc >= 0)
+                    {
+                        wc = (wchar_t *)alloca((nc + 1) * sizeof(wchar_t));
+                        mbstowcs(wc, xi, nc + 1);
+                        for (j = 0; j < nc; j++)
+                            wc[j] = towctrans(wc[j], tr);
+                        nb = wcstombs(NULL, wc, 0);
+                        wcstombs(xi, wc, nb + 1);
+                        for (j = 0; j < nb; j++)
+                            *t++ = *xi++;
+                    }
                 }
+                else
+#endif
+                    for (i = ovec[2 * k]; i < ovec[2 * k + 1]; i++)
+                    {
+                        c = orig[i];
+                        *t++ = upper ? toupper(c) : (lower ? tolower(c) : c);
+                    }
                 p += 2;
             }
             else if (p[1] == 'U')
@@ -405,7 +469,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
                gsub("a*", "x", "baaac") is "xbxcx" not "xbxxcx" */
             if (ovector[1] > last_end)
             {
-                ns += length_adj(t, ovector, re_nsub);
+                ns += length_adj(s, t, ovector, re_nsub, useBytes);
                 last_end = ovector[1];
             }
             offset = ovector[1];
@@ -456,7 +520,7 @@ SEXP do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     *u++ = s[j];
                 if (ovector[1] > last_end)
                 {
-                    u = string_adj(u, s, t, ovector);
+                    u = string_adj(u, s, t, ovector, useBytes);
                     last_end = ovector[1];
                 }
                 offset = ovector[1];
