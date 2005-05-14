@@ -217,14 +217,24 @@ static int length_adj(char *repl, int *ovec, int nsubexpr)
                 n += (ovec[2 * k + 1] - ovec[2 * k]) - 2;
                 p++;
             }
+            else if (p[1] == 'U')
+            {
+                p++;
+                n -= 2;
+            }
+            else if (p[1] == 'L')
+            {
+                p++;
+                n -= 2;
+            }
             else if (p[1] == 0)
             {
                 /* can't escape the final '\0' */
-                n -= 1;
+                n--;
             }
             else
             {
-                n -= 1;
+                n--;
                 p++;
             }
         }
@@ -236,7 +246,8 @@ static int length_adj(char *repl, int *ovec, int nsubexpr)
 static char *string_adj(char *target, char *orig, char *repl, int *ovec)
 {
     int i, k;
-    char *p = repl, *t = target;
+    char *p = repl, *t = target, c;
+    Rboolean upper = FALSE, lower = FALSE;
     while (*p)
     {
         if (*p == '\\')
@@ -245,8 +256,23 @@ static char *string_adj(char *target, char *orig, char *repl, int *ovec)
             {
                 k = p[1] - '0';
                 for (i = ovec[2 * k]; i < ovec[2 * k + 1]; i++)
-                    *t++ = orig[i];
+                {
+                    c = orig[i];
+                    *t++ = upper ? toupper(c) : (lower ? tolower(c) : c);
+                }
                 p += 2;
+            }
+            else if (p[1] == 'U')
+            {
+                p += 2;
+                upper = TRUE;
+                lower = FALSE;
+            }
+            else if (p[1] == 'L')
+            {
+                p += 2;
+                upper = FALSE;
+                lower = TRUE;
             }
             else if (p[1] == 0)
             {
