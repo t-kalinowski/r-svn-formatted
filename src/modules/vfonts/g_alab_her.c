@@ -226,7 +226,9 @@ static void R_VF_VText(double x, double y, char *s, double x_justify, double y_j
      * Override gc settings for lty and lwd
      */
     gc->lty = LTY_SOLID;
-    gc->lwd = 1;
+    gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
+    gc->lend = GE_ROUND_CAP;
+    gc->ljoin = GE_ROUND_JOIN;
 
     /* convert string to a codestring, including annotations */
     codestring = _controlify(dd, (unsigned char *)s, gc->fontfamily[0], gc->fontface);
@@ -607,7 +609,7 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
         {
             if (line_width_type != 1)
             {
-                gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_STROKE_WIDTH);
+                gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                 line_width_type = 1;
             }
             _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, OCCIDENTAL, false);
@@ -617,7 +619,7 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
         {
             if (line_width_type != 2)
             {
-                gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_STROKE_WIDTH);
+                gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                 line_width_type = 2;
             }
             _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, ORIENTAL, false);
@@ -770,7 +772,7 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
                 /* draw the character */
                 if (line_width_type != 1)
                 {
-                    gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_STROKE_WIDTH);
+                    gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                     line_width_type = 1;
                 }
                 _draw_hershey_glyph(vc, gc, dd, char_glyphnum, charsize, OCCIDENTAL, oblique);
@@ -819,7 +821,7 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
                     _draw_hershey_penup_stroke(vc, gc, dd, shift * (double)kana_width, 0.0, charsize, oblique);
                     if (line_width_type != 2)
                     {
-                        gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_STROKE_WIDTH);
+                        gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                         line_width_type = 2;
                     }
                     _draw_hershey_glyph(vc, gc, dd, glyphnum, (SMALL_KANA_SIZE)*charsize, OCCIDENTAL, oblique);
@@ -834,13 +836,13 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
                     {
                         if (line_width_type != 2)
                         {
-                            gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_ORIENTAL_STROKE_WIDTH);
+                            gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_ORIENTAL_STROKE_WIDTH);
                             line_width_type = 2;
                         }
                     }
                     else if (line_width_type != 1)
                     {
-                        gc->lwd = HERSHEY_X_UNITS_TO_USER_UNITS(HERSHEY_STROKE_WIDTH);
+                        gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                         line_width_type = 1;
                     }
                     _draw_hershey_glyph(vc, gc, dd, glyphnum, charsize, OCCIDENTAL, oblique);
