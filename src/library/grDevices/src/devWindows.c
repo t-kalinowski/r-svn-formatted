@@ -1359,7 +1359,6 @@ static void CHelpKeyIn(control w, int key)
 }
 
 __declspec(dllimport) extern int UserBreak;
-static void donelocator(gadesc *xd);
 
 static void NHelpKeyIn(control w, int key)
 {
@@ -1392,8 +1391,6 @@ static void NHelpKeyIn(control w, int key)
             xd->enterkey = TRUE;
             return;
         case ESC:
-            if (xd->locator)
-                donelocator(xd);
             UserBreak = TRUE;
             return;
         }
@@ -2556,8 +2553,10 @@ static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE
 /* not all devices will do anything (e.g., postscript)	*/
 /********************************************************/
 
-static void donelocator(gadesc *xd)
+static void donelocator(void *data)
 {
+    gadesc *xd;
+    xd = (gadesc *)data;
     addto(xd->gawin);
     gchangemenubar(xd->mbar);
     if (xd->stoploc)
@@ -2575,6 +2574,7 @@ static void donelocator(gadesc *xd)
 static Rboolean GA_Locator(double *x, double *y, NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
+    RCNTXT cntxt;
 
     if (xd->kind != SCREEN)
         return FALSE;
@@ -2591,6 +2591,12 @@ static Rboolean GA_Locator(double *x, double *y, NewDevDesc *dd)
     gchangepopup(xd->gawin, xd->locpopup);
     gsetcursor(xd->gawin, CrossCursor);
     setstatus(G_("Locator is active"));
+
+    /* set up a context which will clean up if there's an error */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    cntxt.cend = &donelocator;
+    cntxt.cenddata = xd;
+
     while (!xd->clicked)
     {
         if (xd->buffered)
@@ -2598,7 +2604,10 @@ static Rboolean GA_Locator(double *x, double *y, NewDevDesc *dd)
         WaitMessage();
         R_ProcessEvents();
     }
-    donelocator(xd);
+
+    endcontext(&cntxt);
+    donelocator((void *)xd);
+
     if (xd->clicked == 1)
     {
         *x = xd->px;
