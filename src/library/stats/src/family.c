@@ -75,19 +75,22 @@ SEXP binomial_dev_resids(SEXP y, SEXP mu, SEXP wt)
         nprot++;
     }
     ans = PROTECT(duplicate(y));
-    if (!isReal(mu) {
+    if (!isReal(mu))
+    {
         mu = PROTECT(coerceVector(mu, REALSXP));
-        nprot++;}
-    if (!isReal(wt) {
+        nprot++;
+    }
+    if (!isReal(wt))
+    {
         wt = PROTECT(coerceVector(wt, REALSXP));
-        nprot++;}
+        nprot++;
+    }
     if (lmu != n && lmu != 1)
-	error(_("argument %s must be a numeric vector of length 1 or length %d"),
-	      "mu", n);
+        error(_("argument %s must be a numeric vector of length 1 or length %d"), "mu", n);
     if (lwt != n && lwt != 1)
-	error(_("argument %s must be a numeric vector of length 1 or length %d"),
-	      "wt", n);
-    for (i = 0; i < n; i++) {
+        error(_("argument %s must be a numeric vector of length 1 or length %d"), "wt", n);
+    for (i = 0; i < n; i++)
+    {
         double mui = REAL(mu)[lmu > 1 ? i : 0], yi = REAL(y)[i];
 
         REAL(ans)[i] = 2 * REAL(wt)[lwt > 1 ? i : 0] * (y_log_y(yi, mui) + y_log_y(1 - yi, 1 - mui));
