@@ -5287,7 +5287,7 @@ SEXP PostScript(SEXP args)
         if (!PSDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, (double)horizontal, ps,
                             onefile, pagecentre, printit, cmd, title, fonts))
         {
-            free(dev);
+            /* free(dev); No, dev freed inside PSDeviceDrive */
             error(_("unable to start device PostScript"));
         }
         gsetVar(install(".Device"), mkString("postscript"), R_NilValue);
@@ -5364,7 +5364,7 @@ SEXP XFig(SEXP args)
         if (!XFigDeviceDriver(dev, file, paper, family, bg, fg, width, height, (double)horizontal, ps, onefile,
                               pagecentre))
         {
-            free(dev);
+            /* free(dev); No, freed inside XFigDeviceDriver */
             error(_("unable to start device xfig"));
         }
         gsetVar(install(".Device"), mkString("xfig"), R_NilValue);
@@ -5452,7 +5452,7 @@ SEXP PDF(SEXP args)
         if (!PDFDeviceDriver(dev, file, paper, family, encoding, bg, fg, width, height, ps, onefile, pagecentre, title,
                              fonts, major, minor))
         {
-            free(dev);
+            /* free(dev); PDFDeviceDriver now frees */
             error(_("unable to start device pdf"));
         }
         gsetVar(install(".Device"), mkString("pdf"), R_NilValue);
