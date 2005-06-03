@@ -169,7 +169,7 @@ SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *sym
         if (dll.type != FILENAME)
         {
             *fun = R_FindNativeSymbolFromDLL(buf, &dll, symbol);
-            if (!fun)
+            if (!*fun)
             {
                 errorcall(call, _("cannot resolve native routine"));
             }
