@@ -47,8 +47,12 @@ double df(double x, double m, double n, int give_log)
         ML_ERR_return_NAN;
     if (x <= 0.)
         return (R_D__0);
-    if (!R_FINITE(m) && !R_FINITE(n)) /* both +Inf */
-        ML_ERR_return_NAN;
+    if (!R_FINITE(m) && !R_FINITE(n))
+    { /* both +Inf */
+        if (x == 1.)
+            return ML_POSINF;
+        /* else */ return R_D__0;
+    }
     if (!R_FINITE(n)) /* must be +Inf by now */
         return (dgamma(x, m / 2, 2. / m, give_log));
     if (m > 1e14)
