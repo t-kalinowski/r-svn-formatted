@@ -2033,6 +2033,7 @@ static Rboolean isna(SEXP x, int indx)
     return FALSE;
 }
 
+#ifdef UNUSED
 static void change_dec(char *tmp, char cdec, SEXPTYPE t)
 {
     char *p;
@@ -2048,6 +2049,7 @@ static void change_dec(char *tmp, char cdec, SEXPTYPE t)
         break;
     }
 }
+#endif
 
 /* a version of EncodeElement with different escaping of char strings */
 static char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qmethod, R_StringBuffer *buff, char cdec)
