@@ -215,9 +215,9 @@ void copyViewportContext(LViewportContext vpc1, LViewportContext *vpc2)
     vpc2->yscalemax = vpc1.yscalemax;
 }
 
-void gcontextFromViewport(SEXP vp, R_GE_gcontext *gc)
+void gcontextFromViewport(SEXP vp, R_GE_gcontext *gc, GEDevDesc *dd)
 {
-    gcontextFromgpar(viewportgpar(vp), 0, gc);
+    gcontextFromgpar(viewportgpar(vp), 0, gc, dd);
 }
 
 /* The idea is to produce a transformation for this viewport which
@@ -301,7 +301,7 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
          *
          * WAS gcontextFromViewport(parent, &parentgc);
          */
-        gcontextFromgpar(viewportParentGPar(vp), 0, &parentgc);
+        gcontextFromgpar(viewportParentGPar(vp), 0, &parentgc, dd);
         /* In order for the vp to get its vpl from a layout
          * it must have specified a layout.pos and the parent
          * must have a layout
@@ -364,7 +364,7 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
     if (!isNull(viewportLayout(vp)))
     {
         fillViewportContextFromViewport(vp, &vpc);
-        gcontextFromViewport(vp, &gc);
+        gcontextFromViewport(vp, &gc, dd);
         calcViewportLayout(vp, vpWidthCM, vpHeightCM, vpc, &gc, dd);
     }
     /* Record all of the answers in the viewport

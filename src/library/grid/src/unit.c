@@ -543,7 +543,7 @@ double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, int
     }
     else
     {
-        gcontextFromgpar(currentgp, 0, &gc);
+        gcontextFromgpar(currentgp, 0, &gc, dd);
         result = transformWidthtoINCHES(width, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
     }
     /* Call postDraw(grob)
@@ -655,7 +655,7 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, in
     }
     else
     {
-        gcontextFromgpar(currentgp, 0, &gc);
+        gcontextFromgpar(currentgp, 0, &gc, dd);
         result = transformHeighttoINCHES(height, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd);
     }
     /* Call postDraw(grob)
@@ -698,6 +698,7 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
         result = result / 2.54;
         break;
     case L_INCHES:
+        result = result;
         break;
     /* FIXME:  The following two assume that the pointsize specified
      * by the user is actually the pointsize provided by the
@@ -769,6 +770,31 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
         break;
     default:
         error(_("Illegal unit or unit not yet implemented"));
+    }
+    /*
+     * For physical units, scale the result by GSS_SCALE (a "zoom" factor)
+     */
+    switch (unit)
+    {
+    case L_INCHES:
+    case L_CM:
+    case L_MM:
+    case L_POINTS:
+    case L_PICAS:
+    case L_BIGPOINTS:
+    case L_DIDA:
+    case L_CICERO:
+    case L_SCALEDPOINTS:
+        result = result * REAL(gridStateElement(dd, GSS_SCALE))[0];
+        break;
+    default:
+        /*
+         * No need to scale relative coordinates (NPC, NATIVE, NULL)
+         * CHAR and LINES already scaled because of scaling in gcontextFromGPar()
+         * Ditto STRINGWIDTH/HEIGHT
+         * GROBWIDTH/HEIGHT recurse into here so scaling already done
+         */
+        break;
     }
     return result;
 }
@@ -1323,6 +1349,29 @@ double transformFromINCHES(double value, int unit, R_GE_gcontext *gc, double thi
     case L_NULL:
     default:
         error(_("Illegal unit or unit not yet implemented"));
+    }
+    /*
+     * For physical units, reverse the scale by GSS_SCALE (a "zoom" factor)
+     */
+    switch (unit)
+    {
+    case L_INCHES:
+    case L_CM:
+    case L_MM:
+    case L_POINTS:
+    case L_PICAS:
+    case L_BIGPOINTS:
+    case L_DIDA:
+    case L_CICERO:
+    case L_SCALEDPOINTS:
+        result = result / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        break;
+    default:
+        /*
+         * No need to scale relative coordinates (NPC, NATIVE, NULL)
+         * All other units forbidden anyway
+         */
+        break;
     }
     return result;
 }

@@ -29,10 +29,6 @@
 
 extern int gridRegisterIndex;
 
-/* FIXME:  Need to query device for this
- */
-double devPS = 10;
-
 void getDeviceSize(GEDevDesc *dd, double *devWidthCM, double *devHeightCM)
 {
     double left, right, bottom, top;
@@ -108,7 +104,7 @@ void dirtyGridDevice(GEDevDesc *dd)
         {
             R_GE_gcontext gc;
             SEXP currentgp = gridStateElement(dd, GSS_GPAR);
-            gcontextFromgpar(currentgp, 0, &gc);
+            gcontextFromgpar(currentgp, 0, &gc, dd);
             GENewPage(&gc, dd);
             GEdirtyDevice(dd);
         }
@@ -247,7 +243,7 @@ SEXP doSetViewport(SEXP vp,
                 PROTECT(y2 = unit(1.5, L_NPC));
             }
             getViewportContext(vp, &vpc);
-            gcontextFromViewport(vp, &gc);
+            gcontextFromViewport(vp, &gc, dd);
             transformLocn(x1, y1, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
             transformLocn(x2, y2, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx2, &yy2);
             UNPROTECT(4); /* unprotect x1, y1, x2, y2 */
@@ -974,7 +970,7 @@ SEXP L_newpage()
     if (deviceGridDirty || deviceDirty)
     {
         SEXP currentgp = gridStateElement(dd, GSS_GPAR);
-        gcontextFromgpar(currentgp, 0, &gc);
+        gcontextFromgpar(currentgp, 0, &gc, dd);
         GENewPage(&gc, dd);
     }
     return R_NilValue;
@@ -1085,28 +1081,28 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     case 0:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)[i] = transformXtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         }
         break;
     case 1:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)[i] = transformYtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         }
         break;
     case 2:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)[i] = transformWidthtoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         }
         break;
     case 3:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)[i] = transformHeighttoINCHES(x, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         }
         break;
@@ -1121,7 +1117,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     case 0:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)
             [i] = transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.xscalemin,
                                         vpc.xscalemax, &gc, vpWidthCM, vpHeightCM, dd);
@@ -1130,7 +1126,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     case 1:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)
             [i] = transformXYFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.yscalemin,
                                         vpc.yscalemax, &gc, vpHeightCM, vpWidthCM, dd);
@@ -1139,7 +1135,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     case 2:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)
             [i] = transformWidthHeightFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.xscalemin,
                                                  vpc.xscalemax, &gc, vpWidthCM, vpHeightCM, dd);
@@ -1148,7 +1144,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     case 3:
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             REAL(answer)
             [i] = transformWidthHeightFromINCHES(REAL(answer)[i], INTEGER(unitto)[i % LENGTH(unitto)], vpc.yscalemin,
                                                  vpc.yscalemax, &gc, vpHeightCM, vpWidthCM, dd);
@@ -1240,7 +1236,7 @@ SEXP L_moveTo(SEXP x, SEXP y)
     PROTECT(devloc = gridStateElement(dd, GSS_CURRLOC));
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
-    gcontextFromgpar(currentgp, 0, &gc);
+    gcontextFromgpar(currentgp, 0, &gc, dd);
     /* Convert the x and y values to CM locations */
     transformLocn(x, y, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
     /*
@@ -1276,7 +1272,7 @@ SEXP L_lineTo(SEXP x, SEXP y)
     PROTECT(devloc = gridStateElement(dd, GSS_CURRLOC));
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
-    gcontextFromgpar(currentgp, 0, &gc);
+    gcontextFromgpar(currentgp, 0, &gc, dd);
     /* Convert the x and y values to CM locations */
     transformLocn(x, y, 0, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
     REAL(prevloc)[0] = REAL(devloc)[0];
@@ -1320,7 +1316,7 @@ SEXP L_lines(SEXP x, SEXP y)
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
-    gcontextFromgpar(currentgp, 0, &gc);
+    gcontextFromgpar(currentgp, 0, &gc, dd);
     nx = unitLength(x);
     ny = unitLength(y);
     if (ny > nx)
@@ -1389,7 +1385,7 @@ SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1)
     for (i = 0; i < maxn; i++)
     {
         double xx0, yy0, xx1, yy1;
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         transformLocn(x0, y0, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx0, &yy0);
         transformLocn(x1, y1, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx1, &yy1);
         /* The graphics engine only takes device coordinates
@@ -1501,7 +1497,7 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
         double vertx[3];
         double verty[3];
         double l1, l2, l, a, t;
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         l1 = transformWidthtoINCHES(length, i % nl, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         l2 = transformHeighttoINCHES(length, i % nl, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         l = fmin2(l1, l2);
@@ -1612,7 +1608,7 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
     {
         char *vmax;
         SEXP indices = VECTOR_ELT(index, i);
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         /*
          * Number of vertices
          *
@@ -1692,7 +1688,7 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, Rboolean draw)
     ncirc = 0;
     for (i = 0; i < nx; i++)
     {
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
         /* These two will give the same answer unless r is in "native",
          * "npc", or some other relative units;  in those cases, just
@@ -1746,10 +1742,14 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, Rboolean draw)
     if (ncirc > 0)
     {
         result = allocVector(REALSXP, 4);
-        REAL(result)[0] = xmin;
-        REAL(result)[1] = xmax;
-        REAL(result)[2] = ymin;
-        REAL(result)[3] = ymax;
+        /*
+         * Reverse the scale adjustment (zoom factor)
+         * when calculating physical value to return to user-level
+         */
+        REAL(result)[0] = xmin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[1] = xmax / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[2] = ymin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[3] = ymax / REAL(gridStateElement(dd, GSS_SCALE))[0];
     }
     return result;
 }
@@ -1807,7 +1807,7 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, Rbo
     nrect = 0;
     for (i = 0; i < maxn; i++)
     {
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
         ww = transformWidthtoINCHES(w, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         hh = transformHeighttoINCHES(h, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
@@ -1963,10 +1963,14 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, Rbo
     if (nrect > 0)
     {
         result = allocVector(REALSXP, 4);
-        REAL(result)[0] = xmin;
-        REAL(result)[1] = xmax;
-        REAL(result)[2] = ymin;
-        REAL(result)[3] = ymax;
+        /*
+         * Reverse the scale adjustment (zoom factor)
+         * when calculating physical value to return to user-level
+         */
+        REAL(result)[0] = xmin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[1] = xmax / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[2] = ymin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[3] = ymax / REAL(gridStateElement(dd, GSS_SCALE))[0];
     }
     return result;
 }
@@ -2026,7 +2030,7 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
     {
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
     }
     /* The label can be a string or an expression
@@ -2056,7 +2060,7 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
         for (i = 0; i < nx; i++)
         {
             int doDrawing = 1;
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             /*
              * Generate bounding boxes when checking for overlap
              * or sizing text
@@ -2089,7 +2093,7 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
                 yy[i] = toDeviceY(yy[i], GE_INCHES, dd);
                 if (R_FINITE(xx[i]) && R_FINITE(yy[i]))
                 {
-                    gcontextFromgpar(currentgp, i, &gc);
+                    gcontextFromgpar(currentgp, i, &gc, dd);
                     if (isExpression(txt))
                         GEMathText(xx[i], yy[i], VECTOR_ELT(txt, i % LENGTH(txt)), REAL(hjust)[i % LENGTH(hjust)],
                                    REAL(vjust)[i % LENGTH(vjust)], numeric(rot, i % LENGTH(rot)) + rotationAngle, &gc,
@@ -2130,10 +2134,14 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
         if (ntxt > 0)
         {
             result = allocVector(REALSXP, 4);
-            REAL(result)[0] = xmin;
-            REAL(result)[1] = xmax;
-            REAL(result)[2] = ymin;
-            REAL(result)[3] = ymax;
+            /*
+             * Reverse the scale adjustment (zoom factor)
+             * when calculating physical value to return to user-level
+             */
+            REAL(result)[0] = xmin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+            REAL(result)[1] = xmax / REAL(gridStateElement(dd, GSS_SCALE))[0];
+            REAL(result)[2] = ymin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+            REAL(result)[3] = ymax / REAL(gridStateElement(dd, GSS_SCALE))[0];
         }
     }
     vmaxset(vmax);
@@ -2191,7 +2199,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     yy = (double *)R_alloc(nx, sizeof(double));
     for (i = 0; i < nx; i++)
     {
-        gcontextFromgpar(currentgp, i, &gc);
+        gcontextFromgpar(currentgp, i, &gc, dd);
         transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &(xx[i]), &(yy[i]));
         /* The graphics engine only takes device coordinates
          */
@@ -2206,7 +2214,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
              * rotations !!!
              */
             int ipch;
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             symbolSize = transformWidthtoINCHES(size, i, vpc, &gc, vpWidthCM, vpHeightCM, dd);
             /* The graphics engine only takes device coordinates
              */
@@ -2361,7 +2369,7 @@ SEXP L_locnBounds(SEXP x, SEXP y)
     {
         for (i = 0; i < nx; i++)
         {
-            gcontextFromgpar(currentgp, i, &gc);
+            gcontextFromgpar(currentgp, i, &gc, dd);
             transformLocn(x, y, i, vpc, &gc, vpWidthCM, vpHeightCM, dd, transform, &xx, &yy);
             if (R_FINITE(xx) & R_FINITE(yy))
             {
@@ -2380,10 +2388,14 @@ SEXP L_locnBounds(SEXP x, SEXP y)
     if (nloc > 0)
     {
         result = allocVector(REALSXP, 4);
-        REAL(result)[0] = xmin;
-        REAL(result)[1] = xmax;
-        REAL(result)[2] = ymin;
-        REAL(result)[3] = ymax;
+        /*
+         * Reverse the scale adjustment (zoom factor)
+         * when calculating physical value to return to user-level
+         */
+        REAL(result)[0] = xmin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[1] = xmax / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[2] = ymin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+        REAL(result)[3] = ymax / REAL(gridStateElement(dd, GSS_SCALE))[0];
     }
     return result;
 }

@@ -518,7 +518,7 @@ static void RFontInit()
 static int SetBaseFont(gadesc *xd)
 {
     xd->fontface = 1;
-    xd->fontsize = MulDiv(xd->basefontsize, xd->wanteddpi, xd->truedpi);
+    xd->fontsize = xd->basefontsize;
     xd->fontangle = 0.0;
     xd->usefixed = FALSE;
     xd->fontfamily[0] = '\0';
@@ -607,7 +607,6 @@ static void SetFont(char *family, int face, int size, double rot, NewDevDesc *dd
         size = SMALLEST;
     if (size > LARGEST)
         size = LARGEST;
-    size = MulDiv(size, xd->wanteddpi, xd->truedpi);
     if (!xd->usefixed &&
         (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle || strcmp(family, xd->fontfamily)))
     {
@@ -2011,16 +2010,10 @@ static void GA_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd)
 
 static void GA_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd)
 {
-    gadesc *xd = (gadesc *)dd->deviceSpecific;
-
-    int iw, ih;
-
-    iw = xd->windowWidth;
-    ih = xd->windowHeight;
-    *left = 0.0;
-    *top = 0.0;
-    *right = iw;
-    *bottom = ih;
+    *left = dd->left;
+    *top = dd->top;
+    *right = dd->right;
+    *bottom = dd->bottom;
 }
 
 static void GA_Resize(NewDevDesc *dd)
