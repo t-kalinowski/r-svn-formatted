@@ -655,9 +655,9 @@ double pgamma(double x, double alph, double scale, int lower_tail, int log_p)
 
 double pgamma(double x, double alph, double scale, int lower_tail, int log_p)
 {
-    const double xbig = 1.0e+8, xlarge = 1.0e+37,
+    const static double xbig = 1.0e+8, xlarge = 1.0e+37,
 
-                 /* normal approx. for alph > alphlimit */
+                        /* normal approx. for alph > alphlimit */
         alphlimit = 1e5; /* was 1000. till R.1.8.x */
 
     double pn1, pn2, pn3, pn4, pn5, pn6, arg, a, b, c, an, osum, sum;

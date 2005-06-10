@@ -128,7 +128,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
 #define pMIN 1e-100      /* was 0.000002 = 2e-6 */
 #define pMAX (1 - 1e-14) /* was (1-1e-12) and 0.999998 = 1 - 2e-6 */
 
-    const double i420 = 1. / 420., i2520 = 1. / 2520., i5040 = 1. / 5040;
+    const static double i420 = 1. / 420., i2520 = 1. / 2520., i5040 = 1. / 5040;
 
     double p_, a, b, c, g, ch, ch0, p1;
     double p2, q, s1, s2, s3, s4, s5, s6, t, x;

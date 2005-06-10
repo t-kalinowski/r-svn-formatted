@@ -53,7 +53,7 @@ double log1p(double x)
      *			    significant figures required  30.93
      *				 decimal places required  32.01
      */
-    const double alnrcs[43] = {
+    const static double alnrcs[43] = {
         +.10378693562743769800686267719098e+1,  -.13364301504908918098766041553133e+0,
         +.19408249135520563357926199374750e-1,  -.30107551127535777690376537776592e-2,
         +.48694614797154850090456366509137e-3,  -.81054881893175356066809943008622e-4,
@@ -77,7 +77,7 @@ double log1p(double x)
         +.17578597841760239233269760000000e-29, -.33410026677731010351377066666666e-30,
         +.63533936180236187354180266666666e-31,
     };
-    const double xmin = -1 + sqrt(1 / DBL_EPSILON); /*was sqrt(d1mach(4)); */
+    const static double xmin = -1 + sqrt(1 / DBL_EPSILON); /*was sqrt(d1mach(4)); */
 
 #ifdef NOMORE_FOR_THREADS
     static int nlnrel = 0;
