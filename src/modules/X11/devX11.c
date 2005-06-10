@@ -1106,6 +1106,11 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
     XGCValues gcv;
     /* Indicates whether the display is created within this particular call: */
     Rboolean DisplayOpened = FALSE;
+    static const char *title = "R Graphics";
+    XSizeHints *size_hints;
+    Status size_hints_status;
+    long supplied_return;
+    XSizeHints *hint;
 
 #ifdef USE_FONTSET
     if (!XSupportsLocale())
@@ -1216,6 +1221,15 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
     /* We want to know about exposures */
     /* and window-resizes and locations. */
 
+    /*
+     * <MBCS-FIXED>: R on gnome window manager task-bar button see?
+     * I try it.
+     * A button such as, maximization disappears
+     * unless I give Hint for clear statement in
+     * gnome window magager.
+     */
+
+    memset(&attributes, 0, sizeof(attributes));
     attributes.background_pixel = whitepixel;
     attributes.border_pixel = blackpixel;
     attributes.backing_store = Always;
@@ -1228,17 +1242,27 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         {
             xd->windowWidth = iw = w / pixelWidth();
             xd->windowHeight = ih = h / pixelHeight();
-            if ((xd->window = XCreateWindow(display, rootwin, DisplayWidth(display, screen) - iw - 10, 10, iw, ih, 1,
-                                            DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
-                                            CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore, &attributes)) ==
-                0)
+
+            hint = XAllocSizeHints();
+            hint->x = numX11Devices * 20 % (DisplayWidth(display, screen) - iw - 10);
+            hint->y = numX11Devices * 20 % (DisplayHeight(display, screen) - ih - 10);
+            hint->width = iw;
+            hint->height = ih;
+            hint->flags = PPosition | PSize;
+            xd->window = XCreateSimpleWindow(display, rootwin, hint->x, hint->y, hint->width, hint->height, 1,
+                                             blackpixel, whitepixel);
+            if (xd->window == 0)
             {
+                XFree(hint);
                 warning(_("unable to create X11 window"));
                 return FALSE;
             }
+            XSetWMNormalHints(display, xd->window, hint);
+            XFree(hint);
+            XChangeWindowAttributes(display, xd->window, CWEventMask | CWBackPixel | CWBorderPixel | CWBackingStore,
+                                    &attributes);
 
-            XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace,
-                            (unsigned char *)"R Graphics", 13);
+            XStoreName(display, xd->window, title);
 
             xd->gcursor = XCreateFontCursor(display, CURSOR);
             XDefineCursor(display, xd->window, xd->gcursor);
@@ -1439,9 +1463,11 @@ static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
         char buf[10];
         wchar_t wc[2] = L" ";
         XRectangle ink, log;
+        wchar_t *wcs = wc;
 
         wc[0] = (unsigned int)c;
-        wcstombs(buf, wc, 10);
+
+        wcsrtombs(buf, (const wchar_t **)&wcs, sizeof(wc), NULL);
 #ifdef HAVE_XUTF8TEXTEXTENTS
         if (utf8locale)
             Xutf8TextExtents(xd->font->fontset, buf, strlen(buf), &ink, &log);
@@ -1460,9 +1486,22 @@ static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
     { /* symbol font */
         if (first <= c && c <= last)
         {
-            *ascent = f->per_char[c - first].ascent;
-            *descent = f->per_char[c - first].descent;
-            *width = f->per_char[c - first].width;
+            /*
+             * <MBCS-FIXED>: try demo(lm.glm,package="stats")
+             * per_char is NULL case.
+             */
+            if (f->per_char)
+            {
+                *ascent = f->per_char[c - first].ascent;
+                *descent = f->per_char[c - first].descent;
+                *width = f->per_char[c - first].width;
+            }
+            else
+            {
+                *ascent = f->max_bounds.ascent;
+                *descent = f->max_bounds.descent;
+                *width = f->max_bounds.width;
+            }
         }
     }
 #else
@@ -1736,7 +1775,11 @@ static void newX11_Activate(NewDevDesc *dd)
     sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
     strcat(t, num);
     strcat(t, " (ACTIVE)");
-    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)t, strlen(t));
+    /**
+    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (unsigned char*)t, strlen(t));
+    **/
+    XStoreName(display, xd->window, t);
     XSync(display, 0);
 }
 
@@ -1753,7 +1796,11 @@ static void newX11_Deactivate(NewDevDesc *dd)
     sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
     strcat(t, num);
     strcat(t, " (inactive)");
-    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING, 8, PropModeReplace, (unsigned char *)t, strlen(t));
+    /**
+    XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (unsigned char*)t, strlen(t));
+    **/
+    XStoreName(display, xd->window, t);
     XSync(display, 0);
 }
 

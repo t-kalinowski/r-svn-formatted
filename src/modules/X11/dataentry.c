@@ -28,6 +28,10 @@
 /* The version for R 2.1.0 is partly based on patches by
    Eiji Nakama <nakama@ki.rim.or.jp> for use with Japanese fonts. */
 
+#define DPRINTS(x) printf(#x "=[%s]\n", x)
+#define DPRINTX(x) printf(#x "=%x\n", x)
+#define DPRINTD(x) printf(#x "=%d\n", x)
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -114,6 +118,7 @@ static void printrect(int, int);
 static void printstring(char *, int, int, int, int);
 static void printelt(SEXP, int, int, int);
 static void RefreshKeyboardMapping(DEEvent *);
+static void cell_cursor_init(void);
 
 /* Functions to hide Xlib calls */
 static void bell(void);
@@ -126,12 +131,19 @@ static void drawline(int, int, int, int);
 #endif
 static void drawrectangle(int, int, int, int, int, int);
 static void drawtext(int, int, char *, int);
-static int NextEvent(DEEvent *ioevent);
+#if 0
+static int  NextEvent(DEEvent *ioevent);
+#endif
 static void RefreshKeyboardMapping(DEEvent *ioevent);
 static void Rsync(void);
 static int textwidth(char *, int);
 static int WhichEvent(DEEvent ioevent);
 
+static char *get_col_name(int col);
+static int get_col_width(int col);
+static CellType get_col_type(int col);
+static void calc_pre_edit_pos(void);
+static int last_wchar_bytes(char *);
 static SEXP work, names, lens;
 static PROTECT_INDEX wpi, npi, lpi;
 static SEXP ssNA_STRING;
@@ -151,19 +163,19 @@ static int crow;       /* current row */
 static int ccol;       /* current column */
 static int nwide, nhigh;
 static int colmax, colmin, rowmax, rowmin;
-static int ndecimal;  /* count decimal points */
-static int ne;        /* count exponents */
-static int nneg;      /* indicate whether its a negative */
-static int clength;   /* number of characters currently entered */
-static char buf[201]; /* boosted to allow for MBCS */
+static int ndecimal; /* count decimal points */
+static int ne;       /* count exponents */
+static int nneg;     /* indicate whether its a negative */
+static int clength;  /* number of characters currently entered */
+
+#define BOOSTED_BUF_SIZE 201
+static char buf[BOOSTED_BUF_SIZE]; /* boosted to allow for MBCS */
 static char *bufp;
 static int bwidth; /* width of the border */
 static int hwidth; /* width of header  */
 static int text_offset;
 
 static SEXP ssNewVector(SEXPTYPE, int);
-static SEXP ssNA_STRING;
-static double ssNA_REAL;
 
 static Atom _XA_WM_PROTOCOLS, protocol;
 
@@ -180,15 +192,33 @@ static char labform[6];
 static Display *iodisplay;
 static Window iowindow, menuwindow, menupanes[4];
 static GC iogc;
-static XSizeHints iohint;
 static XFontStruct *font_info;
 static char *font_name = "9x15";
+static Status status;
 #ifdef USE_FONTSET
 static XFontSet font_set;
 static XFontStruct **fs_list;
 static int font_set_cnt;
-static char *fontset_name = "-*-fixed-medium-r-normal--13-";
+static char *fontset_name = "-*-fixed-medium-r-normal--13-*-*-*-*-*-*-*";
 static XIM ioim;
+static XIMStyle ioim_style;
+static XIMStyles *ioim_styles;
+
+/*
+ * XIM:
+ * OverTheSpot XIMPreeditPosition | XIMStatusArea;
+ * OffTheSpot  XIMPreeditArea     | XIMStatusArea;
+ * Root        XIMPreeditNothing  | XIMStatusNothing;
+ */
+static XIMStyle preedit_styles[] = {
+    XIMPreeditPosition, XIMPreeditArea, XIMPreeditNothing, XIMPreeditNone, (XIMStyle)NULL,
+};
+static XIMStyle status_styles[] = {
+    XIMStatusArea,
+    XIMStatusNothing,
+    XIMStatusNone,
+    (XIMStyle)NULL,
+};
 static XIC ioic;
 #endif
 
@@ -245,9 +275,9 @@ static XIC ioic;
  */
 
 static char *menu_label[] = {
-    "Real",
-    "Character",
-    "Change Name",
+    " Real",
+    " Character",
+    "Change Name ",
 };
 
 /*
@@ -367,6 +397,8 @@ SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     highlightrect();
 
+    cell_cursor_init();
+
     eventloop();
 
     endcontext(&cntxt);
@@ -456,7 +488,10 @@ static void drawwindow(void)
     XWindowAttributes attribs;
 
     /* if there is an active cell enter the data in it */
-    closerect();
+    /*
+     * case colname input Expose not use.
+     * closerect();
+     */
 
     /* now set up the window with the new dimensions */
     XGetWindowAttributes(iodisplay, iowindow, &attribs);
@@ -534,6 +569,7 @@ static void doHscroll(int oldcol)
     }
 
     highlightrect();
+    cell_cursor_init();
 
     Rsync();
 }
@@ -567,6 +603,7 @@ static void jumpwin(int wcol, int wrow)
     {
         colmin = wcol;
         rowmin = wrow;
+        closerect();
         drawwindow();
     }
     else
@@ -627,6 +664,45 @@ static void advancerect(DE_DIRECTION which)
     }
 
     highlightrect();
+
+    cell_cursor_init();
+}
+
+static void cell_cursor_init(void)
+{
+    int i, whichrow = crow + rowmin - 1, whichcol = ccol + colmin - 1;
+    SEXP tmp;
+
+    memset(buf, 0, sizeof(buf));
+
+    if (crow == 0)
+    {
+        strncpy(buf, get_col_name(whichcol), BOOSTED_BUF_SIZE - 1);
+    }
+    else
+    {
+        if (length(work) >= whichcol)
+        {
+            tmp = VECTOR_ELT(work, whichcol - 1);
+            if (tmp != R_NilValue && (i = whichrow - 1) < LENGTH(tmp))
+            {
+                PrintDefaults(R_NilValue);
+                if (TYPEOF(tmp) == REALSXP)
+                {
+                    if (REAL(tmp)[i] != ssNA_REAL)
+                        strncpy(buf, EncodeElement(tmp, i, 0, '.'), BOOSTED_BUF_SIZE - 1);
+                }
+                else if (TYPEOF(tmp) == STRSXP)
+                {
+                    if (!streql(CHAR(STRING_ELT(tmp, i)), CHAR(STRING_ELT(ssNA_STRING, 0))))
+                        strncpy(buf, EncodeElement(tmp, i, 0, '.'), BOOSTED_BUF_SIZE - 1);
+                }
+            }
+        }
+    }
+    buf[BOOSTED_BUF_SIZE - 1] = '\0';
+    clength = strlen(buf);
+    bufp = buf + clength;
 }
 
 static char *get_col_name(int col)
@@ -663,6 +739,7 @@ static int get_col_width(int col)
         else
             strp = "var12";
         PrintDefaults(R_NilValue);
+
         w = textwidth(strp, strlen(strp));
         for (i = 0; i < INTEGER(lens)[col - 1]; i++)
         {
@@ -1028,8 +1105,70 @@ static void closerect(void)
 static void printstring(char *ibuf, int buflen, int row, int col, int left)
 {
     int i, x_pos, y_pos, bw, bufw;
-    char pbuf[201], *pc = pbuf;
+    char pbuf[BOOSTED_BUF_SIZE];
+#ifdef USE_FONTSET
+    int wcsbufw, j;
+    wchar_t wcspbuf[BOOSTED_BUF_SIZE], *wcspc = wcspbuf;
+    wchar_t wcs[BOOSTED_BUF_SIZE];
+    char s[BOOSTED_BUF_SIZE];
+    wchar_t *w_p;
+    char *p;
+    int cnt;
 
+    find_coords(row, col, &x_pos, &y_pos);
+    if (col == 0)
+        bw = boxw[0];
+    else
+        bw = BOXW(col + colmin - 1);
+    cleararea(x_pos + 2, y_pos + 2, bw - 3, box_h - 3);
+    bufw = (buflen > BOOSTED_BUF_SIZE - 1) ? BOOSTED_BUF_SIZE - 1 : buflen;
+    strncpy(pbuf, ibuf, bufw);
+    pbuf[bufw] = '\0';
+
+    p = pbuf;
+    wcsbufw = mbsrtowcs(wcspbuf, (const char **)&p, bufw, NULL);
+    wcspbuf[wcsbufw] = L'\0';
+    if (left)
+    {
+        for (i = wcsbufw; i > 1; i--)
+        {
+            for (j = 0; *(wcspc + j) != L'\0'; j++)
+                wcs[j] = *(wcspc + j);
+            wcs[j] = L'\0';
+            w_p = wcs;
+            cnt = wcsrtombs(s, (const wchar_t **)&w_p, sizeof(wcs), NULL);
+            s[cnt] = '\0';
+            if (textwidth(s, strlen(s)) < (bw - text_offset))
+                break;
+            *(++wcspc) = L'<';
+        }
+    }
+    else
+    {
+        for (i = wcsbufw; i > 1; i--)
+        {
+            for (j = 0; *(wcspc + j) != L'\0'; j++)
+                wcs[j] = *(wcspc + j);
+            wcs[j] = L'\0';
+            w_p = wcs;
+            cnt = wcsrtombs(s, (const wchar_t **)&w_p, sizeof(wcs), NULL);
+            s[cnt] = '\0';
+            if (textwidth(s, strlen(s)) < (bw - text_offset))
+                break;
+            *(wcspbuf + i - 2) = L'>';
+            *(wcspbuf + i - 1) = L'\0';
+        }
+    }
+    for (j = 0; *(wcspc + j) != L'\0'; j++)
+        wcs[j] = *(wcspc + j);
+    wcs[j] = L'\0';
+    w_p = wcs;
+    cnt = wcsrtombs(s, (const wchar_t **)&w_p, sizeof(wcs), NULL);
+
+    drawtext(x_pos + text_offset, y_pos + box_h - text_offset, s, cnt);
+
+#else  /* USE_FONTSET */
+    char *pc = pbuf;
     find_coords(row, col, &x_pos, &y_pos);
     if (col == 0)
         bw = boxw[0];
@@ -1057,6 +1196,8 @@ static void printstring(char *ibuf, int buflen, int row, int col, int left)
         }
     }
     drawtext(x_pos + text_offset, y_pos + box_h - text_offset, pc, i);
+#endif /* USE_FONTSET */
+
     Rsync();
 }
 
@@ -1085,8 +1226,10 @@ static void handlechar(char *text)
 {
     int i, c = text[0];
 #ifdef USE_FONTSET
-    wchar_t wc;
+    wchar_t wcs[BOOSTED_BUF_SIZE];
 #endif
+
+    memset(wcs, 0, sizeof(wcs));
 
     if (c == '\033')
     { /* ESC */
@@ -1094,6 +1237,7 @@ static void handlechar(char *text)
         clength = 0;
         bufp = buf;
         drawelt(crow, ccol);
+        cell_cursor_init();
         return;
     }
     else
@@ -1117,38 +1261,56 @@ static void handlechar(char *text)
         highlightrect();
     }
 
+    /* NA number? */
+    if (1 == get_col_type(ccol + colmin - 1))
+    {
+        /* input numeric for NA of buffer , suppress NA.*/
+        if (strcmp(buf, CHAR(STRING_ELT(ssNA_STRING, 0))) == 0)
+        {
+            buf[0] = '\0';
+            clength = 0;
+            bufp = buf;
+        }
+    }
+
     if (currentexp == 1)
     { /* we are parsing a number */
+
 #ifdef USE_FONTSET
-        mbrtowc(&wc, text, MB_CUR_MAX, NULL);
-        switch (wc)
+        char *mbs = text;
+        int cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
+
+        for (i = 0; i < cnt; i++)
         {
-        case L'-':
-            if (nneg == 0)
-                nneg++;
-            else
-                goto donehc;
-            break;
-        case '.':
-            if (ndecimal == 0)
-                ndecimal++;
-            else
-                goto donehc;
-            break;
-        case L'e':
-        case L'E':
-            if (ne == 0)
+            switch (wcs[i])
             {
-                nneg = ndecimal = 0; /* might have decimal in exponent */
-                ne++;
+            case L'-':
+                if (nneg == 0)
+                    nneg++;
+                else
+                    goto donehc;
+                break;
+            case L'.':
+                if (ndecimal == 0)
+                    ndecimal++;
+                else
+                    goto donehc;
+                break;
+            case L'e':
+            case L'E':
+                if (ne == 0)
+                {
+                    nneg = ndecimal = 0; /* might have decimal in exponent */
+                    ne++;
+                }
+                else
+                    goto donehc;
+                break;
+            default:
+                if (!iswdigit(wcs[i]))
+                    goto donehc;
+                break;
             }
-            else
-                goto donehc;
-            break;
-        default:
-            if (!iswdigit(wc))
-                goto donehc;
-            break;
         }
 #else
         switch (c)
@@ -1185,13 +1347,17 @@ static void handlechar(char *text)
     if (currentexp == 3)
     {
 #ifdef USE_FONTSET
-        mbrtowc(&wc, text, MB_CUR_MAX, NULL);
-        if (iswspace(wc))
-            goto donehc;
-        if (clength == 0 && wc != '.' && !iswalpha(wc))
-            goto donehc;
-        else if (wc != '.' && !iswalnum(wc))
-            goto donehc;
+        char *mbs = text;
+        int cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
+        for (i = 0; i < cnt; i++)
+        {
+            if (iswspace(wcs[i]))
+                goto donehc;
+            if (clength == 0 && wcs[i] != L'.' && !iswalpha(wcs[i]))
+                goto donehc;
+            else if (wcs[i] != L'.' && !iswalnum(wcs[i]))
+                goto donehc;
+        }
 #else
         if (isspace(c))
             goto donehc;
@@ -1202,15 +1368,16 @@ static void handlechar(char *text)
 #endif
     }
 
-    if (clength++ > 29)
+    if (clength + strlen(text) > BOOSTED_BUF_SIZE - MB_CUR_MAX - 1)
     {
         warning("dataentry: expression too long");
-        clength--;
         goto donehc;
     }
 
     for (i = 0; i < strlen(text); i++)
         *bufp++ = text[i];
+    *(bufp + 1) = '\0';
+    clength += strlen(text);
     printstring(buf, clength, crow, ccol, 1);
     return;
 
@@ -1355,24 +1522,62 @@ static void eventloop(void)
     done = 0;
     while (done == 0)
     {
-        if (NextEvent(&ioevent))
+        /*
+    if (NextEvent(&ioevent)) {
+        */
+        XNextEvent(iodisplay, &ioevent);
         {
+#ifdef USE_FONTSET
+            if (XFilterEvent(&ioevent, None))
+            {
+                if (ioic)
+                {
+                    XSetICFocus(ioic);
+                    if (ioim_style & XIMPreeditPosition)
+                        calc_pre_edit_pos();
+                }
+                continue;
+            }
+#endif
+
             switch (WhichEvent(ioevent))
             {
-            case activateEvt:
-                drawwindow();
-                break;
-            case mouseDown:
-                done = doMouseDown(&ioevent);
-                break;
-            case keyDown:
+            case keyDown: /* KeyPress */
                 doSpreadKey(0, &ioevent);
+                break;
+            case Expose:
+                /*
+                 * XIM on  - KeyPress - Expose
+                 * XIM off - KeyPress - KeyRelease
+                 * colname change XIM on mode. type Backspace.
+                 */
+                if (crow == 0)
+                {
+                    drawwindow();
+                    printstring(buf, clength, crow, ccol, 1);
+                }
+                else
+                {
+                    closerect();
+                    drawwindow();
+                    cell_cursor_init();
+                }
+                break;
+            case activateEvt: /* MapNotify */
+                closerect();
+                drawwindow();
+                cell_cursor_init();
+                break;
+            case mouseDown: /* ButtonPress */
+                done = doMouseDown(&ioevent);
+                cell_cursor_init();
                 break;
             case MappingNotify:
                 RefreshKeyboardMapping(&ioevent);
                 break;
             case ConfigureNotify:
                 doConfigure(&ioevent);
+                cell_cursor_init();
                 break;
             case ClientMessage:
                 if (ioevent.xclient.message_type == _XA_WM_PROTOCOLS && ioevent.xclient.data.l[0] == protocol)
@@ -1414,27 +1619,39 @@ static void doSpreadKey(int key, DEEvent *event)
     {
         int i = rowmin - nhigh + 2;
         jumpwin(colmin, max(1, i));
+        cell_cursor_init();
     }
 #elif defined(XK_Prior)
     else if (iokey == XK_Prior)
     {
         int i = rowmin - nhigh + 2;
         jumpwin(colmin, max(1, i));
+        cell_cursor_init();
     }
 #endif
 #ifdef XK_Page_Down
     else if (iokey == XK_Page_Down)
+    {
         jumpwin(colmin, rowmax);
+        cell_cursor_init();
+    }
 #elif defined(XK_Next)
     else if (iokey == XK_Next)
+    {
         jumpwin(colmin, rowmax);
+        cell_cursor_init();
+    }
 #endif
     else if ((iokey == XK_BackSpace) || (iokey == XK_Delete))
     {
         if (clength > 0)
         {
-            clength--;
-            bufp--;
+            int last_w;
+            last_w = last_wchar_bytes(NULL);
+            clength -= last_w;
+            bufp -= last_w;
+            *bufp = '\0';
+            CellModified = TRUE;
             printstring(buf, clength, crow, ccol, 1);
         }
         else
@@ -1453,6 +1670,7 @@ static void doSpreadKey(int key, DEEvent *event)
         downlightrect();
         crow = ccol = 1;
         highlightrect();
+        cell_cursor_init();
     }
     else if (iokey == XK_End)
     {
@@ -1462,19 +1680,24 @@ static void doSpreadKey(int key, DEEvent *event)
         crow = ymaxused - rowmin + 1;
         ccol = 1;
         highlightrect();
+        cell_cursor_init();
     }
     else if (IsModifierKey(iokey))
     {
     }
     else
+    {
         handlechar(text);
+    }
 }
 
-static int NextEvent(DEEvent *ioevent)
+#if 0
+static int NextEvent(DEEvent * ioevent)
 {
     XNextEvent(iodisplay, ioevent);
     return 1;
 }
+#endif
 
 static int WhichEvent(DEEvent ioevent)
 {
@@ -1492,22 +1715,27 @@ static KeySym GetKey(DEEvent *event)
 
 static char *GetCharP(DEEvent *event)
 {
-    static char text[8];
+    static char text[BOOSTED_BUF_SIZE];
     KeySym iokey;
+
+    memset(text, 0, sizeof(text));
 
 #ifdef USE_FONTSET
     if (mbcslocale)
     {
 #ifdef HAVE_XUTF8LOOKUPSTRING
-        Xutf8LookupString(ioic, (XKeyEvent *)event, text, 8, &iokey, NULL);
-#else
-        XmbLookupString(ioic, (XKeyEvent *)event, text, 8, &iokey, NULL);
+        if (utf8locale)
+            Xutf8LookupString(ioic, (XKeyEvent *)event, text, sizeof(text) - clength, &iokey, &status);
+        else
 #endif
+            XmbLookupString(ioic, (XKeyEvent *)event, text, sizeof(text) - clength, &iokey, &status);
         /* FIXME check the return code */
+        if (status == XBufferOverflow)
+            warning("dataentry: expression too long");
     }
     else
 #endif
-        XLookupString((XKeyEvent *)event, text, 8, &iokey, NULL);
+        XLookupString((XKeyEvent *)event, text, sizeof(text) - clength, &iokey, NULL);
     return text;
 }
 
@@ -1543,15 +1771,20 @@ static void doControl(DEEvent *event)
         closerect();
         for (i = 1; i <= min(100, xmaxused); i++)
             boxw[i] = get_col_width(i);
+        closerect();
         drawwindow();
         break;
     }
+    cell_cursor_init();
 }
 
 static void doConfigure(DEEvent *event)
 {
     if ((fullwindowWidth != (*event).xconfigure.width) || (fullwindowHeight != (*event).xconfigure.height))
+    {
+        closerect();
         drawwindow();
+    }
 }
 
 static void RefreshKeyboardMapping(DEEvent *event)
@@ -1596,13 +1829,19 @@ static Rboolean initwin(void) /* TRUE = Error */
     int i, twidth, w, minwidth;
     int ioscreen;
     unsigned long iowhite, ioblack;
-    char ioname[] = "R DataEntryWindow";
+    /* char ioname[] = "R DataEntryWindow"; */
     char digits[] = "123456789.0";
     Window root;
     XEvent ioevent;
     XSetWindowAttributes winattr;
     XWindowAttributes attribs;
-    XWMHints hints;
+    XSizeHints *hint;
+#ifdef USE_FONTSET
+    int j, k;
+    unsigned long fevent = 0UL;
+    XVaNestedList xva_nlist;
+    XPoint xpoint;
+#endif
 
     strcpy(copycontents, "");
 
@@ -1629,7 +1868,25 @@ static Rboolean initwin(void) /* TRUE = Error */
         int missing_charset_count;
         char **missing_charset_list;
         char *def_string;
-        font_set = XCreateFontSet(iodisplay, fontset_name, &missing_charset_list, &missing_charset_count, &def_string);
+
+        char opt_fontset_name[512];
+
+        /*
+          options("X11fonts")[1] read font name
+        */
+        char *s = CHAR(STRING_ELT(GetOption(install("X11fonts"), R_NilValue), 0));
+
+        if (s == NULL)
+        {
+            strcpy(opt_fontset_name, fontset_name);
+        }
+        else
+        {
+            sprintf(opt_fontset_name, s, "medium", "r", 12);
+        }
+
+        font_set =
+            XCreateFontSet(iodisplay, opt_fontset_name, &missing_charset_list, &missing_charset_count, &def_string);
         if (missing_charset_count)
             XFreeStringList(missing_charset_list);
         if (font_set == NULL)
@@ -1657,6 +1914,7 @@ static Rboolean initwin(void) /* TRUE = Error */
         nboxchars = 0;
 
     twidth = textwidth(digits, strlen(digits));
+
     if (nboxchars > 0)
         twidth = (twidth * nboxchars) / 10;
     box_w = twidth + 4;
@@ -1682,6 +1940,7 @@ static Rboolean initwin(void) /* TRUE = Error */
     boxw[0] = 0.1 * labdigs * textwidth("0123456789", 10) + textwidth(" ", 1) + 8;
     for (i = 1; i < 100; i++)
         boxw[i] = get_col_width(i);
+
     /* try for a window width that covers all the columns, or is around
        800 pixels */
     w = windowWidth = 0;
@@ -1706,25 +1965,35 @@ static Rboolean initwin(void) /* TRUE = Error */
     iowhite = WhitePixel(iodisplay, ioscreen);
     ioblack = BlackPixel(iodisplay, ioscreen);
 
-    iohint.x = 0;
-    iohint.y = 0;
-    iohint.width = windowWidth;
-    iohint.height = windowHeight;
-    iohint.flags = PPosition | PSize;
+    hint = XAllocSizeHints();
+
+    hint->x = 0;
+    hint->y = 0;
+    hint->width = windowWidth;
+    hint->height = windowHeight;
+    hint->flags = PPosition | PSize;
+    /*
+     * not necessary?
     hints.flags = InputHint;
     hints.input = True;
+    */
     root = DefaultRootWindow(iodisplay);
 
-    if ((iowindow = XCreateSimpleWindow(iodisplay, root, iohint.x, iohint.y, iohint.width, iohint.height, bwidth,
-                                        ioblack, iowhite)) == 0)
+    if ((iowindow = XCreateSimpleWindow(iodisplay, root, hint->x, hint->y, hint->width, hint->height, bwidth, ioblack,
+                                        iowhite)) == 0)
     {
         warning("unable to open window for data editor");
         return TRUE;
     }
 
-    XSetStandardProperties(iodisplay, iowindow, ioname, ioname, None, (char **)NULL, 0, &iohint);
+    /*
+    XSetStandardProperties(iodisplay, iowindow, ioname, ioname, None,
+               (char **)NULL, 0, iohint);
+    */
+    XSetWMNormalHints(iodisplay, iowindow, hint);
+    XFree(hint);
 
-    winattr.backing_store = Always;
+    winattr.backing_store = WhenMapped;
     XChangeWindowAttributes(iodisplay, iowindow, CWBackingStore, &winattr);
 
     /* set up protocols so that window manager sends */
@@ -1732,7 +2001,13 @@ static Rboolean initwin(void) /* TRUE = Error */
     _XA_WM_PROTOCOLS = XInternAtom(iodisplay, "WM_PROTOCOLS", 0);
     protocol = XInternAtom(iodisplay, "WM_DELETE_WINDOW", 0);
     XSetWMProtocols(iodisplay, iowindow, &protocol, 1);
+    /*
+     * not necessary
     XSetWMHints(iodisplay, iowindow, &hints);
+     */
+
+    iogc = XCreateGC(iodisplay, iowindow, 0, 0);
+
 #ifdef USE_FONTSET
     if (mbcslocale)
     {
@@ -1741,21 +2016,50 @@ static Rboolean initwin(void) /* TRUE = Error */
         {
             XDestroyWindow(iodisplay, iowindow);
             XCloseDisplay(iodisplay);
-            error("unable to open X Input Method");
+            warning("unable to open X Input Method");
+            return TRUE;
         }
 
-        ioic = XCreateIC(ioim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, iowindow, NULL);
+        /* search supported input style */
+        XGetIMValues(ioim, XNQueryInputStyle, &ioim_styles, NULL);
+        for (i = 0; i < ioim_styles->count_styles; i++)
+        {
+            for (j = 0; preedit_styles[j]; j++)
+            {
+                for (k = 0; status_styles[k]; k++)
+                {
+                    ioim_style = (preedit_styles[j] | status_styles[k]);
+                    if (ioim_styles->supported_styles[i] == ioim_style)
+                    {
+                        goto loop_out;
+                    }
+                }
+            }
+        }
+    loop_out:
+
+        /* create input context */
+        xpoint.x = 0;
+        xpoint.y = 0;
+        xva_nlist = XVaCreateNestedList(0, XNFontSet, font_set, XNSpotLocation, &xpoint, NULL);
+
+        ioic = XCreateIC(ioim, XNInputStyle, ioim_style, XNClientWindow, iowindow, XNFocusWindow, iowindow,
+                         XNPreeditAttributes, xva_nlist, XNStatusAttributes, xva_nlist, NULL);
+        XFree(xva_nlist);
         if (!ioic)
         {
             XCloseIM(ioim);
             XDestroyWindow(iodisplay, iowindow);
             XCloseDisplay(iodisplay);
-            error("unable to open X Input Context");
+            warning("unable to open X Input Context");
+            return TRUE;
         }
+
+        /* get XIM processes event. */
+        XGetICValues(ioic, XNFilterEvents, &fevent, NULL);
     }
 #endif
 
-    iogc = XCreateGC(iodisplay, iowindow, 0, 0);
 #ifdef USE_FONTSET
     if (!mbcslocale)
 #endif
@@ -1764,11 +2068,25 @@ static Rboolean initwin(void) /* TRUE = Error */
     XSetForeground(iodisplay, iogc, BlackPixel(iodisplay, DefaultScreen(iodisplay)));
     XSetLineAttributes(iodisplay, iogc, 1, LineSolid, CapRound, JoinRound);
 
-    XSelectInput(iodisplay, iowindow, ButtonPressMask | KeyPressMask | ExposureMask | StructureNotifyMask);
+    /*
+    XSelectInput(iodisplay, iowindow,
+         ButtonPressMask | KeyPressMask
+         | ExposureMask | StructureNotifyMask | fevent);
+    */
+
+    XSelectInput(iodisplay, iowindow,
+                 ButtonPressMask | KeyPressMask | StructureNotifyMask | ExposureMask | EnterWindowMask |
+                     LeaveWindowMask | fevent);
     XMapRaised(iodisplay, iowindow);
 
     /* now set up the menu-window, for now use the same text
        dimensions as above */
+
+    /* font size consideration */
+    for (i = 0; i < (sizeof(menu_label) / sizeof(char *)); i++)
+        twidth = (twidth < textwidth(menu_label[i], strlen(menu_label[i])))
+                     ? textwidth(menu_label[i], strlen(menu_label[i]))
+                     : twidth;
 
     menuwindow = XCreateSimpleWindow(iodisplay, root, 0, 0, twidth, 4 * box_h, 2, ioblack, iowhite);
     for (i = 0; i < 4; i++)
@@ -1857,10 +2175,11 @@ static void drawtext(int xpos, int ypos, char *text, int len)
 #ifdef USE_FONTSET
     if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWIMAGESTRING
-        Xutf8DrawImageString(iodisplay, iowindow, font_set, iogc, xpos, ypos, text, len);
-#else
-        XmbDrawImageString(iodisplay, iowindow, font_set, iogc, xpos, ypos, text, len);
+        if (utf8locale)
+            Xutf8DrawImageString(iodisplay, iowindow, font_set, iogc, xpos, ypos, text, len);
+        else
 #endif
+            XmbDrawImageString(iodisplay, iowindow, font_set, iogc, xpos, ypos, text, len);
     else
 #endif
         XDrawImageString(iodisplay, iowindow, iogc, xpos, ypos, text, len);
@@ -1874,13 +2193,15 @@ static void Rsync()
 
 static int textwidth(char *text, int nchar)
 {
+
 #ifdef USE_FONTSET
     if (mbcslocale)
 #ifdef HAVE_XUTF8TEXTESCAPEMENT
-        return Xutf8TextEscapement(font_set, text, nchar);
-#else
-        return XmbTextEscapement(font_set, text, nchar);
+        if (utf8locale)
+            return Xutf8TextEscapement(font_set, text, nchar);
+        else
 #endif
+            return XmbTextEscapement(font_set, text, nchar);
 #endif
     return XTextWidth(font_info, text, nchar);
 }
@@ -1895,9 +2216,9 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
     Window selected_pane;
     SEXP tvec;
 
+    XMoveWindow(iodisplay, menuwindow, x_pos, y_pos);
     XMapSubwindows(iodisplay, menuwindow);
     XMapRaised(iodisplay, menuwindow);
-    XMoveWindow(iodisplay, menuwindow, x_pos, y_pos);
 
     /* now fill in the menu panes with the correct information */
 
@@ -1916,13 +2237,56 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
     }
     tvec = VECTOR_ELT(work, popupcol - 1);
     name = CHAR(STRING_ELT(names, popupcol - 1));
-    XDrawString(iodisplay, menupanes[0], iogc, 3, box_h - 3, name, strlen(name));
-    for (i = 1; i < 4; i++)
-        XDrawString(iodisplay, menupanes[i], iogc, 3, box_h - 3, menu_label[i - 1], strlen(menu_label[i - 1]));
-    if (isNull(tvec) || TYPEOF(tvec) == REALSXP)
-        XDrawString(iodisplay, menupanes[1], iogc, box_w - 20, box_h - 3, "X", 1);
+#ifdef USE_FONTSET
+    if (mbcslocale)
+#ifdef HAVE_XUTF8DRAWSTRING
+        if (utf8locale)
+            Xutf8DrawString(iodisplay, menupanes[0], font_set, iogc, 3, box_h - 3, name, strlen(name));
+        else
+#endif
+            XmbDrawString(iodisplay, menupanes[0], font_set, iogc, 3, box_h - 3, name, strlen(name));
     else
-        XDrawString(iodisplay, menupanes[2], iogc, box_w - 20, box_h - 3, "X", 1);
+#endif
+        XDrawString(iodisplay, menupanes[0], iogc, 3, box_h - 3, name, strlen(name));
+    for (i = 1; i < 4; i++)
+#ifdef USE_FONTSET
+        if (mbcslocale)
+#ifdef HAVE_XUTF8DRAWSTRING
+            if (utf8locale)
+                Xutf8DrawString(iodisplay, menupanes[i], font_set, iogc, 3, box_h - 3, menu_label[i - 1],
+                                strlen(menu_label[i - 1]));
+            else
+#endif
+                XmbDrawString(iodisplay, menupanes[i], font_set, iogc, 3, box_h - 3, menu_label[i - 1],
+                              strlen(menu_label[i - 1]));
+        else
+#endif
+            XDrawString(iodisplay, menupanes[i], iogc, 3, box_h - 3, menu_label[i - 1], strlen(menu_label[i - 1]));
+
+    if (isNull(tvec) || TYPEOF(tvec) == REALSXP)
+#ifdef USE_FONTSET
+        if (mbcslocale)
+#ifdef HAVE_XUTF8DRAWSTRING
+            if (utf8locale)
+                Xutf8DrawString(iodisplay, menupanes[1], font_set, iogc, 0, box_h - 3, "*", 1);
+            else
+#endif
+                XmbDrawString(iodisplay, menupanes[1], font_set, iogc, 0, box_h - 3, "*", 1);
+        else
+#endif
+            XDrawString(iodisplay, menupanes[1], iogc, 0, box_h - 3, "*", 1);
+    else
+#ifdef USE_FONTSET
+        if (mbcslocale)
+#ifdef HAVE_XUTF8DRAWSTRING
+        if (utf8locale)
+            Xutf8DrawString(iodisplay, menupanes[2], font_set, iogc, 0, box_h - 3, "*", 1);
+        else
+#endif
+            XmbDrawString(iodisplay, menupanes[2], font_set, iogc, 0, box_h - 3, "*", 1);
+    else
+#endif
+        XDrawString(iodisplay, menupanes[2], iogc, 0, box_h - 3, "*", 1);
 
     /*
       start an event loop; we're looking for a button press and a button
@@ -1932,6 +2296,9 @@ void popupmenu(int x_pos, int y_pos, int col, int row)
     while (1)
     {
         XNextEvent(iodisplay, &event);
+
+        /* event is processed with input method */
+
         if (event.type == ButtonPress)
         {
             button = event.xbutton.button;
@@ -2003,7 +2370,11 @@ void popdownmenu(void)
 
 static void copycell(void)
 {
-    int i, whichrow = crow + colmin - 1, whichcol = ccol + colmin - 1;
+    /*
+     * whichrow = crow + colmin - 1 => whichrow = crow + rowmin - 1
+     *                   ^^^                             ^^^
+     */
+    int i, whichrow = crow + rowmin - 1, whichcol = ccol + colmin - 1;
     SEXP tmp;
 
     if (whichrow == 0)
@@ -2022,12 +2393,18 @@ static void copycell(void)
                 if (TYPEOF(tmp) == REALSXP)
                 {
                     if (REAL(tmp)[i] != ssNA_REAL)
-                        strcpy(copycontents, EncodeElement(tmp, i, 0, '.'));
+                    {
+                        strncpy(copycontents, EncodeElement(tmp, i, 0, '.'), BOOSTED_BUF_SIZE - 1);
+                        copycontents[BOOSTED_BUF_SIZE - 1] = '\0';
+                    }
                 }
                 else if (TYPEOF(tmp) == STRSXP)
                 {
                     if (!streql(CHAR(STRING_ELT(tmp, i)), CHAR(STRING_ELT(ssNA_STRING, 0))))
-                        strcpy(copycontents, EncodeElement(tmp, i, 0, '.'));
+                    {
+                        strncpy(copycontents, EncodeElement(tmp, i, 0, '.'), BOOSTED_BUF_SIZE - 1);
+                        copycontents[BOOSTED_BUF_SIZE - 1] = '\0';
+                    }
                 }
             }
         }
@@ -2049,4 +2426,70 @@ static void pastecell(int row, int col)
     }
     closerect();
     highlightrect();
+}
+
+static void calc_pre_edit_pos(void)
+{
+#ifdef USE_FONTSET
+    XVaNestedList xva_nlist;
+    XPoint xpoint;
+    int i;
+    int w;
+
+    xpoint.x = boxw[0];
+    for (i = 1; i < ccol; i++)
+        xpoint.x += BOXW(colmin + i - 1);
+#ifdef HAVE_XUTF8TEXTESCAPEMENT
+    if (utf8locale)
+        w = Xutf8TextEscapement(font_set, buf, clength);
+    else
+#endif
+        w = XmbTextEscapement(font_set, buf, clength);
+    xpoint.x += (w > BOXW(colmin + ccol - 1)) ? BOXW(colmin + ccol - 1) : w;
+    xpoint.x += text_offset;
+    xpoint.y = hwidth + (crow + 1) * box_h - text_offset;
+
+    /*
+      <FIXME>
+      I may depend on implementation of XIM, but I do not obey,
+      setting value, and investigation in various implementation
+      system is need.
+      It is only a problem in an appearance.
+    */
+    xva_nlist = XVaCreateNestedList(0, XNSpotLocation, &xpoint, XNFontSet, font_set, NULL);
+    XSetICValues(ioic, XNPreeditAttributes, xva_nlist, NULL);
+
+    XFree(xva_nlist);
+#endif /* USE_FONTSET */
+    return;
+}
+
+/* last character bytes */
+static int last_wchar_bytes(char *str)
+{
+#ifdef USE_FONTSET
+    wchar_t wcs[BOOSTED_BUF_SIZE];
+    mbstate_t mb_st;
+    int cnt;
+    char last_mbs[8];
+    char *mbs;
+
+    mbs = (str == NULL) ? buf : str;
+
+    memset(wcs, 0, sizeof(wcs));
+    memset(&mb_st, 0, sizeof(mbstate_t));
+
+    if ((size_t)-1 == (cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(mbs), &mb_st)))
+    {
+        return 0;
+    }
+    if (wcs[0] == L'\0')
+        return 0;
+
+    memset(last_mbs, 0, sizeof(last_mbs));
+    wcrtomb(last_mbs, wcs[cnt - 1], &mb_st);
+    return (strlen(last_mbs));
+#else
+    return (1);
+#endif
 }
