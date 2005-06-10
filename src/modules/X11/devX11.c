@@ -1107,9 +1107,6 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
     /* Indicates whether the display is created within this particular call: */
     Rboolean DisplayOpened = FALSE;
     static const char *title = "R Graphics";
-    XSizeHints *size_hints;
-    Status size_hints_status;
-    long supplied_return;
     XSizeHints *hint;
 
 #ifdef USE_FONTSET
