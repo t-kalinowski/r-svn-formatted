@@ -128,7 +128,7 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 {
     int n, mode, stretch = 1;
     SEXP indx, result, attrib, nattrib;
-    Rboolean isMatrixSubscript = FALSE;
+    /* Rboolean isMatrixSubscript = FALSE; */
 
     if (s == R_MissingArg)
         return duplicate(x);
@@ -141,7 +141,7 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 
     if (isMatrix(s) && isArray(x) && (isInteger(s) || isReal(s)) && ncols(s) == length(attrib))
     {
-        isMatrixSubscript = TRUE;
+        /* isMatrixSubscript = TRUE; */
         s = mat2indsub(attrib, s);
         UNPROTECT(1);
         PROTECT(s);
@@ -163,9 +163,12 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
         SET_NAMED(result, 2);
 
     PROTECT(result = ExtractSubset(x, result, indx, call));
-    if (result != R_NilValue && !isMatrixSubscript &&
+    if (result != R_NilValue &&
+        /* !isMatrixSubscript && */
         (((attrib = getAttrib(x, R_NamesSymbol)) != R_NilValue) ||
-         ((attrib = getAttrib(x, R_DimNamesSymbol)) != R_NilValue && (attrib = GetRowNames(attrib)) != R_NilValue)))
+         (/* here we might have an array.  Use row names if 1D */
+          isArray(x) && LENGTH(getAttrib(x, R_DimNamesSymbol)) == 1 &&
+          (attrib = getAttrib(x, R_DimNamesSymbol)) != R_NilValue && (attrib = GetRowNames(attrib)) != R_NilValue)))
     {
         nattrib = allocVector(TYPEOF(attrib), n);
         PROTECT(nattrib);
