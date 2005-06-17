@@ -652,6 +652,7 @@ void Rvprintf(const char *format, va_list arg)
     do
     {
         con = getConnection(con_num);
+        /* Parentheses added for FC4 with gcc4 and -D_FORTIFY_SOURCE=2 */
         (con->vfprintf)(con, format, arg);
         con->fflush(con);
         con_num = getActiveSink(i++);
@@ -679,6 +680,7 @@ void REvprintf(const char *format, va_list arg)
         }
         else
         {
+            /* Parentheses added for FC4 with gcc4 and -D_FORTIFY_SOURCE=2 */
             (con->vfprintf)(con, format, arg);
             con->fflush(con);
             return;
