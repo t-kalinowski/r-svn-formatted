@@ -1339,10 +1339,13 @@ static SEXP Rf_getCallingDLL()
     SEXP rho = R_NilValue;
     Rboolean found = FALSE;
 
-    /* first find the environment of the caller */
-    for (cptr = R_GlobalContext->nextcontext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)
+    /* First find the environment of the caller.
+       Testing shows this is the right caller, despite the .C/.Call ...
+     */
+    for (cptr = R_GlobalContext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)
         if (cptr->callflag & CTXT_FUNCTION)
         {
+            /* PrintValue(cptr->call); */
             rho = cptr->cloenv;
             break;
         }
@@ -1356,6 +1359,7 @@ static SEXP Rf_getCallingDLL()
         else if (R_IsNamespaceEnv(rho))
         {
             found = TRUE;
+            PrintValue(rho);
             break;
         }
         rho = ENCLOS(rho);
@@ -1385,6 +1389,7 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
 
     if (dll->obj == NULL)
     {
+        /* Rprintf("\nsearching for %s\n", name); */
         dll->obj = Rf_getCallingDLL();
         PROTECT(dll->obj);
         numProtects++;
