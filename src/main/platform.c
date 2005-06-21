@@ -1267,13 +1267,35 @@ static Rboolean R_can_use_X11()
 
 SEXP do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, ansnames;
+    SEXP what, ans, ansnames;
     int i = 0;
 #ifdef Unix
-    Rboolean X11 = R_can_use_X11();
+    Rboolean X11 = FALSE;
 #endif
 
     checkArity(op, args);
+    what = CAR(args);
+    if (!isNull(what) && !isString(what))
+        error(_("invalid value of 'what' argument"));
+
+#if defined(Unix) && defined(HAVE_X11)
+    /* Don't load the module and contact the X11 display
+       unless it is necessary.
+    */
+    for (i = 0; i < LENGTH(what); i++)
+        if (streql(CHAR(STRING_ELT(input, i)), "X11")
+#ifdef HAVE_JPEG
+            || streql(CHAR(STRING_ELT(input, i)), "jpeg")
+#endif
+#ifdef HAVE_PNG
+            || streql(CHAR(STRING_ELT(input, i)), "png")
+#endif
+        )
+        {
+            X11 = R_can_use_X11();
+            break;
+        }
+#endif
     PROTECT(ans = allocVector(LGLSXP, 10));
     PROTECT(ansnames = allocVector(STRSXP, 10));
 
