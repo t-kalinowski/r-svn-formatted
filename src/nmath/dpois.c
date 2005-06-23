@@ -46,7 +46,7 @@ double dpois_raw(double x, double lambda, int give_log)
         return R_D__0;
     if (x < 0)
         return (R_D__0);
-    if (x < lambda * DBL_MIN)
+    if (x <= lambda * DBL_MIN)
         return (R_D_exp(-lambda));
     if (lambda < x * DBL_MIN)
         return (R_D_exp(-lambda + x * log(lambda) - lgammafn(x + 1)));
