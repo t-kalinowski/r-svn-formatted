@@ -403,6 +403,7 @@ SEXP classgets(SEXP vec, SEXP class)
     return R_NilValue; /*- just for -Wall */
 }
 
+/* oldClass() : */
 SEXP do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
@@ -447,11 +448,10 @@ static SEXP lang2str(SEXP obj, SEXPTYPE t)
     return PRINTNAME(call_sym);
 }
 
-/* the S4-style class: for dispatch  required to be a single string;
-   for the newClass function, keeps S3-style multiple classes.
-
+/* the S4-style class: for dispatch required to be a single string;
+   for the new class() function;
+   if(singleString) , keeps S3-style multiple classes.
  */
-
 SEXP R_data_class(SEXP obj, Rboolean singleString)
 {
     SEXP class, value;
@@ -463,12 +463,12 @@ SEXP R_data_class(SEXP obj, Rboolean singleString)
     if (n == 0)
     {
         SEXP dim;
-        int n;
+        int nd;
         dim = getAttrib(obj, R_DimSymbol);
-        n = length(dim);
-        if (n > 0)
+        nd = length(dim);
+        if (nd > 0)
         {
-            if (n == 2)
+            if (nd == 2)
                 class = mkChar("matrix");
             else
                 class = mkChar("array");
