@@ -1359,7 +1359,6 @@ static SEXP Rf_getCallingDLL()
         else if (R_IsNamespaceEnv(rho))
         {
             found = TRUE;
-            PrintValue(rho);
             break;
         }
         rho = ENCLOS(rho);
