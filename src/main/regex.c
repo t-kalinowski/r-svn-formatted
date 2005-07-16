@@ -4687,7 +4687,7 @@ bracket_elem_t *start_elem, *end_elem;
         mbcset->range_ends[mbcset->nranges++] = end_wc;
 
         /* Build the table for single byte characters.  */
-        for (wc = 0; wc <= SBC_MAX; ++wc)
+        for (wc = 0; wc < SBC_MAX; ++wc)
         {
             cmp_buf[2] = wc;
             if (wcscoll(cmp_buf, cmp_buf + 2) <= 0 && wcscoll(cmp_buf + 2, cmp_buf + 4) <= 0)
@@ -4704,7 +4704,7 @@ bracket_elem_t *start_elem, *end_elem;
         if (start_ch > end_ch)
             return REG_ERANGE;
         /* Build the table for single byte characters.  */
-        for (ch = 0; ch <= SBC_MAX; ++ch)
+        for (ch = 0; ch < SBC_MAX; ++ch)
             if (start_ch <= ch && ch <= end_ch)
                 bitset_set(sbcset, ch);
     }
@@ -4917,7 +4917,7 @@ reg_errcode_t *err;
 #endif /* RE_ENABLE_I18N */
 
         /* Build the table for single byte characters.  */
-        for (ch = 0; ch <= SBC_MAX; ch++)
+        for (ch = 0; ch < SBC_MAX; ++ch)
         {
             uint32_t ch_collseq;
             /*
