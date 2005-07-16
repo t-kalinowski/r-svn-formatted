@@ -190,7 +190,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
     {
         q = ch;
         p1 = 0.5 * ch;
-        p2 = p_ - pgamma(p1, alpha, 1, /*lower_tail*/ TRUE, /*log_p*/ FALSE);
+        p2 = p_ - pgamma_raw(p1, alpha, /*lower_tail*/ TRUE, /*log_p*/ FALSE);
 #ifdef DEBUG_qgamma
         if (i == 1)
             REprintf(" Ph.II iter; ch=%g, p2=%g\n", ch, p2);
