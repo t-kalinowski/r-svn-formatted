@@ -9524,7 +9524,7 @@ const re_string_t *input;
         {
             /* match with range expression?  */
 #if __GNUC__ >= 2
-            wchar_t cmp_buf[] = {L'\0', L'\0', wc, L'\0', L'\0', L'\0'};
+            __extension__ wchar_t cmp_buf[] = {L'\0', L'\0', wc, L'\0', L'\0', L'\0'};
 #else
             wchar_t cmp_buf[] = {L'\0', L'\0', L'\0', L'\0', L'\0', L'\0'};
             cmp_buf[2] = wc;
