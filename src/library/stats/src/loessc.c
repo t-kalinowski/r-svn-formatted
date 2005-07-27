@@ -60,8 +60,8 @@ void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc);
 #define GAUSSIAN 1
 #define SYMMETRIC 0
 
-static Sint *iv, liv, lv, tau;
-static double *v;
+static Sint *iv = NULL, liv, lv, tau;
+static double *v = NULL;
 
 /* these are set in an earlier call to loess_workspace or loess_grow */
 static void loess_free(void)
@@ -76,7 +76,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, S
                double *trL, double *one_delta, double *two_delta, Sint *setLf)
 {
     Sint zero = 0, one = 1, two = 2, nsing, i, k;
-    double *hat_matrix, *LL;
+    double *hat_matrix, *LL, dzero = 0.0;
 
     *trL = 0;
 
@@ -84,7 +84,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, S
     v[1] = *cell; /* = v(2) in Fortran (!) */
     if (!strcmp(*surf_stat, "interpolate/none"))
     {
-        F77_CALL(lowesb)(x, y, robust, &zero, &zero, iv, &liv, &lv, v);
+        F77_CALL(lowesb)(x, y, robust, &dzero, &zero, iv, &liv, &lv, v);
         F77_CALL(lowese)(iv, &liv, &lv, v, n, x, surface);
         loess_prune(parameter, a, xi, vert, vval);
     }
@@ -104,7 +104,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, Sint *d, S
     }
     else if (!strcmp(*surf_stat, "interpolate/2.approx"))
     {
-        F77_CALL(lowesb)(x, y, robust, &zero, &zero, iv, &liv, &lv, v);
+        F77_CALL(lowesb)(x, y, robust, &dzero, &zero, iv, &liv, &lv, v);
         F77_CALL(lowese)(iv, &liv, &lv, v, n, x, surface);
         nsing = iv[29];
         F77_CALL(ehg196)(&tau, d, span, trL);
