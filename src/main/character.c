@@ -901,6 +901,7 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
                         /* leave alone */;
                     else if (!isalnum((int)*wc))
                         *wc = L'.';
+                    /* else leave alone */
                 }
                 wcstombs(this, wstr, strlen(this) + 1);
                 Free(wstr);
@@ -2382,7 +2383,7 @@ static int mbrtoint(int *w, const char *s)
 SEXP do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
-    int i, j, nc, *ians, tmp, used;
+    int i, j, nc, *ians, tmp, used = 0; /* -Wall */
     char *s = CHAR(STRING_ELT(x, 0));
 
     checkArity(op, args);
