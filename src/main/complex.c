@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 2000-5       	    The R Development Core Team.
+ *  Copyright (C) 2005		    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -282,8 +283,10 @@ SEXP do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             for (i = 0; i < n; i++)
                 if (ISNAN(REAL(x)[i]))
                     REAL(y)[i] = REAL(x)[i];
-                else
+                else if (REAL(x)[i] >= 0)
                     REAL(y)[i] = 0;
+                else
+                    REAL(y)[i] = M_PI;
             break;
         case 3: /* Mod */
         case 6: /* abs */
