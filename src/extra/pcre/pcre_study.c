@@ -2,14 +2,11 @@
  *      Perl-Compatible Regular Expressions       *
  *************************************************/
 
-/*
-This is a library of functions to support regular expressions whose syntax
-and semantics are as close as possible to those of the Perl 5 language. See
-the file Tech.Notes for some information on the internals.
+/* PCRE is a library of functions to support regular expressions whose syntax
+and semantics are as close as possible to those of the Perl 5 language.
 
-Written by: Philip Hazel <ph10@cam.ac.uk>
-
-           Copyright (c) 1997-2004 University of Cambridge
+                       Written by Philip Hazel
+           Copyright (c) 1997-2005 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -40,10 +37,10 @@ POSSIBILITY OF SUCH DAMAGE.
 -----------------------------------------------------------------------------
 */
 
-/* Include the internals header, which itself includes Standard C headers plus
-the external pcre header. */
+/* This module contains the external function pcre_study(), along with local
+supporting functions. */
 
-#include "internal.h"
+#include "pcre_internal.h"
 
 /*************************************************
  *      Set a bit and maybe its alternate case    *
@@ -440,7 +437,7 @@ EXPORT pcre_extra *pcre_study(const pcre *external_re, int options, const char *
 
     tables = re->tables;
     if (tables == NULL)
-        (void)pcre_fullinfo(external_re, NULL, PCRE_INFO_DEFAULT_TABLES, &tables);
+        (void)pcre_fullinfo(external_re, NULL, PCRE_INFO_DEFAULT_TABLES, (void *)(&tables));
 
     compile_block.lcc = tables + lcc_offset;
     compile_block.fcc = tables + fcc_offset;
@@ -480,4 +477,4 @@ EXPORT pcre_extra *pcre_study(const pcre *external_re, int options, const char *
     return extra;
 }
 
-/* End of study.c */
+/* End of pcre_study.c */
