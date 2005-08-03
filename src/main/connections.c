@@ -411,7 +411,11 @@ static Rboolean file_open(Rconnection con)
     fp = R_fopen(name, con->mode);
     if (!fp)
     {
+#ifdef HAVE_STRERROR
         warning(_("cannot open file '%s', reason '%s'"), name, strerror(errno));
+#else
+        warning(_("cannot open file '%s'"), name);
+#endif
         return FALSE;
     }
     if (temp)
@@ -700,10 +704,15 @@ static Rboolean fifo_open(Rconnection con)
         res = stat(name, &sb);
         if (res)
         { /* error, does not exist? */
+            errno = 0;
             res = mkfifo(name, 00644);
             if (res)
             {
+#ifdef HAVE_STRERROR
+                warning(_("cannot create fifo '%s', reason '%s'"), name, strerror(errno));
+#else
                 warning(_("cannot create fifo '%s'"), name);
+#endif
                 return FALSE;
             }
         }
@@ -893,10 +902,15 @@ static Rboolean pipe_open(Rconnection con)
     mode[0] = con->mode[0];
     mode[1] = '\0';
 #endif
+    errno = 0;
     fp = R_popen(con->description, mode);
     if (!fp)
     {
+#ifdef HAVE_STRERROR
+        warning(_("cannot open pipe() cmd '%s', reason '%s'"), con->description, strerror(errno));
+#else
         warning(_("cannot open pipe() cmd '%s'"), con->description);
+#endif
         return FALSE;
     }
     ((Rfileconn)(con->private))->fp = fp;
