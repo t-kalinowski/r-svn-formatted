@@ -376,7 +376,7 @@ void init_con(Rconnection new, char *description, char *mode)
 
 /* ------------------- file connections --------------------- */
 
-#if defined(HAVE_OFF_T) && defined(__USE_LARGEFILE)
+#if defined(HAVE_OFF_T) && defined(_LARGEFILE_SOURCE)
 #define f_seek fseeko
 #define f_tell ftello
 #else
@@ -407,10 +407,11 @@ static Rboolean file_open(Rconnection con)
     }
     else
         name = R_ExpandFileName(con->description);
+    errno = 0; /* some systems require this */
     fp = R_fopen(name, con->mode);
     if (!fp)
     {
-        warning(_("cannot open file '%s'"), name);
+        warning(_("cannot open file '%s', reason '%s'"), name, strerror(errno));
         return FALSE;
     }
     if (temp)
@@ -500,7 +501,7 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
 {
     Rfileconn this = con->private;
     FILE *fp = this->fp;
-#if defined(HAVE_OFF_T) && defined(__USE_LARGEFILE)
+#if defined(HAVE_OFF_T) && defined(_LARGEFILE_SOURCE)
     off_t pos = f_tell(fp);
 #else
 #ifdef Win32
