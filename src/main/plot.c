@@ -857,7 +857,7 @@ SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
      *
      *	axp[0:2] = (x1, x2, nInt), where x1..x2 are the extreme tick marks
      *		   {unless in log case, where nint \in {1,2,3 ; -1,-2,....}
-     *		    and the `nint' argument is used.
+     *		    and the `nint' argument is used.}
 
      *	The resulting REAL vector must have length >= 1, ideally >= 2
      */
