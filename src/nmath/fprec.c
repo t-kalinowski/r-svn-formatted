@@ -58,7 +58,7 @@ double fprec(double x, double digits)
     double l10, pow10, sgn, p10, P10;
     int e10, e2, do_round, dig;
     /* Max.expon. of 10 (=308.2547) */
-    const static double max10e = DBL_MAX_EXP * M_LOG10_2;
+    const static int max10e = DBL_MAX_EXP * M_LOG10_2;
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(digits))
@@ -95,17 +95,21 @@ double fprec(double x, double digits)
     {
         p10 = 1.0;
         if (e10 > max10e)
-        {
+        { /* numbers less than 10^(dig-1) * 1e-308 */
             p10 = R_pow_di(10., e10 - max10e);
             e10 = max10e;
         }
-        else if (e10 < -max10e)
-        {
-            p10 = R_pow_di(10., e10 + max10e);
-            e10 = -max10e;
+        if (e10 > 0)
+        { /* Try always to have pow >= 1
+     and so exactly representable */
+            pow10 = R_pow_di(10., e10);
+            return (sgn * (floor(((x * pow10) * p10) + 0.5) / pow10) / p10);
         }
-        pow10 = R_pow_di(10., e10);
-        return (sgn * (floor((x * pow10) * p10 + 0.5) / pow10) / p10);
+        else
+        {
+            pow10 = R_pow_di(10., -e10);
+            return (sgn * (floor(((x / pow10)) + 0.5) * pow10));
+        }
     }
     else
     { /* -- LARGE or small -- */
