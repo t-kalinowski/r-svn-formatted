@@ -270,6 +270,8 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     R_print.digits = savedigits;
     if ((opts & WARNINCOMPLETE) && !localData.sourceable)
         warning(_("deparse may be incomplete"));
+    /* somewhere lower down might have allocated ... */
+    R_FreeStringBuffer(&(localData.buffer));
     return svec;
 }
 
