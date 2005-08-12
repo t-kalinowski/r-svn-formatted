@@ -238,7 +238,7 @@ SEXP do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     method = CAR(args);
     if (!isString(method) || LENGTH(method) != 1)
-        errorcall(call, _("invalid 'method' argument"));
+        errorcall(call, _("invalid '%s' argument"), "method");
     tn = CHAR(STRING_ELT(method, 0));
     args = CDR(args);
     options = CAR(args);

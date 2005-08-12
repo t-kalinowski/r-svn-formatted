@@ -847,19 +847,19 @@ SEXP do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || length(sfile) < 1)
-        errorcall(call, _("invalid 'description' argument"));
+        errorcall(call, _("invalid '%s' argument"), "description");
     if (length(sfile) > 1)
         warning(_("only first element of 'description' argument used"));
     file = CHAR(STRING_ELT(sfile, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     block = asLogical(CADDR(args));
     if (block == NA_LOGICAL)
-        error(_("invalid 'block' argument"));
+        error(_("invalid '%s' argument"), "block");
     enc = CADDDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
     open = CHAR(STRING_ELT(sopen, 0));
     ncon = NextConnection();
     con = Connections[ncon] = newfifo(file, strlen(open) ? open : "r");
@@ -993,17 +993,17 @@ SEXP do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     scmd = CAR(args);
     if (!isString(scmd) || length(scmd) < 1)
-        error(_("invalid 'description' argument"));
+        error(_("invalid '%s' argument"), "description");
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
     file = CHAR(STRING_ELT(scmd, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     open = CHAR(STRING_ELT(sopen, 0));
     enc = CADDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
 
     ncon = NextConnection();
 #ifdef Win32
@@ -1193,19 +1193,19 @@ SEXP do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || length(sfile) < 1)
-        errorcall(call, _("invalid 'description' argument"));
+        errorcall(call, _("invalid '%s' argument"), "description");
     if (length(sfile) > 1)
         warning(_("only first element of 'description' argument used"));
     file = CHAR(STRING_ELT(sfile, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     enc = CADDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
     compress = asInteger(CADDDR(args));
     if (compress == NA_LOGICAL || compress < 0 || compress > 9)
-        error(_("invalid 'compress' argument"));
+        error(_("invalid '%s' argument"), "compress");
     open = CHAR(STRING_ELT(sopen, 0));
     ncon = NextConnection();
     con = Connections[ncon] = newgzfile(file, strlen(open) ? open : "r", compress);
@@ -1387,16 +1387,16 @@ SEXP do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || length(sfile) < 1)
-        errorcall(call, _("invalid 'description' argument"));
+        errorcall(call, _("invalid '%s' argument"), "description");
     if (length(sfile) > 1)
         warning(_("only first element of 'description' argument used"));
     file = CHAR(STRING_ELT(sfile, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     enc = CADDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
     open = CHAR(STRING_ELT(sopen, 0));
     ncon = NextConnection();
     con = Connections[ncon] = newbzfile(file, strlen(open) ? open : "r");
@@ -2158,18 +2158,18 @@ SEXP do_textconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || length(sfile) != 1)
-        error(_("invalid 'description' argument"));
+        error(_("invalid '%s' argument"), "description");
     desc = CHAR(STRING_ELT(sfile, 0));
     stext = CADR(args);
     if (!isString(stext))
-        error(_("invalid 'text' argument"));
+        error(_("invalid '%s' argument"), "text");
     sopen = CADDR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     open = CHAR(STRING_ELT(sopen, 0));
     venv = CADDDR(args);
     if (!isEnvironment(venv) && venv != R_NilValue)
-        error(_("invalid 'environment' argument"));
+        error(_("invalid '%s' argument"), "environment");
     ncon = NextConnection();
     if (!strlen(open) || strncmp(open, "r", 1) == 0)
         con = Connections[ncon] = newtext(desc, stext);
@@ -2211,29 +2211,29 @@ SEXP do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_SOCKETS
     scmd = CAR(args);
     if (!isString(scmd) || length(scmd) != 1)
-        error(_("invalid 'host' argument"));
+        error(_("invalid '%s' argument"), "host");
     host = CHAR(STRING_ELT(scmd, 0));
     args = CDR(args);
     port = asInteger(CAR(args));
     if (port == NA_INTEGER || port < 0)
-        error(_("invalid 'port' argument"));
+        error(_("invalid '%s' argument"), "port");
     args = CDR(args);
     server = asLogical(CAR(args));
     if (server == NA_LOGICAL)
-        error(_("invalid 'server' argument"));
+        error(_("invalid '%s' argument"), "server");
     args = CDR(args);
     blocking = asLogical(CAR(args));
     if (blocking == NA_LOGICAL)
-        error(_("invalid 'blocking' argument"));
+        error(_("invalid '%s' argument"), "blocking");
     args = CDR(args);
     sopen = CAR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     open = CHAR(STRING_ELT(sopen, 0));
     args = CDR(args);
     enc = CAR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
 
     ncon = NextConnection();
     con = R_newsock(host, port, server, open);
@@ -2278,16 +2278,16 @@ SEXP do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     sfile = CAR(args);
     if (!isString(sfile) || length(sfile) < 1)
-        errorcall(call, _("invalid 'description' argument"));
+        errorcall(call, _("invalid '%s' argument"), "description");
     if (length(sfile) > 1)
         warning(_("only first element of 'description' argument used"));
     file = CHAR(STRING_ELT(sfile, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     enc = CADDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
     open = CHAR(STRING_ELT(sopen, 0));
     ncon = NextConnection();
     con = Connections[ncon] = R_newunz(file, strlen(open) ? open : "r");
@@ -2339,10 +2339,10 @@ SEXP do_open(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     block = asLogical(CADDR(args));
     if (block == NA_LOGICAL)
-        error(_("invalid 'blocking' argument"));
+        error(_("invalid '%s' argument"), "blocking");
     open = CHAR(STRING_ELT(sopen, 0));
     if (strlen(open) > 0)
         strcpy(con->mode, open);
@@ -2744,13 +2744,13 @@ SEXP do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     text = CAR(args);
     if (!isString(text))
-        error(_("invalid 'text' argument"));
+        error(_("invalid '%s' argument"), "text");
     if (!inherits(CADR(args), "connection"))
         errorcall(call, _("'con' is not a connection"));
     con = getConnection(asInteger(CADR(args)));
     sep = CADDR(args);
     if (!isString(sep))
-        error(_("invalid 'sep' argument"));
+        error(_("invalid '%s' argument"), "sep");
     if (!con->canwrite)
         error(_("cannot write to this connection"));
     wasopen = con->isopen;
@@ -3539,13 +3539,13 @@ SEXP do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
 
     stext = CAR(args);
     if (!isString(stext))
-        error(_("invalid 'data' argument"));
+        error(_("invalid '%s' argument"), "data");
     i = asInteger(CADR(args));
     if (i == NA_INTEGER || !(con = Connections[i]))
         error(_("invalid connection"));
     newLine = asLogical(CADDR(args));
     if (newLine == NA_LOGICAL)
-        error(_("invalid 'newLine' argument"));
+        error(_("invalid '%s' argument"), "newLine");
     if (!con->canread && !con->isopen)
         error(_("can only push back on open readable connections"));
     if (!con->text)
@@ -3817,7 +3817,7 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     scmd = CAR(args);
     if (!isString(scmd) || length(scmd) < 1)
-        error(_("invalid 'description' argument"));
+        error(_("invalid '%s' argument"), "description");
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
     url = CHAR(STRING_ELT(scmd, 0));
@@ -3830,14 +3830,14 @@ SEXP do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
-        error(_("invalid 'open' argument"));
+        error(_("invalid '%s' argument"), "open");
     open = CHAR(STRING_ELT(sopen, 0));
     block = asLogical(CADDR(args));
     if (block == NA_LOGICAL)
-        error(_("invalid 'block' argument"));
+        error(_("invalid '%s' argument"), "block");
     enc = CADDDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100)
-        error(_("invalid 'encoding' argument"));
+        error(_("invalid '%s' argument"), "encoding");
 
     ncon = NextConnection();
     if (strncmp(url, "file://", 7) == 0)

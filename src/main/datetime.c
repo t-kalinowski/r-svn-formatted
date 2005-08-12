@@ -592,7 +592,7 @@ SEXP do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     x = CAR(args);
     if (!isVectorList(x) || LENGTH(x) != 9)
-        error(_("invalid 'x' argument"));
+        error(_("invalid '%s' argument"), "x");
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
         error(_("invalid 'tz' value"));
 
@@ -666,13 +666,13 @@ SEXP do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     x = CAR(args);
     if (!isVectorList(x) || LENGTH(x) != 9)
-        error(_("invalid 'x' argument"));
+        error(_("invalid '%s' argument"), "x");
     if (!isString((sformat = CADR(args))) || LENGTH(sformat) == 0)
-        error(_("invalid 'format' argument"));
+        error(_("invalid '%s' argument"), "format");
     m = LENGTH(sformat);
     UseTZ = asLogical(CADDR(args));
     if (UseTZ == NA_LOGICAL)
-        error(_("invalid 'usetz' argument"));
+        error(_("invalid '%s' argument"), "usetz");
     tz = getAttrib(x, install("tzone"));
 
     /* workaround for glibc & MacOS X bugs in strftime: they have
@@ -800,9 +800,9 @@ SEXP do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString((x = CAR(args))))
-        error(_("invalid 'x' argument"));
+        error(_("invalid '%s' argument"), "x");
     if (!isString((sformat = CADR(args))) || LENGTH(sformat) == 0)
-        error(_("invalid 'format' argument"));
+        error(_("invalid '%s' argument"), "x");
     n = LENGTH(x);
     m = LENGTH(sformat);
     if (n > 0)
@@ -924,7 +924,7 @@ SEXP do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     x = CAR(args);
     if (!isVectorList(x) || LENGTH(x) != 9)
-        error(_("invalid 'x' argument"));
+        error(_("invalid '%s' argument"), "x");
 
     for (i = 3; i < 6; i++)
         if ((nlen[i] = LENGTH(VECTOR_ELT(x, i))) > n)
