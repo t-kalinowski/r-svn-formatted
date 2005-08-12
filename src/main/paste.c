@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2003  The R Development Core Team
+ *  Copyright (C) 1997--2005  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,25 +160,14 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
     int wi, di, ei;
     char *strp;
 
+    checkArity(op, args);
     PrintDefaults(env);
-
-    switch (length(args))
-    {
-    case 1:
-        break;
-    case 3:
-        nsmall = asInteger(CADDR(args));
-        if (nsmall == NA_INTEGER || nsmall < 0 || nsmall > 20)
-            errorcall(call, _("invalid 'nsmall' argument"));
-    /* drop through */
-    case 2:
-        trim = asLogical(CADR(args));
-        if (trim == NA_INTEGER)
-            errorcall(call, _("invalid 'trim' argument"));
-        break;
-    default:
-        errorcall(call, _("incorrect number of arguments"));
-    }
+    trim = asLogical(CADR(args));
+    if (trim == NA_INTEGER)
+        errorcall(call, _("invalid 'trim' argument"));
+    nsmall = asInteger(CADDR(args));
+    if (nsmall == NA_INTEGER || nsmall < 0 || nsmall > 20)
+        errorcall(call, _("invalid 'nsmall' argument"));
 
     if (!isVector(x = CAR(args)))
         errorcall(call, _("first argument must be atomic"));
@@ -243,28 +232,33 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(1);
         break;
 
-    case STRSXP: /* this is *UN*used now (1.2) */
-
-        formatString(STRING_PTR(x), n, &w, 0);
-        if (trim)
-            w = 0;
-        PROTECT(y = allocVector(STRSXP, n));
-        for (i = 0; i < n; i++)
-        {
-            strp = EncodeString(STRING_ELT(x, i), w, 0, Rprt_adj_left);
-            SET_STRING_ELT(y, i, mkChar(strp));
-        }
-        UNPROTECT(1);
-        break;
+#if 0
+    case STRSXP: /*this is *UN*used now (1.2) */
+	/* not, it was used for a list 1.2 <= R < 2.2.0 */
+	formatString(STRING_PTR(x), n, &w, 0);
+	if (trim) w = 0;
+	PROTECT(y = allocVector(STRSXP, n));
+	for (i = 0; i < n; i++) {
+	    strp = EncodeString(STRING_ELT(x, i), w, 0, Rprt_adj_left);
+	    SET_STRING_ELT(y, i, mkChar(strp));
+	}
+	UNPROTECT(1);
+	break;
+#endif
     default:
         errorcall(call, _("Impossible mode ( x )"));
         y = R_NilValue; /* -Wall */
     }
     PROTECT(y);
     if ((l = getAttrib(x, R_DimSymbol)) != R_NilValue)
+    {
         setAttrib(y, R_DimSymbol, l);
-    if ((l = getAttrib(x, R_DimNamesSymbol)) != R_NilValue)
-        setAttrib(y, R_DimNamesSymbol, l);
+        if ((l = getAttrib(x, R_DimNamesSymbol)) != R_NilValue)
+            setAttrib(y, R_DimNamesSymbol, l);
+    }
+    else if ((l = getAttrib(x, R_NamesSymbol)) != R_NilValue)
+        setAttrib(y, R_NamesSymbol, l);
+
     UNPROTECT(1);
     return y;
 }
