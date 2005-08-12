@@ -516,7 +516,7 @@ SEXP do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), REALSXP));
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
-        error(_("invalid 'tz' value"));
+        error(_("invalid '%s' value"), "tz");
     tz = CHAR(STRING_ELT(stz, 0));
     if (strlen(tz) == 0)
     {
@@ -594,7 +594,7 @@ SEXP do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isVectorList(x) || LENGTH(x) != 9)
         error(_("invalid '%s' argument"), "x");
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
-        error(_("invalid 'tz' value"));
+        error(_("invalid '%s' value"), "tz");
 
     tz = CHAR(STRING_ELT(stz, 0));
     if (strlen(tz) == 0)

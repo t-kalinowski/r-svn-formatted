@@ -422,7 +422,7 @@ SEXP FixupVFont(SEXP vfont)
         int i;
         PROTECT(vf = coerceVector(vfont, INTSXP));
         if (length(vf) != 2)
-            error(_("invalid 'vfont' value"));
+            error(_("invalid '%s' value"), "vfont");
         typeface = INTEGER(vf)[0];
         if (typeface < 0 || typeface > 7)
             error(_("invalid 'vfont' value [typeface]"));
@@ -2415,14 +2415,14 @@ SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     else
-        errorcall(call, _("invalid 'adj' value"));
+        errorcall(call, _("invalid '%s' value"), "adj");
     args = CDR(args);
 
     PROTECT(pos = coerceVector(CAR(args), INTSXP));
     npos = length(pos);
     for (i = 0; i < npos; i++)
         if (INTEGER(pos)[i] < 1 || INTEGER(pos)[i] > 4)
-            errorcall(call, _("invalid 'pos' value"));
+            errorcall(call, _("invalid '%s' value"), "pos");
     args = CDR(args);
 
     offset = GConvertXUnits(asReal(CAR(args)), CHARS, INCHES, dd);
@@ -3783,7 +3783,7 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isNull(CAR(args)))                                                                                         \
             cex = Rf_gpptr(dd)->cex;                                                                                   \
         else if (!R_FINITE(cex = asReal(CAR(args))) || cex <= 0.0)                                                     \
-            errorcall(call, _("invalid 'cex' value"));                                                                 \
+            errorcall(call, _("invalid '%s' value"), "cex");                                                           \
                                                                                                                        \
         n = LENGTH(str);                                                                                               \
         PROTECT(ans = allocVector(REALSXP, n));                                                                        \

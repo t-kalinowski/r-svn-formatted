@@ -140,7 +140,7 @@ SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *sym
         args = naokfind(CDR(args), nargs, naok, dup, &dll);
 
         if (*naok == NA_LOGICAL)
-            errorcall(call, _("invalid 'naok' value"));
+            errorcall(call, _("invalid '%s' value"), "naok");
         if (*nargs > MAX_ARGS)
             errorcall(call, _("too many arguments in foreign function call"));
     }

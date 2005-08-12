@@ -739,7 +739,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         return string;
 
     if (!isString(string))
-        errorcall(call, _("invalid 'string' value"));
+        errorcall(call, _("invalid '%s' value"), "string");
 
     if (isNull(CAR(args)))
     {
@@ -773,7 +773,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isString(CAR(args)))
         domain = CHAR(STRING_ELT(CAR(args), 0));
     else
-        errorcall(call, _("invalid 'domain' value"));
+        errorcall(call, _("invalid '%s' value"), "domain");
 
     if (strlen(domain))
     {
@@ -880,7 +880,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isString(sdom))
         domain = CHAR(STRING_ELT(sdom, 0));
     else
-        errorcall(call, _("invalid 'domain' value"));
+        errorcall(call, _("invalid '%s' value"), "domain");
 
     if (strlen(domain))
     {
@@ -903,7 +903,7 @@ SEXP do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
-        errorcall(call, _("invalid 'domain' value"));
+        errorcall(call, _("invalid '%s' value"), "domain");
     if (isNull(CADR(args)))
     {
         res = bindtextdomain(CHAR(STRING_ELT(CAR(args), 0)), NULL);
@@ -911,7 +911,7 @@ SEXP do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
     {
         if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
-            errorcall(call, _("invalid 'dirname' value"));
+            errorcall(call, _("invalid '%s' value"), "dirname");
         res = bindtextdomain(CHAR(STRING_ELT(CAR(args), 0)), CHAR(STRING_ELT(CADR(args), 0)));
     }
     if (res)
