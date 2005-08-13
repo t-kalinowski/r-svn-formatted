@@ -133,53 +133,58 @@ R_size_t R_Decode2Long(char *p, int *ierr)
     }
 }
 
+/* There is no documented (or enforced) limit on 'w' here,
+   so use snprintf */
+#define NB 1000
 char *EncodeLogical(int x, int w)
 {
-    R_AllocStringBuffer(0, buffer);
+    static char buff[NB];
     if (x == NA_LOGICAL)
-        sprintf(buffer->data, "%*s", w, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
     else if (x)
-        sprintf(buffer->data, "%*s", w, "TRUE");
+        snprintf(buff, NB, "%*s", w, "TRUE");
     else
-        sprintf(buffer->data, "%*s", w, "FALSE");
-    return buffer->data;
+        snprintf(buff, NB, "%*s", w, "FALSE");
+    buff[NB - 1] = '\0';
+    return buff;
 }
 
 char *EncodeInteger(int x, int w)
 {
-    R_AllocStringBuffer(0, buffer);
+    static char buff[NB];
     if (x == NA_INTEGER)
-        sprintf(buffer->data, "%*s", w, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
     else
-        sprintf(buffer->data, "%*d", w, x);
-    return buffer->data;
+        snprintf(buff, NB, "%*d", w, x);
+    buff[NB - 1] = '\0';
+    return buff;
 }
 
 char *EncodeRaw(Rbyte x)
 {
-    R_AllocStringBuffer(0, buffer);
-    sprintf(buffer->data, "%02x", x);
-    return buffer->data;
+    static char buff[10];
+    sprintf(buff, "%02x", x);
+    return buff;
 }
 
 char *EncodeReal(double x, int w, int d, int e, char cdec)
 {
+    static char buff[NB];
     char *p, fmt[20];
 
-    R_AllocStringBuffer(0, buffer);
     /* IEEE allows signed zeros (yuck!) */
     if (x == 0.0)
         x = 0.0;
     if (!R_FINITE(x))
     {
         if (ISNA(x))
-            sprintf(buffer->data, "%*s", w, CHAR(R_print.na_string));
+            snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
         else if (ISNAN(x))
-            sprintf(buffer->data, "%*s", w, "NaN");
+            snprintf(buff, NB, "%*s", w, "NaN");
         else if (x > 0)
-            sprintf(buffer->data, "%*s", w, "Inf");
+            snprintf(buff, NB, "%*s", w, "Inf");
         else
-            sprintf(buffer->data, "%*s", w, "-Inf");
+            snprintf(buff, NB, "%*s", w, "-Inf");
     }
     else if (e)
     {
@@ -187,12 +192,12 @@ char *EncodeReal(double x, int w, int d, int e, char cdec)
         if (d)
         {
             sprintf(fmt, "%%#%d.%de", w, d);
-            sprintf(buffer->data, fmt, x);
+            snprintf(buff, NB, fmt, x);
         }
         else
         {
             sprintf(fmt, "%%%d.%de", w, d);
-            sprintf(buffer->data, fmt, x);
+            snprintf(buff, NB, fmt, x);
         }
 #else
         /* Win32 libraries always use e+xxx format so avoid them */
@@ -212,7 +217,7 @@ char *EncodeReal(double x, int w, int d, int e, char cdec)
                 sprintf(fmt, "%%#%d.%de", w, d);
             else
                 sprintf(fmt, "%%%d.%de", w, d);
-            sprintf(buffer->data, fmt, X);
+            snprintf(buff, NB, fmt, X);
         }
         else
         {
@@ -220,30 +225,31 @@ char *EncodeReal(double x, int w, int d, int e, char cdec)
                 sprintf(fmt, "%%#%d.%dfe%%+0%dd", w - ee - 3, d, ee + 2);
             else
                 sprintf(fmt, "%%%d.%dfe%%+0%dd", w - ee - 3, d, ee + 2);
-            sprintf(buffer->data, fmt, x, kp);
+            snprintf(buff, NB, fmt, x, kp);
         }
 #endif
     }
     else
     { /* e = 0 */
         sprintf(fmt, "%%%d.%df", w, d);
-        sprintf(buffer->data, fmt, x);
+        snprintf(buff, NB, fmt, x);
     }
+    buff[NB - 1] = '\0';
 
     if (cdec != '.')
-        for (p = buffer->data; *p; p++)
+        for (p = buff; *p; p++)
             if (*p == '.')
                 *p = cdec;
 
-    return buffer->data;
+    return buff;
 }
 
 char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, char cdec)
 {
-    char *Re, *Im, *tmp;
+    static char buff[NB];
+    char Re[NB], *Im, *tmp;
     int flagNegIm = 0;
 
-    R_AllocStringBuffer(0, buffer);
     /* IEEE allows signed zeros; strip these here */
     if (x.r == 0.0)
         x.r = 0.0;
@@ -252,28 +258,20 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, 
 
     if (ISNA(x.r) || ISNA(x.i))
     {
-        sprintf(buffer->data, "%*s%*s", R_print.gap, "", wr + wi + 2, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s%*s", R_print.gap, "", wr + wi + 2, CHAR(R_print.na_string));
     }
     else
     {
-        /* EncodeReal returns pointer to static storage so copy */
-
+        /* EncodeReal has static buffer, so copy */
         tmp = EncodeReal(x.r, wr, dr, er, cdec);
-        Re = Calloc(strlen(tmp) + 1, char);
         strcpy(Re, tmp);
-
         if ((flagNegIm = (x.i < 0)))
             x.i = -x.i;
-        tmp = EncodeReal(x.i, wi, di, ei, cdec);
-        Im = Calloc(strlen(tmp) + 1, char);
-        strcpy(Im, tmp);
-
-        sprintf(buffer->data, "%s%s%si", Re, flagNegIm ? "-" : "+", Im);
-
-        Free(Re);
-        Free(Im);
+        Im = EncodeReal(x.i, wi, di, ei, cdec);
+        snprintf(buff, NB, "%s%s%si", Re, flagNegIm ? "-" : "+", Im);
     }
-    return buffer->data;
+    buff[NB - 1] = '\0';
+    return buff;
 }
 
 #ifdef SUPPORT_MBCS
@@ -383,7 +381,10 @@ int Rstrlen(SEXP s, int quote)
     return Rstrwid(CHAR(s), LENGTH(s), quote);
 }
 
-/* Here w appears to be the minimum field width */
+/* Here w is the minimum field width
+   If 'quote' is non-zero the result should be quoted (and internal quotes
+   escaped and NA strings handled differently).
+ */
 char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
     int b, b0, i, j, cnt;
@@ -402,7 +403,12 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
         cnt = LENGTH(s);
     }
 
-    R_AllocStringBuffer(imax2(cnt + 2, w), buffer); /* +2 allows for quotes */
+    /* We need enough space for the encoded string, including escapes.
+       Octal encoding turns one byte into four.
+       Unicode encoding can turn a multibyte into six or perhaps ten.
+       Let's be wasteful here.
+     */
+    R_AllocStringBuffer(imax2(5 * cnt + 2, w), buffer); /* +2 allows for quotes */
     q = buffer->data;
     b = w - i - (quote ? 2 : 0); /* total amount of padding */
     if (b > 0 && justify != Rprt_adj_left)
@@ -552,36 +558,38 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 char *EncodeElement(SEXP x, int indx, int quote, char dec)
 {
     int w, d, e, wi, di, ei;
+    char *res;
 
     switch (TYPEOF(x))
     {
     case LGLSXP:
         formatLogical(&INTEGER(x)[indx], 1, &w);
-        EncodeLogical(INTEGER(x)[indx], w);
+        res = EncodeLogical(INTEGER(x)[indx], w);
         break;
     case INTSXP:
         formatInteger(&INTEGER(x)[indx], 1, &w);
-        EncodeInteger(INTEGER(x)[indx], w);
+        res = EncodeInteger(INTEGER(x)[indx], w);
         break;
     case REALSXP:
         formatReal(&REAL(x)[indx], 1, &w, &d, &e, 0);
-        EncodeReal(REAL(x)[indx], w, d, e, dec);
+        res = EncodeReal(REAL(x)[indx], w, d, e, dec);
         break;
     case STRSXP:
         formatString(&STRING_PTR(x)[indx], 1, &w, quote);
-        EncodeString(STRING_ELT(x, indx), w, quote, Rprt_adj_left);
+        res = EncodeString(STRING_ELT(x, indx), w, quote, Rprt_adj_left);
         break;
     case CPLXSXP:
         formatComplex(&COMPLEX(x)[indx], 1, &w, &d, &e, &wi, &di, &ei, 0);
-        EncodeComplex(COMPLEX(x)[indx], w, d, e, wi, di, ei, dec);
+        res = EncodeComplex(COMPLEX(x)[indx], w, d, e, wi, di, ei, dec);
         break;
     case RAWSXP:
-        EncodeRaw(RAW(x)[indx]);
+        res = EncodeRaw(RAW(x)[indx]);
         break;
     default:
+        res = NULL; /* -Wall */
         UNIMPLEMENTED_TYPE("EncodeElement", x);
     }
-    return buffer->data;
+    return res;
 }
 
 #if 0
