@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2004  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2005  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1174,8 +1174,6 @@ static SEXP duplicated2(SEXP x, HashData *d)
     return ans;
 }
 
-#include <R_ext/RS.h> /* for Calloc, free */
-
 SEXP do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP names, sep, ans, dup, newx;
@@ -1203,8 +1201,8 @@ SEXP do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     if (n > 1)
     {
         /* +2 for terminator and rounding error */
-        buf = Calloc(maxlen + strlen(csep) + log((double)n) / log(10.0) + 2, char);
-        cnts = Calloc(n, int);
+        buf = alloca(maxlen + strlen(csep) + log((double)n) / log(10.0) + 2);
+        cnts = (int *)alloca(n * sizeof(int));
         for (i = 0; i < n; i++)
             cnts[i] = 1;
         data.nomatch = 0;
@@ -1228,8 +1226,6 @@ SEXP do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
             /* insert it */ (void)isDuplicated(ans, i, &data);
             cnts[dp - 1] = cnt + 1; /* cache the first unused cnt value */
         }
-        Free(cnts);
-        Free(buf);
         UNPROTECT(3);
     }
     UNPROTECT(1);
