@@ -1117,7 +1117,7 @@ SEXP do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         w = asInteger(CADR(args));
         if (w != NA_INTEGER && w < 0)
-            errorcall(call, _("invalid '%s' value"), "w");
+            errorcall(call, _("invalid '%s' value"), "width");
     }
     findWidth = (w == NA_INTEGER);
     s = CADDR(args);
@@ -1135,7 +1135,7 @@ SEXP do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
         w = 0;
     na = asLogical(CAD4R(args));
     if (na == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' value"), "na");
+        errorcall(call, _("invalid '%s' value"), "na.encode");
 
     len = LENGTH(x);
     if (findWidth && justify < 3)
