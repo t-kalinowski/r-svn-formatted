@@ -194,13 +194,13 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     adj = asInteger(CAR(args));
-    if (adj == NA_INTEGER || adj < -1 || adj > 2)
+    if (adj == NA_INTEGER || adj < 0 || adj > 3)
         errorcall(call, _("invalid '%s' argument"), "justify");
     args = CDR(args);
 
     na = asLogical(CAR(args));
     if (na == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' value"), "na.encode");
+        errorcall(call, _("invalid '%s' argument"), "na.encode");
 
     if ((n = LENGTH(x)) <= 0)
         return allocVector(STRSXP, 0);
@@ -275,7 +275,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP s0;
 
         w = wd;
-        if (adj >= 0)
+        if (adj != Rprt_adj_none)
         {
             for (i = 0; i < n; i++)
                 if (STRING_ELT(x, i) != NA_STRING)
@@ -283,6 +283,8 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
                 else if (na)
                     w = imax2(w, R_print.na_width);
         }
+        else
+            w = 0;
         /* now calculate the buffer size needed, in bytes */
         for (i = 0; i < n; i++)
             if (STRING_ELT(x, i) != NA_STRING)
@@ -320,10 +322,8 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (j = 0; j < LENGTH(s0); j++)
                     *q++ = *s++;
                 if (b > 0 && adj != Rprt_adj_right)
-                {
                     for (j = 0; j < b; j++)
                         *q++ = ' ';
-                }
                 *q = '\0';
                 SET_STRING_ELT(y, i, mkChar(buff));
             }
