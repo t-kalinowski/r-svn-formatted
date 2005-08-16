@@ -28,6 +28,7 @@
 
 #include <Defn.h>
 #include <Rmath.h>
+#include <R_ext/RS.h>     /* for Calloc/Free */
 #include <R_ext/Applic.h> /* for dgemm */
 
 /* "GetRowNames" and "GetColNames" are utility routines which
@@ -1219,10 +1220,7 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             int *Cnt = NULL, *c;
             rx = REAL(x);
             if (!keepNA && OP == 3)
-            {
-                Cnt = (int *)alloca(n * sizeof(int));
-                memset(Cnt, 0, n * sizeof(int));
-            }
+                Cnt = Calloc(n, int);
             memset(rans, 0, n * sizeof(double));
             for (j = 0; j < p; j++)
             {
@@ -1251,6 +1249,7 @@ SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                             *ra++ /= *c;
                         else
                             *ra++ = NA_REAL;
+                    Free(Cnt);
                 }
             }
             UNPROTECT(1);
