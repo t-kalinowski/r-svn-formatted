@@ -1109,7 +1109,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean create_at;
     double x, y, temp, tnew, tlast;
     double axp[3], usr[2];
-    double gap, labw, low, high, line, pos, lwd;
+    double gap, labw, low, high, line, pos, lwd, hadj;
     double axis_base, axis_tick, axis_lab, axis_low, axis_high;
 
     SEXP originalArgs = args, label;
@@ -1233,13 +1233,17 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     col = asInteger(FixupCol(CAR(args), Rf_gpptr(dd)->fg));
     args = CDR(args);
 
+    /* Optional argument: "hadj" */
+    if (length(CAR(args)) != 1)
+        errorcall(call, _("'hadj' must be of length one"));
+    hadj = asReal(CAR(args));
+    args = CDR(args);
+
     /* Optional argument: "padj" */
     PROTECT(padj = coerceVector(CAR(args), REALSXP));
     npadj = length(padj);
     if (npadj <= 0)
         errorcall(call, _("zero length 'padj' specified"));
-    /* if (n < npadj) n = npadj; */
-    args = CDR(args);
 
     /* Retrieve relevant "par" values. */
 
@@ -1291,8 +1295,13 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (length(lab) == 0)
             lab = labelformat(at);
-        else if (!isExpression(lab))
-            lab = labelformat(lab);
+        else
+        {
+            if (create_at)
+                errorcall(call, _("'label' is supplied and not 'at'"));
+            if (!isExpression(lab))
+                lab = labelformat(lab);
+        }
         if (length(at) != length(lab))
             errorcall(call, _("'at' and 'label' lengths differ, %d != %d"), length(at), length(lab));
     }
@@ -1343,7 +1352,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 
     Rf_gpptr(dd)->xpd = 2;
 
-    Rf_gpptr(dd)->adj = 0.5;
+    Rf_gpptr(dd)->adj = R_FINITE(hadj) ? hadj : 0.5;
     Rf_gpptr(dd)->font = (font == NA_INTEGER) ? Rf_gpptr(dd)->fontaxis : font;
     Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * Rf_gpptr(dd)->cexaxis;
     /* no!   col = Rf_gpptr(dd)->col; */
@@ -1421,12 +1430,15 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         Rf_gpptr(dd)->col = Rf_gpptr(dd)->colaxis;
         gap = GStrWidth("m", NFC, dd); /* FIXUP x/y distance */
         tlast = -1.0;
-        if (Rf_gpptr(dd)->las == 2 || Rf_gpptr(dd)->las == 3)
+        if (!R_FINITE(hadj))
         {
-            Rf_gpptr(dd)->adj = (side == 1) ? 1 : 0;
+            if (Rf_gpptr(dd)->las == 2 || Rf_gpptr(dd)->las == 3)
+            {
+                Rf_gpptr(dd)->adj = (side == 1) ? 1 : 0;
+            }
+            else
+                Rf_gpptr(dd)->adj = 0.5;
         }
-        else
-            Rf_gpptr(dd)->adj = 0.5;
         if (side == 1)
         {
             axis_lab = -axis_base + GConvertYUnits(Rf_gpptr(dd)->mgp[1] - lineoff, LINES, NFC, dd) +
@@ -1563,12 +1575,15 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         gap = GStrWidth("m", INCHES, dd);
         gap = GConvertYUnits(gap, INCHES, NFC, dd);
         tlast = -1.0;
-        if (Rf_gpptr(dd)->las == 1 || Rf_gpptr(dd)->las == 2)
+        if (!R_FINITE(hadj))
         {
-            Rf_gpptr(dd)->adj = (side == 2) ? 1 : 0;
+            if (Rf_gpptr(dd)->las == 1 || Rf_gpptr(dd)->las == 2)
+            {
+                Rf_gpptr(dd)->adj = (side == 2) ? 1 : 0;
+            }
+            else
+                Rf_gpptr(dd)->adj = 0.5;
         }
-        else
-            Rf_gpptr(dd)->adj = 0.5;
         if (side == 2)
         {
             axis_lab = -axis_base + GConvertXUnits(Rf_gpptr(dd)->mgp[1] - lineoff, LINES, NFC, dd) +
