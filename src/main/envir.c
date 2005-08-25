@@ -1642,7 +1642,7 @@ SEXP do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
         genv = CADR(args);
     else
     {
-        errorcall(call, _("invalid 'inherits' argument"), "envir");
+        errorcall(call, _("invalid '%s' argument"), "envir");
         genv = R_NilValue; /* -Wall */
     }
 
