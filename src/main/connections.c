@@ -518,11 +518,6 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
     int whence = SEEK_SET;
 
     /* make sure both positions are set */
-#ifdef Win32
-    /* workaround a Windows bug - PR#7896
-       unfortunately the suggested fix breaks the foreign package's tests.
-    fflush(fp); */
-#endif
     pos = f_tell(fp);
     if (this->last_was_write)
         this->wpos = pos;
@@ -552,6 +547,11 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
         break;
     case 3:
         whence = SEEK_END;
+#ifdef Win32
+        /* work around a bug in MinGW runtime 3.8 fseeko64, PR#7896 */
+        if (con->canwrite)
+            fflush(fp);
+#endif
         break;
     default:
         whence = SEEK_SET;
