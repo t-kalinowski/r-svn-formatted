@@ -420,14 +420,14 @@ static void menupkgcranmirror(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "utils:::chooseCRANmirror()");
+    consolecmd(RConsole, "chooseCRANmirror()");
 }
 
 static void menupkgrepos(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "utils::setRepositories()");
+    consolecmd(RConsole, "setRepositories()");
 }
 
 static void menupkginstallpkgs(control m)
