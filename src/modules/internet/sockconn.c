@@ -43,7 +43,7 @@ static Rboolean sock_open(Rconnection con)
 {
     Rsockconn this = (Rsockconn)con->private;
     int sock, sock1, mlen;
-    int timeout = asInteger(GetOption(install("timeout"), R_NilValue));
+    int timeout = asInteger(GetOption(install("timeout"), R_BaseEnv));
     char buf[256];
 
     if (timeout == NA_INTEGER || timeout <= 0)
@@ -63,7 +63,7 @@ static Rboolean sock_open(Rconnection con)
             RCNTXT cntxt;
 
             /* set up a context which will close socket on jump. */
-            begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+            begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
             cntxt.cend = &listencleanup;
             cntxt.cenddata = &sock1;
             sock = R_SockListen(sock1, buf, 256);

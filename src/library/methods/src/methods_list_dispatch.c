@@ -606,7 +606,7 @@ static SEXP nonstandard_primitive(primitive_type which, SEXP skeleton, SEXP prim
 /* C version of the standardGeneric R function. */
 SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
 {
-    SEXP f_env = R_NilValue, mlist = R_NilValue, f, val = R_NilValue, fsym; /* -Wall */
+    SEXP f_env = R_BaseEnv, mlist = R_NilValue, f, val = R_NilValue, fsym; /* -Wall */
     int nprotect = 0;
     Rboolean prim_case = FALSE;
 
@@ -632,7 +632,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
         break;
     case SPECIALSXP:
     case BUILTINSXP:
-        f_env = R_NilValue;
+        f_env = R_BaseEnv;
         PROTECT(mlist = R_primitive_methods(fdef));
         nprotect++;
         prim_case = TRUE;

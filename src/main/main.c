@@ -137,11 +137,11 @@ char *R_PromptString(int browselevel, int type)
                 sprintf(BrowsePrompt, "Browse[%d]> ", browselevel);
                 return BrowsePrompt;
             }
-            return (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_NilValue), 0));
+            return (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
         }
         else
         {
-            return (char *)CHAR(STRING_ELT(GetOption(install("continue"), R_NilValue), 0));
+            return (char *)CHAR(STRING_ELT(GetOption(install("continue"), R_BaseEnv), 0));
         }
     }
 }
@@ -506,6 +506,7 @@ void setup_Rmainloop(void)
 #endif
     InitMemory();
     InitNames();
+    InitBaseEnv();
     InitGlobalEnv();
     InitDynload();
     InitOptions();
@@ -535,8 +536,8 @@ void setup_Rmainloop(void)
     R_Toplevel.promargs = R_NilValue;
     R_Toplevel.callfun = R_NilValue;
     R_Toplevel.call = R_NilValue;
-    R_Toplevel.cloenv = R_NilValue;
-    R_Toplevel.sysparent = R_NilValue;
+    R_Toplevel.cloenv = R_BaseEnv;
+    R_Toplevel.sysparent = R_BaseEnv;
     R_Toplevel.conexit = R_NilValue;
     R_Toplevel.vmax = NULL;
 #ifdef BYTECODE
@@ -844,12 +845,12 @@ SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* browser prompt.  The (optional) second one */
     /* acts as a target for error returns. */
 
-    begincontext(&returncontext, CTXT_BROWSER, call, rho, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&returncontext, CTXT_BROWSER, call, rho, R_BaseEnv, R_NilValue, R_NilValue);
     returncontext.cend = browser_cend;
     returncontext.cenddata = &savebrowselevel;
     if (!SETJMP(returncontext.cjmpbuf))
     {
-        begincontext(&thiscontext, CTXT_RESTART, R_NilValue, rho, R_NilValue, R_NilValue, R_NilValue);
+        begincontext(&thiscontext, CTXT_RESTART, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
         if (SETJMP(thiscontext.cjmpbuf))
         {
             SET_RESTART_BIT_ON(thiscontext.callflag);

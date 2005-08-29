@@ -2788,7 +2788,7 @@ static void ParseInit()
     FunctionLevel = 0;
     SourcePtr = FunctionSource;
     xxcharcount = 0;
-    KeepSource = *LOGICAL(GetOption(install("keep.source"), R_NilValue));
+    KeepSource = *LOGICAL(GetOption(install("keep.source"), R_BaseEnv));
     npush = 0;
 }
 
@@ -3011,14 +3011,14 @@ static char *Prompt(SEXP prompt, int type)
     {
         if (length(prompt) <= 0)
         {
-            return (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_NilValue), 0));
+            return (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
         }
         else
             return CHAR(STRING_ELT(prompt, 0));
     }
     else
     {
-        return (char *)CHAR(STRING_ELT(GetOption(install("continue"), R_NilValue), 0));
+        return (char *)CHAR(STRING_ELT(GetOption(install("continue"), R_BaseEnv), 0));
     }
 }
 

@@ -591,7 +591,7 @@ Rboolean R_ToplevelExec(void (*fun)(void *), void *data)
     PROTECT(topExp = R_CurrentExpr);
     saveToplevelContext = R_ToplevelContext;
 
-    begincontext(&thiscontext, CTXT_TOPLEVEL, R_NilValue, R_GlobalEnv, R_NilValue, R_NilValue, R_GlobalEnv);
+    begincontext(&thiscontext, CTXT_TOPLEVEL, R_NilValue, R_GlobalEnv, R_BaseEnv, R_NilValue, R_GlobalEnv);
     if (SETJMP(thiscontext.cjmpbuf))
         result = FALSE;
     else

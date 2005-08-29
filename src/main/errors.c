@@ -223,7 +223,7 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
     if (inWarning)
         return;
 
-    s = GetOption(install("warning.expression"), R_NilValue);
+    s = GetOption(install("warning.expression"), R_BaseEnv);
     if (s != R_NilValue)
     {
         if (!isLanguage(s) && !isExpression(s))
@@ -235,7 +235,7 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
         return;
     }
 
-    w = asInteger(GetOption(install("warn"), R_NilValue));
+    w = asInteger(GetOption(install("warn"), R_BaseEnv));
 
     if (w == NA_INTEGER) /* set to a sensible value */
         w = 0;
@@ -248,7 +248,7 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
         w = 1;
 
     /* set up a context which will restore inWarning if there is an exit */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
     cntxt.cend = &reset_inWarning;
 
     inWarning = 1;
@@ -355,7 +355,7 @@ void PrintWarnings(void)
 
     /* set up a context which will restore inPrintWarnings if there is
        an exit */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
     cntxt.cend = &cleanup_PrintWarnings;
 
     inPrintWarnings = 1;
@@ -450,7 +450,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
     }
 
     /* set up a context to restore inError value on exit */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
     cntxt.cend = &restore_inError;
     cntxt.cenddata = &oldInError;
     oldInError = inError;
@@ -603,7 +603,7 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
     int haveHandler, oldInError;
 
     /* set up a context to restore inError value on exit */
-    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
     cntxt.cend = &restore_inError;
     cntxt.cenddata = &oldInError;
 
@@ -617,7 +617,7 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
             inError = 1;
 
         /*now see if options("error") is set */
-        s = GetOption(install("error"), R_NilValue);
+        s = GetOption(install("error"), R_BaseEnv);
         haveHandler = (s != R_NilValue);
         if (haveHandler)
         {
@@ -744,7 +744,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isNull(CAR(args)))
     {
         RCNTXT *cptr;
-        SEXP rho = R_NilValue;
+        SEXP rho = R_BaseEnv;
         for (cptr = R_GlobalContext->nextcontext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL;
              cptr = cptr->nextcontext)
             if (cptr->callflag & CTXT_FUNCTION)
@@ -752,7 +752,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 rho = cptr->cloenv;
                 break;
             }
-        while (rho != R_NilValue)
+        while (rho != R_BaseEnv)
         {
             if (rho == R_GlobalEnv)
                 break;
@@ -851,7 +851,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isNull(sdom))
     {
         RCNTXT *cptr;
-        SEXP rho = R_NilValue;
+        SEXP rho = R_BaseEnv;
         for (cptr = R_GlobalContext->nextcontext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL;
              cptr = cptr->nextcontext)
             if (cptr->callflag & CTXT_FUNCTION)
@@ -859,7 +859,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 rho = cptr->cloenv;
                 break;
             }
-        while (rho != R_NilValue)
+        while (rho != R_BaseEnv)
         {
             if (rho == R_GlobalEnv)
                 break;

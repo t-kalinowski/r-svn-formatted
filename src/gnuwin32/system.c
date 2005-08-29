@@ -199,7 +199,7 @@ static int GuiReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
     int res;
     char *p;
-    char *NormalPrompt = (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_NilValue), 0));
+    char *NormalPrompt = (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
 
     if (!R_is_running)
     {
@@ -544,7 +544,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
 
 int internal_ShowFile(char *file, char *header)
 {
-    SEXP pager = GetOption(install("pager"), R_NilValue);
+    SEXP pager = GetOption(install("pager"), R_BaseEnv);
     char *files[1], *headers[1];
 
     files[0] = file;

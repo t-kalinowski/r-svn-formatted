@@ -399,7 +399,7 @@ SEXP eval(SEXP e, SEXP rho)
                 RCNTXT cntxt;
                 PROTECT(tmp = evalList(CDR(e), rho));
                 R_Visible = 1 - PRIMPRINT(op);
-                begincontext(&cntxt, CTXT_BUILTIN, e, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+                begincontext(&cntxt, CTXT_BUILTIN, e, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
                 tmp = PRIMFUN(op)(e, op, tmp, rho);
                 endcontext(&cntxt);
                 UNPROTECT(1);
@@ -422,7 +422,7 @@ SEXP eval(SEXP e, SEXP rho)
         else if (TYPEOF(op) == CLOSXP)
         {
             PROTECT(tmp = promiseArgs(CDR(e), rho));
-            tmp = applyClosure(e, op, tmp, rho, R_NilValue);
+            tmp = applyClosure(e, op, tmp, rho, R_BaseEnv);
             UNPROTECT(1);
         }
         else
@@ -925,7 +925,7 @@ SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     bgn = BodyHasBraces(body);
 
     PROTECT_WITH_INDEX(ans, &api);
-    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     switch (SETJMP(cntxt.cjmpbuf))
     {
     case CTXT_BREAK:
@@ -1001,7 +1001,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     t = R_NilValue;
     PROTECT_WITH_INDEX(t, &tpi);
-    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     if (SETJMP(cntxt.cjmpbuf) != CTXT_BREAK)
     {
         while (asLogicalNoNA(eval(CAR(args), rho), call))
@@ -1033,7 +1033,7 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     t = R_NilValue;
     PROTECT_WITH_INDEX(t, &tpi);
-    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     if (SETJMP(cntxt.cjmpbuf) != CTXT_BREAK)
     {
         for (;;)
@@ -1241,8 +1241,8 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (rho == R_BaseNamespace)
         errorcall(call, _("cannot do complex assignments in base namespace"));
-    if (rho == R_NilValue)
-        errorcall(call, _("cannot do complex assignments in NULL environment"));
+    if (rho == R_BaseEnv)
+        errorcall(call, _("cannot do complex assignments in base environment"));
     defineVar(R_TmpvalSymbol, R_NilValue, rho);
     tmploc = R_findVarLocInFrame(rho, R_TmpvalSymbol);
 
@@ -1700,7 +1700,7 @@ SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(s = findFun(CAR(cptr->call), cptr->sysparent));
     else
         PROTECT(s = eval(CAR(cptr->call), cptr->sysparent));
-    ans = applyClosure(cptr->call, s, args, cptr->sysparent, R_NilValue);
+    ans = applyClosure(cptr->call, s, args, cptr->sysparent, R_BaseEnv);
     UNPROTECT(1);
     return ans;
 }
@@ -1835,7 +1835,7 @@ int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP 
             nprotect++;
             SET_PRVALUE(CAR(pargs), x);
             begincontext(&cntxt, CTXT_RETURN, call, rho, rho, pargs, op);
-            if (usemethod(generic, x, call, pargs, rho, rho, R_NilValue, ans))
+            if (usemethod(generic, x, call, pargs, rho, rho, R_BaseEnv, ans))
             {
                 endcontext(&cntxt);
                 UNPROTECT(nprotect);
@@ -1883,7 +1883,7 @@ int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP 
             /* PROTECT(args = promiseArgs(args, rho)); */
             SET_PRVALUE(CAR(args), x);
             begincontext(&cntxt, CTXT_RETURN, call, rho, rho, args, op);
-            if (usemethod(generic, x, call, args, rho, rho, R_NilValue, ans))
+            if (usemethod(generic, x, call, args, rho, rho, R_BaseEnv, ans))
             {
                 endcontext(&cntxt);
                 UNPROTECT(nprotect);
@@ -1918,7 +1918,7 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
             error(_("class name too long in '%s'"), generic);
         sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, whichclass)));
         *meth = install(buf);
-        *sxp = R_LookupMethod(*meth, rho, rho, R_NilValue);
+        *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
         {
             *gr = mkString("");
@@ -1928,7 +1928,7 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
             error(_("class name too long in '%s'"), group);
         sprintf(buf, "%s.%s", group, CHAR(STRING_ELT(class, whichclass)));
         *meth = install(buf);
-        *sxp = R_LookupMethod(*meth, rho, rho, R_NilValue);
+        *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
         {
             *gr = mkString(group);
@@ -2086,7 +2086,7 @@ int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *an
     if (R_UseNamespaceDispatch)
     {
         defineVar(install(".GenericCallEnv"), rho, newrho);
-        defineVar(install(".GenericDefEnv"), R_NilValue, newrho);
+        defineVar(install(".GenericDefEnv"), R_BaseEnv, newrho);
     }
 
     PROTECT(t = LCONS(lmeth, CDR(call)));
@@ -2682,7 +2682,7 @@ static int tryDispatch(char *generic, SEXP call, SEXP x, SEXP rho, SEXP *pv)
     PROTECT(pargs = promiseArgs(CDR(call), rho));
     SET_PRVALUE(CAR(pargs), x);
     begincontext(&cntxt, CTXT_RETURN, call, rho, rho, pargs, R_NilValue); /**** FIXME: put in op */
-    if (usemethod(generic, x, call, pargs, rho, rho, R_NilValue, pv))
+    if (usemethod(generic, x, call, pargs, rho, rho, R_BaseEnv, pv))
         dispatched = TRUE;
     endcontext(&cntxt);
     UNPROTECT(1);
@@ -2762,7 +2762,7 @@ static int opcode_counts[OPCOUNT];
 static void loopWithContect(volatile SEXP code, volatile SEXP rho)
 {
     RCNTXT cntxt;
-    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_NilValue, R_NilValue, R_NilValue);
+    begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     if (SETJMP(cntxt.cjmpbuf) != CTXT_BREAK)
         bcEval(code, rho);
     endcontext(&cntxt);
@@ -3317,7 +3317,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 value = PRIMFUN(fun)(call, fun, CDR(call), rho);
                 break;
             case CLOSXP:
-                value = applyClosure(call, fun, args, rho, R_NilValue);
+                value = applyClosure(call, fun, args, rho, R_BaseEnv);
                 break;
             default:
                 error(_("bad function"));
@@ -3444,7 +3444,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 SET_STRING_ELT(str, 0, PRINTNAME(symbol));
                 SET_PRVALUE(CADR(pargs), str);
                 begincontext(&cntxt, CTXT_RETURN, call, rho, rho, pargs, R_NilValue); /**** FIXME: put in op */
-                if (usemethod("$", x, call, pargs, rho, rho, R_NilValue, &value))
+                if (usemethod("$", x, call, pargs, rho, rho, R_BaseEnv, &value))
                     dispatched = TRUE;
                 endcontext(&cntxt);
                 UNPROTECT(1);
@@ -3473,7 +3473,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 SET_PRVALUE(CADR(pargs), str);
                 SET_PRVALUE(CADDR(pargs), value);
                 begincontext(&cntxt, CTXT_RETURN, call, rho, rho, pargs, R_NilValue); /**** FIXME: put in op */
-                if (usemethod("$<-", x, call, pargs, rho, rho, R_NilValue, &value))
+                if (usemethod("$<-", x, call, pargs, rho, rho, R_BaseEnv, &value))
                     dispatched = TRUE;
                 endcontext(&cntxt);
                 UNPROTECT(1);

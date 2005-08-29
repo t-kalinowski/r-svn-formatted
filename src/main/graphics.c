@@ -4785,7 +4785,7 @@ DevDesc *CurrentDevice(void)
      * If there is one, start it up. */
     if (NoDevices())
     {
-        SEXP defdev = GetOption(install("device"), R_NilValue);
+        SEXP defdev = GetOption(install("device"), R_BaseEnv);
         if (isString(defdev) && length(defdev) > 0)
             PROTECT(defdev = lang1(install(CHAR(STRING_ELT(defdev, 0)))));
         else
@@ -4827,9 +4827,9 @@ void InitGraphics(void)
 
     /* init .Device and .Devices */
     PROTECT(s = mkString("null device"));
-    gsetVar(install(".Device"), s, R_NilValue);
+    gsetVar(install(".Device"), s, R_BaseEnv);
     PROTECT(t = mkString("null device"));
-    gsetVar(install(".Devices"), CONS(t, R_NilValue), R_NilValue);
+    gsetVar(install(".Devices"), CONS(t, R_NilValue), R_BaseEnv);
     UNPROTECT(2);
 
     /* Register the base graphics system with the graphics engine
@@ -4840,7 +4840,7 @@ void InitGraphics(void)
 static SEXP getSymbolValue(char *symbolName)
 {
     SEXP t;
-    t = findVar(install(symbolName), R_NilValue);
+    t = findVar(install(symbolName), R_BaseEnv);
     return t;
 }
 
@@ -4997,7 +4997,7 @@ int selectDevice(int devNum)
         R_CurrentDevice = devNum;
 
         /* maintain .Device */
-        gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), devNum), R_NilValue);
+        gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), devNum), R_BaseEnv);
 
         dd = CurrentDevice();
         if (!NoDevices())
@@ -5037,7 +5037,7 @@ static void removeDevice(int devNum)
             R_CurrentDevice = nextDevice(R_CurrentDevice);
 
             /* maintain .Device */
-            gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), R_CurrentDevice), R_NilValue);
+            gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), R_CurrentDevice), R_BaseEnv);
 
             if (!NoDevices())
             {

@@ -1105,7 +1105,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     {
                         val = SYMVALUE(CAR(s));
                         if (TYPEOF(val) == PROMSXP)
-                            val = eval(val, R_NilValue);
+                            val = eval(val, R_BaseEnv);
                     }
                     if (isSymbol(CAR(s)) && TYPEOF(val) == CLOSXP && streql(CHAR(PRINTNAME(CAR(s))), "::"))
                     { /*  :: is special case */

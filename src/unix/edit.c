@@ -103,7 +103,7 @@ SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(x) == CLOSXP)
         envir = CLOENV(x);
     else
-        envir = R_NilValue;
+        envir = R_BaseEnv;
     PROTECT(envir);
 
     fn = CAR(args);

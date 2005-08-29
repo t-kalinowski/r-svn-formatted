@@ -107,7 +107,7 @@ static SEXP makeErrorCall(SEXP fun)
 
 SEXP GetOption(SEXP tag, SEXP rho)
 {
-    SEXP opt = findVar(Options(), R_NilValue);
+    SEXP opt = findVar(Options(), R_BaseEnv);
     if (!isList(opt))
         error(_("corrupted options list"));
     opt = FindTaggedItem(opt, tag);

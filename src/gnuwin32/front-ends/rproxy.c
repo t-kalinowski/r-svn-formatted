@@ -482,7 +482,7 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
          */
         lDev->savedSnapshot = R_NilValue;
         R_Proxy_Graphics_Driver(lDev, "ActiveXDevice 1", 100.0, 100.0, 10.0, 0, 0, device);
-        gsetVar(install(".Device"), mkString("ActiveXDevice 1"), R_NilValue);
+        gsetVar(install(".Device"), mkString("ActiveXDevice 1"), R_BaseEnv);
         lDD = GEcreateDevDesc(lDev);
         addDevice((DevDesc *)lDD);
         GEinitDisplayList(lDD);
