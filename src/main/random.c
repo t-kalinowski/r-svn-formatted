@@ -338,7 +338,7 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
 {
     double *q, rU;
     int i, j, k;
-    int *HL = (int *)alloca(n * sizeof(int)), *H = HL - 1, *L = HL + n;
+    int *HL, *H, *L;
 
     if (!Walker_warn)
     {
@@ -351,7 +351,20 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
        and L ... H[n-1] label those >= 1.
        By rounding error we could have q[i] < 1. or > 1. for all entries.
      */
-    q = (double *)alloca(n * sizeof(double));
+    if (n <= 100000)
+    {
+        /* might do this repeatedly, so speed matters */
+        HL = (int *)alloca(n * sizeof(int));
+        q = (double *)alloca(n * sizeof(double));
+    }
+    else
+    {
+        /* Slow enough anyway not to risk overflow */
+        HL = Calloc(n, int);
+        q = Calloc(n, double);
+    }
+    H = HL - 1;
+    L = HL + n;
     for (i = 0; i < n; i++)
     {
         q[i] = p[i] * n;
@@ -383,6 +396,11 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
         rU = unif_rand() * n;
         k = (int)rU;
         ans[i] = (rU < q[k]) ? k + 1 : a[k] + 1;
+    }
+    if (n > 100000)
+    {
+        Free(HL);
+        Free(q);
     }
 }
 
