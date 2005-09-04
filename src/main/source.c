@@ -74,7 +74,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = -1;
         s = R_ParseVector(text, num, &status);
         if (status != PARSE_OK)
-            errorcall(call, _("parse error"));
+            parseError(call, 0);
     }
     else if (ifile >= 3)
     { /* file != "" */
@@ -87,7 +87,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!wasopen)
             con->close(con);
         if (status != PARSE_OK)
-            errorcall(call, _("syntax error on line %d"), R_ParseError);
+            parseError(call, R_ParseError);
     }
     else
     {
@@ -95,7 +95,7 @@ SEXP do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = 1;
         s = R_ParseBuffer(&R_ConsoleIob, num, &status, prompt);
         if (status != PARSE_OK)
-            errorcall(call, _("parse error"));
+            parseError(call, 0);
     }
     UNPROTECT(2);
     return s;
