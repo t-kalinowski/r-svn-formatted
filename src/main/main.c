@@ -105,7 +105,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
                 PrintWarnings();
             break;
         case PARSE_ERROR:
-            error(_("syntax error: evaluating expression %d"), count);
+            parseError(R_NilValue, count);
             break;
         case PARSE_EOF:
             return;
@@ -279,7 +279,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     case PARSE_ERROR:
 
         state->prompt_type = 1;
-        error(_("syntax error"));
+        parseError(R_NilValue, 0);
         R_IoBufferWriteReset(&R_ConsoleIob);
         return (1);
 
@@ -376,7 +376,7 @@ int R_ReplDLLdo1()
         prompt_type = 1;
         break;
     case PARSE_ERROR:
-        error(_("syntax error"));
+        parseError(R_NilValue, 0);
         R_IoBufferWriteReset(&R_ConsoleIob);
         prompt_type = 1;
         break;
