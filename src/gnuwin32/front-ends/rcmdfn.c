@@ -54,6 +54,53 @@ void rcmdusage(char *RCMD)
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
 }
 
+static int setTexopts(char *RHome)
+{
+    /* Set the R_TEXOPTS environment variable according to the content of
+       the R_TEXOPTS file, if it exists */
+
+    if (!getenv("R_TEXOPTS"))
+    {
+        char line[MAX_PATH + 21], fname[MAX_PATH + 21], *texopts, *rhome, *c;
+        FILE *f;
+
+        strcpy(fname, RHome);
+        strcat(fname, "/src/gnuwin32/R_TEXOPTS");
+
+        if ((f = fopen(fname, "r")))
+        {
+            while (fgets(line, MAX_PATH + 21, f))
+            {
+                for (texopts = line; *texopts == ' '; texopts++)
+                    ;
+                if (!strncmp(texopts, "R_TEXOPTS", 7))
+                {
+                    if ((rhome = strstr(texopts, "$R_HOME")))
+                    {
+                        if (strlen(texopts) - 7 + strlen(RHome) > MAX_PATH + 20)
+                        {
+                            fprintf(stderr, "R_TEXOPTS too long.");
+                            return (27);
+                        }
+                        memmove(rhome + strlen(RHome), rhome + 7, strlen(rhome + 7) + 1);
+                        memmove(rhome, RHome, strlen(RHome));
+                    }
+                    for (c = texopts; *c; c++)
+                        if (*c == '\\')
+                            *c = '/';
+                    if (texopts[strlen(texopts) - 1] == '\n')
+                        texopts[strlen(texopts) - 1] = '\0';
+
+                    putenv(texopts);
+                    break;
+                }
+            }
+            fclose(f);
+        }
+    }
+    return (0);
+}
+
 int rcmdfn(int cmdarg, int argc, char **argv)
 {
     /* tasks:
@@ -238,6 +285,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         strcat(RSHARE, "/share");
         putenv(RSHARE);
 
+        if ((status = setTexopts(RHome)))
+            return (status);
+
         sprintf(Rversion, "R_VERSION=%s.%s", R_MAJOR, R_MINOR);
         putenv(Rversion);
 
@@ -284,7 +334,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             p = argv[cmdarg];
             if (strcmp(p, "Rd2dvi") == 0)
             {
-                strcat(cmd, "sh ");
+                strcpy(cmd, "sh ");
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Rd2dvi.sh");
             }
