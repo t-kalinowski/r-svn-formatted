@@ -259,7 +259,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 else if (lval < 10000)
                     R_ShowMessage(_("WARNING: '-max-ppsize' value is too small: ignored\n"));
 
-                else if (lval > 100000)
+                else if (lval > 500000)
                     R_ShowMessage(_("WARNING: '-max-ppsize' value is too large: ignored\n"));
                 else
                     Rp->ppsize = lval;
