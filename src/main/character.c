@@ -1530,6 +1530,292 @@ SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes)
+{
+    int matchIndex, j, st, foundAll, foundAny, offset;
+    regmatch_t regmatch[10];
+    SEXP ans, matchlen;         /* Return vect and its attribute */
+    SEXP matchbuf, matchlenbuf; /* Buffers for storing multiple matches */
+    int bufsize = 1024;         /* Starting size for buffers */
+    PROTECT(matchbuf = allocVector(INTSXP, bufsize));
+    PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
+    matchIndex = -1;
+    foundAll = foundAny = offset = 0;
+    while (!foundAll)
+    {
+        if (Rregexec(reg, string, 1, regmatch, 0, offset) == 0)
+        {
+            if ((matchIndex + 1) == bufsize)
+            {
+                /* Reallocate match buffers */
+                int newbufsize = bufsize * 2;
+                SEXP tmp;
+                tmp = allocVector(INTSXP, 2 * bufsize);
+                for (j = 0; j < bufsize; j++)
+                    INTEGER(tmp)[j] = INTEGER(matchlenbuf)[j];
+                UNPROTECT(1);
+                matchlenbuf = tmp;
+                PROTECT(matchlenbuf);
+                tmp = allocVector(INTSXP, 2 * bufsize);
+                for (j = 0; j < bufsize; j++)
+                    INTEGER(tmp)[j] = INTEGER(matchbuf)[j];
+                matchbuf = tmp;
+                UNPROTECT(2);
+                PROTECT(matchbuf);
+                PROTECT(matchlenbuf);
+                bufsize = newbufsize;
+            }
+            matchIndex++;
+            foundAny = 1;
+            st = regmatch[0].rm_so;
+            offset = regmatch[0].rm_eo;
+            INTEGER(matchbuf)[matchIndex] = st + 1; /* index from one */
+            INTEGER(matchlenbuf)[matchIndex] = offset - st;
+#ifdef SUPPORT_MBCS
+            if (!useBytes && mbcslocale)
+            {
+                int mlen = regmatch[0].rm_eo - st;
+                /* Unfortunately these are in bytes, so we need to
+                   use chars instead */
+                if (st > 0)
+                {
+                    AllocBuffer(st, &cbuff);
+                    memcpy(cbuff.data, string, st);
+                    cbuff.data[st] = '\0';
+                    INTEGER(matchbuf)[matchIndex] = 1 + mbstowcs(NULL, cbuff.data, 0);
+                    if (INTEGER(matchbuf)[matchIndex] <= 0)
+                    { /* an invalid string */
+                        INTEGER(matchbuf)[matchIndex] = NA_INTEGER;
+                        foundAll = 1;
+                    }
+                }
+                AllocBuffer(mlen + 1, &cbuff);
+                memcpy(cbuff.data, string + st, mlen);
+                cbuff.data[mlen] = '\0';
+                INTEGER(matchlenbuf)[matchIndex] = mbstowcs(NULL, cbuff.data, 0);
+                if (INTEGER(matchlenbuf)[matchIndex] < 0)
+                { /* an invalid string */
+                    INTEGER(matchlenbuf)[matchIndex] = NA_INTEGER;
+                    foundAll = 1;
+                }
+            }
+#endif
+        }
+        else
+        {
+            foundAll = 1;
+            if (!foundAny)
+            {
+                matchIndex++;
+                INTEGER(matchbuf)[matchIndex] = -1;
+                INTEGER(matchlenbuf)[matchIndex] = -1;
+            }
+        }
+    }
+#ifdef SUPPORT_MBCS
+    DeallocBuffer(&cbuff);
+#endif
+    PROTECT(ans = allocVector(INTSXP, matchIndex + 1));
+    PROTECT(matchlen = allocVector(INTSXP, matchIndex + 1));
+    /* copy from buffers */
+    for (j = 0; j <= matchIndex; j++)
+    {
+        INTEGER(ans)[j] = INTEGER(matchbuf)[j];
+        INTEGER(matchlen)[j] = INTEGER(matchlenbuf)[j];
+    }
+    setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(4);
+    return ans;
+}
+
+static SEXP gregexpr_fixed(char *pattern, char *string, int useBytes)
+{
+    int patlen, matchIndex, st, foundAll, foundAny, curpos, j, ansSize;
+    SEXP ans, matchlen;         /* return vect and its attribute */
+    SEXP matchbuf, matchlenbuf; /* buffers for storing multiple matches */
+    int bufsize = 1024;         /* starting size for buffers */
+    PROTECT(matchbuf = allocVector(INTSXP, bufsize));
+    PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
+#ifdef SUPPORT_MBCS
+    if (!useBytes && mbcslocale)
+        patlen = mbstowcs(NULL, pattern, 0);
+    else
+#endif
+        patlen = strlen(pattern);
+    foundAll = curpos = st = foundAny = 0;
+    st = fgrep_one(pattern, string, useBytes);
+    matchIndex = -1;
+    if (st < 0)
+    {
+        INTEGER(matchbuf)[0] = -1;
+        INTEGER(matchlenbuf)[0] = -1;
+    }
+    else
+    {
+        foundAny = 1;
+        matchIndex++;
+        INTEGER(matchbuf)[matchIndex] = st + 1; /* index from one */
+        INTEGER(matchlenbuf)[matchIndex] = patlen;
+        while (!foundAll)
+        {
+            string += st + patlen;
+            curpos += st + patlen;
+            st = fgrep_one(pattern, string, useBytes);
+            if (st >= 0)
+            {
+                if ((matchIndex + 1) == bufsize)
+                {
+                    /* Reallocate match buffers */
+                    int newbufsize = bufsize * 2;
+                    SEXP tmp;
+                    tmp = allocVector(INTSXP, 2 * bufsize);
+                    for (j = 0; j < bufsize; j++)
+                        INTEGER(tmp)[j] = INTEGER(matchlenbuf)[j];
+                    UNPROTECT(1);
+                    matchlenbuf = tmp;
+                    PROTECT(matchlenbuf);
+                    tmp = allocVector(INTSXP, 2 * bufsize);
+                    for (j = 0; j < bufsize; j++)
+                        INTEGER(tmp)[j] = INTEGER(matchbuf)[j];
+                    matchbuf = tmp;
+                    UNPROTECT(2);
+                    PROTECT(matchbuf);
+                    PROTECT(matchlenbuf);
+                    bufsize = newbufsize;
+                }
+                matchIndex++;
+                /* index from one */
+                INTEGER(matchbuf)[matchIndex] = curpos + st + 1;
+                INTEGER(matchlenbuf)[matchIndex] = patlen;
+            }
+            else
+                foundAll = 1;
+        }
+    }
+    ansSize = foundAny ? (matchIndex + 1) : 1;
+    PROTECT(ans = allocVector(INTSXP, ansSize));
+    PROTECT(matchlen = allocVector(INTSXP, ansSize));
+    /* copy from buffers */
+    for (j = 0; j < ansSize; j++)
+    {
+        INTEGER(ans)[j] = INTEGER(matchbuf)[j];
+        INTEGER(matchlen)[j] = INTEGER(matchlenbuf)[j];
+    }
+    setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(4);
+    return ans;
+}
+
+static SEXP gregexpr_NAInputAns(void)
+{
+    SEXP ans, matchlen;
+    PROTECT(ans = allocVector(INTSXP, 1));
+    PROTECT(matchlen = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = INTEGER(matchlen)[0] = R_NaInt;
+    setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(2);
+    return ans;
+}
+
+static SEXP gregexpr_BadStringAns(void)
+{
+    SEXP ans, matchlen;
+    PROTECT(ans = allocVector(INTSXP, 1));
+    PROTECT(matchlen = allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = INTEGER(matchlen)[0] = -1;
+    setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(2);
+    return ans;
+}
+
+SEXP do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP pat, text, ansList, ans, matchlen;
+    regex_t reg;
+    regmatch_t regmatch[10];
+    int i, n, st, extended_opt, fixed_opt, useBytes, cflags;
+    char *spat = NULL; /* -Wall */
+
+    checkArity(op, args);
+    pat = CAR(args);
+    args = CDR(args);
+    text = CAR(args);
+    args = CDR(args);
+    extended_opt = asLogical(CAR(args));
+    args = CDR(args);
+    if (extended_opt == NA_INTEGER)
+        extended_opt = 1;
+    fixed_opt = asLogical(CAR(args));
+    args = CDR(args);
+    if (fixed_opt == NA_INTEGER)
+        fixed_opt = 0;
+    useBytes = asLogical(CAR(args));
+    args = CDR(args);
+    if (useBytes == NA_INTEGER || !fixed_opt)
+        useBytes = 0;
+
+    if (length(pat) < 1 || length(text) < 1)
+        errorcall(call, R_MSG_IA);
+    if (!isString(pat))
+        PROTECT(pat = coerceVector(pat, STRSXP));
+    else
+        PROTECT(pat);
+    if (STRING_ELT(pat, 0) == NA_STRING)
+        errorcall(call, R_MSG_IA);
+    if (!isString(text))
+        PROTECT(text = coerceVector(text, STRSXP));
+    else
+        PROTECT(text);
+
+    cflags = extended_opt ? REG_EXTENDED : 0;
+
+#ifdef SUPPORT_MBCS
+    if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(pat, 0))))
+        errorcall(call, _("regular expression is invalid in this locale"));
+#endif
+    if (!fixed_opt && regcomp(&reg, CHAR(STRING_ELT(pat, 0)), cflags))
+        errorcall(call, _("invalid regular expression '%s'"), CHAR(STRING_ELT(pat, 0)));
+    if (fixed_opt)
+        spat = CHAR(STRING_ELT(pat, 0));
+    n = length(text);
+    PROTECT(ansList = allocVector(VECSXP, n));
+    for (i = 0; i < n; i++)
+    {
+        int j, foundAll, foundAny, matchIndex, offset;
+        char *s;
+        foundAll = foundAny = offset = 0;
+        matchIndex = -1;
+        s = CHAR(STRING_ELT(text, i));
+        if (STRING_ELT(text, i) == NA_STRING)
+        {
+            PROTECT(ans = gregexpr_NAInputAns());
+        }
+        else
+        {
+#ifdef SUPPORT_MBCS
+            if (!useBytes && mbcslocale && !mbcsValid(s))
+            {
+                warningcall(call, _("input string %d is invalid in this locale"), i + 1);
+                PROTECT(ans = gregexpr_BadStringAns());
+            }
+            else
+#endif
+            {
+                if (fixed_opt)
+                    PROTECT(ans = gregexpr_fixed(spat, s, useBytes));
+                else
+                    PROTECT(ans = gregexpr_Regexc(&reg, s, useBytes));
+            }
+        }
+        SET_VECTOR_ELT(ansList, i, ans);
+        UNPROTECT(1);
+    }
+    if (!fixed_opt)
+        regfree(&reg);
+    UNPROTECT(3);
+    return ansList;
+}
+
 SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
@@ -1679,7 +1965,7 @@ static wchar_t wtr_get_next_char_from_spec(struct wtr_spec **p)
         return ('\0');
     switch (this->type)
     {
-    /* Note: this code does not deal with the WTR_INIT case. */
+        /* Note: this code does not deal with the WTR_INIT case. */
     case WTR_CHAR:
         c = this->u.c;
         *p = this->next;
@@ -1781,7 +2067,7 @@ static unsigned char tr_get_next_char_from_spec(struct tr_spec **p)
         return ('\0');
     switch (this->type)
     {
-    /* Note: this code does not deal with the TR_INIT case. */
+        /* Note: this code does not deal with the TR_INIT case. */
     case TR_CHAR:
         c = this->u.c;
         *p = this->next;
