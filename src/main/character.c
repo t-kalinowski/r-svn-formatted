@@ -1730,10 +1730,9 @@ static SEXP gregexpr_BadStringAns(void)
 
 SEXP do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP pat, text, ansList, ans, matchlen;
+    SEXP pat, text, ansList, ans;
     regex_t reg;
-    regmatch_t regmatch[10];
-    int i, n, st, extended_opt, fixed_opt, useBytes, cflags;
+    int i, n, extended_opt, fixed_opt, useBytes, cflags;
     char *spat = NULL; /* -Wall */
 
     checkArity(op, args);
@@ -1781,7 +1780,7 @@ SEXP do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ansList = allocVector(VECSXP, n));
     for (i = 0; i < n; i++)
     {
-        int j, foundAll, foundAny, matchIndex, offset;
+        int foundAll, foundAny, matchIndex, offset;
         char *s;
         foundAll = foundAny = offset = 0;
         matchIndex = -1;
