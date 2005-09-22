@@ -2856,7 +2856,7 @@ SEXP savePlot(SEXP args)
         /*Default quality suggested in libjpeg*/
         SaveAsJpeg(dd, 75, fn);
     }
-    else if (!strcmp(tp, "wmf"))
+    else if (!strcmp(tp, "wmf") || !strcmp(tp, "emf"))
     {
         if (strlen(fn) > 512)
         {
@@ -2866,7 +2866,7 @@ SEXP savePlot(SEXP args)
         sprintf(display, "win.metafile:%s", fn);
         SaveAsWin(dd, display);
     }
-    else if (!strcmp(tp, "ps"))
+    else if (!strcmp(tp, "ps") || !strcmp(tp, "eps"))
     {
         SaveAsPostscript(dd, fn);
     }
