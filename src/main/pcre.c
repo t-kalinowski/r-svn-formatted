@@ -735,10 +735,10 @@ SEXP do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
+        char *s = CHAR(STRING_ELT(text, i));
         int j, foundAll, foundAny, matchIndex, start;
         foundAll = foundAny = start = 0;
         matchIndex = -1;
-        char *s = CHAR(STRING_ELT(text, i));
         if (STRING_ELT(text, i) == NA_STRING)
         {
             PROTECT(ans = allocVector(INTSXP, 1));
