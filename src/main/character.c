@@ -909,7 +909,7 @@ SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     if (*wc == L'.' || (allow_ && *wc == L'_'))
                         /* leave alone */;
-                    else if (!isalnum((int)*wc))
+                    else if (!iswalnum((int)*wc))
                         *wc = L'.';
                 }
                 wcstombs(this, wstr, strlen(this) + 1);
