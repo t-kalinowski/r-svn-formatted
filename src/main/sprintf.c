@@ -35,7 +35,7 @@ SEXP do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
     size_t n, cur, chunk;
 
     SEXP format, ans, this, a[100], tmp;
-    int ns, maxlen, lens[100], nthis, has_star, star_arg, nstar;
+    int ns, maxlen, lens[100], nthis, has_star, star_arg = 0, nstar;
 
     /* grab the format string */
 
