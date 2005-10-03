@@ -2821,10 +2821,7 @@ static int rawRead(char *p, int size, int n, Rbyte *bytes, int nbytes, int *np)
 {
     int avail, m;
 
-    avail = (nbytes - n * size);
-    if (avail < 0)
-        avail = 0;
-    avail = avail / size;
+    avail = nbytes / size;
     m = n;
     if (m > avail)
         m = avail;
