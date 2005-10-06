@@ -457,8 +457,9 @@ static unsigned char re_string_fetch_byte_case(re_string_t *pstr) internal_funct
 #define re_string_skip_bytes(pstr, idx) ((pstr)->cur_idx += (idx))
 #define re_string_set_index(pstr, idx) ((pstr)->cur_idx = (idx))
 
-#define re_malloc(t, n) ((t *)malloc((n) * sizeof(t)))
-#define re_realloc(p, t, n) ((t *)realloc(p, (n) * sizeof(t)))
+/* This is a workaround for AIX, which returns NULL if n == 0 */
+#define re_malloc(t, n) ((t *)malloc((n > 0 ? n : 1) * sizeof(t)))
+#define re_realloc(p, t, n) ((t *)realloc(p, (n > 0 ? n : 1) * sizeof(t)))
 #define re_free(p) free(p)
 
 struct bin_tree_t
@@ -8776,6 +8777,7 @@ static re_dfastate_t **build_trtable(re_dfa_t *dfa, re_dfastate_t *state)
     else
 #endif
     {
+        /* Could this be size zero? -- don't think so */
         dests_node = (re_node_set *)malloc((sizeof(re_node_set) + sizeof(bitset)) * SBC_MAX);
         if (BE(dests_node == NULL, 0))
             return NULL;
@@ -8813,6 +8815,7 @@ static re_dfastate_t **build_trtable(re_dfa_t *dfa, re_dfastate_t *state)
     else
 #endif
     {
+        /* Could this be size zero? -- don't think so */
         dest_states = (re_dfastate_t **)malloc(ndests * 3 * sizeof(re_dfastate_t *));
         if (BE(dest_states == NULL, 0))
         {
