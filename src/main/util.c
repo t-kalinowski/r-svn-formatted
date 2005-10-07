@@ -743,14 +743,10 @@ size_t mbcsMblen(char *in)
 {
     unsigned int ucs4buf[1];
     unsigned short ucs2buf[1];
-    void *cd = NULL;
-    char *i_buf;
-    char *o_buf;
-    size_t i_len;
-    size_t o_len;
-    size_t status;
+    void *cd = NULL, *buftype;
+    char *i_buf, *o_buf;
+    size_t i_len, o_len, status;
     int i;
-    void *buftype;
 
     /* 6 == MB_LEN_MAX ? shift sequence is ignored... */
     for (i = 1; i <= 6; i++)
@@ -772,7 +768,7 @@ size_t mbcsMblen(char *in)
         memset(o_buf, 0, o_len);
         status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
         Riconv_close(cd);
-        if ((size_t)(-1) == status)
+        if ((size_t)-1 == status)
         {
             switch (errno)
             {
@@ -785,15 +781,11 @@ size_t mbcsMblen(char *in)
                 return (size_t)-1;
             }
         }
-        else if ((size_t)(0) == status)
-        {
+        else if ((size_t)0 == status)
             /* normal status */
             return (size_t)i;
-        }
         else
-        {
             return (size_t)status;
-        }
     }
     return (size_t)-1;
 }
@@ -802,13 +794,8 @@ size_t ucs2Mblen(ucs2_t *in)
 {
     char mbbuf[16];
     void *cd = NULL;
-    char *i_buf;
-    char *o_buf;
-    size_t i_len;
-    size_t o_len;
-    size_t status;
-
-    void *buftype;
+    char *i_buf, *o_buf;
+    size_t i_len, o_len, status;
 
     if ((void *)-1 == (cd = Riconv_open("", (char *)UCS2ENC)))
         return (size_t)-1;
@@ -821,8 +808,7 @@ size_t ucs2Mblen(ucs2_t *in)
     memset(o_buf, 0, o_len);
     status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
     Riconv_close(cd);
-    if ((size_t)(-1) == status)
-    {
+    if ((size_t)-1 == status)
         switch (errno)
         {
         case EINVAL:
@@ -834,7 +820,6 @@ size_t ucs2Mblen(ucs2_t *in)
         case EILSEQ:
             return (size_t)-1;
         }
-    }
     return (size_t)strlen(mbbuf);
 }
 
