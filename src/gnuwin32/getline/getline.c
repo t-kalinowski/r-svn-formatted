@@ -898,7 +898,7 @@ static void gl_addchar(int c)
         gl_putc('\a');
         return;
     }
-#if SUPPORT_MBCS
+#ifdef SUPPORT_MBCS
     if (mbcslocale)
     {
         int mb_len;
