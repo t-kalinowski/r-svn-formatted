@@ -2000,7 +2000,11 @@ static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 /********************************************************/
 
 /* Character Metric Information */
-/* Passing c == 0 gets font information */
+/* Passing c == 0 gets font information.
+   In a mbcslocale for a non-symbol font
+   we pass a Unicode point, otherwise an 8-bit char, and
+   we don't care which for a 7-bit char.
+ */
 
 static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
@@ -2009,8 +2013,8 @@ static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
-#ifdef SUPPORT_UTF8
-    if (gc->fontface != 5)
+#ifdef SUPPORT_MBCS
+    if (mbcslocale && gc->fontface != 5 && c > 127)
         gwcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     else
 #endif
