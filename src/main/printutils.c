@@ -272,6 +272,7 @@ char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, 
 }
 
 #ifdef SUPPORT_MBCS
+#include <R_ext/rlocale.h>
 #include <wchar.h>
 #include <wctype.h>
 #if !HAVE_DECL_WCWIDTH

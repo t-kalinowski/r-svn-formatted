@@ -293,7 +293,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    char family[256], encoding[256], paper[256], bg[256], fg[256], **afmpaths = NULL;
+    char family[256], encoding[256], paper[256], cidfamily[256], bg[256], fg[256], **afmpaths = NULL;
 
     if (!ndd)
     {
@@ -312,6 +312,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     /* Set default values and pad with zeroes ... */
     strncpy(family, "Helvetica", 256);
     strcpy(encoding, "ISOLatin1.enc");
+    strcpy(cidfamily, "default");
     strncpy(paper, "default", 256);
     strncpy(bg, "transparent", 256);
     strncpy(fg, "black", 256);
@@ -326,6 +327,11 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
             if (!strcmp("family", CHAR(STRING_ELT(names, i))))
             {
                 strncpy(family, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
+                done += 1;
+            }
+            if (!strcmp("cidfamily", CHAR(STRING_ELT(names, i))))
+            {
+                strncpy(cidfamily, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
                 done += 1;
             }
             if (!strcmp("paper", CHAR(STRING_ELT(names, i))))
@@ -345,7 +351,26 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, bg, fg,
+    if (!strcmp("default", cidfamily))
+        switch (GetACP())
+        {
+        case 932: /* Japan1 */
+            strcpy(cidfamily, "Japan1");
+            break;
+        case 949:
+            strcpy(cidfamily, "Korea1");
+            break;
+        case 936:
+            strcpy(cidfamily, "GB1");
+            break;
+        case 950:
+            strcpy(cidfamily, "CNS1");
+            break;
+        default:
+            strcpy(cidfamily, "");
+            break;
+        }
+    if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, cidfamily, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, "", "R Graphics Output", R_NilValue))
@@ -359,7 +384,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    char family[256], encoding[256], bg[256], fg[256];
+    char family[256], encoding[256], cidfamily[256], bg[256], fg[256];
 
     if (!ndd)
     {
@@ -379,6 +404,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     s = findVar(install(".PostScript.Options"), xd->psenv);
     strncpy(family, "Helvetica", 256);
     strcpy(encoding, "ISOLatin1.enc");
+    strcpy(cidfamily, "default");
     strncpy(bg, "transparent", 256);
     strncpy(fg, "black", 256);
     /* and then try to get it from .PostScript.Options */
@@ -393,6 +419,11 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
                 strncpy(family, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
                 done += 1;
             }
+            if (!strcmp("cidfamily", CHAR(STRING_ELT(names, i))))
+            {
+                strncpy(cidfamily, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
+                done += 1;
+            }
             if (!strcmp("bg", CHAR(STRING_ELT(names, i))))
             {
                 strncpy(bg, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
@@ -405,7 +436,26 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (PDFDeviceDriver(ndd, fn, "special", family, encoding, bg, fg,
+    if (!strcmp("default", cidfamily))
+        switch (GetACP())
+        {
+        case 932: /* Japan1 */
+            strcpy(cidfamily, "Japan1");
+            break;
+        case 949:
+            strcpy(cidfamily, "Korea1");
+            break;
+        case 936:
+            strcpy(cidfamily, "GB1");
+            break;
+        case 950:
+            strcpy(cidfamily, "CNS1");
+            break;
+        default:
+            strcpy(cidfamily, "");
+            break;
+        }
+    if (PDFDeviceDriver(ndd, fn, "special", family, encoding, cidfamily, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         ((gadesc *)dd->deviceSpecific)->basefontsize, 1, 0, "R Graphics Output", R_NilValue, 1, 4))

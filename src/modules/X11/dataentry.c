@@ -1218,6 +1218,7 @@ static void clearrect(void)
 
 /* --- Not true! E.g. ESC ends up in here... */
 #ifdef USE_FONTSET
+#include <R_ext/rlocale.h>
 #include <wchar.h>
 #include <wctype.h>
 #endif
