@@ -903,7 +903,7 @@ static void gl_addchar(int c)
     {
         int mb_len;
         int dst_len;
-        wchar_t mb_st;
+        mbstate_t mb_st;
         wchar_t wc;
         char s[9];
         int res;
