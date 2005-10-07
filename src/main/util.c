@@ -731,6 +731,7 @@ void UNIMPLEMENTED_TYPE(char *s, SEXP x)
 #include <langinfo.h>
 #endif
 
+/* <FIXME> use WORDS_BIGENDIAN */
 #if BYTE_ORDER == BIG_ENDIAN
 static const char UCS2ENC[] = "UCS-2BE";
 static const char UCS4ENC[] = "UCS-4BE";
@@ -760,7 +761,7 @@ size_t mbcsMblen(char *in)
             buftype = (void *)ucs2buf;
             if ((void *)-1 == (cd = Riconv_open((char *)UCS2ENC, "")))
             {
-                return ((size_t)(-1));
+                return (size_t)(-1);
             }
         }
 
@@ -779,22 +780,22 @@ size_t mbcsMblen(char *in)
                 /* next char */
                 break;
             case E2BIG:
-                return ((size_t)-1);
+                return (size_t)-1;
             case EILSEQ:
-                return ((size_t)-1);
+                return (size_t)-1;
             }
         }
         else if ((size_t)(0) == status)
         {
             /* normal status */
-            return ((size_t)i);
+            return (size_t)i;
         }
         else
         {
-            return ((size_t)status);
+            return (size_t)status;
         }
     }
-    return ((size_t)-1);
+    return (size_t)-1;
 }
 
 size_t ucs2Mblen(ucs2_t *in)
@@ -810,9 +811,7 @@ size_t ucs2Mblen(ucs2_t *in)
     void *buftype;
 
     if ((void *)-1 == (cd = Riconv_open("", (char *)UCS2ENC)))
-    {
-        return ((size_t)(-1));
-    }
+        return (size_t)-1;
 
     memset(mbbuf, 0, sizeof(mbbuf));
     i_buf = (char *)in;
@@ -828,19 +827,19 @@ size_t ucs2Mblen(ucs2_t *in)
         {
         case EINVAL:
             /* not case */
-            return ((size_t)-1);
+            return (size_t)-1;
         case E2BIG:
             /* probably few case */
-            return ((size_t)-1);
+            return (size_t)-1;
         case EILSEQ:
-            return ((size_t)-1);
+            return (size_t)-1;
         }
     }
-    return ((size_t)strlen(mbbuf));
+    return (size_t)strlen(mbbuf);
 }
 
 /*
- * out gives back the number of the national chars in the case of NULL
+ * out returns the number of the national chars in the case of NULL
  */
 size_t mbcsToUcs2(char *in, ucs2_t *out)
 {
@@ -860,19 +859,15 @@ size_t mbcsToUcs2(char *in, ucs2_t *out)
         int rc;
         rc = (int)mbcsMblen(i_buf);
         if (rc < 0)
-            return (rc);
+            return rc;
         i_buf += rc;
         wc_len++;
     }
     if (out == NULL)
-    {
-        return (wc_len);
-    }
+        return wc_len;
 
     if ((void *)-1 == (cd = Riconv_open((char *)UCS2ENC, "")))
-    {
-        return ((size_t)(-1));
-    }
+        return (size_t)-1;
 
     i_buf = in;
     i_len = strlen(in);
@@ -881,26 +876,26 @@ size_t mbcsToUcs2(char *in, ucs2_t *out)
     status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
 
     Riconv_close(cd);
-    if (status == (size_t)(-1))
+    if (status == (size_t)-1)
     {
         switch (errno)
         {
         case EINVAL:
-            return ((size_t)-2);
+            return (size_t)-2;
         case EILSEQ:
-            return ((size_t)-1);
+            return (size_t)-1;
         case E2BIG:
             break;
         default:
             errno = EILSEQ;
-            return ((size_t)-1);
+            return (size_t)-1;
         }
     }
-    return (wc_len);
+    return wc_len;
 }
 
 /*
- * out gives back the number of the bytes in the case of NULL
+ * out returns the number of the bytes in the case of NULL
  */
 size_t ucs2ToMbcs(ucs2_t *in, char *out)
 {
@@ -920,42 +915,36 @@ size_t ucs2ToMbcs(ucs2_t *in, char *out)
         int rc;
         rc = ucs2Mblen(ucs);
         if (rc < 0)
-        {
-            return (rc);
-        }
+            return rc;
         o_len += rc;
         i_len += sizeof(ucs2_t);
     }
     if (out == NULL)
-    {
-        return (o_len);
-    }
+        return o_len;
 
     if ((void *)-1 == (cd = Riconv_open("", (char *)UCS2ENC)))
-    {
         return ((size_t)(-1));
-    }
 
     o_buf = (char *)out;
     status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
 
     Riconv_close(cd);
-    if (status == (size_t)(-1))
+    if (status == (size_t)-1)
     {
         switch (errno)
         {
         case EINVAL:
-            return ((size_t)-2);
+            return (size_t)-2;
         case EILSEQ:
-            return ((size_t)-1);
+            return (size_t)-1;
         case E2BIG:
             break;
         default:
             errno = EILSEQ;
-            return ((size_t)-1);
+            return (size_t)-1;
         }
     }
-    return (strlen(out));
+    return strlen(out);
 }
 #endif /* HAVE_ICONV */
 

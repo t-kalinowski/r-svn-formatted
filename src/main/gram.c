@@ -249,7 +249,7 @@ static size_t ucstomb(char *s, wchar_t wc, mbstate_t *ps)
     if (wc == L'\0')
     {
         *s = '\0';
-        return (1);
+        return 1;
     }
 
     if ((void *)(-1) == (cd = Riconv_open("", (char *)UNICODE)))
@@ -258,11 +258,9 @@ static size_t ucstomb(char *s, wchar_t wc, mbstate_t *ps)
         /* locale set fuzzy case */
         strncpy(tocode, locale2charset(NULL), sizeof(tocode));
         if ((void *)(-1) == (cd = Riconv_open(tocode, (char *)UNICODE)))
-        {
-            return ((size_t)(-1));
-        }
+            return (size_t)(-1);
 #else
-        return ((size_t)(-1));
+        return (size_t)(-1);
 #endif
     }
 
@@ -274,18 +272,18 @@ static size_t ucstomb(char *s, wchar_t wc, mbstate_t *ps)
         switch (errno)
         {
         case EINVAL:
-            return ((size_t)-2);
+            return (size_t)-2;
         case EILSEQ:
-            return ((size_t)-1);
+            return (size_t)-1;
         case E2BIG:
             break;
         default:
             errno = EILSEQ;
-            return ((size_t)-1);
+            return (size_t)-1;
         }
     }
     strncpy(s, buf, sizeof(buf));
-    return (strlen(buf));
+    return strlen(buf);
 }
 
 static int mbcs_get_next(int c, wchar_t *wc)

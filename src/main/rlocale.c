@@ -118,6 +118,7 @@ static cjk_locale_name_t cjk_locale_name[] = {
     {"KO", MB_ko_KR},
     {"", MB_UTF8},
 };
+
 int Ri18n_wcwidth(wchar_t c)
 {
     char lc_str[128];
@@ -275,6 +276,7 @@ ISWFUNC(alnum)
 
 wctype_t Ri18n_wctype(const char *);
 int Ri18n_iswctype(wint_t, wctype_t);
+
 static int Ri18n_iswalnum(wint_t wc)
 {
     return (Ri18n_iswctype(wc, Ri18n_wctype("digit")) || Ri18n_iswctype(wc, Ri18n_wctype("alpha")));
