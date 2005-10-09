@@ -18,6 +18,11 @@
  *  Suite 330, Boston, MA  02111-1307  USA.
  */
 
+/*  This file was contributed by Ei-ji Nakama.
+ *  It exports locale2charset for use in rlocale.c.
+ *  Although this is quite general, it is only used on MacOS X.
+ */
+
 /* setlocale(LC_CTYPE,NULL) to encodingname cf nl_langinfo(LC_CTYPE) */
 
 /*********************************************************************
@@ -508,9 +513,7 @@ static const int known_count = (sizeof(known) / sizeof(name_value));
 
 static char *name_value_search(const char *name, const name_value table[], const int table_count)
 {
-    int min;
-    int mid;
-    int max;
+    int min, mid, max;
 
 #if defined(DEBUG_TEST)
     static last;
@@ -521,7 +524,7 @@ static char *name_value_search(const char *name, const name_value table[], const
     min = 0;
     max = table_count - 1;
 
-    if ((0 > strcmp(name, table[min].name)) || (0 < strcmp(name, table[max].name)))
+    if (0 > strcmp(name, table[min].name) || 0 < strcmp(name, table[max].name))
     {
 #if defined(DEBUG_TEST) && DEBUG_TEST > 1
         DPRINT(strcmp(name, table[min].name));
@@ -578,9 +581,7 @@ char *locale2charset(const char *locale)
         locale = setlocale(LC_CTYPE, NULL);
 
     if (0 == strcmp(locale, "C") || 0 == strcmp(locale, "POSIX"))
-    {
         return ("ASCII");
-    }
 
     memset(charset, 0, sizeof(charset));
 
@@ -612,24 +613,24 @@ char *locale2charset(const char *locale)
     switch (cp = atoi(enc))
     {
     case 1250:
-        return ("ISO 8859-2");
+        return "ISO 8859-2";
     case 1251:
-        return ("KOI8-U");
+        return "KOI8-U";
     case 1252:
-        return ("ISO 8859-1");
+        return "ISO 8859-1";
     case 1253:
-        return ("ISO 8859-7");
+        return "ISO 8859-7";
     case 1254:
-        return ("ISO 8859-9");
+        return "ISO 8859-9";
     case 1255:
-        return ("ISO 8859-8");
+        return "ISO 8859-8";
     case 1256:
-        return ("ISO 8859-6");
+        return "ISO 8859-6";
     case 1257:
-        return ("ISO 8859-13");
+        return "ISO 8859-13";
     default:
         sprintf(charset, "CP%u", cp);
-        return (charset);
+        return charset;
     }
 #endif
 
@@ -647,21 +648,18 @@ char *locale2charset(const char *locale)
 
     if (strcmp(enc, "") && strcmp(enc, "utf8"))
     {
-
         for (i = 0; enc[i]; i++)
             enc[i] = tolower(enc[i]);
 
         for (i = 0; i < known_count; i++)
-        {
             if (0 == strcmp(known[i].name, enc))
-                return (known[i].value);
-        }
+                return known[i].value;
 
         /* cut encoding old linux cp- */
         if (0 == strncmp(enc, "cp-", 3))
         {
             sprintf(charset, "CP%s", enc + 3);
-            return (charset);
+            return charset;
         }
         /* cut encoding IBM ibm- */
         if (0 == strncmp(enc, "ibm", 3))
@@ -670,9 +668,7 @@ char *locale2charset(const char *locale)
             sprintf(charset, "IBM-%d", abs(cp));
             /* IBM-[0-9]+ case */
             if (cp != 0)
-            {
-                return (charset);
-            }
+                return charset;
             /* IBM-eucXX case */
             strncpy(charset, (enc[3] == '-') ? enc + 4 : enc + 3, sizeof(charset));
             if (strncmp(charset, "euc", 3))
@@ -685,7 +681,7 @@ char *locale2charset(const char *locale)
                 }
                 for (i = 0; charset[i]; i++)
                     charset[i] = toupper(charset[i]);
-                return (charset);
+                return charset;
             }
         }
 
@@ -695,34 +691,22 @@ char *locale2charset(const char *locale)
             if (isalpha(enc[0]) && isalpha(enc[1]) && (enc[2] == '_'))
             {
                 if (0 == strncmp("ja", la_loc, 2))
-                    return ("EUC-JP");
+                    return "EUC-JP";
                 if (0 == strncmp("ko", la_loc, 2))
-                    return ("EUC-KR");
+                    return "EUC-KR";
                 if (0 == strncmp("zh", la_loc, 2))
-                    return ("GB2312");
+                    return "GB2312";
             }
         }
     }
 
     if (0 == strcmp(enc, "utf8"))
-        return ("UTF-8");
+        return "UTF-8";
 
-    /*
-      for(i=0; i<guess_count; i++)
-        if (0==strcmp(guess[i].name,la_loc))
-          return(guess[i].value);
-    */
-    if (NULL == (value = name_value_search(la_loc, guess, guess_count)))
-    {
-        return ("ASCII");
-    }
-    else
-    {
-        return (value);
-    }
-
-    return ("ASCII");
+    value = name_value_search(la_loc, guess, guess_count);
+    return value == NULL ? "ASCII" : value;
 }
+
 /*****************************************************
  * Test !!
  *****************************************************/

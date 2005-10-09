@@ -409,7 +409,7 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     size = gc->cex * gc->ps + 0.5;
     SetFont(gc->fontface, size, ptd);
     sum = 0;
-#ifdef SUPPORT_MBCS
+#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV)
     /*
      * <FIXME>
      * is ad-hoc.
@@ -423,7 +423,7 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
         unsigned short ucs2;
         char buf[8];
 
-        mb_len = (int)mbcsMblen(p);
+        mb_len = (int)mbcsMblen(p); /* uses iconv */
         if (mb_len == 1 && (unsigned char)*p < 128)
             sum += charwidth[ptd->fontface - 1][(int)*p];
         else if (mb_len > 0)
