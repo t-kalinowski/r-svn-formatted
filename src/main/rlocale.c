@@ -188,7 +188,7 @@ static int wcsearch(int wint, const struct interval *table, int max)
 }
 #endif
 
-/* what is this for ?
+/* what was this for ?
 #ifdef Win32
 # include <windows.h>
 # include <winnls.h>

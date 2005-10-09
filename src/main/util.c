@@ -723,16 +723,16 @@ void UNIMPLEMENTED_TYPE(char *s, SEXP x)
     UNIMPLEMENTED_TYPEt(s, TYPEOF(x));
 }
 
-#ifdef HAVE_ICONV
+#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV)
 #include <R_ext/Riconv.h>
 #include <sys/param.h>
 #include <errno.h>
-#ifdef HAVE_LANGINFO_CODESET
-#include <langinfo.h>
-#endif
+/* # ifdef HAVE_LANGINFO_CODESET
+#  include <langinfoh>
+# endif */
 
-/* Previous versions (< 2.3.0) assumed wchar_t was in Unicode (and it
-   commonly is).  These functions do not. */
+/* Previous versions of R (< 2.3.0) assumed wchar_t was in Unicode
+   (and it commonly is).  These functions do not. */
 #ifdef WORDS_BIGENDIAN
 static const char UCS2ENC[] = "UCS-2BE";
 static const char UCS4ENC[] = "UCS-4BE";
@@ -765,8 +765,8 @@ size_t mbcsMblen(char *in)
 
         i_buf = in;
         i_len = i;
-        o_buf = (buftype == (void *)ucs4buf) ? (char *)ucs4buf : (char *)ucs2buf;
-        o_len = (buftype == (void *)ucs4buf) ? 4 : 2;
+        o_buf = buftype == (void *)ucs4buf ? (char *)ucs4buf : (char *)ucs2buf;
+        o_len = buftype == (void *)ucs4buf ? 4 : 2;
         memset(o_buf, 0, o_len);
         status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
         Riconv_close(cd);
@@ -831,12 +831,8 @@ size_t ucs2Mblen(ucs2_t *in)
 size_t mbcsToUcs2(char *in, ucs2_t *out)
 {
     void *cd = NULL;
-    char *i_buf;
-    char *o_buf;
-    size_t i_len;
-    size_t o_len;
-    size_t status;
-    size_t wc_len;
+    char *i_buf, *o_buf;
+    size_t i_len, o_len, status, wc_len;
 
     /* out length */
     i_buf = in;
@@ -888,11 +884,8 @@ size_t ucs2ToMbcs(ucs2_t *in, char *out)
 {
     void *cd = NULL;
     ucs2_t *ucs = in;
-    char *i_buf = (char *)in;
-    char *o_buf;
-    size_t i_len;
-    size_t o_len;
-    size_t status;
+    char *i_buf = (char *)in, *o_buf;
+    size_t i_len, o_len, status;
 
     /* out length */
     o_len = 0;
@@ -933,7 +926,7 @@ size_t ucs2ToMbcs(ucs2_t *in, char *out)
     }
     return strlen(out);
 }
-#endif /* HAVE_ICONV */
+#endif /* SUPPORT_MBCS && HAVE_ICONV */
 
 #ifdef SUPPORT_MBCS
 #include <wctype.h>
