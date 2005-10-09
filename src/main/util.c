@@ -731,8 +731,9 @@ void UNIMPLEMENTED_TYPE(char *s, SEXP x)
 #include <langinfo.h>
 #endif
 
-/* <FIXME> use WORDS_BIGENDIAN */
-#if BYTE_ORDER == BIG_ENDIAN
+/* Previous versions (< 2.3.0) assumed wchar_t was in Unicode (and it
+   commonly is).  These functions do not. */
+#ifdef WORDS_BIGENDIAN
 static const char UCS2ENC[] = "UCS-2BE";
 static const char UCS4ENC[] = "UCS-4BE";
 #else
@@ -740,7 +741,6 @@ static const char UCS2ENC[] = "UCS-2LE";
 static const char UCS4ENC[] = "UCS-4LE";
 #endif
 
-/* <FIXME> These need iconv */
 size_t mbcsMblen(char *in)
 {
     unsigned int ucs4buf[1];

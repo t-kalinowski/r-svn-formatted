@@ -241,7 +241,7 @@ static const char UNICODE[] = "UCS-4BE";
 #endif
 
 /*********************************************************************
- *  iswalpha etc. does not function normally for Windows
+ *  iswalpha etc. does not function correctly for Windows
  *  iswalpha etc. does not function at all in AIX.
  *  all locale wchar_t == UNICODE
  ********************************************************************/
@@ -264,6 +264,9 @@ static const char UNICODE[] = "UCS-4BE";
     }
 #endif
 
+/* These are the functions which C99 and POSIX define.  However,
+   not all are used in R and not all are implemented in e.g. Solaris */
+
 ISWFUNC(upper)
 ISWFUNC(lower)
 ISWFUNC(alpha)
@@ -272,10 +275,12 @@ ISWFUNC(xdigit)
 ISWFUNC(space)
 ISWFUNC(print)
 ISWFUNC(graph)
-ISWFUNC(blank)
-ISWFUNC(cntrl)
+/* unused, not defined on Solaris
+   ISWFUNC(blank)
+   ISWFUNC(cntrl)
+*/
 ISWFUNC(punct)
-/*
+/*  defined below in terms of digit and alpha
 ISWFUNC(alnum)
 */
 
@@ -305,8 +310,10 @@ static const Ri18n_wctype_func_l Ri18n_wctype_func[] = {{"upper", 1 << 0, Ri18n_
                                                         {"space", 1 << 5, Ri18n_iswspace},
                                                         {"print", 1 << 6, Ri18n_iswprint},
                                                         {"graph", 1 << 7, Ri18n_iswgraph},
-                                                        {"blank", 1 << 8, Ri18n_iswblank},
-                                                        {"cntrl", 1 << 9, Ri18n_iswcntrl},
+                                                        /*  see comments above
+                                                            {"blank",  1<<8,  Ri18n_iswblank},
+                                                            {"cntrl",  1<<9,  Ri18n_iswcntrl},
+                                                        */
                                                         {"punct", 1 << 10, Ri18n_iswpunct},
                                                         {"alnum", 1 << 11, Ri18n_iswalnum},
                                                         {NULL, 0, NULL}};

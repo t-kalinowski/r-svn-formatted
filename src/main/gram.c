@@ -216,10 +216,13 @@ static int xxcharcount, xxcharsave;
 #ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
+
+/* Previous versions (< 2.3.0) assumed wchar_t was in Unicode (and it
+   commonly is).  This version does not. */
 #ifdef Win32
 static const char UNICODE[] = "UCS-2LE";
 #else
-#if BYTE_ORDER == BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
 static const char UNICODE[] = "UCS-4BE";
 #else
 static const char UNICODE[] = "UCS-4LE";
@@ -267,7 +270,7 @@ static size_t ucstomb(char *s, wchar_t wc, mbstate_t *ps)
     status = Riconv(cd, (char **)&inbuf, (size_t *)&inbytesleft, (char **)&outbuf, (size_t *)&outbytesleft);
     Riconv_close(cd);
 
-    if (status == (size_t)(-1))
+    if (status == (size_t)-1)
     {
         switch (errno)
         {
