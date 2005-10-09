@@ -17,18 +17,28 @@
  *  writing to the Free Software Foundation, Inc., 59 Temple Place,
  *  Suite 330, Boston, MA  02111-1307  USA.
  */
-/*
- * SUPPORT_MBCS
+
+/*  This file was contributed by Ei-ji Nakama.
+ *  See also the comments in R_ext/rlocale.h.
+ *
+ *  It provides replacements for the wctype functions on
+ *  Windows (where they are not correct in e.g. Japanese)
+ *  AIX (missing)
+ *  MacOS X in CJK (where these just call the ctype functions)
+ *
+ *  It also provides wc[s]width, where widths of CJK fonts are often
+ *  wrong in vendor-supplied versions and in Marcus Kuhn's version
+ *  used for Windows in R 2.[12].x.
  */
-#include <string.h>
-#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <string.h>
+#include <stdlib.h>
+
 #ifndef SUPPORT_MBCS
-/* -------------------- DUMMY  -------------------- */
 void Ri18n_wcswidth(void)
 {
     return;
@@ -45,10 +55,8 @@ void Ri18n_iswctype(void)
 {
     return;
 }
-/* -------------------- DUMMY  -------------------- */
-#endif
 
-#ifdef SUPPORT_MBCS
+#else /* SUPPORT_MBCS */
 
 #include "rlocale_data.h"
 
@@ -58,8 +66,6 @@ void Ri18n_iswctype(void)
 #include <locale.h>
 #include <limits.h>
 #include <R_ext/Riconv.h>
-
-typedef void *iconv_t;
 
 static int wcwidthsearch(int wint, const struct interval_wcwidth *table, int max, int locale)
 {
@@ -159,6 +165,7 @@ int Ri18n_wcswidth(const wchar_t *s, size_t n)
     return rs;
 }
 
+#if defined(Win32) || defined(_AIX) || defined(__APPLE_CC__)
 static int wcsearch(int wint, const struct interval *table, int max)
 {
     int min = 0;
@@ -179,16 +186,19 @@ static int wcsearch(int wint, const struct interval *table, int max)
     }
     return 0;
 }
-
-#ifdef Win32
-#include <windows.h>
-#include <winnls.h>
-#else
-#include <langinfo.h>
 #endif
 
+/* what is this for ?
+#ifdef Win32
+# include <windows.h>
+# include <winnls.h>
+#else
+# include <langinfo.h>
+#endif
+*/
+
 /*
- * locale2charset.c
+ * from localecharset.c
  */
 extern char *locale2charset(const char *);
 
@@ -197,7 +207,7 @@ extern char *locale2charset(const char *);
  *  (wchar_t != unicode)
  *  However, it is Unicode at the time of UTF-8.
  ********************************************************************/
-#if (defined(HAVE_ICONV) && defined(__APPLE_CC__))
+#if defined(HAVE_ICONV) && defined(__APPLE_CC__)
 static const char UNICODE[] = "UCS-4BE";
 #define ISWFUNC(ISWNAME)                                                                                               \
     static int Ri18n_isw##ISWNAME(wint_t wc)                                                                           \
@@ -206,7 +216,7 @@ static const char UNICODE[] = "UCS-4BE";
         size_t mb_len;                                                                                                 \
         int ucs4_buf[2];                                                                                               \
         size_t wc_len;                                                                                                 \
-        iconv_t cd;                                                                                                    \
+        void *cd;                                                                                                      \
         char fromcode[128];                                                                                            \
         char *_mb_buf;                                                                                                 \
         char *_wc_buf;                                                                                                 \
@@ -220,7 +230,7 @@ static const char UNICODE[] = "UCS-4BE";
         memset(mb_buf, 0, sizeof(mb_buf));                                                                             \
         memset(ucs4_buf, 0, sizeof(ucs4_buf));                                                                         \
         wcrtomb(mb_buf, wc, NULL);                                                                                     \
-        if ((iconv_t)(-1) != (cd = Riconv_open(UNICODE, fromcode)))                                                    \
+        if ((void *)(-1) != (cd = Riconv_open(UNICODE, fromcode)))                                                     \
         {                                                                                                              \
             wc_len = sizeof(ucs4_buf);                                                                                 \
             _wc_buf = (char *)ucs4_buf;                                                                                \
@@ -240,7 +250,7 @@ static const char UNICODE[] = "UCS-4BE";
  *  iswalpha etc. does not function at all in AIX.
  *  all locale wchar_t == UNICODE
  ********************************************************************/
-#if (defined(Win32) || defined(_AIX))
+#if defined(Win32) || defined(_AIX)
 #define ISWFUNC(ISWNAME)                                                                                               \
     static int Ri18n_isw##ISWNAME(wint_t wc)                                                                           \
     {                                                                                                                  \

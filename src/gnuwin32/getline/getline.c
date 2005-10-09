@@ -652,7 +652,7 @@ int getline(char *prompt, char *buf, int buflen)
                     for (i = 0; i < gl_pos;)
                     {
                         mbrtowc(&wc, gl_buf + i, MB_CUR_MAX, &mb_st);
-                        mb_len = wcwidth(wc);
+                        mb_len = Ri18n_wcwidth(wc);
                         i += (wc == 0) ? 0 : mb_len;
                     }
                     gl_fixup(gl_prompt, -1, gl_pos - mb_len);
@@ -698,7 +698,7 @@ int getline(char *prompt, char *buf, int buflen)
                     for (i = 0; i <= gl_pos;)
                     {
                         mbrtowc(&wc, gl_buf + i, MB_CUR_MAX, &mb_st);
-                        mb_len = wcwidth(wc);
+                        mb_len = Ri18n_wcwidth(wc);
                         i += (wc == 0) ? 0 : mb_len;
                     }
                     gl_fixup(gl_prompt, -1, gl_pos + mb_len);
@@ -800,7 +800,7 @@ int getline(char *prompt, char *buf, int buflen)
                             for (i = 0; i <= gl_pos;)
                             {
                                 mbrtowc(&wc, gl_buf + i, MB_CUR_MAX, &mb_st);
-                                mb_len = wcwidth(wc);
+                                mb_len = Ri18n_wcwidth(wc);
                                 i += (wc == 0) ? 0 : mb_len;
                             }
                             gl_fixup(gl_prompt, -1, gl_pos + mb_len);
@@ -821,7 +821,7 @@ int getline(char *prompt, char *buf, int buflen)
                             for (i = 0; i <= gl_pos;)
                             {
                                 mbrtowc(&wc, gl_buf + i, MB_CUR_MAX, &mb_st);
-                                mb_len = wcwidth(wc);
+                                mb_len = Ri18n_wcwidth(wc);
                                 i += (wc == 0) ? 0 : mb_len;
                             }
                             gl_fixup(gl_prompt, -1, gl_pos - mb_len);
@@ -1092,7 +1092,7 @@ static void gl_del(int loc)
             for (i = 0; i <= gl_pos + loc;)
             {
                 mbrtowc(&wc, gl_buf + i, MB_CUR_MAX, &mb_st);
-                mb_len = wcwidth(wc);
+                mb_len = Ri18n_wcwidth(wc);
                 i += (wc == 0) ? 0 : mb_len;
             }
             for (i = gl_pos + (loc * mb_len); i <= gl_cnt - mb_len; i++)
