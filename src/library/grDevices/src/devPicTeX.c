@@ -439,11 +439,10 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
         }
     }
     else
-#else
-    for (p = str; *p; p++)
-        sum += charwidth[ptd->fontface - 1][(int)*p];
 #endif
-        return sum * ptd->fontsize;
+        for (p = str; *p; p++)
+            sum += charwidth[ptd->fontface - 1][(int)*p];
+    return sum * ptd->fontsize;
 }
 
 /* Possibly Filled Rectangle */
