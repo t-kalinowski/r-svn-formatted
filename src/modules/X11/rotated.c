@@ -30,11 +30,6 @@
 #include <config.h>
 #endif
 
-#ifdef SUPPORT_MBCS
-#define USE_FONTSET 1
-extern int utf8locale;
-#endif
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -45,6 +40,19 @@ extern int utf8locale;
 #if defined(HAVE_DECL_STRDUP) && !HAVE_DECL_STRDUP
 extern char *strdup(const char *s1);
 #endif
+
+#ifdef SUPPORT_MBCS
+#define USE_FONTSET 1
+extern int utf8locale;
+/* In theory we should do this, but it works less well
+# ifdef X_HAVE_UTF8_STRING
+#  define HAVE_XUTF8TEXTESCAPEMENT 1
+#  define HAVE_XUTF8TEXTEXTENTS 1
+#  define HAVE_XUTF8DRAWSTRING 1
+#  define HAVE_XUTF8DRAWIMAGESTRING 1
+# endif */
+#endif
+
 #include "rotated.h"
 
 /* ---------------------------------------------------------------------- */

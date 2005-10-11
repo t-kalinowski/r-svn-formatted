@@ -1741,7 +1741,8 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
                                 char *ss = sbuf;
                                 int charNum = 0;
 #ifdef SUPPORT_MBCS
-                                if (mbcslocale && !utf8strIsASCII(ss))
+                                /* Symbol fonts are not encoded in MBCS ever */
+                                if (gc->fontface != 5 && mbcslocale && !utf8strIsASCII(ss))
                                 {
                                     int n = strlen(ss), used;
                                     wchar_t wc;
@@ -1934,7 +1935,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
         else
         {
 #ifdef SUPPORT_MBCS
-            if (mbcslocale)
+            if (mbcslocale && gc->fontface != 5)
             {
                 int cnt = wcrtomb(str, pch, NULL);
                 str[cnt] = 0;
