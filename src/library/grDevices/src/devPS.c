@@ -116,6 +116,8 @@ static const struct
     {"ComputerModern",
      {"CM_regular_10.afm", "CM_boldx_10.afm", "CM_italic_10.afm", "CM_boldx_italic_10.afm", "CM_symbol_10.afm"}},
 
+    {"ComputerModernItalic",
+     {"CM_regular_10.afm", "CM_boldx_10.afm", "cmti10.afm", "cmbxti10.afm", "CM_symbol_10.afm"}},
     {NULL}};
 
 /* Part 1.  AFM File Parsing.  */
