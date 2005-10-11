@@ -522,7 +522,7 @@ static int LoadEncoding(char *encpath, char *encname, CNAME *encnames, char *enc
     if (strchr(encpath, FILESEP[0]))
         strcpy(buf, encpath);
     else
-        snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%safm%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP, encpath);
+        snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%senc%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP, encpath);
 #ifdef DEBUG_PS
     Rprintf("encoding path is %s\n", buf);
 #endif
