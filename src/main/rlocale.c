@@ -262,10 +262,15 @@ static const char UNICODE[] = "UCS-4BE";
     {                                                                                                                  \
         return isw##ISWNAME(wc);                                                                                       \
     }
+/* Solaris 8 is missing iswblank.  Its man page is missing iswcntrl,
+   but the function is there.  Windows also does not have iswblank. */
+#ifndef HAVE_ISWBLANK
+#define iswblank(wc) iswctype(wc, wctype("blank"))
+#endif
 #endif
 
 /* These are the functions which C99 and POSIX define.  However,
-   not all are used in R and not all are implemented in e.g. Solaris */
+   not all are used elsewhere in R, but they are used in Ri18n_iswctype. */
 
 ISWFUNC(upper)
 ISWFUNC(lower)
@@ -275,10 +280,8 @@ ISWFUNC(xdigit)
 ISWFUNC(space)
 ISWFUNC(print)
 ISWFUNC(graph)
-/* unused, not defined on Solaris
-   ISWFUNC(blank)
-   ISWFUNC(cntrl)
-*/
+ISWFUNC(blank)
+ISWFUNC(cntrl)
 ISWFUNC(punct)
 /*  defined below in terms of digit and alpha
 ISWFUNC(alnum)
@@ -310,10 +313,8 @@ static const Ri18n_wctype_func_l Ri18n_wctype_func[] = {{"upper", 1 << 0, Ri18n_
                                                         {"space", 1 << 5, Ri18n_iswspace},
                                                         {"print", 1 << 6, Ri18n_iswprint},
                                                         {"graph", 1 << 7, Ri18n_iswgraph},
-                                                        /*  see comments above
-                                                            {"blank",  1<<8,  Ri18n_iswblank},
-                                                            {"cntrl",  1<<9,  Ri18n_iswcntrl},
-                                                        */
+                                                        {"blank", 1 << 8, Ri18n_iswblank},
+                                                        {"cntrl", 1 << 9, Ri18n_iswcntrl},
                                                         {"punct", 1 << 10, Ri18n_iswpunct},
                                                         {"alnum", 1 << 11, Ri18n_iswalnum},
                                                         {NULL, 0, NULL}};
