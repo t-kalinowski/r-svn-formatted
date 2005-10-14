@@ -456,6 +456,16 @@ static int scanchar(Rboolean inQuote, LocalData *d)
     return next;
 }
 
+/* utility to close connections after interrupts */
+static void scan_cleanup(void *data)
+{
+    LocalData *ld = data;
+    if (!ld->ttyflag && !ld->wasopen)
+        ld->con->close(ld->con);
+    if (ld->quotesave)
+        free(ld->quotesave);
+}
+
 #include "RBufferUtils.h"
 
 /*XX  Can we pass this routine an R_StringBuffer? appears so.
@@ -650,8 +660,6 @@ static R_INLINE void expected(char *what, char *got, LocalData *d)
         while ((c = scanchar(FALSE, d)) != R_EOF && c != '\n')
             ;
     }
-    else if (!d->wasopen)
-        d->con->close(d->con);
     error(_("scan() expected '%s', got '%s'"), what, got);
 }
 
@@ -763,6 +771,8 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
 
     for (;;)
     {
+        if (n % 10000 == 9999)
+            R_CheckUserInterrupt();
         if (bch == R_EOF)
         {
             if (d->ttyflag)
@@ -876,8 +886,6 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
     nc = length(what);
     if (!nc)
     {
-        if (!d->ttyflag & !d->wasopen)
-            d->con->close(d->con);
         error(_("empty 'what' specified"));
     }
 
@@ -897,8 +905,6 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         {
             if (!isVector(w))
             {
-                if (!d->ttyflag & !d->wasopen)
-                    d->con->close(d->con);
                 error(_("invalid 'what' specified"));
             }
             if (TYPEOF(w) == STRSXP)
@@ -933,6 +939,8 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
 
     for (;;)
     {
+        if (linesread % 1000 == 999)
+            R_CheckUserInterrupt();
 
         if (bch == R_EOF)
         {
@@ -1077,6 +1085,7 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     char *p, *vmax;
     LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
     data.NAstrings = R_NilValue;
+    RCNTXT cntxt;
 
     checkArity(op, args);
     vmax = vmaxget();
@@ -1221,6 +1230,12 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     ans = R_NilValue; /* -Wall */
     data.save = 0;
 
+    /* set up a context which will close the connection if there is
+       an error or user interrupt */
+    begincontext(&cntxt, CTXT_CCODE, call, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+    cntxt.cend = &scan_cleanup;
+    cntxt.cenddata = &data;
+
     switch (TYPEOF(what))
     {
     case LGLSXP:
@@ -1236,10 +1251,10 @@ SEXP do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip, multiline, &data);
         break;
     default:
-        if (!data.ttyflag && !data.wasopen)
-            data.con->close(data.con);
         errorcall(call, _("invalid 'what' specified"));
     }
+    endcontext(&cntxt);
+
     /* we might have a character that was unscanchar-ed.
        So pushback if possible */
     if (data.save && !data.ttyflag && data.wasopen)
@@ -2086,15 +2101,35 @@ static char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qmethod, 
     return EncodeElement(x, indx, quote ? '"' : 0, cdec);
 }
 
+typedef struct wt_info
+{
+    Rboolean wasopen;
+    Rconnection con;
+    R_StringBuffer *buf;
+    int savedigits;
+} wt_info;
+
+/* utility to cleanup e.g. after interrpts */
+static void wt_cleanup(void *data)
+{
+    wt_info *ld = data;
+    if (!ld->wasopen)
+        ld->con->close(ld->con);
+    R_FreeStringBuffer(ld->buf);
+    R_print.digits = ld->savedigits;
+}
+
 SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, sep, rnames, eol, na, dec, quote, xj;
-    int nr, nc, i, j, qmethod, savedigits;
+    int nr, nc, i, j, qmethod;
     Rboolean wasopen, quote_rn = FALSE, *quote_col;
     Rconnection con;
     char *csep, *ceol, *cna, cdec, *tmp;
     SEXP *levels;
     R_StringBuffer strBuf = {NULL, 0, MAXELTSIZE};
+    wt_info wi;
+    RCNTXT cntxt;
 
     checkArity(op, args);
 
@@ -2168,8 +2203,14 @@ SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     R_AllocStringBuffer(0, &strBuf);
     PrintDefaults(R_NilValue);
-    savedigits = R_print.digits;
+    wi.savedigits = R_print.digits;
     R_print.digits = DBL_DIG; /* MAX precision */
+    wi.con = con;
+    wi.wasopen = wasopen;
+    wi.buf = &strBuf;
+    begincontext(&cntxt, CTXT_CCODE, call, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+    cntxt.cend = &wt_cleanup;
+    cntxt.cenddata = &wi;
 
     if (isVectorList(x))
     { /* A data frame */
@@ -2191,6 +2232,8 @@ SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < nr; i++)
         {
+            if (i % 1000 == 999)
+                R_CheckUserInterrupt();
             if (!isNull(rnames))
                 writecon(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, cdec), csep);
             for (j = 0; j < nc; j++)
@@ -2228,6 +2271,8 @@ SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < nr; i++)
         {
+            if (i % 1000 == 999)
+                R_CheckUserInterrupt();
             if (!isNull(rnames))
                 writecon(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, cdec), csep);
             for (j = 0; j < nc; j++)
@@ -2246,9 +2291,7 @@ SEXP do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
             writecon(con, "%s", ceol);
         }
     }
-    if (!wasopen)
-        con->close(con);
-    R_FreeStringBuffer(&strBuf);
-    R_print.digits = savedigits;
+    endcontext(&cntxt);
+    wt_cleanup(&wi);
     return R_NilValue;
 }
