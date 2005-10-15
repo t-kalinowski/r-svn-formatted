@@ -1601,7 +1601,7 @@ static char *getFontEncoding(char *family)
             PROTECT(platform = findVar(install(".Platform"), R_GlobalEnv));
             PROTECT(platformNames = getAttrib(platform, R_NamesSymbol));
             if (strcmp(CHAR(STRING_ELT(platformNames, 0)), "OS.type"))
-                error(".Platform has changed and nobody told postscript");
+                error(".Platform has changed and nobody told postscript()");
             PROTECT(OStype = VECTOR_ELT(platform, 0));
             if (!strcmp(CHAR(STRING_ELT(OStype, 0)), "windows"))
                 result = WinAnsiEnc;
@@ -2108,6 +2108,7 @@ typedef struct
     cidfontlist cidfonts;
     encodinglist encodings;
     char cidfamilyname[50];
+    char enc2[50]; /* the SBCS to be used */
 } PostScriptDesc;
 
 /*  Part 3.  Graphics Support Code.  */
@@ -2690,8 +2691,10 @@ static void PS_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
 static void PS_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PS_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+#ifdef SUPPORT_MBCS
 static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
                               NewDevDesc *dd);
+#endif
 
 /* PostScript Support (formerly in PostScript.c) */
 
@@ -2796,7 +2799,17 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
         free(pd);
         error(_("encoding path is too long"));
     }
+    strcpy(pd->enc2, "latin1");
 #ifdef SUPPORT_MBCS
+#ifdef HAVE_ICONV
+    {
+        char *p;
+        strcpy(pd->enc2, encoding);
+        p = strrchr(pd->enc2, '.');
+        if (p)
+            *p = '\0';
+    }
+#else
     if (utf8locale && strcmp(encoding, "ISOLatin1.enc"))
     {
         warning(_("Requested encoding \"%s\"\nOnly encoding = \"ISOLatin1.enc\" is currently allowed in a UTF-8 "
@@ -2804,6 +2817,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
                 encoding);
         encoding = ISOLatin1Enc;
     }
+#endif
 #endif
 
     pd->encodings = NULL;
@@ -3436,13 +3450,9 @@ static CIDFontMetricInfo *cidmetricInfo(int face, PostScriptDesc *pd)
 
     fontfamily = findDeviceCIDFont(pd->cidfamilyname, pd->cidfonts, &fontIndex);
     if (fontfamily)
-    {
         result = &(fontfamily->cidfonts[face - 1]->cidmetrics);
-    }
     else
-    {
         error(_("cidfamily '%s' not included in PostScript device"), pd->cidfamilyname);
-    }
     return result;
 }
 
@@ -3452,13 +3462,9 @@ static FontMetricInfo *metricInfo(char *family, int face, PostScriptDesc *pd)
     int fontIndex;
     type1fontfamily fontfamily = findDeviceFont(family, pd->fonts, &fontIndex);
     if (fontfamily)
-    {
         result = &(fontfamily->fonts[face - 1]->metrics);
-    }
     else
-    {
         error(_("family '%s' not included in PostScript device"), family);
-    }
     return result;
 }
 
@@ -3642,12 +3648,10 @@ static int translateFont(char *family, int style, PostScriptDesc *pd)
     return result;
 }
 
+/* Only used for symbol fonts and on non-MBCS platforms */
 static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *str1 = str;
-#ifdef SUPPORT_MBCS
-    char *buff;
-#endif
 
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
@@ -3655,31 +3659,39 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
-#ifdef SUPPORT_MBCS
-        if (utf8locale && !utf8strIsASCII(str) &&
-            /*
-             * Every fifth font is a symbol font
-             * See postscriptFonts()
-             */
-            (pd->current.font % 5) != 0)
-        {
-            buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-            if (!buff)
-                error(_("allocation failure in PS_Text"));
-            mbcsToLatin1(str, buff);
-            str1 = buff;
-        }
-#endif
         PostScriptText(pd->psfp, x, y, str1, hadj, 0.0, rot);
     }
 }
 
+#ifdef HAVE_ICONV
+#include <R_ext/Riconv.h>
+
+static void mbcsToSbcs(char *in, char *out, char *encoding)
+{
+    void *cd = NULL;
+    char *i_buf, *o_buf;
+    size_t i_len, o_len, status;
+
+    if ((void *)-1 == (cd = Riconv_open(encoding, "")))
+        error(_("unknown encoding in 'mbcsToSbcs'"));
+
+    i_buf = in;
+    i_len = strlen(in);
+    o_buf = (char *)out;
+    o_len = i_len;
+    status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
+
+    Riconv_close(cd);
+    if (status == (size_t)-1)
+        error(_("conversion failure in 'mbcsToSbcs'"));
+}
+#endif
+
+#ifdef SUPPORT_MBCS
 static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *str1 = str;
-#ifdef SUPPORT_MBCS
     char *buff;
-#endif
 
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
@@ -3689,9 +3701,10 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
         return;
     }
 
-#ifdef SUPPORT_MBCS
+    /* No symbol fonts from now on */
+
 #ifdef HAVE_ICONV
-    if (mbcslocale && pd->cidfonts && (gc->fontface != 5))
+    if (mbcslocale && pd->cidfonts)
     {
         unsigned char *buf;
         size_t ucslen;
@@ -3738,30 +3751,28 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
         }
     }
 #endif
-#endif
 
+    /* Now using single-byte non-symbol font */
     SetFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
-#ifdef SUPPORT_MBCS
-        if (utf8locale && !utf8strIsASCII(str) &&
-            /*
-             * Every fifth font is a symbol font
-             * See postscriptFonts()
-             */
-            (pd->current.font % 5) != 0)
+        if (utf8locale && !utf8strIsASCII(str))
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error(_("allocation failure in PS_Text"));
+#ifdef HAVE_ICONV
+            mbcsToSbcs(str, buff, pd->enc2);
+#else
             mbcsToLatin1(str, buff);
+#endif
             str1 = buff;
         }
-#endif
         PostScriptText(pd->psfp, x, y, str1, hadj, 0.0, rot);
     }
 }
+#endif
 
 static Rboolean PS_Locator(double *x, double *y, NewDevDesc *dd)
 {
@@ -4628,6 +4639,7 @@ typedef struct
     cidfontlist cidfonts;
     encodinglist encodings;
     char cidfamilyname[50];
+    char enc2[50]; /* the SBCS to be used */
 } PDFDesc;
 
 /* Device Driver Actions */
@@ -4650,8 +4662,10 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *
 static void PDF_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PDF_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+#ifdef SUPPORT_MBCS
 static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
                                NewDevDesc *dd);
+#endif
 
 /*
  * Add a graphics engine font family to the list of fonts used on a
@@ -4778,12 +4792,23 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
         error(_("encoding path is too long"));
     }
 #ifdef SUPPORT_MBCS
+#ifdef HAVE_ICONV
+    {
+        char *p;
+        strcpy(pd->enc2, encoding);
+        p = strrchr(pd->enc2, '.');
+        if (p)
+            *p = '\0';
+    }
+#else
     if (utf8locale && strcmp(encoding, "ISOLatin1.enc"))
     {
-        warning(
-            _("Only encoding = \"ISOLatin1.enc\" is currently allowed in a UTF-8 locale\nAssuming \"ISOLatin1.enc\""));
+        warning(_("Requested encoding \"%s\"\nOnly encoding = \"ISOLatin1.enc\" is currently allowed in a UTF-8 "
+                  "locale\nAssuming \"ISOLatin1.enc\""),
+                encoding);
         encoding = ISOLatin1Enc;
     }
+#endif
 #endif
 
     pd->encodings = NULL;
@@ -6037,9 +6062,6 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     int face = gc->fontface;
     double a, b, rot1;
     char *str1 = str;
-#ifdef SUPPORT_MBCS
-    char *buff;
-#endif
 
     if (face < 1 || face > 5)
     {
@@ -6064,21 +6086,12 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
                 -b, a, x, y);
-#ifdef SUPPORT_MBCS
-        if (utf8locale && !utf8strIsASCII(str1) && face < 5)
-        {
-            buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-            if (!buff)
-                error(_("allocation failure in PDF_Text"));
-            mbcsToLatin1(str, buff);
-            str1 = buff;
-        }
-#endif
         PostScriptWriteString(pd->pdffp, str1);
         fprintf(pd->pdffp, " Tj\n");
     }
 }
 
+#ifdef SUPPORT_MBCS
 static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
                                NewDevDesc *dd)
 {
@@ -6087,9 +6100,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     int face = gc->fontface;
     double a, b, rot1;
     char *str1 = str;
-#ifdef SUPPORT_MBCS
     char *buff;
-#endif
 
     if (face < 1 || face > 5)
     {
@@ -6113,7 +6124,6 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     if (!pd->inText)
         texton(pd);
 
-#ifdef SUPPORT_MBCS
 #ifdef HAVE_ICONV
     if (mbcslocale && pd->cidfonts && face != 5)
     {
@@ -6167,7 +6177,6 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         return;
     }
 #endif
-#endif
 
     /*
      * Only try to do real transparency if version at least 1.4
@@ -6177,20 +6186,23 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
                 -b, a, x, y);
-#ifdef SUPPORT_MBCS
         if (utf8locale && !utf8strIsASCII(str1) && face < 5)
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error(_("allocation failure in PDF_Text"));
+#ifdef HAVE_ICONV
+            mbcsToSbcs(str, buff, pd->enc2);
+#else
             mbcsToLatin1(str, buff);
+#endif
             str1 = buff;
         }
-#endif
         PostScriptWriteString(pd->pdffp, str1);
         fprintf(pd->pdffp, " Tj\n");
     }
 }
+#endif
 
 static Rboolean PDF_Locator(double *x, double *y, NewDevDesc *dd)
 {
@@ -6312,6 +6324,7 @@ static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *des
  *  paper	= paper type
  *  family	= typeface = "family"
  *  encoding	= char encoding file name
+ *  cidfamily	= char encoding file name for CID fonts
  *  bg		= background color
  *  fg		= foreground color
  *  width	= width in inches
@@ -6500,6 +6513,7 @@ SEXP XFig(SEXP args)
  *  file	= output filename
  *  family	= typeface = "family"
  *  encoding	= char encoding file name
+ *  cidfamily	= char encoding file name for CID fonts
  *  bg		= background color
  *  fg		= foreground color
  *  width	= width in inches
