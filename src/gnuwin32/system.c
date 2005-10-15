@@ -682,11 +682,23 @@ void R_SetWin32(Rstart Rp)
     int dummy;
     /* xTib *tib = GetTIB(); */
 
-    R_CStackLimit = 0xA00000; /* set in front-ends/Makefile */
+    CharacterMode = Rp->CharacterMode;
+    switch (CharacterMode)
+    {
+    case RGui:
+    case RTerm:
+        R_CStackLimit = 0xA00000; /* set in front-ends/Makefile */
+        break;
+    default:
+        R_CStackLimit = -1; /* embedded in another front-end, so we have no idea */
+    }
+
     R_CStackStart = (unsigned long)&dummy;
+
     /* printf("stack base %lx\n", R_CStackStart);
        R_CStackStart = (long)tib->pvStackUserBase;
        printf("stack base %lx\n", R_CStackStart); */
+
     R_CStackDir = 1;
     R_Home = Rp->rhome;
     if (strlen(R_Home) >= MAX_PATH)
@@ -697,7 +709,6 @@ void R_SetWin32(Rstart Rp)
     strcat(UserRHome, Rp->home);
     putenv(UserRHome);
 
-    CharacterMode = Rp->CharacterMode;
     switch (CharacterMode)
     {
     case RGui:
