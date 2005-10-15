@@ -203,7 +203,13 @@ static int wcsearch(int wint, const struct interval *table, int max)
  *  However, it is Unicode at the time of UTF-8.
  ********************************************************************/
 #if defined(HAVE_ICONV) && defined(__APPLE_CC__)
+/* allow for MacIntel platforms */
+#ifdef WORDS_BIGENDIAN
 static const char UNICODE[] = "UCS-4BE";
+#else
+static const char UNICODE[] = "UCS-4LE";
+#endif
+char *locale2charset(const char *locale);
 #define ISWFUNC(ISWNAME)                                                                                               \
     static int Ri18n_isw##ISWNAME(wint_t wc)                                                                           \
     {                                                                                                                  \
@@ -219,23 +225,21 @@ static const char UNICODE[] = "UCS-4BE";
                                                                                                                        \
         strncpy(fromcode, locale2charset(NULL), sizeof(fromcode));                                                     \
         if (0 == strcmp(fromcode, "UTF-8"))                                                                            \
-        {                                                                                                              \
             return wcsearch(wc, table_w##ISWNAME, table_w##ISWNAME##_count);                                           \
-        }                                                                                                              \
         memset(mb_buf, 0, sizeof(mb_buf));                                                                             \
         memset(ucs4_buf, 0, sizeof(ucs4_buf));                                                                         \
         wcrtomb(mb_buf, wc, NULL);                                                                                     \
-        if ((void *)(-1) != (cd = Riconv_open(UNICODE, fromcode)))                                                     \
-        {                                                                                                              \
-            wc_len = sizeof(ucs4_buf);                                                                                 \
-            _wc_buf = (char *)ucs4_buf;                                                                                \
-            mb_len = strlen(mb_buf);                                                                                   \
-            _mb_buf = (char *)mb_buf;                                                                                  \
-            rc = Riconv(cd, (char **)&_mb_buf, (size_t *)&mb_len, (char **)&_wc_buf, (size_t *)&wc_len);               \
-            Riconv_close(cd);                                                                                          \
-            wc = ucs4_buf[0];                                                                                          \
-            return wcsearch(wc, table_w##ISWNAME, table_w##ISWNAME##_count);                                           \
-        }                                                                                                              \
+        if ((void *)(-1) != (cd = Riconv_open(char *) UNICODE, fromcode)))                                                      \
+            {                                                                                                          \
+                wc_len = sizeof(ucs4_buf);                                                                             \
+                _wc_buf = (char *)ucs4_buf;                                                                            \
+                mb_len = strlen(mb_buf);                                                                               \
+                _mb_buf = (char *)mb_buf;                                                                              \
+                rc = Riconv(cd, (char **)&_mb_buf, (size_t *)&mb_len, (char **)&_wc_buf, (size_t *)&wc_len);           \
+                Riconv_close(cd);                                                                                      \
+                wc = ucs4_buf[0];                                                                                      \
+                return wcsearch(wc, table_w##ISWNAME, table_w##ISWNAME##_count);                                       \
+            }                                                                                                          \
         return (-1);                                                                                                   \
     }
 #endif
