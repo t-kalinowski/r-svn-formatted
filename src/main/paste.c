@@ -314,6 +314,7 @@ SEXP do_format(SEXP call, SEXP op, SEXP args, SEXP env)
                 else if (na)
                     cnt = imax2(cnt, R_print.na_width);
             buff = alloca(cnt + 1);
+            R_CheckStack();
             PROTECT(y = allocVector(STRSXP, n));
             for (i = 0; i < n; i++)
             {
