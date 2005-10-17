@@ -85,7 +85,7 @@ int askokcancel(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, "Question", MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL | TopmostDialogs);
+    result = MessageBox(0, question, G_("Question"), MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL | TopmostDialogs);
 
     switch (result)
     {
@@ -325,7 +325,7 @@ static char *BROWSE_STRING = "Browse";
 
 static char *QUESTION_TITLE = "Question";
 static char *PASSWORD_TITLE = "Password Entry";
-static char *FINDDIR_TITLE = "Change directory";
+static char *FINDDIR_TITLE = "Choose directory";
 
 static void add_data(window w)
 {
@@ -504,9 +504,9 @@ static window init_askstr_dialog(char *title, char *question, char *default_str)
     d->question = newlabel(question, rect(10, h, tw + 4, h * 2 + 2), AlignLeft);
     if (title == FINDDIR_TITLE)
     {
-        bw = strwidth(SystemFont, BROWSE_STRING) * 3 / 2;
+        bw = strwidth(SystemFont, G_(BROWSE_STRING)) * 3 / 2;
         d->text = newfield(default_str, rect(10, h * 4, tw + 4 - bw, h * 3 / 2));
-        newbutton(BROWSE_STRING, rect(20 + tw - bw, h * 4 - 2, bw, h + 10), browse_button);
+        newbutton(G_(BROWSE_STRING), rect(20 + tw - bw, h * 4 - 2, bw, h + 10), browse_button);
     }
     else if (title == PASSWORD_TITLE)
         d->text = newpassword(default_str, rect(10, h * 4, tw + 4, h * 3 / 2));
