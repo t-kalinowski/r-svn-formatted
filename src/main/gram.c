@@ -3803,7 +3803,7 @@ int isValidName(char *name)
         if (wc == L'.')
         {
             /* We don't care about other than ASCII digits */
-            if (isdigit((int)*p))
+            if (isdigit(0xff & (int)*p))
                 return 0;
             /* Mbrtowc(&wc, p, n, NULL); if(iswdigit(wc)) return 0; */
         }
@@ -3820,12 +3820,12 @@ int isValidName(char *name)
     else
 #endif
     {
-        int c = *p++;
+        int c = 0xff & *p++;
         if (c != '.' && !isalpha(c))
             return 0;
-        if (c == '.' && isdigit((int)*p))
+        if (c == '.' && isdigit(0xff & (int)*p))
             return 0;
-        while (c = *p++, (isalnum(c) || c == '.' || c == '_'))
+        while (c = 0xff & *p++, (isalnum(c) || c == '.' || c == '_'))
             ;
         if (c != '\0')
             return 0;
