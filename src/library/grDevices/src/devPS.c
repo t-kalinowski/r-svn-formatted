@@ -6163,7 +6163,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
                         a, x, y);
 
                 fprintf(pd->pdffp, "<");
-                p = str;
+                p = (unsigned char *)str;
                 while (*p)
                     fprintf(pd->pdffp, "%02x", *p++);
                 fprintf(pd->pdffp, ">");
