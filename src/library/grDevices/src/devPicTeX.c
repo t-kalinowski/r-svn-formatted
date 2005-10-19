@@ -407,7 +407,7 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     size = gc->cex * gc->ps + 0.5;
     SetFont(gc->fontface, size, ptd);
     sum = 0;
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
     if (mbcslocale && ptd->fontface != 5)
     {
         /* <FIXME> what happens for symbols fonts: unsupported? */

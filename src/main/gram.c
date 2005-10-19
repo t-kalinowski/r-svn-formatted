@@ -207,7 +207,7 @@ static int xxgetc();
 static int xxungetc();
 static int xxcharcount, xxcharsave;
 
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
 #include <R_ext/Riconv.h>
 #include <R_ext/rlocale.h>
 #include <wchar.h>
@@ -3612,7 +3612,7 @@ static int StringValue(int c)
                 }
                 c = val;
             }
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
             /* Only realy valid in UTF-8, but useful shorthand elsewhere */
             else if (mbcslocale && c == 'u')
             {
@@ -3723,7 +3723,7 @@ static int StringValue(int c)
                 }
             }
         }
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
         else if (mbcslocale)
         {
             int i, clen;
@@ -3845,7 +3845,7 @@ static int SymbolValue(int c)
 {
     int kw;
     DECLARE_YYTEXT_BUFP(yyp);
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
     if (mbcslocale)
     {
         wchar_t wc;
@@ -3905,7 +3905,7 @@ static int SymbolValue(int c)
 static int token()
 {
     int c;
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
     wchar_t wc;
 #endif
 
@@ -3958,7 +3958,7 @@ symbol:
 
     if (c == '.')
         return SymbolValue(c);
-#if defined(SUPPORT_MBCS) && defined(HAVE_ICONV) && defined(ICONV_LATIN1)
+#if defined(SUPPORT_MBCS)
     if (mbcslocale)
     {
         mbcs_get_next(c, &wc);

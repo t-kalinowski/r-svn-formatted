@@ -38,7 +38,9 @@
 #include <Graphics.h>
 
 #include <R_ext/RConverters.h>
+#ifdef HAVE_ICONV
 #include <R_ext/Riconv.h>
+#endif
 
 #ifndef max
 #define max(a, b) ((a > b) ? (a) : (b))
@@ -224,8 +226,6 @@ static Rboolean checkNativeType(int targetType, int actualType)
 
     return (TRUE);
 }
-
-#include <R_ext/Riconv.h>
 
 static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const char *name, R_toCConverter **converter,
                         int targetType, char *encname)
