@@ -229,17 +229,17 @@ char *locale2charset(const char *locale);
         memset(mb_buf, 0, sizeof(mb_buf));                                                                             \
         memset(ucs4_buf, 0, sizeof(ucs4_buf));                                                                         \
         wcrtomb(mb_buf, wc, NULL);                                                                                     \
-        if ((void *)(-1) != (cd = Riconv_open(char *) UNICODE, fromcode)))                                                      \
-            {                                                                                                          \
-                wc_len = sizeof(ucs4_buf);                                                                             \
-                _wc_buf = (char *)ucs4_buf;                                                                            \
-                mb_len = strlen(mb_buf);                                                                               \
-                _mb_buf = (char *)mb_buf;                                                                              \
-                rc = Riconv(cd, (char **)&_mb_buf, (size_t *)&mb_len, (char **)&_wc_buf, (size_t *)&wc_len);           \
-                Riconv_close(cd);                                                                                      \
-                wc = ucs4_buf[0];                                                                                      \
-                return wcsearch(wc, table_w##ISWNAME, table_w##ISWNAME##_count);                                       \
-            }                                                                                                          \
+        if ((void *)(-1) != (cd = Riconv_open((char *)UNICODE, fromcode)))                                             \
+        {                                                                                                              \
+            wc_len = sizeof(ucs4_buf);                                                                                 \
+            _wc_buf = (char *)ucs4_buf;                                                                                \
+            mb_len = strlen(mb_buf);                                                                                   \
+            _mb_buf = (char *)mb_buf;                                                                                  \
+            rc = Riconv(cd, (char **)&_mb_buf, (size_t *)&mb_len, (char **)&_wc_buf, (size_t *)&wc_len);               \
+            Riconv_close(cd);                                                                                          \
+            wc = ucs4_buf[0];                                                                                          \
+            return wcsearch(wc, table_w##ISWNAME, table_w##ISWNAME##_count);                                           \
+        }                                                                                                              \
         return (-1);                                                                                                   \
     }
 #endif
