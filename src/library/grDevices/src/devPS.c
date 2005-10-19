@@ -2221,7 +2221,9 @@ static void specialCaseCM(FILE *fp, type1fontfamily family, int familynum)
 
 static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
 {
+#ifdef SUPPORT_MBCS
     cidfontlist cidfonts = pd->cidfonts;
+#endif
     type1fontlist fonts = pd->fonts;
     int familynum = 1;
 
@@ -2633,6 +2635,7 @@ static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, d
     fprintf(fp, " t\n");
 }
 
+#ifdef SUPPORT_MBCS
 static void PostScriptHexText(FILE *fp, double x, double y, char *str, double xc, double yc, double rot)
 {
     unsigned char *p = (unsigned char *)str;
@@ -2670,6 +2673,7 @@ static void PostScriptHexText(FILE *fp, double x, double y, char *str, double xc
 
     fprintf(fp, " t\n");
 }
+#endif
 
 /* Device Driver Actions */
 
@@ -2750,7 +2754,9 @@ static void PostScriptSetFill(FILE *fp, double r, double g, double b)
 static void SetColor(int, NewDevDesc *);
 static void SetFill(int, NewDevDesc *);
 static void SetFont(int, int, NewDevDesc *);
+#ifdef SUPPORT_MBCS
 static void SetCIDFont(int, int, NewDevDesc *);
+#endif
 static void SetLineStyle(R_GE_gcontext *, NewDevDesc *dd);
 static void Invalidate(NewDevDesc *);
 static int MatchCIDFamily(char *);
@@ -3232,6 +3238,7 @@ static void SetFont(int font, int size, NewDevDesc *dd)
     }
 }
 
+#ifdef SUPPORT_MBCS
 static void SetCIDFont(int font, int size, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -3244,6 +3251,7 @@ static void SetCIDFont(int font, int size, NewDevDesc *dd)
         pd->current.font = font;
     }
 }
+#endif
 
 #ifdef Win32
 /* exists, but does not work on GUI processes */
