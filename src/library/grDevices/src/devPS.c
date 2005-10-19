@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <limits.h> /* required for MB_LEN_MAX */
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
 #include <R_ext/Riconv.h>
 #endif
 
@@ -2801,7 +2801,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
     }
     strcpy(pd->enc2, "latin1");
 #ifdef SUPPORT_MBCS
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     {
         char *p;
         strcpy(pd->enc2, encoding);
@@ -3663,7 +3663,7 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
     }
 }
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
 #include <R_ext/Riconv.h>
 
 static void mbcsToSbcs(char *in, char *out, char *encoding)
@@ -3703,7 +3703,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
 
     /* No symbol fonts from now on */
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     if (mbcslocale && pd->cidfonts)
     {
         size_t ucslen;
@@ -3779,7 +3779,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error(_("allocation failure in PS_Text"));
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             mbcsToSbcs(str, buff, pd->enc2);
 #else
             mbcsToLatin1(str, buff);
@@ -4809,7 +4809,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
         error(_("encoding path is too long"));
     }
 #ifdef SUPPORT_MBCS
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     {
         char *p;
         strcpy(pd->enc2, encoding);
@@ -6143,7 +6143,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     if (!pd->inText)
         texton(pd);
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     if (mbcslocale && pd->cidfonts && face != 5)
     {
         unsigned char *buf = NULL /* -Wall */;
@@ -6235,7 +6235,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
             if (!buff)
                 error(_("allocation failure in PDF_Text"));
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             mbcsToSbcs(str, buff, pd->enc2);
 #else
             mbcsToLatin1(str, buff);
