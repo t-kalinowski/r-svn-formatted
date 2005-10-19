@@ -777,7 +777,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
 
 #ifdef SUPPORT_MBCS
     char *buff;
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     if (mbcslocale && cidmetrics && (face % 5) != 0)
     {
         unsigned short *ucs2s;
