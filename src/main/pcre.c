@@ -238,7 +238,6 @@ static int length_adj(char *orig, char *repl, int *ovec, int nsubexpr, Rboolean 
                             wc[j] = towctrans(wc[j], tr);
                         nb = wcstombs(NULL, wc, 0);
                     }
-                    n += nb - 2;
                 }
 #endif
                 n += nb - 2;
