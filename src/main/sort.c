@@ -979,6 +979,7 @@ SEXP do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
     off -= xmin;
     /* alloca is fine here: we know this is small */
     cnts = (unsigned int *)alloca((xmax + 1) * sizeof(unsigned int));
+    R_CheckStack();
 
     for (i = 0; i <= xmax + 1; i++)
         cnts[i] = 0;
