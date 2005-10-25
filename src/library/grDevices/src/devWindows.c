@@ -384,7 +384,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    char family[256], encoding[256], cidfamily[256], bg[256], fg[256];
+    char family[256], encoding[256], cidfamily[256], bg[256], fg[256], **afmpaths = NULL;
 
     if (!ndd)
     {
@@ -455,7 +455,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
             strcpy(cidfamily, "");
             break;
         }
-    if (PDFDeviceDriver(ndd, fn, "special", family, encoding, cidfamily, bg, fg,
+    if (PDFDeviceDriver(ndd, fn, "special", family, afmpaths, encoding, cidfamily, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         ((gadesc *)dd->deviceSpecific)->basefontsize, 1, 0, "R Graphics Output", R_NilValue, 1, 4))

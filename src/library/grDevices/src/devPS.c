@@ -4754,9 +4754,9 @@ static Rboolean addPDFfont(type1fontfamily family, PDFDesc *pd, int *fontIndex)
     return result;
 }
 
-Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char *encoding, char *cidfamily,
-                         char *bg, char *fg, double width, double height, double ps, int onefile, int pagecentre,
-                         char *title, SEXP fonts, int versionMajor, int versionMinor)
+Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, char **afmpaths, char *encoding,
+                         char *cidfamily, char *bg, char *fg, double width, double height, double ps, int onefile,
+                         int pagecentre, char *title, SEXP fonts, int versionMajor, int versionMinor)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -4846,9 +4846,16 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     strcpy(pd->cidfamilyname, cidfamily);
 
     gotFont = 0;
-    if (!(font = findDefaultLoadedFont(encoding, family, 0)))
+    if (!strcmp(family, "User"))
     {
-        font = addDefaultFontFromFamily(encoding, MatchFamily(family), 0);
+        font = addDefaultFontFromAFMs(encoding, afmpaths, 0);
+    }
+    else
+    {
+        if (!(font = findDefaultLoadedFont(encoding, family, 0)))
+        {
+            font = addDefaultFontFromFamily(encoding, MatchFamily(family), 0);
+        }
     }
     if (font)
         addPDFfont(font, pd, &gotFont);
@@ -6581,10 +6588,10 @@ SEXP PDF(SEXP args)
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
-    char *file, *paper, *encoding, *cidfamily, *family, *bg, *fg, *title, call[] = "PDF";
+    char *file, *paper, *encoding, *cidfamily, *family, *bg, *fg, *title, call[] = "PDF", *afms[5];
     double height, width, ps;
-    int onefile, pagecentre, major, minor;
-    SEXP fonts;
+    int i, onefile, pagecentre, major, minor;
+    SEXP fam, fonts;
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
@@ -6592,8 +6599,20 @@ SEXP PDF(SEXP args)
     args = CDR(args);
     paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    family = CHAR(asChar(CAR(args)));
+    fam = CAR(args);
     args = CDR(args);
+    if (length(fam) == 1)
+        family = CHAR(asChar(fam));
+    else if (length(fam) == 5)
+    {
+        if (!isString(fam))
+            error(_("invalid 'family' parameter in %s"), call);
+        family = "User";
+        for (i = 0; i < 5; i++)
+            afms[i] = CHAR(STRING_ELT(fam, i));
+    }
+    else
+        error(_("invalid 'family' parameter in %s"), call);
     encoding = CHAR(asChar(CAR(args)));
     args = CDR(args);
     cidfamily = CHAR(asChar(CAR(args)));
@@ -6633,7 +6652,7 @@ SEXP PDF(SEXP args)
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!PDFDeviceDriver(dev, file, paper, family, encoding, cidfamily, bg, fg, width, height, ps, onefile,
+        if (!PDFDeviceDriver(dev, file, paper, family, afms, encoding, cidfamily, bg, fg, width, height, ps, onefile,
                              pagecentre, title, fonts, major, minor))
         {
             /* free(dev); PDFDeviceDriver now frees */
