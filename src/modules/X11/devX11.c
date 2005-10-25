@@ -1105,7 +1105,7 @@ static int R_X11IOErr(Display *dsp)
 }
 
 Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double h, double gamma_fac,
-                     X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor, int res)
+                     X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor, int res, int xpos, int ypos)
 {
     /* if we have to bail out with "error", then must free(dd) and free(xd) */
     /* That means the *caller*: the X11DeviceDriver code frees xd, for example */
@@ -1252,8 +1252,16 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
             xd->windowHeight = ih = h / pixelHeight();
 
             hint = XAllocSizeHints();
-            hint->x = numX11Devices * 20 % (DisplayWidth(display, screen) - iw - 10);
-            hint->y = numX11Devices * 20 % (DisplayHeight(display, screen) - ih - 10);
+            if (xpos == NA_INTEGER)
+                hint->x = numX11Devices * 20 % (DisplayWidth(display, screen) - iw - 10);
+            else
+                hint->x = (xpos >= 0) ? xpos : DisplayWidth(display, screen) - iw + xpos;
+
+            if (ypos == NA_INTEGER)
+                hint->y = numX11Devices * 20 % (DisplayHeight(display, screen) + ih - 10);
+            else
+                hint->y = (ypos >= 0) ? ypos : DisplayHeight(display, screen) - iw - ypos;
+            /* printf("x = %d, y = %d\n", hint->x, hint->y);*/
             hint->width = iw;
             hint->height = ih;
             hint->flags = PPosition | PSize;
@@ -2060,7 +2068,7 @@ static void newX11_Hold(NewDevDesc *dd)
 
 Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double height, double pointsize,
                             double gamma_fac, X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor,
-                            SEXP sfonts, int res)
+                            SEXP sfonts, int res, int xpos, int ypos)
 {
     newX11Desc *xd;
     char *fn;
@@ -2092,7 +2100,7 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
     /*	Start the Device Driver and Hardcopy.  */
 
     if (!newX11_Open((NewDevDesc *)(dd), xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor,
-                     canvascolor, res))
+                     canvascolor, res, xpos, ypos))
     {
         free(xd);
         return FALSE;
@@ -2348,7 +2356,8 @@ static char *SaveString(SEXP sxp, int offset)
 }
 
 static DevDesc *Rf_addX11Device(char *display, double width, double height, double ps, double gamma, int colormodel,
-                                int maxcubesize, int bgcolor, int canvascolor, char *devname, SEXP sfonts, int res)
+                                int maxcubesize, int bgcolor, int canvascolor, char *devname, SEXP sfonts, int res,
+                                int xpos, int ypos)
 {
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
@@ -2370,7 +2379,7 @@ static DevDesc *Rf_addX11Device(char *display, double width, double height, doub
          * This is supposed to happen via addDevice now.
          */
         if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor,
-                                canvascolor, sfonts, res))
+                                canvascolor, sfonts, res, xpos, ypos))
         {
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
@@ -2389,7 +2398,7 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char *display, *vmax, *cname, *devname;
     double height, width, ps, gamma;
-    int colormodel, maxcubesize, bgcolor, canvascolor, res;
+    int colormodel, maxcubesize, bgcolor, canvascolor, res, xpos, ypos;
     SEXP sc, sfonts;
 
     checkArity(op, args);
@@ -2450,6 +2459,10 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("invalid '%s' value"), "fonts");
     args = CDR(args);
     res = asInteger(CAR(args));
+    args = CDR(args);
+    xpos = asInteger(CAR(args));
+    args = CDR(args);
+    ypos = asInteger(CAR(args));
 
     devname = "X11";
     if (!strncmp(display, "png::", 5))
@@ -2460,7 +2473,7 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "XImage";
 
     Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor, devname, sfonts,
-                    res);
+                    res, xpos, ypos);
     vmaxset(vmax);
     return R_NilValue;
 }
