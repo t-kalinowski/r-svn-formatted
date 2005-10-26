@@ -779,13 +779,14 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
             doit = 2;
         if (doit)
         {
+            /* printf("Looking for %s\n", name); */
             fcnptr = R_dlsym(&LoadedDLL[i], name, symbol); /* R_osDynSymbol->dlsym */
             if (fcnptr != (DL_FUNC)NULL)
             {
                 if (symbol)
                     symbol->dll = LoadedDLL + i;
 #ifdef CACHE_DLL_SYM
-                if (strlen(pkg) <= 20 && strlen(name) <= 20 && nCPFun < 100)
+                if (strlen(pkg) <= 20 && strlen(name) <= 40 && nCPFun < 100)
                 {
                     strcpy(CPFun[nCPFun].pkg, LoadedDLL[i].name);
                     strcpy(CPFun[nCPFun].name, name);
