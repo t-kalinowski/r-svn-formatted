@@ -48,7 +48,7 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("graphics device does not support graphics events"));
 
     prompt = CAR(args);
-    if (!isString(prompt))
+    if (!isString(prompt) || !length(prompt))
         errorcall(call, _("invalid prompt"));
     args = CDR(args);
 
