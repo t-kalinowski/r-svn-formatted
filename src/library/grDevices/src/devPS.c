@@ -349,7 +349,7 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics, CNAME *charn
            &(cidmetrics->CharInfo[nchar].BBox[2]), &(cidmetrics->CharInfo[nchar].BBox[3]));
 
 #ifdef DEBUG_PS2
-    Rprintf("nchar = %d %d %d %d %d %d\n", nchar, cidmetrics->CharInfo[nchar].WX, cidmetrics->CharInfo[nchar].BBox[0],
+    Rprintf("nchar = %04x %d %d %d %d %d\n", nchar, cidmetrics->CharInfo[nchar].WX, cidmetrics->CharInfo[nchar].BBox[0],
             cidmetrics->CharInfo[nchar].BBox[1], cidmetrics->CharInfo[nchar].BBox[2],
             cidmetrics->CharInfo[nchar].BBox[3]);
 #endif
@@ -778,7 +778,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
 {
     int sum = 0, i;
     short wx;
-    unsigned char *p, *str1 = str;
+    unsigned char *p = NULL, *str1 = str;
     unsigned char p1, p2;
 
 #ifdef SUPPORT_MBCS
@@ -790,24 +790,30 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
         ucslen = mbcsToUcs2((char *)str, NULL);
         if ((size_t)-1 != ucslen)
         {
-            ucs2s = (unsigned short *)calloc(sizeof(unsigned short), ucslen + 1);
+            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
             memset(ucs2s, 0, ucslen + 1);
             mbcsToUcs2((char *)str, ucs2s);
             for (i = 0; i < ucslen; i++)
             {
-                if (ucs2s[i] > 255)
-                    wx = cidmetrics->CharInfo[ucs2s[i]].WX;
-                else
-#ifdef USE_HYPHEN
-                    if (ucs2s[i] == '-' && !isdigit(ucs2s[i + 1]))
-                    wx = metrics->CharInfo[(int)PS_hyphen].WX;
-                else
-#endif
-                    wx = metrics->CharInfo[ucs2s[i]].WX;
+                /* This is unsafe: in these encodings 173 need not exist nor be hyphen
+                #ifdef USE_HYPHEN
+                        if (ucs2s[i] == '-' && !isdigit(ucs2s[i+1]))
+                            wx = metrics->CharInfo[(int)PS_hyphen].WX;
+                        else
+                #endif
+                */
+                wx = cidmetrics->CharInfo[ucs2s[i]].WX;
+                if (wx == NA_SHORT)
+                    warning(_("font width unknown for character U+%04x"), *p);
+                /* printf("width for U+%04x is %d\n", ucs2s[i], wx); */
                 sum += wx;
             }
-            free(ucs2s);
             return 0.001 * sum;
+        }
+        else
+        {
+            warning(_("invalid string in '%s'"), "PostScriptStringWidth");
+            return 0;
         }
     }
     else if (utf8locale && !utf8strIsASCII((char *)str) &&
@@ -819,8 +825,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
     {
         buff = alloca(strlen((char *)str) + 1);
         /* Output string cannot be longer */
-        if (!buff)
-            error(_("allocation failure in PS_Text"));
+        R_CheckStack();
         mbcsToSbcs((char *)str, buff, encoding);
         str1 = (unsigned char *)buff;
     }
@@ -853,6 +858,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
     return 0.001 * sum;
 }
 
+/* <FIXME> use cidmetrics or metrics, not a mixture */
 static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics,
                                  CIDFontMetricInfo *cidmetrics)
 {
@@ -877,7 +883,7 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
             *ascent = 0;
             *descent = 0;
             *width = 0;
-            warning(_("font metrics unknown for Unicode character 0x%x"), c);
+            warning(_("font metrics unknown for Unicode character U+%04x"), c);
         }
     }
     else
@@ -3742,6 +3748,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
          * CID convert PS encoding != locale encode case
          */
         ucslen = mbcsToUcs2(str, NULL);
+        printf("ucslen = %d\n", ucslen);
         if ((size_t)-1 != ucslen)
         {
             void *cd;
@@ -3754,9 +3761,8 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
             if ((void *)-1 == cd)
                 return;
 
-            buf = (unsigned char *)calloc(sizeof(unsigned char), ucslen * MB_LEN_MAX + 1);
-            if (!buf)
-                error(_("allocation failure in PDF_TextCIDWrapper"));
+            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
+            R_CheckStack();
 
             memset(buf, 0, ucslen * MB_LEN_MAX + 1);
             i_buf = str;
@@ -3768,7 +3774,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
 
             Riconv_close(cd);
             if ((size_t)-1 == status)
-                warning(_("failed in text conversion of a encoding"));
+                warning(_("failed in text conversion to encoding '%s'"), (char *)CIDResource[cid_id].encoding);
             else
             {
                 SetCIDFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
@@ -3778,7 +3784,11 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
                     PostScriptHexText(pd->psfp, x, y, (char *)buf, hadj, 0.0, rot);
                 }
             }
-            free(buf);
+            return;
+        }
+        else
+        {
+            warning(_("invalid string in '%s'"), "PS_TextCIDWrapper");
             return;
         }
     }
@@ -3791,8 +3801,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
         if (utf8locale && !utf8strIsASCII(str))
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-            if (!buff)
-                error(_("allocation failure in PS_Text"));
+            R_CheckStack();
             mbcsToSbcs(str, buff, pd->enc2);
             str1 = buff;
         }
@@ -6206,9 +6215,8 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
             if ((void *)-1 == cd)
                 return;
 
-            buf = (unsigned char *)calloc(sizeof(unsigned char), ucslen * MB_LEN_MAX + 1);
-            if (!buf)
-                error(_("allocation failure in PDF_TextCIDWrapper"));
+            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
+            R_CheckStack();
 
             memset(buf, 0, ucslen * MB_LEN_MAX + 1);
             i_buf = str;
@@ -6220,7 +6228,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
 
             Riconv_close(cd);
             if ((size_t)-1 == status)
-                warning(_("failed in text conversion of a encoding"));
+                warning(_("failed in text conversion to encoding '%s'"), (char *)CIDResource[cid_id].encoding);
             else if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
             {
                 PDF_SetFill(gc->col, dd);
@@ -6234,9 +6242,13 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
                 fprintf(pd->pdffp, ">");
                 fprintf(pd->pdffp, " Tj\n");
             }
+            return;
         }
-        free(buf);
-        return;
+        else
+        {
+            warning(_("invalid string in '%s'"), "PDF_TextCIDWrapper");
+            return;
+        }
     }
 
     /*
@@ -6250,8 +6262,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         if (utf8locale && !utf8strIsASCII(str1) && face < 5)
         {
             buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-            if (!buff)
-                error(_("allocation failure in PDF_Text"));
+            R_CheckStack();
             mbcsToSbcs(str, buff, pd->enc2);
             str1 = buff;
         }
