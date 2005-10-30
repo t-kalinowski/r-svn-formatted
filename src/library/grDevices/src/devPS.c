@@ -310,14 +310,17 @@ static int GetFontBBox(char *buf, FontMetricInfo *metrics)
     return 1;
 }
 
+/* The longest named Adobe glyph is 39 chars:
+   whitediamondcontainingblacksmalldiamond
+ */
 typedef struct
 {
-    char cname[25];
+    char cname[40];
 } CNAME;
 
 static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
 {
-    char *p = buf, charname[1000];
+    char *p = buf, charname[40];
     unsigned int nchar;
     short WX;
 
@@ -326,7 +329,7 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
     p = SkipToNextItem(p);
     sscanf(p, "<%x>", &nchar);
     if (nchar > 0xffff)
-        return 1;
+        return 0;
     p = SkipToNextKey(p);
 
     if (!MatchKey(p, "W0X"))
@@ -359,7 +362,7 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
 /* If reencode > 0, remap to new encoding */
 static int GetCharInfo(char *buf, FontMetricInfo *metrics, CNAME *charnames, CNAME *encnames, int reencode)
 {
-    char *p = buf, charname[25];
+    char *p = buf, charname[40];
     int nchar, nchar2 = -1, i;
     short WX;
 
@@ -367,7 +370,7 @@ static int GetCharInfo(char *buf, FontMetricInfo *metrics, CNAME *charnames, CNA
         return 0;
     p = SkipToNextItem(p);
     sscanf(p, "%d", &nchar);
-    if (nchar < 0 && !reencode)
+    if ((nchar < 0 || nchar > 255) && !reencode)
         return 1;
     p = SkipToNextKey(p);
 
