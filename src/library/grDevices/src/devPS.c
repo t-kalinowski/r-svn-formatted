@@ -315,17 +315,17 @@ typedef struct
     char cname[25];
 } CNAME;
 
-static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics, CNAME *charnames)
+static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
 {
-    char *p = buf;
-    int nchar;
+    char *p = buf, charname[1000];
+    unsigned int nchar;
     short WX;
 
     if (!MatchKey(buf, "CH "))
         return 0;
     p = SkipToNextItem(p);
-    sscanf(p, "<%x>", (unsigned int *)&nchar);
-    if (nchar < 0)
+    sscanf(p, "<%x>", &nchar);
+    if (nchar > 0xffff)
         return 1;
     p = SkipToNextKey(p);
 
@@ -333,13 +333,13 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics, CNAME *charn
         return 0;
     p = SkipToNextItem(p);
     sscanf(p, "%hd", &WX);
+    cidmetrics->CharInfo[nchar].WX = WX;
     p = SkipToNextKey(p);
 
     if (!MatchKey(p, "N "))
         return 0;
     p = SkipToNextItem(p);
-    sscanf(p, "%s", charnames[nchar].cname);
-    cidmetrics->CharInfo[nchar].WX = WX;
+    sscanf(p, "%s", charname);
     p = SkipToNextKey(p);
 
     if (!MatchKey(p, "B "))
@@ -578,8 +578,7 @@ static int LoadEncoding(char *encpath, char *encname, CNAME *encnames, char *enc
 
 /* Load CID font metrics from a file: defaults to the
    R_HOME/library/grDevices/CID directory */
-static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetricInfo *cidmetrics, char *fontname,
-                                        CNAME *charnames)
+static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetricInfo *cidmetrics, char *fontname)
 {
     char buf[BUFSIZE], *p;
     int mode, j, ii;
@@ -596,11 +595,11 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
     mode = 0;
     for (ii = 0; ii < 65536; ii++)
     {
-        charnames[ii].cname[0] = '\0';
         cidmetrics->CharInfo[ii].WX = NA_SHORT;
         for (j = 0; j < 4; j++)
             cidmetrics->CharInfo[ii].BBox[j] = 0;
     }
+
     while (fgets(buf, BUFSIZE, fp))
     {
         switch (KeyType(buf))
@@ -622,7 +621,7 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
         case CH:
             if (mode != StartFontMetrics)
                 goto pserror;
-            if (!GetCIDCharInfo(buf, cidmetrics, charnames))
+            if (!GetCIDCharInfo(buf, cidmetrics))
                 goto pserror;
             break;
 
@@ -791,7 +790,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
         if ((size_t)-1 != ucslen)
         {
             ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
-            memset(ucs2s, 0, ucslen + 1);
+            R_CheckStack();
             mbcsToUcs2((char *)str, ucs2s);
             for (i = 0; i < ucslen; i++)
             {
@@ -802,10 +801,14 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
                         else
                 #endif
                 */
+                wx = 1000;
                 wx = cidmetrics->CharInfo[ucs2s[i]].WX;
                 if (wx == NA_SHORT)
-                    warning(_("font width unknown for character U+%04x"), *p);
-                /* printf("width for U+%04x is %d\n", ucs2s[i], wx); */
+                {
+                    warning(_("font width unknown for character U+%04x, assuming 1000"), ucs2s[i]);
+                    wx = 1000;
+                }
+                /* printf("width for U+%04x is %d\n", ucs2s[i], wx);*/
                 sum += wx;
             }
             return 0.001 * sum;
@@ -924,7 +927,6 @@ typedef struct CIDFontInfo
 {
     char name[50];
     CIDFontMetricInfo cidmetrics;
-    CNAME charnames[65536];
 } CIDFontInfo, *cidfontinfo;
 
 typedef struct T1FontInfo
@@ -1703,8 +1705,7 @@ static cidfontfamily addCIDFont(int family_id, Rboolean isPDF)
             fontfamily->cidfonts[i] = font;
             /* ### */
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family_id].cidafmfile[i],
-                                              &(fontfamily->cidfonts[i]->cidmetrics), fontfamily->cidfonts[i]->name,
-                                              fontfamily->cidfonts[i]->charnames))
+                                              &(fontfamily->cidfonts[i]->cidmetrics), fontfamily->cidfonts[i]->name))
             {
                 warning(_("cannot read CID %s family afm files"), CIDResource[family_id].cidfamily);
                 freeCIDFontFamily(fontfamily);
@@ -1910,7 +1911,7 @@ static cidfontfamily addDefaultCIDFontFromFamily(int family, Rboolean isPDF)
             }
             fontfamily->cidfonts[i] = font;
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family].cidafmfile[i], &(fontfamily->cidfonts[i]->cidmetrics),
-                                              fontfamily->cidfonts[i]->name, fontfamily->cidfonts[i]->charnames))
+                                              fontfamily->cidfonts[i]->name))
             {
                 warning(_("cannot read afm file %s"), CIDResource[family].cidafmfile[i]);
                 freeCIDFontFamily(fontfamily);
@@ -2645,14 +2646,14 @@ static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, d
 }
 
 #ifdef SUPPORT_MBCS
-static void PostScriptHexText(FILE *fp, double x, double y, char *str, double xc, double yc, double rot)
+static void PostScriptHexText(FILE *fp, double x, double y, unsigned short *ucs2s, size_t ucslen, double xc, double yc,
+                              double rot)
 {
-    unsigned char *p = (unsigned char *)str;
+    size_t i;
 
-    fprintf(fp, "%.2f %.2f ", x, y);
-    fprintf(fp, " <");
-    while (*p)
-        fprintf(fp, "%02x", *p++);
+    fprintf(fp, "%.2f %.2f <", x, y);
+    for (i = 0; i < ucslen; i++)
+        fprintf(fp, "%04x", ucs2s[i]);
     fprintf(fp, "> ");
 
     if (xc == 0)
@@ -3728,69 +3729,23 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
     if (mbcslocale && pd->cidfonts)
     {
         size_t ucslen;
-        int cid_id = MatchCIDFamily(pd->cidfamilyname);
-
-        /*
-         * CID convert optimize PS encoding == locale encode case
-         */
-        if (!strcmp(locale2charset(NULL), (char *)CIDResource[cid_id].encoding))
+        unsigned short *ucs2s;
+        ucslen = mbcsToUcs2(str, NULL);
+        if (ucslen != (size_t)-1)
         {
+            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
+            R_CheckStack();
+            mbcsToUcs2((char *)str, ucs2s);
             SetCIDFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
             if (R_OPAQUE(gc->col))
             {
                 SetColor(gc->col, dd);
-                PostScriptHexText(pd->psfp, x, y, str, hadj, 0.0, rot);
+                PostScriptHexText(pd->psfp, x, y, ucs2s, ucslen, hadj, 0.0, rot);
             }
-            return;
-        }
-
-        /*
-         * CID convert PS encoding != locale encode case
-         */
-        ucslen = mbcsToUcs2(str, NULL);
-        printf("ucslen = %d\n", ucslen);
-        if ((size_t)-1 != ucslen)
-        {
-            void *cd;
-            unsigned char *buf;
-            char *i_buf, *o_buf;
-            size_t i_len, o_len;
-            size_t status;
-
-            cd = (void *)Riconv_open((char *)CIDResource[cid_id].encoding, "");
-            if ((void *)-1 == cd)
-                return;
-
-            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
-            R_CheckStack();
-
-            memset(buf, 0, ucslen * MB_LEN_MAX + 1);
-            i_buf = str;
-            o_buf = (char *)buf;
-            i_len = strlen(str);
-            o_len = ucslen * MB_LEN_MAX + 1;
-
-            status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
-
-            Riconv_close(cd);
-            if ((size_t)-1 == status)
-                warning(_("failed in text conversion to encoding '%s'"), (char *)CIDResource[cid_id].encoding);
-            else
-            {
-                SetCIDFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
-                if (R_OPAQUE(gc->col))
-                {
-                    SetColor(gc->col, dd);
-                    PostScriptHexText(pd->psfp, x, y, (char *)buf, hadj, 0.0, rot);
-                }
-            }
-            return;
         }
         else
-        {
             warning(_("invalid string in '%s'"), "PS_TextCIDWrapper");
-            return;
-        }
+        return;
     }
 
     /* Now using single-byte non-symbol font */
@@ -4916,6 +4871,11 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     gotCIDFont = 0;
     if (strcmp(cidfamily, ""))
     {
+        if (versionMajor == 1 && versionMinor < 3)
+        {
+            warning(_("'version' must be at least 1.3 to allow the use of CID fonts"));
+            pd->versionMinor = 3;
+        }
         if (!(cidfont = findDefaultLoadedCIDFont(cidfamily, 0)))
         {
             gotCIDFont = MatchCIDFamily(cidfamily);
@@ -6125,10 +6085,7 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
         b = 0.0;
     if (!pd->inText)
         texton(pd);
-    /*
-     * Only try to do real transparency if version at least 1.4
-     */
-    if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+    if (alphaVersion(pd) || R_OPAQUE(gc->col))
     {
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
@@ -6160,6 +6117,8 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         return;
     }
 
+    /* No symbol fonts from now on */
+
     rot1 = rot * DEG2RAD;
     a = size * cos(rot1);
     b = size * sin(rot1);
@@ -6171,90 +6130,36 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     if (!pd->inText)
         texton(pd);
 
-    if (mbcslocale && pd->cidfonts && face != 5)
+    if (mbcslocale && pd->cidfonts)
     {
-        unsigned char *buf = NULL /* -Wall */;
-        size_t ucslen;
-        unsigned char *p;
-        int cid_id = MatchCIDFamily(pd->cidfamilyname);
+        size_t i, ucslen;
+        unsigned short *ucs2s;
 
-        /*
-         * CID convert optimize PDF encoding == locale encode case
-         */
-        if (!strcmp(locale2charset(NULL), CIDResource[cid_id].encoding))
-        {
-            if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
-            {
-                PDF_SetFill(gc->col, dd);
-                fprintf(pd->pdffp, "/%s_%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", pd->cidfamilyname, face, a, b, -b,
-                        a, x, y);
-
-                fprintf(pd->pdffp, "<");
-                p = (unsigned char *)str;
-                while (*p)
-                    fprintf(pd->pdffp, "%02x", *p++);
-                fprintf(pd->pdffp, ">");
-                fprintf(pd->pdffp, " Tj\n");
-            }
-            return;
-        }
-
-        /*
-         * CID convert  PDF encoding != locale encode case
-         */
         ucslen = mbcsToUcs2(str, NULL);
-        if ((size_t)-1 != ucslen)
+        if (ucslen != (size_t)-1)
         {
-            void *cd;
-            char *i_buf, *o_buf;
-            size_t i_len, o_len;
-            size_t status;
-            unsigned char *p;
-
-            cd = (void *)Riconv_open((char *)CIDResource[cid_id].encoding, "");
-            if ((void *)-1 == cd)
-                return;
-
-            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
+            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
             R_CheckStack();
-
-            memset(buf, 0, ucslen * MB_LEN_MAX + 1);
-            i_buf = str;
-            o_buf = (char *)buf;
-            i_len = strlen(str);
-            o_len = ucslen * MB_LEN_MAX + 1;
-
-            status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
-
-            Riconv_close(cd);
-            if ((size_t)-1 == status)
-                warning(_("failed in text conversion to encoding '%s'"), (char *)CIDResource[cid_id].encoding);
-            else if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+            mbcsToUcs2((char *)str, ucs2s);
+            if (alphaVersion(pd) || R_OPAQUE(gc->col))
             {
                 PDF_SetFill(gc->col, dd);
-                fprintf(pd->pdffp, "/%s_%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", pd->cidfamilyname, face, a, b, -b,
+                fprintf(pd->pdffp, "/%s_%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm <", pd->cidfamilyname, face, a, b, -b,
                         a, x, y);
-
-                fprintf(pd->pdffp, "<");
-                p = buf;
-                while (*p)
-                    fprintf(pd->pdffp, "%02x", *p++);
-                fprintf(pd->pdffp, ">");
-                fprintf(pd->pdffp, " Tj\n");
+                for (i = 0; i < ucslen; i++)
+                    fprintf(pd->pdffp, "%04x", ucs2s[i]);
+                fprintf(pd->pdffp, "> Tj\n");
             }
-            return;
         }
         else
-        {
             warning(_("invalid string in '%s'"), "PDF_TextCIDWrapper");
-            return;
-        }
+        return;
     }
 
     /*
      * Only try to do real transparency if version at least 1.4
      */
-    if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+    if (alphaVersion(pd) || R_OPAQUE(gc->col))
     {
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
