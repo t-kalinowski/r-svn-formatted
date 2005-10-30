@@ -339,11 +339,12 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
     cidmetrics->CharInfo[nchar].WX = WX;
     p = SkipToNextKey(p);
 
-    if (!MatchKey(p, "N "))
-        return 0;
-    p = SkipToNextItem(p);
-    sscanf(p, "%s", charname);
-    p = SkipToNextKey(p);
+    if (MatchKey(p, "N "))
+    { /* name is optional */
+        p = SkipToNextItem(p);
+        sscanf(p, "%s", charname);
+        p = SkipToNextKey(p);
+    }
 
     if (!MatchKey(p, "B "))
         return 0;
@@ -1423,7 +1424,7 @@ static cidfontfamily findDefaultLoadedCIDFont(char *family, Rboolean isPDF)
             font = fontlist->cidfamily;
         fontlist = fontlist->next;
     }
-#ifdef PS_DEBUG
+#ifdef DEBUG_PS
     if (found)
         Rprintf("findDefaultLoadedCIDFont found = %s\n", family);
 #endif
@@ -1710,7 +1711,7 @@ static cidfontfamily addCIDFont(int family_id, Rboolean isPDF)
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family_id].cidafmfile[i],
                                               &(fontfamily->cidfonts[i]->cidmetrics), fontfamily->cidfonts[i]->name))
             {
-                warning(_("cannot read CID %s family afm files"), CIDResource[family_id].cidfamily);
+                warning(_("cannot read CID '%s' family afm files"), CIDResource[family_id].cidfamily);
                 freeCIDFontFamily(fontfamily);
                 fontfamily = NULL;
                 break;
@@ -1793,7 +1794,7 @@ static type1fontfamily addFont(char *name, Rboolean isPDF)
                                                     */
                                                    encoding->encnames, (i < 4) ? 1 : 0))
                     {
-                        warning(_("cannot read afm file %s"), afmpath);
+                        warning(_("cannot read afm file '%s'"), afmpath);
                         freeFontFamily(fontfamily);
                         fontfamily = NULL;
                         break;
@@ -1863,7 +1864,7 @@ static type1fontfamily addDefaultFontFromAFMs(char *encpath, char **afmpaths, Rb
                                                 */
                                                encoding->encnames, (i < 4) ? 1 : 0))
                 {
-                    warning(_("cannot read afm file %s"), afmpaths[i]);
+                    warning(_("cannot read afm file '%s'"), afmpaths[i]);
                     freeFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
@@ -1916,7 +1917,7 @@ static cidfontfamily addDefaultCIDFontFromFamily(int family, Rboolean isPDF)
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family].cidafmfile[i], &(fontfamily->cidfonts[i]->cidmetrics),
                                               fontfamily->cidfonts[i]->name))
             {
-                warning(_("cannot read afm file %s"), CIDResource[family].cidafmfile[i]);
+                warning(_("cannot read CID afm file '%s'"), CIDResource[family].cidafmfile[i]);
                 freeCIDFontFamily(fontfamily);
                 fontfamily = NULL;
                 break;
@@ -1983,7 +1984,7 @@ static type1fontfamily addDefaultFontFromFamily(char *encpath, int family, Rbool
                                                 */
                                                encoding->encnames, (i < 4) ? 1 : 0))
                 {
-                    warning(_("cannot read afm file %s"), Family[family].afmfile[i]);
+                    warning(_("cannot read afm file '%s'"), Family[family].afmfile[i]);
                     freeFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
