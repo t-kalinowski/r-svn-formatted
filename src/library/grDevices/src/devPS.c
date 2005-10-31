@@ -594,7 +594,10 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
 #endif
 
     if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
+    {
+        warning(_("afm file '%s' could not be opened"), R_ExpandFileName(buf));
         return 0;
+    }
 
     mode = 0;
     for (ii = 0; ii < 65536; ii++)
@@ -619,14 +622,20 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
 
         case FontBBox:
             if (!GetCIDFontBBox(buf, cidmetrics))
+            {
+                warning(_("FontBBox could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case CH:
             if (mode != StartFontMetrics)
                 goto pserror;
             if (!GetCIDCharInfo(buf, cidmetrics))
+            {
+                warning(_("CharInfo could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case Unknown:
@@ -669,7 +678,10 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
 #endif
 
     if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
+    {
+        warning(_("afm file '%s' could not be opened"), R_ExpandFileName(buf));
         return 0;
+    }
 
     metrics->KernPairs = NULL;
     mode = 0;
@@ -695,14 +707,20 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
 
         case FontBBox:
             if (!GetFontBBox(buf, metrics))
+            {
+                warning(_("FontBBox could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case C:
             if (mode != StartFontMetrics)
                 goto pserror;
             if (!GetCharInfo(buf, metrics, charnames, encnames, reencode))
+            {
+                warning(_("CharInfo could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case StartKernData:
@@ -1711,7 +1729,7 @@ static cidfontfamily addCIDFont(int family_id, Rboolean isPDF)
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family_id].cidafmfile[i],
                                               &(fontfamily->cidfonts[i]->cidmetrics), fontfamily->cidfonts[i]->name))
             {
-                warning(_("cannot read CID '%s' family afm files"), CIDResource[family_id].cidfamily);
+                warning(_("failed to load CID afm file '%s'"), CIDResource[family_id].cidfamily);
                 freeCIDFontFamily(fontfamily);
                 fontfamily = NULL;
                 break;
@@ -1794,7 +1812,7 @@ static type1fontfamily addFont(char *name, Rboolean isPDF)
                                                     */
                                                    encoding->encnames, (i < 4) ? 1 : 0))
                     {
-                        warning(_("cannot read afm file '%s'"), afmpath);
+                        warning(_("failed to load afm file '%s'"), afmpath);
                         freeFontFamily(fontfamily);
                         fontfamily = NULL;
                         break;
@@ -1864,7 +1882,7 @@ static type1fontfamily addDefaultFontFromAFMs(char *encpath, char **afmpaths, Rb
                                                 */
                                                encoding->encnames, (i < 4) ? 1 : 0))
                 {
-                    warning(_("cannot read afm file '%s'"), afmpaths[i]);
+                    warning(_("failed to load afm file '%s'"), afmpaths[i]);
                     freeFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
@@ -1917,7 +1935,7 @@ static cidfontfamily addDefaultCIDFontFromFamily(int family, Rboolean isPDF)
             if (!PostScriptLoadCIDFontMetrics(CIDResource[family].cidafmfile[i], &(fontfamily->cidfonts[i]->cidmetrics),
                                               fontfamily->cidfonts[i]->name))
             {
-                warning(_("cannot read CID afm file '%s'"), CIDResource[family].cidafmfile[i]);
+                warning(_("failed to load CID afm file '%s'"), CIDResource[family].cidafmfile[i]);
                 freeCIDFontFamily(fontfamily);
                 fontfamily = NULL;
                 break;
@@ -1984,7 +2002,7 @@ static type1fontfamily addDefaultFontFromFamily(char *encpath, int family, Rbool
                                                 */
                                                encoding->encnames, (i < 4) ? 1 : 0))
                 {
-                    warning(_("cannot read afm file '%s'"), Family[family].afmfile[i]);
+                    warning(_("failed to load afm file '%s'"), Family[family].afmfile[i]);
                     freeFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
