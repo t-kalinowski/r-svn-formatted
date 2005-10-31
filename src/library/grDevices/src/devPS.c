@@ -806,12 +806,12 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
     char *buff;
     if (mbcslocale && cidmetrics && (face % 5) != 0)
     {
-        unsigned short *ucs2s;
+        ucs2_t *ucs2s;
         size_t ucslen;
         ucslen = mbcsToUcs2((char *)str, NULL);
         if ((size_t)-1 != ucslen)
         {
-            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
+            ucs2s = (ucs2_t *)alloca(sizeof(ucs2_t) * (ucslen + 1));
             R_CheckStack();
             mbcsToUcs2((char *)str, ucs2s);
             for (i = 0; i < ucslen; i++)
@@ -2668,7 +2668,7 @@ static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, d
 }
 
 #ifdef SUPPORT_MBCS
-static void PostScriptHexText(FILE *fp, double x, double y, unsigned short *ucs2s, size_t ucslen, double xc, double yc,
+static void PostScriptHexText(FILE *fp, double x, double y, ucs2_t *ucs2s, size_t ucslen, double xc, double yc,
                               double rot)
 {
     size_t i;
@@ -3751,11 +3751,11 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
     if (mbcslocale && pd->cidfonts)
     {
         size_t ucslen;
-        unsigned short *ucs2s;
+        ucs2_t *ucs2s;
         ucslen = mbcsToUcs2(str, NULL);
         if (ucslen != (size_t)-1)
         {
-            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
+            ucs2s = (ucs2_t *)alloca(sizeof(ucs2_t) * (ucslen + 1));
             R_CheckStack();
             mbcsToUcs2((char *)str, ucs2s);
             SetCIDFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
@@ -6155,12 +6155,12 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     if (mbcslocale && pd->cidfonts)
     {
         size_t i, ucslen;
-        unsigned short *ucs2s;
+        ucs2_t *ucs2s;
 
         ucslen = mbcsToUcs2(str, NULL);
         if (ucslen != (size_t)-1)
         {
-            ucs2s = (unsigned short *)alloca(sizeof(unsigned short) * (ucslen + 1));
+            ucs2s = (ucs2_t *)alloca(sizeof(ucs2_t) * (ucslen + 1));
             R_CheckStack();
             mbcsToUcs2((char *)str, ucs2s);
             if (alphaVersion(pd) || R_OPAQUE(gc->col))
