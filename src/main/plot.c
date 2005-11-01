@@ -464,20 +464,19 @@ SEXP FixupVFont(SEXP vfont)
 }
 
 /* GetTextArg() : extract from call and possibly set text arguments
- *  ("label", col=, cex=, font=, vfont=)
+ *  ("label", col=, cex=, font=)
  *
  * Main purpose: Treat things like  title(main = list("This Title", font= 4))
  *
  * Called from	do_title()  [only, currently]
  */
-static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex, int *pfont, SEXP *pvfont)
+static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex, int *pfont)
 {
     int i, n, col, font, colspecd;
     double cex;
-    SEXP txt, vfont, nms;
+    SEXP txt, nms;
 
     txt = R_NilValue;
-    vfont = R_NilValue;
     cex = NA_REAL;
     col = R_TRANWHITE;
     colspecd = 0;
@@ -535,10 +534,6 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
                     {
                         font = asInteger(FixupFont(VECTOR_ELT(spec, i), NA_INTEGER));
                     }
-                    else if (!strcmp(CHAR(STRING_ELT(nms, i)), "vfont"))
-                    {
-                        vfont = FixupVFont(VECTOR_ELT(spec, i));
-                    }
                     else if (!strcmp(CHAR(STRING_ELT(nms, i)), ""))
                     {
                         txt = VECTOR_ELT(spec, i);
@@ -577,8 +572,6 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
             *pcol = col;
         if (font != NA_INTEGER)
             *pfont = font;
-        if (vfont != R_NilValue)
-            *pvfont = vfont;
     }
 } /* GetTextArg */
 
@@ -2867,7 +2860,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
          line, outer,
          ...) */
 
-    SEXP Main, xlab, ylab, sub, vfont, string;
+    SEXP Main, xlab, ylab, sub, string;
     double adj, adjy, cex, offset, line, hpos, vpos, where;
     int col, font, outer;
     int i, n;
@@ -2922,7 +2915,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         cex = Rf_gpptr(dd)->cexmain;
         col = Rf_gpptr(dd)->colmain;
         font = Rf_gpptr(dd)->fontmain;
-        GetTextArg(call, Main, &Main, &col, &cex, &font, &vfont);
+        GetTextArg(call, Main, &Main, &col, &cex, &font);
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->font = font;
@@ -2977,7 +2970,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         cex = Rf_gpptr(dd)->cexsub;
         col = Rf_gpptr(dd)->colsub;
         font = Rf_gpptr(dd)->fontsub;
-        GetTextArg(call, sub, &sub, &col, &cex, &font, &vfont);
+        GetTextArg(call, sub, &sub, &col, &cex, &font);
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->font = font;
@@ -3013,7 +3006,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         cex = Rf_gpptr(dd)->cexlab;
         col = Rf_gpptr(dd)->collab;
         font = Rf_gpptr(dd)->fontlab;
-        GetTextArg(call, xlab, &xlab, &col, &cex, &font, &vfont);
+        GetTextArg(call, xlab, &xlab, &col, &cex, &font);
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->font = font;
@@ -3049,7 +3042,7 @@ SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         cex = Rf_gpptr(dd)->cexlab;
         col = Rf_gpptr(dd)->collab;
         font = Rf_gpptr(dd)->fontlab;
-        GetTextArg(call, ylab, &ylab, &col, &cex, &font, &vfont);
+        GetTextArg(call, ylab, &ylab, &col, &cex, &font);
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->font = font;
