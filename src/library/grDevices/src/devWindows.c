@@ -329,11 +329,6 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
                 strncpy(family, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
                 done += 1;
             }
-            if (!strcmp("cidfamily", CHAR(STRING_ELT(names, i))))
-            {
-                strncpy(cidfamily, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
-                done += 1;
-            }
             if (!strcmp("paper", CHAR(STRING_ELT(names, i))))
             {
                 strncpy(paper, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
@@ -370,7 +365,8 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
             strcpy(cidfamily, "");
             break;
         }
-    if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, cidfamily, bg, fg,
+    /* <FIXME> work out how to deal with this */
+    if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, 0, "", "R Graphics Output", R_NilValue))
@@ -419,11 +415,6 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
                 strncpy(family, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
                 done += 1;
             }
-            if (!strcmp("cidfamily", CHAR(STRING_ELT(names, i))))
-            {
-                strncpy(cidfamily, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
-                done += 1;
-            }
             if (!strcmp("bg", CHAR(STRING_ELT(names, i))))
             {
                 strncpy(bg, CHAR(STRING_ELT(VECTOR_ELT(s, i), 0)), 255);
@@ -455,7 +446,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
             strcpy(cidfamily, "");
             break;
         }
-    if (PDFDeviceDriver(ndd, fn, "special", family, afmpaths, encoding, cidfamily, bg, fg,
+    if (PDFDeviceDriver(ndd, fn, "special", family, afmpaths, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         ((gadesc *)dd->deviceSpecific)->basefontsize, 1, 0, "R Graphics Output", R_NilValue, 1, 4))
