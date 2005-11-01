@@ -4363,6 +4363,8 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *
     double xoff, yoff, pointsize;
     XFigDesc *pd;
     type1fontfamily font;
+    encodinginfo enc;
+    encodinglist enclist;
 
     /* Check and extract the device parameters */
 
@@ -4400,8 +4402,14 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *
     /*
      * Load the default encoding AS THE FIRST ENCODING FOR THIS DEVICE.
      */
-    pd->encodings = addDeviceEncoding(findEncoding("ISOLatin1.enc", pd->encodings), pd->encodings);
-    if (!pd->encodings)
+    pd->encodings = NULL;
+    if (!(enc = findEncoding("ISOLatin1.enc", pd->encodings)))
+        enc = addEncoding("ISOLatin1.enc", 0);
+    if (enc && (enclist = addDeviceEncoding(enc, pd->encodings)))
+    {
+        pd->encodings = enclist;
+    }
+    else
     {
         free(dd);
         free(pd);
