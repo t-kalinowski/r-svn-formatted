@@ -85,6 +85,9 @@ typedef struct
     short XHeight;
     short Descender;
     short Ascender;
+    short StemH;
+    short StemV;
+    short ItalicAngle;
     struct
     {
         short WX;
@@ -99,6 +102,9 @@ typedef struct
     short XHeight;
     short Descender;
     short Ascender;
+    short StemH;
+    short StemV;
+    short ItalicAngle;
     struct
     {
         short WX;
@@ -614,6 +620,9 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
         return 0;
     }
 
+    cidmetrics->CapHeight = cidmetrics->XHeight = cidmetrics->Descender = cidmetrics->Ascender = cidmetrics->StemH =
+        cidmetrics->StemV = NA_SHORT;
+    cidmetrics->ItalicAngle = 0;
     mode = 0;
     for (ii = 0; ii < 65536; ii++)
     {
@@ -661,6 +670,41 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
             sscanf(p, "%[^\n\f\r]", fontname);
             break;
 
+        case CapHeight:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->CapHeight);
+            break;
+
+        case XHeight:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->XHeight);
+            break;
+
+        case Ascender:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->Ascender);
+            break;
+
+        case Descender:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->Descender);
+            break;
+
+        case StdHW:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->StemH);
+            break;
+
+        case StdVW:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->StemV);
+            break;
+
+        case ItalicAngle:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &cidmetrics->ItalicAngle);
+            break;
+
         case Empty:
         default:
             break;
@@ -672,9 +716,9 @@ pserror:
     fclose(fp);
     return 0;
 }
+
 /* Load font metrics from a file: defaults to the
    R_HOME/library/grDevices/afm directory */
-
 static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo *metrics, char *fontname,
                                      CNAME *charnames, CNAME *encnames, int reencode)
 {
@@ -698,6 +742,9 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
     }
 
     metrics->KernPairs = NULL;
+    metrics->CapHeight = metrics->XHeight = metrics->Descender = metrics->Ascender = metrics->StemH = metrics->StemV =
+        NA_SHORT;
+    metrics->ItalicAngle = 0;
     mode = 0;
     for (ii = 0; ii < 256; ii++)
     {
@@ -775,6 +822,41 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
             sscanf(p, "%[^\n\f\r]", fontname);
             break;
 
+        case CapHeight:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->CapHeight);
+            break;
+
+        case XHeight:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->XHeight);
+            break;
+
+        case Ascender:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->Ascender);
+            break;
+
+        case Descender:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->Descender);
+            break;
+
+        case StdHW:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->StemH);
+            break;
+
+        case StdVW:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->StemV);
+            break;
+
+        case ItalicAngle:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%hd", &metrics->ItalicAngle);
+            break;
+
         case Empty:
         default:
             break;
@@ -839,7 +921,10 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
                 */
                 wx = cidmetrics->CharInfo[ucs2s[i]].WX;
                 if (wx == NA_SHORT)
+                {
                     warning(_("font width unknown for character U+%04x"), ucs2s[i]);
+                    wx = 1000;
+                }
                 /* printf("width for U+%04x is %d\n", ucs2s[i], wx); */
                 sum += wx;
             }
@@ -866,6 +951,8 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
     }
 #endif
 
+    /* Now we know we have an 8-bit encoded string in the encoding to
+       be used for output. */
     for (p = str1; *p; p++)
     {
 #ifdef USE_HYPHEN
@@ -904,9 +991,10 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
    re-encoded to Unicode in GEText (and interpreted as Unicode in
    GESymbol).
 
-   <FIXME> the assumption made here is that the corresponding 8-bit encoding
-   is Latin1 (it was < 2.3.0) and so we have a match for the first two
-   planes of Unicode and no info thereafter.
+   <FIXME> the assumption made here is that the corresponding 8-bit
+   encoding is Latin1 (it was < 2.3.0) and so we have a match for the
+   first two planes of Unicode and no info otherwise (and these are
+   chars that would not be printed).
 */
 static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics)
 {
@@ -954,7 +1042,7 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
         *descent = -0.001 * cidmetrics->FontBBox[1];
         *width = 0.001 * (cidmetrics->FontBBox[2] - cidmetrics->FontBBox[0]);
     }
-    if (c > 65535)
+    else if (c > 65535)
     {
         /* Unlikely, but could happen, so guess */
         warning(_("font metrics unknown for character U+%04x"), c);
@@ -969,8 +1057,8 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
         wx = cidmetrics->CharInfo[c].WX;
         if (wx == NA_SHORT)
         {
-            warning(_("font metrics unknown for character 0x%x"), c);
-            wx = 0;
+            warning(_("font metrics unknown for character U+%04x"), c);
+            wx = 1000; /* A reasonable guess */
         }
         *width = 0.001 * wx;
     }
@@ -6066,6 +6154,7 @@ static void PDF_endfile(PDFDesc *pd)
         type1fontlist fontlist = pd->fonts;
         while (fontlist)
         {
+            FontMetricInfo *metrics;
             /*
              * Find the index of the device encoding
              * This really should be there
@@ -6076,11 +6165,27 @@ static void PDF_endfile(PDFDesc *pd)
                 error(_("Corrupt encodings in PDF device"));
             for (i = 0; i < 4; i++)
             {
+                metrics = &fontlist->family->fonts[i]->metrics;
                 pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n", pd->nobjs,
+                        nfonts + 2, fontlist->family->fonts[i]->name);
+                /* write font descriptor
                 fprintf(pd->pdffp,
-                        "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n/Encoding %d 0 "
-                        "R\n>>\nendobj\n",
-                        pd->nobjs, nfonts + 2, fontlist->family->fonts[i]->name,
+                    "/FontDescriptor\n"
+                    "  <<\n"
+                    "    /Type /FontDescriptor\n"
+                    "    /CapHeight %d /Ascent %d /Descent %d\n"
+                    "    /FontBBox [%d %d %d %d]\n"
+                    "    /ItalicAngle %d /XHeight %d\n",
+                    metrics->CapHeight, metrics->Ascender,
+                    metrics->Descender,
+                    metrics->FontBBox[0], metrics->FontBBox[1],
+                    metrics->FontBBox[2], metrics->FontBBox[3],
+                    metrics->ItalicAngle, metrics->XHeight);
+                if (metrics->StemV != NA_SHORT)
+                    fprintf(pd->pdffp, "    /StemV %d\n", metrics->StemV);
+                fprintf(pd->pdffp, "  >>\n");*/
+                fprintf(pd->pdffp, "/Encoding %d 0 R\n>>\nendobj\n",
                         /* Encodings come after dingbats font which is
                          * object 5 */
                         encIndex + firstencobj);
