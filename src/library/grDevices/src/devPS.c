@@ -3012,15 +3012,16 @@ static void PostScriptText(FILE *fp, double x, double y, char *str, double xc, d
 }
 
 #ifdef SUPPORT_MBCS
-static void PostScriptHexText(FILE *fp, double x, double y, char *str, double xc, double yc, double rot)
+static void PostScriptHexText(FILE *fp, double x, double y, char *str, int strlen, double xc, double yc, double rot)
 {
     unsigned char *p = (unsigned char *)str;
+    int i;
 
     fprintf(fp, "%.2f %.2f ", x, y);
-    fprintf(fp, " <");
-    while (*p)
+    fprintf(fp, "<");
+    for (i = 0; i < strlen; i++)
         fprintf(fp, "%02x", *p++);
-    fprintf(fp, "> ");
+    fprintf(fp, ">");
 
     if (xc == 0)
         fprintf(fp, " 0");
@@ -4190,7 +4191,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
             if (R_OPAQUE(gc->col))
             {
                 SetColor(gc->col, dd);
-                PostScriptHexText(pd->psfp, x, y, str, hadj, 0.0, rot);
+                PostScriptHexText(pd->psfp, x, y, str, strlen(str), hadj, 0.0, rot);
             }
             return;
         }
@@ -4204,21 +4205,21 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
             void *cd;
             unsigned char *buf;
             char *i_buf, *o_buf;
-            size_t i_len, o_len;
+            size_t nb, i_len, o_len, buflen = MB_LEN_MAX * (ucslen + 1);
             size_t status;
 
             cd = (void *)Riconv_open(cidfont->encoding, "");
             if ((void *)-1 == cd)
                 return;
 
-            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
+            buf = (unsigned char *)alloca(buflen);
             R_CheckStack();
 
-            memset(buf, 0, ucslen * MB_LEN_MAX + 1);
+            memset(buf, 0, buflen); /* should not be needed: is it? */
             i_buf = str;
             o_buf = (char *)buf;
             i_len = strlen(str);
-            o_len = ucslen * MB_LEN_MAX + 1;
+            nb = o_len = buflen;
 
             status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
 
@@ -4231,7 +4232,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
                 if (R_OPAQUE(gc->col))
                 {
                     SetColor(gc->col, dd);
-                    PostScriptHexText(pd->psfp, x, y, (char *)buf, hadj, 0.0, rot);
+                    PostScriptHexText(pd->psfp, x, y, (char *)buf, nb - o_len, hadj, 0.0, rot);
                 }
             }
             return;
@@ -6825,7 +6826,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         cidfontfamily cidfont = findDeviceCIDFont(gc->fontfamily, pd->cidfonts, &fontIndex);
         if (!strcmp(locale2charset(NULL), cidfont->encoding))
         {
-            if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+            if (alphaVersion(pd) || (R_OPAQUE(gc->col)))
             {
                 PDF_SetFill(gc->col, dd);
                 fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ",
@@ -6849,7 +6850,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         {
             void *cd;
             char *i_buf, *o_buf;
-            size_t i_len, o_len;
+            size_t i, nb, i_len, o_len, buflen = (ucslen + 1) * MB_LEN_MAX;
             size_t status;
             unsigned char *p;
 
@@ -6857,32 +6858,28 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
             if ((void *)-1 == cd)
                 return;
 
-            buf = (unsigned char *)alloca(ucslen * MB_LEN_MAX + 1);
+            buf = (unsigned char *)alloca(buflen);
             R_CheckStack();
 
-            memset(buf, 0, ucslen * MB_LEN_MAX + 1);
+            memset(buf, 0, buflen);
             i_buf = str;
             o_buf = (char *)buf;
             i_len = strlen(str);
-            o_len = ucslen * MB_LEN_MAX + 1;
+            nb = o_len = buflen;
 
             status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
 
             Riconv_close(cd);
             if ((size_t)-1 == status)
                 warning(_("failed in text conversion to encoding '%s'"), cidfont->encoding);
-            else if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+            else if (alphaVersion(pd) || (R_OPAQUE(gc->col)))
             {
                 PDF_SetFill(gc->col, dd);
-                fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ",
+                fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm <",
                         PDFfontNumber(gc->fontfamily, face, pd), a, b, -b, a, x, y);
-
-                fprintf(pd->pdffp, "<");
-                p = buf;
-                while (*p)
+                for (i = 0, p = buf; i < nb - o_len; i++)
                     fprintf(pd->pdffp, "%02x", *p++);
-                fprintf(pd->pdffp, ">");
-                fprintf(pd->pdffp, " Tj\n");
+                fprintf(pd->pdffp, "> Tj\n");
             }
             return;
         }
@@ -6896,7 +6893,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     /*
      * Only try to do real transparency if version at least 1.4
      */
-    if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+    if (alphaVersion(pd) || (R_OPAQUE(gc->col)))
     {
         PDF_SetFill(gc->col, dd);
         fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
