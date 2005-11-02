@@ -2459,13 +2459,13 @@ static void specialCaseCM(FILE *fp, type1fontfamily family, int familynum)
 
 static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
 {
-#ifdef SUPPORT_MBCS
-    cidfontlist cidfonts = pd->cidfonts;
-#endif
     type1fontlist fonts = pd->fonts;
     int familynum = 1;
-    int cidfamilynum = 1;
     int haveWrittenDefaultEnc = 0;
+#ifdef SUPPORT_MBCS
+    cidfontlist cidfonts = pd->cidfonts;
+    int cidfamilynum = 1;
+#endif
 
     while (fonts)
     {
@@ -3950,6 +3950,7 @@ static int translateFont(char *family, int style, PostScriptDesc *pd)
     return result;
 }
 
+#ifdef SUPPORT_MBCS
 static int numFonts(type1fontlist fonts)
 {
     int i = 0;
@@ -3961,7 +3962,6 @@ static int numFonts(type1fontlist fonts)
     return i;
 }
 
-#ifdef SUPPORT_MBCS
 static int translateCIDFont(char *family, int style, PostScriptDesc *pd)
 {
     int result = style;
