@@ -255,37 +255,41 @@ static int GetFontBBox(char *buf, FontMetricInfo *metrics)
     return 1;
 }
 
+/* The longest named Adobe glyph is 39 chars:
+   whitediamondcontainingblacksmalldiamond
+ */
 typedef struct
 {
-    char cname[25];
+    char cname[40];
 } CNAME;
 
-static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics, CNAME *charnames)
+static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics)
 {
-    char *p = buf;
-    int nchar;
+    char *p = buf, charname[40];
+    unsigned int nchar;
     short WX;
 
     if (!MatchKey(buf, "CH "))
         return 0;
     p = SkipToNextItem(p);
-    sscanf(p, "<%x>", (unsigned int *)&nchar);
-    if (nchar < 0)
-        return 1;
+    sscanf(p, "<%x>", &nchar);
+    if (nchar > 0xffff)
+        return 0;
     p = SkipToNextKey(p);
 
     if (!MatchKey(p, "W0X"))
         return 0;
     p = SkipToNextItem(p);
     sscanf(p, "%hd", &WX);
-    p = SkipToNextKey(p);
-
-    if (!MatchKey(p, "N "))
-        return 0;
-    p = SkipToNextItem(p);
-    sscanf(p, "%s", charnames[nchar].cname);
     cidmetrics->CharInfo[nchar].WX = WX;
     p = SkipToNextKey(p);
+
+    if (MatchKey(p, "N "))
+    { /* name is optional */
+        p = SkipToNextItem(p);
+        sscanf(p, "%s", charname);
+        p = SkipToNextKey(p);
+    }
 
     if (!MatchKey(p, "B "))
         return 0;
@@ -304,7 +308,7 @@ static int GetCIDCharInfo(char *buf, CIDFontMetricInfo *cidmetrics, CNAME *charn
 /* If reencode > 0, remap to new encoding */
 static int GetCharInfo(char *buf, FontMetricInfo *metrics, CNAME *charnames, CNAME *encnames, int reencode)
 {
-    char *p = buf, charname[25];
+    char *p = buf, charname[40];
     int nchar, nchar2 = -1, i;
     short WX;
 
@@ -312,7 +316,7 @@ static int GetCharInfo(char *buf, FontMetricInfo *metrics, CNAME *charnames, CNA
         return 0;
     p = SkipToNextItem(p);
     sscanf(p, "%d", &nchar);
-    if (nchar < 0 && !reencode)
+    if ((nchar < 0 || nchar > 255) && !reencode)
         return 1;
     p = SkipToNextKey(p);
 
@@ -593,8 +597,7 @@ static int LoadEncoding(char *encpath, char *encname, char *encconvname, CNAME *
 
 /* Load CID font metrics from a file: defaults to the
    R_HOME/library/grDevices/CID directory */
-static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetricInfo *cidmetrics, char *fontname,
-                                        CNAME *charnames)
+static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetricInfo *cidmetrics, char *fontname)
 {
     char buf[BUFSIZE], *p;
     int mode, j, ii;
@@ -606,12 +609,14 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
 #endif
 
     if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
+    {
+        warning(_("afm file '%s' could not be opened"), R_ExpandFileName(buf));
         return 0;
+    }
 
     mode = 0;
     for (ii = 0; ii < 65536; ii++)
     {
-        charnames[ii].cname[0] = '\0';
         cidmetrics->CharInfo[ii].WX = NA_SHORT;
         for (j = 0; j < 4; j++)
             cidmetrics->CharInfo[ii].BBox[j] = 0;
@@ -631,14 +636,20 @@ static int PostScriptLoadCIDFontMetrics(const char *const fontpath, CIDFontMetri
 
         case FontBBox:
             if (!GetCIDFontBBox(buf, cidmetrics))
+            {
+                warning(_("FontBBox could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case CH:
             if (mode != StartFontMetrics)
                 goto pserror;
-            if (!GetCIDCharInfo(buf, cidmetrics, charnames))
+            if (!GetCIDCharInfo(buf, cidmetrics))
+            {
+                warning(_("CharInfo could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case Unknown:
@@ -681,7 +692,10 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
 #endif
 
     if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
+    {
+        warning(_("afm file '%s' could not be opened"), R_ExpandFileName(buf));
         return 0;
+    }
 
     metrics->KernPairs = NULL;
     mode = 0;
@@ -707,14 +721,20 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
 
         case FontBBox:
             if (!GetFontBBox(buf, metrics))
+            {
+                warning(_("FontBBox could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case C:
             if (mode != StartFontMetrics)
                 goto pserror;
             if (!GetCharInfo(buf, metrics, charnames, encnames, reencode))
+            {
+                warning(_("CharInfo could not be parsed"));
                 goto pserror;
+            }
             break;
 
         case StartKernData:
@@ -819,7 +839,7 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
                 */
                 wx = cidmetrics->CharInfo[ucs2s[i]].WX;
                 if (wx == NA_SHORT)
-                    warning(_("font width unknown for character U+%04x"), *p);
+                    warning(_("font width unknown for character U+%04x"), ucs2s[i]);
                 /* printf("width for U+%04x is %d\n", ucs2s[i], wx); */
                 sum += wx;
             }
@@ -873,7 +893,21 @@ static double PostScriptStringWidth(unsigned char *str, FontMetricInfo *metrics,
     return 0.001 * sum;
 }
 
-/* <FIXME> use cidmetrics or metrics, not a mixture */
+/* Be careful about the assumptions here.  In an 8-bit locale 0 <= c < 256
+   and it is in the encoding in use.  As it is not going to be
+   re-encoded when text is output, it is correct not to re-encode here.
+   If called from PostscriptStringWidth, it will be called
+   on a 8-bit string in the locale assumed for output.
+
+   If called from PS_MetricInfo, in an MBCS locale and font != 5,
+   chars < 128 are sent as is (we assume that is ASCII) and others are
+   re-encoded to Unicode in GEText (and interpreted as Unicode in
+   GESymbol).
+
+   <FIXME> the assumption made here is that the corresponding 8-bit encoding
+   is Latin1 (it was < 2.3.0) and so we have a match for the first two
+   planes of Unicode and no info thereafter.
+*/
 static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics)
 {
     short wx;
@@ -908,7 +942,11 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
 static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, double *width,
                                     CIDFontMetricInfo *cidmetrics)
 {
+    /* We should assume that c is always Unicode */
     short wx;
+    /* We do not have font 5, so a precaution */
+    if (!cidmetrics)
+        error("trying to use unknown face (5?) in a CID family");
 
     if (c == 0)
     {
@@ -916,11 +954,13 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
         *descent = -0.001 * cidmetrics->FontBBox[1];
         *width = 0.001 * (cidmetrics->FontBBox[2] - cidmetrics->FontBBox[0]);
     }
-    else if (c > 255)
-    { /* Unicode */
+    if (c > 65535)
+    {
+        /* Unlikely, but could happen, so guess */
+        warning(_("font metrics unknown for character U+%04x"), c);
         *ascent = 0.001 * cidmetrics->FontBBox[3];
         *descent = -0.001 * cidmetrics->FontBBox[1];
-        *width = 0.001 * (cidmetrics->FontBBox[2] - cidmetrics->FontBBox[0]);
+        *width = 1; /* That is, 1000 */
     }
     else
     {
@@ -1038,7 +1078,7 @@ static cidfontinfo makeCIDFont()
 {
     cidfontinfo font = (CIDFontInfo *)malloc(sizeof(CIDFontInfo));
     if (!font)
-        warning(_("Failed to allocate CID font info"));
+        warning(_("failed to allocate CID font info"));
     return font;
 }
 
@@ -1053,7 +1093,7 @@ static type1fontinfo makeType1Font()
      */
     font->metrics.KernPairs = NULL;
     if (!font)
-        warning(_("Failed to allocate Type 1 font info"));
+        warning(_("failed to allocate Type 1 font info"));
     return font;
 }
 
@@ -1073,7 +1113,7 @@ static encodinginfo makeEncoding()
 {
     encodinginfo encoding = (EncodingInfo *)malloc(sizeof(EncodingInfo));
     if (!encoding)
-        warning(_("Failed to allocate encoding info"));
+        warning(_("failed to allocate encoding info"));
     return encoding;
 }
 
@@ -1092,7 +1132,7 @@ static cidfontfamily makeCIDFontFamily()
             family->cidfonts[i] = NULL;
     }
     else
-        warning(_("Failed to allocate CID font family"));
+        warning(_("failed to allocate CID font family"));
     return family;
 }
 
@@ -1107,7 +1147,7 @@ static type1fontfamily makeFontFamily()
         family->encoding = NULL;
     }
     else
-        warning(_("Failed to allocate Type 1 font family"));
+        warning(_("failed to allocate Type 1 font family"));
     return family;
 }
 /*
@@ -1146,7 +1186,7 @@ static cidfontlist makeCIDFontList()
         fontlist->next = NULL;
     }
     else
-        warning(_("Failed to allocate font list"));
+        warning(_("failed to allocate font list"));
     return fontlist;
 }
 
@@ -1159,7 +1199,7 @@ static type1fontlist makeFontList()
         fontlist->next = NULL;
     }
     else
-        warning(_("Failed to allocate font list"));
+        warning(_("failed to allocate font list"));
     return fontlist;
 }
 
@@ -1218,7 +1258,7 @@ static encodinglist makeEncList()
         enclist->next = NULL;
     }
     else
-        warning(_("Failed to allocated encoding list"));
+        warning(_("failed to allocated encoding list"));
     return enclist;
 }
 
@@ -1369,7 +1409,7 @@ static void safestrcpy(char *dest, char *src, int maxlen)
         strcpy(dest, src);
     else
     {
-        warning(_("Truncated string which was too long for copy"));
+        warning(_("truncated string which was too long for copy"));
         strncpy(dest, src, maxlen - 1);
         dest[maxlen - 1] = '\0';
     }
@@ -1410,7 +1450,7 @@ static encodinginfo addEncoding(char *encpath, Rboolean isPDF)
         }
         else
         {
-            warning(_("Failed to load encoding file"));
+            warning(_("failed to load encoding file '%s'"), encpath);
             freeEncoding(encoding);
             encoding = NULL;
         }
@@ -1677,7 +1717,7 @@ static SEXP getFont(char *family, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font family not found in PostScript font database"));
+        warning(_("font family not found in PostScript font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1710,7 +1750,7 @@ static char *fontMetricsFileName(char *family, int faceIndex, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font family not found in PostScript font database"));
+        warning(_("font family not found in PostScript font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1784,7 +1824,7 @@ static char *getFontEncoding(char *family, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font encoding not found in font database"));
+        warning(_("font encoding not found in font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1812,7 +1852,7 @@ static char *getFontName(char *family, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font CMap not found in font database"));
+        warning(_("font CMap not found in font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1840,7 +1880,7 @@ static char *getFontCMap(char *family, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font CMap not found in font database"));
+        warning(_("font CMap not found in font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1868,7 +1908,7 @@ static char *getCIDFontEncoding(char *family, char *fontdbname)
         }
     }
     if (!found)
-        warning(_("Font encoding not found in font database"));
+        warning(_("font encoding not found in font database"));
     UNPROTECT(1);
     return result;
 }
@@ -1896,7 +1936,7 @@ static char *getCIDFontPDFResource(char *family)
         }
     }
     if (!found)
-        warning(_("Font encoding not found in font database"));
+        warning(_("font encoding not found in font database"));
     UNPROTECT(1);
     return result;
 }
@@ -2037,9 +2077,9 @@ static cidfontfamily addCIDFont(char *name, Rboolean isPDF)
                 fontfamily->cidfonts[i] = font;
                 /* ### */
                 if (!PostScriptLoadCIDFontMetrics(afmpath, &(fontfamily->cidfonts[i]->cidmetrics),
-                                                  fontfamily->cidfonts[i]->name, fontfamily->cidfonts[i]->charnames))
+                                                  fontfamily->cidfonts[i]->name))
                 {
-                    warning(_("cannot read CID %s family afm files"), afmpath);
+                    warning(_("failed to load CID afm file '%s'"), afmpath);
                     freeCIDFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
@@ -2134,7 +2174,7 @@ static type1fontfamily addFont(char *name, Rboolean isPDF, encodinglist deviceEn
                                                     */
                                                    encoding->encnames, (i < 4) ? 1 : 0))
                     {
-                        warning(_("cannot read afm file %s"), afmpath);
+                        warning(_("cannot load afm file '%s'"), afmpath);
                         freeFontFamily(fontfamily);
                         fontfamily = NULL;
                         break;
@@ -2205,7 +2245,7 @@ static type1fontfamily addDefaultFontFromAFMs(char *encpath, char **afmpaths, Rb
                                                 */
                                                encoding->encnames, (i < 4) ? 1 : 0))
                 {
-                    warning(_("cannot read afm file %s"), afmpaths[i]);
+                    warning(_("cannot load afm file '%s'"), afmpaths[i]);
                     freeFontFamily(fontfamily);
                     fontfamily = NULL;
                     break;
@@ -4071,7 +4111,6 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
          * CID convert PS encoding != locale encode case
          */
         ucslen = mbcsToUcs2(str, NULL);
-        printf("ucslen = %d\n", ucslen);
         if ((size_t)-1 != ucslen)
         {
             void *cd;
@@ -4335,7 +4374,7 @@ static int XFigBaseNum(char *name)
         i = 28;
     else
     {
-        warning(_("unknown postscript font family, using Helvetica"));
+        warning(_("unknown postscript font family '%s', using Helvetica"), name);
         i = 16;
     }
     return i;
@@ -6077,7 +6116,7 @@ static void PDF_endfile(PDFDesc *pd)
                         "      /Type /Font\n"
                         "      /Subtype /CIDFontType0\n"
                         "      /BaseFont /%s%s\n"
-                        "%s"
+                        "      %s"
                         "    >>\n"
                         "  ]\n"
                         "  /Encoding /%s\n"
