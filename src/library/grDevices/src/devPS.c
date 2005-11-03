@@ -1032,9 +1032,9 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
 {
     /* We should assume that c is always Unicode */
     short wx;
-    /* We do not have font 5, so a precaution */
+    /* Shoudn't happen, but a precaution */
     if (!cidmetrics)
-        error("trying to use unknown face (5?) in a CID family");
+        error("trying to use unknown face in a CID family");
 
     if (c == 0)
     {
@@ -1121,6 +1121,7 @@ typedef struct CIDFontFamily
 {
     char fxname[50];
     cidfontinfo cidfonts[4];
+    type1fontinfo symfont;
     char cmap[50];
     char encoding[50];
 } CIDFontFamily, *cidfontfamily;
@@ -1218,6 +1219,7 @@ static cidfontfamily makeCIDFontFamily()
         int i;
         for (i = 0; i < 4; i++)
             family->cidfonts[i] = NULL;
+        family->symfont = NULL;
     }
     else
         warning(_("failed to allocate CID font family"));
@@ -1253,6 +1255,8 @@ static void freeCIDFontFamily(cidfontfamily family)
     for (i = 0; i < 4; i++)
         if (family->cidfonts[i])
             freeCIDFont(family->cidfonts[i]);
+    if (family->symfont)
+        freeType1Font(family->symfont);
     free(family);
 }
 
@@ -2189,6 +2193,42 @@ static cidfontfamily addCIDFont(char *name, Rboolean isPDF)
                 safestrcpy(fontfamily->cidfonts[i]->name, getFontName(name, fontdbname), 50);
             }
             /*
+             * Load the (Type 1!) symbol font
+             *
+             * Gratuitous loop of length 1 so "break" jumps to end of loop
+             */
+            for (i = 0; i < 1; i++)
+            {
+                type1fontinfo font = makeType1Font();
+                char *afmpath = fontMetricsFileName(name, 4, fontdbname);
+                if (!font)
+                {
+                    freeCIDFontFamily(fontfamily);
+                    fontfamily = NULL;
+                    break;
+                }
+                if (!afmpath)
+                {
+                    freeCIDFontFamily(fontfamily);
+                    fontfamily = NULL;
+                    break;
+                }
+                fontfamily->symfont = font;
+                if (!PostScriptLoadFontMetrics(afmpath, &(fontfamily->symfont->metrics), fontfamily->symfont->name,
+                                               fontfamily->symfont->charnames,
+                                               /*
+                                                * Reencode all but
+                                                * symbol face
+                                                */
+                                               NULL, 0))
+                {
+                    warning(_("cannot load afm file '%s'"), afmpath);
+                    freeCIDFontFamily(fontfamily);
+                    fontfamily = NULL;
+                    break;
+                }
+            }
+            /*
              * Add font
              */
             if (fontfamily)
@@ -2725,8 +2765,18 @@ static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
             fprintf(fp, "  {1 index /FID ne {def} {pop pop} ifelse} forall\n");
             fprintf(fp, "  currentdict\n");
             fprintf(fp, "  end\n");
-            fprintf(fp, "/Font%d exch definefont pop\n", (familynum - 1) * 5 + (cidfamilynum - 1) * 4 + i + 1);
+            fprintf(fp, "/Font%d exch definefont pop\n", (familynum - 1) * 5 + (cidfamilynum - 1) * 5 + i + 1);
         }
+        /*
+         * Symbol font
+         */
+        fprintf(fp, "%%%%IncludeResource: font %s\n", cidfonts->cidfamily->symfont->name);
+        fprintf(fp, "/%s findfont\n", cidfonts->cidfamily->symfont->name);
+        fprintf(fp, "dup length dict begin\n");
+        fprintf(fp, "  {1 index /FID ne {def} {pop pop} ifelse} forall\n");
+        fprintf(fp, "  currentdict\n");
+        fprintf(fp, "  end\n");
+        fprintf(fp, "/Font%d exch definefont pop\n", (familynum - 1) * 5 + (cidfamilynum - 1) * 5 + 5);
         cidfamilynum++;
         cidfonts = cidfonts->next;
     }
@@ -3854,18 +3904,38 @@ static void PS_Deactivate(NewDevDesc *dd)
 {
 }
 
+static FontMetricInfo *CIDsymbolmetricInfo(char *family, PostScriptDesc *pd)
+{
+    FontMetricInfo *result = NULL;
+    int fontIndex;
+    cidfontfamily fontfamily;
+
+    fontfamily = findDeviceCIDFont(family, pd->cidfonts, &fontIndex);
+    if (fontfamily)
+    {
+        /* (Type 1!) symbol font */
+        result = &(fontfamily->symfont->metrics);
+    }
+    else
+        error(_("CID family '%s' not included in PostScript device"), family);
+    return result;
+}
+
+/*
+ * Must be called with face < 5
+ * CIDsymbolmetricInfo should be called for face 5
+ */
 static CIDFontMetricInfo *CIDmetricInfo(char *family, int face, PostScriptDesc *pd)
 {
     CIDFontMetricInfo *result = NULL;
     int fontIndex;
     cidfontfamily fontfamily;
 
-    if (face == 5) /* no symbol font */
-        return NULL;
-
     fontfamily = findDeviceCIDFont(family, pd->cidfonts, &fontIndex);
     if (fontfamily)
+    {
         result = &(fontfamily->cidfonts[face - 1]->cidmetrics);
+    }
     else
         error(_("CID family '%s' not included in PostScript device"), family);
     return result;
@@ -3910,8 +3980,19 @@ static double PS_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     }
     else
     { /* cidfont(gc->fontfamily, PostScriptFonts) */
-        return floor(gc->cex * gc->ps + 0.5) *
-               PostScriptStringWidth((unsigned char *)str, NULL, CIDmetricInfo(gc->fontfamily, face, pd), face, NULL);
+        if (face < 5)
+        {
+            return floor(gc->cex * gc->ps + 0.5) * PostScriptStringWidth((unsigned char *)str, NULL,
+                                                                         CIDmetricInfo(gc->fontfamily, face, pd), face,
+                                                                         NULL);
+        }
+        else
+        {
+            return floor(gc->cex * gc->ps + 0.5) * PostScriptStringWidth((unsigned char *)str,
+                                                                         /* Send symbol face metric info */
+                                                                         CIDsymbolmetricInfo(gc->fontfamily, pd), NULL,
+                                                                         face, NULL);
+        }
     }
 }
 
@@ -3929,7 +4010,14 @@ static void PS_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
     }
     else
     { /* cidfont(gc->fontfamily, PostScriptFonts) */
-        PostScriptCIDMetricInfo(c, ascent, descent, width, CIDmetricInfo(gc->fontfamily, face, pd));
+        if (face < 5)
+        {
+            PostScriptCIDMetricInfo(c, ascent, descent, width, CIDmetricInfo(gc->fontfamily, face, pd));
+        }
+        else
+        {
+            PostScriptMetricInfo(c, ascent, descent, width, CIDsymbolmetricInfo(gc->fontfamily, pd));
+        }
     }
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
@@ -4118,7 +4206,7 @@ static int translateCIDFont(char *family, int style, PostScriptDesc *pd)
         /*
          * CID fonts all listed after all Type 1 fonts.
          */
-        result = (numFonts(pd->fonts) * 5) + (fontIndex - 1) * 4 + style;
+        result = (numFonts(pd->fonts) * 5) + (fontIndex - 1) * 5 + style;
     }
     else
     {
@@ -4128,19 +4216,24 @@ static int translateCIDFont(char *family, int style, PostScriptDesc *pd)
 }
 #endif
 
-/* Only used for symbol fonts and on non-MBCS platforms */
-static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+static void drawSimpleText(double x, double y, char *str, double rot, double hadj, int font, R_GE_gcontext *gc,
+                           NewDevDesc *dd)
 {
-    char *str1 = str;
-
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
-    SetFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
+    SetFont(font, (int)floor(gc->cex * gc->ps + 0.5), dd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
-        PostScriptText(pd->psfp, x, y, str1, hadj, 0.0, rot);
+        PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot);
     }
+}
+
+/* Only used for symbol fonts and on non-MBCS platforms */
+static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+{
+    PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
+    drawSimpleText(x, y, str, rot, hadj, translateFont(gc->fontfamily, gc->fontface, pd), gc, dd);
 }
 
 #ifdef SUPPORT_MBCS
@@ -4181,8 +4274,16 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
 
     if (gc->fontface == 5)
     {
-        PS_Text(x, y, str, rot, hadj, gc, dd);
-        return;
+        if (isCIDFont(gc->fontfamily, PostScriptFonts, pd->defaultCIDFont))
+        {
+            drawSimpleText(x, y, str1, rot, hadj, translateCIDFont(gc->fontfamily, gc->fontface, pd), gc, dd);
+            return;
+        }
+        else
+        {
+            drawSimpleText(x, y, str1, rot, hadj, translateFont(gc->fontfamily, gc->fontface, pd), gc, dd);
+            return;
+        }
     }
 
     /* No symbol fonts from now on */
@@ -4256,19 +4357,14 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
     }
 
     /* Now using single-byte non-symbol font */
-    SetFont(translateFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
-    if (R_OPAQUE(gc->col))
+    if (utf8locale && !utf8strIsASCII(str))
     {
-        SetColor(gc->col, dd);
-        if (utf8locale && !utf8strIsASCII(str))
-        {
-            buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-            R_CheckStack();
-            mbcsToSbcs(str, buff, convname(gc->fontfamily, pd));
-            str1 = buff;
-        }
-        PostScriptText(pd->psfp, x, y, str1, hadj, 0.0, rot);
+        buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
+        R_CheckStack();
+        mbcsToSbcs(str, buff, convname(gc->fontfamily, pd));
+        str1 = buff;
     }
+    drawSimpleText(x, y, str1, rot, hadj, translateFont(gc->fontfamily, gc->fontface, pd), gc, dd);
 }
 #endif
 
@@ -6128,7 +6224,7 @@ static void PDF_endfile(PDFDesc *pd)
         cidfontlist fontlist = pd->cidfonts;
         while (fontlist)
         {
-            for (i = 0; i < 4; i++)
+            for (i = 0; i < 5; i++)
             {
                 fprintf(pd->pdffp, "/F%d %d 0 R ", 1000 + cidnfonts + 1, ++tempnobj);
                 cidnfonts++;
@@ -6258,6 +6354,11 @@ static void PDF_endfile(PDFDesc *pd)
                 );
                 cidnfonts++;
             }
+            /* Symbol face does not use encoding */
+            pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+            fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n>>\nendobj\n",
+                    pd->nobjs, 1000 + cidnfonts + 1, fontlist->cidfamily->symfont->name);
+            cidnfonts++;
             fontlist = fontlist->next;
         }
     }
@@ -6709,7 +6810,7 @@ static int PDFfontNumber(char *family, int face, PDFDesc *pd)
              * Use very high font number for CID fonts to avoid
              * Type 1 fonts
              */
-            num = 1000 + (cidfontIndex - 1) * 4 + 1 + face;
+            num = 1000 + (cidfontIndex - 1) * 5 + 1 + face;
         else
         {
             /*
@@ -6734,7 +6835,7 @@ static int PDFfontNumber(char *family, int face, PDFDesc *pd)
                 {
                     if (addPDFDeviceCIDfont(cidfontfamily, pd, &cidfontIndex))
                     {
-                        num = 1000 + (cidfontIndex - 1) * 4 + 1 + face;
+                        num = 1000 + (cidfontIndex - 1) * 5 + 1 + face;
                     }
                     else
                     {
@@ -6756,7 +6857,8 @@ static int PDFfontNumber(char *family, int face, PDFDesc *pd)
     return num;
 }
 
-static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+static void PDFSimpleText(double x, double y, char *str, double rot, double hadj, int font, R_GE_gcontext *gc,
+                          NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int size = (int)floor(gc->cex * gc->ps + 0.5);
@@ -6782,14 +6884,19 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     /*
      * Only try to do real transparency if version at least 1.4
      */
-    if ((pd->versionMajor >= 1 && pd->versionMinor >= 4) || (R_OPAQUE(gc->col)))
+    if (alphaVersion(pd) || (R_OPAQUE(gc->col)))
     {
         PDF_SetFill(gc->col, dd);
-        fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b,
-                -b, a, x, y);
+        fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", font, a, b, -b, a, x, y);
         PostScriptWriteString(pd->pdffp, str1);
         fprintf(pd->pdffp, " Tj\n");
     }
+}
+
+static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    PDFSimpleText(x, y, str, rot, hadj, PDFfontNumber(gc->fontfamily, gc->fontface, pd), gc, dd);
 }
 
 #ifdef SUPPORT_MBCS
@@ -6812,8 +6919,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
     }
     if (face == 5)
     {
-        PDF_Text(x, y, str, rot, hadj, gc, dd);
-        return;
+        PDFSimpleText(x, y, str, rot, hadj, PDFfontNumber(gc->fontfamily, face, pd), gc, dd);
     }
 
     rot1 = rot * DEG2RAD;
@@ -6941,9 +7047,6 @@ static void PDF_Hold(NewDevDesc *dd)
 static CIDFontMetricInfo *PDFCIDmetricInfo(char *family, int face, PDFDesc *pd)
 {
     CIDFontMetricInfo *result;
-    if (face == 5)
-        return (NULL);
-    result = &(pd->cidfonts->cidfamily->cidfonts[face - 1]->cidmetrics);
     if (strlen(family) > 0)
     {
         int dontcare;
@@ -6974,12 +7077,56 @@ static CIDFontMetricInfo *PDFCIDmetricInfo(char *family, int face, PDFDesc *pd)
         if (!fontfamily)
             error(_("Failed to find or load PDF CID font"));
     }
+    else
+    {
+        result = &(pd->cidfonts->cidfamily->cidfonts[face - 1]->cidmetrics);
+    }
+    return result;
+}
+
+static FontMetricInfo *PDFCIDsymbolmetricInfo(char *family, PDFDesc *pd)
+{
+    FontMetricInfo *result;
+    if (strlen(family) > 0)
+    {
+        int dontcare;
+        /*
+         * Find the family in pd->cidfonts
+         */
+        cidfontfamily fontfamily = findDeviceCIDFont(family, pd->cidfonts, &dontcare);
+        if (fontfamily)
+            result = &(fontfamily->symfont->metrics);
+        else
+        {
+            /*
+             * Try to load the font
+             */
+            fontfamily = addCIDFont(family, 1);
+            if (fontfamily)
+            {
+                if (addPDFDeviceCIDfont(fontfamily, pd, &dontcare))
+                {
+                    result = &(fontfamily->symfont->metrics);
+                }
+                else
+                {
+                    fontfamily = NULL;
+                }
+            }
+        }
+        if (!fontfamily)
+            error(_("Failed to find or load PDF CID font"));
+    }
+    else
+    {
+        result = &(pd->cidfonts->cidfamily->symfont->metrics);
+    }
     return result;
 }
 
 static FontMetricInfo *PDFmetricInfo(char *family, int face, PDFDesc *pd)
 {
-    FontMetricInfo *result = &(pd->fonts->family->fonts[face - 1]->metrics);
+    FontMetricInfo *result;
     if (strlen(family) > 0)
     {
         int dontcare;
@@ -7009,6 +7156,10 @@ static FontMetricInfo *PDFmetricInfo(char *family, int face, PDFDesc *pd)
         }
         if (!fontfamily)
             error(_("Failed to find or load PDF font"));
+    }
+    else
+    {
+        result = &(pd->fonts->family->fonts[face - 1]->metrics);
     }
     return result;
 }
@@ -7052,6 +7203,7 @@ static char *PDFconvname(char *family, PDFDesc *pd)
 static double PDF_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
 
     if (gc->fontface < 1 || gc->fontface > 5)
         gc->fontface = 1;
@@ -7063,15 +7215,25 @@ static double PDF_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     }
     else
     { /* cidfont(gc->fontfamily) */
-        return floor(gc->cex * gc->ps + 0.5) * PostScriptStringWidth((unsigned char *)str, NULL,
-                                                                     PDFCIDmetricInfo(gc->fontfamily, gc->fontface, pd),
-                                                                     gc->fontface, NULL);
+        if (face < 5)
+        {
+            return floor(gc->cex * gc->ps + 0.5) *
+                   PostScriptStringWidth((unsigned char *)str, NULL, PDFCIDmetricInfo(gc->fontfamily, gc->fontface, pd),
+                                         gc->fontface, NULL);
+        }
+        else
+        {
+            return floor(gc->cex * gc->ps + 0.5) * PostScriptStringWidth((unsigned char *)str,
+                                                                         PDFCIDsymbolmetricInfo(gc->fontfamily, pd),
+                                                                         NULL, gc->fontface, NULL);
+        }
     }
 }
 
 static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
 
     if (gc->fontface < 1 || gc->fontface > 5)
         gc->fontface = 1;
@@ -7081,7 +7243,14 @@ static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *des
     }
     else
     { /* cidfont(gc->fontfamily) */
-        PostScriptCIDMetricInfo(c, ascent, descent, width, PDFCIDmetricInfo(gc->fontfamily, gc->fontface, pd));
+        if (face < 5)
+        {
+            PostScriptCIDMetricInfo(c, ascent, descent, width, PDFCIDmetricInfo(gc->fontfamily, gc->fontface, pd));
+        }
+        else
+        {
+            PostScriptMetricInfo(c, ascent, descent, width, PDFCIDsymbolmetricInfo(gc->fontfamily, pd));
+        }
     }
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
