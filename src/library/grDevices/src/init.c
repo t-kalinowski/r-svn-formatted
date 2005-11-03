@@ -40,7 +40,7 @@ static R_CMethodDef CEntries[] = {CDEF(R_chull), {NULL, NULL, 0}};
     }
 
 static R_CallMethodDef CallEntries[] = {
-    CALLDEF(Type1FontInUse, 1), {"L_nullDevice", (DL_FUNC)&L_nullDevice, 0}, {NULL, NULL, 0}};
+    CALLDEF(Type1FontInUse, 2), CALLDEF(CIDFontInUse, 2), {"L_nullDevice", (DL_FUNC)&L_nullDevice, 0}, {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
