@@ -3131,10 +3131,6 @@ static void PS_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
 static void PS_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PS_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
-#ifdef SUPPORT_MBCS
-static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
-                              NewDevDesc *dd);
-#endif
 
 /* PostScript Support (formerly in PostScript.c) */
 
@@ -3616,11 +3612,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
     dd->size = PS_Size;
     dd->newPage = PS_NewPage;
     dd->clip = PS_Clip;
-#ifdef SUPPORT_MBCS
-    dd->text = PS_TextCIDWrapper;
-#else
     dd->text = PS_Text;
-#endif
     dd->strWidth = PS_StrWidth;
     dd->metricInfo = PS_MetricInfo;
     dd->rect = PS_Rect;
@@ -4230,13 +4222,13 @@ static void drawSimpleText(double x, double y, char *str, double rot, double had
 }
 
 /* Only used for symbol fonts and on non-MBCS platforms */
+#ifndef SUPPORT_MBCS
 static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
     drawSimpleText(x, y, str, rot, hadj, translateFont(gc->fontfamily, gc->fontface, pd), gc, dd);
 }
-
-#ifdef SUPPORT_MBCS
+#else
 static void mbcsToSbcs(char *in, char *out, char *encoding)
 {
     void *cd = NULL;
@@ -4262,10 +4254,8 @@ static void mbcsToSbcs(char *in, char *out, char *encoding)
     if (status == (size_t)-1)
         error(_("conversion failure in 'mbcsToSbcs'"));
 }
-#endif
 
-#ifdef SUPPORT_MBCS
-static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     char *str1 = str;
     char *buff;
@@ -4351,7 +4341,7 @@ static void PS_TextCIDWrapper(double x, double y, char *str, double rot, double 
         }
         else
         {
-            warning(_("invalid string in '%s'"), "PS_TextCIDWrapper");
+            warning(_("invalid string in '%s'"), "PS_Text");
             return;
         }
     }
@@ -5330,10 +5320,6 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *
 static void PDF_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static double PDF_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
-#ifdef SUPPORT_MBCS
-static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
-                               NewDevDesc *dd);
-#endif
 
 /*
  * Add a graphics engine font family to the list of fonts used on a
@@ -5814,11 +5800,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     dd->size = PDF_Size;
     dd->newPage = PDF_NewPage;
     dd->clip = PDF_Clip;
-#ifdef SUPPORT_MBCS
-    dd->text = PDF_TextCIDWrapper;
-#else
     dd->text = PDF_Text;
-#endif
     dd->strWidth = PDF_StrWidth;
     dd->metricInfo = PDF_MetricInfo;
     dd->rect = PDF_Rect;
@@ -6893,17 +6875,17 @@ static void PDFSimpleText(double x, double y, char *str, double rot, double hadj
     }
 }
 
+#ifndef SUPPORT_MBCS
 static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     PDFSimpleText(x, y, str, rot, hadj, PDFfontNumber(gc->fontfamily, gc->fontface, pd), gc, dd);
 }
 
-#ifdef SUPPORT_MBCS
+#else
 static char *PDFconvname(char *family, PDFDesc *pd);
 
-static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc,
-                               NewDevDesc *dd)
+static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int size = (int)floor(gc->cex * gc->ps + 0.5);
@@ -7005,7 +6987,7 @@ static void PDF_TextCIDWrapper(double x, double y, char *str, double rot, double
         }
         else
         {
-            warning(_("invalid string in '%s'"), "PDF_TextCIDWrapper");
+            warning(_("invalid string in '%s'"), "PDF_Text");
             return;
         }
     }
@@ -7046,7 +7028,7 @@ static void PDF_Hold(NewDevDesc *dd)
 
 static CIDFontMetricInfo *PDFCIDmetricInfo(char *family, int face, PDFDesc *pd)
 {
-    CIDFontMetricInfo *result;
+    CIDFontMetricInfo *result = NULL;
     if (strlen(family) > 0)
     {
         int dontcare;
@@ -7086,7 +7068,7 @@ static CIDFontMetricInfo *PDFCIDmetricInfo(char *family, int face, PDFDesc *pd)
 
 static FontMetricInfo *PDFCIDsymbolmetricInfo(char *family, PDFDesc *pd)
 {
-    FontMetricInfo *result;
+    FontMetricInfo *result = NULL;
     if (strlen(family) > 0)
     {
         int dontcare;
@@ -7126,7 +7108,7 @@ static FontMetricInfo *PDFCIDsymbolmetricInfo(char *family, PDFDesc *pd)
 
 static FontMetricInfo *PDFmetricInfo(char *family, int face, PDFDesc *pd)
 {
-    FontMetricInfo *result;
+    FontMetricInfo *result = NULL;
     if (strlen(family) > 0)
     {
         int dontcare;
