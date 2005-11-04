@@ -1302,6 +1302,8 @@ SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* value, but it can't hurt. */
 
     SET_ATTRIB(new, R_NilValue);
+    setAttrib(new, R_DotEnvSymbol, getAttrib(old, R_DotEnvSymbol));
+
     return new;
 }
 

@@ -1269,7 +1269,9 @@ again:
     FORWARD_NODE(R_CommentSxp);
 
     FORWARD_NODE(R_GlobalEnv); /* Global environment */
-    FORWARD_NODE(R_Warnings);  /* Warnings, if any */
+    FORWARD_NODE(R_BaseEnv);
+    FORWARD_NODE(R_EmptyEnv);
+    FORWARD_NODE(R_Warnings); /* Warnings, if any */
 
 #ifdef NEW_CONDITION_HANDLING
     FORWARD_NODE(R_HandlerStack); /* Condition handler stack */

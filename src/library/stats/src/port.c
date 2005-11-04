@@ -374,8 +374,12 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
     int i, n = LENGTH(d);
     SEXP xpt;
     double *b = (double *)NULL, *g = (double *)NULL, *h = (double *)NULL, fx = R_PosInf;
-
-    if (!isEnvironment(rho))
+    if (isNull(rho))
+    {
+        warning(_("use of NULL environment is deprecated"));
+        rho = R_BaseEnv;
+    }
+    else if (!isEnvironment(rho))
         error(_("`rho' must be an environment"));
     if (!isReal(d) || n < 1)
         error(_("`d' must be a nonempty numeric vector"));

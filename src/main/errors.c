@@ -782,7 +782,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 rho = cptr->cloenv;
                 break;
             }
-        while (rho != R_BaseEnv)
+        while (rho != R_EmptyEnv)
         {
             if (rho == R_GlobalEnv)
                 break;
@@ -897,7 +897,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 rho = cptr->cloenv;
                 break;
             }
-        while (rho != R_BaseEnv)
+        while (rho != R_EmptyEnv)
         {
             if (rho == R_GlobalEnv)
                 break;

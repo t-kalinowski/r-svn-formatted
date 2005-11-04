@@ -2773,7 +2773,12 @@ SEXP do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("'expr' argument must be an expression"));
     if (TYPEOF(list) != VECSXP)
         errorcall(call, _("'list' argument must be a list"));
-    if (!isEnvironment(parentenv))
+    if (isNull(parentenv))
+    {
+        warning(_("use of NULL environment is deprecated"));
+        parentenv = R_BaseEnv;
+    }
+    else if (!isEnvironment(parentenv))
         errorcall(call, _("'env' argument must be an environment"));
     /*
      * This conversion of list to env taken from do_eval

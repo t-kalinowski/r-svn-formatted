@@ -409,7 +409,7 @@ Rboolean isFrame(SEXP s)
 
 Rboolean isEnvironment(SEXP s)
 {
-    return (TYPEOF(s) == NILSXP || TYPEOF(s) == ENVSXP);
+    return (TYPEOF(s) == ENVSXP);
 }
 
 Rboolean isExpression(SEXP s)
