@@ -2735,6 +2735,9 @@ SEXP do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
     case REALSXP:
     case INTSXP:
         return do_pos2env(call, op, args, rho);
+    case NILSXP:
+        warning(_("using 'as.environment(NULL)' is deprecated"));
+        return R_BaseEnv;
     default:
         errorcall(call, _("invalid object for as.environment"));
         return R_NilValue; /* -Wall */
