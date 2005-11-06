@@ -969,7 +969,7 @@ static char *check_single_string(SEXP obj, Rboolean nonEmpty, char *what)
     if (isString(obj))
     {
         if (length(obj) != 1)
-            error(_("'%s' must be a single string (got a character vector of length %d))"), what, length(obj));
+            error(_("'%s' must be a single string (got a character vector of length %d)"), what, length(obj));
         string = CHAR(asChar(obj));
         if (nonEmpty && (!string || !string[0]))
             error(_("'%s' must be a non-empty string; got an empty string"), what);

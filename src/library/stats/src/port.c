@@ -400,7 +400,7 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
             }
         }
         else
-            error(_("lowerb and upperb must be numeric vectors"));
+            error(_("'lowerb' and 'upperb' must be numeric vectors"));
     }
     if (gr != R_NilValue)
     {
