@@ -4335,8 +4335,9 @@ static void PS_Text(double x, double y, char *str, double rot, double hadj, R_GE
 
     /* No symbol fonts from now on */
 
-    if (mbcslocale && isCIDFont(gc->fontfamily, PostScriptFonts, pd->defaultCIDFont))
+    if (isCIDFont(gc->fontfamily, PostScriptFonts, pd->defaultCIDFont))
     {
+        /* NB, we could be in a SBCS here */
         size_t ucslen;
         int fontIndex;
 
@@ -6972,8 +6973,9 @@ static void PDF_Text(double x, double y, char *str, double rot, double hadj, R_G
     if (!pd->inText)
         texton(pd);
 
-    if (mbcslocale && isCIDFont(gc->fontfamily, PDFFonts, pd->defaultCIDFont) && face != 5)
+    if (isCIDFont(gc->fontfamily, PDFFonts, pd->defaultCIDFont) && face != 5)
     {
+        /* NB we could be in a SBCS here */
         unsigned char *buf = NULL /* -Wall */;
         size_t ucslen;
         unsigned char *p;
