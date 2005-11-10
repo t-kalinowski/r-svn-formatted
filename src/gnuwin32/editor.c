@@ -71,6 +71,8 @@ void deleditordata(EditorData p)
         fix_editor_up = FALSE;
     free(p->filename);
     free(p->title);
+    free(p->hmenu);
+    free(p->pmenu);
     free(p);
 }
 
@@ -545,6 +547,8 @@ static void editormenuact(control m)
         enable(p->mfind);
         enable(p->mreplace);
     }
+    helpmenuact(p->hmenu);
+    pkgmenuact(p->pmenu);
 }
 
 static void editorresize(editor c, rect r)
@@ -761,7 +765,9 @@ static editor neweditor()
     MCHECK(newmenuitem(G_("GUI preferences..."), 0, menuconfig));
 
     /* Packages menu should go here */
-    RguiPackageMenu();
+    p->pmenu = (PkgMenuItems)malloc(sizeof(struct structPkgMenuItems));
+    RguiPackageMenu(p->pmenu);
+
 #ifdef USE_MDI
     newmdimenu(); /* Create and fill the 'Window' menu */
 #endif
@@ -769,7 +775,8 @@ static editor neweditor()
     MCHECK(m = newmenu(G_("Help")));
     MCHECK(newmenuitem(G_("Editor"), 0, menueditorhelp));
     MCHECK(newmenuitem("-", 0, NULL));
-    RguiCommonHelp(m);
+    p->hmenu = (HelpMenuItems)malloc(sizeof(struct structHelpMenuItems));
+    RguiCommonHelp(m, p->hmenu);
 
     settextfont(t, editorfn);
     setresize(c, editorresize);
@@ -849,9 +856,10 @@ int Rgui_Edit(char *filename, char *title, int stealconsole)
 
     p = getdata(getdata(c));
     p->stealconsole = stealconsole;
-    fix_editor_up = stealconsole;
     if (stealconsole)
+    {
+        fix_editor_up = TRUE;
         eventloop(c);
-
+    }
     return 0;
 }
