@@ -264,7 +264,9 @@ static int internal_dfa_exec(dfa_match_data *md, const uschar *this_start_code, 
     const uschar *end_subject = md->end_subject;
     const uschar *start_code = md->start_code;
 
+#ifdef SUPPORT_UTF8
     BOOL utf8 = (md->poptions & PCRE_UTF8) != 0;
+#endif
 
     rlevel++;
     offsetcount &= (-2);
