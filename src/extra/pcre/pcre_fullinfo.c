@@ -58,7 +58,7 @@ Arguments:
 Returns:           0 if data returned, negative on error
 */
 
-EXPORT int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra_data, int what, void *where)
+PCRE_EXPORT int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra_data, int what, void *where)
 {
     real_pcre internal_re;
     pcre_study_data internal_study;

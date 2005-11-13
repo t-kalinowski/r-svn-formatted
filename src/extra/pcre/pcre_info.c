@@ -65,7 +65,7 @@ Returns:        number of capturing subpatterns
                 or negative values on error
 */
 
-EXPORT int pcre_info(const pcre *argument_re, int *optptr, int *first_byte)
+PCRE_EXPORT int pcre_info(const pcre *argument_re, int *optptr, int *first_byte)
 {
     real_pcre internal_re;
     const real_pcre *re = (const real_pcre *)argument_re;

@@ -61,7 +61,7 @@ Returns:        the (possibly updated) count value (a non-negative number), or
                 a negative error number
 */
 
-EXPORT int pcre_refcount(pcre *argument_re, int adjust)
+PCRE_EXPORT int pcre_refcount(pcre *argument_re, int adjust)
 {
     real_pcre *re = (real_pcre *)argument_re;
     if (re == NULL)

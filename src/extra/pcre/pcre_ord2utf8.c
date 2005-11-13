@@ -56,7 +56,7 @@ Arguments:
 Returns:     number of characters placed in the buffer
 */
 
-EXPORT int _pcre_ord2utf8(int cvalue, uschar *buffer)
+PCRE_EXPORT int _pcre_ord2utf8(int cvalue, uschar *buffer)
 {
     register int i, j;
     for (i = 0; i < _pcre_utf8_table1_size; i++)

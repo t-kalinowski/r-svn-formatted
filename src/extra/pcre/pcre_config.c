@@ -55,7 +55,7 @@ Arguments:
 Returns:           0 if data returned, negative on error
 */
 
-EXPORT int pcre_config(int what, void *where)
+PCRE_EXPORT int pcre_config(int what, void *where)
 {
     switch (what)
     {

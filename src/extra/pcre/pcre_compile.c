@@ -42,6 +42,13 @@ supporting internal functions that are not used by other modules. */
 
 #include "pcre_internal.h"
 
+/* When DEBUG is defined, we need the pcre_printint() function, which is also
+used by pcretest. DEBUG is not defined when building a production library. */
+
+#ifdef DEBUG
+#include "pcre_printint.src"
+#endif
+
 /*************************************************
  *      Code parameters and static tables         *
  *************************************************/
@@ -3883,14 +3890,14 @@ Returns:        pointer to compiled data block, or NULL on error,
 
 #include "chartables.h"
 
-EXPORT pcre *pcre_compile(const char *pattern, int options, const char **errorptr, int *erroroffset,
-                          const unsigned char *tables)
+PCRE_EXPORT pcre *pcre_compile(const char *pattern, int options, const char **errorptr, int *erroroffset,
+                               const unsigned char *tables)
 {
     return pcre_compile2(pattern, options, NULL, errorptr, erroroffset, tables);
 }
 
-EXPORT pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, const char **errorptr, int *erroroffset,
-                           const unsigned char *tables)
+PCRE_EXPORT pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, const char **errorptr,
+                                int *erroroffset, const unsigned char *tables)
 {
     real_pcre *re;
     int length = 1 + LINK_SIZE; /* For initial BRA plus length */
@@ -5107,7 +5114,8 @@ EXPORT pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, 
         re->options |= PCRE_REQCHSET;
     }
 
-    /* Print out the compiled data for debugging */
+    /* Print out the compiled data if debugging is enabled. This is never the
+    case when building a production library. */
 
 #ifdef DEBUG
 
@@ -5147,7 +5155,7 @@ EXPORT pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, 
             printf("Req char = \\x%02x%s\n", ch, caseless);
     }
 
-    _pcre_printint(re, stdout);
+    pcre_printint(re, stdout);
 
     /* This check is done here in the debugging case so that the code that
     was compiled can be seen. */

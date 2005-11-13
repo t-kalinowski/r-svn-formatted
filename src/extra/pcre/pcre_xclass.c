@@ -57,7 +57,7 @@ Arguments:
 Returns:      TRUE if character matches, else FALSE
 */
 
-EXPORT BOOL _pcre_xclass(int c, const uschar *data)
+PCRE_EXPORT BOOL _pcre_xclass(int c, const uschar *data)
 {
     int t;
     BOOL negated = (*data & XCL_NOT) != 0;
@@ -101,7 +101,7 @@ EXPORT BOOL _pcre_xclass(int c, const uschar *data)
         {
             int chartype, othercase;
             int rqdtype = *data++;
-            int category = ucp_findchar(c, &chartype, &othercase);
+            int category = _pcre_ucp_findchar(c, &chartype, &othercase);
             if (rqdtype >= 128)
             {
                 if ((rqdtype - 128 == category) == (t == XCL_PROP))
