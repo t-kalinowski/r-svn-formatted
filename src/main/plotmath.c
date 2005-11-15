@@ -866,6 +866,7 @@ static int SymbolCode(SEXP expr)
     return 0;
 }
 
+/* this is the one really used: */
 static int TranslatedSymbol(SEXP expr)
 {
     int code = SymbolCode(expr);
