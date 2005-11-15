@@ -1862,7 +1862,9 @@ void GEText(double x, double y, char *str, double xc, double yc, double rot, R_G
  * Draws a "curve" through the specified control points.
  * Return the vertices of the line that gets drawn.
  */
-SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, R_GE_gcontext *gc, GEDevDesc *dd)
+SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open,
+               Rboolean draw, /* May be called just to get points */
+               R_GE_gcontext *gc, GEDevDesc *dd)
 {
     /*
      * Use xspline.c code to generate points to draw
@@ -1877,12 +1879,14 @@ SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, R_GE_gcont
     if (open)
     {
         compute_open_spline(n, x, y, s, HIGH_PRECISION, dd);
-        GEPolyline(npoints, xpoints, ypoints, gc, dd);
+        if (draw)
+            GEPolyline(npoints, xpoints, ypoints, gc, dd);
     }
     else
     {
         compute_closed_spline(n, x, y, s, HIGH_PRECISION, dd);
-        GEPolygon(npoints, xpoints, ypoints, gc, dd);
+        if (draw)
+            GEPolygon(npoints, xpoints, ypoints, gc, dd);
     }
     if (npoints > 1)
     {
