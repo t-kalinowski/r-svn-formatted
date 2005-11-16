@@ -225,8 +225,7 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
 
     if (!isReal(ans))
     {
-        SEXP temp;
-        temp = coerceVector(ans, REALSXP);
+        SEXP temp = coerceVector(ans, REALSXP);
         UNPROTECT(1);
         PROTECT(ans = temp);
     }
@@ -237,7 +236,13 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
     }
     for (i = 0; i < LENGTH(theta); i++)
     {
-        SET_VECTOR_ELT(pars, i, findVar(install(CHAR(STRING_ELT(theta, i))), rho));
+        char *name = CHAR(STRING_ELT(theta, i));
+        SEXP temp = findVar(install(name), rho);
+        if (isInteger(temp))
+            error(_("variable '%s' is integer, not numeric"), name);
+        if (!isReal(temp))
+            error(_("variable '%s' is not numeric"), name);
+        SET_VECTOR_ELT(pars, i, temp);
         lengthTheta += LENGTH(VECTOR_ELT(pars, i));
     }
     PROTECT(gradient = allocMatrix(REALSXP, LENGTH(ans), lengthTheta));
