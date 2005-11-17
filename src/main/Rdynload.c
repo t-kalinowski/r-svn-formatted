@@ -1094,6 +1094,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
     SEXP ans;
     int i, num;
     R_RegisteredNativeSymbol sym;
+    DL_FUNC address = NULL;
 
     sym.dll = info;
     sym.type = type;
@@ -1124,20 +1125,24 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
         {
         case R_CALL_SYM:
             sym.symbol.call = &info->CallSymbols[i];
+            address = sym.symbol.call->fun;
             break;
         case R_C_SYM:
             sym.symbol.c = &info->CSymbols[i];
+            address = sym.symbol.c->fun;
             break;
         case R_FORTRAN_SYM:
             sym.symbol.fortran = &info->FortranSymbols[i];
+            address = sym.symbol.fortran->fun;
             break;
         case R_EXTERNAL_SYM:
             sym.symbol.external = &info->ExternalSymbols[i];
+            address = sym.symbol.external->fun;
             break;
         default:
             continue;
         }
-        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, NULL, &sym));
+        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, address, &sym));
     }
 
     setAttrib(ans, R_ClassSymbol, mkString("NativeRoutineList"));
