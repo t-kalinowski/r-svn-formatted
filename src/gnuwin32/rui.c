@@ -1144,7 +1144,7 @@ int RguiCommonHelp(menu m, HelpMenuItems hmenu)
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(hmenu->mhelp = newmenuitem(G_("R functions (text)..."), 0, menuhelp));
     MCHECK(hmenu->mhelpstart = newmenuitem(G_("Html help"), 0, menuhelpstart));
-    if (!check_doc_file("doc\\html\\rwin.html"))
+    if (!check_doc_file("doc\\html\\index.html"))
         disable(hmenu->mhelpstart);
     MCHECK(hmenu->mhelpsearch = newmenuitem(G_("Search help..."), 0, menuhelpsearch));
     MCHECK(hmenu->msearchRsite = newmenuitem(G_("search.r-project.org ..."), 0, menusearchRsite));
