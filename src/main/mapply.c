@@ -21,14 +21,13 @@
 #include <config.h>
 #endif
 
-#include <R.h>
-#include <Rinternals.h>
+#include <Defn.h>
 
 SEXP do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
 {
 
     int i, j, m, nc, *lengths, *counters, named, longest = 0;
-    SEXP vnames, fcall, mindex, nindex, tmp1, tmp2, ans;
+    SEXP vnames, fcall = R_NilValue, mindex, nindex, tmp1, tmp2, ans;
 
     m = length(varyingArgs);
     nc = length(constantArgs);
@@ -57,8 +56,10 @@ SEXP do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
 
     if (constantArgs == R_NilValue)
         PROTECT(fcall = R_NilValue);
-    else
+    else if (isVectorList(constantArgs))
         PROTECT(fcall = VectorToPairList(constantArgs));
+    else
+        error(_("argument 'MoreArgs' of 'mapply' is not a list"));
 
     for (j = m - 1; j >= 0; j--)
     {
