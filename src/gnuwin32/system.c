@@ -984,9 +984,15 @@ int cmdlineoptions(int ac, char **av)
                                 (ierr == 1) ? 'M' : ((ierr == 2) ? 'K' : 'k'));
                     R_ShowMessage(s);
                 }
-                else if (value < 10 * Mega)
+                else if (value < 16 * Mega)
                 {
                     sprintf(s, _("WARNING: max-mem-size =%4.1fM too small and ignored\n"), value / (1024.0 * 1024.0));
+                    R_ShowMessage(s);
+                }
+                else if (value >= 3072 * Mega)
+                {
+                    sprintf(s, _("WARNING: max-mem-size =%4.1fM is too large and taken as 3Gb\n"),
+                            value / (1024.0 * 1024.0));
                     R_ShowMessage(s);
                 }
                 else
