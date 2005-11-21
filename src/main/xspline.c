@@ -56,7 +56,7 @@ static Rboolean add_point(double x, double y, GEDevDesc *dd)
         /* too many points, return false */
         if (tmp_n > MAXNUMPTS)
         {
-            error("add_point - reached MAXNUMPTS (%d)\n", tmp_n);
+            error(_("add_point - reached MAXNUMPTS (%d)"), tmp_n);
         }
         if (max_points == 0)
         {
@@ -70,7 +70,7 @@ static Rboolean add_point(double x, double y, GEDevDesc *dd)
         }
         if (tmp_px == NULL || tmp_py == NULL)
         {
-            error("insufficient memory to allocate point array\n");
+            error(_("insufficient memory to allocate point array"));
         }
         xpoints = tmp_px;
         ypoints = tmp_py;
@@ -417,7 +417,7 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, floa
     ypoints = NULL;
 
     if (n < 2)
-        error("There must be at least two control points");
+        error(_("There must be at least two control points"));
 
     COPY_CONTROL_POINT(0, 0, n);
     COPY_CONTROL_POINT(1, 0, n);
@@ -467,7 +467,7 @@ static Rboolean compute_closed_spline(int n, double *x, double *y, double *s, fl
     ypoints = NULL;
 
     if (n < 3)
-        error("There must be at least three control points");
+        error(_("There must be at least three control points"));
 
     INIT_CONTROL_POINTS(n);
 
