@@ -1331,8 +1331,8 @@ int DialogSelectFile(char *buf, int len)
     return (strlen(buf));
 }
 
-static menu usermenus[16];
-static char usermenunames[16][51];
+static menu usermenus[50];
+static char usermenunames[50][51];
 
 static Uitem umitems[500];
 
@@ -1460,14 +1460,14 @@ int winaddmenu(char *name, char *errmsg)
     if (getMenu(name))
         return 0; /* Don't add repeats */
 
-    if (nmenus > 15)
+    if (nmenus >= 50)
     {
-        strcpy(errmsg, G_("Only 16 menus are allowed"));
+        strcpy(errmsg, G_("Only 50 menus are allowed"));
         return 2;
     }
     if (strlen(name) > 50)
     {
-        strcpy(errmsg, G_("'menu' is limited to 50 chars"));
+        strcpy(errmsg, G_("'menu' is limited to 50 bytes"));
         return 5;
     }
     p = Rf_strrchr(name, '/');
@@ -1517,7 +1517,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
     }
     if (strlen(item) + strlen(menu) > 100)
     {
-        strcpy(errmsg, G_("menu + item is limited to 100 chars"));
+        strcpy(errmsg, G_("menu + item is limited to 100 bytes"));
         return 5;
     }
 
@@ -1658,7 +1658,7 @@ int windelmenuitem(char *item, char *menu, char *errmsg)
 
     if (strlen(item) + strlen(menu) > 100)
     {
-        strcpy(errmsg, G_("menu + item is limited to 100 chars"));
+        strcpy(errmsg, G_("menu + item is limited to 100 bytes"));
         return 5;
     }
     strcpy(mitem, menu);
