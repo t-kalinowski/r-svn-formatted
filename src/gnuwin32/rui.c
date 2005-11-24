@@ -1331,12 +1331,12 @@ int DialogSelectFile(char *buf, int len)
     return (strlen(buf));
 }
 
-static menu usermenus[50];
-static char usermenunames[50][51];
+static menu *usermenus;
+static char **usermenunames;
 
-static Uitem umitems[500];
+static Uitem *umitems;
 
-static int nmenus = 0, nitems = 0;
+static int nmenus = 0, nitems = 0, alloc_menus = -1, alloc_items = -1;
 
 static void menuuser(control m)
 {
@@ -1361,22 +1361,21 @@ char *getusermenuname(int pos)
 menuItems *wingetmenuitems(char *mname, char *errmsg)
 {
     menuItems *items;
-    char mitem[102], *p, *q, *r;
+    char mitem[1002], *p, *q, *r;
     int i, j = 0;
 
-    q = (char *)malloc(100 * sizeof(char));
-    r = (char *)malloc(100 * sizeof(char));
+    q = (char *)malloc(1000 * sizeof(char));
+    r = (char *)malloc(1000 * sizeof(char));
 
-    items = (menuItems *)malloc(sizeof(menuItems));
-    items->mItems = (Uitem *)malloc(500 * sizeof(Uitem));
-
-    if (strlen(mname) > 100)
+    if (strlen(mname) > 1000)
     {
-        strcpy(errmsg, G_("'mname' is limited to 100 chars"));
-        free(items->mItems);
-        free(items);
+        strcpy(errmsg, G_("'mname' is limited to 1000 bytes"));
         return NULL;
     }
+
+    items = (menuItems *)malloc(sizeof(menuItems));
+    if (nitems > 0)
+        items->mItems = (Uitem *)malloc(alloc_items * sizeof(Uitem));
 
     strcpy(mitem, mname);
     strcat(mitem, "/");
@@ -1454,20 +1453,30 @@ static menu getMenu(char *name)
 
 int winaddmenu(char *name, char *errmsg)
 {
-    char *p, *submenu = name, start[50];
+    char *p, *submenu = name, start[501];
     menu parent;
 
     if (getMenu(name))
         return 0; /* Don't add repeats */
 
-    if (nmenus >= 50)
+    if (nmenus > alloc_menus)
     {
-        strcpy(errmsg, G_("Only 50 menus are allowed"));
-        return 2;
+        if (alloc_menus <= 0)
+        {
+            alloc_menus = 10;
+            usermenus = (menu *)malloc(sizeof(menu) * alloc_menus);
+            usermenunames = (char **)malloc(sizeof(char *) * alloc_menus);
+        }
+        else
+        {
+            alloc_menus += 10;
+            usermenus = (menu *)realloc(usermenus, sizeof(menu) * alloc_menus);
+            usermenunames = (char **)realloc(usermenunames, sizeof(char *) * alloc_menus);
+        }
     }
-    if (strlen(name) > 50)
+    if (strlen(name) > 500)
     {
-        strcpy(errmsg, G_("'menu' is limited to 50 bytes"));
+        strcpy(errmsg, G_("'menu' is limited to 500 bytes"));
         return 5;
     }
     p = Rf_strrchr(name, '/');
@@ -1492,7 +1501,7 @@ int winaddmenu(char *name, char *errmsg)
     if (m)
     {
         usermenus[nmenus] = m;
-        strcpy(usermenunames[nmenus], name);
+        usermenunames[nmenus] = strdup(name);
         nmenus++;
         show(RConsole);
         return 0;
@@ -1508,16 +1517,15 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
 {
     int i, im;
     menuitem m;
-    char mitem[102], *p;
+    char mitem[1002], *p;
 
-    if (nitems > 499)
+    /* if (nitems > 499) {
+    strcpy(errmsg, G_("too many menu items have been created"));
+    return 2;
+    } */
+    if (strlen(item) + strlen(menu) > 1000)
     {
-        strcpy(errmsg, G_("too many menu items have been created"));
-        return 2;
-    }
-    if (strlen(item) + strlen(menu) > 100)
-    {
-        strcpy(errmsg, G_("menu + item is limited to 100 bytes"));
+        strcpy(errmsg, G_("menu + item is limited to 1000 bytes"));
         return 5;
     }
 
@@ -1569,6 +1577,19 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
         m = newmenuitem(item, 0, menuuser);
         if (m)
         {
+            if (alloc_items < nitems)
+            {
+                if (alloc_items <= 0)
+                {
+                    alloc_items = 100;
+                    umitems = (Uitem *)malloc(sizeof(Uitem) * alloc_items);
+                }
+                else
+                {
+                    alloc_items += 100;
+                    umitems = (Uitem *)realloc(umitems, sizeof(Uitem) * alloc_items);
+                }
+            }
             umitems[nitems] = (Uitem)malloc(sizeof(uitem));
             umitems[nitems]->m = m;
             umitems[nitems]->name = p = (char *)malloc(strlen(mitem) + 1);
@@ -1654,11 +1675,11 @@ void windelmenus(char *prefix)
 int windelmenuitem(char *item, char *menu, char *errmsg)
 {
     int i;
-    char mitem[102];
+    char mitem[1002];
 
-    if (strlen(item) + strlen(menu) > 100)
+    if (strlen(item) + strlen(menu) > 1000)
     {
-        strcpy(errmsg, G_("menu + item is limited to 100 bytes"));
+        strcpy(errmsg, G_("menu + item is limited to 1000 bytes"));
         return 5;
     }
     strcpy(mitem, menu);
