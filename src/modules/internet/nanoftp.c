@@ -89,6 +89,10 @@ extern void R_ProcessEvents(void);
 #include <sys/select.h>
 #endif
 
+#if defined(HAVE_DECL_STRDUP) && !HAVE_DECL_STRDUP
+extern char *strdup(const char *s1);
+#endif
+
 #define xmlFree free
 #define xmlMalloc malloc
 #define xmlMemStrdup strdup
