@@ -30,6 +30,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_GLIBC2
+#define _BSD_SOURCE /* for M_PI */
+#endif
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -38,6 +42,7 @@
 #include <math.h>
 #include <string.h>
 #if defined(HAVE_DECL_STRDUP) && !HAVE_DECL_STRDUP
+#undef strdup
 extern char *strdup(const char *s1);
 #endif
 
