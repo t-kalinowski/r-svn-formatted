@@ -1797,7 +1797,7 @@ static SEXP getOneVal(SEXP vec, int i)
 SEXP do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, env, x, mode, ifnotfound, ifnfnd;
-    SEXPTYPE gmode;
+    SEXPTYPE gmode; /* is unsigned int */
     int ginherits = 0, nvals, nmode, nifnfnd, i;
 
     checkArity(op, args);
@@ -1867,7 +1867,7 @@ SEXP do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
 
         /* is the mode provided one of the real modes */
-        if (gmode < 0)
+        if (gmode == (SEXPTYPE)(-1))
             errorcall(call, _("invalid '%s' argument"), "mode");
 
         if (nifnfnd == 1)
