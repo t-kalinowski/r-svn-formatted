@@ -32,12 +32,13 @@
 #include <config.h>
 #endif
 
+#include <Defn.h>
+
 #ifdef HAVE_STRINGS_H
 /* may be needed to define bzero in FD_ZERO (eg AIX) */
 #include <strings.h>
 #endif
 
-#include "Defn.h"
 #include "Fileio.h"
 #include <Rdevices.h> /* for KillAllDevices */
 #include "Runix.h"
@@ -976,7 +977,7 @@ void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 #endif /* not CLK_TCK */
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define R_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -995,7 +996,7 @@ SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (;;)
     {
         fd_set *what;
-        Timeout = R_wait_usec ? MIN(tm, R_wait_usec) : tm;
+        Timeout = R_wait_usec ? R_MIN(tm, R_wait_usec) : tm;
         what = R_checkActivity(Timeout, 1);
 
         /* Time up? */
