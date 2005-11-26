@@ -39,11 +39,11 @@
 #include <config.h>
 #endif
 
-#include <sys/types.h>
+#include <Defn.h>
 
-#include "Defn.h"
-#include <R_ext/RS.h> /* for Calloc/Free */
-#include <Rmath.h>    /* for imax2 */
+#include <sys/types.h> /* probably not needed */
+#include <R_ext/RS.h>  /* for Calloc/Free */
+#include <Rmath.h>     /* for imax2 */
 
 #ifdef SUPPORT_MBCS
 #include <R_ext/rlocale.h>
@@ -2671,7 +2671,7 @@ static int mbrtoint(int *w, const char *s)
         else
             return -1;
     }
-    return -2;
+    return -2; /* not reached */
 }
 
 SEXP do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
