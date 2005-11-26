@@ -52,7 +52,7 @@
 
 static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
-                               Rboolean buffered, SEXP psenv);
+                               Rboolean buffered, SEXP psenv, Rboolean restoreConsole);
 
 /* a colour used to represent the background on png if transparent
    NB: used as RGB and BGR
@@ -263,7 +263,7 @@ static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, char *name)
     show(xd->gawin);
 }
 
-static void SaveAsWin(NewDevDesc *dd, char *display)
+static void SaveAsWin(NewDevDesc *dd, char *display, Rboolean restoreConsole)
 {
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
@@ -283,7 +283,7 @@ static void SaveAsWin(NewDevDesc *dd, char *display)
     if (GADeviceDriver(ndd, display, fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, White, 1, NA_INTEGER, NA_INTEGER,
-                       FALSE, R_GlobalEnv))
+                       FALSE, R_GlobalEnv, restoreConsole))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -983,13 +983,13 @@ static void menuwm(control m)
         return;
     }
     sprintf(display, "win.metafile:%s", fn);
-    SaveAsWin(dd, display);
+    SaveAsWin(dd, display, TRUE);
 }
 
 static void menuclpwm(control m)
 {
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
-    SaveAsWin(dd, "win.metafile");
+    SaveAsWin(dd, "win.metafile", TRUE);
 }
 
 static void menuclpbm(control m)
@@ -1014,7 +1014,7 @@ static void menustayontop(control m)
 static void menuprint(control m)
 {
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
-    SaveAsWin(dd, "win.print:");
+    SaveAsWin(dd, "win.print:", TRUE);
 }
 
 static void menuclose(control m)
@@ -2719,7 +2719,7 @@ static void GA_Hold(NewDevDesc *dd)
 
 static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
-                               Rboolean buffered, SEXP psenv)
+                               Rboolean buffered, SEXP psenv, Rboolean restoreConsole)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -2859,7 +2859,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, doub
     }
     xd->newFrameConfirm = GA_NewFrameConfirm;
     dd->displayListOn = (xd->kind == SCREEN);
-    if (RConsole && (xd->kind != SCREEN))
+    if (RConsole && restoreConsole)
         show(RConsole);
     return TRUE;
 }
@@ -2870,6 +2870,7 @@ SEXP savePlot(SEXP args)
     char *fn, *tp, display[550];
     int device;
     NewDevDesc *dd;
+    Rboolean restoreConsole;
 
     args = CDR(args); /* skip entry point name */
     device = asInteger(CAR(args));
@@ -2887,6 +2888,7 @@ SEXP savePlot(SEXP args)
     if (!isString(type) || LENGTH(type) != 1)
         error(_("invalid type argument in savePlot"));
     tp = CHAR(STRING_ELT(type, 0));
+    restoreConsole = asLogical(CADDDR(args));
 
     if (!strcmp(tp, "png"))
     {
@@ -2909,7 +2911,7 @@ SEXP savePlot(SEXP args)
             return R_NilValue;
         }
         sprintf(display, "win.metafile:%s", fn);
-        SaveAsWin(dd, display);
+        SaveAsWin(dd, display, restoreConsole);
     }
     else if (!strcmp(tp, "ps") || !strcmp(tp, "eps"))
     {
@@ -3118,6 +3120,7 @@ SEXP devga(SEXP args)
     char *display, *vmax;
     double height, width, ps, xpinch, ypinch, gamma;
     int recording = 0, resize = 1, bg, canvas, xpos, ypos, buffered;
+    Rboolean restoreConsole;
     SEXP sc, psenv;
 
     vmax = vmaxget();
@@ -3165,6 +3168,8 @@ SEXP devga(SEXP args)
     if (!isString(sc) && !isInteger(sc) && !isLogical(sc) && !isReal(sc))
         error(_("invalid value of 'bg' in devWindows"));
     bg = RGBpar(sc, 0);
+    args = CDR(args);
+    restoreConsole = asLogical(CAR(args));
 
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
@@ -3180,7 +3185,7 @@ SEXP devga(SEXP args)
         dev->savedSnapshot = R_NilValue;
         GAsetunits(xpinch, ypinch);
         if (!GADeviceDriver(dev, display, width, height, ps, (Rboolean)recording, resize, bg, canvas, gamma, xpos, ypos,
-                            (Rboolean)buffered, psenv))
+                            (Rboolean)buffered, psenv, restoreConsole))
         {
             free(dev);
             error(_("unable to start device devWindows"));
