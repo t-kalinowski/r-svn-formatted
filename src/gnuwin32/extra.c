@@ -993,7 +993,7 @@ void InitTempDir()
     len = strlen(tm);
     p = (char *)malloc(len + 1);
     if (!p)
-        R_Suicide("cannot allocate R_TempDir");
+        R_Suicide(_("cannot allocate R_TempDir"));
     else
     {
         R_TempDir = p;
@@ -1182,7 +1182,7 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isString(paths))
-        errorcall(call, "'path' must be a character vector");
+        errorcall(call, _("'path' must be a character vector"));
 
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
@@ -1203,7 +1203,7 @@ SEXP do_shortpath(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isString(paths))
-        errorcall(call, "'path' must be a character vector");
+        errorcall(call, _("'path' must be a character vector"));
 
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
