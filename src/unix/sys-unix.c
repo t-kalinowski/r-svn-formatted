@@ -282,25 +282,42 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 extern char *mkdtemp(char *template);
 #endif
 
+#ifdef HAVE_ACCESS
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif
+
 void InitTempDir()
 {
     char *tmp, *tm, tmp1[PATH_MAX + 10], *p;
     int len;
-    int res;
 
     tmp = getenv("R_SESSION_TMPDIR");
     if (!tmp)
     {
-        /* This looks like it will only be called in the embedded case
-           since this is done in the script. Also should test if directory
-           exists rather than just attempting to remove it.
-    */
+        /* This will only be called in the embedded case since this is
+           done in the R script. */
         char *buf;
+
         tm = getenv("TMPDIR");
+#ifdef HAVE_ACCESS
+        if (tm && access(tm, W_OK) != 0)
+            tm = NULL;
+        if (!tm)
+            tm = getenv("TMP");
+        if (tm && access(tm, W_OK) != 0)
+            tm = NULL;
+        if (!tm)
+            tm = getenv("TEMP");
+        if (tm && access(tm, W_OK) != 0)
+            tm = NULL;
+#else
         if (!tm)
             tm = getenv("TMP");
         if (!tm)
             tm = getenv("TEMP");
+#endif
         if (!tm)
             tm = "/tmp";
         sprintf(tmp1, "%s/RtmpXXXXXX", tm);
