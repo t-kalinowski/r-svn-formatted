@@ -37,6 +37,7 @@
 #include "graphapp/ga.h"
 #include "rui.h"
 
+/* RAND_MAX is 0x7FFF on Windows */
 char *R_tmpnam(const char *prefix, const char *tempdir)
 {
     char tm[MAX_PATH], tmp1[MAX_PATH], *res;
@@ -52,7 +53,7 @@ char *R_tmpnam(const char *prefix, const char *tempdir)
     for (n = 0; n < 100; n++)
     {
         /* try a random number at the end */
-        sprintf(tm, "%s\\%s%x", tmp1, prefix, rand());
+        sprintf(tm, "%s\\%s%x%x", tmp1, prefix, rand(), rand());
         if ((h = FindFirstFile(tm, &fd)) == INVALID_HANDLE_VALUE)
         {
             done = 1;
