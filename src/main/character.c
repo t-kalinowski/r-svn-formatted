@@ -52,13 +52,7 @@
 #endif
 
 /* The next must come after other header files to redefine RE_DUP_MAX */
-#ifdef USE_SYSTEM_REGEX
-/* for 2.1.0, this option is not functional */
-#error USE_SYSTEM_REGEX is no longer supported
-#include <regex.h>
-#else
 #include "Rregex.h"
-#endif
 
 #include <Print.h> /* for R_print */
 

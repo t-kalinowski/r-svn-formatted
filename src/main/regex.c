@@ -28,7 +28,6 @@
 /* for declaration of mempcpy */
 #define _GNU_SOURCE 1
 
-#ifndef USE_SYSTEM_REGEX
 #include <R_ext/Error.h>
 
 #include <ctype.h>
@@ -9740,7 +9739,3 @@ int Rregexec(const regex_t *__restrict preg, const char *__restrict string, size
         err = re_search_internal(preg, string, length, offset, length - offset, length, nmatch, pmatch, eflags);
     return err != REG_NOERROR;
 }
-#else /* not USE_SYSTEM_REGEX */
-/* for 2.1.0, this option is not functional */
-#error USE_SYSTEM_REGEX is no longer supported
-#endif

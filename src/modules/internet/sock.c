@@ -77,6 +77,7 @@ static int Sock_error(Sock_error_t perr, int e, int he)
     return -1;
 }
 
+/* <FIXME> is this classic MacOS X? */
 #ifdef MACINTOSH
 extern void __sinit(void);
 extern int __initialize(void *ignoredParameter);
@@ -86,6 +87,7 @@ int __initialize(void *ignoredParameter)
     return (0);
 }
 #endif
+/* </FIXME> */
 
 /* Initialize the socket services */
 int Sock_init()
