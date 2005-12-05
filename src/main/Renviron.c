@@ -28,7 +28,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <Defn.h> /* for PATH_MAX */
+
+#include <stdlib.h> /* for putenv */
+#include <Defn.h>   /* for PATH_MAX */
 
 /* remove leading and trailing space */
 static char *rmspace(char *s)
