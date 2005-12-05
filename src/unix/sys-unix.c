@@ -31,15 +31,6 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_GLIBC2
-/* avoid setting CLK_TCK = 60 */
-#include <features.h>
-#define __USE_BSD 1
-#define __USE_POSIX 1
-#define __USE_SVID 1
-#undef _POSIX_C_SOURCE
-#endif
-
 #include "Defn.h"
 #include "Fileio.h"
 #include "Runix.h"
@@ -167,6 +158,16 @@ SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
+
+static clock_t StartTime;
+static struct tms timeinfo;
+static double clk_tck;
+
+void R_setStartTime(void)
+{
+#ifdef HAVE_SYSCONF
+    clk_tck = (double)sysconf(_SC_CLK_TCK);
+#else
 #ifndef CLK_TCK
 /* this is in ticks/second, generally 60 on BSD style Unix, 100? on SysV
  */
@@ -176,30 +177,24 @@ SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 #define CLK_TCK 60
 #endif
 #endif /* not CLK_TCK */
-
-static clock_t StartTime;
-static struct tms timeinfo;
-
-void R_setStartTime(void)
-{
+    clk_tck = (double)CLK_TCK;
+#endif
     /* printf("CLK_TCK = %d\n", CLK_TCK); */
     StartTime = times(&timeinfo);
 }
 
 void R_getProcTime(double *data)
 {
-    double elapsed;
-    elapsed = (times(&timeinfo) - StartTime) / (double)CLK_TCK;
-    data[0] = timeinfo.tms_utime / (double)CLK_TCK;
-    data[1] = timeinfo.tms_stime / (double)CLK_TCK;
-    data[2] = elapsed;
-    data[3] = timeinfo.tms_cutime / (double)CLK_TCK;
-    data[4] = timeinfo.tms_cstime / (double)CLK_TCK;
+    data[2] = (times(&timeinfo) - StartTime) / clk_tck;
+    data[0] = timeinfo.tms_utime / clk_tck;
+    data[1] = timeinfo.tms_stime / clk_tck;
+    data[3] = timeinfo.tms_cutime / clk_tck;
+    data[4] = timeinfo.tms_cstime / clk_tck;
 }
 
 double R_getClockIncrement(void)
 {
-    return 1.0 / (double)CLK_TCK;
+    return 1.0 / clk_tck;
 }
 
 SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -223,10 +218,8 @@ SEXP do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
 #define INTERN_BUFSIZE 8096
 SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    FILE *fp;
-    char *x = "r", buf[INTERN_BUFSIZE];
-    int read = 0, i, j;
-    SEXP tlist = R_NilValue, tchar, rval;
+    SEXP tlist = R_NilValue;
+    int read = 0;
 
     checkArity(op, args);
     if (!isValidStringF(CAR(args)))
@@ -236,6 +229,11 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (read)
     {
 #ifdef HAVE_POPEN
+        FILE *fp;
+        char *x = "r", buf[INTERN_BUFSIZE];
+        int i, j;
+        SEXP tchar, rval;
+
         PROTECT(tlist);
         fp = R_popen(CHAR(STRING_ELT(CAR(args), 0)), x);
         for (i = 0; fgets(buf, INTERN_BUFSIZE, fp); i++)

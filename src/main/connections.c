@@ -21,6 +21,11 @@
 #include <config.h>
 #endif
 
+#if defined(HAVE_GLIBC2)
+/* for fileno */
+#define _POSIX_SOURCE 1
+#endif
+
 #include <Defn.h>
 #include <Fileio.h>
 #include <zlib.h> /* needs to be before Rconnections.h */
@@ -598,6 +603,7 @@ static double file_seek(Rconnection con, double where, int origin, int rw)
 static void file_truncate(Rconnection con)
 {
     Rfileconn this = con->private;
+#ifdef HAVE_FTRUNCATE
     FILE *fp = this->fp;
     int fd = fileno(fp);
 #ifdef HAVE_OFF_T
@@ -607,6 +613,7 @@ static void file_truncate(Rconnection con)
     __int64 size = lseek64(fd, 0, SEEK_CUR);
 #else
     int size = lseek(fd, 0, SEEK_CUR);
+#endif
 #endif
 #endif
 
