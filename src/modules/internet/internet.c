@@ -990,6 +990,9 @@ void RxmlMessage(int level, const char *format, ...)
 }
 
 #include "sock.h"
+#ifdef Win32
+#define STRICT_R_HEADERS
+#endif
 #include <R_ext/RS.h> /* for Calloc */
 
 #ifdef USE_WININET
