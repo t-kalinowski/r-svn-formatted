@@ -1,11 +1,11 @@
 /*
- *  $Id: nls.c,v 1.2 2004/05/17 08:12:39 ripley Exp $
- *
  *  Routines used in calculating least squares solutions in a
  *  nonlinear model in nls library for R.
  *
  *  Copyright 1999-2001 Douglas M. Bates <bates@stat.wisc.edu>,
  *                      Saikat DebRoy <saikat@stat.wisc.edu>
+ *
+ *  Copyright 2005 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,25 +73,25 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     doTrace = asLogical(doTraceArg);
 
     if (!isNewList(control))
-        error(_("control must be a list"));
+        error(_("'control' must be a list"));
     if (!isNewList(m))
-        error(_("m must be a list"));
+        error(_("'m' must be a list"));
 
     PROTECT(tmp = getAttrib(control, R_NamesSymbol));
 
     conv = getListElement(control, tmp, "maxiter");
     if (conv == NULL || !isNumeric(conv))
-        error(_("control$maxiter absent"));
+        error(_("'control$maxiter' absent"));
     maxIter = asInteger(conv);
 
     conv = getListElement(control, tmp, "tol");
     if (conv == NULL || !isNumeric(conv))
-        error(_("control$tol absent"));
+        error(_("'control$tol' absent"));
     tolerance = asReal(conv);
 
     conv = getListElement(control, tmp, "minFactor");
     if (conv == NULL || !isNumeric(conv))
-        error(_("control$minFactor absent"));
+        error(_("'control$minFactor' absent"));
     minFac = asReal(conv);
 
     UNPROTECT(1);
@@ -100,7 +100,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 
     conv = getListElement(m, tmp, "conv");
     if (conv == NULL || !isFunction(conv))
-        error(_("m$conv() absent"));
+        error(_("'m$conv()' absent"));
     PROTECT(conv = lang1(conv));
 
     incr = getListElement(m, tmp, "incr");
@@ -110,22 +110,22 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 
     deviance = getListElement(m, tmp, "deviance");
     if (deviance == NULL || !isFunction(deviance))
-        error(_("m$deviance() absent"));
+        error(_("'m$deviance()' absent"));
     PROTECT(deviance = lang1(deviance));
 
     trace = getListElement(m, tmp, "trace");
     if (trace == NULL || !isFunction(trace))
-        error(_("m$trace() absent"));
+        error(_("'m$trace()' absent"));
     PROTECT(trace = lang1(trace));
 
     setPars = getListElement(m, tmp, "setPars");
     if (setPars == NULL || !isFunction(setPars))
-        error(_("m$setPars() absent"));
+        error(_("'m$setPars()' absent"));
     PROTECT(setPars);
 
     getPars = getListElement(m, tmp, "getPars");
     if (getPars == NULL || !isFunction(getPars))
-        error(_("m$getPars() absent"));
+        error(_("'m$getPars()' absent"));
     PROTECT(getPars = lang1(getPars));
 
     PROTECT(pars = eval(getPars, R_GlobalEnv));

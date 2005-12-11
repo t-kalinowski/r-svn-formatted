@@ -452,7 +452,7 @@ static R_INLINE SEXP getElement(SEXP list, char *nm)
     SEXP names = getAttrib(list, R_NamesSymbol);
 
     if (!isNewList(list) || LENGTH(names) != LENGTH(list))
-        error(_("getElement applies only to named lists"));
+        error(_("'getElement' applies only to named lists"));
     for (i = 0; i < LENGTH(list); i++)
         if (!strcmp(CHAR(STRING_ELT(names, i)), nm))
             return (VECTOR_ELT(list, i));
@@ -484,7 +484,7 @@ static void neggrad(SEXP gf, SEXP rho, SEXP gg)
     int i, ntot = gdims[0] * gdims[1];
 
     if (TYPEOF(val) != TYPEOF(gg) || !isMatrix(val) || dims[0] != gdims[0] || dims[1] != gdims[1])
-        error(_("gradient must be a numeric matrix of dimension (%d,%d)"), gdims[0], gdims[1]);
+        error(_("'gradient' must be a numeric matrix of dimension (%d,%d)"), gdims[0], gdims[1]);
     for (i = 0; i < ntot; i++)
         REAL(gg)[i] = -REAL(val)[i];
     UNPROTECT(1);
@@ -559,7 +559,7 @@ SEXP port_nlsb(SEXP m, SEXP d, SEXP gg, SEXP iv, SEXP v, SEXP lowerb, SEXP upper
             }
         }
         else
-            error(_("lowerb and upperb must be numeric vectors"));
+            error(_("'lowerb' and 'upperb' must be numeric vectors"));
     }
 
     do
