@@ -70,9 +70,9 @@ void HoltWinters(double *x, int *xl, double *alpha, double *beta, double *gamma,
         if (*gamma > 0)
         {
             if (*seasonal == 1)
-                season[s0] = *gamma * (x[i] - level[i0]) + (1 - *gamma) * stmp;
+                season[s0] = *gamma * (x[i] - level[i0 - 1]) + (1 - *gamma) * stmp;
             else
-                season[s0] = *gamma * (x[i] / level[i0]) + (1 - *gamma) * stmp;
+                season[s0] = *gamma * (x[i] / level[i0 - 1]) + (1 - *gamma) * stmp;
         }
     }
 }
