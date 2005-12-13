@@ -4058,7 +4058,7 @@ static void PS_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
 
     if (isType1Font(gc->fontfamily, PostScriptFonts, pd->defaultFont))
     {
-        PostScriptMetricInfo(c, ascent, descent, width, metricInfo(gc->fontfamily, face, pd), face != 5,
+        PostScriptMetricInfo(c, ascent, descent, width, metricInfo(gc->fontfamily, face, pd), face == 5,
                              convname(gc->fontfamily, pd));
     }
     else
@@ -5307,7 +5307,7 @@ static void XFig_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *de
     if (face < 1 || face > 5)
         face = 1;
 
-    PostScriptMetricInfo(c, ascent, descent, width, &(pd->fonts->family->fonts[face - 1]->metrics), face != 5, "");
+    PostScriptMetricInfo(c, ascent, descent, width, &(pd->fonts->family->fonts[face - 1]->metrics), face == 5, "");
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
     *width = floor(gc->cex * gc->ps + 0.5) * *width;
@@ -5560,7 +5560,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
      */
     pd->encodings = NULL;
     if (!(enc = findEncoding(encoding, pd->encodings)))
-        enc = addEncoding(encoding, 0);
+        enc = addEncoding(encoding, 1);
     if (enc && (enclist = addDeviceEncoding(enc, pd->encodings)))
     {
         pd->encodings = enclist;
@@ -5569,7 +5569,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     {
         free(dd);
         free(pd);
-        error(_("failed to load encoding"));
+        error(_("failed to load default encoding"));
     }
 
     /*****************************
@@ -5631,7 +5631,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
          * At this point the font is loaded, so add it to the
          * device's list of fonts.
          */
-        if (!strcmp(family, "User") || isType1Font(family, PostScriptFonts, NULL))
+        if (!strcmp(family, "User") || isType1Font(family, PDFFonts, NULL))
         {
             addPDFDevicefont(font, pd, &gotFont);
             pd->defaultFont = pd->fonts->family;
@@ -7322,7 +7322,7 @@ static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *des
         gc->fontface = 1;
     if (isType1Font(gc->fontfamily, PDFFonts, pd->defaultFont))
     {
-        PostScriptMetricInfo(c, ascent, descent, width, PDFmetricInfo(gc->fontfamily, gc->fontface, pd), face != 5,
+        PostScriptMetricInfo(c, ascent, descent, width, PDFmetricInfo(gc->fontfamily, gc->fontface, pd), face == 5,
                              PDFconvname(gc->fontfamily, pd));
     }
     else
