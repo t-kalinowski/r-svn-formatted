@@ -1013,7 +1013,7 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
     if (mbcslocale && !isSymbol && c >= 128 && c < 65536)
     { /* Unicode */
         void *cd = NULL;
-        char *i_buf, *o_buf, out[2];
+        unsigned char *i_buf, *o_buf, out[2];
         size_t i_len, o_len, status;
         unsigned short w[2];
 
