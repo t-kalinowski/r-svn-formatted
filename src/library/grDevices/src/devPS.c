@@ -1025,7 +1025,7 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
         i_buf = (char *)w;
         i_len = 4;
         o_buf = out;
-        o_len = 1;
+        o_len = 2;
         status = Riconv(cd, (char **)&i_buf, (size_t *)&i_len, (char **)&o_buf, (size_t *)&o_len);
         Riconv_close(cd);
         if (status == (size_t)-1)
