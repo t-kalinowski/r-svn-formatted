@@ -1754,7 +1754,7 @@ SEXP L_lines(SEXP x, SEXP y, SEXP arrow)
 /* We are assuming here that the R code has checked that x and y
  * are unit objects
  */
-SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP index, double theta, Rboolean draw)
+SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index, double theta, Rboolean draw)
 {
     int i, j, nx, np, nloc;
     double *xx, *yy, *ss;
@@ -1828,7 +1828,7 @@ SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP index, double thet
                 error(_("Non-finite control point in Xspline"));
             }
         }
-        PROTECT(points = GEXspline(nx, xx, yy, ss, LOGICAL(o)[0], draw, &gc, dd));
+        PROTECT(points = GEXspline(nx, xx, yy, ss, LOGICAL(o)[0], LOGICAL(rep)[0], draw, &gc, dd));
         if (draw && !isNull(a) && !isNull(points))
         {
             /*
@@ -1926,15 +1926,15 @@ SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP index, double thet
     return result;
 }
 
-SEXP L_xspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP index)
+SEXP L_xspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index)
 {
-    gridXspline(x, y, s, o, a, index, 0, TRUE);
+    gridXspline(x, y, s, o, a, rep, index, 0, TRUE);
     return R_NilValue;
 }
 
-SEXP L_xsplineBounds(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP index, SEXP theta)
+SEXP L_xsplineBounds(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index, SEXP theta)
 {
-    return gridXspline(x, y, s, o, a, index, REAL(theta)[0], FALSE);
+    return gridXspline(x, y, s, o, a, rep, index, REAL(theta)[0], FALSE);
 }
 
 SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1, SEXP arrow)
