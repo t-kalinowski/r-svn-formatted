@@ -406,6 +406,82 @@ static void handleInterrupt(int dummy)
     signal(SIGINT, handleInterrupt);
 }
 
+static void install_signal_handlers()
+{
+    signal(SIGINT, handleInterrupt);
+    signal(SIGUSR1, onsigusr1);
+    signal(SIGUSR2, onsigusr2);
+#ifdef Unix
+    signal(SIGPIPE, onpipe);
+#endif
+}
+
+#if defined(HAVE_SIGALTSTACK) && defined(HAVE_SIGACTION) && defined(HAVE_SIGEMPTYSET)
+#ifndef SIGSTKSZ
+#define SIGSTKSZ 8000 /* just a guess of how much stack is needed... */
+#endif
+
+static stack_t sigstk;
+static char *signal_stack;
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> /* for getpid() */
+#endif
+
+#define CONSOLE_BUFFER_SIZE 1024
+#define CONSOLE_PROMPT_SIZE 256
+static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE];
+
+static void handleSegv(int dummy)
+{
+    /* Do not translate these */
+    REprintf("\n *** caught segfault ***\n");
+    if (R_Interactive)
+    {
+        /* need to take off R-level stack checking as stack has changed */
+        R_CStackLimit = (unsigned long)-1;
+        REprintf("1: terminate (with core dump)\n2: normal exit\n3: exit without saving\n");
+        if (R_ReadConsole("Selection: ", ConsoleBuf, CONSOLE_BUFFER_SIZE, 0) > 0)
+        {
+            if (ConsoleBuf[0] == '2')
+                R_CleanUp(SA_DEFAULT, 0, 1);
+            if (ConsoleBuf[0] == '3')
+                R_CleanUp(SA_NOSAVE, 0, 1);
+        }
+    }
+    REprintf("exiting ...\n");
+    /* now do normal behaviour, e.g. core dump */
+    signal(SIGSEGV, SIG_DFL);
+    kill(getpid(), SIGSEGV);
+}
+
+static void init_signal_handlers()
+{
+    /* <FIXME> may need to reinstall this if we do recover */
+    struct sigaction sa;
+    signal_stack = malloc(SIGSTKSZ);
+    if (signal_stack != NULL)
+    {
+        sigstk.ss_sp = signal_stack;
+        sigstk.ss_size = SIGSTKSZ;
+        sigstk.ss_flags = 0;
+        (void)sigaltstack(&sigstk, NULL);
+    }
+    sa.sa_handler = handleSegv;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_ONSTACK;
+    sigaction(SIGSEGV, &sa, NULL);
+
+    install_signal_handlers();
+}
+
+#else /* not sigaltstack and sigaction and sigemptyset*/
+static void init_signal_handlers()
+{
+    install_signal_handlers();
+}
+#endif
+
 static void R_LoadProfile(FILE *fparg, SEXP env)
 {
     FILE *volatile fp = fparg; /* is this needed? */
@@ -415,7 +491,7 @@ static void R_LoadProfile(FILE *fparg, SEXP env)
         {
             R_GlobalContext = R_ToplevelContext = &R_Toplevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-            signal(SIGINT, handleInterrupt);
+            install_signal_handlers();
 #endif
             R_ReplFile(fp, env, 0, 0);
         }
@@ -576,12 +652,7 @@ void setup_Rmainloop(void)
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
-    signal(SIGINT, handleInterrupt);
-    signal(SIGUSR1, onsigusr1);
-    signal(SIGUSR2, onsigusr2);
-#ifdef Unix
-    signal(SIGPIPE, onpipe);
-#endif
+    init_signal_handlers();
     if (!doneit)
     {
         doneit = 1;
@@ -629,12 +700,7 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-    signal(SIGINT, handleInterrupt);
-    signal(SIGUSR1, onsigusr1);
-    signal(SIGUSR2, onsigusr2);
-#ifdef Unix
-    signal(SIGPIPE, onpipe);
-#endif
+    install_signal_handlers();
 #endif
     if (!doneit)
     {
@@ -652,7 +718,7 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-    signal(SIGINT, handleInterrupt);
+    install_signal_handlers();
 #endif
     if (!doneit)
     {
@@ -674,7 +740,7 @@ void setup_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-    signal(SIGINT, handleInterrupt);
+    install_signal_handlers();
 #endif
     if (!doneit)
     {
@@ -719,12 +785,7 @@ void run_Rmainloop(void)
     SETJMP(R_Toplevel.cjmpbuf);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-    signal(SIGINT, handleInterrupt);
-    signal(SIGUSR1, onsigusr1);
-    signal(SIGUSR2, onsigusr2);
-#ifdef Unix
-    signal(SIGPIPE, onpipe);
-#endif
+    install_signal_handlers();
 #endif
     R_ReplConsole(R_GlobalEnv, 0, 0);
     end_Rmainloop(); /* must go here */
@@ -863,7 +924,7 @@ SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
         R_BrowseLevel = savebrowselevel;
 #ifdef REINSTALL_SIGNAL_HANDLERS
-        signal(SIGINT, handleInterrupt);
+        install_signal_handlers();
 #endif
         R_ReplConsole(rho, savestack, R_BrowseLevel);
         endcontext(&thiscontext);
