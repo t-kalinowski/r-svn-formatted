@@ -34,7 +34,7 @@
 
    You should have received a copy of the GNU Library General Public
    License along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
    USA.  */
 
 /* The bison generated parser uses alloca.  AIX 3 forces us to put this
@@ -213,7 +213,7 @@ static const short yycheck[] = {1,  10, 11, 4, 13, 14, 9, 8, 9,  10, 11, 12, 13,
 #define YYPURE 1
 
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/local/share/bison/bison.simple"
+#line 3 "/home/haible/gnu/arch/linuxlibc6/share/bison/bison.simple"
 
 /* Skeleton output parser for bison,
 
@@ -514,7 +514,7 @@ const char *yysrc;
 #endif
 #endif
 
-#line 315 "/usr/local/share/bison/bison.simple"
+#line 315 "/home/haible/gnu/arch/linuxlibc6/share/bison/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -966,7 +966,7 @@ yyreduce:
     break;
     }
 
-#line 705 "/usr/local/share/bison/bison.simple"
+#line 705 "/home/haible/gnu/arch/linuxlibc6/share/bison/bison.simple"
 
     yyvsp -= yylen;
     yyssp -= yylen;
