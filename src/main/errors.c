@@ -140,6 +140,8 @@ void onintr()
 
 /* SIGUSR1: save and quit
    SIGUSR2: save and quit, don't run .Last or on.exit().
+
+   These do far more processing than is allowed in a signal handler ....
 */
 
 void onsigusr1()
@@ -148,6 +150,7 @@ void onsigusr1()
     {
         /**** ought to save signal and handle after suspend */
         REprintf(_("interrupts suspended; signal ignored"));
+        signal(SIGUSR1, onsigusr1);
         return;
     }
 
@@ -183,6 +186,7 @@ void onsigusr2()
     {
         /**** ought to save signal and handle after suspend */
         REprintf(_("interrupts suspended; signal ignored"));
+        signal(SIGUSR2, onsigusr2);
         return;
     }
 
