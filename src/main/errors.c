@@ -144,7 +144,7 @@ void onintr()
    These do far more processing than is allowed in a signal handler ....
 */
 
-void onsigusr1()
+RETSIGTYPE onsigusr1(int dummy)
 {
     if (R_interrupts_suspended)
     {
@@ -178,7 +178,7 @@ void onsigusr1()
     R_CleanUp(SA_SAVE, 2, 1); /* quit, save,  .Last, status=2 */
 }
 
-void onsigusr2()
+RETSIGTYPE onsigusr2(int dummy)
 {
     inError = 1;
 
