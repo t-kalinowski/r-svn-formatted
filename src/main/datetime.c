@@ -557,6 +557,8 @@ static void reset_tz(char *tz)
         unsetenv("TZ");
 #else
 #ifdef HAVE_PUTENV
+        /* This ought (POSIX) to set the value to "", but on MinGW
+           it removes the variable which happens to be what we want. */
         putenv("TZ=");
 #endif
 #endif
