@@ -56,7 +56,9 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
     const char *special;
     const char *sponsor;
     const char *revision;
+#ifdef NOT_USED
     const char *alias_value = NULL;
+#endif
     int mask;
 
     /* LOCALE can consist of up to four recognized parts for the XPG syntax:
@@ -107,7 +109,7 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
         /* NOTREACHED */
     }
 
-#ifndef WIN32 /* not used on Windows */
+#ifdef NOT_USED /* R change */
     /* See whether the locale value is an alias.  If yes its value
        *overwrites* the alias name.  No test for the original value is
        done.  */
@@ -158,7 +160,7 @@ struct loaded_l10nfile *internal_function _nl_find_domain(const char *dirname, c
     }
 
     /* The room for an alias was dynamically allocated.  Free it now.  */
-#ifndef WIN32 /* not used on Windows */
+#ifdef NOT_USED
     if (alias_value != NULL)
         free(locale);
 #endif
