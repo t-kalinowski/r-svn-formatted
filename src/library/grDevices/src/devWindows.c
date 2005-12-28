@@ -3,6 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004        The R Foundation
+ *  Copyright (C) 2004-5      The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,9 +18,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- */
-
-/* <MBCS> Use of strchr on display type is fine.
  */
 
 /*--- Device Driver for Windows; this file started from
@@ -293,7 +291,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    char family[256], encoding[256], paper[256], cidfamily[256], bg[256], fg[256], **afmpaths = NULL;
+    char family[256], encoding[256], paper[256], bg[256], fg[256], **afmpaths = NULL;
 
     if (!ndd)
     {
@@ -312,7 +310,6 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
     /* Set default values and pad with zeroes ... */
     strncpy(family, "Helvetica", 256);
     strcpy(encoding, "ISOLatin1.enc");
-    strcpy(cidfamily, "default");
     strncpy(paper, "default", 256);
     strncpy(bg, "transparent", 256);
     strncpy(fg, "black", 256);
@@ -346,26 +343,6 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (!strcmp("default", cidfamily))
-        switch (GetACP())
-        {
-        case 932: /* Japan1 */
-            strcpy(cidfamily, "Japan1");
-            break;
-        case 949:
-            strcpy(cidfamily, "Korea1");
-            break;
-        case 936:
-            strcpy(cidfamily, "GB1");
-            break;
-        case 950:
-            strcpy(cidfamily, "CNS1");
-            break;
-        default:
-            strcpy(cidfamily, "");
-            break;
-        }
-    /* <FIXME> work out how to deal with this */
     if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
@@ -380,7 +357,7 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    char family[256], encoding[256], cidfamily[256], bg[256], fg[256], **afmpaths = NULL;
+    char family[256], encoding[256], bg[256], fg[256], **afmpaths = NULL;
 
     if (!ndd)
     {
@@ -400,7 +377,6 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
     s = findVar(install(".PostScript.Options"), xd->psenv);
     strncpy(family, "Helvetica", 256);
     strcpy(encoding, "ISOLatin1.enc");
-    strcpy(cidfamily, "default");
     strncpy(bg, "transparent", 256);
     strncpy(fg, "black", 256);
     /* and then try to get it from .PostScript.Options */
@@ -427,25 +403,6 @@ static void SaveAsPDF(NewDevDesc *dd, char *fn)
             }
         }
     }
-    if (!strcmp("default", cidfamily))
-        switch (GetACP())
-        {
-        case 932: /* Japan1 */
-            strcpy(cidfamily, "Japan1");
-            break;
-        case 949:
-            strcpy(cidfamily, "Korea1");
-            break;
-        case 936:
-            strcpy(cidfamily, "GB1");
-            break;
-        case 950:
-            strcpy(cidfamily, "CNS1");
-            break;
-        default:
-            strcpy(cidfamily, "");
-            break;
-        }
     if (PDFDeviceDriver(ndd, fn, "special", family, afmpaths, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
@@ -589,7 +546,7 @@ static char *SaveFontSpec(SEXP sxp, int offset)
 /*
  * Take the fontfamily from a gcontext (which is device-independent)
  * and convert it into a Windows-specific font description using
- * the Windows font database (see src/library/graphics/R/unix/windows.R)
+ * the Windows font database (see src/library/grDevices/R/windows/windows.R)
  *
  * IF gcontext fontfamily is empty ("")
  * OR IF can't find gcontext fontfamily in font database
@@ -2004,11 +1961,9 @@ static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
-#ifdef SUPPORT_MBCS
     if (mbcslocale && gc->fontface != 5 && c > 127)
         gwcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     else
-#endif
         gcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     /* Some Windows systems report that space has height and depth,
        so we have a kludge.  Note that 32 is space in symbol font too */
@@ -2569,14 +2524,12 @@ static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE
     SetColor(gc->col, gc->gamma, dd);
     if (R_OPAQUE(gc->col))
     {
-#ifdef SUPPORT_UTF8
-        if (gc->fontface != 5)
+        if (mbcslocale && gc->fontface != 5)
         {
             /* These macros need to be wrapped in braces */
-            DRAW(gwdrawstr(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
+            DRAW(gwdrawstr1(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
         }
         else
-#endif
         {
             DRAW(gdrawstr1(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
         }
