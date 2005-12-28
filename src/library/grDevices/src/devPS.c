@@ -117,6 +117,7 @@ typedef struct
     short KPstart[256];
     short KPend[256];
     short nKP;
+    short IsFixedPitch;
 } FontMetricInfo;
 
 enum
@@ -725,7 +726,7 @@ pserror:
 static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo *metrics, char *fontname,
                                      CNAME *charnames, CNAME *encnames, int reencode)
 {
-    char buf[BUFSIZE], *p;
+    char buf[BUFSIZE], *p, truth[10];
     int mode, i = 0, j, ii, nKPX = 0;
     FILE *fp;
 
@@ -747,6 +748,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
     metrics->KernPairs = NULL;
     metrics->CapHeight = metrics->XHeight = metrics->Descender = metrics->Ascender = metrics->StemH = metrics->StemV =
         NA_SHORT;
+    metrics->IsFixedPitch = -1;
     metrics->ItalicAngle = 0;
     mode = 0;
     for (ii = 0; ii < 256; ii++)
@@ -858,6 +860,12 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
         case ItalicAngle:
             p = SkipToNextItem(buf);
             sscanf(p, "%hd", &metrics->ItalicAngle);
+            break;
+
+        case IsFixedPitch:
+            p = SkipToNextItem(buf);
+            sscanf(p, "%[^\n\f\r]", truth);
+            metrics->IsFixedPitch = strcmp(truth, "true") == 0;
             break;
 
         case Empty:
@@ -1464,7 +1472,7 @@ static char PDFFonts[] = ".PDF.Fonts";
    separate DLL.
 */
 #if 0
-void freeType1Fonts() 
+void freeType1Fonts()
 {
     encodinglist enclist = loadedEncodings;
     type1fontlist fl = loadedFonts;
@@ -5398,6 +5406,8 @@ typedef struct
      */
     type1fontfamily defaultFont;
     cidfontfamily defaultCIDFont;
+    /* Record if fonts are used */
+    Rboolean fontUsed[100];
 } PDFDesc;
 
 /* Device Driver Actions */
@@ -5541,6 +5551,8 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     strcpy(pd->filename, file);
     strcpy(pd->papername, paper);
     strncpy(pd->title, title, 1024);
+    memset(pd->fontUsed, 0, 100 * sizeof(Rboolean));
+    pd->fontUsed[1] = TRUE; /* Dingbats */
 
     pd->width = width;
     pd->height = height;
@@ -6250,6 +6262,31 @@ static void PDF_startfile(PDFDesc *pd)
     fprintf(pd->pdffp, "5 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F1\n/BaseFont /ZapfDingbats\n>>\nendobj\n");
 }
 
+static char *Base14[] = {"Courier",          "Courier-Oblique",   "Courier-Bold",   "Courier-BoldOblique",
+                         "Helvetica",        "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
+                         "Symbol",           "Times-Roman",       "Times-Italic",   "Times-Bold",
+                         "Times-BoldItalic", "ZapfDingbats"};
+
+static int isBase14(char *name)
+{
+    int i;
+    for (i = 0; i < 14; i++)
+        if (strcmp(name, Base14[i]) == 0)
+            return 1;
+    return 0;
+}
+
+static char *KnownSanSerif[] = {"AvantGarde", "Helvetica-Narrow", "URWGothic", "NimbusSan"};
+
+static int isSans(char *name)
+{
+    int i;
+    for (i = 0; i < 4; i++)
+        if (strncmp(name, KnownSanSerif[i], strlen(KnownSanSerif[i])) == 0)
+            return 1;
+    return 0;
+}
+
 #define boldslant(x) ((x == 3) ? ",BoldItalic" : ((x == 2) ? ",Italic" : ((x == 1) ? ",Bold" : "")))
 static void PDF_endfile(PDFDesc *pd)
 {
@@ -6284,7 +6321,7 @@ static void PDF_endfile(PDFDesc *pd)
     }
     /* Should be a default text font at least, plus possibly others */
     tempnobj = pd->nobjs + nenc;
-    nfonts = 0;
+    nfonts = 2; /* /F1 is dingbats */
     if (pd->fonts)
     {
         type1fontlist fontlist = pd->fonts;
@@ -6292,9 +6329,13 @@ static void PDF_endfile(PDFDesc *pd)
         {
             for (i = 0; i < 5; i++)
             {
-                fprintf(pd->pdffp, "/F%d %d 0 R ",
-                        /* /F1 is dingbats */
-                        nfonts + 2, ++tempnobj);
+                if (nfonts >= 100 || pd->fontUsed[nfonts])
+                {
+                    fprintf(pd->pdffp, "/F%d %d 0 R ", nfonts, ++tempnobj);
+                    /* Allow for the font descriptor object, if present */
+                    if (!isBase14(fontlist->family->fonts[i]->name))
+                        tempnobj++;
+                }
                 nfonts++;
             }
             fontlist = fontlist->next;
@@ -6317,15 +6358,12 @@ static void PDF_endfile(PDFDesc *pd)
     fprintf(pd->pdffp, ">>\n");
     /* graphics state parameter dictionaries */
     fprintf(pd->pdffp, "/ExtGState << ");
-    tempnobj = pd->nobjs + nenc + nfonts + cidnfonts;
+    /* <FIXME> is this correct now ?
+    tempnobj = pd->nobjs + nenc + nfonts + cidnfonts; */
     for (i = 0; i < 256 && pd->colAlpha[i] >= 0; i++)
-    {
         fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 1, ++tempnobj);
-    }
     for (i = 0; i < 256 && pd->fillAlpha[i] >= 0; i++)
-    {
         fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 257, ++tempnobj);
-    }
     fprintf(pd->pdffp, ">>\n");
 
     fprintf(pd->pdffp, ">>\nendobj\n");
@@ -6341,7 +6379,7 @@ static void PDF_endfile(PDFDesc *pd)
      * Write out objects representing the fonts
      */
 
-    nfonts = 0;
+    nfonts = 2;
     if (pd->fonts)
     {
         type1fontlist fontlist = pd->fonts;
@@ -6356,39 +6394,73 @@ static void PDF_endfile(PDFDesc *pd)
             encodinginfo encoding = findDeviceEncoding(fontlist->family->encoding->encpath, pd->encodings, &encIndex);
             if (!encoding)
                 error(_("Corrupt encodings in PDF device"));
-            for (i = 0; i < 4; i++)
+            for (i = 0; i < 5; i++)
             {
-                metrics = &fontlist->family->fonts[i]->metrics;
-                pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
-                fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n", pd->nobjs,
-                        nfonts + 2, fontlist->family->fonts[i]->name);
-                /* write font descriptor
-                fprintf(pd->pdffp,
-                    "/FontDescriptor\n"
-                    "  <<\n"
-                    "    /Type /FontDescriptor\n"
-                    "    /CapHeight %d /Ascent %d /Descent %d\n"
-                    "    /FontBBox [%d %d %d %d]\n"
-                    "    /ItalicAngle %d /XHeight %d\n",
-                    metrics->CapHeight, metrics->Ascender,
-                    metrics->Descender,
-                    metrics->FontBBox[0], metrics->FontBBox[1],
-                    metrics->FontBBox[2], metrics->FontBBox[3],
-                    metrics->ItalicAngle, metrics->XHeight);
-                if (metrics->StemV != NA_SHORT)
-                    fprintf(pd->pdffp, "    /StemV %d\n", metrics->StemV);
-                fprintf(pd->pdffp, "  >>\n");*/
-                fprintf(pd->pdffp, "/Encoding %d 0 R\n>>\nendobj\n",
-                        /* Encodings come after dingbats font which is
-                         * object 5 */
-                        encIndex + firstencobj);
+                if (nfonts >= 100 || pd->fontUsed[nfonts])
+                {
+                    type1fontinfo fn = fontlist->family->fonts[i];
+                    int base = isBase14(fn->name);
+                    metrics = &fn->metrics;
+                    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                    fprintf(pd->pdffp, "%d 0 obj <<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n",
+                            pd->nobjs, nfonts, fn->name);
+                    if (!base)
+                    {
+                        int ii, first, last, tmp;
+                        for (first = 1, ii = 0; ii < 255; ii++)
+                            if (metrics->CharInfo[ii].WX != NA_SHORT)
+                            {
+                                first = ii;
+                                break;
+                            }
+                        for (last = 255, ii = 254; ii >= 0; ii--)
+                            if (metrics->CharInfo[ii].WX != NA_SHORT)
+                            {
+                                last = ii + 1;
+                                break;
+                            }
+                        fprintf(pd->pdffp, "/FirstChar %d /LastChar %d /Widths [\n", first, last);
+                        for (ii = first; ii < last; ii++)
+                        {
+                            tmp = metrics->CharInfo[ii].WX;
+                            fprintf(pd->pdffp, " %d", tmp == NA_SHORT ? 0 : tmp);
+                            if ((ii + 1) % 15 == 0)
+                                fprintf(pd->pdffp, "\n");
+                        }
+                        fprintf(pd->pdffp, "]\n");
+                        fprintf(pd->pdffp, "/FontDescriptor %d 0 R\n", pd->nobjs + 1);
+                    }
+                    if (i < 4)
+                        fprintf(pd->pdffp, "/Encoding %d 0 R\n",
+                                /* Encodings come after dingbats font which is
+                                 * object 5 */
+                                encIndex + firstencobj);
+                    fprintf(pd->pdffp, ">> endobj\n");
+                    if (!base)
+                    {
+                        /* write font descriptor */
+                        int flags = 32 /*bit 6, non-symbolic*/ + ((i == 2 || i == 3) ? 64 /* italic */ : 0) +
+                                    (metrics->IsFixedPitch > 0 ? 1 : 0) + (isSans(fn->name) ? 0 : 2);
+                        /* <FIXME> we have no real way to know
+                           if this is serif or not */
+                        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                        fprintf(pd->pdffp,
+                                "%d 0 obj <<\n"
+                                " /Type /FontDescriptor\n"
+                                " /FontName /%s\n"
+                                " /Flags %d\n"
+                                " /FontBBox [%d %d %d %d]\n"
+                                " /CapHeight %d\n /Ascent %d\n /Descent %d\n"
+                                " /ItalicAngle %d\n /XHeight %d\n /StemV %d\n"
+                                ">>\nendobj\n",
+                                pd->nobjs, fn->name, (i == 4) ? 4 : flags, metrics->FontBBox[0], metrics->FontBBox[1],
+                                metrics->FontBBox[2], metrics->FontBBox[3], metrics->CapHeight, metrics->Ascender,
+                                metrics->Descender, metrics->ItalicAngle, metrics->XHeight,
+                                (metrics->StemV != NA_SHORT) ? metrics->StemV : (i == 2 || i == 3) ? 140 : 83);
+                    }
+                }
                 nfonts++;
             }
-            /* Symbol face does not use encoding */
-            pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
-            fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n>>\nendobj\n",
-                    pd->nobjs, nfonts + 2, fontlist->family->fonts[4]->name);
-            nfonts++;
             fontlist = fontlist->next;
         }
     }
@@ -6469,9 +6541,7 @@ static void PDF_endfile(PDFDesc *pd)
     fprintf(pd->pdffp, "xref\n0 %d\n", pd->nobjs + 1);
     fprintf(pd->pdffp, "0000000000 65535 f \n");
     for (i = 1; i <= pd->nobjs; i++)
-    {
         fprintf(pd->pdffp, "%010d 00000 n \n", pd->pos[i]);
-    }
     fprintf(pd->pdffp, "trailer\n<<\n/Size %d\n/Info 1 0 R\n/Root 2 0 R\n>>\nstartxref\n%d\n", pd->nobjs + 1,
             startxref);
     fprintf(pd->pdffp, "%%%%EOF\n");
@@ -6936,6 +7006,8 @@ static int PDFfontNumber(char *family, int face, PDFDesc *pd)
         else
             num = 1000 + face;
     }
+    if (num < 100)
+        pd->fontUsed[num] = TRUE;
     return num;
 }
 
