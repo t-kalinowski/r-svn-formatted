@@ -1472,6 +1472,7 @@ SEXP do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 /* ------------------- clipboard connections --------------------- */
 
 #ifdef Win32
+#define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 extern int clipboardhastext(); /* from ga.h */
 #endif
