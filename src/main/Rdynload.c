@@ -147,7 +147,7 @@ static DllInfo LoadedDLL[MAX_NUM_DLLS];
 int addDLL(char *dpath, char *name, HINSTANCE handle);
 SEXP Rf_MakeDLLInfo(DllInfo *info);
 
-static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol *symbol);
+static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol *symbol, Rboolean withRegistrationInfo);
 
 OSDynSymbol Rf_osDynSymbol;
 OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
@@ -379,10 +379,11 @@ static Rboolean R_callDLLUnload(DllInfo *dllInfo)
 {
     char buf[1024];
     DL_FUNC f;
-    R_RegisteredNativeSymbol sym;
+    R_RegisteredNativeSymbol symbol;
+    symbol.type = R_ANY_SYM;
 
     snprintf(buf, 1024, "R_unload_%s", dllInfo->name);
-    f = R_dlsym(dllInfo, buf, &sym);
+    f = R_dlsym(dllInfo, buf, &symbol);
     if (f)
         f(dllInfo);
 
@@ -638,9 +639,8 @@ DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_RegisteredNa
     NativeSymbolType purpose = R_ANY_SYM;
 
     if (symbol)
-    {
         purpose = symbol->type;
-    }
+
     if ((purpose == R_ANY_SYM || purpose == R_C_SYM) && info->numCSymbols > 0)
     {
         Rf_DotCSymbol *sym;
@@ -753,6 +753,7 @@ DL_FUNC R_dlsym(DllInfo *info, char const *name, R_RegisteredNativeSymbol *symbo
   .Fortran(), .External(), generic, etc. invocation. This will
   reduce the pool of possible symbols in the case of a library
   that registers its routines.
+  This is currently done via the value in symbol.
  */
 
 DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol *symbol)
@@ -770,7 +771,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
     /* It is only meant to be used in systems supporting */
     /* the dlopen() interface, in which systems data and  */
     /* function pointers _are_ the same size and _can_   */
-    /* be cast without loss of information.		     */
+    /* be cast without loss of information.	     */
 
     for (i = CountDLL - 1; i >= 0; i--)
     {
@@ -779,7 +780,6 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
             doit = 2;
         if (doit)
         {
-            /* printf("Looking for %s\n", name); */
             fcnptr = R_dlsym(&LoadedDLL[i], name, symbol); /* R_osDynSymbol->dlsym */
             if (fcnptr != (DL_FUNC)NULL)
             {
@@ -890,6 +890,37 @@ SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
     return (ref);
 }
 
+static void freeRegisteredNativeSymbolCopy(SEXP ref)
+{
+    void *ptr;
+    ptr = R_ExternalPtrAddr(ref);
+    if (ptr)
+        free(ptr);
+}
+
+SEXP Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
+{
+    SEXP ref, klass;
+    R_RegisteredNativeSymbol *copy;
+    copy = (R_RegisteredNativeSymbol *)malloc(1 * sizeof(R_RegisteredNativeSymbol));
+    if (!copy)
+    {
+        error(_("cannot allocate memory for registered native symbol (%d bytes)"),
+              (int)sizeof(R_RegisteredNativeSymbol));
+    }
+    *copy = *symbol;
+
+    PROTECT(ref = R_MakeExternalPtr((void *)copy, Rf_install("registered native symbol"), R_NilValue));
+    R_RegisterCFinalizer(ref, freeRegisteredNativeSymbolCopy);
+
+    PROTECT(klass = allocVector(STRSXP, 1));
+    SET_STRING_ELT(klass, 0, mkChar("RegisteredNativeSymbol"));
+    setAttrib(ref, R_ClassSymbol, klass);
+
+    UNPROTECT(2);
+    return (ref);
+}
+
 static SEXP Rf_makeDllObject(HINSTANCE inst)
 {
     SEXP ans;
@@ -965,7 +996,7 @@ SEXP Rf_MakeDLLInfo(DllInfo *info)
   registered, we add a class identifying the interface type
   for which it is intended (i.e. .C(), .Call(), etc.)
  */
-SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
+SEXP R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
 {
     char *package, *name;
     R_RegisteredNativeSymbol symbol = {R_ANY_SYM, {NULL}, NULL};
@@ -997,7 +1028,7 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
         f = R_FindSymbol(name, package, &symbol);
 
     if (f)
-        sym = createRSymbolObject(sname, f, &symbol);
+        sym = createRSymbolObject(sname, f, &symbol, LOGICAL(withRegistrationInfo)[0]);
 
     return (sym);
 }
@@ -1017,7 +1048,7 @@ SEXP R_getDllTable()
     return (ans);
 }
 
-static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol *symbol)
+static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol *symbol, Rboolean withRegistrationInfo)
 {
     SEXP tmp, klass, sym, names;
     int n = (symbol->type != R_ANY_SYM) ? 4 : 3;
@@ -1037,7 +1068,10 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
     SET_VECTOR_ELT(sym, 0, sname);
     SET_STRING_ELT(names, 0, mkChar("name"));
 
-    SET_VECTOR_ELT(sym, 1, Rf_MakeNativeSymbolRef(f));
+    SET_VECTOR_ELT(sym, 1,
+                   withRegistrationInfo && symbol && symbol->symbol.c && symbol->dll
+                       ? Rf_MakeRegisteredNativeSymbol(symbol)
+                       : Rf_MakeNativeSymbolRef(f));
     SET_STRING_ELT(names, 1, mkChar("address"));
     if (symbol->dll)
         SET_VECTOR_ELT(sym, 2, Rf_MakeDLLInfo(symbol->dll));
@@ -1142,7 +1176,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
         default:
             continue;
         }
-        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, address, &sym));
+        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, address, &sym, FALSE)); /* XXX */
     }
 
     setAttrib(ans, R_ClassSymbol, mkString("NativeRoutineList"));
