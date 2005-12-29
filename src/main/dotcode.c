@@ -1484,8 +1484,6 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
     if (inherits(dll->obj, "DLLInfo"))
     {
         SEXP tmp;
-        /*XXX*/
-        DL_FUNC R_dlsym(DllInfo * info, char const *name, R_RegisteredNativeSymbol *symbol);
         tmp = VECTOR_ELT(dll->obj, 4);
         info = (DllInfo *)R_ExternalPtrAddr(tmp);
         if (!info)

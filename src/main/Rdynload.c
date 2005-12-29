@@ -1176,7 +1176,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
         default:
             continue;
         }
-        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, address, &sym, FALSE)); /* XXX */
+        SET_VECTOR_ELT(ans, i, createRSymbolObject(NULL, address, &sym, TRUE)); /* XXX */
     }
 
     setAttrib(ans, R_ClassSymbol, mkString("NativeRoutineList"));
