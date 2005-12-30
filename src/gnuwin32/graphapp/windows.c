@@ -454,11 +454,23 @@ window newwindow(char *name, rect r, long flags)
         else if (!win_class_name)
             win_class_name = register_new_class("", app_win_proc);
 
-        hwnd = CreateWindowEx(ex_style, (flags & Workspace) ? work_class_name : win_class_name, name, win_style, r.x,
-                              r.y, r.width, r.height, (HWND)((flags & ChildWindow) ? current_window->handle : 0),
-                              ((HMENU)((flags & ChildWindow) ? child_id : 0)), this_instance, NULL);
+        if (is_NT)
+        {
+            wchar_t wkind[100], wc[1000];
+            mbstowcs(wkind, (flags & Workspace) ? work_class_name : win_class_name, 100);
+            mbstowcs(wc, name, 1000);
+            hwnd = CreateWindowExW(ex_style, wkind, wc, win_style, r.x, r.y, r.width, r.height,
+                                   (HWND)((flags & ChildWindow) ? current_window->handle : 0),
+                                   ((HMENU)((flags & ChildWindow) ? child_id : 0)), this_instance, NULL);
+        }
+        else
+        {
+            hwnd =
+                CreateWindowEx(ex_style, (flags & Workspace) ? work_class_name : win_class_name, name, win_style, r.x,
+                               r.y, r.width, r.height, (HWND)((flags & ChildWindow) ? current_window->handle : 0),
+                               ((HMENU)((flags & ChildWindow) ? child_id : 0)), this_instance, NULL);
+        }
     }
-
     if (!hwnd)
         return NULL;
     if (flags & Closebox)

@@ -714,9 +714,6 @@ void *_getextradata(control obj)
         return NULL;
 }
 
-#include <R_ext/Boolean.h>
-extern Rboolean mbcslocale;
-
 /*
  *  Set the text of an object. This will set the names appearing
  *  in a window's title bar, a button, checkbox or radio button,
@@ -743,7 +740,7 @@ void settext(control obj, char *text)
         if (obj->kind & ControlObject)
         {
             text = to_dos_string(text);
-            if (is_NT && mbcslocale)
+            if (is_NT)
             {
                 wchar_t wc[1000];
                 mbstowcs(wc, text, 1000);
@@ -755,7 +752,7 @@ void settext(control obj, char *text)
         }
         if (obj->kind == MenuitemObject)
         {
-            if (is_NT && mbcslocale)
+            if (is_NT)
             {
                 wchar_t wc[1000];
                 mbstowcs(wc, text, 1000);

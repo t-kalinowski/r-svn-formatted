@@ -124,9 +124,6 @@ drawing newdrawing(rect r, drawfn fn)
     return obj;
 }
 
-#include <R_ext/Boolean.h>
-extern Rboolean mbcslocale;
-
 static object newchildwin(char *kind, char *text, unsigned long style, rect r, actionfn fn)
 {
     HWND hwnd;
@@ -135,7 +132,7 @@ static object newchildwin(char *kind, char *text, unsigned long style, rect r, a
     ensure_window();
     r = rcanon(r);
 
-    if (is_NT && mbcslocale)
+    if (is_NT)
     {
         wchar_t wkind[100], wc[1000];
         mbstowcs(wkind, kind, 100);

@@ -626,6 +626,9 @@ void setup_Rmainloop(void)
             setlocale(LC_CTYPE, p);
         else
             setlocale(LC_CTYPE, Rlocale);
+        /* LC_CTYPE=C bombs in mingwex */
+        if (strcmp(setlocale(LC_CTYPE, NULL), "C") == 0)
+            setlocale(LC_CTYPE, "en");
         if ((p = getenv("LC_COLLATE")))
             setlocale(LC_COLLATE, p);
         else
