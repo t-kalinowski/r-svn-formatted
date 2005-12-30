@@ -1955,6 +1955,8 @@ static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
    we don't care which for a 7-bit char.
  */
 
+__declspec(dllimport) extern int is_NT; /* from graphapp */
+
 static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd)
 {
     int a, d, w;
@@ -1962,9 +1964,11 @@ static void GA_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *desc
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
-    if (mbcslocale && gc->fontface != 5 && c > 127)
+#ifdef SUPPORT_MBCS
+    if (is_NT && mbcslocale && gc->fontface != 5 && c > 127)
         gwcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     else
+#endif
         gcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     /* Some Windows systems report that space has height and depth,
        so we have a kludge.  Note that 32 is space in symbol font too */

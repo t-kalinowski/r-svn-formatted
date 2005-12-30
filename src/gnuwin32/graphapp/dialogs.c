@@ -61,6 +61,22 @@ void setuserfilter(char *uf)
 
 static HWND hModelessDlg = NULL;
 
+#include <R_ext/Boolean.h>
+extern Rboolean mbcslocale;
+
+int myMessageBox(HWND h, char *text, char *caption, UINT type)
+{
+    if (is_NT && mbcslocale)
+    {
+        wchar_t wc[1000], wcaption[100];
+        mbstowcs(wcaption, caption, 100);
+        mbstowcs(wc, text, 1000);
+        return MessageBoxW(h, wc, wcaption, type);
+    }
+    else
+        return MessageBoxA(h, text, caption, type);
+}
+
 /*
  *  Error reporting dialog.
  */
@@ -68,7 +84,7 @@ void apperror(char *errstr)
 {
     if (!errstr)
         errstr = "Unspecified error";
-    MessageBox(0, errstr, "Graphics Library Error", MB_TASKMODAL | MB_ICONSTOP | MB_OK | TopmostDialogs);
+    myMessageBox(0, errstr, "Graphics Library Error", MB_TASKMODAL | MB_ICONSTOP | MB_OK | TopmostDialogs);
     exitapp();
 }
 
@@ -76,7 +92,7 @@ void askok(char *info)
 {
     if (!info)
         info = "";
-    MessageBox(0, info, "Information", MB_TASKMODAL | MB_ICONINFORMATION | MB_OK | TopmostDialogs);
+    myMessageBox(0, info, "Information", MB_TASKMODAL | MB_ICONINFORMATION | MB_OK | TopmostDialogs);
 }
 
 int askokcancel(char *question)
@@ -85,7 +101,7 @@ int askokcancel(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, G_("Question"), MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL | TopmostDialogs);
+    result = myMessageBox(0, question, G_("Question"), MB_TASKMODAL | MB_ICONQUESTION | MB_OKCANCEL | TopmostDialogs);
 
     switch (result)
     {
@@ -106,7 +122,7 @@ int askyesno(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, G_("Question"), MB_TASKMODAL | MB_ICONQUESTION | MB_YESNO | TopmostDialogs);
+    result = myMessageBox(0, question, G_("Question"), MB_TASKMODAL | MB_ICONQUESTION | MB_YESNO | TopmostDialogs);
 
     switch (result)
     {
@@ -129,8 +145,8 @@ int askyesnocancel(char *question)
 
     if (!question)
         question = "";
-    result = MessageBox(0, question, G_("Question"),
-                        MB_TASKMODAL | MB_ICONQUESTION | MB_YESNOCANCEL | MB_SETFOREGROUND | TopmostDialogs);
+    result = myMessageBox(0, question, G_("Question"),
+                          MB_TASKMODAL | MB_ICONQUESTION | MB_YESNOCANCEL | MB_SETFOREGROUND | TopmostDialogs);
 
     switch (result)
     {

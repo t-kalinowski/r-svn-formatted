@@ -23,7 +23,7 @@
    More safe in case of multiple redrawing
  */
 
-#include <config.h> /* for SUPPORT_UTF8 */
+#include <config.h> /* for SUPPORT_MBCS and SUPPORT_UTF8 */
 
 #include "internal.h"
 extern unsigned int TopmostDialogs; /* from dialogs.c */
@@ -484,6 +484,9 @@ void gfillpolygon(drawing d, rgb fill, point *p, int n)
     DeleteObject(br);
 }
 
+#include <R_ext/Boolean.h>
+extern Rboolean mbcslocale;
+
 /* For ordinary text, e.g. in console */
 int gdrawstr(drawing d, font f, rgb c, point p, char *s)
 {
@@ -499,16 +502,18 @@ int gdrawstr(drawing d, font f, rgb c, point p, char *s)
     SetTextAlign(dc, TA_TOP | TA_LEFT | TA_UPDATECP);
 
 #ifdef SUPPORT_MBCS
-    { /* This allows us to change locales and output in the new locale */
+    if (is_NT && mbcslocale)
+    {
+        /* This allows us to change locales and output in the new locale */
         wchar_t *wc;
         int n = strlen(s), cnt;
         wc = alloca((n + 1) * sizeof(wchar_t));
         cnt = mbstowcs(wc, s, n);
         TextOutW(dc, p.x, p.y, wc, cnt);
     }
-#else
-    TextOut(dc, p.x, p.y, s, strlen(s));
+    else
 #endif
+        TextOut(dc, p.x, p.y, s, strlen(s));
 
     GetCurrentPositionEx(dc, &curr_pos);
     width = curr_pos.x - p.x;
@@ -711,10 +716,10 @@ void gcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *width
         *ascent = size.cy - *descent - extra;
         *width = size.cx;
         /*
-       Under NT, ' ' gives 0 ascent and descent, which seems
-       correct but this : (i) makes R engine to center in random way;
-       (ii) doesn't correspond to what 98 and X do (' ' is there
-       high as the full font)
+          Under NT, ' ' gives 0 ascent and descent, which seems
+          correct but this : (i) makes R engine to center in random way;
+          (ii) doesn't correspond to what 98 and X do (' ' is there
+          high as the full font)
         */
         if ((c != ' ') && (tm.tmPitchAndFamily & TMPF_TRUETYPE))
         {
@@ -739,8 +744,7 @@ void gcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *width
     SelectObject(dc, old);
 }
 
-/* need this defined even if not used for non-MBCS since grDevices
-   is compiled with SUPPORT_MBCS true */
+#ifdef SUPPORT_MBCS
 void gwcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *width)
 {
     int first, last, extra;
@@ -778,10 +782,10 @@ void gwcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *widt
         *ascent = size.cy - *descent - extra;
         *width = size.cx;
         /*
-       Under NT, ' ' gives 0 ascent and descent, which seems
-       correct but this : (i) makes R engine to center in random way;
-       (ii) doesn't correspond to what 98 and X do (' ' is there
-       high as the full font)
+          Under NT, ' ' gives 0 ascent and descent, which seems
+          correct but this : (i) makes R engine to center in random way;
+          (ii) doesn't correspond to what 98 and X do (' ' is there
+          high as the full font)
         */
         if ((c != ' ') && (tm.tmPitchAndFamily & TMPF_TRUETYPE))
         {
@@ -805,6 +809,7 @@ void gwcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *widt
     }
     SelectObject(dc, old);
 }
+#endif
 
 font gnewfont(drawing d, char *face, int style, int size, double rot)
 {

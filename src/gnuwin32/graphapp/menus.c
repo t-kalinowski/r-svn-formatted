@@ -118,25 +118,6 @@ char *Rf_strchr(const char *s, int c); /* from util.c, MBCS-aware */
 
 static int find_char(int ch, char *str)
 {
-    /*
-        int where;
-    #ifdef SUPPORT_MBCS
-        for (where=0; str[where] != '\0'; where++)
-        {
-            int mb_len = 0;
-            mbstate_t mb_st;
-
-            mbs_init(mb_st);
-            mb_len = Rf_mbrtowc(NULL, str+where, MB_CUR_MAX, &mb_st);
-            if (mb_len > 1) {where += mb_len - 1; continue;}
-            if (str[where] == ch) return where;
-        }
-    #else
-        for (where=0; str[where] != '\0'; where++)
-            if (str[where] == ch) return where;
-    #endif
-        return -1;
-     */
     char *p;
     p = Rf_strchr(str, ch);
     if (!p)
@@ -187,9 +168,7 @@ static void set_search_string(char *search, char *name, int key)
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
-        {
             source += mb_len - 1;
-        }
         else
 #endif /* SUPPORT_MBCS */
             if (isupper(name[source]))
@@ -204,9 +183,7 @@ static void set_search_string(char *search, char *name, int key)
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
-        {
             source += mb_len - 1;
-        }
         else
 #endif /* SUPPORT_MBCS */
             if (isdigit(name[source]))
@@ -221,9 +198,7 @@ static void set_search_string(char *search, char *name, int key)
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
-        {
             source += mb_len - 1;
-        }
         else
 #endif /* SUPPORT_MBCS */
             if (islower(name[source]))
@@ -372,6 +347,21 @@ menubar newmenubar(actionfn adjust_menus)
     return (menubar)obj;
 }
 
+#include <R_ext/Boolean.h>
+extern Rboolean mbcslocale;
+
+BOOL myAppendMenu(HMENU h, UINT flags, UINT id, LPCTSTR name)
+{
+    if (is_NT && mbcslocale)
+    {
+        wchar_t wc[100];
+        mbstowcs(wc, name, 100);
+        return AppendMenuW(h, flags, id, wc);
+    }
+    else
+        return AppendMenuA(h, flags, id, name);
+}
+
 menu newsubmenu(menu parent, char *name)
 {
     object obj;
@@ -410,7 +400,7 @@ menu newsubmenu(menu parent, char *name)
         current_menu = obj;
     }
     if (parent->kind != WindowObject)
-        AppendMenu(parent->handle, flags, (UINT)hm, name);
+        myAppendMenu(parent->handle, flags, (UINT)hm, name);
     if (parent == current_menubar)
         DrawMenuBar(current_menubar->parent->handle);
 
@@ -460,7 +450,7 @@ menuitem newmenuitem(char *name, int key, menufn fn)
             name = str;
         }
 
-        AppendMenu(current_menu->handle, flags, obj->id, name);
+        myAppendMenu(current_menu->handle, flags, obj->id, name);
     }
     return (menuitem)obj;
 }
