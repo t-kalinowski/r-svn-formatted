@@ -63,7 +63,7 @@ static HWND hModelessDlg = NULL;
 
 int myMessageBox(HWND h, char *text, char *caption, UINT type)
 {
-    if (is_NT)
+    if (is_NT && (localeCP != GetACP()))
     {
         wchar_t wc[1000], wcaption[100];
         mbstowcs(wcaption, caption, 100);

@@ -1162,7 +1162,7 @@ int RguiCommonHelp(menu m, HelpMenuItems hmenu)
 
 int setupui()
 {
-    char *p, Rlocale[1000] = ""; /* Windows' locales can be very long */
+    char *p, *ctype, Rlocale[1000] = ""; /* Windows' locales can be very long */
 
     initapp(0, 0);
 
@@ -1177,6 +1177,12 @@ int setupui()
         strcpy(Rlocale, "en");
     setlocale(LC_CTYPE, Rlocale);
     mbcslocale = MB_CUR_MAX > 1;
+    ctype = setlocale(LC_CTYPE, NULL);
+    p = strrchr(ctype, '.');
+    if (p && isdigit(p[1]))
+        localeCP = atoi(p + 1);
+    else
+        localeCP = 1252;
 
     readconsolecfg();
 #ifdef USE_MDI
