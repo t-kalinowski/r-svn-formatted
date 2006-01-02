@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1998--2004  Guido Masarotto and Brian Ripley
- *  Copyright (C) 2005        The R Development Core Team
+ *  Copyright (C) 2005-6      The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -977,18 +977,17 @@ static cp2charset_table cp2charset[] = {
 
 /* Used to set the charset for the font in the console/pager/editor.
    As from 2.3.0 these use wchar on NT, but the charset still
-   seems to affect the font chosen and its width, depending on the system
-   locale. */
+   seems to affect the font chosen. */
 int getcharset(void)
 {
-    int i, acp = GetACP(); /* FIXME: probably should be localeCP */
+    int i, cp = localeCP;
     if (!is_NT)
         /* From Nakama's patch.  I don't know the reason for this
            as Win9x should support these CHARSET names. */
         return (DEFAULT_CHARSET);
     else
         for (i = 0; i < sizeof(cp2charset) / sizeof(cp2charset_table); i++)
-            if (acp == cp2charset[i].codepage)
+            if (cp == cp2charset[i].codepage)
                 return (cp2charset[i].charset);
     return (ANSI_CHARSET);
 }
