@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2005	The R Development Core Team.
+ *  Copyright (C) 1998--2006	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,7 +69,8 @@ static Rboolean bc_profiling = FALSE;
    get a context.  With recent changes to pos.to.env it seems possible
    to insert a context around BUILTIN calls to that they show up in
    the trace.  Since there is a cost in establishing these contexts,
-   they are only inserted when profiling is enabled.
+   they are only inserted when profiling is enabled. [BDR: we have since
+   also added contexts for the BUILTIN calls to foreign code.]
 
    One possible advantage of not tracing BUILTIN's is that then
    profiling adds no cost when the timer is turned off.  This would be
@@ -110,7 +111,7 @@ static void doprof()
     SuspendThread(MainThread);
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
-        if (((cptr->callflag & CTXT_FUNCTION) || (cptr->callflag & CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
+        if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
         {
             SEXP fun = CAR(cptr->call);
             if (strlen(buf) < 1000)
@@ -143,7 +144,7 @@ static void doprof(int sig)
     int newline = 0;
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
-        if (((cptr->callflag & CTXT_FUNCTION) || (cptr->callflag & CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
+        if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
         {
             SEXP fun = CAR(cptr->call);
             if (!newline)
@@ -395,27 +396,23 @@ SEXP eval(SEXP e, SEXP rho)
         else if (TYPEOF(op) == BUILTINSXP)
         {
             int save = R_PPStackTop;
-#ifdef R_PROFILING
-            if (R_Profiling)
+            RCNTXT cntxt;
+            PROTECT(tmp = evalList(CDR(e), rho));
+            R_Visible = 1 - PRIMPRINT(op);
+            /* We used to do insert a context only if profiling,
+               but helps for tracebacks too. */
+            if (R_Profiling || (PPINFO(op).kind == PP_FOREIGN))
             {
-                RCNTXT cntxt;
-                PROTECT(tmp = evalList(CDR(e), rho));
-                R_Visible = 1 - PRIMPRINT(op);
                 begincontext(&cntxt, CTXT_BUILTIN, e, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
                 tmp = PRIMFUN(op)(e, op, tmp, rho);
                 endcontext(&cntxt);
-                UNPROTECT(1);
             }
             else
             {
-#endif /* R_PROFILING */
-                PROTECT(tmp = evalList(CDR(e), rho));
-                R_Visible = 1 - PRIMPRINT(op);
                 tmp = PRIMFUN(op)(e, op, tmp, rho);
-                UNPROTECT(1);
-#ifdef R_PROFILING
             }
-#endif
+            UNPROTECT(1);
+
             if (save != R_PPStackTop)
             {
                 Rprintf("stack imbalance in %s, %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
