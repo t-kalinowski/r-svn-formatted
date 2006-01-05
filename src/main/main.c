@@ -1032,7 +1032,7 @@ static void browser_cend(void *data)
     R_BrowseLevel = *psaved - 1;
 }
 
-SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *saveToplevelContext;
     RCNTXT *saveGlobalContext;
@@ -1120,7 +1120,7 @@ void R_dot_Last(void)
     UNPROTECT(1);
 }
 
-SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *tmp;
     int ask = SA_DEFAULT, status, runLast;

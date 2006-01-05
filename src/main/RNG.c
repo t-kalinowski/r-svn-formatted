@@ -431,7 +431,7 @@ static void Norm_kind(N01type kind)
 
 /*------ .Internal interface ------------------------*/
 
-SEXP do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, rng, norm;
 
@@ -453,7 +453,7 @@ SEXP do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_setseed(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_setseed(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP skind;
     int seed;

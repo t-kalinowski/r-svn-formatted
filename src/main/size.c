@@ -122,7 +122,7 @@ static R_size_t objectsize(SEXP s)
     return (cnt);
 }
 
-SEXP do_objectsize(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_objectsize(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     R_size_t cnt = 0;

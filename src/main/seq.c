@@ -126,7 +126,7 @@ static SEXP seq(SEXP call, SEXP s1, SEXP s2)
     return ans;
 }
 
-SEXP do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (isFactor(CAR(args)) && isFactor(CADR(args)))
@@ -323,7 +323,7 @@ static SEXP rep(SEXP s, SEXP ncopy)
     return a;
 }
 
-SEXP do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return rep(CAR(args), CADR(args));

@@ -362,7 +362,7 @@ static SEXP commentgets(SEXP vec, SEXP comment)
     return R_NilValue; /*- just for -Wall */
 }
 
-SEXP do_commentgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_commentgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (NAMED(CAR(args)) == 2)
@@ -373,7 +373,7 @@ SEXP do_commentgets(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-SEXP do_comment(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_comment(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return getAttrib(CAR(args), R_CommentSymbol);
@@ -404,7 +404,7 @@ SEXP classgets(SEXP vec, SEXP class)
 }
 
 /* oldClass() : */
-SEXP do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (NAMED(CAR(args)) == 2)
@@ -415,7 +415,7 @@ SEXP do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-SEXP do_class(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_class(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return getAttrib(CAR(args), R_ClassSymbol);
@@ -591,7 +591,7 @@ SEXP R_do_set_class(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* names(object) <- name */
-SEXP do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (NAMED(CAR(args)) == 2)
@@ -686,7 +686,7 @@ SEXP namesgets(SEXP vec, SEXP val)
     return vec;
 }
 
-SEXP do_names(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_names(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s;
     checkArity(op, args);
@@ -696,7 +696,7 @@ SEXP do_names(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_dimnamesgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dimnamesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     if (DispatchOrEval(call, op, "dimnames<-", args, env, &ans, 0, 0))
@@ -795,7 +795,7 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
     return (vec);
 }
 
-SEXP do_dimnames(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dimnames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     if (DispatchOrEval(call, op, "dimnames", args, env, &ans, 0, 0))
@@ -807,7 +807,7 @@ SEXP do_dimnames(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_dim(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dim(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     if (DispatchOrEval(call, op, "dim", args, env, &ans, 0, 0))
@@ -819,7 +819,7 @@ SEXP do_dim(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_dimgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dimgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     if (DispatchOrEval(call, op, "dim<-", args, env, &ans, 0, 0))
@@ -863,7 +863,7 @@ SEXP dimgets(SEXP vec, SEXP val)
     return vec;
 }
 
-SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP attrs, names, namesattr, value;
     int nvalues;
@@ -907,7 +907,7 @@ SEXP do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* attributes(object) <- attrs */
-SEXP do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* NOTE: The following code ensures that when an attribute list */
     /* is attached to an object, that the "dim" attibute is always */
@@ -1000,7 +1000,7 @@ benchmarks.  There is still some inefficiency since using getAttrib
 means the attributes list will be searched twice, but this seems
 fairly minor.  LT */
 
-SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tag = R_NilValue, alist;
     char *str;
@@ -1085,7 +1085,7 @@ SEXP do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
         return getAttrib(s, tag);
 }
 
-SEXP do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*  attr(obj, "<name>")  <-  value  */
     SEXP obj, name, value;
@@ -1285,7 +1285,7 @@ SEXP R_pseudo_null()
    (see do_subset3) but without S3-style methods.
 */
 #ifdef noSlotCheck
-SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nlist, object, ans;
 
@@ -1331,7 +1331,7 @@ static Rboolean has_class_definition(SEXP class_name)
     return FALSE;
 }
 
-SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nlist, object, ans, class;
 
@@ -1381,7 +1381,7 @@ SEXP do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #if 0
 /* Was a .Primitive implementation for @<-; no longer needed? */
-SEXP do_AT_assign(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_AT_assign(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nlist, object, ans, value;
     PROTECT(object = eval(CAR(args), env));

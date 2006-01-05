@@ -1153,7 +1153,7 @@ void R_RegisterCFinalizer(SEXP s, R_CFinalizer_t fun)
 
 /* R interface function */
 
-SEXP do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
 
@@ -1453,7 +1453,7 @@ again:
     }
 }
 
-SEXP do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i;
     SEXP old = allocVector(LGLSXP, 1);
@@ -1466,7 +1466,7 @@ SEXP do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
     return old;
 }
 
-SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i;
     SEXP old = allocVector(LGLSXP, 1);
@@ -1479,7 +1479,7 @@ SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
     return old;
 }
 
-SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value;
     int ogc, reset_max;
@@ -2107,7 +2107,7 @@ void R_getProcTime(double *data);
 static double gctimes[5], gcstarttimes[5];
 static Rboolean gctime_enabled = FALSE;
 
-SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     if (args == R_NilValue)
@@ -2123,7 +2123,7 @@ SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 #else  /* not _R_HAVE_TIMING_ */
-SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error(_("gc.time() is not implemented on this system"));
     return R_NilValue; /* -Wall */
@@ -2205,7 +2205,7 @@ again:
     }
 }
 
-SEXP do_memlimits(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_memlimits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     int nsize, vsize;
@@ -2227,7 +2227,7 @@ SEXP do_memlimits(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, nms;
     int i, tmp;

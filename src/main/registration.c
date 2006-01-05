@@ -263,7 +263,7 @@ static R_FortranMethodDef fortranMethods[] = {
     FDEF(dqrdc),  FDEF(dqrdc2), FDEF(dqrls), FDEF(dqrsl), FDEF(dqrqty), FDEF(dqrqy),  FDEF(dqrrsd),
     FDEF(dqrsl),  FDEF(dqrxb),  FDEF(dsvdc), FDEF(dtrsl), FDEF(dtrco),  FDEF(lminfl), {NULL, NULL, 0}};
 
-void R_init_base(DllInfo *dll)
+void attribute_hidden R_init_base(DllInfo *dll)
 {
     R_registerRoutines(dll, cMethods, callMethods, fortranMethods, externalMethods);
     R_useDynamicSymbols(dll, FALSE);

@@ -277,7 +277,7 @@ void InitOptions(void)
     UNPROTECT(1);
 }
 
-SEXP do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP argi = R_NilValue, argnames = R_NilValue, namei = R_NilValue, names, options, s, tag,
          value; /* = R_Nil..: -Wall */

@@ -68,7 +68,7 @@ int Rgui_Edit(char *filename, char *title, int modal);
 static char *DefaultFileName;
 static int EdFileUsed = 0;
 
-void InitEd()
+void attribute_hidden InitEd()
 {
 #ifdef Win32
     DefaultFileName = R_tmpnam("Redit", R_TempDir);
@@ -83,7 +83,7 @@ void CleanEd()
         unlink(DefaultFileName);
 }
 
-SEXP do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i, rc;
     ParseStatus status;

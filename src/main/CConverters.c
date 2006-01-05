@@ -36,7 +36,7 @@ static R_toCConverter *StoCConverters = NULL;
    than vectors and lists unaltered.
    This is is accessed in do_dotCode() in dotcode.c. It is not for public use.
 */
-void *Rf_convertToC(SEXP s, R_CConvertInfo *info, int *success, R_toCConverter **converter)
+void *attribute_hidden Rf_convertToC(SEXP s, R_CConvertInfo *info, int *success, R_toCConverter **converter)
 {
     void *ans;
     R_toCConverter *tmp = StoCConverters;
@@ -223,7 +223,7 @@ static int Rf_getNumRtoCConverters()
  Returns the number of registered converters to S.
 */
 
-SEXP do_getNumRtoCConverters(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_getNumRtoCConverters(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     checkArity(op, args);
@@ -235,7 +235,7 @@ SEXP do_getNumRtoCConverters(SEXP call, SEXP op, SEXP args, SEXP env)
 /*
   Return a character vector describing each of the converter elements.
  */
-SEXP do_getRtoCConverterDescriptions(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_getRtoCConverterDescriptions(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int n = 0, i;
     R_toCConverter *tmp = StoCConverters;
@@ -261,7 +261,7 @@ SEXP do_getRtoCConverterDescriptions(SEXP call, SEXP op, SEXP args, SEXP env)
  Return a logical vector indicating whether each converter element
  is active or inactive
 */
-SEXP do_getRtoCConverterStatus(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_getRtoCConverterStatus(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int n = 0, i;
     R_toCConverter *tmp = StoCConverters;
@@ -289,7 +289,7 @@ SEXP do_getRtoCConverterStatus(SEXP call, SEXP op, SEXP args, SEXP env)
  This is also used to remove an element. The op contains a different value
  to indicate this.
 */
-SEXP do_setToCConverterActiveStatus(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_setToCConverterActiveStatus(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     R_toCConverter *el;
     SEXP id, status;

@@ -34,7 +34,7 @@
 static SEXP bcEval(SEXP, SEXP);
 #endif
 
-SEXP do_browser(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_browser(SEXP, SEXP, SEXP, SEXP);
 
 /*#define BC_PROFILING*/
 #ifdef BC_PROFILING
@@ -234,7 +234,7 @@ static void R_InitProfiling(char *filename, int append, double dinterval)
     R_Profiling = 1;
 }
 
-SEXP do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *filename;
     int append_mode;
@@ -260,7 +260,7 @@ SEXP do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 #else  /* not R_PROFILING */
-SEXP do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     error(_("R profiling is not available on this system"));
     return R_NilValue; /* -Wall */
@@ -863,7 +863,7 @@ static Rboolean asLogicalNoNA(SEXP s, SEXP call)
     return cond;
 }
 
-SEXP do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP Cond = eval(CAR(args), rho);
 
@@ -888,7 +888,7 @@ SEXP do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
         }                                                                                                              \
     } while (0)
 
-SEXP do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int dbg;
     volatile int i, n, bgn;
@@ -984,7 +984,7 @@ for_break:
     return ans;
 }
 
-SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int dbg;
     volatile int bgn;
@@ -1016,7 +1016,7 @@ SEXP do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
     return t;
 }
 
-SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int dbg;
     volatile int bgn;
@@ -1048,19 +1048,19 @@ SEXP do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     return t;
 }
 
-SEXP do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     findcontext(PRIMVAL(op), rho, R_NilValue);
     return R_NilValue;
 }
 
-SEXP do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return CAR(args);
 }
 
-SEXP do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s;
     if (args == R_NilValue)
@@ -1084,7 +1084,7 @@ SEXP do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
     return s;
 }
 
-SEXP do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, v, vals;
     int nv = 0;
@@ -1135,7 +1135,7 @@ SEXP do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static SEXP forcePromise(SEXP e);
 
-SEXP do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rval;
 
@@ -1294,7 +1294,7 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* Defunct in in 1.5.0
-SEXP do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op,args);
     Rprintf(".Alias is deprecated; there is no replacement \n");
@@ -1305,7 +1305,7 @@ SEXP do_alias(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /*  Assignment in its various forms  */
 
-SEXP do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP s;
     if (length(args) != 2)
@@ -1566,7 +1566,7 @@ err:
 /* "eval" and "eval.with.vis" : Evaluate the first argument */
 /* in the environment specified by the second argument. */
 
-SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP encl, x, xptr;
     volatile SEXP expr, env, tmp;
@@ -1674,7 +1674,7 @@ SEXP do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     return expr;
 }
 
-SEXP do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;
     SEXP s, ans;
@@ -2275,14 +2275,14 @@ enum
 
 SEXP R_unary(SEXP, SEXP, SEXP);
 SEXP R_binary(SEXP, SEXP, SEXP, SEXP);
-SEXP do_math1(SEXP, SEXP, SEXP, SEXP);
-SEXP do_relop_dflt(SEXP, SEXP, SEXP, SEXP);
-SEXP do_logic(SEXP, SEXP, SEXP, SEXP);
-SEXP do_subset_dflt(SEXP, SEXP, SEXP, SEXP);
-SEXP do_subassign_dflt(SEXP, SEXP, SEXP, SEXP);
-SEXP do_c_dflt(SEXP, SEXP, SEXP, SEXP);
-SEXP do_subset2_dflt(SEXP, SEXP, SEXP, SEXP);
-SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_math1(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_relop_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_logic(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_subset_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_subassign_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_c_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_subset2_dflt(SEXP, SEXP, SEXP, SEXP);
+SEXP attribute_hidden do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
 SEXP R_subset3_dflt(SEXP, SEXP);
 SEXP R_subassign3_dflt(SEXP, SEXP, SEXP, SEXP);
 
@@ -3641,7 +3641,7 @@ SEXP R_bcDecode(SEXP x)
 }
 #endif
 
-SEXP do_mkcode(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_mkcode(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP bytes, consts, ans;
 
@@ -3653,7 +3653,7 @@ SEXP do_mkcode(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP do_bcclose(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_bcclose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP forms, body, env;
 
@@ -3678,7 +3678,7 @@ SEXP do_bcclose(SEXP call, SEXP op, SEXP args, SEXP rho)
     return mkCLOSXP(forms, body, env);
 }
 
-SEXP do_is_builtin_internal(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_is_builtin_internal(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP symbol, i;
 
@@ -3724,7 +3724,7 @@ static SEXP disassemble(SEXP bc)
     return ans;
 }
 
-SEXP do_disassemble(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_disassemble(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP code;
 
@@ -3735,7 +3735,7 @@ SEXP do_disassemble(SEXP call, SEXP op, SEXP args, SEXP rho)
     return disassemble(code);
 }
 
-SEXP do_bcversion(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_bcversion(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans = allocVector(INTSXP, 1);
     INTEGER(ans)[0] = R_bcVersion;
@@ -3744,7 +3744,7 @@ SEXP do_bcversion(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #include "Fileio.h"
 
-SEXP do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP file, s;
     FILE *fp;
@@ -3766,7 +3766,7 @@ SEXP do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
     return s;
 }
 
-SEXP do_savefile(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_savefile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     FILE *fp;
 
@@ -3839,7 +3839,7 @@ FILE *R_OpenCompiledFile(char *fname, char *buf, size_t bsize)
         return NULL;
 }
 
-SEXP do_putconst(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_putconst(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP code, c, ans;
     int i, n;

@@ -119,7 +119,7 @@ static SEXP cummin(SEXP x, SEXP s)
     return s;
 }
 
-SEXP do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, ans;
     int i;

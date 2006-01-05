@@ -33,7 +33,7 @@
 #include <Graphics.h>
 #include <Rdevices.h>
 
-SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP prompt, onMouseDown, onMouseMove, onMouseUp, onKeybd;
     GEDevDesc *dd;

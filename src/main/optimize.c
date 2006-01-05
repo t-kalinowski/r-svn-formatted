@@ -79,7 +79,7 @@ badvalue:
 }
 
 /* fmin(f, xmin, xmax tol) */
-SEXP do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_fmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     double xmin, xmax, tol;
     SEXP v, res;
@@ -166,7 +166,7 @@ badvalue:
 }
 
 /* zeroin(f, xmin, xmax, tol, maxiter) */
-SEXP do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     double xmin, xmax, tol;
     int iter;
@@ -559,7 +559,7 @@ from above in some direction,\n"
 
 /* NOTE: The actual Dennis-Schnabel algorithm `optif9' is in ../appl/uncmin.c */
 
-SEXP do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value, names, v, R_gradientSymbol, R_hessianSymbol;
 

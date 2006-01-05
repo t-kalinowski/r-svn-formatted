@@ -35,7 +35,7 @@
 #include <R_ext/RS.h>
 
 /* R function  qsort(x, index.return) */
-SEXP do_qsort(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_qsort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, sx;
     int indx_ret, n;

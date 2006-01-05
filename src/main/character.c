@@ -93,7 +93,7 @@ static void DeallocBuffer(R_StringBuffer *cbuff)
 /* Functions to perform analogues of the standard C string library. */
 /* Most are vectorized */
 
-SEXP do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP d, s, x, stype;
     int i, len, ntype;
@@ -213,7 +213,7 @@ static void substr(char *buf, char *str, int sa, int so)
     *buf = '\0';
 }
 
-SEXP do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, sa, so;
     int i, len, start, stop, slen, k, l;
@@ -300,7 +300,7 @@ static void substrset(char *buf, char *str, int sa, int so)
         memcpy(buf + sa - 1, str, so - sa + 1);
 }
 
-SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, sa, so, value;
     int i, len, start, stop, slen, vlen, k, l, v;
@@ -372,7 +372,7 @@ SEXP do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
  * returned of length equal to the input vector x, each element of the
  * list is the collection of splits for the corresponding element of x.
  */
-SEXP do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tok, x;
     int i, j, len, tlen, ntok, slen;
@@ -783,7 +783,7 @@ donesc:
     return (mkChar(buff1));
 }
 
-SEXP do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     int i, len, minlen, uclass;
@@ -814,7 +814,7 @@ SEXP do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
-SEXP do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP arg, ans;
     int i, l, n, allow_;
@@ -972,7 +972,7 @@ static int fgrep_one(char *pat, char *target, int useBytes)
     return -1;
 }
 
-SEXP do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
     regex_t reg;
@@ -1172,7 +1172,7 @@ static char *string_adj(char *target, char *orig, char *repl, regmatch_t *regmat
     return t;
 }
 
-SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, vec, ans;
     regex_t reg;
@@ -1394,7 +1394,7 @@ SEXP do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ans, matchlen;
     regex_t reg;
@@ -1722,7 +1722,7 @@ static SEXP gregexpr_BadStringAns(void)
 }
 #endif
 
-SEXP do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ansList, ans;
     regex_t reg;
@@ -1809,7 +1809,7 @@ SEXP do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     return ansList;
 }
 
-SEXP do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int i, n, ul;
@@ -2083,7 +2083,7 @@ static unsigned char tr_get_next_char_from_spec(struct tr_spec **p)
     return (c);
 }
 
-SEXP do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP old, new, x, y;
     int i, n;
@@ -2250,7 +2250,7 @@ SEXP do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     return (y);
 }
 
-SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
     int i, j, n, nmatches;
@@ -2409,7 +2409,7 @@ SEXP do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 #define isRaw(x) (TYPEOF(x) == RAWSXP)
 
 /* <UTF8>  charToRaw should work at byte level */
-SEXP do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int nc;
@@ -2427,7 +2427,7 @@ SEXP do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* <UTF8>  rawToChar should work at byte level */
-SEXP do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, c, x = CAR(args);
     int i, nc = LENGTH(x), multiple, len;
@@ -2464,7 +2464,7 @@ SEXP do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int i, shift = asInteger(CADR(args));
@@ -2484,7 +2484,7 @@ SEXP do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int i, j = 0, k;
@@ -2503,7 +2503,7 @@ SEXP do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int i, j = 0, k;
@@ -2522,7 +2522,7 @@ SEXP do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args), stype = CADR(args);
     Rboolean useRaw;
@@ -2670,7 +2670,7 @@ static int mbrtoint(int *w, const char *s)
     return -2; /* not reached */
 }
 
-SEXP do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int i, j, nc, *ians, tmp, used = 0; /* -Wall */
@@ -2729,7 +2729,7 @@ static size_t inttomb(char *s, const int wc)
     return i + 1;
 }
 
-SEXP do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, c, x = CAR(args);
     int i, nc = LENGTH(x), multiple, len, used;
@@ -2772,7 +2772,7 @@ SEXP do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, width;
     int i, len, nw, w, nc;

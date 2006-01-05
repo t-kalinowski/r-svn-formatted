@@ -743,7 +743,7 @@ static int TermCode(SEXP termlist, SEXP thisterm, int whichbit, SEXP term)
 
 static SEXP ExpandDots(SEXP object, SEXP value);
 
-SEXP do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, ans, v, pattern, formula, varnames, term, termlabs;
     SEXP specials, t, data, rhs;
@@ -1234,7 +1234,7 @@ badformula:
     return R_NilValue; /*NOTREACHED*/
 }
 
-SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP new, old, lhs, rhs;
 
@@ -1335,7 +1335,7 @@ SEXP do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* .Internal(model.frame(terms, rownames, variables, varnames, */
 /*           dots, dotnames, subset, na.action)) */
 
-SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP terms, data, names, variables, varnames, dots, dotnames, na_action;
     SEXP ans, row_names, subset, tmp;
@@ -1508,7 +1508,7 @@ SEXP do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* Just returns the unevaluated call */
 /* No longer needed??? */
 
-SEXP do_tilde(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_tilde(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     if (isObject(call))
         return duplicate(call);
@@ -1625,7 +1625,7 @@ static SEXP ColumnNames(SEXP x)
         return VECTOR_ELT(dn, 1);
 }
 
-SEXP do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP expr, factors, terms, vars, vnames, assign;
     SEXP xnames, tnames, rnames;

@@ -566,7 +566,7 @@ void errorcall(SEXP call, const char *format, ...)
     va_end(ap);
 }
 
-SEXP do_geterrmessage(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_geterrmessage(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP res;
 
@@ -765,7 +765,7 @@ void jump_to_toplevel()
 /* #define DEBUG_GETTEXT 1 */
 
 /* gettext(domain, string) */
-SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 #ifdef ENABLE_NLS
     char *domain = "", *buf;
@@ -876,7 +876,7 @@ SEXP do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* ngettext(n, msg1, msg2, domain) */
-SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 #ifdef ENABLE_NLS
     char *domain = "", *buf;
@@ -943,7 +943,7 @@ SEXP do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* bindtextdomain(domain, dirname) */
-SEXP do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 #ifdef ENABLE_NLS
     char *res;
@@ -977,7 +977,7 @@ static SEXP findCall(void)
     return R_NilValue;
 }
 
-SEXP do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     /* error(.) : really doesn't return anything; but all do_foo() must be SEXP */
     SEXP c_call;
@@ -1001,7 +1001,7 @@ SEXP do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* never called: */ return c_call;
 }
 
-SEXP do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP c_call;
 
@@ -1244,7 +1244,7 @@ static SEXP mkHandlerEntry(SEXP class, SEXP parentenv, SEXP handler, SEXP rho, S
 
 #define RESULT_SIZE 3
 
-SEXP do_addCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_addCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP classes, handlers, parentenv, target, oldstack, newstack, result;
     int calling, i, n;
@@ -1288,7 +1288,7 @@ SEXP do_addCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
     return oldstack;
 }
 
-SEXP do_resetCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_resetCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     R_HandlerStack = CAR(args);
@@ -1399,7 +1399,7 @@ static SEXP findConditionHandler(SEXP cond)
     return R_NilValue;
 }
 
-SEXP do_signalCondition(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_signalCondition(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP list, cond, msg, ecall, oldstack;
 
@@ -1520,7 +1520,7 @@ void R_InsertRestartHandlers(RCNTXT *cptr, Rboolean browser)
     UNPROTECT(3);
 }
 
-SEXP do_dfltWarn(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_dfltWarn(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *msg;
     SEXP ecall;
@@ -1536,7 +1536,7 @@ SEXP do_dfltWarn(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-SEXP do_dfltStop(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_dfltStop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *msg;
     SEXP ecall;
@@ -1556,7 +1556,7 @@ SEXP do_dfltStop(SEXP call, SEXP op, SEXP args, SEXP rho)
  * Restart Handling
  */
 
-SEXP do_getRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_getRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i;
     SEXP list;
@@ -1591,7 +1591,7 @@ SEXP do_getRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
             error(_("bad restart"));                                                                                   \
     } while (0)
 
-SEXP do_addRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_addRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     CHECK_RESTART(CAR(args));
@@ -1628,7 +1628,7 @@ static void invokeRestart(SEXP r, SEXP arglist)
     }
 }
 
-SEXP do_invokeRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_invokeRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     CHECK_RESTART(CAR(args));
@@ -1637,7 +1637,7 @@ SEXP do_invokeRestart(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 #endif
 
-SEXP do_addTryHandlers(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_addTryHandlers(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (R_GlobalContext == R_ToplevelContext || !R_GlobalContext->callflag & CTXT_FUNCTION)

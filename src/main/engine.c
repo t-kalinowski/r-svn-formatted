@@ -2797,7 +2797,7 @@ void GEplaySnapshot(SEXP snapshot, GEDevDesc *dd)
  ****************************************************************
  */
 
-SEXP do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, xptr, evalenv, retval;
     GEDevDesc *dd = GEcurrentDevice();

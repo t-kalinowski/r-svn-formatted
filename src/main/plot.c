@@ -66,7 +66,7 @@ void NewFrameConfirm(void)
     if (!LENGTH(CAR(args)))                                                                                            \
     errorcall(call, _("argument must have positive length"))
 
-SEXP do_devcontrol(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devcontrol(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int listFlag;
 
@@ -81,14 +81,14 @@ SEXP do_devcontrol(SEXP call, SEXP op, SEXP args, SEXP env)
     return ScalarLogical(listFlag);
 }
 
-SEXP do_devcopy(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devcopy(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity_length;
     GEcopyDisplayList(INTEGER(CAR(args))[0] - 1);
     return R_NilValue;
 }
 
-SEXP do_devcur(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devcur(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP cd = allocVector(INTSXP, 1);
     checkArity(op, args);
@@ -96,7 +96,7 @@ SEXP do_devcur(SEXP call, SEXP op, SEXP args, SEXP env)
     return cd;
 }
 
-SEXP do_devnext(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devnext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nd = allocVector(INTSXP, 1);
     checkArity_length;
@@ -104,7 +104,7 @@ SEXP do_devnext(SEXP call, SEXP op, SEXP args, SEXP env)
     return nd;
 }
 
-SEXP do_devprev(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devprev(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pd = allocVector(INTSXP, 1);
     checkArity_length;
@@ -112,7 +112,7 @@ SEXP do_devprev(SEXP call, SEXP op, SEXP args, SEXP env)
     return pd;
 }
 
-SEXP do_devset(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devset(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int devNum = INTEGER(CAR(args))[0] - 1;
     SEXP sd = allocVector(INTSXP, 1);
@@ -121,7 +121,7 @@ SEXP do_devset(SEXP call, SEXP op, SEXP args, SEXP env)
     return sd;
 }
 
-SEXP do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_devoff(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity_length;
     killDevice(INTEGER(CAR(args))[0] - 1);
@@ -577,7 +577,7 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
 
 /* GRAPHICS FUNCTION ENTRY POINTS */
 
-SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* plot.new() - create a new plot "frame" */
 
@@ -629,7 +629,7 @@ SEXP do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
  *	full computation is captured in the display list.
  */
 
-SEXP do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP xlim, ylim, logarg;
     double asp, xmin, xmax, ymin, ymax;
@@ -1093,7 +1093,7 @@ static double ComputePAdjValue(double padj, int side, int las)
     return padj;
 }
 
-SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* axis(side, at, labels, tick, line, pos,
      *	    outer, font, lty, lwd, col, padj, ...) */
@@ -1656,7 +1656,7 @@ SEXP do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     return at;
 } /* do_axis */
 
-SEXP do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*	plot.xy(xy, type, pch, lty, col, bg, cex, lwd, ...)
 
@@ -1968,7 +1968,7 @@ static void xypoints(SEXP call, SEXP args, int *n)
     args = CDR(args);
 }
 
-SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* segments(x0, y0, x1, y1, col, lty, lwd, ...) */
     SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
@@ -2045,7 +2045,7 @@ SEXP do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* rect(xl, yb, xr, yt, col, border, lty, ...) */
     SEXP sxl, sxr, syb, syt, col, lty, lwd, border;
@@ -2126,7 +2126,7 @@ SEXP do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* arrows(x0, y0, x1, y1, length, angle, code, col, lty, lwd, ...) */
     SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
@@ -2228,7 +2228,7 @@ static void drawPolygon(int n, double *x, double *y, int lty, int fill, int bord
     GPolygon(n, x, y, USER, fill, border, dd);
 }
 
-SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* polygon(x, y, col, border, lty, ...) */
     SEXP sx, sy, col, border, lty;
@@ -2308,7 +2308,7 @@ SEXP do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_text(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* text(xy, labels, adj, pos, offset,
      *	vfont, cex, col, font, ...)
@@ -2629,7 +2629,7 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
      font = NA,
      ...) */
 
-SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP text, side, line, outer, at, adj, padj, cex, col, font, string;
     SEXP rawcol;
@@ -2825,7 +2825,7 @@ SEXP do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 } /* do_mtext */
 
-SEXP do_title(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* Annotation for plots :
 
@@ -3100,7 +3100,7 @@ static void getylimits(double *y, DevDesc *dd)
     }
 }
 
-SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP a, b, h, v, untf, col, lty, lwd;
     int i, ncol, nlines, nlty, nlwd, lstart, lstop;
@@ -3300,7 +3300,7 @@ SEXP do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 } /* do_abline */
 
-SEXP do_box(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*     box(which="plot", lty="solid", ...)
            --- which is coded, 1 = plot, 2 = figure, 3 = inner, 4 = outer.
@@ -3354,7 +3354,7 @@ static void drawPointsLines(double xp, double yp, double xold, double yold, char
         GLine(xold, yold, xp, yp, DEVICE, dd);
 }
 
-SEXP do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y, nobs, ans, saveans, stype = R_NilValue;
     int i, n, type = 'p';
@@ -3477,7 +3477,7 @@ static void drawLabel(double xi, double yi, int pos, double offset, char *l, Dev
     }
 }
 
-SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset, tol;
@@ -3742,9 +3742,9 @@ SEXP do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         return ans;                                                                                                    \
     }
 
-SEXP do_strheight(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Height)
+SEXP attribute_hidden do_strheight(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Height)
 
-    SEXP do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Width)
+    SEXP attribute_hidden do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Width)
 
 #undef DO_STR_DIM
 
@@ -3803,7 +3803,7 @@ static void drawdend(int node, double *x, double *y, DevDesc *dd)
     *x = 0.5 * (xl + xr);
 }
 
-SEXP do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     double x, y;
     int n;
@@ -3880,7 +3880,7 @@ badargs:
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
-SEXP do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, imax, n;
     double pin, *ll, tmp, yval, *y, ymin, ymax, yrange, m;
@@ -3998,7 +3998,7 @@ badargs:
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
-SEXP do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP col;
     int ncol;
@@ -4015,7 +4015,7 @@ SEXP do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_getSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_getSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DevDesc *dd = CurrentDevice();
 
@@ -4031,7 +4031,7 @@ SEXP do_getSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
-SEXP do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DevDesc *dd = CurrentDevice();
 
@@ -4045,7 +4045,7 @@ SEXP do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* I don't think this gets called in any base R code
  */
-SEXP do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     if (!NoDevices())
     {
@@ -4057,7 +4057,7 @@ SEXP do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DevDesc *dd = CurrentDevice();
     SEXP theList;
@@ -4090,7 +4090,7 @@ SEXP do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-SEXP do_setGPar(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_setGPar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DevDesc *dd = CurrentDevice();
     int lGPar = 1 + sizeof(GPar) / sizeof(int);
@@ -4149,7 +4149,7 @@ static void CheckSymbolPar(SEXP call, SEXP p, int *nr, int *nc)
 }
 
 /* Internal  symbols(x, y, type, data, inches, bg, fg, ...) */
-SEXP do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y, p, fg, bg;
     int i, j, nr, nc, nbg, nfg, type;

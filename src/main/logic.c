@@ -30,7 +30,7 @@ static SEXP binaryLogic(int code, SEXP s1, SEXP s2);
 static SEXP binaryLogic2(int code, SEXP s1, SEXP s2);
 
 /* & | ! */
-SEXP do_logic(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_logic(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
 
@@ -214,7 +214,7 @@ static SEXP lunary(SEXP call, SEXP op, SEXP arg)
 }
 
 /* && || */
-SEXP do_logic2(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_logic2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*  &&	and  ||	 */
     SEXP s1, s2;
@@ -372,7 +372,7 @@ static void checkValues(int *x, int n, Rboolean *haveFalse, Rboolean *haveTrue, 
 }
 
 /* all, any */
-SEXP do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, s, t;
     int narm;

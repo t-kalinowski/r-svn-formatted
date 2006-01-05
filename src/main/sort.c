@@ -105,7 +105,7 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
     return STRCOLL(CHAR(x), CHAR(y));
 }
 
-Rboolean isUnsorted(SEXP x)
+Rboolean attribute_hidden isUnsorted(SEXP x)
 {
     int n, i;
 
@@ -146,7 +146,7 @@ Rboolean isUnsorted(SEXP x)
     return FALSE; /* sorted */
 }
 
-SEXP do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
 
@@ -296,7 +296,7 @@ void revsort(double *a, int *ib, int n)
     }
 }
 
-SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     Rboolean decreasing;
@@ -543,7 +543,7 @@ static void Psort(SEXP x, int k)
 }
 
 /* FUNCTION psort(x, indices) */
-SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i, k, n;
     int *l;
@@ -815,7 +815,7 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
 }
 
 /* FUNCTION order(...) */
-SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ap, ans;
     int i, n = -1, narg = 0;
@@ -857,7 +857,7 @@ SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* FUNCTION: rank(x) */
-SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rank, indx, x;
     int *in;
@@ -933,7 +933,7 @@ SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #include <R_ext/RS.h>
 
-SEXP do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, ans;
     Rboolean nalast, decreasing;

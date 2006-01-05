@@ -25,6 +25,16 @@ Furthermore:
 
 /* <UTF8-FIXME> byte-level ops. Not at all clear that this is fixable. */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+#define attribute_hidden __attribute__((visibility("hidden")))
+#else
+#define attribute_hidden
+#endif
+
 #include "apse.h"
 
 #include <stdio.h>
@@ -138,7 +148,7 @@ static char *_apse_fbin(apse_vec_t v, apse_size_t n, apse_bool_t last)
 
 /* The code begins. */
 
-apse_bool_t apse_set_pattern(apse_t *ap, unsigned char *pattern, apse_size_t pattern_size)
+static apse_bool_t apse_set_pattern(apse_t *ap, unsigned char *pattern, apse_size_t pattern_size)
 {
     apse_size_t i;
 
@@ -188,65 +198,60 @@ out:
     }
 }
 
-void apse_set_greedy(apse_t *ap, apse_bool_t greedy)
-{
+#if 0
+void apse_set_greedy(apse_t *ap, apse_bool_t greedy) {
     ap->is_greedy = greedy;
 }
 
-apse_bool_t apse_get_greedy(apse_t *ap)
-{
+apse_bool_t apse_get_greedy(apse_t *ap) {
     return ap->is_greedy;
 }
 
-void apse_set_match_bot_callback(apse_t *ap, void *(*match_bot_callback)(apse_t *ap))
-{
+void apse_set_match_bot_callback(apse_t *ap,
+				 void* (*match_bot_callback)(apse_t* ap)) {
     ap->match_bot_callback = match_bot_callback;
 }
 
-void apse_set_match_begin_callback(apse_t *ap, void *(*match_begin_callback)(apse_t *ap))
-{
+void apse_set_match_begin_callback(apse_t *ap,
+				   void* (*match_begin_callback)(apse_t* ap)) {
     ap->match_begin_callback = match_begin_callback;
 }
 
-void apse_set_match_fail_callback(apse_t *ap, void *(*match_fail_callback)(apse_t *ap))
-{
+void apse_set_match_fail_callback(apse_t *ap,
+				  void* (*match_fail_callback)(apse_t* ap)) {
     ap->match_fail_callback = match_fail_callback;
 }
 
-void apse_set_match_end_callback(apse_t *ap, void *(*match_end_callback)(apse_t *ap))
-{
+void apse_set_match_end_callback(apse_t *ap,
+				 void* (*match_end_callback)(apse_t* ap)) {
     ap->match_end_callback = match_end_callback;
 }
 
-void apse_set_match_eot_callback(apse_t *ap, void *(*match_eot_callback)(apse_t *ap))
-{
+void apse_set_match_eot_callback(apse_t *ap,
+				 void* (*match_eot_callback)(apse_t* ap)) {
     ap->match_eot_callback = match_eot_callback;
 }
 
-void *(*apse_get_match_bot_callback(apse_t *ap))(apse_t *ap)
-{
+void* (*apse_get_match_bot_callback(apse_t * ap))(apse_t *ap) {
     return ap->match_bot_callback;
 }
 
-void *(*apse_get_match_begin_callback(apse_t *ap))(apse_t *ap)
-{
+void* (*apse_get_match_begin_callback(apse_t * ap))(apse_t *ap) {
     return ap->match_begin_callback;
 }
 
-void *(*apse_get_match_fail_callback(apse_t *ap))(apse_t *ap)
-{
+void* (*apse_get_match_fail_callback(apse_t * ap))(apse_t *ap) {
     return ap->match_fail_callback;
 }
 
-void *(*apse_get_match_end_callback(apse_t *ap))(apse_t *ap)
-{
+void* (*apse_get_match_end_callback(apse_t * ap))(apse_t *ap) {
     return ap->match_end_callback;
 }
 
-void *(*apse_get_match_eot_callback(apse_t *ap))(apse_t *ap)
-{
+void* (*apse_get_match_eot_callback(apse_t * ap))(apse_t *ap) {
     return ap->match_eot_callback;
 }
+#endif
 
 static int _apse_wrap_slice(apse_t *ap, apse_ssize_t begin_in, apse_ssize_t size_in, apse_ssize_t *begin_out,
                             apse_ssize_t *size_out)
@@ -281,57 +286,66 @@ static int _apse_wrap_slice(apse_t *ap, apse_ssize_t begin_in, apse_ssize_t size
     return 1;
 }
 
-apse_bool_t apse_set_anychar(apse_t *ap, apse_ssize_t pattern_index)
-{
-    apse_size_t bitvectors_in_state = ap->bitvectors_in_state;
-    apse_ssize_t true_index, i;
-    apse_bool_t okay = 0;
+#if 0
+apse_bool_t apse_set_anychar(apse_t *ap, apse_ssize_t pattern_index) {
+    apse_size_t	bitvectors_in_state = ap->bitvectors_in_state;
+    apse_ssize_t	true_index, i;
+    apse_bool_t	okay = 0;
 
-    if (!_apse_wrap_slice(ap, pattern_index, (apse_ssize_t)1, &true_index, 0))
-        goto out;
+    if (!_apse_wrap_slice(ap, pattern_index, (apse_ssize_t)1,
+			      &true_index, 0))
+	goto out;
 
     for (i = 0; i < APSE_CHAR_MAX; i++)
-        APSE_BIT_SET(ap->case_mask, i, bitvectors_in_state, pattern_index);
+	APSE_BIT_SET(ap->case_mask,
+		      i, bitvectors_in_state, pattern_index);
     if (ap->fold_mask)
-        for (i = 0; i < APSE_CHAR_MAX; i++)
-            APSE_BIT_SET(ap->fold_mask, i, bitvectors_in_state, pattern_index);
+	for (i = 0; i < APSE_CHAR_MAX; i++)
+	    APSE_BIT_SET(ap->fold_mask,
+			  i, bitvectors_in_state, pattern_index);
 
     okay = 1;
 
-out:
-
+  out:
+    
     return okay;
 }
 
-apse_bool_t apse_set_charset(apse_t *ap, apse_ssize_t pattern_index, unsigned char *set, apse_size_t set_size,
-                             apse_bool_t complement)
-{
-    apse_size_t bitvectors_in_state = ap->bitvectors_in_state;
-    apse_ssize_t true_index, i;
-    apse_bool_t okay = 0;
+apse_bool_t apse_set_charset(apse_t*		ap,
+			     apse_ssize_t	pattern_index,
+			     unsigned char*	set,
+			     apse_size_t	set_size,
+			     apse_bool_t	complement) {
+    apse_size_t	bitvectors_in_state = ap->bitvectors_in_state;
+    apse_ssize_t	true_index, i;
+    apse_bool_t	okay = 0;
 
-    if (!_apse_wrap_slice(ap, pattern_index, (apse_ssize_t)1, &true_index, 0))
-        goto out;
-
-    if (complement)
-    {
-        for (i = 0; i < set_size; i++)
-            APSE_BIT_CLR(ap->case_mask, (unsigned)set[i], bitvectors_in_state, true_index);
-    }
-    else
-    {
-        for (i = 0; i < set_size; i++)
-            APSE_BIT_SET(ap->case_mask, (unsigned)set[i], bitvectors_in_state, true_index);
+    if (!_apse_wrap_slice(ap, pattern_index, (apse_ssize_t)1,
+			      &true_index, 0))
+	goto out;
+    
+    if (complement) {
+	for (i = 0; i < set_size; i++)
+	    APSE_BIT_CLR(ap->case_mask,
+			  (unsigned)set[i],
+			  bitvectors_in_state, true_index);
+    } else {
+	for (i = 0; i < set_size; i++)
+	    APSE_BIT_SET(ap->case_mask,
+			  (unsigned)set[i],
+			  bitvectors_in_state, true_index);
     }
     if (ap->fold_mask)
-        apse_set_caseignore_slice(ap, pattern_index, (apse_ssize_t)1, (apse_bool_t)1);
+	apse_set_caseignore_slice(ap, pattern_index,
+				   (apse_ssize_t)1, (apse_bool_t)1);
 
     okay = 1;
 
-out:
+ out:
 
     return okay;
 }
+#endif
 
 static void _apse_reset_state(apse_t *ap)
 {
@@ -350,55 +364,53 @@ static void _apse_reset_state(apse_t *ap)
     }
 }
 
-apse_bool_t apse_set_text_position(apse_t *ap, apse_size_t text_position)
-{
+#if 0
+apse_bool_t apse_set_text_position(apse_t *ap,
+					 apse_size_t text_position) {
     ap->text_position = text_position;
 
     return 1;
 }
 
-apse_size_t apse_get_text_position(apse_t *ap)
-{
+apse_size_t apse_get_text_position(apse_t *ap) {
     return ap->text_position;
 }
 
-apse_bool_t apse_set_text_initial_position(apse_t *ap, apse_size_t text_initial_position)
-{
+apse_bool_t apse_set_text_initial_position(apse_t *ap,
+					   apse_size_t text_initial_position) {
     ap->text_initial_position = text_initial_position;
 
     return 1;
 }
 
-apse_size_t apse_get_text_initial_position(apse_t *ap)
-{
+apse_size_t apse_get_text_initial_position(apse_t *ap) {
     return ap->text_initial_position;
 }
 
-apse_bool_t apse_set_text_final_position(apse_t *ap, apse_size_t text_final_position)
-{
+apse_bool_t apse_set_text_final_position(apse_t *ap,
+					 apse_size_t text_final_position) {
     ap->text_final_position = text_final_position;
 
     return 1;
 }
 
-apse_size_t apse_get_text_final_position(apse_t *ap)
-{
+apse_size_t apse_get_text_final_position(apse_t *ap) {
     return ap->text_final_position;
 }
 
-apse_bool_t apse_set_text_position_range(apse_t *ap, apse_size_t text_position_range)
-{
+apse_bool_t apse_set_text_position_range(apse_t *ap,
+					 apse_size_t text_position_range) {
     ap->text_position_range = text_position_range;
 
     return 1;
 }
 
-apse_size_t apse_get_text_position_range(apse_t *ap)
-{
+apse_size_t apse_get_text_position_range(apse_t *ap) {
     return ap->text_position_range;
 }
+#endif
 
-void apse_reset(apse_t *ap)
+static void apse_reset(apse_t *ap)
 {
     _apse_reset_state(ap);
 
@@ -410,7 +422,7 @@ void apse_reset(apse_t *ap)
     ap->match_end = APSE_MATCH_BAD;
 }
 
-apse_bool_t apse_set_edit_distance(apse_t *ap, apse_size_t edit_distance)
+static apse_bool_t apse_set_edit_distance(apse_t *ap, apse_size_t edit_distance)
 {
     /* TODO: waste not--reuse if possible */
 
@@ -466,57 +478,54 @@ out:
     return ap->state && ap->prev_state;
 }
 
-apse_size_t apse_get_edit_distance(apse_t *ap)
-{
+#if 0
+apse_size_t apse_get_edit_distance(apse_t *ap) {
     return ap->edit_distance;
 }
 
-apse_bool_t apse_set_minimal_distance(apse_t *ap, apse_bool_t minimal)
-{
+apse_bool_t apse_set_minimal_distance(apse_t* ap, apse_bool_t minimal) {
     ap->use_minimal_distance = minimal;
     return 1;
 }
 
-apse_bool_t apse_get_minimal_distance(apse_t *ap)
-{
+apse_bool_t apse_get_minimal_distance(apse_t *ap) {
     return ap->use_minimal_distance;
 }
 
-apse_bool_t apse_set_exact_slice(apse_t *ap, apse_ssize_t exact_begin, apse_ssize_t exact_size, apse_bool_t exact)
-{
-    apse_ssize_t i, j, true_begin, true_size;
-    apse_bool_t okay = 0;
+apse_bool_t apse_set_exact_slice(apse_t*	ap,
+				 apse_ssize_t	exact_begin,
+				 apse_ssize_t	exact_size,
+				 apse_bool_t	exact) {
+    apse_ssize_t	i, j, true_begin, true_size;
+    apse_bool_t	okay = 0;
 
-    if (!ap->exact_mask)
-    {
+    if (!ap->exact_mask) {
 
-        ap->exact_mask = calloc((size_t)1, ap->bytes_in_state);
-        if (!ap->exact_mask)
-            goto out;
+	ap->exact_mask = calloc((size_t)1, ap->bytes_in_state);
+	if (!ap->exact_mask)
+	    goto out;
 
-        ap->exact_positions = 0;
+	ap->exact_positions = 0;
     }
 
-    if (!_apse_wrap_slice(ap, exact_begin, exact_size, &true_begin, &true_size))
-        goto out;
+    if (!_apse_wrap_slice(ap, exact_begin, exact_size,
+			      &true_begin, &true_size))
+	goto out;
 
-    if (exact)
-    {
-        for (i = true_begin, j = true_begin + true_size; i < j && i < ap->pattern_size; i++)
-        {
-            if (!APSE_BIT_TST(ap->exact_mask, 0, 0, i))
-                ap->exact_positions++;
-            APSE_BIT_SET(ap->exact_mask, 0, 0, i);
-        }
-    }
-    else
-    {
-        for (i = true_begin, j = true_begin + true_size; i < j && i < ap->pattern_size; i++)
-        {
-            if (APSE_BIT_TST(ap->exact_mask, 0, 0, i))
-                ap->exact_positions--;
-            APSE_BIT_CLR(ap->exact_mask, 0, 0, i);
-        }
+    if (exact) {
+	for (i = true_begin, j = true_begin +  true_size;
+	     i < j && i < ap->pattern_size; i++) {
+	    if (!APSE_BIT_TST(ap->exact_mask, 0, 0, i))
+		ap->exact_positions++;
+	    APSE_BIT_SET(ap->exact_mask, 0, 0, i);
+	}
+    } else {
+	for (i = true_begin, j = true_begin +  true_size;
+	     i < j && i < ap->pattern_size; i++) {
+	    if (APSE_BIT_TST(ap->exact_mask, 0, 0, i))
+		ap->exact_positions--;
+	    APSE_BIT_CLR(ap->exact_mask, 0, 0, i);
+	}
     }
 
     okay = 1;
@@ -524,9 +533,10 @@ apse_bool_t apse_set_exact_slice(apse_t *ap, apse_ssize_t exact_begin, apse_ssiz
 out:
     return okay;
 }
+#endif
 
-apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t caseignore_begin, apse_ssize_t caseignore_size,
-                                      apse_bool_t caseignore)
+attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t caseignore_begin,
+                                                       apse_ssize_t caseignore_size, apse_bool_t caseignore)
 {
     apse_size_t i, j;
     int k;
@@ -587,7 +597,7 @@ out:
     return okay;
 }
 
-void apse_destroy(apse_t *ap)
+attribute_hidden void apse_destroy(apse_t *ap)
 {
     if (ap->case_mask)
         free(ap->case_mask);
@@ -602,7 +612,7 @@ void apse_destroy(apse_t *ap)
     free(ap);
 }
 
-apse_t *apse_create(unsigned char *pattern, apse_size_t pattern_size, apse_size_t edit_distance)
+attribute_hidden apse_t *apse_create(unsigned char *pattern, apse_size_t pattern_size, apse_size_t edit_distance)
 {
     apse_t *ap;
     apse_bool_t okay = 0;
@@ -699,7 +709,7 @@ out:
     return ap;
 }
 
-apse_bool_t apse_set_insertions(apse_t *ap, apse_size_t insertions)
+attribute_hidden apse_bool_t apse_set_insertions(apse_t *ap, apse_size_t insertions)
 {
     apse_bool_t okay = 0;
 
@@ -716,15 +726,16 @@ apse_bool_t apse_set_insertions(apse_t *ap, apse_size_t insertions)
     return okay;
 }
 
-apse_size_t apse_get_insertions(apse_t *ap)
-{
+#if 0
+apse_size_t apse_get_insertions(apse_t *ap) {
     if (ap->has_different_distances)
-        return ap->edit_insertions;
+	return ap->edit_insertions;
     else
-        return ap->edit_distance;
+	return ap->edit_distance;
 }
+#endif
 
-apse_bool_t apse_set_deletions(apse_t *ap, apse_size_t deletions)
+attribute_hidden apse_bool_t apse_set_deletions(apse_t *ap, apse_size_t deletions)
 {
     apse_bool_t okay = 0;
 
@@ -741,15 +752,16 @@ apse_bool_t apse_set_deletions(apse_t *ap, apse_size_t deletions)
     return okay;
 }
 
-apse_size_t apse_get_deletions(apse_t *ap)
-{
+#if 0
+apse_size_t apse_get_deletions(apse_t *ap) {
     if (ap->has_different_distances)
-        return ap->edit_deletions;
+	return ap->edit_deletions;
     else
-        return ap->edit_distance;
+	return ap->edit_distance;
 }
+#endif
 
-apse_bool_t apse_set_substitutions(apse_t *ap, apse_size_t substitutions)
+attribute_hidden apse_bool_t apse_set_substitutions(apse_t *ap, apse_size_t substitutions)
 {
     apse_bool_t okay = 0;
 
@@ -766,13 +778,14 @@ apse_bool_t apse_set_substitutions(apse_t *ap, apse_size_t substitutions)
     return okay;
 }
 
-apse_size_t apse_get_substitutions(apse_t *ap)
-{
+#if 0
+apse_size_t apse_get_substitutions(apse_t *ap) {
     if (ap->has_different_distances)
-        return ap->edit_substitutions;
+	return ap->edit_substitutions;
     else
-        return ap->edit_distance;
+	return ap->edit_distance;
 }
+#endif
 
 #ifdef APSE_DEBUGGING
 static const char *apse_match_state_name(apse_t *ap)
@@ -1364,7 +1377,7 @@ static apse_bool_t _apse_match(apse_t *ap, unsigned char *text, apse_size_t text
         return __apse_match(ap, text, text_size);
 }
 
-apse_bool_t apse_match(apse_t *ap, unsigned char *text, apse_size_t text_size)
+attribute_hidden apse_bool_t apse_match(apse_t *ap, unsigned char *text, apse_size_t text_size)
 {
     apse_bool_t did_match = _apse_match(ap, text, text_size);
 
@@ -1374,18 +1387,19 @@ apse_bool_t apse_match(apse_t *ap, unsigned char *text, apse_size_t text_size)
     return did_match;
 }
 
-apse_bool_t apse_match_next(apse_t *ap, unsigned char *text, apse_size_t text_size)
-{
+#if 0
+apse_bool_t apse_match_next(apse_t *ap,
+			    unsigned char *text, apse_size_t text_size) {
     apse_bool_t did_match = _apse_match(ap, text, text_size);
 
     if (!did_match)
-        ap->match_state = APSE_MATCH_STATE_BOT;
+	ap->match_state = APSE_MATCH_STATE_BOT;
 
     return did_match;
 }
 
-apse_ssize_t apse_index(apse_t *ap, unsigned char *text, apse_size_t text_size)
-{
+apse_ssize_t apse_index(apse_t *ap,
+			 unsigned char *text, apse_size_t text_size) {
     apse_size_t did_match = _apse_match(ap, text, text_size);
     _apse_match_eot(ap);
     ap->match_state = APSE_MATCH_STATE_BOT;
@@ -1393,43 +1407,45 @@ apse_ssize_t apse_index(apse_t *ap, unsigned char *text, apse_size_t text_size)
     return did_match ? ap->match_begin : APSE_MATCH_BAD;
 }
 
-apse_ssize_t apse_index_next(apse_t *ap, unsigned char *text, apse_size_t text_size)
-{
+apse_ssize_t apse_index_next(apse_t *ap,
+			     unsigned char *text, apse_size_t text_size) {
     apse_bool_t did_match = _apse_match(ap, text, text_size);
 
     if (!did_match)
-        ap->match_state = APSE_MATCH_STATE_BOT;
+	ap->match_state = APSE_MATCH_STATE_BOT;
 
     return did_match ? ap->match_begin : APSE_MATCH_BAD;
 }
 
-static apse_bool_t _apse_slice(apse_t *ap, unsigned char *text, apse_size_t text_size, apse_size_t *match_begin,
-                               apse_size_t *match_size)
-{
+static apse_bool_t _apse_slice(apse_t *ap,
+			       unsigned char *text,
+			       apse_size_t text_size,
+			       apse_size_t *match_begin,
+			       apse_size_t *match_size) {
     apse_bool_t did_match = _apse_match(ap, text, text_size);
 
-    if (did_match)
-    {
-        if (match_begin)
-            *match_begin = ap->match_begin;
-        if (match_size)
-            *match_size = ap->match_end - ap->match_begin + 1;
-    }
-    else
-    {
-        if (match_begin)
-            *match_begin = APSE_MATCH_BAD;
-        if (match_size)
-            *match_size = APSE_MATCH_BAD;
+    if (did_match) {
+	if (match_begin)
+	    *match_begin = ap->match_begin;
+	if (match_size)
+	    *match_size	 = ap->match_end - ap->match_begin + 1;
+    } else {
+	if (match_begin)
+	    *match_begin = APSE_MATCH_BAD;
+	if (match_size)
+	    *match_size	 = APSE_MATCH_BAD;
     }
 
     return did_match;
 }
 
-apse_bool_t apse_slice(apse_t *ap, unsigned char *text, apse_size_t text_size, apse_size_t *match_begin,
-                       apse_size_t *match_size)
-{
-    apse_bool_t did_match = _apse_slice(ap, text, text_size, match_begin, match_size);
+apse_bool_t apse_slice(apse_t *ap,
+		       unsigned char *text,
+		       apse_size_t text_size,
+		       apse_size_t *match_begin,
+		       apse_size_t *match_size) {
+    apse_bool_t did_match =
+        _apse_slice(ap, text, text_size, match_begin, match_size);
 
     _apse_match_eot(ap);
     ap->match_state = APSE_MATCH_STATE_BOT;
@@ -1437,26 +1453,31 @@ apse_bool_t apse_slice(apse_t *ap, unsigned char *text, apse_size_t text_size, a
     return did_match;
 }
 
-apse_bool_t apse_slice_next(apse_t *ap, unsigned char *text, apse_size_t text_size, apse_size_t *match_begin,
-                            apse_size_t *match_size)
-{
-    apse_bool_t did_match = _apse_slice(ap, text, text_size, match_begin, match_size);
+apse_bool_t apse_slice_next(apse_t*		ap,
+			    unsigned char*	text,
+			    apse_size_t		text_size,
+			    apse_size_t*	match_begin,
+			    apse_size_t*	match_size) {
+    apse_bool_t did_match =
+        _apse_slice(ap, text, text_size, match_begin, match_size);
 
     if (!did_match)
-        ap->match_state = APSE_MATCH_STATE_BOT;
+	ap->match_state = APSE_MATCH_STATE_BOT;
 
     return did_match;
 }
 
-void apse_set_custom_data(apse_t *ap, void *custom_data, apse_size_t custom_data_size)
-{
-    ap->custom_data = custom_data;
+void apse_set_custom_data(apse_t*	ap,
+			  void*		custom_data,
+			  apse_size_t	custom_data_size) {
+    ap->custom_data      = custom_data;
     ap->custom_data_size = custom_data_size;
 }
 
-void *apse_get_custom_data(apse_t *ap, apse_size_t *custom_data_size)
-{
+void* apse_get_custom_data(apse_t*	ap,
+			   apse_size_t*	custom_data_size) {
     if (custom_data_size)
-        *custom_data_size = ap->custom_data_size;
+	*custom_data_size = ap->custom_data_size;
     return ap->custom_data;
 }
+#endif

@@ -32,7 +32,7 @@
 static R_InternetRoutines routines, *ptr = &routines;
 
 /*
-SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env);
+SEXP attribute_hidden do_download(SEXP call, SEXP op, SEXP args, SEXP env);
 Rconnection R_newurl(char *description, char *mode);
 Rconnection R_newsock(char *host, int port, int server, char *mode);
 
@@ -89,7 +89,7 @@ static void internet_Init(void)
     return;
 }
 
-SEXP do_download(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     if (!initialized)
         internet_Init();

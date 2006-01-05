@@ -803,7 +803,7 @@ static SEXP enctrim(SEXP args, char *name, int len)
     return args;
 }
 
-SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[128], *p, *q;
     checkArity(op, args);
@@ -826,7 +826,7 @@ SEXP do_symbol(SEXP call, SEXP op, SEXP args, SEXP env)
     return mkString(buf);
 }
 
-SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     char *sym, *pkg = "", *type = "";
@@ -879,7 +879,7 @@ SEXP do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 /*   Call dynamically loaded "internal" functions */
 /*   code by Jean Meloche <jean@stat.ubc.ca> */
 
-SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC fun = NULL;
     SEXP retval;
@@ -911,7 +911,7 @@ SEXP do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* .Call(name, <args>) */
-SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC fun = NULL;
     SEXP retval, nm, cargs[MAX_ARGS], pargs;
@@ -1373,7 +1373,7 @@ SEXP do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
 /*  Call dynamically loaded "internal" graphics functions */
 /*  .External.gr  and  .Call.gr */
 
-SEXP do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP retval;
     GEDevDesc *dd = GEcurrentDevice();
@@ -1396,7 +1396,7 @@ SEXP do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
     return retval;
 }
 
-SEXP do_dotcallgr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dotcallgr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP retval;
     GEDevDesc *dd = GEcurrentDevice();
@@ -1498,7 +1498,7 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
 }
 
 /* .C() {op=0}  or  .Fortran() {op=1} */
-SEXP do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     void **cargs;
     int dup, havenames, naok, nargs, which;

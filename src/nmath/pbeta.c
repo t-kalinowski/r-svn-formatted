@@ -45,7 +45,7 @@
 
 /* This is called from	qbeta(.) in a root-finding loop --- be FAST! */
 
-double pbeta_raw(double x, double pin, double qin, int lower_tail)
+attribute_hidden double pbeta_raw(double x, double pin, double qin, int lower_tail)
 {
     double ans, c, finsum, p, ps, p1, q, term, xb, xi, y;
     int n, i, ib, swap_tail;

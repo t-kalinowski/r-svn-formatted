@@ -29,7 +29,7 @@
 Rboolean compute_identical(SEXP x, SEXP y);
 static Rboolean neWithNaN(double x, double y);
 
-SEXP do_identical(SEXP x, SEXP y)
+SEXP attribute_hidden do_identical(SEXP x, SEXP y)
 {
     SEXP ans;
 
@@ -41,7 +41,7 @@ SEXP do_identical(SEXP x, SEXP y)
 
 /* primitive interface */
 
-SEXP do_ident(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_ident(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return do_identical(CAR(args), CADR(args));
