@@ -153,7 +153,7 @@ double R_PosInf = ML_POSINF, R_NegInf = ML_NEGINF;
 
 #include <stdio.h>
 #include <stdarg.h>
-void REprintf(char *format, ...)
+void attribute_hidden REprintf(char *format, ...)
 {
     va_list(ap);
     va_start(ap, format);

@@ -5,6 +5,7 @@
    14 digits accuracy.
 */
 
+#include "nmath.h"
 #include <math.h>
 #define min(a, b) ((a < b) ? a : b)
 #define max(a, b) ((a > b) ? a : b)
@@ -31,7 +32,7 @@ static double gamln(double);
 static double alnrel(double);
 static double esum(int, double);
 static double erf__(double);
-static double rexp(double);
+static double rexpm1(double);
 static double erfc1(int, double);
 static double gsumln(double, double);
 extern double Rf_d1mach(int i);
@@ -40,7 +41,7 @@ extern int Rf_i1mach(int i);
 /*      ALGORITHM 708, COLLECTED ALGORITHMS FROM ACM. */
 /*      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE, */
 /*      VOL. 18, NO. 3, SEPTEMBER, 1992, PP. 360-373z. */
-void bratio(double a, double b, double x, double y, double *w, double *w1, int *ierr)
+void attribute_hidden bratio(double a, double b, double x, double y, double *w, double *w1, int *ierr)
 {
     /* System generated locals */
     double d__1;
@@ -1404,7 +1405,7 @@ L30:
     return;
 
 L40:
-    l = rexp(z__);
+    l = rexpm1(z__);
     w = l + 0.5 + 0.5;
     *q = (w * j - l) * g - h__;
     if (*q < 0.0)
@@ -1688,7 +1689,7 @@ L20:
     return ret_val;
 } /* esum */
 
-double rexp(double x)
+double rexpm1(double x)
 {
     /* Initialized data */
 
@@ -1727,7 +1728,7 @@ L10:
 L20:
     ret_val = w * (0.5 - 1.0 / w + 0.5);
     return ret_val;
-} /* rexp */
+} /* rexpm1 */
 
 static double alnrel(double a)
 {
