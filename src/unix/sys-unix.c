@@ -161,7 +161,7 @@ static clock_t StartTime;
 static struct tms timeinfo;
 static double clk_tck;
 
-void R_setStartTime(void)
+attribute_hidden void R_setStartTime(void)
 {
 #ifdef HAVE_SYSCONF
     clk_tck = (double)sysconf(_SC_CLK_TCK);
@@ -181,7 +181,7 @@ void R_setStartTime(void)
     StartTime = times(&timeinfo);
 }
 
-void R_getProcTime(double *data)
+attribute_hidden void R_getProcTime(double *data)
 {
     data[2] = (times(&timeinfo) - StartTime) / clk_tck;
     data[0] = timeinfo.tms_utime / clk_tck;
@@ -190,7 +190,7 @@ void R_getProcTime(double *data)
     data[4] = timeinfo.tms_cstime / clk_tck;
 }
 
-double R_getClockIncrement(void)
+attribute_hidden double R_getClockIncrement(void)
 {
     return 1.0 / clk_tck;
 }
@@ -359,7 +359,8 @@ SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 #include <pmmintrin.h>
 #endif
 
-void attribute_hidden fpu_setup(Rboolean start)
+/* used in package gnomeGUI */
+void fpu_setup(Rboolean start)
 {
     if (start)
     {

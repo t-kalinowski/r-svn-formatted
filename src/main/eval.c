@@ -95,7 +95,7 @@ static Rboolean bc_profiling = FALSE;
 #include <signal.h>
 #endif /* not Win32 */
 
-FILE *R_ProfileOutfile = NULL;
+static FILE *R_ProfileOutfile = NULL;
 static int R_Profiling = 0;
 
 #ifdef Win32
@@ -1494,7 +1494,7 @@ SEXP evalListKeepMissing(SEXP el, SEXP rho)
 /* form below because it is does not cause growth of the pointer */
 /* protection stack, and because it is a little more efficient. */
 
-SEXP promiseArgs(SEXP el, SEXP rho)
+SEXP attribute_hidden promiseArgs(SEXP el, SEXP rho)
 {
     SEXP ans, h, tail;
 
@@ -1723,7 +1723,8 @@ SEXP EvalArgs(SEXP el, SEXP rho, int dropmissing)
  * To call this an ugly hack would be to insult all existing ugly hacks
  * at large in the world.
  */
-int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP *ans, int dropmissing, int argsevald)
+attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP *ans, int dropmissing,
+                                    int argsevald)
 {
 #define AVOID_PROMISES_IN_DISPATCH_OR_EVAL
 #ifdef AVOID_PROMISES_IN_DISPATCH_OR_EVAL
@@ -1939,7 +1940,7 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
     *which = whichclass;
 }
 
-int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans)
+attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans)
 {
     int i, j, nargs, lwhich, rwhich, set;
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
@@ -2142,7 +2143,7 @@ static SEXP R_FalseValue = NULL;
 #define THREADED_CODE
 #endif
 
-void R_initialize_bcode(void)
+attribute_hidden void R_initialize_bcode(void)
 {
     R_AddSym = install("+");
     R_SubSym = install("-");
@@ -2565,7 +2566,7 @@ typedef union {
     int i;
 } BCODE;
 
-struct
+static struct
 {
     void *addr;
     int argc;

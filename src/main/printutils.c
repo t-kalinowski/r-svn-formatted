@@ -723,18 +723,18 @@ void REvprintf(const char *format, va_list arg)
     }
 }
 
-int IndexWidth(int n)
+int attribute_hidden IndexWidth(int n)
 {
     return (int)(log10(n + 0.5) + 1);
 }
 
-void VectorIndex(int i, int w)
+void attribute_hidden VectorIndex(int i, int w)
 {
     /* print index label "[`i']" , using total width `w' (left filling blanks) */
     Rprintf("%*s[%ld]", w - IndexWidth(i) - 2, "", i);
 }
 
-void MatrixColumnLabel(SEXP cl, int j, int w)
+void attribute_hidden MatrixColumnLabel(SEXP cl, int j, int w)
 {
     int l;
     SEXP tmp;
@@ -754,7 +754,7 @@ void MatrixColumnLabel(SEXP cl, int j, int w)
     }
 }
 
-void RightMatrixColumnLabel(SEXP cl, int j, int w)
+void attribute_hidden RightMatrixColumnLabel(SEXP cl, int j, int w)
 {
     int l;
     SEXP tmp;
@@ -777,7 +777,7 @@ void RightMatrixColumnLabel(SEXP cl, int j, int w)
     }
 }
 
-void LeftMatrixColumnLabel(SEXP cl, int j, int w)
+void attribute_hidden LeftMatrixColumnLabel(SEXP cl, int j, int w)
 {
     int l;
     SEXP tmp;
@@ -797,7 +797,7 @@ void LeftMatrixColumnLabel(SEXP cl, int j, int w)
     }
 }
 
-void MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
+void attribute_hidden MatrixRowLabel(SEXP rl, int i, int rlabw, int lbloff)
 {
     int l;
     SEXP tmp;

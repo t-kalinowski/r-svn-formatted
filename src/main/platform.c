@@ -156,7 +156,7 @@ static void Init_R_Platform(SEXP rho)
     UNPROTECT(2);
 }
 
-void Init_R_Variables(SEXP rho)
+void attribute_hidden Init_R_Variables(SEXP rho)
 {
     Init_R_Machine(rho);
     Init_R_Platform(rho);
@@ -171,7 +171,7 @@ void Init_R_Variables(SEXP rho)
 /* BDR 2000/7/20.
  *  time and ctime are in fact ANSI C calls, so we don't check them.
  */
-char *R_Date()
+static char *R_Date()
 {
     time_t t;
     static char s[26]; /* own space */

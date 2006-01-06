@@ -58,7 +58,7 @@
 
 #include "Runix.h"
 
-Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/platform.c */
+attribute_hidden Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/platform.c */
 
 /* call pointers to allow interface switching */
 

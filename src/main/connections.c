@@ -36,7 +36,7 @@
 #include <R_ext/Riconv.h>
 #undef ERROR /* for compilation on Windows */
 
-int R_OutputCon; /* used in printutils.c */
+int attribute_hidden R_OutputCon; /* used in printutils.c */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -94,7 +94,7 @@ static int ConnIndex(Rconnection con)
 }
 
 /* internal, not the same as R function getConnection */
-Rconnection getConnection(int n)
+attribute_hidden Rconnection getConnection(int n)
 {
     Rconnection con = NULL;
 
@@ -103,7 +103,7 @@ Rconnection getConnection(int n)
     return con;
 }
 
-int getActiveSink(int n)
+attribute_hidden int getActiveSink(int n)
 {
     if (n >= R_SinkNumber || n < 0)
         return 0;
@@ -114,7 +114,7 @@ int getActiveSink(int n)
 }
 
 /* for use in REvprintf */
-Rconnection getConnection_no_err(int n)
+attribute_hidden Rconnection getConnection_no_err(int n)
 {
     Rconnection con = NULL;
 
@@ -3652,7 +3652,7 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
 /* ------------------- push back text  --------------------- */
 
 /* used in readLines and scan */
-void con_pushback(Rconnection con, Rboolean newLine, char *line)
+attribute_hidden void con_pushback(Rconnection con, Rboolean newLine, char *line)
 {
     int nexists = con->nPushBack;
     char **q;
@@ -3887,7 +3887,7 @@ SEXP attribute_hidden do_sinknumber(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* ------------------- admin functions  --------------------- */
 
-void InitConnections()
+void attribute_hidden InitConnections()
 {
     int i;
     Connections[0] = newterminal("stdin", "r");
@@ -4488,7 +4488,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* Experimental code for in-memory (de)compression
+/* code for in-memory (de)compression
    of data stored in a scalar string. Uses a 4-byte header of length,
    in XDR order. */
 
@@ -4501,7 +4501,7 @@ static unsigned int uiSwap(unsigned int x)
 #define uiSwap(x) (x)
 #endif
 
-SEXP R_compress1(SEXP in)
+attribute_hidden SEXP R_compress1(SEXP in)
 {
     uLong inlen, outlen;
     int res;
@@ -4523,7 +4523,7 @@ SEXP R_compress1(SEXP in)
     return ScalarString(ans);
 }
 
-SEXP R_decompress1(SEXP in)
+attribute_hidden SEXP R_decompress1(SEXP in)
 {
     uLong inlen, outlen;
     int res;

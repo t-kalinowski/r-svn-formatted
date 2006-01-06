@@ -149,8 +149,8 @@ SEXP Rf_MakeDLLInfo(DllInfo *info);
 
 static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol *symbol, Rboolean withRegistrationInfo);
 
-OSDynSymbol Rf_osDynSymbol;
-OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
+attribute_hidden OSDynSymbol Rf_osDynSymbol;
+attribute_hidden OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
 
 void R_init_base(DllInfo *); /* In Registration.c */
 DL_FUNC R_dlsym(DllInfo *dll, char const *name, R_RegisteredNativeSymbol *symbol);
@@ -299,7 +299,8 @@ static void R_setArgStyles(const R_FortranMethodDef *const croutine, Rf_DotFortr
         memcpy(sym->styles, croutine->styles, sizeof(R_NativeArgStyle) * croutine->numArgs);
 }
 
-void R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym)
+void attribute_hidden R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine,
+                                          Rf_DotFortranSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
@@ -310,14 +311,15 @@ void R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine
         R_setArgStyles(croutine, sym);
 }
 
-void R_addExternalRoutine(DllInfo *info, const R_ExternalMethodDef *const croutine, Rf_DotExternalSymbol *sym)
+void attribute_hidden R_addExternalRoutine(DllInfo *info, const R_ExternalMethodDef *const croutine,
+                                           Rf_DotExternalSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
     sym->numArgs = croutine->numArgs > -1 ? croutine->numArgs : -1;
 }
 
-void R_addCRoutine(DllInfo *info, const R_CMethodDef *const croutine, Rf_DotCSymbol *sym)
+void attribute_hidden R_addCRoutine(DllInfo *info, const R_CMethodDef *const croutine, Rf_DotCSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
@@ -328,29 +330,29 @@ void R_addCRoutine(DllInfo *info, const R_CMethodDef *const croutine, Rf_DotCSym
         R_setArgStyles(croutine, sym);
 }
 
-void R_addCallRoutine(DllInfo *info, const R_CallMethodDef *const croutine, Rf_DotCallSymbol *sym)
+void attribute_hidden R_addCallRoutine(DllInfo *info, const R_CallMethodDef *const croutine, Rf_DotCallSymbol *sym)
 {
     sym->name = strdup(croutine->name);
     sym->fun = croutine->fun;
     sym->numArgs = croutine->numArgs > -1 ? croutine->numArgs : -1;
 }
 
-void Rf_freeCSymbol(Rf_DotCSymbol *sym)
+void attribute_hidden Rf_freeCSymbol(Rf_DotCSymbol *sym)
 {
     free(sym->name);
 }
 
-void Rf_freeCallSymbol(Rf_DotCallSymbol *sym)
+void attribute_hidden Rf_freeCallSymbol(Rf_DotCallSymbol *sym)
 {
     free(sym->name);
 }
 
-void Rf_freeFortranSymbol(Rf_DotFortranSymbol *sym)
+void attribute_hidden Rf_freeFortranSymbol(Rf_DotFortranSymbol *sym)
 {
     free(sym->name);
 }
 
-void Rf_freeDllInfo(DllInfo *info)
+void attribute_hidden Rf_freeDllInfo(DllInfo *info)
 {
     int i;
     free(info->name);
@@ -434,7 +436,7 @@ found:
     return 1;
 }
 
-DL_FUNC Rf_lookupCachedSymbol(const char *name, const char *pkg, int all)
+attribute_hidden DL_FUNC Rf_lookupCachedSymbol(const char *name, const char *pkg, int all)
 {
 #ifdef CACHE_DLL_SYM
     int i;
@@ -507,7 +509,7 @@ static DllInfo *AddDLL(char *path, int asLocal, int now)
     return info;
 }
 
-DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
+attribute_hidden DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
 {
     char *dpath, DLLname[PATH_MAX], *p;
     DllInfo *info;
@@ -556,7 +558,7 @@ DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     return (info);
 }
 
-int addDLL(char *dpath, char *DLLname, HINSTANCE handle)
+int attribute_hidden addDLL(char *dpath, char *DLLname, HINSTANCE handle)
 {
     int ans = CountDLL;
     char *name = malloc(strlen(DLLname) + 1);
@@ -875,7 +877,7 @@ int moduleCdynload(char *module, int local, int now)
   NativeSymbol and can be used to relay symbols from
   one library to another.
  */
-SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
+SEXP attribute_hidden Rf_MakeNativeSymbolRef(DL_FUNC f)
 {
     SEXP ref, klass;
 
@@ -898,7 +900,7 @@ static void freeRegisteredNativeSymbolCopy(SEXP ref)
         free(ptr);
 }
 
-SEXP Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
+SEXP attribute_hidden Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
 {
     SEXP ref, klass;
     R_RegisteredNativeSymbol *copy;
@@ -949,7 +951,7 @@ static SEXP Rf_makeDllInfoReference(HINSTANCE inst)
  name of the DLL and whether we only look for symbols that have been
  registered in this DLL or do we also use dynamic lookup.
  */
-SEXP Rf_MakeDLLInfo(DllInfo *info)
+SEXP attribute_hidden Rf_MakeDLLInfo(DllInfo *info)
 {
     SEXP ref, elNames, tmp;
     int i, n;
@@ -996,7 +998,7 @@ SEXP Rf_MakeDLLInfo(DllInfo *info)
   registered, we add a class identifying the interface type
   for which it is intended (i.e. .C(), .Call(), etc.)
  */
-SEXP R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
+SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
 {
     char *package, *name;
     R_RegisteredNativeSymbol symbol = {R_ANY_SYM, {NULL}, NULL};
@@ -1033,7 +1035,7 @@ SEXP R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
     return (sym);
 }
 
-SEXP R_getDllTable()
+SEXP attribute_hidden R_getDllTable()
 {
     int i;
     SEXP ans;
@@ -1184,7 +1186,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
     return (ans);
 }
 
-SEXP R_getRegisteredRoutines(SEXP dll)
+SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
 {
 
     DllInfo *info;
@@ -1226,7 +1228,7 @@ void InitFunctionHashing()
 {
 }
 
-DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol *symbol)
+attribute_hidden DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol *symbol)
 {
     int i;
     for (i = 0; CFunTab[i].name; i++)
@@ -1247,17 +1249,17 @@ SEXP attribute_hidden do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
     return (R_NilValue);
 }
 
-SEXP R_getSymbolInfo(SEXP sname, SEXP spackage)
+SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage)
 {
     error(_("no dyn.load support in this R version"));
 }
 
-SEXP R_getDllTable()
+SEXP attribute_hidden R_getDllTable()
 {
     error(_("no dyn.load support in this R version"));
 }
 
-SEXP R_getRegisteredRoutines(SEXP dll)
+SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
 {
     error(_("no dyn.load support in this R version"));
 }

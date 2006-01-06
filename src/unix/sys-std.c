@@ -464,7 +464,7 @@ struct _R_ReadlineData
     R_ReadlineData *prev;
 };
 
-R_ReadlineData *rl_top = NULL;
+static R_ReadlineData *rl_top = NULL;
 
 #define MAX_READLINE_NESTING 10
 

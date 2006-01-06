@@ -72,7 +72,7 @@ int Rf_ParseBrowser(SEXP, SEXP);
 
 extern void InitDynload();
 
-AccuracyInfo R_AccuracyInfo;
+attribute_hidden AccuracyInfo R_AccuracyInfo;
 /* This is declared here and declared extern in Defn.h */
 
 /* Read-Eval-Print Loop [ =: REPL = repl ] with input from a file */
@@ -977,7 +977,7 @@ static void printwhere(void)
     Rprintf("\n");
 }
 
-int Rf_ParseBrowser(SEXP CExpr, SEXP rho)
+int attribute_hidden Rf_ParseBrowser(SEXP CExpr, SEXP rho)
 {
     int rval = 0;
     if (isSymbol(CExpr))

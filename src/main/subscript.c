@@ -540,7 +540,7 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
     return R_NilValue;
 }
 
-SEXP attribute_hidden arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
+SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
     return int_arraySubscript(dim, s, dims, dng, strg, x, TRUE);
 }
@@ -553,7 +553,7 @@ SEXP attribute_hidden arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng,
    otherwise, stretch returns the new required length for x
 */
 
-SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, int *stretch)
+SEXP makeSubscript(SEXP x, SEXP s, int *stretch)
 {
     int nx;
     SEXP ans;
@@ -632,7 +632,7 @@ static SEXP int_vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, St
     return ans;
 }
 
-SEXP attribute_hidden vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)
+SEXP vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
     return int_vectorSubscript(nx, s, stretch, dng, strg, x, TRUE);
 }

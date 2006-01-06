@@ -2278,7 +2278,8 @@ int attribute_hidden R_XDRDecodeInteger(void *buf)
     return i;
 }
 
-void attribute_hidden R_SaveGlobalEnvToFile(const char *name)
+/* Next two used in gnomeGUI package */
+void R_SaveGlobalEnvToFile(const char *name)
 {
     SEXP sym = install("sys.save.image");
     if (findVar(sym, R_GlobalEnv) == R_UnboundValue)
@@ -2299,7 +2300,7 @@ void attribute_hidden R_SaveGlobalEnvToFile(const char *name)
     }
 }
 
-void attribute_hidden R_RestoreGlobalEnvFromFile(const char *name, Rboolean quiet)
+void R_RestoreGlobalEnvFromFile(const char *name, Rboolean quiet)
 {
     SEXP sym = install("sys.load.image");
     if (findVar(sym, R_GlobalEnv) == R_UnboundValue)

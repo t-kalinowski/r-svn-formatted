@@ -570,13 +570,13 @@ static SEXP R_GlobalCache, R_GlobalCachePreserve;
 #endif
 static SEXP R_BaseNamespaceName;
 
-void InitBaseEnv()
+void attribute_hidden InitBaseEnv()
 {
     R_EmptyEnv = NewEnvironment(R_NilValue, R_NilValue, R_NilValue);
     R_BaseEnv = NewEnvironment(R_NilValue, R_NilValue, R_EmptyEnv);
 }
 
-void InitGlobalEnv()
+void attribute_hidden InitGlobalEnv()
 {
     R_GlobalEnv = NewEnvironment(R_NilValue, R_NilValue, R_BaseEnv);
 #ifdef NEW_CODE
@@ -1028,7 +1028,7 @@ SEXP findVar(SEXP symbol, SEXP rho)
 
 */
 
-SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
+SEXP attribute_hidden findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
 {
     SEXP vl;
     while (rho != R_BaseEnv && rho != R_EmptyEnv)
@@ -1081,7 +1081,7 @@ SEXP findVar1(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits)
  *  ditto, but check *mode* not *type*
  */
 
-SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits, Rboolean doGet)
+static SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits, Rboolean doGet)
 {
     SEXP vl;
     int tl;
@@ -1379,7 +1379,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 
 */
 
-SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
+SEXP attribute_hidden setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 {
     int hashcode;
     SEXP frame, c;

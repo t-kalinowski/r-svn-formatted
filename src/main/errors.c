@@ -144,7 +144,7 @@ void onintr()
    These do far more processing than is allowed in a signal handler ....
 */
 
-RETSIGTYPE onsigusr1(int dummy)
+RETSIGTYPE attribute_hidden onsigusr1(int dummy)
 {
     if (R_interrupts_suspended)
     {
@@ -178,7 +178,7 @@ RETSIGTYPE onsigusr1(int dummy)
     R_CleanUp(SA_SAVE, 2, 1); /* quit, save,  .Last, status=2 */
 }
 
-RETSIGTYPE onsigusr2(int dummy)
+RETSIGTYPE attribute_hidden onsigusr2(int dummy)
 {
     inError = 1;
 
@@ -1036,7 +1036,7 @@ SEXP attribute_hidden do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* Error recovery for incorrect argument count error. */
-void WrongArgCount(const char *s)
+attribute_hidden void WrongArgCount(const char *s)
 {
     error(_("incorrect number of arguments to \"%s\""), s);
 }
