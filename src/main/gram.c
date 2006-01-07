@@ -2916,7 +2916,7 @@ static int file_getc(void)
     return R_fgetc(fp_parse);
 }
 
-SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status)
 {
     ParseInit();
     ParseContextInit();
@@ -2934,7 +2934,7 @@ static int buffer_getc()
     return R_IoBufferGetc(iob);
 }
 
-SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status)
 {
     ParseInit();
     ParseContextInit();
@@ -2952,7 +2952,7 @@ static int text_getc()
     return R_TextBufferGetc(txtb);
 }
 
-SEXP R_Parse1Vector(TextBuffer *textb, int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1Vector(TextBuffer *textb, int gencode, ParseStatus *status)
 {
     ParseInit();
     ParseContextInit();
@@ -2963,10 +2963,7 @@ SEXP R_Parse1Vector(TextBuffer *textb, int gencode, ParseStatus *status)
     return R_CurrentExpr;
 }
 
-#define GENERAL
-#ifdef GENERAL
-
-SEXP R_Parse1General(int (*g_getc)(), int (*g_ungetc)(), int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1General(int (*g_getc)(), int (*g_ungetc)(), int gencode, ParseStatus *status)
 {
     ParseInit();
     ParseContextInit();
@@ -2975,9 +2972,8 @@ SEXP R_Parse1General(int (*g_getc)(), int (*g_ungetc)(), int gencode, ParseStatu
     R_Parse1(status);
     return R_CurrentExpr;
 }
-#endif
 
-SEXP R_Parse(int n, ParseStatus *status)
+attribute_hidden SEXP R_Parse(int n, ParseStatus *status)
 {
     int i;
     SEXP t, rval;
@@ -3044,7 +3040,7 @@ SEXP R_Parse(int n, ParseStatus *status)
     }
 }
 
-SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status)
+attribute_hidden SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status)
 {
     GenerateCode = 1;
     R_ParseError = 1;
@@ -3068,7 +3064,7 @@ static int con_getc(void)
     return (last = c);
 }
 
-SEXP R_ParseConn(Rconnection con, int n, ParseStatus *status)
+attribute_hidden SEXP R_ParseConn(Rconnection con, int n, ParseStatus *status)
 {
     GenerateCode = 1;
     R_ParseError = 1;
@@ -3078,6 +3074,7 @@ SEXP R_ParseConn(Rconnection con, int n, ParseStatus *status)
     return R_Parse(n, status);
 }
 
+/* This one is public */
 SEXP R_ParseVector(SEXP text, int n, ParseStatus *status)
 {
     SEXP rval;
@@ -3092,15 +3089,13 @@ SEXP R_ParseVector(SEXP text, int n, ParseStatus *status)
     return rval;
 }
 
-#ifdef GENERAL
-SEXP R_ParseGeneral(int (*ggetc)(), int (*gungetc)(), int n, ParseStatus *status)
+attribute_hidden SEXP R_ParseGeneral(int (*ggetc)(), int (*gungetc)(), int n, ParseStatus *status)
 {
     GenerateCode = 1;
     R_ParseError = 1;
     ptr_getc = ggetc;
     return R_Parse(n, status);
 }
-#endif
 
 static char *Prompt(SEXP prompt, int type)
 {
@@ -3119,7 +3114,7 @@ static char *Prompt(SEXP prompt, int type)
     }
 }
 
-SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status, SEXP prompt)
+attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status, SEXP prompt)
 {
     SEXP rval, t;
     char *bufp, buf[1024];
