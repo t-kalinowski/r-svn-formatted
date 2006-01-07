@@ -731,8 +731,8 @@ static SEXP growList(SEXP oldlist)
  * Store the list of segments for a single level in the SEXP
  * list that will be returned to the user
  */
-int addContourLines(double *x, int nx, double *y, int ny, double *z, double zc, double atom, SEGP *segmentDB,
-                    int nlines, SEXP container)
+static int addContourLines(double *x, int nx, double *y, int ny, double *z, double zc, double atom, SEGP *segmentDB,
+                           int nlines, SEXP container)
 {
     double xend, yend;
     int i, ii, j, jj, ns, ns2, dir, nc;

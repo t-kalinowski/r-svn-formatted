@@ -14,7 +14,7 @@ int attribute_hidden baseRegisterIndex = -1;
 
 void restoredpSaved(DevDesc *dd);
 
-SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
+static SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
 {
     GEDevDesc *curdd;
     GESystemDesc *sd;
@@ -167,17 +167,17 @@ void registerBase()
 
 /* FIXME: Make this a macro to avoid function call overhead?
  */
-GPar *Rf_gpptr(DevDesc *dd)
+attribute_hidden GPar *Rf_gpptr(DevDesc *dd)
 {
     return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->gp);
 }
 
-GPar *Rf_dpptr(DevDesc *dd)
+attribute_hidden GPar *Rf_dpptr(DevDesc *dd)
 {
     return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->dp);
 }
 
-GPar *Rf_dpSavedptr(DevDesc *dd)
+attribute_hidden GPar *Rf_dpSavedptr(DevDesc *dd)
 {
     return &(((baseSystemState *)GEsystemState((GEDevDesc *)dd, baseRegisterIndex))->dpSaved);
 }
