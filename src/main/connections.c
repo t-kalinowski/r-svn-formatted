@@ -192,6 +192,10 @@ static int null_vfprintf(Rconnection con, const char *format, va_list ap)
 /* va_copy is C99, but a draft standard had __va_copy.  Glibc has
    __va_copy declared uncondiitonally */
 
+#if defined(HAVE_VASPRINTF) && !HAVE_DECL_VASPRINTF
+int vasprintf(char **strp, const char *fmt, va_list ap);
+#endif
+
 #if !HAVE_VA_COPY && HAVE___VA_COPY
 #define va_copy __va_copy
 #undef HAVE_VA_COPY
@@ -209,12 +213,16 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
     int res;
 #ifdef HAVE_VA_COPY
     char *vmax = vmaxget();
-    int usedRalloc = FALSE;
+    int usedRalloc = FALSE, usedVasprintf = FALSE;
     va_list aq;
 
     va_copy(aq, ap);
     res = vsnprintf(buf, BUFSIZE, format, aq);
     va_end(aq);
+#ifdef HAVE_VASPRINTF
+    if (res >= BUFSIZE || res < 0)
+        vasprintf(&b, format, ap);
+#else
     if (res >= BUFSIZE)
     { /* res is the desired output length */
         usedRalloc = TRUE;
@@ -233,6 +241,7 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
             res = 10 * BUFSIZE;
         }
     }
+#endif /* HAVE_VASPRINTF */
 #else
     res = vsnprintf(buf, BUFSIZE, format, ap);
     if (res >= BUFSIZE || res < 0)
@@ -272,11 +281,13 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
         } while (again);
     }
     else
-#endif
+#endif /* HAVE_VA_COPY */
         con->write(b, 1, res, con);
 #ifdef HAVE_VA_COPY
     if (usedRalloc)
         vmaxset(vmax);
+    if (usedVasprintf)
+        free(b);
 #endif
     return res;
 }
