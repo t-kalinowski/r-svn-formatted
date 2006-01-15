@@ -1852,14 +1852,10 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
     return s;
 }
 
-/* "allocString" allocate a string on the (vector) heap. */
 /* All vector objects  must be a multiple of sizeof(ALIGN) */
 /* bytes so that alignment is preserved for all objects */
 
-SEXP allocString(int length)
-{
-    return allocVector(CHARSXP, length);
-}
+/* allocString is now in Rinlinedfuns.h */
 
 /* Allocate a vector object on the heap */
 

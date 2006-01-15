@@ -972,7 +972,7 @@ SEXP R_isMethodsDispatchOn(SEXP onOff)
 
 /* simpler version for internal use */
 
-Rboolean isMethodsDispatchOn(void)
+attribute_hidden Rboolean isMethodsDispatchOn(void)
 {
     return !NOT_METHODS_DISPATCH_PTR(R_standardGeneric_ptr);
 }
