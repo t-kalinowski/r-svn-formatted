@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001--2005  The R Development Core Team.
+ *  Copyright (C) 2001--2006  The R Development Core Team.
  *  Copyright (C) 2003-5      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -25,17 +25,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) gettext(String)
-#else
-#define _(String) (String)
-#endif
+#include <Defn.h>
 
 #include "Lapack.h"
-
-#include <Rinternals.h>
 
 static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP method)
 {
@@ -112,23 +104,18 @@ static SEXP modLa_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v, SEXP
     return val;
 }
 
-static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
+static SEXP modLa_rs(SEXP xin, SEXP only_values)
 {
     int *xdims, n, lwork, info = 0, ov;
     char jobv[1], uplo[1], range[1];
     SEXP values, ret, nm, x, z = R_NilValue;
     double *work, *rx, *rvalues, tmp;
-    char *meth;
+    int liwork, *iwork, itmp, m;
+    double vl = 0.0, vu = 0.0, abstol = 0.0;
+    /* valgrind seems to think vu should be set, but it is documented
+       not to be used if range='a' */
+    int il, iu, *isuppz;
 
-    if (!isString(method))
-        error(_("'method' must be a character string"));
-    meth = CHAR(STRING_ELT(method, 0));
-    /* #ifndef IEEE_754
-        if (strcmp(meth, "dsyevr") == 0) {
-        warning("method = \"dseyvr\" requires IEEE 754 arithmetic: using \"dsyev\"");
-        meth = "dsyev";
-        }
-    #endif */
     PROTECT(x = duplicate(xin));
     rx = REAL(x);
     uplo[0] = 'L';
@@ -146,67 +133,37 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values, SEXP method)
 
     PROTECT(values = allocVector(REALSXP, n));
     rvalues = REAL(values);
-    if (strcmp(meth, "dsyevr"))
-    {
-        /* ask for optimal size of work array */
-        lwork = -1;
-        F77_CALL(dsyev)(jobv, uplo, &n, rx, &n, rvalues, &tmp, &lwork, &info);
-        if (info != 0)
-            error(_("error code %d from Lapack routine '%s'"), info, "dsyev");
-        lwork = (int)tmp;
-        if (lwork < 3 * n - 1)
-            lwork = 3 * n - 1; /* Sanity check */
-        work = (double *)R_alloc(lwork, sizeof(double));
-        F77_CALL(dsyev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, &info);
-        if (info != 0)
-            error(_("error code %d from Lapack routine '%s'"), info, "dsyev");
-    }
-    else
-    {
-        int liwork, *iwork, itmp, m;
-        double vl = 0.0, vu = 0.0, abstol = 0.0;
-        /* valgrind seems to think vu should be set, but it is documented
-           not to be used if range='a' */
-        int il, iu, *isuppz;
 
-        range[0] = 'A';
-        if (!ov)
-            PROTECT(z = allocMatrix(REALSXP, n, n));
-        isuppz = (int *)R_alloc(2 * n, sizeof(int));
-        /* ask for optimal size of work arrays */
-        lwork = -1;
-        liwork = -1;
-        F77_CALL(dsyevr)
-        (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, &tmp, &lwork,
-         &itmp, &liwork, &info);
-        if (info != 0)
-            error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
-        lwork = (int)tmp;
-        liwork = itmp;
+    range[0] = 'A';
+    if (!ov)
+        PROTECT(z = allocMatrix(REALSXP, n, n));
+    isuppz = (int *)R_alloc(2 * n, sizeof(int));
+    /* ask for optimal size of work arrays */
+    lwork = -1;
+    liwork = -1;
+    F77_CALL(dsyevr)
+    (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, &tmp, &lwork, &itmp,
+     &liwork, &info);
+    if (info != 0)
+        error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
+    lwork = (int)tmp;
+    liwork = itmp;
 
-        work = (double *)R_alloc(lwork, sizeof(double));
-        iwork = (int *)R_alloc(liwork, sizeof(int));
-        F77_CALL(dsyevr)
-        (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, work, &lwork,
-         iwork, &liwork, &info);
-        if (info != 0)
-            error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
-    }
+    work = (double *)R_alloc(lwork, sizeof(double));
+    iwork = (int *)R_alloc(liwork, sizeof(int));
+    F77_CALL(dsyevr)
+    (jobv, range, uplo, &n, rx, &n, &vl, &vu, &il, &iu, &abstol, &m, rvalues, REAL(z), &n, isuppz, work, &lwork, iwork,
+     &liwork, &info);
+    if (info != 0)
+        error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
 
     if (!ov)
     {
         ret = PROTECT(allocVector(VECSXP, 2));
         nm = PROTECT(allocVector(STRSXP, 2));
         SET_STRING_ELT(nm, 1, mkChar("vectors"));
-        if (strcmp(meth, "dsyevr"))
-        {
-            SET_VECTOR_ELT(ret, 1, x);
-        }
-        else
-        {
-            SET_VECTOR_ELT(ret, 1, z);
-            UNPROTECT_PTR(z);
-        }
+        SET_VECTOR_ELT(ret, 1, z);
+        UNPROTECT_PTR(z);
     }
     else
     {
@@ -291,7 +248,8 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
 
     complexValues = FALSE;
     for (i = 0; i < n; i++)
-        if (wI[i] != 0.0)
+        /* This test used to be !=0 for R < 2.3.0.  This is OK for 0+0i */
+        if (fabs(wI[i]) > 10 * R_AccuracyInfo.eps * fabs(wR[i]))
         {
             complexValues = TRUE;
             break;
