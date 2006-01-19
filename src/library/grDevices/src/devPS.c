@@ -2343,6 +2343,7 @@ typedef struct
     int paperheight;    /* paper height in big points */
     Rboolean landscape; /* landscape mode */
     int pageno;         /* page number */
+    int fileno;         /* file number */
 
     int maxpointsize;
 
@@ -3399,7 +3400,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
         xoff = yoff = 0.0;
     }
     pd->maxpointsize = 72.0 * ((pd->pageheight > pd->pagewidth) ? pd->pageheight : pd->pagewidth);
-    pd->pageno = 0;
+    pd->pageno = pd->fileno = 0;
 
     /* Base Pointsize */
     /* Nominal Character Sizes in Pixels */
@@ -3454,7 +3455,6 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
 
     /*	Start the driver */
 
-    pd->pageno = 0;
     if (!PS_Open(dd, pd))
     {
         freeDeviceFontList(pd->fonts);
@@ -3615,7 +3615,7 @@ static Rboolean PS_Open(NewDevDesc *dd, PostScriptDesc *pd)
     }
     else
     {
-        snprintf(buf, 512, pd->filename, pd->pageno + 1); /* page 1 to start */
+        snprintf(buf, 512, pd->filename, pd->fileno + 1); /* file 1 to start */
         pd->psfp = R_fopen(R_ExpandFileName(buf), "w");
         pd->open_type = 0;
     }
@@ -3688,8 +3688,9 @@ static void PS_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
     else if (pd->pageno > 0)
     {
         PostScriptClose(dd);
+        pd->fileno++;
         PS_Open(dd, pd);
-        pd->pageno++;
+        pd->pageno = 1;
     }
     else
         pd->pageno++;
