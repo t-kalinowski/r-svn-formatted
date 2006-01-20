@@ -1031,13 +1031,15 @@ static void gl_transpose(void)
             gl_extent = l_len + r_len;
             gl_fixup(gl_prompt, gl_pos - l_len, gl_pos + (r_len - l_len));
         }
-#else  /* SUPPORT_MBCS */
-        c = gl_buf[gl_pos - 1];
-        gl_buf[gl_pos - 1] = gl_buf[gl_pos];
-        gl_buf[gl_pos] = (char)c;
-        gl_extent = 2;
-        gl_fixup(gl_prompt, gl_pos - 1, gl_pos);
+        else
 #endif /* SUPPORT_MBCS */
+        {
+            c = gl_buf[gl_pos - 1];
+            gl_buf[gl_pos - 1] = gl_buf[gl_pos];
+            gl_buf[gl_pos] = (char)c;
+            gl_extent = 2;
+            gl_fixup(gl_prompt, gl_pos - 1, gl_pos);
+        }
     }
     else
         gl_beep();
