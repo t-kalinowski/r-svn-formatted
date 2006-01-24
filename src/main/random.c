@@ -495,7 +495,7 @@ static void FixupProb(SEXP call, double *p, int n, int k, int replace)
 /* with/without replacement according to r. */
 SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP x, y, prob;
+    SEXP x, y, prob, sreplace;
     int k, n, replace;
     double *p;
 
@@ -504,8 +504,11 @@ SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     k = asInteger(CAR(args));
     args = CDR(args);
-    replace = asLogical(CAR(args));
+    sreplace = CAR(args);
     args = CDR(args);
+    if (length(sreplace) != 1)
+        errorcall(call, _("invalid '%s' argument"), "replace");
+    replace = asLogical(sreplace);
     prob = CAR(args);
     if (replace == NA_LOGICAL)
         errorcall(call, _("invalid '%s' argument"), "replace");
