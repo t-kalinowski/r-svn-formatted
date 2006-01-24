@@ -1635,9 +1635,8 @@ SEXP R_Unserialize(R_inpstream_t stream)
  * Generic Persistent Stream Initializers
  */
 
-void attribute_hidden R_InitInPStream(R_inpstream_t stream, R_pstream_data_t data, R_pstream_format_t type,
-                                      int (*inchar)(R_inpstream_t), void (*inbytes)(R_inpstream_t, void *, int),
-                                      SEXP (*phook)(SEXP, SEXP), SEXP pdata)
+void R_InitInPStream(R_inpstream_t stream, R_pstream_data_t data, R_pstream_format_t type, int (*inchar)(R_inpstream_t),
+                     void (*inbytes)(R_inpstream_t, void *, int), SEXP (*phook)(SEXP, SEXP), SEXP pdata)
 {
     stream->data = data;
     stream->type = type;
@@ -1647,10 +1646,9 @@ void attribute_hidden R_InitInPStream(R_inpstream_t stream, R_pstream_data_t dat
     stream->InPersistHookData = pdata;
 }
 
-void attribute_hidden R_InitOutPStream(R_outpstream_t stream, R_pstream_data_t data, R_pstream_format_t type,
-                                       int version, void (*outchar)(R_outpstream_t, int),
-                                       void (*outbytes)(R_outpstream_t, void *, int), SEXP (*phook)(SEXP, SEXP),
-                                       SEXP pdata)
+void R_InitOutPStream(R_outpstream_t stream, R_pstream_data_t data, R_pstream_format_t type, int version,
+                      void (*outchar)(R_outpstream_t, int), void (*outbytes)(R_outpstream_t, void *, int),
+                      SEXP (*phook)(SEXP, SEXP), SEXP pdata)
 {
     stream->data = data;
     stream->type = type;
