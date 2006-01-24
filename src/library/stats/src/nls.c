@@ -200,10 +200,10 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
  *  Returns: ans
  */
 
-SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
+SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho, SEXP dir)
 {
     SEXP ans, gradient, pars;
-    double eps = sqrt(DOUBLE_EPS);
+    double eps = sqrt(DOUBLE_EPS), *rDir;
     int start, i, j, k, lengthTheta = 0;
 
     if (!isString(theta))
@@ -215,6 +215,9 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
     }
     else if (!isEnvironment(rho))
         error(_("'rho' should be an environment"));
+    if (TYPEOF(dir) != REALSXP || LENGTH(dir) != LENGTH(theta))
+        error(_("'dir' is not a numeric vector of the correct length"));
+    rDir = REAL(dir);
 
     PROTECT(pars = allocVector(VECSXP, LENGTH(theta)));
 
@@ -257,7 +260,7 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
             origPar = REAL(VECTOR_ELT(pars, i))[j];
             xx = fabs(origPar);
             delta = (xx == 0) ? eps : xx * eps;
-            REAL(VECTOR_ELT(pars, i))[j] += delta;
+            REAL(VECTOR_ELT(pars, i))[j] += rDir[i] * delta;
             PROTECT(ans_del = eval(expr, rho));
             if (!isReal(ans_del))
                 ans_del = coerceVector(ans_del, REALSXP);
@@ -266,7 +269,7 @@ SEXP numeric_deriv(SEXP expr, SEXP theta, SEXP rho)
             {
                 if (!R_FINITE(REAL(ans_del)[k]))
                     error(_("Missing value or an infinity produced when evaluating the model"));
-                REAL(gradient)[start + k] = (REAL(ans_del)[k] - REAL(ans)[k]) / delta;
+                REAL(gradient)[start + k] = rDir[i] * (REAL(ans_del)[k] - REAL(ans)[k]) / delta;
             }
             REAL(VECTOR_ELT(pars, i))[j] = origPar;
         }
