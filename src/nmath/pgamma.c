@@ -61,15 +61,15 @@
 static const double scalefactor = SQR(SQR(SQR(4294967296.0)));
 #undef SQR
 
-/* If |x| > |k| * M_cutoff,  then  log[ exp(-x) * k^x ]  =~=  -x */
+/* If |x| > |k| * M_cutoff,  then  log[ exp(-x) * k^x ]	 =~=  -x */
 static const double M_cutoff = M_LN2 * DBL_MAX_EXP / DBL_EPSILON; /*=3.196577e18*/
 
 /* Continued fraction for calculation of
- *    1/i + x/(i+d) + x^2/(i+2*d) + x^3/(i+3*d) + ...
+ *    1/i + x/(i+d) + x^2/(i+2*d) + x^3/(i+3*d) + ... = sum_{k=0}^Inf x^k/(i+k*d)
  *
  * auxilary in log1pmx() and lgamma1p()
  */
-static double logcf(double x, double i, double d)
+static double logcf(double x, double i, double d, double eps /* ~ relative tolerance */)
 {
     double c1 = 2 * d;
     double c2 = i + d;
@@ -78,7 +78,6 @@ static double logcf(double x, double i, double d)
     double b1 = i * (c2 - i * x);
     double b2 = d * d * x;
     double a2 = c4 * c2 - b2;
-    const double cfVSmall = 1.0e-14; /* ~= relative tolerance */
 
 #if 0
     assert (i > 0);
@@ -87,7 +86,7 @@ static double logcf(double x, double i, double d)
 
     b2 = c4 * b1 - i * b2;
 
-    while (fabs(a2 * b1 - a1 * b2) > fabs(cfVSmall * b1 * b2))
+    while (fabs(a2 * b1 - a1 * b2) > fabs(eps * b1 * b2))
     {
         double c3 = c2 * c2 * x;
         c2 += d;
@@ -124,7 +123,6 @@ static double logcf(double x, double i, double d)
 double log1pmx(double x)
 {
     static const double minLog1Value = -0.79149064;
-    static const double two = 2;
 
     if (x > 1 || x < minLog1Value)
         return log1p(x) - x;
@@ -133,9 +131,15 @@ double log1pmx(double x)
         double term = x / (2 + x);
         double y = term * term;
         if (fabs(x) < 1e-2)
+        {
+            static const double two = 2;
             return term * ((((two / 9 * y + two / 7) * y + two / 5) * y + two / 3) * y - x);
+        }
         else
-            return term * (2 * y * logcf(y, 3, 2) - x);
+        {
+            static const double tol_logcf = 1e-14;
+            return term * (2 * y * logcf(y, 3, 2, tol_logcf) - x);
+        }
     }
 }
 
@@ -144,10 +148,11 @@ double lgamma1p(double a)
 {
     const double eulers_const = 0.5772156649015328606065120900824024;
 
-    /* coeffs[i] holds (zeta(i+2)-1)/(i+2) , i = 1:N, N = 40 : */
+    /* coeffs[i] holds (zeta(i+2)-1)/(i+2) , i = 0:(N-1), N = 40 : */
     const int N = 40;
     static const double coeffs[40] = {
-        0.3224670334241132182362075833230126e-0,  0.6735230105319809513324605383715000e-1,
+        0.3224670334241132182362075833230126e-0, /* = (zeta(2)-1)/2 */
+        0.6735230105319809513324605383715000e-1, /* = (zeta(3)-1)/3 */
         0.2058080842778454787900092413529198e-1,  0.7385551028673985266273097291406834e-2,
         0.2890510330741523285752988298486755e-2,  0.1192753911703260977113935692828109e-2,
         0.5096695247430424223356548135815582e-3,  0.2231547584535793797614188036013401e-3,
@@ -166,9 +171,11 @@ double lgamma1p(double a)
         0.1711991790559617908601084114443031e-11, 0.8315385841420284819798357793954418e-12,
         0.4042200525289440065536008957032895e-12, 0.1966475631096616490411045679010286e-12,
         0.9573630387838555763782200936508615e-13, 0.4664076026428374224576492565974577e-13,
-        0.2273736960065972320633279596737272e-13, 0.1109139947083452201658320007192334e-13};
+        0.2273736960065972320633279596737272e-13, 0.1109139947083452201658320007192334e-13 /* = (zeta(40+1)-1)/(40+1) */
+    };
 
     const double c = 0.2273736845824652515226821577978691e-12; /* zeta(N+2)-1 */
+    const double tol_logcf = 1e-14;
     double lgam;
     int i;
 
@@ -177,7 +184,7 @@ double lgamma1p(double a)
 
     /* Abramowitz & Stegun 6.1.33,
      * also  http://functions.wolfram.com/06.11.06.0008.01 */
-    lgam = c * logcf(-a / 2, N + 2, 1);
+    lgam = c * logcf(-a / 2, N + 2, 1, tol_logcf);
     for (i = N - 1; i >= 0; i--)
         lgam = coeffs[i] - a * lgam;
 
@@ -315,16 +322,16 @@ static double pd_upper_series(double x, double y, int log_p)
     } while (term > sum * DBL_EPSILON);
 
     /* sum =  \sum_{n=1}^ oo  x^n     / (y*(y+1)*...*(y+n-1))
-     *     =  \sum_{n=0}^ oo  x^(n+1) / (y*(y+1)*...*(y+n))
-     *     =  x/y * (1 + \sum_{n=1}^oo  x^n / ((y+1)*...*(y+n)))
-     *     ~  x/y +  o(x/y)   {which happens when alph -> Inf}
+     *	   =  \sum_{n=0}^ oo  x^(n+1) / (y*(y+1)*...*(y+n))
+     *	   =  x/y * (1 + \sum_{n=1}^oo	x^n / ((y+1)*...*(y+n)))
+     *	   ~  x/y +  o(x/y)   {which happens when alph -> Inf}
      */
     return log_p ? log(sum) : sum;
 }
 
 /* Continued fraction for calculation of
  *    ???
- *  =  (i / d)  +  o(i/d)
+ *  =  (i / d)	+  o(i/d)
  */
 static double pd_lower_cf(double i, double d)
 {
@@ -412,8 +419,8 @@ static double pd_lower_series(double lambda, double y)
         y--;
     }
     /* sum =  \sum_{n=0}^ oo  y*(y-1)*...*(y - n) / lambda^(n+1)
-     *     =  y/lambda * (1 + \sum_{n=1}^Inf  (y-1)*...*(y-n) / lambda^n
-     *     ~  y/lambda + o(y/lambda)
+     *	   =  y/lambda * (1 + \sum_{n=1}^Inf  (y-1)*...*(y-n) / lambda^n
+     *	   ~  y/lambda + o(y/lambda)
      */
 #ifdef DEBUG_p
     REprintf(" done: term=%g, sum=%g, y= %g\n", term, sum, y);
@@ -430,7 +437,7 @@ static double pd_lower_series(double lambda, double y)
         REprintf(" y not int: add another term ");
 #endif
         /* FIXME: in quite few cases, adding  term*f  has no effect (f too small)
-         *        and unnecessary e.g. for pgamma(4e12, 121.1) */
+         *	  and unnecessary e.g. for pgamma(4e12, 121.1) */
         f = pd_lower_cf(y, lambda + 1 - y);
 #ifdef DEBUG_p
         REprintf("  (= %.14g) * term = %.14g to sum %g\n", f, term * f, sum);
@@ -440,6 +447,56 @@ static double pd_lower_series(double lambda, double y)
 
     return sum;
 } /* pd_lower_series() */
+
+/*
+ * Compute the following ratio with higher accuracy that would be had
+ * from doing it directly.
+ *
+ *		 dnorm (x, 0, 1, FALSE)
+ *	   ----------------------------------
+ *	   pnorm (x, 0, 1, lower_tail, FALSE)
+ *
+ * Abramowitz & Stegun 26.2.12
+ */
+static double dpnorm(double x, int lower_tail, double p)
+{
+    /*
+     * So as not to repeat a pnorm call, we expect
+     *
+     *	   p == pnorm (x, 0, 1, lower_tail, FALSE)
+     *
+     * but use it only in the non-critical case where either x is small
+     * or p is close to 1.
+     */
+
+    if (x < 0)
+    {
+        x = -x;
+        lower_tail = !lower_tail;
+    }
+
+    if (x > 10 && !lower_tail)
+    {
+        double term = 1 / x;
+        double sum = term;
+        double x2 = x * x;
+        double i = 1;
+
+        do
+        {
+            term *= -i / x2;
+            sum += term;
+            i += 2;
+        } while (fabs(term) > DBL_EPSILON * sum);
+
+        return 1 / sum;
+    }
+    else
+    {
+        double d = dnorm(x, 0, 1, FALSE);
+        return d / p;
+    }
+}
 
 /*
  * Asymptotic expansion to calculate the probability that poisson variate
@@ -465,7 +522,7 @@ static double ppois_asymp(double x, double lambda, int lower_tail, int log_p)
 
     double dfm, pt_, s2pt, res1, res2, elfb, term;
     double ig2, ig3, ig4, ig5, ig6, ig7, ig25, ig35, ig45, ig55, ig65, ig75;
-    double f, np, nd;
+    double f, np;
     double pt0, x0;
 
     dfm = lambda - x;
@@ -531,20 +588,27 @@ static double ppois_asymp(double x, double lambda, int lower_tail, int log_p)
     f = (res1 + res2) / elfb;
 
     np = pnorm(s2pt, 0.0, 1.0, !lower_tail, log_p);
-    nd = dnorm(s2pt, 0.0, 1.0, log_p);
-
-#ifdef DEBUG_p
-    /* this is nonsense if np and nd are on log scale. */
-    REprintf("pp*_asymp(): f=%.14g np=%.14g nd=%.14g  f*nd=%.14g\n", f, np, nd, f * nd);
-#endif
 
     if (log_p)
-        return np + log1p(f * exp(nd - np)); /* See PR#8528 */
-                                             /*(f >= 0)
-                                             ? logspace_add (np, log (fabs (f)) + nd)
-                                             : logspace_sub (np, log (fabs (f)) + nd); */
+    {
+        double n_d_over_p = dpnorm(s2pt, !lower_tail, R_D_qIv(np));
+#ifdef DEBUG_p
+        REprintf("pp*_asymp(): f=%.14g	 np=e^%.14g ndp=%.14g  f*ndp=%.14g\n", f, np, n_d_over_p, f * n_d_over_p);
+#endif
+        return np + log1p(f * n_d_over_p);
+    }
     else
-        return np + f * nd;
+    {
+        double nd = dnorm(s2pt, 0.0, 1.0, log_p);
+
+        if (log_p)
+            return np + log1p(f * exp(nd - np)); /* See PR#8528 */
+                                                 /*(f >= 0)
+                                                 ? logspace_add (np, log (fabs (f)) + nd)
+                                                 : logspace_sub (np, log (fabs (f)) + nd); */
+        else
+            return np + f * nd;
+    }
 } /* ppois_asymp() */
 
 double pgamma_raw(double x, double alph, int lower_tail, int log_p)
@@ -669,7 +733,7 @@ double pgamma(double x, double alph, double scale, int lower_tail, int log_p)
 /*
  *  Copyright (C) 1998		Ross Ihaka
  *  Copyright (C) 1999-2000	The R Development Core Team
- *  Copyright (C) 2003-2004     The R Foundation
+ *  Copyright (C) 2003-2004	The R Foundation
  *  based on AS 239 (C) 1988 Royal Statistical Society
  *
  *  ................
@@ -822,7 +886,7 @@ double pgamma(double x, double alph, double scale, int lower_tail, int log_p)
     if (log_p && lower_tail)
         return (arg);
     /* else */
-    /* sum = exp(arg); and return   if(lower_tail) sum  else 1-sum : */
+    /* sum = exp(arg); and return   if(lower_tail) sum	else 1-sum : */
     return (lower_tail) ? exp(arg) : (log_p ? R_Log1_Exp(arg) : -expm1(arg));
 }
 
