@@ -2,6 +2,7 @@
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 2005	Morten Welinder <terra@gnome.org>
  *  Copyright (C) 2005	The R Foundation
+ *  Copyright (C) 2006	The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -183,6 +184,7 @@ double lgamma1p(double a)
     return (a * lgam - eulers_const) * a - log1pmx(a);
 } /* lgamma1p */
 
+#if 0 /* These were part of the problem of PR#8528 */
 /*
  * Compute the log of a sum from logs of terms, i.e.,
  *
@@ -191,10 +193,11 @@ double lgamma1p(double a)
  * without causing overflows and without throwing away large handfuls
  * of accuracy.
  */
-double logspace_add(double logx, double logy)
+double logspace_add (double logx, double logy)
 {
-    return fmax2(logx, logy) + log1p(exp(-fabs(logx - logy)));
+    return fmax2 (logx, logy) + log1p (exp (-fabs (logx - logy)));
 }
+
 
 /*
  * Compute the log of a difference from logs of terms, i.e.,
@@ -204,10 +207,11 @@ double logspace_add(double logx, double logy)
  * without causing overflows and without throwing away large handfuls
  * of accuracy.
  */
-double logspace_sub(double logx, double logy)
+double logspace_sub (double logx, double logy)
 {
-    return logx + log1p(-exp(logy - logx));
+    return logx + log1p (-exp (logy - logx));
 }
+#endif
 
 #ifndef R_USE_OLD_PGAMMA
 
@@ -462,45 +466,61 @@ static double ppois_asymp(double x, double lambda, int lower_tail, int log_p)
     double dfm, pt_, s2pt, res1, res2, elfb, term;
     double ig2, ig3, ig4, ig5, ig6, ig7, ig25, ig35, ig45, ig55, ig65, ig75;
     double f, np, nd;
+    double pt0, x0;
 
     dfm = lambda - x;
+    /* If lambda is large, the distribution is highly concentrated
+       about lambda.  So representation error in x or lambda can lead
+       to arbitrarily large values of pt_ and hence divergence of the
+       coefficients of this approximation.
+    */
     pt_ = -x * log1pmx(dfm / x);
     s2pt = sqrt(2 * pt_);
     if (dfm < 0)
         s2pt = -s2pt;
 
+    pt0 = pt_;
+    x0 = x;
+    /* If x and pt_ are large the coefficients here can overflow: the
+       series are in powers of pt_/x.  See PR#8528 */
+    if (fabs(x) > 1e50)
+    {
+        x0 = 1;
+        pt0 = pt_ / x;
+    }
     ig2 = 1.0 + pt_;
-    term = pt_ * pt_ * 0.5;
+    term = pt0 * pt_ * 0.5;
     ig3 = ig2 + term;
-    term *= pt_ / 3;
+    term *= pt0 / 3;
     ig4 = ig3 + term;
-    term *= pt_ / 4;
+    term *= pt0 / 4;
     ig5 = ig4 + term;
-    term *= pt_ / 5;
+    term *= pt0 / 5;
     ig6 = ig5 + term;
-    term *= pt_ / 6;
+    term *= pt0 / 6;
     ig7 = ig6 + term;
 
     term = pt_ * (two / 3);
     ig25 = 1.0 + term;
-    term *= pt_ * (two / 5);
+    term *= pt0 * (two / 5);
     ig35 = ig25 + term;
-    term *= pt_ * (two / 7);
+    term *= pt0 * (two / 7);
     ig45 = ig35 + term;
-    term *= pt_ * (two / 9);
+    term *= pt0 * (two / 9);
     ig55 = ig45 + term;
-    term *= pt_ * (two / 11);
+    term *= pt0 * (two / 11);
     ig65 = ig55 + term;
-    term *= pt_ * (two / 13);
+    term *= pt0 * (two / 13);
     ig75 = ig65 + term;
 
     elfb = ((((((coef75 / x + coef65) / x + coef55) / x + coef45) / x + coef35) / x + coef25) / x + coef15) + x;
-    res1 = ((((((ig7 * coef7 / x + ig6 * coef6) / x + ig5 * coef5) / x + ig4 * coef4) / x + ig3 * coef3) / x +
+    res1 = ((((((ig7 * coef7 / x0 + ig6 * coef6) / x0 + ig5 * coef5) / x0 + ig4 * coef4) / x0 + ig3 * coef3) / x0 +
              ig2 * coef2) /
                 x +
             coef1) *
            sqrt(x);
-    res2 = ((((((ig75 * coef75 / x + ig65 * coef65) / x + ig55 * coef55) / x + ig45 * coef45) / x + ig35 * coef35) / x +
+    res2 = ((((((ig75 * coef75 / x0 + ig65 * coef65) / x0 + ig55 * coef55) / x0 + ig45 * coef45) / x0 + ig35 * coef35) /
+                 x0 +
              ig25 * coef25) /
                 x +
             coef15) *
@@ -514,11 +534,15 @@ static double ppois_asymp(double x, double lambda, int lower_tail, int log_p)
     nd = dnorm(s2pt, 0.0, 1.0, log_p);
 
 #ifdef DEBUG_p
+    /* this is nonsense if np and nd are on log scale. */
     REprintf("pp*_asymp(): f=%.14g np=%.14g nd=%.14g  f*nd=%.14g\n", f, np, nd, f * nd);
 #endif
 
     if (log_p)
-        return (f >= 0) ? logspace_add(np, log(fabs(f)) + nd) : logspace_sub(np, log(fabs(f)) + nd);
+        return np + log1p(f * exp(nd - np)); /* See PR#8528 */
+                                             /*(f >= 0)
+                                             ? logspace_add (np, log (fabs (f)) + nd)
+                                             : logspace_sub (np, log (fabs (f)) + nd); */
     else
         return np + f * nd;
 } /* ppois_asymp() */
@@ -539,7 +563,8 @@ double pgamma_raw(double x, double alph, int lower_tail, int log_p)
         res = pgamma_smallx(x, alph, lower_tail, log_p);
     }
     else if (x <= alph - 1 && x < 0.8 * (alph + 50))
-    {                                                 /* incl. large alph */
+    {
+        /* incl. large alph compared to x */
         double sum = pd_upper_series(x, alph, log_p); /* = x/alph + o(x/alph) */
         double d = dpois_wrap(alph, x, log_p);
 #ifdef DEBUG_p
@@ -551,7 +576,8 @@ double pgamma_raw(double x, double alph, int lower_tail, int log_p)
             res = log_p ? sum + d : sum * d;
     }
     else if (alph - 1 < x && alph < 0.8 * (x + 50))
-    { /* incl. large x */
+    {
+        /* incl. large x compared to alph */
         double sum;
         double d = dpois_wrap(alph, x, log_p);
 #ifdef DEBUG_p
@@ -582,7 +608,7 @@ double pgamma_raw(double x, double alph, int lower_tail, int log_p)
             res = log_p ? R_Log1_Exp(d + sum) : 1 - d * sum;
     }
     else
-    {
+    { /* x > 1 and x fairly near alph. */
 #ifdef DEBUG_p
         REprintf(" using ppois_asymp()\n");
 #endif
