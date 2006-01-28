@@ -1124,6 +1124,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     case CPLXSXP:
     case STRSXP:
     case VECSXP:
+    case RAWSXP:
         break;
     /* we don't handle expressions: we could, but coercion of a matrix
        to an expression is not ideal */
@@ -1302,6 +1303,21 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 idx = (!isMatrix(u)) ? rows : k;
                 for (i = 0; i < idx; i++)
                     COMPLEX(result)[n++] = COMPLEX(u)[i % k];
+            }
+        }
+    }
+    else if (mode == RAWSXP)
+    {
+        for (t = args; t != R_NilValue; t = CDR(t))
+        {
+            u = PRVALUE(CAR(t));
+            if (isMatrix(u) || length(u) >= lenmin)
+            {
+                u = coerceVector(u, RAWSXP);
+                k = LENGTH(u);
+                idx = (!isMatrix(u)) ? rows : k;
+                for (i = 0; i < idx; i++)
+                    RAW(result)[n++] = RAW(u)[i % k];
             }
         }
     }
