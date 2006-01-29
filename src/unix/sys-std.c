@@ -823,6 +823,9 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
  *  7) PLATFORM DEPENDENT FUNCTIONS
  */
 
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
 int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
                                     char **file,    /* array of filenames */
                                     char **headers, /* the `headers' args of file.show.
@@ -856,6 +859,7 @@ int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
             {
                 if (headers[i] && *headers[i])
                     fprintf(tfp, "%s\n\n", headers[i]);
+                errno = 0; /* some systems require this */
                 if ((fp = R_fopen(R_ExpandFileName(file[i]), "r")) != NULL)
                 {
                     while ((c = fgetc(fp)) != EOF)
@@ -866,7 +870,11 @@ int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
                         unlink(R_ExpandFileName(file[i]));
                 }
                 else
-                    fprintf(tfp, "NO FILE %s\n\n", file[i]);
+#ifdef HAVE_STRERROR
+                    fprintf(tfp, _("Cannot open file '%s', reason '%s'\n\n"), file[i], strerror(errno));
+#else
+                    fprintf(tfp, _("Cannot open file '%s'\n\n"), file[i]);
+#endif
             }
             fclose(tfp);
         }
