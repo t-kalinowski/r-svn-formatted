@@ -965,7 +965,7 @@ static void printwhere(void)
 
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
-        if ((cptr->callflag & CTXT_FUNCTION) && (TYPEOF(cptr->call) == LANGSXP))
+        if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && (TYPEOF(cptr->call) == LANGSXP))
         {
             Rprintf("where %d: ", lct++);
             PrintValue(cptr->call);
@@ -1014,7 +1014,7 @@ int attribute_hidden Rf_ParseBrowser(SEXP CExpr, SEXP rho)
         if (!strcmp(CHAR(PRINTNAME(CExpr)), "where"))
         {
             printwhere();
-            SET_DEBUG(rho, 1);
+            /* SET_DEBUG(rho, 1); */
             rval = 2;
         }
     }
