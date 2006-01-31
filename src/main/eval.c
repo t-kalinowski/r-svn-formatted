@@ -34,8 +34,6 @@
 static SEXP bcEval(SEXP, SEXP);
 #endif
 
-SEXP do_browser(SEXP, SEXP, SEXP, SEXP); /* from main.c */
-
 /*#define BC_PROFILING*/
 #ifdef BC_PROFILING
 static Rboolean bc_profiling = FALSE;

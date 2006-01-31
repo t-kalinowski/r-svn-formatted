@@ -68,7 +68,7 @@ void nl_Rdummy()
 
 void Rf_callToplevelHandlers(SEXP expr, SEXP value, Rboolean succeeded, Rboolean visible);
 
-int Rf_ParseBrowser(SEXP, SEXP);
+static int ParseBrowser(SEXP, SEXP);
 
 extern void InitDynload();
 
@@ -974,7 +974,7 @@ static void printwhere(void)
     Rprintf("\n");
 }
 
-int attribute_hidden Rf_ParseBrowser(SEXP CExpr, SEXP rho)
+static int ParseBrowser(SEXP CExpr, SEXP rho)
 {
     int rval = 0;
     if (isSymbol(CExpr))
