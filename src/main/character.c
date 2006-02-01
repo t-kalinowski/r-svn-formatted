@@ -1524,7 +1524,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes)
 {
-    int matchIndex, j, st, foundAll, foundAny, offset;
+    int matchIndex, j, st, foundAll, foundAny, offset, len;
     regmatch_t regmatch[10];
     SEXP ans, matchlen;         /* Return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* Buffers for storing multiple matches */
@@ -1533,9 +1533,10 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
     PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
     matchIndex = -1;
     foundAll = foundAny = offset = 0;
+    len = strlen(string);
     while (!foundAll)
     {
-        if (Rregexec(reg, string, 1, regmatch, 0, offset) == 0)
+        if (offset < len && Rregexec(reg, string, 1, regmatch, 0, offset) == 0)
         {
             if ((matchIndex + 1) == bufsize)
             {
@@ -1560,9 +1561,9 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
             matchIndex++;
             foundAny = 1;
             st = regmatch[0].rm_so;
-            offset = regmatch[0].rm_eo;
             INTEGER(matchbuf)[matchIndex] = st + 1; /* index from one */
-            INTEGER(matchlenbuf)[matchIndex] = offset - st;
+            INTEGER(matchlenbuf)[matchIndex] = regmatch[0].rm_eo - st;
+            offset = st + 1;
 #ifdef SUPPORT_MBCS
             if (!useBytes && mbcslocale)
             {
@@ -1650,8 +1651,8 @@ static SEXP gregexpr_fixed(char *pattern, char *string, int useBytes)
         INTEGER(matchlenbuf)[matchIndex] = patlen;
         while (!foundAll)
         {
-            string += st + patlen;
-            curpos += st + patlen;
+            string += st + 1;
+            curpos += st + 1;
             st = fgrep_one(pattern, string, useBytes);
             if (st >= 0)
             {
