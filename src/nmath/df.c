@@ -45,8 +45,10 @@ double df(double x, double m, double n, int give_log)
 #endif
     if (m <= 0 || n <= 0)
         ML_ERR_return_NAN;
-    if (x <= 0.)
+    if (x < 0.)
         return (R_D__0);
+    if (x == 0.)
+        return (m > 2 ? R_D__0 : (m == 2 ? R_D__1 : ML_POSINF));
     if (!R_FINITE(m) && !R_FINITE(n))
     { /* both +Inf */
         if (x == 1.)
