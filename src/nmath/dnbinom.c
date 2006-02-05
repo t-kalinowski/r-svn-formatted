@@ -42,7 +42,7 @@ double dnbinom(double x, double n, double p, int give_log)
         return x + n + p;
 #endif
 
-    if (p < 0 || p > 1 || n <= 0)
+    if (p <= 0 || p > 1 || n <= 0)
         ML_ERR_return_NAN;
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
