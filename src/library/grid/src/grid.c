@@ -1343,7 +1343,7 @@ static void polygonEdge(double *x, double *y, int n, double theta, double *edgex
     /*
      * Special case zero-width or zero-height
      */
-    if (xmin == xmax)
+    if (fabs(xmin - xmax) < 1e-6)
     {
         *edgex = xmin;
         if (theta == 90)
@@ -1354,7 +1354,7 @@ static void polygonEdge(double *x, double *y, int n, double theta, double *edgex
             *edgey = ym;
         return;
     }
-    if (ymin == ymax)
+    if (fabs(ymin - ymax) < 1e-6)
     {
         *edgey = ymin;
         if (theta == 0)
