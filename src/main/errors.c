@@ -454,6 +454,7 @@ static void restore_inError(void *data)
 {
     int *poldval = data;
     inError = *poldval;
+    R_Expressions = R_Expressions_keep;
 }
 
 static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
@@ -480,6 +481,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
             R_Warnings = R_NilValue;
             REprintf(_("Lost warning messages\n"));
         }
+        R_Expressions = R_Expressions_keep;
         jump_to_top_ex(FALSE, FALSE, FALSE, FALSE, FALSE);
     }
 
