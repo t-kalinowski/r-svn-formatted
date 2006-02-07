@@ -43,13 +43,13 @@ static Rboolean deviceChanged(double devWidthCM, double devHeightCM, SEXP curren
     SEXP pvpDevWidthCM, pvpDevHeightCM;
     PROTECT(pvpDevWidthCM = VECTOR_ELT(currentvp, PVP_DEVWIDTHCM));
     PROTECT(pvpDevHeightCM = VECTOR_ELT(currentvp, PVP_DEVHEIGHTCM));
-    if (fabs(REAL(pvpDevWidthCM)[0] - devWidthCM) > DBL_EPSILON)
+    if (fabs(REAL(pvpDevWidthCM)[0] - devWidthCM) > 1e-6)
     {
         result = TRUE;
         REAL(pvpDevWidthCM)[0] = devWidthCM;
         SET_VECTOR_ELT(currentvp, PVP_DEVWIDTHCM, pvpDevWidthCM);
     }
-    if (fabs(REAL(pvpDevHeightCM)[0] - devHeightCM) > DBL_EPSILON)
+    if (fabs(REAL(pvpDevHeightCM)[0] - devHeightCM) > 1e-6)
     {
         result = TRUE;
         REAL(pvpDevHeightCM)[0] = devHeightCM;
