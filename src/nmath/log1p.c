@@ -115,7 +115,7 @@ double log1p(double x)
     if (x < xmin)
     {
         /* answer less than half precision because x too near -1 */
-        ML_ERROR(ME_PRECISION); /* which surrently does nothing */
+        ML_ERROR(ME_PRECISION);
     }
     return log(1 + x);
 }

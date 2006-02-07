@@ -103,7 +103,7 @@ double gammafn(double x)
      * then return NaN. */
     if (x == 0 || (x < 0 && x == (long)x))
     {
-        ML_ERROR(ME_RANGE);
+        ML_ERROR(ME_DOMAIN);
         return ML_NAN;
     }
 
