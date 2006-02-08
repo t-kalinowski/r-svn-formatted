@@ -864,7 +864,11 @@ int moduleCdynload(char *module, int local, int now)
 
     if (!p)
         return 0;
+#ifdef R_ARCH
+    snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s%s%s", p, FILESEP, FILESEP, R_ARCH, FILESEP, module, SHLIB_EXT);
+#else
     snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
+#endif
     res = AddDLL(dllpath, local, now);
     if (!res)
         warning(_("unable to load shared library '%s':\n  %s"), dllpath, DLLerror);
