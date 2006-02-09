@@ -6195,7 +6195,7 @@ static void PDF_endfile(PDFDesc *pd)
                                 break;
                             }
                         fprintf(pd->pdffp, "/FirstChar %d /LastChar %d /Widths [\n", first, last);
-                        for (ii = first; ii < last; ii++)
+                        for (ii = first; ii <= last; ii++)
                         {
                             tmp = metrics->CharInfo[ii].WX;
                             fprintf(pd->pdffp, " %d", tmp == NA_SHORT ? 0 : tmp);
