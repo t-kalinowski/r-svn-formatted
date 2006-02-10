@@ -347,6 +347,10 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     if (DispatchGroup("Summary", call, op, args, env, &ans))
         return ans;
 
+#ifdef DEBUG_Summary
+    REprintf("C do_summary(op%s, *): did NOT dispatch\n", PRIMNAME(op));
+#endif
+
     ans = matchArgExact(R_NaRmSymbol, &args);
     narm = asLogical(ans);
     updated = 0;
