@@ -129,9 +129,9 @@ static ParTab ParTable[] = {{"adj", 0},
                             {"yaxs", 0},
                             {"yaxt", 0},
                             {"ylog", 1},
-                            /* Obselete pars */
+                            /* Obsolete pars */
                             {"type", -2},
-                            /* Mon-pars that might get passed to Specify2 */
+                            /* Non-pars that might get passed to Specify2 */
                             {"asp", -3},
                             {"main", -3},
                             {"sub", -3},
