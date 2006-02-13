@@ -601,13 +601,13 @@ static void reset_tz(char *tz)
 
 static const char ltnames[][6] = {"sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst"};
 
-static void makelt(struct tm *tm, SEXP ans, int i, int valid)
+static void makelt(struct tm *tm, SEXP ans, int i, int valid, double frac_secs)
 {
     int j;
 
     if (valid)
     {
-        INTEGER(VECTOR_ELT(ans, 0))[i] = tm->tm_sec;
+        REAL(VECTOR_ELT(ans, 0))[i] = tm->tm_sec + frac_secs;
         INTEGER(VECTOR_ELT(ans, 1))[i] = tm->tm_min;
         INTEGER(VECTOR_ELT(ans, 2))[i] = tm->tm_hour;
         INTEGER(VECTOR_ELT(ans, 3))[i] = tm->tm_mday;
@@ -619,7 +619,8 @@ static void makelt(struct tm *tm, SEXP ans, int i, int valid)
     }
     else
     {
-        for (j = 0; j < 8; j++)
+        REAL(VECTOR_ELT(ans, 0))[i] = NA_REAL;
+        for (j = 1; j < 8; j++)
             INTEGER(VECTOR_ELT(ans, j))[i] = NA_INTEGER;
         INTEGER(VECTOR_ELT(ans, 8))[i] = -1;
     }
@@ -652,7 +653,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 9));
     for (i = 0; i < 9; i++)
-        SET_VECTOR_ELT(ans, i, allocVector(INTSXP, n));
+        SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
 
     PROTECT(ansnames = allocVector(STRSXP, 9));
     for (i = 0; i < 9; i++)
@@ -661,9 +662,9 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         struct tm dummy, *ptm = &dummy;
-        if (R_FINITE(REAL(x)[i]))
+        double d = REAL(x)[i];
+        if (R_FINITE(d))
         {
-            double d = REAL(x)[i];
             ptm = localtime0(&d, 1 - isgmt, &dummy);
             /* in theory localtime/gmtime always return a valid
                struct tm pointer, but Windows uses NULL for error
@@ -672,7 +673,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
             valid = 0;
-        makelt(ptm, ans, i, valid);
+        makelt(ptm, ans, i, valid, d - floor(d));
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(class = allocVector(STRSXP, 2));
@@ -708,7 +709,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     double tmp;
 
     checkArity(op, args);
-    x = CAR(args);
+    PROTECT(x = duplicate(CAR(args))); /* coerced below */
     if (!isVectorList(x) || LENGTH(x) != 9)
         error(_("invalid '%s' argument"), "x");
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
@@ -741,15 +742,17 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         if (nlen[8] == 0)
             error(_("zero length component in non-empty POSIXlt structure"));
     }
-    /* coerce fields to integer */
+    /* coerce fields to integer or real */
+    SET_VECTOR_ELT(x, 0, coerceVector(VECTOR_ELT(x, 0), REALSXP));
     for (i = 0; i < 6; i++)
-        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), INTSXP));
+        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), i > 0 ? INTSXP : REALSXP));
     SET_VECTOR_ELT(x, 8, coerceVector(VECTOR_ELT(x, 8), INTSXP));
 
     PROTECT(ans = allocVector(REALSXP, n));
     for (i = 0; i < n; i++)
     {
-        tm.tm_sec = INTEGER(VECTOR_ELT(x, 0))[i % nlen[0]];
+        double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
+        tm.tm_sec = fsecs;
         tm.tm_min = INTEGER(VECTOR_ELT(x, 1))[i % nlen[1]];
         tm.tm_hour = INTEGER(VECTOR_ELT(x, 2))[i % nlen[2]];
         tm.tm_mday = INTEGER(VECTOR_ELT(x, 3))[i % nlen[3]];
@@ -757,20 +760,20 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_year = INTEGER(VECTOR_ELT(x, 5))[i % nlen[5]];
         /* mktime ignores tm.tm_wday and tm.tm_yday */
         tm.tm_isdst = isgmt ? 0 : INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
-        if (tm.tm_sec == NA_INTEGER || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER ||
-            tm.tm_mday == NA_INTEGER || tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
+        if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
+            tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
             REAL(ans)[i] = NA_REAL;
         else
         {
             tmp = mktime0(&tm, 1 - isgmt);
-            REAL(ans)[i] = (tmp == (double)(-1)) ? NA_REAL : tmp;
+            REAL(ans)[i] = (tmp == (double)(-1)) ? NA_REAL : tmp + (secs - fsecs);
         }
     }
 
     if (settz)
         reset_tz(oldtz);
 
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
@@ -782,7 +785,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     struct tm tm;
 
     checkArity(op, args);
-    x = CAR(args);
+    PROTECT(x = duplicate(CAR(args))); /* coerced below */
     if (!isVectorList(x) || LENGTH(x) != 9)
         error(_("invalid '%s' argument"), "x");
     if (!isString((sformat = CADR(args))) || LENGTH(sformat) == 0)
@@ -798,13 +801,13 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
      */
     memset(&tm, 0, sizeof(tm));
 
-    /* coerce fields to integer, find length of longest one */
+    /* coerce fields to integer or real, find length of longest one */
     for (i = 0; i < 9; i++)
     {
         nlen[i] = LENGTH(VECTOR_ELT(x, i));
         if (nlen[i] > n)
             n = nlen[i];
-        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), INTSXP));
+        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), i > 0 ? INTSXP : REALSXP));
     }
     if (n > 0)
         N = (m > n) ? m : n;
@@ -814,7 +817,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, N));
     for (i = 0; i < N; i++)
     {
-        tm.tm_sec = INTEGER(VECTOR_ELT(x, 0))[i % nlen[0]];
+        double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
+        tm.tm_sec = fsecs;
         tm.tm_min = INTEGER(VECTOR_ELT(x, 1))[i % nlen[1]];
         tm.tm_hour = INTEGER(VECTOR_ELT(x, 2))[i % nlen[2]];
         tm.tm_mday = INTEGER(VECTOR_ELT(x, 3))[i % nlen[3]];
@@ -823,8 +827,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_wday = INTEGER(VECTOR_ELT(x, 6))[i % nlen[6]];
         tm.tm_yday = INTEGER(VECTOR_ELT(x, 7))[i % nlen[7]];
         tm.tm_isdst = INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
-        if (tm.tm_sec == NA_INTEGER || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER ||
-            tm.tm_mday == NA_INTEGER || tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
+        if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
+            tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
         {
             SET_STRING_ELT(ans, i, NA_STRING);
         }
@@ -834,7 +838,23 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
             {
-                strftime(buff, 256, CHAR(STRING_ELT(sformat, i % m)), &tm);
+                char *q = CHAR(STRING_ELT(sformat, i % m)), buf2[500];
+                strcpy(buf2, q);
+                p = strstr(q, "%OS");
+                if (p)
+                {
+                    int ns = 3;
+                    char *p2 = strstr(buf2, "%OS");
+                    *p2 = '\0';
+                    ns = *(p + 3) - '0';
+                    if (ns > 6)
+                        ns = 6;
+                    if (ns < 1)
+                        ns = 1;
+                    sprintf(p2, "%0*.*f", ns + 3, ns, secs);
+                    strcat(buf2, p + 4);
+                }
+                strftime(buff, 256, buf2, &tm);
                 if (UseTZ && !isNull(tz))
                 {
                     int i = 0;
@@ -858,7 +878,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
@@ -939,7 +959,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(ans = allocVector(VECSXP, 9));
     for (i = 0; i < 9; i++)
-        SET_VECTOR_ELT(ans, i, allocVector(INTSXP, N));
+        SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
 
     PROTECT(ansnames = allocVector(STRSXP, 9));
     for (i = 0; i < 9; i++)
@@ -972,7 +992,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_isdst = isgmt ? 0 : tm2.tm_isdst;
         }
         invalid = invalid || validate_tm(&tm) != 0;
-        makelt(&tm, ans, i, !invalid);
+        makelt(&tm, ans, i, !invalid, 0.0);
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(class = allocVector(STRSXP, 2));
@@ -996,7 +1016,7 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 9));
     for (i = 0; i < 9; i++)
-        SET_VECTOR_ELT(ans, i, allocVector(INTSXP, n));
+        SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
 
     PROTECT(ansnames = allocVector(STRSXP, 9));
     for (i = 0; i < 9; i++)
@@ -1036,7 +1056,7 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
             valid = 0;
-        makelt(&tm, ans, i, valid);
+        makelt(&tm, ans, i, valid, 0.0);
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(class = allocVector(STRSXP, 2));
@@ -1055,7 +1075,7 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
     struct tm tm;
 
     checkArity(op, args);
-    x = CAR(args);
+    PROTECT(x = duplicate(CAR(args)));
     if (!isVectorList(x) || LENGTH(x) != 9)
         error(_("invalid '%s' argument"), "x");
 
@@ -1072,10 +1092,9 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
         if (nlen[8] == 0)
             error(_("zero length component in non-empty POSIXlt structure"));
     }
-    /* coerce fields to integer */
-    for (i = 0; i < 6; i++)
+    /* coerce relevant fields to integer */
+    for (i = 3; i < 6; i++)
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), INTSXP));
-    SET_VECTOR_ELT(x, 8, coerceVector(VECTOR_ELT(x, 8), INTSXP));
 
     PROTECT(ans = allocVector(REALSXP, n));
     for (i = 0; i < n; i++)
@@ -1098,6 +1117,6 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(class = allocVector(STRSXP, 1));
     SET_STRING_ELT(class, 0, mkChar("Date"));
     classgets(ans, class);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return ans;
 }
