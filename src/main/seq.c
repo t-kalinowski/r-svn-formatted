@@ -33,24 +33,27 @@
 
 static SEXP cross(SEXP s, SEXP t)
 {
-    SEXP a, la, ls, lt;
+    SEXP a, la, ls, lt, rs, rt;
     int i, j, k, n, nls, nlt, vs, vt;
 
     n = length(s);
-    nls = nlevels(s);
-    nlt = nlevels(t);
+    ls = getAttrib(s, R_LevelsSymbol);
+    lt = getAttrib(t, R_LevelsSymbol);
+    nls = LENGTH(ls);
+    nlt = LENGTH(lt);
     PROTECT(a = allocVector(INTSXP, n));
+    PROTECT(rs = coerceVector(s, INTSXP));
+    PROTECT(rt = coerceVector(t, INTSXP));
     for (i = 0; i < n; i++)
     {
-        vs = INTEGER(s)[i];
-        vt = INTEGER(t)[i];
+        vs = INTEGER(rs)[i];
+        vt = INTEGER(rt)[i];
         if ((vs == NA_INTEGER) || (vt == NA_INTEGER))
             INTEGER(a)[i] = NA_INTEGER;
         else
             INTEGER(a)[i] = vt + (vs - 1) * nlt;
     }
-    ls = getAttrib(s, R_LevelsSymbol);
-    lt = getAttrib(t, R_LevelsSymbol);
+    UNPROTECT(2);
     if (!isNull(ls) && !isNull(lt))
     {
         PROTECT(la = allocVector(STRSXP, nls * nlt));
@@ -129,7 +132,7 @@ static SEXP seq(SEXP call, SEXP s1, SEXP s2)
 SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
-    if (isFactor(CAR(args)) && isFactor(CADR(args)))
+    if (inherits(CAR(args), "factor") && inherits(CADR(args), "factor"))
     {
         if (length(CAR(args)) != length(CADR(args)))
             errorcall(call, _("unequal factor lengths"));
