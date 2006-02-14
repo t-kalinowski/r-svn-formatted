@@ -761,7 +761,7 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
                 if (TAG(a) == R_DimSymbol || TAG(a) == R_DimNamesSymbol)
                     goto nextattr;
             }
-            if (isFactor(s))
+            if (inherits(s, "factor"))
             {
                 if (TAG(a) == R_LevelsSymbol)
                     goto nextattr;
