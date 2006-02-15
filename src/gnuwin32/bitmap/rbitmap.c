@@ -74,8 +74,8 @@ static void my_png_warning(png_structp png_ptr, png_const_charp msg)
 
 #define CN (100.0 / 2.54)
 
-int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp,
-                unsigned int transparent, int res)
+__declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr,
+                                      FILE *fp, unsigned int transparent, int res)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -306,8 +306,8 @@ static void my_output_message(j_common_ptr cinfo)
     R_ShowMessage(buffer);
 }
 
-int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, int quality,
-                 FILE *outfile, int res)
+__declspec(dllexport) int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr,
+                                       int quality, FILE *outfile, int res)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
@@ -433,7 +433,8 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
         BMPERROR;
 #define HEADERSIZE 54
 
-int R_SaveAsBmp(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp, int res)
+__declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr,
+                                      FILE *fp, int res)
 {
     unsigned long col, palette[256];
     int i, j, r, ncols, mid, high, low, withpalette;
