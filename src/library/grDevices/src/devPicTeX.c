@@ -403,7 +403,7 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     picTeXDesc *ptd = (picTeXDesc *)dd->deviceSpecific;
 
     char *p;
-    int size, status;
+    int size;
     double sum;
 
     size = gc->cex * gc->ps + 0.5;
@@ -413,7 +413,7 @@ static double PicTeX_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
     if (mbcslocale && ptd->fontface != 5)
     {
         /* This version at least uses the state of the MBCS */
-        int i, ucslen = mbcsToUcs2(str, NULL, 0);
+        int i, status, ucslen = mbcsToUcs2(str, NULL, 0);
         if (ucslen != (size_t)-1)
         {
             ucs2_t *ucs;
