@@ -161,7 +161,7 @@ static clock_t StartTime;
 static struct tms timeinfo;
 static double clk_tck;
 
-attribute_hidden void R_setStartTime(void)
+void R_setStartTime(void)
 {
 #ifdef HAVE_SYSCONF
     clk_tck = (double)sysconf(_SC_CLK_TCK);
