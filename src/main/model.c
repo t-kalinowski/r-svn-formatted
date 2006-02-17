@@ -1422,9 +1422,9 @@ SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             ans = VECTOR_ELT(data, i);
             if (TYPEOF(ans) < LGLSXP || TYPEOF(ans) > REALSXP)
-                errorcall(call, _("invalid variable type"));
+                errorcall(call, _("invalid variable type for '%s'"), CHAR(STRING_ELT(names, i)));
             if (nrows(ans) != nr)
-                errorcall(call, _("variable lengths differ"));
+                errorcall(call, _("variable lengths differ (found for '%s')"), CHAR(STRING_ELT(names, i)));
         }
     }
     else
@@ -1708,13 +1708,7 @@ SEXP attribute_hidden do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         var_i = SET_VECTOR_ELT(variable, i, VECTOR_ELT(vars, i));
         if (nrows(var_i) != n)
-            errorcall(call, _("variable lengths differ"));
-        /*if (i == risponse - 1) {
-            LOGICAL(ordered)[0] = 0;
-            INTEGER(nlevs)[0] = 0;
-            INTEGER(columns)[0] = 0;
-        }
-        else */
+            errorcall(call, _("variable lengths differ (found for variable %d)"), i);
         if (isOrdered(var_i))
         {
             LOGICAL(ordered)[i] = 1;
