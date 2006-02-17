@@ -638,7 +638,7 @@ static void handleEvent(XEvent event)
     }
 }
 
-static void R_ProcessEvents(void *data)
+static void R_ProcessX11Events(void *data)
 {
     XEvent event;
 
@@ -1232,7 +1232,7 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
         Rf_setX11Display(display, gamma_fac, colormodel, maxcube, TRUE);
         displayOpen = TRUE;
         if (xd->handleOwnEvents == FALSE)
-            addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessEvents, XActivity);
+            addInputHandler(R_InputHandlers, ConnectionNumber(display), R_ProcessX11Events, XActivity);
     }
     /* whitepixel = GetX11Pixel(255, 255, 255); */
     whitepixel = GetX11Pixel(R_RED(canvascolor), R_GREEN(canvascolor), R_BLUE(canvascolor));
@@ -1819,7 +1819,7 @@ static void newX11_Close(NewDevDesc *dd)
         /* process pending events */
         /* set block on destroy events */
         inclose = TRUE;
-        R_ProcessEvents((void *)NULL);
+        R_ProcessX11Events((void *)NULL);
 
         XFreeCursor(display, xd->gcursor);
         XDestroyWindow(display, xd->window);
@@ -2079,7 +2079,7 @@ static Rboolean newX11_Locator(double *x, double *y, NewDevDesc *dd)
 
     if (xd->type > WINDOW)
         return 0;
-    R_ProcessEvents((void *)NULL); /* discard pending events */
+    R_ProcessX11Events((void *)NULL); /* discard pending events */
     XSync(display, 1);
     /* handle X events as normal until get a button */
     /* click in the desired device */
@@ -2189,7 +2189,7 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
                   if par("bg") is not transparent */
 
 #if BUG
-    R_ProcessEvents((void *)NULL);
+    R_ProcessX11Events((void *)NULL);
 #endif
 
     return TRUE;
