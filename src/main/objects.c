@@ -1406,3 +1406,13 @@ SEXP R_do_new_object(SEXP class_def)
     setAttrib(value, R_ClassSymbol, e);
     return value;
 }
+
+Rboolean R_seemsS4Object(SEXP object)
+{
+    static SEXP R_packageSymbol = NULL;
+    SEXP class;
+    if (!R_packageSymbol)
+        R_packageSymbol = install("package");
+    class = getAttrib(object, R_ClassSymbol);
+    return (class != R_NilValue && getAttrib(class, R_packageSymbol) != R_NilValue) ? TRUE : FALSE;
+}
