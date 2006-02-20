@@ -177,7 +177,8 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
-                    /* error("Line %d is malformed!", n+1); */
+                    line[20] = '\0';
+                    warning("Line starting '%s ...' is malformed!", line);
                 }
             }
         }
