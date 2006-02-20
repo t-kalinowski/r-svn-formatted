@@ -1392,6 +1392,8 @@ Rboolean newX11_Open(NewDevDesc *dd, newX11Desc *xd, char *dsp, double w, double
     { /* PIXMAP */
         xd->windowWidth = iw = w;
         xd->windowHeight = ih = h;
+        if (iw < 20 && ih < 20)
+            warning(_("'width=%d, height=%d' are unlikely values in pixels"), iw, ih);
         if ((xd->window = XCreatePixmap(display, rootwin, iw, ih, DefaultDepth(display, screen))) == 0)
         {
             warning(_("unable to create pixmap"));

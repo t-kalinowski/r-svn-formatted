@@ -1828,9 +1828,12 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
             warning(_("Unable to load Rbitmap.dll"));
             return FALSE;
         }
+
+        if (w < 20 && h < 20)
+            warning(_("'width=%d, height=%d' are unlikely values in pixels"), (int)w, (int)h);
         /*
           Observe that given actual graphapp implementation 256 is
-          irrelevant,i.e., depth of the bitmap is the one of graphic card
+          irrelevant,i.e., depth of the bitmap is that of graphic card
           if required depth > 1
         */
         if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
@@ -1865,6 +1868,8 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
         if (strlen(p + 1) >= 512)
             error(_("filename too long in jpeg() call"));
         strcpy(xd->filename, p + 1);
+        if (w < 20 && h < 20)
+            warning(_("'width=%d, height=%d' are unlikely values in pixels"), (int)w, (int)h);
         if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
         {
             warning(_("Unable to allocate bitmap"));
