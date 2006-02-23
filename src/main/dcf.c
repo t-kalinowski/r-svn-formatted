@@ -34,7 +34,8 @@ static void transferVector(SEXP s, SEXP t);
 
 SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int nwhat, nret, nc, nr, m, k, lastm, need, skip;
+    int nwhat, nret, nc, nr, m, k, lastm, need;
+    Rboolean blank_skip, field_skip = FALSE;
     int whatlen, dynwhat, buflen = 0;
     char *line, *buf;
     regex_t blankline, contline, trailblank, regline;
@@ -54,7 +55,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->open(con))
             error(_("cannot open the connection"));
 
-    PROTECT(what = coerceVector(CADR(args), STRSXP));
+    PROTECT(what = coerceVector(CADR(args), STRSXP)); /* argument fields */
     nwhat = LENGTH(what);
     dynwhat = (nwhat == 0);
 
@@ -75,13 +76,15 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     regcomp(&regline, "^[^:]+:[[:blank:]]*", REG_EXTENDED);
 
     k = 0;
-    lastm = -1;
-    skip = 1;
+    lastm = -1; /* index of the field currently being recorded */
+    blank_skip = TRUE;
     while (Rconn_getline(con, line, MAXELTSIZE) >= 0)
     {
         if (strlen(line) == 0 || regexec(&blankline, line, 0, 0, 0) == 0)
         {
-            if (skip == 0)
+            /* A blank line.  The first one after a record
+               ends a new record, subsequent ones are skipped */
+            if (!blank_skip)
             {
                 k++;
                 if (k > nret - 1)
@@ -93,31 +96,35 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     retval = retval2;
                 }
             }
-            skip = 1;
+            blank_skip = TRUE;
         }
         else
         {
-            skip = 0;
+            /* starting a new record */
+            blank_skip = FALSE;
             /* remove trailing whitespace */
             if (regexec(&trailblank, line, 1, regmatch, 0) == 0)
-            {
                 line[regmatch[0].rm_so] = '\0';
-            }
 
-            if (lastm >= 0 && regexec(&contline, line, 1, regmatch, 0) == 0)
+            /* A continuation line.  Are we currently recording?
+               Or are we skipping a field?  Or is this an error? */
+            if ((lastm >= 0 || field_skip) && regexec(&contline, line, 1, regmatch, 0) == 0)
             {
-                need = strlen(line + regmatch[0].rm_eo) + strlen(CHAR(STRING_ELT(retval, lastm + nwhat * k))) + 2;
-                if (buflen < need)
+                if (lastm >= 0)
                 {
-                    buf = (char *)realloc(buf, need);
-                    if (!buf)
-                        error(_("could not allocate memory for 'read.dcf'"));
-                    buflen = need;
+                    need = strlen(line + regmatch[0].rm_eo) + strlen(CHAR(STRING_ELT(retval, lastm + nwhat * k))) + 2;
+                    if (buflen < need)
+                    {
+                        buf = (char *)realloc(buf, need);
+                        if (!buf)
+                            error(_("could not allocate memory for 'read.dcf'"));
+                        buflen = need;
+                    }
+                    strcpy(buf, CHAR(STRING_ELT(retval, lastm + nwhat * k)));
+                    strcat(buf, "\n");
+                    strcat(buf, line + regmatch[0].rm_eo);
+                    SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(buf));
                 }
-                strcpy(buf, CHAR(STRING_ELT(retval, lastm + nwhat * k)));
-                strcat(buf, "\n");
-                strcat(buf, line + regmatch[0].rm_eo);
-                SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(buf));
             }
             else
             {
@@ -131,15 +138,21 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         {
                             SET_STRING_ELT(retval, m + nwhat * k, mkChar(line + regmatch[0].rm_eo));
                             lastm = m;
+                            field_skip = FALSE;
                             break;
                         }
                         else
                         {
+                            /* This is a field, but not one prespecified */
                             lastm = -1;
+                            field_skip = TRUE;
                         }
                     }
                     if (dynwhat && (lastm == -1))
                     {
+                        /* A previously unseen field and we are
+                           recording all fields */
+                        field_skip = FALSE;
                         PROTECT(what2 = allocVector(STRSXP, nwhat + 1));
                         PROTECT(retval2 = allocMatrixNA(STRSXP, nrows(retval) + 1, ncols(retval)));
                         if (nwhat > 0)
@@ -170,7 +183,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         buf[Rf_strchr(line, ':') - line] = '\0';
                         SET_STRING_ELT(what, nwhat, mkChar(buf));
                         nwhat++;
-                        /* lastm uses C indexing, hence nwhat-1 */
+                        /* lastm uses C indexing, hence nwhat - 1 */
                         lastm = nwhat - 1;
                         SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(line + regmatch[0].rm_eo));
                     }
@@ -192,7 +205,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     regfree(&trailblank);
     regfree(&regline);
 
-    if (skip == 0)
+    if (!blank_skip)
         k++;
 
     /* and now transpose the whole matrix */
