@@ -39,23 +39,24 @@ static R_CMethodDef CEntries[] = {CDEF(R_chull), {NULL, NULL, 0}};
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
-                                        CALLDEF(CIDFontInUse, 2),
-                                        {"R_GD_nullDevice", (DL_FUNC)&R_GD_nullDevice, 0},
-                                        {NULL, NULL, 0}};
+static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
+                                              CALLDEF(CIDFontInUse, 2),
+                                              {"R_GD_nullDevice", (DL_FUNC)&R_GD_nullDevice, 0},
+                                              {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16), EXTDEF(XFig, 11), EXTDEF(PDF, 13),
+static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16),
+                                                 EXTDEF(XFig, 11),  EXTDEF(PDF, 13),
 #ifdef WIN32
-                                           EXTDEF(devga, 15), EXTDEF(savePlot, 3),
+                                                 EXTDEF(devga, 15), EXTDEF(savePlot, 3),
 #else
-                                           EXTDEF(Quartz, -1),
+                                                 EXTDEF(Quartz, -1),
 #endif
-                                           {NULL, NULL, 0}};
+                                                 {NULL, NULL, 0}};
 
 void R_init_grDevices(DllInfo *dll)
 {

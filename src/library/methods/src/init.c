@@ -28,27 +28,27 @@
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static R_CallMethodDef CallEntries[] = {CALLDEF(R_M_setPrimitiveMethods, 5),
-                                        CALLDEF(R_clear_method_selection, 0),
-                                        CALLDEF(R_dummy_extern_place, 0),
-                                        CALLDEF(R_el_named, 2),
-                                        CALLDEF(R_externalptr_prototype_object, 0),
-                                        CALLDEF(R_getGeneric, 3),
-                                        CALLDEF(R_get_slot, 2),
-                                        CALLDEF(R_identC, 2),
-                                        CALLDEF(R_initMethodDispatch, 1),
-                                        CALLDEF(R_methodsPackageMetaName, 2),
-                                        CALLDEF(R_methods_test_MAKE_CLASS, 1),
-                                        CALLDEF(R_methods_test_NEW, 1),
-                                        CALLDEF(R_missingArg, 2),
-                                        CALLDEF(R_nextMethodCall, 2),
-                                        CALLDEF(R_quick_method_check, 3),
-                                        CALLDEF(R_selectMethod, 4),
-                                        CALLDEF(R_set_el_named, 3),
-                                        CALLDEF(R_set_slot, 3),
-                                        CALLDEF(R_standardGeneric, 3),
-                                        CALLDEF(do_substitute_direct, 2),
-                                        {NULL, NULL, 0}};
+static const R_CallMethodDef CallEntries[] = {CALLDEF(R_M_setPrimitiveMethods, 5),
+                                              CALLDEF(R_clear_method_selection, 0),
+                                              CALLDEF(R_dummy_extern_place, 0),
+                                              CALLDEF(R_el_named, 2),
+                                              CALLDEF(R_externalptr_prototype_object, 0),
+                                              CALLDEF(R_getGeneric, 3),
+                                              CALLDEF(R_get_slot, 2),
+                                              CALLDEF(R_identC, 2),
+                                              CALLDEF(R_initMethodDispatch, 1),
+                                              CALLDEF(R_methodsPackageMetaName, 2),
+                                              CALLDEF(R_methods_test_MAKE_CLASS, 1),
+                                              CALLDEF(R_methods_test_NEW, 1),
+                                              CALLDEF(R_missingArg, 2),
+                                              CALLDEF(R_nextMethodCall, 2),
+                                              CALLDEF(R_quick_method_check, 3),
+                                              CALLDEF(R_selectMethod, 4),
+                                              CALLDEF(R_set_el_named, 3),
+                                              CALLDEF(R_set_slot, 3),
+                                              CALLDEF(R_standardGeneric, 3),
+                                              CALLDEF(do_substitute_direct, 2),
+                                              {NULL, NULL, 0}};
 
 void
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
