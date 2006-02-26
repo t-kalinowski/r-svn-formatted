@@ -39,7 +39,7 @@
 
 #include "nmath.h"
 
-extern int signgam; /* set in lgammafn(.) */
+extern int R_signgam; /* set in lgammafn(.) */
 
 double attribute_hidden lfastchoose(double n, double k)
 {
@@ -51,7 +51,7 @@ static double lfastchoose2(double n, double k, int *s_choose)
 {
     double r;
     r = lgammafn(n - k + 1.);
-    *s_choose = signgam;
+    *s_choose = R_signgam;
     return lgammafn(n + 1.) - lgammafn(k + 1.) - r;
 }
 
