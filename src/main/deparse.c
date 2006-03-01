@@ -267,6 +267,13 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
             strcat(data, "...");
         svec = mkString(data);
     }
+    else if (R_BrowseLines > 0 && localData.linenumber > R_BrowseLines)
+    {
+        /* we need to truncate to fewer lines in the browser call */
+        PROTECT(svec = lengthgets(svec, R_BrowseLines + 1));
+        SET_STRING_ELT(svec, R_BrowseLines, mkChar("  ..."));
+        UNPROTECT(1);
+    }
     R_print.digits = savedigits;
     if ((opts & WARNINCOMPLETE) && !localData.sourceable)
         warning(_("deparse may be incomplete"));
