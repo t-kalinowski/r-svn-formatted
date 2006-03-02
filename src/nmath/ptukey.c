@@ -392,7 +392,7 @@ double ptukey(double q, double rr, double cc, double df, int lower_tail, int log
 
     if (otsum > eps2)
     { /* not converged */
-        ML_ERROR(ME_PRECISION);
+        ML_ERROR(ME_PRECISION, "ptukey");
     }
     if (ans > 1.)
         ans = 1.;

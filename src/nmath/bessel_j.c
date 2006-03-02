@@ -47,7 +47,7 @@ double bessel_j(double x, double alpha)
 #endif
     if (x < 0)
     {
-        ML_ERROR(ME_RANGE);
+        ML_ERROR(ME_RANGE, "bessel_j");
         return ML_NAN;
     }
     if (alpha < 0)
@@ -220,7 +220,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
         *ncalc = *nb;
         if (*x > xlrg_BESS_IJ)
         {
-            ML_ERROR(ME_RANGE);
+            ML_ERROR(ME_RANGE, "J_bessel");
             for (i = 1; i <= *nb; i++)
                 b[i] = ML_POSINF; /* FIXME : +Inf is really nonsense */
             return;

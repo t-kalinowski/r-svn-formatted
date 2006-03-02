@@ -1,6 +1,6 @@
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 2003	      The R Foundation
+ *  Copyright (C) 2003-2006     The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,14 +42,14 @@
 #ifdef MATHLIB_STANDALONE
 #define ML_ERR_ret_NAN(_k_)                                                                                            \
     {                                                                                                                  \
-        ML_ERROR(ME_DOMAIN);                                                                                           \
+        ML_ERROR(ME_DOMAIN, "rmultinom");                                                                              \
         rN[_k_] = -1;                                                                                                  \
         return;                                                                                                        \
     }
 #else
 #define ML_ERR_ret_NAN(_k_)                                                                                            \
     {                                                                                                                  \
-        ML_ERROR(ME_DOMAIN);                                                                                           \
+        ML_ERROR(ME_DOMAIN, "rmultinom");                                                                              \
         rN[_k_] = NA_INTEGER;                                                                                          \
         return;                                                                                                        \
     }
@@ -66,7 +66,7 @@ void rmultinom(int n, double *prob, int K, int *rN)
 #ifdef MATHLIB_STANDALONE
     if (K < 1)
     {
-        ML_ERROR(ME_DOMAIN);
+        ML_ERROR(ME_DOMAIN, "rmultinom");
         return;
     }
     if (n < 0)
@@ -74,7 +74,7 @@ void rmultinom(int n, double *prob, int K, int *rN)
 #else
     if (K == NA_INTEGER || K < 1)
     {
-        ML_ERROR(ME_DOMAIN);
+        ML_ERROR(ME_DOMAIN, "rmultinom");
         return;
     }
     if (n == NA_INTEGER || n < 0)

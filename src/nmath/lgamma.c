@@ -77,7 +77,7 @@ double lgammafn(double x)
 
     if (x <= 0 && x == trunc(x))
     { /* Negative integer argument */
-        ML_ERROR(ME_RANGE);
+        ML_ERROR(ME_RANGE, "lgamma");
         return ML_POSINF; /* +Inf, since lgamma(x) = log|gamma(x)| */
     }
 
@@ -90,7 +90,7 @@ double lgammafn(double x)
 
     if (y > xmax)
     {
-        ML_ERROR(ME_RANGE);
+        ML_ERROR(ME_RANGE, "lgamma");
         return ML_POSINF;
     }
 
@@ -123,7 +123,7 @@ Now UNNECESSARY: caught above */
         /* The answer is less than half precision because
          * the argument is too near a negative integer. */
 
-        ML_ERROR(ME_PRECISION);
+        ML_ERROR(ME_PRECISION, "lgamma");
     }
 
     return ans;

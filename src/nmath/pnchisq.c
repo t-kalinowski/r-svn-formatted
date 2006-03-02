@@ -45,7 +45,7 @@ double pnchisq(double x, double f, double theta, int lower_tail, int log_p)
     else
     {
         if (ans < 1e-10)
-            ML_ERROR(ME_PRECISION);
+            ML_ERROR(ME_PRECISION, "pnchisq");
         ans = fmax2(ans, 0.0); /* Precaution PR#7099 */
         return log_p ? log(ans) : ans;
     }
