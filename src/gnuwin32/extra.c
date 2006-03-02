@@ -1150,7 +1150,6 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     *list = '\0'; /* no initialization */
     askfilenames(CHAR(STRING_ELT(caption, 0)), path, multi, cfilters, filterindex, list,
                  65500); /* list declared larger to protect against overwrites */
-    Rwin_fpset();
 
     if (!multi)
     {
@@ -1216,7 +1215,6 @@ SEXP do_chooseDir(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(caption) || length(caption) != 1)
         errorcall(call, _("'caption' must be a character string"));
     p = askcdstring(CHAR(STRING_ELT(caption, 0)), path);
-    Rwin_fpset();
 
     PROTECT(ans = allocVector(STRSXP, 1));
     SET_STRING_ELT(ans, 0, p ? mkChar(p) : NA_STRING);

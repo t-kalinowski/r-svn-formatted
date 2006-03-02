@@ -40,7 +40,6 @@ static void private_delprinter(printer obj)
     EndPage(h);
     EndDoc(h);
     DeleteDC(h);
-    Rwin_fpset();
     return;
 }
 
@@ -167,7 +166,6 @@ printer newprinter(double width, double height, char *name)
     }
 
     StartPage(hDC);
-    Rwin_fpset();
     return obj;
 }
 
@@ -177,5 +175,4 @@ void nextpage(printer p)
         return;
     EndPage((HDC)p->handle);
     StartPage((HDC)p->handle);
-    Rwin_fpset();
 }
