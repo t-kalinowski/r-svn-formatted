@@ -57,6 +57,7 @@ typedef struct opt_struct
     double *parscale; /* scaling for parameters */
     int usebounds;
     double *lower, *upper;
+    SEXP names; /* names for par */
 } opt_struct, *OptStruct;
 
 static double fminfn(int n, double *p, void *ex)
@@ -68,6 +69,8 @@ static double fminfn(int n, double *p, void *ex)
     PROTECT_INDEX ipx;
 
     PROTECT(x = allocVector(REALSXP, n));
+    if (!isNull(OS->names))
+        setAttrib(x, R_NamesSymbol, OS->names);
     for (i = 0; i < n; i++)
     {
         if (!R_FINITE(p[i]))
@@ -95,6 +98,8 @@ static void fmingr(int n, double *p, double *df, void *ex)
     if (!isNull(OS->R_gcall))
     { /* analytical derivatives */
         PROTECT(x = allocVector(REALSXP, n));
+        if (!isNull(OS->names))
+            setAttrib(x, R_NamesSymbol, OS->names);
         for (i = 0; i < n; i++)
         {
             if (!R_FINITE(p[i]))
@@ -113,6 +118,7 @@ static void fmingr(int n, double *p, double *df, void *ex)
     else
     { /* numerical derivatives */
         PROTECT(x = allocVector(REALSXP, n));
+        setAttrib(x, R_NamesSymbol, OS->names);
         for (i = 0; i < n; i++)
             REAL(x)[i] = p[i] * (OS->parscale[i]);
         SETCADR(OS->R_fcall, x);
@@ -229,6 +235,7 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     OS->usebounds = 0;
     OS->R_env = rho;
     par = CAR(args);
+    OS->names = getAttrib(par, R_NamesSymbol);
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
@@ -465,6 +472,7 @@ SEXP attribute_hidden do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     OS->R_env = rho;
     par = CAR(args);
     npar = LENGTH(par);
+    OS->names = getAttrib(par, R_NamesSymbol);
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
