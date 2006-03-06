@@ -111,6 +111,7 @@ static char *MyW2A(wchar_t *w)
     return rc;
 }
 
+/* 06-02-15 | baier | trace on error */
 int WINAPI BDX2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 {
     int lRet = 0;
@@ -133,6 +134,7 @@ int WINAPI BDX2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
         lRet = BDXArray2Variant(pBDXData, pVariantData);
         break;
     default:
+        BDX_TRACE(printf("BDX2Variant: unknown type, bailing out\n"));
         lRet = -2;
     }
 
@@ -154,6 +156,7 @@ int WINAPI Variant2BDX(VARIANT VariantData, BDX_Data **ppBDXData)
 }
 
 /* 05-05-20 | baier | BDX_SPECIAL, BDX_HANDLE */
+/* 06-02-15 | baier | fixes for COM objects/EXTPTRSXP */
 static int BDXScalar2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 {
     int lRet = 0;
@@ -179,7 +182,7 @@ static int BDXScalar2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
     break;
     case BDX_HANDLE: {
         LPSTREAM lStream = pBDXData->data.raw_data[0].ptr;
-        HRESULT lRc = CoUnmarshalInterface(lStream, &IID_IDispatch, (void *)V_DISPATCH(pVariantData));
+        HRESULT lRc = CoUnmarshalInterface(lStream, &IID_IDispatch, (void **)&V_DISPATCH(pVariantData));
         if (FAILED(lRc))
         {
             BDX_ERR(printf("unmarshalling stream ptr %p failed with hr=%08x\n", lStream, lRc));
@@ -188,6 +191,7 @@ static int BDXScalar2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 
         /* create SEXP for COM object */
         V_VT(pVariantData) = VT_DISPATCH;
+        break;
     }
     case BDX_SPECIAL:
         V_VT(pVariantData) = VT_ERROR;
@@ -203,6 +207,7 @@ static int BDXScalar2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 
 /* 05-06-05 | baier | BDX_GENERIC */
 /* 05-06-08 | baier | array of BDX_SPECIAL */
+/* 06-02-15 | baier | fixes for COM objects/EXTPTRSXP */
 static int BDXArray2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 {
     int lRet = 0;
@@ -228,6 +233,7 @@ static int BDXArray2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
         lRet = BDXGenericArray2Variant(pBDXData, pVariantData);
         break;
     default:
+        BDX_ERR(printf("BDXArray2Variant: unsupported array type %x\n", pBDXData->type));
         lRet = -2;
     }
 
@@ -538,6 +544,7 @@ static unsigned int GetArrayBounds(BDX_Data *pBDXData, SAFEARRAYBOUND **ppArrayB
 
 /* 04-11-16 | baier | set BDX version */
 /* 05-05-19 | baier | VT_DISPATCH, VT_ERROR */
+/* 05-11-29 | baier | handle VT_EMPTY, too */
 int VariantScalar2BDX(VARIANT VariantData, BDX_Data **ppBDXData)
 {
     /* allocate base buffer */
@@ -674,6 +681,11 @@ int VariantScalar2BDX(VARIANT VariantData, BDX_Data **ppBDXData)
         }
     }
     break;
+
+    case VT_EMPTY: /* empty cells in Excel for example */
+        lData->type |= BDX_SPECIAL;
+        lData->data.raw_data[0].special_value = BDX_SV_NULL;
+        break;
 
     case VT_ERROR: /* special values (e.g. NA, NaN) */
     {
@@ -1168,6 +1180,7 @@ static int VariantStringArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsig
     return 0;
 }
 
+/* 05-11-29 | baier | handle VT_EMPTY, too */
 static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsigned int pTotalElements)
 {
     SAFEARRAY *lArray;
@@ -1268,6 +1281,7 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
             {
                 lCoerceTo = VT_ERROR; /* this really means: transfer as is */
             }
+        case VT_EMPTY: /* empty cells in Excel for example */
         case VT_ERROR:
             /* excel specifies cell errors with the following typedef. These are ORed with 0x800a0000
                 typedef enum {
@@ -1446,6 +1460,10 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
                 {
                     pBDXData->data.raw_data_with_type[i].raw_data.string_value = MyW2A(*lVariantArray[i].pbstrVal);
                 }
+                break;
+            case VT_EMPTY: /* empty cells in Excel for example */
+                pBDXData->data.raw_data_with_type[i].type = BDX_SPECIAL;
+                pBDXData->data.raw_data_with_type[i].raw_data.special_value = BDX_SV_NULL;
                 break;
             case VT_ERROR:
                 pBDXData->data.raw_data_with_type[i].type = BDX_SPECIAL;
