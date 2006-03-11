@@ -749,7 +749,7 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
 {
     char action[50];
     int C;
-    Rboolean calcvert, shrinkfail = FALSE;
+    Rboolean calcvert;
     double convtol, f;
     int funcount = 0, H, i, j, L = 0;
     int n1 = 0;
@@ -819,7 +819,6 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
         }
         oldsize = size;
         calcvert = TRUE;
-        shrinkfail = FALSE;
         do
         {
             if (calcvert)
@@ -862,113 +861,113 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
                 }
             }
 
-            if (VH > VL + convtol && VL > abstol)
-            {
-                sprintf(tstr, "%5d", funcount);
-                if (trace)
-                    Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
+            if (VH <= VL + convtol || VL <= abstol)
+                break;
 
+            sprintf(tstr, "%5d", funcount);
+            if (trace)
+                Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
+
+            for (i = 0; i < n; i++)
+            {
+                temp = -P[i][H - 1];
+                for (j = 0; j < n1; j++)
+                    temp += P[i][j];
+                P[i][C - 1] = temp / n;
+            }
+            for (i = 0; i < n; i++)
+                Bvec[i] = (1.0 + alpha) * P[i][C - 1] - alpha * P[i][H - 1];
+            f = fminfn(n, Bvec, ex);
+            if (!R_FINITE(f))
+                f = big;
+            funcount++;
+            strcpy(action, "REFLECTION     ");
+            VR = f;
+            if (VR < VL)
+            {
+                P[n1 - 1][C - 1] = f;
                 for (i = 0; i < n; i++)
                 {
-                    temp = -P[i][H - 1];
-                    for (j = 0; j < n1; j++)
-                        temp += P[i][j];
-                    P[i][C - 1] = temp / n;
+                    f = gamm * Bvec[i] + (1 - gamm) * P[i][C - 1];
+                    P[i][C - 1] = Bvec[i];
+                    Bvec[i] = f;
                 }
-                for (i = 0; i < n; i++)
-                    Bvec[i] = (1.0 + alpha) * P[i][C - 1] - alpha * P[i][H - 1];
                 f = fminfn(n, Bvec, ex);
                 if (!R_FINITE(f))
                     f = big;
                 funcount++;
-                strcpy(action, "REFLECTION     ");
-                VR = f;
-                if (VR < VL)
+                if (f < VR)
                 {
-                    P[n1 - 1][C - 1] = f;
                     for (i = 0; i < n; i++)
-                    {
-                        f = gamm * Bvec[i] + (1 - gamm) * P[i][C - 1];
-                        P[i][C - 1] = Bvec[i];
-                        Bvec[i] = f;
-                    }
-                    f = fminfn(n, Bvec, ex);
-                    if (!R_FINITE(f))
-                        f = big;
-                    funcount++;
-                    if (f < VR)
-                    {
-                        for (i = 0; i < n; i++)
-                            P[i][H - 1] = Bvec[i];
-                        P[n1 - 1][H - 1] = f;
-                        strcpy(action, "EXTENSION      ");
-                    }
-                    else
-                    {
-                        for (i = 0; i < n; i++)
-                            P[i][H - 1] = P[i][C - 1];
-                        P[n1 - 1][H - 1] = VR;
-                    }
+                        P[i][H - 1] = Bvec[i];
+                    P[n1 - 1][H - 1] = f;
+                    strcpy(action, "EXTENSION      ");
                 }
                 else
                 {
-                    strcpy(action, "HI-REDUCTION   ");
-                    if (VR < VH)
-                    {
-                        for (i = 0; i < n; i++)
-                            P[i][H - 1] = Bvec[i];
-                        P[n1 - 1][H - 1] = VR;
-                        strcpy(action, "LO-REDUCTION   ");
-                    }
-
                     for (i = 0; i < n; i++)
-                        Bvec[i] = (1 - bet) * P[i][H - 1] + bet * P[i][C - 1];
-                    f = fminfn(n, Bvec, ex);
-                    if (!R_FINITE(f))
-                        f = big;
-                    funcount++;
+                        P[i][H - 1] = P[i][C - 1];
+                    P[n1 - 1][H - 1] = VR;
+                }
+            }
+            else
+            {
+                strcpy(action, "HI-REDUCTION   ");
+                if (VR < VH)
+                {
+                    for (i = 0; i < n; i++)
+                        P[i][H - 1] = Bvec[i];
+                    P[n1 - 1][H - 1] = VR;
+                    strcpy(action, "LO-REDUCTION   ");
+                }
 
-                    if (f < P[n1 - 1][H - 1])
+                for (i = 0; i < n; i++)
+                    Bvec[i] = (1 - bet) * P[i][H - 1] + bet * P[i][C - 1];
+                f = fminfn(n, Bvec, ex);
+                if (!R_FINITE(f))
+                    f = big;
+                funcount++;
+
+                if (f < P[n1 - 1][H - 1])
+                {
+                    for (i = 0; i < n; i++)
+                        P[i][H - 1] = Bvec[i];
+                    P[n1 - 1][H - 1] = f;
+                }
+                else
+                {
+                    if (VR >= VH)
                     {
-                        for (i = 0; i < n; i++)
-                            P[i][H - 1] = Bvec[i];
-                        P[n1 - 1][H - 1] = f;
-                    }
-                    else
-                    {
-                        if (VR >= VH)
+                        strcpy(action, "SHRINK         ");
+                        calcvert = TRUE;
+                        size = 0.0;
+                        for (j = 0; j < n1; j++)
                         {
-                            strcpy(action, "SHRINK         ");
-                            calcvert = TRUE;
-                            size = 0.0;
-                            for (j = 0; j < n1; j++)
+                            if (j + 1 != L)
                             {
-                                if (j + 1 != L)
+                                for (i = 0; i < n; i++)
                                 {
-                                    for (i = 0; i < n; i++)
-                                    {
-                                        P[i][j] = bet * (P[i][j] - P[i][L - 1]) + P[i][L - 1];
-                                        size += fabs(P[i][j] - P[i][L - 1]);
-                                    }
+                                    P[i][j] = bet * (P[i][j] - P[i][L - 1]) + P[i][L - 1];
+                                    size += fabs(P[i][j] - P[i][L - 1]);
                                 }
                             }
-                            if (size < oldsize)
-                            {
-                                shrinkfail = FALSE;
-                                oldsize = size;
-                            }
-                            else
-                            {
-                                if (trace)
-                                    Rprintf("Polytope size measure not decreased in shrink\n");
-                                shrinkfail = TRUE;
-                            }
+                        }
+                        if (size < oldsize)
+                        {
+                            oldsize = size;
+                        }
+                        else
+                        {
+                            if (trace)
+                                Rprintf("Polytope size measure not decreased in shrink\n");
+                            *fail = 10;
+                            break;
                         }
                     }
                 }
             }
 
-        } while (!(VH <= VL + convtol || VL <= abstol || shrinkfail || funcount > maxit));
+        } while (funcount <= maxit);
     }
 
     if (trace)
@@ -979,8 +978,6 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
     *Fmin = P[n1 - 1][L - 1];
     for (i = 0; i < n; i++)
         X[i] = P[i][L - 1];
-    if (shrinkfail)
-        *fail = 10;
     if (funcount > maxit)
         *fail = 1;
     *fncount = funcount;
