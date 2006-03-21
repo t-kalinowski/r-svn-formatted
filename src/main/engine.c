@@ -1281,6 +1281,9 @@ void GECircle(double x, double y, double radius, R_GE_gcontext *gc, GEDevDesc *d
     double *xc, *yc;
     int result;
 
+    if (gc->lty == LTY_BLANK)
+        /* "transparent" border */
+        gc->col = R_TRANWHITE;
     /*
      * If the device can clip, then we just clip to the device
      * boundary and let the device do clipping within that.
@@ -1400,6 +1403,9 @@ void GERect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, GEDev
     double *xc, *yc;
     int result;
 
+    if (gc->lty == LTY_BLANK)
+        /* "transparent" border */
+        gc->col = R_TRANWHITE;
     /*
      * For clipping logic, see comments in GECircle
      */
