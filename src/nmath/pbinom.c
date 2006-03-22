@@ -41,9 +41,9 @@ double pbinom(double x, double n, double p, int lower_tail, int log_p)
     if (n < 0 || p < 0 || p > 1)
         ML_ERR_return_NAN;
 
-    x = floor(x + 1e-7);
-    if (x < 0.0)
+    if (x < 0)
         return R_DT_0;
+    x = floor(x + 1e-7);
     if (n <= x)
         return R_DT_1;
     return pbeta(p, x + 1, n - x, !lower_tail, log_p);
