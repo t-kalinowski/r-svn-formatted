@@ -103,6 +103,8 @@ static xbuf file2xbuf(char *name, int del)
     if ((xb = newxbuf(dim + 1, ms + 1, 1)))
         for (q = p, ms = 0; *q; q++)
         {
+            if (*q == '\r')
+                continue;
             if (*q == '\n')
             {
                 ms++;

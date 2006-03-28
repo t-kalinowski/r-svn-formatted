@@ -103,11 +103,13 @@ int inline mb_char_len(char *buf, int clength)
 
 void setCURCOL(ConsoleData p)
 {
+    char *P = LINE(NUMLINES - 1);
+    int w0 = 0;
+
 #ifdef SUPPORT_MBCS
     if (mbcslocale)
     {
-        char *P = LINE(NUMLINES - 1) + prompt_len;
-        int w0 = 0, used;
+        int used;
         wchar_t wc;
         mbs_init(&mb_st);
         while (P < LINE(NUMLINES - 1) + prompt_len + cur_byte)
@@ -115,14 +117,22 @@ void setCURCOL(ConsoleData p)
             used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
             if (used <= 0)
                 break;
-            w0 += Ri18n_wcwidth(wc);
+            if (wc == L'\r')
+                w0 = -1;
+            else
+                w0 += Ri18n_wcwidth(wc);
             P += used;
         }
-        CURCOL = w0 + prompt_wid;
     }
     else
 #endif
-        CURCOL = cur_byte + prompt_wid;
+        while (P++ < LINE(NUMLINES - 1) + prompt_len + cur_byte)
+            if (*P == '\r')
+                w0 = -1;
+            else
+                w0++;
+
+    CURCOL = w0;
 }
 
 /* xbuf */
@@ -270,12 +280,32 @@ void xbufaddc(xbuf p, char c)
     case '\b':
         if (strlen(p->s[p->ns - 1]))
         {
-            p->free--;
-            p->av++;
+            /* delete the last character, not the last byte */
+#ifdef SUPPORT_MBCS
+            if (mbcslocale)
+            {
+                char *buf = p->s[p->ns - 1];
+                int l = mb_char_len(buf, strlen(buf) - 1);
+                p->free -= l;
+                p->av += l;
+            }
+            else
+#endif
+            {
+                p->free--;
+                p->av++;
+            }
         }
         break;
+    /* The following implemented a destructive CR
     case '\r':
-        break;
+        {
+        int l = strlen(p->s[p->ns - 1]);
+        p->free -= l;
+        p->av += l;
+    }
+    break;
+    */
     case '\t':
         XPUTC(' ');
         *p->free = '\0';
@@ -493,7 +523,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
 /* write line i of the buffer at row j on bitmap */
 static int writeline(ConsoleData p, int i, int j)
 {
-    char *s;
+    char *s, *stmp, *p0;
     int insel, len, col1, d;
     int c1, c2, c3, x0, y0, x1, y1;
 #ifdef SUPPORT_MBCS
@@ -502,13 +532,37 @@ static int writeline(ConsoleData p, int i, int j)
 
     if ((i < 0) || (i >= NUMLINES))
         return 0;
-    s = LINE(i);
+    stmp = s = LINE(i);
 #ifdef SUPPORT_MBCS
     if (mbcslocale)
-        len = mbswidth(s);
+        len = mbswidth(stmp);
     else
 #endif
-        len = strlen(s);
+        len = strlen(stmp);
+    /* If there is a \r in the line, we need to preprocess it */
+    if ((p0 = strchr(s, '\r')))
+    {
+        int l, l1;
+        stmp = LINE(i);
+        s = alloca(strlen(stmp) + 1);
+        l = p0 - stmp;
+        strncpy(s, stmp, l);
+        stmp = p0 + 1;
+        while ((p0 = strchr(stmp, '\r')))
+        {
+            l1 = p0 - stmp;
+            strncpy(s, stmp, l1);
+            if (l1 > l)
+                l = l1;
+            stmp = p0 + 1;
+        }
+        l1 = strlen(stmp);
+        strncpy(s, stmp, l1);
+        if (l1 > l)
+            l = l1;
+        s[l] = '\0';
+        len = l; /* for redraw that uses len */
+    }
     col1 = COLS - 1;
     insel = p->sel ? ((i - p->my0) * (i - p->my1)) : 1;
     if (insel < 0)
@@ -743,6 +797,7 @@ void setfirstcol(control c, int newcol)
     {
         for (i = 0, ml = 0; i < ll; i++)
         {
+            /* <FIXME> this should really take \r into account */
 #ifdef SUPPORT_MBCS
             if (mbcslocale)
                 li = mbswidth(LINE(NEWFV + i));
@@ -1594,23 +1649,46 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
     ConsoleData p = getdata(c);
 
     char cur_char;
-    char *cur_line;
+    char *cur_line, *P;
     char *aLine;
-    int ns0 = NUMLINES;
+    int ns0 = NUMLINES, w0 = 0;
     int mb_len;
 
     /* print the prompt */
     xbufadds(p->lbuf, prompt, 1);
     if (!xbufmakeroom(p->lbuf, len + 1))
         return 1;
-    aLine = LINE(NUMLINES - 1);
+    P = aLine = LINE(NUMLINES - 1);
     prompt_len = strlen(aLine);
 #ifdef SUPPORT_MBCS
     if (mbcslocale)
-        prompt_wid = mbswidth(aLine);
+    {
+        int used;
+        wchar_t wc;
+        mbs_init(&mb_st);
+        while (P++ < aLine + prompt_len)
+        {
+            used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
+            if (used <= 0)
+                break;
+            if (wc == L'\r')
+                w0 = -1;
+            else
+                w0 += Ri18n_wcwidth(wc);
+            P += used;
+        }
+        prompt_wid = w0;
+    }
     else
 #endif
-        prompt_wid = prompt_len;
+    {
+        while (P++ < aLine + prompt_len)
+            if (*P == '\r')
+                w0 = -1;
+            else
+                w0++;
+        prompt_wid = w0;
+    }
     if (NUMLINES > ROWS)
     {
         p->r = ROWS - 1;
@@ -1622,6 +1700,7 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
         p->newfv = 0;
     }
     CURCOL = prompt_wid;
+    USER(NUMLINES - 1) = prompt_wid;
     p->fc = 0;
     cur_byte = 0;
     max_byte = 0;
@@ -1649,7 +1728,7 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
                 p->r = NUMLINES - 1;
                 p->newfv = 0;
             }
-            USER(NUMLINES - 1) = prompt_wid;
+            USER(NUMLINES - 1) = prompt_wid; /* probably no longer needed */
             p->needredraw = 1;
         }
         if (chtype && (max_byte < len - 2))
