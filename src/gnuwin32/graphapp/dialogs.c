@@ -23,7 +23,7 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Copyright (C) 2004 	The R Foundation
+/* Copyright (C) 2004--2006 	The R Foundation
 
    Additions for R, Chris Jackson
    Find and replace dialog boxes and dialog handlers */
@@ -183,14 +183,22 @@ void askchangedir()
 
 char *askfilename(char *title, char *default_name)
 {
-    if (*askfilenames(title, default_name, 0, userfilter ? userfilter : filter[0], 0, strbuf, BUFSIZE))
+    if (*askfilenames(title, default_name, 0, userfilter ? userfilter : filter[0], 0, strbuf, BUFSIZE, NULL))
+        return strbuf;
+    else
+        return NULL;
+}
+
+char *askfilenamewithdir(char *title, char *default_name, char *dir)
+{
+    if (*askfilenames(title, default_name, 0, userfilter ? userfilter : filter[0], 0, strbuf, BUFSIZE, dir))
         return strbuf;
     else
         return NULL;
 }
 
 char *askfilenames(char *title, char *default_name, int multi, char *filters, int filterindex, char *strbuf,
-                   int bufsize)
+                   int bufsize, char *dir)
 {
     int i;
     OPENFILENAME ofn;
@@ -200,7 +208,12 @@ char *askfilenames(char *title, char *default_name, int multi, char *filters, in
     strcpy(strbuf, default_name);
     GetCurrentDirectory(MAX_PATH, cwd);
     if (!strcmp(cod, ""))
-        strcpy(cod, cwd);
+    {
+        if (!dir)
+            strcpy(cod, cwd);
+        else
+            strcpy(cod, dir);
+    }
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.hwndOwner = current_window ? current_window->handle : 0;
