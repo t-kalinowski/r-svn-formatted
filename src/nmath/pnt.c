@@ -177,6 +177,6 @@ finis:
         if (tnc > 1 - 1e-10)
             ML_ERROR(ME_PRECISION, "pnt");
         tnc = fmin2(tnc, 1.0); /* Precaution */
-        return log_p ? log1p(-tnc) : (1 - tnc);
+        return log_p ? log1p(-tnc) : (0.5 - tnc + 0.5);
     }
 }
