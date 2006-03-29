@@ -2055,13 +2055,14 @@ SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP c, fun, names;
+    SEXP c, fun, names, envir;
     int i, n;
-    RCNTXT *cptr;
+    /* RCNTXT *cptr; */
 
     checkArity(op, args);
 
     fun = CAR(args);
+    envir = CADDR(args);
     args = CADR(args);
 
     /* must be a string or a function */
@@ -2074,6 +2075,9 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall_return(call, _("first argument must be a character string or a function"))
 
             if (!isNull(args) && !isNewList(args)) errorcall_return(call, R_MSG_A2_list);
+
+    if (!isEnvironment(envir))
+        errorcall_return(call, _("'envir' must be an environment"));
 
     n = length(args);
     names = getAttrib(args, R_NamesSymbol);
@@ -2098,20 +2102,22 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
             SET_TAG(c, install(CHAR(ItemName(names, i))));
         c = CDR(c);
     }
+    call = eval(call, envir);
 
+    /*
     cptr = R_GlobalContext;
-    while (cptr->nextcontext != NULL)
-    {
-        if (cptr->callflag & CTXT_FUNCTION)
-        {
-            if (cptr->cloenv == rho)
-                break;
-        }
+    while (cptr->nextcontext != NULL) {
+        if (cptr->callflag & CTXT_FUNCTION ) {
+        if(cptr->cloenv == rho)
+           break;
     }
-    if (cptr->cloenv == rho)
+    }
+    if( cptr->cloenv == rho )
         call = eval(call, cptr->sysparent);
     else
         error(_("do.call: could not find parent environment"));
+    */
+
     UNPROTECT(1);
     return call;
 }
