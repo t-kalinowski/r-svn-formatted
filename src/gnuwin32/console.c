@@ -118,7 +118,7 @@ void setCURCOL(ConsoleData p)
             if (used <= 0)
                 break;
             if (wc == L'\r')
-                w0 = -1;
+                w0 = 0;
             else
                 w0 += Ri18n_wcwidth(wc);
             P += used;
@@ -126,9 +126,9 @@ void setCURCOL(ConsoleData p)
     }
     else
 #endif
-        while (P++ < LINE(NUMLINES - 1) + prompt_len + cur_byte)
+        for (; P < LINE(NUMLINES - 1) + prompt_len + cur_byte; P++)
             if (*P == '\r')
-                w0 = -1;
+                w0 = 0;
             else
                 w0++;
 
@@ -1651,9 +1651,10 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
     char cur_char;
     char *cur_line, *P;
     char *aLine;
-    int ns0 = NUMLINES, w0 = 0;
+    int ns0 = NUMLINES, w0 = 0, pre_prompt_len;
     int mb_len;
 
+    pre_prompt_len = strlen(LINE(NUMLINES - 1));
     /* print the prompt */
     xbufadds(p->lbuf, prompt, 1);
     if (!xbufmakeroom(p->lbuf, len + 1))
@@ -1666,28 +1667,30 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
         int used;
         wchar_t wc;
         mbs_init(&mb_st);
-        while (P++ < aLine + prompt_len)
+        while (P < aLine + pre_prompt_len)
         {
             used = mbrtowc(&wc, P, MB_CUR_MAX, &mb_st);
             if (used <= 0)
                 break;
             if (wc == L'\r')
-                w0 = -1;
+                w0 = 0;
             else
                 w0 += Ri18n_wcwidth(wc);
             P += used;
         }
-        prompt_wid = w0;
+        USER(NUMLINES - 1) = w0;
+        prompt_wid = w0 + mbswidth(prompt);
     }
     else
 #endif
     {
-        while (P++ < aLine + prompt_len)
+        for (; P < aLine + pre_prompt_len; P++)
             if (*P == '\r')
-                w0 = -1;
+                w0 = 0;
             else
                 w0++;
-        prompt_wid = w0;
+        USER(NUMLINES - 1) = w0;
+        prompt_wid = w0 + strlen(prompt);
     }
     if (NUMLINES > ROWS)
     {
@@ -1700,7 +1703,6 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
         p->newfv = 0;
     }
     CURCOL = prompt_wid;
-    USER(NUMLINES - 1) = prompt_wid;
     p->fc = 0;
     cur_byte = 0;
     max_byte = 0;
@@ -1728,7 +1730,7 @@ int consolereads(control c, char *prompt, char *buf, int len, int addtohistory)
                 p->r = NUMLINES - 1;
                 p->newfv = 0;
             }
-            USER(NUMLINES - 1) = prompt_wid; /* probably no longer needed */
+            USER(NUMLINES - 1) = prompt_wid;
             p->needredraw = 1;
         }
         if (chtype && (max_byte < len - 2))
