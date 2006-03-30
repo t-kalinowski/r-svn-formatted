@@ -42,11 +42,11 @@
 
 static Rboolean isum(int *x, int n, int *value, Rboolean narm)
 {
-    double s;
+    double s = 0.0;
     int i;
     Rboolean updated = FALSE;
 
-    for (i = 0, s = 0; i < n; i++)
+    for (i = 0; i < n; i++)
     {
         if (x[i] != NA_INTEGER)
         {
@@ -75,10 +75,11 @@ static Rboolean isum(int *x, int n, int *value, Rboolean narm)
 
 static Rboolean rsum(double *x, int n, double *value, Rboolean narm)
 {
-    LDOUBLE s;
+    LDOUBLE s = 0.0;
     int i;
     Rboolean updated = FALSE;
-    for (i = 0, s = 0; i < n; i++)
+
+    for (i = 0; i < n; i++)
     {
         if (!ISNAN(x[i]) || !narm)
         {
@@ -116,17 +117,16 @@ static Rboolean csum(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
 
 static Rboolean imin(int *x, int n, int *value, Rboolean narm)
 {
-    int i, s /* -Wall */;
-    Rboolean updated = FALSE, used = FALSE;
+    int i, s = 0 /* -Wall */;
+    Rboolean updated = FALSE;
 
     /* Used to set s = INT_MAX, but this ignored INT_MAX in the input */
     for (i = 0; i < n; i++)
     {
         if (x[i] != NA_INTEGER)
         {
-            if (!used || s > x[i])
+            if (!updated || s > x[i])
             {
-                used = TRUE;
                 s = x[i];
                 if (!updated)
                     updated = TRUE;
@@ -145,11 +145,11 @@ static Rboolean imin(int *x, int n, int *value, Rboolean narm)
 
 static Rboolean rmin(double *x, int n, double *value, Rboolean narm)
 {
-    double s;
+    double s = 0.0 /* -Wall */;
     int i;
     Rboolean updated = FALSE;
 
-    s = R_PosInf;
+    /* s = R_PosInf; */
     for (i = 0; i < n; i++)
     {
         if (ISNAN(x[i]))
@@ -157,19 +157,19 @@ static Rboolean rmin(double *x, int n, double *value, Rboolean narm)
             if (!narm)
             {
                 if (s != NA_REAL)
-                    s = x[i]; /* was s += x[i];*/
+                    s = x[i]; /* so any NA trumps all NaNs */
                 if (!updated)
                     updated = TRUE;
             }
         }
-        else if (x[i] < s)
-        {
+        else if (!updated || x[i] < s)
+        { /* Never true if s is NA/NaN */
             s = x[i];
             if (!updated)
                 updated = TRUE;
         }
     }
-    *value = /* (!updated) ? NA_REAL : */ s;
+    *value = s;
 
     return (updated);
 }
@@ -177,15 +177,14 @@ static Rboolean rmin(double *x, int n, double *value, Rboolean narm)
 static Rboolean imax(int *x, int n, int *value, Rboolean narm)
 {
     int i, s = 0 /* -Wall */;
-    Rboolean updated = FALSE, used = FALSE;
+    Rboolean updated = FALSE;
 
     for (i = 0; i < n; i++)
     {
         if (x[i] != NA_INTEGER)
         {
-            if (!used || s < x[i])
+            if (!updated || s < x[i])
             {
-                used = TRUE;
                 s = x[i];
                 if (!updated)
                     updated = TRUE;
@@ -204,11 +203,10 @@ static Rboolean imax(int *x, int n, int *value, Rboolean narm)
 
 static Rboolean rmax(double *x, int n, double *value, Rboolean narm)
 {
-    double s;
+    double s = 0.0 /* -Wall */;
     int i;
     Rboolean updated = FALSE;
 
-    s = R_NegInf;
     for (i = 0; i < n; i++)
     {
         if (ISNAN(x[i]))
@@ -216,34 +214,34 @@ static Rboolean rmax(double *x, int n, double *value, Rboolean narm)
             if (!narm)
             {
                 if (s != NA_REAL)
-                    s = x[i]; /* was s += x[i];*/
+                    s = x[i]; /* so any NA trumps all NaNs */
                 if (!updated)
                     updated = TRUE;
             }
         }
-        else if (x[i] > s)
-        {
+        else if (!updated || x[i] > s)
+        { /* Never true if s is NA/NaN */
             s = x[i];
             if (!updated)
                 updated = TRUE;
         }
     }
-    *value = /* (!updated) ? NA_REAL : */ s;
+    *value = s;
 
     return (updated);
 }
 
 static Rboolean iprod(int *x, int n, double *value, Rboolean narm)
 {
-    double s;
+    double s = 1.0;
     int i;
     Rboolean updated = FALSE;
-    s = 1;
+
     for (i = 0; i < n; i++)
     {
         if (x[i] != NA_INTEGER)
         {
-            s = s * x[i];
+            s *= x[i];
             if (!updated)
                 updated = TRUE;
         }
@@ -256,7 +254,7 @@ static Rboolean iprod(int *x, int n, double *value, Rboolean narm)
         }
 
         if (ISNAN(s))
-        {
+        { /* how can this happen? */
             *value = NA_REAL;
             return (updated);
         }
@@ -268,22 +266,17 @@ static Rboolean iprod(int *x, int n, double *value, Rboolean narm)
 
 static Rboolean rprod(double *x, int n, double *value, Rboolean narm)
 {
-    LDOUBLE s;
+    LDOUBLE s = 1.0;
     int i;
     Rboolean updated = FALSE;
-    for (i = 0, s = 1; i < n; i++)
+
+    for (i = 0; i < n; i++)
     {
-        if (!ISNAN(x[i]))
+        if (!ISNAN(x[i]) || !narm)
         {
             if (!updated)
                 updated = TRUE;
-            s = s * x[i];
-        }
-        else if (!narm)
-        {
-            if (!updated)
-                updated = TRUE;
-            s *= x[i]; /* Na(N) */
+            s *= x[i];
         }
     }
     *value = s;
@@ -499,8 +492,8 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                         DbgP3(" INT: (old)icum= %ld, itmp=%ld\n", icum, itmp);
                         if (itmp == NA_INTEGER)
                             goto na_answer;
-                        if ((iop == 2 && itmp < icum)     /* min */
-                            || (iop == 3 && itmp > icum)) /* max */
+                        if ((iop == 2 && itmp < icum) || /* min */
+                            (iop == 3 && itmp > icum))   /* max */
                             icum = itmp;
                     }
                     else
@@ -518,7 +511,9 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 } /*updated*/
                 else
                 {
-                    /*-- in what cases does this happen here at all? */
+                    /*-- in what cases does this happen here at all?
+                      -- if there are no non-missing elements.
+                     */
                     DbgP2(" NOT updated [!! RARE !!]: int_a=%d\n", int_a);
                 }
 
@@ -643,9 +638,9 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     if (empty && (iop == 2 || iop == 3))
     {
         if (iop == 2)
-            warning(_("no finite arguments to min; returning Inf"));
+            warning(_("no non-missing arguments to min; returning Inf"));
         else
-            warning(_("no finite arguments to max; returning -Inf"));
+            warning(_("no non-missing arguments to max; returning -Inf"));
         ans_type = REALSXP;
     }
 
@@ -664,7 +659,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     return ans;
 
-na_answer: /* even for IEEE, for INT : */
+na_answer: /* only INTSXP case curently used */
     ans = allocVector(ans_type, 1);
     switch (ans_type)
     {
