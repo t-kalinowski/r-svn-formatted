@@ -2247,7 +2247,13 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     if (!isNull(levels[j]))
                     {
-                        tmp = EncodeElement2(levels[j], INTEGER(xj)[i] - 1, quote_col[j], qmethod, &strBuf, cdec);
+                        /* We cannot assume factors have integer levels */
+                        if (TYPEOF(xj) == INTSXP)
+                            tmp = EncodeElement2(levels[j], INTEGER(xj)[i] - 1, quote_col[j], qmethod, &strBuf, cdec);
+                        else if (TYPEOF(xj) == REALSXP)
+                            tmp = EncodeElement2(levels[j], REAL(xj)[i] - 1, quote_col[j], qmethod, &strBuf, cdec);
+                        else
+                            error("column %s claims to be a factor but does not have numeric codes", j + 1);
                     }
                     else
                     {
