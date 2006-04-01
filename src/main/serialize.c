@@ -1934,7 +1934,8 @@ static void InitBConOutPStream(R_outpstream_t stream, bconbuf_t bb, Rconnection 
     R_InitOutPStream(stream, (R_pstream_data_t)bb, type, version, OutCharBB, OutBytesBB, phook, pdata);
 }
 
-SEXP R_serializeb(SEXP object, SEXP icon, SEXP fun)
+/* only for use by serialize(), with binary write to a socket connection */
+SEXP attribute_hidden R_serializeb(SEXP object, SEXP icon, SEXP fun)
 {
     struct R_outpstream_st out;
     SEXP (*hook)(SEXP, SEXP);
@@ -2031,6 +2032,7 @@ static void free_mem_buffer(void *data)
     }
 }
 
+/* <FIXME> for 2.4.0 use a raw vector instead, or perhaps if ascii = FALSE */
 static SEXP CloseMemOutPStream(R_outpstream_t stream)
 {
     SEXP val;
@@ -2043,6 +2045,7 @@ static SEXP CloseMemOutPStream(R_outpstream_t stream)
     return val;
 }
 
+/* This is undocumented and in no header, but used by package taskPR. */
 SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun)
 {
     struct R_outpstream_st out;
@@ -2087,6 +2090,7 @@ SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun)
     }
 }
 
+/* This is undocumented and in no header, but used by package taskPR */
 SEXP R_unserialize(SEXP icon, SEXP fun)
 {
     struct R_inpstream_st in;
@@ -2099,6 +2103,14 @@ SEXP R_unserialize(SEXP icon, SEXP fun)
         struct membuf_st mbs;
         void *data = CHAR(STRING_ELT(icon, 0));
         int length = LENGTH(STRING_ELT(icon, 0));
+        InitMemInPStream(&in, &mbs, data, length, hook, fun);
+        return R_Unserialize(&in);
+    }
+    else if (TYPEOF(icon) == RAWSXP)
+    { /* for future use */
+        struct membuf_st mbs;
+        void *data = RAW(icon);
+        int length = LENGTH(icon);
         InitMemInPStream(&in, &mbs, data, length, hook, fun);
         return R_Unserialize(&in);
     }
