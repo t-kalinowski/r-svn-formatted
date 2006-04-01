@@ -3860,6 +3860,11 @@ SEXP attribute_hidden do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (tee == NA_LOGICAL)
         error(_("invalid value for 'split'"));
 
+#ifndef HAVE_VA_COPY
+    if (tee)
+        error(_("this platform does not support 'split=TRUE'"));
+#endif
+
     if (!errcon)
     {
         /* allow space for cat() to use sink() */
