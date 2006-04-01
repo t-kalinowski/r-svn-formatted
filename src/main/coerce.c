@@ -2173,10 +2173,6 @@ SEXP substitute(SEXP lang, SEXP rho)
 /* Work through a list doing substitute on the */
 /* elements taking particular care to handle ... */
 
-/* FIXME:  This version takes particular care, but still mis-handles 	*/
-/* cases like substitute(list(..., x), list(x=1)) (where it 		*/
-/* doesn't substitute for x).  -DJM 					*/
-
 SEXP attribute_hidden substituteList(SEXP el, SEXP rho)
 {
     SEXP h, t;
@@ -2185,23 +2181,23 @@ SEXP attribute_hidden substituteList(SEXP el, SEXP rho)
     if (CAR(el) == R_DotsSymbol)
     {
         if (rho == R_NilValue)
-            return el;
-        h = findVarInFrame3(rho, CAR(el), TRUE);
-        if (h == R_NilValue)
+            h = R_UnboundValue; /* so there is no substitution below */
+        else
+            h = findVarInFrame3(rho, CAR(el), TRUE);
+        if (h == R_UnboundValue)
+            return LCONS(R_DotsSymbol, substituteList(CDR(el), rho));
+        if (h == R_NilValue || h == R_MissingArg)
             return substituteList(CDR(el), rho);
-        if (TYPEOF(h) != DOTSXP)
+        if (TYPEOF(h) == DOTSXP)
         {
-            if (h == R_UnboundValue)
-                return el;
-            if (h == R_MissingArg)
-                return substituteList(CDR(el), rho);
-            error(_("... used in an incorrect context"));
+            PROTECT(h = substituteList(h, R_NilValue));
+            PROTECT(t = substituteList(CDR(el), rho));
+            t = listAppend(h, t);
+            UNPROTECT(2);
+            return t;
         }
-        PROTECT(h = substituteList(h, R_NilValue));
-        PROTECT(t = substituteList(CDR(el), rho));
-        t = listAppend(h, t);
-        UNPROTECT(2);
-        return t;
+        error(_("... used in an incorrect context"));
+        return R_NilValue; /* to suppress warning */
     }
     else
     {
