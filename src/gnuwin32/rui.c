@@ -1405,7 +1405,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
         m = newmenuitem(item, 0, menuuser);
         if (m)
         {
-            if (alloc_items < nitems)
+            if (alloc_items <= nitems)
             {
                 if (alloc_items <= 0)
                 {
