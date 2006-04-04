@@ -615,13 +615,13 @@ double evaluateGrobUnit(double value, SEXP grob, double vpwidthCM, double vpheig
     {
     case 0:
     case 1:
-        if (evalType && pureNullUnit(unitx, 0, dd))
-        {
-            result = evaluateNullUnit(pureNullUnitValue(unitx, 0), vpWidthCM, nullLMode, nullAMode);
-        }
-        else if (pureNullUnit(unity, 0, dd))
+        if (evalType && pureNullUnit(unity, 0, dd))
         {
             result = evaluateNullUnit(pureNullUnitValue(unity, 0), vpWidthCM, nullLMode, nullAMode);
+        }
+        else if (pureNullUnit(unitx, 0, dd))
+        {
+            result = evaluateNullUnit(pureNullUnitValue(unitx, 0), vpWidthCM, nullLMode, nullAMode);
         }
         else
         {
