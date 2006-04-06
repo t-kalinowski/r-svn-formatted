@@ -518,7 +518,7 @@ SEXP do_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
         gl_savehistory(CHAR(STRING_ELT(sfile, 0)), R_HistorySize);
     }
     else
-        errorcall(call, _("savehistory can only be used in Rgui and Rterm"));
+        errorcall(call, _("'savehistory' can only be used in Rgui and Rterm"));
     return R_NilValue;
 }
 
@@ -533,7 +533,7 @@ SEXP do_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
     if (CharacterMode == RGui || (R_Interactive && CharacterMode == RTerm))
         gl_loadhistory(CHAR(STRING_ELT(sfile, 0)));
     else
-        errorcall(call, _("loadhistory can only be used in Rgui and Rterm"));
+        errorcall(call, _("'loadhistory' can only be used in Rgui and Rterm"));
     return R_NilValue;
 }
 
@@ -570,7 +570,7 @@ SEXP do_loadRconsole(SEXP call, SEXP op, SEXP args, SEXP env)
             applyGUI(&gui);
     }
     else
-        errorcall(call, _("loadRconsole can only be used in Rgui"));
+        errorcall(call, _("'loadRconsole' can only be used in Rgui"));
     return R_NilValue;
 }
 
