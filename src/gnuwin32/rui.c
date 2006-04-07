@@ -769,7 +769,7 @@ void readconsolecfg()
     if (gui.toolbar)
         RguiMDI |= RW_TOOLBAR;
     else
-        RguiMDI &= ~RW_MDI;
+        RguiMDI &= ~RW_TOOLBAR;
     if (gui.statusbar)
         RguiMDI |= RW_STATUSBAR;
     else
