@@ -36,12 +36,10 @@
    execute shortcut if menu item is grayed out */
 
 #include "internal.h"
-#include "config.h"
-#ifdef SUPPORT_MBCS
+/*#include "config.h" */
 #include <wchar.h>
 #define mbs_init(x) memset(&x, 0, sizeof(x))
 size_t Rf_mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps);
-#endif
 
 /*
  *  Menu variables.
@@ -137,6 +135,8 @@ static void set_search_string(char *search, char *name, int key)
 {
     int source;
     int dest = 0;
+    int mb_len;
+    mbstate_t mb_st;
 
     /* handle a couple of special cases first */
     if (!string_diff(name, "Cut"))
@@ -162,46 +162,31 @@ static void set_search_string(char *search, char *name, int key)
     /* add the uppercase letters */
     for (source = 0; name[source]; source++)
     {
-#ifdef SUPPORT_MBCS
-        int mb_len;
-        mbstate_t mb_st;
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
             source += mb_len - 1;
-        else
-#endif /* SUPPORT_MBCS */
-            if (isupper(name[source]))
+        else if (isupper(name[source]))
             search[dest++] = name[source];
     }
     /* add the digits */
     for (source = 0; name[source]; source++)
     {
-#ifdef SUPPORT_MBCS
-        int mb_len;
-        mbstate_t mb_st;
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
             source += mb_len - 1;
-        else
-#endif /* SUPPORT_MBCS */
-            if (isdigit(name[source]))
+        else if (isdigit(name[source]))
             search[dest++] = name[source];
     }
     /* add the lowercase letters */
     for (source = 0; name[source]; source++)
     {
-#ifdef SUPPORT_MBCS
-        int mb_len;
-        mbstate_t mb_st;
         mbs_init(mb_st);
         mb_len = Rf_mbrtowc(NULL, name + source, MB_CUR_MAX, &mb_st);
         if (mb_len > 1)
             source += mb_len - 1;
-        else
-#endif /* SUPPORT_MBCS */
-            if (islower(name[source]))
+        else if (islower(name[source]))
             search[dest++] = name[source];
     }
     /* end the search string */
@@ -223,7 +208,6 @@ static int find_shortcut(object me, char *search)
 
     for (source = 0; search[source]; source++)
     {
-#ifdef SUPPORT_MBCS
         int mb_len;
         mbstate_t mb_st;
         mbs_init(mb_st);
@@ -233,7 +217,6 @@ static int find_shortcut(object me, char *search)
             source += mb_len - 1;
         }
         else
-#endif /* SUPPORT_MBCS */
             /* for each character in the search string */
             /* look through every sibling object */
 
@@ -262,11 +245,6 @@ static void setmenustring(object obj, char *buf, char *name, int key)
     int ch, where, source, dest = 0;
     char *extra = "\tCtrl+";
 
-#if 0 /* moved to rui.c                                                                                                \
-#ifdef SUPPORT_MBCS                                                                                                    \
-        setlocale(LC_CTYPE,"");                                                                                        \
-#endif */
-#endif
     set_search_string(search, name, key);
     ch = find_shortcut(obj, search);
 
@@ -276,7 +254,6 @@ static void setmenustring(object obj, char *buf, char *name, int key)
         where = find_char(ch, name);
 
         for (source = 0; source < where; source++)
-#ifdef SUPPORT_MBCS
         {
             int mb_len;
             int i;
@@ -294,9 +271,6 @@ static void setmenustring(object obj, char *buf, char *name, int key)
             else
                 buf[dest++] = name[source];
         }
-#else
-            buf[dest++] = name[source];
-#endif /* SUPPORT_MBCS */
         buf[dest++] = '&';
         for (; name[source]; source++)
             buf[dest++] = name[source];
