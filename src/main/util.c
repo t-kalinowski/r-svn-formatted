@@ -233,7 +233,7 @@ SEXP type2str(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return mkChar(TypeTable[i].str);
     }
-    error(_("type %d is unimplemented in type2str"), t);
+    error(_("type %d is unimplemented in '%s'"), t, "type2str");
     return R_NilValue; /* for -Wall */
 }
 
@@ -244,9 +244,9 @@ char *const type2char(SEXPTYPE t)
     for (i = 0; TypeTable[i].str; i++)
     {
         if (TypeTable[i].type == t)
-            return TypeTable[i].str;
+            return (char *const)TypeTable[i].str;
     }
-    error(_("type %d is unimplemented in type2str"), t);
+    error(_("type %d is unimplemented in '%s'"), t, "type2char");
     return ""; /* for -Wall */
 }
 
@@ -261,7 +261,7 @@ SEXP type2symbol(SEXPTYPE t)
         if (TypeTable[i].type == t)
             return install((char *)&TypeTable[i].str);
     }
-    error(_("type %d is unimplemented in type2symbol"), t);
+    error(_("type %d is unimplemented in '%s'"), t, "type2symbol");
     return R_NilValue; /* for -Wall */
 }
 

@@ -95,7 +95,7 @@ SEXP getAttrib(SEXP vec, SEXP name)
                     SET_STRING_ELT(s, i, PRINTNAME(TAG(vec)));
                 }
                 else
-                    error(_("getAttrib: invalid type for TAG"));
+                    error(_("getAttrib: invalid type (%s) for TAG"), type2char(TYPEOF(TAG(vec))));
             }
             UNPROTECT(1);
             if (any)
@@ -288,7 +288,7 @@ static void checkNames(SEXP x, SEXP s)
     if (isVector(x) || isList(x) || isLanguage(x))
     {
         if (!isVector(s) && !isList(s))
-            error(_("invalid type for 'names': must be vector"));
+            error(_("invalid type (%s) for 'names': must be vector"), type2char(TYPEOF(s)));
         if (length(x) != length(s))
             error(_("'names' attribute [%d] must be the same length as the vector [%d]"), length(s), length(x));
     }
@@ -681,7 +681,7 @@ SEXP namesgets(SEXP vec, SEXP val)
     else if (isVector(vec))
         installAttrib(vec, R_NamesSymbol, val);
     else
-        error(_("invalid type to set 'names' attribute"));
+        error(_("invalid type (%s) to set 'names' attribute"), type2char(TYPEOF(vec)));
     UNPROTECT(2);
     return vec;
 }
@@ -777,7 +777,7 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         if (this != R_NilValue)
         {
             if (!isVector(this))
-                error(_("invalid type for 'dimnames' (must be a vector)"));
+                error(_("invalid type (%s) for 'dimnames' (must be a vector)"), type2char(TYPEOF(this)));
             if (INTEGER(dims)[i] != LENGTH(this) && LENGTH(this) != 0)
                 error(_("length of 'dimnames' [%d] not equal to array extent"), i + 1);
             SET_VECTOR_ELT(val, i, dimnamesgets1(this));
