@@ -723,7 +723,7 @@ SEXP R_missingArg(SEXP symbol, SEXP ev)
               class_string(symbol));
     if (isNull(ev))
     {
-        warning(_("use of NULL environment is deprecated"));
+        error(_("use of NULL environment is defunct"));
         ev = R_BaseEnv;
     }
     else if (!isEnvironment(ev))

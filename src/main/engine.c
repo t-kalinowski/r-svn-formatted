@@ -2838,7 +2838,7 @@ SEXP attribute_hidden do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("'list' argument must be a list"));
     if (isNull(parentenv))
     {
-        warning(_("use of NULL environment is deprecated"));
+        error(_("use of NULL environment is defunct"));
         parentenv = R_BaseEnv;
     }
     else if (!isEnvironment(parentenv))
