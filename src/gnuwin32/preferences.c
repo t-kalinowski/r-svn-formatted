@@ -70,13 +70,13 @@ static char *FontsList[] = {"Courier",   "Courier New", "FixedSys", "FixedFont",
 
 static window wconfig;
 static button bApply, bSave, bLoad, bOK, bCancel;
-static label l_mdi, l_mwin, l_font, l_point, l_style, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_grx, l_gry,
-    l_cols, l_bgcol, l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
+static label l_mdi, l_mwin, l_font, l_point, l_style, l_lang, l_crows, l_ccols, l_cx, l_cy, l_prows, l_pcols, l_grx,
+    l_gry, l_cols, l_bgcol, l_fgcol, l_usercol, l_highlightcol, l_cbb, l_cbl;
 static radiogroup g_mwin;
 static radiobutton rb_mdi, rb_sdi, rb_mwin, rb_swin;
 static listbox f_font, f_style, d_point, bgcol, fgcol, usercol, highlightcol;
 static checkbox toolbar, statusbar, tt_font, c_resize;
-static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl, f_grx, f_gry;
+static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl, f_grx, f_gry, f_lang;
 
 static void getChoices(Gui p)
 {
@@ -84,6 +84,7 @@ static void getChoices(Gui p)
     p->toolbar = ischecked(toolbar);
     p->statusbar = ischecked(statusbar);
     p->pagerMultiple = ischecked(rb_mwin);
+    strcpy(p->language, gettext(f_lang));
     strcpy(p->font, gettext(f_font));
     p->tt_font = ischecked(tt_font);
     p->pointsize = atoi(gettext(d_point));
@@ -115,6 +116,10 @@ void getActive(Gui gui)
     gui->statusbar = ((RguiMDI & RW_STATUSBAR) != 0);
     gui->MDI = ((RguiMDI & RW_MDI) != 0);
     gui->pagerMultiple = pagerMultiple;
+    {
+        char *p = getenv("LANGUAGE");
+        strcpy(gui->language, p ? p : "");
+    }
 
     /* Font, pointsize, style */
 
@@ -171,12 +176,12 @@ void getActive(Gui gui)
 static int has_changed(Gui a, Gui b)
 {
     return !a || a->MDI != b->MDI || a->toolbar != b->toolbar || a->statusbar != b->statusbar ||
-           a->pagerMultiple != b->pagerMultiple || strcmp(a->font, b->font) || a->tt_font != b->tt_font ||
-           a->pointsize != b->pointsize || strcmp(a->style, b->style) || a->crows != b->crows || a->ccols != b->ccols ||
-           a->cx != b->cx || a->cy != b->cy || a->cbb != b->cbb || a->cbl != b->cbl ||
-           a->setWidthOnResize != b->setWidthOnResize || a->prows != b->prows || a->pcols != b->pcols ||
-           a->grx != b->grx || a->gry != b->gry || a->bg != b->bg || a->fg != b->fg || a->user != b->user ||
-           a->hlt != b->hlt;
+           a->pagerMultiple != b->pagerMultiple || strcmp(a->language, b->language) || strcmp(a->font, b->font) ||
+           a->tt_font != b->tt_font || a->pointsize != b->pointsize || strcmp(a->style, b->style) ||
+           a->crows != b->crows || a->ccols != b->ccols || a->cx != b->cx || a->cy != b->cy || a->cbb != b->cbb ||
+           a->cbl != b->cbl || a->setWidthOnResize != b->setWidthOnResize || a->prows != b->prows ||
+           a->pcols != b->pcols || a->grx != b->grx || a->gry != b->gry || a->bg != b->bg || a->fg != b->fg ||
+           a->user != b->user || a->hlt != b->hlt;
 }
 
 static void cleanup()
@@ -191,6 +196,8 @@ static void cleanup()
     delobj(g_mwin);
     delobj(rb_mwin);
     delobj(rb_swin);
+    delobj(l_lang);
+    delobj(f_lang);
     delobj(l_font);
     delobj(f_font);
     delobj(tt_font);
@@ -250,6 +257,15 @@ void applyGUI(Gui newGUI)
     if (newGUI->MDI != curGUI.MDI || newGUI->toolbar != curGUI.toolbar || newGUI->statusbar != curGUI.statusbar)
         askok(G_("The overall console properties cannot be changed\non a running console.\n\nSave the preferences and "
                  "restart Rgui to apply them.\n"));
+
+    if (strcmp(newGUI->language, curGUI.language))
+    {
+        char *buf = malloc(50);
+        askok(G_("The language for menus cannot be changed on a\n running console.\n\nSave the preferences and restart "
+                 "Rgui to apply to menus.\n"));
+        sprintf(buf, "LANGUAGE=%s", newGUI->language);
+        putenv(buf);
+    }
 
     /*  Set a new font? */
     if (strcmp(newGUI->font, curGUI.font) || newGUI->pointsize != curGUI.pointsize ||
@@ -412,6 +428,7 @@ static void save(button b)
     fprintf(fp, "highlight = %s\n", gettext(highlightcol));
     fprintf(fp, "\n\n%s\n%s\nxgraphics = %s\nygraphics = %s\n", "## Initial position of the graphics window",
             "## (pixels, <0 values from opposite edge)", gettext(f_grx), gettext(f_gry));
+    fprintf(fp, "\n\n%s\nlanguage = %s\n", "## Language for messages", gettext(f_lang));
     fclose(fp);
 }
 
@@ -655,6 +672,19 @@ int loadRconsole(Gui gui, char *optf)
                     gui->setWidthOnResize = 0;
                 done = 1;
             }
+            if (!strcmp(opt[0], "language"))
+            {
+                strcpy(gui->language, opt[1]);
+                done = 1;
+            }
+        }
+        else if (ok == 3)
+        { /* opt[1] == "" */
+            if (!strcmp(opt[0], "language"))
+            {
+                strcpy(gui->language, opt[1]);
+                done = 1;
+            }
         }
         if (!done)
         {
@@ -725,14 +755,17 @@ static void showDialog(Gui gui)
         cSDI(rb_sdi);
     }
 
-    l_mwin = newlabel("Pager style", rect(10, 50, 90, 20), AlignLeft);
+    l_mwin = newlabel("Pager style", rect(10, 40, 90, 20), AlignLeft);
     g_mwin = newradiogroup();
-    rb_mwin = newradiobutton("multiple windows", rect(150, 50, 150, 20), NULL);
-    rb_swin = newradiobutton("single window", rect(320, 50, 150, 20), NULL);
+    rb_mwin = newradiobutton("multiple windows", rect(150, 40, 150, 20), NULL);
+    rb_swin = newradiobutton("single window", rect(150, 60, 150, 20), NULL);
     if (gui->pagerMultiple)
         check(rb_mwin);
     else
         check(rb_swin);
+
+    l_lang = newlabel("Language for menus\nand messages", rect(320, 40, 130, 40), AlignLeft);
+    f_lang = newfield(gui->language, rect(450, 45, 60, 20));
 
     /* Font, pointsize, style */
 

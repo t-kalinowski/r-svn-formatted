@@ -728,6 +728,7 @@ void readconsolecfg()
     strcpy(gui.style, "normal");
     gui.tt_font = 0;
     gui.pointsize = 12;
+    strcpy(gui.language, "");
 
 #ifdef USE_MDI
     gui.toolbar = ((RguiMDI & RW_TOOLBAR) != 0);
@@ -786,6 +787,12 @@ void readconsolecfg()
     Rwin_graphicsx = gui.grx;
     Rwin_graphicsy = gui.gry;
 
+    if (strlen(gui.language))
+    {
+        char *buf = malloc(50);
+        sprintf(buf, "LANGUAGE=%s", gui.language);
+        putenv(buf);
+    }
     setconsoleoptions(fn, sty, gui.pointsize, gui.crows, gui.ccols, gui.cx, gui.cy, gui.fg, gui.user, gui.bg, gui.hlt,
                       gui.prows, gui.pcols, gui.pagerMultiple, gui.setWidthOnResize, gui.cbb, gui.cbl);
 }
