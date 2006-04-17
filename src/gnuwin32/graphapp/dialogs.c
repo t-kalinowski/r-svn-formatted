@@ -345,9 +345,9 @@ typedef struct dialog_data_class
 /*
  *  Some strings to use:
  */
-static char *OKAY_STRING = "OK";
-static char *CANCEL_STRING = "Cancel";
-static char *BROWSE_STRING = "Browse";
+/*	static char * OKAY_STRING	= "OK";
+    static char * CANCEL_STRING	= "Cancel";
+    static char * BROWSE_STRING	= "Browse"; */
 
 static char *QUESTION_TITLE = "Question";
 static char *PASSWORD_TITLE = "Password Entry";
@@ -517,7 +517,7 @@ static window init_askstr_dialog(char *title, char *question, char *default_str)
     if (!default_str)
         default_str = "";
 
-    tw = strwidth(SystemFont, CANCEL_STRING) * 8;
+    tw = strwidth(SystemFont, G_("Cancel")) * 8;
     h = getheight(SystemFont);
 
     if (tw < 150)
@@ -530,9 +530,9 @@ static window init_askstr_dialog(char *title, char *question, char *default_str)
     d->question = newlabel(question, rect(10, h, tw + 4, h * 2 + 2), AlignLeft);
     if (title == FINDDIR_TITLE)
     {
-        bw = strwidth(SystemFont, G_(BROWSE_STRING)) * 3 / 2;
+        bw = strwidth(SystemFont, G_("Browse")) * 3 / 2;
         d->text = newfield(default_str, rect(10, h * 4, tw + 4 - bw, h * 3 / 2));
-        newbutton(G_(BROWSE_STRING), rect(20 + tw - bw, h * 4 - 2, bw, h + 10), browse_button);
+        newbutton(G_("Browse"), rect(20 + tw - bw, h * 4 - 2, bw, h + 10), browse_button);
     }
     else if (title == PASSWORD_TITLE)
         d->text = newpassword(default_str, rect(10, h * 4, tw + 4, h * 3 / 2));
@@ -540,12 +540,12 @@ static window init_askstr_dialog(char *title, char *question, char *default_str)
         d->text = newfield(default_str, rect(10, h * 4, tw + 4, h * 3 / 2));
 
     middle = (tw + 30) / 2;
-    bw = strwidth(SystemFont, CANCEL_STRING) * 3 / 2;
+    bw = strwidth(SystemFont, G_("Cancel")) * 3 / 2;
 
-    d->yes = newbutton(OKAY_STRING, rect(middle - bw - 10, h * 7, bw, h + 10), hit_button);
+    d->yes = newbutton(G_("OK"), rect(middle - bw - 10, h * 7, bw, h + 10), hit_button);
     setvalue(d->yes, YES);
 
-    d->cancel = newbutton(CANCEL_STRING, rect(middle + 10, h * 7, bw, h + 10), hit_button);
+    d->cancel = newbutton(G_("Cancel"), rect(middle + 10, h * 7, bw, h + 10), hit_button);
     setvalue(d->cancel, CANCEL);
 
     setkeydown(win, hit_key);
@@ -623,7 +623,7 @@ char *askUserPass(char *title)
     {
         int tw, bw, h, middle;
 
-        tw = strwidth(SystemFont, CANCEL_STRING) * 8;
+        tw = strwidth(SystemFont, G_("Cancel")) * 8;
         h = getheight(SystemFont);
         if (tw < 150)
             tw = 150;
@@ -637,12 +637,12 @@ char *askUserPass(char *title)
         newlabel(_("Password"), rect(10, h * 4, tw + 4, h * 2 + 2), AlignLeft);
         d->pass = newpassword("", rect(20 + bw, h * 4, tw - 6 - bw, h * 3 / 2));
         middle = (tw + 30) / 2;
-        bw = strwidth(SystemFont, CANCEL_STRING) * 3 / 2;
+        bw = strwidth(SystemFont, G_("Cancel")) * 3 / 2;
 
-        d->yes = newbutton(OKAY_STRING, rect(middle - bw - 10, h * 7, bw, h + 10), hit_button);
+        d->yes = newbutton(G_("OK"), rect(middle - bw - 10, h * 7, bw, h + 10), hit_button);
         setvalue(d->yes, YES);
 
-        d->cancel = newbutton(CANCEL_STRING, rect(middle + 10, h * 7, bw, h + 10), hit_button);
+        d->cancel = newbutton(G_("Cancel"), rect(middle + 10, h * 7, bw, h + 10), hit_button);
         setvalue(d->cancel, CANCEL);
 
         setkeydown(win, hit_key);
