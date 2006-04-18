@@ -403,7 +403,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         perl = 0;
 
 #ifdef SUPPORT_MBCS
-    if (perl)
+    if (!fixed && perl)
     {
         if (utf8locale)
             options = PCRE_UTF8;
