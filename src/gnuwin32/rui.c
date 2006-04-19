@@ -729,6 +729,7 @@ void readconsolecfg()
     gui.tt_font = 0;
     gui.pointsize = 12;
     strcpy(gui.language, "");
+    gui.buffered = 1;
 
 #ifdef USE_MDI
     gui.toolbar = ((RguiMDI & RW_TOOLBAR) != 0);
@@ -794,7 +795,7 @@ void readconsolecfg()
         putenv(buf);
     }
     setconsoleoptions(fn, sty, gui.pointsize, gui.crows, gui.ccols, gui.cx, gui.cy, gui.fg, gui.user, gui.bg, gui.hlt,
-                      gui.prows, gui.pcols, gui.pagerMultiple, gui.setWidthOnResize, gui.cbb, gui.cbl);
+                      gui.prows, gui.pcols, gui.pagerMultiple, gui.setWidthOnResize, gui.cbb, gui.cbl, gui.buffered);
 }
 
 static void dropconsole(control m, char *fn)

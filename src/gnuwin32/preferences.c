@@ -75,7 +75,7 @@ static label l_mdi, l_mwin, l_font, l_point, l_style, l_lang, l_crows, l_ccols, 
 static radiogroup g_mwin;
 static radiobutton rb_mdi, rb_sdi, rb_mwin, rb_swin;
 static listbox f_font, f_style, d_point, bgcol, fgcol, usercol, highlightcol;
-static checkbox toolbar, statusbar, tt_font, c_resize;
+static checkbox toolbar, statusbar, tt_font, c_resize, c_buff;
 static field f_crows, f_ccols, f_prows, f_pcols, f_cx, f_cy, f_cbb, f_cbl, f_grx, f_gry, f_lang;
 
 static void getChoices(Gui p)
@@ -94,6 +94,7 @@ static void getChoices(Gui p)
     p->cx = atoi(gettext(f_cx));
     p->cy = atoi(gettext(f_cy));
     p->setWidthOnResize = ischecked(c_resize);
+    p->buffered = ischecked(c_buff);
     p->cbb = atoi(gettext(f_cbb));
     p->cbl = atoi(gettext(f_cbl));
     p->prows = atoi(gettext(f_prows));
@@ -155,6 +156,7 @@ void getActive(Gui gui)
     gui->setWidthOnResize = setWidthOnResize;
     gui->cbb = p->lbuf->dim;
     gui->cbl = p->lbuf->ms;
+    gui->buffered = consolebuffered;
 
     /* Pager size */
     gui->prows = pagerrow;
@@ -210,6 +212,7 @@ static void cleanup()
     delobj(l_ccols);
     delobj(f_ccols);
     delobj(c_resize);
+    delobj(c_buff);
     delobj(l_cx);
     delobj(f_cx);
     delobj(l_cy);
@@ -358,6 +361,7 @@ void applyGUI(Gui newGUI)
     }
 
     setWidthOnResize = newGUI->setWidthOnResize;
+    consolebuffered = newGUI->buffered;
 }
 
 static void do_apply()
@@ -429,6 +433,8 @@ static void save(button b)
     fprintf(fp, "\n\n%s\n%s\nxgraphics = %s\nygraphics = %s\n", "## Initial position of the graphics window",
             "## (pixels, <0 values from opposite edge)", gettext(f_grx), gettext(f_gry));
     fprintf(fp, "\n\n%s\nlanguage = %s\n", "## Language for messages", gettext(f_lang));
+    fprintf(fp, "\n\n## Default setting for console buffering: 'yes' or 'no'\n");
+    fprintf(fp, "buffered = %s\n", ischecked(c_buff) ? "yes" : "no");
     fclose(fp);
 }
 
@@ -677,6 +683,14 @@ int loadRconsole(Gui gui, char *optf)
                 strcpy(gui->language, opt[1]);
                 done = 1;
             }
+            if (!strcmp(opt[0], "buffered"))
+            {
+                if (!strcmp(opt[1], "yes"))
+                    gui->buffered = 1;
+                else if (!strcmp(opt[1], "no"))
+                    gui->buffered = 0;
+                done = 1;
+            }
         }
         else if (ok == 3)
         { /* opt[1] == "" */
@@ -799,7 +813,7 @@ static void showDialog(Gui gui)
     sprintf(buf, "%d", gui->cy);
     f_cy = newfield(buf, rect(480, 150, 40, 20));
 
-    c_resize = newcheckbox("set options(width) on resize?", rect(50, 175, 200, 20), NULL);
+    c_resize = newcheckbox("set options(width) on resize?", rect(20, 175, 200, 20), NULL);
     if (gui->setWidthOnResize)
         check(c_resize);
 
@@ -810,21 +824,25 @@ static void showDialog(Gui gui)
     sprintf(buf, "%d", gui->cbl);
     f_cbl = newfield(buf, rect(480, 175, 40, 20));
 
+    c_buff = newcheckbox("buffer console by default?", rect(20, 190, 200, 20), NULL);
+    if (gui->buffered)
+        check(c_buff);
+
     /* Pager size */
-    l_prows = newlabel("Pager   rows", rect(10, 210, 100, 20), AlignLeft);
+    l_prows = newlabel("Pager   rows", rect(10, 220, 100, 20), AlignLeft);
     sprintf(buf, "%d", gui->prows);
-    f_prows = newfield(buf, rect(110, 210, 30, 20));
-    l_pcols = newlabel("columns", rect(150, 210, 60, 20), AlignLeft);
+    f_prows = newfield(buf, rect(110, 220, 30, 20));
+    l_pcols = newlabel("columns", rect(150, 220, 60, 20), AlignLeft);
     sprintf(buf, "%d", gui->pcols);
-    f_pcols = newfield(buf, rect(220, 210, 30, 20));
+    f_pcols = newfield(buf, rect(220, 220, 30, 20));
 
     /* Graphics window */
-    l_grx = newlabel("Graphics windows: initial left", rect(10, 250, 190, 20), AlignLeft);
+    l_grx = newlabel("Graphics windows: initial left", rect(10, 260, 190, 20), AlignLeft);
     sprintf(buf, "%d", gui->grx);
-    f_grx = newfield(buf, rect(200, 250, 40, 20));
-    l_gry = newlabel("top", rect(270, 250, 30, 20), AlignLeft);
+    f_grx = newfield(buf, rect(200, 260, 40, 20));
+    l_gry = newlabel("top", rect(270, 260, 30, 20), AlignLeft);
     sprintf(buf, "%d", gui->gry);
-    f_gry = newfield(buf, rect(300, 250, 40, 20));
+    f_gry = newfield(buf, rect(300, 260, 40, 20));
 
     /* Font colours */
     l_cols = newlabel("Console and Pager Colours", rect(10, 300, 520, 20), AlignCenter);
