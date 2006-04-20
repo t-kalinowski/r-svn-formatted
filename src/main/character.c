@@ -1420,7 +1420,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
 
-    if (length(pat) < 1 || length(text) < 1)
+    /* allow 'text' to be zero-length from 2.4.0 */
+    if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
     if (!isString(pat))
         PROTECT(pat = coerceVector(pat, STRSXP));
