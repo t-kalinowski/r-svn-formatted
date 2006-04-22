@@ -1107,7 +1107,7 @@ SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         cat = -1;
     }
-    if (cat > 0)
+    if (cat >= 0)
         p = setlocale(cat, NULL);
     PROTECT(ans = allocVector(STRSXP, 1));
     if (p)
