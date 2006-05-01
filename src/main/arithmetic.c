@@ -1802,10 +1802,8 @@ SEXP attribute_hidden do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math4_2(args, pnbeta);
     case 6:
         return Math4_2(args, qnbeta);
-#ifdef UNIMP
     case 7:
         return Math4_1(args, dnf);
-#endif
     case 8:
         return Math4_2(args, pnf);
     case 9:
