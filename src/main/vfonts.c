@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-5 The R Development Core Team
+ *  Copyright (C) 2001-6 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -78,12 +78,15 @@ double GVStrWidth(const unsigned char *s, int typeface, int fontindex, int unit,
     char *str = (char *)s;
 #ifdef SUPPORT_MBCS
     char *buff;
+    Rboolean conv = mbcslocale;
 #endif
     gcontextFromGP(&gc, dd);
     gc.fontface = typeface;
     gc.fontfamily[0] = fontindex;
 #ifdef SUPPORT_MBCS
-    if (mbcslocale && !utf8strIsASCII(str))
+    if (typeface == 0 && (fontindex == 5 || fontindex == 6))
+        conv = FALSE;
+    if (conv && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
         R_CheckStack();
@@ -115,12 +118,15 @@ double GVStrHeight(const unsigned char *s, int typeface, int fontindex, int unit
     char *str = (char *)s;
 #ifdef SUPPORT_MBCS
     char *buff;
+    Rboolean conv = mbcslocale;
 #endif
     gcontextFromGP(&gc, dd);
     gc.fontface = typeface;
     gc.fontfamily[0] = fontindex;
 #ifdef SUPPORT_MBCS
-    if (mbcslocale && !utf8strIsASCII(str))
+    if (typeface == 0 && (fontindex == 5 || fontindex == 6))
+        conv = FALSE;
+    if (conv && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
         R_CheckStack();
@@ -153,6 +159,7 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
     char *str = s;
 #ifdef SUPPORT_MBCS
     char *buff;
+    Rboolean conv = mbcslocale;
 #endif
     gcontextFromGP(&gc, dd);
     /*
@@ -163,7 +170,9 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
     gc.fontface = fontindex;
     gc.fontfamily[0] = typeface;
 #ifdef SUPPORT_MBCS
-    if (mbcslocale && !utf8strIsASCII(str))
+    if (typeface == 0 && (fontindex == 5 || fontindex == 6))
+        conv = FALSE;
+    if (conv && !utf8strIsASCII(str))
     {
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
         R_CheckStack();
