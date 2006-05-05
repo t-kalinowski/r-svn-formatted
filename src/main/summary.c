@@ -342,7 +342,15 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
         case INTSXP:
             PROTECT(ans = allocVector(REALSXP, 1));
             for (i = 0; i < n; i++)
+            {
+                if (INTEGER(x)[i] == NA_INTEGER)
+                {
+                    REAL(ans)[0] = R_NaReal;
+                    UNPROTECT(1);
+                    return ans;
+                }
                 s += INTEGER(x)[i];
+            }
             REAL(ans)[0] = s / n;
             break;
         case REALSXP:
