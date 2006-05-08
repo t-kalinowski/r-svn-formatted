@@ -379,8 +379,8 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 for (i = 0; i < n; i++)
                 {
-                    s += COMPLEX(x)[i].r;
-                    si += COMPLEX(x)[i].i;
+                    t += COMPLEX(x)[i].r - s;
+                    ti += COMPLEX(x)[i].i - si;
                 }
                 s += t / n;
                 si += ti / n;
