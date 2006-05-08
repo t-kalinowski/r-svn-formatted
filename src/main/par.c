@@ -751,14 +751,16 @@ void Specify2(char *what, SEXP value, DevDesc *dd, SEXP call)
      *  these are *different* from Specify() , i.e., par(<NAM> = .) use : */
     else if (streql(what, "bg"))
     {
-        lengthCheck(what, value, 1, call);
-        ix = RGBpar(value, 0);
-        /*	naIntCheck(ix, what); */
-        R_DEV__(bg) = ix;
+        /* bg can be a vector of length > 1, so pick off first value
+           (as e.g. pch always did) */
+        if (!isVector(value) || LENGTH(value) < 1)
+            par_error(what);
+        R_DEV__(bg) = RGBpar(value, 0);
     }
     else if (streql(what, "cex"))
     {
-        lengthCheck(what, value, 1, call);
+        /* cex can be a vector of length > 1, so pick off first value
+           (as e.g. pch always did) */
         x = asReal(value);
         posRealCheck(x, what);
         R_DEV__(cex) = x;
@@ -780,15 +782,6 @@ void Specify2(char *what, SEXP value, DevDesc *dd, SEXP call)
         /*	naIntCheck(ix, what); */
         R_DEV__(fg) = ix;
     }
-#if 0 /* done better in 2.3.0 */
-    else if (streql(what, "asp")) {
-	/* this is not a parameter, but let it through as if it were */
-    }
-
-    else warning(
-	_("graphical parameter \"%s\" can not be set in high-level plot() function"),
-	what);
-#endif
 } /* Specify2 */
 
 /* Do NOT forget to update  ../library/base/R/par.R */
