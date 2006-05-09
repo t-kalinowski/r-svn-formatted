@@ -67,7 +67,7 @@
     {                                                                                                                  \
         SEXP __a__ = ATTRIB(from);                                                                                     \
         if (__a__ != R_NilValue)                                                                                       \
-            SET_ATTRIB(to, duplicate(__a__));                                                                          \
+            SET_ATTRIB(to, duplicate1(__a__));                                                                         \
     } while (0)
 
 #define COPY_TAG(to, from)                                                                                             \
@@ -78,7 +78,54 @@
             SET_TAG(to, __tag__);                                                                                      \
     } while (0)
 
+/* For memory profiling.  */
+/* We want a count of calls to duplicate from outside
+   which requires a wrapper function
+
+   The original duplicate() function is now duplicate1()
+
+   I don't see how to make the wrapper go away when R_PROFILING
+   is not defined, because we still need to be able to
+   optionally rename duplicate() as Rf_duplicate().
+*/
+static SEXP duplicate1(SEXP);
+
+#ifdef R_PROFILING
+static unsigned long duplicate_counter = -1;
+
+unsigned long get_duplicate_counter(void)
+{
+    return duplicate_counter;
+}
+void reset_duplicate_counter(void)
+{
+    duplicate_counter = 0;
+    return;
+}
+#endif
+
 SEXP duplicate(SEXP s)
+{
+    SEXP t;
+
+#ifdef R_PROFILING
+    duplicate_counter++;
+#endif
+    t = duplicate1(s);
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(s) && !(TYPEOF(s) == CLOSXP || TYPEOF(s) == BUILTINSXP || TYPEOF(s) == SPECIALSXP ||
+                      TYPEOF(s) == PROMSXP || TYPEOF(s) == ENVSXP))
+    {
+        memtrace_report(s, t);
+        SET_TRACE(t, 1);
+    }
+#endif
+    return t;
+}
+
+/*****************/
+
+static SEXP duplicate1(SEXP s)
 {
     SEXP h, t, sp;
     int i, n;
@@ -110,7 +157,7 @@ SEXP duplicate(SEXP s)
         PROTECT(h = t = CONS(R_NilValue, R_NilValue));
         while (sp != R_NilValue)
         {
-            SETCDR(t, CONS(duplicate(CAR(sp)), R_NilValue));
+            SETCDR(t, CONS(duplicate1(CAR(sp)), R_NilValue));
             t = CDR(t);
             COPY_TAG(t, sp);
             DUPLICATE_ATTRIB(t, sp);
@@ -124,7 +171,7 @@ SEXP duplicate(SEXP s)
         PROTECT(h = t = CONS(R_NilValue, R_NilValue));
         while (sp != R_NilValue)
         {
-            SETCDR(t, CONS(duplicate(CAR(sp)), R_NilValue));
+            SETCDR(t, CONS(duplicate1(CAR(sp)), R_NilValue));
             t = CDR(t);
             COPY_TAG(t, sp);
             DUPLICATE_ATTRIB(t, sp);
@@ -140,7 +187,7 @@ SEXP duplicate(SEXP s)
         PROTECT(h = t = CONS(R_NilValue, R_NilValue));
         while (sp != R_NilValue)
         {
-            SETCDR(t, CONS(duplicate(CAR(sp)), R_NilValue));
+            SETCDR(t, CONS(duplicate1(CAR(sp)), R_NilValue));
             t = CDR(t);
             COPY_TAG(t, sp);
             DUPLICATE_ATTRIB(t, sp);
@@ -164,7 +211,7 @@ SEXP duplicate(SEXP s)
         PROTECT(s);
         PROTECT(t = allocVector(TYPEOF(s), n));
         for (i = 0; i < n; i++)
-            SET_VECTOR_ELT(t, i, duplicate(VECTOR_ELT(s, i)));
+            SET_VECTOR_ELT(t, i, duplicate1(VECTOR_ELT(s, i)));
         DUPLICATE_ATTRIB(t, s);
         SET_TRUELENGTH(t, TRUELENGTH(s));
         UNPROTECT(2);
