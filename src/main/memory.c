@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2005  The R Development Core Team.
+ *  Copyright (C) 1998--2006  The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2942,7 +2942,8 @@ void(SET_HASHVALUE)(SEXP x, int v)
 
 SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    error(call, _("memory profiling is not available onb this system"));
+    errorcall(call, _("memory profiling is not available on this system"));
+    return R_NilValue; /* not reached */
 }
 
 #else
@@ -3018,7 +3019,7 @@ static void R_InitMemReporting(char *filename, int append, R_size_t threshold)
     R_MemReportingThreshold = threshold;
     R_IsMemReporting = 1;
     return;
-};
+}
 
 SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
