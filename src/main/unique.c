@@ -1020,16 +1020,19 @@ SEXP attribute_hidden do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     REAL(X)[I] = 0
 #endif
 
-SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
+SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans;
-    int i, j, n, p, ng = 0, offset, offsetg;
+    int i, j, n, p, ng = 0, offset, offsetg, narm;
     HashData data;
     data.nomatch = 0;
 
     n = LENGTH(g);
     p = INTEGER(ncol)[0];
     ng = length(uniqueg);
+    narm = asLogical(snarm);
+    if (narm == NA_LOGICAL)
+        error("'na.rm' must be TRUE or FALSE");
 
     HashTableSetup(uniqueg, &data);
     PROTECT(data.HashTable);
@@ -1048,9 +1051,8 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
         for (i = 0; i < p; i++)
         {
             for (j = 0; j < n; j++)
-            {
-                REAL(ans)[INTEGER(matches)[j] - 1 + offsetg] += REAL(x)[j + offset];
-            }
+                if (!narm || !ISNAN(REAL(x)[j + offset]))
+                    REAL(ans)[INTEGER(matches)[j] - 1 + offsetg] += REAL(x)[j + offset];
             offset += n;
             offsetg += ng;
         }
@@ -1062,7 +1064,10 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
             for (j = 0; j < n; j++)
             {
                 if (INTEGER(x)[j + offset] == NA_INTEGER)
-                    INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] = NA_INTEGER;
+                {
+                    if (!narm)
+                        INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] = NA_INTEGER;
+                }
                 else if (INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] != NA_INTEGER)
                     INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] += INTEGER(x)[j + offset];
             }
@@ -1079,16 +1084,19 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
     return ans;
 }
 
-SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
+SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
-    int i, j, n, p, ng = 0, offset, offsetg;
+    int i, j, n, p, ng = 0, offset, offsetg, narm;
     HashData data;
     data.nomatch = 0;
 
     n = LENGTH(g);
     p = INTEGER(ncol)[0];
     ng = length(uniqueg);
+    narm = asLogical(snarm);
+    if (narm == NA_LOGICAL)
+        error("'na.rm' must be TRUE or FALSE");
 
     HashTableSetup(uniqueg, &data);
     PROTECT(data.HashTable);
@@ -1111,9 +1119,8 @@ SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
             PROTECT(col = allocVector(REALSXP, ng));
             ZERODBL(col, ng, i);
             for (j = 0; j < n; j++)
-            {
-                REAL(col)[INTEGER(matches)[j] - 1] += REAL(xcol)[j];
-            }
+                if (!narm || !ISNAN(REAL(xcol)[j]))
+                    REAL(col)[INTEGER(matches)[j] - 1] += REAL(xcol)[j];
             SET_VECTOR_ELT(ans, i, col);
             UNPROTECT(1);
             break;
@@ -1123,7 +1130,10 @@ SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg)
             for (j = 0; j < n; j++)
             {
                 if (INTEGER(xcol)[j] == NA_INTEGER)
-                    INTEGER(col)[INTEGER(matches)[j] - 1] = NA_INTEGER;
+                {
+                    if (!narm)
+                        INTEGER(col)[INTEGER(matches)[j] - 1] = NA_INTEGER;
+                }
                 else if (INTEGER(col)[INTEGER(matches)[j] - 1] != NA_INTEGER)
                     INTEGER(col)[INTEGER(matches)[j] - 1] += INTEGER(xcol)[j];
             }
