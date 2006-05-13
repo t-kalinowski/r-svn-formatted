@@ -118,7 +118,7 @@ static void doprof()
         get_current_mem(&smallv, &bigv, &nodes);
         if ((len = strlen(buf)) < 1000)
         {
-            sprintf(buf + len, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes * sizeof(SEXPREC), get_duplicate_counter());
+            sprintf(buf + len, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes, get_duplicate_counter());
         }
         reset_duplicate_counter();
     }
@@ -161,7 +161,7 @@ static void doprof(int sig)
         get_current_mem(&smallv, &bigv, &nodes);
         if (!newline)
             newline = 1;
-        fprintf(R_ProfileOutfile, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes * sizeof(SEXPREC), get_duplicate_counter());
+        fprintf(R_ProfileOutfile, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes, get_duplicate_counter());
         reset_duplicate_counter();
     }
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
