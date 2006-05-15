@@ -2965,13 +2965,13 @@ Rboolean R_BindingIsLocked(SEXP sym, SEXP env)
     else if (TYPEOF(env) != ENVSXP)
         error(_("not an environment"));
     if (env == R_BaseEnv || env == R_BaseNamespace)
-        return BINDING_IS_LOCKED(sym);
+        return BINDING_IS_LOCKED(sym) != 0;
     else
     {
         SEXP binding = findVarLocInFrame(env, sym, NULL);
         if (binding == R_NilValue)
             error(_("no binding for \"%s\""), CHAR(PRINTNAME(sym)));
-        return BINDING_IS_LOCKED(binding);
+        return BINDING_IS_LOCKED(binding) != 0;
     }
 }
 
