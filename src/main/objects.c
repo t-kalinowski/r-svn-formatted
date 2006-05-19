@@ -181,52 +181,42 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
 {
     SEXP val;
 
-    if (R_UseNamespaceDispatch)
+    if (TYPEOF(callrho) == NILSXP)
     {
-        if (TYPEOF(callrho) == NILSXP)
-        {
-            error(_("use of NULL environment is defunct"));
-            callrho = R_BaseEnv;
-        }
-        else if (TYPEOF(callrho) != ENVSXP)
-            error(_("bad generic call environment"));
-        if (TYPEOF(defrho) == NILSXP)
-        {
-            error(_("use of NULL environment is defunct"));
-            defrho = R_BaseEnv;
-        }
-        else if (TYPEOF(defrho) != ENVSXP)
-            error(_("bad generic definition environment"));
-        if (defrho == R_BaseEnv)
-            defrho = R_BaseNamespace;
-
-        val = findVar(method, callrho);
-        if (TYPEOF(val) == PROMSXP)
-            val = eval(val, rho);
-        if (isFunction(val))
-            return val;
-        else
-        {
-            SEXP table = findVarInFrame3(defrho, install(".__S3MethodsTable__."), TRUE);
-            if (TYPEOF(table) == PROMSXP)
-                table = eval(table, R_BaseEnv);
-            if (TYPEOF(table) == ENVSXP)
-            {
-                val = findVarInFrame3(table, method, TRUE);
-                if (TYPEOF(val) == PROMSXP)
-                    val = eval(val, rho);
-                if (val != R_UnboundValue)
-                    return val;
-            }
-            return R_UnboundValue;
-        }
+        error(_("use of NULL environment is defunct"));
+        callrho = R_BaseEnv;
     }
+    else if (TYPEOF(callrho) != ENVSXP)
+        error(_("bad generic call environment"));
+    if (TYPEOF(defrho) == NILSXP)
+    {
+        error(_("use of NULL environment is defunct"));
+        defrho = R_BaseEnv;
+    }
+    else if (TYPEOF(defrho) != ENVSXP)
+        error(_("bad generic definition environment"));
+    if (defrho == R_BaseEnv)
+        defrho = R_BaseNamespace;
+
+    val = findVar(method, callrho);
+    if (TYPEOF(val) == PROMSXP)
+        val = eval(val, rho);
+    if (isFunction(val))
+        return val;
     else
     {
-        val = findVar(method, rho);
-        if (TYPEOF(val) == PROMSXP)
-            val = eval(val, rho);
-        return val;
+        SEXP table = findVarInFrame3(defrho, install(".__S3MethodsTable__."), TRUE);
+        if (TYPEOF(table) == PROMSXP)
+            table = eval(table, R_BaseEnv);
+        if (TYPEOF(table) == ENVSXP)
+        {
+            val = findVarInFrame3(table, method, TRUE);
+            if (TYPEOF(val) == PROMSXP)
+                val = eval(val, rho);
+            if (val != R_UnboundValue)
+                return val;
+        }
+        return R_UnboundValue;
     }
 }
 
@@ -319,11 +309,8 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
             PROTECT(t = mkString(buf));
             defineVar(install(".Method"), t, newrho);
             UNPROTECT(1);
-            if (R_UseNamespaceDispatch)
-            {
-                defineVar(install(".GenericCallEnv"), callrho, newrho);
-                defineVar(install(".GenericDefEnv"), defrho, newrho);
-            }
+            defineVar(install(".GenericCallEnv"), callrho, newrho);
+            defineVar(install(".GenericDefEnv"), defrho, newrho);
             t = newcall;
             SETCAR(t, method);
             R_GlobalContext->callflag = CTXT_GENERIC;
@@ -347,11 +334,8 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
         PROTECT(t = mkString(buf));
         defineVar(install(".Method"), t, newrho);
         UNPROTECT(1);
-        if (R_UseNamespaceDispatch)
-        {
-            defineVar(install(".GenericCallEnv"), callrho, newrho);
-            defineVar(install(".GenericDefEnv"), defrho, newrho);
-        }
+        defineVar(install(".GenericCallEnv"), callrho, newrho);
+        defineVar(install(".GenericDefEnv"), defrho, newrho);
         t = newcall;
         SETCAR(t, method);
         R_GlobalContext->callflag = CTXT_GENERIC;
@@ -371,7 +355,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
 
 SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, generic = R_NilValue /* -Wall */, obj;
+    SEXP ans, generic = R_NilValue /* -Wall */, obj, val;
     SEXP callenv, defenv;
     int nargs;
     RCNTXT *cptr;
@@ -388,12 +372,24 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!(cptr->callflag & CTXT_FUNCTION) || cptr->cloenv != env)
         error(_("'UseMethod' used in an inappropriate fashion"));
     callenv = cptr->sysparent;
-    defenv = ENCLOS(env);
-
     if (nargs)
         PROTECT(generic = eval(CAR(args), env));
     else
         errorcall(call, _("there must be a first argument"));
+    /* We need to find the generic to find out where it is defined.
+       This is set up to avoid getting caught by things like
+
+      mycoef <- function(x)
+       {
+           mycoef <- function(x) stop("not this one")
+           UseMethod("mycoef")
+       }
+    */
+    val = findFun(install(CHAR(STRING_ELT(generic, 0))), ENCLOS(env));
+    /* That has evaluated promises, but we need to check we got a closure */
+    if (TYPEOF(val) != CLOSXP)
+        errorcall(call, _("generic '%s' is not a closure"), CHAR(STRING_ELT(generic, 0)));
+    defenv = CLOENV(val);
 
     if (nargs > 2) /* R-lang says there should be a warning */
         warningcall(call, _("arguments after the first two are ignored"));
@@ -501,24 +497,16 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
        check to be on the safe side.  If the variables are not in the
        environment (the method was called outside a method dispatch)
        then chose reasonable defaults. */
-    if (R_UseNamespaceDispatch)
-    {
-        callenv = findVarInFrame3(R_GlobalContext->sysparent, install(".GenericCallEnv"), TRUE);
-        if (TYPEOF(callenv) == PROMSXP)
-            callenv = eval(callenv, R_BaseEnv);
-        else if (callenv == R_UnboundValue)
-            callenv = env;
-        defenv = findVarInFrame3(R_GlobalContext->sysparent, install(".GenericDefEnv"), TRUE);
-        if (TYPEOF(defenv) == PROMSXP)
-            defenv = eval(defenv, R_BaseEnv);
-        else if (defenv == R_UnboundValue)
-            defenv = R_GlobalEnv;
-    }
-    else
-    {
+    callenv = findVarInFrame3(R_GlobalContext->sysparent, install(".GenericCallEnv"), TRUE);
+    if (TYPEOF(callenv) == PROMSXP)
+        callenv = eval(callenv, R_BaseEnv);
+    else if (callenv == R_UnboundValue)
         callenv = env;
+    defenv = findVarInFrame3(R_GlobalContext->sysparent, install(".GenericDefEnv"), TRUE);
+    if (TYPEOF(defenv) == PROMSXP)
+        defenv = eval(defenv, R_BaseEnv);
+    else if (defenv == R_UnboundValue)
         defenv = R_GlobalEnv;
-    }
 
     /* set up the arglist */
     s = R_LookupMethod(CAR(cptr->call), env, callenv, defenv);
@@ -779,11 +767,9 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(method, j, mkChar(buf));
     }
     defineVar(install(".Method"), method, m);
-    if (R_UseNamespaceDispatch)
-    {
-        defineVar(install(".GenericCallEnv"), callenv, m);
-        defineVar(install(".GenericDefEnv"), defenv, m);
-    }
+    defineVar(install(".GenericCallEnv"), callenv, m);
+    defineVar(install(".GenericDefEnv"), defenv, m);
+
     method = install(buf);
 
     defineVar(install(".Generic"), generic, m);

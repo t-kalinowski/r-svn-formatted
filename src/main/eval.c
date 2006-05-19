@@ -2137,11 +2137,8 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
         SET_STRING_ELT(t, j, duplicate(STRING_ELT(lclass, lwhich++)));
     defineVar(install(".Class"), t, newrho);
     UNPROTECT(1);
-    if (R_UseNamespaceDispatch)
-    {
-        defineVar(install(".GenericCallEnv"), rho, newrho);
-        defineVar(install(".GenericDefEnv"), R_BaseEnv, newrho);
-    }
+    defineVar(install(".GenericCallEnv"), rho, newrho);
+    defineVar(install(".GenericDefEnv"), R_BaseEnv, newrho);
 
     PROTECT(t = LCONS(lmeth, CDR(call)));
 
