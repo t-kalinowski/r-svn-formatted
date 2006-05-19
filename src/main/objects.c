@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 2002-3	      The R Foundation
+ *  Copyright (C) 1999-2006   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -198,13 +199,13 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
     if (defrho == R_BaseEnv)
         defrho = R_BaseNamespace;
 
-    val = findVar(method, callrho);
-    if (TYPEOF(val) == PROMSXP)
-        val = eval(val, rho);
+    val = findVar1(method, callrho, FUNSXP, TRUE);
+    /* if (TYPEOF(val) == PROMSXP) val = eval(val, rho); */
     if (isFunction(val))
         return val;
     else
     {
+        /* We assume here that no one registered a non-function */
         SEXP table = findVarInFrame3(defrho, install(".__S3MethodsTable__."), TRUE);
         if (TYPEOF(table) == PROMSXP)
             table = eval(table, R_BaseEnv);
@@ -285,13 +286,13 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
         sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, i)));
         method = install(buf);
         sxp = R_LookupMethod(method, rho, callrho, defrho);
-        /* autoloading requires that promises be evaluated <TSL>*/
-        if (TYPEOF(sxp) == PROMSXP)
-        {
+        /* autoloading requires that promises be evaluated <TSL>
+           but it has already been done.
+        if (TYPEOF(sxp) == PROMSXP){
             PROTECT(tmp = eval(sxp, rho));
             sxp = tmp;
             UNPROTECT(1);
-        }
+        } */
         if (isFunction(sxp))
         {
             defineVar(install(".Generic"), mkString(generic), newrho);
@@ -325,8 +326,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
     sprintf(buf, "%s.default", generic);
     method = install(buf);
     sxp = R_LookupMethod(method, rho, callrho, defrho);
-    if (TYPEOF(sxp) == PROMSXP)
-        sxp = eval(sxp, rho);
+    /* if (TYPEOF(sxp) == PROMSXP) sxp = eval(sxp, rho); */
     if (isFunction(sxp))
     {
         defineVar(install(".Generic"), mkString(generic), newrho);
@@ -379,16 +379,13 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     /* We need to find the generic to find out where it is defined.
        This is set up to avoid getting caught by things like
 
-      mycoef <- function(x)
+        mycoef <- function(x)
        {
            mycoef <- function(x) stop("not this one")
            UseMethod("mycoef")
        }
     */
-    val = findFun(install(CHAR(STRING_ELT(generic, 0))), ENCLOS(env));
-    /* That has evaluated promises, but we need to check we got a closure */
-    if (TYPEOF(val) != CLOSXP)
-        errorcall(call, _("generic '%s' is not a closure"), CHAR(STRING_ELT(generic, 0)));
+    val = findVar1(install(CHAR(STRING_ELT(generic, 0))), ENCLOS(env), CLOSXP, TRUE); /* That has evaluated promises */
     defenv = CLOENV(val);
 
     if (nargs > 2) /* R-lang says there should be a warning */
@@ -510,12 +507,11 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* set up the arglist */
     s = R_LookupMethod(CAR(cptr->call), env, callenv, defenv);
-    if (TYPEOF(s) == PROMSXP) /* looks like R_LookupMethod just did this */
-        s = eval(s, env);
+    /* if (TYPEOF(s) == PROMSXP) s = eval(s, env); */
     if (TYPEOF(s) == SYMSXP && s == R_UnboundValue)
         error(_("no calling generic was found: was a method called directly?"));
     if (TYPEOF(s) != CLOSXP)
-    {
+    { /* R_LookupMethod looked for a function */
         errorcall(R_NilValue, _("'function' is not a function, but of type %d"), TYPEOF(s));
     }
     /* get formals and actuals; attach the names of the formals to
@@ -537,8 +533,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (TYPEOF(CAR(s)) == DOTSXP)
             {
-                i = 1;
-                for (a = CAR(s); a != R_NilValue; a = CDR(a), i++, m = CDR(m))
+                for (i = 1, a = CAR(s); a != R_NilValue; a = CDR(a), i++, m = CDR(m))
                 {
                     sprintf(tbuf, "..%d", i);
                     SET_TAG(m, mkSYMSXP(mkChar(tbuf), R_UnboundValue));
@@ -712,8 +707,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("class name too long in '%s'"), CHAR(STRING_ELT(generic, 0)));
         sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(class, i)));
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-        if (TYPEOF(nextfun) == PROMSXP)
-            nextfun = eval(nextfun, env);
+        /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
         if (isFunction(nextfun))
             break;
         if (group != R_UnboundValue)
@@ -721,8 +715,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             /* if not Generic.foo, look for Group.foo */
             sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(class, i)));
             nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-            if (TYPEOF(nextfun) == PROMSXP)
-                nextfun = eval(nextfun, env);
+            /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
             if (isFunction(nextfun))
                 break;
         }
@@ -733,8 +726,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-        if (TYPEOF(nextfun) == PROMSXP)
-            nextfun = eval(nextfun, env);
+        /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
         if (!isFunction(nextfun))
         {
             t = install(CHAR(STRING_ELT(generic, 0)));
