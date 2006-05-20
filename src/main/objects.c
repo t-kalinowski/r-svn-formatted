@@ -199,8 +199,8 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
     if (defrho == R_BaseEnv)
         defrho = R_BaseNamespace;
 
+    /* This evaluates promises */
     val = findVar1(method, callrho, FUNSXP, TRUE);
-    /* if (TYPEOF(val) == PROMSXP) val = eval(val, rho); */
     if (isFunction(val))
         return val;
     else
@@ -224,7 +224,7 @@ SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP defrho)
 int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP callrho, SEXP defrho, SEXP *ans)
 {
     SEXP class, method, sxp, t, s, matchedarg;
-    SEXP op, formals, newrho, newcall, tmp;
+    SEXP op, formals, newrho, newcall;
     char buf[512];
     int i, j, nclass, matched;
     RCNTXT *cptr;
@@ -269,6 +269,7 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
             for (t = formals; t != R_NilValue; t = CDR(t))
                 if (TAG(t) == TAG(s))
                     matched = 1;
+
             if (!matched)
                 defineVar(TAG(s), CAR(s), newrho);
         }
@@ -286,13 +287,6 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
         sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, i)));
         method = install(buf);
         sxp = R_LookupMethod(method, rho, callrho, defrho);
-        /* autoloading requires that promises be evaluated <TSL>
-           but it has already been done.
-        if (TYPEOF(sxp) == PROMSXP){
-            PROTECT(tmp = eval(sxp, rho));
-            sxp = tmp;
-            UNPROTECT(1);
-        } */
         if (isFunction(sxp))
         {
             defineVar(install(".Generic"), mkString(generic), newrho);
@@ -326,7 +320,6 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
     sprintf(buf, "%s.default", generic);
     method = install(buf);
     sxp = R_LookupMethod(method, rho, callrho, defrho);
-    /* if (TYPEOF(sxp) == PROMSXP) sxp = eval(sxp, rho); */
     if (isFunction(sxp))
     {
         defineVar(install(".Generic"), mkString(generic), newrho);
@@ -507,7 +500,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* set up the arglist */
     s = R_LookupMethod(CAR(cptr->call), env, callenv, defenv);
-    /* if (TYPEOF(s) == PROMSXP) s = eval(s, env); */
     if (TYPEOF(s) == SYMSXP && s == R_UnboundValue)
         error(_("no calling generic was found: was a method called directly?"));
     if (TYPEOF(s) != CLOSXP)
@@ -633,9 +625,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     group = findVarInFrame3(R_GlobalContext->sysparent, install(".Group"), TRUE);
     if (group == R_UnboundValue)
-    {
         PROTECT(group = mkString(""));
-    }
     else
         PROTECT(group);
 
@@ -651,8 +641,10 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     nextfun = R_NilValue;
 
-    /* find the method currently being invoked and jump over the current call */
-    /* if t is R_UnboundValue then we called the current method directly */
+    /*
+       Find the method currently being invoked and jump over the current call
+       If t is R_UnboundValue then we called the current method directly
+    */
 
     method = findVarInFrame3(R_GlobalContext->sysparent, install(".Method"), TRUE);
     if (method != R_UnboundValue)
@@ -707,7 +699,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("class name too long in '%s'"), CHAR(STRING_ELT(generic, 0)));
         sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(class, i)));
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-        /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
         if (isFunction(nextfun))
             break;
         if (group != R_UnboundValue)
@@ -715,7 +706,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             /* if not Generic.foo, look for Group.foo */
             sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(class, i)));
             nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-            /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
             if (isFunction(nextfun))
                 break;
         }
@@ -726,7 +716,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
-        /* if (TYPEOF(nextfun) == PROMSXP) nextfun = eval(nextfun, env); */
         if (!isFunction(nextfun))
         {
             t = install(CHAR(STRING_ELT(generic, 0)));
@@ -796,6 +785,7 @@ SEXP attribute_hidden do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
+#if UNUSED
 /* ___unused___	 InheritsClass() and RemoveClass() */
 Rboolean InheritsClass(SEXP x, char *name)
 {
@@ -836,15 +826,14 @@ void RemoveClass(SEXP x, char *name)
             PROTECT(newclass = allocVector(STRSXP, nclass - nmatch));
             for (i = 0, j = 0; i < nclass; i++)
                 if (strcmp(CHAR(STRING_ELT(class, i)), name))
-                {
                     SET_STRING_ELT(newclass, j++, STRING_ELT(class, i));
-                }
             setAttrib(x, R_ClassSymbol, newclass);
             UNPROTECT(1);
         }
         UNPROTECT(1);
     }
 }
+#endif
 
 SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -854,12 +843,6 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     x = CAR(args);
-    /* if x isn't an object get out asap */
-    /* if( !isObject(x) )
-       return mkFalse();
-
-       class = getAttrib(x, R_ClassSymbol);*/
-
     class = R_data_class(x, FALSE);
     nclass = length(class);
 
@@ -896,6 +879,14 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
         return mkFalse();
     return rval;
 }
+
+/*
+   ==============================================================
+
+     code from here on down is support for the methods package
+
+   ==============================================================
+*/
 
 /* standardGeneric:  uses a pointer to R_standardGeneric, to be
    initialized when the methods package is attached.  When and if the
