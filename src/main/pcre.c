@@ -796,7 +796,10 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 st = ovector[0];
                 INTEGER(matchbuf)[matchIndex] = st + 1; /* index from one */
                 INTEGER(matchlenbuf)[matchIndex] = ovector[1] - st;
-                start = ovector[0] + 1;
+                if (INTEGER(matchlenbuf)[matchIndex] == 0)
+                    start = ovector[0] + 1;
+                else
+                    start = ovector[1];
 #ifdef SUPPORT_UTF8
                 if (!useBytes && mbcslocale)
                 {
