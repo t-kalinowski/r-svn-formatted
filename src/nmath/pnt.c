@@ -121,12 +121,13 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
         s = .5 - p;
         a = .5;
         b = .5 * df;
-        rxb = pow(1. - x, b);
+        rxb = pow(1. - x, b); /* ~ 1 - b*x for tiny x */
         albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(.5 + b);
         xodd = pbeta(x, a, b, /*lower*/ TRUE, /*log_p*/ FALSE);
         godd = 2. * rxb * exp(a * log(x) - albeta);
-        xeven = 1. - rxb;
-        geven = b * x * rxb;
+        tnc = b * x;
+        xeven = (tnc < DBL_EPSILON) ? tnc : 1. - rxb;
+        geven = tnc * rxb;
         tnc = p * xodd + q * xeven;
 
         /* repeat until convergence or iteration limit */
