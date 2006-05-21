@@ -385,7 +385,7 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(val) == CLOSXP)
         defenv = CLOENV(val);
     else
-        defenv = R_BaseNameSpace;
+        defenv = R_BaseNamespace;
     /*
         if(defenv !=  ENCLOS(env)) {
             printf("*** problem ***\n");
