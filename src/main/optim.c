@@ -1128,7 +1128,7 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
                                 count++;
                         }
                         if (count < n)
-                        {
+                        { /* point is different */
                             f = fminfn(n, Bvec, ex);
                             funcount++;
                             accpoint = (R_FINITE(f) && f <= *Fmin + gradproj * steplength * acctol);
@@ -1139,6 +1139,8 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
                                 if (trace)
                                     Rprintf("*");
                             }
+                            else
+                                *Fmin = f; /* we improved, so update value */
                         }
                     } while (!(count == n || accpoint));
                     if (count < n)
@@ -1159,7 +1161,7 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
                                     Rprintf(" i< ");
                             }
                             else
-                            {
+                            { /* reset Bvec to match lowest point */
                                 if (trace)
                                     Rprintf(" i> ");
                                 for (i = 0; i < n; i++)
