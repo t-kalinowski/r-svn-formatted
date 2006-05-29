@@ -414,13 +414,8 @@ SEXP eval(SEXP e, SEXP rho)
         break;
     case LANGSXP:
         if (TYPEOF(CAR(e)) == SYMSXP)
-        {
+            /* This will throw an error if the function is not found */
             PROTECT(op = findFun(CAR(e), rho));
-            /* findFun will not normally fail, but will if R_BaseEnv
-               is not searched */
-            if (op == R_UnboundValue)
-                error(_("could not find function \"%s\""), CHAR(PRINTNAME(CAR(e))));
-        }
         else
             PROTECT(op = eval(CAR(e), rho));
 
