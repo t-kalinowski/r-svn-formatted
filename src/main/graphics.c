@@ -4678,6 +4678,8 @@ unsigned int LTYpar(SEXP value, int ind)
         for (; *p; p++)
         {
             digit = hexdigit(*p);
+            if (digit == 0)
+                error(_("invalid line type: zeroes are not allowed"));
             code |= (digit << shift);
             shift += 4;
         }
