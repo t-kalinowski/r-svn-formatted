@@ -549,8 +549,11 @@ void *in_R_HTTPOpen(const char *url, int cacheOK)
         int rc = RxmlNanoHTTPReturnCode(ctxt);
         if (rc != 200)
         {
+            char *msg;
             RxmlNanoHTTPClose(ctxt);
-            warning(_("cannot open: HTTP status was '%d %s'"), rc, RxmlNanoHTTPStatusMsg(ctxt));
+            /* bug work-around: it will crash on OS X if passed directly */
+            msg = _("cannot open: HTTP status was '%d %s'");
+            warning(msg, rc, RxmlNanoHTTPStatusMsg(ctxt));
             return NULL;
         }
         else
