@@ -200,10 +200,12 @@ static void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc
     {
         if (ex < DBL_MIN || ex > xlrg_BESS_Y)
         {
-            ML_ERROR(ME_RANGE, "Y_bessel");
+            /* Warning is not really appropriate, give
+             * proper limit:
+             * ML_ERROR(ME_RANGE, "Y_bessel"); */
             *ncalc = *nb;
             if (ex > xlrg_BESS_Y)
-                by[0] = ML_POSINF;
+                by[0] = 0.; /*was ML_POSINF */
             else if (ex < DBL_MIN)
                 by[0] = ML_NEGINF;
             for (i = 0; i < *nb; i++)

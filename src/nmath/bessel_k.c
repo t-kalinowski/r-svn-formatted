@@ -215,7 +215,8 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
         {
             if (ex <= 0)
             {
-                ML_ERROR(ME_RANGE, "K_bessel");
+                if (ex < 0)
+                    ML_ERROR(ME_RANGE, "K_bessel");
                 for (i = 0; i < *nb; i++)
                     bk[i] = ML_POSINF;
             }

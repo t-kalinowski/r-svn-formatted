@@ -200,7 +200,9 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
         *ncalc = *nb;
         if ((*ize == 1 && *x > exparg_BESS) || (*ize == 2 && *x > xlrg_BESS_IJ))
         {
-            ML_ERROR(ME_RANGE, "I_bessel");
+            /* If a warning, then about precision loss;
+             * but the limit *is* = Inf :
+             * was:   ML_ERROR(ME_RANGE, "I_bessel"); */
             for (k = 1; k <= *nb; k++)
                 bi[k] = ML_POSINF;
             return;

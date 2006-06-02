@@ -221,8 +221,10 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
         if (*x > xlrg_BESS_IJ)
         {
             ML_ERROR(ME_RANGE, "J_bessel");
+            /* indeed, the limit is 0,
+             * but the cutoff happens too early */
             for (i = 1; i <= *nb; i++)
-                b[i] = ML_POSINF; /* FIXME : +Inf is really nonsense */
+                b[i] = 0.; /*was ML_POSINF (really nonsense) */
             return;
         }
         intx = (long)(*x);
