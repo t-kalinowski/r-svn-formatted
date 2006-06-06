@@ -1007,14 +1007,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
-    if (!isString(pat))
-        PROTECT(pat = coerceVector(pat, STRSXP));
-    else
-        PROTECT(pat);
-    if (!isString(vec))
-        PROTECT(vec = coerceVector(vec, STRSXP));
-    else
-        PROTECT(vec);
 
 #ifdef SUPPORT_MBCS
     if (!useBytes && mbcslocale && !mbcsValid(CHAR(STRING_ELT(pat, 0))))
@@ -1100,7 +1092,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             if (LOGICAL(ind)[i])
                 INTEGER(ans)[j++] = i + 1;
     }
-    UNPROTECT(3);
+    UNPROTECT(1);
     return ans;
 }
 
@@ -1212,19 +1204,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (length(pat) < 1 || length(rep) < 1)
         errorcall(call, R_MSG_IA);
-
-    if (!isString(pat))
-        PROTECT(pat = coerceVector(pat, STRSXP));
-    else
-        PROTECT(pat);
-    if (!isString(rep))
-        PROTECT(rep = coerceVector(rep, STRSXP));
-    else
-        PROTECT(rep);
-    if (!isString(vec))
-        PROTECT(vec = coerceVector(vec, STRSXP));
-    else
-        PROTECT(vec);
 
     cflags = 0;
     if (extended_opt)
@@ -1390,7 +1369,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!fixed_opt)
         regfree(&reg);
-    UNPROTECT(4);
+    UNPROTECT(1);
     return ans;
 }
 
@@ -1423,16 +1402,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     /* allow 'text' to be zero-length from 2.4.0 */
     if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
-    if (!isString(pat))
-        PROTECT(pat = coerceVector(pat, STRSXP));
-    else
-        PROTECT(pat);
     if (STRING_ELT(pat, 0) == NA_STRING)
         errorcall(call, R_MSG_IA);
-    if (!isString(text))
-        PROTECT(text = coerceVector(text, STRSXP));
-    else
-        PROTECT(text);
 
     cflags = extended_opt ? REG_EXTENDED : 0;
 
@@ -1519,7 +1490,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!fixed_opt)
         regfree(&reg);
     setAttrib(ans, install("match.length"), matchlen);
-    UNPROTECT(4);
+    UNPROTECT(2);
     return ans;
 }
 
@@ -1754,16 +1725,8 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (length(pat) < 1 || length(text) < 1)
         errorcall(call, R_MSG_IA);
-    if (!isString(pat))
-        PROTECT(pat = coerceVector(pat, STRSXP));
-    else
-        PROTECT(pat);
     if (STRING_ELT(pat, 0) == NA_STRING)
         errorcall(call, R_MSG_IA);
-    if (!isString(text))
-        PROTECT(text = coerceVector(text, STRSXP));
-    else
-        PROTECT(text);
 
     cflags = extended_opt ? REG_EXTENDED : 0;
 
@@ -1810,7 +1773,7 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!fixed_opt)
         regfree(&reg);
-    UNPROTECT(3);
+    UNPROTECT(1);
     return ansList;
 }
 
