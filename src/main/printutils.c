@@ -66,13 +66,6 @@
 #include <config.h>
 #endif
 
-/* need to do this before including Print.h */
-#if !HAVE_VA_COPY && HAVE___VA_COPY
-#define va_copy __va_copy
-#undef HAVE_VA_COPY
-#define HAVE_VA_COPY 1
-#endif
-
 #include <Defn.h>
 #include <Rmath.h>
 #include <Print.h>
@@ -756,6 +749,12 @@ void REprintf(char *format, ...)
 int vasprintf(char **strp, const char *fmt, va_list ap);
 #endif
 
+#if !HAVE_VA_COPY && HAVE___VA_COPY
+#define va_copy __va_copy
+#undef HAVE_VA_COPY
+#define HAVE_VA_COPY 1
+#endif
+
 #ifdef HAVE_VA_COPY
 #define R_BUFSIZE BUFSIZE
 #else
@@ -813,11 +812,7 @@ void Rcons_vprintf(const char *format, va_list arg)
 #endif
 }
 
-#ifdef HAVE_VA_COPY
 void Rvprintf(const char *format, va_list arg)
-#else
-void Rvprintf(const char *format, ...)
-#endif
 {
     int i = 0, con_num = R_OutputCon;
     Rconnection con;
@@ -841,10 +836,7 @@ void Rvprintf(const char *format, ...)
         (con->vfprintf)(con, format, argcopy);
         va_end(argcopy);
 #else /* don't support sink(,split=TRUE) */
-        va_list(ap);
-        va_start(ap, format);
-        (con->vfprintf)(con, format, ap);
-        va_end(ap);
+        (con->vfprintf)(con, format, arg);
 #endif
         con->fflush(con);
         con_num = getActiveSink(i++);
