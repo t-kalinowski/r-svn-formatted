@@ -127,20 +127,16 @@ please bug.report() [R_run_onexits]"));
         {
             void (*cend)(void *) = c->cend;
             c->cend = NULL; /* prevent recursion */
-#ifdef NEW_CONDITION_HANDLING
             R_HandlerStack = c->handlerstack;
             R_RestartStack = c->restartstack;
-#endif
             cend(c->cenddata);
         }
         if (c->cloenv != R_NilValue && c->conexit != R_NilValue)
         {
             SEXP s = c->conexit;
             c->conexit = R_NilValue; /* prevent recursion */
-#ifdef NEW_CONDITION_HANDLING
             R_HandlerStack = c->handlerstack;
             R_RestartStack = c->restartstack;
-#endif
             PROTECT(s);
             eval(s, c->cloenv);
             UNPROTECT(1);
@@ -161,10 +157,8 @@ void attribute_hidden R_restore_globals(RCNTXT *cptr)
     R_EvalDepth = cptr->evaldepth;
     vmaxset(cptr->vmax);
     R_interrupts_suspended = cptr->intsusp;
-#ifdef NEW_CONDITION_HANDLING
     R_HandlerStack = cptr->handlerstack;
     R_RestartStack = cptr->restartstack;
-#endif
 #ifdef BYTECODE
     R_BCNodeStackTop = cptr->nodestack;
 #ifdef BC_INT_STACK
@@ -217,10 +211,8 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->callfun = callfun;
     cptr->vmax = vmaxget();
     cptr->intsusp = R_interrupts_suspended;
-#ifdef NEW_CONDITION_HANDLING
     cptr->handlerstack = R_HandlerStack;
     cptr->restartstack = R_RestartStack;
-#endif
 #ifdef BYTECODE
     cptr->nodestack = R_BCNodeStackTop;
 #ifdef BC_INT_STACK
@@ -234,10 +226,8 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
 
 void endcontext(RCNTXT *cptr)
 {
-#ifdef NEW_CONDITION_HANDLING
     R_HandlerStack = cptr->handlerstack;
     R_RestartStack = cptr->restartstack;
-#endif
     if (cptr->cloenv != R_NilValue && cptr->conexit != R_NilValue)
     {
         SEXP s = cptr->conexit;
