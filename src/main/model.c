@@ -1381,10 +1381,8 @@ SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     nactualdots = 0;
     for (i = 0; i < ndots; i++)
-    {
         if (VECTOR_ELT(dots, i) != R_NilValue)
             nactualdots++;
-    }
 
     /* Assemble the base data frame. */
 
@@ -1421,8 +1419,19 @@ SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < nc; i++)
         {
             ans = VECTOR_ELT(data, i);
-            if (TYPEOF(ans) < LGLSXP || TYPEOF(ans) > STRSXP)
-                errorcall(call, _("invalid variable type for '%s'"), CHAR(STRING_ELT(names, i)));
+            switch (TYPEOF(ans))
+            {
+            case LGLSXP:
+            case INTSXP:
+            case REALSXP:
+            case CPLXSXP:
+            case STRSXP:
+            case RAWSXP:
+                break;
+            default:
+                errorcall(call, _("invalid type (%s) for variable '%s'"), type2char(TYPEOF(ans)),
+                          CHAR(STRING_ELT(names, i)));
+            }
             if (nrows(ans) != nr)
                 errorcall(call, _("variable lengths differ (found for '%s')"), CHAR(STRING_ELT(names, i)));
         }
@@ -1964,7 +1973,7 @@ alldone:;
                     {
                         errorcall(call, _("complex variables are not currently allowed in model matrices"));
                     }
-                    else
+                    else if (isNumeric(var_i))
                     { /* numeric */
                         x = ColumnNames(var_i);
                         ll = ncols(var_i);
@@ -1992,6 +2001,9 @@ alldone:;
                             }
                         }
                     }
+                    else
+                        errorcall(call, _("variables of type '%s' are not allowed in model matrices"),
+                                  type2char(TYPEOF(var_i)));
                     indx /= ll;
                 }
             }
