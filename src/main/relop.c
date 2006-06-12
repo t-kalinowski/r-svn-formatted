@@ -28,6 +28,7 @@
 
 #include <Defn.h>
 #include <Rmath.h>
+#include <errno.h>
 
 static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
 static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2);
@@ -478,9 +479,11 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
 
 #endif
 
+/* POSIX allows EINVAL when one of the strings contains characters
+   outside the collation domain. */
 static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
-    int i, n, n1, n2;
+    int i, n, n1, n2, res;
     SEXP ans;
 
     n1 = LENGTH(s1);
@@ -519,10 +522,15 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         {
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else if (STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) < 0)
-                LOGICAL(ans)[i] = 1;
             else
-                LOGICAL(ans)[i] = 0;
+            {
+                errno = 0;
+                res = STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2)));
+                if (errno)
+                    LOGICAL(ans)[i] = NA_LOGICAL;
+                else
+                    LOGICAL(ans)[i] = (res < 0) ? 1 : 0;
+            }
         }
         break;
     case GTOP:
@@ -530,10 +538,15 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         {
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else if (STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) > 0)
-                LOGICAL(ans)[i] = 1;
             else
-                LOGICAL(ans)[i] = 0;
+            {
+                errno = 0;
+                res = STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2)));
+                if (errno)
+                    LOGICAL(ans)[i] = NA_LOGICAL;
+                else
+                    LOGICAL(ans)[i] = (res > 0) ? 1 : 0;
+            }
         }
         break;
     case LEOP:
@@ -541,10 +554,15 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         {
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else if (STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) <= 0)
-                LOGICAL(ans)[i] = 1;
             else
-                LOGICAL(ans)[i] = 0;
+            {
+                errno = 0;
+                res = STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2)));
+                if (errno)
+                    LOGICAL(ans)[i] = NA_LOGICAL;
+                else
+                    LOGICAL(ans)[i] = (res <= 0) ? 1 : 0;
+            }
         }
         break;
     case GEOP:
@@ -552,10 +570,15 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
         {
             if ((STRING_ELT(s1, i % n1) == NA_STRING) || (STRING_ELT(s2, i % n2) == NA_STRING))
                 LOGICAL(ans)[i] = NA_LOGICAL;
-            else if (STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2))) >= 0)
-                LOGICAL(ans)[i] = 1;
             else
-                LOGICAL(ans)[i] = 0;
+            {
+                errno = 0;
+                res = STRCOLL(CHAR(STRING_ELT(s1, i % n1)), CHAR(STRING_ELT(s2, i % n2)));
+                if (errno)
+                    LOGICAL(ans)[i] = NA_LOGICAL;
+                else
+                    LOGICAL(ans)[i] = (res >= 0) ? 1 : 0;
+            }
         }
         break;
     }
