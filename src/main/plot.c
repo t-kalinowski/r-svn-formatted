@@ -1299,12 +1299,12 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             if (create_at)
-                errorcall(call, _("'label' is supplied and not 'at'"));
+                errorcall(call, _("'labels' is supplied and not 'at'"));
             if (!isExpression(lab))
                 lab = labelformat(lab);
         }
         if (length(at) != length(lab))
-            errorcall(call, _("'at' and 'label' lengths differ, %d != %d"), length(at), length(lab));
+            errorcall(call, _("'at' and 'labels' lengths differ, %d != %d"), length(at), length(lab));
     }
     PROTECT(lab);
 
