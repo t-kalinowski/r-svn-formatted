@@ -122,7 +122,7 @@ SEXP attribute_hidden do_memtrace(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(object) == ENVSXP || TYPEOF(object) == PROMSXP)
         errorcall(call, "memtrace is not useful for promise and environment objects");
     if (TYPEOF(object) == EXTPTRSXP || TYPEOF(object) == WEAKREFSXP)
-        errorcall(call, "memtrace is not useful for weak reference or pointer objects");
+        errorcall(call, "memtrace is not useful for weak reference or external pointer objects");
 
     SET_TRACE(object, 1);
     sprintf(buffer, "<%p>", object);
