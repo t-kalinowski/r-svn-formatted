@@ -2930,7 +2930,7 @@ static Void_t *sYSMALLOc(INTERNAL_SIZE_T nb, mstate av)
     {
         if (R_Is_Running)
             Rf_warning("Reached total allocation of %dMb: see help(memory.size)", R_max_memory / 1048576);
-        return (void *)-1;
+        return (void *)0;
     }
 
     /*
