@@ -1909,7 +1909,7 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
   do_missing
 
   This function tests whether the symbol passed as its first argument
-  is ia "missing argument to the current closure.  rho is the
+  is a missing argument to the current closure.  rho is the
   environment that missing was called from.
 
 */
