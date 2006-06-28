@@ -756,6 +756,7 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
     int itmp, *isna, numna = 0;
     int *ix = INTEGER(key);
     double *x = REAL(key);
+    Rcomplex *cx = COMPLEX(key);
     SEXP *sx = STRING_PTR(key);
 
     /* First sort NAs to one end */
@@ -775,6 +776,10 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
         for (i = 0; i < n; i++)
             isna[i] = (sx[i] == NA_STRING);
         break;
+    case CPLXSXP:
+        for (i = 0; i < n; i++)
+            isna[i] = ISNAN(cx[i].r) || ISNAN(cx[i].i);
+        break;
     default:
         UNIMPLEMENTED_TYPE("orderVector1", key);
     }
@@ -788,6 +793,7 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
         case INTSXP:
         case REALSXP:
         case STRSXP:
+        case CPLXSXP:
             if (!nalast)
                 for (i = 0; i < n; i++)
                     isna[i] = !isna[i];
@@ -830,6 +836,20 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
         else
         {
 #define less(a, b) (x[a] > x[b] || (x[a] == x[b] && a > b))
+            sort2_with_index
+#undef less
+        }
+        break;
+    case CPLXSXP:
+        if (decreasing)
+        {
+#define less(a, b) (ccmp(cx[a], cx[b], 0) < 0 || (cx[a].r == cx[b].r && cx[a].i == cx[b].i && a > b))
+            sort2_with_index
+#undef less
+        }
+        else
+        {
+#define less(a, b) (ccmp(cx[a], cx[b], 0) > 0 || (cx[a].r == cx[b].r && cx[a].i == cx[b].i && a > b))
             sort2_with_index
 #undef less
         }
