@@ -165,6 +165,18 @@ static SEXP EnlargeVector(SEXP x, R_len_t newlen)
     return newx;
 }
 
+/* used instead of coerceVector to embed a non-vector in a list for
+   purposes of SubassignTypeFix, for cases in wich coerceVector should
+   fail; namely, S4SXP */
+static SEXP embedInVector(SEXP v)
+{
+    SEXP ans, tmp;
+    PROTECT(ans = allocVector(VECSXP, 1));
+    SET_VECTOR_ELT(ans, 0, v);
+    UNPROTECT(1);
+    return (ans);
+}
+
 /* Level 1 is used in VectorAssign, MatrixAssign, ArrayAssign.
    That coerces RHS to a list or expression.
 
@@ -272,6 +284,20 @@ static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level, SEXP call)
         }
         break;
 
+    case 1925: /* vector <- S4 */
+
+        if (level == 1)
+        {
+            /* Embed the RHS into a list */
+            *y = embedInVector(*y);
+        }
+        else
+        {
+            /* Nothing to do here: duplicate when used (if needed) */
+            redo_which = FALSE;
+        }
+        break;
+
     case 1019: /* logical    <- vector     */
     case 1319: /* integer    <- vector     */
     case 1419: /* real       <- vector     */
@@ -298,6 +324,20 @@ static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level, SEXP call)
         {
             /* Note : No coercion is needed here. */
             /* We just insert the RHS into the LHS. */
+            redo_which = FALSE;
+        }
+        break;
+
+    case 2025: /* expression <- S4 */
+
+        if (level == 1)
+        {
+            /* Embed the RHS into a list */
+            *y = embedInVector(*y);
+        }
+        else
+        {
+            /* Nothing to do here: duplicate when used (if needed) */
             redo_which = FALSE;
         }
         break;
@@ -1751,6 +1791,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         case 1922: /* vector     <- external pointer */
         case 1923: /* vector     <- weak reference */
         case 1924: /* vector     <- raw */
+        case 1925: /* vector     <- S4 */
         case 1903:
         case 1907:
         case 1908:
@@ -1765,6 +1806,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         case 2014: /* expression <- real	    */
         case 2015: /* expression <- complex    */
         case 2016: /* expression <- character  */
+        case 2024: /* expression     <- raw */
+        case 2025: /* expression     <- S4 */
         case 1919: /* vector     <- vector     */
         case 2020: /* expression <- expression */
 

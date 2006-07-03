@@ -348,6 +348,7 @@ SEXP eval(SEXP e, SEXP rho)
     case STRSXP:
     case CPLXSXP:
     case RAWSXP:
+    case S4SXP:
     case SPECIALSXP:
     case BUILTINSXP:
     case ENVSXP:
