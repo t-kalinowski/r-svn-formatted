@@ -1840,11 +1840,11 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
                     ytemp[n0++] = yold;
                 }
                 xtemp[n0] = xx;
-                ytemp[n0++] = yold;
+                ytemp[n0++] = yold; /* <-only diff 's' <-> 'S' */
                 xtemp[n0] = xx;
                 ytemp[n0++] = yy;
             }
-            else if ((R_FINITE(xold) && R_FINITE(yold)) && !(R_FINITE(xx) && R_FINITE(yy)))
+            else if ((R_FINITE(xold) && R_FINITE(yold)) && !(R_FINITE(xx) && R_FINITE(yy)) && n0 > 0)
             {
                 GPolyline(n0, xtemp, ytemp, DEVICE, dd);
                 n0 = 0;
@@ -1883,7 +1883,7 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
                 xtemp[n0] = xx;
                 ytemp[n0++] = yy;
             }
-            else if ((R_FINITE(xold) && R_FINITE(yold)) && !(R_FINITE(xx) && R_FINITE(yy)))
+            else if ((R_FINITE(xold) && R_FINITE(yold)) && !(R_FINITE(xx) && R_FINITE(yy)) && n0 > 0)
             {
                 GPolyline(n0, xtemp, ytemp, DEVICE, dd);
                 n0 = 0;
