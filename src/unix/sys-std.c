@@ -759,241 +759,261 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
         qask:
             R_ClearerrConsole();
             R_FlushConsole();
-            R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
-            switch (buf[0])
+            if (asLogical(GetOption(install("quit.with.no.save"), R_BaseEnv)) == 1)
             {
-            case 'y':
-            case 'Y':
-                saveact = SA_SAVE;
-                break;
-            case 'n':
-            case 'N':
-                saveact = SA_NOSAVE;
-                break;
-            case 'c':
-            case 'C':
-                jump_to_toplevel();
-                break;
-            default:
-                goto qask;
+                R_ReadConsole("Quit and discard workspace? [y/n/c]: ", buf, 128, 0);
+                switch (buf[0])
+                {
+                case 'y':
+                case 'Y':
+                    saveact = SA_NOSAVE;
+                    break;
+                case 'n':
+                case 'N':
+                case 'c':
+                case 'C':
+                    jump_to_toplevel();
+                    break;
+                default:
+                    goto qask;
+                }
             }
+            else
+            {
+                R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
+                switch (buf[0])
+                {
+                case 'y':
+                case 'Y':
+                    saveact = SA_SAVE;
+                    break;
+                case 'n':
+                case 'N':
+                    saveact = SA_NOSAVE;
+                    break;
+                case 'c':
+                case 'C':
+                    jump_to_toplevel();
+                    break;
+                default:
+                    goto qask;
+                }
+            }
+            else saveact = SaveAction;
         }
-        else
-            saveact = SaveAction;
-    }
-    switch (saveact)
-    {
-    case SA_SAVE:
-        if (runLast)
-            R_dot_Last();
-        if (R_DirtyImage)
-            R_SaveGlobalEnv();
+        switch (saveact)
+        {
+        case SA_SAVE:
+            if (runLast)
+                R_dot_Last();
+            if (R_DirtyImage)
+                R_SaveGlobalEnv();
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-        if (R_Interactive && UsingReadline)
-        {
-            R_setupHistory(); /* re-read the history size and filename */
-            stifle_history(R_HistorySize);
-            write_history(R_HistoryFile);
-        }
+            if (R_Interactive && UsingReadline)
+            {
+                R_setupHistory(); /* re-read the history size and filename */
+                stifle_history(R_HistorySize);
+                write_history(R_HistoryFile);
+            }
 #endif /* HAVE_READLINE_HISTORY_H */
 #endif /* HAVE_LIBREADLINE */
-        break;
-    case SA_NOSAVE:
-        if (runLast)
-            R_dot_Last();
-        break;
-    case SA_SUICIDE:
-    default:
-        break;
-    }
-    R_RunExitFinalizers();
-    CleanEd();
-    if (saveact != SA_SUICIDE)
-        KillAllDevices();
-    if ((tmpdir = R_TempDir))
-    {
-        snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
-        R_system((char *)buf);
-    }
-    if (saveact != SA_SUICIDE && R_CollectWarnings)
-        PrintWarnings(); /* from device close and .Last */
-    fpu_setup(FALSE);
+            break;
+        case SA_NOSAVE:
+            if (runLast)
+                R_dot_Last();
+            break;
+        case SA_SUICIDE:
+        default:
+            break;
+        }
+        R_RunExitFinalizers();
+        CleanEd();
+        if (saveact != SA_SUICIDE)
+            KillAllDevices();
+        if ((tmpdir = R_TempDir))
+        {
+            snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
+            R_system((char *)buf);
+        }
+        if (saveact != SA_SUICIDE && R_CollectWarnings)
+            PrintWarnings(); /* from device close and .Last */
+        fpu_setup(FALSE);
 
-    exit(status);
-}
+        exit(status);
+    }
 
-/*
- *  7) PLATFORM DEPENDENT FUNCTIONS
- */
+    /*
+     *  7) PLATFORM DEPENDENT FUNCTIONS
+     */
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
-                                    char **file,    /* array of filenames */
-                                    char **headers, /* the `headers' args of file.show.
-                                               Printed before each file. */
-                                    char *wtitle,   /* title for window
-                                               = `title' arg of file.show */
-                                    Rboolean del,   /* should files be deleted after use? */
-                                    char *pager)    /* pager to be used */
+    int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
+                                        char **file,    /* array of filenames */
+                                        char **headers, /* the `headers' args of file.show.
+                                                   Printed before each file. */
+                                        char *wtitle,   /* title for window
+                                                   = `title' arg of file.show */
+                                        Rboolean del,   /* should files be deleted after use? */
+                                        char *pager)    /* pager to be used */
 
-{
+    {
+        /*
+            This function can be used to display the named files with the
+            given titles and overall title.	 On GUI platforms we could
+            use a read-only window to display the result.  Here we just
+            make up a temporary file and invoke a pager on it.
+        */
+
+        int c, i, res;
+        char *filename;
+        FILE *fp, *tfp;
+        char buf[1024];
+
+        if (nfile > 0)
+        {
+            if (pager == NULL || strlen(pager) == 0)
+                pager = "more";
+            filename = R_tmpnam(NULL, R_TempDir); /* mallocs result */
+            if ((tfp = fopen(filename, "w")) != NULL)
+            {
+                for (i = 0; i < nfile; i++)
+                {
+                    if (headers[i] && *headers[i])
+                        fprintf(tfp, "%s\n\n", headers[i]);
+                    errno = 0; /* some systems require this */
+                    if ((fp = R_fopen(R_ExpandFileName(file[i]), "r")) != NULL)
+                    {
+                        while ((c = fgetc(fp)) != EOF)
+                            fputc(c, tfp);
+                        fprintf(tfp, "\n");
+                        fclose(fp);
+                        if (del)
+                            unlink(R_ExpandFileName(file[i]));
+                    }
+                    else
+#ifdef HAVE_STRERROR
+                        fprintf(tfp, _("Cannot open file '%s', reason '%s'\n\n"), file[i], strerror(errno));
+#else
+                        fprintf(tfp, _("Cannot open file '%s'\n\n"), file[i]);
+#endif
+                }
+                fclose(tfp);
+            }
+            snprintf(buf, 1024, "%s < %s", pager, filename);
+            res = R_system(buf);
+            unlink(filename);
+            free(filename);
+            return (res != 0);
+        }
+        return 1;
+    }
+
     /*
-        This function can be used to display the named files with the
-        given titles and overall title.	 On GUI platforms we could
-        use a read-only window to display the result.  Here we just
-        make up a temporary file and invoke a pager on it.
+       Prompt the user for a file name.  Return the length of
+       the name typed.  On Gui platforms, this should bring up
+       a dialog box so a user can choose files that way.
     */
 
-    int c, i, res;
-    char *filename;
-    FILE *fp, *tfp;
-    char buf[1024];
-
-    if (nfile > 0)
+    int attribute_hidden Rstd_ChooseFile(int new, char *buf, int len)
     {
-        if (pager == NULL || strlen(pager) == 0)
-            pager = "more";
-        filename = R_tmpnam(NULL, R_TempDir); /* mallocs result */
-        if ((tfp = fopen(filename, "w")) != NULL)
-        {
-            for (i = 0; i < nfile; i++)
-            {
-                if (headers[i] && *headers[i])
-                    fprintf(tfp, "%s\n\n", headers[i]);
-                errno = 0; /* some systems require this */
-                if ((fp = R_fopen(R_ExpandFileName(file[i]), "r")) != NULL)
-                {
-                    while ((c = fgetc(fp)) != EOF)
-                        fputc(c, tfp);
-                    fprintf(tfp, "\n");
-                    fclose(fp);
-                    if (del)
-                        unlink(R_ExpandFileName(file[i]));
-                }
-                else
-#ifdef HAVE_STRERROR
-                    fprintf(tfp, _("Cannot open file '%s', reason '%s'\n\n"), file[i], strerror(errno));
-#else
-                    fprintf(tfp, _("Cannot open file '%s'\n\n"), file[i]);
-#endif
-            }
-            fclose(tfp);
-        }
-        snprintf(buf, 1024, "%s < %s", pager, filename);
-        res = R_system(buf);
-        unlink(filename);
-        free(filename);
-        return (res != 0);
+        int namelen;
+        char *bufp;
+        R_ReadConsole("Enter file name: ", (unsigned char *)buf, len, 0);
+        namelen = strlen(buf);
+        bufp = &buf[namelen - 1];
+        while (bufp >= buf && isspace((int)*bufp))
+            *bufp-- = '\0';
+        return strlen(buf);
     }
-    return 1;
-}
 
-/*
-   Prompt the user for a file name.  Return the length of
-   the name typed.  On Gui platforms, this should bring up
-   a dialog box so a user can choose files that way.
-*/
+    void attribute_hidden Rstd_ShowMessage(char *s)
+    {
+        REprintf("%s\n", s);
+    }
 
-int attribute_hidden Rstd_ChooseFile(int new, char *buf, int len)
-{
-    int namelen;
-    char *bufp;
-    R_ReadConsole("Enter file name: ", (unsigned char *)buf, len, 0);
-    namelen = strlen(buf);
-    bufp = &buf[namelen - 1];
-    while (bufp >= buf && isspace((int)*bufp))
-        *bufp-- = '\0';
-    return strlen(buf);
-}
-
-void attribute_hidden Rstd_ShowMessage(char *s)
-{
-    REprintf("%s\n", s);
-}
-
-void attribute_hidden Rstd_read_history(char *s)
-{
+    void attribute_hidden Rstd_read_history(char *s)
+    {
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H
-    if (R_Interactive && UsingReadline)
-    {
-        read_history(s);
-    }
+        if (R_Interactive && UsingReadline)
+        {
+            read_history(s);
+        }
 #endif /* HAVE_READLINE_HISTORY_H */
 #endif /* HAVE_LIBREADLINE */
-}
-
-void attribute_hidden Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP sfile;
-    char file[PATH_MAX], *p;
-
-    sfile = CAR(args);
-    if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, _("invalid '%s' argument"), "file");
-    p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
-    if (strlen(p) > PATH_MAX - 1)
-        errorcall(call, _("'file' argument is too long"));
-    strcpy(file, p);
-#if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
-    if (R_Interactive && UsingReadline)
-    {
-        clear_history();
-        read_history(file);
     }
-    else
+
+    void attribute_hidden Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
+    {
+        SEXP sfile;
+        char file[PATH_MAX], *p;
+
+        sfile = CAR(args);
+        if (!isString(sfile) || LENGTH(sfile) < 1)
+            errorcall(call, _("invalid '%s' argument"), "file");
+        p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
+        if (strlen(p) > PATH_MAX - 1)
+            errorcall(call, _("'file' argument is too long"));
+        strcpy(file, p);
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
+        if (R_Interactive && UsingReadline)
+        {
+            clear_history();
+            read_history(file);
+        }
+        else
+            errorcall(call, _("no history mechanism available"));
+#else
         errorcall(call, _("no history mechanism available"));
-#else
-    errorcall(call, _("no history mechanism available"));
-#endif
-}
-
-void attribute_hidden Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP sfile;
-    char file[PATH_MAX], *p;
-
-    sfile = CAR(args);
-    if (!isString(sfile) || LENGTH(sfile) < 1)
-        errorcall(call, _("invalid '%s' argument"), "file");
-    p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
-    if (strlen(p) > PATH_MAX - 1)
-        errorcall(call, _("'file' argument is too long"));
-    strcpy(file, p);
-#if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
-    if (R_Interactive && UsingReadline)
-    {
-        write_history(file);
-#ifdef HAVE_HISTORY_TRUNCATE_FILE
-        R_setupHistory(); /* re-read the history size */
-        history_truncate_file(file, R_HistorySize);
 #endif
     }
-    else
-        errorcall(call, _("no history available to save"));
-#else
-    errorcall(call, _("no history available to save"));
-#endif
-}
 
-void attribute_hidden Rstd_addhistory(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP stamp;
-    int i;
+    void attribute_hidden Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
+    {
+        SEXP sfile;
+        char file[PATH_MAX], *p;
 
-    checkArity(op, args);
-    stamp = CAR(args);
-    if (!isString(stamp))
-        errorcall(call, _("invalid timestamp"));
+        sfile = CAR(args);
+        if (!isString(sfile) || LENGTH(sfile) < 1)
+            errorcall(call, _("invalid '%s' argument"), "file");
+        p = R_ExpandFileName(CHAR(STRING_ELT(sfile, 0)));
+        if (strlen(p) > PATH_MAX - 1)
+            errorcall(call, _("'file' argument is too long"));
+        strcpy(file, p);
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
-    if (R_Interactive && UsingReadline)
-        for (i = 0; i < LENGTH(stamp); i++)
-            add_history(CHAR(STRING_ELT(stamp, i)));
+        if (R_Interactive && UsingReadline)
+        {
+            write_history(file);
+#ifdef HAVE_HISTORY_TRUNCATE_FILE
+            R_setupHistory(); /* re-read the history size */
+            history_truncate_file(file, R_HistorySize);
 #endif
-}
+        }
+        else
+            errorcall(call, _("no history available to save"));
+#else
+        errorcall(call, _("no history available to save"));
+#endif
+    }
+
+    void attribute_hidden Rstd_addhistory(SEXP call, SEXP op, SEXP args, SEXP env)
+    {
+        SEXP stamp;
+        int i;
+
+        checkArity(op, args);
+        stamp = CAR(args);
+        if (!isString(stamp))
+            errorcall(call, _("invalid timestamp"));
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
+        if (R_Interactive && UsingReadline)
+            for (i = 0; i < LENGTH(stamp); i++)
+                add_history(CHAR(STRING_ELT(stamp, i)));
+#endif
+    }
 
 #ifdef _R_HAVE_TIMING_
 #include <time.h>
@@ -1012,73 +1032,73 @@ void attribute_hidden Rstd_addhistory(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #define R_MIN(a, b) ((a) < (b) ? (a) : (b))
 
-/* This could in principle overflow times.  It is of type clock_t,
-   typically long int.  So use gettimeofday if you have it, which
-   is also more accurate.
- */
-SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    int Timeout;
-    double tm;
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval tv;
-#else
-    struct tms timeinfo;
-#endif
-    double timeint, start, elapsed;
-
-    checkArity(op, args);
-    timeint = asReal(CAR(args));
-    if (ISNAN(timeint) || timeint < 0)
-        errorcall(call, _("invalid '%s' value"), "time");
-    tm = timeint * 1e6;
-
-#ifdef HAVE_GETTIMEOFDAY
-    gettimeofday(&tv, NULL);
-    start = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec;
-#else
-    start = times(&timeinfo);
-#endif
-    for (;;)
+    /* This could in principle overflow times.  It is of type clock_t,
+       typically long int.  So use gettimeofday if you have it, which
+       is also more accurate.
+     */
+    SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
-        fd_set *what;
-        tm = R_MIN(tm, 2e9); /* avoid integer overflow */
-        Timeout = R_wait_usec ? R_MIN(tm, R_wait_usec) : tm;
-        what = R_checkActivity(Timeout, 1);
+        int Timeout;
+        double tm;
+#ifdef HAVE_GETTIMEOFDAY
+        struct timeval tv;
+#else
+        struct tms timeinfo;
+#endif
+        double timeint, start, elapsed;
 
-        /* Time up? */
+        checkArity(op, args);
+        timeint = asReal(CAR(args));
+        if (ISNAN(timeint) || timeint < 0)
+            errorcall(call, _("invalid '%s' value"), "time");
+        tm = timeint * 1e6;
+
 #ifdef HAVE_GETTIMEOFDAY
         gettimeofday(&tv, NULL);
-        elapsed = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec - start;
+        start = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec;
 #else
-        elapsed = (times(&timeinfo) - start) / (double)CLK_TCK;
+        start = times(&timeinfo);
 #endif
-        if (elapsed >= timeint)
-            break;
+        for (;;)
+        {
+            fd_set *what;
+            tm = R_MIN(tm, 2e9); /* avoid integer overflow */
+            Timeout = R_wait_usec ? R_MIN(tm, R_wait_usec) : tm;
+            what = R_checkActivity(Timeout, 1);
 
-        /* Nope, service pending events */
-        R_runHandlers(R_InputHandlers, what);
-
-        /* Servicing events might take some time, so recheck: */
+            /* Time up? */
 #ifdef HAVE_GETTIMEOFDAY
-        gettimeofday(&tv, NULL);
-        elapsed = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec - start;
+            gettimeofday(&tv, NULL);
+            elapsed = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec - start;
 #else
-        elapsed = (times(&timeinfo) - start) / (double)CLK_TCK;
+            elapsed = (times(&timeinfo) - start) / (double)CLK_TCK;
 #endif
-        if (elapsed >= timeint)
-            break;
+            if (elapsed >= timeint)
+                break;
 
-        tm = 1e6 * (timeint - elapsed); /* old code had "+ 10000;" */
+            /* Nope, service pending events */
+            R_runHandlers(R_InputHandlers, what);
+
+            /* Servicing events might take some time, so recheck: */
+#ifdef HAVE_GETTIMEOFDAY
+            gettimeofday(&tv, NULL);
+            elapsed = (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec - start;
+#else
+            elapsed = (times(&timeinfo) - start) / (double)CLK_TCK;
+#endif
+            if (elapsed >= timeint)
+                break;
+
+            tm = 1e6 * (timeint - elapsed); /* old code had "+ 10000;" */
+        }
+
+        return R_NilValue;
     }
 
-    return R_NilValue;
-}
-
 #else  /* not _R_HAVE_TIMING_ */
-SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    error(_("Sys.sleep is not implemented on this system"));
-    return R_NilValue; /* -Wall */
-}
+    SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
+    {
+        error(_("Sys.sleep is not implemented on this system"));
+        return R_NilValue; /* -Wall */
+    }
 #endif /* not _R_HAVE_TIMING_ */
