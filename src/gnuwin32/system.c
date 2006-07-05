@@ -80,7 +80,6 @@ Rboolean AllDevicesKilled = FALSE;
 int setupui(void);
 void delui(void);
 int (*R_YesNoCancel)(char *s);
-int (*R_OkCancel)(char *s);
 
 static DWORD mainThreadId;
 
@@ -405,32 +404,17 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     {
         if (R_Interactive)
         {
-            if (asLogical(GetOption(install("quit.with.no.save"), R_BaseEnv)) == 1)
+            switch (R_YesNoCancel(G_("Save workspace image?")))
             {
-                switch (R_OkCancel(G_("Quit and discard workspace?")))
-                {
-                case YES:
-                    saveact = SA_NOSAVE;
-                    break;
-                case CANCEL:
-                    jump_to_toplevel();
-                    break;
-                }
-            }
-            else
-            {
-                switch (R_YesNoCancel(G_("Save workspace image?")))
-                {
-                case YES:
-                    saveact = SA_SAVE;
-                    break;
-                case NO:
-                    saveact = SA_NOSAVE;
-                    break;
-                case CANCEL:
-                    jump_to_toplevel();
-                    break;
-                }
+            case YES:
+                saveact = SA_SAVE;
+                break;
+            case NO:
+                saveact = SA_NOSAVE;
+                break;
+            case CANCEL:
+                jump_to_toplevel();
+                break;
             }
         }
         else
@@ -616,7 +600,7 @@ int R_ChooseFile(int new, char *buf, int len)
     return (DialogSelectFile(buf, len));
 }
 
-/* code for R_ShowMessage, R_YesNoCancel, R_OkCancel */
+/* code for R_ShowMessage, R_YesNoCancel */
 
 void (*pR_ShowMessage)(char *s);
 void R_ShowMessage(char *s)
@@ -655,23 +639,6 @@ static int char_YesNoCancel(char *s)
     case 'n':
     case 'N':
         return NO;
-    default:
-        return CANCEL;
-    }
-}
-
-static int char_OkCancel(char *s)
-{
-    char ss[128];
-    unsigned char a[3];
-
-    sprintf(ss, "%s [y/c]: ", s);
-    R_ReadConsole(ss, a, 3, 0);
-    switch (a[0])
-    {
-    case 'y':
-    case 'Y':
-        return YES;
     default:
         return CANCEL;
     }
@@ -731,7 +698,6 @@ void R_SetWin32(Rstart Rp)
     R_CallBackHook = Rp->CallBack;
     pR_ShowMessage = Rp->ShowMessage;
     R_YesNoCancel = Rp->YesNoCancel;
-    R_OkCancel = Rp->OkCancel;
     my_R_Busy = Rp->Busy;
     /* Process R_HOME/etc/Renviron.site, then
        .Renviron or ~/.Renviron, if it exists.
@@ -916,7 +882,6 @@ int cmdlineoptions(int ac, char **av)
         Rp->WriteConsole = TermWriteConsole;
         Rp->ShowMessage = char_message;
         Rp->YesNoCancel = char_YesNoCancel;
-        Rp->OkCancel = char_OkCancel;
         Rp->Busy = CharBusy;
     }
     else
@@ -926,7 +891,6 @@ int cmdlineoptions(int ac, char **av)
         Rp->WriteConsole = GuiWriteConsole;
         Rp->ShowMessage = askok;
         Rp->YesNoCancel = askyesnocancel;
-        Rp->OkCancel = askokcancel;
         Rp->Busy = GuiBusy;
     }
 
