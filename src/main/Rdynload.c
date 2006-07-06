@@ -155,7 +155,7 @@ attribute_hidden OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
 void R_init_base(DllInfo *); /* In Registration.c */
 DL_FUNC R_dlsym(DllInfo *dll, char const *name, R_RegisteredNativeSymbol *symbol);
 
-void InitDynload()
+void attribute_hidden InitDynload()
 {
     DllInfo *dll;
     int which = addDLL(strdup("base"), "base", NULL);
