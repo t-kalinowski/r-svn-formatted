@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2002   The R Development Core Team.
+ *  Copyright (C) 2002-2006   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -116,6 +116,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         if (!ISNAN(y[l]))
         {
+            double *rr = REAL(resid);
             resid0 = y[l];
             for (i = 0; i < p; i++)
                 resid0 -= Z[i] * anew[i];
@@ -130,7 +131,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
             }
             ssq += resid0 * resid0 / gain;
             if (lop)
-                REAL(resid)[l] = resid0 / sqrt(gain);
+                rr[l] = resid0 / sqrt(gain);
             sumlog += log(gain);
             for (i = 0; i < p; i++)
                 a[i] = anew[i] + M[i] * resid0 / gain;
@@ -140,16 +141,20 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         else
         {
+            double *rr = REAL(resid);
             for (i = 0; i < p; i++)
                 a[i] = anew[i];
             for (i = 0; i < p * p; i++)
                 P[i] = Pnew[i];
             if (lop)
-                REAL(resid)[l] = NA_REAL;
+                rr[l] = NA_REAL;
         }
         if (lop)
+        {
+            double *rs = REAL(states);
             for (j = 0; j < p; j++)
-                REAL(states)[l + n * j] = a[j];
+                rs[l + n * j] = a[j];
+        }
     }
     if (lop)
     {
@@ -641,6 +646,7 @@ SEXP ARIMA_Like(SEXP sy, SEXP sPhi, SEXP sTheta, SEXP sDelta, SEXP sa, SEXP sP, 
     double sumlog = 0.0, ssq = 0, resid, gain, tmp, vi, *anew, *mm = NULL, *M;
     int i, j, k, l, nu = 0;
     Rboolean useResid = asLogical(giveResid);
+    double *rsResid = NULL /* -Wall */;
 
     anew = (double *)R_alloc(rd, sizeof(double));
     M = (double *)R_alloc(rd, sizeof(double));
@@ -648,7 +654,10 @@ SEXP ARIMA_Like(SEXP sy, SEXP sPhi, SEXP sTheta, SEXP sDelta, SEXP sa, SEXP sP, 
         mm = (double *)R_alloc(rd * rd, sizeof(double));
 
     if (useResid)
+    {
         PROTECT(sResid = allocVector(REALSXP, n));
+        rsResid = REAL(sResid);
+    }
 
     for (l = 0; l < n; l++)
     {
@@ -776,7 +785,7 @@ SEXP ARIMA_Like(SEXP sy, SEXP sPhi, SEXP sTheta, SEXP sDelta, SEXP sa, SEXP sP, 
                 sumlog += log(gain);
             }
             if (useResid)
-                REAL(sResid)[l] = resid / sqrt(gain);
+                rsResid[l] = resid / sqrt(gain);
             for (i = 0; i < rd; i++)
                 a[i] = anew[i] + M[i] * resid / gain;
             for (i = 0; i < rd; i++)
@@ -790,7 +799,7 @@ SEXP ARIMA_Like(SEXP sy, SEXP sPhi, SEXP sTheta, SEXP sDelta, SEXP sa, SEXP sP, 
             for (i = 0; i < rd * rd; i++)
                 P[i] = Pnew[i];
             if (useResid)
-                REAL(sResid)[l] = NA_REAL;
+                rsResid[l] = NA_REAL;
         }
     }
 
@@ -879,6 +888,7 @@ SEXP TSconv(SEXP a, SEXP b)
 {
     int i, j, na, nb, nab;
     SEXP ab;
+    double *ra, *rb, *rab;
 
     PROTECT(a = coerceVector(a, REALSXP));
     PROTECT(b = coerceVector(b, REALSXP));
@@ -886,11 +896,14 @@ SEXP TSconv(SEXP a, SEXP b)
     nb = LENGTH(b);
     nab = na + nb - 1;
     PROTECT(ab = allocVector(REALSXP, nab));
+    ra = REAL(a);
+    rb = REAL(b);
+    rab = REAL(ab);
     for (i = 0; i < nab; i++)
-        REAL(ab)[i] = 0.0;
+        rab[i] = 0.0;
     for (i = 0; i < na; i++)
         for (j = 0; j < nb; j++)
-            REAL(ab)[i + j] += REAL(a)[i] * REAL(b)[j];
+            rab[i + j] += ra[i] * rb[j];
     UNPROTECT(3);
     return (ab);
 }

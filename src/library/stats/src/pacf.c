@@ -87,6 +87,7 @@ SEXP setup_starma(SEXP na, SEXP x, SEXP pn, SEXP xreg, SEXP pm, SEXP dt, SEXP pt
     Starma G;
     int i, n, m, ip, iq, ir, np;
     SEXP res;
+    double *rx = REAL(x), *rxreg = REAL(xreg);
 
     G = Calloc(1, starma_struct);
     G->mp = INTEGER(na)[0];
@@ -119,9 +120,9 @@ SEXP setup_starma(SEXP na, SEXP x, SEXP pn, SEXP xreg, SEXP pm, SEXP dt, SEXP pt
     G->reg = Calloc(1 + n * m, double); /* AIX can't calloc 0 items */
     G->delta = asReal(dt);
     for (i = 0; i < n; i++)
-        G->w[i] = G->wkeep[i] = REAL(x)[i];
+        G->w[i] = G->wkeep[i] = rx[i];
     for (i = 0; i < n * m; i++)
-        G->reg[i] = REAL(xreg)[i];
+        G->reg[i] = rxreg[i];
     Starma_tag = install("STARMA_TAG");
     res = R_MakeExternalPtr(G, Starma_tag, R_NilValue);
     return res;
@@ -280,11 +281,13 @@ SEXP get_resid(SEXP pG)
 {
     SEXP res;
     int i;
+    double *rres;
     GET_STARMA;
 
     res = allocVector(REALSXP, G->n);
+    rres = REAL(res);
     for (i = 0; i < G->n; i++)
-        REAL(res)[i] = G->resid[i];
+        rres[i] = G->resid[i];
     return res;
 }
 
