@@ -113,6 +113,9 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
             Rprintf("stack imbalance in %s, %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
         }
     }
+    /* Is it actually possible to have a .Internal as a method?
+       How would it be found (they are not visible by name)?
+     */
     else if (TYPEOF(op) == BUILTINSXP)
     {
         int save = R_PPStackTop;
