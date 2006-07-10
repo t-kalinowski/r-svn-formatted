@@ -804,7 +804,7 @@ static SEXP Query(char *what, DevDesc *dd)
     else if (streql(what, "ask"))
     {
         value = allocVector(LGLSXP, 1);
-        INTEGER(value)[0] = Rf_dpptr(dd)->ask;
+        LOGICAL(value)[0] = Rf_dpptr(dd)->ask;
     }
     else if (streql(what, "bg"))
     {
@@ -1069,7 +1069,7 @@ static SEXP Query(char *what, DevDesc *dd)
     else if (streql(what, "new"))
     {
         value = allocVector(LGLSXP, 1);
-        INTEGER(value)[0] = Rf_dpptr(dd)->new;
+        LOGICAL(value)[0] = Rf_dpptr(dd)->new;
     }
     else if (streql(what, "oma"))
     {
@@ -1212,15 +1212,15 @@ static SEXP Query(char *what, DevDesc *dd)
     else if (streql(what, "xlog"))
     {
         value = allocVector(LGLSXP, 1);
-        INTEGER(value)[0] = Rf_dpptr(dd)->xlog;
+        LOGICAL(value)[0] = Rf_dpptr(dd)->xlog;
     }
     else if (streql(what, "xpd"))
     {
         value = allocVector(LGLSXP, 1);
         if (Rf_dpptr(dd)->xpd == 2)
-            INTEGER(value)[0] = NA_INTEGER;
+            LOGICAL(value)[0] = NA_LOGICAL;
         else
-            INTEGER(value)[0] = Rf_dpptr(dd)->xpd;
+            LOGICAL(value)[0] = Rf_dpptr(dd)->xpd;
     }
     else if (streql(what, "yaxp"))
     {
@@ -1250,7 +1250,7 @@ static SEXP Query(char *what, DevDesc *dd)
     else if (streql(what, "ylog"))
     {
         value = allocVector(LGLSXP, 1);
-        INTEGER(value)[0] = Rf_dpptr(dd)->ylog;
+        LOGICAL(value)[0] = Rf_dpptr(dd)->ylog;
     }
     else if (ParCode(what) == -2)
     {

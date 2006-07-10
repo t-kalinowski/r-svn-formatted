@@ -394,7 +394,7 @@ void PrintWarnings(void)
         names = CAR(ATTRIB(R_Warnings));
         for (i = 0; i < R_CollectWarnings; i++)
         {
-            if (STRING_ELT(R_Warnings, i) == R_NilValue)
+            if (VECTOR_ELT(R_Warnings, i) == R_NilValue)
                 REprintf("%d: %s \n", i + 1, CHAR(STRING_ELT(names, i)));
             else
                 REprintf("%d: %s in: %s \n", i + 1, CHAR(STRING_ELT(names, i)),
