@@ -408,7 +408,8 @@ SEXP eval(SEXP e, SEXP rho)
             val = eval(PRCODE(e), PRENV(e));
             SET_PRSEEN(e, 0);
             SET_PRVALUE(e, val);
-            /* allow GC to reclaim; useful for fancy games with delay() */
+            /* allow GC to reclaim;
+               also useful for fancy games with delayedAssign() */
             SET_PRENV(e, R_NilValue);
         }
         tmp = PRVALUE(e);
@@ -1628,7 +1629,11 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     env = CADR(args);
     encl = CADDR(args);
     if (isNull(encl))
+    {
+        /* This is supposed to be defunct, but has been kept here
+           (and documented as such */
         encl = R_BaseEnv;
+    }
     else if (!isEnvironment(encl))
         errorcall(call, _("invalid '%s' argument"), "enclos");
     switch (TYPEOF(env))
@@ -1661,7 +1666,11 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         errorcall(call, _("invalid '%s' argument"), "envir");
     }
-    if (isLanguage(expr) || isSymbol(expr) || isByteCode(expr))
+
+    /* isLanguage include NILSXP, and that does not need to be
+       evaluated
+    if (isLanguage(expr) || isSymbol(expr) || isByteCode(expr)) { */
+    if (TYPEOF(expr) == LANGSXP || TYPEOF(expr) == SYMSXP || isByteCode(expr))
     {
         PROTECT(expr);
         begincontext(&cntxt, CTXT_RETURN, call, env, rho, args, op);
@@ -1679,7 +1688,7 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         endcontext(&cntxt);
         UNPROTECT(1);
     }
-    else if (isExpression(expr))
+    else if (TYPEOF(expr) == EXPRSXP)
     {
         int i, n;
         PROTECT(expr);
@@ -1705,7 +1714,7 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (TYPEOF(expr) == PROMSXP)
     {
         expr = eval(expr, rho);
-    }
+    } /* else expr is returned unchanged */
     if (PRIMVAL(op))
     { /* eval.with.vis(*) : */
         PROTECT(expr);
