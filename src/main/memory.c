@@ -2549,6 +2549,7 @@ int(TRUELENGTH)(SEXP x)
 {
     return TRUELENGTH(x);
 }
+
 char *(R_CHAR)(SEXP x)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2557,6 +2558,7 @@ char *(R_CHAR)(SEXP x)
 #endif
     return CHAR(x);
 }
+
 SEXP(STRING_ELT)(SEXP x, int i)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2565,17 +2567,17 @@ SEXP(STRING_ELT)(SEXP x, int i)
 #endif
     return STRING_ELT(x, i);
 }
+
 SEXP(VECTOR_ELT)(SEXP x, int i)
 {
 #ifdef USE_TYPE_CHECKING
     /* We need to allow vector-like types here */
     if (TYPEOF(x) != VECSXP && TYPEOF(x) != EXPRSXP && TYPEOF(x) != WEAKREFSXP)
-    {
         error("%s() can only be applied to a '%s', not a '%s'", "VECTOR_ELT", "VECSXP", type2char(TYPEOF(x)));
-    }
 #endif
     return VECTOR_ELT(x, i);
 }
+
 int(LEVELS)(SEXP x)
 {
     return LEVELS(x);
@@ -2589,14 +2591,16 @@ int *(LOGICAL)(SEXP x)
 #endif
     return LOGICAL(x);
 }
+
 int *(INTEGER)(SEXP x)
 {
 #ifdef USE_TYPE_CHECKING
     if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP)
-        error("INT() can only be applied to a INTSXP or a LGLSXP, not a '%s'", type2char(TYPEOF(x)));
+        error("%s() can only be applied to a '%s', not a '%s'", "INT", "INTSXP", type2char(TYPEOF(x)));
 #endif
     return INTEGER(x);
 }
+
 Rbyte *(RAW)(SEXP x)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2605,6 +2609,7 @@ Rbyte *(RAW)(SEXP x)
 #endif
     return RAW(x);
 }
+
 double *(REAL)(SEXP x)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2613,6 +2618,7 @@ double *(REAL)(SEXP x)
 #endif
     return REAL(x);
 }
+
 Rcomplex *(COMPLEX)(SEXP x)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2656,11 +2662,8 @@ SEXP(SET_VECTOR_ELT)(SEXP x, int i, SEXP v)
 {
 #ifdef USE_TYPE_CHECKING
     /*  we need to allow vector-like types here */
-    if (TYPEOF(x) != VECSXP && TYPEOF(x) != STRSXP && TYPEOF(x) != EXPRSXP && TYPEOF(x) != WEAKREFSXP)
+    if (TYPEOF(x) != VECSXP && TYPEOF(x) != EXPRSXP && TYPEOF(x) != WEAKREFSXP)
     {
-        /* char *xx=NULL;
-        PrintValue(x);
-        *xx='a'; */
         error("%s() can only be applied to a '%s', not a '%s'", "SET_VECTOR_ELT", "VECSXP", type2char(TYPEOF(x)));
     }
 #endif

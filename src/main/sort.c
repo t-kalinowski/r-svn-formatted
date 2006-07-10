@@ -27,7 +27,8 @@
 #include <config.h>
 #endif
 
-#include <Defn.h> /* => Utils.h with the protos from here */
+#define USE_RINTERNALS /* needed for STRING_PTR */
+#include <Defn.h>      /* => Utils.h with the protos from here */
 #include <Rmath.h>
 
 /*--- Part I: Comparison Utilities ---*/
