@@ -54,28 +54,31 @@ extern double atanh(double x);
 SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, SEXP sPn, SEXP sUP, SEXP op, SEXP fast)
 {
     SEXP res, ans = R_NilValue, resid = R_NilValue, states = R_NilValue;
-    int n = LENGTH(sy), p = LENGTH(sa), lop = asLogical(op);
-    double *y = REAL(sy), *Z = REAL(sZ), *a = REAL(sa), *P = REAL(sP), *T = REAL(sT), *V = REAL(sV), h = asReal(sh),
-           *Pnew = REAL(sPn);
+    int n, p, lop = asLogical(op);
+    double *y, *Z, *a, *P, *T, *V, h = asReal(sh), *Pnew;
     double sumlog = 0.0, ssq = 0, resid0, gain, tmp, *anew, *mm, *M;
     int i, j, k, l;
 
-    /* It would be better to check types before using LENGTH and REAL
-       on these, but should still work this way.  LT */
     if (TYPEOF(sy) != REALSXP || TYPEOF(sZ) != REALSXP || TYPEOF(sa) != REALSXP || TYPEOF(sP) != REALSXP ||
-        TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
+        TYPEOF(sPn) != REALSXP || TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
         error(_("invalid argument type"));
+    n = LENGTH(sy);
+    p = LENGTH(sa);
+    y = REAL(sy);
+    Z = REAL(sZ);
+    T = REAL(sT);
+    V = REAL(sV);
 
     /* Avoid modifying arguments unless fast=TRUE */
     if (!LOGICAL(fast)[0])
     {
         PROTECT(sP = duplicate(sP));
-        P = REAL(sP);
         PROTECT(sa = duplicate(sa));
-        a = REAL(sa);
         PROTECT(sPn = duplicate(sPn));
-        Pnew = REAL(sPn);
     }
+    P = REAL(sP);
+    a = REAL(sa);
+    Pnew = REAL(sPn);
 
     anew = (double *)R_alloc(p, sizeof(double));
     M = (double *)R_alloc(p, sizeof(double));
@@ -116,7 +119,9 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         if (!ISNAN(y[l]))
         {
-            double *rr = REAL(resid);
+            double *rr;
+            if (lop)
+                rr = REAL(resid);
             resid0 = y[l];
             for (i = 0; i < p; i++)
                 resid0 -= Z[i] * anew[i];
@@ -141,7 +146,9 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         else
         {
-            double *rr = REAL(resid);
+            double *rr;
+            if (lop)
+                rr = REAL(resid);
             for (i = 0; i < p; i++)
                 a[i] = anew[i];
             for (i = 0; i < p * p; i++)
@@ -156,6 +163,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
                 rs[l + n * j] = a[j];
         }
     }
+
     if (lop)
     {
         SET_VECTOR_ELT(ans, 0, res = allocVector(REALSXP, 2));
