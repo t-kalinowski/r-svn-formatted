@@ -2182,7 +2182,7 @@ static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
     PROTECT(a = ans);
     while (a != R_NilValue)
     {
-        SET_VECTOR_ELT(names, cnt++, PRINTNAME(TAG(a)));
+        SET_STRING_ELT(names, cnt++, PRINTNAME(TAG(a)));
         defineVar(TAG(a), ConvertPairToVector(CAR(a)), aenv);
         a = CDR(a);
     }
