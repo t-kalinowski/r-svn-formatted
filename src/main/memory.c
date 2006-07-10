@@ -2538,6 +2538,8 @@ void(SET_NAMED)(SEXP x, int v)
     SET_NAMED(x, v);
 }
 
+#define USE_TYPE_CHECKING
+
 /* Vector Accessors */
 int(LENGTH)(SEXP x)
 {
@@ -2549,14 +2551,29 @@ int(TRUELENGTH)(SEXP x)
 }
 char *(R_CHAR)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != CHARSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "CHAR", "CHARSXP", type2char(TYPEOF(x)));
+#endif
     return CHAR(x);
 }
 SEXP(STRING_ELT)(SEXP x, int i)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != STRSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "STRING_ELT", "STRSXP", type2char(TYPEOF(x)));
+#endif
     return STRING_ELT(x, i);
 }
 SEXP(VECTOR_ELT)(SEXP x, int i)
 {
+    /* We need to allow vector-like types here
+    #ifdef USE_TYPE_CHECKING
+        if(TYPEOF(x) != VECSXP && TYPEOF(x) != EXPRSXP)
+        error("%s() can only be applied to a '%s', not a '%s'",
+              "VECTOR_ELT", "VECSXP", type2char(TYPEOF(x)));
+    #endif
+    */
     return VECTOR_ELT(x, i);
 }
 int(LEVELS)(SEXP x)
@@ -2566,22 +2583,42 @@ int(LEVELS)(SEXP x)
 
 int *(LOGICAL)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != LGLSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "LOGICAL", "LGLSXP", type2char(TYPEOF(x)));
+#endif
     return LOGICAL(x);
 }
 int *(INTEGER)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP)
+        error("INT() can only be applied to a INTSXP or a LGLSXP");
+#endif
     return INTEGER(x);
 }
 Rbyte *(RAW)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != RAWSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "RAW", "RAWSXP", type2char(TYPEOF(x)));
+#endif
     return RAW(x);
 }
 double *(REAL)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != REALSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "REAL", "REALSXP", type2char(TYPEOF(x)));
+#endif
     return REAL(x);
 }
 Rcomplex *(COMPLEX)(SEXP x)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != CPLXSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "COMPLEX", "CPLXSXP", type2char(TYPEOF(x)));
+#endif
     return COMPLEX(x);
 }
 SEXP *(STRING_PTR)(SEXP x)
@@ -2602,13 +2639,28 @@ void(SET_TRUELENGTH)(SEXP x, int v)
 {
     SET_TRUELENGTH(x, v);
 }
+
 void(SET_STRING_ELT)(SEXP x, int i, SEXP v)
 {
+#ifdef USE_TYPE_CHECKING
+    if (TYPEOF(x) != STRSXP)
+        error("%s() can only be applied to a '%s', not a '%s'", "SET_STRING_ELT", "STRSXP", type2char(TYPEOF(x)));
+    if (TYPEOF(v) != CHARSXP && TYPEOF(v) != NILSXP)
+        error("Value of SET_STRING_ELT() must be a 'CHARSXP' not a '%s'", type2char(TYPEOF(v)));
+#endif
     CHECK_OLD_TO_NEW(x, v);
     STRING_ELT(x, i) = v;
 }
+
 SEXP(SET_VECTOR_ELT)(SEXP x, int i, SEXP v)
 {
+    /*  we need to allow vector-like types here
+    #ifdef USE_TYPE_CHECKING
+        if(TYPEOF(x) != VECSXP)
+        error("%s() can only be applied to a '%s', not a '%s'",
+              "SET_VECTOR_ELT", "VECSXP", type2char(TYPEOF(x)));
+    #endif
+    */
     CHECK_OLD_TO_NEW(x, v);
     return VECTOR_ELT(x, i) = v;
 }
