@@ -1790,7 +1790,6 @@ static SEXP gfind(char *name, SEXP env, SEXPTYPE mode, SEXP ifnotfound, int inhe
     /* We need to evaluate if it is a promise */
     if (TYPEOF(rval) == PROMSXP)
         rval = eval(rval, env);
-
     if (!isNull(rval) && NAMED(rval) == 0)
         SET_NAMED(rval, 1);
     return rval;
@@ -1884,15 +1883,12 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (gmode == (SEXPTYPE)(-1))
             errorcall(call, _("invalid '%s' argument"), "mode");
 
+        if (TYPEOF(ifnotfound) != VECSXP)
+            errorcall(call, _("invalid '%s' argument"), "ifnotfound");
         if (nifnfnd == 1)
-        {
-            if (TYPEOF(ifnotfound) == VECSXP)
-                PROTECT(ifnfnd = VECTOR_ELT(ifnotfound, 0));
-            else
-                PROTECT(ifnfnd = ifnotfound);
-        }
+            PROTECT(ifnfnd = VECTOR_ELT(ifnotfound, 0));
         else
-            PROTECT(ifnfnd = getOneVal(ifnotfound, i));
+            PROTECT(ifnfnd = VECTOR_ELT(ifnotfound, i));
 
         SET_VECTOR_ELT(ans, i, gfind(CHAR(STRING_ELT(x, i % nvals)), env, gmode, ifnfnd, ginherits, rho));
 
