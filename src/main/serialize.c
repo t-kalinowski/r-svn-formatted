@@ -1451,6 +1451,10 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             }
             break;
         case LGLSXP:
+            length = InInteger(stream);
+            PROTECT(s = allocVector(type, length));
+            InVec(stream, s, SET_LOGICAL_ELT, InInteger, length);
+            break;
         case INTSXP:
             length = InInteger(stream);
             PROTECT(s = allocVector(type, length));

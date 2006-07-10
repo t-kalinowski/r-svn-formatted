@@ -1126,10 +1126,17 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
 
     case INTSXP:
-    case LGLSXP:
         for (j = 0, i = 0; i < len; i++)
         {
             INTEGER(r)[i] = INTEGER(a)[j];
+            CLICKJ;
+        }
+        break;
+
+    case LGLSXP:
+        for (j = 0, i = 0; i < len; i++)
+        {
+            LOGICAL(r)[i] = LOGICAL(a)[j];
             CLICKJ;
         }
         break;
@@ -1180,7 +1187,7 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     /* handle the resize */
-    PROTECT(resize = coerceVector(CADDR(args), INTSXP));
+    PROTECT(resize = coerceVector(CADDR(args), LGLSXP));
     if (LOGICAL(resize)[0])
         setAttrib(r, R_DimSymbol, dimsr);
     else
