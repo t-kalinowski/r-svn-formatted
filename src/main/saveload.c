@@ -652,13 +652,15 @@ static void RestoreSEXP(SEXP s, FILE *fp, InputRoutines *m, NodeInfo *node, int 
             INTEGER(s)[j] = m->InInteger(fp, d);
         break;
     case STRSXP:
+        len = m->InInteger(fp, d);
+        for (j = 0; j < len; j++)
+            SET_STRING_ELT(s, j, OffsetToNode(m->InInteger(fp, d), node));
+        break;
     case VECSXP:
     case EXPRSXP:
         len = m->InInteger(fp, d);
         for (j = 0; j < len; j++)
-        {
             SET_VECTOR_ELT(s, j, OffsetToNode(m->InInteger(fp, d), node));
-        }
         break;
     default:
         error(_("bad SEXP type in data file"));
