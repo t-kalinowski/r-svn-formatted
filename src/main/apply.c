@@ -63,6 +63,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+#ifdef UNUSED
 /* .Internal(apply(X, X1, FUN)) */
 /* X is a matrix, and the last dimension is the one we want to
    loop over */
@@ -125,3 +126,4 @@ SEXP attribute_hidden do_apply(SEXP call, SEXP op, SEXP args, SEXP rho)
     UNPROTECT(3);
     return ans;
 }
+#endif
