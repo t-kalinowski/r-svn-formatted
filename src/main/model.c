@@ -2015,6 +2015,14 @@ alldone:;
 
     PROTECT(x = allocMatrix(REALSXP, n, nc));
 
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(vars))
+    {
+        memtrace_report(vars, x);
+        SET_TRACE(x, 1);
+    }
+#endif
+
     /* a) Begin with a column of 1s for the intercept. */
 
     if ((jnext = jstart = intrcept) != 0)
@@ -2037,6 +2045,13 @@ alldone:;
             if (INTEGER(columns)[i] == 0)
                 continue;
             var_i = VECTOR_ELT(variable, i);
+#ifdef R_MEMORY_PROFILING
+            if (TRACE(var_i))
+            {
+                memtrace_report(var_i, x);
+                SET_TRACE(x, 1);
+            }
+#endif
             fik = INTEGER(factors)[i + k * nVar];
             if (fik)
             {

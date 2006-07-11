@@ -523,6 +523,13 @@ static SEXP coerceToLogical(SEXP v)
     SEXP ans;
     int i, n, warn = 0;
     PROTECT(ans = allocVector(LGLSXP, n = length(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -560,6 +567,13 @@ static SEXP coerceToInteger(SEXP v)
     SEXP ans;
     int i, n, warn = 0;
     PROTECT(ans = allocVector(INTSXP, n = LENGTH(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -597,6 +611,13 @@ static SEXP coerceToReal(SEXP v)
     SEXP ans;
     int i, n, warn = 0;
     PROTECT(ans = allocVector(REALSXP, n = LENGTH(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -634,6 +655,13 @@ static SEXP coerceToComplex(SEXP v)
     SEXP ans;
     int i, n, warn = 0;
     PROTECT(ans = allocVector(CPLXSXP, n = LENGTH(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -672,6 +700,13 @@ static SEXP coerceToRaw(SEXP v)
     int i, n, warn = 0, tmp;
 
     PROTECT(ans = allocVector(RAWSXP, n = LENGTH(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -749,6 +784,13 @@ static SEXP coerceToString(SEXP v)
     SEXP ans;
     int i, n, savedigits, warn = 0;
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(v)));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     DUPLICATE_ATTRIB(ans, v);
     switch (TYPEOF(v))
     {
@@ -797,6 +839,13 @@ static SEXP coerceToExpression(SEXP v)
     {
         n = LENGTH(v);
         PROTECT(ans = allocVector(EXPRSXP, n));
+#ifdef R_MEMORY_PROFILING
+        if (TRACE(v))
+        {
+            memtrace_report(v, ans);
+            SET_TRACE(ans, 1);
+        }
+#endif
         switch (TYPEOF(v))
         {
         case LGLSXP:
@@ -842,6 +891,13 @@ static SEXP coerceToVectorList(SEXP v)
     int i, n;
     n = length(v);
     PROTECT(ans = allocVector(VECSXP, n));
+#ifdef R_MEMORY_PROFILING
+    if (TRACE(v))
+    {
+        memtrace_report(v, ans);
+        SET_TRACE(ans, 1);
+    }
+#endif
     switch (TYPEOF(v))
     {
     case LGLSXP:
@@ -1042,6 +1098,13 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     {
         n = length(v);
         PROTECT(rval = allocVector(type, n));
+#ifdef R_MEMORY_PROFILING
+        if (TRACE(v))
+        {
+            memtrace_report(v, rval);
+            SET_TRACE(rval, 1);
+        }
+#endif
         for (i = 0; i < n; i++)
         {
             if (isString(VECTOR_ELT(v, i)) && length(VECTOR_ELT(v, i)) == 1)
