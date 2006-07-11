@@ -1795,17 +1795,6 @@ static SEXP gfind(char *name, SEXP env, SEXPTYPE mode, SEXP ifnotfound, int inhe
     return rval;
 }
 
-/* return a vector of length 1 of the input type */
-static SEXP getOneVal(SEXP vec, int i)
-{
-    SEXP ans;
-
-    PROTECT(ans = allocVector(TYPEOF(vec), 1));
-    SET_VECTOR_ELT(ans, 0, duplicate(VECTOR_ELT(vec, i)));
-    UNPROTECT(1);
-    return ans;
-}
-
 /* get multiple values from an environment */
 SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1884,7 +1873,7 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         if (TYPEOF(ifnotfound) != VECSXP)
             errorcall(call, _("invalid '%s' argument"), "ifnotfound");
-        if (nifnfnd == 1)
+        if (nifnfnd == 1) /* length has been checked to be 1 or nvals. */
             ifnfnd = VECTOR_ELT(ifnotfound, 0);
         else
             ifnfnd = VECTOR_ELT(ifnotfound, i);
