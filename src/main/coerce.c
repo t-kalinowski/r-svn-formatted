@@ -995,7 +995,7 @@ static SEXP coerceToPairList(SEXP v)
     return (ans);
 }
 
-/* Coerce a list to the given type */
+/* Coerce a pairlist to the given type */
 static SEXP coercePairList(SEXP v, SEXPTYPE type)
 {
     int i, n = 0;
@@ -1080,6 +1080,7 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
     return rval;
 }
 
+/* Coerce a vector list to the given type */
 static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
 {
     int i, n, warn = 0, tmp;
@@ -1087,6 +1088,16 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
 
     names = v;
     rval = R_NilValue; /* -Wall */
+
+    /* expression -> list, new in R 2.4.0 */
+    if (type == VECSXP && TYPEOF(v) == EXPRSXP)
+    {
+        /* This is sneaky but saves us rewriting a lot of the duplicate code */
+        rval = duplicate(v);
+        TYPEOF(rval) = VECSXP;
+        return rval;
+    }
+
     if (type == EXPRSXP)
     {
         PROTECT(rval = allocVector(type, 1));
