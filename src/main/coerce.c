@@ -1094,7 +1094,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     {
         /* This is sneaky but saves us rewriting a lot of the duplicate code */
         rval = duplicate(v);
-        TYPEOF(rval) = VECSXP;
+        SET_TYPEOF(rval, VECSXP);
         return rval;
     }
 
