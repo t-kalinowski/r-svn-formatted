@@ -119,7 +119,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         if (!ISNAN(y[l]))
         {
-            double *rr;
+            double *rr = NULL /* -Wall */;
             if (lop)
                 rr = REAL(resid);
             resid0 = y[l];
@@ -146,7 +146,7 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
         }
         else
         {
-            double *rr;
+            double *rr = NULL /* -Wall */;
             if (lop)
                 rr = REAL(resid);
             for (i = 0; i < p; i++)
