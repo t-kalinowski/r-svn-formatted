@@ -673,8 +673,10 @@ static SEXP R_GetGlobalCache(SEXP symbol)
   of the specified frame.
 
   FIXME ? should this also unbind the symbol value slot when rho is
-  R_NilValue.
+  R_BaseEnv.
 
+  This is only called from eval.c in applyDefine and bcEval
+  (and AFAICS not in R_BaseEnv).
 */
 
 static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
@@ -719,7 +721,7 @@ void unbindVar(SEXP symbol, SEXP rho)
     if (rho == R_BaseNamespace)
         error(_("cannot unbind in the base namespace"));
     if (rho == R_BaseEnv)
-        error(_("cannot unbind in the base environment"));
+        error(_("unbind in the base environment is unimplemented"));
     if (FRAME_IS_LOCKED(rho))
         error(_("cannot remove bindings from a locked environment"));
 #ifdef USE_GLOBAL_CACHE
@@ -1560,6 +1562,9 @@ static int RemoveVariable(SEXP name, int hashcode, SEXP env)
     {
         /* we have just installed the symbol, so it is there */
         found = (SYMVALUE(name) != R_UnboundValue);
+#ifdef USE_GLOBAL_CACHE
+        R_FlushGlobalCache(name);
+#endif
         if (TYPEOF(name) != SYMSXP)
             error(_("not a symbol"));
         if (R_BindingIsLocked(name, R_BaseEnv))
@@ -2227,7 +2232,7 @@ SEXP attribute_hidden do_detach(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         R_FlushGlobalCacheFromUserTable(HASHTAB(s));
-        MARK_AS_GLOBAL_FRAME(s);
+        MARK_AS_LOCAL_FRAME(s); /* was _GLOBAL_ prior to 2.4.0 */
     }
 #endif
     R_Visible = 0;
