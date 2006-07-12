@@ -2519,6 +2519,14 @@ int(NAMED)(SEXP x)
 {
     return NAMED(x);
 }
+int(TRACE)(SEXP x)
+{
+    return TRACE(x);
+}
+int(LEVELS)(SEXP x)
+{
+    return LEVELS(x);
+}
 
 void(SET_ATTRIB)(SEXP x, SEXP v)
 {
@@ -2537,6 +2545,14 @@ void(SET_NAMED)(SEXP x, int v)
 {
     SET_NAMED(x, v);
 }
+void(SET_TRACE)(SEXP x, int v)
+{
+    SET_TRACE(x, v);
+}
+int(SETLEVELS)(SEXP x, int v)
+{
+    return SETLEVELS(x, v);
+}
 
 #define USE_TYPE_CHECKING
 
@@ -2552,6 +2568,14 @@ int(LENGTH)(SEXP x)
 int(TRUELENGTH)(SEXP x)
 {
     return TRUELENGTH(x);
+}
+void(SETLENGTH)(SEXP x, int v)
+{
+    SETLENGTH(x, v);
+}
+void(SET_TRUELENGTH)(SEXP x, int v)
+{
+    SET_TRUELENGTH(x, v);
 }
 
 char *(R_CHAR)(SEXP x)
@@ -2584,11 +2608,6 @@ SEXP(VECTOR_ELT)(SEXP x, int i)
         error("%s() can only be applied to a '%s', not a '%s'", "VECTOR_ELT", "VECSXP", type2char(TYPEOF(x)));
 #endif
     return VECTOR_ELT(x, i);
-}
-
-int(LEVELS)(SEXP x)
-{
-    return LEVELS(x);
 }
 
 int *(LOGICAL)(SEXP x)
@@ -2651,15 +2670,6 @@ SEXP *(VECTOR_PTR)(SEXP x)
     return NULL;
 }
 
-void(SETLENGTH)(SEXP x, int v)
-{
-    SETLENGTH(x, v);
-}
-void(SET_TRUELENGTH)(SEXP x, int v)
-{
-    SET_TRUELENGTH(x, v);
-}
-
 void(SET_STRING_ELT)(SEXP x, int i, SEXP v)
 {
 #ifdef USE_TYPE_CHECKING
@@ -2689,10 +2699,6 @@ SEXP(SET_VECTOR_ELT)(SEXP x, int i, SEXP v)
 #endif
     CHECK_OLD_TO_NEW(x, v);
     return VECTOR_ELT(x, i) = v;
-}
-int(SETLEVELS)(SEXP x, int v)
-{
-    return SETLEVELS(x, v);
 }
 
 /* List Accessors */
@@ -2838,10 +2844,6 @@ int(DEBUG)(SEXP x)
 {
     return DEBUG(x);
 }
-int(TRACE)(SEXP x)
-{
-    return TRACE(x);
-}
 
 void(SET_FORMALS)(SEXP x, SEXP v)
 {
@@ -2861,10 +2863,6 @@ void(SET_CLOENV)(SEXP x, SEXP v)
 void(SET_DEBUG)(SEXP x, int v)
 {
     SET_DEBUG(x, v);
-}
-void(SET_TRACE)(SEXP x, int v)
-{
-    SET_TRACE(x, v);
 }
 
 /* Primitive Accessors */
