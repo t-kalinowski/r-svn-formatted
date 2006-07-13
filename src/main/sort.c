@@ -754,10 +754,10 @@ void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasi
 {
     int c, i, j, h, t, lo = 0, hi = n - 1;
     int itmp, *isna, numna = 0;
-    int *ix;
-    double *x;
-    Rcomplex *cx;
-    SEXP *sx;
+    int *ix = NULL /* -Wall */;
+    double *x = NULL /* -Wall */;
+    Rcomplex *cx = NULL /* -Wall */;
+    SEXP *sx = NULL /* -Wall */;
 
     switch (TYPEOF(key))
     {
