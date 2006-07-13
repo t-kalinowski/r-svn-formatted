@@ -714,7 +714,7 @@ static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
     }
 }
 
-void unbindVar(SEXP symbol, SEXP rho)
+void attribute_hidden unbindVar(SEXP symbol, SEXP rho)
 {
     int hashcode;
     SEXP c;
@@ -742,6 +742,7 @@ void unbindVar(SEXP symbol, SEXP rho)
     }
     else
     {
+        /* This case is currently unused */
         c = PRINTNAME(symbol);
         if (!HASHASH(c))
         {
@@ -750,6 +751,9 @@ void unbindVar(SEXP symbol, SEXP rho)
         }
         hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
         R_HashDelete(hashcode, symbol, HASHTAB(rho));
+        /* we have no record here if deletion worked */
+        if (rho == R_GlobalEnv)
+            R_DirtyImage = 1;
     }
 }
 
@@ -1334,6 +1338,11 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 
     if (rho == R_BaseNamespace || rho == R_BaseEnv)
     {
+        if (FRAME_IS_LOCKED(rho))
+        {
+            if (SYMVALUE(symbol) == R_UnboundValue)
+                error(_("cannot add binding of '%s' to the base environment"), CHAR(PRINTNAME(symbol)));
+        }
 #ifdef USE_GLOBAL_CACHE
         R_FlushGlobalCache(symbol);
 #endif
@@ -1416,6 +1425,11 @@ static SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
 
     if (rho == R_BaseNamespace)
     {
+        if (FRAME_IS_LOCKED(rho))
+        {
+            if (SYMVALUE(symbol) == R_UnboundValue)
+                error(_("cannot add binding of '%s' to the base namespace"), CHAR(PRINTNAME(symbol)));
+        }
 #ifdef USE_GLOBAL_CACHE
         R_FlushGlobalCache(symbol);
 #endif
@@ -1505,6 +1519,11 @@ void setVar(SEXP symbol, SEXP value, SEXP rho)
 
 void gsetVar(SEXP symbol, SEXP value, SEXP rho)
 {
+    if (FRAME_IS_LOCKED(rho))
+    {
+        if (SYMVALUE(symbol) == R_UnboundValue)
+            error(_("cannot add binding of '%s' to the base environment"), CHAR(PRINTNAME(symbol)));
+    }
 #ifdef USE_GLOBAL_CACHE
     R_FlushGlobalCache(symbol);
 #endif
@@ -2810,7 +2829,21 @@ SEXP attribute_hidden do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
 void R_LockEnvironment(SEXP env, Rboolean bindings)
 {
     if (env == R_BaseEnv || env == R_BaseNamespace)
-        error(_("locking the base environment is not supported yet"));
+    {
+        if (bindings)
+        {
+            SEXP s;
+            int j;
+            for (j = 0; j < HSIZE; j++)
+                for (s = R_SymbolTable[j]; s != R_NilValue; s = CDR(s))
+                    if (SYMVALUE(CAR(s)) != R_UnboundValue)
+                        LOCK_BINDING(CAR(s));
+        }
+#ifdef NOTYET
+        LOCK_FRAME(env);
+#endif
+        return;
+    }
 
     if (TYPEOF(env) != ENVSXP)
         error(_("not an environment"));
@@ -2842,10 +2875,7 @@ Rboolean R_EnvironmentIsLocked(SEXP env)
         error(_("use of NULL environment is defunct"));
     if (TYPEOF(env) != ENVSXP)
         error(_("not an environment"));
-    if (env == R_BaseEnv || env == R_BaseNamespace)
-        return FALSE;
-    else
-        return FRAME_IS_LOCKED(env) != 0;
+    return FRAME_IS_LOCKED(env) != 0;
 }
 
 SEXP attribute_hidden do_lockEnv(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -2886,7 +2916,7 @@ void R_LockBinding(SEXP sym, SEXP env)
     }
 }
 
-static void R_unLockBinding(SEXP sym, SEXP env)
+void R_unLockBinding(SEXP sym, SEXP env)
 {
     if (TYPEOF(sym) != SYMSXP)
         error(_("not a symbol"));
