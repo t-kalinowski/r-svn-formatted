@@ -469,7 +469,7 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                 /* To be portable, treat \0 explicitly */
                 if (res == 0)
                 {
-                    k == 0;
+                    k = 0;
                     wc = L'\0';
                 }
                 if (0x20 <= k && k < 0x7f && iswprint(wc))

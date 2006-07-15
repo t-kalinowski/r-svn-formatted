@@ -111,7 +111,7 @@
         SEXP __b__ = (b);                                                                                              \
         SEXP __val__ = (val);                                                                                          \
         if (BINDING_IS_LOCKED(__b__))                                                                                  \
-            error(_("cannot change value of locked binding for '%s'"), CHAR(PRINTNAME(__b__)));                        \
+            error(_("cannot change value of locked binding for '%s'"), CHAR(PRINTNAME(TAG(__b__))));                   \
         if (IS_ACTIVE_BINDING(__b__))                                                                                  \
             setActiveValue(CAR(__b__), __val__);                                                                       \
         else                                                                                                           \
