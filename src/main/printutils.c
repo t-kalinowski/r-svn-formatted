@@ -473,6 +473,7 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                     case L'\\':
                         *q++ = '\\';
                         *q++ = '\\';
+                        *p++;
                         break;
                     case L'\'':
                     case L'"':
