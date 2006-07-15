@@ -2045,7 +2045,6 @@ static void outtext_close(Rconnection con)
 static void outtext_destroy(Rconnection con)
 {
     Routtextconn this = (Routtextconn)con->private;
-    R_ReleaseObject(this->data);
     free(this->lastline);
     free(this);
 }
@@ -2159,7 +2158,6 @@ static void outtext_init(Rconnection con, char *mode, int idx)
     }
     this->len = LENGTH(val);
     this->data = val;
-    R_PreserveObject(val); /* protect from garbage collection */
     this->lastline[0] = '\0';
     this->lastlinelength = LAST_LINE_LEN;
 }
