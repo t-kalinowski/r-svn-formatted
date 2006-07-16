@@ -35,7 +35,7 @@ double dweibull(double x, double shape, double scale, int give_log)
     if (shape <= 0 || scale <= 0)
         ML_ERR_return_NAN;
 
-    if (x <= 0)
+    if (x < 0)
         return R_D__0;
     if (!R_FINITE(x))
         return R_D__0;
