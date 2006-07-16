@@ -2031,6 +2031,7 @@ static void outtext_close(Rconnection con)
     SEXP tmp;
     int idx = ConnIndex(con);
 
+    R_unLockBinding(this->namesymbol, VECTOR_ELT(OutTextData, idx));
     if (strlen(this->lastline) > 0)
     {
         PROTECT(tmp = lengthgets(this->data, ++this->len));
@@ -2040,7 +2041,6 @@ static void outtext_close(Rconnection con)
         this->data = tmp;
         UNPROTECT(1);
     }
-    R_unLockBinding(this->namesymbol, VECTOR_ELT(OutTextData, idx));
     /* moved to _destroy
     SET_VECTOR_ELT(OutTextData, idx, R_NilValue);
     */
