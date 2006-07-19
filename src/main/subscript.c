@@ -485,10 +485,10 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
         }
         INTEGER(indx)[i] = sub;
     }
-    /* Ghastly hack!  We attach the new names to the attribute */
-    /* slot on the returned subscript vector. */
+    /* We return the new names as the names attribute of the returned
+       subscript vector. */
     if (extra != nnames)
-        SET_ATTRIB(indx, indexnames);
+        setAttrib(indx, R_NamesSymbol, indexnames);
     if (canstretch)
         *stretch = extra;
     UNPROTECT(4);
