@@ -156,8 +156,8 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
        part of another character in a MBCS: but this does not happen
        in UTF-8.
     */
-    int i;
-    char *p, quote = '\0', prev = '\0';
+    int i, nbslash = 0; /* number of preceding backslashes */
+    char *p, quote = '\0';
     Rboolean ign, inquote = FALSE;
 
     if (TYPEOF(text) != STRSXP)
@@ -169,7 +169,7 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
     for (i = 0; i < LENGTH(text); i++)
     {
         p = CHAR(STRING_ELT(text, i));
-        for (; *p; prev = *(p++))
+        for (; *p; p++)
         {
             if (!inquote && *p == '#')
                 break;
@@ -182,7 +182,7 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
                     return ScalarLogical(TRUE);
                 }
             }
-            if (prev != '\\' && (*p == '"' || *p == '\''))
+            if (nbslash % 2 && (*p == '"' || *p == '\''))
             {
                 if (inquote && *p == quote)
                 {
@@ -194,6 +194,10 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
                     inquote = TRUE;
                 }
             }
+            if (*p == '\\')
+                nbslash++;
+            else
+                nbslash = 0;
         }
     }
     return ScalarLogical(FALSE);
