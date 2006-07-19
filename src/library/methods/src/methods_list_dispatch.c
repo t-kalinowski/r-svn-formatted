@@ -6,9 +6,8 @@
 #include <config.h>
 #endif
 
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
+#include <Defn.h>
+#undef _
 
 #include "RSMethods.h"
 #include "methods.h"
@@ -17,6 +16,7 @@
 extern int snprintf(char *s, size_t n, const char *format, ...);
 #endif
 
+#if 0
 /* from Defn.h: it might be better actually to include that */
 #define type2str Rf_type2str
 SEXP type2str(SEXPTYPE);
@@ -37,22 +37,26 @@ Rboolean R_GetVarLocMISSING(R_varloc_t);
 
 /* from Defn.h */
 typedef SEXP (*R_stdGen_ptr_t)(SEXP, SEXP, SEXP);
-R_stdGen_ptr_t R_get_standardGeneric_ptr();                     /* get method */
+R_stdGen_ptr_t R_get_standardGeneric_ptr(); /* get method */
 R_stdGen_ptr_t R_set_standardGeneric_ptr(R_stdGen_ptr_t, SEXP); /* set method */
+
 
 /* attrib.c */
 SEXP R_data_class(SEXP obj, int singleString);
+
 
 /* from main/subassign.c */
 SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val);
 
 /* from main/objects.c */
 SEXP R_deferred_default_method();
-SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mlist);
+SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, 
+		       SEXP mlist);
 SEXP R_primitive_methods(SEXP op);
 SEXP do_set_prim_method(SEXP op, char *code_string, SEXP fundef, SEXP mlist);
 void R_set_quick_method_check(R_stdGen_ptr_t);
 SEXP R_do_slot(SEXP obj, SEXP name);
+#endif
 
 /* the following utilities are included here for now, as statics.  But
    they will eventually be C implementations of slot, data.class,
@@ -124,19 +128,14 @@ SEXP R_initMethodDispatch(SEXP envir)
     s_argument = Rf_install("argument");
     s_allMethods = Rf_install("allMethods");
 
-    R_FALSE = PROTECT(NEW_LOGICAL(1));
-    LOGICAL_POINTER(R_FALSE)[0] = FALSE;
+    R_FALSE = ScalarLogical(FALSE);
     R_PreserveObject(R_FALSE);
-    R_TRUE = PROTECT(NEW_LOGICAL(1));
-    LOGICAL_POINTER(R_TRUE)[0] = TRUE;
+    R_TRUE = ScalarLogical(TRUE);
     R_PreserveObject(R_TRUE);
-    UNPROTECT(2);
 
     /* some strings (NOT symbols) */
-    s_missing = PROTECT(NEW_CHARACTER(1));
-    SET_STRING_ELT(s_missing, 0, mkChar("missing"));
+    s_missing = mkString("missing");
     R_PreserveObject(s_missing);
-    UNPROTECT(1);
 
     /* Some special lists of primitive skeleton calls.
        These will be promises under lazy-loading.
@@ -437,8 +436,8 @@ static SEXP R_get_from_f_env(SEXP env, SEXP what, SEXP fname)
 */
 #define IS_NON_GENERIC(vl)                                                                                             \
     (TYPEOF(vl) == BUILTINSXP || TYPEOF(vl) == SPECIALSXP ||                                                           \
-     (TYPEOF(vl) == CLOSXP && GET_ATTR(vl, s_generic) == R_NilValue))
-#define IS_GENERIC(vl) (TYPEOF(vl) == CLOSXP && GET_ATTR(vl, s_generic) != R_NilValue)
+     (TYPEOF(vl) == CLOSXP && getAttrib(vl, s_generic) == R_NilValue))
+#define IS_GENERIC(vl) (TYPEOF(vl) == CLOSXP && getAttrib(vl, s_generic) != R_NilValue)
 
 static SEXP get_generic(SEXP symbol, SEXP rho)
 {
@@ -487,7 +486,7 @@ SEXP R_getGeneric(SEXP name, SEXP mustFind, SEXP env)
     value = get_generic(name, env);
     if (value == R_UnboundValue)
     {
-        if (LOGICAL_VALUE(mustFind))
+        if (asLogical(mustFind))
         {
             if (env == R_GlobalEnv)
                 error(_("no generic function definition found for '%s'"), CHAR_STAR(name));
