@@ -1,8 +1,3 @@
-#ifndef lint
-static char *copyright = "Copyright (C) 1991, 1992, 1993, Chris Thewalt";
-#endif
-
-/* #include <config.h> */
 #include <R_ext/Boolean.h>
 #include <R_ext/Error.h>
 
@@ -36,6 +31,7 @@ int (*gl_in_hook)() = 0;
 int (*gl_out_hook)() = 0;
 int (*gl_tab_hook)() = gl_tab;
 
+#define SUPPORT_MBCS
 #include <R_ext/rlocale.h>
 #include <wchar.h>
 extern Rboolean mbcslocale;
@@ -72,10 +68,12 @@ static int gl_pos, gl_cnt = 0; /* position and size of input */
 static char *gl_buf;           /* input buffer */
 static char *gl_killbuf;       /* killed text */
 static char *gl_prompt;        /* to save the prompt string */
-static char gl_intrc = 0;      /* keyboard SIGINT char */
-static char gl_quitc = 0;      /* keyboard SIGQUIT char */
-static char gl_suspc = 0;      /* keyboard SIGTSTP char */
-static char gl_dsuspc = 0;     /* delayed SIGTSTP char */
+#ifdef POSIX
+static char gl_intrc = 0;  /* keyboard SIGINT char */
+static char gl_quitc = 0;  /* keyboard SIGQUIT char */
+static char gl_suspc = 0;  /* keyboard SIGTSTP char */
+static char gl_dsuspc = 0; /* delayed SIGTSTP char */
+#endif
 static int gl_search_mode = 0; /* search mode flag */
 
 static jmp_buf gl_jmp;
@@ -378,7 +376,7 @@ static int gl_getc(void)
         DWORD st;
         WORD vk;
         CONSOLE_SCREEN_BUFFER_INFO csb;
-        int bbb = 0, nAlt = 0, n, d;
+        int bbb = 0, nAlt = 0, n;
 
         c = 0;
         while (!c)
@@ -875,8 +873,6 @@ static void gl_addchar(int c)
     }
     if (mbcslocale)
     {
-        int mb_len;
-        int dst_len;
         mbstate_t mb_st;
         wchar_t wc;
         char s[9];
