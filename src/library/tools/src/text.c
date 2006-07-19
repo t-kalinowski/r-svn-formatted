@@ -169,6 +169,7 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
     for (i = 0; i < LENGTH(text); i++)
     {
         p = CHAR(STRING_ELT(text, i));
+        inquote = FALSE; /* avoid runaway quotes */
         for (; *p; p++)
         {
             if (!inquote && *p == '#')
