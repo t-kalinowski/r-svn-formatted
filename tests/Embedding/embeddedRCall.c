@@ -31,7 +31,7 @@ int eval_R_command(const char *funcName, int argc, char *argv[])
     /* Evaluate the call to the R function.
        Ignore the return value.
      */
-    Test_tryEval(e, &errorOccurred);
+    R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
     UNPROTECT(3);
     return (0);
@@ -50,39 +50,4 @@ void init_R(int argc, char **argv)
         argv = defaultArgv;
     }
     Rf_initEmbeddedR(argc, argv);
-}
-
-typedef struct
-{
-    SEXP expression;
-    SEXP val;
-} R_ProtectedEvalData;
-
-void protectedEval(void *d)
-{
-    R_ProtectedEvalData *data = (R_ProtectedEvalData *)d;
-
-    data->val = eval(data->expression, R_GlobalEnv);
-    PROTECT(data->val);
-}
-
-SEXP Test_tryEval(SEXP e, int *ErrorOccurred)
-{
-    Rboolean ok;
-    R_ProtectedEvalData data;
-
-    data.expression = e;
-    data.val = NULL;
-
-    ok = R_ToplevelExec(protectedEval, &data);
-    if (ErrorOccurred)
-    {
-        *ErrorOccurred = (ok == FALSE);
-    }
-    if (ok == FALSE)
-        data.val = NULL;
-    else
-        UNPROTECT(1);
-
-    return (data.val);
 }

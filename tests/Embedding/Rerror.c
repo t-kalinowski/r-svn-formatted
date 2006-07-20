@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     SETCAR(e, fun);
     SETCAR(CDR(e), arg);
 
-    Test_tryEval(e, &errorOccurred);
+    R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
     UNPROTECT(2);
 
@@ -42,12 +42,12 @@ int main(int argc, char *argv[])
     PROTECT(e);
     SETCAR(e, fun);
 
-    Test_tryEval(e, &errorOccurred);
+    R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
     fprintf(stderr, "Trying again (yes it will fail also!)\n");
     fflush(stderr);
 
-    Test_tryEval(e, &errorOccurred);
+    R_tryEval(e, R_GlobalEnv, &errorOccurred);
     UNPROTECT(2);
 
     R_CleanUp(SA_NOSAVE, 0, FALSE);

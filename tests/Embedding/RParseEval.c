@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     Rf_PrintValue(e);
     n = GET_LENGTH(e);
 
-    Test_tryEval(VECTOR_ELT(e, 0), &hadError);
+    R_tryEval(VECTOR_ELT(e, 0), R_GlobalEnv, &hadError);
 
     UNPROTECT(2);
 
