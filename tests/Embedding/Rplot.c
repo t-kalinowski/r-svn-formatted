@@ -10,8 +10,8 @@
 int main(int argc, char *argv[])
 {
     /* Evaluates the expression
-         plot(c(1,2,3,4,5,6,7,8,9,10))
-     */
+       plot(c(1,2,3,4,5,6,7,8,9,10))
+    */
     eval_R_command("plot", argc, argv);
     return (0);
 }

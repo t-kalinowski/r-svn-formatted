@@ -1,39 +1,26 @@
-
-#include <R.h>
-#include <Rinternals.h>
-#include <Rdefines.h>
-
 #include "embeddedRCall.h"
-#include "config.h"
-#include "Defn.h"
 
 int eval_R_command(const char *funcName, int argc, char *argv[])
 {
     SEXP e;
-    SEXP fun;
     SEXP arg;
 
     int i;
     int errorOccurred;
     init_R(argc, argv);
 
-    fun = Rf_findFun(Rf_install((char *)funcName), R_GlobalEnv);
-    PROTECT(fun);
-    PROTECT(arg = NEW_INTEGER(10));
-    for (i = 0; i < GET_LENGTH(arg); i++)
-        INTEGER_DATA(arg)[i] = i + 1;
+    PROTECT(arg = allocVector(INTSXP, 10));
+    for (i = 0; i < LENGTH(arg); i++)
+        INTEGER(arg)[i] = i + 1;
 
-    e = allocVector(LANGSXP, 2);
-    PROTECT(e);
-    SETCAR(e, fun);
-    SETCAR(CDR(e), arg);
+    PROTECT(e = lang2(install((char *)funcName), arg));
 
     /* Evaluate the call to the R function.
        Ignore the return value.
-     */
+    */
     R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
-    UNPROTECT(3);
+    UNPROTECT(2);
     return (0);
 }
 

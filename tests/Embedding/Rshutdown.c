@@ -25,13 +25,10 @@ int callLength(SEXP obj)
     int errorOccurred;
     int len = -1;
 
-    PROTECT(e = allocVector(LANGSXP, 2));
-    SETCAR(e, Rf_install("length"));
-    SETCAR(CDR(e), obj);
-
-    PROTECT(val = R_tryEval(e, R_GlobalEnv, &errorOccurred));
+    PROTECT(e = lang2(install("length"), obj));
+    val = R_tryEval(e, R_GlobalEnv, &errorOccurred);
     len = INTEGER(val)[0];
-    UNPROTECT(2);
+    UNPROTECT(1);
 
     return (len);
 }
