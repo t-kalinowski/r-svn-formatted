@@ -540,7 +540,9 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
     return R_NilValue;
 }
 
-SEXP attribute_hidden arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
+/* This is used by packages arules and cba. Seems dangerous as the
+   typedef is not exported */
+SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
     return int_arraySubscript(dim, s, dims, dng, strg, x, TRUE);
 }
