@@ -76,7 +76,7 @@ const static char *const falsenames[] = {
         }                                                                                                              \
     } while (0)
 
-void CoercionWarning(int warn)
+void attribute_hidden CoercionWarning(int warn)
 {
     /* FIXME: Use
        =====
@@ -170,17 +170,17 @@ double R_strtod(const char *c, char **end)
     return x;
 }
 
-int LogicalFromInteger(int x, int *warn)
+int attribute_hidden LogicalFromInteger(int x, int *warn)
 {
     return (x == NA_INTEGER) ? NA_LOGICAL : (x != 0);
 }
 
-int LogicalFromReal(double x, int *warn)
+int attribute_hidden LogicalFromReal(double x, int *warn)
 {
     return ISNAN(x) ? NA_LOGICAL : (x != 0);
 }
 
-int LogicalFromComplex(Rcomplex x, int *warn)
+int attribute_hidden LogicalFromComplex(Rcomplex x, int *warn)
 {
     return (ISNAN(x.r) || ISNAN(x.i)) ? NA_LOGICAL : (x.r != 0 || x.i != 0);
 }
@@ -200,12 +200,12 @@ int attribute_hidden LogicalFromString(SEXP x, int *warn)
     return NA_LOGICAL;
 }
 
-int IntegerFromLogical(int x, int *warn)
+int attribute_hidden IntegerFromLogical(int x, int *warn)
 {
     return (x == NA_LOGICAL) ? NA_INTEGER : x;
 }
 
-int IntegerFromReal(double x, int *warn)
+int attribute_hidden IntegerFromReal(double x, int *warn)
 {
     if (ISNAN(x))
         return NA_INTEGER;
@@ -217,7 +217,7 @@ int IntegerFromReal(double x, int *warn)
     return x;
 }
 
-int IntegerFromComplex(Rcomplex x, int *warn)
+int attribute_hidden IntegerFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_INTEGER;
@@ -260,12 +260,12 @@ int attribute_hidden IntegerFromString(SEXP x, int *warn)
     return NA_INTEGER;
 }
 
-double RealFromLogical(int x, int *warn)
+double attribute_hidden RealFromLogical(int x, int *warn)
 {
     return (x == NA_LOGICAL) ? NA_REAL : x;
 }
 
-double RealFromInteger(int x, int *warn)
+double attribute_hidden RealFromInteger(int x, int *warn)
 {
     if (x == NA_INTEGER)
         return NA_REAL;
@@ -273,7 +273,7 @@ double RealFromInteger(int x, int *warn)
         return x;
 }
 
-double RealFromComplex(Rcomplex x, int *warn)
+double attribute_hidden RealFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_REAL;
@@ -1589,6 +1589,115 @@ SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
     SET_TYPEOF(ans, LANGSXP);
     SET_TAG(ans, R_NilValue);
     return ans;
+}
+
+/* int, not Rboolean, for NA_LOGICAL : */
+int asLogical(SEXP x)
+{
+    int warn = 0;
+
+    if (isVectorAtomic(x))
+    {
+        if (LENGTH(x) < 1)
+            return NA_LOGICAL;
+        switch (TYPEOF(x))
+        {
+        case LGLSXP:
+            return LOGICAL(x)[0];
+        case INTSXP:
+            return Rf_LogicalFromInteger(INTEGER(x)[0], &warn);
+        case REALSXP:
+            return Rf_LogicalFromReal(REAL(x)[0], &warn);
+        case CPLXSXP:
+            return Rf_LogicalFromComplex(COMPLEX(x)[0], &warn);
+        default:
+            UNIMPLEMENTED_TYPE("asLogical", x);
+        }
+    }
+    return NA_LOGICAL;
+}
+
+int asInteger(SEXP x)
+{
+    int warn = 0, res;
+
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
+    {
+        switch (TYPEOF(x))
+        {
+        case LGLSXP:
+            return Rf_IntegerFromLogical(LOGICAL(x)[0], &warn);
+        case INTSXP:
+            return INTEGER(x)[0];
+        case REALSXP:
+            res = Rf_IntegerFromReal(REAL(x)[0], &warn);
+            Rf_CoercionWarning(warn);
+            return res;
+        case CPLXSXP:
+            res = Rf_IntegerFromComplex(COMPLEX(x)[0], &warn);
+            Rf_CoercionWarning(warn);
+            return res;
+        default:
+            UNIMPLEMENTED_TYPE("asInteger", x);
+        }
+    }
+    return NA_INTEGER;
+}
+
+double asReal(SEXP x)
+{
+    int warn = 0;
+    double res;
+
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
+    {
+        switch (TYPEOF(x))
+        {
+        case LGLSXP:
+            res = Rf_RealFromLogical(LOGICAL(x)[0], &warn);
+            Rf_CoercionWarning(warn);
+            return res;
+        case INTSXP:
+            res = Rf_RealFromInteger(INTEGER(x)[0], &warn);
+            Rf_CoercionWarning(warn);
+            return res;
+        case REALSXP:
+            return REAL(x)[0];
+        case CPLXSXP:
+            res = Rf_RealFromComplex(COMPLEX(x)[0], &warn);
+            Rf_CoercionWarning(warn);
+            return res;
+        default:
+            UNIMPLEMENTED_TYPE("asReal", x);
+        }
+    }
+    return NA_REAL;
+}
+
+Rcomplex asComplex(SEXP x)
+{
+    int warn = 0;
+    Rcomplex z;
+
+    z.r = NA_REAL;
+    z.i = NA_REAL;
+    if (isVectorAtomic(x) && LENGTH(x) >= 1)
+    {
+        switch (TYPEOF(x))
+        {
+        case LGLSXP:
+            return Rf_ComplexFromLogical(LOGICAL(x)[0], &warn);
+        case INTSXP:
+            return Rf_ComplexFromInteger(INTEGER(x)[0], &warn);
+        case REALSXP:
+            return Rf_ComplexFromReal(REAL(x)[0], &warn);
+        case CPLXSXP:
+            return COMPLEX(x)[0];
+        default:
+            UNIMPLEMENTED_TYPE("asComplex", x);
+        }
+    }
+    return z;
 }
 
 /* return the type (= "detailed mode") of the SEXP */
