@@ -77,7 +77,7 @@ static void printAttributes(SEXP, SEXP, Rboolean);
 #define TAGBUFLEN 256
 static char tagbuf[TAGBUFLEN + 5];
 
-void PrintDefaults(SEXP rho)
+void attribute_hidden PrintDefaults(SEXP rho)
 {
     R_print.na_string = NA_STRING;
     R_print.na_string_noquote = mkChar("<NA>");
@@ -596,7 +596,7 @@ static void PrintEnvir(SEXP rho)
         Rprintf("<environment: %p>\n", rho);
 }
 
-void PrintValueRec(SEXP s, SEXP env)
+void attribute_hidden PrintValueRec(SEXP s, SEXP env)
 {
     int i;
     SEXP t;
@@ -846,7 +846,7 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
 /* Print an S-expression using (possibly) local options.
    This is used for auto-printing */
 
-void PrintValueEnv(SEXP s, SEXP env)
+void attribute_hidden PrintValueEnv(SEXP s, SEXP env)
 {
     SEXP call;
     char *autoprint = "print";
@@ -891,7 +891,7 @@ void R_PV(SEXP s)
         PrintValueEnv(s, R_BaseEnv);
 }
 
-void CustomPrintValue(SEXP s, SEXP env)
+void attribute_hidden CustomPrintValue(SEXP s, SEXP env)
 {
     tagbuf[0] = '\0';
     PrintValueRec(s, env);

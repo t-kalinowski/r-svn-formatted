@@ -48,6 +48,7 @@
 
 #include "Defn.h"
 
+/* used in subscript.c and subassign.c */
 Rboolean NonNullStringMatch(SEXP s, SEXP t)
 {
     /* "" or NA string matches nothing */
@@ -59,6 +60,7 @@ Rboolean NonNullStringMatch(SEXP s, SEXP t)
         return FALSE;
 }
 
+/* currently unused outside this file */
 Rboolean psmatch(char *f, char *t, Rboolean exact)
 {
     if (exact)
@@ -152,7 +154,8 @@ static SEXP matchPar_int(char *tag, SEXP *list, Rboolean exact)
     }
 }
 
-SEXP matchPar(char *tag, SEXP *list)
+/* unused outside this file */
+SEXP attribute_hidden matchPar(char *tag, SEXP *list)
 {
     return matchPar_int(tag, list, FALSE);
 }
@@ -161,7 +164,7 @@ SEXP matchPar(char *tag, SEXP *list)
 /* Returns the first partially matching tag found. */
 /* Pattern is a symbol. */
 
-SEXP matchArg(SEXP tag, SEXP *list)
+SEXP attribute_hidden matchArg(SEXP tag, SEXP *list)
 {
     return matchPar(CHAR(PRINTNAME(tag)), list);
 }
@@ -170,7 +173,7 @@ SEXP matchArg(SEXP tag, SEXP *list)
 /* Returns the first exactly matching tag found. */
 /* Pattern is a symbol. */
 
-SEXP matchArgExact(SEXP tag, SEXP *list)
+SEXP attribute_hidden matchArgExact(SEXP tag, SEXP *list)
 {
     return matchPar_int(CHAR(PRINTNAME(tag)), list, TRUE);
 }
@@ -183,7 +186,7 @@ SEXP matchArgExact(SEXP tag, SEXP *list)
 
 /* We need to leave supplied unchanged in case we call UseMethod */
 
-SEXP matchArgs(SEXP formals, SEXP supplied)
+SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied)
 {
     int i, seendots;
     SEXP f, a, b, dots, actuals;
