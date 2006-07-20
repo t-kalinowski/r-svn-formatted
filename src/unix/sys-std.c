@@ -483,7 +483,7 @@ static struct
   Registers the specified routine and prompt with readline
   and keeps a record of it on the top of the R readline stack.
  */
-void attribute_hidden pushReadline(char *prompt, rl_vcpfunc_t f)
+static void pushReadline(char *prompt, rl_vcpfunc_t f)
 {
     if (ReadlineStack.current >= ReadlineStack.max)
     {
@@ -503,7 +503,7 @@ void attribute_hidden pushReadline(char *prompt, rl_vcpfunc_t f)
   Unregister the current readline handler and pop it from R's readline
   stack, followed by re-registering the previous one.
 */
-void attribute_hidden popReadline()
+static void popReadline()
 {
     if (ReadlineStack.current > -1)
     {
