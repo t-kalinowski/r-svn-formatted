@@ -1496,7 +1496,7 @@ void attribute_hidden get_current_mem(unsigned long *smallvsize, unsigned long *
 {
     *smallvsize = R_SmallVallocSize;
     *largevsize = R_LargeVallocSize;
-    *nodes = (R_NodesInUse * sizeof(SEXPREC));
+    *nodes = R_NodesInUse * sizeof(SEXPREC);
     return;
 }
 
@@ -1663,6 +1663,8 @@ char *R_alloc(long nelem, int eltsize)
     { /* precaution against integer overflow */
         SEXP s;
 #if SIZEOF_LONG > 4
+        /* In this case by allocating larger units we can get up to
+           size(double) * (2^31 - 1) bytes, approx 16Gb */
         if (dsize < R_LEN_T_MAX)
             s = allocString(size); /**** avoid extra null byte?? */
         else if (dsize < sizeof(double) * (R_LEN_T_MAX - 1))
@@ -1703,17 +1705,19 @@ char *S_alloc(long nelem, int eltsize)
 
 char *S_realloc(char *p, long new, long old, int size)
 {
-    int i, nold;
+    int /*i,*/ nold;
     char *q;
     /* shrinking is a no-op */
     if (new <= old)
         return p;
     q = R_alloc(new, size);
     nold = old * size;
-    for (i = 0; i < nold; i++)
-        q[i] = p[i];
-    for (i = nold; i < new *size; i++)
-        q[i] = 0;
+    memcpy(q, p, nold);
+    memset(q + nold, 0, new *size - nold);
+    /* for(i = 0; i < nold; i++)
+    q[i] = p[i];
+    for(i = nold; i < new*size; i++)
+        q[i] = 0; */
     return q;
 }
 
@@ -1876,7 +1880,9 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
 
 /* allocString is now in Rinlinedfuns.h */
 
-/* Allocate a vector object on the heap */
+/* Allocate a vector object.  This ensures only validity of list-like
+   SEXPTYPES (as the elements must be initialized).  Initializing of
+   other vector types is done in do_makevector */
 
 SEXP allocVector(SEXPTYPE type, R_len_t length)
 {
@@ -2096,6 +2102,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         VALGRIND_MAKE_WRITABLE(INTEGER(s), actual_size);
 #endif
     }
+    /* <FIXME> why not valgrindify LGLSXP, CPLXSXP and RAWSXP/ */
     return s;
 }
 
@@ -2105,9 +2112,7 @@ SEXP allocList(int n)
     SEXP result;
     result = R_NilValue;
     for (i = 0; i < n; i++)
-    {
         result = CONS(R_NilValue, result);
-    }
     return result;
 }
 
@@ -2270,7 +2275,7 @@ SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         int gen;
 
-        /* run a full GC to make sure that all stuff in use in in Old space */
+        /* run a full GC to make sure that all stuff in use is in Old space */
         num_old_gens_to_collect = NUM_OLD_GENERATIONS;
         R_gc();
         for (gen = 0; gen < NUM_OLD_GENERATIONS; gen++)
@@ -2310,6 +2315,7 @@ static void reset_pp_stack(void *data)
     R_size_t *poldpps = data;
     R_PPStackSize = *poldpps;
 }
+
 SEXP protect(SEXP s)
 {
     if (R_PPStackTop >= R_PPStackSize)
@@ -2338,7 +2344,7 @@ void unprotect(int l)
     if (R_PPStackTop >= l)
         R_PPStackTop -= l;
     else
-        error(_("unprotect(): stack imbalance"));
+        error(_("unprotect(): only %d protected items"), R_PPStackTop);
 }
 
 /* "unprotect_ptr" remove pointer from somewhere in R_PPStack */
@@ -2398,6 +2404,7 @@ void *R_chk_calloc(size_t nelem, size_t elsize)
         error(_("Calloc could not allocate (%d of %d) memory"), nelem, elsize);
     return (p);
 }
+
 void *R_chk_realloc(void *ptr, size_t size)
 {
     void *p;
@@ -2410,6 +2417,7 @@ void *R_chk_realloc(void *ptr, size_t size)
         error(_("Realloc could not re-allocate (size %d) memory"), size);
     return (p);
 }
+
 void R_chk_free(void *ptr)
 {
     /* S-PLUS warns here, but there seems no reason to do so */
@@ -3055,7 +3063,7 @@ SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 #else
-static int R_IsMemReporting;
+static int R_IsMemReporting; /* Rboolean more appropriate? */
 static FILE *R_MemReportingOutfile;
 static R_size_t R_MemReportingThreshold;
 
@@ -3109,6 +3117,7 @@ static void R_EndMemReporting()
 {
     if (R_MemReportingOutfile != NULL)
     {
+        /* does not fclose always flush? */
         fflush(R_MemReportingOutfile);
         fclose(R_MemReportingOutfile);
         R_MemReportingOutfile = NULL;
