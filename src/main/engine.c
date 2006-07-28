@@ -1117,7 +1117,7 @@ static void closeClip(double *xout, double *yout, int *cnt, int store, GClipRect
     }
 }
 
-int clipPoly(double *x, double *y, int n, int store, int toDevice, double *xout, double *yout, GEDevDesc *dd)
+static int clipPoly(double *x, double *y, int n, int store, int toDevice, double *xout, double *yout, GEDevDesc *dd)
 {
     int i, cnt = 0;
     GClipState cs[4];

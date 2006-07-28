@@ -1493,7 +1493,7 @@ SEXP attribute_hidden do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
-extern int clipboardhastext(); /* from ga.h */
+extern int GA_clipboardhastext(); /* from ga.h */
 #endif
 
 #ifdef Unix
@@ -1514,7 +1514,7 @@ static Rboolean clp_open(Rconnection con)
 #ifdef Win32
         HGLOBAL hglb;
         char *pc;
-        if (clipboardhastext() && OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) &&
+        if (GA_clipboardhastext() && OpenClipboard(NULL) && (hglb = GetClipboardData(CF_TEXT)) &&
             (pc = (char *)GlobalLock(hglb)))
         {
             int len = strlen(pc);
@@ -3799,7 +3799,7 @@ SEXP attribute_hidden do_clearpushback(SEXP call, SEXP op, SEXP args, SEXP env)
 /* Switch output to connection number icon, or popd stack if icon < 0
  */
 
-Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
+static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
 {
     int toclose;
 
@@ -3855,9 +3855,12 @@ Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
 }
 
 /* This is not only used by cat(), but is in a public
-   header, so we need a wrapper */
+   header, so we need a wrapper
 
-Rboolean switch_stdout(int icon, int closeOnExit)
+   Mo, Rconnections.h is not public and not installed.
+*/
+
+Rboolean attribute_hidden switch_stdout(int icon, int closeOnExit)
 {
     return switch_or_tee_stdout(icon, closeOnExit, 0);
 }

@@ -173,8 +173,8 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
   provided, we check whether the calling function is in a namespace
   and look there.
 */
-SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *symbol, char *buf, int *nargs, int *naok,
-                          int *dup, SEXP call)
+static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *symbol, char *buf, int *nargs,
+                                 int *naok, int *dup, SEXP call)
 {
     SEXP op;
     char *p, *q;

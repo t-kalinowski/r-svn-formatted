@@ -700,6 +700,8 @@ void *getdata(control obj)
         return NULL;
 }
 
+/* These two are in none of the headers */
+#ifdef UNUSED
 void _setextradata(control obj, void *data)
 {
     if (obj)
@@ -713,6 +715,7 @@ void *_getextradata(control obj)
     else
         return NULL;
 }
+#endif
 
 /*
  *  Set the text of an object. This will set the names appearing

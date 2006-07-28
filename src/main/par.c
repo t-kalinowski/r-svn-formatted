@@ -150,6 +150,7 @@ static int ParCode(char *what)
     return -1;
 }
 
+#ifdef UNUSED
 /* par(.)'s call */
 
 static SEXP gcall;
@@ -158,6 +159,7 @@ void RecordGraphicsCall(SEXP call)
 {
     gcall = call;
 }
+#endif
 
 static void par_error(char *what)
 {
