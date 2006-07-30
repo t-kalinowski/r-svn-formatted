@@ -39,11 +39,6 @@
 #define _(String) (String)
 #endif
 
-/* we have a substitute snprintf */
-#ifndef HAVE_SNPRINTF
-#define HAVE_SNPRINTF 1
-#endif
-
 #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
 
 #ifdef Win32
@@ -135,7 +130,7 @@ static int setSelectMask(InputHandler *handlers, fd_set *readMask)
 #define FTP_COMMAND_OK 200
 #define FTP_SYNTAX_ERROR 500
 #define FTP_GET_PASSWD 331
-#define FTP_BUF_SIZE 512
+#define FTP_BUF_SIZE 1024
 
 typedef struct RxmlNanoFTPCtxt
 {
@@ -196,7 +191,7 @@ static void RxmlNanoFTPInit(void)
 
     proxyPort = 21;
     env = getenv("no_proxy");
-    if (env != NULL)
+    if (env && ((env[0] == '*') && (env[1] == 0)))
         return;
     env = getenv("ftp_proxy");
     if (env != NULL)
@@ -271,6 +266,9 @@ static void RxmlNanoFTPScanURL(void *ctx, const char *URL)
     int indx = 0;
     int port = 0;
 
+    /*
+     * Clear any existing data from the context
+     */
     if (ctxt->protocol != NULL)
     {
         xmlFree(ctxt->protocol);
@@ -487,7 +485,10 @@ static void *RxmlNanoFTPNewCtxt(const char *URL)
 
     ret = (RxmlNanoFTPCtxtPtr)xmlMalloc(sizeof(RxmlNanoFTPCtxt));
     if (ret == NULL)
+    {
+        RxmlMessage(1, "error allocating FTP context");
         return (NULL);
+    }
 
     memset(ret, 0, sizeof(RxmlNanoFTPCtxt));
     ret->port = 21;
@@ -533,7 +534,6 @@ static void RxmlNanoFTPFreeCtxt(void *ctx)
 
 /**
  * RxmlNanoFTPParseResponse:
- * @ctx:  the FTP connection context
  * @buf:  the buffer containing the response
  * @len:  the buffer length
  *
@@ -582,6 +582,9 @@ static int RxmlNanoFTPGetMore(void *ctx)
     int len;
     int size;
 
+    if ((ctxt == NULL) || (ctxt->controlFd < 0))
+        return (-1);
+
     if ((ctxt->controlBufIndex < 0) || (ctxt->controlBufIndex > FTP_BUF_SIZE))
     {
         RxmlMessage(0, "RxmlNanoFTPGetMore : controlBufIndex = %d", ctxt->controlBufIndex);
@@ -622,6 +625,7 @@ static int RxmlNanoFTPGetMore(void *ctx)
      */
     if ((len = recv(ctxt->controlFd, &ctxt->controlBuf[ctxt->controlBufIndex], size, 0)) < 0)
     {
+        RxmlMessage(1, "recv failed");
         closesocket(ctxt->controlFd);
         ctxt->controlFd = -1;
         ctxt->controlFd = -1;
@@ -665,6 +669,9 @@ static int RxmlNanoFTPReadResponse(void *ctx)
     char *ptr, *end;
     int len;
     int res = -1, cur = -1;
+
+    if ((ctxt == NULL) || (ctxt->controlFd < 0))
+        return (-1);
 
 get_more:
     /*
@@ -758,6 +765,8 @@ static int RxmlNanoFTPCheckResponse(void *ctx)
     fd_set rfd;
     struct timeval tv;
 
+    if ((ctxt == NULL) || (ctxt->controlFd < 0))
+        return (-1);
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     FD_ZERO(&rfd);
@@ -778,7 +787,7 @@ static int RxmlNanoFTPCheckResponse(void *ctx)
 }
 
 /**
- * Send the user authentification
+ * Send the user authentication
  */
 
 static int RxmlNanoFTPSendUser(void *ctx)
@@ -789,24 +798,23 @@ static int RxmlNanoFTPSendUser(void *ctx)
     int res;
 
     if (ctxt->user == NULL)
-        sprintf(buf, "USER anonymous\r\n");
+        snprintf(buf, sizeof(buf), "USER anonymous\r\n");
     else
-#ifdef HAVE_SNPRINTF
         snprintf(buf, sizeof(buf), "USER %s\r\n", ctxt->user);
-#else
-        sprintf(buf, "USER %s\r\n", ctxt->user);
-#endif
     buf[sizeof(buf) - 1] = 0;
     len = strlen(buf);
-    RxmlMessage(0, buf);
+    RxmlMessage(0, "%s", buf);
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
+    {
+        RxmlMessage(1, "send failed");
         return (res);
+    }
     return (0);
 }
 
 /**
- * Send the password authentification
+ * Send the password authentication
  */
 
 static int RxmlNanoFTPSendPasswd(void *ctx)
@@ -817,23 +825,18 @@ static int RxmlNanoFTPSendPasswd(void *ctx)
     int res;
 
     if (ctxt->passwd == NULL)
-#ifdef HAVE_SNPRINTF
-        snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
-#else
-        sprintf(buf, "PASS anonymous\r\n");
-#endif
+        snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
     else
-#ifdef HAVE_SNPRINTF
         snprintf(buf, sizeof(buf), "PASS %s\r\n", ctxt->passwd);
-#else
-        sprintf(buf, "PASS %s\r\n", ctxt->passwd);
-#endif
     buf[sizeof(buf) - 1] = 0;
     len = strlen(buf);
-    RxmlMessage(0, buf);
+    RxmlMessage(0, "%s", buf);
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
+    {
+        RxmlMessage(1, "send failed");
         return (res);
+    }
     return (0);
 }
 
@@ -850,12 +853,14 @@ static int RxmlNanoFTPQuit(void *ctx)
 {
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
-    int len;
-    int res;
+    int len, res;
 
-    sprintf(buf, "QUIT\r\n");
+    if ((ctxt == NULL) || (ctxt->controlFd < 0))
+        return (-1);
+
+    snprintf(buf, sizeof(buf), "QUIT\r\n");
     len = strlen(buf);
-    RxmlMessage(0, buf);
+    RxmlMessage(0, "%s", buf);
     res = send(ctxt->controlFd, buf, len, 0);
     return (0);
 }
@@ -985,17 +990,14 @@ static int RxmlNanoFTPConnect(void *ctx)
             /*
              * We need proxy auth
              */
-#ifdef HAVE_SNPRINTF
             snprintf(buf, sizeof(buf), "USER %s\r\n", proxyUser);
-#else
-            sprintf(buf, "USER %s\r\n", proxyUser);
-#endif
             buf[sizeof(buf) - 1] = 0;
             len = strlen(buf);
-            RxmlMessage(0, buf);
+            RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
             {
+                RxmlMessage(1, "send failed");
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 return (res);
@@ -1008,23 +1010,16 @@ static int RxmlNanoFTPConnect(void *ctx)
                     break;
             case 3:
                 if (proxyPasswd != NULL)
-#ifdef HAVE_SNPRINTF
                     snprintf(buf, sizeof(buf), "PASS %s\r\n", proxyPasswd);
-#else
-                    sprintf(buf, "PASS %s\r\n", proxyPasswd);
-#endif
                 else
-#ifdef HAVE_SNPRINTF
-                    snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
-#else
-                    sprintf(buf, "PASS anonymous\r\n");
-#endif
+                    snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
                 buf[sizeof(buf) - 1] = 0;
                 len = strlen(buf);
-                RxmlMessage(0, buf);
+                RxmlMessage(0, "%s", buf);
                 res = send(ctxt->controlFd, buf, len, 0);
                 if (res < 0)
                 {
+                    RxmlMessage(1, "send failed");
                     closesocket(ctxt->controlFd);
                     ctxt->controlFd = -1;
                     return (res);
@@ -1056,20 +1051,17 @@ static int RxmlNanoFTPConnect(void *ctx)
         switch (proxyType)
         {
         case 0:
-        /* we will try in seqence */
+        /* we will try in sequence */
         case 1:
             /* Using SITE command */
-#ifdef HAVE_SNPRINTF
             snprintf(buf, sizeof(buf), "SITE %s\r\n", ctxt->hostname);
-#else
-            sprintf(buf, "SITE %s\r\n", ctxt->hostname);
-#endif
             buf[sizeof(buf) - 1] = 0;
             len = strlen(buf);
-            RxmlMessage(0, buf);
+            RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
             {
+                RxmlMessage(1, "send failed");
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
@@ -1092,23 +1084,16 @@ static int RxmlNanoFTPConnect(void *ctx)
         case 2:
             /* USER user@host command */
             if (ctxt->user == NULL)
-#ifdef HAVE_SNPRINTF
-                snprintf(buf, sizeof(buf), "USER anonymous%s\r\n", ctxt->hostname);
-#else
-                sprintf(buf, "USER anonymous%s\r\n", ctxt->hostname);
-#endif
+                snprintf(buf, sizeof(buf), "USER anonymous@%s\r\n", ctxt->hostname);
             else
-#ifdef HAVE_SNPRINTF
                 snprintf(buf, sizeof(buf), "USER %s@%s\r\n", ctxt->user, ctxt->hostname);
-#else
-                sprintf(buf, "USER %s@%s\r\n", ctxt->user, ctxt->hostname);
-#endif
             buf[sizeof(buf) - 1] = 0;
             len = strlen(buf);
-            RxmlMessage(0, buf);
+            RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
             {
+                RxmlMessage(1, "send failed");
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
@@ -1122,23 +1107,17 @@ static int RxmlNanoFTPConnect(void *ctx)
                 return (0);
             }
             if (ctxt->passwd == NULL)
-#ifdef HAVE_SNPRINTF
-                snprintf(buf, sizeof(buf), "PASS anonymous\r\n");
-#else
-                sprintf(buf, "PASS anonymous\r\n");
-#endif
+                snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
             else
-#ifdef HAVE_SNPRINTF
+
                 snprintf(buf, sizeof(buf), "PASS %s\r\n", ctxt->passwd);
-#else
-                sprintf(buf, "PASS %s\r\n", ctxt->passwd);
-#endif
             buf[sizeof(buf) - 1] = 0;
             len = strlen(buf);
-            RxmlMessage(0, buf);
+            RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
             {
+                RxmlMessage(1, "send failed");
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
@@ -1260,14 +1239,15 @@ static int RxmlNanoFTPGetConnection(void *ctx)
 
     if (ctxt->passive)
     {
-        sprintf(buf, "PASV\r\n");
+        snprintf(buf, sizeof(buf), "PASV\r\n");
         len = strlen(buf);
 #ifdef DEBUG_FTP
-        RxmlMessage(0, buf);
+        RxmlMessage(0, "%s", buf);
 #endif
         res = send(ctxt->controlFd, buf, len, 0);
         if (res < 0)
         {
+            RxmlMessage(1, "send failed");
             closesocket(ctxt->dataFd);
             ctxt->dataFd = -1;
             return (res);
@@ -1338,22 +1318,18 @@ static int RxmlNanoFTPGetConnection(void *ctx)
         }
         adp = (unsigned char *)&dataAddr.sin_addr;
         portp = (unsigned char *)&dataAddr.sin_port;
-#ifdef HAVE_SNPRINTF
         snprintf(buf, sizeof(buf), "PORT %d,%d,%d,%d,%d,%d\r\n", adp[0] & 0xff, adp[1] & 0xff, adp[2] & 0xff,
                  adp[3] & 0xff, portp[0] & 0xff, portp[1] & 0xff);
-#else
-        sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", adp[0] & 0xff, adp[1] & 0xff, adp[2] & 0xff, adp[3] & 0xff,
-                portp[0] & 0xff, portp[1] & 0xff);
-#endif
         buf[sizeof(buf) - 1] = 0;
         len = strlen(buf);
 #ifdef DEBUG_FTP
-        RxmlMessage(1, buf);
+        RxmlMessage(1, "%s", buf);
 #endif
 
         res = send(ctxt->controlFd, buf, len, 0);
         if (res < 0)
         {
+            RxmlMessage(1, "send failed");
             closesocket(ctxt->dataFd);
             ctxt->dataFd = -1;
             return (res);
@@ -1384,20 +1360,23 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[300];
     int res, len;
+    if (ctx == NULL)
+        return (-1);
     if ((filename == NULL) && (ctxt->path == NULL))
         return (-1);
     ctxt->dataFd = RxmlNanoFTPGetConnection(ctxt);
     if (ctxt->dataFd == -1)
         return (-1);
 
-    sprintf(buf, "TYPE I\r\n");
+    snprintf(buf, sizeof(buf), "TYPE I\r\n");
     len = strlen(buf);
 #ifdef DEBUG_FTP
-    RxmlMessage(0, buf);
+    RxmlMessage(0, "%s", buf);
 #endif
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
+        RxmlMessage(1, "send failed");
         closesocket(ctxt->dataFd);
         ctxt->dataFd = -1;
         return (res);
@@ -1410,25 +1389,18 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
         return (-res);
     }
     if (filename == NULL)
-#ifdef HAVE_SNPRINTF
         snprintf(buf, sizeof(buf), "RETR %s\r\n", ctxt->path);
-#else
-        sprintf(buf, "RETR %s\r\n", ctxt->path);
-#endif
     else
-#ifdef HAVE_SNPRINTF
         snprintf(buf, sizeof(buf), "RETR %s\r\n", filename);
-#else
-        sprintf(buf, "RETR %s\r\n", filename);
-#endif
     buf[sizeof(buf) - 1] = 0;
     len = strlen(buf);
 #ifdef DEBUG_FTP
-    RxmlMessage(0, buf);
+    RxmlMessage(0, "%s", buf);
 #endif
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
+        RxmlMessage(1, "send failed");
         closesocket(ctxt->dataFd);
         ctxt->dataFd = -1;
         return (res);
