@@ -2515,10 +2515,6 @@ void R_SetExternalPtrProtected(SEXP s, SEXP p)
 /* General Cons Cell Attributes */
 SEXP(ATTRIB)(SEXP x)
 {
-#ifdef USE_TYPE_CHECKING
-    if (TYPEOF(x) != LISTSXP)
-        error("%s() can only be applied to a '%s', not a '%s'", "ATTRIB", "pairlist", type2char(TYPEOF(x)));
-#endif
     return ATTRIB(x);
 }
 int(OBJECT)(SEXP x)
