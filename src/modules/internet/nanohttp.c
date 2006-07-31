@@ -1262,6 +1262,9 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
  * @contentType:  if available the Content-Type information will be
  *                returned at that location
  *
+ * @headers: headers to be used in the HTTP request.  These must be name/value
+ *           pairs separated by ':', each on their own line.
+ *
  * This function try to open a connection to the indicated resource
  * via HTTP GET.
  *
@@ -1269,11 +1272,11 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
  *     The contentType, if provided must be freed by the caller
  */
 
-void *RxmlNanoHTTPOpen(const char *URL, char **contentType, int cacheOK)
+void *RxmlNanoHTTPOpen(const char *URL, char **contentType, const char *headers, int cacheOK)
 {
     if (contentType != NULL)
         *contentType = NULL;
-    return RxmlNanoHTTPMethod(URL, NULL, NULL, contentType, NULL, cacheOK);
+    return RxmlNanoHTTPMethod(URL, NULL, NULL, contentType, headers, cacheOK);
 }
 
 /**
