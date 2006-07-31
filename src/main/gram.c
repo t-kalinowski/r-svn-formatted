@@ -2983,70 +2983,40 @@ static SEXP R_Parse(int n, ParseStatus *status)
 
     ParseContextInit();
     savestack = R_PPStackTop;
-    if (n >= 0)
+    PROTECT(t = NewList());
+    for (i = 0;;)
     {
-        PROTECT(rval = allocVector(EXPRSXP, n));
-        for (i = 0; i < n; i++)
+        if (n >= 0 && i >= n)
+            break;
+        ParseInit();
+        rval = R_Parse1(status);
+        switch (*status)
         {
-        try_again:
-            ParseInit();
-            t = R_Parse1(status);
-            switch (*status)
-            {
-            case PARSE_NULL:
-                goto try_again;
-                break;
-            case PARSE_OK:
-                SET_VECTOR_ELT(rval, i, t);
-                break;
-            case PARSE_INCOMPLETE:
-            case PARSE_ERROR:
-                R_PPStackTop = savestack;
-                return R_NilValue;
-                break;
-            case PARSE_EOF:
-                *status = PARSE_OK;
-                i = n;
-                break;
-            }
-        }
-        UNPROTECT(1);
-        return rval;
-    }
-    else
-    {
-        PROTECT(t = NewList());
-        for (;;)
-        {
-            ParseInit();
-            rval = R_Parse1(status);
-            switch (*status)
-            {
-            case PARSE_NULL:
-                break;
-            case PARSE_OK:
-                t = GrowList(t, rval);
-                break;
-            case PARSE_INCOMPLETE:
-            case PARSE_ERROR:
-                R_PPStackTop = savestack;
-                return R_NilValue;
-                break;
-            case PARSE_EOF:
-                t = CDR(t);
-                rval = allocVector(EXPRSXP, length(t));
-                for (n = 0; n < LENGTH(rval); n++)
-                {
-                    SET_VECTOR_ELT(rval, n, CAR(t));
-                    t = CDR(t);
-                }
-                UNPROTECT(1);
-                *status = PARSE_OK;
-                return rval;
-                break;
-            }
+        case PARSE_NULL:
+            break;
+        case PARSE_OK:
+            t = GrowList(t, rval);
+            i++;
+            break;
+        case PARSE_INCOMPLETE:
+        case PARSE_ERROR:
+            R_PPStackTop = savestack;
+            return R_NilValue;
+            break;
+        case PARSE_EOF:
+            goto finish;
+            break;
         }
     }
+
+finish:
+    t = CDR(t);
+    rval = allocVector(EXPRSXP, length(t));
+    for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
+        SET_VECTOR_ELT(rval, n, CAR(t));
+    R_PPStackTop = savestack;
+    *status = PARSE_OK;
+    return rval;
 }
 
 /* used in edit.c */
@@ -3138,92 +3108,51 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
     buf[0] = '\0';
     bufp = buf;
     savestack = R_PPStackTop;
-    if (n >= 0)
+    PROTECT(t = NewList());
+    for (i = 0;;)
     {
-        PROTECT(rval = allocVector(EXPRSXP, n));
-        for (i = 0; i < n; i++)
+        if (n >= 0 && i >= n)
+            break;
+        if (!*bufp)
         {
-        try_again:
-            if (!*bufp)
-            {
-                if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
-                    goto error;
-                bufp = buf;
-            }
-            while ((c = *bufp++))
-            {
-                R_IoBufferPutc(c, buffer);
-                if (c == ';' || c == '\n')
-                    break;
-            }
-            t = R_Parse1Buffer(buffer, 1, status);
-            switch (*status)
-            {
-            case PARSE_NULL:
-                goto try_again;
-                break;
-            case PARSE_OK:
-                SET_VECTOR_ELT(rval, i, t);
-                break;
-            case PARSE_INCOMPLETE:
-            case PARSE_ERROR:
-                rval = R_NilValue;
-            /* Fall through */
-            case PARSE_EOF:
-                goto error;
-                break;
-            }
+            if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
+                goto finish;
+            bufp = buf;
         }
-    error:
-        R_IoBufferWriteReset(buffer);
-        R_PPStackTop = savestack;
-        return rval;
-    }
-    else
-    {
-        PROTECT(t = NewList());
-        for (;;)
+        while ((c = *bufp++))
         {
-            if (!*bufp)
-            {
-                if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
-                    goto eof;
-                bufp = buf;
-            }
-            while ((c = *bufp++))
-            {
-                R_IoBufferPutc(c, buffer);
-                if (c == ';' || c == '\n')
-                    break;
-            }
-            rval = R_Parse1Buffer(buffer, 1, status);
-            switch (*status)
-            {
-            case PARSE_NULL:
+            R_IoBufferPutc(c, buffer);
+            if (c == ';' || c == '\n')
                 break;
-            case PARSE_OK:
-                t = GrowList(t, rval);
-                break;
-            case PARSE_INCOMPLETE:
-            case PARSE_ERROR:
-                R_IoBufferWriteReset(buffer);
-                R_PPStackTop = savestack;
-                return R_NilValue;
-                break;
-            case PARSE_EOF:
-                goto eof;
-                break;
-            }
+        }
+        rval = R_Parse1Buffer(buffer, 1, status);
+        switch (*status)
+        {
+        case PARSE_NULL:
+            break;
+        case PARSE_OK:
+            t = GrowList(t, rval);
+            i++;
+            break;
+        case PARSE_INCOMPLETE:
+        case PARSE_ERROR:
+            R_IoBufferWriteReset(buffer);
+            R_PPStackTop = savestack;
+            return R_NilValue;
+            break;
+        case PARSE_EOF:
+            goto finish;
+            break;
         }
     }
-eof:
+finish:
     R_IoBufferWriteReset(buffer);
     t = CDR(t);
     rval = allocVector(EXPRSXP, length(t));
     for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
         SET_VECTOR_ELT(rval, n, CAR(t));
-    *status = PARSE_OK;
     R_PPStackTop = savestack;
+    *status = PARSE_OK;
     return rval;
 }
 
