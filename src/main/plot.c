@@ -491,20 +491,21 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
     int i, n, col, font, colspecd;
     double cex;
     SEXP txt, nms;
+    PROTECT_INDEX pi;
 
     txt = R_NilValue;
     cex = NA_REAL;
     col = R_TRANWHITE;
     colspecd = 0;
     font = NA_INTEGER;
-    PROTECT(txt);
+    /* It doesn't look as if this protection is needed */
+    PROTECT_WITH_INDEX(txt, &pi);
 
     switch (TYPEOF(spec))
     {
     case LANGSXP:
     case SYMSXP:
-        UNPROTECT(1);
-        PROTECT(txt = coerceVector(spec, EXPRSXP));
+        REPROTECT(txt = coerceVector(spec, EXPRSXP), pi);
         break;
     case VECSXP:
         if (length(spec) == 0)
@@ -518,15 +519,9 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
             { /* PR#1939 */
                 txt = VECTOR_ELT(spec, 0);
                 if (TYPEOF(txt) == LANGSXP || TYPEOF(txt) == SYMSXP)
-                {
-                    UNPROTECT(1);
-                    PROTECT(txt = coerceVector(txt, EXPRSXP));
-                }
+                    REPROTECT(txt = coerceVector(txt, EXPRSXP), pi);
                 else if (!isExpression(txt))
-                {
-                    UNPROTECT(1);
-                    PROTECT(txt = coerceVector(txt, STRSXP));
-                }
+                    REPROTECT(txt = coerceVector(txt, STRSXP), pi);
             }
             else
             {
@@ -554,15 +549,9 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
                     {
                         txt = VECTOR_ELT(spec, i);
                         if (TYPEOF(txt) == LANGSXP || TYPEOF(txt) == SYMSXP)
-                        {
-                            UNPROTECT(1);
-                            PROTECT(txt = coerceVector(txt, EXPRSXP));
-                        }
+                            REPROTECT(txt = coerceVector(txt, EXPRSXP), pi);
                         else if (!isExpression(txt))
-                        {
-                            UNPROTECT(1);
-                            PROTECT(txt = coerceVector(txt, STRSXP));
-                        }
+                            REPROTECT(txt = coerceVector(txt, STRSXP), pi);
                     }
                     else
                         errorcall(call, _("invalid graphics parameter"));
@@ -575,7 +564,7 @@ static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, int *pcol, double *pcex
         txt = spec;
         break;
     default:
-        txt = coerceVector(spec, STRSXP);
+        REPROTECT(txt = coerceVector(spec, STRSXP), pi);
         break;
     }
     UNPROTECT(1);
@@ -2926,8 +2915,9 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         cex = Rf_gpptr(dd)->cexmain;
         col = Rf_gpptr(dd)->colmain;
         font = Rf_gpptr(dd)->fontmain;
+        /* GetTextArg may coerce, so protect the result */
         GetTextArg(call, Main, &Main, &col, &cex, &font);
-        protect(Main);
+        PROTECT(Main);
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->font = font;
@@ -2976,15 +2966,16 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
                     GText(hpos, offset - i, where, CHAR(string), adj, adjy, 0.0, dd);
             }
         }
-        unprotect(1);
+        UNPROTECT(1);
     }
     if (sub != R_NilValue)
     {
         cex = Rf_gpptr(dd)->cexsub;
         col = Rf_gpptr(dd)->colsub;
         font = Rf_gpptr(dd)->fontsub;
+        /* GetTextArg may coerce, so protect the result */
         GetTextArg(call, sub, &sub, &col, &cex, &font);
-        protect(sub);
+        PROTECT(sub);
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->font = font;
@@ -3014,15 +3005,16 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
                     GMtext(CHAR(string), 1, vpos, where, hpos, 0, 0.0, dd);
             }
         }
-        unprotect(1);
+        UNPROTECT(1);
     }
     if (xlab != R_NilValue)
     {
         cex = Rf_gpptr(dd)->cexlab;
         col = Rf_gpptr(dd)->collab;
         font = Rf_gpptr(dd)->fontlab;
+        /* GetTextArg may coerce, so protect the result */
         GetTextArg(call, xlab, &xlab, &col, &cex, &font);
-        protect(xlab);
+        PROTECT(xlab);
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->font = font;
@@ -3052,15 +3044,16 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
                     GMtext(CHAR(string), 1, vpos + i, where, hpos, 0, 0.0, dd);
             }
         }
-        unprotect(1);
+        UNPROTECT(1);
     }
     if (ylab != R_NilValue)
     {
         cex = Rf_gpptr(dd)->cexlab;
         col = Rf_gpptr(dd)->collab;
         font = Rf_gpptr(dd)->fontlab;
+        /* GetTextArg may coerce, so protect the result */
         GetTextArg(call, ylab, &ylab, &col, &cex, &font);
-        protect(ylab);
+        PROTECT(ylab);
         Rf_gpptr(dd)->cex = Rf_gpptr(dd)->cexbase * cex;
         Rf_gpptr(dd)->col = col;
         Rf_gpptr(dd)->font = font;
@@ -3090,7 +3083,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
                     GMtext(CHAR(string), 2, vpos - i, where, hpos, 0, 0.0, dd);
             }
         }
-        unprotect(1);
+        UNPROTECT(1);
     }
     GMode(0, dd);
     GRestorePars(dd);
