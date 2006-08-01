@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2005 University of Cambridge
+           Copyright (c) 1997-2006 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@ Arguments:
 Returns:      TRUE if character matches, else FALSE
 */
 
-PCRE_EXPORT BOOL _pcre_xclass(int c, const uschar *data)
+BOOL _pcre_xclass(int c, const uschar *data)
 {
     int t;
     BOOL negated = (*data & XCL_NOT) != 0;
@@ -99,19 +99,44 @@ PCRE_EXPORT BOOL _pcre_xclass(int c, const uschar *data)
 #ifdef SUPPORT_UCP
         else /* XCL_PROP & XCL_NOTPROP */
         {
-            int chartype, othercase;
-            int rqdtype = *data++;
-            int category = _pcre_ucp_findchar(c, &chartype, &othercase);
-            if (rqdtype >= 128)
+            int chartype, script;
+            int category = _pcre_ucp_findprop(c, &chartype, &script);
+
+            switch (*data)
             {
-                if ((rqdtype - 128 == category) == (t == XCL_PROP))
+            case PT_ANY:
+                if (t == XCL_PROP)
                     return !negated;
-            }
-            else
-            {
-                if ((rqdtype == chartype) == (t == XCL_PROP))
+                break;
+
+            case PT_LAMP:
+                if ((chartype == ucp_Lu || chartype == ucp_Ll || chartype == ucp_Lt) == (t == XCL_PROP))
                     return !negated;
+                break;
+
+            case PT_GC:
+                if ((data[1] == category) == (t == XCL_PROP))
+                    return !negated;
+                break;
+
+            case PT_PC:
+                if ((data[1] == chartype) == (t == XCL_PROP))
+                    return !negated;
+                break;
+
+            case PT_SC:
+                if ((data[1] == script) == (t == XCL_PROP))
+                    return !negated;
+                break;
+
+                /* This should never occur, but compilers may mutter if there is no
+                default. */
+
+            default:
+                return FALSE;
             }
+
+            data += 2;
         }
 #endif /* SUPPORT_UCP */
     }

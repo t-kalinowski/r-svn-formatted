@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2005 University of Cambridge
+           Copyright (c) 1997-2006 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@ Arguments:
 Returns:           0 if data returned, negative on error
 */
 
-PCRE_EXPORT int pcre_config(int what, void *where)
+PCRE_DATA_SCOPE int pcre_config(int what, void *where)
 {
     switch (what)
     {
@@ -89,6 +89,10 @@ PCRE_EXPORT int pcre_config(int what, void *where)
 
     case PCRE_CONFIG_MATCH_LIMIT:
         *((unsigned int *)where) = MATCH_LIMIT;
+        break;
+
+    case PCRE_CONFIG_MATCH_LIMIT_RECURSION:
+        *((unsigned int *)where) = MATCH_LIMIT_RECURSION;
         break;
 
     case PCRE_CONFIG_STACKRECURSE:

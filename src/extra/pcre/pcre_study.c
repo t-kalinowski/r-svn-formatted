@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2005 University of Cambridge
+           Copyright (c) 1997-2006 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -87,13 +87,22 @@ static BOOL set_start_bits(const uschar *code, uschar *start_bits, BOOL caseless
 {
     register int c;
 
-    /* This next statement and the later reference to dummy are here in order to
-    trick the optimizer of the IBM C compiler for OS/2 into generating correct
-    code. Apparently IBM isn't going to fix the problem, and we would rather not
-    disable optimization (in this module it actually makes a big difference, and
-    the pcre module can use all the optimization it can get). */
+#if 0
+/* ========================================================================= */
+/* The following comment and code was inserted in January 1999. In May 2006,
+when it was observed to cause compiler warnings about unused values, I took it
+out again. If anybody is still using OS/2, they will have to put it back
+manually. */
 
-    volatile int dummy;
+/* This next statement and the later reference to dummy are here in order to
+trick the optimizer of the IBM C compiler for OS/2 into generating correct
+code. Apparently IBM isn't going to fix the problem, and we would rather not
+disable optimization (in this module it actually makes a big difference, and
+the pcre module can use all the optimization it can get). */
+
+volatile int dummy;
+/* ========================================================================= */
+#endif
 
     do
     {
@@ -154,7 +163,11 @@ static BOOL set_start_bits(const uschar *code, uschar *start_bits, BOOL caseless
                 case OP_BRAMINZERO:
                     if (!set_start_bits(++tcode, start_bits, caseless, utf8, cd))
                         return FALSE;
-                    dummy = 1;
+                    /* =========================================================================
+                          See the comment at the head of this function concerning the next line,
+                          which was an old fudge for the benefit of OS/2.
+                          dummy = 1;
+                      ========================================================================= */
                     do
                         tcode += GET(tcode, 1);
                     while (*tcode == OP_ALT);
@@ -216,15 +229,31 @@ static BOOL set_start_bits(const uschar *code, uschar *start_bits, BOOL caseless
                     try_next = FALSE;
                     break;
 
+                    /* The cbit_space table has vertical tab as whitespace; we have to
+                    discard it. */
+
                 case OP_NOT_WHITESPACE:
                     for (c = 0; c < 32; c++)
-                        start_bits[c] |= ~cd->cbits[c + cbit_space];
+                    {
+                        int d = cd->cbits[c + cbit_space];
+                        if (c == 1)
+                            d &= ~0x08;
+                        start_bits[c] |= ~d;
+                    }
                     try_next = FALSE;
                     break;
 
+                    /* The cbit_space table has vertical tab as whitespace; we have to
+                    discard it. */
+
                 case OP_WHITESPACE:
                     for (c = 0; c < 32; c++)
-                        start_bits[c] |= cd->cbits[c + cbit_space];
+                    {
+                        int d = cd->cbits[c + cbit_space];
+                        if (c == 1)
+                            d &= ~0x08;
+                        start_bits[c] |= d;
+                    }
                     try_next = FALSE;
                     break;
 
@@ -278,14 +307,30 @@ static BOOL set_start_bits(const uschar *code, uschar *start_bits, BOOL caseless
                             start_bits[c] |= cd->cbits[c + cbit_digit];
                         break;
 
+                        /* The cbit_space table has vertical tab as whitespace; we have to
+                        discard it. */
+
                     case OP_NOT_WHITESPACE:
                         for (c = 0; c < 32; c++)
-                            start_bits[c] |= ~cd->cbits[c + cbit_space];
+                        {
+                            int d = cd->cbits[c + cbit_space];
+                            if (c == 1)
+                                d &= ~0x08;
+                            start_bits[c] |= ~d;
+                        }
                         break;
+
+                        /* The cbit_space table has vertical tab as whitespace; we have to
+                        discard it. */
 
                     case OP_WHITESPACE:
                         for (c = 0; c < 32; c++)
-                            start_bits[c] |= cd->cbits[c + cbit_space];
+                        {
+                            int d = cd->cbits[c + cbit_space];
+                            if (c == 1)
+                                d &= ~0x08;
+                            start_bits[c] |= d;
+                        }
                         break;
 
                     case OP_NOT_WORDCHAR:
@@ -402,15 +447,15 @@ Returns:    pointer to a pcre_extra block, with study_data filled in and the
             NULL on error or if no optimization possible
 */
 
-PCRE_EXPORT pcre_extra *pcre_study(const pcre *external_re, int options, const char **errorptr)
+PCRE_DATA_SCOPE pcre_extra *pcre_study(const pcre *external_re, int options, const char **errorptr)
 {
     uschar start_bits[32];
     pcre_extra *extra;
     pcre_study_data *study;
     const uschar *tables;
-    const real_pcre *re = (const real_pcre *)external_re;
-    uschar *code = (uschar *)re + re->name_table_offset + (re->name_count * re->name_entry_size);
+    uschar *code;
     compile_data compile_block;
+    const real_pcre *re = (const real_pcre *)external_re;
 
     *errorptr = NULL;
 
@@ -425,6 +470,8 @@ PCRE_EXPORT pcre_extra *pcre_study(const pcre *external_re, int options, const c
         *errorptr = "unknown or incorrect option bit(s) set";
         return NULL;
     }
+
+    code = (uschar *)re + re->name_table_offset + (re->name_count * re->name_entry_size);
 
     /* For an anchored pattern, or an unanchored pattern that has a first char, or
     a multiline pattern that matches only at "line starts", no further processing

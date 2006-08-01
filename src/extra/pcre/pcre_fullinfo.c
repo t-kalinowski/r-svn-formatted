@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2005 University of Cambridge
+           Copyright (c) 1997-2006 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ Arguments:
 Returns:           0 if data returned, negative on error
 */
 
-PCRE_EXPORT int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra_data, int what, void *where)
+PCRE_DATA_SCOPE int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra_data, int what, void *where)
 {
     real_pcre internal_re;
     pcre_study_data internal_study;
