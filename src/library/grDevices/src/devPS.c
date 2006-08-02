@@ -1486,7 +1486,10 @@ static encodinglist addDeviceEncoding(encodinginfo encoding, encodinglist devEnc
  * R database is "default"
  * (i.e., the graphics engine font family encoding is unspecified)
  * If it is "default" then check that the loaded encoding is the
- * same as the encoding we want.
+ * same as the encoding we want.  A matching encoding is defined
+ * as one which leads to the same iconvname (see seticonvName()).
+ * This could perhaps be made more rigorous by actually looking inside
+ * the relevant encoding file for the encoding name.
  *
  * If the encoding we want is NULL, then we just don't care.
  *
@@ -1520,8 +1523,10 @@ static type1fontfamily findLoadedFont(char *name, char *encoding, Rboolean isPDF
             font = fontlist->family;
             if (encoding)
             {
+                char encconvname[50];
                 char *encname = getFontEncoding(name, fontdbname);
-                if (!strcmp(encname, "default") && strcmp(fontlist->family->encoding->name, encoding))
+                seticonvName(encoding, encconvname);
+                if (!strcmp(encname, "default") && strcmp(fontlist->family->encoding->convname, encconvname))
                 {
                     font = NULL;
                     found = 0;
@@ -6749,24 +6754,47 @@ static int PDFfontNumber(char *family, int face, PDFDesc *pd)
         else
         {
             /*
-             * Try to load the font
+             * Check whether the font is loaded and, if not,
+             * load it.
              */
-            fontfamily = addFont(family, 1, pd->encodings);
-            if (fontfamily)
+            fontfamily = findLoadedFont(family, pd->encodings->encoding->encpath, TRUE);
+            cidfontfamily = findLoadedCIDFont(family, TRUE);
+            if (!(fontfamily || cidfontfamily))
             {
-                if (addPDFDevicefont(fontfamily, pd, &fontIndex))
+                if (isType1Font(family, PDFFonts, NULL))
                 {
-                    num = (fontIndex - 1) * 5 + 1 + face;
+                    fontfamily = addFont(family, TRUE, pd->encodings);
+                }
+                else if (isCIDFont(family, PDFFonts, NULL))
+                {
+                    cidfontfamily = addCIDFont(family, TRUE);
                 }
                 else
                 {
-                    fontfamily = NULL;
+                    /*
+                     * Should NOT get here.
+                     */
+                    error(_("Invalid font type"));
                 }
             }
-            else
+            /*
+             * Once the font is loaded, add it to the device's
+             * list of fonts.
+             */
+            if (fontfamily || cidfontfamily)
             {
-                cidfontfamily = addCIDFont(family, 1);
-                if (cidfontfamily)
+                if (isType1Font(family, PDFFonts, NULL))
+                {
+                    if (addPDFDevicefont(fontfamily, pd, &fontIndex))
+                    {
+                        num = (fontIndex - 1) * 5 + 1 + face;
+                    }
+                    else
+                    {
+                        fontfamily = NULL;
+                    }
+                }
+                else /* (isCIDFont(family, PDFFonts)) */
                 {
                     if (addPDFDeviceCIDfont(cidfontfamily, pd, &cidfontIndex))
                     {
@@ -7054,16 +7082,22 @@ static FontMetricInfo *PDFmetricInfo(char *family, int face, PDFDesc *pd)
         else
         {
             /*
-             * Try to load the font
+             * Check whether the font is loaded and, if not,
+             * load it.
              */
-            fontfamily = addFont(family, 1, pd->encodings);
+            fontfamily = findLoadedFont(family, pd->encodings->encoding->encpath, TRUE);
+            if (!fontfamily)
+            {
+                fontfamily = addFont(family, TRUE, pd->encodings);
+            }
+            /*
+             * Once the font is loaded, add it to the device's
+             * list of fonts.
+             */
             if (fontfamily)
             {
-                if (addPDFDevicefont(fontfamily, pd, &dontcare))
-                {
-                    result = &(fontfamily->fonts[face - 1]->metrics);
-                }
-                else
+                int dontcare;
+                if (!addPDFDevicefont(fontfamily, pd, &dontcare))
                 {
                     fontfamily = NULL;
                 }
@@ -7094,16 +7128,22 @@ static char *PDFconvname(char *family, PDFDesc *pd)
         else
         {
             /*
-             * Try to load the font
+             * Check whether the font is loaded and, if not,
+             * load it.
              */
-            fontfamily = addFont(family, 1, pd->encodings);
+            fontfamily = findLoadedFont(family, pd->encodings->encoding->encpath, TRUE);
+            if (!fontfamily)
+            {
+                fontfamily = addFont(family, TRUE, pd->encodings);
+            }
+            /*
+             * Once the font is loaded, add it to the device's
+             * list of fonts.
+             */
             if (fontfamily)
             {
-                if (addPDFDevicefont(fontfamily, pd, &dontcare))
-                {
-                    result = fontfamily->encoding->convname;
-                }
-                else
+                int dontcare;
+                if (!addPDFDevicefont(fontfamily, pd, &dontcare))
                 {
                     fontfamily = NULL;
                 }
