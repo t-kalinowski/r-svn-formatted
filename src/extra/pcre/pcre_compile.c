@@ -4210,7 +4210,7 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
     ptr = (const uschar *)(pattern - 1);
     while ((c = *(++ptr)) != 0)
     {
-        int min, max;
+        int min = 0, max = 0 /* -Wall */;
         int class_optcount;
         int bracket_length;
         int duplength;

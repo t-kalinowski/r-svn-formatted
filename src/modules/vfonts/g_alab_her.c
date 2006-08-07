@@ -484,7 +484,7 @@ static double _label_width_hershey(R_GE_gcontext *gc, GEDevDesc *dd, const unsig
                character is composite */
             if (glyphnum == ACC0 || glyphnum == ACC1 || glyphnum == ACC2)
             {
-                unsigned char composite, character, accent;
+                unsigned char composite, character = '\0' /* -Wall */, accent;
 
                 /* if so, use 1st element of composite character */
                 composite = (unsigned char)c;
@@ -719,7 +719,7 @@ static void _draw_hershey_string(vfontContext *vc, R_GE_gcontext *gc, GEDevDesc 
             int char_glyphnum, accent_glyphnum; /* for composite chars */
             int char_width, accent_width;       /* for composite chars */
             const unsigned char *char_glyph, *accent_glyph;
-            unsigned char composite, character, accent;
+            unsigned char composite, character = '\0', accent = '\0' /* -Wall */;
             bool oblique, small_kana = false;
 
             /* compute index of font, in font table in g_fontdb.c */

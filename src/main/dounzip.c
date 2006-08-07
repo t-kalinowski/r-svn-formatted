@@ -557,7 +557,7 @@ static int unzlocal_getByte(FILE *fin, int *pi)
 static int unzlocal_getShort(FILE *fin, uLong *pX)
 {
     uLong x;
-    int i, err;
+    int i = 0 /* -Wall */, err;
 
     err = unzlocal_getByte(fin, &i);
     x = (uLong)i;
@@ -574,7 +574,7 @@ static int unzlocal_getShort(FILE *fin, uLong *pX)
 static int unzlocal_getLong(FILE *fin, uLong *pX)
 {
     uLong x;
-    int i, err;
+    int i = 0 /* -Wall */, err;
 
     err = unzlocal_getByte(fin, &i);
     x = (uLong)i;

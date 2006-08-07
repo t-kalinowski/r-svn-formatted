@@ -454,7 +454,7 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboo
     float step;
     double px[4];
     double py[4];
-    double ps[4];
+    double ps[4] = {0., 0., 0., 0.};
 
     max_points = 0;
     npoints = 0;

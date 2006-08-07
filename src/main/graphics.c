@@ -2864,7 +2864,7 @@ static void intersect(Edge b, double x1, double y1, double x2, double y2, double
 static void clipPoint(Edge b, double x, double y, double *xout, double *yout, int *cnt, int store, GClipRect *clip,
                       GClipState *cs)
 {
-    double ix, iy;
+    double ix = 0.0, iy = 0.0 /* -Wall */;
 
     if (!cs[b].first)
     {
@@ -2919,7 +2919,7 @@ static void clipPoint(Edge b, double x, double y, double *xout, double *yout, in
 
 static void closeClip(double *xout, double *yout, int *cnt, int store, GClipRect *clip, GClipState *cs)
 {
-    double ix, iy;
+    double ix = 0.0, iy = 0.0 /* -Wall */;
     Edge b;
 
     for (b = Left; b <= Top; b++)
