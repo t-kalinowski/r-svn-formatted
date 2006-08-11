@@ -38,7 +38,15 @@ static SEXP commentgets(SEXP, SEXP);
 
 static SEXP row_names_gets(SEXP vec, SEXP val)
 {
-    if (isInteger(val))
+    SEXP ans;
+    /* temporary fix */
+    if (TYPEOF(val) == REALSXP)
+    {
+        warning("row names should be 'integer', not 'double'");
+        val = coerceVector(val, INTSXP);
+        /* we can get away without protection here */
+    }
+    else if (isInteger(val))
     {
         Rboolean OK_compact = TRUE;
         int i, n = LENGTH(val);
@@ -59,7 +67,6 @@ static SEXP row_names_gets(SEXP vec, SEXP val)
             OK_compact = FALSE;
         if (OK_compact)
         {
-            SEXP ans;
             /* we hide the length in an impossible integer vector */
             PROTECT(val = allocVector(INTSXP, 2));
             INTEGER(val)[0] = NA_INTEGER;
@@ -70,8 +77,11 @@ static SEXP row_names_gets(SEXP vec, SEXP val)
         }
     }
     else if (!isString(val))
-        error("row names must be character or integer");
-    return installAttrib(vec, R_RowNamesSymbol, val);
+        error("row names must be 'character' or 'integer'");
+    PROTECT(val);
+    ans = installAttrib(vec, R_RowNamesSymbol, val);
+    UNPROTECT(1);
+    return ans;
 }
 
 static SEXP stripAttrib(SEXP tag, SEXP lst)
