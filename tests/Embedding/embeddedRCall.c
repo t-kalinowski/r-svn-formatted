@@ -20,7 +20,7 @@ int eval_R_command(const char *funcName, int argc, char *argv[])
     */
     R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
-    end_R();
+    Rf_KillAllDevices();
     UNPROTECT(2);
     return (0);
 }
@@ -42,5 +42,5 @@ void init_R(int argc, char **argv)
 
 void end_R()
 {
-    end_Rmainloop();
+    Rf_KillAllDevices();
 }

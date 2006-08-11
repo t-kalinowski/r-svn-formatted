@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     Rf_initEmbeddedR(argc, argv);
     doSplinesExample();
-    end_Rmainloop();
+    Rf_KillAllDevices();
     return (0);
 }
 
