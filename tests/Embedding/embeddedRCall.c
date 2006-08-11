@@ -1,5 +1,8 @@
 #include "embeddedRCall.h"
 
+extern int Rf_initEmbeddedR(int argc, char *argv[]);
+extern void Rf_endEmbeddedR(int fatal);
+
 int eval_R_command(const char *funcName, int argc, char *argv[])
 {
     SEXP e;
@@ -20,12 +23,10 @@ int eval_R_command(const char *funcName, int argc, char *argv[])
     */
     R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
-    Rf_KillAllDevices();
+    Rf_endEmbeddedR(0);
     UNPROTECT(2);
     return (0);
 }
-
-extern int Rf_initEmbeddedR(int argc, char *argv[]);
 
 void init_R(int argc, char **argv)
 {
@@ -42,5 +43,5 @@ void init_R(int argc, char **argv)
 
 void end_R()
 {
-    Rf_KillAllDevices();
+    Rf_endEmbeddedR(0);
 }
