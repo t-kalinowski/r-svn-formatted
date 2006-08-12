@@ -744,11 +744,20 @@ void attribute_hidden Rstd_Busy(int which)
    If ask = SA_SUICIDE, no save, no .Last, possibly other things.
  */
 
+void R_CleanTempDir(void)
+{
+    char buf[1024];
+
+    if ((R_TempDir))
+    {
+        snprintf(buf, 1024, "rm -rf %s", R_TempDir);
+        buf[1023] = '\0';
+        R_system(buf);
+    }
+}
+
 void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
-    unsigned char buf[1024];
-    char *tmpdir;
-
     if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
         saveact = SaveAction;
 
@@ -756,7 +765,9 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
     {
         if (R_Interactive)
         {
+            unsigned char buf[1024];
         qask:
+
             R_ClearerrConsole();
             R_FlushConsole();
             R_ReadConsole("Save workspace image? [y/n/c]: ", buf, 128, 0);
@@ -811,11 +822,7 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
     CleanEd();
     if (saveact != SA_SUICIDE)
         KillAllDevices();
-    if ((tmpdir = R_TempDir))
-    {
-        snprintf((char *)buf, 1024, "rm -rf %s", tmpdir);
-        R_system((char *)buf);
-    }
+    R_CleanTempDir();
     if (saveact != SA_SUICIDE && R_CollectWarnings)
         PrintWarnings(); /* from device close and .Last */
     fpu_setup(FALSE);

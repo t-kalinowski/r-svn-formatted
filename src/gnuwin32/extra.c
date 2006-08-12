@@ -924,7 +924,7 @@ int Rwin_rename(char *from, char *to)
     return res;
 }
 
-void CleanTempDir()
+void R_CleanTempDir()
 {
     if (R_TempDir)
         R_unlink(R_TempDir, 1);

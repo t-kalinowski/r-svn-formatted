@@ -50,7 +50,7 @@
 #define GN_(String) String
 #endif
 
-void CleanTempDir();   /* from extra.c */
+void R_CleanTempDir(); /* from extra.c */
 void editorcleanall(); /* from editor.c */
 
 int Rwin_graphicsx = -25, Rwin_graphicsy = 0;
@@ -446,7 +446,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     R_RunExitFinalizers();
     editorcleanall();
     CleanEd();
-    CleanTempDir();
+    R_CleanTempDir();
     KillAllDevices();
     AllDevicesKilled = TRUE;
     if (R_Interactive && CharacterMode == RTerm)
