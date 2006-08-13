@@ -43,6 +43,7 @@ static char rhomebuf[MAX_PATH];
     }                                                                                                                  \
     *p = '\0'
 
+/* get R_HOME from the module path: used in Rgui and Rterm */
 char *getRHOME()
 {
     DWORD nc;
@@ -72,17 +73,25 @@ char *getDLLVersion()
     return (DLLversion);
 }
 
+/* get R_HOME from environment or registry: used in embedded apps */
 char *get_R_HOME()
 {
     LONG rc;
     HKEY hkey;
     DWORD keytype = REG_SZ, cbData = sizeof(rhomebuf);
 
+    /* First try the C environment space */
     if (getenv("R_HOME"))
     {
         strncpy(rhomebuf, getenv("R_HOME"), MAX_PATH);
         return (rhomebuf);
     }
+
+    /* Then the Windows API environment space */
+    if (GetEnvironmentVariable("R_HOME", rhomebuf, sizeof(rhomebuf)) > 0)
+        return (rhomebuf);
+
+    /* And then the registry */
     rc = RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\R-core\\R", 0, KEY_READ, &hkey);
     if (rc == ERROR_SUCCESS)
     {
