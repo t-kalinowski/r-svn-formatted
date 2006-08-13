@@ -55,6 +55,7 @@ void rcmdusage(char *RCMD)
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
 }
 
+#define CMD_LEN 10000
 int rcmdfn(int cmdarg, int argc, char **argv)
 {
     /* tasks:
@@ -67,7 +68,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
        launch %R_HOME%\bin\$*
      */
     int i, iused, res, status = 0;
-    char *RHome, PERL5LIB[MAX_PATH], TEXINPUTS[MAX_PATH], PATH[10000], RHOME[MAX_PATH], *p, cmd[10000], Rversion[25],
+    char *RHome, PERL5LIB[MAX_PATH], TEXINPUTS[MAX_PATH], PATH[10000], RHOME[MAX_PATH], *p, cmd[CMD_LEN], Rversion[25],
         HOME[MAX_PATH + 10], RSHARE[MAX_PATH];
     char RCMD[] = "R CMD";
     int len = strlen(argv[0]);
@@ -94,7 +95,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             return (0);
         }
         /* R --help */
-        sprintf(cmd, "%s/bin/Rterm.exe --help", getRHOME());
+        snprintf(cmd, CMD_LEN, "%s/bin/Rterm.exe --help", getRHOME());
         system(cmd);
         fprintf(stderr, "%s", "\n\nOr: R CMD command args\n\n");
         rcmdusage(RCMD);
@@ -112,7 +113,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         HANDLE hIN = INVALID_HANDLE_VALUE, hOUT = INVALID_HANDLE_VALUE;
 
         /* process the command line */
-        sprintf(cmd, "%s/bin/Rterm.exe --restore --save", getRHOME());
+        snprintf(cmd, CMD_LEN, "%s/bin/Rterm.exe --restore --save", getRHOME());
         if ((p = getenv("R_BATCH_OPTIONS")) && strlen(p))
         {
             strcat(cmd, " ");
@@ -244,7 +245,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         strcat(RSHARE, "/share");
         putenv(RSHARE);
 
-        sprintf(Rversion, "R_VERSION=%s.%s", R_MAJOR, R_MINOR);
+        snprintf(Rversion, 25, "R_VERSION=%s.%s", R_MAJOR, R_MINOR);
         putenv(Rversion);
 
         putenv("R_CMD=R CMD");
@@ -316,7 +317,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             }
         }
         else
-            sprintf(cmd, "%s/bin/Rterm.exe", getRHOME());
+            snprintf(cmd, CMD_LEN, "%s/bin/Rterm.exe", getRHOME());
 
         for (i = cmdarg + 1; i < argc; i++)
         {
