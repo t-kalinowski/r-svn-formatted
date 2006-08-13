@@ -1,6 +1,7 @@
 /*******************************************************************************
  *  RProxy: Connector implementation between application and R language
  *  Copyright (C) 1999--2005 Thomas Baier
+ *  Copyright 2006 R Development Core Team
  *
  *  R_Proxy_init based on rtest.c,  Copyright (C) 1998--2000
  *                                  R Development Core Team
@@ -36,10 +37,10 @@
 #include "SC_proxy.h"
 #include "rproxy.h"
 #include "rproxy_impl.h"
-/* <FIXME> These are private header files */
+/* <FIXME> The next two are private header files */
 #include <IOStuff.h>
 #include <Parse.h>
-#include <Graphics.h>
+#include <R_ext/GraphicsDevice.h>
 
 struct _R_Proxy_init_parameters
 {
@@ -65,30 +66,30 @@ int R_Proxy_printf(char const *pFormat, ...)
 
     va_list lArgs;
     va_start(lArgs, pFormat);
-    vsprintf(__tracebuf, pFormat, lArgs);
+    vsnprintf(__tracebuf, 2048, pFormat, lArgs);
     OutputDebugString(__tracebuf);
     return 0;
 }
 
 static int s_EvalInProgress = 0;
 
-void R_Proxy_askok(char *pMsg)
+static void R_Proxy_askok(char *pMsg)
 {
     GA_askok(pMsg);
     return;
 }
 
-int R_Proxy_askyesnocancel(char *pMsg)
+static int R_Proxy_askyesnocancel(char *pMsg)
 {
     return 1;
 }
 
-int R_Proxy_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
+static int R_Proxy_ReadConsole(char *prompt, char *buf, int len, int addtohistory)
 {
     return 0;
 }
 
-void R_Proxy_WriteConsole(char *buf, int len)
+static void R_Proxy_WriteConsole(char *buf, int len)
 {
     if (__output_device)
     {
@@ -96,17 +97,16 @@ void R_Proxy_WriteConsole(char *buf, int len)
     }
 }
 
-void R_Proxy_CallBack()
+static void R_Proxy_CallBack()
 {
     /* called during i/o, eval, graphics in ProcessEvents */
 }
 
-void R_Proxy_Busy(int which)
+static void R_Proxy_Busy(int which)
 {
     /* set a busy cursor ... in which = 1, unset if which = 0 */
 }
 
-/* 00-02-18 | baier | parse parameter string and fill parameter structure */
 int R_Proxy_parse_parameters(char const *pParameterString, struct _R_Proxy_init_parameters *pParameterStruct)
 {
     /*
@@ -117,73 +117,6 @@ int R_Proxy_parse_parameters(char const *pParameterString, struct _R_Proxy_init_
      *   NSIZE ... number of cons cells, (unsigned int) parameter
      *   VSIZE ... size of vector heap, (unsigned int) parameter
      */
-    int lDone = 0;
-#if 0
-  char const* lParameterStart = pParameterString;
-  int lIndexOfSemicolon = 0;
-  char* lTmpBuffer = NULL;
-  char* lPosOfSemicolon = NULL;
-#endif
-
-    while (!lDone)
-    {
-#if 0
-      /* NSIZE? */
-      if (strncmp (lParameterStart,"NSIZE=",6) == 0)
-	{
-	  lParameterStart += 6;
-
-	  lPosOfSemicolon = strchr (lParameterStart,';');
-	  lIndexOfSemicolon = lPosOfSemicolon - lParameterStart;
-
-	  if (lPosOfSemicolon)
-	    {
-	      lTmpBuffer = malloc (lIndexOfSemicolon + 1); /* to catch NSIZE=; */
-	      strncpy (lTmpBuffer,lParameterStart,lIndexOfSemicolon);
-	      *(lTmpBuffer + lIndexOfSemicolon) = 0x0;
-	      pParameterStruct->nsize_valid = 1;
-	      pParameterStruct->nsize = atoi (lTmpBuffer);
-	      free (lTmpBuffer);
-	      lParameterStart += lIndexOfSemicolon + 1;
-	    }
-	  else
-	    {
-	      pParameterStruct->nsize_valid = 1;
-	      pParameterStruct->nsize = atoi (lParameterStart);
-	      lDone = 1;
-	    }
-	}
-      else if (strncmp (lParameterStart,"VSIZE=",6) == 0)
-	{
-	  lParameterStart += 6;
-
-	  lPosOfSemicolon = strchr (lParameterStart,';');
-	  lIndexOfSemicolon = lPosOfSemicolon - lParameterStart;
-
-	  if (lPosOfSemicolon)
-	    {
-	      lTmpBuffer = malloc (lIndexOfSemicolon + 1); /* to catch VSIZE=; */
-	      strncpy (lTmpBuffer,lParameterStart,lIndexOfSemicolon);
-	      *(lTmpBuffer + lIndexOfSemicolon) = 0x0;
-	      pParameterStruct->vsize_valid = 1;
-	      pParameterStruct->vsize = atoi (lTmpBuffer);
-	      free (lTmpBuffer);
-	      lParameterStart += lIndexOfSemicolon + 1;
-	    }
-	  else
-	    {
-	      pParameterStruct->vsize_valid = 1;
-	      pParameterStruct->vsize = atoi (lParameterStart);
-	      lDone = 1;
-	    }
-	}
-      else
-#endif
-        {
-            lDone = 1;
-        }
-    }
-
     return 0;
 }
 
@@ -196,8 +129,8 @@ int R_Proxy_init(char const *pParameterString)
     char Rversion[25];
     static char RHome[MAX_PATH];
 
-    sprintf(Rversion, "%s.%s", R_MAJOR, R_MINOR);
-    if (strcmp(getDLLVersion(), Rversion) != 0)
+    snprintf(Rversion, 25, "%s.%s", R_MAJOR, R_MINOR);
+    if (strncmp(getDLLVersion(), Rversion, 25) != 0)
     {
         fprintf(stderr, "Error: R.DLL version does not match\n");
         return SC_PROXY_ERR_UNKNOWN;
@@ -224,41 +157,11 @@ int R_Proxy_init(char const *pParameterString)
     /* now we add %R_HOME%\bin to %PATH% (for dynamically loaded modules there) */
     {
         char buf[2048];
-        sprintf(buf, "PATH=%s\\bin;%s", RHome, getenv("PATH"));
+        snprintf(buf, 2048, "PATH=%s\\bin;%s", RHome, getenv("PATH"));
         putenv(buf);
     }
 
     Rp->rhome = RHome;
-
-#if 0
-  /* This a copy using a private entry point of a function
-     documented in R-exts. */
-  /*
-   * try R_USER then HOME then Windows homes then working directory
-   */
-
-  if ((p = getenv("R_USER"))) {
-    if(strlen(p) >= MAX_PATH) R_Suicide("Invalid R_USER");
-    strcpy(RUser, p);
-  } else if ((p = getenv("HOME"))) {
-    if(strlen(p) >= MAX_PATH) R_Suicide("Invalid HOME");
-    strcpy(RUser, p);
-  } else if (ShellGetPersonalDirectory(RUser)) {
-    /* nothing to do */;
-  } else if ((p = getenv("HOMEDRIVE")) && (q = getenv("HOMEPATH"))) {
-    if(strlen(p) >= MAX_PATH) R_Suicide("Invalid HOMEDRIVE");
-    strcpy(RUser, p);
-    if(strlen(RUser) + strlen(q) >= MAX_PATH)
-      R_Suicide("Invalid HOMEDRIVE+HOMEPATH");
-    strcat(RUser, q);
-  } else {
-    GetCurrentDirectory(MAX_PATH, RUser);
-  }
-  
-  p = RUser + (strlen(RUser) - 1);
-
-  if (*p == '/' || *p == '\\') *p = '\0';
-#endif
 
     Rp->home = getRUser();
     Rp->CharacterMode = LinkDLL;
@@ -266,48 +169,14 @@ int R_Proxy_init(char const *pParameterString)
     Rp->WriteConsole = R_Proxy_WriteConsole;
     Rp->CallBack = R_Proxy_CallBack;
     Rp->ShowMessage = R_Proxy_askok;
-
     Rp->YesNoCancel = R_Proxy_askyesnocancel;
     Rp->Busy = R_Proxy_Busy;
     Rp->R_Quiet = 1;
-#if 1
-    /* run as "interactive", so server won't be killed after an error */
-    Rp->R_Slave = Rp->R_Verbose = 0;
-    Rp->R_Interactive = 1;
-#else
-    Rp->R_Slave = Rp->R_Interactive = Rp->R_Verbose = 0;
-#endif
     Rp->RestoreAction = 0; /* no restore */
     Rp->SaveAction = 2;    /* no save */
 
-    /*  Rp->nsize = 300000;
-        Rp->vsize = 6e6;*/
-    R_SetParams(Rp); /* so R_ShowMessage is set */
-    R_SizeFromEnv(Rp);
-    R_set_command_line_arguments(0, NULL);
-
-    /* parse parameters */
-#if 0
-  {
-    struct _R_Proxy_init_parameters lParameterStruct =
-    {
-      0,0,0,0
-    };
-
-    R_Proxy_parse_parameters (pParameterString,&lParameterStruct);
-
-    if (lParameterStruct.nsize_valid)
-      {
-	Rp->nsize = lParameterStruct.nsize;
-      }
-    if (lParameterStruct.vsize_valid)
-      {
-	Rp->vsize = lParameterStruct.vsize;
-      }
-  }
-#endif
-
     R_SetParams(Rp);
+    R_set_command_line_arguments(0, NULL);
 
     setup_term_ui();
     setup_Rmainloop();

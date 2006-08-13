@@ -41,7 +41,7 @@ int bdx_trace_printf(char const *pFormat, ...)
 
     va_list lArgs;
     va_start(lArgs, pFormat);
-    vsprintf(__tracebuf, pFormat, lArgs);
+    vsnprintf(__tracebuf, 2048, pFormat, lArgs);
     OutputDebugString(__tracebuf);
     return 0;
 }
