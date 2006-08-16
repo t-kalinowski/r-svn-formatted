@@ -217,6 +217,8 @@ void printVector(SEXP x, int indx, int quote)
         Rprintf("logical(0)\n");                                                                                       \
         break;                                                                                                         \
     case INTSXP:                                                                                                       \
+        Rprintf("integer(0)\n");                                                                                       \
+        break;                                                                                                         \
     case REALSXP:                                                                                                      \
         Rprintf("numeric(0)\n");                                                                                       \
         break;                                                                                                         \
