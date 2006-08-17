@@ -90,6 +90,9 @@ void PrintDefaults(SEXP rho)
     R_print.scipen = asInteger(GetOption(install("scipen"), rho));
     if (R_print.scipen == NA_INTEGER)
         R_print.scipen = 0;
+    R_print.max = asInteger(GetOption(install("max.print"), rho));
+    if (R_print.max == NA_INTEGER)
+        R_print.max = 99999;
     R_print.gap = 1;
     R_print.width = GetOptionWidth(rho);
 }
@@ -115,6 +118,7 @@ SEXP attribute_hidden do_visibleflag(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 #endif
 
+/* This is *only* called via outdated R_level prmatrix() : */
 SEXP attribute_hidden do_prmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int quote;
