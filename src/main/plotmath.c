@@ -1316,7 +1316,8 @@ static BBOX RenderSpace(SEXP expr, int draw, mathContext *mc, R_GE_gcontext *gc,
 static SymTab BinTable[] = {{"*", 052}, /* Binary Operators */
                             {"+", 053},        {"-", 055},    {"/", 057},    {":", 072},
                             {"%+-%", 0261},    {"%*%", 0264}, {"%/%", 0270}, {"%intersection%", 0307},
-                            {"%union%", 0310}, {NULL, 0}};
+                            {"%union%", 0310}, {"%.%", 0327}, /* cdot or dotmath */
+                            {NULL, 0}};
 
 static int BinAtom(SEXP expr)
 {
