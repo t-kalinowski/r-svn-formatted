@@ -595,10 +595,9 @@ void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SE
         return;
     }
     r1 = r;
-    if (R_print.max < r * c)
-    {
+    /* Need to avoid integer overflow here */
+    if (c > 0 && R_print.max / c < r)
         r = R_print.max / c;
-    }
     switch (TYPEOF(x))
     {
     case LGLSXP:
