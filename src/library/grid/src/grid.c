@@ -2267,12 +2267,10 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, double theta, Rboolean draw)
          */
         rr1 = transformWidthtoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
         rr2 = transformHeighttoINCHES(r, i % nr, vpc, &gc, vpWidthCM, vpHeightCM, dd);
-        rr = fmin2(rr1, rr2);
         /*
-         * A negative radius is invalid
+         * A negative radius is silently converted to absolute value
          */
-        if (rr < 0)
-            error(_("Invalid circle radius (must be non-negative)"));
+        rr = fmin2(fabs(rr1), fabs(rr2));
         if (R_FINITE(xx) && R_FINITE(yy) && R_FINITE(rr))
         {
             if (draw)
