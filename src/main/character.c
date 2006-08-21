@@ -792,7 +792,7 @@ SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (!isString(CAR(args)))
-        errorcall_return(call, _("the first argument must be a string"));
+        errorcall_return(call, _("the first argument must be a character vector"));
     len = length(CAR(args));
 
     PROTECT(ans = allocVector(STRSXP, len));
@@ -1399,7 +1399,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
 
-    /* allow 'text' to be zero-length from 2.4.0 */
+    /* allow 'text' to be zero-length from 2.3.1 */
     if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
     if (STRING_ELT(pat, 0) == NA_STRING)
@@ -2753,8 +2753,8 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
     checkArity(op, args);
-    PROTECT(x = coerceVector(CAR(args), STRSXP));
-    if (!isString(x))
+    /* conversion happens at R level now */
+    if (!isString(x = CAR(args)))
         errorcall(call, _("strtrim() requires a character vector"));
     len = LENGTH(x);
     PROTECT(width = coerceVector(CADR(args), INTSXP));
@@ -2812,7 +2812,6 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (len > 0)
         DeallocBuffer(&cbuff);
-    copyMostAttrib(CAR(args), s);
-    UNPROTECT(3);
+    UNPROTECT(2);
     return s;
 }

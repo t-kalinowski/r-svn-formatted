@@ -168,18 +168,26 @@ SEXP attribute_hidden do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ind);
     if (value_opt)
     {
+        SEXP nmold = getAttrib(vec, R_NamesSymbol), nm;
         ans = allocVector(STRSXP, nmatches);
-        j = 0;
-        for (i = 0; i < n; i++)
-            if (INTEGER(ind)[i])
+        for (i = 0, j = 0; i < n; i++)
+            if (LOGICAL(ind)[i])
                 SET_STRING_ELT(ans, j++, STRING_ELT(vec, i));
+        /* copy across names and subset */
+        if (!isNull(nmold))
+        {
+            nm = allocVector(STRSXP, nmatches);
+            for (i = 0, j = 0; i < n; i++)
+                if (LOGICAL(ind)[i])
+                    SET_STRING_ELT(nm, j++, STRING_ELT(nmold, i));
+            setAttrib(ans, R_NamesSymbol, nm);
+        }
     }
     else
     {
         ans = allocVector(INTSXP, nmatches);
-        j = 0;
-        for (i = 0; i < n; i++)
-            if (INTEGER(ind)[i])
+        for (i = 0, j = 0; i < n; i++)
+            if (LOGICAL(ind)[i])
                 INTEGER(ans)[j++] = i + 1;
     }
     UNPROTECT(1);
