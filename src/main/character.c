@@ -179,6 +179,8 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 #if defined(SUPPORT_MBCS)
     DeallocBuffer(&cbuff);
 #endif
+    if ((d = getAttrib(x, R_NamesSymbol)) != R_NilValue)
+        setAttrib(s, R_NamesSymbol, d);
     if ((d = getAttrib(x, R_DimSymbol)) != R_NilValue)
         setAttrib(s, R_DimSymbol, d);
     if ((d = getAttrib(x, R_DimNamesSymbol)) != R_NilValue)
