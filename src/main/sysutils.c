@@ -321,7 +321,7 @@ static void iconv_Init(void)
     snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", getenv("R_HOME"), FILESEP, FILESEP, "iconv", SHLIB_EXT);
     if (!initialized)
     {
-        int res = moduleCdynload("iconv", 1, 1);
+        int res = R_moduleCdynload("iconv", 1, 1);
         initialized = res ? 1 : -1;
         if (initialized > 0)
         {

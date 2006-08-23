@@ -62,7 +62,7 @@ void R_GE_setVFontRoutines(R_GE_VStrWidthRoutine vwidth, R_GE_VStrHeightRoutine 
 
 static void vfonts_Init(void)
 {
-    int res = moduleCdynload("vfonts", 1, 1);
+    int res = R_moduleCdynload("vfonts", 1, 1);
     initialized = -1;
     if (!res)
         return;
