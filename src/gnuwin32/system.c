@@ -269,19 +269,19 @@ static void *cd = NULL;
 static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
 {
     int ll, err = 0;
-    char inbuf[1001];
+
     if (!R_Slave)
     {
         fputs(prompt, stdout);
         fflush(stdout);
     }
-    if (fgets(inbuf, len, stdin) == NULL)
+    if (fgets(buf, len, stdin) == NULL)
         return 0;
     /* translate if necessary */
     if (strlen(R_StdinEnc) && strcmp(R_StdinEnc, "native.enc"))
     {
-        size_t res, inb = strlen(inbuf), onb = len;
-        char *ib = inbuf, *ob = buf;
+        size_t res, inb = strlen(buf), onb = len;
+        char *ib = buf, *ob = buf;
         if (!cd)
         {
             cd = Riconv_open("", R_StdinEnc);
@@ -293,10 +293,8 @@ static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
         err = res == (size_t)(-1);
         /* errors lead to part of the input line being ignored */
         if (err)
-            fputs(_("<ERROR: invalid input in encoding> "), stdout);
+            fputs(_("<ERROR: invalid input in encoding>\n"), stdout);
     }
-    else
-        strncpy(buf, inbuf, strlen(inbuf) + 1);
 
     /* according to system.txt, should be terminated in \n, so check this
        at eof or error */
