@@ -883,7 +883,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (need_prefix)
         {
-            tmp = Calloc(l + 1 + 1, char);
+            tmp = Calloc(l + 2, char);
             strcpy(tmp, "X");
             strcat(tmp, CHAR(STRING_ELT(arg, i)));
         }

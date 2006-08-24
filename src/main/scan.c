@@ -52,7 +52,7 @@
 /* The number of distinct strings to track */
 #define MAX_STRINGS 10000
 
-static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE];
+static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE + 1];
 static unsigned char *ConsoleBufp;
 static int ConsoleBufCnt;
 static char ConsolePrompt[CONSOLE_PROMPT_SIZE];
@@ -153,6 +153,7 @@ static int ConsoleGetchar()
 {
     if (--ConsoleBufCnt < 0)
     {
+        ConsoleBuf[CONSOLE_BUFFER_SIZE] = '\0';
         if (R_ReadConsole(ConsolePrompt, ConsoleBuf, CONSOLE_BUFFER_SIZE, 0) == 0)
         {
             R_ClearerrConsole();

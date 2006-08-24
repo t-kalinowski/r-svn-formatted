@@ -594,7 +594,7 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
         {
 #if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             size_t res, inb = strlen((char *)buf), onb = len;
-            char obuf[1001];
+            char obuf[CONSOLE_BUFFER_SIZE + 1];
             char *ib = (char *)buf, *ob = obuf;
             if (!cd)
             {
