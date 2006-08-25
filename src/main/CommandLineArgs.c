@@ -190,7 +190,6 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 {
                     strncpy(R_StdinEnc, p, 30);
                     R_StdinEnc[30] = '\0';
-                    break;
                 }
             }
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
