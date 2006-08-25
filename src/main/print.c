@@ -163,7 +163,7 @@ SEXP attribute_hidden do_prmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 } /* do_prmatrix */
 
 /* .Internal(print.default(x, digits, quote, na.print, print.gap,
-                           right, useS4)) */
+                           right, max, useS4)) */
 SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, naprint;
@@ -212,6 +212,14 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("invalid '%s' argument"), "right");
     args = CDR(args);
 
+    if (!isNull(CAR(args)))
+    {
+        R_print.max = asInteger(CAR(args));
+        if (R_print.max == NA_INTEGER)
+            errorcall(call, _("invalid '%s' argument"), "max");
+    }
+    args = CDR(args);
+
     tryS4 = asLogical(CAR(args));
     if (tryS4 == NA_LOGICAL)
         errorcall(call, _("invalid 'tryS4' internal argument"));
@@ -231,7 +239,7 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
         CustomPrintValue(x, rho);
     }
 
-    PrintDefaults(rho); /* reset, as na.print.etc may have been set */
+    PrintDefaults(rho); /* reset, as na.print etc may have been set */
     return x;
 } /* do_printdefault */
 
