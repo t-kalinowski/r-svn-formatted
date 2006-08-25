@@ -20,9 +20,9 @@
 
 /* <UTF8> char here is handled as a whole string */
 
-/* The `` x:y ''  primitive calls do_seq(); do_seq() calls cross() if
-   both arguments are factors and seq() otherwise.
-   */
+/* The x:y  primitive calls do_colon(); do_colon() calls cross_colon() if
+   both arguments are factors and seq_colon() otherwise.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -31,11 +31,13 @@
 #include <Defn.h>
 #include <Rmath.h>
 
-static SEXP cross(SEXP s, SEXP t)
+static SEXP cross_colon(SEXP call, SEXP s, SEXP t)
 {
     SEXP a, la, ls, lt, rs, rt;
     int i, j, k, n, nls, nlt, vs, vt;
 
+    if (length(s) != length(t))
+        errorcall(call, _("unequal factor lengths"));
     n = length(s);
     ls = getAttrib(s, R_LevelsSymbol);
     lt = getAttrib(t, R_LevelsSymbol);
@@ -79,7 +81,7 @@ static SEXP cross(SEXP s, SEXP t)
     return (a);
 }
 
-static SEXP seq(SEXP call, SEXP s1, SEXP s2)
+static SEXP seq_colon(SEXP call, SEXP s1, SEXP s2)
 {
     int i, n, in1;
     double n1, n2, r;
@@ -129,16 +131,14 @@ static SEXP seq(SEXP call, SEXP s1, SEXP s2)
     return ans;
 }
 
-SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_colon(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (inherits(CAR(args), "factor") && inherits(CADR(args), "factor"))
     {
-        if (length(CAR(args)) != length(CADR(args)))
-            errorcall(call, _("unequal factor lengths"));
-        return (cross(CAR(args), CADR(args)));
+        return (cross_colon(call, CAR(args), CADR(args)));
     }
-    return seq(call, CAR(args), CADR(args));
+    return seq_colon(call, CAR(args), CADR(args));
 }
 
 /* It is assumed that type-checking has been done in rep */
@@ -237,7 +237,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     return a;
 }
 
-static SEXP rep(SEXP s, SEXP ncopy)
+static SEXP rep1(SEXP s, SEXP ncopy)
 {
     int i, ns, na, nc;
     SEXP a, t;
@@ -326,8 +326,8 @@ static SEXP rep(SEXP s, SEXP ncopy)
     return a;
 }
 
-SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
-    return rep(CAR(args), CADR(args));
+    return rep1(CAR(args), CADR(args));
 }
