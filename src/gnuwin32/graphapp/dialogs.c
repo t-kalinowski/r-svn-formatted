@@ -242,6 +242,7 @@ char *askfilenames(char *title, char *default_name, int multi, char *filters, in
     int i;
     OPENFILENAME ofn;
     char cwd[MAX_PATH] = "";
+
     if (!default_name)
         default_name = "";
     strcpy(strbuf, default_name);
@@ -315,7 +316,7 @@ char *askfilesavewithdir(char *title, char *default_name, char *dir)
 {
     int i;
     OPENFILENAME ofn;
-    char cwd[MAX_PATH];
+    char *p, cwd[MAX_PATH];
 
     if (!default_name)
         default_name = "";
@@ -333,7 +334,13 @@ char *askfilesavewithdir(char *title, char *default_name, char *dir)
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = _MAX_FNAME + _MAX_EXT;
     if (dir && strlen(dir) > 0)
-        ofn.lpstrInitialDir = dir;
+    {
+        strcpy(cwd, dir);
+        for (p = cwd; *p; p++)
+            if (*p == '/')
+                *p = '\\';
+        ofn.lpstrInitialDir = cwd;
+    }
     else
     {
         if (GetCurrentDirectory(MAX_PATH, cwd))
@@ -345,7 +352,7 @@ char *askfilesavewithdir(char *title, char *default_name, char *dir)
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR | OFN_HIDEREADONLY;
     ofn.nFileOffset = 0;
     ofn.nFileExtension = 0;
-    ofn.lpstrDefExt = "*";
+    ofn.lpstrDefExt = NULL /* "*" */;
     ofn.lCustData = 0L;
     ofn.lpfnHook = NULL;
     ofn.lpTemplateName = NULL;
