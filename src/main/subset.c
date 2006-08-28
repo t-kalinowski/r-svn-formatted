@@ -813,6 +813,10 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
             ans = eval(ans, R_GlobalEnv);
             UNPROTECT(1);
         }
+        else
+        {
+            SET_NAMED(ans, 2);
+        }
 
         UNPROTECT(1);
         if (ans == R_UnboundValue)
