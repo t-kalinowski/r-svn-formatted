@@ -30,7 +30,7 @@
 
 #include "Defn.h"
 
-static SEXP evalListKeepMissing(SEXP el, SEXP rho);
+SEXP evalListKeepMissing(SEXP el, SEXP rho);
 
 #ifdef BYTECODE
 static SEXP bcEval(SEXP, SEXP);
@@ -1489,7 +1489,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho)
 /* form below because it is does not cause growth of the pointer */
 /* protection stack, and because it is a little more efficient. */
 
-static SEXP evalListKeepMissing(SEXP el, SEXP rho)
+SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
 {
     SEXP ans, h, tail;
 
