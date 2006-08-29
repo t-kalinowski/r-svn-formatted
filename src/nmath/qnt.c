@@ -39,8 +39,11 @@ double qnt(double p, double df, double delta, int lower_tail, int log_p)
      * df = floor(df + 0.5);
      * if (df < 1 || delta < 0) ML_ERR_return_NAN;
      */
-    if (df < 0 || delta < 0)
+    if (df <= 0.0)
         ML_ERR_return_NAN;
+
+    if (delta == 0.0)
+        return qt(p, df, lower_tail, log_p);
 
     R_Q_P01_boundaries(p, ML_NEGINF, ML_POSINF);
 
@@ -53,10 +56,10 @@ double qnt(double p, double df, double delta, int lower_tail, int log_p)
     if (p > 1 - DBL_EPSILON)
         return ML_POSINF;
     pp = fmin2(1 - DBL_EPSILON, p * (1 + Eps));
-    for (ux = delta; ux < DBL_MAX && pnt(ux, df, delta, TRUE, FALSE) < pp; ux *= 2)
+    for (ux = fmax2(1., delta); ux < DBL_MAX && pnt(ux, df, delta, TRUE, FALSE) < pp; ux *= 2)
         ;
     pp = p * (1 - Eps);
-    for (lx = fmin2(-1, -delta); lx > -DBL_MAX && pnt(lx, df, delta, TRUE, FALSE) > pp; lx *= 2)
+    for (lx = fmin2(-1., -delta); lx > -DBL_MAX && pnt(lx, df, delta, TRUE, FALSE) > pp; lx *= 2)
         ;
 
     /* 2. interval (lx,ux)  halving : */

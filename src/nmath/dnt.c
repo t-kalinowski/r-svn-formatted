@@ -68,8 +68,11 @@ double dnt(double x, double df, double ncp, int give_log)
 #endif
 
     /* If non-positive df then error */
-    if (df <= 0)
+    if (df <= 0.0)
         ML_ERR_return_NAN;
+
+    if (ncp == 0.0)
+        return dt(x, df, give_log);
 
     /* If x is infinite then return 0 */
     if (!R_FINITE(x))
