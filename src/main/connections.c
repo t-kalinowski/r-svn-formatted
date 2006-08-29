@@ -3536,7 +3536,7 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         len = INTEGER(nchars)[i];
         if (len == NA_INTEGER || len < 0)
-            error(_("supplied length is invalid"));
+            error(_("invalid value for '%s'"), "nchar");
         onechar = readFixedString(con, len);
         if (onechar != R_NilValue)
         {
@@ -3573,6 +3573,8 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     object = CAR(args);
+    if (TYPEOF(object) != STRSXP)
+        error(_("invalid value for '%s'"), "object");
     i = asInteger(CADR(args));
     if (i == NA_INTEGER || !(con = Connections[i]))
         error(_("invalid connection"));
@@ -3597,6 +3599,8 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(nchars);
     if (n == 0)
         return R_NilValue;
+    if (LENGTH(object) < n)
+        error(_("'object' is too short"));
 
     len = 0;
     for (i = 0; i < n; i++)
@@ -3607,6 +3611,8 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
         if (tlen > len)
             len = tlen;
         tlen = INTEGER(nchars)[i];
+        if (tlen == NA_INTEGER || tlen < 0)
+            error(_("invalid value for '%s'"), "nchar");
         if (tlen > len)
             len = tlen;
     }
@@ -3617,56 +3623,53 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->open(con))
             error(_("cannot open the connection"));
 
-    if (TYPEOF(object) == STRSXP)
+    for (i = 0; i < n; i++)
     {
-        for (i = 0; i < n; i++)
+        len = INTEGER(nchars)[i];
+        s = CHAR(STRING_ELT(object, i));
+        lenb = lenc = strlen(s);
+#ifdef SUPPORT_MBCS
+        if (mbcslocale)
+            lenc = mbstowcs(NULL, s, 0);
+#endif
+        /* As from 1.8.1, zero-pad if too many chars are requested. */
+        if (len > lenc)
         {
-            len = INTEGER(nchars)[i];
-            s = CHAR(STRING_ELT(object, i));
-            lenb = lenc = strlen(s);
+            warning(_("writeChar: more characters requested than are in the string - will zero-pad"));
+            lenb += (len - lenc);
+        }
+        if (len < lenc)
+        {
 #ifdef SUPPORT_MBCS
             if (mbcslocale)
-                lenc = mbstowcs(NULL, s, 0);
-#endif
-            /* As from 1.8.1, zero-pad if too many chars are requested. */
-            if (len > lenc)
             {
-                warning(_("writeChar: more characters requested than are in the string - will zero-pad"));
-                lenb += (len - lenc);
-            }
-            if (len < lenc)
-            {
-#ifdef SUPPORT_MBCS
-                if (mbcslocale)
+                /* find out how many bytes we need to write */
+                int i, used;
+                char *p = s;
+                mbs_init(&mb_st);
+                for (i = 0, lenb = 0; i < len; i++)
                 {
-                    /* find out how many bytes we need to write */
-                    int i, used;
-                    char *p = s;
-                    mbs_init(&mb_st);
-                    for (i = 0, lenb = 0; i < len; i++)
-                    {
-                        used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st);
-                        p += used;
-                        lenb += used;
-                    }
+                    used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st);
+                    p += used;
+                    lenb += used;
                 }
-                else
+            }
+            else
 #endif
-                    lenb = len;
-            }
-            memset(buf, '\0', lenb + slen);
-            strncpy(buf, s, lenb);
-            if (usesep)
-            {
-                strcat(buf, ssep);
-                lenb += slen;
-            }
-            nwrite = con->write(buf, sizeof(char), lenb, con);
-            if (!nwrite)
-            {
-                warning(_("problem writing to connection"));
-                break;
-            }
+                lenb = len;
+        }
+        memset(buf, '\0', lenb + slen);
+        strncpy(buf, s, lenb);
+        if (usesep)
+        {
+            strcat(buf, ssep);
+            lenb += slen;
+        }
+        nwrite = con->write(buf, sizeof(char), lenb, con);
+        if (!nwrite)
+        {
+            warning(_("problem writing to connection"));
+            break;
         }
     }
     vmaxset(vmax);

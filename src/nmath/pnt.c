@@ -142,7 +142,8 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
             q *= lambda / (2 * it + 1);
             tnc += p * xodd + q * xeven;
             s -= p;
-            if (s <= 0.)
+            /* R 2.4.0 added test for rounding error here. */
+            if (s < -1.e-10)
             { /* happens e.g. for (t,df,delta)=(40,10,38.5), after 799 it.*/
                 ML_ERROR(ME_PRECISION, "pnt");
 #ifdef DEBUG_pnt
@@ -150,6 +151,8 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
 #endif
                 goto finis;
             }
+            if (s <= 0)
+                goto finis;
             errbd = 2. * s * (xodd - godd);
 #ifdef DEBUG_pnt
             REprintf("%3d %#9.4g %#9.4g	 %#9.4g %#9.4g %#9.4g %#14.10g %#9.4g\n", it, 1e5 * godd, 1e5 * geven, p, q, s,
