@@ -239,7 +239,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist, SEXP fdef)
 SEXP R_quick_dispatch(SEXP args, SEXP mtable, SEXP fdef)
 {
     /* Match the list of (evaluated) args to the methods table. */
-    SEXP object, methods, value, retValue = R_NilValue;
+    SEXP object, value, retValue = R_NilValue;
     char *class;
     int nprotect = 0;
 #define NBUF 200
@@ -812,7 +812,6 @@ static SEXP do_inherited_table(SEXP class_objs, SEXP fdef, SEXP mtable, SEXP ev)
 {
     static SEXP dotFind = NULL, f;
     SEXP e, ee;
-    int error_flag;
     if (dotFind == NULL)
     {
         dotFind = install(".InheritForDispatch");
@@ -853,10 +852,11 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
 {
     static SEXP R_mtable = NULL, R_allmtable, R_sigargs, R_siglength;
     int nprotect = 0;
-    SEXP mtable, classes, thisClass, sigargs, siglength, f_env, label, method, f, val;
+    SEXP mtable, classes, thisClass, sigargs, siglength, f_env = R_NilValue, label, method, f, val = R_NilValue;
     char *buf, *bufptr;
     int nargs, i, lwidth = 0;
     Rboolean prim_case = FALSE;
+
     if (!R_mtable)
     {
         R_mtable = install(".MTable");
