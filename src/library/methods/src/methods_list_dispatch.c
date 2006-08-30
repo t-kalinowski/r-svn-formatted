@@ -838,8 +838,9 @@ static SEXP do_mtable(SEXP fdef, SEXP ev)
     {
         dotFind = install(".getMethodsTable");
         f = findFun(dotFind, R_MethodsNamespace);
+        R_PreserveObject(f);
     }
-    PROTECT(e = allocVector(LANGSXP, 4));
+    PROTECT(e = allocVector(LANGSXP, 2));
     SETCAR(e, f);
     ee = CDR(e);
     SETCAR(ee, fdef);
