@@ -436,9 +436,7 @@ SEXP eval(SEXP e, SEXP rho)
             tmp = PRIMFUN(op)(e, op, CDR(e), rho);
             UNPROTECT(1);
             if (save != R_PPStackTop)
-            {
-                Rprintf("stack imbalance in %s, %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
-            }
+                error("stack imbalance in '%s', %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
         }
         else if (TYPEOF(op) == BUILTINSXP)
         {
@@ -461,9 +459,7 @@ SEXP eval(SEXP e, SEXP rho)
             UNPROTECT(1);
 
             if (save != R_PPStackTop)
-            {
-                Rprintf("stack imbalance in %s, %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
-            }
+                error("stack imbalance in '%s', %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
         }
         else if (TYPEOF(op) == CLOSXP)
         {
