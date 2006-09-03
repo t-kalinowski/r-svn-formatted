@@ -1074,7 +1074,7 @@ SEXP attribute_hidden do_internal(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("no internal function \"%s\""), CHAR(PRINTNAME(fun)));
     args = CDR(s);
     if (TYPEOF(INTERNAL(fun)) == BUILTINSXP)
-        args = evalList(args, env);
+        args = evalList(args, env, op);
     PROTECT(args);
     flag = PRIMPRINT(INTERNAL(fun));
     R_Visible = 1 - flag;

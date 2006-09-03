@@ -25,12 +25,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <Defn.h>
 
 #define ARGUSED(x) LEVELS(x)
-
-#include "Defn.h"
-
-SEXP evalListKeepMissing(SEXP el, SEXP rho);
 
 #ifdef BYTECODE
 static SEXP bcEval(SEXP, SEXP);
@@ -444,7 +441,7 @@ SEXP eval(SEXP e, SEXP rho)
         {
             int save = R_PPStackTop;
             RCNTXT cntxt;
-            PROTECT(tmp = evalList(CDR(e), rho));
+            PROTECT(tmp = evalList(CDR(e), rho, op));
             R_Visible = 1 - PRIMPRINT(op);
             /* We used to insert a context only if profiling,
                but helps for tracebacks on .C etc. */
@@ -1438,10 +1435,22 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* because it is does not cause growth of the pointer protection stack, */
 /* and because it is a little more efficient. */
 
-/* called in names.c and objects.c */
-SEXP attribute_hidden evalList(SEXP el, SEXP rho)
+static void PrintArgs(SEXP args, SEXP op)
 {
-    SEXP ans, h, tail;
+    if (op == R_NilValue)
+        REprintf("the part of the args list of a builtin being evaluated was:\n");
+    else
+        REprintf("the part of the args list of '%s' being evaluated was:\n", PRIMNAME(op));
+    REprintf("   %s\n", CHAR(STRING_ELT(deparse1line(args, 0), 0)) + 4);
+}
+
+/* called in names.c and objects.c */
+
+/* Prior to 2.4.0 this dropped missing elements */
+SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP op)
+{
+    SEXP ans, h, tail, orig = el;
+    int n = 1;
 
     PROTECT(ans = tail = CONS(R_NilValue, R_NilValue));
 
@@ -1478,7 +1487,18 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho)
             tail = CDR(tail);
             SET_TAG(tail, CreateTag(TAG(el)));
         }
+        else if (CDR(el) == R_NilValue)
+        {
+            REprintf("Warning: a final missing element has been omitted\n");
+            PrintArgs(orig, op);
+        }
+        else
+        { /* It was a missing element */
+            PrintArgs(orig, op);
+            error(_("element %d is missing"), n);
+        }
         el = CDR(el);
+        n++;
     }
     UNPROTECT(1);
     return CDR(ans);
@@ -1776,10 +1796,10 @@ SEXP attribute_hidden do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-static SEXP EvalArgs(SEXP el, SEXP rho, int dropmissing)
+static SEXP evalArgs(SEXP el, SEXP rho, SEXP op, int dropmissing)
 {
     if (dropmissing)
-        return evalList(el, rho);
+        return evalList(el, rho, op);
     else
         return evalListKeepMissing(el, rho);
 }
@@ -1883,10 +1903,10 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args
                    multiple evaluation after the call to possible_dispatch.
                 */
                 if (dots)
-                    argValue = EvalArgs(argValue, rho, dropmissing);
+                    argValue = evalArgs(argValue, rho, op, dropmissing);
                 else
                 {
-                    argValue = CONS(x, EvalArgs(CDR(argValue), rho, dropmissing));
+                    argValue = CONS(x, evalArgs(CDR(argValue), rho, op, dropmissing));
                     SET_TAG(argValue, CreateTag(TAG(args)));
                 }
                 PROTECT(args = argValue);
@@ -1922,10 +1942,10 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args
             /* The first call argument was ... and may contain more than the
                object, so it needs to be evaluated here.  The object should be
                in a promise, so evaluating it again should be no problem. */
-            *ans = EvalArgs(args, rho, dropmissing);
+            *ans = evalArgs(args, rho, op, dropmissing);
         else
         {
-            PROTECT(*ans = CONS(x, EvalArgs(CDR(args), rho, dropmissing)));
+            PROTECT(*ans = CONS(x, evalArgs(CDR(args), rho, op, dropmissing)));
             SET_TAG(*ans, CreateTag(TAG(args)));
             UNPROTECT(1);
         }
@@ -1965,7 +1985,7 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args
         }
     }
     /* else PROTECT(args); */
-    PROTECT(*ans = CONS(x, EvalArgs(CDR(args), rho, dropmissing)));
+    PROTECT(*ans = CONS(x, evalArgs(CDR(args), rho, op, dropmissing)));
     SET_TAG(*ans, CreateTag(TAG(args)));
     UNPROTECT(1);
 #endif
