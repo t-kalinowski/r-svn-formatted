@@ -1250,6 +1250,7 @@ static SEXP data_part(SEXP obj)
     val = CDR(e);
     SETCAR(val, obj);
     val = eval(e, R_MethodsNamespace);
+    UNSET_S4_OBJECT(val); /* data part must be base vector */
     UNPROTECT(1);
     return (val);
 }
@@ -1266,6 +1267,7 @@ static SEXP set_data_part(SEXP obj, SEXP rhs)
     val = CDR(val);
     SETCAR(val, rhs);
     val = eval(e, R_MethodsNamespace);
+    SET_S4_OBJECT(val);
     UNPROTECT(1);
     return (val);
 }
@@ -1420,7 +1422,7 @@ SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
     if (isString(nlist))
         nlist = install(CHAR(STRING_ELT(nlist, 0)));
     PROTECT(object = eval(CAR(args), env));
-    if (can_test_S4Object && !R_seemsS4Object(object))
+    if (can_test_S4Object && !IS_S4_OBJECT(object))
     {
         class = getAttrib(object, R_ClassSymbol);
         if (length(class) == 0)

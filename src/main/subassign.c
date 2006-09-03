@@ -75,6 +75,7 @@
 #endif
 
 #include "Defn.h"
+#include <R_ext/RS.h> /* for test of S4 objects */
 
 #if 0
 static SEXP gcall;
@@ -1435,6 +1436,7 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP subs, x, y;
     int nsubs, oldtype;
+    Rboolean S4;
 
     PROTECT(args);
 
@@ -1448,6 +1450,7 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         x = SETCAR(args, duplicate(CAR(args)));
 
     SubAssignArgs(args, &x, &subs, &y);
+    S4 = IS_S4_OBJECT(x);
     nsubs = length(subs);
 
     oldtype = 0;
@@ -1523,6 +1526,8 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     UNPROTECT(2);
     SET_NAMED(x, 0);
+    if (S4)
+        SET_S4_OBJECT(x);
     return x;
 }
 
@@ -1575,10 +1580,12 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
 {
     SEXP dims, indx, names, newname, subs, x, xtop, xup, y;
     int i, ndims, nsubs, offset, off = -1 /* -Wall */, stretch, which;
+    Rboolean S4;
 
     PROTECT(args);
 
     SubAssignArgs(args, &x, &subs, &y);
+    S4 = IS_S4_OBJECT(x);
 
     /* Handle NULL left-hand sides.  If the right-hand side */
     /* is NULL, just return the left-hand size otherwise, */
@@ -1895,6 +1902,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
 
     UNPROTECT(1);
     SET_NAMED(xtop, 0);
+    if (S4)
+        SET_S4_OBJECT(xtop);
     return xtop;
 }
 
@@ -1943,9 +1952,11 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
     SEXP t;
     PROTECT_INDEX pvalidx, pxidx;
     Rboolean maybe_duplicate = FALSE;
+    Rboolean S4;
 
     PROTECT_WITH_INDEX(x, &pxidx);
     PROTECT_WITH_INDEX(val, &pvalidx);
+    S4 = IS_S4_OBJECT(x);
 
     if (NAMED(x) == 2)
         REPROTECT(x = duplicate(x), pxidx);
@@ -2106,5 +2117,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
     }
     UNPROTECT(2);
     SET_NAMED(x, 0);
+    if (S4)
+        SET_S4_OBJECT(x);
     return x;
 }
