@@ -67,8 +67,8 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 {
 
     double dev, fac, minFac, tolerance, newDev, convNew;
-    int i, j, maxIter, hasConverged, nPars, doTrace;
-    SEXP tmp, conv, incr, deviance, setPars, getPars, pars, newPars, newIncr, trace;
+    int i, j, maxIter, hasConverged, nPars, doTrace, evaltotCnt, warnOnly, printEval;
+    SEXP tmp, conv, incr, deviance, setPars, getPars, pars, newPars, trace;
 
     doTrace = asLogical(doTraceArg);
 
@@ -93,6 +93,16 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     if (conv == NULL || !isNumeric(conv))
         error(_("'%s' absent"), "control$minFactor");
     minFac = asReal(conv);
+
+    conv = getListElement(control, tmp, "warnOnly");
+    if (conv == NULL || !isLogical(conv))
+        error(_("'%s' absent"), "control$warnOnly");
+    warnOnly = conv;
+
+    conv = getListElement(control, tmp, "printEval");
+    if (conv == NULL || !isLogical(conv))
+        error(_("'%s' absent"), "control$printEval");
+    printEval = conv;
 
     UNPROTECT(1);
 
@@ -139,8 +149,12 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     hasConverged = FALSE;
 
     PROTECT(newPars = allocVector(REALSXP, nPars));
+    if (printEval)
+        evaltotCnt = 1;
     for (i = 0; i < maxIter; i++)
     {
+        SEXP newIncr;
+        int evalCnt;
         if ((convNew = asReal(eval(conv, R_GlobalEnv))) < tolerance)
         {
             hasConverged = TRUE;
@@ -148,8 +162,17 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
         }
         PROTECT(newIncr = eval(incr, R_GlobalEnv));
 
+        if (printEval)
+            evalCnt = 1;
+
         while (fac >= minFac)
         {
+            if (printEval)
+            {
+                Rprintf("\nIteration: %d   Evaluation: %d   Total eval.: %d \n", i + 1, evalCnt, evaltotCnt);
+                evalCnt++;
+                evaltotCnt++;
+            }
             for (j = 0; j < nPars; j++)
                 REAL(newPars)[j] = REAL(pars)[j] + fac * REAL(newIncr)[j];
 
@@ -157,7 +180,13 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
             if (asLogical(eval(tmp, R_GlobalEnv)))
             { /* singular gradient */
                 UNPROTECT(11);
-                error(_("singular gradient"));
+                if (warnOnly)
+                {
+                    warning(_("singular gradient"));
+                    return m;
+                }
+                else
+                    error(_("singular gradient"));
             }
             UNPROTECT(1);
 
@@ -172,25 +201,32 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
                 pars = tmp;
                 break;
             }
-            fac = fac * 0.5;
+            fac /= 2.;
         }
         UNPROTECT(1);
         if (fac < minFac)
         {
             UNPROTECT(9);
-            error(_("step factor %g reduced below 'minFactor' of %g"), fac, minFac);
+            if (warnOnly)
+            {
+                warning(_("step factor %g reduced below 'minFactor' of %g"), fac, minFac);
+                return m;
+            }
+            else
+                error(_("step factor %g reduced below 'minFactor' of %g"), fac, minFac);
         }
         if (doTrace)
             eval(trace, R_GlobalEnv);
     }
 
+    UNPROTECT(9);
     if (!hasConverged)
     {
-        UNPROTECT(9);
-        error(_("number of iterations exceeded maximum of %d"), maxIter);
+        if (warnOnly)
+            warning(_("number of iterations exceeded maximum of %d"), maxIter);
+        else
+            error(_("number of iterations exceeded maximum of %d"), maxIter);
     }
-
-    UNPROTECT(9);
     return m;
 }
 
