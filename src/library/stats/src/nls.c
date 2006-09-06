@@ -5,7 +5,8 @@
  *  Copyright 1999-2001 Douglas M. Bates <bates@stat.wisc.edu>,
  *                      Saikat DebRoy <saikat@stat.wisc.edu>
  *
- *  Copyright 2005 The R Development Core Team
+ *  Copyright 2005--2006  The R Development Core Team
+ *  Copyright 2006	  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,7 +68,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 {
 
     double dev, fac, minFac, tolerance, newDev, convNew;
-    int i, j, maxIter, hasConverged, nPars, doTrace, evaltotCnt, warnOnly, printEval;
+    int i, j, maxIter, hasConverged, nPars, doTrace, evaltotCnt = -1, warnOnly, printEval;
     SEXP tmp, conv, incr, deviance, setPars, getPars, pars, newPars, trace;
 
     doTrace = asLogical(doTraceArg);
@@ -97,12 +98,12 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     conv = getListElement(control, tmp, "warnOnly");
     if (conv == NULL || !isLogical(conv))
         error(_("'%s' absent"), "control$warnOnly");
-    warnOnly = conv;
+    warnOnly = asLogical(conv);
 
     conv = getListElement(control, tmp, "printEval");
     if (conv == NULL || !isLogical(conv))
         error(_("'%s' absent"), "control$printEval");
-    printEval = conv;
+    printEval = asLogical(conv);
 
     UNPROTECT(1);
 
@@ -154,7 +155,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
     for (i = 0; i < maxIter; i++)
     {
         SEXP newIncr;
-        int evalCnt;
+        int evalCnt = -1;
         if ((convNew = asReal(eval(conv, R_GlobalEnv))) < tolerance)
         {
             hasConverged = TRUE;
@@ -169,7 +170,7 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
         {
             if (printEval)
             {
-                Rprintf("\nIteration: %d   Evaluation: %d   Total eval.: %d \n", i + 1, evalCnt, evaltotCnt);
+                Rprintf("Iteration: %d   Evaluation: %d   Total eval.: %d \n", i + 1, evalCnt, evaltotCnt);
                 evalCnt++;
                 evaltotCnt++;
             }
