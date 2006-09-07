@@ -706,10 +706,6 @@ static SEGP *contourLines(double *x, int nx, double *y, int ny, double *z, doubl
     return segmentDB;
 }
 
-/* maximal number of line segments of one contour segment:
- * for preventing infinite loops -- shouldn't be needed --> warning */
-#define MAX_ns 25000
-
 #define CONTOUR_LIST_STEP 100
 #define CONTOUR_LIST_LEVEL 0
 #define CONTOUR_LIST_X 1
@@ -785,13 +781,13 @@ static int addContourLines(double *x, int nx, double *y, int ny, double *z, doub
                 /* ns := #{segments of polyline} -- need to allocate */
                 s = start;
                 ns = 0;
-                /* MAX_ns: prevent inf.loop (shouldn't be needed) */
-                while (s && ns < MAX_ns)
+                /* max_contour_segments: prevent inf.loop (shouldn't be needed) */
+                while (s && ns < max_contour_segments)
                 {
                     ns++;
                     s = s->next;
                 }
-                if (ns == MAX_ns)
+                if (ns == max_contour_segments)
                     warning(_("contour(): circular/long seglist -- bug.report()!"));
 
                 /* countour midpoint : use for labelling sometime (not yet!) */
@@ -813,7 +809,7 @@ static int addContourLines(double *x, int nx, double *y, int ny, double *z, doub
                 REAL(xsxp)[0] = s->x0;
                 REAL(ysxp)[0] = s->y0;
                 ns = 1;
-                while (s->next && ns < MAX_ns)
+                while (s->next && ns < max_contour_segments)
                 {
                     s = s->next;
                     REAL(xsxp)[ns] = s->x0;
@@ -887,7 +883,7 @@ SEXP GEcontourLines(double *x, int nx, double *y, int ny, double *z, double *lev
     /* change to 1e-3, reconsidered because of PR#897
      * but 1e-7, and even  2*DBL_EPSILON do not prevent inf.loop in contour().
      * maybe something like   16 * DBL_EPSILON * (..).
-     * see also MAX_ns above */
+     * see also max_contour_segments above */
     atom = 1e-3 * (zmax - zmin);
     /*
      * Create a "container" which is a list with only 1 element.
@@ -1086,13 +1082,13 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 /* ns := #{segments of polyline} -- need to allocate */
                 s = start;
                 ns = 0;
-                /* MAX_ns: prevent inf.loop (shouldn't be needed) */
-                while (s && ns < MAX_ns)
+                /* max_contour_segments: prevent inf.loop (shouldn't be needed) */
+                while (s && ns < max_contour_segments)
                 {
                     ns++;
                     s = s->next;
                 }
-                if (ns == MAX_ns)
+                if (ns == max_contour_segments)
                     warning(_("contour(): circular/long seglist -- bug.report()!"));
 
                 /* countour midpoint : use for labelling sometime (not yet!) */
@@ -1109,7 +1105,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 ns = 0;
                 xxx[ns] = s->x0;
                 yyy[ns++] = s->y0;
-                while (s->next && ns < MAX_ns)
+                while (s->next && ns < max_contour_segments)
                 {
                     s = s->next;
                     xxx[ns] = s->x0;
@@ -1584,7 +1580,7 @@ SEXP attribute_hidden do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     /* change to 1e-3, reconsidered because of PR#897
      * but 1e-7, and even  2*DBL_EPSILON do not prevent inf.loop in contour().
      * maybe something like   16 * DBL_EPSILON * (..).
-     * see also MAX_ns above */
+     * see also max_contour_segments above */
     atom = 1e-3 * (zmax - zmin);
 
     /* Initialize the segment data base */
