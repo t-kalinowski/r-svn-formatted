@@ -449,7 +449,7 @@ static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE];
 
 static void sigactionSegv(int signum, siginfo_t *ip, void *context)
 {
-    char *s, buf[PATH_MAX + 20];
+    char *s;
 
     /* First check for stack overflow if we know the stack position.
        We assume anything within 16Mb beyond the stack end is a stack overflow.
@@ -590,8 +590,7 @@ static void sigactionSegv(int signum, siginfo_t *ip, void *context)
         }
     }
     REprintf("aborting ...\n");
-    snprintf(buf, PATH_MAX + 20, "rm -rf %s", R_TempDir);
-    R_system(buf);
+    R_CleanTempDir();
     /* now do normal behaviour, e.g. core dump */
     signal(signum, SIG_DFL);
     raise(signum);

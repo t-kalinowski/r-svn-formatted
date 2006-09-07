@@ -583,6 +583,8 @@ void attribute_hidden InitTempDir()
     int hasspace = 0;
 #endif
 
+    if (R_TempDir)
+        return; /* someone else set it */
     tmp = NULL; /* getenv("R_SESSION_TMPDIR");   no longer set in R.sh */
     if (!tmp)
     {
@@ -642,6 +644,7 @@ void attribute_hidden InitTempDir()
     {
         R_TempDir = p;
         strcpy(R_TempDir, tmp);
+        Sys_TempDir = R_TempDir;
     }
 }
 
