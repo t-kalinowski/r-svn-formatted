@@ -258,6 +258,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
     {
         PROTECT(dims);
         PROTECT(t = allocArray(STRSXP, dims));
+        /* FIXME: check (ns <= R_print.max +1) ? ns : R_print.max; */
         for (i = 0; i < ns; i++)
         {
             switch (TYPEOF(PROTECT(tmp = VECTOR_ELT(s, i))))
@@ -365,7 +366,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
         UNPROTECT(2);
     }
     else
-    {
+    { /* .. no dim() .. */
         names = getAttrib(s, R_NamesSymbol);
         taglen = strlen(tagbuf);
         ptag = tagbuf + taglen;
@@ -375,7 +376,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
 
         if (ns > 0)
         {
-            for (i = 0; i < ns; i++)
+            int n_pr = (ns <= R_print.max + 1) ? ns : R_print.max;
+            /* '...max +1'  ==> will omit at least 2 ==> plural in msg below */
+            for (i = 0; i < n_pr; i++)
             {
                 if (i > 0)
                     Rprintf("\n");
@@ -416,9 +419,11 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 *ptag = '\0';
             }
             Rprintf("\n");
+            if (n_pr < ns)
+                Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]]\n", ns - n_pr);
         }
         else
-        {
+        { /* ns = length(s) == 0 */
             /* Formal classes are represented as empty lists */
             char *className = NULL;
             SEXP class;
