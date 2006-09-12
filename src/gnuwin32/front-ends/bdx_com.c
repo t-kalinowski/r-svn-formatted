@@ -1,6 +1,6 @@
 /*******************************************************************************
  *  BDX: Binary Data eXchange format library
- *  Copyright (C) 1999-2006 Thomas Baier
+ *  Copyright (C) 1999-2005 Thomas Baier
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -27,7 +27,7 @@
 
 #include "bdx.h"
 #include "bdx_util.h"
-/* #include "com_util.h" */
+#include "com_util.h"
 #include <windows.h>
 #include <stdio.h>
 #include <assert.h>
@@ -118,8 +118,9 @@ int WINAPI BDX2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 
     if (pBDXData->version != BDX_VERSION)
     {
-        BDX_ERR(printf("BDX2Variant: got invalid BDX version. Expected %d, got %d\n", BDX_VERSION, pBDXData->version));
         return -1;
+        /*    _LOG(printf("BDX2Variant: got invalid BDX version. Expected %d, got %d\n",BDX_VERSION,
+          pBDXData->version));*/
     }
 
     switch (pBDXData->type & BDX_CMASK)
@@ -186,10 +187,6 @@ static int BDXScalar2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
         {
             BDX_ERR(printf("unmarshalling stream ptr %p failed with hr=%08x\n", lStream, lRc));
             return -1;
-        }
-        else
-        {
-            BDX_ERR(printf("successfully marshalled COM interface\n"));
         }
 
         /* create SEXP for COM object */
@@ -365,8 +362,6 @@ static int BDXDoubleArray2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
     return 0;
 }
 
-/* 06-05-16 | baier | fix: use ...raw_data[i].special_value instead of
- *                    ...raw_data[i].double_value */
 static int BDXSpecialArray2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
 {
     unsigned int lMaxIndex;
@@ -399,7 +394,7 @@ static int BDXSpecialArray2Variant(BDX_Data *pBDXData, VARIANT *pVariantData)
     /* copy the data */
     for (i = 0; i < lMaxIndex; i++)
     {
-        lErrorArray[i] = getSCODEFromSpecialValue(pBDXData->data.raw_data[i].special_value);
+        lErrorArray[i] = getSCODEFromSpecialValue(pBDXData->data.raw_data[i].double_value);
     }
 
     SafeArrayUnlock(pVariantData->parray);
@@ -1186,7 +1181,6 @@ static int VariantStringArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsig
 }
 
 /* 05-11-29 | baier | handle VT_EMPTY, too */
-/* 06-07-03 | baier | bug fix: homogenous array never was transferred, fixed */
 static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsigned int pTotalElements)
 {
     SAFEARRAY *lArray;
@@ -1246,7 +1240,7 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
         switch (V_VT(&lVariantArray[i]))
         {
         case VT_BOOL:
-            if ((lCoerceTo == VT_UNKNOWN) || (lCoerceTo == VT_BOOL))
+            if (lCoerceTo == VT_UNKNOWN)
             {
                 lCoerceTo = VT_BOOL;
             }
@@ -1258,7 +1252,7 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
         case VT_I2:  /* 2-byte signed integer (iVal) */
         case VT_UI1: /* unsigned one-byte integer (bVal) */
         case VT_I4:
-            if ((lCoerceTo == VT_UNKNOWN) || (lCoerceTo == VT_I4))
+            if (lCoerceTo == VT_UNKNOWN)
             {
                 lCoerceTo = VT_I4;
             }
@@ -1269,7 +1263,7 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
             break;
         case VT_R4:
         case VT_R8:
-            if ((lCoerceTo == VT_UNKNOWN) || (lCoerceTo == VT_I4) || (lCoerceTo == VT_R8))
+            if ((lCoerceTo == VT_UNKNOWN) || (lCoerceTo == VT_I4))
             {
                 lCoerceTo = VT_R8;
             }
@@ -1279,7 +1273,7 @@ static int VariantVariantArray2BDX(VARIANT VariantData, BDX_Data *pBDXData, unsi
             }
             break;
         case VT_BSTR:
-            if ((lCoerceTo == VT_UNKNOWN) || (lCoerceTo == VT_BSTR))
+            if (lCoerceTo == VT_UNKNOWN)
             {
                 lCoerceTo = VT_BSTR;
             }
