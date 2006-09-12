@@ -787,7 +787,7 @@ static void cancel(button b)
 
 static void finish(button b)
 {
-    strncpy(selected, gettext(f_list), 100);
+    strncpy(selected, GA_gettext(f_list), 100);
     done = 1;
 }
 
@@ -1349,9 +1349,9 @@ SEXP getWindowTitle()
     {
     case RGui:
         if (RguiMDI & RW_MDI)
-            SET_STRING_ELT(result, 0, mkChar(gettext(RFrame)));
+            SET_STRING_ELT(result, 0, mkChar(GA_gettext(RFrame)));
         else
-            SET_STRING_ELT(result, 0, mkChar(gettext(RConsole)));
+            SET_STRING_ELT(result, 0, mkChar(GA_gettext(RConsole)));
         break;
     case RTerm:
         GetConsoleTitle(buf, 512);

@@ -847,7 +847,7 @@ static void closerect(void)
     {
         if (CellEditable)
         {
-            strncpy(buf, gettext(celledit), BUFSIZE - 1);
+            strncpy(buf, GA_gettext(celledit), BUFSIZE - 1);
             clength = strlen(buf);
             hide(celledit);
             del(celledit);
@@ -1487,7 +1487,7 @@ static void popupclose(control c)
     char buf[BUFSIZE], clab[25];
     int i;
     buf[BUFSIZE - 1] = '\0';
-    strncpy(buf, gettext(varname), BUFSIZE - 1);
+    strncpy(buf, GA_gettext(varname), BUFSIZE - 1);
     if (!strlen(buf))
     {
         askok(G_("column names cannot be blank"));
@@ -1631,7 +1631,7 @@ static void vw_close(control c)
     if (ischecked(varwidths))
         x = 0;
     else
-        x = atoi(gettext(varname)); /* 0 if error */
+        x = atoi(GA_gettext(varname)); /* 0 if error */
     x = min(x, 50);
     if (x != nboxchars)
     {
