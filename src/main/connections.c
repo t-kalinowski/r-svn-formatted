@@ -2152,14 +2152,12 @@ static void outtext_init(Rconnection con, SEXP stext, char *mode, int idx)
 
     if (stext == R_NilValue)
     {
-        printf("using NULL\n");
         this->namesymbol = NULL;
         /* create variable pointed to by con->description */
         val = allocVector(STRSXP, 0);
     }
     else
     {
-        printf("using %s\n", con->description);
         this->namesymbol = install(con->description);
         if (strcmp(mode, "w") == 0)
         {
