@@ -233,8 +233,10 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
 
     case PARSE_NULL:
 
-        if (browselevel)
-            return (-1);
+        /* The intention here is to break on CR but not on other
+           null statements: see PR#9063 */
+        if (browselevel && !strcmp((char *)state->buf, "\n"))
+            return -1;
         R_IoBufferWriteReset(&R_ConsoleIob);
         state->prompt_type = 1;
         return (1);
@@ -1004,22 +1006,23 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
     int rval = 0;
     if (isSymbol(CExpr))
     {
-        if (!strcmp(CHAR(PRINTNAME(CExpr)), "n"))
+        char *expr = CHAR(PRINTNAME(CExpr));
+        if (!strcmp(expr, "n"))
         {
             SET_DEBUG(rho, 1);
             rval = 1;
         }
-        if (!strcmp(CHAR(PRINTNAME(CExpr)), "c"))
+        if (!strcmp(expr, "c"))
         {
             rval = 1;
             SET_DEBUG(rho, 0);
         }
-        if (!strcmp(CHAR(PRINTNAME(CExpr)), "cont"))
+        if (!strcmp(expr, "cont"))
         {
             rval = 1;
             SET_DEBUG(rho, 0);
         }
-        if (!strcmp(CHAR(PRINTNAME(CExpr)), "Q"))
+        if (!strcmp(expr, "Q"))
         {
 
             /* Run onexit/cend code for everything above the target.
@@ -1036,7 +1039,7 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
 
             jump_to_toplevel();
         }
-        if (!strcmp(CHAR(PRINTNAME(CExpr)), "where"))
+        if (!strcmp(expr, "where"))
         {
             printwhere();
             /* SET_DEBUG(rho, 1); */
