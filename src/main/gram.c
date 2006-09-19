@@ -3555,7 +3555,7 @@ static int StringValue(int c)
                 wint_t val = 0;
                 int i, ext;
                 size_t res;
-                char buff[5];
+                char buff[16];
                 Rboolean delim = FALSE;
                 if ((c = xxgetc()) == '{')
                     delim = TRUE;
@@ -3607,7 +3607,7 @@ static int StringValue(int c)
                     wint_t val = 0;
                     int i, ext;
                     size_t res;
-                    char buff[9];
+                    char buff[16];
                     Rboolean delim = FALSE;
                     if ((c = xxgetc()) == '{')
                         delim = TRUE;

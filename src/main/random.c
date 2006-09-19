@@ -548,7 +548,8 @@ SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        if (replace)
+        /* avoid allocation for a single sample */
+        if (replace || k < 2)
             SampleReplace(k, n, INTEGER(y));
         else
         {
