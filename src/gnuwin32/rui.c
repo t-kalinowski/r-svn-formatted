@@ -348,8 +348,13 @@ static void menuconsolestayontop(control m)
 
 static void menukill(control m)
 {
-    /*  show(RConsole); */
     UserBreak = TRUE;
+}
+
+static void menukillall(control m)
+{
+    consolenewline(RConsole);
+    Rf_jump_to_toplevel();
 }
 
 static Rboolean isdebuggerpresent()
@@ -360,7 +365,7 @@ static Rboolean isdebuggerpresent()
     if (entry == NULL)
         return (FALSE);
     else
-        return ((Rboolean)entry());
+        return (Rboolean)entry();
 }
 
 void breaktodebugger()
@@ -1136,6 +1141,7 @@ int setupui()
 
     MCHECK(newmenu(G_("Misc")));
     MCHECK(newmenuitem(G_("Stop current computation           \tESC"), 0, menukill));
+    MCHECK(newmenuitem(G_("Stop all computations"), 0, menukillall));
     if (DebugMenuitem || isdebuggerpresent())
         MCHECK(newmenuitem(G_("Break to debugger"), 0, menudebug));
     MCHECK(newmenuitem("-", 0, NULL));
