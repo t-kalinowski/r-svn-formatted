@@ -321,7 +321,7 @@ attribute_hidden SEXP FixupFont(SEXP font, int dflt)
         {
             k = LOGICAL(font)[i];
 #ifndef Win32
-            if (k < 1 || k > 4)
+            if (k < 1 || k > 5)
                 k = NA_INTEGER;
 #else
             if (k < 1 || k > 32)
@@ -337,7 +337,7 @@ attribute_hidden SEXP FixupFont(SEXP font, int dflt)
         {
             k = INTEGER(font)[i];
 #ifndef Win32
-            if (k < 1 || k > 4)
+            if (k < 1 || k > 5)
                 k = NA_INTEGER;
 #else
             if (k < 1 || k > 32)
@@ -353,7 +353,7 @@ attribute_hidden SEXP FixupFont(SEXP font, int dflt)
         {
             k = REAL(font)[i];
 #ifndef Win32
-            if (k < 1 || k > 4)
+            if (k < 1 || k > 5)
                 k = NA_INTEGER;
 #else
             if (k < 1 || k > 32)
