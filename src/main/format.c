@@ -427,7 +427,7 @@ void formatComplex(Rcomplex *x, int n, int *wr, int *dr, int *er, int *wi, int *
             }
             else
             {
-                if (tmp.r != 0)
+                if (x[i].r != 0)
                     all_re_zero = FALSE;
                 scientific(&(tmp.r), &sgn, &kpower, &nsig, eps);
 
@@ -462,7 +462,7 @@ void formatComplex(Rcomplex *x, int n, int *wr, int *dr, int *er, int *wi, int *
             }
             else
             {
-                if (tmp.i != 0)
+                if (x[i].i != 0)
                     all_im_zero = FALSE;
                 scientific(&(tmp.i), &sgn, &kpower, &nsig, eps);
 
