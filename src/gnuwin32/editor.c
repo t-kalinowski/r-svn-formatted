@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999--2004  The R Development Core Team
+ *  Copyright (C) 1999-2006  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,9 +60,10 @@ static EditorData neweditordata(int file, char *filename)
     EditorData p;
     p = (EditorData)malloc(sizeof(struct structEditorData));
     p->file = file;
-    p->filename = (char *)malloc(_MAX_PATH * sizeof(char));
+    /* need space for terminator, and to copy it */
+    p->filename = (char *)malloc((MAX_PATH + 1) * sizeof(char));
     if (filename)
-        strncpy(p->filename, filename, _MAX_PATH);
+        strncpy(p->filename, filename, MAX_PATH + 1);
     p->title = (char *)malloc((EDITORMAXTITLE + 1) * sizeof(char));
     p->title[EDITORMAXTITLE] = p->title[0] = '\0';
     return p;
@@ -98,13 +99,15 @@ static void editor_load_file(editor c, char *name)
     textbox t = getdata(c);
     EditorData p = getdata(t);
     FILE *f;
-    char *buffer = NULL, tmp[_MAX_PATH + 30];
+    char *buffer = NULL, tmp[MAX_PATH + 50];
     long num = 1, bufsize;
+
+    /* we checked that file could be read in the caller */
     f = fopen(name, "r");
     if (f == NULL)
         return;
     p->file = 1;
-    strncpy(p->filename, name, _MAX_PATH);
+    strncpy(p->filename, name, MAX_PATH + 1);
     bufsize = 0;
     while (num > 0)
     {
@@ -117,7 +120,7 @@ static void editor_load_file(editor c, char *name)
         }
         else
         {
-            snprintf(tmp, _MAX_PATH + 30, "Couldn't read from file %s", name);
+            snprintf(tmp, MAX_PATH + 50, G_("Could not read from file '%s'"), name);
             askok(tmp);
         }
     }
@@ -132,7 +135,7 @@ static void editor_save_file(editor c, char *name)
 {
     textbox t = getdata(c);
     FILE *f;
-    char buf[_MAX_PATH + 30];
+    char buf[MAX_PATH + 30];
     if (name == NULL)
         return;
     else
@@ -140,7 +143,7 @@ static void editor_save_file(editor c, char *name)
         f = fopen(name, "w");
         if (f == NULL)
         {
-            snprintf(buf, _MAX_PATH + 30, "Couldn't save file %s", name);
+            snprintf(buf, MAX_PATH + 30, G_("Could not save file '%s'"), name);
             askok(buf);
             return;
         }
@@ -156,14 +159,14 @@ static void editorsaveas(editor c)
     char *current_name = (p->file ? p->filename : "");
     char *name;
     setuserfilter("R files (*.R)\0*.R\0S files (*.q, *.ssc, *.S)\0*.q;*.ssc;*.S\0All files (*.*)\0*.*\0\0");
-    name = askfilesave("Save script as", current_name);
+    name = askfilesave(G_("Save script as"), current_name);
     if (name == NULL)
         return;
     else
     {
         editor_save_file(c, name);
         p->file = 1;
-        strncpy(p->filename, name, _MAX_PATH);
+        strncpy(p->filename, name, MAX_PATH + 1);
         gsetmodified(t, 0);
         editor_set_title(c, name);
         show(c);
@@ -261,7 +264,8 @@ static void editorconsole(editor c)
     show(RConsole);
 }
 
-/* Remove global pointer to editor when closing an editor. Fill the gap in the array with the last editor in the list */
+/* Remove global pointer to editor when closing an editor. Fill the
+ * gap in the array with the last editor in the list */
 
 static void editorupdateglobals(editor c)
 {
@@ -415,7 +419,8 @@ static void editorcopy(control m)
 static void editorpaste(control m)
 {
     textbox t = getdata(m);
-    /* check whether the widget text limit needs to be increased before doing the paste */
+    /* check whether the widget text limit needs to be increased
+     * before doing the paste */
     int pastelen = getpastelength();
     checklimittext(t, pastelen + 1);
     pastetext(t);
@@ -850,6 +855,8 @@ int Rgui_Edit(char *filename, char *title, int stealconsole)
     {
         if (!access(filename, R_OK))
             editor_load_file(c, filename);
+        else
+            R_ShowMessage(G_("Unable to open file for reading"));
         editor_set_title(c, title);
     }
     else
