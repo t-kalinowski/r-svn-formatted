@@ -1697,13 +1697,17 @@ static int InCharFile(R_inpstream_t stream)
 static void OutBytesFile(R_outpstream_t stream, void *buf, int length)
 {
     FILE *fp = stream->data;
-    fwrite(buf, 1, length, fp); /**** error message */
+    size_t out = fwrite(buf, 1, length, fp);
+    if (out != length)
+        error(_("write failed"));
 }
 
 static void InBytesFile(R_inpstream_t stream, void *buf, int length)
 {
     FILE *fp = stream->data;
-    fread(buf, 1, length, fp); /**** error message */
+    size_t in = fread(buf, 1, length, fp);
+    if (in != length)
+        error(_("read failed"));
 }
 
 void R_InitFileOutPStream(R_outpstream_t stream, FILE *fp, R_pstream_format_t type, int version,
