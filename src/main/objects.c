@@ -725,6 +725,10 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
+        /* If there is no default method, try the generic itself,
+           provided it is primitive or a wrapper for a .Internal
+           function of the same name.
+         */
         if (!isFunction(nextfun))
         {
             t = install(CHAR(STRING_ELT(generic, 0)));
@@ -749,7 +753,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_STRING_ELT(s, j, duplicate(STRING_ELT(class, i++)));
     setAttrib(s, install("previous"), class);
     defineVar(install(".Class"), s, m);
-    /* It is possible that it a method was called directly that
+    /* It is possible that if a method was called directly that
     'method' is unset */
     if (method != R_UnboundValue)
     {
