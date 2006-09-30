@@ -825,7 +825,7 @@ void Rcons_vprintf(const char *format, va_list arg)
         res = R_BUFSIZE;
     }
 #endif /* HAVE_VA_COPY */
-    R_WriteConsole(p, strlen(buf));
+    R_WriteConsole(p, strlen(p));
 #ifdef HAVE_VA_COPY
     if (usedRalloc)
         vmaxset(vmax);
@@ -911,12 +911,10 @@ void REvprintf(const char *format, va_list arg)
     else
     {
         char buf[BUFSIZE];
-        int slen;
 
         vsnprintf(buf, BUFSIZE, format, arg);
         buf[BUFSIZE - 1] = '\0';
-        slen = strlen(buf);
-        R_WriteConsole(buf, slen);
+        R_WriteConsole(buf, strlen(buf));
     }
 }
 
