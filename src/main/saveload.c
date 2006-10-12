@@ -2563,6 +2563,9 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
         if (wasopen)
         {
             endcontext(&cntxt);
+        }
+        else
+        {
             con->close(con);
         }
         UNPROTECT(1);
