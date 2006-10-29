@@ -80,6 +80,10 @@ SEXP attribute_hidden do_commandArgs(SEXP call, SEXP op, SEXP args, SEXP env)
     return vals;
 }
 
+#ifdef Win32
+extern int R_LoadRconsole;
+#endif
+
 void R_common_command_line(int *pac, char **argv, Rstart Rp)
 {
     int ac = *pac, newac = 1; /* argv[0] is process name */
@@ -145,6 +149,9 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 Rp->LoadInitFile = FALSE;         /* --no-init-file */
                 R_RestoreHistory = 0;             /* --no-restore-history */
                 Rp->NoRenviron = TRUE;
+#ifdef Win32
+                R_LoadRconsole = 0;
+#endif
             }
             else if (!strcmp(*av, "--no-environ"))
             {
@@ -192,6 +199,12 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     R_StdinEnc[30] = '\0';
                 }
             }
+#ifdef Win32
+            else if (!strcmp(*av, "--no-Rconsole"))
+            {
+                R_LoadRconsole = 0;
+            }
+#endif
             else if (!strcmp(*av, "-save") || !strcmp(*av, "-nosave") || !strcmp(*av, "-restore") ||
                      !strcmp(*av, "-norestore") || !strcmp(*av, "-noreadline") || !strcmp(*av, "-quiet") ||
                      !strcmp(*av, "-nsize") || !strcmp(*av, "-vsize") || !strcmp(*av, "-V") || !strcmp(*av, "-n") ||
