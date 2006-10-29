@@ -532,8 +532,13 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
     }
     else if (TYPEOF(x) == REALSXP || TYPEOF(y) == REALSXP)
     {
-        COERCE_IF_NEEDED(x, REALSXP, xpi);
-        COERCE_IF_NEEDED(y, REALSXP, ypi);
+        if (!(TYPEOF(x) == INTSXP || TYPEOF(y) == INTSXP
+              /* || TYPEOF(x) == LGLSXP || TYPEOF(y) == LGLSXP*/))
+        {
+            /* Can get a LGLSXP. In base-Ex.R on 24 Oct '06, got 8 of these. */
+            COERCE_IF_NEEDED(x, REALSXP, xpi);
+            COERCE_IF_NEEDED(y, REALSXP, ypi);
+        }
         val = real_binary(PRIMVAL(op), x, y);
     }
     else
@@ -874,6 +879,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     return ans;
 }
 
+#define R_INTEGER(robj, i) (double)(INTEGER(robj)[i] == NA_INTEGER ? NA_REAL : INTEGER(robj)[i])
+
 static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 {
     int i, i1, i2, n, n1, n2;
@@ -916,45 +923,165 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case PLUSOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
+            }
         }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_INTEGER(s1, i1) + REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] + R_INTEGER(s2, i2);
+            }
+        }
+
         break;
     case MINUSOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_INTEGER(s1, i1) - REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] - R_INTEGER(s2, i2);
+            }
         }
         break;
     case TIMESOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_INTEGER(s1, i1) * REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] * R_INTEGER(s2, i2);
+            }
         }
         break;
     case DIVOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_INTEGER(s1, i1) / REAL(s2)[i2];
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = REAL(s1)[i1] / R_INTEGER(s2, i2);
+            }
         }
         break;
     case POWOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = R_pow(REAL(s1)[i1], REAL(s2)[i2]);
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_pow(REAL(s1)[i1], REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_pow(R_INTEGER(s1, i1), REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = R_pow(REAL(s1)[i1], R_INTEGER(s2, i2));
+            }
         }
         break;
     case MODOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfmod(R_INTEGER(s1, i1), REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfmod(REAL(s1)[i1], R_INTEGER(s2, i2));
+            }
         }
         break;
     case IDIVOP:
-        mod_iterate(n1, n2, i1, i2)
+        if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            REAL(ans)[i] = myfloor(REAL(s1)[i1], REAL(s2)[i2]);
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfloor(REAL(s1)[i1], REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s1) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfloor(R_INTEGER(s1, i1), REAL(s2)[i2]);
+            }
+        }
+        else if (TYPEOF(s2) == INTSXP)
+        {
+            mod_iterate(n1, n2, i1, i2)
+            {
+                REAL(ans)[i] = myfloor(REAL(s1)[i1], R_INTEGER(s2, i2));
+            }
         }
         break;
     }
