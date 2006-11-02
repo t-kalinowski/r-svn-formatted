@@ -4099,7 +4099,8 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
                 strncmp(url, "clipboard-", 10) == 0
 #else
-                strcmp(url, "X11_primary") == 0 || strcmp(url, "X11_secondary") == 0
+                strcmp(url, "X11_primary") == 0 || strcmp(url, "X11_secondary") == 0 ||
+                strcmp(url, "X11_clipboard") == 0
 #endif
             )
                 con = newclp(url, strlen(open) ? open : "r");
