@@ -263,6 +263,7 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     {
         char data[14];
         strncpy(data, CHAR(STRING_ELT(svec, 0)), 10);
+        data[10] = '\0';
         if (strlen(CHAR(STRING_ELT(svec, 0))) > 10)
             strcat(data, "...");
         svec = mkString(data);
