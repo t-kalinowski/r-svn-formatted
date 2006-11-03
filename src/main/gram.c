@@ -3921,7 +3921,6 @@ static int StringValue(int c)
                     if (GenerateCode)
                     {
                         have_warned++;
-                        *ct++ = '%';
                         warning(_("'\\%%%%' is an unrecognized escape in a character string"));
                     }
                     break;
@@ -3959,6 +3958,8 @@ static int StringValue(int c)
                 break;
         }
 #endif /* SUPPORT_MBCS */
+        if (c == '%')
+            *ct++ = c;
         YYTEXT_PUSH(c, yyp);
     }
     YYTEXT_PUSH('\0', yyp);
