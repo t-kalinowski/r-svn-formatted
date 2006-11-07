@@ -2221,7 +2221,7 @@ again:
 
     if (gc_reporting)
     {
-        REprintf("\n%d cons cells free (%d%%)\n", R_Collected, (100 * R_Collected / R_NSize));
+        REprintf("\n%lu cons cells free (%d%%)\n", R_Collected, (100 * R_Collected / R_NSize));
         vcells = VHEAP_FREE();
         vfrac = (100.0 * vcells) / R_VSize;
         /* arrange for percentage to be rounded down, or we get
