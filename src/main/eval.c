@@ -2063,14 +2063,13 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
     /* try for formal method */
     if (R_has_methods(op))
     {
-        SEXP value;
-        value = R_possible_dispatch(call, op, args, rho);
+        SEXP value = R_possible_dispatch(call, op, args, rho);
         if (value)
         {
             *ans = value;
             return 1;
         }
-        /*else to on to look for S3 methods */
+        /* else go on to look for S3 methods */
     }
 
     /* check whether we are processing the default method */
