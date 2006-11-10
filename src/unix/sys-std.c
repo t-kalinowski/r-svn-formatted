@@ -911,7 +911,7 @@ int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
    a dialog box so a user can choose files that way.
 */
 
-int attribute_hidden Rstd_ChooseFile(int new, char *buf, int len)
+int attribute_hidden Rstd_ChooseFile(int _new, char *buf, int len)
 {
     int namelen;
     char *bufp;
@@ -1057,7 +1057,7 @@ SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         fd_set *what;
         tm = R_MIN(tm, 2e9); /* avoid integer overflow */
-        Timeout = R_wait_usec ? R_MIN(tm, R_wait_usec) : tm;
+        Timeout = (int)(R_wait_usec ? R_MIN(tm, R_wait_usec) : tm);
         what = R_checkActivity(Timeout, 1);
 
         /* Time up? */
