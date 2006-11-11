@@ -134,7 +134,6 @@ static void args2buff(SEXP, int, int, LocalParseData *);
 static void deparse2buff(SEXP, LocalParseData *);
 static void print2buff(char *, LocalParseData *);
 static void printtab2buff(int, LocalParseData *);
-static void scalar2buff(SEXP, LocalParseData *);
 static void writeline(LocalParseData *);
 static void vector2buff(SEXP, LocalParseData *);
 static void vec2buff(SEXP, LocalParseData *);
@@ -1245,17 +1244,11 @@ static void print2buff(char *strng, LocalParseData *d)
     d->len += tlen;
 }
 
-static void scalar2buff(SEXP inscalar, LocalParseData *d)
-{
-    char *strp;
-    strp = EncodeElement(inscalar, 0, '"', '.');
-    print2buff(strp, d);
-}
-
 static void vector2buff(SEXP vector, LocalParseData *d)
 {
     int tlen, i, quote;
     char *strp;
+    Rboolean surround = FALSE, allNA = TRUE, addL = TRUE;
 
     tlen = length(vector);
     if (isString(vector))
@@ -1288,30 +1281,143 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             UNIMPLEMENTED_TYPE("vector2buff", vector);
         }
     }
-    else if (tlen == 1)
+    else if (TYPEOF(vector) == INTSXP)
     {
-        if ((d->opts & KEEPINTEGER) && TYPEOF(vector) == INTSXP)
-            print2buff("as.integer(", d);
-        scalar2buff(vector, d);
-        if ((d->opts & KEEPINTEGER) && TYPEOF(vector) == INTSXP)
-            print2buff(")", d);
+        /* We treat integer separately, as S_compatible is relevant.
+           as.integer() is needed if all entries are NA and
+           KEEPINTEGER | KEEPNA.  It is also needed when
+           KEEPINTEGER & S_COMPAT.
+
+           Also, it is neat to deparse m:n in that form,
+           so we do so as from 2.5.0.
+         */
+        Rboolean intSeq = (tlen > 1);
+        int *tmp = INTEGER(vector);
+
+        for (i = 1; i < tlen; i++)
+        {
+            if (tmp[i] - tmp[i - 1] != 1)
+            {
+                intSeq = FALSE;
+                break;
+            }
+        }
+        if (intSeq)
+        {
+            strp = EncodeElement(vector, 0, '"', '.');
+            print2buff(strp, d);
+            print2buff(":", d);
+            strp = EncodeElement(vector, tlen - 1, '"', '.');
+            print2buff(strp, d);
+        }
+        else
+        {
+            for (i = 0; i < tlen; i++)
+                if (tmp[i] != NA_INTEGER)
+                {
+                    allNA = FALSE;
+                    break;
+                }
+            addL = d->opts & KEEPINTEGER & !(d->opts & S_COMPAT);
+            if ((d->opts & KEEPINTEGER && (d->opts & S_COMPAT)) || ((d->opts & KEEPNA) && allNA))
+            {
+                surround = TRUE;
+                print2buff("as.integer(", d);
+            }
+            if (tlen == 1)
+            {
+                strp = EncodeElement(vector, 0, '"', '.');
+                print2buff(strp, d);
+                if (addL && tmp[0] != NA_INTEGER)
+                    print2buff("L", d);
+            }
+            else
+            {
+                print2buff("c(", d);
+                for (i = 0; i < tlen; i++)
+                {
+                    strp = EncodeElement(vector, i, quote, '.');
+                    print2buff(strp, d);
+                    if (addL && tmp[i] != NA_INTEGER)
+                        print2buff("L", d);
+                    if (i < (tlen - 1))
+                        print2buff(", ", d);
+                    if (d->len > d->cutoff)
+                        writeline(d);
+                }
+                print2buff(")", d);
+            }
+            if (surround)
+                print2buff(")", d);
+        }
     }
     else
     {
-        if ((d->opts & KEEPINTEGER) && TYPEOF(vector) == INTSXP)
-            print2buff("as.integer(", d);
-        print2buff("c(", d);
-        for (i = 0; i < tlen; i++)
+        if ((d->opts & KEEPNA) && TYPEOF(vector) == REALSXP)
         {
-            strp = EncodeElement(vector, i, quote, '.');
-            print2buff(strp, d);
-            if (i < (tlen - 1))
-                print2buff(", ", d);
-            if (d->len > d->cutoff)
-                writeline(d);
+            for (i = 0; i < tlen; i++)
+                if (!ISNA(REAL(vector)[i]))
+                {
+                    allNA = FALSE;
+                    break;
+                }
+            if (allNA)
+            {
+                surround = TRUE;
+                print2buff("as.double(", d);
+            }
         }
-        print2buff(")", d);
-        if ((d->opts & KEEPINTEGER) && TYPEOF(vector) == INTSXP)
+        else if ((d->opts & KEEPNA) && TYPEOF(vector) == CPLXSXP)
+        {
+            Rcomplex *tmp = COMPLEX(vector);
+            for (i = 0; i < tlen; i++)
+            {
+                if (!ISNA(tmp[i].r) && !ISNA(tmp[i].i))
+                {
+                    allNA = FALSE;
+                    break;
+                }
+            }
+            if (allNA)
+            {
+                surround = TRUE;
+                print2buff("as.complex(", d);
+            }
+        }
+        else if ((d->opts & KEEPNA) && TYPEOF(vector) == STRSXP)
+        {
+            for (i = 0; i < tlen; i++)
+                if (STRING_ELT(vector, i) != NA_STRING)
+                {
+                    allNA = FALSE;
+                    break;
+                }
+            if (allNA)
+            {
+                surround = TRUE;
+                print2buff("as.character(", d);
+            }
+        }
+        if (tlen == 1)
+        {
+            strp = EncodeElement(vector, 0, '"', '.');
+            print2buff(strp, d);
+        }
+        else
+        {
+            print2buff("c(", d);
+            for (i = 0; i < tlen; i++)
+            {
+                strp = EncodeElement(vector, i, quote, '.');
+                print2buff(strp, d);
+                if (i < (tlen - 1))
+                    print2buff(", ", d);
+                if (d->len > d->cutoff)
+                    writeline(d);
+            }
+            print2buff(")", d);
+        }
+        if (surround)
             print2buff(")", d);
     }
 }
