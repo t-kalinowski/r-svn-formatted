@@ -84,7 +84,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
     png_infop info_ptr;
     unsigned long col, palette[256];
     png_color pngpalette[256];
-    png_bytep pscanline, scanline = calloc(3 * width, sizeof(png_byte));
+    png_bytep pscanline, scanline = (png_bytep)calloc(3 * width, sizeof(png_byte));
     png_byte trans[256];
     png_color_16 trans_values[1];
     int i, j, r, ncols, mid, high, low, withpalette;
@@ -326,7 +326,7 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
     /* More stuff */
-    JSAMPLE *pscanline, *scanline = calloc(3 * width, sizeof(JSAMPLE));
+    JSAMPLE *pscanline, *scanline = (JSAMPLE *)calloc(3 * width, sizeof(JSAMPLE));
     int i, j;
     unsigned long col;
     DECLARESHIFTS;
