@@ -812,7 +812,10 @@ static Bool unRLE_obuf_to_output_FAST(DState *s)
 }
 
 /*---------------------------------------------------*/
-R_INLINE Int32 BZ2_indexIntoF(Int32 indx, Int32 *cftab)
+#ifndef __cplusplus
+R_INLINE
+#endif
+Int32 BZ2_indexIntoF(Int32 indx, Int32 *cftab)
 {
     Int32 nb, na, mid;
     nb = 0;
