@@ -85,9 +85,9 @@ SEXP R_traceOnOff(SEXP onOff)
     Rboolean prev = GET_TRACE_STATE;
     if (length(onOff) > 0)
     {
-        Rboolean new = asLogical(onOff);
-        if (new == TRUE || new == FALSE)
-            SET_TRACE_STATE(new);
+        Rboolean _new = asLogical(onOff);
+        if (_new == TRUE || _new == FALSE)
+            SET_TRACE_STATE(_new);
         else
             error("Value for tracingState must be TRUE or FALSE");
     }
@@ -125,7 +125,7 @@ SEXP attribute_hidden do_memtrace(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, "memtrace is not useful for weak reference or external pointer objects");
 
     SET_TRACE(object, 1);
-    sprintf(buffer, "<%p>", object);
+    sprintf(buffer, "<%p>", (void *)object);
     return mkString(buffer);
 #else
     errorcall(call, "R not compiled with memory profiling");
@@ -153,7 +153,7 @@ SEXP attribute_hidden do_memuntrace(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 #ifndef R_MEMORY_PROFILING
-void attribute_hidden memtrace_report(SEXP old, SEXP new)
+void attribute_hidden memtrace_report(void *old, void *_new)
 {
     return;
 }
@@ -172,11 +172,11 @@ static void memtrace_stack_dump(void)
     }
     Rprintf("\n");
 }
-void attribute_hidden memtrace_report(SEXP old, SEXP new)
+void attribute_hidden memtrace_report(void *old, void *_new)
 {
     if (!R_current_trace_state())
         return;
-    Rprintf("memtrace[%p->%p]: ", old, new);
+    Rprintf("memtrace[%p->%p]: ", (void *)old, _new);
     memtrace_stack_dump();
 }
 
@@ -198,7 +198,7 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (TRACE(object))
     {
-        sprintf(buffer, "<%p>", object);
+        sprintf(buffer, "<%p>", (void *)object);
         ans = mkString(buffer);
     }
     else
