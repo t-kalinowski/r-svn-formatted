@@ -149,7 +149,10 @@ void acf(double *x, int *n, int *nser, int *nlag, int *correlation, double *acf)
             se[u] = sqrt(acf[0 + d1 * u + d2 * u]);
         for (u = 0; u < ns; u++)
             for (v = 0; v < ns; v++)
-                for (lag = 0; lag <= nl; lag++)
+            {
+                acf[d1 * u + d2 * v] = 1.0;
+                for (lag = 1; lag <= nl; lag++)
                     acf[lag + d1 * u + d2 * v] /= se[u] * se[v];
+            }
     }
 }
