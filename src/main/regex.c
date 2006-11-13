@@ -437,7 +437,7 @@ static reg_errcode_t re_string_reconstruct(re_string_t *pstr, int idx, int eflag
 static reg_errcode_t re_string_realloc_buffers(re_string_t *pstr, int new_buf_len) internal_function;
 #ifdef RE_ENABLE_I18N
 static void build_wcs_buffer(re_string_t *pstr) internal_function;
-static int build_wcs_upper_buffer(re_string_t *pstr) internal_function;
+static reg_errcode_t build_wcs_upper_buffer(re_string_t *pstr) internal_function;
 #endif /* RE_ENABLE_I18N */
 static void build_upper_buffer(re_string_t *pstr) internal_function;
 static void re_string_translate_buffer(re_string_t *pstr) internal_function;
@@ -1037,7 +1037,7 @@ static void build_wcs_buffer(re_string_t *pstr)
 /* Build wide character buffer PSTR->WCS like build_wcs_buffer,
    but for REG_ICASE.  */
 
-static int build_wcs_upper_buffer(re_string_t *pstr)
+static reg_errcode_t build_wcs_upper_buffer(re_string_t *pstr)
 {
     mbstate_t prev_st;
     int src_idx, byte_idx, end_idx, mbclen, remain_len;
@@ -1455,7 +1455,7 @@ static reg_errcode_t re_string_reconstruct(re_string_t *pstr, int idx, int eflag
         {
             int ret = build_wcs_upper_buffer(pstr);
             if (BE(ret != REG_NOERROR, 0))
-                return ret;
+                return (reg_errcode_t)ret;
         }
         else
             build_wcs_buffer(pstr);
@@ -2568,7 +2568,7 @@ static void re_compile_fastmap_iter(regex_t *bufp, const re_dfastate_t *init_sta
 #ifdef RE_ENABLE_I18N
             if ((bufp->syntax & RE_ICASE) && dfa->mb_cur_max > 1)
             {
-                unsigned char *buf = alloca(dfa->mb_cur_max), *p;
+                unsigned char *buf = (unsigned char *)alloca(dfa->mb_cur_max), *p;
                 wchar_t wc;
                 mbstate_t state;
 
@@ -2686,9 +2686,12 @@ static void re_compile_fastmap_iter(regex_t *bufp, const re_dfastate_t *init_sta
    It returns 0 if it succeeds, nonzero if it doesn't.  (See regex.h for
    the return codes and their meanings.)  */
 
-int attribute_hidden regcomp(preg, pattern, cflags) regex_t *__restrict preg;
-const char *__restrict pattern;
-int cflags;
+int attribute_hidden regcomp(regex_t *__restrict preg, const char *__restrict pattern, int cflags)
+/*
+    regex_t *__restrict preg;
+    const char *__restrict pattern;
+    int cflags;
+*/
 {
     reg_errcode_t ret;
     reg_syntax_t syntax = ((cflags & REG_EXTENDED) ? RE_SYNTAX_POSIX_EXTENDED : RE_SYNTAX_POSIX_BASIC);
@@ -2745,10 +2748,13 @@ weak_alias(__regcomp, regcomp)
     /* Returns a message corresponding to an error code, ERRCODE, returned
        from either regcomp or regexec.   We don't use PREG here.  */
 
-    size_t attribute_hidden regerror(errcode, preg, errbuf, errbuf_size) int errcode;
-const regex_t *preg;
-char *errbuf;
-size_t errbuf_size;
+    size_t attribute_hidden regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
+/*
+    int errcode;
+    const regex_t *preg;
+    char *errbuf;
+    size_t errbuf_size;
+*/
 {
     const char *msg;
     size_t msg_size;
@@ -2857,7 +2863,8 @@ static void free_dfa_content(re_dfa_t *dfa)
 
 /* Free dynamically allocated space used by PREG.  */
 
-void regfree(preg) regex_t *preg;
+void regfree(regex_t *preg)
+/*    regex_t *preg; */
 {
     re_dfa_t *dfa = (re_dfa_t *)preg->buffer;
     if (BE(dfa != NULL, 1))
@@ -3072,7 +3079,7 @@ static reg_errcode_t init_dfa(re_dfa_t *dfa, int pat_len)
         if (table_size > pat_len)
             break;
 
-    dfa->state_table = calloc(sizeof(struct re_state_table_entry), table_size);
+    dfa->state_table = (struct re_state_table_entry *)calloc(sizeof(struct re_state_table_entry), table_size);
     dfa->state_hash_mask = table_size - 1;
 
     dfa->mb_cur_max = MB_CUR_MAX;
@@ -5791,7 +5798,7 @@ static bin_tree_t *re_dfa_add_tree_node(re_dfa_t *dfa, bin_tree_t *left, bin_tre
     if (new_idx == -1)
         return NULL;
 
-    return create_tree(dfa, left, right, 0, new_idx);
+    return create_tree(dfa, left, right, (re_token_type_t)0, new_idx);
 }
 
 /* Mark the tree SRC as an optional subexpression.  */
@@ -5992,11 +5999,15 @@ static reg_errcode_t extend_buffers(re_match_context_t *mctx) internal_function;
 
    We return 0 if we find a match and REG_NOMATCH if not.  */
 
-int attribute_hidden regexec(preg, string, nmatch, pmatch, eflags) const regex_t *__restrict preg;
-const char *__restrict string;
-size_t nmatch;
-regmatch_t pmatch[];
-int eflags;
+int attribute_hidden regexec(const regex_t *__restrict preg, const char *string, size_t nmatch, regmatch_t pmatch[],
+                             int eflags)
+/*
+    const regex_t *__restrict preg;
+    const char *__restrict string;
+    size_t nmatch;
+    regmatch_t pmatch[];
+    int eflags;
+*/
 {
     reg_errcode_t err;
     int start, length;
@@ -6068,11 +6079,13 @@ compat_symbol(libc, __compat_regexec, regexec, GLIBC_2_0);
    match was found and -2 indicates an internal error.  */
 
 int
-re_match (bufp, string, length, start, regs)
+re_match (struct re_pattern_buffer *bufp, const char *string, int length, int start, struct re_registers *regs)
+/*
     struct re_pattern_buffer *bufp;
     const char *string;
     int length, start;
     struct re_registers *regs;
+*/
 {
   return re_search_stub (bufp, string, length, start, 0, length, regs, 1);
 }
@@ -6081,11 +6094,14 @@ weak_alias (__re_match, re_match)
 #endif
 
 int
-re_search (bufp, string, length, start, range, regs)
+re_search (struct re_pattern_buffer * bufp, const char *string, 
+	   int length, int start, int range, struct re_registers *regs)
+/*
     struct re_pattern_buffer *bufp;
     const char *string;
     int length, start, range;
     struct re_registers *regs;
+*/
 {
   return re_search_stub (bufp, string, length, start, range, length, regs, 0);
 }
@@ -6094,11 +6110,15 @@ weak_alias (__re_search, re_search)
 #endif
 
 int
-re_match_2 (bufp, string1, length1, string2, length2, start, regs, stop)
+re_match_2 (struct re_pattern_buffer *bufp, const char *string1, 
+	    int length1, const char *string2, int length2, int start, 
+	    struct re_registers *regs, int stop)
+/*
     struct re_pattern_buffer *bufp;
     const char *string1, *string2;
     int length1, length2, start, stop;
     struct re_registers *regs;
+*/
 {
   return re_search_2_stub (bufp, string1, length1, string2, length2,
 			   start, 0, regs, stop, 1);
@@ -6122,12 +6142,16 @@ weak_alias (__re_search_2, re_search_2)
 #endif
 
 static int
-re_search_2_stub (bufp, string1, length1, string2, length2, start, range, regs,
-		  stop, ret_len)
+re_search_2_stub (struct re_pattern_buffer *bufp, const char *string1, 
+		  int length1, const char *string2, int length2, 
+		  int start, int range, struct re_registers regs,
+		  int stop, int ret_len)
+/*
     struct re_pattern_buffer *bufp;
     const char *string1, *string2;
     int length1, length2, start, range, stop, ret_len;
     struct re_registers *regs;
+*/
 {
   const char *str;
   int rval;
@@ -6168,11 +6192,15 @@ re_search_2_stub (bufp, string1, length1, string2, length2, start, range, regs,
    otherwise the position of the match is returned.  */
 
 static int
-re_search_stub (bufp, string, length, start, range, stop, regs, ret_len)
+re_search_stub (struct re_pattern_buffer *bufp, const char *string, 
+		int length, int start, int range, int stop, 
+		struct re_registers *regs, int ret_len)
+/*
     struct re_pattern_buffer *bufp;
     const char *string;
     int length, start, range, stop, ret_len;
     struct re_registers *regs;
+*/
 {
   reg_errcode_t result;
   regmatch_t *pmatch;
@@ -6249,10 +6277,13 @@ re_search_stub (bufp, string, length, start, range, stop, regs, ret_len)
 }
 
 static unsigned
-re_copy_regs (regs, pmatch, nregs, regs_allocated)
+re_copy_regs (struct re_registers * regs, regmatch_t *pmatch, int nregs, 
+	      int regs_allocated)
+/*
     struct re_registers *regs;
     regmatch_t *pmatch;
     int nregs, regs_allocated;
+*/
 {
   int rval = REGS_REALLOCATE;
   int i;
@@ -6318,11 +6349,14 @@ re_copy_regs (regs, pmatch, nregs, regs_allocated)
    freeing the old data.  */
 
 void
-re_set_registers (bufp, regs, num_regs, starts, ends)
+re_set_registers (struct re_pattern_buffer *bufp, struct re_registers *regs, 
+		  unsigned num_regs, regoff_t *starts, regoff_t *ends)
+/*
     struct re_pattern_buffer *bufp;
     struct re_registers *regs;
     unsigned num_regs;
     regoff_t *starts, *ends;
+*/
 {
   if (num_regs)
     {
@@ -7028,7 +7062,8 @@ static reg_errcode_t push_fail_stack(struct re_fail_stack_t *fs, int str_idx, in
     if (fs->num == fs->alloc)
     {
         struct re_fail_stack_ent_t *new_array;
-        new_array = realloc(fs->stack, (sizeof(struct re_fail_stack_ent_t) * fs->alloc * 2));
+        new_array =
+            (struct re_fail_stack_ent_t *)realloc(fs->stack, (sizeof(struct re_fail_stack_ent_t) * fs->alloc * 2));
         if (new_array == NULL)
             return REG_ESPACE;
         fs->alloc *= 2;
@@ -7748,7 +7783,7 @@ static reg_errcode_t sift_states_bkref(re_match_context_t *mctx, re_sift_context
             }
             local_sctx.last_node = node;
             local_sctx.last_str_idx = str_idx;
-            err = re_node_set_insert(&local_sctx.limits, enabled_idx);
+            err = (reg_errcode_t)re_node_set_insert(&local_sctx.limits, enabled_idx);
             if (BE(err < 0, 0))
             {
                 err = REG_ESPACE;
@@ -7946,7 +7981,7 @@ re_dfastate_t *find_recover_state(reg_errcode_t *err, re_match_context_t *mctx)
         } while (mctx->state_log[cur_str_idx] == NULL);
 
         cur_state = merge_state_with_log(err, mctx, NULL);
-    } while (err == REG_NOERROR && cur_state == NULL);
+    } while (*err == REG_NOERROR && cur_state == NULL);
     return cur_state;
 }
 
@@ -8294,7 +8329,7 @@ static reg_errcode_t get_subexp(re_match_context_t *mctx, int bkref_node, int bk
                 continue; /* No.  */
             if (sub_top->path == NULL)
             {
-                sub_top->path = calloc(sizeof(state_array_t), sl_str - sub_top->str_idx + 1);
+                sub_top->path = (state_array_t *)calloc(sizeof(state_array_t), sl_str - sub_top->str_idx + 1);
                 if (sub_top->path == NULL)
                     return REG_ESPACE;
             }
@@ -8669,9 +8704,10 @@ static reg_errcode_t check_arrival_expand_ecl_sub(re_dfa_t *dfa, re_node_set *ds
             break;
         if (dfa->edests[cur_node].nelem == 2)
         {
-            err = check_arrival_expand_ecl_sub(dfa, dst_nodes, dfa->edests[cur_node].elems[1], ex_subexp, type);
-            if (BE(err != REG_NOERROR, 0))
-                return err;
+            reg_errcode_t status;
+            status = check_arrival_expand_ecl_sub(dfa, dst_nodes, dfa->edests[cur_node].elems[1], ex_subexp, type);
+            if (BE(status != REG_NOERROR, 0))
+                return (status);
         }
         cur_node = dfa->edests[cur_node].elems[0];
     }
@@ -9690,7 +9726,7 @@ static reg_errcode_t match_ctx_add_subtop(re_match_context_t *mctx, int node, in
         mctx->sub_tops = new_array;
         mctx->asub_tops = new_asub_tops;
     }
-    mctx->sub_tops[mctx->nsub_tops] = calloc(1, sizeof(re_sub_match_top_t));
+    mctx->sub_tops[mctx->nsub_tops] = (re_sub_match_top_t *)calloc(1, sizeof(re_sub_match_top_t));
     if (BE(mctx->sub_tops[mctx->nsub_tops] == NULL, 0))
         return REG_ESPACE;
     mctx->sub_tops[mctx->nsub_tops]->node = node;
@@ -9713,7 +9749,7 @@ static re_sub_match_last_t *match_ctx_add_sublast(re_sub_match_top_t *subtop, in
         subtop->lasts = new_array;
         subtop->alasts = new_alasts;
     }
-    new_entry = calloc(1, sizeof(re_sub_match_last_t));
+    new_entry = (re_sub_match_last_t *)calloc(1, sizeof(re_sub_match_last_t));
     if (BE(new_entry != NULL, 1))
     {
         subtop->lasts[subtop->nlasts] = new_entry;
