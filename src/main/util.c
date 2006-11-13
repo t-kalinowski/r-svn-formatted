@@ -38,6 +38,18 @@
 #include <unistd.h>
 #endif
 
+#include "Clinkage.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    void F77_SYMBOL(rwarnc)(char *msg, int *nchar);
+    void F77_SYMBOL(rexitc)(char *msg, int *nchar);
+
+#ifdef __cplusplus
+}
+#endif
+
 /* Many small functions are included from Rinlinedfuns.h */
 
 Rboolean tsConform(SEXP x, SEXP y)
@@ -196,7 +208,8 @@ SEXPTYPE str2type(char *s)
         if (!strcmp(s, TypeTable[i].str))
             return TypeTable[i].type;
     }
-    return -1;
+    /* SEXPTYPE is an unsigned int, so the compiler warns us w/o the cast. */
+    return (SEXPTYPE)-1;
 }
 
 SEXP type2str(SEXPTYPE t)
@@ -827,7 +840,7 @@ SEXP attribute_hidden do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         s = STRING_ELT(x, i);
         if (na || s != NA_STRING)
-            SET_STRING_ELT(ans, i, mkChar(EncodeString(s, w, quote, justify)));
+            SET_STRING_ELT(ans, i, mkChar(EncodeString(s, w, quote, (Rprt_adj)justify)));
     }
     UNPROTECT(1);
     return ans;

@@ -48,6 +48,9 @@ static double Q[] = {
     -9.27277618139601130017E1};
 
 double atanh(double x)
+#ifdef __cplusplus
+    throw()
+#endif
 {
     double s, z;
 

@@ -185,8 +185,8 @@ void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, 
     R_GE_VText(x, y, str, x_justify, y_justify, rotation, &gc, (GEDevDesc *)dd);
 }
 
-void R_GE_VText(double x, double y, char *s, double x_justify, double y_justify, double rotation, R_GE_gcontext *gc,
-                GEDevDesc *dd)
+void R_GE_VText(double x, double y, const char *const s, double x_justify, double y_justify, double rotation,
+                R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();

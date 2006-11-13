@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 #include <Defn.h>
+#include <Rinterface.h>
 
 #define ARGUSED(x) LEVELS(x)
 
@@ -2009,21 +2010,21 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args
 }
 
 /* gr needs to be protected on return from this function */
-static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *gr, SEXP *meth, int *which, char *buf,
+static void findmethod(SEXP Class, char *group, char *generic, SEXP *sxp, SEXP *gr, SEXP *meth, int *which, char *buf,
                        SEXP rho)
 {
     int len, whichclass;
 
-    len = length(class);
+    len = length(Class);
 
     /* Need to interleave looking for group and generic methods */
     /* eg if class(x) is "foo" "bar" then x>3 should invoke */
     /* "Ops.foo" rather than ">.bar" */
     for (whichclass = 0; whichclass < len; whichclass++)
     {
-        if (strlen(generic) + strlen(CHAR(STRING_ELT(class, whichclass))) + 2 > 512)
+        if (strlen(generic) + strlen(CHAR(STRING_ELT(Class, whichclass))) + 2 > 512)
             error(_("class name too long in '%s'"), generic);
-        sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(class, whichclass)));
+        sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(Class, whichclass)));
         *meth = install(buf);
         *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
@@ -2031,9 +2032,9 @@ static void findmethod(SEXP class, char *group, char *generic, SEXP *sxp, SEXP *
             *gr = mkString("");
             break;
         }
-        if (strlen(group) + strlen(CHAR(STRING_ELT(class, whichclass))) + 2 > 512)
+        if (strlen(group) + strlen(CHAR(STRING_ELT(Class, whichclass))) + 2 > 512)
             error(_("class name too long in '%s'"), group);
-        sprintf(buf, "%s.%s", group, CHAR(STRING_ELT(class, whichclass)));
+        sprintf(buf, "%s.%s", group, CHAR(STRING_ELT(Class, whichclass)));
         *meth = install(buf);
         *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))

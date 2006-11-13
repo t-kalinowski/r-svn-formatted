@@ -27,6 +27,7 @@
 
 #define NEED_CONNECTION_PSTREAMS
 #include <Defn.h>
+#include <Rinterface.h>
 #include <Rmath.h>
 #include <Fileio.h>
 
@@ -1392,7 +1393,7 @@ static SEXP NewReadItem(SEXP sym_table, SEXP env_table, FILE *fp, InputRoutines 
 static void newdataload_cleanup(void *data)
 {
     InputCtxtData *cinfo = (InputCtxtData *)data;
-    FILE *fp = data;
+    FILE *fp = (FILE *)data;
     cinfo->methods->InTerm(fp, cinfo->data);
 }
 
@@ -1564,9 +1565,9 @@ static char *InStringAscii(FILE *fp, SaveLoadData *unused)
         char *newbuf;
         /* Protect against broken realloc */
         if (buf)
-            newbuf = realloc(buf, nbytes + 1);
+            newbuf = (char *)realloc(buf, nbytes + 1);
         else
-            newbuf = malloc(nbytes + 1);
+            newbuf = (char *)malloc(nbytes + 1);
         if (newbuf == NULL)
             error(_("out of memory reading ascii string"));
         buf = newbuf;
@@ -1751,9 +1752,9 @@ static char *InStringBinary(FILE *fp, SaveLoadData *unused)
         char *newbuf;
         /* Protect against broken realloc */
         if (buf)
-            newbuf = realloc(buf, nbytes + 1);
+            newbuf = (char *)realloc(buf, nbytes + 1);
         else
-            newbuf = malloc(nbytes + 1);
+            newbuf = (char *)malloc(nbytes + 1);
         if (newbuf == NULL)
             error(_("out of memory reading binary string"));
         buf = newbuf;
@@ -1848,9 +1849,9 @@ static char *InStringXdr(FILE *fp, SaveLoadData *d)
         char *newbuf;
         /* Protect against broken realloc */
         if (buf)
-            newbuf = realloc(buf, nbytes + 1);
+            newbuf = (char *)realloc(buf, nbytes + 1);
         else
-            newbuf = malloc(nbytes + 1);
+            newbuf = (char *)malloc(nbytes + 1);
         if (newbuf == NULL)
             error(_("out of memory reading binary string"));
         buf = newbuf;
@@ -2114,7 +2115,7 @@ SEXP attribute_hidden R_LoadFromFile(FILE *fp, int startup)
 
 static void saveload_cleanup(void *data)
 {
-    FILE *fp = data;
+    FILE *fp = (FILE *)data;
     fclose(fp);
 }
 
@@ -2293,7 +2294,7 @@ void attribute_hidden R_XDREncodeDouble(double d, void *buf)
     XDR xdrs;
     int success;
 
-    xdrmem_create(&xdrs, buf, R_XDR_DOUBLE_SIZE, XDR_ENCODE);
+    xdrmem_create(&xdrs, (char *)buf, R_XDR_DOUBLE_SIZE, XDR_ENCODE);
     success = xdr_double(&xdrs, &d);
     xdr_destroy(&xdrs);
     if (!success)
@@ -2306,7 +2307,7 @@ double attribute_hidden R_XDRDecodeDouble(void *buf)
     double d;
     int success;
 
-    xdrmem_create(&xdrs, buf, R_XDR_DOUBLE_SIZE, XDR_DECODE);
+    xdrmem_create(&xdrs, (char *)buf, R_XDR_DOUBLE_SIZE, XDR_DECODE);
     success = xdr_double(&xdrs, &d);
     xdr_destroy(&xdrs);
     if (!success)
@@ -2319,7 +2320,7 @@ void attribute_hidden R_XDREncodeInteger(int i, void *buf)
     XDR xdrs;
     int success;
 
-    xdrmem_create(&xdrs, buf, R_XDR_INTEGER_SIZE, XDR_ENCODE);
+    xdrmem_create(&xdrs, (char *)buf, R_XDR_INTEGER_SIZE, XDR_ENCODE);
     success = xdr_int(&xdrs, &i);
     xdr_destroy(&xdrs);
     if (!success)
@@ -2331,7 +2332,7 @@ int attribute_hidden R_XDRDecodeInteger(void *buf)
     XDR xdrs;
     int i, success;
 
-    xdrmem_create(&xdrs, buf, R_XDR_INTEGER_SIZE, XDR_DECODE);
+    xdrmem_create(&xdrs, (char *)buf, R_XDR_INTEGER_SIZE, XDR_DECODE);
     success = xdr_int(&xdrs, &i);
     xdr_destroy(&xdrs);
     if (!success)
@@ -2506,7 +2507,7 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void saveloadcon_cleanup(void *data)
 {
-    FILE *fp = data;
+    FILE *fp = (FILE *)data;
     fclose(fp);
 }
 

@@ -34,6 +34,7 @@ extern void R_ProcessEvents(void);
 /* -> Errormsg.h */
 #include <Startup.h> /* rather cleanup ..*/
 #include <Rconnections.h>
+#include <Rinterface.h>
 #include <R_ext/GraphicsDevice.h>
 #include <R_ext/GraphicsEngine.h> /* for GEonExit */
 #include <Rmath.h>                /* for imax2 */
@@ -76,7 +77,7 @@ static void signalInterrupt(void);
 
 static void reset_stack_limit(void *data)
 {
-    unsigned int *limit = data;
+    unsigned int *limit = (unsigned int *)data;
     R_CStackLimit = *limit;
 }
 
@@ -447,7 +448,7 @@ static void (*R_ErrorHook)(SEXP, char *) = NULL;
 
 static void restore_inError(void *data)
 {
-    int *poldval = data;
+    int *poldval = (int *)data;
     inError = *poldval;
     R_Expressions = R_Expressions_keep;
 }
@@ -785,7 +786,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         if (strlen(domain))
         {
-            buf = alloca(strlen(domain) + 3);
+            buf = (char *)alloca(strlen(domain) + 3);
             R_CheckStack();
             sprintf(buf, "R-%s", domain);
             domain = buf;
@@ -802,17 +803,17 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             int ihead = 0, itail = 0;
-            char *this = CHAR(STRING_ELT(string, i)), *tmp, *head = NULL, *tail = NULL, *p, *tr;
-            tmp = alloca(strlen(this) + 1);
+            char *This = CHAR(STRING_ELT(string, i)), *tmp, *head = NULL, *tail = NULL, *p, *tr;
+            tmp = (char *)alloca(strlen(This) + 1);
             R_CheckStack();
-            strcpy(tmp, this);
+            strcpy(tmp, This);
             /* strip leading and trailing white spaces and
                add back after translation */
             for (p = tmp; *p && (*p == ' ' || *p == '\t' || *p == '\n'); p++, ihead++)
                 ;
             if (ihead > 0)
             {
-                head = alloca(ihead + 1);
+                head = (char *)alloca(ihead + 1);
                 R_CheckStack();
                 strncpy(head, tmp, ihead);
                 head[ihead] = '\0';
@@ -823,7 +824,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                     ;
             if (itail > 0)
             {
-                tail = alloca(itail + 1);
+                tail = (char *)alloca(itail + 1);
                 R_CheckStack();
                 strcpy(tail, tmp + strlen(tmp) - itail);
                 tmp[strlen(tmp) - itail] = '\0';
@@ -834,7 +835,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 REprintf("translating '%s' in domain '%s'\n", tmp, domain);
 #endif
                 tr = dgettext(domain, tmp);
-                tmp = alloca(strlen(tr) + ihead + itail + 1);
+                tmp = (char *)alloca(strlen(tr) + ihead + itail + 1);
                 R_CheckStack();
                 tmp[0] = '\0';
                 if (ihead > 0)
@@ -844,7 +845,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                     strcat(tmp, tail);
             }
             else
-                tmp = this;
+                tmp = This;
             SET_STRING_ELT(ans, i, mkChar(tmp));
         }
         UNPROTECT(1);
@@ -900,7 +901,7 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         if (strlen(domain))
         {
-            buf = alloca(strlen(domain) + 3);
+            buf = (char *)alloca(strlen(domain) + 3);
             R_CheckStack();
             sprintf(buf, "R-%s", domain);
             domain = buf;
@@ -1031,7 +1032,7 @@ void UNIMPLEMENTED(const char *s)
 /* ERROR_.. codes in Errormsg.h */
 static struct
 {
-    const R_WARNING code;
+    const R_ERROR code;
     const char *const format;
 } const ErrorDB[] = {{ERROR_NUMARGS, N_("invalid number of arguments")},
                      {ERROR_ARGTYPE, N_("invalid argument type")},
@@ -1203,10 +1204,10 @@ SEXP R_GetTraceback(int skip)
     return s;
 }
 
-static SEXP mkHandlerEntry(SEXP class, SEXP parentenv, SEXP handler, SEXP rho, SEXP result, int calling)
+static SEXP mkHandlerEntry(SEXP klass, SEXP parentenv, SEXP handler, SEXP rho, SEXP result, int calling)
 {
     SEXP entry = allocVector(VECSXP, 5);
-    SET_VECTOR_ELT(entry, 0, class);
+    SET_VECTOR_ELT(entry, 0, klass);
     SET_VECTOR_ELT(entry, 1, parentenv);
     SET_VECTOR_ELT(entry, 2, handler);
     SET_VECTOR_ELT(entry, 3, rho);
@@ -1257,9 +1258,9 @@ SEXP attribute_hidden do_addCondHands(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (i = n - 1; i >= 0; i--)
     {
-        SEXP class = STRING_ELT(classes, i);
+        SEXP klass = STRING_ELT(classes, i);
         SEXP handler = VECTOR_ELT(handlers, i);
-        SEXP entry = mkHandlerEntry(class, parentenv, handler, target, result, calling);
+        SEXP entry = mkHandlerEntry(klass, parentenv, handler, target, result, calling);
         REPROTECT(newstack = CONS(entry, newstack), osi);
     }
 
@@ -1438,12 +1439,12 @@ static SEXP findInterruptHandler()
 static SEXP getInterruptCondition()
 {
     /**** FIXME: should probably pre-allocate this */
-    SEXP cond, class;
+    SEXP cond, klass;
     PROTECT(cond = allocVector(VECSXP, 0));
-    PROTECT(class = allocVector(STRSXP, 2));
-    SET_STRING_ELT(class, 0, mkChar("interrupt"));
-    SET_STRING_ELT(class, 1, mkChar("condition"));
-    R_set_class(cond, class, R_NilValue);
+    PROTECT(klass = allocVector(STRSXP, 2));
+    SET_STRING_ELT(klass, 0, mkChar("interrupt"));
+    SET_STRING_ELT(klass, 1, mkChar("condition"));
+    R_set_class(cond, klass, R_NilValue);
     UNPROTECT(2);
     return cond;
 }
@@ -1476,7 +1477,7 @@ static void signalInterrupt(void)
 
 void attribute_hidden R_InsertRestartHandlers(RCNTXT *cptr, Rboolean browser)
 {
-    SEXP class, rho, entry, name;
+    SEXP klass, rho, entry, name;
 
     if ((cptr->handlerstack != R_HandlerStack || cptr->handlerstack != R_HandlerStack))
     {
@@ -1488,8 +1489,8 @@ void attribute_hidden R_InsertRestartHandlers(RCNTXT *cptr, Rboolean browser)
 
     /**** need more here to keep recursive errors in browser? */
     rho = cptr->cloenv;
-    PROTECT(class = mkChar("error"));
-    entry = mkHandlerEntry(class, rho, R_RestartToken, rho, R_NilValue, TRUE);
+    PROTECT(klass = mkChar("error"));
+    entry = mkHandlerEntry(klass, rho, R_RestartToken, rho, R_NilValue, TRUE);
     R_HandlerStack = CONS(entry, R_HandlerStack);
     UNPROTECT(1);
     PROTECT(name = ScalarString(mkChar(browser ? "browser" : "tryRestart")));
@@ -1599,7 +1600,7 @@ static void invokeRestart(SEXP r, SEXP arglist)
                 R_RestartStack = CDR(R_RestartStack);
                 if (TYPEOF(exit) == EXTPTRSXP)
                 {
-                    RCNTXT *c = R_ExternalPtrAddr(exit);
+                    RCNTXT *c = (RCNTXT *)R_ExternalPtrAddr(exit);
                     R_JumpToContext(c, CTXT_RESTART, R_RestartToken);
                 }
                 else

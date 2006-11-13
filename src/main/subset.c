@@ -930,9 +930,16 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+enum pmatch
+{
+    NO_MATCH,
+    EXACT_MATCH,
+    PARTIAL_MATCH
+};
+
 /* A helper to partially match tags against a candidate. */
 /* Returns: */
-static enum pmatch { NO_MATCH, EXACT_MATCH, PARTIAL_MATCH } pstrmatch(SEXP target, SEXP input, int slen)
+static enum pmatch pstrmatch(SEXP target, SEXP input, int slen)
 {
     char *st = "";
 

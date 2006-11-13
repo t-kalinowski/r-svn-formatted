@@ -36,6 +36,7 @@
 
 #include <stdlib.h> /* for putenv */
 #include <Defn.h>   /* for PATH_MAX */
+#include <Rinterface.h>
 
 /* remove leading and trailing space */
 static char *rmspace(char *s)
@@ -81,7 +82,7 @@ static char *subterm(char *s)
     p = getenv(s);
     if (p && strlen(p))
         return p; /* variable was set and non-empty */
-    return q ? subterm(q) : "";
+    return q ? subterm(q) : (char *)"";
 }
 
 /* skip along until we find an unmatched right brace */
@@ -132,7 +133,7 @@ static char *findterm(char *s)
         nans = strlen(ans);
         strncat(ans, s, p - s);
         ans[nans + p - s] = '\0';
-        r = alloca(q - p + 2);
+        r = (char *)alloca(q - p + 2);
         strncpy(r, p, q - p + 1);
         r[q - p + 1] = '\0';
         r2 = subterm(r);

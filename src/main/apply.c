@@ -146,7 +146,7 @@ SEXP attribute_hidden do_apply(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace, SEXP rho)
 {
-    SEXP ans, names, class, R_fcall;
+    SEXP ans, names, klass, R_fcall;
     int i, j, n;
     Rboolean matched = FALSE;
 
@@ -168,10 +168,10 @@ static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace,
         matched = TRUE;
     else
     {
-        PROTECT(class = R_data_class(X, FALSE));
-        for (i = 0; i < LENGTH(class); i++)
+        PROTECT(klass = R_data_class(X, FALSE));
+        for (i = 0; i < LENGTH(klass); i++)
             for (j = 0; j < length(classes); j++)
-                if (strcmp(CHAR(STRING_ELT(class, i)), CHAR(STRING_ELT(classes, j))) == 0)
+                if (strcmp(CHAR(STRING_ELT(klass, i)), CHAR(STRING_ELT(classes, j))) == 0)
                     matched = TRUE;
         UNPROTECT(1);
     }

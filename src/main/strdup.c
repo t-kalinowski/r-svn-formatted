@@ -30,7 +30,7 @@ char *strcpy();
 /* Return a newly allocated copy of STR,
    or 0 if out of memory. */
 
-char *strdup(str) const char *str;
+char *strdup(const char *str)
 {
     char *newstr;
 

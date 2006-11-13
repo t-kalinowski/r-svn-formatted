@@ -209,7 +209,7 @@ static int EatLines = 0;
 static int GenerateCode = 0;
 static int EndOfFile = 0;
 static int xxgetc();
-static int xxungetc();
+static int xxungetc(int);
 static int xxcharcount, xxcharsave;
 
 #if defined(SUPPORT_MBCS)
@@ -3534,11 +3534,11 @@ static void yyerror(char *s)
 {
 }
 
-static void CheckFormalArgs(SEXP formlist, SEXP new)
+static void CheckFormalArgs(SEXP formlist, SEXP _new)
 {
     while (formlist != R_NilValue)
     {
-        if (TAG(formlist) == new)
+        if (TAG(formlist) == _new)
         {
             error(_("Repeated formal argument"));
         }
