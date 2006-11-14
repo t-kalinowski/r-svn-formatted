@@ -801,7 +801,7 @@ static void AdjustHeapSize(R_size_t size_needed)
         R_VSize = VNeeded;
     if (vect_occup > R_VGrowFrac)
     {
-        R_size_t change = R_VGrowIncrMin + R_VGrowIncrFrac * R_NSize;
+        R_size_t change = R_VGrowIncrMin + R_VGrowIncrFrac * R_VSize;
         if (R_MaxVSize - R_VSize >= change)
             R_VSize += change;
     }
