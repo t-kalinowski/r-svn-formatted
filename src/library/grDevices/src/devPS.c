@@ -5174,6 +5174,7 @@ typedef struct
      */
     short colAlpha[256];
     short fillAlpha[256];
+    Rboolean usedAlpha;
 
     /*
      * What version of PDF are we trying to work with?
@@ -5543,6 +5544,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
     /*
      * Initialise all alphas to -1
      */
+    pd->usedAlpha = FALSE;
     for (i = 0; i < 256; i++)
     {
         pd->colAlpha[i] = -1;
@@ -5793,14 +5795,14 @@ static int fillAlphaIndex(int alpha, PDFDesc *pd)
  * Does the version support alpha transparency?
  * As from R 2.4.0 bump the version number so it does.
  */
-static int alphaVersion(PDFDesc *pd)
+static void alphaVersion(PDFDesc *pd)
 {
     if (pd->versionMajor == 1 && pd->versionMinor < 4)
     {
         pd->versionMinor = 4;
         warning(_("increasing the PDF version to 1.4"));
     }
-    return 1;
+    pd->usedAlpha = TRUE;
 }
 
 /*
@@ -5819,7 +5821,9 @@ static void PDF_SetLineColor(int color, NewDevDesc *dd)
     {
         /* we don't draw at all if alpha= 0 */
         unsigned int alpha = R_ALPHA(color);
-        if (0 < alpha && alphaVersion(pd))
+        if (0 < alpha && alpha < 255)
+            alphaVersion(pd);
+        if (0 < alpha && pd->usedAlpha)
         {
             /*
              * Apply graphics state parameter dictionary
@@ -5839,7 +5843,9 @@ static void PDF_SetFill(int color, NewDevDesc *dd)
     {
         /* we don't draw at all if alpha= 0 */
         unsigned int alpha = R_ALPHA(color);
-        if (0 < alpha && alphaVersion(pd))
+        if (0 < alpha && alpha < 255)
+            alphaVersion(pd);
+        if (0 < alpha && pd->usedAlpha)
         {
             /*
              * Apply graphics state parameter dictionary
