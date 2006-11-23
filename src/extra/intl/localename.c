@@ -1162,8 +1162,7 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_BENGALI_INDIA:
                 return "bn_IN";
-            case SUBLANG_BENGALI_BANGLADESH:
-                return "bn_BD";
+                // case SUBLANG_BENGALI_BANGLADESH: return "bn_BD";
             }
             return "bn";
         case LANG_BULGARIAN:
@@ -1487,8 +1486,7 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_PUNJABI_INDIA:
                 return "pa_IN"; /* Gurmukhi script */
-            case SUBLANG_PUNJABI_PAKISTAN:
-                return "pa_PK"; /* Arabic script */
+                // case SUBLANG_PUNJABI_PAKISTAN: return "pa_PK"; /* Arabic script */
             }
             return "pa";
         case LANG_RHAETO_ROMANCE:
@@ -1498,8 +1496,7 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_ROMANIAN_ROMANIA:
                 return "ro_RO";
-            case SUBLANG_ROMANIAN_MOLDOVA:
-                return "ro_MD";
+                // case SUBLANG_ROMANIAN_MOLDOVA: return "ro_MD";
             }
             return "ro";
         case LANG_RUSSIAN:
