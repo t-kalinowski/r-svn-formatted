@@ -189,7 +189,7 @@ SEXP attribute_hidden do_edit(SEXP call, SEXP op, SEXP args, SEXP rho)
     x = PROTECT(R_ParseFile(fp, -1, &status));
     fclose(fp);
     if (status != PARSE_OK)
-        errorcall(call, _("an error occurred on line %d\n use a command like\n x <- edit()\n to recover"),
+        errorcall(call, _("%s occurred on line %d\n use a command like\n x <- edit()\n to recover"), R_ParseErrorMsg,
                   R_ParseError);
     R_ResetConsole();
     { /* can't just eval(x) here */
