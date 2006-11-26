@@ -189,7 +189,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (num == NA_INTEGER)
             num = -1;
-        s = R_ParseVector(text, num, &status);
+        s = R_ParseVector(text, num, &status, source);
         if (status != PARSE_OK)
             parseError(call, 0);
     }

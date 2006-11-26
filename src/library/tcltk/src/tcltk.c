@@ -48,7 +48,7 @@ static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 c
     for (i = 1; i < argc; i++)
         SET_STRING_ELT(text, i - 1, mkChar(argv[i]));
 
-    expr = PROTECT(R_ParseVector(text, -1, &status));
+    expr = PROTECT(R_ParseVector(text, -1, &status, R_NilValue));
     if (status != PARSE_OK)
     {
         UNPROTECT(2);
