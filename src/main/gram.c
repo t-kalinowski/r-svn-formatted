@@ -3331,9 +3331,9 @@ static SEXP NextArg(SEXP l, SEXP s, SEXP tag)
  *  The following routines parse several expressions and return
  *  their values in a single expression vector.
  *
- *	SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status)
+ *	SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status, SEXP srcfile)
  *
- *	SEXP R_ParseVector(SEXP *text, int n, ParseStatus *status)
+ *	SEXP R_ParseVector(SEXP *text, int n, ParseStatus *status, SEXP srcfile)
  *
  *	SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status, SEXP prompt, SEXP srcfile)
  *
@@ -3513,12 +3513,12 @@ finish:
 }
 
 /* used in edit.c */
-attribute_hidden SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status)
+attribute_hidden SEXP R_ParseFile(FILE *fp, int n, ParseStatus *status, SEXP srcfile)
 {
     GenerateCode = 1;
     fp_parse = fp;
     ptr_getc = file_getc;
-    return R_Parse(n, status, R_NilValue);
+    return R_Parse(n, status, srcfile);
 }
 
 #include "Rconnections.h"
@@ -3546,7 +3546,7 @@ attribute_hidden SEXP R_ParseConn(Rconnection con, int n, ParseStatus *status, S
 }
 
 /* This one is public, and used in source.c */
-SEXP R_ParseVector(SEXP text, int n, ParseStatus *status, SEXP srcfilecopy)
+SEXP R_ParseVector(SEXP text, int n, ParseStatus *status, SEXP srcfile)
 {
     SEXP rval;
     TextBuffer textb;
@@ -3554,18 +3554,18 @@ SEXP R_ParseVector(SEXP text, int n, ParseStatus *status, SEXP srcfilecopy)
     txtb = &textb;
     GenerateCode = 1;
     ptr_getc = text_getc;
-    rval = R_Parse(n, status, srcfilecopy);
+    rval = R_Parse(n, status, srcfile);
     R_TextBufferFree(&textb);
     return rval;
 }
 
 #ifdef PARSE_UNUSED
 /* Not used, and note ungetc is no longer needed */
-SEXP R_ParseGeneral(int (*ggetc)(), int (*gungetc)(), int n, ParseStatus *status)
+SEXP R_ParseGeneral(int (*ggetc)(), int (*gungetc)(), int n, ParseStatus *status, SEXP srcfile)
 {
     GenerateCode = 1;
     ptr_getc = ggetc;
-    return R_Parse(n, status, R_NilValue);
+    return R_Parse(n, status, srcfile);
 }
 #endif
 
