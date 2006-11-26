@@ -3472,7 +3472,7 @@ static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
     if (!isNull(srcfile))
         SrcFile = srcfile;
     xxlineno = 1;
-    xxcolno = 1;
+    xxcolno = 0;
     ParseContextInit();
     savestack = R_PPStackTop;
     PROTECT(t = NewList());
@@ -3620,7 +3620,7 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
             SrcFile = srcfile;
 
         xxlineno = 1;
-        xxcolno = 1;
+        xxcolno = 0;
 
         rval = R_Parse1Buffer(buffer, 1, status);
         SrcFile = NULL;
