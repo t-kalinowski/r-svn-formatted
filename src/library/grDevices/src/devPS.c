@@ -6548,7 +6548,7 @@ static void PDF_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDe
     }
     if (code)
     {
-        if (semiTransparent(gc->col) || semiTransparent(gc->fill) || r > 0)
+        if (semiTransparent(gc->col) || semiTransparent(gc->fill) || r > 10)
         {
             /*
              * Due to possible bug in Acrobat Reader for rendering
