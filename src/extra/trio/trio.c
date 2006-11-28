@@ -2888,7 +2888,20 @@ reprocess:
 
     dblFractionBase = TrioPower(base, fractionDigits);
 
-    workNumber = number + 0.5 / dblFractionBase;
+    /* This where rounding up occurs */
+    if (base == 10.0)
+    {
+        workNumber = trio_fmodl(number * dblFractionBase, 10.0);
+        if ((int)workNumber % 2 == 0)
+        {
+            workNumber = number + 0.5 * (1 - 1e-14) / dblFractionBase;
+        }
+        else
+            workNumber = number + 0.5 / dblFractionBase;
+    }
+    else
+        workNumber = number + 0.5 / dblFractionBase;
+
     if (trio_floorl(number) != trio_floorl(workNumber))
     {
         if ((flags & FLAGS_FLOAT_G) && !(flags & FLAGS_FLOAT_E))
@@ -3097,7 +3110,18 @@ reprocess:
     /* Output the integer part and thousand separators */
     for (i = 0; i < integerDigits; i++)
     {
-        workNumber = trio_floorl(((integerNumber + integerAdjust) / TrioPower(base, integerDigits - i - 1)));
+        /* need round-to-even rule here.  Applies only if base == 10 */
+        if (base == 10 && i == integerDigits - 1 && fractionDigits == 0 && integerAdjust == 0.5)
+        {
+            int ii = (int)trio_floorl(integerNumber / TrioPower(base, integerDigits - i - 1));
+            if (ii % 2 == 0)
+                workNumber =
+                    trio_floorl(((integerNumber + integerAdjust - 1e-7) / TrioPower(base, integerDigits - i - 1)));
+            else
+                workNumber = trio_floorl(((integerNumber + integerAdjust) / TrioPower(base, integerDigits - i - 1)));
+        }
+        else
+            workNumber = trio_floorl(((integerNumber + integerAdjust) / TrioPower(base, integerDigits - i - 1)));
         if (i > integerThreshold)
         {
             /* Beyond accuracy */
@@ -3148,7 +3172,16 @@ reprocess:
         {
             fractionNumber *= dblBase;
             fractionAdjust *= dblBase;
-            workNumber = trio_floorl(fractionNumber + fractionAdjust);
+            if (base == 10 && i == fractionDigits - 1)
+            {
+                int ii = (int)trio_floorl(fractionNumber);
+                if (ii % 2 == 0)
+                    workNumber = trio_floorl(fractionNumber + fractionAdjust * (1 - 1e-14));
+                else
+                    workNumber = trio_floorl(fractionNumber + fractionAdjust);
+            }
+            else
+                workNumber = trio_floorl(fractionNumber + fractionAdjust);
             if (workNumber > fractionNumber)
             {
                 /* fractionNumber should never become negative */
