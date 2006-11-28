@@ -1428,11 +1428,15 @@ SEXP attribute_hidden do_ascharacter(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans;
 
     if (DispatchOrEval(call, op, "as.character", args, rho, &ans, 1, 0))
+    {
+        R_Visible = 1;
         return (ans);
+    }
 
     /* Method dispatch has failed, we now just */
     /* run the generic internal code */
 
+    R_Visible = 1;
     PROTECT(args = ans);
     checkArity(op, args);
 
@@ -2235,6 +2239,7 @@ SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
         SETCAR(rest, eval(CAR(rest), rho));
     rfun = LCONS(rfun, evargs);
     UNPROTECT(3);
+    R_Visible = 1; /* protect against assignments in arg evals */
     return (rfun);
 }
 
