@@ -83,7 +83,9 @@ static int ihash(SEXP x, int indx, HashData *d)
 }
 
 /* We use unions here because Solaris gcc -O2 has trouble with
-   casting + incrementing pointers */
+   casting + incrementing pointers.  We use tests here, but R currently
+   assumes int is 4 bytes and double is 8 bytes.
+ */
 union foo {
     double d;
     unsigned int u[2];
@@ -99,14 +101,15 @@ static int rhash(SEXP x, int indx, HashData *d)
         tmp = NA_REAL;
     else if (R_IsNaN(tmp))
         tmp = R_NaN;
-    if (sizeof(double) >= sizeof(unsigned int) * 2)
+#if 2 * SIZEOF_INT == SIZEOF_DOUBLE
     {
         union foo tmpu;
         tmpu.d = tmp;
         return scatter(tmpu.u[0] + tmpu.u[1], d);
     }
-    else
-        return scatter(*((unsigned int *)(&tmp)), d);
+#else
+    return scatter(*((unsigned int *)(&tmp)), d);
+#endif
 }
 
 static int chash(SEXP x, int indx, HashData *d)
@@ -124,7 +127,7 @@ static int chash(SEXP x, int indx, HashData *d)
         tmp.i = NA_REAL;
     else if (R_IsNaN(tmp.i))
         tmp.i = R_NaN;
-    if (sizeof(double) >= sizeof(unsigned int) * 2)
+#if 2 * SIZEOF_INT == SIZEOF_DOUBLE
     {
         union foo tmpu;
         tmpu.d = tmp.r;
@@ -133,8 +136,9 @@ static int chash(SEXP x, int indx, HashData *d)
         u ^= tmpu.u[0] ^ tmpu.u[1];
         return scatter(u, d);
     }
-    else
-        return scatter((*((unsigned int *)(&tmp.r)) ^ (*((unsigned int *)(&tmp.i)))), d);
+#else
+    return scatter((*((unsigned int *)(&tmp.r)) ^ (*((unsigned int *)(&tmp.i)))), d);
+#endif
 }
 
 static int shash(SEXP x, int indx, HashData *d)
