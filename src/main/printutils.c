@@ -78,6 +78,7 @@ extern int R_OutputCon; /* from connections.c */
 
 #define BUFSIZE 8192 /* used by Rprintf etc */
 
+/* Only if ierr < 0 or not is currently used */
 R_size_t R_Decode2Long(char *p, int *ierr)
 {
     R_size_t v = strtol(p, &p, 10);
@@ -91,7 +92,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
     {
         if ((Giga * (double)v) > R_SIZE_T_MAX)
         {
-            *ierr = 1;
+            *ierr = 4;
             return (v);
         }
         return (Giga * v);
