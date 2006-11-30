@@ -3481,9 +3481,12 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!wasopen)
         con->close(con);
     if (isRaw)
+    {
+        R_Visible = TRUE;
         UNPROTECT(1);
+    }
     else
-        R_Visible = 0;
+        R_Visible = FALSE;
     return ans;
 }
 

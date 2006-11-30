@@ -89,7 +89,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
         case PARSE_NULL:
             break;
         case PARSE_OK:
-            R_Visible = 0;
+            R_Visible = FALSE;
             R_EvalDepth = 0;
             count++;
             PROTECT(R_CurrentExpr);
@@ -257,7 +257,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
                 return (0);
             }
         }
-        R_Visible = 0;
+        R_Visible = FALSE;
         R_EvalDepth = 0;
         PROTECT(R_CurrentExpr);
         R_Busy(1);
@@ -360,7 +360,7 @@ int R_ReplDLLdo1()
     case PARSE_OK:
         R_IoBufferReadReset(&R_ConsoleIob);
         R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status);
-        R_Visible = 0;
+        R_Visible = FALSE;
         R_EvalDepth = 0;
         PROTECT(R_CurrentExpr);
         R_Busy(1);
@@ -1124,7 +1124,7 @@ SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             SET_RESTART_BIT_ON(thiscontext.callflag);
             R_ReturnedValue = R_NilValue;
-            R_Visible = 0;
+            R_Visible = FALSE;
         }
         R_GlobalContext = &thiscontext;
         R_InsertRestartHandlers(&thiscontext, TRUE);
