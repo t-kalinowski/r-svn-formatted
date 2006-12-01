@@ -1665,6 +1665,8 @@ void GEText(double x, double y, const char *const str, double xc, double yc, dou
     }
     else
     {
+        /* PR#7397: this seems to reset R_Visible */
+        Rboolean savevis = R_Visible;
         char *sbuf = NULL;
         if (str && *str)
         {
@@ -1856,6 +1858,7 @@ void GEText(double x, double y, const char *const str, double xc, double yc, dou
                     break;
             }
         }
+        R_Visible = savevis;
     }
 }
 
