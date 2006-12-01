@@ -2573,6 +2573,7 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         error(_("the input does not start with a magic number compatible with loading from a connection"));
+    R_Visible = FALSE;
     return res;
 }
 

@@ -1429,14 +1429,14 @@ SEXP attribute_hidden do_ascharacter(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (DispatchOrEval(call, op, "as.character", args, rho, &ans, 1, 0))
     {
-        R_Visible = 1;
+        R_Visible = TRUE;
         return (ans);
     }
 
     /* Method dispatch has failed, we now just */
     /* run the generic internal code */
 
-    R_Visible = 1;
+    R_Visible = TRUE;
     PROTECT(args = ans);
     checkArity(op, args);
 
@@ -1452,7 +1452,10 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     int type;
 
     if (DispatchOrEval(call, op, "as.vector", args, rho, &ans, 1, 0))
+    {
+        R_Visible = TRUE;
         return (ans);
+    }
 
     /* Method dispatch has failed, we now just */
     /* run the generic internal code */
@@ -1500,6 +1503,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     }
     UNPROTECT(1);
+    R_Visible = TRUE;
     return ans;
 }
 
@@ -2239,7 +2243,7 @@ SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
         SETCAR(rest, eval(CAR(rest), rho));
     rfun = LCONS(rfun, evargs);
     UNPROTECT(3);
-    R_Visible = 1; /* protect against assignments in arg evals */
+    R_Visible = TRUE; /* protect against assignments in arg evals */
     return (rfun);
 }
 

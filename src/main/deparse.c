@@ -345,6 +345,7 @@ SEXP attribute_hidden do_dput(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     if (!wasopen)
         con->close(con);
+    R_Visible = FALSE;
     return (CAR(args));
 }
 
@@ -440,7 +441,7 @@ SEXP attribute_hidden do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     UNPROTECT(2);
-    /* R_Visible = 0; covered by .Internal code */
+    R_Visible = FALSE;
     return outnames;
 }
 

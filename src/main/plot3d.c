@@ -1858,7 +1858,6 @@ SEXP attribute_hidden do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     Rf_gpptr(dd)->col = colsave;
     Rf_gpptr(dd)->xpd = xpdsave;
-    /* R_Visible = 0; covered by .Internal code */
     UNPROTECT(1);
     if (GRecording(call, dd))
         recordGraphicOperation(op, oargs, dd);
@@ -1933,7 +1932,6 @@ SEXP attribute_hidden do_image(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     Rf_gpptr(dd)->col = colsave;
     Rf_gpptr(dd)->xpd = xpdsave;
-    /* R_Visible = 0; covered by .Internal code */
     UNPROTECT(1);
     if (GRecording(call, dd))
         recordGraphicOperation(op, oargs, dd);

@@ -232,7 +232,7 @@ void endcontext(RCNTXT *cptr)
     if (cptr->cloenv != R_NilValue && cptr->conexit != R_NilValue)
     {
         SEXP s = cptr->conexit;
-        int savevis = R_Visible;
+        Rboolean savevis = R_Visible;
         cptr->conexit = R_NilValue; /* prevent recursion */
         PROTECT(s);
         eval(s, cptr->cloenv);
