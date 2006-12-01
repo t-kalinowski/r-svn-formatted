@@ -342,10 +342,8 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     int i, lx, len = NA_INTEGER, each = 1, nt, nprotect = 4;
 
     if (DispatchOrEval(call, op, "rep", args, rho, &ans, 0, 0))
-    {
-        /* R_Visible = TRUE; */
         return (ans);
-    }
+
     /* This has evaluated all the non-missing arguments into ans */
     PROTECT(args = ans);
 
@@ -443,7 +441,6 @@ done:
     /* 1D arrays get dimensions preserved */
     setAttrib(ans, R_DimSymbol, R_NilValue);
     UNPROTECT(nprotect);
-    /* R_Visible = TRUE; */
     return ans;
 }
 
@@ -458,10 +455,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     Rboolean One = nargs == 1;
 
     if (DispatchOrEval(call, op, "seq", args, rho, &ans, 0, 0))
-    {
-        /* R_Visible = TRUE; */
         return (ans);
-    }
 
     /* This is a primitive and we have not dispatched to a method
        so we manage the argument matching ourselves.  We pretend this is
@@ -655,7 +649,6 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 done:
     UNPROTECT(3);
-    /* R_Visible = TRUE; */
     return ans;
 }
 
@@ -671,7 +664,6 @@ SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
     p = INTEGER(ans);
     for (i = 0; i < len; i++)
         p[i] = i + 1;
-    /* R_Visible = TRUE; */
     return ans;
 }
 
