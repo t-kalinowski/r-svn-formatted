@@ -12,7 +12,7 @@
 
  *  Other parts
  *  Copyright (C) 2000-2006  The R Development Core Team
- *  Copyright (C) 2003-2004  The R Foundation
+ *  Copyright (C) 2003-2006  The R Foundation
  */
 
 #include "nmath.h"
@@ -63,9 +63,9 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
     /*= -708.3964 for IEEE double precision */
 
     if (x <= 0.)
-        return 0.;
+        return lower_tail ? 0. : 1.;
     if (!R_FINITE(x))
-        return 1.;
+        return lower_tail ? 1. : 0.;
 
         /* This is principally for use from qnchisq */
 #ifndef MATHLIB_STANDALONE
@@ -136,8 +136,8 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
         if (x > f + theta + 5 * sqrt(2 * (f + 2 * theta)))
         {
             /* x > E[X] + 5* sigma(X) */
-            return 1.; /* better than 0 --- but definitely "FIXME" */
-        }              /* else */
+            return lower_tail ? 1. : 0.; /* FIXME: We could be more accurate than 0. */
+        }                                /* else */
         l_x = log(x);
         ans = term = t = 0.;
     }
