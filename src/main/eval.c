@@ -937,7 +937,7 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
         return (eval(CAR(CDR(args)), rho));
     else if (length(args) > 2)
         return (eval(CAR(CDR(CDR(args))), rho));
-    R_Visible = FALSE;
+    R_Visible = FALSE; /* case of no 'else' so return invisible NULL */
     return R_NilValue;
 }
 
@@ -1418,7 +1418,6 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
                 s = t;
             }
             PROTECT(s);
-            R_Visible = FALSE;
             defineVar(CAR(args), s, rho);
             UNPROTECT(1);
             SET_NAMED(s, 1);
@@ -1432,9 +1431,9 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
                 SET_NAMED(s, 2);
                 break;
             }
-            R_Visible = FALSE;
             defineVar(CAR(args), s, rho);
 #endif
+            R_Visible = FALSE;
             return (s);
         }
         else if (isLanguage(CAR(args)))
@@ -1451,10 +1450,10 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (NAMED(s))
                 s = duplicate(s);
             PROTECT(s);
-            R_Visible = FALSE;
             setVar(CAR(args), s, ENCLOS(rho));
             UNPROTECT(1);
             SET_NAMED(s, 1);
+            R_Visible = FALSE;
             return s;
         }
         else if (isLanguage(CAR(args)))
