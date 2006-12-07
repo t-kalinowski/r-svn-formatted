@@ -185,6 +185,7 @@ SEXP getAttrib(SEXP vec, SEXP name)
     if (isString(name))
         name = install(CHAR(STRING_ELT(name, 0)));
 
+    /* special test for c(NA, n) rownames of data frames: */
     if (name == R_RowNamesSymbol)
     {
         SEXP s = getAttrib0(vec, R_RowNamesSymbol);
@@ -200,6 +201,20 @@ SEXP getAttrib(SEXP vec, SEXP name)
     }
     else
         return getAttrib0(vec, name);
+}
+
+SEXP R_shortRowNames(SEXP vec)
+{
+    /* return  n { = nrow(.)} if the data frame 'vec' has c(NA, n) rownames;
+     *	      - nrow(.) otherwise;  note that data frames with nrow(.) == 0
+     *		have no row.names.
+  ==> is also used in dim.data.frame() */
+    SEXP s = getAttrib0(vec, R_RowNamesSymbol), r = allocVector(INTSXP, 1);
+
+    INTEGER(r)
+    [0] =
+        (isInteger(s) && LENGTH(s) == 2 && INTEGER(s)[0] == NA_INTEGER) ? INTEGER(s)[1] : (isNull(s) ? 0 : -LENGTH(s));
+    return r;
 }
 
 SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
