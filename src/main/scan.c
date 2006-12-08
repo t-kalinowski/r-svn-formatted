@@ -1551,7 +1551,7 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP cvec, a, dup, levs, dims, names, dec;
     SEXP rval = R_NilValue; /* -Wall */
-    int i, j, len, numeric, asIs, res;
+    int i, j, len, numeric, asIs;
     Rboolean done = FALSE;
     char *endp, *tmp = NULL;
     LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
@@ -1590,7 +1590,7 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     numeric = 1;
 
-    /* save the dim/dimname attributes */
+    /* save the dim/dimnames attributes */
 
     PROTECT(dims = getAttrib(cvec, R_DimSymbol));
     if (isArray(cvec))
