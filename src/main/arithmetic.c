@@ -1243,7 +1243,23 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP s;
     if (DispatchGroup("Math", call, op, args, env, &s))
         return s;
-    return do_cmathfuns(call, op, args, env);
+    checkArity(op, args);
+    if (isComplex(CAR(args)) || !(isInteger(CAR(args)) || isLogical(CAR(args))))
+        return do_cmathfuns(call, op, args, env);
+    else
+    { /* integer or logical ==> return integer */
+        SEXP x = CAR(args);
+        int i, n;
+        n = length(x);
+        PROTECT(s = allocVector(INTSXP, n));
+        /* Note: relying on INTEGER(.) === LOGICAL(.) : */
+        for (i = 0; i < n; i++)
+            INTEGER(s)[i] = abs(INTEGER(x)[i]);
+        SET_ATTRIB(s, duplicate(ATTRIB(x)));
+        SET_OBJECT(s, OBJECT(x));
+        UNPROTECT(1);
+        return s;
+    }
 }
 
 /* Mathematical Functions of Two Numeric Arguments (plus 1 int) */
