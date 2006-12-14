@@ -189,9 +189,6 @@ static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace,
         return duplicate(deflt);
 }
 
-/* This is a special, so has unevaluated arguments.  It is called from a
-   closure wrapper, so X and FUN are promises. */
-
 SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP X, FUN, classes, deflt, how, ans, names;
@@ -199,7 +196,7 @@ SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     Rboolean replace;
 
     checkArity(op, args);
-    PROTECT(X = eval(CAR(args), rho));
+    X = CAR(args);
     args = CDR(args);
     FUN = CAR(args);
     args = CDR(args);
@@ -223,7 +220,7 @@ SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
         setAttrib(ans, R_NamesSymbol, names);
     for (i = 0; i < n; i++)
         SET_VECTOR_ELT(ans, i, do_one(VECTOR_ELT(X, i), FUN, classes, deflt, replace, rho));
-    UNPROTECT(2);
+    UNPROTECT(1);
     return ans;
 }
 
