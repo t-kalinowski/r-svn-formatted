@@ -447,14 +447,16 @@ SEXP attribute_hidden do_restart(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* An implementation of S's frame access functions. They usually count */
 /* up from the globalEnv while we like to count down from the currentEnv. */
 /* So if the argument is negative count down if positive count up. */
-/* We don't want to count the closure that do_sys is contained in so the */
+/* We don't want to count the closure that do_sys is contained in, so the */
 /* indexing is adjusted to handle this. */
 
 SEXP attribute_hidden do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int i, n, nframe;
+    int i, n = -1, nframe;
     SEXP rval, t;
     RCNTXT *cptr;
+
+    checkArity(op, args);
     /* first find the context that sys.xxx needs to be evaluated in */
     cptr = R_GlobalContext;
     t = cptr->sysparent;
@@ -467,12 +469,7 @@ SEXP attribute_hidden do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     if (length(args) == 1)
-    {
-        t = eval(CAR(args), rho);
-        n = asInteger(t);
-    }
-    else
-        n = -1;
+        n = asInteger(CAR(args));
 
     switch (PRIMVAL(op))
     {
@@ -543,7 +540,8 @@ SEXP attribute_hidden do_parentframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP t;
     RCNTXT *cptr;
 
-    t = eval(CAR(args), rho);
+    checkArity(op, args);
+    t = CAR(args);
     n = asInteger(t);
 
     if (n == NA_INTEGER || n < 1)

@@ -652,14 +652,13 @@ done:
     return ans;
 }
 
-/* here args are not evaluated */
 SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     int i, len, *p;
 
     checkArity(op, args);
-    len = length(eval(CAR(args), rho));
+    len = length(CAR(args));
     ans = allocVector(INTSXP, len);
     p = INTEGER(ans);
     for (i = 0; i < len; i++)
@@ -667,7 +666,6 @@ SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* here args are evaluated */
 SEXP attribute_hidden do_seq_len(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
