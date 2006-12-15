@@ -125,7 +125,7 @@ SEXP attribute_hidden do_memtrace(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("'tracemem' is not useful for weak reference or external pointer objects"));
 
     SET_TRACE(object, 1);
-    sprintf(buffer, "<%p>", (void *)object);
+    snprintf(buffer, 20, "<%p>", (void *)object);
     return mkString(buffer);
 #else
     errorcall(call, _("R was not compiled with support for memory profiling"));
@@ -189,17 +189,22 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP object, origin, ans;
     char buffer[20];
 
-    checkArity(op, args);
+    /* checkArity(op, args); */
+    if (length(args) < 1 || length(args) > 2)
+        errorcall(call, _("invalid number of arguments"));
 
     object = CAR(args);
     if (TYPEOF(object) == CLOSXP || TYPEOF(object) == BUILTINSXP || TYPEOF(object) == SPECIALSXP)
         errorcall(call, _("argument must not be a function"));
 
-    origin = CADR(args);
+    if (length(args) >= 2)
+        origin = CADR(args);
+    else
+        origin = R_NilValue;
 
     if (TRACE(object))
     {
-        sprintf(buffer, "<%p>", (void *)object);
+        snprintf(buffer, 20, "<%p>", (void *)object);
         ans = mkString(buffer);
     }
     else
@@ -210,7 +215,7 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
         SET_TRACE(object, 1);
         if (R_current_trace_state())
         {
-            Rprintf("tracemem[%s->%p]: ", CHAR(STRING_ELT(origin, 0)), object);
+            Rprintf("tracemem[%s -> %p]: ", CHAR(STRING_ELT(origin, 0)), (void *)object);
             memtrace_stack_dump();
         }
     }
