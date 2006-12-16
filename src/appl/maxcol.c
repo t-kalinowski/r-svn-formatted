@@ -36,6 +36,8 @@ void R_max_col(double *matrix, int *nr, int *nc, int *maxes, int *ties_meth)
                 isna = TRUE;
                 break;
             }
+            if (!R_FINITE(a))
+                continue;
             if (do_rand)
                 large = fmax2(large, fabs(a));
         }
