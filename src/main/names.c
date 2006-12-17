@@ -143,6 +143,7 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"identical", do_identical, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
 
     /* Binary Operators */
+    /* these are group generic and so need to eval args */
     {"+", do_arith, PLUSOP, 1, 2, {PP_BINARY, PREC_SUM, 0}},
     {"-", do_arith, MINUSOP, 1, 2, {PP_BINARY, PREC_SUM, 0}},
     {"*", do_arith, TIMESOP, 1, 2, {PP_BINARY, PREC_PROD, 0}},
@@ -150,9 +151,12 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"^", do_arith, POWOP, 1, 2, {PP_BINARY2, PREC_POWER, 1}},
     {"%%", do_arith, MODOP, 1, 2, {PP_BINARY2, PREC_PERCENT, 0}},
     {"%/%", do_arith, IDIVOP, 1, 2, {PP_BINARY2, PREC_PERCENT, 0}},
+
     {"%*%", do_matprod, 0, 1, 2, {PP_BINARY, PREC_PERCENT, 0}},
     {"crossprod", do_matprod, 1, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
     {"tcrossprod", do_matprod, 2, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
+
+    /* these are group generic and so need to eval args */
     {"==", do_relop, EQOP, 1, 2, {PP_BINARY, PREC_COMPARE, 0}},
     {"!=", do_relop, NEOP, 1, 2, {PP_BINARY, PREC_COMPARE, 0}},
     {"<", do_relop, LTOP, 1, 2, {PP_BINARY, PREC_COMPARE, 0}},
@@ -162,13 +166,14 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"&", do_logic, 1, 1, 2, {PP_BINARY, PREC_AND, 0}},
     {"|", do_logic, 2, 1, 2, {PP_BINARY, PREC_OR, 0}},
     {"!", do_logic, 3, 1, 1, {PP_UNARY, PREC_NOT, 0}},
+
     {"&&", do_logic2, 1, 0, 2, {PP_BINARY, PREC_AND, 0}},
     {"||", do_logic2, 2, 0, 2, {PP_BINARY, PREC_OR, 0}},
     {":", do_colon, 0, 1, 2, {PP_BINARY2, PREC_COLON, 0}},
     {"~", do_tilde, 0, 0, 2, {PP_BINARY, PREC_TILDE, 0}},
 
     /* Logic Related Functions */
-
+    /* these are group generic and so need to eval args */
     {"all", do_logic3, 1, 11, -1, {PP_FUNCALL, PREC_FN, 0}},
     {"any", do_logic3, 2, 11, -1, {PP_FUNCALL, PREC_FN, 0}},
 
@@ -228,8 +233,9 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"search", do_search, 0, 11, 0, {PP_FUNCALL, PREC_FN, 0}},
 
     /* Mathematical Functions */
-    /* Note that the number of arguments in this group only applies
-       to the default method */
+    /* these are group generic and so need to eval args */
+    /* Note that the number of arguments for the primitives in this group
+       only applies to the default method. */
     {"round", do_Math2, 10001, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
     {"atan", do_atan, 10002, 1, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"log", do_log, 10003, 11, -1, {PP_FUNCALL, PREC_FN, 0}},
@@ -305,6 +311,7 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"psigamma", do_math2, 26, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
 
     /* Mathematical Functions of a Complex Argument */
+    /* these are group generic and so need to eval args */
 
     {"Re", do_cmathfuns, 1, 1, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"Im", do_cmathfuns, 2, 1, 1, {PP_FUNCALL, PREC_FN, 0}},
@@ -424,7 +431,7 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"set.seed", do_setseed, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
 
     /* Data Summaries */
-
+    /* sum, min, max, prod, range are group generic and so need to eval args */
     {"sum", do_summary, 0, 11, -1, {PP_FUNCALL, PREC_FN, 0}},
     {"mean", do_summary, 1, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"min", do_summary, 2, 11, -1, {PP_FUNCALL, PREC_FN, 0}},
