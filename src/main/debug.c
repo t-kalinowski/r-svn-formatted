@@ -198,7 +198,11 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("argument must not be a function"));
 
     if (length(args) >= 2)
+    {
         origin = CADR(args);
+        if (!isString(origin))
+            errorcall(call, _("invalid '%s' argument"), "origin");
+    }
     else
         origin = R_NilValue;
 
