@@ -3108,8 +3108,6 @@ static void R_OutputStackTrace(FILE *file)
 
 static void R_ReportAllocation(R_size_t size)
 {
-    int newline = 0;
-
     if (R_IsMemReporting)
     {
         if (size > R_MemReportingThreshold)
@@ -3123,8 +3121,6 @@ static void R_ReportAllocation(R_size_t size)
 
 static void R_ReportNewPage(void)
 {
-    int newline = 0;
-
     if (R_IsMemReporting)
     {
         fprintf(R_MemReportingOutfile, "new page:");
