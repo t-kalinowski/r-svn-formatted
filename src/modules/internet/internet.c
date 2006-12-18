@@ -105,6 +105,7 @@ static Rboolean url_open(Rconnection con)
     else
         con->text = TRUE;
     con->save = -1000;
+    set_iconv(con);
     return TRUE;
 }
 
