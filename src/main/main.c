@@ -866,6 +866,8 @@ void setup_Rmainloop(void)
     /* At least temporarily unlock some bindings uses in graphics */
     R_unLockBinding(install(".Device"), R_BaseEnv);
     R_unLockBinding(install(".Devices"), R_BaseEnv);
+    /* allow Rprofile.site to set this */
+    R_unLockBinding(install(".Library.site"), R_BaseEnv);
 
     /* require(methods) if it is in the default packages */
     doneit = 0;
