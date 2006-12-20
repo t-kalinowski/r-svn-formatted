@@ -70,6 +70,9 @@ static Rboolean url_open(Rconnection con)
 
     switch (type)
     {
+#ifdef USE_WININET
+    case HTTPSsh:
+#endif
     case HTTPsh:
         ctxt = in_R_HTTPOpen(url, NULL, 0);
         if (ctxt == NULL)
@@ -93,7 +96,7 @@ static Rboolean url_open(Rconnection con)
         ((Rurlconn)(con->private))->ctxt = ctxt;
         break;
     default:
-        warning(_("unknown URL scheme"));
+        warning(_("unsupported URL scheme"));
         return FALSE;
     }
 
@@ -114,6 +117,7 @@ static void url_close(Rconnection con)
     UrlScheme type = ((Rurlconn)(con->private))->type;
     switch (type)
     {
+    case HTTPSsh:
     case HTTPsh:
         in_R_HTTPClose(((Rurlconn)(con->private))->ctxt);
         break;
@@ -133,6 +137,7 @@ static int url_fgetc_internal(Rconnection con)
 
     switch (type)
     {
+    case HTTPSsh:
     case HTTPsh:
         n = in_R_HTTPRead(ctxt, (char *)&c, 1);
         break;
@@ -151,6 +156,7 @@ static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
 
     switch (type)
     {
+    case HTTPSsh:
     case HTTPsh:
         n = in_R_HTTPRead(ctxt, ptr, size * nitems);
         break;
@@ -346,7 +352,11 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef HAVE_INTERNET
     }
-    else if (strncmp(url, "http://", 7) == 0)
+    else if (strncmp(url, "http://", 7) == 0
+#ifdef USE_WININET
+             || strncmp(url, "https://", 8) == 0
+#endif
+    )
     {
 
         FILE *out;
