@@ -238,6 +238,8 @@ static int xxlineno, xxcolno, xxlinesave, xxcolsave;
 static int xxlastlinelen;
 
 static SEXP SrcFile = NULL;
+static SEXP SrcRefs = NULL;
+static PROTECT_INDEX srindex;
 
 #if defined(SUPPORT_MBCS)
 #include <R_ext/Riconv.h>
@@ -468,7 +470,7 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 /* Line 216 of yacc.c.  */
-#line 464 "gram.tab.c"
+#line 466 "gram.tab.c"
 
 #ifdef short
 #undef short
@@ -729,10 +731,10 @@ static const yytype_int8 yyrhs[] = {
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] = {
-    0,   302, 302, 303, 304, 305, 306, 309, 310, 313, 316, 317, 318, 319, 321, 322, 324, 325, 326, 327, 328, 330, 331,
-    332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 349, 350, 351, 353, 354, 355, 356,
-    357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 378, 381, 384, 388, 389,
-    390, 391, 392, 393, 396, 397, 400, 401, 402, 403, 404, 405, 406, 407, 410, 411, 412, 413, 414, 417};
+    0,   304, 304, 305, 306, 307, 308, 311, 312, 315, 318, 319, 320, 321, 323, 324, 326, 327, 328, 329, 330, 332, 333,
+    334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 351, 352, 353, 355, 356, 357, 358,
+    359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 380, 383, 386, 390, 391,
+    392, 393, 394, 395, 398, 399, 402, 403, 404, 405, 406, 407, 408, 409, 412, 413, 414, 415, 416, 419};
 #endif
 
 #if YYDEBUG || YYERROR_VERBOSE || YYTOKEN_TABLE
@@ -1713,7 +1715,7 @@ yyreduce:
     switch (yyn)
     {
     case 2:
-#line 302 "gram.y"
+#line 304 "gram.y"
     {
         return 0;
         ;
@@ -1721,7 +1723,7 @@ yyreduce:
     break;
 
     case 3:
-#line 303 "gram.y"
+#line 305 "gram.y"
     {
         return xxvalue(NULL, 2, NULL);
         ;
@@ -1729,7 +1731,7 @@ yyreduce:
     break;
 
     case 4:
-#line 304 "gram.y"
+#line 306 "gram.y"
     {
         return xxvalue((yyvsp[(1) - (2)]), 3, &(yylsp[(1) - (2)]));
         ;
@@ -1737,7 +1739,7 @@ yyreduce:
     break;
 
     case 5:
-#line 305 "gram.y"
+#line 307 "gram.y"
     {
         return xxvalue((yyvsp[(1) - (2)]), 4, &(yylsp[(1) - (2)]));
         ;
@@ -1745,7 +1747,7 @@ yyreduce:
     break;
 
     case 6:
-#line 306 "gram.y"
+#line 308 "gram.y"
     {
         YYABORT;
         ;
@@ -1753,7 +1755,7 @@ yyreduce:
     break;
 
     case 7:
-#line 309 "gram.y"
+#line 311 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -1761,7 +1763,7 @@ yyreduce:
     break;
 
     case 8:
-#line 310 "gram.y"
+#line 312 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -1769,7 +1771,7 @@ yyreduce:
     break;
 
     case 9:
-#line 313 "gram.y"
+#line 315 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -1777,22 +1779,6 @@ yyreduce:
     break;
 
     case 10:
-#line 316 "gram.y"
-    {
-        (yyval) = (yyvsp[(1) - (1)]);
-        ;
-    }
-    break;
-
-    case 11:
-#line 317 "gram.y"
-    {
-        (yyval) = (yyvsp[(1) - (1)]);
-        ;
-    }
-    break;
-
-    case 12:
 #line 318 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1800,7 +1786,7 @@ yyreduce:
     }
     break;
 
-    case 13:
+    case 11:
 #line 319 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1808,8 +1794,24 @@ yyreduce:
     }
     break;
 
-    case 14:
+    case 12:
+#line 320 "gram.y"
+    {
+        (yyval) = (yyvsp[(1) - (1)]);
+        ;
+    }
+    break;
+
+    case 13:
 #line 321 "gram.y"
+    {
+        (yyval) = (yyvsp[(1) - (1)]);
+        ;
+    }
+    break;
+
+    case 14:
+#line 323 "gram.y"
     {
         (yyval) = xxexprlist((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]));
         ;
@@ -1817,7 +1819,7 @@ yyreduce:
     break;
 
     case 15:
-#line 322 "gram.y"
+#line 324 "gram.y"
     {
         (yyval) = xxparen((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]));
         ;
@@ -1825,22 +1827,6 @@ yyreduce:
     break;
 
     case 16:
-#line 324 "gram.y"
-    {
-        (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
-        ;
-    }
-    break;
-
-    case 17:
-#line 325 "gram.y"
-    {
-        (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
-        ;
-    }
-    break;
-
-    case 18:
 #line 326 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1848,7 +1834,7 @@ yyreduce:
     }
     break;
 
-    case 19:
+    case 17:
 #line 327 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1856,7 +1842,7 @@ yyreduce:
     }
     break;
 
-    case 20:
+    case 18:
 #line 328 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1864,23 +1850,23 @@ yyreduce:
     }
     break;
 
-    case 21:
+    case 19:
+#line 329 "gram.y"
+    {
+        (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
+        ;
+    }
+    break;
+
+    case 20:
 #line 330 "gram.y"
     {
-        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
     }
     break;
 
-    case 22:
-#line 331 "gram.y"
-    {
-        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
-        ;
-    }
-    break;
-
-    case 23:
+    case 21:
 #line 332 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1888,7 +1874,7 @@ yyreduce:
     }
     break;
 
-    case 24:
+    case 22:
 #line 333 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1896,7 +1882,7 @@ yyreduce:
     }
     break;
 
-    case 25:
+    case 23:
 #line 334 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1904,7 +1890,7 @@ yyreduce:
     }
     break;
 
-    case 26:
+    case 24:
 #line 335 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1912,7 +1898,7 @@ yyreduce:
     }
     break;
 
-    case 27:
+    case 25:
 #line 336 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1920,7 +1906,7 @@ yyreduce:
     }
     break;
 
-    case 28:
+    case 26:
 #line 337 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1928,7 +1914,7 @@ yyreduce:
     }
     break;
 
-    case 29:
+    case 27:
 #line 338 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1936,7 +1922,7 @@ yyreduce:
     }
     break;
 
-    case 30:
+    case 28:
 #line 339 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1944,7 +1930,7 @@ yyreduce:
     }
     break;
 
-    case 31:
+    case 29:
 #line 340 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1952,7 +1938,7 @@ yyreduce:
     }
     break;
 
-    case 32:
+    case 30:
 #line 341 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1960,7 +1946,7 @@ yyreduce:
     }
     break;
 
-    case 33:
+    case 31:
 #line 342 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1968,7 +1954,7 @@ yyreduce:
     }
     break;
 
-    case 34:
+    case 32:
 #line 343 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1976,7 +1962,7 @@ yyreduce:
     }
     break;
 
-    case 35:
+    case 33:
 #line 344 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1984,7 +1970,7 @@ yyreduce:
     }
     break;
 
-    case 36:
+    case 34:
 #line 345 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1992,7 +1978,7 @@ yyreduce:
     }
     break;
 
-    case 37:
+    case 35:
 #line 346 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2000,7 +1986,7 @@ yyreduce:
     }
     break;
 
-    case 38:
+    case 36:
 #line 347 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2008,7 +1994,15 @@ yyreduce:
     }
     break;
 
-    case 39:
+    case 37:
+#line 348 "gram.y"
+    {
+        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        ;
+    }
+    break;
+
+    case 38:
 #line 349 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2016,8 +2010,16 @@ yyreduce:
     }
     break;
 
+    case 39:
+#line 351 "gram.y"
+    {
+        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        ;
+    }
+    break;
+
     case 40:
-#line 350 "gram.y"
+#line 352 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), (yyvsp[(1) - (3)]));
         ;
@@ -2025,7 +2027,7 @@ yyreduce:
     break;
 
     case 41:
-#line 352 "gram.y"
+#line 354 "gram.y"
     {
         (yyval) = xxdefun((yyvsp[(1) - (6)]), (yyvsp[(3) - (6)]), (yyvsp[(6) - (6)]));
         ;
@@ -2033,7 +2035,7 @@ yyreduce:
     break;
 
     case 42:
-#line 353 "gram.y"
+#line 355 "gram.y"
     {
         (yyval) = xxfuncall((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]));
         ;
@@ -2041,7 +2043,7 @@ yyreduce:
     break;
 
     case 43:
-#line 354 "gram.y"
+#line 356 "gram.y"
     {
         (yyval) = xxif((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -2049,7 +2051,7 @@ yyreduce:
     break;
 
     case 44:
-#line 355 "gram.y"
+#line 357 "gram.y"
     {
         (yyval) = xxifelse((yyvsp[(1) - (5)]), (yyvsp[(2) - (5)]), (yyvsp[(3) - (5)]), (yyvsp[(5) - (5)]));
         ;
@@ -2057,7 +2059,7 @@ yyreduce:
     break;
 
     case 45:
-#line 356 "gram.y"
+#line 358 "gram.y"
     {
         (yyval) = xxfor((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -2065,7 +2067,7 @@ yyreduce:
     break;
 
     case 46:
-#line 357 "gram.y"
+#line 359 "gram.y"
     {
         (yyval) = xxwhile((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -2073,7 +2075,7 @@ yyreduce:
     break;
 
     case 47:
-#line 358 "gram.y"
+#line 360 "gram.y"
     {
         (yyval) = xxrepeat((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
@@ -2081,7 +2083,7 @@ yyreduce:
     break;
 
     case 48:
-#line 359 "gram.y"
+#line 361 "gram.y"
     {
         (yyval) = xxsubscript((yyvsp[(1) - (5)]), (yyvsp[(2) - (5)]), (yyvsp[(3) - (5)]));
         ;
@@ -2089,7 +2091,7 @@ yyreduce:
     break;
 
     case 49:
-#line 360 "gram.y"
+#line 362 "gram.y"
     {
         (yyval) = xxsubscript((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]));
         ;
@@ -2097,22 +2099,6 @@ yyreduce:
     break;
 
     case 50:
-#line 361 "gram.y"
-    {
-        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
-        ;
-    }
-    break;
-
-    case 51:
-#line 362 "gram.y"
-    {
-        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
-        ;
-    }
-    break;
-
-    case 52:
 #line 363 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2120,7 +2106,7 @@ yyreduce:
     }
     break;
 
-    case 53:
+    case 51:
 #line 364 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2128,7 +2114,7 @@ yyreduce:
     }
     break;
 
-    case 54:
+    case 52:
 #line 365 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2136,7 +2122,7 @@ yyreduce:
     }
     break;
 
-    case 55:
+    case 53:
 #line 366 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2144,7 +2130,7 @@ yyreduce:
     }
     break;
 
-    case 56:
+    case 54:
 #line 367 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2152,7 +2138,7 @@ yyreduce:
     }
     break;
 
-    case 57:
+    case 55:
 #line 368 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2160,7 +2146,7 @@ yyreduce:
     }
     break;
 
-    case 58:
+    case 56:
 #line 369 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2168,7 +2154,7 @@ yyreduce:
     }
     break;
 
-    case 59:
+    case 57:
 #line 370 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2176,7 +2162,7 @@ yyreduce:
     }
     break;
 
-    case 60:
+    case 58:
 #line 371 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2184,7 +2170,7 @@ yyreduce:
     }
     break;
 
-    case 61:
+    case 59:
 #line 372 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2192,8 +2178,24 @@ yyreduce:
     }
     break;
 
-    case 62:
+    case 60:
 #line 373 "gram.y"
+    {
+        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        ;
+    }
+    break;
+
+    case 61:
+#line 374 "gram.y"
+    {
+        (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        ;
+    }
+    break;
+
+    case 62:
+#line 375 "gram.y"
     {
         (yyval) = xxnxtbrk((yyvsp[(1) - (1)]));
         ;
@@ -2201,7 +2203,7 @@ yyreduce:
     break;
 
     case 63:
-#line 374 "gram.y"
+#line 376 "gram.y"
     {
         (yyval) = xxnxtbrk((yyvsp[(1) - (1)]));
         ;
@@ -2209,7 +2211,7 @@ yyreduce:
     break;
 
     case 64:
-#line 378 "gram.y"
+#line 380 "gram.y"
     {
         (yyval) = xxcond((yyvsp[(2) - (3)]));
         ;
@@ -2217,7 +2219,7 @@ yyreduce:
     break;
 
     case 65:
-#line 381 "gram.y"
+#line 383 "gram.y"
     {
         (yyval) = xxifcond((yyvsp[(2) - (3)]));
         ;
@@ -2225,7 +2227,7 @@ yyreduce:
     break;
 
     case 66:
-#line 384 "gram.y"
+#line 386 "gram.y"
     {
         (yyval) = xxforcond((yyvsp[(2) - (5)]), (yyvsp[(4) - (5)]));
         ;
@@ -2233,7 +2235,7 @@ yyreduce:
     break;
 
     case 67:
-#line 388 "gram.y"
+#line 390 "gram.y"
     {
         (yyval) = xxexprlist0();
         ;
@@ -2241,7 +2243,7 @@ yyreduce:
     break;
 
     case 68:
-#line 389 "gram.y"
+#line 391 "gram.y"
     {
         (yyval) = xxexprlist1((yyvsp[(1) - (1)]), &(yylsp[(1) - (1)]));
         ;
@@ -2249,22 +2251,6 @@ yyreduce:
     break;
 
     case 69:
-#line 390 "gram.y"
-    {
-        (yyval) = xxexprlist2((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
-        ;
-    }
-    break;
-
-    case 70:
-#line 391 "gram.y"
-    {
-        (yyval) = (yyvsp[(1) - (2)]);
-        ;
-    }
-    break;
-
-    case 71:
 #line 392 "gram.y"
     {
         (yyval) = xxexprlist2((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
@@ -2272,7 +2258,7 @@ yyreduce:
     }
     break;
 
-    case 72:
+    case 70:
 #line 393 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (2)]);
@@ -2280,8 +2266,24 @@ yyreduce:
     }
     break;
 
+    case 71:
+#line 394 "gram.y"
+    {
+        (yyval) = xxexprlist2((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
+        ;
+    }
+    break;
+
+    case 72:
+#line 395 "gram.y"
+    {
+        (yyval) = (yyvsp[(1) - (2)]);
+        ;
+    }
+    break;
+
     case 73:
-#line 396 "gram.y"
+#line 398 "gram.y"
     {
         (yyval) = xxsublist1((yyvsp[(1) - (1)]));
         ;
@@ -2289,7 +2291,7 @@ yyreduce:
     break;
 
     case 74:
-#line 397 "gram.y"
+#line 399 "gram.y"
     {
         (yyval) = xxsublist2((yyvsp[(1) - (4)]), (yyvsp[(4) - (4)]));
         ;
@@ -2297,7 +2299,7 @@ yyreduce:
     break;
 
     case 75:
-#line 400 "gram.y"
+#line 402 "gram.y"
     {
         (yyval) = xxsub0();
         ;
@@ -2305,7 +2307,7 @@ yyreduce:
     break;
 
     case 76:
-#line 401 "gram.y"
+#line 403 "gram.y"
     {
         (yyval) = xxsub1((yyvsp[(1) - (1)]));
         ;
@@ -2313,22 +2315,6 @@ yyreduce:
     break;
 
     case 77:
-#line 402 "gram.y"
-    {
-        (yyval) = xxsymsub0((yyvsp[(1) - (2)]));
-        ;
-    }
-    break;
-
-    case 78:
-#line 403 "gram.y"
-    {
-        (yyval) = xxsymsub1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
-        ;
-    }
-    break;
-
-    case 79:
 #line 404 "gram.y"
     {
         (yyval) = xxsymsub0((yyvsp[(1) - (2)]));
@@ -2336,7 +2322,7 @@ yyreduce:
     }
     break;
 
-    case 80:
+    case 78:
 #line 405 "gram.y"
     {
         (yyval) = xxsymsub1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2344,8 +2330,24 @@ yyreduce:
     }
     break;
 
-    case 81:
+    case 79:
 #line 406 "gram.y"
+    {
+        (yyval) = xxsymsub0((yyvsp[(1) - (2)]));
+        ;
+    }
+    break;
+
+    case 80:
+#line 407 "gram.y"
+    {
+        (yyval) = xxsymsub1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
+        ;
+    }
+    break;
+
+    case 81:
+#line 408 "gram.y"
     {
         (yyval) = xxnullsub0();
         ;
@@ -2353,7 +2355,7 @@ yyreduce:
     break;
 
     case 82:
-#line 407 "gram.y"
+#line 409 "gram.y"
     {
         (yyval) = xxnullsub1((yyvsp[(3) - (3)]));
         ;
@@ -2361,7 +2363,7 @@ yyreduce:
     break;
 
     case 83:
-#line 410 "gram.y"
+#line 412 "gram.y"
     {
         (yyval) = xxnullformal();
         ;
@@ -2369,7 +2371,7 @@ yyreduce:
     break;
 
     case 84:
-#line 411 "gram.y"
+#line 413 "gram.y"
     {
         (yyval) = xxfirstformal0((yyvsp[(1) - (1)]));
         ;
@@ -2377,7 +2379,7 @@ yyreduce:
     break;
 
     case 85:
-#line 412 "gram.y"
+#line 414 "gram.y"
     {
         (yyval) = xxfirstformal1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -2385,7 +2387,7 @@ yyreduce:
     break;
 
     case 86:
-#line 413 "gram.y"
+#line 415 "gram.y"
     {
         (yyval) = xxaddformal0((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
         ;
@@ -2393,7 +2395,7 @@ yyreduce:
     break;
 
     case 87:
-#line 414 "gram.y"
+#line 416 "gram.y"
     {
         (yyval) = xxaddformal1((yyvsp[(1) - (5)]), (yyvsp[(3) - (5)]), (yyvsp[(5) - (5)]));
         ;
@@ -2401,7 +2403,7 @@ yyreduce:
     break;
 
     case 88:
-#line 417 "gram.y"
+#line 419 "gram.y"
     {
         EatLines = 1;
         ;
@@ -2409,7 +2411,7 @@ yyreduce:
     break;
 
 /* Line 1267 of yacc.c.  */
-#line 2366 "gram.tab.c"
+#line 2368 "gram.tab.c"
     default:
         break;
     }
@@ -2621,7 +2623,7 @@ yyreturn:
     return YYID(yyresult);
 }
 
-#line 419 "gram.y"
+#line 421 "gram.y"
 
 /*----------------------------------------------------------------------------*/
 
@@ -2693,7 +2695,7 @@ static int xxungetc(int c)
 
 static SEXP makeSrcref(YYLTYPE *lloc, SEXP srcfile)
 {
-    SEXP result, val;
+    SEXP val;
 
     PROTECT(val = allocVector(INTSXP, 4));
     INTEGER(val)[0] = lloc->first_line;
@@ -2702,19 +2704,32 @@ static SEXP makeSrcref(YYLTYPE *lloc, SEXP srcfile)
     INTEGER(val)[3] = lloc->last_column;
     setAttrib(val, R_SrcfileSymbol, srcfile);
     setAttrib(val, R_ClassSymbol, mkString("srcref"));
-    result = allocList(1);
-    SETCAR(result, val);
-    SET_TAG(result, R_SrcrefSymbol);
     UNPROTECT(1);
-    return result;
+    return val;
+}
+
+static SEXP attachSrcrefs(SEXP val)
+{
+    SEXP t, srval;
+    int n;
+
+    PROTECT(val);
+    t = CDR(SrcRefs);
+    srval = allocVector(VECSXP, length(t));
+    for (n = 0; n < LENGTH(srval); n++, t = CDR(t))
+        SET_VECTOR_ELT(srval, n, CAR(t));
+    setAttrib(val, R_SrcrefSymbol, srval);
+    UNPROTECT(1);
+    SrcRefs = NULL;
+    return val;
 }
 
 static int xxvalue(SEXP v, int k, YYLTYPE *lloc)
 {
     if (k > 2)
     {
-        if (KeepSource && SrcFile)
-            SET_ATTRIB(v, makeSrcref(lloc, SrcFile));
+        if (SrcFile)
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
         UNPROTECT_PTR(v);
     }
     R_CurrentExpr = v;
@@ -2786,7 +2801,14 @@ static SEXP xxexprlist0()
 {
     SEXP ans;
     if (GenerateCode)
+    {
         PROTECT(ans = NewList());
+        if (SrcFile)
+        {
+            setAttrib(ans, R_SrcrefSymbol, SrcRefs);
+            REPROTECT(SrcRefs = NewList(), srindex);
+        }
+    }
     else
         PROTECT(ans = R_NilValue);
     return ans;
@@ -2797,11 +2819,15 @@ static SEXP xxexprlist1(SEXP expr, YYLTYPE *lloc)
     SEXP ans, tmp;
     if (GenerateCode)
     {
-        if (KeepSource && SrcFile)
-            SET_ATTRIB(expr, makeSrcref(lloc, SrcFile));
         PROTECT(tmp = NewList());
+        if (SrcFile)
+        {
+            setAttrib(tmp, R_SrcrefSymbol, SrcRefs);
+            REPROTECT(SrcRefs = NewList(), srindex);
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
+        }
         PROTECT(ans = GrowList(tmp, expr));
-        UNPROTECT(1);
+        UNPROTECT_PTR(tmp);
     }
     else
         PROTECT(ans = R_NilValue);
@@ -2814,8 +2840,8 @@ static SEXP xxexprlist2(SEXP exprlist, SEXP expr, YYLTYPE *lloc)
     SEXP ans;
     if (GenerateCode)
     {
-        if (KeepSource && SrcFile)
-            SET_ATTRIB(expr, makeSrcref(lloc, SrcFile));
+        if (SrcFile)
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
         PROTECT(ans = GrowList(exprlist, expr));
     }
     else
@@ -3167,12 +3193,24 @@ static SEXP xxsubscript(SEXP a1, SEXP a2, SEXP a3)
 static SEXP xxexprlist(SEXP a1, SEXP a2)
 {
     SEXP ans;
+    SEXP prevSrcrefs;
+
     EatLines = 0;
     if (GenerateCode)
     {
         SET_TYPEOF(a2, LANGSXP);
         SETCAR(a2, a1);
-        PROTECT(ans = a2);
+        if (SrcFile)
+        {
+            PROTECT(prevSrcrefs = getAttrib(a2, R_SrcrefSymbol));
+            PROTECT(ans = attachSrcrefs(a2));
+            REPROTECT(SrcRefs = prevSrcrefs, srindex);
+            /* SrcRefs got NAMED by being an attribute... */
+            SET_NAMED(SrcRefs, 0);
+            UNPROTECT_PTR(prevSrcrefs);
+        }
+        else
+            PROTECT(ans = a2);
     }
     else
         PROTECT(ans = R_NilValue);
@@ -3469,13 +3507,20 @@ static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
     int i;
     SEXP t, rval;
 
-    if (!isNull(srcfile))
-        SrcFile = srcfile;
-    xxlineno = 1;
-    xxcolno = 0;
     ParseContextInit();
     savestack = R_PPStackTop;
     PROTECT(t = NewList());
+
+    xxlineno = 1;
+    xxcolno = 0;
+    if (!isNull(srcfile))
+    {
+        SrcFile = srcfile;
+        PROTECT_WITH_INDEX(SrcRefs = NewList(), &srindex);
+    }
+    else
+        SrcFile = NULL;
+
     for (i = 0;;)
     {
         if (n >= 0 && i >= n)
@@ -3502,11 +3547,16 @@ static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
     }
 
 finish:
-    SrcFile = NULL;
+
     t = CDR(t);
     rval = allocVector(EXPRSXP, length(t));
     for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
         SET_VECTOR_ELT(rval, n, CAR(t));
+    if (SrcFile)
+    {
+        rval = attachSrcrefs(rval);
+        SrcFile = NULL;
+    }
     R_PPStackTop = savestack;
     *status = PARSE_OK;
     return rval;
@@ -3599,6 +3649,17 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
     bufp = buf;
     savestack = R_PPStackTop;
     PROTECT(t = NewList());
+
+    xxlineno = 1;
+    xxcolno = 0;
+    if (!isNull(srcfile))
+    {
+        SrcFile = srcfile;
+        PROTECT_WITH_INDEX(SrcRefs = NewList(), &srindex);
+    }
+    else
+        SrcFile = NULL;
+
     for (i = 0;;)
     {
         if (n >= 0 && i >= n)
@@ -3616,14 +3677,7 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
                 break;
         }
 
-        if (!isNull(srcfile))
-            SrcFile = srcfile;
-
-        xxlineno = 1;
-        xxcolno = 0;
-
         rval = R_Parse1Buffer(buffer, 1, status);
-        SrcFile = NULL;
 
         switch (*status)
         {
@@ -3650,6 +3704,11 @@ finish:
     rval = allocVector(EXPRSXP, length(t));
     for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
         SET_VECTOR_ELT(rval, n, CAR(t));
+    if (SrcFile)
+    {
+        rval = attachSrcrefs(rval);
+        SrcFile = NULL;
+    }
     R_PPStackTop = savestack;
     *status = PARSE_OK;
     return rval;
