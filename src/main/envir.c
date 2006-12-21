@@ -1834,6 +1834,9 @@ static int isMissing(SEXP symbol, SEXP rho)
     if (symbol == R_MissingArg) /* Yes, this can happen */
         return 1;
 
+    /* check for infinite recursion */
+    R_CheckStack();
+
     if (DDVAL(symbol))
     {
         s = R_DotsSymbol;
