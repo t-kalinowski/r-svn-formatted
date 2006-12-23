@@ -145,7 +145,7 @@ const unsigned char *pcre_maketables(void)
         meta-character, which in this sense is any character that terminates a run
         of data characters. */
 
-        if (strchr("*+?{^.$|()[", i) != 0)
+        if (strchr("\\*+?{^.$|()[", i) != 0)
             x += ctype_meta;
         *p++ = x;
     }
