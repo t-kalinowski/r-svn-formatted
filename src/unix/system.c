@@ -58,6 +58,8 @@
 
 #include "Runix.h"
 
+attribute_hidden FILE *ifp = NULL;
+
 attribute_hidden Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/platform.c */
 
 /* call pointers to allow interface switching */
@@ -338,6 +340,26 @@ int Rf_initialize_R(int ac, char **av)
             {
                 UsingReadline = FALSE;
             }
+            else if (!strcmp(*av, "-f"))
+            {
+                ac--;
+                av++;
+                ifp = R_fopen(*av, "r");
+                if (!ifp)
+                {
+                    snprintf(msg, 1024, _("cannot open file '%s'"), *av);
+                    R_Suicide(msg);
+                }
+            }
+            else if (!strncmp(*av, "--file=", 7))
+            {
+                ifp = R_fopen((*av) + 7, "r");
+                if (!ifp)
+                {
+                    snprintf(msg, 1024, _("cannot open file '%s'"), (*av) + 7);
+                    R_Suicide(msg);
+                }
+            }
             else if (!strcmp(*av, "--args"))
             {
                 break;
@@ -373,7 +395,7 @@ int Rf_initialize_R(int ac, char **av)
         R_Interactive = useaqua;
     else
 #endif
-        R_Interactive = isatty(0);
+        R_Interactive = ifp == NULL && isatty(0);
 
 #ifdef HAVE_AQUA
     if (useaqua)
