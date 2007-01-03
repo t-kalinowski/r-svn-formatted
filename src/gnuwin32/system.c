@@ -993,22 +993,28 @@ int cmdlineoptions(int ac, char **av)
                 av++;
                 Rp->R_Interactive = FALSE;
                 Rp->ReadConsole = FileReadConsole;
-                ifp = R_fopen(*av, "r");
-                if (!ifp)
+                if (strcmp(*av, "-"))
                 {
-                    snprintf(s, 1024, _("cannot open file '%s'"), *av);
-                    R_Suicide(s);
+                    ifp = R_fopen(*av, "r");
+                    if (!ifp)
+                    {
+                        snprintf(s, 1024, _("cannot open file '%s'"), *av);
+                        R_Suicide(s);
+                    }
                 }
             }
             else if (CharacterMode == RTerm && !strncmp(*av, "--file=", 7))
             {
                 Rp->R_Interactive = FALSE;
                 Rp->ReadConsole = FileReadConsole;
-                ifp = R_fopen((*av) + 7, "r");
-                if (!ifp)
+                if (strcmp((*av) + 7, "-"))
                 {
-                    snprintf(s, 1024, _("cannot open file '%s'"), (*av) + 7);
-                    R_Suicide(s);
+                    ifp = R_fopen((*av) + 7, "r");
+                    if (!ifp)
+                    {
+                        snprintf(s, 1024, _("cannot open file '%s'"), (*av) + 7);
+                        R_Suicide(s);
+                    }
                 }
             }
             else
