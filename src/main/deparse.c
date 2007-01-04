@@ -1203,10 +1203,17 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff(tpb, d);
         break;
     case S4SXP:
+#ifdef S4_SIMPLE_DEPARSE
         d->sourceable = FALSE;
         print2buff("<S4 object of class ", d);
         deparse2buff(getAttrib(s, R_ClassSymbol), d);
         print2buff(">", d);
+#else
+        sprintf(tpb, "new(\"%s\",\n", CHAR(getAttrib(s, R_ClassSymbol)));
+        print2buff(tpb, d);
+
+        print2buff(")", d);
+#endif
         break;
     default:
         d->sourceable = FALSE;
