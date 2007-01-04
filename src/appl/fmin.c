@@ -162,13 +162,6 @@ double Brent_fmin(double ax, double bx, double (*f)(double, void *), void *info,
 
         /*  update  a, b, v, w, and x */
 
-        if (fx <= fu)
-        {
-            if (u < x)
-                a = u;
-            else
-                b = u;
-        }
         if (fu <= fx)
         {
             if (u < x)
@@ -184,6 +177,10 @@ double Brent_fmin(double ax, double bx, double (*f)(double, void *), void *info,
         }
         else
         {
+            if (u < x)
+                a = u;
+            else
+                b = u;
             if (fu <= fw || w == x)
             {
                 v = w;
