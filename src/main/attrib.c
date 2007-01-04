@@ -1354,8 +1354,6 @@ SEXP R_do_slot(SEXP obj, SEXP name)
     /* Slots are stored as attributes to
        provide some back-compatibility
     */
-    SEXP value = NULL;
-    int nprotect = 0;
     if (!(isSymbol(name) || (isString(name) && LENGTH(name) == 1)))
         error(_("invalid type or length for slot name"));
     if (!s_dot_Data)
@@ -1364,33 +1362,38 @@ SEXP R_do_slot(SEXP obj, SEXP name)
         name = install(CHAR(STRING_ELT(name, 0)));
     if (name == s_dot_Data)
         return data_part(obj);
-    value = getAttrib(obj, name);
-    if (value == R_NilValue)
+    else
     {
-        SEXP input = name, classString;
-        if (isSymbol(name))
+        SEXP value = getAttrib(obj, name);
+        if (value == R_NilValue)
         {
-            input = PROTECT(allocVector(STRSXP, 1));
-            nprotect++;
-            SET_STRING_ELT(input, 0, PRINTNAME(name));
-            classString = GET_CLASS(obj);
-            if (isNull(classString))
-                error(_("cannot get a slot (\"%s\") from an object of type \"%s\""), CHAR(asChar(input)),
-                      CHAR(type2str(TYPEOF(obj))));
-        }
-        else
-            classString = R_NilValue; /* make sure it is initialized */
-                                      /* not there.  But since even NULL really does get stored, this
-                                         implies that there is no slot of this name.  Or somebody
-                                         screwed up by using atttr(..) <- NULL */
+            SEXP input = name, classString;
+            if (isSymbol(name))
+            {
+                input = PROTECT(allocVector(STRSXP, 1));
+                SET_STRING_ELT(input, 0, PRINTNAME(name));
+                classString = GET_CLASS(obj);
+                if (isNull(classString))
+                {
+                    UNPROTECT(1);
+                    error(_("cannot get a slot (\"%s\") from an object of type \"%s\""), CHAR(asChar(input)),
+                          CHAR(type2str(TYPEOF(obj))));
+                }
+            }
+            else
+                classString = R_NilValue; /* make sure it is initialized */
+            /* not there.  But since even NULL really does get stored, this
+               implies that there is no slot of this name.  Or somebody
+               screwed up by using atttr(..) <- NULL */
 
-        error(_("no slot of name \"%s\" for this object of class \"%s\""), CHAR(asChar(input)),
-              CHAR(asChar(classString)));
+            UNPROTECT(1);
+            error(_("no slot of name \"%s\" for this object of class \"%s\""), CHAR(asChar(input)),
+                  CHAR(asChar(classString)));
+        }
+        else if (value == pseudo_NULL)
+            value = R_NilValue;
+        return value;
     }
-    else if (value == pseudo_NULL)
-        value = R_NilValue;
-    UNPROTECT(nprotect);
-    return value;
 }
 
 SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
