@@ -229,6 +229,9 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(CAR(args)))
         errorcall(call, _("wrong type for argument"));
 
+    if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
+        errorcall(call, _("wrong type for argument"));
+
     i = LENGTH(CAR(args));
     if (i == 0)
     {
@@ -257,7 +260,7 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             s = getenv(CHAR(STRING_ELT(CAR(args), j)));
             if (s == NULL)
-                SET_STRING_ELT(ans, j, mkChar(""));
+                SET_STRING_ELT(ans, j, STRING_ELT(CADR(args), 0));
             else
                 SET_STRING_ELT(ans, j, mkChar(s));
         }
@@ -266,14 +269,14 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
-#ifdef HAVE_PUTENV
-static int Rputenv(char *str)
+#if !defined(HAVE_SETENV) && defined(HAVE_PUTENV)
+static int Rputenv(char *nm, char *val)
 {
     char *buf;
-    buf = (char *)malloc((strlen(str) + 1) * sizeof(char));
+    buf = (char *)malloc((strlen(nm) + strlen(val) + 2) * sizeof(char));
     if (!buf)
         return 1;
-    strcpy(buf, str);
+    sprintf(buf, "%s=%s", nm, val);
     putenv(buf);
     /* no free here: storage remains in use */
     return 0;
@@ -282,7 +285,39 @@ static int Rputenv(char *str)
 
 SEXP attribute_hidden do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#ifdef HAVE_PUTENV
+#if defined(HAVE_PUTENV) || defined(HAVE_SETENV)
+    int i, n;
+    SEXP ans, nm, vars;
+
+    checkArity(op, args);
+
+    if (!isString(nm = CAR(args)))
+        errorcall(call, _("wrong type for argument"));
+    if (!isString(vars = CADR(args)))
+        errorcall(call, _("wrong type for argument"));
+    if (LENGTH(nm) != LENGTH(vars))
+        errorcall(call, _("wrong length for argument"));
+
+    n = LENGTH(vars);
+    PROTECT(ans = allocVector(LGLSXP, n));
+#ifdef HAVE_SETENV
+    for (i = 0; i < n; i++)
+        LOGICAL(ans)[i] = setenv(CHAR(STRING_ELT(nm, i)), CHAR(STRING_ELT(vars, i)), 1) == 0;
+#else
+    for (i = 0; i < n; i++)
+        LOGICAL(ans)[i] = Rputenv(CHAR(STRING_ELT(nm, i)), CHAR(STRING_ELT(vars, i))) == 0;
+#endif
+    UNPROTECT(1);
+    return ans;
+#else
+    error(_("'Sys.putenv' is not available on this system"));
+    return R_NilValue; /* -Wall */
+#endif
+}
+
+SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+#if defined(HAVE_UNSETENV) || defined(Win32)
     int i, n;
     SEXP ans, vars;
 
@@ -290,17 +325,25 @@ SEXP attribute_hidden do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(vars = CAR(args)))
         errorcall(call, _("wrong type for argument"));
-
     n = LENGTH(vars);
     PROTECT(ans = allocVector(LGLSXP, n));
-    for (i = 0; i < n; i++)
+#ifdef Win32
     {
-        LOGICAL(ans)[i] = Rputenv(CHAR(STRING_ELT(vars, i))) == 0;
+        char buf[1000];
+        for (i = 0; i < n; i++)
+        {
+            snprintf(buf, 1000, "%s=", CHAR(STRING_ELT(vars, i)));
+            LOGICAL(ans)[i] = putenv(buf) == 0;
+        }
     }
+#else
+    for (i = 0; i < n; i++)
+        LOGICAL(ans)[i] = unsetenv(CHAR(STRING_ELT(vars, i))) == 0;
+#endif
     UNPROTECT(1);
     return ans;
 #else
-    error(_("'putenv' is not available on this system"));
+    error(_("'Sys.unsetenv' is not available on this system"));
     return R_NilValue; /* -Wall */
 #endif
 }
