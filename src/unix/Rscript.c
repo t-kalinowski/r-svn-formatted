@@ -137,7 +137,10 @@ int main(int argc, char *argv[])
         }
         if (strcmp(argv[1], "--version") == 0)
         {
-            fprintf(stderr, "R scripting front-end %s\n", RSVERSION);
+            char buf[20];
+            strcpy(buf, RSVERSION + 6);
+            buf[strlen(buf) - 2] = '\0';
+            fprintf(stderr, "R scripting front-end version %s\n", buf);
             exit(0);
         }
     }
