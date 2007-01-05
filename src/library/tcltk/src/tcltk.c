@@ -9,6 +9,15 @@
 /* Includes Nakama's internationalization patches */
 #endif
 
+#include <R.h>
+
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) dgettext("tcltk", String)
+#else
+#define _(String) (String)
+#endif
+
 extern int (*R_timeout_handler)();
 extern long R_timeout_val;
 
@@ -52,7 +61,7 @@ static int R_eval(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 c
     if (status != PARSE_OK)
     {
         UNPROTECT(2);
-        Tcl_SetResult(interp, "parse error in R expression", TCL_STATIC);
+        Tcl_SetResult(interp, _("parse error in R expression"), TCL_STATIC);
         return TCL_ERROR;
     }
 
@@ -146,7 +155,7 @@ static Tcl_Obj *tk_eval(char *cmd)
     {
         char p[512];
         if (strlen(Tcl_GetStringResult(RTcl_interp)) > 500)
-            strcpy(p, "tcl error.\n");
+            strcpy(p, _("tcl error.\n"));
         else
 #ifdef SUPPORT_MBCS
         {
@@ -179,7 +188,7 @@ SEXP dotTcl(SEXP args)
     char *cmd;
     Tcl_Obj *val;
     if (!isValidString(CADR(args)))
-        error("invalid argument");
+        error(_("invalid argument"));
     cmd = CHAR(STRING_ELT(CADR(args), 0));
     val = tk_eval(cmd);
     ans = makeRTclObject(val);
@@ -227,7 +236,7 @@ SEXP dotTclObjv(SEXP args)
     {
         char p[512];
         if (strlen(Tcl_GetStringResult(RTcl_interp)) > 500)
-            strcpy(p, "tcl error.\n");
+            strcpy(p, _("tcl error.\n"));
         else
 #ifdef SUPPORT_MBCS
         {
@@ -576,7 +585,7 @@ static void callback_closure(char *buf, int buflen, SEXP closure)
         snprintf(tmp, 20, " %%%s", CHAR(PRINTNAME(TAG(formals))));
         tmp[20] = '\0';
         if (strlen(buf) + strlen(tmp) >= buflen)
-            error("argument list is too long in tcltk internal function 'callback_closure'");
+            error(_("argument list is too long in tcltk internal function 'callback_closure'"));
         strcat(buf, tmp);
         formals = CDR(formals);
     }
@@ -607,7 +616,7 @@ SEXP dotTclcallback(SEXP args)
         callback_lang(buff, callback, env);
     }
     else
-        error("argument is not of correct type");
+        error(_("argument is not of correct type"));
 
 #ifdef SUPPORT_MBCS
     {
@@ -652,7 +661,7 @@ static int Gtk_TclHandler(void)
 static void addTcl(void)
 {
     if (Tcl_loaded)
-        error("Tcl already loaded");
+        error(_("Tcl already loaded"));
     Tcl_loaded = 1;
     if (strcmp(R_GUIType, "GNOME") == 0)
     {
@@ -673,7 +682,7 @@ static void addTcl(void)
 void delTcl(void)
 {
     if (!Tcl_loaded)
-        error("Tcl is not loaded");
+        error(_("Tcl is not loaded"));
     if (strcmp(R_GUIType, "GNOME") == 0)
     {
         R_timeout_handler = NULL;
@@ -682,7 +691,7 @@ void delTcl(void)
     else
     {
         if (R_PolledEvents != TclHandler)
-            error("Tcl is not last loaded handler");
+            error(_("Tcl is not last loaded handler"));
         R_PolledEvents = OldHandler;
         R_wait_usec = OldTimeout;
     }
@@ -761,7 +770,7 @@ void tcltk_init(void)
     }
 #if !defined(Win32) && !defined(HAVE_AQUA)
     else
-        warning("no DISPLAY variable so Tk is not available");
+        warning(_("no DISPLAY variable so Tk is not available"));
 #endif
 
     Tcl_CreateCommand(RTcl_interp, "R_eval", R_eval, (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
@@ -794,7 +803,7 @@ SEXP RTcl_ServiceMode(SEXP args)
     int value;
 
     if (!isLogical(CADR(args)) || length(CADR(args)) > 1)
-        error("invalid argument");
+        error(_("invalid argument"));
 
     if (length(CADR(args)))
         value = Tcl_SetServiceMode(LOGICAL(CADR(args))[0] ? TCL_SERVICE_ALL : TCL_SERVICE_NONE);
