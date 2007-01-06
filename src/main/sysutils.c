@@ -236,14 +236,12 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     if (i == 0)
     {
 #ifdef Win32
-        char *envir, *e;
-        envir = (char *)GetEnvironmentStrings();
-        for (i = 0, e = envir; strlen(e) > 0; i++, e += strlen(e) + 1)
+        char **e;
+        for (i = 0, e = _environ; *e != NULL; i++, e++)
             ;
         PROTECT(ans = allocVector(STRSXP, i));
-        for (i = 0, e = envir; strlen(e) > 0; i++, e += strlen(e) + 1)
-            SET_STRING_ELT(ans, i, mkChar(e));
-        FreeEnvironmentStrings(envir);
+        for (i = 0, e = _environ; *e != NULL; i++, e++)
+            SET_STRING_ELT(ans, i, mkChar(*e));
 #else
         char **e;
         for (i = 0, e = environ; *e != NULL; i++, e++)
@@ -277,7 +275,8 @@ static int Rputenv(char *nm, char *val)
     if (!buf)
         return 1;
     sprintf(buf, "%s=%s", nm, val);
-    putenv(buf);
+    if (putenv(buf))
+        return 1;
     /* no free here: storage remains in use */
     return 0;
 }
@@ -673,16 +672,24 @@ void attribute_hidden InitTempDir()
         tmp = mkdtemp(tmp1);
         if (!tmp)
             R_Suicide(_("cannot mkdir R_TempDir"));
-#if defined(HAVE_PUTENV) && !defined(Win32)
-        {
-            char *buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
-            if (buf)
+#ifndef Win32
+#ifdef HAVE_SETENV
+        if (setenv("R_SESSION_TMPDIR", tmp, 1))
+            errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
+#elif defined(HAVE_PUTENV)
             {
-                sprintf(buf, "R_SESSION_TMPDIR=%s", tmp);
-                putenv(buf);
-                /* no free here: storage remains in use */
+                char *buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
+                if (buf)
+                {
+                    sprintf(buf, "R_SESSION_TMPDIR=%s", tmp);
+                    if (putenv(buf))
+                        errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
+                    /* no free here: storage remains in use */
+                }
+                else
+                    errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
             }
-        }
+#endif
 #endif
     }
 
