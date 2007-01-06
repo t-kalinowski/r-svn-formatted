@@ -317,7 +317,7 @@ SEXP attribute_hidden do_putenv(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#if defined(HAVE_UNSETENV) || defined(Win32)
+#if defined(HAVE_UNSETENV) || defined(HAVE_PUTENV_UNSET) || defined(HAVE_PUTENV_UNSET2)
     int i, n;
     SEXP ans, vars;
 
@@ -327,7 +327,14 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("wrong type for argument"));
     n = LENGTH(vars);
     PROTECT(ans = allocVector(LGLSXP, n));
-#ifdef Win32
+#ifdef HAVE_UNSETENV
+    for (i = 0; i < n; i++)
+        LOGICAL(ans)[i] = unsetenv(CHAR(STRING_ELT(vars, i))) == 0;
+#elif defined(HAVE_PUTENV_UNSET)
+    for (i = 0; i < n; i++)
+    {
+        LOGICAL(ans)[i] = putenv(CHAR(STRING_ELT(vars, i))) == 0;
+#elif defined(HAVE_PUTENV_UNSET2)
     {
         char buf[1000];
         for (i = 0; i < n; i++)
@@ -336,9 +343,6 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
             LOGICAL(ans)[i] = putenv(buf) == 0;
         }
     }
-#else
-    for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = unsetenv(CHAR(STRING_ELT(vars, i))) == 0;
 #endif
     UNPROTECT(1);
     return ans;
@@ -441,7 +445,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         cnt = 0;
         iconvlist(write_one, (void *)ans);
 #else
-        PROTECT(ans = R_NilValue);
+            PROTECT(ans = R_NilValue);
 #endif
     }
     else
@@ -546,7 +550,7 @@ void *Riconv_open(char *tocode, char *fromcode)
     else
         return iconv_open(tocode, fromcode);
 #else
-    return iconv_open(tocode, fromcode);
+        return iconv_open(tocode, fromcode);
 #endif
 }
 
