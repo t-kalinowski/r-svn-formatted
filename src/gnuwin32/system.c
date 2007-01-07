@@ -751,9 +751,10 @@ char *PrintUsage(void)
          msg3[] = "  -q, --quiet           Don't print startup message\n  --silent              Same as --quiet\n  "
                   "--slave               Make R run as quietly as possible\n  --verbose             Print more "
                   "information about progress\n  --args                Skip the rest of the command line\n",
-         msg4[] =
-             "  --ess                 Don't use getline for command-line editing\n                          and assert "
-             "interactive use\n   -f file              Take input from 'file'\n  --file=file           ditto";
+         msg4[] = "  --ess                 Don't use getline for command-line editing\n                          and "
+                  "assert interactive use\n  -f file               Take input from 'file'\n  --file=file           "
+                  "ditto\n  -e expression         Use 'expression' as input\n\nOne or more -e options can be used, but "
+                  "not together with -f or --file";
     if (CharacterMode == RTerm)
         strcpy(msg, "Usage: Rterm [options] [< infile] [> outfile] [EnvVars]\n\n");
     else
@@ -765,6 +766,7 @@ char *PrintUsage(void)
     strcat(msg, msg3);
     if (CharacterMode == RTerm)
         strcat(msg, msg4);
+    strcat(msg, "\n");
     return msg;
 }
 
@@ -791,7 +793,7 @@ int cmdlineoptions(int ac, char **av)
     int i, ierr;
     R_size_t value;
     char *p;
-    char s[1024];
+    char s[1024], cmdlines[10000];
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
 #endif
@@ -907,6 +909,7 @@ int cmdlineoptions(int ac, char **av)
 
     R_common_command_line(&ac, av, Rp);
 
+    cmdlines[0] = '\0';
     while (--ac)
     {
         if (processing && **++av == '-')
@@ -1017,6 +1020,21 @@ int cmdlineoptions(int ac, char **av)
                     }
                 }
             }
+            else if (CharacterMode == RTerm && !strcmp(*av, "-e"))
+            {
+                ac--;
+                av++;
+                if (strlen(cmdlines) + strlen(*av) + 2 <= 10000)
+                {
+                    strcat(cmdlines, *av);
+                    strcat(cmdlines, "\n");
+                }
+                else
+                {
+                    snprintf(s, 1024, _("WARNING: '-e %s' omitted as input is too long\n"), *av);
+                    R_ShowMessage(s);
+                }
+            }
             else
             {
                 snprintf(s, 1024, _("WARNING: unknown option '%s'\n"), *av);
@@ -1057,6 +1075,20 @@ int cmdlineoptions(int ac, char **av)
                 FindClose(res);
         }
     }
+    if (strlen(cmdlines))
+    {
+        if (ifp)
+            R_Suicide(_("cannot use -e with -f or --file"));
+        Rp->R_Interactive = FALSE;
+        Rp->ReadConsole = FileReadConsole;
+        ifp = tmpfile();
+        fwrite(cmdlines, strlen(cmdlines) + 1, 1, ifp);
+        fflush(ifp);
+        rewind(ifp);
+    }
+    if (ifp && Rp->SaveAction != SA_SAVE)
+        Rp->SaveAction = SA_NOSAVE;
+
     Rp->rhome = R_Home;
 
     Rp->home = getRUser();

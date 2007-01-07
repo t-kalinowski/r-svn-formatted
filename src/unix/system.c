@@ -158,9 +158,10 @@ int Rf_initialize_R(int ac, char **av)
 {
     int i, ioff = 1, j;
     Rboolean useX11 = TRUE, useTk = FALSE;
-    char *p, msg[1024], **avv;
+    char *p, msg[1024], cmdlines[10000], **avv;
     structRstart rstart;
     Rstart Rp = &rstart;
+    cmdlines[0] = '\0';
 
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
@@ -368,6 +369,22 @@ int Rf_initialize_R(int ac, char **av)
                     }
                 }
             }
+            else if (!strcmp(*av, "-e"))
+            {
+                ac--;
+                av++;
+                Rp->R_Interactive = FALSE;
+                if (strlen(cmdlines) + strlen(*av) + 2 <= 10000)
+                {
+                    strcat(cmdlines, *av);
+                    strcat(cmdlines, "\n");
+                }
+                else
+                {
+                    snprintf(msg, 1024, _("WARNING: '-e %s' omitted as input is too long\n"), *av);
+                    R_ShowMessage(msg);
+                }
+            }
             else if (!strcmp(*av, "--args"))
             {
                 break;
@@ -389,7 +406,21 @@ int Rf_initialize_R(int ac, char **av)
             R_ShowMessage(msg);
         }
     }
+
+    if (strlen(cmdlines))
+    { /* had at least one -e option */
+        if (ifp)
+            R_Suicide(_("cannot use -e with -f or --file"));
+        ifp = tmpfile();
+        fwrite(cmdlines, strlen(cmdlines) + 1, 1, ifp);
+        fflush(ifp);
+        rewind(ifp);
+    }
+    if (ifp && Rp->SaveAction != SA_SAVE)
+        Rp->SaveAction = SA_NOSAVE;
+
     R_SetParams(Rp);
+
     if (!Rp->NoRenviron)
     {
         process_site_Renviron();
