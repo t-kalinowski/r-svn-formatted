@@ -106,19 +106,24 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "BATCH") == 0)
     {
         /* handle Rcmd BATCH internally */
-        char infile[MAX_PATH], outfile[MAX_PATH], *p;
+        char infile[MAX_PATH], outfile[MAX_PATH], *p, cmd_extra[CMD_LEN];
         DWORD ret;
         SECURITY_ATTRIBUTES sa;
         PROCESS_INFORMATION pi;
         STARTUPINFO si;
-        HANDLE hIN = INVALID_HANDLE_VALUE, hOUT = INVALID_HANDLE_VALUE;
+        HANDLE hOUT = INVALID_HANDLE_VALUE;
 
         /* process the command line */
-        snprintf(cmd, CMD_LEN, "%s/bin/Rterm.exe --restore --save", getRHOME());
+        cmd_extra[0] = '\0';
         if ((p = getenv("R_BATCH_OPTIONS")) && strlen(p))
         {
-            strcat(cmd, " ");
-            strcat(cmd, p);
+            if (1 + strlen(p) >= CMD_LEN)
+            {
+                fprintf(stderr, "command line too long\n");
+                return (27);
+            }
+            strcat(cmd_extra, " ");
+            strcat(cmd_extra, p);
         }
 
         for (i = cmdarg + 1, iused = cmdarg; i < argc; i++)
@@ -154,13 +159,13 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             }
             if (argv[i][0] == '-')
             {
-                if (strlen(cmd) + strlen(argv[i]) > 9900)
+                if (strlen(cmd_extra) + strlen(argv[i]) > 9900)
                 {
                     fprintf(stderr, "command line too long\n");
                     return (27);
                 }
-                strcat(cmd, " ");
-                strcat(cmd, argv[i]);
+                strcat(cmd_extra, " ");
+                strcat(cmd_extra, argv[i]);
                 iused = i;
             }
             else
@@ -184,6 +189,15 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else
                 strcat(outfile, ".Rout");
         }
+
+        snprintf(cmd, CMD_LEN, "%s/bin/Rterm.exe -f %s --restore --save", getRHOME(), infile);
+        if (strlen(cmd) + strlen(cmd_extra) >= CMD_LEN)
+        {
+            fprintf(stderr, "command line too long\n");
+            return (27);
+        }
+        strcat(cmd, cmd_extra);
+
         /* fprintf(stderr, "%s->%s\n", infile, outfile);
            fprintf(stderr, "%s\n", cmd); */
 
@@ -191,19 +205,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         sa.lpSecurityDescriptor = NULL;
         sa.bInheritHandle = TRUE;
 
-        hIN = CreateFile(infile, GENERIC_READ, FILE_SHARE_READ, &sa, OPEN_EXISTING, 0, NULL);
-        if (hIN == INVALID_HANDLE_VALUE)
-        {
-            fprintf(stderr, "unable to open input file\n");
-            return (1);
-        }
         hOUT = CreateFile(outfile, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, 0, NULL);
         if (hOUT == INVALID_HANDLE_VALUE)
         {
             fprintf(stderr, "unable to open output file\n");
             return (2);
         }
-        SetStdHandle(STD_INPUT_HANDLE, hIN);
         SetStdHandle(STD_OUTPUT_HANDLE, hOUT);
         SetStdHandle(STD_ERROR_HANDLE, hOUT);
         si.cb = sizeof(si);
@@ -215,7 +222,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         si.dwFlags = STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_SHOWDEFAULT;
         ret = CreateProcess(0, cmd, &sa, &sa, TRUE, 0, NULL, NULL, &si, &pi);
-        CloseHandle(hIN);
         CloseHandle(hOUT);
         if (!ret)
         {
