@@ -26,10 +26,6 @@
 #include <config.h>
 #endif
 
-#if defined(__APPLE__) && (!defined(_POSIX_C_SOURCE) || (_POSIX_C_SOURCE < 200112L))
-#define _POSIX_C_SOURCE 200112L /* for correct unsetenv */
-#endif
-
 #include <stdlib.h> /* for putenv */
 #include <Defn.h>
 #include <R_ext/Riconv.h>
@@ -329,25 +325,25 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(vars = CAR(args)))
         errorcall(call, _("wrong type for argument"));
     n = LENGTH(vars);
-    PROTECT(ans = allocVector(LGLSXP, n));
 #ifdef HAVE_UNSETENV
     for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = unsetenv(CHAR(STRING_ELT(vars, i))) == 0;
+        unsetenv(CHAR(STRING_ELT(vars, i)));
 #elif defined(HAVE_PUTENV_UNSET)
     for (i = 0; i < n; i++)
-    {
-        LOGICAL(ans)[i] = putenv(CHAR(STRING_ELT(vars, i))) == 0;
+        putenv(CHAR(STRING_ELT(vars, i)));
 #elif defined(HAVE_PUTENV_UNSET2)
     {
         char buf[1000];
         for (i = 0; i < n; i++)
         {
             snprintf(buf, 1000, "%s=", CHAR(STRING_ELT(vars, i)));
-            LOGICAL(ans)[i] = putenv(buf) == 0;
+            putenv(buf);
         }
     }
 #endif
-    UNPROTECT(1);
+    ans = allocVector(LGLSXP, n);
+    for (i = 0; i < n; i++)
+        LOGICAL(ans)[i] = !getenv(CHAR(STRING_ELT(vars, i)));
     return ans;
 #else
     error(_("'Sys.unsetenv' is not available on this system"));
@@ -448,7 +444,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         cnt = 0;
         iconvlist(write_one, (void *)ans);
 #else
-            PROTECT(ans = R_NilValue);
+        PROTECT(ans = R_NilValue);
 #endif
     }
     else
@@ -553,7 +549,7 @@ void *Riconv_open(char *tocode, char *fromcode)
     else
         return iconv_open(tocode, fromcode);
 #else
-        return iconv_open(tocode, fromcode);
+    return iconv_open(tocode, fromcode);
 #endif
 }
 
@@ -681,18 +677,18 @@ void attribute_hidden InitTempDir()
         if (setenv("R_SESSION_TMPDIR", tmp, 1))
             errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
 #elif defined(HAVE_PUTENV)
+        {
+            char *buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
+            if (buf)
             {
-                char *buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
-                if (buf)
-                {
-                    sprintf(buf, "R_SESSION_TMPDIR=%s", tmp);
-                    if (putenv(buf))
-                        errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
-                    /* no free here: storage remains in use */
-                }
-                else
+                sprintf(buf, "R_SESSION_TMPDIR=%s", tmp);
+                if (putenv(buf))
                     errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
+                /* no free here: storage remains in use */
             }
+            else
+                errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
+        }
 #endif
 #endif
     }
