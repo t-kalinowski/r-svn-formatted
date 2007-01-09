@@ -455,7 +455,7 @@ SEXP R_standardGeneric(SEXP fname, SEXP ev, SEXP fdef)
         prim_case = TRUE;
         break;
     default:
-        error(_("invalid  generic function object for method selection for function '%s': expected a function or a "
+        error(_("invalid generic function object for method selection for function '%s': expected a function or a "
                 "primitive, got an object of class \"%s\""),
               CHAR(asChar(fsym)), class_string(fdef));
     }
