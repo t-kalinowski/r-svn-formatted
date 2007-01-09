@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2006   Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997-2007   Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -174,6 +174,44 @@ static Rboolean rmin(double *x, int n, double *value, Rboolean narm)
     return (updated);
 }
 
+#if defined(Win32) && defined(SUPPORT_UTF8)
+#define STRCOLL Rstrcoll
+#else
+#ifdef HAVE_STRCOLL
+#define STRCOLL strcoll
+#else
+#define STRCOLL strcmp
+#endif
+#endif
+
+static Rboolean smin(SEXP x, SEXP *value, Rboolean narm)
+{
+    int i;
+    SEXP s = NA_STRING; /* -Wall */
+    Rboolean updated = FALSE;
+
+    for (i = 0; i < length(x); i++)
+    {
+        if (STRING_ELT(x, i) != NA_STRING)
+        {
+            if (!updated || STRCOLL(CHAR(s), CHAR(STRING_ELT(x, i))) > 0)
+            {
+                s = STRING_ELT(x, i);
+                if (!updated)
+                    updated = TRUE;
+            }
+        }
+        else if (!narm)
+        {
+            *value = NA_STRING;
+            return (TRUE);
+        }
+    }
+    *value = s;
+
+    return (updated);
+}
+
 static Rboolean imax(int *x, int n, int *value, Rboolean narm)
 {
     int i, s = 0 /* -Wall */;
@@ -224,6 +262,33 @@ static Rboolean rmax(double *x, int n, double *value, Rboolean narm)
             s = x[i];
             if (!updated)
                 updated = TRUE;
+        }
+    }
+    *value = s;
+
+    return (updated);
+}
+static Rboolean smax(SEXP x, SEXP *value, Rboolean narm)
+{
+    int i;
+    SEXP s = NA_STRING; /* -Wall */
+    Rboolean updated = FALSE;
+
+    for (i = 0; i < length(x); i++)
+    {
+        if (STRING_ELT(x, i) != NA_STRING)
+        {
+            if (!updated || STRCOLL(CHAR(s), CHAR(STRING_ELT(x, i))) < 0)
+            {
+                s = STRING_ELT(x, i);
+                if (!updated)
+                    updated = TRUE;
+            }
+        }
+        else if (!narm)
+        {
+            *value = NA_STRING;
+            return (TRUE);
         }
     }
     *value = s;
@@ -319,12 +384,12 @@ static Rboolean cprod(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
 
 SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, a;
+    SEXP ans, a, stmp, scum = NA_STRING;
     double tmp = 0.0, s;
     Rcomplex z, ztmp, zcum = {0.0, 0.0} /* -Wall */;
-    int itmp = 0, icum = 0, int_a, empty;
+    int itmp = 0, icum = 0, int_a, real_a, empty, warn = 0 /* dummy */;
     short iop;
-    SEXPTYPE ans_type; /* only INTEGER, REAL, or COMPLEX here */
+    SEXPTYPE ans_type; /* only INTEGER, REAL, COMPLEX or STRSXP here */
 
     Rboolean narm;
     int updated;
@@ -462,6 +527,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         a = CAR(args);
         int_a = 0; /* int_a = 1	<-->	a is INTEGER */
+        real_a = 0;
 
         if (length(a) > 0)
         {
@@ -483,6 +549,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                         updated = imax(INTEGER(a), length(a), &itmp, narm);
                     break;
                 case REALSXP:
+                    real_a = 1;
                     if (ans_type == INTSXP)
                     { /* change to REAL */
                         ans_type = REALSXP;
@@ -493,6 +560,17 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                         updated = rmin(REAL(a), length(a), &tmp, narm);
                     else
                         updated = rmax(REAL(a), length(a), &tmp, narm);
+                    break;
+                case STRSXP:
+                    if (!empty && ans_type == INTSXP)
+                        scum = StringFromInteger(icum, &warn);
+                    else if (!empty && ans_type == REALSXP)
+                        scum = StringFromReal(zcum.r, &warn);
+                    ans_type = STRSXP;
+                    if (iop == 2)
+                        updated = smin(a, &stmp, narm);
+                    else
+                        updated = smax(a, &stmp, narm);
                     break;
                 default:
                     goto invalid_type;
@@ -510,8 +588,8 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                             (iop == 3 && itmp > icum))   /* max */
                             icum = itmp;
                     }
-                    else
-                    { /* real */
+                    else if (ans_type == REALSXP)
+                    {
                         if (int_a)
                             tmp = Int2Real(itmp);
                         DbgP3(" REAL: (old)cum= %g, tmp=%g\n", zcum.r, tmp);
@@ -521,6 +599,21 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                         }
                         else if ((iop == 2 && tmp < zcum.r) || (iop == 3 && tmp > zcum.r))
                             zcum.r = tmp;
+                    }
+                    else
+                    {
+                        if (empty)
+                            scum = stmp;
+                        else
+                        {
+                            if (int_a)
+                                stmp = StringFromInteger(itmp, &warn);
+                            if (real_a)
+                                stmp = StringFromReal(tmp, &warn);
+                            if (((iop == 2 && STRCOLL(CHAR(stmp), CHAR(scum)) < 0)) ||
+                                (iop == 3 && STRCOLL(CHAR(stmp), CHAR(scum)) > 0))
+                                scum = stmp;
+                        }
                     }
                 } /*updated*/
                 else
@@ -645,6 +738,16 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (iop == 2 || iop == 3)
                     goto invalid_type;
                 break;
+            case STRSXP:
+                if (iop == 2 || iop == 3)
+                {
+                    if (!empty && ans_type == INTSXP)
+                        scum = StringFromInteger(icum, &warn);
+                    else if (!empty && ans_type == REALSXP)
+                        scum = StringFromReal(zcum.r, &warn);
+                    ans_type = STRSXP;
+                    break;
+                }
             default:
                 goto invalid_type;
             }
@@ -665,11 +768,18 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     /*-------------------------------------------------------*/
     if (empty && (iop == 2 || iop == 3))
     {
-        if (iop == 2)
-            warning(_("no non-missing arguments to min; returning Inf"));
+        if (ans_type == STRSXP)
+        {
+            warning(_("no non-missing arguments, returning NA"));
+        }
         else
-            warning(_("no non-missing arguments to max; returning -Inf"));
-        ans_type = REALSXP;
+        {
+            if (iop == 2)
+                warning(_("no non-missing arguments to min; returning Inf"));
+            else
+                warning(_("no non-missing arguments to max; returning -Inf"));
+            ans_type = REALSXP;
+        }
     }
 
     ans = allocVector(ans_type, 1);
@@ -684,10 +794,12 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     case CPLXSXP:
         COMPLEX(ans)[0].r = zcum.r;
         COMPLEX(ans)[0].i = zcum.i;
+    case STRSXP:
+        SET_STRING_ELT(ans, 0, scum);
     }
     return ans;
 
-na_answer: /* only INTSXP case curently used */
+na_answer: /* only INTSXP case used */
     ans = allocVector(ans_type, 1);
     switch (ans_type)
     {
@@ -699,6 +811,8 @@ na_answer: /* only INTSXP case curently used */
         break;
     case CPLXSXP:
         COMPLEX(ans)[0].r = COMPLEX(ans)[0].i = NA_REAL;
+    case STRSXP:
+        SET_STRING_ELT(ans, 0, NA_STRING);
     }
     return ans;
 
