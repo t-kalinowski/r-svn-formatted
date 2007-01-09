@@ -588,7 +588,7 @@ static void reset_tz(char *tz)
     else
     {
 #ifdef HAVE_UNSETENV
-        unsetenv("TZ") /* FreeBSD variants do not return a value */
+        unsetenv("TZ"); /* FreeBSD variants do not return a value */
 #elif defined(HAVE_PUTENV_UNSET)
         if (putenv("TZ"))
             warning(_("problem with unsetting timezone"));
