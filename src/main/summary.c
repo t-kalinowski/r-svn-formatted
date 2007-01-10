@@ -384,7 +384,7 @@ static Rboolean cprod(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
 
 SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, a, stmp, scum = NA_STRING;
+    SEXP ans, a, stmp = NA_STRING /* -Wall */, scum = NA_STRING;
     double tmp = 0.0, s;
     Rcomplex z, ztmp, zcum = {0.0, 0.0} /* -Wall */;
     int itmp = 0, icum = 0, int_a, real_a, empty, warn = 0 /* dummy */;
@@ -600,7 +600,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                         else if ((iop == 2 && tmp < zcum.r) || (iop == 3 && tmp > zcum.r))
                             zcum.r = tmp;
                     }
-                    else
+                    else if (ans_type == STRSXP)
                     {
                         if (empty)
                             scum = stmp;
@@ -794,12 +794,14 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     case CPLXSXP:
         COMPLEX(ans)[0].r = zcum.r;
         COMPLEX(ans)[0].i = zcum.i;
+        break;
     case STRSXP:
         SET_STRING_ELT(ans, 0, scum);
+        break;
     }
     return ans;
 
-na_answer: /* only INTSXP case used */
+na_answer: /* only INTSXP case curently used */
     ans = allocVector(ans_type, 1);
     switch (ans_type)
     {
@@ -811,8 +813,10 @@ na_answer: /* only INTSXP case used */
         break;
     case CPLXSXP:
         COMPLEX(ans)[0].r = COMPLEX(ans)[0].i = NA_REAL;
+        break;
     case STRSXP:
         SET_STRING_ELT(ans, 0, NA_STRING);
+        break;
     }
     return ans;
 
