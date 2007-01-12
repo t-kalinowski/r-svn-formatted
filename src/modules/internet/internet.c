@@ -174,7 +174,7 @@ static Rconnection in_R_newurl(char *description, const char *const mode)
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
         error(_("allocation of url connection failed"));
-    new->class = (char *)malloc(strlen("file") + 1);
+    new->class = (char *)malloc(strlen("url") + 1);
     if (!new->class)
     {
         free(new);
