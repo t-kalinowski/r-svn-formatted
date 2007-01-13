@@ -188,14 +188,20 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     rpipe *fp;
     char buf[INTERN_BUFSIZE];
-    int vis = 0, flag = 2, i = 0, j, ll;
+    int vis = 0, flag = 2, i = 0, j, ll, ignore_stderr = 0;
     SEXP tlist = R_NilValue, tchar, rval;
+    HANDLE hERR;
 
     checkArity(op, args);
     if (!isString(CAR(args)))
         errorcall(call, _("character string expected as first argument"));
     if (isInteger(CADR(args)))
         flag = INTEGER(CADR(args))[0];
+    if (flag >= 100)
+    {
+        ignore_stderr = 1;
+        flag -= 100;
+    }
     if (flag >= 20)
     {
         vis = -1;
@@ -218,6 +224,11 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         SetStdHandle(STD_OUTPUT_HANDLE, INVALID_HANDLE_VALUE);
         SetStdHandle(STD_ERROR_HANDLE, INVALID_HANDLE_VALUE);
     }
+    if ((CharacterMode != RGui) && ignore_stderr)
+    {
+        hERR = GetStdHandle(STD_ERROR_HANDLE);
+        SetStdHandle(STD_ERROR_HANDLE, INVALID_HANDLE_VALUE);
+    }
     if (flag < 2)
     {
         ll = runcmd(CHAR(STRING_ELT(CAR(args), 0)), flag, vis, CHAR(STRING_ELT(CADDR(args), 0)));
@@ -226,7 +237,12 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        fp = rpipeOpen(CHAR(STRING_ELT(CAR(args), 0)), vis, CHAR(STRING_ELT(CADDR(args), 0)), 0);
+        int m = 0;
+        if (flag == 2 /* show on console */ || CharacterMode == RGui)
+            m = 2;
+        if (ignore_stderr)
+            m = 0;
+        fp = rpipeOpen(CHAR(STRING_ELT(CAR(args), 0)), vis, CHAR(STRING_ELT(CADDR(args), 0)), m);
         if (!fp)
         {
             /* If we are capturing standard output generate an error */
@@ -256,6 +272,8 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             ll = rpipeClose(fp);
         }
     }
+    if ((CharacterMode != RGui) && ignore_stderr)
+        SetStdHandle(STD_ERROR_HANDLE, hERR);
     if (flag == 3)
     {
         rval = allocVector(STRSXP, i);

@@ -258,7 +258,8 @@ int runcmd(char *cmd, int wait, int visible, char *finput)
      redirect stdin for the child.
    newconsole != 0 to use a new console (if not waiting)
    visible = -1, 0, 1 for hide, minimized, default
-   io = 0 to read from pipe, 1 to write to pipe.
+   io = 0 to read stdout from pipe, 1 to write to pipe,
+   2 to read stdout and stderr from pipe.
  */
 rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
 {
@@ -273,7 +274,7 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
         return NULL;
     }
     r->process = NULL;
-    if (io)
+    if (io == 1)
     { /* pipe to write to */
         res = CreatePipe(&(r->read), &hTemp, NULL, 0);
         if (res == FALSE)
@@ -310,11 +311,13 @@ rpipe *rpipeOpen(char *cmd, int visible, char *finput, int io)
     CloseHandle(hTemp);
     CloseHandle(hTHIS);
     SetStdHandle(STD_OUTPUT_HANDLE, r->write);
-    SetStdHandle(STD_ERROR_HANDLE, r->write);
+    if (io > 0)
+        SetStdHandle(STD_ERROR_HANDLE, r->write);
     r->process = pcreate(cmd, finput, 0, visible, 1);
     r->active = 1;
     SetStdHandle(STD_OUTPUT_HANDLE, hOUT);
-    SetStdHandle(STD_ERROR_HANDLE, hERR);
+    if (io > 0)
+        SetStdHandle(STD_ERROR_HANDLE, hERR);
     if (!r->process)
         return NULL;
     if (!(hThread = CreateThread(NULL, 0, threadedwait, r, 0, &id)))
