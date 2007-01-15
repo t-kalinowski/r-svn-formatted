@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 {
 #ifdef HAVE_EXECV
     char cmd[PATH_MAX + 1], buf[PATH_MAX + 8], buf2[200], *p;
-    int i, i0 = 0, ac = 0, res = 0, e_mode = 0;
+    int i, i0 = 0, ac = 0, res = 0, e_mode = 0, set_dp = 0;
     char **av;
 
     if (argc <= 1)
@@ -165,6 +165,7 @@ int main(int argc, char *argv[])
         }
         if (strncmp(argv[i], "--default-packages=", 18) == 0)
         {
+            set_dp = 1;
             snprintf(buf2, 200, "R_DEFAULT_PACKAGES=%s", argv[i] + 19);
             if (verbose)
                 fprintf(stderr, "setting '%s'\n", buf2);
@@ -191,6 +192,10 @@ int main(int argc, char *argv[])
     for (i = i0 + 1; i < argc; i++)
         av[ac++] = argv[i];
     av[ac] = (char *)NULL;
+#ifdef HAVE_PUTENV
+    if (!set_dp && !getenv("R_DEFAULT_PACKAGES"))
+        putenv("R_DEFAULT_PACKAGES=datasets,utils,grdevices,graphics,stats");
+#endif
     if (verbose)
     {
         fprintf(stderr, "running\n  '%s", cmd);
