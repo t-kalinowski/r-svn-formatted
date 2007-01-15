@@ -280,6 +280,10 @@ void formatReal(double *x, int n, int *w, int *d, int *e, int nsmall)
     int i, naflag, nanflag, posinf, neginf;
 
     double eps = pow(10.0, -(double)R_print.digits);
+    /* better to err on the side of too few signif digits rather than
+       far too many */
+    if (eps < 2 * DBL_EPSILON)
+        eps = 2 * DBL_EPSILON;
 
     nanflag = 0;
     naflag = 0;
@@ -391,6 +395,8 @@ void formatComplex(Rcomplex *x, int n, int *wr, int *dr, int *er, int *wi, int *
     Rboolean all_re_zero = TRUE, all_im_zero = TRUE;
 
     double eps = pow(10.0, -(double)R_print.digits);
+    if (eps < 2 * DBL_EPSILON)
+        eps = 2 * DBL_EPSILON;
 
     naflag = 0;
     rnanflag = 0;
