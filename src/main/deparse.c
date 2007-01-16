@@ -561,7 +561,7 @@ static void attr1(SEXP s, LocalParseData *d)
 
 static void attr2(SEXP s, LocalParseData *d)
 {
-    Rboolean localOpts = d->opts;
+    int localOpts = d->opts;
 
     if (hasAttributes(s))
     {
@@ -1472,9 +1472,8 @@ static Rboolean src2buff(SEXP sv, int k, LocalParseData *d)
 static void vec2buff(SEXP v, LocalParseData *d)
 {
     SEXP nv, sv;
-    int i, n;
+    int i, n, localOpts = d->opts;
     Rboolean lbreak = FALSE;
-    Rboolean localOpts = d->opts;
 
     n = length(v);
     nv = getAttrib(v, R_NamesSymbol);
