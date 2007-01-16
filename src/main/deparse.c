@@ -400,11 +400,8 @@ SEXP attribute_hidden do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
                     continue;
                 obj_name = CHAR(STRING_ELT(names, i));
                 SET_STRING_ELT(outnames, nout++, STRING_ELT(names, i));
-                /* figure out if we need to quote the name */
-                if (!isValidName(obj_name))
-                    Rprintf("`%s` <-\n", obj_name);
-                else
-                    Rprintf("%s <-\n", obj_name);
+                Rprintf(/* figure out if we need to quote the name */
+                        isValidName(obj_name) ? "%s <-\n" : "`%s` <-\n", obj_name);
                 tval = deparse1(CAR(o), 0, opts);
                 for (j = 0; j < LENGTH(tval); j++)
                     Rprintf("%s\n", CHAR(STRING_ELT(tval, j)));
@@ -693,10 +690,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 {
     PPinfo fop;
     Rboolean lookahead = FALSE, lbreak = FALSE, parens;
-    Rboolean localOpts = d->opts;
     SEXP op, t;
     char tpb[120];
-    int i, n;
+    int localOpts = d->opts, i, n;
 
     switch (TYPEOF(s))
     {
