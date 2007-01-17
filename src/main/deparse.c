@@ -596,7 +596,7 @@ static void attr2(SEXP s, LocalParseData *d)
                 {
                     /* TAG(a) might contain spaces etc */
                     char *tag = CHAR(PRINTNAME(TAG(a)));
-                    d->opts = SIMPLEDEPARSE;
+                    d->opts = SIMPLEDEPARSE; /* turn off quote()ing */
                     if (isValidName(tag))
                         deparse2buff(TAG(a), d);
                     else
@@ -810,7 +810,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         {
             if (TAG(t) != R_NilValue)
             {
-                d->opts = SIMPLEDEPARSE;
+                d->opts = SIMPLEDEPARSE; /* turn off quote()ing */
                 deparse2buff(TAG(t), d);
                 d->opts = localOpts;
                 print2buff(" = ", d);
@@ -820,7 +820,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         }
         if (TAG(t) != R_NilValue)
         {
-            d->opts = SIMPLEDEPARSE;
+            d->opts = SIMPLEDEPARSE; /* turn off quote()ing */
             deparse2buff(TAG(t), d);
             d->opts = localOpts;
             print2buff(" = ", d);
@@ -1479,7 +1479,7 @@ static Rboolean src2buff(SEXP sv, int k, LocalParseData *d)
 static void vec2buff(SEXP v, LocalParseData *d)
 {
     SEXP nv, sv;
-    int i, n, localOpts = d->opts;
+    int i, n /*, localOpts = d->opts */;
     Rboolean lbreak = FALSE;
 
     n = length(v);
@@ -1499,7 +1499,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
         linebreak(&lbreak, d);
         if (!isNull(nv) && !isNull(STRING_ELT(nv, i)) && *CHAR(STRING_ELT(nv, i)))
         {
-            d->opts = SIMPLEDEPARSE;
+            /* d->opts = SIMPLEDEPARSE; This seems pointless */
             if (isValidName(CHAR(STRING_ELT(nv, i))))
                 deparse2buff(STRING_ELT(nv, i), d);
             else
@@ -1508,7 +1508,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
                 deparse2buff(STRING_ELT(nv, i), d);
                 print2buff("\"", d);
             }
-            d->opts = localOpts;
+            /* d->opts = localOpts; */
             print2buff(" = ", d);
         }
         if (!src2buff(sv, i, d))
