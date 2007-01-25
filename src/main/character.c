@@ -224,7 +224,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     x = CAR(args);
     sa = CADR(args);
-    so = CAR(CDDR(args));
+    so = CADDR(args);
     k = LENGTH(sa);
     l = LENGTH(so);
 
@@ -248,13 +248,13 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 
         for (i = 0; i < len; i++)
         {
-            if (STRING_ELT(x, i) == NA_STRING)
+            start = INTEGER(sa)[i % k];
+            stop = INTEGER(so)[i % l];
+            if (STRING_ELT(x, i) == NA_STRING || start == NA_INTEGER || stop == NA_INTEGER)
             {
                 SET_STRING_ELT(s, i, NA_STRING);
                 continue;
             }
-            start = INTEGER(sa)[i % k];
-            stop = INTEGER(so)[i % l];
             slen = strlen(CHAR(STRING_ELT(x, i)));
             if (start < 1)
                 start = 1;
@@ -333,13 +333,14 @@ SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
         for (i = 0; i < len; i++)
         {
-            if (STRING_ELT(x, i) == NA_STRING || STRING_ELT(value, i % v) == NA_STRING)
+            start = INTEGER(sa)[i % k];
+            stop = INTEGER(so)[i % l];
+            if (STRING_ELT(x, i) == NA_STRING || STRING_ELT(value, i % v) == NA_STRING || start == NA_INTEGER ||
+                stop == NA_INTEGER)
             {
                 SET_STRING_ELT(s, i, NA_STRING);
                 continue;
             }
-            start = INTEGER(sa)[i % k];
-            stop = INTEGER(so)[i % l];
             slen = strlen(CHAR(STRING_ELT(x, i)));
             if (start < 1)
                 start = 1;
