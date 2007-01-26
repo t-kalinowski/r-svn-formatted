@@ -33,6 +33,8 @@ static char MDIStatusText[256] = "";
 #include "commctrl.h"
 #endif
 
+static HWND intMDIStatus = 0;
+
 int addstatusbar()
 {
     int a[1] = {-1};
@@ -40,19 +42,33 @@ int addstatusbar()
         return 0;
     if (MDIStatus)
         return 1;
-    InitCommonControls();
-    MDIStatus = CreateStatusWindow(WS_CHILD | SBARS_SIZEGRIP | WS_VISIBLE, "", hwndFrame, 121);
-    if (!MDIStatus)
+    if (!intMDIStatus)
+    {
+        InitCommonControls();
+        intMDIStatus = CreateStatusWindow(WS_CHILD | SBARS_SIZEGRIP | WS_VISIBLE, "", hwndFrame, 121);
+        if (!intMDIStatus)
+            return 0;
+        SendMessage(intMDIStatus, SB_SETPARTS, (WPARAM)1, (LPARAM)a);
+    }
+    MDIStatus = intMDIStatus;
+    SendMessage(hwndFrame, WM_PAINT, (WPARAM)0, (LPARAM)0);
+    return 1;
+}
+
+int delstatusbar()
+{
+    if (!MDIFrame)
         return 0;
-    SendMessage(MDIStatus, SB_SETPARTS, (WPARAM)1, (LPARAM)a);
+    MDIStatus = 0; /* handle_mdiframeresize notices this */
+    SendMessage(hwndFrame, WM_PAINT, (WPARAM)0, (LPARAM)0);
     return 1;
 }
 
 PROTECTED void updatestatus(char *text)
 {
+    strncpy(MDIStatusText, text, 255);
     if (!MDIStatus)
         return;
-    strncpy(MDIStatusText, text, 255);
     SendMessage(MDIStatus, SB_SETTEXT, (WPARAM)0 | 0, (LPARAM)MDIStatusText);
     SendMessage(MDIStatus, WM_PAINT, (WPARAM)0, (LPARAM)0);
 }

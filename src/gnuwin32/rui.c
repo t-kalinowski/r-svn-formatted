@@ -64,7 +64,7 @@ extern Rboolean DebugMenuitem;
 static menubar RMenuBar;
 static popup RConsolePopup;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
-    mlazy, mconfig, mls, mrm, msearch, mde;
+    mlazy, mconfig, mls, mrm, msearch, mde, mtools, mstatus;
 static int lmanintro, lmanref, lmandata, lmanlang, lmanext, lmanint, lmanadmin;
 static menu m;
 static char cmd[1024];
@@ -334,6 +334,34 @@ void menuconfig(control m)
 {
     Rgui_configure();
     /*    show(RConsole); */
+}
+
+static void menutools(control m)
+{
+    if (ischecked(mtools))
+    {
+        toolbar_hide();
+        uncheck(mtools);
+    }
+    else
+    {
+        toolbar_show();
+        check(mtools);
+    }
+}
+
+static void menustatus(control m)
+{
+    if (ischecked(mstatus))
+    {
+        delstatusbar();
+        uncheck(mstatus);
+    }
+    else
+    {
+        addstatusbar();
+        check(mstatus);
+    }
 }
 
 static void menulazy(control m)
@@ -1055,7 +1083,7 @@ int setupui()
         return 0;
     TRACERUI("Console done");
 #ifdef USE_MDI
-    if (ismdi() && (RguiMDI & RW_TOOLBAR))
+    if (ismdi())
     {
         int btsize = 24;
         rect r = rect(2, 2, btsize, btsize);
@@ -1142,7 +1170,18 @@ int setupui()
     MCHECK(mde = newmenuitem(G_("Data editor..."), 0, menude));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mconfig = newmenuitem(G_("GUI preferences..."), 0, menuconfig));
-
+#ifdef USE_MDI
+    if (ismdi())
+    {
+        MCHECK(newmenu(G_("View")));
+        MCHECK(mtools = newmenuitem(G_("Toolbar"), 0, menutools));
+        MCHECK(mstatus = newmenuitem(G_("Statusbar"), 0, menustatus));
+        if (RguiMDI & RW_TOOLBAR)
+            check(mtools);
+        if (RguiMDI & RW_STATUSBAR)
+            check(mstatus);
+    }
+#endif
     MCHECK(newmenu(G_("Misc")));
     MCHECK(newmenuitem(G_("Stop current computation           \tESC"), 0, menukill));
     MCHECK(newmenuitem(G_("Stop all computations"), 0, menukillall));
@@ -1170,6 +1209,8 @@ int setupui()
     gl_hist_init(R_HistorySize, 0);
     if (R_RestoreHistory)
         gl_loadhistory(R_HistoryFile);
+    if (ismdi() && !(RguiMDI & RW_TOOLBAR))
+        toolbar_hide();
     show(RConsole);
     return 1;
 }
