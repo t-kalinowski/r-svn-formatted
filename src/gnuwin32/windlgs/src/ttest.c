@@ -83,6 +83,7 @@ void menu_ttest(char **vars, int ints[], double level[])
         R_ProcessEvents();
         if (done > 0)
             break;
+        Sleep(100);
     }
     vars[0] = v[0];
     vars[1] = v[1];
@@ -96,7 +97,7 @@ void menu_ttest(char **vars, int ints[], double level[])
     delobj(win);
 }
 
-extern void Rconsolecmd(window c, char *cmd);
+extern void Rconsolecmd(char *cmd);
 extern __declspec(dllimport) window RConsole;
 
 static void cancel2(button b)
@@ -118,13 +119,14 @@ void menu_ttest2()
         R_ProcessEvents();
         if (done > 0)
             break;
+        Sleep(100);
     }
     if (done == 1)
     {
         sprintf(cmd, "t.test(x=%s, y=%s, alternative=\"%s\",\n      paired=%s, var.equal=%s, conf.level=%s)\n", v[0],
                 v[1], alts[getlistitem(alt)], ischecked(paired) ? "TRUE" : "FALSE",
                 ischecked(varequal) ? "TRUE" : "FALSE", GA_gettext(lvl));
-        Rconsolecmd(RConsole, cmd);
+        Rconsolecmd(cmd);
     }
     hide(win);
     delobj(bApply);
@@ -151,6 +153,7 @@ SEXP menu_ttest3()
         R_ProcessEvents();
         if (done > 0)
             break;
+        Sleep(100);
     }
     if (done == 1)
     {
