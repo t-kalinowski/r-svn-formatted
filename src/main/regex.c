@@ -20,7 +20,9 @@
 
 /* constructed from glibc 2.3.6/posix via
    cat regex.c regex_internal.h regex_internal.c regcomp.c regexec.c > Rregex.c
-   pasng through protoize and hand-editing */
+   passing through protoize and hand-editing.
+   See also change at line 475, and log for r39858.
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -450,7 +452,8 @@ static R_INLINE wint_t re_string_wchar_at(const re_string_t *pstr, int idx) inte
 static unsigned int re_string_context_at(const re_string_t *input, int idx, int eflags) internal_function
     __attribute((pure));
 static unsigned char re_string_peek_byte_case(const re_string_t *pstr, int idx) internal_function __attribute((pure));
-static unsigned char re_string_fetch_byte_case(re_string_t *pstr) internal_function __attribute((pure));
+/* R patch for icc: this is not pure */
+static unsigned char re_string_fetch_byte_case(re_string_t *pstr) internal_function;
 #endif
 #define re_string_peek_byte(pstr, offset) ((pstr)->mbs[(pstr)->cur_idx + offset])
 #define re_string_fetch_byte(pstr) ((pstr)->mbs[(pstr)->cur_idx++])
