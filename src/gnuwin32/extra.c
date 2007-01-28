@@ -1412,6 +1412,7 @@ SEXP do_setStatusBar(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (!isString(text) || LENGTH(text) != 1 || STRING_ELT(text, 0) == NA_STRING)
         errorcall(call, _("'text' must be a character string"));
+    showstatusbar();
     setstatus(CHAR(STRING_ELT(text, 0)));
     return R_NilValue;
 }
