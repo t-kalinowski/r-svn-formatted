@@ -49,6 +49,7 @@ int addstatusbar()
         if (!intMDIStatus)
             return 0;
         SendMessage(intMDIStatus, SB_SETPARTS, (WPARAM)1, (LPARAM)a);
+        SendMessage(intMDIStatus, SB_SETTEXT, (WPARAM)0 | 0, (LPARAM)MDIStatusText);
     }
     MDIStatus = intMDIStatus;
     SendMessage(hwndFrame, WM_PAINT, (WPARAM)0, (LPARAM)0);
@@ -66,7 +67,7 @@ int delstatusbar()
 
 PROTECTED void updatestatus(char *text)
 {
-    strncpy(MDIStatusText, text, 255);
+    /* strncpy(MDIStatusText, text, 255); */
     if (!MDIStatus)
         return;
     SendMessage(MDIStatus, SB_SETTEXT, (WPARAM)0 | 0, (LPARAM)MDIStatusText);
@@ -75,6 +76,7 @@ PROTECTED void updatestatus(char *text)
 
 void setstatus(char *text)
 {
+    strncpy(MDIStatusText, text, 255);
     if (!MDIStatus || !current_window)
         return;
     strncpy(current_window->status, text, 255);
