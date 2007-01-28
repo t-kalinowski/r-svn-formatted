@@ -1459,9 +1459,9 @@ static reg_errcode_t internal_function re_string_reconstruct(re_string_t *pstr, 
         else
         {
             /* No, skip all characters until IDX.  */
+#ifdef RE_ENABLE_I18N
             int prev_valid_len = pstr->valid_len;
 
-#ifdef RE_ENABLE_I18N
             if (BE(pstr->offsets_needed, 0))
             {
                 pstr->len = pstr->raw_len - idx + offset;
@@ -2131,7 +2131,9 @@ static void internal_function re_node_set_remove_at(re_node_set *set, int idx)
 
 static int internal_function re_dfa_add_node(re_dfa_t *dfa, re_token_t token)
 {
+#ifdef RE_ENABLE_I18N
     int type = token.type;
+#endif
     if (BE(dfa->nodes_len >= dfa->nodes_alloc, 0))
     {
         size_t new_nodes_alloc = dfa->nodes_alloc * 2;
@@ -8702,7 +8704,9 @@ static reg_errcode_t internal_function check_arrival_add_next_nodes(re_match_con
     const re_dfa_t *const dfa = mctx->dfa;
     int result;
     int cur_idx;
+#ifdef RE_ENABLE_I18N
     reg_errcode_t err = REG_NOERROR;
+#endif
     re_node_set union_set;
     re_node_set_init_empty(&union_set);
     for (cur_idx = 0; cur_idx < cur_nodes->nelem; ++cur_idx)
