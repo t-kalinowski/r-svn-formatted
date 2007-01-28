@@ -201,16 +201,16 @@ SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     FUN = CAR(args);
     args = CDR(args);
     if (!isFunction(FUN))
-        errorcall(call, _("invalid 'f' argument"));
+        errorcall(call, _("invalid '%s' argument"), "f");
     classes = CAR(args);
     args = CDR(args);
     if (!isString(classes))
-        errorcall(call, _("invalid 'classes' argument"));
+        errorcall(call, _("invalid '%s' argument"), "classes");
     deflt = CAR(args);
     args = CDR(args);
     how = CAR(args);
     if (!isString(how))
-        errorcall(call, _("invalid 'how' argument"));
+        errorcall(call, _("invalid '%s' argument"), "how");
     replace = strcmp(CHAR(STRING_ELT(how, 0)), "replace") == 0;
     n = length(X);
     PROTECT(ans = allocVector(VECSXP, n));
