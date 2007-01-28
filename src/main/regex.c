@@ -6877,7 +6877,7 @@ free_return:
    We must select appropriate initial state depending on the context,
    since initial states may have constraints like "\<", "^", etc..  */
 
-static R_INLINE re_dfastate_t *__attribute((always_inline)) internal_function acquire_init_state_context(
+static inline re_dfastate_t *__attribute((always_inline)) internal_function acquire_init_state_context(
     reg_errcode_t *err, const re_match_context_t *mctx, int idx)
 {
     const re_dfa_t *const dfa = mctx->dfa;
