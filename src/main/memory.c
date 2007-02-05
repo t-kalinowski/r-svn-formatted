@@ -1668,7 +1668,7 @@ void vmaxset(char *ovmax)
 char *R_alloc(long nelem, int eltsize)
 {
     R_size_t size = nelem * eltsize;
-    double dsize = nelem * eltsize;
+    double dsize = (double)nelem * eltsize;
     if (dsize > 0)
     { /* precaution against integer overflow */
         SEXP s;
@@ -1682,11 +1682,27 @@ char *R_alloc(long nelem, int eltsize)
         else
         {
             s = R_NilValue; /* -Wall */
-            error(_("cannot allocate memory block of size %.0f"), dsize);
+            if (dsize > 1024.0 * 1024.0 * 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Gb"), dsize / 1024.0 / 1024.0 / 1024.0);
+            else if (dsize > 1024.0 * 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Mb"), dsize / 1024.0 / 1024.0);
+            else if (dsize > 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Kb"), dsize / 1024.0);
+            else
+                error(_("cannot allocate memory block of size %.0f"), dsize);
         }
 #else
         if (dsize > R_LEN_T_MAX)
-            error(_("cannot allocate memory block of size %.0f"), dsize);
+        {
+            if (dsize > 1024.0 * 1024.0 * 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Gb"), dsize / 1024.0 / 1024.0 / 1024.0);
+            else if (dsize > 1024.0 * 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Mb"), dsize / 1024.0 / 1024.0);
+            else if (dsize > 1024.0)
+                error(_("cannot allocate memory block of size %0.1f Kb"), dsize / 1024.0);
+            else
+                error(_("cannot allocate memory block of size %.0f"), dsize);
+        }
         s = allocString(size); /**** avoid extra null byte?? */
 #endif
         ATTRIB(s) = R_VStack;
@@ -2048,9 +2064,15 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
             }
             if (!success)
             {
+                double dsize = (double)size * sizeof(VECREC) / 1024.0;
                 /* reset the vector heap limit */
                 R_VSize = old_R_VSize;
-                errorcall(R_NilValue, _("cannot allocate vector of size %lu Kb"), (size * sizeof(VECREC)) / 1024);
+                if (dsize > 1024.0 * 1024.0)
+                    errorcall(R_NilValue, _("cannot allocate vector of size %0.1f Gb"), dsize / 1024.0 / 1024.0);
+                if (dsize > 1024.0)
+                    errorcall(R_NilValue, _("cannot allocate vector of size %0.1f Mb"), dsize / 1024.0);
+                else
+                    errorcall(R_NilValue, _("cannot allocate vector of size %0.f Kb"), dsize);
             }
             s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
             SET_NODE_CLASS(s, LARGE_NODE_CLASS);
