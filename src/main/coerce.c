@@ -1710,14 +1710,17 @@ SEXP attribute_hidden do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* Define many of the <primitive> "is.xxx" functions :
-   Note that  isNull, isNumeric, etc are defined in ./util.c
+   Note that  isNull, isNumeric, etc are defined in util.c or Rinlinedfuns.h
 */
 SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     checkArity(op, args);
 
-    if (isObject(CAR(args)) && DispatchOrEval(call, op, CHAR(PRINTNAME(CAR(call))), args, rho, &ans, 0, 1))
+    /* These are all builtins, so we do not need to worry about
+       evaluating arguments in DispatchOrEval */
+    if (PRIMVAL(op) >= 100 && PRIMVAL(op) < 200 && isObject(CAR(args)) &&
+        DispatchOrEval(call, op, CHAR(PRINTNAME(CAR(call))), args, rho, &ans, 0, 1))
         return (ans);
 
     PROTECT(ans = allocVector(LGLSXP, 1));
@@ -1730,9 +1733,9 @@ SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == LGLSXP);
         break;
     case INTSXP: /* is.integer */
-        LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == INTSXP);
+        LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == INTSXP) && !inherits(CAR(args), "factor");
         break;
-    case REALSXP: /* is.double */
+    case REALSXP: /* is.double == is.real */
         LOGICAL(ans)[0] = (TYPEOF(CAR(args)) == REALSXP);
         break;
     case CPLXSXP: /* is.complex */
@@ -1760,12 +1763,14 @@ SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
     case 50: /* is.object */
         LOGICAL(ans)[0] = OBJECT(CAR(args));
         break;
-    case 80:
-        LOGICAL(ans)[0] = isFrame(CAR(args));
-        break;
+        /* no longer used: is.data.frame is R code
+            case 80:
+            LOGICAL(ans)[0] = isFrame(CAR(args));
+            break;
+        */
 
-    case 100: /* is.numeric */
-        LOGICAL(ans)[0] = (isNumeric(CAR(args)) && !isLogical(CAR(args)));
+    case 100:                                                            /* is.numeric */
+        LOGICAL(ans)[0] = isNumeric(CAR(args)) && !isLogical(CAR(args)); /* isNumeric excludes factors */
         break;
     case 101: /* is.matrix */
         LOGICAL(ans)[0] = isMatrix(CAR(args));
