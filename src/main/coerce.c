@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2006  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1995-2007  Robert Gentleman, Ross Ihaka and the
  *			     R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1000,8 +1000,11 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
     int i, n = 0;
     SEXP rval = R_NilValue, vp, names;
 
+    /* Hmm, this is also called to LANGSXP, and coerceVector already
+       did the check of TYPEOF(v) == type */
     if (type == LISTSXP)
         return v; /* IS pairlist */
+
     names = v;
     if (type == EXPRSXP)
     {
