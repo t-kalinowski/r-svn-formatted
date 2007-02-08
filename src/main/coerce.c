@@ -1092,19 +1092,19 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     if (type == VECSXP && TYPEOF(v) == EXPRSXP)
     {
         /* This is sneaky but saves us rewriting a lot of the duplicate code */
-        rval = duplicate(v);
+        rval = NAMED(v) ? duplicate(v) : v;
         SET_TYPEOF(rval, VECSXP);
         return rval;
     }
 
-    if (type == EXPRSXP)
+    if (type == EXPRSXP && TYPEOF(v) == VECSXP)
     {
-        PROTECT(rval = allocVector(type, 1));
-        SET_VECTOR_ELT(rval, 0, v);
-        UNPROTECT(1);
+        rval = NAMED(v) ? duplicate(v) : v;
+        SET_TYPEOF(rval, EXPRSXP);
         return rval;
     }
-    else if (type == STRSXP)
+
+    if (type == STRSXP)
     {
         n = length(v);
         PROTECT(rval = allocVector(type, n));
