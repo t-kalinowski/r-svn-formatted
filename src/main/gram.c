@@ -147,7 +147,7 @@ enum yytokentype
 /*
  *  R : A Computer Langage for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2006  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -3059,6 +3059,30 @@ static SEXP xxfuncall(SEXP expr, SEXP args)
     return ans;
 }
 
+static SEXP mkChar2(const char *name)
+{
+    SEXP c = allocString(strlen(name));
+    strcpy(CHAR(c), name);
+    if (!utf8strIsASCII((char *)name))
+    {
+        if (known_to_be_latin1)
+            SET_LATIN1(c);
+        else if (known_to_be_utf8)
+            SET_UTF8(c);
+    }
+    return c;
+}
+
+static SEXP mkString2(const char *s)
+{
+    SEXP t;
+
+    PROTECT(t = allocVector(STRSXP, 1));
+    SET_STRING_ELT(t, 0, mkChar2(s));
+    UNPROTECT(1);
+    return t;
+}
+
 static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
 {
 
@@ -3113,7 +3137,7 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
                     {
                         strncpy((char *)SourceLine, (char *)p0, nc);
                         SourceLine[nc] = '\0';
-                        SET_STRING_ELT(source, lines++, mkChar((char *)SourceLine));
+                        SET_STRING_ELT(source, lines++, mkChar2((char *)SourceLine));
                     }
                     else
                     { /* over-long line */
@@ -3122,7 +3146,7 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
                             error(("unable to allocate space for source line"));
                         strncpy(LongLine, (char *)p0, nc);
                         LongLine[nc] = '\0';
-                        SET_STRING_ELT(source, lines++, mkChar((char *)LongLine));
+                        SET_STRING_ELT(source, lines++, mkChar2((char *)LongLine));
                         free(LongLine);
                     }
                     p0 = p + 1;
@@ -4390,7 +4414,7 @@ static int StringValue(int c)
         YYTEXT_PUSH(c, yyp);
     }
     YYTEXT_PUSH('\0', yyp);
-    PROTECT(yylval = mkString(yytext));
+    PROTECT(yylval = mkString2(yytext));
     if (have_warned)
     {
         *ct = '\0';

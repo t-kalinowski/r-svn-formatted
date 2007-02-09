@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2006   The R Development Core Team.
+ *  Copyright (C) 1998-2007   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -71,6 +71,8 @@ typedef struct
     Rboolean wasopen;
     Rboolean escapes;
     int save; /* = 0; */
+    Rboolean isLatin1;
+    Rboolean isUTF8;
     void *hash;
 
     char convbuf[100];
@@ -126,13 +128,24 @@ static HashData *HashTableSetup(int maxstrings)
     return d;
 }
 
-static SEXP insertString(char *str, HashData *d)
+static SEXP insertString(char *str, LocalData *l)
 {
+    HashData *d = l->hash;
     int i;
     SEXP tmp, *h = d->HashTable;
 
     if (d->nins >= d->maxstrings)
-        return mkChar(str);
+    {
+        tmp = mkChar(str);
+        if (!utf8strIsASCII(str))
+        {
+            if (l->isLatin1)
+                SET_LATIN1(tmp);
+            if (l->isUTF8)
+                SET_UTF8(tmp);
+        }
+        return tmp;
+    }
     i = shash(str, d);
     while (h[i] != NULL)
     {
@@ -142,6 +155,13 @@ static SEXP insertString(char *str, HashData *d)
     }
     d->nins++;
     tmp = mkChar(str);
+    if (!utf8strIsASCII(str))
+    {
+        if (l->isLatin1)
+            SET_LATIN1(tmp);
+        if (l->isUTF8)
+            SET_UTF8(tmp);
+    }
     h[i] = tmp;
     return tmp;
 }
@@ -715,7 +735,7 @@ static void extractItem(char *buffer, SEXP ans, int i, LocalData *d)
         if (isNAstring(buffer, 1, d))
             SET_STRING_ELT(ans, i, NA_STRING);
         else
-            SET_STRING_ELT(ans, i, insertString(buffer, d->hash));
+            SET_STRING_ELT(ans, i, insertString(buffer, d));
         break;
     case RAWSXP:
         if (isNAstring(buffer, 0, d))
@@ -1081,9 +1101,9 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes, comstr;
     int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline, escapes;
-    char *p, *vmax;
+    char *p, *vmax, *encoding;
     RCNTXT cntxt;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
+    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1122,6 +1142,15 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     comstr = CAR(args);
     args = CDR(args);
     escapes = asLogical(CAR(args));
+    args = CDR(args);
+    if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
+        errorcall(call, _("invalid '%s' value"), "encoding");
+    encoding = CHAR(STRING_ELT(CAR(args), 0));
+    known_to_be_latin1 = known_to_be_utf8 = FALSE;
+    if (streql(encoding, "latin1"))
+        data.isLatin1 = TRUE;
+    if (streql(encoding, "UTF-8"))
+        data.isUTF8 = TRUE;
 
     if (data.quiet == NA_LOGICAL)
         data.quiet = 0;
@@ -1279,7 +1308,7 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef SUPPORT_MBCS
     Rboolean dbcslocale = (MB_CUR_MAX == 2);
 #endif
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
+    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1554,7 +1583,7 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, len, numeric, asIs;
     Rboolean done = FALSE;
     char *endp, *tmp = NULL;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
+    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
     Typecvt_Info typeInfo;     /* keep track of possible types of cvec */
     typeInfo.islogical = TRUE; /* we can't rule anything out initially */
     typeInfo.isinteger = TRUE;
@@ -1827,7 +1856,7 @@ SEXP attribute_hidden do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     double first;
     char buffer[MAXELTSIZE], *bufp = buffer;
     SEXP ans;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
+    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1880,7 +1909,7 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nlines, i, c, quote = 0, nread, nbuf, buf_size = BUF_SIZE, blskip;
     char *p, *buf;
     Rboolean empty, skip;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0};
+    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);

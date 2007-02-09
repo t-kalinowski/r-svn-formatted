@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2006  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *  Copyright (C) 2002--2004  The R Foundation
  *
@@ -1507,7 +1507,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                             /* Check room for perpendicular labels. */
                             if (Rf_gpptr(dd)->las == 2 || Rf_gpptr(dd)->las == 3 || tnew - tlast >= gap)
                             {
-                                GMtext(CHAR(label), side, axis_lab, 0, x, Rf_gpptr(dd)->las, padjval, dd);
+                                GMtext(translateChar(label), side, axis_lab, 0, x, Rf_gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw;
                             }
                         }
@@ -1653,7 +1653,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                             /* Check room for perpendicular labels. */
                             if (Rf_gpptr(dd)->las == 1 || Rf_gpptr(dd)->las == 2 || tnew - tlast >= gap)
                             {
-                                GMtext(CHAR(label), side, axis_lab, 0, y, Rf_gpptr(dd)->las, padjval, dd);
+                                GMtext(translateChar(label), side, axis_lab, 0, y, Rf_gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw;
                             }
                         }
@@ -2502,7 +2502,7 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(txt, i % ntxt);
                 if (string != NA_STRING)
-                    GVText(xx, yy, INCHES, CHAR(string), INTEGER(vfont)[0], INTEGER(vfont)[1], adjx, adjy,
+                    GVText(xx, yy, INCHES, translateChar(string), INTEGER(vfont)[0], INTEGER(vfont)[1], adjx, adjy,
                            Rf_gpptr(dd)->srt, dd);
             }
             else if (isExpression(txt))
@@ -2513,7 +2513,7 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(txt, i % ntxt);
                 if (string != NA_STRING)
-                    GText(xx, yy, INCHES, CHAR(string), adjx, adjy, Rf_gpptr(dd)->srt, dd);
+                    GText(xx, yy, INCHES, translateChar(string), adjx, adjy, Rf_gpptr(dd)->srt, dd);
             }
         }
     }
@@ -2841,7 +2841,7 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             string = STRING_ELT(text, i % ntext);
             if (string != NA_STRING)
-                GMtext(CHAR(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, padjval, dd);
+                GMtext(translateChar(string), sideval, lineval, outerval, atval, Rf_gpptr(dd)->las, padjval, dd);
         }
 
         if (outerval == 0)
@@ -2974,7 +2974,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(Main, i);
                 if (string != NA_STRING)
-                    GText(hpos, offset - i, where, CHAR(string), adj, adjy, 0.0, dd);
+                    GText(hpos, offset - i, where, translateChar(string), adj, adjy, 0.0, dd);
             }
         }
         UNPROTECT(1);
@@ -3013,7 +3013,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(sub, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 1, vpos, where, hpos, 0, 0.0, dd);
+                    GMtext(translateChar(string), 1, vpos, where, hpos, 0, 0.0, dd);
             }
         }
         UNPROTECT(1);
@@ -3052,7 +3052,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(xlab, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 1, vpos + i, where, hpos, 0, 0.0, dd);
+                    GMtext(translateChar(string), 1, vpos + i, where, hpos, 0, 0.0, dd);
             }
         }
         UNPROTECT(1);
@@ -3091,7 +3091,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 string = STRING_ELT(ylab, i);
                 if (string != NA_STRING)
-                    GMtext(CHAR(string), 2, vpos - i, where, hpos, 0, 0.0, dd);
+                    GMtext(translateChar(string), 2, vpos - i, where, hpos, 0, 0.0, dd);
             }
         }
         UNPROTECT(1);
@@ -3826,7 +3826,7 @@ static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, DevDesc *
         xl = dnd_xpos[-k - 1];
         yl = (dnd_hang >= 0) ? *y - dnd_hang : 0;
         if (STRING_ELT(dnd_llabels, -k - 1) != NA_STRING)
-            GText(xl, yl - dnd_offset, USER, CHAR(STRING_ELT(dnd_llabels, -k - 1)), 1.0, 0.3, 90.0, dd);
+            GText(xl, yl - dnd_offset, USER, translateChar(STRING_ELT(dnd_llabels, -k - 1)), 1.0, 0.3, 90.0, dd);
     }
     /* right part */
     k = dnd_rptr[node - 1];
@@ -3837,7 +3837,7 @@ static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, DevDesc *
         xr = dnd_xpos[-k - 1];
         yr = (dnd_hang >= 0) ? *y - dnd_hang : 0;
         if (STRING_ELT(dnd_llabels, -k - 1) != NA_STRING)
-            GText(xr, yr - dnd_offset, USER, CHAR(STRING_ELT(dnd_llabels, -k - 1)), 1.0, 0.3, 90.0, dd);
+            GText(xr, yr - dnd_offset, USER, translateChar(STRING_ELT(dnd_llabels, -k - 1)), 1.0, 0.3, 90.0, dd);
     }
     xx[0] = xl;
     yy[0] = yl;

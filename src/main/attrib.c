@@ -183,7 +183,7 @@ SEXP getAttrib(SEXP vec, SEXP name)
         return R_NilValue;
 
     if (isString(name))
-        name = install(CHAR(STRING_ELT(name, 0)));
+        name = install(translateChar(STRING_ELT(name, 0)));
 
     /* special test for c(NA, n) rownames of data frames: */
     if (name == R_RowNamesSymbol)
@@ -236,7 +236,7 @@ SEXP R_copyDFattr(SEXP in, SEXP out)
 SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
 {
     if (isString(name))
-        name = install(CHAR(STRING_ELT(name, 0)));
+        name = install(translateChar(STRING_ELT(name, 0)));
     if (val == R_NilValue)
         return removeAttrib(vec, name);
 
@@ -794,7 +794,7 @@ SEXP namesgets(SEXP vec, SEXP val)
         i = 0;
         for (s = vec; s != R_NilValue; s = CDR(s), i++)
             if (STRING_ELT(val, i) != R_NilValue && STRING_ELT(val, i) != R_NaString && *CHAR(STRING_ELT(val, i)) != 0)
-                SET_TAG(s, install(CHAR(STRING_ELT(val, i))));
+                SET_TAG(s, install(translateChar(STRING_ELT(val, i))));
             else
                 SET_TAG(s, R_NilValue);
     }
@@ -915,7 +915,7 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         top = VECTOR_ELT(val, 0);
         i = 0;
         for (val = vec; !isNull(val); val = CDR(val))
-            SET_TAG(val, install(CHAR(STRING_ELT(top, i++))));
+            SET_TAG(val, install(translateChar(STRING_ELT(top, i++))));
     }
     UNPROTECT(2);
     return (vec);
@@ -1120,7 +1120,7 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < nattrs; i++)
         {
             if (strcmp(CHAR(STRING_ELT(names, i)), "dim"))
-                setAttrib(object, install(CHAR(STRING_ELT(names, i))), VECTOR_ELT(attrs, i));
+                setAttrib(object, install(translateChar(STRING_ELT(names, i))), VECTOR_ELT(attrs, i));
         }
     }
     UNPROTECT(1);
@@ -1165,7 +1165,7 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(t) != 1)
         error(_("exactly one attribute 'name' must be given"));
 
-    str = CHAR(STRING_ELT(t, 0));
+    str = translateChar(STRING_ELT(t, 0));
     n = strlen(str);
 
     /* try to find a match among the attributes list */
@@ -1276,8 +1276,8 @@ void GetMatrixDimnames(SEXP x, SEXP *rl, SEXP *cl, char **rn, char **cn)
         }
         else
         {
-            *rn = CHAR(STRING_ELT(nn, 0));
-            *cn = CHAR(STRING_ELT(nn, 1));
+            *rn = translateChar(STRING_ELT(nn, 0));
+            *cn = translateChar(STRING_ELT(nn, 1));
         }
     }
 }
@@ -1354,7 +1354,7 @@ SEXP R_do_slot(SEXP obj, SEXP name)
     if (!s_dot_Data)
         init_slot_handling();
     if (isString(name))
-        name = install(CHAR(STRING_ELT(name, 0)));
+        name = install(translateChar(STRING_ELT(name, 0)));
     if (name == s_dot_Data)
         return data_part(obj);
     else
@@ -1397,9 +1397,9 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     PROTECT(value);
     /* Ensure that name is a symbol */
     if (isString(name) && LENGTH(name) == 1)
-        name = install(CHAR(STRING_ELT(name, 0)));
+        name = install(translateChar(STRING_ELT(name, 0)));
     if (TYPEOF(name) == CHARSXP)
-        name = install(CHAR(name));
+        name = install(translateChar(name));
     if (!isSymbol(name))
         error(_("invalid type or length for slot name"));
 
@@ -1495,7 +1495,7 @@ SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!(isSymbol(nlist) || (isString(nlist) && LENGTH(nlist) == 1)))
         error(_("invalid type or length for slot name"));
     if (isString(nlist))
-        nlist = install(CHAR(STRING_ELT(nlist, 0)));
+        nlist = install(translateChar(STRING_ELT(nlist, 0)));
     PROTECT(object = eval(CAR(args), env));
     if (can_test_S4Object && !IS_S4_OBJECT(object))
     {

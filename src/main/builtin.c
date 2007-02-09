@@ -88,7 +88,7 @@ SEXP attribute_hidden do_delayed(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(CAR(args)) || length(CAR(args)) == 0)
         errorcall(call, _("invalid first argument"));
     else
-        name = install(CHAR(STRING_ELT(CAR(args), 0)));
+        name = install(translateChar(STRING_ELT(CAR(args), 0)));
     args = CDR(args);
     expr = CAR(args);
 
@@ -178,7 +178,7 @@ SEXP attribute_hidden do_args(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     if (TYPEOF(CAR(args)) == STRSXP && length(CAR(args)) == 1)
     {
-        PROTECT(s = install(CHAR(STRING_ELT(CAR(args), 0))));
+        PROTECT(s = install(translateChar(STRING_ELT(CAR(args), 0))));
         SETCAR(args, findFun(s, rho));
         UNPROTECT(1);
     }
@@ -367,24 +367,23 @@ SEXP attribute_hidden do_parentenvgets(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_envirName(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    char *ans = "";
-    SEXP env = CAR(args);
+    SEXP env = CAR(args), ans = mkString("");
 
     checkArity(op, args);
     if (TYPEOF(env) == ENVSXP)
     {
         if (env == R_GlobalEnv)
-            ans = "R_GlobalEnv";
+            ans = mkString("R_GlobalEnv");
         else if (env == R_BaseEnv)
-            ans = "base";
+            ans = mkString("base");
         else if (env == R_EmptyEnv)
-            ans = "R_EmptyEnv";
+            ans = mkString("R_EmptyEnv");
         else if (R_IsPackageEnv(env))
-            ans = CHAR(STRING_ELT(R_PackageEnvName(env), 0));
+            ans = ScalarString(STRING_ELT(R_PackageEnvName(env), 0));
         else if (R_IsNamespaceEnv(env))
-            ans = CHAR(STRING_ELT(R_NamespaceEnvSpec(env), 0));
+            ans = ScalarString(STRING_ELT(R_NamespaceEnvSpec(env), 0));
     }
-    return mkString(ans);
+    return ans;
 }
 
 static void cat_newline(SEXP labels, int *width, int lablen, int ntot)
@@ -412,7 +411,7 @@ static void cat_printsep(SEXP sep, int ntot)
     if (sep == R_NilValue || LENGTH(sep) == 0)
         return;
 
-    sepchar = CHAR(STRING_ELT(sep, ntot % LENGTH(sep)));
+    sepchar = translateChar(STRING_ELT(sep, ntot % LENGTH(sep)));
     Rprintf("%s", sepchar);
     return;
 }
@@ -531,7 +530,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                 nlines++;
             }
             if (isString(s))
-                p = CHAR(STRING_ELT(s, 0));
+                p = translateChar(STRING_ELT(s, 0));
             else if (isSymbol(s))
                 p = CHAR(PRINTNAME(s));
             else if (isVectorAtomic(s))
@@ -569,7 +568,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     cat_printsep(sepr, ntot);
                     if (isString(s))
-                        p = CHAR(STRING_ELT(s, i + 1));
+                        p = translateChar(STRING_ELT(s, i + 1));
                     else
                     {
                         p = EncodeElement(s, i + 1, 0, OutDec);
