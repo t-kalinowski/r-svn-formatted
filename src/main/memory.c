@@ -3094,6 +3094,32 @@ void attribute_hidden(UNLOCK_BINDING)(SEXP b)
     UNLOCK_BINDING(b);
 }
 
+/* for use when testing the write barrier */
+void attribute_hidden(IS_LATIN1)(SEXP x)
+{
+    IS_LATIN1(x);
+}
+void attribute_hidden(IS_UTF8)(SEXP x)
+{
+    IS_UTF8(x);
+}
+void attribute_hidden(SET_LATIN1)(SEXP x)
+{
+    SET_LATIN1(x);
+}
+void attribute_hidden(SET_UTF8)(SEXP x)
+{
+    SET_UTF8(x);
+}
+void attribute_hidden(UNSET_LATIN1)(SEXP x)
+{
+    UNSET_LATIN1(x);
+}
+void attribute_hidden(UNSET_UTF8)(SEXP x)
+{
+    UNSET_UTF8(x);
+}
+
 /*******************************************/
 /* Non-sampling memory use profiler
    reports all large vector heap
