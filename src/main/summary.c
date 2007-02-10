@@ -1102,7 +1102,10 @@ bad:
     return R_NilValue; /* -Wall */
 }
 
-/* op = 0 is pmin.int, op = 1 is pmax.int */
+/* op = 0 is pmin.int, op = 1 is pmax.int
+   It seems that NULL and logicals are supposed to be handled as
+   if they have been coerced to integer.
+ */
 SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, x, ans;
@@ -1114,11 +1117,13 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("invalid '%s' value"), "na.rm");
     args = CDR(args);
     x = CAR(args);
-    if (x == R_NilValue)
+    if (args == R_NilValue)
         errorcall(call, _("no arguments"));
+
     anstype = TYPEOF(x);
     switch (anstype)
     {
+    case NILSXP:
     case LGLSXP:
     case INTSXP:
     case REALSXP:
@@ -1127,17 +1132,18 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         errorcall(call, _("invalid input type"));
     }
-    len = LENGTH(x);
     a = CDR(args);
-    if (CAR(a) == R_NilValue)
-        return x;
+    if (a == R_NilValue)
+        return x; /* one input */
 
+    len = length(x); /* not LENGTH, as NULL is allowed */
     for (; a != R_NilValue; a = CDR(a))
     {
         x = CAR(a);
         type = TYPEOF(x);
         switch (type)
         {
+        case NILSXP:
         case LGLSXP:
         case INTSXP:
         case REALSXP:
@@ -1148,12 +1154,12 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         if (type > anstype)
             anstype = type;
-        n = LENGTH(x);
+        n = length(x);
         if ((len > 0) ^ (n > 0))
             errorcall(call, _("cannot mix 0-length vectors with others"));
         len = imax2(len, n);
     }
-    if (anstype == LGLSXP)
+    if (anstype < INTSXP)
         anstype = INTSXP;
     if (len == 0)
         return allocVector(anstype, 0);
