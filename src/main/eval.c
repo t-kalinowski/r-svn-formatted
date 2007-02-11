@@ -27,6 +27,7 @@
 #endif
 #include <Defn.h>
 #include <Rinterface.h>
+#include <Fileio.h>
 
 #define ARGUSED(x) LEVELS(x)
 
@@ -211,7 +212,7 @@ static void R_EndProfiling()
 double R_getClockIncrement(void);
 #endif
 
-static void R_InitProfiling(char *filename, int append, double dinterval, int mem_profiling)
+static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem_profiling)
 {
 #ifndef Win32
     struct itimerval itv;
@@ -232,9 +233,9 @@ static void R_InitProfiling(char *filename, int append, double dinterval, int me
 #endif
     if (R_ProfileOutfile != NULL)
         R_EndProfiling();
-    R_ProfileOutfile = fopen(filename, append ? "a" : "w");
+    R_ProfileOutfile = RC_fopen(filename, append ? "a" : "w", TRUE);
     if (R_ProfileOutfile == NULL)
-        error(_("Rprof: cannot open profile file '%s'"), filename);
+        error(_("Rprof: cannot open profile file '%s'"), CHAR(filename));
     if (mem_profiling)
         fprintf(R_ProfileOutfile, "memory profiling: sample.interval=%d\n", interval);
     else
@@ -283,8 +284,8 @@ SEXP attribute_hidden do_Rprof(SEXP call, SEXP op, SEXP args, SEXP rho)
     append_mode = asLogical(CADR(args));
     dinterval = asReal(CADDR(args));
     mem_profiling = asLogical(CADDDR(args));
-    filename = R_ExpandFileName(CHAR(STRING_ELT(CAR(args), 0)));
-    if (strlen(filename))
+    filename = STRING_ELT(CAR(args), 0);
+    if (LENGTH(filename))
         R_InitProfiling(filename, append_mode, dinterval, mem_profiling);
     else
         R_EndProfiling();
@@ -3878,8 +3879,6 @@ SEXP attribute_hidden do_bcversion(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-#include "Fileio.h"
-
 SEXP attribute_hidden do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP file, s;
@@ -3892,7 +3891,7 @@ SEXP attribute_hidden do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isValidStringF(file))
         errorcall(call, _("bad file name"));
 
-    fp = R_fopen(R_ExpandFileName(CHAR(STRING_ELT(file, 0))), "rb");
+    fp = RC_fopen(STRING_ELT(file, 0), "rb", TRUE);
     if (!fp)
         errorcall(call, _("unable to open 'file'"));
     s = R_LoadFromFile(fp, 0);
@@ -3913,7 +3912,7 @@ SEXP attribute_hidden do_savefile(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(CADDR(args)) != LGLSXP)
         errorcall(call, _("'ascii' must be logical"));
 
-    fp = R_fopen(R_ExpandFileName(CHAR(STRING_ELT(CADR(args), 0))), "wb");
+    fp = RC_fopen(STRING_ELT(CADR(args), 0), "wb", TRUE);
     if (!fp)
         errorcall(call, _("unable to open 'file'"));
 

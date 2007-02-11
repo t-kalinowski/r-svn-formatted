@@ -2188,7 +2188,7 @@ void consolesavefile(console c, int pager)
     show(c);
     if (fn)
     {
-        fp = fopen(fn, "wt");
+        fp = R_fopen(fn, "wt");
         if (!fp)
             return;
         cur = currentcursor();

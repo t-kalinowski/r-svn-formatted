@@ -1845,7 +1845,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
             return FALSE;
         }
         snprintf(buf, 600, xd->filename, 1);
-        if ((xd->fp = fopen(buf, "wb")) == NULL)
+        if ((xd->fp = R_fopen(buf, "wb")) == NULL)
         {
             del(xd->gawin);
             warning(_("Unable to open file '%s' for writing"), buf);
@@ -1879,7 +1879,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
             return FALSE;
         }
         snprintf(buf, 600, xd->filename, 1);
-        if ((xd->fp = fopen(buf, "wb")) == NULL)
+        if ((xd->fp = R_fopen(buf, "wb")) == NULL)
         {
             del(xd->gawin);
             warning(_("Unable to open file '%s' for writing"), buf);
@@ -2176,7 +2176,7 @@ static void GA_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
         char buf[600];
         SaveAsBitmap(dd, xd->res_dpi);
         snprintf(buf, 600, xd->filename, xd->npage);
-        if ((xd->fp = fopen(buf, "wb")) == NULL)
+        if ((xd->fp = R_fopen(buf, "wb")) == NULL)
             error(_("Unable to open file '%s' for writing"), buf);
     }
     if (xd->kind == SCREEN)
@@ -2997,7 +2997,7 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
         R_ShowMessage(_("Impossible to load Rbitmap.dll"));
         return;
     }
-    if ((fp = fopen(fn, "wb")) == NULL)
+    if ((fp = R_fopen(fn, "wb")) == NULL)
     {
         char msg[MAX_PATH + 32];
 
@@ -3033,7 +3033,7 @@ static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
         R_ShowMessage(_("Impossible to load Rbitmap.dll"));
         return;
     }
-    if ((fp = fopen(fn, "wb")) == NULL)
+    if ((fp = R_fopen(fn, "wb")) == NULL)
     {
         char msg[MAX_PATH + 32];
         strcpy(msg, "Impossible to open ");
@@ -3068,7 +3068,7 @@ static void SaveAsBmp(NewDevDesc *dd, char *fn)
         R_ShowMessage(_("Impossible to load Rbitmap.dll"));
         return;
     }
-    if ((fp = fopen(fn, "wb")) == NULL)
+    if ((fp = R_fopen(fn, "wb")) == NULL)
     {
         char msg[MAX_PATH + 32];
 
