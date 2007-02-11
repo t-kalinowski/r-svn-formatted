@@ -256,11 +256,18 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(ans = allocVector(STRSXP, i));
         for (j = 0; j < i; j++)
         {
-            s = getenv(CHAR(STRING_ELT(CAR(args), j)));
+            s = getenv(translateChar(STRING_ELT(CAR(args), j)));
             if (s == NULL)
                 SET_STRING_ELT(ans, j, STRING_ELT(CADR(args), 0));
             else
-                SET_STRING_ELT(ans, j, mkChar(s));
+            {
+                SEXP tmp = mkChar(s);
+                if (known_to_be_latin1)
+                    SET_LATIN1(tmp);
+                if (known_to_be_utf8)
+                    SET_UTF8(tmp);
+                SET_STRING_ELT(ans, j, tmp);
+            }
         }
     }
     UNPROTECT(1);
@@ -301,10 +308,10 @@ SEXP attribute_hidden do_setenv(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(LGLSXP, n));
 #ifdef HAVE_SETENV
     for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = setenv(CHAR(STRING_ELT(nm, i)), CHAR(STRING_ELT(vars, i)), 1) == 0;
+        LOGICAL(ans)[i] = setenv(translateChar(STRING_ELT(nm, i)), translateChar(STRING_ELT(vars, i)), 1) == 0;
 #else
     for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = Rputenv(CHAR(STRING_ELT(nm, i)), CHAR(STRING_ELT(vars, i))) == 0;
+        LOGICAL(ans)[i] = Rputenv(translateChar(STRING_ELT(nm, i)), translateChar(STRING_ELT(vars, i))) == 0;
 #endif
     UNPROTECT(1);
     return ans;
@@ -327,23 +334,23 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(vars);
 #ifdef HAVE_UNSETENV
     for (i = 0; i < n; i++)
-        unsetenv(CHAR(STRING_ELT(vars, i)));
+        unsetenv(translateChar(STRING_ELT(vars, i)));
 #elif defined(HAVE_PUTENV_UNSET)
     for (i = 0; i < n; i++)
-        putenv(CHAR(STRING_ELT(vars, i)));
+        putenv(translateChar(STRING_ELT(vars, i)));
 #elif defined(HAVE_PUTENV_UNSET2)
     {
         char buf[1000];
         for (i = 0; i < n; i++)
         {
-            snprintf(buf, 1000, "%s=", CHAR(STRING_ELT(vars, i)));
+            snprintf(buf, 1000, "%s=", translateChar(STRING_ELT(vars, i)));
             putenv(buf);
         }
     }
 #endif
     ans = allocVector(LGLSXP, n);
     for (i = 0; i < n; i++)
-        LOGICAL(ans)[i] = !getenv(CHAR(STRING_ELT(vars, i)));
+        LOGICAL(ans)[i] = !getenv(translateChar(STRING_ELT(vars, i)));
     return ans;
 #else
     error(_("'Sys.unsetenv' is not available on this system"));
@@ -463,7 +470,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         if (STRING_ELT(CADDDR(args), 0) == NA_STRING)
             sub = NULL;
         else
-            sub = CHAR(STRING_ELT(CADDDR(args), 0));
+            sub = translateChar(STRING_ELT(CADDDR(args), 0));
         from = CHAR(STRING_ELT(CADR(args), 0));
         to = CHAR(STRING_ELT(CADDR(args), 0));
         /* Should we do something about marked CHARSXPs in 'from = ""'? */
