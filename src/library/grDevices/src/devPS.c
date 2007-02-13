@@ -7227,7 +7227,7 @@ SEXP PostScript(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(asChar(CAR(args)));
+    file = translateChar(asChar(CAR(args)));
     args = CDR(args);
     paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
@@ -7272,7 +7272,7 @@ SEXP PostScript(SEXP args)
     args = CDR(args);
     cmd = CHAR(asChar(CAR(args)));
     args = CDR(args);
-    title = CHAR(asChar(CAR(args)));
+    title = translateChar(asChar(CAR(args)));
     args = CDR(args);
     fonts = CAR(args);
     args = CDR(args);
@@ -7334,7 +7334,7 @@ SEXP XFig(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(asChar(CAR(args)));
+    file = translateChar(asChar(CAR(args)));
     args = CDR(args);
     paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
@@ -7417,7 +7417,7 @@ SEXP PDF(SEXP args)
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
-    file = CHAR(asChar(CAR(args)));
+    file = translateChar(asChar(CAR(args)));
     args = CDR(args);
     paper = CHAR(asChar(CAR(args)));
     args = CDR(args);
@@ -7451,7 +7451,7 @@ SEXP PDF(SEXP args)
     args = CDR(args);
     pagecentre = asLogical(CAR(args));
     args = CDR(args);
-    title = CHAR(asChar(CAR(args)));
+    title = translateChar(asChar(CAR(args)));
     args = CDR(args);
     fonts = CAR(args);
     args = CDR(args);
