@@ -424,7 +424,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
                     error(_("unsupported encoding '%s'"), encname);
                 for (i = 0; i < n; i++)
                 {
-                    inbuf = translateChar(STRING_ELT(s, i));
+                    inbuf = CHAR(STRING_ELT(s, i));
                     inb = strlen(inbuf);
                     outb0 = 3 * inb;
                 restart_in:
