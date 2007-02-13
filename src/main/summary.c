@@ -194,7 +194,7 @@ static Rboolean smin(SEXP x, SEXP *value, Rboolean narm)
     {
         if (STRING_ELT(x, i) != NA_STRING)
         {
-            if (!updated || STRCOLL(CHAR(s), CHAR(STRING_ELT(x, i))) > 0)
+            if (!updated || STRCOLL(translateChar(s), translateChar(STRING_ELT(x, i))) > 0)
             {
                 s = STRING_ELT(x, i);
                 if (!updated)
@@ -278,7 +278,7 @@ static Rboolean smax(SEXP x, SEXP *value, Rboolean narm)
     {
         if (STRING_ELT(x, i) != NA_STRING)
         {
-            if (!updated || STRCOLL(CHAR(s), CHAR(STRING_ELT(x, i))) < 0)
+            if (!updated || STRCOLL(translateChar(s), translateChar(STRING_ELT(x, i))) < 0)
             {
                 s = STRING_ELT(x, i);
                 if (!updated)
@@ -610,8 +610,8 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                                 stmp = StringFromInteger(itmp, &warn);
                             if (real_a)
                                 stmp = StringFromReal(tmp, &warn);
-                            if (((iop == 2 && STRCOLL(CHAR(stmp), CHAR(scum)) < 0)) ||
-                                (iop == 3 && STRCOLL(CHAR(stmp), CHAR(scum)) > 0))
+                            if (((iop == 2 && STRCOLL(translateChar(stmp), translateChar(scum)) < 0)) ||
+                                (iop == 3 && STRCOLL(translateChar(stmp), translateChar(scum)) > 0))
                                 scum = stmp;
                         }
                     }
@@ -1252,14 +1252,14 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
                 if (PRIMVAL(op) == 1)
                 {
                     if ((narm && t2 == NA_STRING) ||
-                        (t2 != NA_STRING && tmp != NA_STRING && STRCOLL(CHAR(tmp), CHAR(t2)) > 0) ||
+                        (t2 != NA_STRING && tmp != NA_STRING && STRCOLL(translateChar(tmp), translateChar(t2)) > 0) ||
                         (!narm && tmp == NA_STRING))
                         SET_STRING_ELT(ans, i, tmp);
                 }
                 else
                 {
                     if ((narm && t2 == NA_STRING) ||
-                        (t2 != NA_STRING && tmp != NA_STRING && STRCOLL(CHAR(tmp), CHAR(t2)) < 0) ||
+                        (t2 != NA_STRING && tmp != NA_STRING && STRCOLL(translateChar(tmp), translateChar(t2)) < 0) ||
                         (!narm && tmp == NA_STRING))
                         SET_STRING_ELT(ans, i, tmp);
                 }

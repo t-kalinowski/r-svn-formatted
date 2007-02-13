@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-6   The R Development Core Team.
+ *  Copyright (C) 2001-7   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -498,8 +498,8 @@ R_GE_lineend LENDpar(SEXP value, int ind)
     if (isString(value))
     {
         for (i = 0; lineend[i].name; i++)
-        { /* is it the i-th name ? */
-            if (!strcmp(CHAR(STRING_ELT(value, ind)), lineend[i].name))
+        {                                                               /* is it the i-th name ? */
+            if (!strcmp(CHAR(STRING_ELT(value, ind)), lineend[i].name)) /*ASCII */
                 return lineend[i].end;
         }
         error(_("invalid line end")); /*NOTREACHED, for -Wall : */
@@ -567,8 +567,8 @@ R_GE_linejoin LJOINpar(SEXP value, int ind)
     if (isString(value))
     {
         for (i = 0; linejoin[i].name; i++)
-        { /* is it the i-th name ? */
-            if (!strcmp(CHAR(STRING_ELT(value, ind)), linejoin[i].name))
+        {                                                                /* is it the i-th name ? */
+            if (!strcmp(CHAR(STRING_ELT(value, ind)), linejoin[i].name)) /* ASCII */
                 return linejoin[i].join;
         }
         error(_("invalid line join")); /*NOTREACHED, for -Wall : */

@@ -203,8 +203,8 @@ SEXP attribute_hidden do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, slen));
     for (i = 0; i < slen; i++)
     {
-        tn = CHAR(STRING_ELT(pattern, i % n1));
-        td = CHAR(STRING_ELT(tempdir, i % n2));
+        tn = translateChar(STRING_ELT(pattern, i % n1));
+        td = translateChar(STRING_ELT(tempdir, i % n2));
         /* try to get a new file name */
         tm = R_tmpnam(tn, td);
         SET_STRING_ELT(ans, i, mkChar(tm));
@@ -519,7 +519,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             sub = NULL;
         else
             sub = translateChar(STRING_ELT(CADDDR(args), 0));
-        from = CHAR(STRING_ELT(CADR(args), 0));
+        from = CHAR(STRING_ELT(CADR(args), 0)); /* ASCII */
         to = CHAR(STRING_ELT(CADDR(args), 0));
         /* Should we do something about marked CHARSXPs in 'from = ""'? */
         if (streql(to, "UTF-8"))

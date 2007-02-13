@@ -282,9 +282,10 @@ int usemethod(char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP call
     nclass = length(klass);
     for (i = 0; i < nclass; i++)
     {
-        if (strlen(generic) + strlen(CHAR(STRING_ELT(klass, i))) + 2 > 512)
+        char *ss = translateChar(STRING_ELT(klass, i));
+        if (strlen(generic) + strlen(ss) + 2 > 512)
             error(_("class name too long in '%s'"), generic);
-        sprintf(buf, "%s.%s", generic, CHAR(STRING_ELT(klass, i)));
+        sprintf(buf, "%s.%s", generic, ss);
         method = install(buf);
         sxp = R_LookupMethod(method, rho, callrho, defrho);
         if (isFunction(sxp))
@@ -381,7 +382,8 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     The generic need not be a closure (Henrik Bengtsson writes
     UseMethod("$"), although only functions are documented.)
     */
-    val = findVar1(install(CHAR(STRING_ELT(generic, 0))), ENCLOS(env), FUNSXP, TRUE); /* That has evaluated promises */
+    val = findVar1(install(translateChar(STRING_ELT(generic, 0))), ENCLOS(env), FUNSXP,
+                   TRUE); /* That has evaluated promises */
     if (TYPEOF(val) == CLOSXP)
         defenv = CLOENV(val);
     else
@@ -417,7 +419,7 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(generic) != STRSXP || LENGTH(generic) < 1 || strlen(CHAR(STRING_ELT(generic, 0))) == 0)
         errorcall(call, _("first argument must be a generic name"));
 
-    if (usemethod(CHAR(STRING_ELT(generic, 0)), obj, call, CDR(args), env, callenv, defenv, &ans) == 1)
+    if (usemethod(translateChar(STRING_ELT(generic, 0)), obj, call, CDR(args), env, callenv, defenv, &ans) == 1)
     {
         UNPROTECT(1); /* obj */
         PROTECT(ans);
@@ -425,7 +427,7 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(1);
     }
     else
-        error(_("no applicable method for \"%s\""), CHAR(STRING_ELT(generic, 0)));
+        error(_("no applicable method for \"%s\""), translateChar(STRING_ELT(generic, 0)));
     return R_NilValue; /* NOT Used */
 }
 
@@ -467,7 +469,7 @@ static SEXP fixcall(SEXP call, SEXP args)
 
 SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    char buf[512], b[512], bb[512], tbuf[10];
+    char buf[512], b[512], bb[512], tbuf[10], *sb, *sg, *sk;
     SEXP ans, s, t, klass, method, matchedarg, generic, nextfun;
     SEXP sysp, m, formals, actuals, tmp, newcall;
     SEXP a, group, basename;
@@ -662,13 +664,15 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     method = findVarInFrame3(R_GlobalContext->sysparent, install(".Method"), TRUE);
     if (method != R_UnboundValue)
     {
+        char *ss;
         if (!isString(method))
             error(_("wrong value for .Method"));
         for (i = 0; i < length(method); i++)
         {
-            if (strlen(CHAR(STRING_ELT(method, i))) >= 512)
-                error(_("method name too long in '%s'"), CHAR(STRING_ELT(method, i)));
-            sprintf(b, "%s", CHAR(STRING_ELT(method, i)));
+            ss = translateChar(STRING_ELT(method, i));
+            if (strlen(ss) >= 512)
+                error(_("method name too long in '%s'"), ss);
+            sprintf(b, "%s", ss);
             if (strlen(b))
                 break;
         }
@@ -676,9 +680,10 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
            is the same or absent */
         for (j = i; j < length(method); j++)
         {
-            if (strlen(CHAR(STRING_ELT(method, j))) >= 512)
-                error(_("method name too long in '%s'"), CHAR(STRING_ELT(method, j)));
-            sprintf(bb, "%s", CHAR(STRING_ELT(method, j)));
+            char *ss = translateChar(STRING_ELT(method, j));
+            if (strlen(ss) >= 512)
+                error(_("method name too long in '%s'"), ss);
+            sprintf(bb, "%s", ss);
             if (strlen(bb) && strcmp(b, bb))
                 warning(_("Incompatible methods ignored"));
         }
@@ -690,11 +695,13 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         sprintf(b, "%s", CHAR(PRINTNAME(CAR(cptr->call))));
     }
 
+    sb = translateChar(STRING_ELT(basename, 0));
     for (j = 0; j < length(klass); j++)
     {
-        if (strlen(CHAR(STRING_ELT(basename, 0))) + strlen(CHAR(STRING_ELT(klass, j))) + 2 > 512)
-            error(_("class name too long in '%s'"), CHAR(STRING_ELT(basename, 0)));
-        sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(klass, j)));
+        sk = translateChar(STRING_ELT(klass, j));
+        if (strlen(sb) + strlen(sk) + 2 > 512)
+            error(_("class name too long in '%s'"), sb);
+        sprintf(buf, "%s.%s", sb, sk);
         if (!strcmp(buf, b))
             break;
     }
@@ -706,18 +713,23 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* we need the value of i on exit from the for loop to figure out
        how many classes to drop. */
+
+    sg = translateChar(STRING_ELT(generic, 0));
     for (i = j; i < length(klass); i++)
     {
-        if (strlen(CHAR(STRING_ELT(generic, 0))) + strlen(CHAR(STRING_ELT(klass, i))) + 2 > 512)
-            error(_("class name too long in '%s'"), CHAR(STRING_ELT(generic, 0)));
-        sprintf(buf, "%s.%s", CHAR(STRING_ELT(generic, 0)), CHAR(STRING_ELT(klass, i)));
+        sk = translateChar(STRING_ELT(klass, i));
+        if (strlen(sg) + strlen(sk) + 2 > 512)
+            error(_("class name too long in '%s'"), sg);
+        sprintf(buf, "%s.%s", sg, sk);
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
         if (isFunction(nextfun))
             break;
         if (group != R_UnboundValue)
         {
             /* if not Generic.foo, look for Group.foo */
-            sprintf(buf, "%s.%s", CHAR(STRING_ELT(basename, 0)), CHAR(STRING_ELT(klass, i)));
+            if (strlen(sb) + strlen(sk) + 2 > 512)
+                error(_("class name too long in '%s'"), sb);
+            sprintf(buf, "%s.%s", sb, sk);
             nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
             if (isFunction(nextfun))
                 break;
@@ -727,7 +739,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!isFunction(nextfun))
     {
-        sprintf(buf, "%s.default", CHAR(STRING_ELT(generic, 0)));
+        sprintf(buf, "%s.default", sg);
         nextfun = R_LookupMethod(install(buf), env, callenv, defenv);
         /* If there is no default method, try the generic itself,
            provided it is primitive or a wrapper for a .Internal
@@ -735,7 +747,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
          */
         if (!isFunction(nextfun))
         {
-            t = install(CHAR(STRING_ELT(generic, 0)));
+            t = install(sg);
             nextfun = findVar(t, env);
             if (TYPEOF(nextfun) == PROMSXP)
                 nextfun = eval(nextfun, env);
@@ -821,7 +833,7 @@ Rboolean InheritsClass(SEXP x, char *name)
         class = getAttrib(x, R_ClassSymbol);
         nclass = length(class);
         for (i = 0; i < nclass; i++)
-            if (!strcmp(CHAR(STRING_ELT(class, i)), name))
+            if (!strcmp(translateChar(STRING_ELT(class, i)), name))
                 return TRUE;
     }
     return FALSE;
@@ -839,7 +851,7 @@ void RemoveClass(SEXP x, char *name)
         nclass = length(class);
         nmatch = 0;
         for (i = 0; i < nclass; i++)
-            if (!strcmp(CHAR(STRING_ELT(class, i)), name))
+            if (!strcmp(translateChar(STRING_ELT(class, i)), name))
                 nmatch++;
         if (nmatch == nclass)
         {
@@ -849,7 +861,7 @@ void RemoveClass(SEXP x, char *name)
         {
             PROTECT(newclass = allocVector(STRSXP, nclass - nmatch));
             for (i = 0, j = 0; i < nclass; i++)
-                if (strcmp(CHAR(STRING_ELT(class, i)), name))
+                if (strcmp(translateChar(STRING_ELT(class, i)), name))
                     SET_STRING_ELT(newclass, j++, STRING_ELT(class, i));
             setAttrib(x, R_ClassSymbol, newclass);
             UNPROTECT(1);
@@ -885,11 +897,12 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (j = 0; j < nwhat; j++)
     {
+        char *ss = translateChar(STRING_ELT(what, j));
         for (i = 0; i < nclass; i++)
         {
             if (isvec)
                 INTEGER(rval)[j] = 0;
-            if (!strcmp(CHAR(STRING_ELT(klass, i)), CHAR(STRING_ELT(what, j))))
+            if (!strcmp(translateChar(STRING_ELT(klass, i)), ss))
             {
                 if (isvec)
                     INTEGER(rval)[j] = i + 1;
@@ -977,7 +990,7 @@ static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
     SEXP e, value, rho, fun, symbol, dot_Generic;
     RCNTXT *cptr;
     /* find a non-generic function */
-    symbol = install(CHAR(asChar(name)));
+    symbol = install(translateChar(asChar(name)));
     dot_Generic = install(".Generic");
     for (rho = ENCLOS(env); rho != R_EmptyEnv; rho = ENCLOS(rho))
     {
@@ -1000,7 +1013,7 @@ static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
     }
     fun = SYMVALUE(symbol);
     if (fun == R_UnboundValue)
-        error(_("unable to find a non-generic version of function \"%s\""), CHAR(asChar(name)));
+        error(_("unable to find a non-generic version of function \"%s\""), translateChar(asChar(name)));
     cptr = R_GlobalContext;
     /* check this is the right context */
     while (cptr != R_ToplevelContext)
@@ -1054,7 +1067,7 @@ SEXP attribute_hidden do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env
 
     if (isNull(fdef))
         error(_("call to standardGeneric(\"%s\") apparently not from the body of that generic function"),
-              CHAR(STRING_ELT(arg, 0)));
+              translateChar(STRING_ELT(arg, 0)));
 
     value = (*ptr)(arg, env, fdef);
 
@@ -1081,7 +1094,7 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
     char *code_string;
     if (!isValidString(code_vec))
         error(_("argument 'code' must be a character string"));
-    code_string = CHAR(asChar(code_vec));
+    code_string = translateChar(asChar(code_vec));
     do_set_prim_method(op, code_string, fundef, mlist);
     return (fname);
 }
@@ -1268,7 +1281,7 @@ static SEXP get_this_generic(SEXP args)
     if (!gen_name)
         gen_name = install("generic");
     cptr = R_GlobalContext;
-    fname = CHAR(asChar(CAR(args)));
+    fname = translateChar(asChar(CAR(args)));
     n = framedepth(cptr);
     /* check for a matching "generic" slot */
     for (i = 0; i < n; i++)
@@ -1277,7 +1290,7 @@ static SEXP get_this_generic(SEXP args)
         if (isObject(rval))
         {
             SEXP generic = getAttrib(rval, gen_name);
-            if (TYPEOF(generic) == STRSXP && !strcmp(CHAR(asChar(generic)), fname))
+            if (TYPEOF(generic) == STRSXP && !strcmp(translateChar(asChar(generic)), fname))
             {
                 value = rval;
                 break;
@@ -1406,7 +1419,7 @@ SEXP R_do_new_object(SEXP class_def)
     if (asLogical(e) != 0)
     { /* includes NA, TRUE, or anything other than FALSE */
         e = R_do_slot(class_def, s_className);
-        error(_("trying to generate an object from a virtual class (\"%s\")"), CHAR(asChar(e)));
+        error(_("trying to generate an object from a virtual class (\"%s\")"), translateChar(asChar(e)));
     }
     e = R_do_slot(class_def, s_className);
     value = duplicate(R_do_slot(class_def, s_prototype));

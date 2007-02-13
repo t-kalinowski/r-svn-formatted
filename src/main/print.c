@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1998	Robert Gentleman and Ross Ihaka.
- *  Copyright (C) 2000-2006	The R Development Core Team.
+ *  Copyright (C) 2000-2007	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -326,7 +326,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 if (LENGTH(tmp) == 1)
                 {
                     /* This can potentially overflow */
-                    char *ctmp = CHAR(STRING_ELT(tmp, 0));
+                    char *ctmp = translateChar(STRING_ELT(tmp, 0));
                     int len = strlen(ctmp);
                     if (len < 100)
                         snprintf(pbuf, 115, "\"%s\"", ctmp);
@@ -392,7 +392,8 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     Rprintf("\n");
                 if (names != R_NilValue && STRING_ELT(names, i) != R_NilValue && *CHAR(STRING_ELT(names, i)) != '\0')
                 {
-                    if (taglen + strlen(CHAR(STRING_ELT(names, i))) > TAGBUFLEN)
+                    char *ss = translateChar(STRING_ELT(names, i));
+                    if (taglen + strlen(ss) > TAGBUFLEN)
                         sprintf(ptag, "$...");
                     else
                     {
@@ -400,10 +401,10 @@ static void PrintGenericVector(SEXP s, SEXP env)
                            is a valid (if non-syntactic) name */
                         if (STRING_ELT(names, i) == NA_STRING)
                             sprintf(ptag, "$<NA>");
-                        else if (isValidName(CHAR(STRING_ELT(names, i))))
-                            sprintf(ptag, "$%s", CHAR(STRING_ELT(names, i)));
+                        else if (isValidName(ss))
+                            sprintf(ptag, "$%s", ss);
                         else
-                            sprintf(ptag, "$`%s`", CHAR(STRING_ELT(names, i)));
+                            sprintf(ptag, "$`%s`", ss);
                     }
                 }
                 else
@@ -441,10 +442,10 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 if (length(klass) == 1)
                 {
                     /* internal version of isClass() */
-                    char str[201];
-                    snprintf(str, 200, ".__C__%s", CHAR(STRING_ELT(klass, 0)));
+                    char str[201], *ss = translateChar(STRING_ELT(klass, 0));
+                    snprintf(str, 200, ".__C__%s", ss);
                     if (findVar(install(str), env) != R_UnboundValue)
-                        className = CHAR(STRING_ELT(klass, 0));
+                        className = ss;
                 }
             }
             if (className)
@@ -598,7 +599,7 @@ static void PrintExpression(SEXP s)
     u = deparse1(s, 0, R_print.useSource | DEFAULTDEPARSE);
     n = LENGTH(u);
     for (i = 0; i < n; i++)
-        Rprintf("%s\n", CHAR(STRING_ELT(u, i)));
+        Rprintf("%s\n", CHAR(STRING_ELT(u, i))); /*translated */
 }
 
 /* PrintValueRec -- recursively print an SEXP
@@ -615,9 +616,9 @@ static void PrintEnvir(SEXP rho)
     else if (rho == R_EmptyEnv)
         Rprintf("<environment: R_EmptyEnv>\n");
     else if (R_IsPackageEnv(rho))
-        Rprintf("<environment: %s>\n", CHAR(STRING_ELT(R_PackageEnvName(rho), 0)));
+        Rprintf("<environment: %s>\n", translateChar(STRING_ELT(R_PackageEnvName(rho), 0)));
     else if (R_IsNamespaceEnv(rho))
-        Rprintf("<environment: namespace:%s>\n", CHAR(STRING_ELT(R_NamespaceEnvSpec(rho), 0)));
+        Rprintf("<environment: namespace:%s>\n", translateChar(STRING_ELT(R_NamespaceEnvSpec(rho), 0)));
     else
         Rprintf("<environment: %p>\n", rho);
 }
@@ -635,7 +636,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
     case SYMSXP: /* Use deparse here to handle backtick quotification
                   * of "weird names" */
         t = deparse1(s, 0, SIMPLEDEPARSE);
-        Rprintf("%s\n", CHAR(STRING_ELT(t, 0)));
+        Rprintf("%s\n", CHAR(STRING_ELT(t, 0))); /* translated */
         break;
     case SPECIALSXP:
     case BUILTINSXP:
@@ -659,7 +660,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
             {
                 PROTECT(s2);
                 t = deparse1(s2, 0, DEFAULTDEPARSE);
-                Rprintf("%s ", CHAR(STRING_ELT(t, 0)));
+                Rprintf("%s ", CHAR(STRING_ELT(t, 0))); /* translated */
                 Rprintf(".Primitive(\"%s\")\n", PRIMNAME(s));
                 UNPROTECT(1);
             }
@@ -682,7 +683,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         if (isNull(t) || !R_print.useSource)
             t = deparse1(s, 0, R_print.useSource | DEFAULTDEPARSE);
         for (i = 0; i < LENGTH(t); i++)
-            Rprintf("%s\n", CHAR(STRING_ELT(t, i)));
+            Rprintf("%s\n", CHAR(STRING_ELT(t, i))); /* translated */
 #ifdef BYTECODE
         if (TYPEOF(s) == CLOSXP && isByteCode(BODY(s)))
             Rprintf("<bytecode: %p>\n", BODY(s));
@@ -727,7 +728,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
                     char *title = NULL;
 
                     if (!isNull(nn))
-                        title = CHAR(STRING_ELT(nn, 0));
+                        title = translateChar(STRING_ELT(nn, 0));
 
                     printNamedVector(s, VECTOR_ELT(t, 0), R_print.quote, title);
                 }

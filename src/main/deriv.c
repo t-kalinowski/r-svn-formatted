@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2003   The R Development Core Team.
+ *  Copyright (C) 1998-2007   The R Development Core Team.
  *  Copyright (C) 2004-5        The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -480,7 +480,7 @@ static SEXP D(SEXP expr, SEXP var)
         else
         {
             SEXP u = deparse1(CAR(expr), 0, SIMPLEDEPARSE);
-            error(_("Function '%s' is not in the derivatives table"), CHAR(STRING_ELT(u, 0)));
+            error(_("Function '%s' is not in the derivatives table"), translateChar(STRING_ELT(u, 0)));
         }
 
         break;
@@ -596,7 +596,7 @@ SEXP attribute_hidden do_D(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("variable must be a character string"));
     if (length(var) > 1)
         warningcall(call, _("only the first element is used as variable name"));
-    var = install(CHAR(STRING_ELT(var, 0)));
+    var = install(translateChar(STRING_ELT(var, 0)));
     InitDerivSymbols();
     PROTECT(expr = D(expr, var));
     expr = AddParens(expr);
@@ -673,7 +673,7 @@ static int Accumulate2(SEXP expr, SEXP exprlist)
 static SEXP MakeVariable(int k, SEXP tag)
 {
     char buf[64];
-    snprintf(buf, 64, "%s%d", CHAR(STRING_ELT(tag, 0)), k);
+    snprintf(buf, 64, "%s%d", translateChar(STRING_ELT(tag, 0)), k);
     return install(buf);
 }
 
@@ -939,7 +939,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0, k = 0; i < nderiv; i++)
     {
         PROTECT(ans = duplicate(expr));
-        PROTECT(ans = D(ans, install(CHAR(STRING_ELT(names, i)))));
+        PROTECT(ans = D(ans, install(translateChar(STRING_ELT(names, i)))));
         ans2 = duplicate(ans);                         /* keep a temporary copy */
         d_index[i] = FindSubexprs(ans, exprlist, tag); /* examine the derivative first */
         ans = duplicate(ans2);                         /* restore the copy */
@@ -948,7 +948,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
             for (j = i; j < nderiv; j++)
             {
                 PROTECT(ans2 = duplicate(ans));
-                PROTECT(ans2 = D(ans2, install(CHAR(STRING_ELT(names, j)))));
+                PROTECT(ans2 = D(ans2, install(translateChar(STRING_ELT(names, j)))));
                 d2_index[k] = FindSubexprs(ans2, exprlist, tag);
                 k++;
                 UNPROTECT(2);
@@ -980,7 +980,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
             if (hessian)
             {
                 PROTECT(ans = duplicate(expr));
-                PROTECT(ans = D(ans, install(CHAR(STRING_ELT(names, i)))));
+                PROTECT(ans = D(ans, install(translateChar(STRING_ELT(names, i)))));
                 for (j = i; j < nderiv; j++)
                 {
                     if (d2_index[k])
@@ -990,7 +990,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
                     else
                     {
                         PROTECT(ans2 = duplicate(ans));
-                        PROTECT(ans2 = D(ans2, install(CHAR(STRING_ELT(names, j)))));
+                        PROTECT(ans2 = D(ans2, install(translateChar(STRING_ELT(names, j)))));
                         Accumulate2(ans2, exprlist);
                         UNPROTECT(2);
                     }
@@ -1002,7 +1002,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         { /* the first derivative is constant or simple variable */
             PROTECT(ans = duplicate(expr));
-            PROTECT(ans = D(ans, install(CHAR(STRING_ELT(names, i)))));
+            PROTECT(ans = D(ans, install(translateChar(STRING_ELT(names, i)))));
             Accumulate2(ans, exprlist);
             UNPROTECT(2);
             if (hessian)
@@ -1016,7 +1016,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
                     else
                     {
                         PROTECT(ans2 = duplicate(ans));
-                        PROTECT(ans2 = D(ans2, install(CHAR(STRING_ELT(names, j)))));
+                        PROTECT(ans2 = D(ans2, install(translateChar(STRING_ELT(names, j)))));
                         if (isZero(ans2))
                             Accumulate2(R_MissingArg, exprlist);
                         else
@@ -1119,7 +1119,7 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_FORMALS(funarg, ans);
         for (i = 0; i < length(names); i++)
         {
-            SET_TAG(ans, install(CHAR(STRING_ELT(names, i))));
+            SET_TAG(ans, install(translateChar(STRING_ELT(names, i))));
             SETCAR(ans, R_MissingArg);
             ans = CDR(ans);
         }

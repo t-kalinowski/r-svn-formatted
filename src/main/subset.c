@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2006   The R Development Core Team
+ *  Copyright (C) 1997-2007   The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -814,7 +814,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (nsubs != 1 || !isString(CAR(subs)) || length(CAR(subs)) != 1)
             error(_("wrong arguments for subsetting an environment"));
-        ans = findVarInFrame(x, install(CHAR(STRING_ELT(CAR(subs), 0))));
+        ans = findVarInFrame(x, install(translateChar(STRING_ELT(CAR(subs), 0))));
         if (TYPEOF(ans) == PROMSXP)
         {
             PROTECT(ans);
@@ -960,10 +960,10 @@ static enum pmatch pstrmatch(SEXP target, SEXP input, int slen)
         st = CHAR(PRINTNAME(target));
         break;
     case CHARSXP:
-        st = CHAR(target);
+        st = translateChar(target);
         break;
     }
-    if (strncmp(st, CHAR(input), slen) == 0)
+    if (strncmp(st, translateChar(input), slen) == 0)
     {
         if (strlen(st) == slen)
             return EXACT_MATCH;
@@ -1031,7 +1031,7 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input)
     PROTECT(input);
 
     /* Optimisation to prevent repeated recalculation */
-    slen = strlen(CHAR(input));
+    slen = strlen(translateChar(input));
 
     /* If this is not a list object we return NULL. */
     /* Or should this be allocVector(VECSXP, 0)? */
@@ -1112,7 +1112,7 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input)
     }
     else if (isEnvironment(x))
     {
-        y = findVarInFrame(x, install(CHAR(input)));
+        y = findVarInFrame(x, install(translateChar(input)));
         if (TYPEOF(y) == PROMSXP)
         {
             PROTECT(y);

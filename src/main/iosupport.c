@@ -1,6 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1995, 1996, 1997,  Robert Gentleman and Ross Ihaka
+ *                2007 R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -188,7 +189,7 @@ int attribute_hidden R_TextBufferInit(TextBuffer *txtb, SEXP text)
         {
             if (STRING_ELT(text, i) != R_NilValue)
             {
-                k = strlen(CHAR(STRING_ELT(text, i)));
+                k = strlen(translateChar(STRING_ELT(text, i)));
                 if (k > l)
                     l = k;
             }
@@ -199,7 +200,7 @@ int attribute_hidden R_TextBufferInit(TextBuffer *txtb, SEXP text)
         txtb->text = text;
         txtb->ntext = n;
         txtb->offset = 0;
-        transferChars(txtb->buf, CHAR(STRING_ELT(txtb->text, txtb->offset)));
+        transferChars(txtb->buf, translateChar(STRING_ELT(txtb->text, txtb->offset)));
         txtb->offset++;
         return 1;
     }
@@ -238,7 +239,7 @@ int attribute_hidden R_TextBufferGetc(TextBuffer *txtb)
         }
         else
         {
-            transferChars(txtb->buf, CHAR(STRING_ELT(txtb->text, txtb->offset)));
+            transferChars(txtb->buf, translateChar(STRING_ELT(txtb->text, txtb->offset)));
             txtb->bufp = txtb->buf;
             txtb->offset++;
         }

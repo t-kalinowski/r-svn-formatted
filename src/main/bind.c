@@ -490,9 +490,10 @@ static SEXP NewBase(SEXP base, SEXP tag)
     base = EnsureString(base);
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
-    {
-        ans = allocString(strlen(CHAR(tag)) + strlen(CHAR(base)) + 1);
-        sprintf(CHAR(ans), "%s.%s", CHAR(base), CHAR(tag));
+    { /* test of length */
+        char *sb = translateChar(base), *st = translateChar(tag);
+        ans = allocString(strlen(st) + strlen(sb) + 1);
+        sprintf(CHAR(ans), "%s.%s", sb, st);
     }
     else if (*CHAR(tag))
     {
@@ -521,13 +522,15 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     {
-        ans = allocString(strlen(CHAR(base)) + strlen(CHAR(tag)) + 1);
-        sprintf(CHAR(ans), "%s.%s", CHAR(base), CHAR(tag));
+        char *sb = translateChar(base), *st = translateChar(tag);
+        ans = allocString(strlen(sb) + strlen(st) + 1);
+        sprintf(CHAR(ans), "%s.%s", sb, st);
     }
     else if (*CHAR(base))
     {
-        ans = allocString(strlen(CHAR(base)) + IndexWidth(seqno));
-        sprintf(CHAR(ans), "%s%d", CHAR(base), seqno);
+        char *sb = translateChar(base);
+        ans = allocString(strlen(sb) + IndexWidth(seqno));
+        sprintf(CHAR(ans), "%s%d", sb, seqno);
     }
     else if (*CHAR(tag))
     {
@@ -535,8 +538,9 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
             ans = NA_STRING;
         else
         {
-            ans = allocString(strlen(CHAR(tag)));
-            sprintf(CHAR(ans), "%s", CHAR(tag));
+            char *st = translateChar(tag);
+            ans = allocString(strlen(st));
+            sprintf(CHAR(ans), "%s", st);
         }
     }
     else
@@ -548,7 +552,8 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
 SEXP attribute_hidden ItemName(SEXP names, int i)
 {
     /* return  names[i]  if it is a character (>= 1 char), or NULL otherwise */
-    if (names != R_NilValue && STRING_ELT(names, i) != R_NilValue && CHAR(STRING_ELT(names, i))[0] != '\0')
+    if (names != R_NilValue && STRING_ELT(names, i) != R_NilValue &&
+        CHAR(STRING_ELT(names, i))[0] != '\0') /* length test */
         return STRING_ELT(names, i);
     else
         return R_NilValue;
@@ -1066,11 +1071,11 @@ SEXP FetchMethod(char *generic, char *classname, SEXP env)
 /* cbind(deparse.level, ...) and rbind(deparse.level, ...) : */
 SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP a, t, obj, klass, classlist, classname, method, classmethod, rho;
+    SEXP a, t, obj, classlist, classname, method, classmethod, rho;
     const char *generic;
     int mode, deparse_level;
     struct BindData data;
-    char buf[512];
+    char buf[512], *s, *klass;
 
     /* since R 2.2.0: first argument "deparse.level" */
     deparse_level = asInteger(eval(CAR(args), env));
@@ -1102,7 +1107,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(args = promiseArgs(args, env));
 
     generic = ((PRIMVAL(op) == 1) ? "cbind" : "rbind");
-    klass = R_NilValue;
+    klass = "";
     method = R_NilValue;
     for (a = args; a != R_NilValue; a = CDR(a))
     {
@@ -1114,17 +1119,18 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
             for (i = 0; i < length(classlist); i++)
             {
                 classname = STRING_ELT(classlist, i);
-                if (strlen(generic) + strlen(CHAR(classname)) + 2 > 512)
+                s = translateChar(classname);
+                if (strlen(generic) + strlen(s) + 2 > 512)
                     error(_("class name too long in '%s'"), generic);
-                sprintf(buf, "%s.%s", generic, CHAR(classname));
+                sprintf(buf, "%s.%s", generic, s);
                 classmethod = R_LookupMethod(install(buf), env, env, R_BaseNamespace);
                 if (classmethod != R_UnboundValue)
                 {
-                    if (klass == R_NilValue)
+                    if (klass == "")
                     {
                         /* There is no previous class */
                         /* We use this method. */
-                        klass = classname;
+                        klass = s;
                         method = classmethod;
                     }
                     else
@@ -1133,7 +1139,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
                         /* previous class.  If the two are not */
                         /* compatible we drop through to the */
                         /* default method. */
-                        if (strcmp(CHAR(klass), CHAR(classname)))
+                        if (strcmp(klass, s))
                         {
                             method = R_NilValue;
                             break;

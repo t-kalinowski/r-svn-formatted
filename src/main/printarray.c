@@ -99,7 +99,7 @@ static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
         if (STRING_ELT(cl, j) == NA_STRING)                                                                            \
             clabw = R_print.na_width_noquote;                                                                          \
         else                                                                                                           \
-            clabw = strwidth(CHAR(STRING_ELT(cl, j)));                                                                 \
+            clabw = strwidth(translateChar(STRING_ELT(cl, j)));                                                        \
     }                                                                                                                  \
     else                                                                                                               \
         clabw = IndexWidth(j + 1) + 3;
@@ -514,8 +514,8 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, int right, SEXP dimna
             has_dnn = !isNull(dnn);
             if (has_dnn)
             {
-                rn = CHAR(STRING_ELT(dnn, 0));
-                cn = CHAR(STRING_ELT(dnn, 1));
+                rn = translateChar(STRING_ELT(dnn, 0));
+                cn = translateChar(STRING_ELT(dnn, 1));
             }
         }
         /* nb := #{entries} in a slice such as x[1,1,..] or equivalently,
@@ -556,9 +556,9 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, int right, SEXP dimna
                 if (has_dimnames && ((dn = VECTOR_ELT(dimnames, j)) != R_NilValue))
                 {
                     if (has_dnn)
-                        Rprintf(", %s = %s", CHAR(STRING_ELT(dnn, j)), CHAR(STRING_ELT(dn, l - 1)));
+                        Rprintf(", %s = %s", translateChar(STRING_ELT(dnn, j)), translateChar(STRING_ELT(dn, l - 1)));
                     else
-                        Rprintf(", %s", CHAR(STRING_ELT(dn, l - 1)));
+                        Rprintf(", %s", translateChar(STRING_ELT(dn, l - 1)));
                 }
                 else
                     Rprintf(", %d", l);

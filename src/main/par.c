@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2006 Robert Gentleman, Ross Ihaka and the R core team.
+ *  Copyright (C) 1997-2007 Robert Gentleman, Ross Ihaka and the R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -339,12 +339,14 @@ static void Specify(char *what, SEXP value, DevDesc *dd, SEXP call)
     }
     else if (streql(what, "family"))
     {
+        char *ss;
         value = coerceVector(value, STRSXP);
         lengthCheck(what, value, 1, call);
-        if (strlen(CHAR(STRING_ELT(value, 0))) > 200)
+        ss = translateChar(STRING_ELT(value, 0));
+        if (strlen(ss) > 200)
             error(_("graphical parameter 'family' has a maximum length of 200 bytes"));
-        strncpy(Rf_dpptr(dd)->family, CHAR(STRING_ELT(value, 0)), 201);
-        strncpy(Rf_gpptr(dd)->family, CHAR(STRING_ELT(value, 0)), 201);
+        strncpy(Rf_dpptr(dd)->family, ss, 201);
+        strncpy(Rf_gpptr(dd)->family, ss, 201);
     }
     else if (streql(what, "fin"))
     {
@@ -770,11 +772,13 @@ void attribute_hidden Specify2(char *what, SEXP value, DevDesc *dd, SEXP call)
     }
     else if (streql(what, "family"))
     {
+        char *ss;
         value = coerceVector(value, STRSXP);
         lengthCheck(what, value, 1, call);
-        if (strlen(CHAR(STRING_ELT(value, 0))) > 200)
+        ss = translateChar(STRING_ELT(value, 0));
+        if (strlen(ss) > 200)
             error(_("graphical parameter 'family' has a maximum length of 200 bytes"));
-        strncpy(Rf_gpptr(dd)->family, CHAR(STRING_ELT(value, 0)), 201);
+        strncpy(Rf_gpptr(dd)->family, ss, 201);
     }
     else if (streql(what, "fg"))
     {
@@ -1294,6 +1298,7 @@ SEXP attribute_hidden do_par(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 tag = R_NilValue;
             val = VECTOR_ELT(args, i);
+            /* tags are all ASCII */
             if (tag != R_NilValue && CHAR(tag)[0])
             {
                 new_spec = 1;

@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2002   Robert Gentleman, Ross Ihaka and the R core team.
+ *  Copyright (C) 1997-2007   Robert Gentleman, Ross Ihaka and the R core team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1133,14 +1133,14 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                     if (!isNull(labels))
                     {
                         int numl = length(labels);
-                        strcpy(&buffer[1], CHAR(STRING_ELT(labels, cnum % numl)));
+                        strcpy(&buffer[1], translateChar(STRING_ELT(labels, cnum % numl)));
                     }
                     else
                     {
                         PROTECT(lab = allocVector(REALSXP, 1));
                         REAL(lab)[0] = zc;
                         lab = labelformat(lab);
-                        strcpy(&buffer[1], CHAR(STRING_ELT(lab, 0)));
+                        strcpy(&buffer[1], CHAR(STRING_ELT(lab, 0))); /* ASCII */
                         UNPROTECT(1);
                     }
                     buffer[strlen(buffer) + 1] = '\0';
@@ -2484,7 +2484,7 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
             /* Draw tick line */
             GLine(v1[0] / v1[3], v1[1] / v1[3], v2[0] / v2[3], v2[1] / v2[3], USER, dd);
             /* Draw tick label */
-            GText(v3[0] / v3[3], v3[1] / v3[3], USER, CHAR(STRING_ELT(lab, i)), .5, .5, 0, dd);
+            GText(v3[0] / v3[3], v3[1] / v3[3], USER, translateChar(STRING_ELT(lab, i)), .5, .5, 0, dd);
         }
         UNPROTECT(2);
         break;
@@ -2776,8 +2776,9 @@ SEXP attribute_hidden do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
         if (doaxes)
         {
             SEXP xl = STRING_ELT(xlab, 0), yl = STRING_ELT(ylab, 0), zl = STRING_ELT(zlab, 0);
-            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : CHAR(xl),
-                      (yl == NA_STRING) ? "" : CHAR(yl), (zl == NA_STRING) ? "" : CHAR(zl), nTicks, tickType, dd);
+            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : translateChar(xl),
+                      (yl == NA_STRING) ? "" : translateChar(yl), (zl == NA_STRING) ? "" : translateChar(zl), nTicks,
+                      tickType, dd);
         }
     }
 

@@ -700,7 +700,7 @@ SEXP attribute_hidden do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* get current directory to return */
     wd = intern_getwd();
 
-    path = R_ExpandFileName(CHAR(STRING_ELT(s, 0)));
+    path = R_ExpandFileName(translateChar(STRING_ELT(s, 0)));
 #ifdef HAVE_CHDIR
     if (chdir(path) < 0)
 #endif
@@ -722,7 +722,7 @@ SEXP attribute_hidden do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
-        p = R_ExpandFileName(CHAR(STRING_ELT(s, i)));
+        p = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
         if (strlen(p) > PATH_MAX - 1)
             errorcall(call, _("path too long"));
         strcpy(buf, p);
@@ -758,7 +758,7 @@ SEXP attribute_hidden do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
-        p = R_ExpandFileName(CHAR(STRING_ELT(s, i)));
+        p = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
         if (strlen(p) > PATH_MAX - 1)
             errorcall(call, _("path too long"));
         strcpy(buf, p);
@@ -816,7 +816,7 @@ SEXP attribute_hidden do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
     s = CADDR(args);
     if (LENGTH(s) != 1 || TYPEOF(s) != STRSXP)
         errorcall(call, _("invalid '%s' value"), "quote");
-    cs = CHAR(STRING_ELT(s, 0));
+    cs = translateChar(STRING_ELT(s, 0));
     if (strlen(cs) > 0)
         quote = cs[0];
     if (strlen(cs) > 1)
@@ -902,7 +902,7 @@ SEXP attribute_hidden do_setencoding(SEXP call, SEXP op, SEXP args, SEXP rho)
         tmp = STRING_ELT(x, i);
         UNSET_LATIN1(tmp);
         UNSET_UTF8(tmp);
-        this = CHAR(STRING_ELT(enc, i % m));
+        this = CHAR(STRING_ELT(enc, i % m)); /* ASCII */
         if (streql(this, "latin1"))
             SET_LATIN1(tmp);
         else if (streql(this, "UTF-8"))

@@ -793,7 +793,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 break;
             else if (R_IsNamespaceEnv(rho))
             {
-                domain = CHAR(STRING_ELT(R_NamespaceEnvSpec(rho), 0));
+                domain = translateChar(STRING_ELT(R_NamespaceEnvSpec(rho), 0));
                 break;
             }
             rho = CDR(rho);
@@ -807,7 +807,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else if (isString(CAR(args)))
-        domain = CHAR(STRING_ELT(CAR(args), 0));
+        domain = translateChar(STRING_ELT(CAR(args), 0));
     else
         errorcall(call, _("invalid '%s' value"), "domain");
 
@@ -817,7 +817,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
         {
             int ihead = 0, itail = 0;
-            char *This = CHAR(STRING_ELT(string, i)), *tmp, *head = NULL, *tail = NULL, *p, *tr;
+            char *This = translateChar(STRING_ELT(string, i)), *tmp, *head = NULL, *tail = NULL, *p, *tr;
             tmp = (char *)alloca(strlen(This) + 1);
             R_CheckStack();
             strcpy(tmp, This);
@@ -908,7 +908,7 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 break;
             else if (R_IsNamespaceEnv(rho))
             {
-                domain = CHAR(STRING_ELT(R_NamespaceEnvSpec(rho), 0));
+                domain = translateChar(STRING_ELT(R_NamespaceEnvSpec(rho), 0));
                 break;
             }
             rho = CDR(rho);
@@ -928,7 +928,7 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (strlen(domain))
     {
-        char *fmt = dngettext(domain, CHAR(STRING_ELT(msg1, 0)), CHAR(STRING_ELT(msg2, 0)), n);
+        char *fmt = dngettext(domain, translateChar(STRING_ELT(msg1, 0)), translateChar(STRING_ELT(msg2, 0)), n);
         PROTECT(ans = allocVector(STRSXP, 1));
         SET_STRING_ELT(ans, 0, mkChar(fmt));
         UNPROTECT(1);
@@ -950,13 +950,13 @@ SEXP attribute_hidden do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("invalid '%s' value"), "domain");
     if (isNull(CADR(args)))
     {
-        res = bindtextdomain(CHAR(STRING_ELT(CAR(args), 0)), NULL);
+        res = bindtextdomain(translateChar(STRING_ELT(CAR(args), 0)), NULL);
     }
     else
     {
         if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
             errorcall(call, _("invalid '%s' value"), "dirname");
-        res = bindtextdomain(CHAR(STRING_ELT(CAR(args), 0)), CHAR(STRING_ELT(CADR(args), 0)));
+        res = bindtextdomain(translateChar(STRING_ELT(CAR(args), 0)), translateChar(STRING_ELT(CADR(args), 0)));
     }
     if (res)
         return mkString(res);
@@ -991,7 +991,7 @@ SEXP attribute_hidden do_stop(SEXP call, SEXP op, SEXP args, SEXP rho)
         SETCAR(args, coerceVector(CAR(args), STRSXP));
         if (!isValidString(CAR(args)))
             errorcall(c_call, _(" [invalid string in stop(.)]"));
-        errorcall(c_call, "%s", CHAR(STRING_ELT(CAR(args), 0)));
+        errorcall(c_call, "%s", translateChar(STRING_ELT(CAR(args), 0)));
     }
     else
         errorcall(c_call, "");
@@ -1021,7 +1021,7 @@ SEXP attribute_hidden do_warning(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isValidString(CAR(args)))
             warningcall(c_call, _(" [invalid string in warning(.)]"));
         else
-            warningcall(c_call, "%s", CHAR(STRING_ELT(CAR(args), 0)));
+            warningcall(c_call, "%s", translateChar(STRING_ELT(CAR(args), 0)));
     }
     else
         warningcall(c_call, "");
@@ -1415,7 +1415,7 @@ SEXP attribute_hidden do_signalCondition(SEXP call, SEXP op, SEXP args, SEXP rho
             {
                 char *msgstr = NULL;
                 if (TYPEOF(msg) == STRSXP && LENGTH(msg) > 0)
-                    msgstr = CHAR(STRING_ELT(msg, 0));
+                    msgstr = translateChar(STRING_ELT(msg, 0));
                 else
                     error(_("error message not a string"));
                 errorcall_dflt(ecall, "%s", msgstr);
@@ -1523,7 +1523,7 @@ SEXP attribute_hidden do_dfltWarn(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (TYPEOF(CAR(args)) != STRSXP || LENGTH(CAR(args)) != 1)
         error(_("bad error message"));
-    msg = CHAR(STRING_ELT(CAR(args), 0));
+    msg = translateChar(STRING_ELT(CAR(args), 0));
     ecall = CADR(args);
 
     warningcall_dflt(ecall, "%s", msg);
@@ -1539,7 +1539,7 @@ SEXP attribute_hidden do_dfltStop(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (TYPEOF(CAR(args)) != STRSXP || LENGTH(CAR(args)) != 1)
         error(_("bad error message"));
-    msg = CHAR(STRING_ELT(CAR(args), 0));
+    msg = translateChar(STRING_ELT(CAR(args), 0));
     ecall = CADR(args);
 
     errorcall_dflt(ecall, "%s", msg);

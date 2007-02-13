@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2001  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -186,7 +186,7 @@ Rboolean R_converterMatchClass(SEXP obj, R_CConvertInfo *inf, R_toCConverter *el
     n = length(klasses);
     for (i = 0; i < n; i++)
     {
-        if (strcmp(CHAR(STRING_ELT(klasses, i)), (char *)el->userData) == 0)
+        if (strcmp(translateChar(STRING_ELT(klasses, i)), (char *)el->userData) == 0)
         {
             return (TRUE);
         }
@@ -299,7 +299,7 @@ SEXP attribute_hidden do_setToCConverterActiveStatus(SEXP call, SEXP op, SEXP ar
     id = CAR(args);
     if (isString(id))
     {
-        el = R_getToCConverterByDescription(CHAR(STRING_ELT(id, 0)));
+        el = R_getToCConverterByDescription(translateChar(STRING_ELT(id, 0)));
     }
     else
     {
