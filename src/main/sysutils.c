@@ -737,7 +737,7 @@ int Riconv_close(void *cd)
 
 char *translateChar(SEXP x)
 {
-    return x;
+    return CHAR(x);
 }
 #endif
 
