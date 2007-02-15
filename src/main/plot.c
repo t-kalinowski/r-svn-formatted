@@ -216,8 +216,8 @@ attribute_hidden SEXP FixupPch(SEXP pch, int dflt)
         ans = allocVector(INTSXP, n);
         for (i = 0; i < n; i++)
         {
-            if (STRING_ELT(pch, i) == NA_STRING || strlen(CHAR(STRING_ELT(pch, i))) == 0)
-            {
+            if (STRING_ELT(pch, i) == NA_STRING || CHAR(STRING_ELT(pch, i))[0] == '\0')
+            { /* pch = "" */
                 INTEGER(ans)[i] = NA_INTEGER;
             }
             else

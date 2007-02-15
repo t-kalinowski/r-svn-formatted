@@ -57,7 +57,7 @@ static void namewalk(SEXP s, NameWalkData *d)
     case SYMSXP:
         name = PRINTNAME(s);
         /* skip blank symbols */
-        if (strlen(CHAR(name)) == 0)
+        if (CHAR(name)[0] == '\0')
             goto ignore;
         if (d->ItemCounts < d->MaxCount)
         {
