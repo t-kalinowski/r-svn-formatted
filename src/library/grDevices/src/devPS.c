@@ -1281,6 +1281,7 @@ static encodinglist loadedEncodings = NULL;
  */
 static cidfontlist PDFloadedCIDFonts = NULL;
 static type1fontlist PDFloadedFonts = NULL;
+static encodinglist PDFloadedEncodings = NULL;
 
 /*
  * Names of R level font databases
@@ -1344,9 +1345,9 @@ void freeType1Fonts()
  * Given a path to an encoding file,
  * find an EncodingInfo that corresponds
  */
-static encodinginfo findEncoding(char *encpath, encodinglist deviceEncodings)
+static encodinginfo findEncoding(char *encpath, encodinglist deviceEncodings, Rboolean isPDF)
 {
-    encodinglist enclist = loadedEncodings;
+    encodinglist enclist = isPDF ? PDFloadedEncodings : loadedEncodings;
     encodinginfo encoding = NULL;
     int found = 0;
     /*
@@ -1425,11 +1426,16 @@ static encodinginfo addEncoding(char *encpath, Rboolean isPDF)
             }
             else
             {
-                encodinglist enclist = loadedEncodings;
+                encodinglist enclist = isPDF ? PDFloadedEncodings : loadedEncodings;
                 safestrcpy(encoding->encpath, encpath, PATH_MAX);
                 newenc->encoding = encoding;
                 if (!enclist)
-                    loadedEncodings = newenc;
+                {
+                    if (isPDF)
+                        PDFloadedEncodings = newenc;
+                    else
+                        loadedEncodings = newenc;
+                }
                 else
                 {
                     while (enclist->next)
@@ -2141,7 +2147,7 @@ static type1fontfamily addFont(char *name, Rboolean isPDF, encodinglist deviceEn
             /*
              * Find or add encoding
              */
-            if (!(encoding = findEncoding(encpath, deviceEncodings)))
+            if (!(encoding = findEncoding(encpath, deviceEncodings, isPDF)))
                 encoding = addEncoding(encpath, isPDF);
             if (!encoding)
             {
@@ -2214,7 +2220,7 @@ static type1fontfamily addDefaultFontFromAFMs(char *encpath, char **afmpaths, Rb
     if (fontfamily)
     {
         int i;
-        if (!(encoding = findEncoding(encpath, deviceEncodings)))
+        if (!(encoding = findEncoding(encpath, deviceEncodings, isPDF)))
             encoding = addEncoding(encpath, isPDF);
         if (!encoding)
         {
@@ -2541,7 +2547,7 @@ static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
                  * The encoding should have been loaded when the
                  * font was loaded
                  */
-                encoding = findEncoding(fonts->family->encoding->encpath, pd->encodings);
+                encoding = findEncoding(fonts->family->encoding->encpath, pd->encodings, FALSE);
                 if (!encoding)
                     warning(_("Corrupt loaded encodings;  encoding not recorded"));
                 else
@@ -3152,7 +3158,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
      * encpath MUST NOT BE "default"
      */
     pd->encodings = NULL;
-    if (!(enc = findEncoding(encoding, pd->encodings)))
+    if (!(enc = findEncoding(encoding, pd->encodings, FALSE)))
         enc = addEncoding(encoding, 0);
     if (enc && (enclist = addDeviceEncoding(enc, pd->encodings)))
     {
@@ -4535,7 +4541,7 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *
      * Load the default encoding AS THE FIRST ENCODING FOR THIS DEVICE.
      */
     pd->encodings = NULL;
-    if (!(enc = findEncoding("ISOLatin1.enc", pd->encodings)))
+    if (!(enc = findEncoding("ISOLatin1.enc", pd->encodings, FALSE)))
         enc = addEncoding("ISOLatin1.enc", 0);
     if (enc && (enclist = addDeviceEncoding(enc, pd->encodings)))
     {
@@ -5316,7 +5322,7 @@ static Rboolean addPDFDevicefont(type1fontfamily family, PDFDesc *pd, int *fontI
             /*
              * The encoding should have been loaded when the font was loaded
              */
-            encoding = findEncoding(family->encoding->encpath, pd->encodings);
+            encoding = findEncoding(family->encoding->encpath, pd->encodings, TRUE);
             if (!encoding)
             {
                 warning(_("Corrupt loaded encodings;  font not added"));
@@ -5413,7 +5419,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
      * encpath MUST NOT BE "default"
      */
     pd->encodings = NULL;
-    if (!(enc = findEncoding(encoding, pd->encodings)))
+    if (!(enc = findEncoding(encoding, pd->encodings, TRUE)))
         enc = addEncoding(encoding, 1);
     if (enc && (enclist = addDeviceEncoding(enc, pd->encodings)))
     {
