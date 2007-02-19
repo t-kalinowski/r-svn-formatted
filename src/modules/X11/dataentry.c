@@ -178,7 +178,7 @@ static int inSpecial;
 static char buf[BOOSTED_BUF_SIZE]; /* boosted to allow for MBCS */
 static char *bufp;
 static int bwidth; /* width of the border */
-static int hwidth; /* width of header  */
+static int hht;    /* height of header  */
 static int text_offset;
 
 static SEXP ssNewVector(SEXPTYPE, int);
@@ -344,7 +344,7 @@ SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ssNA_STRING = duplicate(NA_STRING));
     nprotect++;
     bwidth = 5;
-    hwidth = 30;
+    hht = 30;
     isEditor = TRUE;
 
     /* setup work, names, lens  */
@@ -498,7 +498,7 @@ SEXP in_R_X11_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ssNA_STRING = duplicate(NA_STRING));
     nprotect++;
     bwidth = 5;
-    hwidth = 30;
+    hht = 10;
     isEditor = FALSE;
 
     /* setup work, names, lens  */
@@ -574,7 +574,7 @@ static void setcellwidths(void)
     for (i = 2; i < 100; i++)
     { /* 100 on-screen columns cannot occur */
         dw = BOXW(i + colmin - 1);
-        if ((w += dw) > fullwindowWidth)
+        if ((w += dw) > fullwindowWidth || (!isEditor && i > xmaxused - colmin + 1))
         {
             nwide = i;
             windowWidth = w - dw;
@@ -600,13 +600,13 @@ static void drawwindow(void)
     fullwindowWidth = attribs.width;
     fullwindowHeight = attribs.height;
     setcellwidths();
-    nhigh = (fullwindowHeight - 2 * bwidth - hwidth) / box_h;
+    nhigh = (fullwindowHeight - 2 * bwidth - hht) / box_h;
     windowHeight = nhigh * box_h + 2 * bwidth;
 
     clearwindow();
 
     for (i = 1; i < nhigh; i++)
-        drawrectangle(0, hwidth + i * box_h, boxw[0], box_h, 1, 1);
+        drawrectangle(0, hht + i * box_h, boxw[0], box_h, 1, 1);
     /* so row 0 and col 0 are reserved for labels */
     colmax = colmin + (nwide - 2);
     rowmax = rowmin + (nhigh - 2);
@@ -614,25 +614,28 @@ static void drawwindow(void)
     for (i = colmin; i <= colmax; i++)
         drawcol(i);
 
-    /* draw the quit etc boxes */
+    if (isEditor)
+    {
+        /* draw the quit etc boxes */
 
-    i = textwidth("Quit", 4);
-    box_coords[0] = st = fullwindowWidth - 6 - bwidth;
-    box_coords[1] = st - i;
-    drawrectangle(st - i, 3, i + 4, hwidth - 6, 1, 1);
-    drawtext(st + 2 - i, hwidth - 7, "Quit", 4);
+        i = textwidth("Quit", 4);
+        box_coords[0] = st = fullwindowWidth - 6 - bwidth;
+        box_coords[1] = st - i;
+        drawrectangle(st - i, 3, i + 4, hht - 6, 1, 1);
+        drawtext(st + 2 - i, hht - 7, "Quit", 4);
 
-    box_coords[4] = st = st - 5 * i;
-    i = textwidth("Paste", 5);
-    box_coords[5] = st - i;
-    drawrectangle(st - i, 3, i + 4, hwidth - 6, 1, 1);
-    drawtext(st + 2 - i, hwidth - 7, "Paste", 5);
+        box_coords[4] = st = st - 5 * i;
+        i = textwidth("Paste", 5);
+        box_coords[5] = st - i;
+        drawrectangle(st - i, 3, i + 4, hht - 6, 1, 1);
+        drawtext(st + 2 - i, hht - 7, "Paste", 5);
 
-    box_coords[2] = st = st - 2 * i;
-    i = textwidth("Copy", 4);
-    box_coords[3] = st - i;
-    drawrectangle(st - i, 3, i + 4, hwidth - 6, 1, 1);
-    drawtext(st + 2 - i, hwidth - 7, "Copy", 4);
+        box_coords[2] = st = st - 2 * i;
+        i = textwidth("Copy", 4);
+        box_coords[3] = st - i;
+        drawrectangle(st - i, 3, i + 4, hht - 6, 1, 1);
+        drawtext(st + 2 - i, hht - 7, "Copy", 4);
+    }
 
     highlightrect();
 
@@ -654,7 +657,7 @@ static void doHscroll(int oldcol)
             dw += BOXW(i);
         copyH(dw, boxw[0], oldwindowWidth - dw + 1);
         dw = oldwindowWidth - BOXW(oldcol) + 1;
-        cleararea(dw, hwidth, fullwindowWidth - dw, fullwindowHeight);
+        cleararea(dw, hht, fullwindowWidth - dw, fullwindowHeight);
         /* oldnwide includes the row labels */
         for (i = oldcol + oldnwide - 1; i <= colmax; i++)
             drawcol(i);
@@ -665,7 +668,7 @@ static void doHscroll(int oldcol)
         dw = BOXW(colmin);
         copyH(boxw[0], boxw[0] + dw, windowWidth - dw + 1);
         dw = windowWidth + 1;
-        cleararea(dw, hwidth, fullwindowWidth - dw, fullwindowHeight);
+        cleararea(dw, hht, fullwindowWidth - dw, fullwindowHeight);
         drawcol(colmin);
     }
 
@@ -687,7 +690,7 @@ static void find_coords(int row, int col, int *xcoord, int *ycoord)
     for (i = 1; i < col; i++)
         w += BOXW(i + colmin - 1);
     *xcoord = w;
-    *ycoord = bwidth + hwidth + box_h * row;
+    *ycoord = bwidth + hht + box_h * row;
 }
 
 /* draw the window with the top left box at column wcol and row wrow */
@@ -738,12 +741,22 @@ static void advancerect(DE_DIRECTION which)
             crow--;
         break;
     case DOWN:
+        if (!isEditor && crow + rowmin > ymaxused)
+        {
+            bell();
+            break;
+        }
         if (crow == (nhigh - 1))
             jumppage(DOWN);
         else
             crow++;
         break;
     case RIGHT:
+        if (!isEditor && ccol + colmin > xmaxused)
+        {
+            bell();
+            break;
+        }
         if (ccol == (nwide - 1))
             jumppage(RIGHT);
         else
@@ -885,7 +898,7 @@ static void drawcol(int whichcol)
     find_coords(0, col, &src_x, &src_y);
     cleararea(src_x, src_y, bw, windowHeight);
     for (i = 0; i < nhigh; i++)
-        drawrectangle(src_x, hwidth + i * box_h, bw, box_h, 1, 1);
+        drawrectangle(src_x, hht + i * box_h, bw, box_h, 1, 1);
 
     /* now fill it in if it is active */
     clab = get_col_name(whichcol);
@@ -999,7 +1012,7 @@ static void jumppage(DE_DIRECTION dir)
     case UP:
         rowmin--;
         rowmax--;
-        copyarea(0, hwidth + box_h, 0, hwidth + 2 * box_h);
+        copyarea(0, hht + box_h, 0, hht + 2 * box_h);
         drawrow(rowmin);
         break;
     case DOWN:
@@ -1007,7 +1020,7 @@ static void jumppage(DE_DIRECTION dir)
             return;
         rowmin++;
         rowmax++;
-        copyarea(0, hwidth + 2 * box_h, 0, hwidth + box_h);
+        copyarea(0, hht + 2 * box_h, 0, hht + box_h);
         drawrow(rowmax);
         break;
     case LEFT:
@@ -1051,10 +1064,7 @@ static void downlightrect(void)
 
 static void highlightrect(void)
 {
-    if (isEditor)
-        printrect(2, 1);
-    else
-        printrect(1, 1);
+    printrect(2, 1);
 }
 
 static Rboolean getccol()
@@ -1554,7 +1564,7 @@ static int findcell(void)
 
         /* check to see if the click was in the header */
 
-        if (yw < hwidth + bwidth)
+        if (yw < hht + bwidth)
         {
             i = checkquit(xw);
             if (i == 1)
@@ -1574,7 +1584,7 @@ static int findcell(void)
             return 0;
         }
         /* translate to box coordinates */
-        wrow = (yw - bwidth - hwidth) / box_h;
+        wrow = (yw - bwidth - hht) / box_h;
         w = bwidth + boxw[0];
         for (i = 1; i <= nwide; i++)
             if ((w += BOXW(i + colmin - 1)) > xw)
@@ -1585,7 +1595,7 @@ static int findcell(void)
 
         /* next check to see if it is in the column labels */
 
-        if (yw < hwidth + bwidth + box_h)
+        if (yw < hht + bwidth + box_h)
         {
             if (xw > bwidth + boxw[0])
                 popupmenu(xr, yr, wcol, wrow);
@@ -1611,11 +1621,11 @@ static int findcell(void)
     { /* Paste */
         int row, col = 0;
 
-        if (yw < hwidth + bwidth || xw < bwidth + boxw[0])
+        if (yw < hht + bwidth || xw < bwidth + boxw[0])
             return 0;
 
         /* translate to box coordinates */
-        row = (yw - bwidth - hwidth) / box_h;
+        row = (yw - bwidth - hht) / box_h;
         w = bwidth + boxw[0];
         for (i = 1; i <= nwide; i++)
             if ((w += BOXW(i + colmin - 1)) > xw)
@@ -1683,8 +1693,11 @@ static void eventloop(void)
                 cell_cursor_init();
                 break;
             case mouseDown: /* ButtonPress */
-                done = doMouseDown(&ioevent);
-                cell_cursor_init();
+                if (isEditor)
+                {
+                    done = doMouseDown(&ioevent);
+                    cell_cursor_init();
+                }
                 break;
             case MappingNotify:
                 RefreshKeyboardMapping(&ioevent);
@@ -1746,7 +1759,13 @@ static void doSpreadKey(int key, DEEvent *event)
 #ifdef XK_Page_Down
     else if (iokey == XK_Page_Down)
     {
-        jumpwin(colmin, rowmax);
+        if (isEditor)
+            jumpwin(colmin, rowmax);
+        else
+        {
+            int i = ymaxused - nhigh + 2;
+            jumpwin(colmin, max(i, 1));
+        }
         cell_cursor_init();
     }
 #elif defined(XK_Next)
@@ -1756,7 +1775,7 @@ static void doSpreadKey(int key, DEEvent *event)
         cell_cursor_init();
     }
 #endif
-    else if ((iokey == XK_BackSpace) || (iokey == XK_Delete))
+    else if (isEditor && (iokey == XK_BackSpace || iokey == XK_Delete))
     {
         if (clength > 0)
         {
@@ -1788,11 +1807,11 @@ static void doSpreadKey(int key, DEEvent *event)
     }
     else if (iokey == XK_End)
     {
-        int i = ymaxused - nhigh + 2;
-        jumpwin(xmaxused, max(i, 1));
+        int i = ymaxused - nhigh + 2, j = xmaxused - nwide + 2;
+        jumpwin(max(j, 1), max(i, 1));
         downlightrect();
         crow = ymaxused - rowmin + 1;
-        ccol = 1;
+        ccol = xmaxused - colmin + 1;
         highlightrect();
         cell_cursor_init();
     }
@@ -2071,7 +2090,7 @@ static Rboolean initwin(char *title) /* TRUE = Error */
         box_h = font_info->max_bounds.ascent + font_info->max_bounds.descent + 4;
         text_offset = 2 + font_info->max_bounds.descent;
     }
-    windowHeight = 26 * box_h + hwidth + 2;
+    windowHeight = 26 * box_h + hht + 2;
     /* this used to presume 4 chars sufficed for row numbering */
     labdigs = max(3, 1 + floor(log10((double)ymaxused)));
     sprintf(labform, "%%%dd", labdigs);
@@ -2322,8 +2341,7 @@ static void copyarea(int src_x, int src_y, int dest_x, int dest_y)
 
 static void copyH(int src_x, int dest_x, int width)
 {
-    XCopyArea(iodisplay, iowindow, iowindow, iogc, src_x + bwidth, hwidth, width, windowHeight + 1, dest_x + bwidth,
-              hwidth);
+    XCopyArea(iodisplay, iowindow, iowindow, iogc, src_x + bwidth, hht, width, windowHeight + 1, dest_x + bwidth, hht);
 }
 
 #if 0
@@ -2629,7 +2647,7 @@ static void calc_pre_edit_pos(void)
         w = XmbTextEscapement(font_set, buf, clength);
     xpoint.x += (w > BOXW(colmin + ccol - 1)) ? BOXW(colmin + ccol - 1) : w;
     xpoint.x += text_offset;
-    xpoint.y = hwidth + (crow + 1) * box_h - text_offset;
+    xpoint.y = hht + (crow + 1) * box_h - text_offset;
 
     /*
       <FIXME>
