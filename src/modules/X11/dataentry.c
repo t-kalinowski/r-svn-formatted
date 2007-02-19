@@ -49,7 +49,9 @@
 #include <X11/cursorfont.h>
 #include <X11/Intrinsic.h>
 
-#include "Print.h"
+#include <Print.h>
+/* For the input handlers of the event loop mechanism: */
+#include <R_ext/eventloop.h>
 
 #ifdef SUPPORT_MBCS
 /* This only uses a FontSet in a MBCS */
@@ -99,12 +101,12 @@ static void closewin(void);
 static void copycell(void);
 static void doControl(DEEvent *);
 static int doMouseDown(DEEvent *);
-static void eventloop(void);
 static void doSpreadKey(int, DEEvent *);
 static void downlightrect(void);
 static void drawwindow(void);
 static void drawcol(int);
 static void drawrow(int);
+static void eventloop(void);
 static void find_coords(int, int, int *, int *);
 static int findcell(void);
 static char *GetCharP(DEEvent *);
@@ -130,18 +132,14 @@ static void cleararea(int, int, int, int);
 static void copyH(int, int, int);
 static void copyarea(int, int, int, int);
 static void doConfigure(DEEvent *ioevent);
-#if 0
-static void drawline(int, int, int, int);
-#endif
 static void drawrectangle(int, int, int, int, int, int);
 static void drawtext(int, int, char *, int);
-#if 0
-static int  NextEvent(DEEvent *ioevent);
-#endif
 static void RefreshKeyboardMapping(DEEvent *ioevent);
 static void Rsync(void);
 static int textwidth(char *, int);
 static int WhichEvent(DEEvent ioevent);
+
+static void R_ProcessX11Events(void *data);
 
 static char *get_col_name(int col);
 static int get_col_width(int col);
@@ -150,12 +148,17 @@ static CellType get_col_type(int col);
 static void calc_pre_edit_pos(void);
 #endif
 static int last_wchar_bytes(char *);
-static SEXP work, names, lens;
-static PROTECT_INDEX wpi, npi, lpi;
+static SEXP ssNewVector(SEXPTYPE, int);
 static SEXP ssNA_STRING;
 
 /* Global variables needed for the graphics */
 
+static Display *iodisplay;
+static Window iowindow;
+static GC iogc;
+static XFontStruct *font_info;
+static SEXP work, names, lens;
+static PROTECT_INDEX wpi, npi, lpi;
 static int box_w;       /* width of a box */
 static int boxw[100];   /* widths of cells */
 static int box_h;       /* height of a box */
@@ -163,43 +166,37 @@ static int windowWidth; /* current width of the window */
 static int fullwindowWidth;
 static int windowHeight; /* current height of the window */
 static int fullwindowHeight;
-static int currentexp; /* boolean: whether an cell is active */
-static int crow;       /* current row */
-static int ccol;       /* current column */
+static int crow; /* current row */
+static int ccol; /* current column */
 static int nwide, nhigh;
 static int colmax, colmin, rowmax, rowmin;
-static int ndecimal; /* count decimal points */
-static int ne;       /* count exponents */
-static int nneg;     /* indicate whether its a negative */
-static int clength;  /* number of characters currently entered */
+static int bwidth; /* width of the border */
+static int hht;    /* height of header  */
+static int text_offset;
+static int nboxchars;
+static int xmaxused, ymaxused;
+static char labform[6];
+static Rboolean isEditor;
+static Atom protocol;
+
+/* only used in the editor */
+static Atom _XA_WM_PROTOCOLS = 0;
+static Window menuwindow, menupanes[4];
+static Rboolean CellModified;
+static int box_coords[6];
+static int currentexp; /* whether an cell is active */
+static int ndecimal;   /* count decimal points */
+static int ne;         /* count exponents */
+static int nneg;       /* indicate whether its a negative */
+static int clength;    /* number of characters currently entered */
 static int inSpecial;
 
 #define BOOSTED_BUF_SIZE 201
 static char buf[BOOSTED_BUF_SIZE]; /* boosted to allow for MBCS */
 static char *bufp;
-static int bwidth; /* width of the border */
-static int hht;    /* height of header  */
-static int text_offset;
-
-static SEXP ssNewVector(SEXPTYPE, int);
-
-static Atom _XA_WM_PROTOCOLS, protocol;
-
-static Rboolean CellModified;
-static int nboxchars;
-static int xmaxused, ymaxused;
-static int box_coords[6];
 static char copycontents[sizeof(buf) + 1];
-static char labform[6];
-static Rboolean isEditor;
 
-/* Xwindows Globals */
-
-static Display *iodisplay;
-static Window iowindow, menuwindow, menupanes[4];
-static GC iogc;
-static XFontStruct *font_info;
-static char *font_name = "9x15";
+/* The next few and used only for the editor in MBCS locales */
 #ifdef USE_FONTSET
 static Status status;
 static XFontSet font_set;
@@ -227,11 +224,6 @@ static XIMStyle status_styles[] = {
 };
 static XIC ioic;
 #endif
-
-#define mouseDown ButtonPress
-#define keyDown KeyPress
-#define activateEvt MapNotify
-#define updateEvt Expose
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -465,16 +457,14 @@ SEXP RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP in_R_X11_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP tnames, stitle;
+    SEXP stitle;
     SEXPTYPE type;
     int i, nprotect;
     RCNTXT cntxt;
-    char clab[25];
 
     nprotect = 0; /* count the PROTECT()s */
-    PROTECT_WITH_INDEX(work = duplicate(CAR(args)), &wpi);
-    nprotect++;
-    tnames = getAttrib(work, R_NamesSymbol);
+    work = CAR(args);
+    names = getAttrib(work, R_NamesSymbol);
 
     if (TYPEOF(work) != VECSXP)
         errorcall(call, "invalid argument");
@@ -495,8 +485,6 @@ SEXP in_R_X11_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
     crow = 1;
     colmin = 1;
     rowmin = 1;
-    PROTECT(ssNA_STRING = duplicate(NA_STRING));
-    nprotect++;
     bwidth = 5;
     hht = 10;
     isEditor = FALSE;
@@ -507,39 +495,14 @@ SEXP in_R_X11_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT_WITH_INDEX(lens = allocVector(INTSXP, xmaxused), &lpi);
     nprotect++;
 
-    if (isNull(tnames))
-    {
-        PROTECT_WITH_INDEX(names = allocVector(STRSXP, xmaxused), &npi);
-        for (i = 0; i < xmaxused; i++)
-        {
-            sprintf(clab, "var%d", i);
-            SET_STRING_ELT(names, i, mkChar(clab));
-        }
-    }
-    else
-        PROTECT_WITH_INDEX(names = duplicate(tnames), &npi);
-    nprotect++;
     for (i = 0; i < xmaxused; i++)
     {
         int len = LENGTH(VECTOR_ELT(work, i));
         INTEGER(lens)[i] = len;
         ymaxused = max(len, ymaxused);
         type = TYPEOF(VECTOR_ELT(work, i));
-        if (type != STRSXP)
-            type = REALSXP;
-        if (isNull(VECTOR_ELT(work, i)))
-        {
-            if (type == NILSXP)
-                type = REALSXP;
-            SET_VECTOR_ELT(work, i, ssNewVector(type, 100));
-        }
-        else if (!isVector(VECTOR_ELT(work, i)))
-            errorcall(call, "invalid type for value");
-        else
-        {
-            if (TYPEOF(VECTOR_ELT(work, i)) != type)
-                SET_VECTOR_ELT(work, i, coerceVector(VECTOR_ELT(work, i), type));
-        }
+        if (type != STRSXP && type != REALSXP)
+            errorcall(call, "invalid argument");
     }
 
     /* start up the window, more initializing in here */
@@ -555,11 +518,11 @@ SEXP in_R_X11_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     cell_cursor_init();
 
-    eventloop();
+    addInputHandler(R_InputHandlers, ConnectionNumber(iodisplay), R_ProcessX11Events, XActivity);
 
-    endcontext(&cntxt);
-    closewin();
-    UNPROTECT(nprotect);
+    drawwindow();
+
+    UNPROTECT(nprotect); /* FIXME, these include the data */
     return R_NilValue;
 }
 
@@ -1640,6 +1603,10 @@ static int findcell(void)
 }
 
 /* Event Loop Functions */
+#define mouseDown ButtonPress
+#define keyDown KeyPress
+#define activateEvt MapNotify
+#define updateEvt Expose
 
 static void eventloop(void)
 {
@@ -1715,6 +1682,48 @@ static void eventloop(void)
                 break;
             }
         }
+    }
+}
+
+static void R_ProcessX11Events(void *data)
+{
+    DEEvent ioevent;
+    int done = 0;
+
+    while (XPending(iodisplay))
+    {
+        XNextEvent(iodisplay, &ioevent);
+        switch (WhichEvent(ioevent))
+        {
+        case keyDown: /* KeyPress */
+            doSpreadKey(0, &ioevent);
+            break;
+        case Expose:
+            drawwindow();
+            break;
+        case MappingNotify:
+            RefreshKeyboardMapping(&ioevent);
+            break;
+        case ConfigureNotify:
+            doConfigure(&ioevent);
+            cell_cursor_init();
+            break;
+        case activateEvt: /* MapNotify */
+            break;
+        case ClientMessage:
+            if (ioevent.xclient.message_type == _XA_WM_PROTOCOLS && ioevent.xclient.data.l[0] == protocol)
+            {
+                /* user clicked on `close' aka `destroy' */
+                done = 1;
+            }
+            break;
+        }
+    }
+    if (done)
+    {
+        int fd = ConnectionNumber(iodisplay);
+        removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
+        closewin();
     }
 }
 
@@ -1986,8 +1995,8 @@ static Rboolean initwin(char *title) /* TRUE = Error */
     int i, twidth, w, minwidth, labdigs;
     int ioscreen;
     unsigned long iowhite, ioblack;
-    /* char ioname[] = "R DataEntryWindow"; */
     char digits[] = "123456789.0";
+    char *font_name = "9x15";
     Window root;
     XEvent ioevent;
     XSetWindowAttributes winattr;
@@ -2189,7 +2198,8 @@ static Rboolean initwin(char *title) /* TRUE = Error */
 
     /* set up protocols so that window manager sends */
     /* me an event when user "destroys" window */
-    _XA_WM_PROTOCOLS = XInternAtom(iodisplay, "WM_PROTOCOLS", 0);
+    if (!_XA_WM_PROTOCOLS)
+        _XA_WM_PROTOCOLS = XInternAtom(iodisplay, "WM_PROTOCOLS", 0);
     protocol = XInternAtom(iodisplay, "WM_DELETE_WINDOW", 0);
     XSetWMProtocols(iodisplay, iowindow, &protocol, 1);
     /*
@@ -2343,13 +2353,6 @@ static void copyH(int src_x, int dest_x, int width)
 {
     XCopyArea(iodisplay, iowindow, iowindow, iogc, src_x + bwidth, hht, width, windowHeight + 1, dest_x + bwidth, hht);
 }
-
-#if 0
-static void drawline(int fromx, int fromy, int tox, int toy)
-{
-    XDrawLine(iodisplay, iowindow, iogc, fromx, fromy, tox, toy);
-}
-#endif
 
 static void drawrectangle(int xpos, int ypos, int width, int height, int lwd, int fore)
 {
