@@ -1669,7 +1669,7 @@ static void de_sbf(control c, int pos)
     DEstruct DE = getdata(c);
     if (pos < 0)
     { /* horizontal */
-        DE->colmin = 1 + (-pos * DE->xScrollbarScale - 1);
+        DE->colmin = min(DE->xmaxused, -pos * DE->xScrollbarScale);
     }
     else
     {
