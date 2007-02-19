@@ -98,6 +98,7 @@ typedef struct
     PROTECT_INDEX wpi, npi, lpi;
     menuitem de_mvw;
     SEXP ssNA_STRING;
+    Rboolean isEditor;
 } destruct, *DEstruct;
 
 /* Local Function Definitions */
@@ -112,7 +113,6 @@ static void de_closewin(DEstruct);
 static void copyarea(DEstruct, int, int, int, int);
 static void copyH(DEstruct, int, int, int);
 static void deredraw(DEstruct);
-static void eventloop(void);
 static void downlightrect(DEstruct);
 static void drawwindow(DEstruct);
 static void drawcol(DEstruct, int);
@@ -123,7 +123,7 @@ static void drawrow(DEstruct, int);
 static void find_coords(DEstruct, int, int, int *, int *);
 static void handlechar(DEstruct, char *);
 static void highlightrect(DEstruct);
-static Rboolean initwin(DEstruct);
+static Rboolean initwin(DEstruct, char *);
 static void jumppage(DEstruct, int);
 static void jumpwin(DEstruct, int, int);
 static void de_popupmenu(DEstruct, int, int, int);
@@ -133,12 +133,10 @@ static void printstring(DEstruct, char *, int, int, int, int);
 static void printelt(DEstruct, SEXP, int, int, int);
 static void setcellwidths(DEstruct);
 
-static dataeditor newdataeditor(DEstruct);
+static dataeditor newdataeditor(DEstruct, char *);
 static void de_copy(control c);
 static void de_paste(control c);
 static void de_delete(control c);
-
-// static DEstruct DE;
 
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h> /* for Sleep */
@@ -198,15 +196,6 @@ static SEXP ssNewVector(DEstruct DE, SEXPTYPE type, int vlen)
             SET_STRING_ELT(tvec, j, DE->ssNA_STRING);
     return (tvec);
 }
-static void eventloop()
-{
-    while (R_de_up)
-    {
-        /* avoid consuming 100% CPU time here */
-        Sleep(10);
-        R_ProcessEvents();
-    }
-}
 
 static void de_closewin_cend(void *DE)
 {
@@ -222,8 +211,9 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
     char clab[25];
     destruct DE1;
     DEstruct DE = &DE1;
-    // DE = &DE1;
 
+    checkArity(op, args);
+    DE->isEditor = TRUE;
     nprotect = 0; /* count the PROTECT()s */
     PROTECT_WITH_INDEX(DE->work = duplicate(CAR(args)), &DE->wpi);
     nprotect++;
@@ -301,8 +291,9 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
         DE->yScrollbarScale = DE->ymaxused / 1000;
 
     /* start up the window, more initializing in here */
-    if (initwin(DE))
+    if (initwin(DE, G_("Data Editor")))
         errorcall(call, G_("invalid device"));
+    R_de_up = TRUE;
 
     /* set up a context which will close the window if there is an error */
     begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
@@ -311,7 +302,12 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     highlightrect(DE);
 
-    eventloop();
+    while (R_de_up)
+    {
+        /* avoid consuming 100% CPU time here */
+        Sleep(10);
+        R_ProcessEvents();
+    }
 
     endcontext(&cntxt);
 
@@ -383,7 +379,7 @@ static void setcellwidths(DEstruct DE)
     for (i = 2; i < 100; i++)
     { /* 100 on-screen columns cannot occur */
         dw = BOXW(i + DE->colmin - 1);
-        if ((w += dw) > DE->p->w)
+        if ((w += dw) > DE->p->w || (!DE->isEditor && i > DE->xmaxused - DE->colmin + 1))
         {
             DE->nwide = i;
             DE->windowWidth = w - dw;
@@ -397,6 +393,8 @@ static void drawwindow(DEstruct DE)
     /* might have resized */
     setcellwidths(DE);
     DE->nhigh = (DE->p->h - 2 * DE->bwidth - DE->hwidth - 3) / DE->box_h;
+    if (!DE->isEditor && DE->nhigh > DE->ymaxused + 1)
+        DE->nhigh = DE->ymaxused + 1;
     DE->windowHeight = DE->nhigh * DE->box_h + 2 * DE->bwidth + DE->hwidth;
     DE->oldWIDTH = DE->p->w;
     DE->oldHEIGHT = DE->p->h;
@@ -779,7 +777,10 @@ static void downlightrect(DEstruct DE)
 
 static void highlightrect(DEstruct DE)
 {
-    printrect(DE, 2, 1);
+    if (DE->isEditor)
+        printrect(DE, 2, 1);
+    else
+        printrect(DE, 1, 1);
 }
 
 static Rboolean getccol(DEstruct DE)
@@ -1180,7 +1181,10 @@ static void de_ctrlkeyin(control c, int key)
         break;
     case END:
         i = DE->ymaxused - DE->nhigh + 2;
-        jumpwin(DE, DE->xmaxused, max(i, 1));
+        if (DE->isEditor)
+            jumpwin(DE, DE->xmaxused, max(i, 1));
+        else
+            jumpwin(DE, max(DE->xmaxused - DE->nwide, 1), max(i, 1));
         downlightrect(DE);
         DE->crow = DE->ymaxused - DE->rowmin + 1;
         DE->ccol = 1;
@@ -1408,10 +1412,17 @@ static void deredraw(DEstruct DE)
 
     for (i = 1; i < DE->nhigh; i++)
         drawrectangle(DE, 0, DE->hwidth + i * DE->box_h, DE->boxw[0], DE->box_h, 1, 1);
-    DE->colmax = DE->colmin + (DE->nwide - 2);
-    DE->rowmax = DE->rowmin + (DE->nhigh - 2);
+    if (DE->isEditor)
+    {
+        DE->colmax = DE->colmin + (DE->nwide - 2);
+        DE->rowmax = DE->rowmin + (DE->nhigh - 2);
+    }
+    else
+    {
+        DE->colmax = min(DE->xmaxused, DE->colmin + (DE->nwide - 2));
+        DE->rowmax = min(DE->ymaxused, DE->rowmin + (DE->nhigh - 2));
+    }
     printlabs(DE);
-    /* if (!isNull(work) I don't think it can be null */
     for (i = DE->colmin; i <= DE->colmax; i++)
         drawcol(DE, i);
     gfillrect(DE->de, DE->p->bg,
@@ -1437,12 +1448,12 @@ static void copyH(DEstruct DE, int src_x, int dest_x, int width)
     copyrect(DE->de, pt(dest_x, DE->hwidth), rect(src_x, DE->hwidth, width, DE->windowHeight - DE->hwidth));
 }
 
-static Rboolean initwin(DEstruct DE)
+static Rboolean initwin(DEstruct DE, char *title)
 {
     int i, labdigs;
     rect r;
 
-    DE->de = newdataeditor(DE);
+    DE->de = newdataeditor(DE, title);
     if (!DE->de)
         return TRUE;
     DE->oldWIDTH = DE->oldHEIGHT = 0;
@@ -1466,6 +1477,8 @@ static Rboolean initwin(DEstruct DE)
     DE->text_yoffset = -3;
     setcellwidths(DE);
     DE->nhigh = (DE->p->h - 2 * DE->bwidth - DE->hwidth - 3) / DE->box_h;
+    if (!DE->isEditor && DE->nhigh > DE->ymaxused + 1)
+        DE->nhigh = DE->ymaxused + 1;
     DE->windowHeight = DE->nhigh * DE->box_h + 2 * DE->bwidth + DE->hwidth;
     r = getrect(DE->de);
     r.width = DE->windowWidth + 3;
@@ -1486,7 +1499,6 @@ static Rboolean initwin(DEstruct DE)
     show(DE->de);
     show(DE->de); /* a precaution, as PD reports transparent windows */
     BringToTop(DE->de, 0);
-    R_de_up = TRUE;
     DE->buf[BUFSIZE - 1] = '\0';
     return FALSE;
 }
@@ -1794,7 +1806,7 @@ static void depopupact(control m)
 
 RECT *RgetMDIsize(); /* in rui.c */
 
-static dataeditor newdataeditor(DEstruct DE)
+static dataeditor newdataeditor(DEstruct DE, char *title)
 {
     int w, h, x, y;
     dataeditor c;
@@ -1820,7 +1832,7 @@ static dataeditor newdataeditor(DEstruct DE)
         x = (devicewidth(NULL) - w) / 3;
         y = (deviceheight(NULL) - h) / 3;
     }
-    c = (dataeditor)newwindow(G_("Data Editor"), rect(x, y, w, h),
+    c = (dataeditor)newwindow(title, rect(x, y, w, h),
                               Document | StandardWindow | Menubar | VScrollbar | HScrollbar | TrackMouse);
     if (!c)
     {
@@ -1847,31 +1859,37 @@ static dataeditor newdataeditor(DEstruct DE)
         MCHECK(tb = newtoolbar(btsize + 4));
         gsetcursor(tb, ArrowCursor);
     }
-    MCHECK(m = gpopup(depopupact, DePopup));
-    setdata(m, DE);
-    setdata(DePopup[2].m, DE);
-    setdata(DePopup[3].m, DE);
-    setdata(DePopup[4].m, DE);
-    setdata(DePopup[6].m, DE);
-    setdata(DePopup[8].m, DE);
+    if (DE->isEditor)
+    {
+        MCHECK(m = gpopup(depopupact, DePopup));
+        setdata(m, DE);
+        setdata(DePopup[2].m, DE);
+        setdata(DePopup[3].m, DE);
+        setdata(DePopup[4].m, DE);
+        setdata(DePopup[6].m, DE);
+        setdata(DePopup[8].m, DE);
+    }
     MCHECK(m = newmenubar(demenuact));
     MCHECK(newmenu(G_("File")));
     /*    MCHECK(m = newmenuitem("-", 0, NULL));*/
     MCHECK(m = newmenuitem(G_("Close"), 0, declose));
     setdata(m, DE);
-    newmdimenu();
-    MCHECK(newmenu(G_("Edit")));
-    MCHECK(m = newmenuitem(G_("Copy  \tCTRL+C"), 0, de_copy));
-    setdata(m, DE);
-    MCHECK(m = newmenuitem(G_("Paste \tCTRL+V"), 0, de_paste));
-    setdata(m, DE);
-    MCHECK(m = newmenuitem(G_("Delete\tDEL"), 0, de_delete));
-    setdata(m, DE);
-    MCHECK(m = newmenuitem("-", 0, NULL));
-    MCHECK(m = DE->de_mvw = newmenuitem(G_("Cell widths ..."), 0, menudecellwidth));
-    setdata(m, DE);
-    MCHECK(m = newmenu(G_("Help")));
-    MCHECK(newmenuitem(G_("Data editor"), 0, menudehelp));
+    if (DE->isEditor)
+    {
+        newmdimenu();
+        MCHECK(newmenu(G_("Edit")));
+        MCHECK(m = newmenuitem(G_("Copy  \tCTRL+C"), 0, de_copy));
+        setdata(m, DE);
+        MCHECK(m = newmenuitem(G_("Paste \tCTRL+V"), 0, de_paste));
+        setdata(m, DE);
+        MCHECK(m = newmenuitem(G_("Delete\tDEL"), 0, de_delete));
+        setdata(m, DE);
+        MCHECK(m = newmenuitem("-", 0, NULL));
+        MCHECK(m = DE->de_mvw = newmenuitem(G_("Cell widths ..."), 0, menudecellwidth));
+        setdata(m, DE);
+        MCHECK(m = newmenu(G_("Help")));
+        MCHECK(newmenuitem(G_("Data editor"), 0, menudehelp));
+    }
 
     setdata(c, DE); /* Why the repeat? */
     setresize(c, deresize);
@@ -1880,8 +1898,117 @@ static dataeditor newdataeditor(DEstruct DE)
     setclose(c, declose);
     sethit(c, de_sbf);
     setkeyaction(c, de_ctrlkeyin);
-    setkeydown(c, de_normalkeyin);
-    setmousedown(c, de_mousedown);
-    setmouseup(c, de_mouseup);
+    if (DE->isEditor)
+    {
+        setkeydown(c, de_normalkeyin);
+        setmousedown(c, de_mousedown);
+        setmouseup(c, de_mouseup);
+    }
     return (c);
+}
+
+static void dv_closewin_cend(void *DE)
+{
+    de_closewin((DEstruct)DE);
+    free(DE);
+}
+
+SEXP do_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    SEXP tnames, stitle;
+    SEXPTYPE type;
+    int i, nprotect;
+    RCNTXT cntxt;
+    char clab[25];
+    DEstruct DE = (DEstruct)malloc(sizeof(destruct));
+
+    checkArity(op, args);
+    DE->isEditor = FALSE;
+    nprotect = 0; /* count the PROTECT()s */
+    PROTECT_WITH_INDEX(DE->work = duplicate(CAR(args)), &DE->wpi);
+    nprotect++;
+    tnames = getAttrib(DE->work, R_NamesSymbol);
+
+    if (TYPEOF(DE->work) != VECSXP)
+        errorcall(call, G_("invalid argument"));
+    stitle = CADR(args);
+    if (!isString(stitle) || LENGTH(stitle) != 1)
+        errorcall(call, G_("invalid argument"));
+
+    /* initialize the constants */
+
+    DE->bufp = DE->buf;
+    DE->ne = 0;
+    DE->currentexp = 0;
+    DE->nneg = 0;
+    DE->ndecimal = 0;
+    DE->clength = 0;
+    DE->inSpecial = 0;
+    DE->ccol = 1;
+    DE->crow = 1;
+    DE->colmin = 1;
+    DE->rowmin = 1;
+    PROTECT(DE->ssNA_STRING = duplicate(NA_STRING));
+    nprotect++;
+    DE->bwidth = 0;
+    DE->hwidth = 5;
+
+    /* setup work, names, lens  */
+    DE->xmaxused = length(DE->work);
+    DE->ymaxused = 0;
+    PROTECT_WITH_INDEX(DE->lens = allocVector(INTSXP, DE->xmaxused), &DE->lpi);
+    nprotect++;
+
+    if (isNull(tnames))
+    {
+        PROTECT_WITH_INDEX(DE->names = allocVector(STRSXP, DE->xmaxused), &DE->npi);
+        for (i = 0; i < DE->xmaxused; i++)
+        {
+            sprintf(clab, "var%d", i);
+            SET_STRING_ELT(DE->names, i, mkChar(clab));
+        }
+    }
+    else
+        PROTECT_WITH_INDEX(DE->names = duplicate(tnames), &DE->npi);
+    nprotect++;
+    for (i = 0; i < DE->xmaxused; i++)
+    {
+        int len = LENGTH(VECTOR_ELT(DE->work, i));
+        INTEGER(DE->lens)[i] = len;
+        DE->ymaxused = max(len, DE->ymaxused);
+        type = TYPEOF(VECTOR_ELT(DE->work, i));
+        if (type != STRSXP)
+            type = REALSXP;
+        if (isNull(VECTOR_ELT(DE->work, i)))
+        {
+            if (type == NILSXP)
+                type = REALSXP;
+            SET_VECTOR_ELT(DE->work, i, ssNewVector(DE, type, 100));
+        }
+        else if (!isVector(VECTOR_ELT(DE->work, i)))
+            errorcall(call, G_("invalid type for value"));
+        else
+        {
+            if (TYPEOF(VECTOR_ELT(DE->work, i)) != type)
+                SET_VECTOR_ELT(DE->work, i, coerceVector(VECTOR_ELT(DE->work, i), type));
+        }
+    }
+
+    /* scale scrollbars as needed */
+    if (DE->xmaxused > 10000)
+        DE->xScrollbarScale = DE->xmaxused / 1000;
+    if (DE->ymaxused > 10000)
+        DE->yScrollbarScale = DE->ymaxused / 1000;
+
+    /* start up the window, more initializing in here */
+    if (initwin(DE, CHAR(STRING_ELT(stitle, 0))))
+        errorcall(call, G_("invalid device"));
+
+    /* set up a context which will close the window if there is an error */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+    cntxt.cend = &dv_closewin_cend;
+    cntxt.cenddata = (void *)DE;
+
+    UNPROTECT(nprotect);
+    return R_NilValue;
 }
