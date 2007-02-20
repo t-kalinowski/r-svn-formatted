@@ -3403,9 +3403,10 @@ static SEXP NextArg(SEXP l, SEXP s, SEXP tag)
  *  for some reason.
  */
 
+#define CONTEXTSTACK_SIZE 50
 static int SavedToken;
 static SEXP SavedLval;
-static char contextstack[50], *contextp;
+static char contextstack[CONTEXTSTACK_SIZE], *contextp;
 
 static void ParseInit()
 {
@@ -3765,7 +3766,7 @@ static void IfPush(void)
 {
     if (*contextp == LBRACE || *contextp == '[' || *contextp == '(' || *contextp == 'i')
     {
-        if (contextp - contextstack >= 50)
+        if (contextp - contextstack >= CONTEXTSTACK_SIZE)
             error("contextstack overflow");
         *++contextp = 'i';
     }
@@ -4986,27 +4987,27 @@ again:
         /* Handle brackets, braces and parentheses */
 
     case LBB:
-        if (contextp - contextstack >= 49)
+        if (contextp - contextstack >= CONTEXTSTACK_SIZE - 1)
             error("contextstack overflow");
         *++contextp = '[';
         *++contextp = '[';
         break;
 
     case '[':
-        if (contextp - contextstack >= 50)
+        if (contextp - contextstack >= CONTEXTSTACK_SIZE)
             error("contextstack overflow");
         *++contextp = tok;
         break;
 
     case LBRACE:
-        if (contextp - contextstack >= 50)
+        if (contextp - contextstack >= CONTEXTSTACK_SIZE)
             error("contextstack overflow");
         *++contextp = tok;
         EatLines = 1;
         break;
 
     case '(':
-        if (contextp - contextstack >= 50)
+        if (contextp - contextstack >= CONTEXTSTACK_SIZE)
             error("contextstack overflow");
         *++contextp = tok;
         break;
