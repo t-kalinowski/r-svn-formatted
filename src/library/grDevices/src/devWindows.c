@@ -878,20 +878,21 @@ static void menufilebitmap(control m)
     NewDevDesc *dd = (NewDevDesc *)getdata(m);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     char *fn;
+    /* the following use a private hook to set the default extension */
     if (m == xd->mpng)
     {
         setuserfilter(G_("Png files (*.png)\0*.png\0\0"));
-        fn = askfilesave(G_("Portable network graphics file"), "");
+        fn = askfilesave(G_("Portable network graphics file"), "|.png");
     }
     else if (m == xd->mbmp)
     {
         setuserfilter(G_("Windows bitmap files (*.bmp)\0*.bmp\0\0"));
-        fn = askfilesave(G_("Windows bitmap file"), "");
+        fn = askfilesave(G_("Windows bitmap file"), "|.bmp");
     }
     else
     {
         setuserfilter(G_("Jpeg files (*.jpeg,*jpg)\0*.jpeg;*.jpg\0\0"));
-        fn = askfilesave(G_("Jpeg file"), "");
+        fn = askfilesave(G_("Jpeg file"), "|.jpg");
     }
     if (!fn)
         return;
@@ -917,7 +918,7 @@ static void menups(control m)
     char *fn;
 
     setuserfilter(G_("Postscript files (*.ps)\0*.ps\0All files (*.*)\0*.*\0\0"));
-    fn = askfilesave(G_("Postscript file"), "");
+    fn = askfilesave(G_("Postscript file"), "|.ps");
     if (!fn)
         return;
     SaveAsPostscript(dd, fn);
@@ -929,7 +930,7 @@ static void menupdf(control m)
     char *fn;
 
     setuserfilter(G_("PDF files (*.pdf)\0*.pdf\0All files (*.*)\0*.*\0\0"));
-    fn = askfilesave(G_("PDF file"), "");
+    fn = askfilesave(G_("PDF file"), "|.pdf");
     if (!fn)
         return;
     SaveAsPDF(dd, fn);
@@ -941,7 +942,7 @@ static void menuwm(control m)
     char display[550], *fn;
 
     setuserfilter(G_("Enhanced metafiles (*.emf)\0*.emf\0All files (*.*)\0*.*\0\0"));
-    fn = askfilesave(G_("Enhanced metafiles"), "");
+    fn = askfilesave(G_("Enhanced metafiles"), "|.emf");
     if (!fn)
         return;
     if (strlen(fn) > 512)
