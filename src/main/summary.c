@@ -859,7 +859,7 @@ SEXP attribute_hidden do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
     { /* which.min */
         s = R_PosInf;
         for (i = 0; i < n; i++)
-            if (!ISNAN(r[i]) && (r[i] < s || (r[i] == s && indx == NA_INTEGER)))
+            if (!ISNAN(r[i]) && (r[i] < s || indx == NA_INTEGER))
             {
                 s = r[i];
                 indx = i;
@@ -869,7 +869,7 @@ SEXP attribute_hidden do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
     { /* which.max */
         s = R_NegInf;
         for (i = 0; i < n; i++)
-            if (!ISNAN(r[i]) && (r[i] > s || (r[i] == s && indx == NA_INTEGER)))
+            if (!ISNAN(r[i]) && (r[i] > s || indx == NA_INTEGER))
             {
                 s = r[i];
                 indx = i;
