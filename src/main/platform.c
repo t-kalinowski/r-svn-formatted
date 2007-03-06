@@ -1402,8 +1402,8 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
                 break;
             }
 #endif
-    PROTECT(ans = allocVector(LGLSXP, 11));
-    PROTECT(ansnames = allocVector(STRSXP, 11));
+    PROTECT(ans = allocVector(LGLSXP, 12));
+    PROTECT(ansnames = allocVector(STRSXP, 12));
 
     SET_STRING_ELT(ansnames, i, mkChar("jpeg"));
 #ifdef HAVE_JPEG
@@ -1507,6 +1507,13 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     SET_STRING_ELT(ansnames, i, mkChar("NLS"));
 #ifdef ENABLE_NLS
+    LOGICAL(ans)[i++] = TRUE;
+#else
+    LOGICAL(ans)[i++] = FALSE;
+#endif
+
+    SET_STRING_ELT(ansnames, i, mkChar("profmem"));
+#ifdef R_MEMORY_PROFILING
     LOGICAL(ans)[i++] = TRUE;
 #else
     LOGICAL(ans)[i++] = FALSE;
