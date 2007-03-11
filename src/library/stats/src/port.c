@@ -353,8 +353,8 @@ static double *check_gv(SEXP gr, SEXP hs, SEXP rho, int n, double *gv, double *h
     return gv;
 }
 
-static void nlminb_iterate(double b[], double d[], double fx, double g[], double h[], int iv[], int liv, int lv, int n,
-                           double v[], double x[])
+void nlminb_iterate(double b[], double d[], double fx, double g[], double h[], int iv[], int liv, int lv, int n,
+                    double v[], double x[])
 {
     int lh = (n * (n + 1)) / 2;
     if (b)
@@ -449,8 +449,8 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
     return R_NilValue;
 }
 
-static void nlsb_iterate(double b[], double d[], double dr[], int iv[], int liv, int lv, int n, int nd, int p,
-                         double r[], double rd[], double v[], double x[])
+void nlsb_iterate(double b[], double d[], double dr[], int iv[], int liv, int lv, int n, int nd, int p, double r[],
+                  double rd[], double v[], double x[])
 {
     int ione = 1;
     if (b)

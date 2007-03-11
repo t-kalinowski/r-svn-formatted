@@ -179,4 +179,8 @@ void
 {
     R_registerRoutines(dll, CEntries, CallEntries, FortEntries, NULL);
     R_useDynamicSymbols(dll, FALSE);
+
+    R_RegisterCCallable("stats", "nlminb_iterate", (DL_FUNC)nlminb_iterate);
+    R_RegisterCCallable("stats", "nlsb_iterate", (DL_FUNC)nlsb_iterate);
+    R_RegisterCCallable("stats", "Rf_divset", (DL_FUNC)Rf_divset);
 }
