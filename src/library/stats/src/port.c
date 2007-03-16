@@ -85,7 +85,7 @@ void F77_NAME(ditsum)(const double d[], const double g[], int iv[], const int *l
         return; /* no iteration output */
     if (!(ivm[NITER] % ivm[OUTLEV]))
     { /* output every ivm[OUTLEV] iterations */
-        Rprintf("%3d %#12g:", ivm[NITER], vm[F]);
+        Rprintf("%3d:%#14.8g:", ivm[NITER], vm[F]);
         for (i = 0; i < nn; i++)
             Rprintf(" %#8g", x[i]);
         Rprintf("\n");
