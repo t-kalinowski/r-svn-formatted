@@ -3,7 +3,7 @@
  *  file extra.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004	      The R Foundation
- *  Copyright (C) 2005--2006  The R Development Core Team
+ *  Copyright (C) 2005--2007  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -935,7 +935,7 @@ void R_CleanTempDir()
 SEXP do_getClipboardFormats(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans = R_NilValue;
-    int size, format = 0;
+    int j, size, format = 0;
 
     checkArity(op, args);
 
@@ -943,7 +943,7 @@ SEXP do_getClipboardFormats(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         size = CountClipboardFormats();
         PROTECT(ans = allocVector(INTSXP, size));
-        for (int j = 0; j < size; j++)
+        for (j = 0; j < size; j++)
         {
             format = EnumClipboardFormats(format);
             INTEGER(ans)[j] = format;
@@ -959,7 +959,7 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans = R_NilValue;
     HGLOBAL hglb;
     char *pc;
-    int format, raw, size;
+    int j, format, raw, size;
 
     checkArity(op, args);
     format = asInteger(CAR(args));
@@ -978,7 +978,7 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 size = GlobalSize(hglb);
                 PROTECT(ans = allocVector(RAWSXP, size));
-                for (int j = 0; j < size; j++)
+                for (j = 0; j < size; j++)
                     RAW(ans)[j] = *pc++;
             }
             GlobalUnlock(hglb);
