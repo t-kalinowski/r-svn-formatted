@@ -2694,7 +2694,7 @@ TRIO_PRIVATE void TrioWriteDouble TRIO_ARGS6((self, number, flags, width, precis
     trio_long_double_t dblBase;
     trio_long_double_t dblFractionBase;
     trio_long_double_t integerAdjust;
-    trio_long_double_t fractionAdjust;
+    trio_long_double_t fractionAdjust, fAdjust = 0.5;
     trio_long_double_t workFractionNumber;
     trio_long_double_t workFractionAdjust;
     int fractionDigitsInspect;
@@ -2892,14 +2892,10 @@ reprocess:
     {
         workNumber = trio_fmodl(number * dblFractionBase, 10.0);
         if ((int)workNumber % 2 == 0)
-        {
-            workNumber = number + 0.5 * (1 - 1e-14) / dblFractionBase;
-        }
-        else
-            workNumber = number + 0.5 / dblFractionBase;
+            fAdjust = 0.5 * (1 - 5 * epsilon);
     }
-    else
-        workNumber = number + 0.5 / dblFractionBase;
+    workNumber = number + fAdjust / dblFractionBase;
+    /* end of R modification */
 
     if (trio_floorl(number) != trio_floorl(workNumber))
     {
@@ -2951,7 +2947,8 @@ reprocess:
     }
 
     /* Estimate accuracy */
-    integerAdjust = fractionAdjust = 0.5;
+    integerAdjust = 0.5;
+    fractionAdjust = fAdjust;
 #if TRIO_FEATURE_ROUNDING
     if (flags & FLAGS_ROUNDING)
     {
@@ -3121,6 +3118,8 @@ reprocess:
         }
         else
             workNumber = trio_floorl(((integerNumber + integerAdjust) / TrioPower(base, integerDigits - i - 1)));
+        /* end of R modification */
+
         if (i > integerThreshold)
         {
             /* Beyond accuracy */
