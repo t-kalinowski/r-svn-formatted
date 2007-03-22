@@ -163,6 +163,11 @@ int main(int argc, char **argv)
 #ifdef DEBUG
         printf("%s: ", line + 34);
 #endif
+        /* the next two files get altered during installation */
+        if (strcmp(line + 34, "etc/Rconsole") == 0)
+            continue;
+        if (strcmp(line + 34, "etc/Rprofile.site") == 0)
+            continue;
         if (line[33] == '*')
             fp2 = fopen(line + 34, "rb");
         else
@@ -202,6 +207,7 @@ int main(int argc, char **argv)
         {
             for (j = 0; j < 16; j++)
                 snprintf(out + 2 * j, 2, "%02x", resblock[j]);
+            out[32] = '\0';
             if (strcmp(onfile, out) == 0)
             {
 #ifdef DEBUG
