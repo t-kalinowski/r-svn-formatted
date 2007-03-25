@@ -3387,7 +3387,8 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, c
         pd->pagewidth = 21.0 / 2.54;
         pd->pageheight = 29.7 / 2.54;
     }
-    else if (!strcmp(pd->papername, "Letter") || !strcmp(pd->papername, "letter"))
+    else if (!strcmp(pd->papername, "Letter") || !strcmp(pd->papername, "letter") || !strcmp(pd->papername, "US") ||
+             !strcmp(pd->papername, "us"))
     {
         pd->pagewidth = 8.5;
         pd->pageheight = 11.0;
@@ -5617,10 +5618,21 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, char *file, char *paper, char *family, 
         pd->pagewidth = 21.0 / 2.54;
         pd->pageheight = 29.7 / 2.54;
     }
-    else if (!strcmp(pd->papername, "Letter") || !strcmp(pd->papername, "letter"))
+    if (!strcmp(pd->papername, "A4r") || !strcmp(pd->papername, "a4r"))
+    {
+        pd->pageheight = 21.0 / 2.54;
+        pd->pagewidth = 29.7 / 2.54;
+    }
+    else if (!strcmp(pd->papername, "Letter") || !strcmp(pd->papername, "letter") || !strcmp(pd->papername, "US") ||
+             !strcmp(pd->papername, "us"))
     {
         pd->pagewidth = 8.5;
         pd->pageheight = 11.0;
+    }
+    else if (!strcmp(pd->papername, "USr") || !strcmp(pd->papername, "usr"))
+    {
+        pd->pageheight = 8.5;
+        pd->pagewidth = 11.0;
     }
     else if (!strcmp(pd->papername, "Legal") || !strcmp(pd->papername, "legal"))
     {
