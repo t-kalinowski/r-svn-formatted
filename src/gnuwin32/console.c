@@ -955,7 +955,10 @@ void performCompletion(control c)
             if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
                 rcompgen_available = 1;
             else
+            {
                 rcompgen_available = 0;
+                return;
+            }
         }
     }
 
