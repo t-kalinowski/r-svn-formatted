@@ -49,8 +49,9 @@ void rcmdusage(char *RCMD)
             "  build    Build add-on packages.\n", "  check    Check add-on packages.\n",
             "  Rprof    Post process R profiling files.\n",
             "  Rdconv   Convert Rd format to various other formats, including html, Nroff,\n",
-            "           LaTeX, plain text, and S documentation format.\n", "  Rd2dvi   Convert Rd format to DVI/PDF.\n",
-            "  Rd2txt   Convert Rd format to text.\n", "  Sd2Rd    Convert S documentation to Rd format.\n",
+            "           LaTeX, plain text, and S documentation format.\n", "  Rdiff    difference R output files.\n",
+            "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Rd2txt   Convert Rd format to text.\n",
+            "  Sd2Rd    Convert S documentation to Rd format.\n",
             "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n");
 
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
@@ -302,6 +303,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcpy(cmd, "sh ");
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Rd2dvi.sh");
+            }
+            else if (strcmp(p, "Rdiff") == 0)
+            {
+                strcpy(cmd, "sh ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/Rdiff.sh");
             }
             else if (strcmp(p, "Sweave") == 0)
             {
