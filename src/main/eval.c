@@ -2404,10 +2404,6 @@ SEXP do_subassign_dflt(SEXP, SEXP, SEXP, SEXP);
 SEXP do_c_dflt(SEXP, SEXP, SEXP, SEXP);
 SEXP do_subset2_dflt(SEXP, SEXP, SEXP, SEXP);
 SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
-/* now in Defn.h
-SEXP R_subset3_dflt(SEXP, SEXP);
-SEXP R_subassign3_dflt(SEXP, SEXP, SEXP, SEXP);
-*/
 
 #define DO_FAST_RELOP2(op, a, b)                                                                                       \
     do                                                                                                                 \
@@ -3591,7 +3587,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             if (dispatched)
                 R_BCNodeStackTop[-1] = value;
             else
-                R_BCNodeStackTop[-1] = R_subset3_dflt(x, PRINTNAME(symbol));
+                R_BCNodeStackTop[-1] = R_subset3_dflt(x, PRINTNAME(symbol), R_NilValue);
             NEXT();
         }
         OP(DOLLARGETS, 2) :
