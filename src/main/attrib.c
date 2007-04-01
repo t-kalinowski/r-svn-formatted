@@ -230,6 +230,8 @@ SEXP R_shortRowNames(SEXP vec, SEXP stype)
 SEXP R_copyDFattr(SEXP in, SEXP out)
 {
     SET_ATTRIB(out, ATTRIB(in));
+    IS_S4_OBJECT(in) ? SET_S4_OBJECT(out) : UNSET_S4_OBJECT(out);
+    SET_OBJECT(out, OBJECT(in));
     return out;
 }
 
@@ -287,6 +289,7 @@ void copyMostAttrib(SEXP inp, SEXP ans)
         }
     }
     SET_OBJECT(ans, OBJECT(inp));
+    IS_S4_OBJECT(inp) ? SET_S4_OBJECT(ans) : UNSET_S4_OBJECT(ans);
     UNPROTECT(2);
 }
 
@@ -333,6 +336,7 @@ void attribute_hidden copyMostAttribNoTs(SEXP inp, SEXP ans)
         }
     }
     SET_OBJECT(ans, OBJECT(inp));
+    IS_S4_OBJECT(inp) ? SET_S4_OBJECT(ans) : UNSET_S4_OBJECT(ans);
     UNPROTECT(2);
 }
 

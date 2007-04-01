@@ -431,8 +431,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("non-numeric argument to function"));
     PROTECT(x);
     PROTECT(y);
-    SET_ATTRIB(y, duplicate(ATTRIB(x)));
-    SET_OBJECT(y, OBJECT(x));
+    DUPLICATE_ATTRIB(y, x);
     UNPROTECT(2);
     return y;
 }
@@ -943,8 +942,7 @@ SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (naflag)
         warning("NAs produced in function \"%s\"", PRIMNAME(op));
-    SET_ATTRIB(y, duplicate(ATTRIB(x)));
-    SET_OBJECT(y, OBJECT(x));
+    DUPLICATE_ATTRIB(y, x);
     UNPROTECT(2);
     return y;
 }
@@ -987,13 +985,11 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)())
         warning("NAs produced in function \"%s\"", PRIMNAME(op));
     if (n == na)
     {
-        SET_ATTRIB(sy, duplicate(ATTRIB(sa)));
-        SET_OBJECT(sy, OBJECT(sa));
+        DUPLICATE_ATTRIB(sy, sa);
     }
     else if (n == nb)
     {
-        SET_ATTRIB(sy, duplicate(ATTRIB(sb)));
-        SET_OBJECT(sy, OBJECT(sb));
+        DUPLICATE_ATTRIB(sy, sb);
     }
     UNPROTECT(3);
     return sy;
