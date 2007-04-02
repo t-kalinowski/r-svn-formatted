@@ -1130,7 +1130,7 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
     }
     else if (isVectorAtomic(x))
     {
-        warningcall(call, "$ operator is not valid for atomic vectors, returning NULL");
+        warningcall(call, "$ operator is invalid for atomic vectors, returning NULL");
     }
     else if (IS_S4_OBJECT(x))
     {
