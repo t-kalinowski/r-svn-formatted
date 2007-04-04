@@ -574,6 +574,7 @@ static void handleInterrupt(void)
     onintr();
 }
 
+#ifdef HAVE_RL_COMPLETION_MATCHES
 /* ============================================================
    function-completion interface formerly in package rcompletion by
    Deepayan Sarkar, whose comments these are (mainly).
@@ -599,6 +600,12 @@ static void initialize_rlcompletion(void)
     /* Find if package rcompgen is around */
     if (rcompgen_active < 0)
     {
+        char *p = getenv("R_COMPLETION");
+        if (p && streql(p, "FALSE"))
+        {
+            rcompgen_active = 0;
+            return;
+        }
         /* First check if namespace is loaded */
         if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
             rcompgen_active = 1;
@@ -766,6 +773,7 @@ static char *R_completion_generator(const char *text, int state)
 }
 
 /* ============================================================ */
+#endif /* HAVE_RL_COMPLETION_MATCHES */
 
 #else
 static void handleInterrupt(void)
@@ -846,7 +854,9 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
             rl_data.prev = rl_top;
             rl_top = &rl_data;
             pushReadline(prompt, readline_handler);
+#ifdef HAVE_RL_COMPLETION_MATCHES
             initialize_rlcompletion();
+#endif
         }
         else
 #endif /* HAVE_LIBREADLINE */
