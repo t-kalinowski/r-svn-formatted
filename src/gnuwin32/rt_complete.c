@@ -131,7 +131,7 @@ static int rt_completion(char *buf, int offset, int *loc)
     if (alen)
     {
         int cp = *loc;
-        memcpy(buf + cp, additional_text, alen);
+        memcpy(buf + cp, additional_text, alen + 1);
         *loc = cp + alen;
     }
     return cursor_position;
