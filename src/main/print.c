@@ -640,6 +640,32 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
     int i;
     SEXP t;
 
+    if (!isMethodsDispatchOn() && (IS_S4_OBJECT(s) || TYPEOF(s) == S4SXP))
+    {
+        SEXP cl = getAttrib(s, install("class"));
+        if (isNull(cl))
+        {
+            /* This might be a mistaken S4 bit set */
+            if (TYPEOF(s) == S4SXP)
+                Rprintf("<S4 object without a class>\n");
+            else
+                Rprintf("<Object of type '%s' with S4 bit but without a class>\n", type2char(TYPEOF(s)));
+        }
+        else
+        {
+            SEXP pkg = getAttrib(s, install("package"));
+            if (isNull(pkg))
+            {
+                Rprintf("<S4 object of class \"%s\">\n", CHAR(STRING_ELT(cl, 0)));
+            }
+            else
+            {
+                Rprintf("<S4 object of class \"%s\" from package '%s'>\n", CHAR(STRING_ELT(cl, 0)),
+                        CHAR(STRING_ELT(pkg, 0)));
+            }
+        }
+        return;
+    }
     switch (TYPEOF(s))
     {
     case NILSXP:
@@ -786,7 +812,8 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         break;
     case S4SXP:
         /*  we got here because no show method, usually no class.
-         Print the "slots" as attributes, since we don't know the class */
+            Print the "slots" as attributes, since we don't know the class.
+        */
         Rprintf("<S4 Type Object>\n");
         break;
     default:
