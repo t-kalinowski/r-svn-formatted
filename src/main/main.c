@@ -576,8 +576,8 @@ static void sigactionSegv(int signum, siginfo_t *ip, void *context)
     }
     if (R_Interactive)
     {
-        REprintf("\nPossible actions:\n1: %s\n2: %s\n3: %s\n4: %s\n", "abort (with core dump)", "normal R exit",
-                 "exit R without saving workspace", "exit R saving workspace");
+        REprintf("\nPossible actions:\n1: %s\n2: %s\n3: %s\n4: %s\n", "abort (with core dump, if enabled)",
+                 "normal R exit", "exit R without saving workspace", "exit R saving workspace");
         while (1)
         {
             if (R_ReadConsole("Selection: ", ConsoleBuf, CONSOLE_BUFFER_SIZE, 0) > 0)
