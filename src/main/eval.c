@@ -1903,11 +1903,8 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args
     if (isObject(x))
     {
         char *pt;
-        /* Try for formal method.
-           It should be possible eventually to test by IS_S4_OBJECT
-           here, but currently fails in limma's tests.
-         */
-        if (R_has_methods(op))
+        /* Try for formal method. */
+        if (IS_S4_OBJECT(x) && R_has_methods(op))
         {
             SEXP value, argValue;
             /* create a promise to pass down to applyClosure  */
