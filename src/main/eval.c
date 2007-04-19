@@ -2032,6 +2032,7 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
     SEXP rclass, rmeth, rgr, rsxp;
     char lbuf[512], rbuf[512], generic[128], *pt;
+    Rboolean useS4 = TRUE;
 
     /* pre-test to avoid string computations when there is nothing to
        dispatch on because either there is only one argument and it
@@ -2041,8 +2042,13 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
        below */
     if (args != R_NilValue && !isObject(CAR(args)) && (CDR(args) == R_NilValue || !isObject(CADR(args))))
         return 0;
+
     /* try for formal method */
-    if (R_has_methods(op))
+    if (length(args) == 1 && !IS_S4_OBJECT(CAR(args)))
+        useS4 = FALSE;
+    if (length(args) == 2 && !IS_S4_OBJECT(CAR(args)) && !IS_S4_OBJECT(CADR(args)))
+        useS4 = FALSE;
+    if (useS4 && R_has_methods(op))
     {
         SEXP value = R_possible_dispatch(call, op, args, rho);
         if (value)
