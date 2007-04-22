@@ -1,3 +1,23 @@
+/*
+ *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 2001-2007   The R Development Core Team.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  A copy of the GNU General Public License is available via WWW at
+ *  http://www.gnu.org/copyleft/gpl.html.  You can also obtain it by
+ *  writing to the Free Software Foundation, Inc., 51 Franklin Street
+ *  Fifth Floor, Boston, MA 02110-1301  USA.
+ */
+
 /* <UTF8>
    Does byte-level handling in primitive_case, but only of ASCII chars
 */
@@ -102,7 +122,7 @@ SEXP R_initMethodDispatch(SEXP envir)
 
     /* Some special lists of primitive skeleton calls.
        These will be promises under lazy-loading.
-     */
+    */
     PROTECT(R_short_skeletons = findVar(Rf_install(".ShortPrimitiveSkeletons"), Methods_Namespace));
     if (TYPEOF(R_short_skeletons) == PROMSXP)
         R_short_skeletons = eval(R_short_skeletons, Methods_Namespace);
@@ -203,9 +223,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist, SEXP fdef)
         return R_NilValue;
     methods = R_do_slot(mlist, s_allMethods);
     if (methods == R_NilValue)
-    {
         return R_NilValue;
-    }
     while (!isNull(args) && !isNull(methods))
     {
         object = CAR(args);
@@ -250,8 +268,10 @@ SEXP R_quick_dispatch(SEXP args, SEXP mtable, SEXP fdef)
         return R_NilValue;
     buf[0] = '\0';
     ptr = buf;
-    /*  doesn't check for nargs() > .SigLength.  Could do so but the search will fail
-     in this case anyway, and the test is not clearly faster  on average */
+    /*  doesn't check for nargs() > .SigLength.
+    Could do so but the search will fail
+    in this case anyway, and the test is not clearly faster
+    on average */
     while (!isNull(args))
     {
         object = CAR(args);
@@ -275,9 +295,10 @@ SEXP R_quick_dispatch(SEXP args, SEXP mtable, SEXP fdef)
             UNPROTECT(nprotect);
             return R_NilValue;
         }
-        /* NB:  this code replicates .SigLabel().  If that changes, e.g. to include
-         the package, the code here must change too.  Or, better, the two should
-        use the same C code. */
+        /* NB:  this code replicates .SigLabel().
+           If that changes, e.g. to include
+           the package, the code here must change too.
+           Or, better, the two should use the same C code. */
         if (ptr > buf)
         {
             ptr = strcpy(ptr, "#");
