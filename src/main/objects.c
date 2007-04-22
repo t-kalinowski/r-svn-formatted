@@ -1058,8 +1058,11 @@ SEXP attribute_hidden do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env
         R_set_standardGeneric_ptr(dispatchNonGeneric, NULL);
         ptr = R_get_standardGeneric_ptr();
     }
-    PROTECT(args);
-    PROTECT(arg = CAR(args));
+    /*    PROTECT(args);
+          PROTECT(arg = CAR(args)); args are always protected */
+
+    checkArity(op, args);
+    arg = CAR(args);
     if (!isValidStringF(arg))
         error(_("argument to standardGeneric must be a non-empty character string"));
 
@@ -1071,7 +1074,7 @@ SEXP attribute_hidden do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env
 
     value = (*ptr)(arg, env, fdef);
 
-    UNPROTECT(3);
+    UNPROTECT(1);
     return value;
 }
 
@@ -1447,6 +1450,21 @@ Rboolean R_seemsS4Object(SEXP object)
     return (klass != R_NilValue && getAttrib(klass, R_packageSymbol) != R_NilValue) ? TRUE : FALSE;
 }
 #endif
+
+Rboolean attribute_hidden R_seemsOldStyleS4Object(SEXP object)
+{
+    static SEXP R_packageSymbol = NULL;
+    SEXP klass;
+    if (!isObject(object) || IS_S4_OBJECT(object))
+        return FALSE;
+    /* We want to know about S4SXPs with no S4 bit */
+    /* if(TYPEOF(object) == S4SXP) return FALSE; */
+    if (!R_packageSymbol)
+        R_packageSymbol = install("package");
+    klass = getAttrib(object, R_ClassSymbol);
+    return (klass != R_NilValue && LENGTH(klass) == 1 && getAttrib(klass, R_packageSymbol) != R_NilValue) ? TRUE
+                                                                                                          : FALSE;
+}
 
 SEXP R_isS4Object(SEXP object)
 {

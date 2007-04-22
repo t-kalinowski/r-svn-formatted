@@ -2189,12 +2189,12 @@ SEXP attribute_hidden do_save(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
 {
-    SEXP a, names;
+    SEXP a, names, obj;
     int cnt = 0;
     /* Store the components of the list in aenv.  We either replace
      * the existing objects in aenv or establish new bindings for
-     * them.  Note that we try to convert old "pairlist" objects
-     * to new "pairlist" objects. */
+     * them.
+     */
 
     /* allow ans to be a vector-style list */
     if (TYPEOF(ans) == VECSXP)
@@ -2207,7 +2207,11 @@ static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
         for (i = 0; i < LENGTH(ans); i++)
         {
             SEXP sym = install(CHAR(STRING_ELT(names, i)));
-            defineVar(sym, VECTOR_ELT(ans, i), aenv);
+            obj = VECTOR_ELT(ans, i);
+            defineVar(sym, obj, aenv);
+            if (R_seemsOldStyleS4Object(obj))
+                warningcall(R_NilValue, _("'%s' looks like a pre-2.4.0 S4 object: please recreate it"),
+                            CHAR(STRING_ELT(names, i)));
         }
         UNPROTECT(2);
         return names;
@@ -2229,6 +2233,9 @@ static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
     {
         SET_STRING_ELT(names, cnt++, PRINTNAME(TAG(a)));
         defineVar(TAG(a), CAR(a), aenv);
+        if (R_seemsOldStyleS4Object(CAR(a)))
+            warningcall(R_NilValue, _("'%s' looks like a pre-2.4.0 S4 object: please recreate it"),
+                        CHAR(PRINTNAME(TAG(a))));
         a = CDR(a);
     }
     UNPROTECT(2);
