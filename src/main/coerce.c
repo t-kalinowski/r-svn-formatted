@@ -2170,6 +2170,8 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans, x, names, dims;
     int i, n;
     checkArity(op, args);
+    if (DispatchOrEval(call, op, "is.finite", args, rho, &ans, 0, 1))
+        return (ans);
 #ifdef stringent_is
     if (!isList(CAR(args)) && !isVector(CAR(args)))
         errorcall_return(call, "is.finite " R_MSG_list_vec);
@@ -2224,6 +2226,8 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     double xr, xi;
     int i, n;
     checkArity(op, args);
+    if (DispatchOrEval(call, op, "is.infinite", args, rho, &ans, 0, 1))
+        return (ans);
 #ifdef stringent_is
     if (!isList(CAR(args)) && !isVector(CAR(args)))
         errorcall_return(call, "is.infinite " R_MSG_list_vec);
