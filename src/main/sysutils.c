@@ -256,10 +256,7 @@ int R_system(char *command)
     return val;
 }
 
-#ifdef Win32
-#define WIN32_LEAN_AND_MEAN 1
-#include <windows.h>
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
 #else
@@ -283,21 +280,12 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
     i = LENGTH(CAR(args));
     if (i == 0)
     {
-#ifdef Win32
-        char **e;
-        for (i = 0, e = _environ; *e != NULL; i++, e++)
-            ;
-        PROTECT(ans = allocVector(STRSXP, i));
-        for (i = 0, e = _environ; *e != NULL; i++, e++)
-            SET_STRING_ELT(ans, i, mkChar(*e));
-#else
         char **e;
         for (i = 0, e = environ; *e != NULL; i++, e++)
             ;
         PROTECT(ans = allocVector(STRSXP, i));
         for (i = 0, e = environ; *e != NULL; i++, e++)
             SET_STRING_ELT(ans, i, mkChar(*e));
-#endif
     }
     else
     {
@@ -748,6 +736,11 @@ char *translateChar(SEXP x)
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#endif
+
+#ifdef Win32
+#define WIN32_LEAN_AND_MEAN 1
+#include <windows.h> /* For GetShortPathName */
 #endif
 
 #if !defined(S_IFDIR) && defined(__S_IFDIR)

@@ -691,6 +691,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 #endif
 
+/* No longer required by POSIX, but maybe on earlier OSes */
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
