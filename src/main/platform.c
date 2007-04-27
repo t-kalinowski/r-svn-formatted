@@ -566,7 +566,6 @@ SEXP attribute_hidden do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rename(from, to) == 0 ? mkTrue() : mkFalse();
 }
 
-#ifdef HAVE_STAT
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -683,13 +682,6 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
     UNPROTECT(3);
     return ans;
 }
-#else
-SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    error(_("file.info() is not implemented on this system"));
-    return R_NilValue; /* -Wall */
-}
-#endif
 
 /* No longer required by POSIX, but maybe on earlier OSes */
 #ifdef HAVE_SYS_TYPES_H
@@ -743,9 +735,7 @@ static void count_files(char *dnp, int *count, int allfiles, int recursive, int 
     DIR *dir;
     struct dirent *de;
     char p[PATH_MAX];
-#ifdef HAVE_STAT
     struct stat sb;
-#endif
 
     if (strlen(dnp) >= PATH_MAX) /* should not happen! */
         error(_("directory/folder path name too long"));
@@ -759,7 +749,6 @@ static void count_files(char *dnp, int *count, int allfiles, int recursive, int 
         {
             if (allfiles || !R_HiddenFile(de->d_name))
             {
-#ifdef HAVE_STAT
                 if (recursive)
                 {
                     snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
@@ -771,7 +760,6 @@ static void count_files(char *dnp, int *count, int allfiles, int recursive, int 
                         continue;
                     }
                 }
-#endif
                 if (pattern)
                 {
                     if (regexec(&reg, de->d_name, 0, NULL, 0) == 0)
@@ -791,9 +779,7 @@ static void list_files(char *dnp, char *stem, int *count, SEXP ans, int allfiles
     DIR *dir;
     struct dirent *de;
     char p[PATH_MAX], stem2[PATH_MAX];
-#ifdef HAVE_STAT
     struct stat sb;
-#endif
 
     if ((dir = opendir(dnp)) != NULL)
     {
@@ -801,7 +787,6 @@ static void list_files(char *dnp, char *stem, int *count, SEXP ans, int allfiles
         {
             if (allfiles || !R_HiddenFile(de->d_name))
             {
-#ifdef HAVE_STAT
                 if (recursive)
                 {
                     snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
@@ -819,7 +804,6 @@ static void list_files(char *dnp, char *stem, int *count, SEXP ans, int allfiles
                         continue;
                     }
                 }
-#endif
                 if (pattern)
                 {
                     if (regexec(&reg, de->d_name, 0, NULL, 0) == 0)
@@ -858,13 +842,6 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     fullnames = asLogical(CAR(args));
     args = CDR(args);
     recursive = asLogical(CAR(args));
-#ifndef HAVE_STAT
-    if (recursive)
-    {
-        warningcall(call, _("'recursive = TRUE' is not supported on this platform"));
-        recursive = FALSE;
-    }
-#endif
     ndir = length(d);
     if (pattern && regcomp(&reg, translateChar(STRING_ELT(p, 0)), REG_EXTENDED))
         errorcall(call, _("invalid 'pattern' regular expression"));
@@ -1094,7 +1071,6 @@ static int R_unlink(char *name, int recursive)
         return 0;
     if (recursive)
     {
-#ifdef HAVE_STAT
         DIR *dir;
         struct dirent *de;
         char p[PATH_MAX];
@@ -1138,7 +1114,6 @@ static int R_unlink(char *name, int recursive)
             ans += (R_rmdir(name) == 0) ? 0 : 1;
             return ans;
         }
-#endif
         /* drop through */
     }
     return unlink(name) == 0 ? 0 : 1;
@@ -1173,13 +1148,6 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         recursive = asLogical(CADR(args));
         if (recursive == NA_LOGICAL)
             errorcall(call, _("invalid '%s' argument"), "recursive");
-#ifndef HAVE_STAT
-        if (recursive)
-        {
-            warningcall(call, _("'recursive = TRUE' is not supported on this platform"));
-            recursive = FALSE;
-        }
-#endif
         for (i = 0; i < nfiles; i++)
         {
             names = translateChar(STRING_ELT(fn, i));
