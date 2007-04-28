@@ -2032,7 +2032,7 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
     SEXP rclass, rmeth, rgr, rsxp;
     char lbuf[512], rbuf[512], generic[128], *pt;
-    Rboolean useS4 = TRUE;
+    Rboolean useS4 = TRUE, isOps = FALSE;
 
     /* pre-test to avoid string computations when there is nothing to
        dispatch on because either there is only one argument and it
@@ -2043,6 +2043,8 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
     if (args != R_NilValue && !isObject(CAR(args)) && (CDR(args) == R_NilValue || !isObject(CADR(args))))
         return 0;
 
+    isOps = strcmp(group, "Ops") == 0;
+
     /* try for formal method */
     if (length(args) == 1 && !IS_S4_OBJECT(CAR(args)))
         useS4 = FALSE;
@@ -2050,7 +2052,13 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
         useS4 = FALSE;
     if (useS4 && R_has_methods(op))
     {
-        SEXP value = R_possible_dispatch(call, op, args, rho);
+        SEXP value;
+        /* Remove argument names to ensure positional matching */
+        if (isOps)
+            for (s = args; s != R_NilValue; s = CDR(s))
+                SET_TAG(s, R_NilValue);
+
+        value = R_possible_dispatch(call, op, args, rho);
         if (value)
         {
             *ans = value;
@@ -2072,7 +2080,7 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
             return 0;
     }
 
-    if (!strcmp(group, "Ops"))
+    if (isOps)
         nargs = length(args);
     else
         nargs = 1;
@@ -2189,7 +2197,12 @@ attribute_hidden int DispatchGroup(char *group, SEXP call, SEXP op, SEXP args, S
     if (length(s) != length(args))
         errorcall(call, _("dispatch error"));
     for (m = s; m != R_NilValue; m = CDR(m), args = CDR(args))
+    {
         SET_PRVALUE(CAR(m), CAR(args));
+        /* ensure positional matching for operators */
+        if (isOps)
+            SET_TAG(m, R_NilValue);
+    }
 
     *ans = applyClosure(t, lsxp, s, rho, newrho);
     UNPROTECT(5);
