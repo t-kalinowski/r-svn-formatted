@@ -386,8 +386,20 @@ int Rf_initialize_R(int ac, char **av)
                 Rp->R_Interactive = FALSE;
                 if (strlen(cmdlines) + strlen(*av) + 2 <= 10000)
                 {
-                    strcat(cmdlines, *av);
-                    strcat(cmdlines, "\n");
+                    char *p = cmdlines + strlen(cmdlines), *q;
+                    /* Undo the escaping done in the front end */
+                    for (q = *av; *q; q++)
+                    {
+                        if (*q == '~' && *(q + 1) == '+' && *(q + 2) == '~')
+                        {
+                            q += 2;
+                            *p++ = ' ';
+                        }
+                        else
+                            *p++ = *q;
+                    }
+                    *p++ = '\n';
+                    *p = '\0';
                 }
                 else
                 {
