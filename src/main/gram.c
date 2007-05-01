@@ -3913,7 +3913,6 @@ static int KeywordLookup(char *s)
 
 static SEXP mkFloat(char *s)
 {
-    SEXP t = R_NilValue;
     double f;
     if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
     {
@@ -3934,12 +3933,32 @@ static SEXP mkFloat(char *s)
     }
     else
         f = atof(s);
-    if (GenerateCode)
+    return ScalarReal(f);
+}
+
+static SEXP mkInt(char *s)
+{
+    double f;
+    if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
     {
-        t = allocVector(REALSXP, 1);
-        REAL(t)[0] = f;
+        double ret = 0;
+        char *p = s + 2;
+        for (; p; p++)
+        {
+            if ('0' <= *p && *p <= '9')
+                ret = 16 * ret + (*p - '0');
+            else if ('a' <= *p && *p <= 'f')
+                ret = 16 * ret + (*p - 'a' + 10);
+            else if ('A' <= *p && *p <= 'F')
+                ret = 16 * ret + (*p - 'A' + 10);
+            else
+                break;
+        }
+        f = ret;
     }
-    return t;
+    else
+        f = atof(s);
+    return ScalarInteger((int)f);
 }
 
 static SEXP mkComplex(char *s)
@@ -4094,50 +4113,45 @@ static int NumericValue(int c)
         last = c;
     }
     YYTEXT_PUSH('\0', yyp);
-    if (1 || GenerateCode)
+    /* Make certain that things are okay. */
+    if (c == 'L')
     {
-        /* Make certain that things are okay. */
-        if (c == 'L')
+        double a = atof(yytext);
+        int b = (int)atof(yytext);
+        /* We are asked to create an integer via the L, so we check that the
+           double and int values are the same. If not, this is a problem and we
+           will not lose information and so use the numeric value.
+        */
+        if (a != (double)b)
         {
-            double a = atof(yytext);
-            int b = (int)atof(yytext);
-            /* We are asked to create an integer via the L, so we check that the
-               double and int values are the same. If not, this is a problem and we
-               will not lose information and so use the numeric value.
-             */
-            if (a != (double)b)
+            if (GenerateCode)
             {
-                if (GenerateCode)
-                {
-                    if (seendot == 1 && seenexp == 0)
-                        warning(_("integer literal %sL contains decimal; using numeric value"), yytext);
-                    else
-                        warning(_("non-integer value %s qualified with L; using numeric value"), yytext);
-                }
-                asNumeric = 1;
-                seenexp = 1;
+                if (seendot == 1 && seenexp == 0)
+                    warning(_("integer literal %sL contains decimal; using numeric value"), yytext);
+                else
+                    warning(_("non-integer value %s qualified with L; using numeric value"), yytext);
             }
-        }
-
-        if (c == 'i')
-        {
-            yylval = GenerateCode ? mkComplex(yytext) : R_NilValue;
-        }
-        else if (c == 'L' && asNumeric == 0)
-        {
-            if (GenerateCode && seendot == 1 && seenexp == 0)
-                warning(_("integer literal %sL contains unnecessary decimal point"), yytext);
-            yylval = GenerateCode ? ScalarInteger((int)atof(yytext)) : R_NilValue;
-        }
-        else
-        {
-            if (c != 'L')
-                xxungetc(c);
-            yylval = GenerateCode ? mkFloat(yytext) : R_NilValue;
+            asNumeric = 1;
+            seenexp = 1;
         }
     }
+
+    if (c == 'i')
+    {
+        yylval = GenerateCode ? mkComplex(yytext) : R_NilValue;
+    }
+    else if (c == 'L' && asNumeric == 0)
+    {
+        if (GenerateCode && seendot == 1 && seenexp == 0)
+            warning(_("integer literal %sL contains unnecessary decimal point"), yytext);
+        yylval = GenerateCode ? mkInt(yytext) : R_NilValue;
+    }
     else
-        yylval = R_NilValue;
+    {
+        if (c != 'L')
+            xxungetc(c);
+        yylval = GenerateCode ? mkFloat(yytext) : R_NilValue;
+    }
 
     PROTECT(yylval);
     return NUM_CONST;
