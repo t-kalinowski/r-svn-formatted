@@ -992,7 +992,8 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
     {
         method = do_inherited_table(classes, fdef, mtable, ev);
     }
-    /* the rest of this is identical to R_standardGeneric; hence the f=method to remind us  */
+    /* the rest of this is identical to R_standardGeneric;
+       hence the f=method to remind us  */
     f = method;
     if (isObject(f))
         f = R_loadMethod(f, fname, ev);
