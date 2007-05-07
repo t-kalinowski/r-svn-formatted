@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2006 University of Cambridge
+           Copyright (c) 1997-2007 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,11 @@ possible. There are also some static supporting functions. */
 #define PSEND end_subject     /* Field containing processed string end */
 
 #include "pcre_internal.h"
+
+/* Undefine some potentially clashing cpp symbols */
+
+#undef min
+#undef max
 
 /* The chain of eptrblocks for tail recursions uses memory in stack workspace,
 obtained at top level, the size of which is defined by EPTR_WORK_SIZE. */
@@ -296,6 +301,8 @@ typedef struct heapframe
     int Xprop_category;
     int Xprop_chartype;
     int Xprop_script;
+    int Xoclength;
+    uschar Xocchars[8];
 #endif
 
     int Xctype;
@@ -433,6 +440,8 @@ HEAP_RECURSE:
 #define prop_category frame->Xprop_category
 #define prop_chartype frame->Xprop_chartype
 #define prop_script frame->Xprop_script
+#define oclength frame->Xoclength
+#define occhars frame->Xocchars
 #endif
 
 #define ctype frame->Xctype
@@ -485,6 +494,8 @@ HEAP_RECURSE:
     int prop_category;
     int prop_chartype;
     int prop_script;
+    int oclength;
+    uschar occhars[8];
 #endif
 
     int ctype;
@@ -2122,19 +2133,19 @@ TAIL_RECURSE:
 
                 if (length > 1)
                 {
-                    int oclength = 0;
-                    uschar occhars[8];
-
 #ifdef SUPPORT_UCP
                     unsigned int othercase;
                     if ((ims & PCRE_CASELESS) != 0 && (othercase = _pcre_ucp_othercase(fc)) != NOTACHAR)
                         oclength = _pcre_ord2utf8(othercase, occhars);
+                    else
+                        oclength = 0;
 #endif /* SUPPORT_UCP */
 
                     for (i = 1; i <= min; i++)
                     {
                         if (memcmp(eptr, charptr, length) == 0)
                             eptr += length;
+#ifdef SUPPORT_UCP
                         /* Need braces because of following else */
                         else if (oclength == 0)
                         {
@@ -2146,6 +2157,12 @@ TAIL_RECURSE:
                                 RRETURN(MATCH_NOMATCH);
                             eptr += oclength;
                         }
+#else  /* without SUPPORT_UCP */
+                        else
+                        {
+                            RRETURN(MATCH_NOMATCH);
+                        }
+#endif /* SUPPORT_UCP */
                     }
 
                     if (min == max)
@@ -2162,6 +2179,7 @@ TAIL_RECURSE:
                                 RRETURN(MATCH_NOMATCH);
                             if (memcmp(eptr, charptr, length) == 0)
                                 eptr += length;
+#ifdef SUPPORT_UCP
                             /* Need braces because of following else */
                             else if (oclength == 0)
                             {
@@ -2173,6 +2191,12 @@ TAIL_RECURSE:
                                     RRETURN(MATCH_NOMATCH);
                                 eptr += oclength;
                             }
+#else  /* without SUPPORT_UCP */
+                            else
+                            {
+                                RRETURN(MATCH_NOMATCH);
+                            }
+#endif /* SUPPORT_UCP */
                         }
                         /* Control never gets here */
                     }
@@ -2186,6 +2210,7 @@ TAIL_RECURSE:
                                 break;
                             if (memcmp(eptr, charptr, length) == 0)
                                 eptr += length;
+#ifdef SUPPORT_UCP
                             else if (oclength == 0)
                                 break;
                             else
@@ -2194,18 +2219,28 @@ TAIL_RECURSE:
                                     break;
                                 eptr += oclength;
                             }
+#else  /* without SUPPORT_UCP */
+                            else
+                                break;
+#endif /* SUPPORT_UCP */
                         }
 
                         if (possessive)
                             continue;
-                        while (eptr >= pp)
+                        for (;;)
                         {
                             RMATCH(rrc, eptr, ecode, offset_top, md, ims, eptrb, 0);
                             if (rrc != MATCH_NOMATCH)
                                 RRETURN(rrc);
+                            if (eptr == pp)
+                                RRETURN(MATCH_NOMATCH);
+#ifdef SUPPORT_UCP
+                            eptr--;
+                            BACKCHAR(eptr);
+#else  /* without SUPPORT_UCP */
                             eptr -= length;
+#endif /* SUPPORT_UCP */
                         }
-                        RRETURN(MATCH_NOMATCH);
                     }
                     /* Control never gets here */
                 }
@@ -3921,8 +3956,8 @@ Returns:          > 0 => success; value is the number of elements filled in
                  < -1 => some kind of unexpected problem
 */
 
-PCRE_DATA_SCOPE int pcre_exec(const pcre *argument_re, const pcre_extra *extra_data, PCRE_SPTR subject, int length,
-                              int start_offset, int options, int *offsets, int offsetcount)
+PCRE_EXP_DEFN int pcre_exec(const pcre *argument_re, const pcre_extra *extra_data, PCRE_SPTR subject, int length,
+                            int start_offset, int options, int *offsets, int offsetcount)
 {
     int rc, resetcount, ocount;
     int first_byte = -1;
@@ -4040,10 +4075,10 @@ PCRE_DATA_SCOPE int pcre_exec(const pcre *argument_re, const pcre_extra *extra_d
     md->lcc = tables + lcc_offset;
     md->ctypes = tables + ctypes_offset;
 
-    /* Handle different types of newline. The two bits give four cases. If nothing
-    is set at run time, whatever was used at compile time applies. */
+    /* Handle different types of newline. The three bits give eight cases. If
+    nothing is set at run time, whatever was used at compile time applies. */
 
-    switch ((((options & PCRE_NEWLINE_BITS) == 0) ? re->options : options) & PCRE_NEWLINE_BITS)
+    switch ((((options & PCRE_NEWLINE_BITS) == 0) ? re->options : (pcre_uint32)options) & PCRE_NEWLINE_BITS)
     {
     case 0:
         newline = NEWLINE;
@@ -4060,11 +4095,18 @@ PCRE_DATA_SCOPE int pcre_exec(const pcre *argument_re, const pcre_extra *extra_d
     case PCRE_NEWLINE_ANY:
         newline = -1;
         break;
+    case PCRE_NEWLINE_ANYCRLF:
+        newline = -2;
+        break;
     default:
         return PCRE_ERROR_BADNEWLINE;
     }
 
-    if (newline < 0)
+    if (newline == -2)
+    {
+        md->nltype = NLTYPE_ANYCRLF;
+    }
+    else if (newline < 0)
     {
         md->nltype = NLTYPE_ANY;
     }
@@ -4242,6 +4284,14 @@ PCRE_DATA_SCOPE int pcre_exec(const pcre *argument_re, const pcre_extra *extra_d
             {
                 while (start_match <= end_subject && !WAS_NEWLINE(start_match))
                     start_match++;
+
+                /* If we have just passed a CR and the newline option is ANY or ANYCRLF,
+                and we are now at a LF, advance the match position by one more character.
+                */
+
+                if (start_match[-1] == '\r' && (md->nltype == NLTYPE_ANY || md->nltype == NLTYPE_ANYCRLF) &&
+                    start_match < end_subject && *start_match == '\n')
+                    start_match++;
             }
         }
 
@@ -4369,11 +4419,12 @@ PCRE_DATA_SCOPE int pcre_exec(const pcre *argument_re, const pcre_extra *extra_d
         if (anchored || start_match > end_subject)
             break;
 
-        /* If we have just passed a CR and the newline option is CRLF or ANY, and we
-        are now at a LF, advance the match position by one more character. */
+        /* If we have just passed a CR and the newline option is CRLF or ANY or
+        ANYCRLF, and we are now at a LF, advance the match position by one more
+        character. */
 
-        if (start_match[-1] == '\r' && (md->nltype == NLTYPE_ANY || md->nllen == 2) && start_match < end_subject &&
-            *start_match == '\n')
+        if (start_match[-1] == '\r' && (md->nltype == NLTYPE_ANY || md->nltype == NLTYPE_ANYCRLF || md->nllen == 2) &&
+            start_match < end_subject && *start_match == '\n')
             start_match++;
 
     } /* End of for(;;) "bumpalong" loop */

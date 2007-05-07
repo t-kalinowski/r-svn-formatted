@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2006 University of Cambridge
+           Copyright (c) 1997-2007 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -76,7 +76,7 @@ are simple data values; negative values are for special things like \d and so
 on. Zero means further processing is needed (for things like \x), or the escape
 is invalid. */
 
-#if !EBCDIC /* This is the "normal" table for ASCII systems */
+#ifndef EBCDIC /* This is the "normal" table for ASCII systems */
 static const short int escapes[] = {
     0,      0,      0,      0,      0,       0,      0,     0,      /* 0 - 7 */
     0,      0,      ':',    ';',    '<',     '=',    '>',   '?',    /* 8 - ? */
@@ -221,7 +221,7 @@ For convenience, we use the same bit definitions as in chartables:
 
 Then we can use ctype_digit and ctype_xdigit in the code. */
 
-#if !EBCDIC /* This is the "normal" case, for ASCII systems */
+#ifndef EBCDIC /* This is the "normal" case, for ASCII systems */
 static const unsigned char digitab[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*   0-  7 */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*   8- 15 */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  16- 23 */
@@ -267,7 +267,7 @@ static const unsigned char digitab[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*    - 71 40 */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  72- |     */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  & - 87 50 */
-                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  88- ¬     */
+                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  88- 95    */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  - -103 60 */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /* 104- ?     */
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /* 112-119 70 */
@@ -301,7 +301,7 @@ static const unsigned char ebcdic_chartab[] = {/* chartable partial dup */
                                                0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*    - 71 */
                                                0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x80, 0x80,  /*  72- |  */
                                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  & - 87 */
-                                               0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x00, 0x00,  /*  88- ¬  */
+                                               0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x00, 0x00,  /*  88- 95 */
                                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /*  - -103 */
                                                0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80,  /* 104- ?  */
                                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  /* 112-119 */
@@ -371,7 +371,7 @@ static int check_escape(const uschar **ptrptr, int *errorcodeptr, int bracount, 
         a table. A non-zero result is something that can be returned immediately.
         Otherwise further processing may be required. */
 
-#if !EBCDIC /* ASCII coding */
+#ifndef EBCDIC /* ASCII coding */
     else if (c < '0' || c > 'z')
     {
     } /* Not alphameric */
@@ -529,7 +529,7 @@ static int check_escape(const uschar **ptrptr, int *errorcodeptr, int bracount, 
                         continue; /* Leading zeroes */
                     count++;
 
-#if !EBCDIC /* ASCII coding */
+#ifndef EBCDIC /* ASCII coding */
                     if (cc >= 'a')
                         cc -= 32; /* Convert to upper case */
                     c = (c << 4) + cc - ((cc < 'A') ? '0' : ('A' - 10));
@@ -559,7 +559,7 @@ static int check_escape(const uschar **ptrptr, int *errorcodeptr, int bracount, 
             {
                 int cc;        /* Some compilers don't like ++ */
                 cc = *(++ptr); /* in initializers */
-#if !EBCDIC                    /* ASCII coding */
+#ifndef EBCDIC                 /* ASCII coding */
                 if (cc >= 'a')
                     cc -= 32; /* Convert to upper case */
                 c = c * 16 + cc - ((cc < 'A') ? '0' : ('A' - 10));
@@ -583,7 +583,7 @@ static int check_escape(const uschar **ptrptr, int *errorcodeptr, int bracount, 
                 return 0;
             }
 
-#if !EBCDIC /* ASCII coding */
+#ifndef EBCDIC /* ASCII coding */
             if (c >= 'a' && c <= 'z')
                 c -= 32;
             c ^= 0x40;
@@ -1247,6 +1247,7 @@ static const uschar *find_bracket(const uschar *code, BOOL utf8, int number)
         else
         {
             code += _pcre_OP_lengths[c];
+#ifdef SUPPORT_UTF8
             if (utf8)
                 switch (c)
                 {
@@ -1269,6 +1270,7 @@ static const uschar *find_bracket(const uschar *code, BOOL utf8, int number)
                         code += _pcre_utf8_table4[code[-1] & 0x3f];
                     break;
                 }
+#endif
         }
     }
 }
@@ -1312,6 +1314,7 @@ static const uschar *find_recurse(const uschar *code, BOOL utf8)
         else
         {
             code += _pcre_OP_lengths[c];
+#ifdef SUPPORT_UTF8
             if (utf8)
                 switch (c)
                 {
@@ -1334,6 +1337,7 @@ static const uschar *find_recurse(const uschar *code, BOOL utf8)
                         code += _pcre_utf8_table4[code[-1] & 0x3f];
                     break;
                 }
+#endif
         }
     }
 }
@@ -5155,14 +5159,14 @@ Returns:        pointer to compiled data block, or NULL on error,
 
 #include "chartables.h"
 
-PCRE_DATA_SCOPE pcre *pcre_compile(const char *pattern, int options, const char **errorptr, int *erroroffset,
-                                   const unsigned char *tables)
+PCRE_EXP_DEFN pcre *pcre_compile(const char *pattern, int options, const char **errorptr, int *erroroffset,
+                                 const unsigned char *tables)
 {
     return pcre_compile2(pattern, options, NULL, errorptr, erroroffset, tables);
 }
 
-PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, const char **errorptr,
-                                    int *erroroffset, const unsigned char *tables)
+PCRE_EXP_DEFN pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, const char **errorptr,
+                                  int *erroroffset, const unsigned char *tables)
 {
     real_pcre *re;
     int length = 1; /* For final END opcode */
@@ -5210,7 +5214,7 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
     if (erroroffset == NULL)
     {
         errorcode = ERR16;
-        goto PCRE_EARLY_ERROR_RETURN;
+        goto PCRE_EARLY_ERROR_RETURN2;
     }
 
     *erroroffset = 0;
@@ -5222,7 +5226,7 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
     if (utf8 && (options & PCRE_NO_UTF8_CHECK) == 0 && (*erroroffset = _pcre_valid_utf8((uschar *)pattern, -1)) >= 0)
     {
         errorcode = ERR44;
-        goto PCRE_UTF8_ERROR_RETURN;
+        goto PCRE_EARLY_ERROR_RETURN2;
     }
 #else
     if ((options & PCRE_UTF8) != 0)
@@ -5248,7 +5252,8 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
     cd->ctypes = tables + ctypes_offset;
 
     /* Handle different types of newline. The three bits give seven cases. The
-    current code allows for fixed one- or two-byte sequences, plus "any". */
+    current code allows for fixed one- or two-byte sequences, plus "any" and
+    "anycrlf". */
 
     switch (options & (PCRE_NEWLINE_CRLF | PCRE_NEWLINE_ANY))
     {
@@ -5267,12 +5272,19 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
     case PCRE_NEWLINE_ANY:
         newline = -1;
         break;
+    case PCRE_NEWLINE_ANYCRLF:
+        newline = -2;
+        break;
     default:
         errorcode = ERR56;
         goto PCRE_EARLY_ERROR_RETURN;
     }
 
-    if (newline < 0)
+    if (newline == -2)
+    {
+        cd->nltype = NLTYPE_ANYCRLF;
+    }
+    else if (newline < 0)
     {
         cd->nltype = NLTYPE_ANY;
     }
@@ -5452,9 +5464,7 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
         (pcre_free)(re);
     PCRE_EARLY_ERROR_RETURN:
         *erroroffset = ptr - (const uschar *)pattern;
-#ifdef SUPPORT_UTF8
-    PCRE_UTF8_ERROR_RETURN:
-#endif
+    PCRE_EARLY_ERROR_RETURN2:
         *errorptr = error_texts[errorcode];
         if (errorcodeptr != NULL)
             *errorcodeptr = errorcode;
@@ -5542,7 +5552,7 @@ PCRE_DATA_SCOPE pcre *pcre_compile2(const char *pattern, int options, int *error
             printf("Req char = \\x%02x%s\n", ch, caseless);
     }
 
-    pcre_printint(re, stdout);
+    pcre_printint(re, stdout, TRUE);
 
     /* This check is done here in the debugging case so that the code that
     was compiled can be seen. */

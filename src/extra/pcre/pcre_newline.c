@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2006 University of Cambridge
+           Copyright (c) 1997-2007 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,8 @@ POSSIBILITY OF SUCH DAMAGE.
 one kind of newline is to be recognized. When a newline is found, its length is
 returned. In principle, we could implement several newline "types", each
 referring to a different set of newline characters. At present, PCRE supports
-only NLTYPE_FIXED, which gets handled without these functions, and NLTYPE_ALL,
-so for now the type isn't passed into the functions. It can easily be added
-later if required. The full list of Unicode newline characters is taken from
+only NLTYPE_FIXED, which gets handled without these functions, NLTYPE_ANYCRLF,
+and NLTYPE_ANY. The full list of Unicode newline characters is taken from
 http://unicode.org/unicode/reports/tr18/. */
 
 #include "pcre_internal.h"
@@ -57,6 +56,7 @@ string that is being processed.
 
 Arguments:
   ptr          pointer to possible newline
+  type         the newline type
   endptr       pointer to the end of the string
   lenptr       where to return the length
   utf8         TRUE if in utf8 mode
@@ -64,7 +64,7 @@ Arguments:
 Returns:       TRUE or FALSE
 */
 
-BOOL _pcre_is_newline(const uschar *ptr, const uschar *endptr, int *lenptr, BOOL utf8)
+BOOL _pcre_is_newline(const uschar *ptr, int type, const uschar *endptr, int *lenptr, BOOL utf8)
 {
     int c;
     if (utf8)
@@ -73,26 +73,43 @@ BOOL _pcre_is_newline(const uschar *ptr, const uschar *endptr, int *lenptr, BOOL
     }
     else
         c = *ptr;
-    switch (c)
-    {
-    case 0x000a: /* LF */
-    case 0x000b: /* VT */
-    case 0x000c:
-        *lenptr = 1;
-        return TRUE; /* FF */
-    case 0x000d:
-        *lenptr = (ptr < endptr - 1 && ptr[1] == 0x0a) ? 2 : 1;
-        return TRUE; /* CR */
-    case 0x0085:
-        *lenptr = utf8 ? 2 : 1;
-        return TRUE; /* NEL */
-    case 0x2028:     /* LS */
-    case 0x2029:
-        *lenptr = 3;
-        return TRUE; /* PS */
-    default:
-        return FALSE;
-    }
+
+    if (type == NLTYPE_ANYCRLF)
+        switch (c)
+        {
+        case 0x000a:
+            *lenptr = 1;
+            return TRUE; /* LF */
+        case 0x000d:
+            *lenptr = (ptr < endptr - 1 && ptr[1] == 0x0a) ? 2 : 1;
+            return TRUE; /* CR */
+        default:
+            return FALSE;
+        }
+
+    /* NLTYPE_ANY */
+
+    else
+        switch (c)
+        {
+        case 0x000a: /* LF */
+        case 0x000b: /* VT */
+        case 0x000c:
+            *lenptr = 1;
+            return TRUE; /* FF */
+        case 0x000d:
+            *lenptr = (ptr < endptr - 1 && ptr[1] == 0x0a) ? 2 : 1;
+            return TRUE; /* CR */
+        case 0x0085:
+            *lenptr = utf8 ? 2 : 1;
+            return TRUE; /* NEL */
+        case 0x2028:     /* LS */
+        case 0x2029:
+            *lenptr = 3;
+            return TRUE; /* PS */
+        default:
+            return FALSE;
+        }
 }
 
 /*************************************************
@@ -104,6 +121,7 @@ the string that is being processed.
 
 Arguments:
   ptr          pointer to possible newline
+  type         the newline type
   startptr     pointer to the start of the string
   lenptr       where to return the length
   utf8         TRUE if in utf8 mode
@@ -111,7 +129,7 @@ Arguments:
 Returns:       TRUE or FALSE
 */
 
-BOOL _pcre_was_newline(const uschar *ptr, const uschar *startptr, int *lenptr, BOOL utf8)
+BOOL _pcre_was_newline(const uschar *ptr, int type, const uschar *startptr, int *lenptr, BOOL utf8)
 {
     int c;
     ptr--;
@@ -122,26 +140,41 @@ BOOL _pcre_was_newline(const uschar *ptr, const uschar *startptr, int *lenptr, B
     }
     else
         c = *ptr;
-    switch (c)
-    {
-    case 0x000a:
-        *lenptr = (ptr > startptr && ptr[-1] == 0x0d) ? 2 : 1;
-        return TRUE; /* LF */
-    case 0x000b:     /* VT */
-    case 0x000c:     /* FF */
-    case 0x000d:
-        *lenptr = 1;
-        return TRUE; /* CR */
-    case 0x0085:
-        *lenptr = utf8 ? 2 : 1;
-        return TRUE; /* NEL */
-    case 0x2028:     /* LS */
-    case 0x2029:
-        *lenptr = 3;
-        return TRUE; /* PS */
-    default:
-        return FALSE;
-    }
+
+    if (type == NLTYPE_ANYCRLF)
+        switch (c)
+        {
+        case 0x000a:
+            *lenptr = (ptr > startptr && ptr[-1] == 0x0d) ? 2 : 1;
+            return TRUE; /* LF */
+        case 0x000d:
+            *lenptr = 1;
+            return TRUE; /* CR */
+        default:
+            return FALSE;
+        }
+
+    else
+        switch (c)
+        {
+        case 0x000a:
+            *lenptr = (ptr > startptr && ptr[-1] == 0x0d) ? 2 : 1;
+            return TRUE; /* LF */
+        case 0x000b:     /* VT */
+        case 0x000c:     /* FF */
+        case 0x000d:
+            *lenptr = 1;
+            return TRUE; /* CR */
+        case 0x0085:
+            *lenptr = utf8 ? 2 : 1;
+            return TRUE; /* NEL */
+        case 0x2028:     /* LS */
+        case 0x2029:
+            *lenptr = 3;
+            return TRUE; /* PS */
+        default:
+            return FALSE;
+        }
 }
 
 /* End of pcre_newline.c */
