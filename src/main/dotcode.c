@@ -2152,9 +2152,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             for (j = 0; j < n; j++)
             {
                 char *str = (char *)(arguments[i]);
-                s = allocString(strlen(str));
-                SET_STRING_ELT(CAR(pcall), i, s);
-                strcpy(CHAR(s), str);
+                SET_STRING_ELT(CAR(pcall), i, mkChar(str));
             }
             break;
             /* FIXME : This copy is unnecessary! */

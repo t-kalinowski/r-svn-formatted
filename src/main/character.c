@@ -846,7 +846,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP arg, ans;
     int i, l, n, allow_;
-    char *p, *_this, *tmp;
+    char *p, *_this, *tmp, *cbuf;
     Rboolean need_prefix;
 
     checkArity(op, args);
@@ -954,15 +954,17 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
                 /* else leave alone */
             }
         }
-        l = strlen(tmp);
-        SET_STRING_ELT(ans, i, allocString(l));
-        strcpy(CHAR(STRING_ELT(ans, i)), tmp);
+        l = strlen(tmp); /* needed? */
+        SET_STRING_ELT(ans, i, mkChar(tmp));
         /* do we have a reserved word?  If so the name is invalid */
         if (!isValidName(tmp))
         {
-            SET_STRING_ELT(ans, i, allocString(strlen(tmp) + 1));
-            strcpy(CHAR(STRING_ELT(ans, i)), tmp);
-            strcat(CHAR(STRING_ELT(ans, i)), ".");
+            /* FIXME: could use R_Realloc instead */
+            cbuf = CallocCharBuf(strlen(tmp) + 1);
+            strcpy(cbuf, tmp);
+            strcat(cbuf, ".");
+            SET_STRING_ELT(ans, i, mkChar(cbuf));
+            Free(cbuf);
         }
         Free(tmp);
     }
@@ -1212,7 +1214,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     regmatch_t regmatch[10];
     int i, j, n, ns, nmatch, offset;
     int global, igcase_opt, extended_opt, fixed_opt, useBytes, cflags, eflags, last_end;
-    char *s, *t, *u;
+    char *s, *t, *u, *cbuf;
     char *spat, *srep;
     int patlen = 0, replen = 0, st, nr;
 
@@ -1326,8 +1328,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                     nr = 1;
-                SET_STRING_ELT(ans, i, allocString(ns + nr * (replen - patlen)));
-                u = CHAR(STRING_ELT(ans, i));
+                cbuf = u = CallocCharBuf(ns + nr * (replen - patlen));
                 *u = '\0';
                 do
                 {
@@ -1338,6 +1339,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcat(u, t);
                 } while (global && (st = fgrep_one(spat, s, useBytes)) >= 0);
                 strcat(u, s);
+                SET_STRING_ELT(ans, i, mkChar(cbuf));
+                Free(cbuf);
             }
         }
         else
@@ -1374,12 +1377,11 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
             {
-                SET_STRING_ELT(ans, i, allocString(ns));
                 offset = 0;
                 nmatch = 0;
                 s = translateChar(STRING_ELT(vec, i));
                 t = srep;
-                u = CHAR(STRING_ELT(ans, i));
+                cbuf = u = CallocCharBuf(ns);
                 ns = strlen(s);
                 eflags = 0;
                 last_end = -1;
@@ -1406,6 +1408,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     for (j = offset; s[j]; j++)
                         *u++ = s[j];
                 *u = '\0';
+                SET_STRING_ELT(ans, i, mkChar(cbuf));
+                Free(cbuf);
             }
         }
     }
@@ -1823,7 +1827,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int i, n, ul;
-    char *p, *xi;
+    char *p, *xi, *cbuf;
 
     checkArity(op, args);
     ul = PRIMVAL(op); /* 0 = tolower, 1 = toupper */
@@ -1839,6 +1843,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
         int nb, nc, j;
         wctrans_t tr = wctrans(ul ? "toupper" : "tolower");
         wchar_t *wc;
+        char *cbuf;
 
         /* the translated string need not be the same length in bytes */
         for (i = 0; i < n; i++)
@@ -1857,9 +1862,11 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                     for (j = 0; j < nc; j++)
                         wc[j] = towctrans(wc[j], tr);
                     nb = wcstombs(NULL, wc, 0);
-                    SET_STRING_ELT(y, i, allocString(nb));
-                    wcstombs(CHAR(STRING_ELT(y, i)), wc, nb + 1);
+                    cbuf = CallocCharBuf(nb);
+                    wcstombs(cbuf, wc, nb + 1);
+                    SET_STRING_ELT(y, i, mkChar(cbuf));
                     markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                    Free(cbuf);
                 }
                 else
                 {
@@ -1878,12 +1885,13 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_STRING_ELT(y, i, NA_STRING);
             else
             {
-                xi = translateChar(STRING_ELT(x, i));
-                SET_STRING_ELT(y, i, allocString(strlen(xi)));
-                strcpy(CHAR(STRING_ELT(y, i)), xi);
-                for (p = CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
+                xi = CallocCharBuf(strlen(CHAR(STRING_ELT(x, i))));
+                strcpy(xi, translateChar(STRING_ELT(x, i)));
+                for (p = xi; *p != '\0'; p++)
                     *p = ul ? toupper(*p) : tolower(*p);
+                SET_STRING_ELT(y, i, mkChar(xi));
                 markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                Free(xi);
             }
         }
     }
@@ -2102,6 +2110,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP old, _new, x, y;
     int i, n;
+    char *cbuf;
 
     checkArity(op, args);
     old = CAR(args);
@@ -2197,9 +2206,11 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (j = 0; j < nc; j++)
                     wc[j] = xtable[wc[j]];
                 nb = wcstombs(NULL, wc, 0);
-                SET_STRING_ELT(y, i, allocString(nb));
-                wcstombs(CHAR(STRING_ELT(y, i)), wc, nb + 1);
+                cbuf = CallocCharBuf(nb);
+                wcstombs(cbuf, wc, nb + 1);
+                SET_STRING_ELT(y, i, mkChar(cbuf));
                 markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                Free(cbuf);
             }
         }
         DeallocBuffer(&cbuff);
@@ -2257,11 +2268,14 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 char *xi = translateChar(STRING_ELT(x, i));
-                SET_STRING_ELT(y, i, allocString(strlen(xi)));
-                strcpy(CHAR(STRING_ELT(y, i)), xi);
-                for (p = (unsigned char *)CHAR(STRING_ELT(y, i)); *p != '\0'; p++)
+                cbuf = CallocCharBuf(strlen(xi));
+                cbuf = CallocCharBuf(strlen(CHAR(STRING_ELT(x, i))));
+                strcpy(cbuf, xi);
+                for (p = (unsigned char *)cbuf; *p != '\0'; p++)
                     *p = xtable[*p];
+                SET_STRING_ELT(y, i, mkChar(cbuf));
                 markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                Free(cbuf);
             }
         }
     }

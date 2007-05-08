@@ -686,7 +686,6 @@ void setup_Rmainloop(void)
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
 #endif
-
     InitConnections(); /* needed to get any output at all */
 
     /* Initialize the interpreter's internal structures. */
@@ -763,6 +762,7 @@ void setup_Rmainloop(void)
     InitRand();
     InitTempDir(); /* must be before InitEd */
     InitMemory();
+    InitStringHash(); /* must be before InitNames */
     InitNames();
     InitBaseEnv();
     InitGlobalEnv();
@@ -1429,8 +1429,7 @@ SEXP R_getTaskCallbackNames()
     el = Rf_ToplevelTaskHandlers;
     while (el)
     {
-        SET_STRING_ELT(ans, n, allocString(strlen(el->name)));
-        strcpy(CHAR(STRING_ELT(ans, n)), el->name);
+        SET_STRING_ELT(ans, n, mkChar(el->name));
         n++;
         el = el->next;
     }
@@ -1565,8 +1564,7 @@ SEXP R_addTaskCallback(SEXP f, SEXP data, SEXP useData, SEXP name)
     if (length(name) == 0)
     {
         PROTECT(name = allocVector(STRSXP, 1));
-        SET_STRING_ELT(name, 0, allocString(strlen(el->name)));
-        strcpy(CHAR(STRING_ELT(name, 0)), el->name);
+        SET_STRING_ELT(name, 0, mkChar(el->name));
 
         setAttrib(index, R_NamesSymbol, name);
         UNPROTECT(1);
