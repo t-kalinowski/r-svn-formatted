@@ -372,7 +372,7 @@ static int isDuplicated(SEXP x, int indx, HashData *d)
     return 0;
 }
 
-SEXP duplicated(SEXP x)
+SEXP duplicated(SEXP x, Rboolean from_last)
 {
     SEXP ans;
     int *h, *v;
@@ -393,9 +393,16 @@ SEXP duplicated(SEXP x)
     for (i = 0; i < data.M; i++)
         h[i] = NIL;
 
-    for (i = 0; i < n; i++)
-        v[i] = isDuplicated(x, i, &data);
-
+    if (from_last)
+    {
+        for (i = n - 1; i >= 0; i--)
+            v[i] = isDuplicated(x, i, &data);
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+            v[i] = isDuplicated(x, i, &data);
+    }
     return ans;
 }
 
@@ -419,7 +426,7 @@ SEXP attribute_hidden do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("%s() applies only to vectors"), (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
     }
 
-    dup = duplicated(x);
+    dup = duplicated(x, asLogical(CADR(args)));
     if (PRIMVAL(op) == 0) /* "duplicated()" : */
         return dup;
     /*	ELSE

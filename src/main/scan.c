@@ -1753,7 +1753,7 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            PROTECT(dup = duplicated(cvec));
+            PROTECT(dup = duplicated(cvec, FALSE));
             j = 0;
             for (i = 0; i < len; i++)
             {
