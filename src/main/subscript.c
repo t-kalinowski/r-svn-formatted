@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2006  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -114,7 +114,7 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
         *newname = STRING_ELT(s, pos);
         break;
     default:
-        error(_("invalid subscript type"));
+        error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return indx;
 }
@@ -197,7 +197,7 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, Rboolean pok, int po
                 break;
             }
     default:
-        error(_("invalid subscript type"));
+        error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return indx;
 }
@@ -534,7 +534,7 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
         if (s == R_MissingArg)
             return nullSubscript(nd);
     default:
-        error(_("invalid subscript"));
+        error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return R_NilValue;
 }
@@ -628,7 +628,7 @@ static SEXP int_vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, St
             break;
         }
     default:
-        error(_("invalid subscript type"));
+        error(_("invalid subscript type %s"), type2char(TYPEOF(s)));
     }
     UNPROTECT(1);
     return ans;
