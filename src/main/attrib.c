@@ -852,7 +852,8 @@ static SEXP dimnamesgets1(SEXP val1)
         PROTECT(this2 = allocVector(STRSXP, n));
         for (i = 0; i < n; i++)
         {
-            SET_STRING_ELT(this2, i, STRING_ELT(labels, INTEGER(val1)[i] - 1));
+            int ii = INTEGER(val1)[i];
+            SET_STRING_ELT(this2, i, (ii == NA_INTEGER) ? NA_STRING : STRING_ELT(labels, ii - 1));
         }
         UNPROTECT(1);
         return this2;
