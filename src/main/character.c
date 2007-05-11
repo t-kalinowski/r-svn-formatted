@@ -1827,7 +1827,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int i, n, ul;
-    char *p, *xi, *cbuf;
+    char *p, *xi;
 
     checkArity(op, args);
     ul = PRIMVAL(op); /* 0 = tolower, 1 = toupper */
