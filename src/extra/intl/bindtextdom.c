@@ -1,5 +1,5 @@
 /* Implementation of the bindtextdomain(3) function
-   Copyright (C) 1995-1998, 2000-2003 Free Software Foundation, Inc.
+   Copyright (C) 1995-1998, 2000-2003, 2005-2006 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU Library General Public License as published
@@ -24,21 +24,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gettextP.h"
 #ifdef _LIBC
 #include <libintl.h>
 #else
 #include "libgnuintl.h"
 #endif
-#include "gettextP.h"
 
+/* Handle multi-threaded applications.  */
 #ifdef _LIBC
-/* We have to handle multi-threaded applications.  */
 #include <bits/libc-lock.h>
+#define gl_rwlock_define __libc_rwlock_define
+#define gl_rwlock_wrlock __libc_rwlock_wrlock
+#define gl_rwlock_unlock __libc_rwlock_unlock
 #else
-/* Provide dummy implementation if this is outside glibc.  */
-#define __libc_rwlock_define(CLASS, NAME)
-#define __libc_rwlock_wrlock(NAME)
-#define __libc_rwlock_unlock(NAME)
+#include "lock.h"
 #endif
 
 /* The internal variables in the standalone libintl.a must have different
@@ -59,16 +59,14 @@
 /* Contains the default location of the message catalogs.  */
 extern const char _nl_default_dirname[];
 #ifdef _LIBC
-extern const char _nl_default_dirname_internal[] attribute_hidden;
-#else
-#define INTUSE(name) name
+libc_hidden_proto(_nl_default_dirname)
 #endif
 
-/* List with bindings of specific domains.  */
-extern struct binding *_nl_domain_bindings;
+    /* List with bindings of specific domains.  */
+    extern struct binding *_nl_domain_bindings;
 
 /* Lock variable to protect the global data in the gettext implementation.  */
-__libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
+gl_rwlock_define(extern, _nl_state_lock attribute_hidden)
 
 /* Names for the libintl functions are a problem.  They must not clash
    with existing names and they should follow ANSI C.  But this source
@@ -106,7 +104,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
         return;
     }
 
-    __libc_rwlock_wrlock(_nl_state_lock);
+    gl_rwlock_wrlock(_nl_state_lock);
 
     modified = 0;
 
@@ -141,8 +139,8 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
                 char *result = binding->dirname;
                 if (strcmp(dirname, result) != 0)
                 {
-                    if (strcmp(dirname, INTUSE(_nl_default_dirname)) == 0)
-                        result = (char *)INTUSE(_nl_default_dirname);
+                    if (strcmp(dirname, _nl_default_dirname) == 0)
+                        result = (char *)_nl_default_dirname;
                     else
                     {
 #if defined _LIBC || defined HAVE_STRDUP
@@ -157,7 +155,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
 
                     if (__builtin_expect(result != NULL, 1))
                     {
-                        if (binding->dirname != INTUSE(_nl_default_dirname))
+                        if (binding->dirname != _nl_default_dirname)
                             free(binding->dirname);
 
                         binding->dirname = result;
@@ -198,7 +196,6 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
                             free(binding->codeset);
 
                         binding->codeset = result;
-                        binding->codeset_cntr++;
                         modified = 1;
                     }
                 }
@@ -210,7 +207,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
     {
         /* Simply return the default values.  */
         if (dirnamep)
-            *dirnamep = INTUSE(_nl_default_dirname);
+            *dirnamep = _nl_default_dirname;
         if (codesetp)
             *codesetp = NULL;
     }
@@ -231,11 +228,11 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
 
             if (dirname == NULL)
                 /* The default value.  */
-                dirname = INTUSE(_nl_default_dirname);
+                dirname = _nl_default_dirname;
             else
             {
-                if (strcmp(dirname, INTUSE(_nl_default_dirname)) == 0)
-                    dirname = INTUSE(_nl_default_dirname);
+                if (strcmp(dirname, _nl_default_dirname) == 0)
+                    dirname = _nl_default_dirname;
                 else
                 {
                     char *result;
@@ -258,9 +255,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
         }
         else
             /* The default value.  */
-            new_binding->dirname = (char *)INTUSE(_nl_default_dirname);
-
-        new_binding->codeset_cntr = 0;
+            new_binding->dirname = (char *)_nl_default_dirname;
 
         if (codesetp)
         {
@@ -282,7 +277,6 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
                 memcpy(result, codeset, len);
 #endif
                 codeset = result;
-                new_binding->codeset_cntr++;
             }
             *codesetp = codeset;
             new_binding->codeset = (char *)codeset;
@@ -312,7 +306,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
         if (0)
         {
         failed_codeset:
-            if (new_binding->dirname != INTUSE(_nl_default_dirname))
+            if (new_binding->dirname != _nl_default_dirname)
                 free(new_binding->dirname);
         failed_dirname:
             free(new_binding);
@@ -328,7 +322,7 @@ __libc_rwlock_define(extern, _nl_state_lock attribute_hidden)
     if (modified)
         ++_nl_msg_cat_cntr;
 
-    __libc_rwlock_unlock(_nl_state_lock);
+    gl_rwlock_unlock(_nl_state_lock);
 }
 
 /* Specify that the DOMAINNAME message catalog will be found

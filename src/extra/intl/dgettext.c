@@ -46,7 +46,11 @@
 
 /* Look up MSGID in the DOMAINNAME message catalog of the current
    LC_MESSAGES locale.  */
-char *DGETTEXT(const char *domainname, const char *msgid)
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+__attribute__((visibility("default")))
+#endif
+char *
+DGETTEXT(const char *domainname, const char *msgid)
 {
     return DCGETTEXT(domainname, msgid, LC_MESSAGES);
 }
