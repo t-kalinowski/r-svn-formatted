@@ -565,7 +565,7 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ans, matchlen;
     int i, n, st, erroffset;
-    int options = 0, useBytes;
+    int options = 0, igcase_opt, useBytes;
     const char *errorptr;
     pcre *re_pcre;
     const unsigned char *tables;
@@ -578,6 +578,8 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     pat = CAR(args);
     args = CDR(args);
     text = CAR(args);
+    args = CDR(args);
+    igcase_opt = asLogical(CAR(args));
     args = CDR(args);
     useBytes = asLogical(CAR(args));
     args = CDR(args);
@@ -598,6 +600,8 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
 #endif
+    if (igcase_opt)
+        options |= PCRE_CASELESS;
 
 #ifdef SUPPORT_UTF8
     if (!useBytes && mbcslocale && !mbcsValid(spat))
@@ -679,7 +683,7 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP matchbuf, matchlenbuf;
     int bufsize = 1024;
     int i, n, st, erroffset;
-    int options = 0, useBytes;
+    int igcase_opt, options = 0, useBytes;
     const char *errorptr;
     pcre *re_pcre;
     const unsigned char *tables;
@@ -692,6 +696,8 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     pat = CAR(args);
     args = CDR(args);
     text = CAR(args);
+    args = CDR(args);
+    igcase_opt = asLogical(CAR(args));
     args = CDR(args);
     useBytes = asLogical(CAR(args));
     args = CDR(args);
@@ -709,6 +715,8 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
 #endif
+    if (igcase_opt)
+        options |= PCRE_CASELESS;
 
     spat = translateChar(STRING_ELT(pat, 0));
 #ifdef SUPPORT_UTF8
