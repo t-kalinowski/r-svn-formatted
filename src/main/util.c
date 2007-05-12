@@ -53,7 +53,7 @@ extern "C"
 }
 #endif
 
-/* Many small functions are included from Rinlinedfuns.h */
+/* Many small functions are included from ../include/Rinlinedfuns.h */
 
 Rboolean tsConform(SEXP x, SEXP y)
 {
