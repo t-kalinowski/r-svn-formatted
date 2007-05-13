@@ -75,6 +75,7 @@ const uschar _pcre_utf8_table4[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                     2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
 
+#ifdef UNUSED
 /* This table translates Unicode property names into type and code values. It
 is searched by binary chop, so must be in collating sequence of name. */
 
@@ -185,6 +186,7 @@ const ucp_type_table _pcre_utt[] = {{"Any", PT_ANY, 0},
                                     {"Zs", PT_PC, ucp_Zs}};
 
 const int _pcre_utt_size = sizeof(_pcre_utt) / sizeof(ucp_type_table);
+#endif
 
 #endif /* SUPPORT_UTF8 */
 
