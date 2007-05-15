@@ -398,7 +398,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tok, x;
     int i, j, len, tlen, ntok, slen;
-    int extended_opt, cflags, fixed, perl;
+    int extended_opt, cflags, fixed_opt, perl_opt;
     char *buf, *pt = NULL, *split = "", *bufp, *laststart;
     regex_t reg;
     regmatch_t regmatch[1];
@@ -414,18 +414,22 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     x = CAR(args);
     tok = CADR(args);
     extended_opt = asLogical(CADDR(args));
-    fixed = asLogical(CADDDR(args));
-    perl = asLogical(CAD4R(args));
+    fixed_opt = asLogical(CADDDR(args));
+    perl_opt = asLogical(CAD4R(args));
+    if (fixed_opt && perl_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "perl = TRUE");
+    if (fixed_opt && !extended_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "extended = FALSE");
 
     if (!isString(x) || !isString(tok))
         errorcall_return(call, _("non-character argument in strsplit()"));
     if (extended_opt == NA_INTEGER)
         extended_opt = 1;
-    if (perl == NA_INTEGER)
-        perl = 0;
+    if (perl_opt == NA_INTEGER)
+        perl_opt = 0;
 
 #ifdef SUPPORT_MBCS
-    if (!fixed && perl)
+    if (!fixed_opt && perl_opt)
     {
         if (utf8locale)
             options = PCRE_UTF8;
@@ -472,7 +476,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             split = translateChar(STRING_ELT(tok, i % tlen));
             slen = strlen(split);
             ntok = 0;
-            if (fixed)
+            if (fixed_opt)
             {
                 /* This is UTF-8 safe since it compares whole strings */
                 laststart = buf;
@@ -486,7 +490,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 bufp = laststart;
             }
-            else if (perl)
+            else if (perl_opt)
             {
                 usedPCRE = TRUE;
                 tables = pcre_maketables();
@@ -541,7 +545,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             pt = (char *)realloc(pt, (strlen(buf) + 1) * sizeof(char));
             for (j = 0; j < ntok; j++)
             {
-                if (fixed)
+                if (fixed_opt)
                 {
                     /* This is UTF-8 safe since it compares whole strings,
                        but it would be more efficient to skip along by chars.
@@ -567,7 +571,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                     bufp = laststart;
                 }
-                else if (perl)
+                else if (perl_opt)
                 {
                     pcre_exec(re_pcre, re_pe, bufp, strlen(bufp), 0, 0, ovector, 30);
                     if (ovector[1] > 0)
@@ -1045,6 +1049,10 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
+    if (fixed_opt && igcase_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "ignore.case = TRUE");
+    if (fixed_opt && !extended_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "extended = FALSE");
 
     if (length(pat) < 1)
         errorcall(call, R_MSG_IA);
@@ -1057,7 +1065,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     n = length(vec);
     nmatches = 0;
     PROTECT(ind = allocVector(LGLSXP, n));
-    /* NAs are removed in R code so this isn't used */
+    /* NA 'pattern' is covered in R code so this isn't used */
     /* it's left in case we change our minds again */
     /* special case: NA pattern matches only NAs in vector */
     if (STRING_ELT(pat, 0) == NA_STRING)
@@ -1244,6 +1252,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
+    if (fixed_opt && igcase_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "ignore.case = TRUE");
+    if (fixed_opt && !extended_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "extended = FALSE");
 
     if (length(pat) < 1 || length(rep) < 1)
         errorcall(call, R_MSG_IA);
@@ -1450,6 +1462,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
+    if (fixed_opt && igcase_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "ignore.case = TRUE");
+    if (fixed_opt && !extended_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "extended = FALSE");
 
     /* allow 'text' to be zero-length from 2.3.1 */
     if (length(pat) < 1)
@@ -1782,6 +1798,10 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (useBytes == NA_INTEGER || !fixed_opt)
         useBytes = 0;
+    if (fixed_opt && igcase_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "ignore.case = TRUE");
+    if (fixed_opt && !extended_opt)
+        warningcall(call, _("argument '%s' will be ignored"), "extended = FALSE");
 
     if (length(pat) < 1 || length(text) < 1)
         errorcall(call, R_MSG_IA);
