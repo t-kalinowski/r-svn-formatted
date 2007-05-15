@@ -339,14 +339,13 @@ SEXP attribute_hidden do_setenv(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(1);
     return ans;
 #else
-    error(_("'Sys.putenv' is not available on this system"));
+    error(_("'Sys.setenv' is not available on this system"));
     return R_NilValue; /* -Wall */
 #endif
 }
 
 SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#if defined(HAVE_UNSETENV) || defined(HAVE_PUTENV_UNSET) || defined(HAVE_PUTENV_UNSET2)
     int i, n;
     SEXP ans, vars;
 
@@ -355,6 +354,8 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(vars = CAR(args)))
         errorcall(call, _("wrong type for argument"));
     n = LENGTH(vars);
+
+#if defined(HAVE_UNSETENV) || defined(HAVE_PUTENV_UNSET) || defined(HAVE_PUTENV_UNSET2)
 #ifdef HAVE_UNSETENV
     for (i = 0; i < n; i++)
         unsetenv(translateChar(STRING_ELT(vars, i)));
@@ -362,23 +363,35 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
         putenv(translateChar(STRING_ELT(vars, i)));
 #elif defined(HAVE_PUTENV_UNSET2)
+    for (i = 0; i < n; i++)
     {
         char buf[1000];
-        for (i = 0; i < n; i++)
-        {
-            snprintf(buf, 1000, "%s=", translateChar(STRING_ELT(vars, i)));
-            putenv(buf);
-        }
+        snprintf(buf, 1000, "%s=", translateChar(STRING_ELT(vars, i)));
+        putenv(buf);
     }
 #endif
-    ans = allocVector(LGLSXP, n);
+
+#elif defined(HAVE_PUTENV) || defined(HAVE_SETENV)
+    warning(_("this system cannot unset environment variables: setting to \"\""));
+    n = LENGTH(vars);
+    for (i = 0; i < n; i++)
+    {
+#ifdef HAVE_SETENV
+        setenv(translateChar(STRING_ELT(vars, i)), "");
+#else
+        Rputenv(translateChar(STRING_ELT(vars, i)), "");
+#endif
+    }
+
+#else
+    warning(_("'Sys.unsetenv' is not available on this system"));
+#endif
+
+    PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
         LOGICAL(ans)[i] = !getenv(translateChar(STRING_ELT(vars, i)));
+    UNPROTECT(1);
     return ans;
-#else
-    error(_("'Sys.unsetenv' is not available on this system"));
-    return R_NilValue; /* -Wall */
-#endif
 }
 
 #if defined(HAVE_ICONV_H) && defined(ICONV_LATIN1) && !defined(Win32)
