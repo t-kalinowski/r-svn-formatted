@@ -77,7 +77,7 @@ SEXP attribute_hidden do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
         useBytes = 0;
 
     if (length(pat) < 1)
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
 
     /* NAs are removed in R code so this isn't used */
     /* it's left in case we change our minds again */
@@ -129,7 +129,7 @@ SEXP attribute_hidden do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
     if (!useBytes && mbcslocale && !mbcsValid(spat))
-        errorcall(call, _("regular expression is invalid in this locale"));
+        error(_("regular expression is invalid in this locale"));
 #endif
     if (igcase_opt)
         options |= PCRE_CASELESS;
@@ -137,7 +137,7 @@ SEXP attribute_hidden do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
-        errorcall(call, _("invalid regular expression '%s'"), spat);
+        error(_("invalid regular expression '%s'"), spat);
 
     n = length(vec);
     ind = allocVector(LGLSXP, n);
@@ -155,7 +155,7 @@ SEXP attribute_hidden do_pgrep(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
         if (!useBytes && mbcslocale && !mbcsValid(s))
         {
-            warningcall(call, _("input string %d is invalid in this locale"), i + 1);
+            warning(_("input string %d is invalid in this locale"), i + 1);
             continue;
         }
 #endif
@@ -397,12 +397,12 @@ SEXP attribute_hidden do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
     if (!useBytes && mbcslocale && !mbcsValid(spat))
-        errorcall(call, _("'pattern' is invalid in this locale"));
+        error(_("'pattern' is invalid in this locale"));
     if (!useBytes && mbcslocale && !mbcsValid(srep))
-        errorcall(call, _("'replacement' is invalid in this locale"));
+        error(_("'replacement' is invalid in this locale"));
 #endif
     if (length(pat) < 1 || length(rep) < 1)
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
 
     if (igcase_opt)
         options |= PCRE_CASELESS;
@@ -410,7 +410,7 @@ SEXP attribute_hidden do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
-        errorcall(call, _("invalid regular expression '%s'"), spat);
+        error(_("invalid regular expression '%s'"), spat);
     re_nsub = pcre_info(re_pcre, NULL, NULL);
     re_pe = pcre_study(re_pcre, 0, &errorptr);
 
@@ -445,9 +445,7 @@ SEXP attribute_hidden do_pgsub(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef SUPPORT_UTF8
         if (!useBytes && mbcslocale && !mbcsValid(s))
-        {
-            errorcall(call, _("input string %d is invalid in this locale"), i + 1);
-        }
+            error(_("input string %d is invalid in this locale"), i + 1);
 #endif
         /* Looks like PCRE_NOTBOL is not needed in this version,
            but leave in as a precaution */
@@ -587,7 +585,7 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         useBytes = 0;
 
     if (length(pat) < 1 || length(text) < 1)
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
     if (!isString(pat))
         PROTECT(pat = coerceVector(pat, STRSXP));
 
@@ -605,12 +603,12 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef SUPPORT_UTF8
     if (!useBytes && mbcslocale && !mbcsValid(spat))
-        errorcall(call, _("regular expression is invalid in this locale"));
+        error(_("regular expression is invalid in this locale"));
 #endif
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
-        errorcall(call, _("invalid regular expression '%s'"), spat);
+        error(_("invalid regular expression '%s'"), spat);
     n = length(text);
     PROTECT(ans = allocVector(INTSXP, n));
     PROTECT(matchlen = allocVector(INTSXP, n));
@@ -628,7 +626,7 @@ SEXP attribute_hidden do_pregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
         if (!useBytes && mbcslocale && !mbcsValid(s))
         {
-            warningcall(call, _("input string %d is invalid in this locale"), i + 1);
+            warning(_("input string %d is invalid in this locale"), i + 1);
             INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
             continue;
         }
@@ -705,7 +703,7 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         useBytes = 0;
 
     if (length(pat) < 1 || length(text) < 1)
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
 
 #ifdef SUPPORT_UTF8
     if (useBytes)
@@ -721,12 +719,12 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     spat = translateChar(STRING_ELT(pat, 0));
 #ifdef SUPPORT_UTF8
     if (!useBytes && mbcslocale && !mbcsValid(spat))
-        errorcall(call, _("regular expression is invalid in this locale"));
+        error(_("regular expression is invalid in this locale"));
 #endif
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
-        errorcall(call, _("invalid regular expression '%s'"), spat);
+        error(_("invalid regular expression '%s'"), spat);
     n = length(text);
     PROTECT(ansList = allocVector(VECSXP, n));
     matchbuf = PROTECT(allocVector(INTSXP, bufsize));
@@ -752,7 +750,7 @@ SEXP attribute_hidden do_gpregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
         if (!useBytes && mbcslocale && !mbcsValid(s))
         {
-            warningcall(call, _("input string %d is invalid in this locale"), i + 1);
+            warning(_("input string %d is invalid in this locale"), i + 1);
             PROTECT(ans = allocVector(INTSXP, 1));
             PROTECT(matchlen = allocVector(INTSXP, 1));
             INTEGER(ans)[0] = INTEGER(matchlen)[0] = -1;
