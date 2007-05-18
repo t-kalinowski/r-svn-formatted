@@ -964,12 +964,7 @@ static enum pmatch pstrmatch(SEXP target, SEXP input, int slen)
         break;
     }
     if (strncmp(st, translateChar(input), slen) == 0)
-    {
-        if (strlen(st) == slen)
-            return EXACT_MATCH;
-        else
-            return PARTIAL_MATCH;
-    }
+        return (strlen(st) == slen) ? EXACT_MATCH : PARTIAL_MATCH;
     else
         return NO_MATCH;
 }
@@ -1060,7 +1055,22 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
             }
         }
         if (havematch == 1)
-        {
+        { /* unique partial match */
+            if (R_warn_partial_match_dollar)
+            {
+                char *st = "";
+                SEXP target = TAG(y);
+                switch (TYPEOF(target))
+                {
+                case SYMSXP:
+                    st = CHAR(PRINTNAME(target));
+                    break;
+                case CHARSXP:
+                    st = translateChar(target);
+                    break;
+                }
+                warningcall(call, _("partial match of '%s' to '%s'"), translateChar(input), st);
+            }
             y = CAR(xmatch);
             if (NAMED(x) > NAMED(y))
                 SET_NAMED(y, NAMED(x));
@@ -1102,7 +1112,22 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
             }
         }
         if (havematch == 1)
-        {
+        { /* unique partial match */
+            if (R_warn_partial_match_dollar)
+            {
+                char *st = "";
+                SEXP target = STRING_ELT(nlist, imatch);
+                switch (TYPEOF(target))
+                {
+                case SYMSXP:
+                    st = CHAR(PRINTNAME(target));
+                    break;
+                case CHARSXP:
+                    st = translateChar(target);
+                    break;
+                }
+                warningcall(call, _("partial match of '%s' to '%s'"), translateChar(input), st);
+            }
             y = VECTOR_ELT(x, imatch);
             if (NAMED(x) > NAMED(y))
                 SET_NAMED(y, NAMED(x));
