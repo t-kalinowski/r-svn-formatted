@@ -29,8 +29,9 @@
 #include <config.h>
 #endif
 
-#define COMPILING_R 1 /* for Rinlinedfuns.h included via Defn.h */
 #include <Defn.h>
+#undef COMPILING_R
+
 #define imax2(x, y) ((x < y) ? y : x)
 #include <Print.h>
 
@@ -40,9 +41,7 @@
 
 #ifdef __cplusplus
 #include "Clinkage.h"
-#endif
 
-#ifdef __cplusplus
 extern "C"
 {
 #endif
