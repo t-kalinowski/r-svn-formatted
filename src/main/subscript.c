@@ -119,15 +119,22 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
     return indx;
 }
 
-int attribute_hidden get1index(SEXP s, SEXP names, int len, Rboolean pok, int pos)
+int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos)
 {
     /* Get a single index for the [[ operator.
        Check that only one index is being selected.
        pok : is "partial ok" ?
+             if pok is -1, warn if partial matching occurs
     */
-    int indx, i;
+    int indx, i, warn_pok = 0;
     double dblind;
-    char *ss;
+    char *ss, *cur_name;
+
+    if (pok == -1)
+    {
+        pok = 1;
+        warn_pok = 1;
+    }
 
     if (pos < 0 && length(s) != 1)
     {
@@ -178,12 +185,22 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, Rboolean pok, int po
             {
                 if (STRING_ELT(names, i) != NA_STRING)
                 {
-                    if (!strncmp(translateChar(STRING_ELT(names, i)), ss, len))
+                    cur_name = translateChar(STRING_ELT(names, i));
+                    if (!strncmp(cur_name, ss, len))
                     {
-                        if (indx == -1) /* first one */
+                        if (indx == -1)
+                        { /* first one */
                             indx = i;
+                            if (warn_pok)
+                                warning("[[ partial match: '%s' => '%s'", ss, cur_name);
+                        }
                         else
+                        {
                             indx = -2; /* more than one partial match */
+                            if (warn_pok)
+                                warning("[[ 2nd partial match: '%s' => '%s'", ss, cur_name);
+                            break;
+                        }
                     }
                 }
             }
