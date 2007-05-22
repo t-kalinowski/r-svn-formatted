@@ -119,7 +119,7 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
     return indx;
 }
 
-int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos)
+int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SEXP call)
 {
     /* Get a single index for the [[ operator.
        Check that only one index is being selected.
@@ -192,13 +192,13 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos)
                         { /* first one */
                             indx = i;
                             if (warn_pok)
-                                warning("[[ partial match: '%s' => '%s'", ss, cur_name);
+                                warningcall(call, "partial match of '%s' to '%s'", ss, cur_name);
                         }
                         else
                         {
                             indx = -2; /* more than one partial match */
                             if (warn_pok)
-                                warning("[[ 2nd partial match: '%s' => '%s'", ss, cur_name);
+                                warningcall(call, "further partial match of '%s' to '%s'", ss, cur_name);
                             break;
                         }
                     }
