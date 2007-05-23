@@ -422,7 +422,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
     if (!isString(x) || !isString(tok))
-        errorcall_return(call, _("non-character argument in strsplit()"));
+        error(_("non-character argument"));
     if (extended_opt == NA_INTEGER)
         extended_opt = 1;
     if (perl_opt == NA_INTEGER)
@@ -819,7 +819,7 @@ SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
     x = CAR(args);
 
     if (!isString(x))
-        errorcall_return(call, _("the first argument must be a character vector"));
+        error(_("the first argument must be a character vector"));
     len = length(x);
 
     PROTECT(ans = allocVector(STRSXP, len));
@@ -944,7 +944,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
                 Free(wstr);
             }
             else
-                errorcall(call, _("invalid multibyte string %d"), i + 1);
+                error(_("invalid multibyte string %d"), i + 1);
         }
         else
 #endif
@@ -2096,8 +2096,9 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
     ul = PRIMVAL(op); /* 0 = tolower, 1 = toupper */
 
     x = CAR(args);
+    /* coercion is done in wrapper */
     if (!isString(x))
-        errorcall(call, _("non-character argument to tolower()"));
+        error(_("non-character argument"));
     n = LENGTH(x);
     PROTECT(y = allocVector(STRSXP, n));
 #ifdef SUPPORT_MBCS
@@ -2133,7 +2134,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
-                    errorcall(call, _("invalid multibyte string %d"), i + 1);
+                    error(_("invalid multibyte string %d"), i + 1);
                 }
             }
         }
@@ -2382,11 +2383,11 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     x = CAR(args);
     if (!isString(old) || (length(old) < 1) || !isString(_new) || (length(_new) < 1) || !isString(x))
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
 
     if (STRING_ELT(old, 0) == NA_STRING || STRING_ELT(_new, 0) == NA_STRING)
     {
-        errorcall(call, _("invalid (NA) arguments."));
+        error(_("invalid (NA) arguments."));
     }
 
 #ifdef SUPPORT_MBCS
@@ -2412,7 +2413,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         s = translateChar(STRING_ELT(old, 0));
         nc = mbstowcs(NULL, s, 0);
         if (nc < 0)
-            errorcall(call, _("invalid multibyte string 'old'"));
+            error(_("invalid multibyte string 'old'"));
         AllocBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
         wc = (wchar_t *)cbuff.data;
         mbstowcs(wc, s, nc + 1);
@@ -2421,7 +2422,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         s = translateChar(STRING_ELT(_new, 0));
         nc = mbstowcs(NULL, s, 0);
         if (nc < 0)
-            errorcall(call, _("invalid multibyte string 'new'"));
+            error(_("invalid multibyte string 'new'"));
         AllocBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
         wc = (wchar_t *)cbuff.data;
         mbstowcs(wc, s, nc + 1);
@@ -2441,7 +2442,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
             if (c_old == '\0')
                 break;
             else if (c_new == '\0')
-                errorcall(call, _("'old' is longer than 'new'"));
+                error(_("'old' is longer than 'new'"));
             else
                 xtable[c_old] = c_new;
         }
@@ -2462,7 +2463,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                 xi = translateChar(STRING_ELT(x, i));
                 nc = mbstowcs(NULL, xi, 0);
                 if (nc < 0)
-                    errorcall(call, _("invalid input multibyte string %d"), i + 1);
+                    error(_("invalid input multibyte string %d"), i + 1);
                 AllocBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
                 wc = (wchar_t *)cbuff.data;
                 mbstowcs(wc, xi, nc + 1);
@@ -2512,7 +2513,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
             if (c_old == '\0')
                 break;
             else if (c_new == '\0')
-                errorcall(call, _("'old' is longer than 'new'"));
+                error(_("'old' is longer than 'new'"));
             else
                 xtable[c_old] = c_new;
         }
@@ -2581,7 +2582,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         value_opt = 0;
 
     if (!isString(pat) || length(pat) < 1 || !isString(vec))
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
 
     /* NAs are removed in R code so this isn't used */
     /* it's left in case we change our minds again */
@@ -2670,7 +2671,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             /* Most likely, an error in apse_set_caseignore_slice()
              * means that allocating memory failed (as we ensure that
              * the slice is contained in the string) ... */
-            errorcall(call, _("could not perform case insensitive matching"));
+            error(_("could not perform case insensitive matching"));
         }
         /* Perform match. */
         if (apse_match(aps, (unsigned char *)str, (apse_size_t)strlen(str)))
@@ -2725,7 +2726,7 @@ SEXP attribute_hidden do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(x) || LENGTH(x) == 0)
-        errorcall(call, _("argument must be a character vector of length 1"));
+        error(_("argument must be a character vector of length 1"));
     if (LENGTH(x) > 1)
         warning(_("argument should be a character vector of length 1\nall but the first element will be ignored"));
     nc = LENGTH(STRING_ELT(x, 0));
@@ -2743,10 +2744,10 @@ SEXP attribute_hidden do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isRaw(x))
-        errorcall(call, _("argument 'x' must be a raw vector"));
+        error(_("argument 'x' must be a raw vector"));
     multiple = asLogical(CADR(args));
     if (multiple == NA_LOGICAL)
-        errorcall(call, _("argument 'multiple' must be TRUE or FALSE"));
+        error(_("argument 'multiple' must be TRUE or FALSE"));
     if (multiple)
     {
         buf[1] = '\0';
@@ -2778,9 +2779,9 @@ SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, shift = asInteger(CADR(args));
 
     if (!isRaw(x))
-        errorcall(call, _("argument 'x' must be a raw vector"));
+        error(_("argument 'x' must be a raw vector"));
     if (shift == NA_INTEGER || shift < -8 || shift > 8)
-        errorcall(call, _("argument 'shift' must be a small integer"));
+        error(_("argument 'shift' must be a small integer"));
     PROTECT(ans = duplicate(x));
     if (shift > 0)
         for (i = 0; i < LENGTH(x); i++)
@@ -2799,7 +2800,7 @@ SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     unsigned int tmp;
 
     if (!isRaw(x))
-        errorcall(call, _("argument 'x' must be a raw vector"));
+        error(_("argument 'x' must be a raw vector"));
     PROTECT(ans = allocVector(RAWSXP, 8 * LENGTH(x)));
     for (i = 0; i < LENGTH(x); i++)
     {
@@ -2818,7 +2819,7 @@ SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     unsigned int tmp;
 
     if (!isInteger(x))
-        errorcall(call, _("argument 'x' must be a integer vector"));
+        error(_("argument 'x' must be a integer vector"));
     PROTECT(ans = allocVector(RAWSXP, 32 * LENGTH(x)));
     for (i = 0; i < LENGTH(x); i++)
     {
@@ -2839,13 +2840,13 @@ SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
     Rbyte btmp;
 
     if (TYPEOF(x) != RAWSXP && TYPEOF(x) != LGLSXP && TYPEOF(x) != INTSXP)
-        errorcall(call, _("argument 'x' must be raw, integer or logical"));
+        error(_("argument 'x' must be raw, integer or logical"));
     if (!isString(stype) || LENGTH(stype) != 1)
-        errorcall(call, _("argument 'type' must be a character string"));
+        error(_("argument 'type' must be a character string"));
     useRaw = strcmp(CHAR(STRING_ELT(stype, 0)), "integer");
     fac = useRaw ? 8 : 32;
     if (len % fac)
-        errorcall(call, _("argument 'x' must be a multiple of %d long"), fac);
+        error(_("argument 'x' must be a multiple of %d long"), fac);
     slen = len / fac;
     PROTECT(ans = allocVector(useRaw ? RAWSXP : INTSXP, slen));
     for (i = 0; i < slen; i++)
@@ -2861,7 +2862,7 @@ SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     j = INTEGER(x)[8 * i + k];
                     if (j == NA_INTEGER)
-                        errorcall(call, _("argument 'x' must not contain NAs"));
+                        error(_("argument 'x' must not contain NAs"));
                     btmp |= j & 0x1;
                 }
             }
@@ -2879,7 +2880,7 @@ SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     j = INTEGER(x)[32 * i + k];
                     if (j == NA_INTEGER)
-                        errorcall(call, _("argument 'x' must not contain NAs"));
+                        error(_("argument 'x' must not contain NAs"));
                     itmp |= j & 0x1;
                 }
             }
@@ -2986,7 +2987,7 @@ SEXP attribute_hidden do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(x) || LENGTH(x) == 0)
-        errorcall(call, _("argument must be a character vector of length 1"));
+        error(_("argument must be a character vector of length 1"));
     if (LENGTH(x) > 1)
         warning(_("argument should be a character vector of length 1\nall but the first element will be ignored"));
     nc = LENGTH(STRING_ELT(x, 0)); /* ints will be shorter */
@@ -3044,10 +3045,10 @@ SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isInteger(x))
-        errorcall(call, _("argument 'x' must be an integer vector"));
+        error(_("argument 'x' must be an integer vector"));
     multiple = asLogical(CADR(args));
     if (multiple == NA_LOGICAL)
-        errorcall(call, _("argument 'multiple' must be TRUE or FALSE"));
+        error(_("argument 'multiple' must be TRUE or FALSE"));
     if (multiple)
     {
         PROTECT(ans = allocVector(STRSXP, nc));
@@ -3094,15 +3095,15 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     /* conversion happens at R level now */
     if (!isString(x = CAR(args)))
-        errorcall(call, _("strtrim() requires a character vector"));
+        error(_("strtrim() requires a character vector"));
     len = LENGTH(x);
     PROTECT(width = coerceVector(CADR(args), INTSXP));
     nw = LENGTH(width);
     if (!nw || (nw < len && len % nw))
-        errorcall(call, _("invalid '%s' argument"), "width");
+        error(_("invalid '%s' argument"), "width");
     for (i = 0; i < nw; i++)
         if (INTEGER(width)[i] == NA_INTEGER || INTEGER(width)[i] < 0)
-            errorcall(call, _("invalid '%s' argument"), "width");
+            error(_("invalid '%s' argument"), "width");
     PROTECT(s = allocVector(STRSXP, len));
     for (i = 0; i < len; i++)
     {
@@ -3178,15 +3179,15 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(x = CAR(args)))
-        errorcall(call, _("invalid '%s' argument"), "paths");
+        error(_("invalid '%s' argument"), "paths");
     if (!LENGTH(x))
         return allocVector(STRSXP, 0);
     dirmark = asLogical(CADR(args));
     if (dirmark == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' argument"), "dirmark");
+        error(_("invalid '%s' argument"), "dirmark");
 #ifndef GLOB_MARK
     if (dirmark)
-        errorcall(call, _("'dirmark = TRUE' is not supported on this platform"));
+        error(_("'dirmark = TRUE' is not supported on this platform"));
 #endif
 
     for (i = 0; i < LENGTH(x); i++)
@@ -3221,7 +3222,7 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     if (!isString(x = CAR(args)))
-        errorcall(call, _("invalid '%s' argument"), "paths");
+        error(_("invalid '%s' argument"), "paths");
     return x;
 }
 #endif

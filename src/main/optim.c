@@ -239,13 +239,13 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
-        errorcall(call, _("'fn' is not a function"));
+        error(_("'fn' is not a function"));
     args = CDR(args);
     gr = CAR(args);
     args = CDR(args);
     method = CAR(args);
     if (!isString(method) || LENGTH(method) != 1)
-        errorcall(call, _("invalid '%s' argument"), "method");
+        error(_("invalid '%s' argument"), "method");
     tn = CHAR(STRING_ELT(method, 0));
     args = CDR(args);
     options = CAR(args);
@@ -258,7 +258,7 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     OS->fnscale = asReal(getListElement(options, "fnscale"));
     tmp = getListElement(options, "parscale");
     if (LENGTH(tmp) != npar)
-        errorcall(call, _("'parscale' is of the wrong length"));
+        error(_("'parscale' is of the wrong length"));
     PROTECT(tmp = coerceVector(tmp, REALSXP));
     OS->parscale = vect(npar);
     for (i = 0; i < npar; i++)
@@ -441,7 +441,7 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
     }
     else
-        errorcall(call, _("unknown 'method'"));
+        error(_("unknown 'method'"));
 
     REAL(value)[0] = val * (OS->fnscale);
     SET_VECTOR_ELT(res, 0, par);
@@ -476,7 +476,7 @@ SEXP attribute_hidden do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     fn = CAR(args);
     if (!isFunction(fn))
-        errorcall(call, _("'fn' is not a function"));
+        error(_("'fn' is not a function"));
     args = CDR(args);
     gr = CAR(args);
     args = CDR(args);
@@ -484,7 +484,7 @@ SEXP attribute_hidden do_optimhess(SEXP call, SEXP op, SEXP args, SEXP rho)
     OS->fnscale = asReal(getListElement(options, "fnscale"));
     tmp = getListElement(options, "parscale");
     if (LENGTH(tmp) != npar)
-        errorcall(call, _("'parscale' is of the wrong length"));
+        error(_("'parscale' is of the wrong length"));
     PROTECT(tmp = coerceVector(tmp, REALSXP));
     OS->parscale = vect(npar);
     for (i = 0; i < npar; i++)

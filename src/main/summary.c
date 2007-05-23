@@ -454,7 +454,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
             COMPLEX(ans)[0].i = si;
             break;
         default:
-            errorcall(call, R_MSG_type, type2str(TYPEOF(x)));
+            error(R_MSG_type, type2str(TYPEOF(x)));
         }
         UNPROTECT(1);
         return ans;
@@ -821,7 +821,7 @@ na_answer: /* only INTSXP case curently used */
     return ans;
 
 invalid_type:
-    errorcall(call, R_MSG_type, type2char(TYPEOF(a)));
+    error(R_MSG_type, type2char(TYPEOF(a)));
     return R_NilValue;
 } /* do_summary */
 
@@ -850,7 +850,7 @@ SEXP attribute_hidden do_first_min(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     PROTECT(sx = coerceVector(CAR(args), REALSXP));
     if (!isNumeric(sx))
-        errorcall(call, _("non-numeric argument"));
+        error(_("non-numeric argument"));
     r = REAL(sx);
     n = LENGTH(sx);
     indx = NA_INTEGER;
@@ -924,7 +924,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         goto bad;
                 }
                 else
-                    errorcall(call, R_MSG_type, type2char(TYPEOF(CAR(t))));
+                    error(R_MSG_type, type2char(TYPEOF(CAR(t))));
         }
         /* FIXME : Need to be careful with the use of isVector() */
         /* since this includes the new list structure and expressions. */
@@ -951,7 +951,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         goto bad;
                 }
                 else
-                    errorcall(call, R_MSG_type, "unknown");
+                    error(R_MSG_type, "unknown");
             }
         }
         else if (isMatrix(CAR(s)))
@@ -970,7 +970,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                 goto bad;
         }
         else
-            errorcall(call, R_MSG_type, type2char(TYPEOF(CAR(s))));
+            error(R_MSG_type, type2char(TYPEOF(CAR(s))));
     }
     PROTECT(rval = allocVector(LGLSXP, len));
     for (i = 0; i < len; i++)
@@ -1011,7 +1011,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     default:
                         UNPROTECT(1);
-                        errorcall(call, R_MSG_type, type2char(TYPEOF(u)));
+                        error(R_MSG_type, type2char(TYPEOF(u)));
                     }
                 }
             }
@@ -1047,7 +1047,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     default:
                         UNPROTECT(1);
-                        errorcall(call, R_MSG_type, type2char(TYPEOF(u)));
+                        error(R_MSG_type, type2char(TYPEOF(u)));
                     }
                 }
             }
@@ -1078,7 +1078,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                     break;
                 default:
                     UNPROTECT(1);
-                    errorcall(call, R_MSG_type, type2char(TYPEOF(u)));
+                    error(R_MSG_type, type2char(TYPEOF(u)));
                 }
             }
         }
@@ -1087,7 +1087,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rval;
 
 bad:
-    errorcall(call, _("not all arguments have the same length"));
+    error(_("not all arguments have the same length"));
     return R_NilValue; /* -Wall */
 }
 
@@ -1103,11 +1103,11 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     narm = asLogical(CAR(args));
     if (narm == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' value"), "na.rm");
+        error(_("invalid '%s' value"), "na.rm");
     args = CDR(args);
     x = CAR(args);
     if (args == R_NilValue)
-        errorcall(call, _("no arguments"));
+        error(_("no arguments"));
 
     anstype = TYPEOF(x);
     switch (anstype)
@@ -1119,7 +1119,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     case STRSXP:
         break;
     default:
-        errorcall(call, _("invalid input type"));
+        error(_("invalid input type"));
     }
     a = CDR(args);
     if (a == R_NilValue)
@@ -1139,13 +1139,13 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         case STRSXP:
             break;
         default:
-            errorcall(call, _("invalid input type"));
+            error(_("invalid input type"));
         }
         if (type > anstype)
             anstype = type;
         n = length(x);
         if ((len > 0) ^ (n > 0))
-            errorcall(call, _("cannot mix 0-length vectors with others"));
+            error(_("cannot mix 0-length vectors with others"));
         len = imax2(len, n);
     }
     if (anstype < INTSXP)

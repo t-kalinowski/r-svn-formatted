@@ -40,7 +40,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     FUN = CADR(args); /* must be unevaluated for use in e.g. bquote */
     n = length(XX);
     if (n == NA_INTEGER)
-        errorcall(call, _("invalid length"));
+        error(_("invalid length"));
 
     PROTECT(ans = allocVector(VECSXP, n));
     names = getAttrib(XX, R_NamesSymbol);
@@ -93,7 +93,7 @@ SEXP attribute_hidden do_apply(SEXP call, SEXP op, SEXP args, SEXP rho)
     X = CAR(args);
     args = CDR(args);
     if (!isMatrix(X))
-        errorcall(call, _("first argument is not a matrix"));
+        error(_("first argument is not a matrix"));
     Xd = getAttrib(X, R_DimSymbol);
     nr = INTEGER(Xd)[0];
     nc = INTEGER(Xd)[1];
@@ -201,16 +201,16 @@ SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     FUN = CAR(args);
     args = CDR(args);
     if (!isFunction(FUN))
-        errorcall(call, _("invalid '%s' argument"), "f");
+        error(_("invalid '%s' argument"), "f");
     classes = CAR(args);
     args = CDR(args);
     if (!isString(classes))
-        errorcall(call, _("invalid '%s' argument"), "classes");
+        error(_("invalid '%s' argument"), "classes");
     deflt = CAR(args);
     args = CDR(args);
     how = CAR(args);
     if (!isString(how))
-        errorcall(call, _("invalid '%s' argument"), "how");
+        error(_("invalid '%s' argument"), "how");
     replace = strcmp(CHAR(STRING_ELT(how, 0)), "replace") == 0; /* ASCII */
     n = length(X);
     PROTECT(ans = allocVector(VECSXP, n));

@@ -2054,7 +2054,7 @@ SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
             LOGICAL(ans)[i] = 0;
         break;
     default:
-        warningcall(call, _("%s() applied to non-(list or vector)"), "is.na");
+        warningcall(call, _("%s() applied to non-(list or vector) of type '%s'"), "is.na", type2char(TYPEOF(x)));
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
     }
@@ -2157,7 +2157,7 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        warningcall(call, _("%s() applied to non-(list or vector)"), "is.nan");
+        warningcall(call, _("%s() applied to non-(list or vector) of type '%s'"), "is.nan", type2char(TYPEOF(x)));
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
     }

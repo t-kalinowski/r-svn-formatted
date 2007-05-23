@@ -955,7 +955,7 @@ SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
         if (isVector(args))
             return args;
         else
-            errorcall(call, _("argument not a list"));
+            error(_("argument not a list"));
     }
 
     /* If a non-vector argument was encountered (perhaps a list if */
@@ -1223,7 +1223,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     /* we don't handle expressions: we could, but coercion of a matrix
        to an expression is not ideal */
     default:
-        errorcall(call, _("cannot create a matrix from these types"));
+        error(_("cannot create a matrix from these types"));
     }
 
     if (PRIMVAL(op) == 1)
@@ -1298,7 +1298,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             if (mrows == -1)
                 mrows = INTEGER(dims)[0];
             else if (mrows != INTEGER(dims)[0])
-                errorcall(call, _("number of rows of matrices must match (see arg %d)"), n + 1);
+                error(_("number of rows of matrices must match (see arg %d)"), n + 1);
             cols += INTEGER(dims)[1];
         }
         else if (length(u) >= lenmin)
@@ -1337,9 +1337,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             if (!warned && k > 0 && (k > rows || rows % k))
             {
                 warned = 1;
-                PROTECT(call = substituteList(call, rho));
-                warningcall(call, "number of rows of result is not a multiple of vector length (arg %d)", n);
-                UNPROTECT(1);
+                warning("number of rows of result is not a multiple of vector length (arg %d)", n);
             }
             dn = getAttrib(u, R_NamesSymbol);
             if (k >= lenmin &&
@@ -1568,7 +1566,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             if (mcols == -1)
                 mcols = INTEGER(dims)[1];
             else if (mcols != INTEGER(dims)[1])
-                errorcall(call, _("number of columns of matrices must match (see arg %d)"), n + 1);
+                error(_("number of columns of matrices must match (see arg %d)"), n + 1);
             rows += INTEGER(dims)[0];
         }
         else if (length(u) >= lenmin)
@@ -1607,9 +1605,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             if (!warned && k > 0 && (k > cols || cols % k))
             {
                 warned = 1;
-                PROTECT(call = substituteList(call, rho));
-                warningcall(call, "number of columns of result\n\tis not a multiple of vector length (arg %d)", n);
-                UNPROTECT(1);
+                warning("number of columns of result\n\tis not a multiple of vector length (arg %d)", n);
             }
             dn = getAttrib(u, R_NamesSymbol);
             if (k >= lenmin &&

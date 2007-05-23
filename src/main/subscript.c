@@ -25,7 +25,14 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
+#include <Defn.h>
+
+/* We might get a call with R_NilValue from subassignment code */
+#define ECALL(call, yy)                                                                                                \
+    if (call == R_NilValue)                                                                                            \
+        error(yy);                                                                                                     \
+    else                                                                                                               \
+        errorcall(call, yy);
 
 static int integerOneIndex(int i, int len, SEXP call)
 {
@@ -34,11 +41,15 @@ static int integerOneIndex(int i, int len, SEXP call)
     if (i > 0)
         indx = i - 1;
     else if (i == 0 || len < 2)
-        errorcall(call, _("attempt to select less than one element"));
+    {
+        ECALL(call, _("attempt to select less than one element"));
+    }
     else if (len == 2 && i > -3)
         indx = 2 + i;
     else
-        errorcall(call, _("attempt to select more than one element"));
+    {
+        ECALL(call, _("attempt to select more than one element"));
+    }
     return (indx);
 }
 
@@ -48,9 +59,14 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
     int i, indx, nx;
 
     if (pos < 0 && length(s) > 1)
-        errorcall(call, _("attempt to select more than one element"));
+    {
+        ECALL(call, _("attempt to select more than one element"));
+    }
     if (pos < 0 && length(s) < 1)
-        errorcall(call, _("attempt to select less than one element"));
+    {
+        ECALL(call, _("attempt to select less than one element"));
+    }
+
     if (pos < 0)
         pos = 0;
 
@@ -114,7 +130,10 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
         *newname = STRING_ELT(s, pos);
         break;
     default:
-        errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        if (call == R_NilValue)
+            error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        else
+            errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return indx;
 }
@@ -139,12 +158,18 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
     if (pos < 0 && length(s) != 1)
     {
         if (length(s) > 1)
-            errorcall(call, _("attempt to select more than one element"));
+        {
+            ECALL(call, _("attempt to select more than one element"));
+        }
         else
-            errorcall(call, _("attempt to select less than one element"));
+        {
+            ECALL(call, _("attempt to select less than one element"));
+        }
     }
     else if (pos >= length(s))
-        errorcall(call, _("internal error in use of recursive indexing"));
+    {
+        ECALL(call, _("internal error in use of recursive indexing"));
+    }
     if (pos < 0)
         pos = 0;
     indx = -1;
@@ -192,13 +217,18 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
                         { /* first one */
                             indx = i;
                             if (warn_pok)
-                                warningcall(call, _("partial match of '%s' to '%s'"), ss, cur_name);
+                            {
+                                if (call == R_NilValue)
+                                    warning(_("partial match of '%s' to '%s'"), ss, cur_name);
+                                else
+                                    warningcall(call, _("partial match of '%s' to '%s'"), ss, cur_name);
+                            }
                         }
                         else
                         {
-                            indx = -2; /* more than one partial match */
-                            if (warn_pok)
-                                warningcall(call, _("further partial match of '%s' to '%s'"), ss, cur_name);
+                            indx = -2;    /* more than one partial match */
+                            if (warn_pok) /* already given context */
+                                warningcall(R_NilValue, _("further partial match of '%s' to '%s'"), ss, cur_name);
                             break;
                         }
                     }
@@ -214,7 +244,10 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
                 break;
             }
     default:
-        errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        if (call == R_NilValue)
+            error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        else
+            errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return indx;
 }
@@ -233,7 +266,10 @@ SEXP attribute_hidden mat2indsub(SEXP dims, SEXP s, SEXP call)
     SEXP rvec;
 
     if (ncols(s) != LENGTH(dims))
-        errorcall(call, _("incorrect number of columns in matrix subscript"));
+    {
+        ECALL(call, _("incorrect number of columns in matrix subscript"));
+    }
+
     PROTECT(rvec = allocVector(INTSXP, nrs));
     s = coerceVector(s, INTSXP);
     setIVector(INTEGER(rvec), nrs, 0);
@@ -252,14 +288,18 @@ SEXP attribute_hidden mat2indsub(SEXP dims, SEXP s, SEXP call)
                 break;
             }
             if (k < 0)
-                errorcall(call, _("negative values are not allowed in a matrix subscript"));
+            {
+                ECALL(call, _("negative values are not allowed in a matrix subscript"));
+            }
             if (k == 0)
             {
                 INTEGER(rvec)[i] = -1;
                 break;
             }
             if (k > INTEGER(dims)[j])
-                errorcall(call, _("subscript out of bounds"));
+            {
+                ECALL(call, _("subscript out of bounds"));
+            }
             INTEGER(rvec)[i] += (k - 1) * tdim;
             tdim *= INTEGER(dims)[j];
         }
@@ -288,7 +328,9 @@ static SEXP logicalSubscript(SEXP s, int ns, int nx, int *stretch, SEXP call)
     SEXP indx;
     canstretch = *stretch;
     if (!canstretch && ns > nx)
-        errorcall(call, _("(subscript) logical subscript too long"));
+    {
+        ECALL(call, _("(subscript) logical subscript too long"));
+    }
     nmax = (ns > nx) ? ns : nx;
     *stretch = (ns > nx) ? ns : 0;
     if (ns == 0)
@@ -372,20 +414,26 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch, SEXP call)
             isna = TRUE;
     }
     if (min < -nx)
-        errorcall(call, _("subscript out of bounds"));
+    {
+        ECALL(call, _("subscript out of bounds"));
+    }
     if (max > nx)
     {
         if (canstretch)
             *stretch = max;
         else
-            errorcall(call, _("subscript out of bounds"));
+        {
+            ECALL(call, _("subscript out of bounds"));
+        }
     }
     if (min < 0)
     {
         if (max == 0 && !isna)
             return negativeSubscript(s, ns, nx, call);
         else
-            errorcall(call, _("only 0's may be mixed with negative subscripts"));
+        {
+            ECALL(call, _("only 0's may be mixed with negative subscripts"));
+        }
     }
     else
         return positiveSubscript(s, ns, nx);
@@ -464,7 +512,9 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
                 {
                     SEXP names_j = strg(names, j);
                     if (!in && TYPEOF(names_j) != CHARSXP)
-                        errorcall(call, _("character vector element does not have type CHARSXP"));
+                    {
+                        ECALL(call, _("character vector element does not have type CHARSXP"));
+                    }
                     if (NonNullStringMatch(STRING_ELT(s, i), names_j))
                     {
                         sub = j + 1;
@@ -495,7 +545,9 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
         if (sub == 0)
         {
             if (!canstretch)
-                errorcall(call, _("subscript out of bounds"));
+            {
+                ECALL(call, _("subscript out of bounds"));
+            }
             extra += 1;
             sub = extra;
             SET_STRING_ELT(indexnames, i, STRING_ELT(s, i));
@@ -546,14 +598,19 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
     case STRSXP:
         dnames = dng(x, R_DimNamesSymbol);
         if (dnames == R_NilValue)
-            errorcall(call, _("no 'dimnames' attribute for array"));
+        {
+            ECALL(call, _("no 'dimnames' attribute for array"));
+        }
         dnames = VECTOR_ELT(dnames, dim);
         return stringSubscript(s, ns, nd, dnames, strg, &stretch, in, call);
     case SYMSXP:
         if (s == R_MissingArg)
             return nullSubscript(nd);
     default:
-        errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        if (call == R_NilValue)
+            error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        else
+            errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     return R_NilValue;
 }
@@ -586,7 +643,9 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, int *stretch, SEXP call)
         ans = vectorSubscript(nx, s, stretch, getAttrib, (STRING_ELT), x, call);
     }
     else
-        errorcall(call, _("subscripting on non-vector"));
+    {
+        ECALL(call, _("subscripting on non-vector"));
+    }
     return ans;
 }
 
@@ -648,7 +707,10 @@ static SEXP int_vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, St
             break;
         }
     default:
-        errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        if (call == R_NilValue)
+            error(_("invalid subscript type '%s'"), type2char(TYPEOF(s)));
+        else
+            errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
     UNPROTECT(1);
     return ans;

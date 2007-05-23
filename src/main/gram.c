@@ -4383,13 +4383,6 @@ static int StringValue(int c)
                 case ' ':
                 case '\n':
                     break;
-                case '%':
-                    if (GenerateCode && R_WarnEscapes)
-                    {
-                        have_warned++;
-                        warningcall(R_NilValue, _("'\\%%%%' is an unrecognized escape in a character string"));
-                    }
-                    break;
                 default:
                     if (GenerateCode && R_WarnEscapes)
                     {
@@ -4424,8 +4417,6 @@ static int StringValue(int c)
                 break;
         }
 #endif /* SUPPORT_MBCS */
-        if (c == '%')
-            *ct++ = c;
         YYTEXT_PUSH(c, yyp);
     }
     YYTEXT_PUSH('\0', yyp);

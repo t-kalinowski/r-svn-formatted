@@ -169,7 +169,7 @@ static void par_error(char *what)
 static void lengthCheck(char *what, SEXP v, int n, SEXP call)
 {
     if (length(v) != n)
-        errorcall(call, _("graphical parameter \"%s\" has the wrong length"), what);
+        error(_("graphical parameter \"%s\" has the wrong length"), what);
 }
 
 static void nonnegIntCheck(int x, char *s)
@@ -488,7 +488,7 @@ static void Specify(char *what, SEXP value, DevDesc *dd, SEXP call)
         value = coerceVector(value, INTSXP);
         np = length(value);
         if (np != 2 && np != 4)
-            errorcall(call, _("parameter \"mfg\" has the wrong length"));
+            error(_("parameter \"mfg\" has the wrong length"));
         posIntCheck(INTEGER(value)[0], what);
         posIntCheck(INTEGER(value)[1], what);
         row = INTEGER(value)[0];
@@ -496,9 +496,9 @@ static void Specify(char *what, SEXP value, DevDesc *dd, SEXP call)
         nrow = Rf_dpptr(dd)->numrows;
         ncol = Rf_dpptr(dd)->numcols;
         if (row <= 0 || row > nrow)
-            errorcall(call, _("parameter \"i\" in \"mfg\" is out of range"));
+            error(_("parameter \"i\" in \"mfg\" is out of range"));
         if (col <= 0 || col > ncol)
-            errorcall(call, _("parameter \"j\" in \"mfg\" is out of range"));
+            error(_("parameter \"j\" in \"mfg\" is out of range"));
         if (np == 4)
         {
             posIntCheck(INTEGER(value)[2], what);
@@ -736,17 +736,17 @@ void attribute_hidden Specify2(char *what, SEXP value, DevDesc *dd, SEXP call)
     }
     if (ptype == -2)
     {
-        warningcall(call, _("graphical parameter \"%s\" is obsolete"), what);
+        warning(_("graphical parameter \"%s\" is obsolete"), what);
         return;
     }
     if (ptype < 0)
     {
-        warningcall(call, _("\"%s\" is not a graphical parameter"), what);
+        warning(_("\"%s\" is not a graphical parameter"), what);
         return;
     }
     if (ptype == 2)
     {
-        warningcall(call, _("graphical parameter \"%s\" cannot be set"), what);
+        warning(_("graphical parameter \"%s\" cannot be set"), what);
         return;
     }
 

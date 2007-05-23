@@ -1147,7 +1147,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     escapes = asLogical(CAR(args));
     args = CDR(args);
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
-        errorcall(call, _("invalid '%s' value"), "encoding");
+        error(_("invalid '%s' value"), "encoding");
     encoding = CHAR(STRING_ELT(CAR(args), 0)); /* ASCII */
     if (streql(encoding, "latin1"))
         data.isLatin1 = TRUE;
@@ -1168,13 +1168,13 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         nmax = 0;
 
     if (TYPEOF(stripwhite) != LGLSXP)
-        errorcall(call, _("invalid '%s' value"), "strip.white");
+        error(_("invalid '%s' value"), "strip.white");
     if (length(stripwhite) != 1 && length(stripwhite) != length(what))
-        errorcall(call, _("invalid 'strip.white' length"));
+        error(_("invalid 'strip.white' length"));
     if (TYPEOF(data.NAstrings) != STRSXP)
-        errorcall(call, _("invalid '%s' value"), "na.strings");
+        error(_("invalid '%s' value"), "na.strings");
     if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
 
     if (isString(sep) || isNull(sep))
     {
@@ -1184,13 +1184,13 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             char *sc = translateChar(STRING_ELT(sep, 0));
             if (strlen(sc) > 1)
-                errorcall(call, _("invalid 'sep' value: must be one byte"));
+                error(_("invalid 'sep' value: must be one byte"));
             data.sepchar = (unsigned char)sc[0];
         }
         /* gets compared to chars: bug prior to 1.7.0 */
     }
     else
-        errorcall(call, _("invalid '%s' value"), "sep");
+        error(_("invalid '%s' value"), "sep");
 
     if (isString(dec) || isNull(dec))
     {
@@ -1205,7 +1205,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-        errorcall(call, _("invalid decimal separator"));
+        error(_("invalid decimal separator"));
 
     if (isString(quotes))
     {
@@ -1217,23 +1217,23 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             data.quotesave = malloc(strlen(data.quoteset) + 1);
         if (!data.quotesave)
-            errorcall(call, _("out of memory"));
+            error(_("out of memory"));
         strcpy(data.quotesave, data.quoteset);
         data.quoteset = data.quotesave;
     }
     else if (isNull(quotes))
         data.quoteset = "";
     else
-        errorcall(call, _("invalid quote symbol set"));
+        error(_("invalid quote symbol set"));
 
     p = translateChar(STRING_ELT(comstr, 0));
     data.comchar = NO_COMCHAR; /*  here for -Wall */
     if (strlen(p) > 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
     else if (strlen(p) == 1)
         data.comchar = (unsigned char)*p;
     if (escapes == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' value"), "allowEscapes");
+        error(_("invalid '%s' value"), "allowEscapes");
     data.escapes = escapes != 0;
 
     i = asInteger(file);
@@ -1281,7 +1281,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = scanFrame(what, nmax, nlines, flush, fill, stripwhite, blskip, multiline, &data);
         break;
     default:
-        errorcall(call, _("invalid 'what' specified"));
+        error(_("invalid 'what' specified"));
     }
     endcontext(&cntxt);
 
@@ -1327,11 +1327,11 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     comstr = CAR(args);
     if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
     p = translateChar(STRING_ELT(comstr, 0));
     data.comchar = NO_COMCHAR; /*  here for -Wall */
     if (strlen(p) > 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
     else if (strlen(p) == 1)
         data.comchar = (unsigned char)*p;
 
@@ -1349,7 +1349,7 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         /* gets compared to chars: bug prior to 1.7.0 */
     }
     else
-        errorcall(call, _("invalid '%s' value"), "sep");
+        error(_("invalid '%s' value"), "sep");
 
     if (isString(quotes))
     {
@@ -1361,14 +1361,14 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             data.quotesave = malloc(strlen(data.quoteset) + 1);
         if (!data.quotesave)
-            errorcall(call, _("out of memory"));
+            error(_("out of memory"));
         strcpy(data.quotesave, data.quoteset);
         data.quoteset = data.quotesave;
     }
     else if (isNull(quotes))
         data.quoteset = "";
     else
-        errorcall(call, _("invalid quote symbol set"));
+        error(_("invalid quote symbol set"));
 
     i = asInteger(file);
     data.con = getConnection(i);
@@ -1438,7 +1438,7 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 if (!data.wasopen)
                     data.con->close(data.con);
-                errorcall(call, _("string terminated by newline or EOF"));
+                error(_("string terminated by newline or EOF"));
             }
             if (inquote && c == quote)
                 inquote = 0;
@@ -1596,11 +1596,11 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (!isString(CAR(args)))
-        errorcall(call, _("the first argument must be of mode character"));
+        error(_("the first argument must be of mode character"));
 
     data.NAstrings = CADR(args);
     if (TYPEOF(data.NAstrings) != STRSXP)
-        errorcall(call, _("invalid '%s' value"), "na.strings");
+        error(_("invalid '%s' value"), "na.strings");
 
     asIs = asLogical(CADDR(args));
     if (asIs == NA_LOGICAL)
@@ -1864,7 +1864,7 @@ SEXP attribute_hidden do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (!isString(CAR(args)))
-        errorcall(call, _("invalid argument"));
+        error(_("invalid argument"));
 
     sprintf(ConsolePrompt, _("Selection: "));
 
@@ -1929,7 +1929,7 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
     sep = CAR(args);
 
     if (nlines <= 0 || nlines == NA_INTEGER)
-        errorcall(call, _("invalid '%s' value"), "nlines");
+        error(_("invalid '%s' value"), "nlines");
     if (blskip == NA_LOGICAL)
         blskip = 1;
     if (isString(quotes))
@@ -1942,21 +1942,21 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             data.quotesave = malloc(strlen(data.quoteset) + 1);
         if (!data.quotesave)
-            errorcall(call, _("out of memory"));
+            error(_("out of memory"));
         strcpy(data.quotesave, data.quoteset);
         data.quoteset = data.quotesave;
     }
     else if (isNull(quotes))
         data.quoteset = "";
     else
-        errorcall(call, _("invalid quote symbol set"));
+        error(_("invalid quote symbol set"));
 
     if (TYPEOF(comstr) != STRSXP || length(comstr) != 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
     p = translateChar(STRING_ELT(comstr, 0));
     data.comchar = NO_COMCHAR; /*  here for -Wall */
     if (strlen(p) > 1)
-        errorcall(call, _("invalid '%s' value"), "comment.char");
+        error(_("invalid '%s' value"), "comment.char");
     else if (strlen(p) == 1)
         data.comchar = (int)*p;
     if (isString(sep) || isNull(sep))
@@ -1968,7 +1968,7 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
         /* gets compared to chars: bug prior to 1.7.0 */
     }
     else
-        errorcall(call, _("invalid '%s' value"), "sep");
+        error(_("invalid '%s' value"), "sep");
 
     i = asInteger(file);
     data.con = getConnection(i);
@@ -2018,7 +2018,7 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
                     buf[nbuf++] = c;
                     c = scanchar(TRUE, &data);
                     if (c == R_EOF)
-                        errorcall(call, _("\\ followed by EOF"));
+                        error(_("\\ followed by EOF"));
                     buf[nbuf++] = c;
                     continue;
                 }
@@ -2216,7 +2216,7 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     /* this is going to be a connection open or openable for writing */
     if (!inherits(CAR(args), "connection"))
-        errorcall(call, _("'file' is not a connection"));
+        error(_("'file' is not a connection"));
     con = getConnection(asInteger(CAR(args)));
     args = CDR(args);
     if (!con->canwrite)
@@ -2247,27 +2247,27 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
     qmethod = asLogical(CAR(args));
 
     if (nr == NA_INTEGER)
-        errorcall(call, _("invalid '%s' value"), "nr");
+        error(_("invalid '%s' value"), "nr");
     if (nc == NA_INTEGER)
-        errorcall(call, _("invalid '%s' value"), "nc");
+        error(_("invalid '%s' value"), "nc");
     if (!isNull(rnames) && !isString(rnames))
-        errorcall(call, _("invalid '%s' value"), "rnames");
+        error(_("invalid '%s' value"), "rnames");
     if (!isString(sep))
-        errorcall(call, _("invalid '%s' value"), "sep");
+        error(_("invalid '%s' value"), "sep");
     if (!isString(eol))
-        errorcall(call, _("invalid '%s' value"), "eol");
+        error(_("invalid '%s' value"), "eol");
     if (!isString(na))
-        errorcall(call, _("invalid '%s' value"), "na");
+        error(_("invalid '%s' value"), "na");
     if (!isString(dec))
-        errorcall(call, _("invalid '%s' value"), "dec");
+        error(_("invalid '%s' value"), "dec");
     if (qmethod == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' value"), "qmethod");
+        error(_("invalid '%s' value"), "qmethod");
     csep = translateChar(STRING_ELT(sep, 0));
     ceol = translateChar(STRING_ELT(eol, 0));
     cna = translateChar(STRING_ELT(na, 0));
     sdec = translateChar(STRING_ELT(dec, 0));
     if (strlen(sdec) != 1)
-        errorcall(call, _("'dec' must be a single character"));
+        error(_("'dec' must be a single character"));
     cdec = sdec[0];
     quote_col = (Rboolean *)R_alloc(nc, sizeof(Rboolean));
     for (j = 0; j < nc; j++)
@@ -2300,7 +2300,7 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             xj = VECTOR_ELT(x, j);
             if (LENGTH(xj) != nr)
-                errorcall(call, _("corrupt data frame -- length of column %d does not not match nrows"), j + 1);
+                error(_("corrupt data frame -- length of column %d does not not match nrows"), j + 1);
             if (inherits(xj, "factor"))
             {
                 levels[j] = getAttrib(xj, R_LevelsSymbol);
@@ -2352,7 +2352,7 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
             UNIMPLEMENTED_TYPE("write.table, matrix method", x);
         /* quick integrity check */
         if (LENGTH(x) != nr * nc)
-            errorcall(call, _("corrupt matrix -- dims not not match length"));
+            error(_("corrupt matrix -- dims not not match length"));
 
         for (i = 0; i < nr; i++)
         {
