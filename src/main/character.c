@@ -249,7 +249,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (len > 0)
     {
         if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-            error(_("invalid substring argument(s) in substr()"));
+            error(_("invalid substring argument(s)"));
 
         /* Calculate the buffer size needed.  The substring could be a lot
            shorter, but in an MBCS locale it is tedious to calculate how long.
@@ -340,11 +340,11 @@ SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     if (len > 0)
     {
         if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-            error(_("invalid substring argument(s) in substr<-()"));
+            error(_("invalid substring argument(s)"));
 
         v = LENGTH(value);
         if (!isString(value) || v == 0)
-            error(_("invalid right-hand side in substr<-()"));
+            error(_("invalid value"));
 
         for (i = 0; i < len; i++)
         {
