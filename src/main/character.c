@@ -983,13 +983,21 @@ static int fgrep_one(char *pat, char *target, int useBytes, int *next)
     char *p;
 
     if (plen == 0)
+    {
+        if (next != NULL)
+            *next = 1;
         return 0;
+    }
     if (plen == 1)
     {
         /* a single byte is a common case */
         for (i = 0, p = target; *p; p++, i++)
             if (*p == pat[0])
+            {
+                if (next != NULL)
+                    *next = i + 1;
                 return i;
+            }
         return -1;
     }
 #ifdef SUPPORT_MBCS
@@ -1873,7 +1881,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
 
 static SEXP gregexpr_fixed(char *pattern, char *string, int useBytes)
 {
-    int patlen, matchIndex, st, foundAll, foundAny, curpos, j, ansSize, nb;
+    int patlen, matchIndex, st, foundAll, foundAny, curpos, j, ansSize, nb = 0;
     SEXP ans, matchlen;         /* return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* buffers for storing multiple matches */
     int bufsize = 1024;         /* starting size for buffers */
