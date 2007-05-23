@@ -2843,7 +2843,7 @@ no_more_lines:
         {
             nread++;
             if (warn)
-                warning(_("incomplete final line found by readLines on '%s'"), con->description);
+                warning(_("incomplete final line found on '%s'"), con->description);
         }
         else
         {

@@ -226,6 +226,7 @@ static int Rvsnprintf(char *buf, size_t size, const char *format, va_list ap)
 void warning(const char *format, ...)
 {
     char buf[BUFSIZE], *p;
+    RCNTXT *c = R_GlobalContext;
 
     va_list(ap);
     va_start(ap, format);
@@ -236,7 +237,9 @@ void warning(const char *format, ...)
         *p = '\0';
     if (R_WarnLength < BUFSIZE - 20 && strlen(buf) == R_WarnLength)
         strcat(buf, " [... truncated]");
-    warningcall(R_NilValue, buf);
+    if (c && (c->callflag & CTXT_BUILTIN))
+        c = c->nextcontext;
+    warningcall(c ? c->call : R_NilValue, "%s", buf);
 }
 
 /* temporary hook to allow experimenting with alternate warning mechanisms */
@@ -408,8 +411,13 @@ void PrintWarnings(void)
         if (VECTOR_ELT(R_Warnings, 0) == R_NilValue)
             REprintf("%s \n", CHAR(STRING_ELT(names, 0)));
         else
-            REprintf("%s in: %s \n", CHAR(STRING_ELT(names, 0)),
-                     CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, 0), 0, DEFAULTDEPARSE), 0)));
+        {
+            char *dcall, *sep = " ", *msg = CHAR(STRING_ELT(names, 0));
+            dcall = CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, 0), 0, DEFAULTDEPARSE), 0));
+            if (strlen(dcall) + strlen(msg) > 70)
+                sep = "\n\t";
+            REprintf("In %s :%s%s\n", dcall, sep, msg);
+        }
     }
     else if (R_CollectWarnings <= 10)
     {
@@ -420,8 +428,13 @@ void PrintWarnings(void)
             if (VECTOR_ELT(R_Warnings, i) == R_NilValue)
                 REprintf("%d: %s \n", i + 1, CHAR(STRING_ELT(names, i)));
             else
-                REprintf("%d: %s in: %s \n", i + 1, CHAR(STRING_ELT(names, i)),
-                         CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, i), 0, DEFAULTDEPARSE), 0)));
+            {
+                char *dcall, *sep = " ", *msg = CHAR(STRING_ELT(names, i));
+                dcall = CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, i), 0, DEFAULTDEPARSE), 0));
+                if (strlen(dcall) + strlen(msg) > 70)
+                    sep = "\n\t";
+                REprintf("%d: In %s :%s%s\n", i + 1, dcall, sep, msg);
+            }
         }
     }
     else
