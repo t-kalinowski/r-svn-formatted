@@ -4387,14 +4387,14 @@ static int StringValue(int c)
                     if (GenerateCode && R_WarnEscapes)
                     {
                         have_warned++;
-                        warning(_("'\\%%%%' is an unrecognized escape in a character string"));
+                        warningcall(R_NilValue, _("'\\%%%%' is an unrecognized escape in a character string"));
                     }
                     break;
                 default:
                     if (GenerateCode && R_WarnEscapes)
                     {
                         have_warned++;
-                        warning(_("'\\%c' is an unrecognized escape in a character string"), c);
+                        warningcall(R_NilValue, _("'\\%c' is an unrecognized escape in a character string"), c);
                     }
                     break;
                 }
