@@ -144,7 +144,8 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             while (*buf)
                 buf++;
         }
-        ans = allocVector(STRSXP, 1);
+        UNPROTECT(1);
+        PROTECT(ans = allocVector(STRSXP, 1));
         SET_STRING_ELT(ans, 0, mkChar(cbuf));
         Free(cbuf);
     }
