@@ -1155,7 +1155,7 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, tag = R_NilValue, alist;
     char *str;
-    int n;
+    int n, nargs = length(args), exact = 0;
     enum
     {
         NONE,
@@ -1164,13 +1164,22 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
         FULL
     } match = NONE;
 
+    if (nargs < 2 || nargs > 3)
+        errorcall(call, "either 2 or 3 arguments are required");
+
     s = CAR(args);
     t = CADR(args);
+    if (nargs == 3)
+    {
+        exact = asLogical(CADDR(args));
+        if (exact == NA_LOGICAL)
+            exact = 0;
+    }
 
     if (!isString(t))
-        errorcall(call, _("attribute 'name' must be of mode character"));
+        errorcall(call, _("'which' must be of mode character"));
     if (length(t) != 1)
-        errorcall(call, _("exactly one attribute 'name' must be given"));
+        errorcall(call, _("exactly one attribute 'which' must be given"));
 
     if (STRING_ELT(t, 0) == NA_STRING)
         return R_NilValue;
@@ -1237,9 +1246,8 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
-    if (match == NONE)
+    if (match == NONE || (exact && match != FULL))
         return R_NilValue;
-#define R_warn_partial_match_attr 0
     if (match == PARTIAL && R_warn_partial_match_attr)
         warningcall(call, _("partial match of '%s' to '%s'"), str, CHAR(PRINTNAME(tag)));
 
