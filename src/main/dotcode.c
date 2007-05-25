@@ -131,7 +131,7 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
                     break;
                 default:
                     /* Something unintended has happened if we get here. */
-                    error(_("Unimplemented type %d in createRSymbolObject"), symbol->type);
+                    errorcall(call, _("Unimplemented type %d in createRSymbolObject"), symbol->type);
                     break;
                 }
                 *symbol = *tmp;
@@ -809,23 +809,23 @@ SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
     R_RegisteredNativeSymbol symbol = {R_FORTRAN_SYM, {NULL}, NULL};
 
     if (nargs < 1)
-        errorcall(call, _("no arguments supplied"));
+        error(_("no arguments supplied"));
     if (nargs > 3)
-        errorcall(call, _("too many arguments"));
+        error(_("too many arguments"));
 
     if (!isValidString(CAR(args)))
-        errorcall(call, R_MSG_IA);
+        error(R_MSG_IA);
     sym = translateChar(STRING_ELT(CAR(args), 0));
     if (nargs >= 2)
     {
         if (!isValidString(CADR(args)))
-            errorcall(call, R_MSG_IA);
+            error(R_MSG_IA);
         pkg = translateChar(STRING_ELT(CADR(args), 0));
     }
     if (nargs >= 3)
     {
         if (!isValidString(CADDR(args)))
-            errorcall(call, R_MSG_IA);
+            error(R_MSG_IA);
         type = CHAR(STRING_ELT(CADDR(args), 0)); /* ASCII */
         if (strcmp(type, "C") == 0)
             symbol.type = R_C_SYM;
@@ -879,8 +879,8 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     if (symbol.symbol.external && symbol.symbol.external->numArgs > -1)
     {
         if (symbol.symbol.external->numArgs != length(args))
-            error(_("Incorrect number of arguments (%d), expecting %d for %s"), length(args),
-                  symbol.symbol.external->numArgs, translateChar(STRING_ELT(CAR(args), 0)));
+            errorcall(call, _("Incorrect number of arguments (%d), expecting %d for %s"), length(args),
+                      symbol.symbol.external->numArgs, translateChar(STRING_ELT(CAR(args), 0)));
     }
 #endif
 
@@ -921,8 +921,8 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     if (symbol.symbol.call && symbol.symbol.call->numArgs > -1)
     {
         if (symbol.symbol.call->numArgs != nargs)
-            error(_("Incorrect number of arguments (%d), expecting %d for %s"), nargs, symbol.symbol.call->numArgs,
-                  translateChar(STRING_ELT(nm, 0)));
+            errorcall(call, _("Incorrect number of arguments (%d), expecting %d for %s"), nargs,
+                      symbol.symbol.call->numArgs, translateChar(STRING_ELT(nm, 0)));
     }
 
     retval = R_NilValue; /* -Wall */
@@ -1377,7 +1377,7 @@ SEXP attribute_hidden do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GErecording(call, dd))
     {
         if (!GEcheckState(dd))
-            error(_("Invalid graphics state"));
+            errorcall(call, _("Invalid graphics state"));
         GErecordGraphicOperation(op, args, dd);
     }
     UNPROTECT(1);
@@ -1400,7 +1400,7 @@ SEXP attribute_hidden do_dotcallgr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GErecording(call, dd))
     {
         if (!GEcheckState(dd))
-            error(_("Invalid graphics state"));
+            errorcall(call, _("Invalid graphics state"));
         GErecordGraphicOperation(op, args, dd);
     }
     UNPROTECT(1);
@@ -1520,8 +1520,8 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     if (symbol.symbol.c && symbol.symbol.c->numArgs > -1)
     {
         if (symbol.symbol.c->numArgs != nargs)
-            error(_("Incorrect number of arguments (%d), expecting %d for %s"), nargs, symbol.symbol.c->numArgs,
-                  symName);
+            errorcall(call, _("Incorrect number of arguments (%d), expecting %d for %s"), nargs,
+                      symbol.symbol.c->numArgs, symName);
 
         checkTypes = symbol.symbol.c->types;
         argStyles = symbol.symbol.c->styles;
@@ -1546,7 +1546,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                to RObjToCPtr(). We just have to sort out the ability
                to return the correct value which is complicated by
                dup, etc. */
-            error(_("Wrong type for argument %d in call to %s"), nargs + 1, symName);
+            errorcall(call, _("Wrong type for argument %d in call to %s"), nargs + 1, symName);
         }
 #endif
         cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, symName, argConverters + nargs,

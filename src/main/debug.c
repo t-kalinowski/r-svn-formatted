@@ -37,7 +37,7 @@ SEXP attribute_hidden do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     find_char_fun
 
-        if (TYPEOF(CAR(args)) != CLOSXP) errorcall(call, _("argument must be a function"));
+        if (TYPEOF(CAR(args)) != CLOSXP) errorcall(call, _("argument must be a closure"));
     switch (PRIMVAL(op))
     {
     case 0:

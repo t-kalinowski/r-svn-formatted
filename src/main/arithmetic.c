@@ -313,7 +313,7 @@ static double logbase(double x, double base)
 
 SEXP R_unary(SEXP, SEXP, SEXP);
 SEXP R_binary(SEXP, SEXP, SEXP, SEXP);
-static SEXP integer_unary(ARITHOP_TYPE, SEXP);
+static SEXP integer_unary(ARITHOP_TYPE, SEXP, SEXP);
 static SEXP real_unary(ARITHOP_TYPE, SEXP, SEXP);
 static SEXP real_binary(ARITHOP_TYPE, SEXP, SEXP);
 static SEXP integer_binary(ARITHOP_TYPE, SEXP, SEXP, SEXP);
@@ -339,7 +339,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     case 2:
         return R_binary(call, op, CAR(args), CADR(args));
     default:
-        error(_("operator needs one or two arguments"));
+        errorcall(call, _("operator needs one or two arguments"));
     }
     return ans; /* never used; to keep -Wall happy */
 }
@@ -593,18 +593,18 @@ SEXP attribute_hidden R_unary(SEXP call, SEXP op, SEXP s1)
     {
     case LGLSXP:
     case INTSXP:
-        return integer_unary(operation, s1);
+        return integer_unary(operation, s1, call);
     case REALSXP:
         return real_unary(operation, s1, call);
     case CPLXSXP:
-        return complex_unary(operation, s1);
+        return complex_unary(operation, s1, call);
     default:
         errorcall(call, _("invalid argument to unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
 
-static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1)
+static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 {
     int i, n, x;
     SEXP ans;
@@ -624,7 +624,7 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1)
         }
         return ans;
     default:
-        error(_("invalid unary operator"));
+        errorcall(call, _("invalid unary operator"));
     }
     return s1; /* never used; to keep -Wall happy */
 }
@@ -1556,7 +1556,7 @@ SEXP attribute_hidden do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
     /* prior to 2.3.0, 2 args were allowed,
        but this was never documented */
     default:
-        error(_("%d arguments passed to 'atan' which requires 1"), n);
+        errorcall(call, _("%d arguments passed to 'atan' which requires 1"), n);
     }
     return s; /* never used; to keep -Wall happy */
 }

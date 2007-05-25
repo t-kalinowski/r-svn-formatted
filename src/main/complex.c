@@ -49,7 +49,7 @@ static R_INLINE double fsign_int(double x, double y)
 #define hypot pythag
 #endif
 
-SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1)
+SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 {
     int i, n;
 #ifndef HAVE_C99_COMPLEX
@@ -77,8 +77,9 @@ SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1)
         }
         return ans;
     default:
-        error_return(_("invalid complex unary operator"));
+        errorcall(call, _("invalid complex unary operator"));
     }
+    return R_NilValue; /* -Wall */
 }
 
 #ifndef HAVE_C99_COMPLEX
