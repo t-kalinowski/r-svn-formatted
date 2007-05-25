@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2006  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *  Copyright (C) 2002--2005  The R Foundation
  *
@@ -161,7 +161,7 @@ static void AnswerType(SEXP x, int recurse, int usenames, struct BindData *data)
 /* The following functions are used to coerce arguments to */
 /* the appropriate type for inclusion in the returned value. */
 
-static void ListAnswer(SEXP x, int recurse, struct BindData *data)
+static void ListAnswer(SEXP x, int recurse, struct BindData *data, SEXP call)
 {
     int i;
 
@@ -198,7 +198,7 @@ static void ListAnswer(SEXP x, int recurse, struct BindData *data)
         if (recurse)
         {
             for (i = 0; i < LENGTH(x); i++)
-                ListAnswer(VECTOR_ELT(x, i), recurse, data);
+                ListAnswer(VECTOR_ELT(x, i), recurse, data, call);
         }
         else
         {
@@ -211,7 +211,7 @@ static void ListAnswer(SEXP x, int recurse, struct BindData *data)
         {
             while (x != R_NilValue)
             {
-                ListAnswer(CAR(x), recurse, data);
+                ListAnswer(CAR(x), recurse, data, call);
                 x = CDR(x);
             }
         }
@@ -228,7 +228,7 @@ static void ListAnswer(SEXP x, int recurse, struct BindData *data)
     }
 }
 
-static void StringAnswer(SEXP x, struct BindData *data)
+static void StringAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n;
     switch (TYPEOF(x))
@@ -238,7 +238,7 @@ static void StringAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            StringAnswer(CAR(x), data);
+            StringAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -246,7 +246,7 @@ static void StringAnswer(SEXP x, struct BindData *data)
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            StringAnswer(VECTOR_ELT(x, i), data);
+            StringAnswer(VECTOR_ELT(x, i), data, call);
         break;
     default:
         PROTECT(x = coerceVector(x, STRSXP));
@@ -258,7 +258,7 @@ static void StringAnswer(SEXP x, struct BindData *data)
     }
 }
 
-static void LogicalAnswer(SEXP x, struct BindData *data)
+static void LogicalAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n;
     switch (TYPEOF(x))
@@ -268,7 +268,7 @@ static void LogicalAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            LogicalAnswer(CAR(x), data);
+            LogicalAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -276,7 +276,7 @@ static void LogicalAnswer(SEXP x, struct BindData *data)
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            LogicalAnswer(VECTOR_ELT(x, i), data);
+            LogicalAnswer(VECTOR_ELT(x, i), data, call);
         break;
     case LGLSXP:
         n = LENGTH(x);
@@ -289,11 +289,11 @@ static void LogicalAnswer(SEXP x, struct BindData *data)
             LOGICAL(data->ans_ptr)[data->ans_length++] = INTEGER(x)[i];
         break;
     default:
-        error(_("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "LogicalAnswer");
+        errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "LogicalAnswer");
     }
 }
 
-static void IntegerAnswer(SEXP x, struct BindData *data)
+static void IntegerAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n;
     switch (TYPEOF(x))
@@ -303,7 +303,7 @@ static void IntegerAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            IntegerAnswer(CAR(x), data);
+            IntegerAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -311,7 +311,7 @@ static void IntegerAnswer(SEXP x, struct BindData *data)
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            IntegerAnswer(VECTOR_ELT(x, i), data);
+            IntegerAnswer(VECTOR_ELT(x, i), data, call);
         break;
     case LGLSXP:
         n = LENGTH(x);
@@ -324,11 +324,11 @@ static void IntegerAnswer(SEXP x, struct BindData *data)
             INTEGER(data->ans_ptr)[data->ans_length++] = INTEGER(x)[i];
         break;
     default:
-        error(_("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "IntegerAnswer");
+        errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "IntegerAnswer");
     }
 }
 
-static void RealAnswer(SEXP x, struct BindData *data)
+static void RealAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n, xi;
     switch (TYPEOF(x))
@@ -338,7 +338,7 @@ static void RealAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            RealAnswer(CAR(x), data);
+            RealAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -346,7 +346,7 @@ static void RealAnswer(SEXP x, struct BindData *data)
     case EXPRSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            RealAnswer(VECTOR_ELT(x, i), data);
+            RealAnswer(VECTOR_ELT(x, i), data, call);
         break;
     case REALSXP:
         n = LENGTH(x);
@@ -376,11 +376,11 @@ static void RealAnswer(SEXP x, struct BindData *data)
         }
         break;
     default:
-        error(_("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "RealAnswer");
+        errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "RealAnswer");
     }
 }
 
-static void ComplexAnswer(SEXP x, struct BindData *data)
+static void ComplexAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n, xi;
     switch (TYPEOF(x))
@@ -390,7 +390,7 @@ static void ComplexAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            ComplexAnswer(CAR(x), data);
+            ComplexAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -398,7 +398,7 @@ static void ComplexAnswer(SEXP x, struct BindData *data)
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            ComplexAnswer(VECTOR_ELT(x, i), data);
+            ComplexAnswer(VECTOR_ELT(x, i), data, call);
         break;
     case REALSXP:
         n = LENGTH(x);
@@ -451,11 +451,11 @@ static void ComplexAnswer(SEXP x, struct BindData *data)
         }
         break;
     default:
-        error(_("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "ComplexAnswer");
+        errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "ComplexAnswer");
     }
 }
 
-static void RawAnswer(SEXP x, struct BindData *data)
+static void RawAnswer(SEXP x, struct BindData *data, SEXP call)
 {
     int i, n;
     switch (TYPEOF(x))
@@ -465,7 +465,7 @@ static void RawAnswer(SEXP x, struct BindData *data)
     case LISTSXP:
         while (x != R_NilValue)
         {
-            RawAnswer(CAR(x), data);
+            RawAnswer(CAR(x), data, call);
             x = CDR(x);
         }
         break;
@@ -473,7 +473,7 @@ static void RawAnswer(SEXP x, struct BindData *data)
     case VECSXP:
         n = LENGTH(x);
         for (i = 0; i < n; i++)
-            RawAnswer(VECTOR_ELT(x, i), data);
+            RawAnswer(VECTOR_ELT(x, i), data, call);
         break;
     case RAWSXP:
         n = LENGTH(x);
@@ -481,7 +481,7 @@ static void RawAnswer(SEXP x, struct BindData *data)
             RAW(data->ans_ptr)[data->ans_length++] = RAW(x)[i];
         break;
     default:
-        error(_("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "RawAnswer");
+        errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "RawAnswer");
     }
 }
 
@@ -692,7 +692,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
 /* because we want to avoid duplication at the top level. */
 /* FIXME : is there another possibility? */
 
-static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
+static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames, SEXP call)
 {
     SEXP a, n, last = NULL, next = NULL;
     int v, n_recurse = 0, n_usenames = 0;
@@ -704,7 +704,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
         if (n != R_NilValue && pmatch(R_RecursiveSymbol, n, 1))
         {
             if (n_recurse++ == 1)
-                error(_("repeated formal argument 'recursive'"));
+                errorcall(call, _("repeated formal argument 'recursive'"));
             if ((v = asLogical(CAR(a))) != NA_INTEGER)
             {
                 *recurse = v;
@@ -717,7 +717,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames)
         else if (n != R_NilValue && pmatch(R_UseNamesSymbol, n, 1))
         {
             if (n_usenames++ == 1)
-                error(_("repeated formal argument 'use.names'"));
+                errorcall(call, _("repeated formal argument 'use.names'"));
             if ((v = asLogical(CAR(a))) != NA_INTEGER)
             {
                 *usenames = v;
@@ -775,7 +775,7 @@ SEXP attribute_hidden do_c_dflt(SEXP call, SEXP op, SEXP args, SEXP env)
     recurse = 0;
     /* this was only done for length(args) > 1 prior to 1.5.0,
        _but_ `recursive' might be the only argument */
-    PROTECT(args = ExtractOptionals(args, &recurse, &usenames));
+    PROTECT(args = ExtractOptionals(args, &recurse, &usenames, call));
 
     /* Determine the type of the returned value. */
     /* The strategy here is appropriate because the */
@@ -833,26 +833,26 @@ SEXP attribute_hidden do_c_dflt(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             while (args != R_NilValue)
             {
-                ListAnswer(CAR(args), 0, &data);
+                ListAnswer(CAR(args), 0, &data, call);
                 args = CDR(args);
             }
         }
         else
-            ListAnswer(args, recurse, &data);
+            ListAnswer(args, recurse, &data, call);
         data.ans_length = length(ans);
     }
     else if (mode == STRSXP)
-        StringAnswer(args, &data);
+        StringAnswer(args, &data, call);
     else if (mode == CPLXSXP)
-        ComplexAnswer(args, &data);
+        ComplexAnswer(args, &data, call);
     else if (mode == REALSXP)
-        RealAnswer(args, &data);
+        RealAnswer(args, &data, call);
     else if (mode == RAWSXP)
-        RawAnswer(args, &data);
+        RawAnswer(args, &data, call);
     else if (mode == LGLSXP)
-        LogicalAnswer(args, &data);
+        LogicalAnswer(args, &data, call);
     else /* integer */
-        IntegerAnswer(args, &data);
+        IntegerAnswer(args, &data, call);
     args = t;
 
     /* Build and attach the names attribute for the returned object. */
@@ -993,24 +993,24 @@ SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!recurse)
         {
             for (i = 0; i < n; i++)
-                ListAnswer(VECTOR_ELT(args, i), 0, &data);
+                ListAnswer(VECTOR_ELT(args, i), 0, &data, call);
         }
         else
-            ListAnswer(args, recurse, &data);
+            ListAnswer(args, recurse, &data, call);
         data.ans_length = length(ans);
     }
     else if (mode == STRSXP)
-        StringAnswer(args, &data);
+        StringAnswer(args, &data, call);
     else if (mode == CPLXSXP)
-        ComplexAnswer(args, &data);
+        ComplexAnswer(args, &data, call);
     else if (mode == REALSXP)
-        RealAnswer(args, &data);
+        RealAnswer(args, &data, call);
     else if (mode == RAWSXP)
-        RawAnswer(args, &data);
+        RawAnswer(args, &data, call);
     else if (mode == LGLSXP)
-        LogicalAnswer(args, &data);
+        LogicalAnswer(args, &data, call);
     else /* integer */
-        IntegerAnswer(args, &data);
+        IntegerAnswer(args, &data, call);
     args = t;
 
     /* Build and attach the names attribute for the returned object. */
