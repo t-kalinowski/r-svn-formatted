@@ -1215,7 +1215,7 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
     h = gethostbyname(host);
     if (h == NULL)
     {
-        RxmlMessage(2, _("unable to resolve '%s'."), host);
+        RxmlMessage(2, _("unable to resolve '%s'"), host);
         return (-1);
     }
 
