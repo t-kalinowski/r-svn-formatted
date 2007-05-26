@@ -4427,7 +4427,7 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
     case 5: /* thermometers */
         if (nc != 3 && nc != 4)
-            errorcall(call, _("invalid thermometers data (need 3 or 4 columns)"));
+            error(_("invalid thermometers data (need 3 or 4 columns)"));
         SymbolRange(REAL(p) + 2 * nr /* <-- pointer arith*/, nr, &pmax, &pmin);
         if (pmax < pmin)
             error(_("invalid thermometers[,%s]"), (nc == 4) ? "3:4" : "3");

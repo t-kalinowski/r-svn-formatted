@@ -86,7 +86,7 @@ static SEXP cross_colon(SEXP call, SEXP s, SEXP t)
     return (a);
 }
 
-static SEXP seq_colon(double n1, double n2)
+static SEXP seq_colon(double n1, double n2, SEXP call)
 {
     int i, n, in1;
     double r;
@@ -99,7 +99,7 @@ static SEXP seq_colon(double n1, double n2)
         useInt = FALSE;
     r = fabs(n2 - n1);
     if (r >= INT_MAX)
-        error(_("result would be too long a vector"));
+        errorcall(call, _("result would be too long a vector"));
 
     n = r + 1 + FLT_EPSILON;
     if (useInt)
@@ -146,7 +146,7 @@ SEXP attribute_hidden do_colon(SEXP call, SEXP op, SEXP args, SEXP rho)
     n2 = asReal(s2);
     if (ISNAN(n1) || ISNAN(n2))
         errorcall(call, _("NA/NaN argument"));
-    return seq_colon(n1, n2);
+    return seq_colon(n1, n2, call);
 }
 
 static SEXP rep2(SEXP s, SEXP ncopy)
@@ -161,7 +161,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     for (i = 0; i < nc; i++)
     {
         if (INTEGER(t)[i] == NA_INTEGER || INTEGER(t)[i] < 0)
-            error(_("invalid number of copies in rep.int()"));
+            error(_("invalid '%s' value"), "times");
         na += INTEGER(t)[i];
     }
 
@@ -249,7 +249,7 @@ static SEXP rep1(SEXP s, SEXP ncopy)
     SEXP a, t;
 
     if (!isVector(ncopy))
-        error(_("rep() incorrect type for second argument"));
+        error(_("incorrect type for second argument"));
 
     if (!isVector(s) && (!isList(s)))
         error(_("attempt to replicate non-vector"));
@@ -258,10 +258,10 @@ static SEXP rep1(SEXP s, SEXP ncopy)
         return rep2(s, ncopy);
 
     if ((length(ncopy) != 1))
-        error(_("invalid number of copies in rep.int()"));
+        error(_("invalid '%s' value"), "times");
 
     if ((nc = asInteger(ncopy)) == NA_INTEGER || nc < 0) /* nc = 0 ok */
-        error(_("invalid number of copies in rep.int()"));
+        error(_("invalid '%s' value"), "times");
 
     ns = length(s);
     na = nc * ns;
@@ -503,9 +503,9 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         lf = length(from);
         if (lf == 1 && (TYPEOF(from) == INTSXP || TYPEOF(from) == REALSXP))
-            ans = seq_colon(1.0, asReal(from));
+            ans = seq_colon(1.0, asReal(from), call);
         else if (lf)
-            ans = seq_colon(1.0, (double)lf);
+            ans = seq_colon(1.0, (double)lf, call);
         else
             ans = allocVector(INTSXP, 0);
         goto done;
@@ -515,7 +515,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         lout = INTEGER(along)[0];
         if (One)
         {
-            ans = lout ? seq_colon(1.0, (double)lout) : allocVector(INTSXP, 0);
+            ans = lout ? seq_colon(1.0, (double)lout, call) : allocVector(INTSXP, 0);
             goto done;
         }
     }
@@ -535,7 +535,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (to == R_MissingArg)
             rto = 1.0;
         if (by == R_MissingArg)
-            ans = seq_colon(rfrom, rto);
+            ans = seq_colon(rfrom, rto, call);
         else
         {
             double del = rto - rfrom, n, dd;
@@ -569,9 +569,9 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (n > (double)INT_MAX)
                 errorcall(call, _("'by' argument is much too small"));
-            nn = (int)(n + FLT_EPSILON);
-            if (nn < 0)
+            if (n < -FLT_EPSILON)
                 errorcall(call, _("wrong sign in 'by' argument"));
+            nn = (int)(n + FLT_EPSILON);
             ans = allocVector(REALSXP, nn + 1);
             for (i = 0; i <= nn; i++)
                 REAL(ans)[i] = rfrom + i * rby;
@@ -583,7 +583,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else if (One)
     {
-        ans = seq_colon(1.0, (double)lout);
+        ans = seq_colon(1.0, (double)lout, call);
     }
     else if (by == R_MissingArg)
     {

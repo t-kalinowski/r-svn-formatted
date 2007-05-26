@@ -1605,7 +1605,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             if (!warned && k > 0 && (k > cols || cols % k))
             {
                 warned = 1;
-                warning("number of columns of result\n\tis not a multiple of vector length (arg %d)", n);
+                warning("number of columns of result is not a multiple of vector length (arg %d)", n);
             }
             dn = getAttrib(u, R_NamesSymbol);
             if (k >= lenmin &&

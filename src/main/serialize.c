@@ -1865,7 +1865,7 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
     con = getConnection(asInteger(CADR(args)));
 
     if (TYPEOF(CADDR(args)) != LGLSXP)
-        errorcall(call, _("'ascii' must be logical"));
+        error(_("'ascii' must be logical"));
     ascii = INTEGER(CADDR(args))[0];
     if (ascii)
         type = R_pstream_ascii_format;

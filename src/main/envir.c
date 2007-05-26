@@ -1502,14 +1502,13 @@ SEXP attribute_hidden do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         name = install(translateChar(STRING_ELT(CAR(args), 0)));
     PROTECT(val = CADR(args));
-    aenv = CAR(CDDR(args));
+    aenv = CADDR(args);
     if (TYPEOF(aenv) == NILSXP)
         error(_("use of NULL environment is defunct"));
     if (TYPEOF(aenv) != ENVSXP)
         error(_("invalid '%s' argument"), "envir");
-    if (isLogical(CAR(nthcdr(args, 3))))
-        ginherits = LOGICAL(CAR(nthcdr(args, 3)))[0];
-    else
+    ginherits = asLogical(CADDDR(args));
+    if (ginherits == NA_LOGICAL)
         error(_("invalid '%s' argument"), "inherits");
     if (ginherits)
         setVar(name, val, aenv);
@@ -1608,9 +1607,8 @@ SEXP attribute_hidden do_remove(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "envir");
     args = CDR(args);
 
-    if (isLogical(CAR(args)))
-        ginherits = asLogical(CAR(args));
-    else
+    ginherits = asLogical(CAR(args));
+    if (ginherits == NA_LOGICAL)
         error(_("invalid '%s' argument"), "inherits");
 
     for (i = 0; i < LENGTH(name); i++)
@@ -1630,7 +1628,7 @@ SEXP attribute_hidden do_remove(SEXP call, SEXP op, SEXP args, SEXP rho)
             tenv = CDR(tenv);
         }
         if (!done)
-            warning(_("remove: variable \"%s\" was not found"), CHAR(PRINTNAME(tsym)));
+            warning(_("variable \"%s\" was not found"), CHAR(PRINTNAME(tsym)));
     }
     return R_NilValue;
 }
@@ -1689,7 +1687,7 @@ SEXP attribute_hidden do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
        storage.mode.
     */
 
-    if (isString(CAR(CDDR(args))))
+    if (isString(CADDR(args)))
     {
         if (!strcmp(CHAR(STRING_ELT(CAR(CDDR(args)), 0)), "function")) /* ASCII */
             gmode = FUNSXP;
@@ -1702,9 +1700,8 @@ SEXP attribute_hidden do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
         gmode = FUNSXP; /* -Wall */
     }
 
-    if (isLogical(CAR(nthcdr(args, 3))))
-        ginherits = LOGICAL(CAR(nthcdr(args, 3)))[0];
-    else
+    ginherits = asLogical(CADDDR(args));
+    if (ginherits == NA_LOGICAL)
         error(_("invalid '%s' argument"), "inherits");
 
     /* Search for the object */
@@ -1802,7 +1799,7 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (!isEnvironment(env))
         error(_("second argument must be an environment"));
 
-    mode = CAR(nthcdr(args, 2));
+    mode = CADDR(args);
     nmode = length(mode);
     if (!isString(mode))
         error(_("invalid '%s' argument"), "mode");
@@ -1810,7 +1807,7 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (nmode != nvals && nmode != 1)
         error(_("wrong length for '%s' argument"), "mode");
 
-    PROTECT(ifnotfound = coerceVector(CAR(nthcdr(args, 3)), VECSXP));
+    PROTECT(ifnotfound = coerceVector(CADDDR(args), VECSXP));
     nifnfnd = length(ifnotfound);
     if (!isVector(ifnotfound))
         error(_("invalid '%s' argument"), "ifnotfound");
@@ -1818,9 +1815,8 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (nifnfnd != nvals && nifnfnd != 1)
         error(_("wrong length for '%s' argument"), "ifnotfound");
 
-    if (isLogical(CAR(nthcdr(args, 4))))
-        ginherits = LOGICAL(CAR(nthcdr(args, 4)))[0];
-    else
+    ginherits = asLogical(CAD4R(args));
+    if (ginherits == NA_LOGICAL)
         error(_("invalid '%s' argument"), "inherits");
 
     PROTECT(ans = allocVector(VECSXP, nvals));
@@ -2723,7 +2719,7 @@ static SEXP pos2env(int pos, SEXP call)
         for (env = R_GlobalEnv; env != R_EmptyEnv && pos > 1; env = ENCLOS(env))
             pos--;
         if (pos != 1)
-            error(R_MSG_IA);
+            errorcall(call, R_MSG_IA);
     }
     return env;
 }
