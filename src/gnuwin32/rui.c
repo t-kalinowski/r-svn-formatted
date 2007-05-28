@@ -1612,7 +1612,7 @@ int windelmenu(char *menu, char *errmsg)
     for (i = 0; i < nmenus; i++)
     {
         if (strcmp(menu, usermenunames[i]) == 0 ||
-            (strncmp(menu, usermenunames[i], len) && usermenunames[i][len] == '/'))
+            (strncmp(menu, usermenunames[i], len) == 0 && usermenunames[i][len] == '/'))
         {
             remove_menu_item(usermenus[i]);
             count++;
