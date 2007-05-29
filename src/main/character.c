@@ -127,7 +127,7 @@ SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP d, s, x, stype;
-    int i, len, ntype;
+    int i, len, ntype, allowNA;
     char *type;
 #ifdef SUPPORT_MBCS
     int nc;
@@ -147,6 +147,10 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     ntype = strlen(type);
     if (ntype == 0)
         error(_("invalid '%s' argument"), "type");
+    allowNA = asLogical(CADDR(args));
+    if (allowNA == NA_LOGICAL)
+        allowNA = 0;
+
     PROTECT(s = allocVector(INTSXP, len));
     for (i = 0; i < len; i++)
     {
@@ -167,6 +171,8 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             if (mbcslocale)
             {
                 nc = mbstowcs(NULL, translateChar(sxi), 0);
+                if (allowNA && nc < 0)
+                    error(_("invalid multibyte string %d"), i + 1);
                 INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
             }
             else
@@ -189,6 +195,8 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (INTEGER(s)[i] < 1)
                         INTEGER(s)[i] = nc;
                 }
+                else if (allowNA)
+                    error(_("invalid multibyte string %d"), i + 1);
                 else
                     INTEGER(s)[i] = NA_INTEGER;
             }
