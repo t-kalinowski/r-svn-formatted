@@ -171,7 +171,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             if (mbcslocale)
             {
                 nc = mbstowcs(NULL, translateChar(sxi), 0);
-                if (allowNA && nc < 0)
+                if (!allowNA && nc < 0)
                     error(_("invalid multibyte string %d"), i + 1);
                 INTEGER(s)[i] = nc >= 0 ? nc : NA_INTEGER;
             }
