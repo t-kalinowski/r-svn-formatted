@@ -212,7 +212,7 @@ char *EncodeReal(double x, int w, int d, int e, char cdec)
     return buff;
 }
 
-char *EncodeReal2(double x, int w, int d, int e)
+attribute_hidden char *EncodeReal2(double x, int w, int d, int e)
 {
     static char buff[NB];
     char fmt[20];
