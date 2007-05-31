@@ -76,97 +76,19 @@ typedef struct
     int save; /* = 0; */
     Rboolean isLatin1;
     Rboolean isUTF8;
-    void *hash;
-
     char convbuf[100];
 } LocalData;
 
-/* Hashing structure for strings: not the same as in unique.c */
-typedef struct _HashData
-{
-    int K, M;
-    SEXP *HashTable;
-    int nins, maxstrings;
-} HashData;
-
-static R_INLINE int scatter(unsigned int key, HashData *d)
-{
-    return 3141592653U * key >> (32 - d->K);
-}
-
-static int shash(char *instr, HashData *d)
-{
-    unsigned int k;
-    char *p = instr;
-    k = 0;
-    while (*p++)
-        k = 11 * k + *p; /* was 8 but 11 isn't a power of 2 */
-    return scatter(k, d);
-}
-
-static int sequal(char *str1, char *str2)
-{
-    return !strcmp(str1, str2);
-}
-
-static HashData *HashTableSetup(int maxstrings)
-{
-    int n4;
-    HashData *d;
-
-    maxstrings = imin2(maxstrings, 536870912); /* 2^29 */
-    n4 = 2 * maxstrings;
-    d = (HashData *)R_alloc(1, sizeof(HashData));
-    d->M = 2;
-    d->K = 1;
-    while (d->M < n4)
-    {
-        d->M *= 2;
-        d->K += 1;
-    }
-    d->nins = 0;
-    d->maxstrings = maxstrings;
-
-    d->HashTable = (SEXP *)S_alloc(d->M, sizeof(SEXP));
-    return d;
-}
-
 static SEXP insertString(char *str, LocalData *l)
 {
-    HashData *d = l->hash;
-    int i;
-    SEXP tmp, *h = d->HashTable;
-
-    if (d->nins >= d->maxstrings)
-    {
-        tmp = mkChar(str);
-        if (!utf8strIsASCII(str))
-        {
-            if (l->isLatin1)
-                SET_LATIN1(tmp);
-            if (l->isUTF8)
-                SET_UTF8(tmp);
-        }
-        return tmp;
-    }
-    i = shash(str, d);
-    while (h[i] != NULL)
-    {
-        if (sequal(str, CHAR(h[i])))
-            return h[i];
-        i = (i + 1) % d->M;
-    }
-    d->nins++;
-    tmp = mkChar(str);
     if (!utf8strIsASCII(str))
     {
         if (l->isLatin1)
-            SET_LATIN1(tmp);
+            return mkCharEnc(str, LATIN1_MASK);
         if (l->isUTF8)
-            SET_UTF8(tmp);
+            return mkCharEnc(str, UTF8_MASK);
     }
-    h[i] = tmp;
-    return tmp;
+    return mkCharEnc(str, 0);
 }
 
 #define Rspace(c) (c == ' ' || c == '\t' || c == '\n' || c == '\r')
@@ -780,17 +702,6 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
 
     strip = asLogical(stripwhite);
 
-    /* compute bound on number of distinct strings */
-    if (type == STRSXP)
-    {
-        int maxstring;
-
-        maxstring = (maxlines > 0) ? maxlines : MAX_STRINGS;
-        if (maxitems > 0)
-            maxstring = imin2(maxitems, maxstring);
-        d->hash = HashTableSetup(maxstring);
-    }
-
     for (;;)
     {
         if (n % 10000 == 9999)
@@ -935,16 +846,6 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         }
     }
     setAttrib(ans, R_NamesSymbol, getAttrib(what, R_NamesSymbol));
-
-    /* compute bound on number of distinct strings */
-    if (nstring > 0)
-    {
-        int maxstring;
-        maxstring = (maxlines > 0) ? maxlines * nstring : MAX_STRINGS;
-        if (maxitems > 0)
-            maxstring = imin2(maxitems * nstring / nc, maxstring);
-        d->hash = HashTableSetup(maxstring);
-    }
 
     n = 0;
     linesread = 0;
@@ -1106,7 +1007,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline, escapes;
     char *p, *vmax, *encoding;
     RCNTXT cntxt;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
+    LocalData data = {NULL, 0, 0, '\0', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, 0};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1310,7 +1211,7 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef SUPPORT_MBCS
     Rboolean dbcslocale = (MB_CUR_MAX == 2);
 #endif
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
+    LocalData data = {NULL, 0, 0, '\0', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, 0};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1585,7 +1486,7 @@ SEXP attribute_hidden do_typecvt(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, len, numeric, asIs;
     Rboolean done = FALSE;
     char *endp, *tmp = NULL;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
+    LocalData data = {NULL, 0, 0, '\0', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, 0};
     Typecvt_Info typeInfo;     /* keep track of possible types of cvec */
     typeInfo.islogical = TRUE; /* we can't rule anything out initially */
     typeInfo.isinteger = TRUE;
@@ -1858,7 +1759,7 @@ SEXP attribute_hidden do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     double first;
     char buffer[MAXELTSIZE], *bufp = buffer;
     SEXP ans;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
+    LocalData data = {NULL, 0, 0, '\0', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, 0};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1911,7 +1812,7 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nlines, i, c, quote = 0, nread, nbuf, buf_size = BUF_SIZE, blskip;
     char *p, *buf;
     Rboolean empty, skip;
-    LocalData data = {NULL, 0, 0, 0, NULL, NULL, NO_COMCHAR, 0, 0, FALSE, FALSE, 0, FALSE, FALSE, NULL};
+    LocalData data = {NULL, 0, 0, '\0', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, 0};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
