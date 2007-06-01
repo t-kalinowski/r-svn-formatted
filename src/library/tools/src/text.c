@@ -176,7 +176,7 @@ SEXP check_nonASCII(SEXP text, SEXP ignore_quotes)
        in UTF-8.
     */
     int i, nbslash = 0; /* number of preceding backslashes */
-    constchar *p;
+    const char *p;
     char quote = '\0';
     Rboolean ign, inquote = FALSE;
 
