@@ -61,12 +61,14 @@ FILE *R_OpenInitFile(void)
 static int HaveHOME = -1;
 static char UserHOME[PATH_MAX];
 static char newFileName[PATH_MAX];
-char *R_ExpandFileName(const char *s)
+char *R_ExpandFileName(char *s)
 {
     char *p;
 
-    if (s[0] != '~' || isalpha(s[1]))
-        return (char *)s;
+    if (s[0] != '~')
+        return s;
+    if (isalpha(s[1]))
+        return s;
     if (HaveHOME < 0)
     {
         HaveHOME = 0;
@@ -107,7 +109,7 @@ char *R_ExpandFileName(const char *s)
         return newFileName;
     }
     else
-        return (char *)s;
+        return s;
 }
 
 /*
