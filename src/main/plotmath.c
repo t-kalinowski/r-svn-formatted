@@ -619,14 +619,14 @@ typedef struct
 
 /* Determine a match between symbol name and string. */
 
-static int NameMatch(SEXP expr, char *aString)
+static int NameMatch(SEXP expr, const char *aString)
 {
     if (!isSymbol(expr))
         return 0;
     return !strcmp(CHAR(PRINTNAME(expr)), aString);
 }
 
-static int StringMatch(SEXP expr, char *aString)
+static int StringMatch(SEXP expr, const char *aString)
 {
     return !strcmp(translateChar(STRING_ELT(expr, 0)), aString);
 }
@@ -1020,9 +1020,10 @@ static BBOX RenderSymbolChar(int ascii, int draw, mathContext *mc, R_GE_gcontext
 /* This code inserts italic corrections after */
 /* every character. */
 
-static BBOX RenderSymbolStr(char *str, int draw, mathContext *mc, R_GE_gcontext *gc, GEDevDesc *dd)
+static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, R_GE_gcontext *gc, GEDevDesc *dd)
 {
-    char chr[7] = "", *s = str;
+    char chr[7] = "";
+    const char *s = str;
     BBOX glyphBBox;
     BBOX resultBBox = NullBBox();
     double lastItalicCorr = 0;
@@ -1145,7 +1146,7 @@ static BBOX RenderChar(int ascii, int draw, mathContext *mc, R_GE_gcontext *gc, 
 }
 
 /* This gets called on strings and PRINTNAMES */
-static BBOX RenderStr(char *str, int draw, mathContext *mc, R_GE_gcontext *gc, GEDevDesc *dd)
+static BBOX RenderStr(const char *str, int draw, mathContext *mc, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     BBOX glyphBBox;
     BBOX resultBBox = NullBBox();
@@ -1154,7 +1155,7 @@ static BBOX RenderStr(char *str, int draw, mathContext *mc, R_GE_gcontext *gc, G
 #ifdef SUPPORT_MBCS
         int n = strlen(str), used;
         wchar_t wc;
-        char *p = str;
+        const char *p = str;
         mbstate_t mb_st;
         mbs_init(&mb_st);
         while ((used = Mbrtowc(&wc, p, n, &mb_st)) > 0)

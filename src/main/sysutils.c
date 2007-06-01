@@ -127,7 +127,7 @@ FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 #else
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {
-    char *filename = translateChar(fn);
+    const char *filename = translateChar(fn);
     if (!filename)
         return NULL;
     if (expand)
@@ -203,7 +203,7 @@ SEXP attribute_hidden do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #ifdef HAVE_POPEN
-FILE *R_popen(char *command, char *type)
+FILE *R_popen(const char *command, const char *type)
 {
     FILE *fp;
 #ifdef __APPLE_CC__
@@ -221,7 +221,7 @@ FILE *R_popen(char *command, char *type)
 }
 #endif /* HAVE_POPEN */
 
-int R_system(char *command)
+int R_system(const char *command)
 {
     int val;
 #ifdef __APPLE_CC__
@@ -596,7 +596,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
-void *Riconv_open(char *tocode, char *fromcode)
+void *Riconv_open(const char *tocode, const char *fromcode)
 {
 #ifdef Win32
     char *cp = "UTF-8";
@@ -611,7 +611,7 @@ void *Riconv_open(char *tocode, char *fromcode)
     else
         return iconv_open(tocode, fromcode);
 #else
-    return iconv_open(tocode, fromcode);
+    return iconv_open((char *)tocode, (char *)fromcode);
 #endif
 }
 
@@ -630,7 +630,8 @@ static void *latin1_obj = NULL, *utf8_obj = NULL;
 char *translateChar(SEXP x)
 {
     void *obj;
-    char *inbuf, *outbuf, *ans = CHAR(x), *p;
+    char *inbuf;
+    char *outbuf, *ans = CHAR(x), *p;
     size_t inb, outb, res;
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 

@@ -505,7 +505,7 @@ static Rboolean file_open(Rconnection con)
         name = R_tmpnam("Rf", R_TempDir);
     }
     else
-        name = R_ExpandFileName(con->description);
+        name = (char *)R_ExpandFileName(con->description);
     errno = 0; /* some systems require this */
     if (strcmp(name, "stdin"))
     {
@@ -803,7 +803,7 @@ static Rconnection newfile(char *description, char *mode)
 
 static Rboolean fifo_open(Rconnection con)
 {
-    char *name;
+    const char *name;
     Rfifoconn this = con->private;
     int fd, flags, res;
     int mlen = strlen(con->mode);

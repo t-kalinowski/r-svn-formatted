@@ -140,7 +140,7 @@ static int R_call_lang(ClientData clientData, Tcl_Interp *interp, int argc, CONS
     return TCL_OK;
 }
 
-static Tcl_Obj *tk_eval(char *cmd)
+static Tcl_Obj *tk_eval(const char *cmd)
 {
 #ifdef SUPPORT_MBCS
     char *cmd_utf8;
@@ -185,7 +185,7 @@ static Tcl_Obj *tk_eval(char *cmd)
 SEXP dotTcl(SEXP args)
 {
     SEXP ans;
-    char *cmd;
+    const char *cmd;
     Tcl_Obj *val;
     if (!isValidString(CADR(args)))
         error(_("invalid argument"));
@@ -213,7 +213,8 @@ SEXP dotTclObjv(SEXP args)
 
     for (objc = i = 0; i < length(avec); i++)
     {
-        char *s, *tmp;
+        const char *s;
+        char *tmp;
         if (!isNull(nm) && strlen(s = translateChar(STRING_ELT(nm, i))))
         {
             tmp = calloc(strlen(s) + 2, sizeof(char));
@@ -520,7 +521,7 @@ SEXP RTcl_ObjFromIntVector(SEXP args)
 SEXP RTcl_GetArrayElem(SEXP args)
 {
     SEXP x, i;
-    char *xstr, *istr;
+    const char *xstr, *istr;
     Tcl_Obj *tclobj;
 
     x = CADR(args);
@@ -539,7 +540,7 @@ SEXP RTcl_GetArrayElem(SEXP args)
 SEXP RTcl_SetArrayElem(SEXP args)
 {
     SEXP x, i;
-    char *xstr, *istr;
+    const char *xstr, *istr;
     Tcl_Obj *value;
 
     x = CADR(args);
@@ -556,7 +557,7 @@ SEXP RTcl_SetArrayElem(SEXP args)
 SEXP RTcl_RemoveArrayElem(SEXP args)
 {
     SEXP x, i;
-    char *xstr, *istr;
+    const char *xstr, *istr;
 
     x = CADR(args);
     i = CADDR(args);

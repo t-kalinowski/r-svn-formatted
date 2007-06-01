@@ -194,7 +194,8 @@ static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP *p
 SEXP attribute_hidden do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn, ans, names = R_NilValue;
-    char zipname[PATH_MAX], *topics[500], dest[PATH_MAX], *p;
+    char zipname[PATH_MAX], *topics[500], dest[PATH_MAX];
+    const char *p;
     int i, ntopics, rc, nnames = 0;
 
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
@@ -266,19 +267,20 @@ static Rboolean unz_open(Rconnection con)
 {
     unzFile uf;
     char path[2 * PATH_MAX], *p;
+    const char *tmp;
 
     if (con->mode[0] != 'r')
     {
         warning(_("unz connections can only be opened for reading"));
         return FALSE;
     }
-    p = R_ExpandFileName(con->description);
-    if (strlen(p) > PATH_MAX - 1)
+    tmp = R_ExpandFileName(con->description);
+    if (strlen(tmp) > PATH_MAX - 1)
     {
         warning(_("zip path is too long"));
         return FALSE;
     }
-    strcpy(path, p);
+    strcpy(path, tmp);
     p = Rf_strrchr(path, ':');
     if (!p)
     {

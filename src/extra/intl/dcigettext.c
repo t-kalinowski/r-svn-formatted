@@ -1094,13 +1094,13 @@ found:
                             memcpy(tmp + len, "//TRANSLIT", 10 + 1);
                             outcharset = tmp;
 
-                            convd->conv = Riconv_open((char *)outcharset, charset);
+                            convd->conv = Riconv_open(outcharset, charset);
 
                             freea(outcharset);
                         }
                         else
 #endif
-                            convd->conv = Riconv_open((char *)outcharset, charset);
+                            convd->conv = Riconv_open(outcharset, charset);
 #endif
 #endif
 

@@ -217,7 +217,7 @@ const static struct
 
                  {(char *)0, -1}};
 
-SEXPTYPE str2type(char *s)
+SEXPTYPE str2type(const char *s)
 {
     int i;
     for (i = 0; TypeTable[i].str; i++)
@@ -242,14 +242,14 @@ SEXP type2str(SEXPTYPE t)
     return R_NilValue; /* for -Wall */
 }
 
-char *type2char(SEXPTYPE t)
+const char *type2char(SEXPTYPE t)
 {
     int i;
 
     for (i = 0; TypeTable[i].str; i++)
     {
         if (TypeTable[i].type == t)
-            return (char *)TypeTable[i].str;
+            return TypeTable[i].str;
     }
     error(_("type %d is unimplemented in '%s'"), t, "type2char");
     return ""; /* for -Wall */
@@ -732,6 +732,7 @@ SEXP attribute_hidden do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, s = R_NilValue; /* -Wall */
     char buf[PATH_MAX], *p, fsp = FILESEP[0];
+    const char *pp;
     int i, n;
 
     checkArity(op, args);
@@ -740,10 +741,10 @@ SEXP attribute_hidden do_basename(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
-        p = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
-        if (strlen(p) > PATH_MAX - 1)
+        pp = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
+        if (strlen(pp) > PATH_MAX - 1)
             error(_("path too long"));
-        strcpy(buf, p);
+        strcpy(buf, pp);
 #ifdef Win32
         R_fixslash(buf);
 #endif
@@ -772,6 +773,7 @@ SEXP attribute_hidden do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, s = R_NilValue; /* -Wall */
     char buf[PATH_MAX], *p, fsp = FILESEP[0];
+    const char *pp;
     int i, n;
 
     checkArity(op, args);
@@ -780,10 +782,10 @@ SEXP attribute_hidden do_dirname(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(STRSXP, n = LENGTH(s)));
     for (i = 0; i < n; i++)
     {
-        p = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
-        if (strlen(p) > PATH_MAX - 1)
+        pp = R_ExpandFileName(translateChar(STRING_ELT(s, i)));
+        if (strlen(pp) > PATH_MAX - 1)
             error(_("path too long"));
-        strcpy(buf, p);
+        strcpy(buf, pp);
 #ifdef Win32
         R_fixslash(buf);
 #endif
@@ -820,7 +822,7 @@ SEXP attribute_hidden do_encodeString(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, s;
     int i, len, w, quote = 0, justify, na;
-    char *cs;
+    const char *cs;
     Rboolean findWidth;
 
     checkArity(op, args);
