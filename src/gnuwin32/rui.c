@@ -1343,7 +1343,7 @@ char *getusermenuname(int pos)
     return (usermenunames[pos]);
 }
 
-menuItems *wingetmenuitems(char *mname, char *errmsg)
+menuItems *wingetmenuitems(const char *mname, char *errmsg)
 {
     menuItems *items;
     char mitem[1002], *p, *q, *r;
@@ -1436,12 +1436,13 @@ static menu getMenu(char *name)
         return (NULL);
 }
 
-int winaddmenu(char *name, char *errmsg)
+int winaddmenu(const char *name, char *errmsg)
 {
-    char *p, *submenu = name, start[501];
+    const char *submenu = name;
+    char *p, start[501];
     menu parent;
 
-    if (getMenu(name))
+    if (getMenu((char *)name))
         return 0; /* Don't add repeats */
 
     if (nmenus >= alloc_menus)
@@ -1476,12 +1477,12 @@ int winaddmenu(char *name, char *errmsg)
             strcpy(errmsg, G_("base menu does not exist"));
             return 3;
         }
-        m = newsubmenu(parent, submenu);
+        m = newsubmenu(parent, (char *)submenu);
     }
     else
     {
         addto(RMenuBar);
-        m = newmenu(submenu);
+        m = newmenu((char *)submenu);
     }
     if (m)
     {
@@ -1498,7 +1499,7 @@ int winaddmenu(char *name, char *errmsg)
     }
 }
 
-int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
+int winaddmenuitem(const char *item, const char *menu, const char *action, char *errmsg)
 {
     int i, im;
     menuitem m;
@@ -1559,7 +1560,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
     else
     {
         addto(usermenus[im]);
-        m = newmenuitem(item, 0, menuuser);
+        m = newmenuitem((char *)item, 0, menuuser);
         if (m)
         {
             if (alloc_items <= nitems)
@@ -1604,7 +1605,7 @@ int winaddmenuitem(char *item, char *menu, char *action, char *errmsg)
     return 0;
 }
 
-int windelmenu(char *menu, char *errmsg)
+int windelmenu(const char *menu, char *errmsg)
 {
     int i, j, count = 0, len = strlen(menu);
 
@@ -1646,7 +1647,7 @@ int windelmenu(char *menu, char *errmsg)
     return 0;
 }
 
-void windelmenus(char *prefix)
+void windelmenus(const char *prefix)
 {
     int i, len = strlen(prefix);
 
@@ -1657,7 +1658,7 @@ void windelmenus(char *prefix)
     }
 }
 
-int windelmenuitem(char *item, char *menu, char *errmsg)
+int windelmenuitem(const char *item, const char *menu, char *errmsg)
 {
     int i;
     char mitem[1002];

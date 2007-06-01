@@ -147,9 +147,9 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* also used in rui.c */
-void internal_shellexec(char *file)
+void internal_shellexec(const char *file)
 {
-    char *home;
+    const char *home;
     unsigned int ret;
 
     home = getenv("R_HOME");
@@ -182,9 +182,10 @@ SEXP do_shellexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
 int winAccess(const char *path, int mode);
 
-int check_doc_file(char *file)
+int check_doc_file(const char *file)
 {
-    char *home, path[MAX_PATH];
+    const char *home;
+    char path[MAX_PATH];
 
     home = getenv("R_HOME");
     if (home == NULL)
@@ -200,7 +201,7 @@ int check_doc_file(char *file)
 SEXP do_windialog(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP message;
-    char *type;
+    const char *type;
     int res = YES;
 
     checkArity(op, args);
@@ -235,7 +236,7 @@ SEXP do_windialog(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_windialogstring(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP message, def;
-    char *string;
+    const char *string;
 
     checkArity(op, args);
     message = CAR(args);
@@ -607,7 +608,7 @@ SEXP do_memsize(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_dllversion(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP path = R_NilValue, ans;
-    char *dll;
+    const char *dll;
     DWORD dwVerInfoSize;
     DWORD dwVerHnd;
 
@@ -797,7 +798,7 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-int Rwin_rename(char *from, char *to)
+int Rwin_rename(const char *from, const char *to)
 {
     int res = 0;
     OSVERSIONINFO verinfo;
@@ -843,7 +844,7 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans = R_NilValue;
     HGLOBAL hglb;
-    char *pc;
+    const char *pc;
     int j, format, raw, size;
 
     checkArity(op, args);
@@ -852,7 +853,8 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (OpenClipboard(NULL))
     {
-        if (IsClipboardFormatAvailable(format) && (hglb = GetClipboardData(format)) && (pc = (char *)GlobalLock(hglb)))
+        if (IsClipboardFormatAvailable(format) && (hglb = GetClipboardData(format)) &&
+            (pc = (const char *)GlobalLock(hglb)))
         {
             if (!raw)
             {
@@ -1202,7 +1204,7 @@ extern window RFrame; /* from rui.c */
 
 SEXP getIdentification()
 {
-    char *res = "" /* -Wall */;
+    const char *res = "" /* -Wall */;
 
     switch (CharacterMode)
     {
@@ -1246,7 +1248,7 @@ SEXP getWindowTitle()
     return mkString(res);
 }
 
-SEXP setTitle(char *title)
+SEXP setTitle(const char *title)
 {
     SEXP result = getWindowTitle();
 
@@ -1254,9 +1256,9 @@ SEXP setTitle(char *title)
     {
     case RGui:
         if (RguiMDI & RW_MDI)
-            settext(RFrame, title);
+            settext(RFrame, (char *)title);
         else
-            settext(RConsole, title);
+            settext(RConsole, (char *)title);
         break;
     case RTerm:
         SetConsoleTitle(title);

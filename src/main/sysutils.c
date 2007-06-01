@@ -170,7 +170,8 @@ SEXP attribute_hidden do_tempdir(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_tempfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, pattern, tempdir;
-    char *tn, *td, *tm;
+    const char *tn, *td;
+    char *tm;
     int i, n1, n2, slen;
 
     checkArity(op, args);
@@ -298,7 +299,7 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #if !defined(HAVE_SETENV) && defined(HAVE_PUTENV)
-static int Rputenv(char *nm, char *val)
+static int Rputenv(const char *nm, const char *val)
 {
     char *buf;
     buf = (char *)malloc((strlen(nm) + strlen(val) + 2) * sizeof(char));
@@ -470,7 +471,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j;
     char *inbuf; /* Solaris headers have const char*  here */
     char *outbuf;
-    char *sub;
+    const char *sub;
     size_t inb, outb, res;
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
@@ -492,7 +493,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-        char *from, *to;
+        const char *from, *to;
         Rboolean isLatin1 = FALSE, isUTF8 = FALSE;
 
         if (TYPEOF(x) != STRSXP)
@@ -526,7 +527,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < LENGTH(x); i++)
         {
         top_of_loop:
-            inbuf = CHAR(STRING_ELT(x, i));
+            inbuf = (char *)CHAR(STRING_ELT(x, i));
             inb = strlen(inbuf);
             outbuf = cbuff.data;
             outb = cbuff.bufsize - 1;
@@ -630,8 +631,8 @@ static void *latin1_obj = NULL, *utf8_obj = NULL;
 char *translateChar(SEXP x)
 {
     void *obj;
-    char *inbuf;
-    char *outbuf, *ans = CHAR(x), *p;
+    char *inbuf, *outbuf, *p;
+    const char *ans = CHAR(x);
     size_t inb, outb, res;
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
@@ -670,7 +671,7 @@ char *translateChar(SEXP x)
     }
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
-    inbuf = ans;
+    inbuf = (char *)ans;
     inb = strlen(inbuf);
     outbuf = cbuff.data;
     outb = cbuff.bufsize - 1;
