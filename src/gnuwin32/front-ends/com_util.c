@@ -79,7 +79,6 @@ RCOM_OBJHANDLE com_addObject(LPDISPATCH object)
 SEXP com_createSEXP(RCOM_OBJHANDLE handle)
 {
     SEXP sexp = R_NilValue;
-    SEXP cls;
     SEXP strsexp;
 
     if (handle == RCOM_NULLHANDLE)
@@ -90,12 +89,8 @@ SEXP com_createSEXP(RCOM_OBJHANDLE handle)
     sexp = R_MakeExternalPtr(handle, R_NilValue, R_NilValue);
     R_RegisterCFinalizerEx(sexp, _com_object_finalizer, (Rboolean)TRUE);
     RPROXY_TRACE(printf("COM object watcher: finalizer for object at %p registered\n", handle));
-    cls = allocString(strlen(RCOM_CLSNAME));
-    PROTECT(cls);
-    strcpy(CHAR(cls), RCOM_CLSNAME);
-    strsexp = PROTECT(allocVector(STRSXP, 1));
-    SET_STRING_ELT(strsexp, 0, cls);
+    PROTECT(strsexp = mkString(RCOM_CLSNAME));
     setAttrib(sexp, R_ClassSymbol, strsexp);
-    UNPROTECT(2);
+    UNPROTECT(1);
     return sexp;
 }
