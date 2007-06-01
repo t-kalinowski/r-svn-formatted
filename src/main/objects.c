@@ -1391,7 +1391,7 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
         return value;
 }
 
-SEXP R_do_MAKE_CLASS(char *what)
+SEXP R_do_MAKE_CLASS(const char *what)
 {
     static SEXP s_getClass = NULL;
     SEXP e, call;

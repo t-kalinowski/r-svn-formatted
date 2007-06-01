@@ -42,7 +42,7 @@
 static SEXP getListElement(SEXP list, SEXP names, char *str)
 {
     SEXP elmt = (SEXP)NULL;
-    char *tempChar;
+    const char *tempChar;
     int i;
 
     for (i = 0; i < length(list); i++)

@@ -2426,7 +2426,7 @@ void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, dou
  * GEStrWidth
  ****************************************************************
  */
-double GEStrWidth(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
+double GEStrWidth(const char *str, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     /*
      * If the fontfamily is a Hershey font family, call R_GE_VStrWidth
@@ -2445,7 +2445,8 @@ double GEStrWidth(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
         w = 0;
         if (str && *str)
         {
-            char *s, *sb;
+            const char *s;
+            char *sb;
             double wdash;
             sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             sb = sbuf;
@@ -2479,7 +2480,7 @@ double GEStrWidth(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
  * GEStrHeight
  ****************************************************************
  */
-double GEStrHeight(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
+double GEStrHeight(const char *str, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     /*
      * If the fontfamily is a Hershey font family, call R_GE_VStrHeight
@@ -2494,7 +2495,7 @@ double GEStrHeight(char *str, R_GE_gcontext *gc, GEDevDesc *dd)
     else
     {
         double h;
-        char *s;
+        const char *s;
         double asc, dsc, wid;
         int n;
         /* Count the lines of text minus one */

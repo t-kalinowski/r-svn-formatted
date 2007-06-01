@@ -133,7 +133,7 @@ SEXP gpFontFamilySXP(SEXP gp)
     return VECTOR_ELT(gp, GP_FONTFAMILY);
 }
 
-char *gpFontFamily(SEXP gp, int i)
+const char *gpFontFamily(SEXP gp, int i)
 {
     SEXP fontfamily = gpFontFamilySXP(gp);
     return CHAR(STRING_ELT(fontfamily, i % LENGTH(fontfamily)));
