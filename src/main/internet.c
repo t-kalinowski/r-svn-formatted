@@ -115,7 +115,7 @@ Rconnection attribute_hidden R_newurl(char *description, const char *const mode)
     }
 }
 
-Rconnection R_newsock(char *host, int port, int server, char *mode)
+Rconnection R_newsock(const char *host, int port, int server, const char *const mode)
 {
     if (!initialized)
         internet_Init();

@@ -152,11 +152,11 @@ double R_GE_VStrHeight(const unsigned char *s, R_GE_gcontext *gc, GEDevDesc *dd)
     }
 }
 
-void GVText(double x, double y, int unit, char *s, int typeface, int fontindex, double x_justify, double y_justify,
-            double rotation, DevDesc *dd)
+void GVText(double x, double y, int unit, const char *s, int typeface, int fontindex, double x_justify,
+            double y_justify, double rotation, DevDesc *dd)
 {
     R_GE_gcontext gc;
-    char *str = s;
+    const char *str = s;
 #ifdef SUPPORT_MBCS
     char *buff;
     Rboolean conv = mbcslocale;

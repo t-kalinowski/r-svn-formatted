@@ -1005,7 +1005,8 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, file, sep, what, stripwhite, dec, quotes, comstr;
     int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline, escapes;
-    char *p, *vmax, *encoding;
+    const char *p, *encoding;
+    char *vmax;
     RCNTXT cntxt;
     LocalData data = {NULL, 0, 0, '.', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE};
     data.NAstrings = R_NilValue;
@@ -1083,7 +1084,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
             data.sepchar = 0;
         else
         {
-            char *sc = translateChar(STRING_ELT(sep, 0));
+            const char *sc = translateChar(STRING_ELT(sep, 0));
             if (strlen(sc) > 1)
                 error(_("invalid 'sep' value: must be one byte"));
             data.sepchar = (unsigned char)sc[0];
@@ -1099,7 +1100,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
             data.decchar = '.';
         else
         {
-            char *dc = translateChar(STRING_ELT(dec, 0));
+            const char *dc = translateChar(STRING_ELT(dec, 0));
             if (strlen(dc) != 1)
                 error(_("invalid decimal separator: must be one byte"));
             data.decchar = dc[0];
@@ -1110,8 +1111,8 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isString(quotes))
     {
-        /* This appears to be necessary to protect quoteset against GC */
-        data.quoteset = translateChar(STRING_ELT(quotes, 0));
+        /* This is necessary to protect quoteset against GC */
+        data.quoteset = (char *)translateChar(STRING_ELT(quotes, 0));
         /* Protect against broken realloc */
         if (data.quotesave)
             data.quotesave = realloc(data.quotesave, strlen(data.quoteset) + 1);
@@ -1207,7 +1208,7 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans, file, sep, bns, quotes, comstr;
     int nfields, nskip, i, c, inquote, quote = 0;
     int blocksize, nlines, blskip;
-    char *p;
+    const char *p;
 #ifdef SUPPORT_MBCS
     Rboolean dbcslocale = (MB_CUR_MAX == 2);
 #endif
@@ -1254,8 +1255,8 @@ SEXP attribute_hidden do_countfields(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isString(quotes))
     {
-        /* This appears to be necessary to protect quoteset against GC */
-        data.quoteset = translateChar(STRING_ELT(quotes, 0));
+        /* This is necessary to protect quoteset against GC */
+        data.quoteset = (char *)translateChar(STRING_ELT(quotes, 0));
         /* Protect against broken realloc */
         if (data.quotesave)
             data.quotesave = realloc(data.quotesave, strlen(data.quoteset) + 1);
@@ -1810,7 +1811,8 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP file, comstr, ans = R_NilValue, ans2, quotes, sep;
     int nlines, i, c, quote = 0, nread, nbuf, buf_size = BUF_SIZE, blskip;
-    char *p, *buf;
+    const char *p;
+    char *buf;
     Rboolean empty, skip;
     LocalData data = {NULL, 0, 0, '.', NULL, NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE};
     data.NAstrings = R_NilValue;
@@ -1835,8 +1837,8 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
         blskip = 1;
     if (isString(quotes))
     {
-        /* This appears to be necessary to protect quoteset against GC */
-        data.quoteset = translateChar(STRING_ELT(quotes, 0));
+        /* This is necessary to protect quoteset against GC */
+        data.quoteset = (char *)translateChar(STRING_ELT(quotes, 0));
         /* Protect against broken realloc */
         if (data.quotesave)
             data.quotesave = realloc(data.quotesave, strlen(data.quoteset) + 1);
@@ -2053,10 +2055,11 @@ static void change_dec(char *tmp, char cdec, SEXPTYPE t)
 #endif
 
 /* a version of EncodeElement with different escaping of char strings */
-static char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qmethod, R_StringBuffer *buff, char cdec)
+static const char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qmethod, R_StringBuffer *buff, char cdec)
 {
     int nbuf;
-    char *p, *p0, *q;
+    char *q;
+    const char *p, *p0;
 
     if (TYPEOF(x) == STRSXP)
     {
@@ -2105,7 +2108,8 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nr, nc, i, j, qmethod;
     Rboolean wasopen, quote_rn = FALSE, *quote_col;
     Rconnection con;
-    char *csep, *ceol, *cna, cdec, *sdec, *tmp = NULL /* -Wall */;
+    const char *csep, *ceol, *cna, *sdec, *tmp = NULL /* -Wall */;
+    char cdec;
     SEXP *levels;
     R_StringBuffer strBuf = {NULL, 0, MAXELTSIZE};
     wt_info wi;

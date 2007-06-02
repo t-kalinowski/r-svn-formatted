@@ -144,7 +144,7 @@ static int chash(SEXP x, int indx, HashData *d)
 static int shash(SEXP x, int indx, HashData *d)
 {
     unsigned int k;
-    char *p = translateChar(STRING_ELT(x, indx));
+    const char *p = translateChar(STRING_ELT(x, indx));
     k = 0;
     while (*p++)
         k = 11 * k + *p; /* was 8 but 11 isn't a power of 2 */
@@ -602,7 +602,8 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, mtch, n_input, n_target, mtch_count, temp, dups_ok, no_match;
     int nexact = 0;
     int *used = NULL, *ians;
-    char *vmax, **in, **tar;
+    char *vmax;
+    char **in, **tar;
     Rboolean no_dups;
 
     checkArity(op, args);
@@ -633,11 +634,11 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     ians = INTEGER(ans);
     for (i = 0; i < n_input; i++)
     {
-        in[i] = translateChar(STRING_ELT(input, i));
+        in[i] = (char *)translateChar(STRING_ELT(input, i));
         ians[i] = 0;
     }
     for (j = 0; j < n_target; j++)
-        tar[j] = translateChar(STRING_ELT(target, j));
+        tar[j] = (char *)translateChar(STRING_ELT(target, j));
 
     /* First pass, exact matching */
     if (no_dups)
@@ -751,7 +752,7 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans, input, target;
     Rboolean perfect;
     int i, j, k, imatch, n_input, n_target, temp, no_match, *ians;
-    char *ss, *st;
+    const char *ss, *st;
 
     checkArity(op, args);
 
@@ -1261,7 +1262,8 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP names, sep, ans, dup, newx;
     int i, n, cnt, len, maxlen = 0, *cnts, dp;
     HashData data;
-    char *csep, *buf, *ss;
+    const char *csep, *ss;
+    char *buf;
     char *vmax;
 
     checkArity(op, args);

@@ -493,7 +493,7 @@ static SEXP NewBase(SEXP base, SEXP tag)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     { /* test of length */
-        char *sb = translateChar(base), *st = translateChar(tag);
+        const char *sb = translateChar(base), *st = translateChar(tag);
         cbuf = CallocCharBuf(strlen(st) + strlen(sb) + 1);
         sprintf(cbuf, "%s.%s", sb, st);
         ans = mkChar(cbuf);
@@ -527,7 +527,7 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     {
-        char *sb = translateChar(base), *st = translateChar(tag);
+        const char *sb = translateChar(base), *st = translateChar(tag);
         cbuf = CallocCharBuf(strlen(sb) + strlen(st) + 1);
         sprintf(cbuf, "%s.%s", sb, st);
         ans = mkChar(cbuf);
@@ -535,7 +535,7 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
     }
     else if (*CHAR(base))
     {
-        char *sb = translateChar(base);
+        const char *sb = translateChar(base);
         cbuf = CallocCharBuf(strlen(sb) + IndexWidth(seqno));
         sprintf(cbuf, "%s%d", sb, seqno);
         ans = mkChar(cbuf);
@@ -547,7 +547,7 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
             ans = NA_STRING;
         else
         {
-            char *st = translateChar(tag);
+            const char *st = translateChar(tag);
             cbuf = CallocCharBuf(strlen(st));
             sprintf(cbuf, "%s", st);
             ans = mkChar(cbuf);
@@ -1086,7 +1086,8 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *generic;
     int mode, deparse_level;
     struct BindData data;
-    char buf[512], *s, *klass;
+    char buf[512];
+    const char *s, *klass;
 
     /* since R 2.2.0: first argument "deparse.level" */
     deparse_level = asInteger(eval(CAR(args), env));

@@ -40,7 +40,7 @@
 #include <stdlib.h> /* for div() */
 
 /* We need display width of a string */
-int Rstrwid(char *str, int slen, int quote); /* from printutils.c */
+int Rstrwid(const char *str, int slen, int quote); /* from printutils.c */
 #define strwidth(x) Rstrwid(x, strlen(x), 0)
 
 /* ceil_DIV(a,b) :=  ceil(a / b)  in _int_ arithmetic : */
@@ -54,7 +54,8 @@ static R_INLINE int ceil_DIV(int a, int b)
  * We define macros that will be re-used in the other functions,
  * and comment the common code here (only):
  */
-static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, char *rn, char *cn)
+static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
+                               const char *cn)
 {
     int *x;
 
@@ -162,7 +163,8 @@ static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
     }
 }
 
-static void printIntegerMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, char *rn, char *cn)
+static void printIntegerMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
+                               const char *cn)
 {
     int *x;
 
@@ -206,7 +208,8 @@ static void printIntegerMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
     }
 }
 
-static void printRealMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, char *rn, char *cn)
+static void printRealMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
+                            const char *cn)
 {
     SEXP sd, se;
     double *x;
@@ -257,7 +260,8 @@ static void printRealMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl
     }
 }
 
-static void printComplexMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, char *rn, char *cn)
+static void printComplexMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
+                               const char *cn)
 {
     SEXP sdr, ser, swr, sdi, sei, swi;
     Rcomplex *x;
@@ -325,7 +329,7 @@ static void printComplexMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
 }
 
 static void printStringMatrix(SEXP sx, int offset, int r_pr, int r, int c, int quote, int right, SEXP rl, SEXP cl,
-                              char *rn, char *cn)
+                              const char *rn, const char *cn)
 {
     SEXP *x;
     _PRINT_INIT_rl_rn;
@@ -375,7 +379,8 @@ static void printStringMatrix(SEXP sx, int offset, int r_pr, int r, int c, int q
     }
 }
 
-static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, char *rn, char *cn)
+static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
+                           const char *cn)
 {
     Rbyte *x;
     _PRINT_INIT_rl_rn;
@@ -416,7 +421,7 @@ static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl,
     }
 }
 
-void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl, char *rn, char *cn)
+void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl, const char *rn, const char *cn)
 {
     /* 'rl' and 'cl' are dimnames(.)[[1]] and dimnames(.)[[2]]  whereas
      * 'rn' and 'cn' are the  names(dimnames(.))
@@ -514,8 +519,8 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, int right, SEXP dimna
             has_dnn = !isNull(dnn);
             if (has_dnn)
             {
-                rn = translateChar(STRING_ELT(dnn, 0));
-                cn = translateChar(STRING_ELT(dnn, 1));
+                rn = (char *)translateChar(STRING_ELT(dnn, 0));
+                cn = (char *)translateChar(STRING_ELT(dnn, 1));
             }
         }
         /* nb := #{entries} in a slice such as x[1,1,..] or equivalently,

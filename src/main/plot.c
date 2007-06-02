@@ -1525,7 +1525,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                         label = STRING_ELT(lab, ind[i]);
                         if (label != NA_STRING)
                         {
-                            char *ss = translateChar(label);
+                            const char *ss = translateChar(label);
                             labw = GStrWidth(ss, NFC, dd);
                             tnew = temp - 0.5 * labw;
                             /* Check room for perpendicular labels. */
@@ -1671,7 +1671,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
                         label = STRING_ELT(lab, ind[i]);
                         if (label != NA_STRING)
                         {
-                            char *ss = translateChar(label);
+                            const char *ss = translateChar(label);
                             labw = GStrWidth(ss, INCHES, dd);
                             labw = GConvertYUnits(labw, INCHES, NFC, dd);
                             tnew = temp - 0.5 * labw;
@@ -3552,7 +3552,7 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
-static void drawLabel(double xi, double yi, int pos, double offset, char *l, DevDesc *dd)
+static void drawLabel(double xi, double yi, int pos, double offset, const char *l, DevDesc *dd)
 {
     switch (pos)
     {

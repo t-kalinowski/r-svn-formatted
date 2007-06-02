@@ -845,7 +845,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
     return (DL_FUNC)NULL;
 }
 
-static void GetFullDLLPath(SEXP call, char *buf, char *path)
+static void GetFullDLLPath(SEXP call, char *buf, const char *const path)
 {
     R_osDynSymbol->getFullDLLPath(call, buf, path);
 }
@@ -1044,7 +1044,7 @@ static SEXP Rf_MakeDLLInfo(DllInfo *info)
  */
 SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
 {
-    char *package, *name;
+    const char *package, *name;
     R_RegisteredNativeSymbol symbol = {R_ANY_SYM, {NULL}, NULL};
     SEXP sym = R_NilValue;
     DL_FUNC f = NULL;

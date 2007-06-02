@@ -213,16 +213,16 @@ static void CheckFormalArgs(SEXP, SEXP);
 static SEXP FirstArg(SEXP, SEXP);
 static SEXP GrowList(SEXP, SEXP);
 static void IfPush(void);
-static int KeywordLookup(char *);
+static int KeywordLookup(const char *);
 static SEXP NewList(void);
 static SEXP NextArg(SEXP, SEXP, SEXP);
 static SEXP TagArg(SEXP, SEXP);
 
 /* These routines allocate constants */
 
-static SEXP mkComplex(char *);
+static SEXP mkComplex(const char *);
 SEXP mkFalse(void);
-static SEXP mkFloat(char *);
+static SEXP mkFloat(const char *);
 static SEXP mkNA(void);
 SEXP mkTrue(void);
 
@@ -264,7 +264,7 @@ static const char UNICODE[] = "UCS-4LE";
 #endif
 #include <errno.h>
 
-static size_t ucstomb(char *s, wchar_t wc, mbstate_t *ps)
+static size_t ucstomb(char *s, const wchar_t wc, mbstate_t *ps)
 {
     char tocode[128];
     char buf[16];
@@ -3555,20 +3555,20 @@ SEXP R_ParseGeneral(int (*ggetc)(), int (*gungetc)(), int n, ParseStatus *status
 }
 #endif
 
-static char *Prompt(SEXP prompt, int type)
+static const char *Prompt(SEXP prompt, int type)
 {
     if (type == 1)
     {
         if (length(prompt) <= 0)
         {
-            return (char *)CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
+            return CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
         }
         else
             return CHAR(STRING_ELT(prompt, 0));
     }
     else
     {
-        return (char *)CHAR(STRING_ELT(GetOption(install("continue"), R_BaseEnv), 0));
+        return CHAR(STRING_ELT(GetOption(install("continue"), R_BaseEnv), 0));
     }
 }
 
@@ -3602,7 +3602,7 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
             break;
         if (!*bufp)
         {
-            if (R_ReadConsole(Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
+            if (R_ReadConsole((char *)Prompt(prompt, prompt_type), (unsigned char *)buf, 1024, 1) == 0)
                 goto finish;
             bufp = buf;
         }
@@ -3745,7 +3745,7 @@ struct
 
 /* KeywordLookup has side effects, it sets yylval */
 
-static int KeywordLookup(char *s)
+static int KeywordLookup(const char *s)
 {
     int i;
     for (i = 0; keywords[i].name; i++)
@@ -3822,13 +3822,13 @@ static int KeywordLookup(char *s)
     return 0;
 }
 
-static SEXP mkFloat(char *s)
+static SEXP mkFloat(const char *s)
 {
     double f;
     if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
     {
         double ret = 0;
-        char *p = s + 2;
+        const char *p = s + 2;
         for (; p; p++)
         {
             if ('0' <= *p && *p <= '9')
@@ -3847,13 +3847,13 @@ static SEXP mkFloat(char *s)
     return ScalarReal(f);
 }
 
-static SEXP mkInt(char *s)
+static SEXP mkInt(const char *s)
 {
     double f;
     if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
     {
         double ret = 0;
-        char *p = s + 2;
+        const char *p = s + 2;
         for (; p; p++)
         {
             if ('0' <= *p && *p <= '9')
@@ -3872,7 +3872,7 @@ static SEXP mkInt(char *s)
     return ScalarInteger((int)f);
 }
 
-static SEXP mkComplex(char *s)
+static SEXP mkComplex(const char *s)
 {
     SEXP t = R_NilValue;
     double f;
@@ -4376,9 +4376,9 @@ static int SpecialValue(int c)
 }
 
 /* return 1 if name is a valid name 0 otherwise */
-int isValidName(char *name)
+int isValidName(const char *name)
 {
-    char *p = name;
+    const char *p = name;
     int i;
 
 #ifdef SUPPORT_MBCS

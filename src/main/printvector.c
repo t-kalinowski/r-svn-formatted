@@ -339,7 +339,7 @@ static void printNamedLogicalVector(int *x, int n, SEXP *names)
                                             PRINT_N_VECTOR(formatRaw(x, n, &w),
                                                            Rprintf("%s%*s", EncodeRaw(x[k]), R_print.gap, ""))
 
-                                                void printNamedVector(SEXP x, SEXP names, int quote, char *title)
+                                                void printNamedVector(SEXP x, SEXP names, int quote, const char *title)
 {
     int n;
 

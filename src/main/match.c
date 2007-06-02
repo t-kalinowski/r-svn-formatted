@@ -84,7 +84,7 @@ Rboolean psmatch(const char *f, const char *t, Rboolean exact)
 
 Rboolean pmatch(SEXP formal, SEXP tag, Rboolean exact)
 {
-    char *f, *t;
+    const char *f, *t;
     switch (TYPEOF(formal))
     {
     case SYMSXP:

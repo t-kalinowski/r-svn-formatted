@@ -147,7 +147,7 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
     */
     int indx, i, warn_pok = 0;
     double dblind;
-    char *ss, *cur_name;
+    const char *ss, *cur_name;
 
     if (pok == -1)
     {

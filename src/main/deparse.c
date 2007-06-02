@@ -105,8 +105,6 @@
 #define MAX_Cutoff (BUFSIZE - 12)
 /* ----- MAX_Cutoff  <	BUFSIZE !! */
 
-extern int isValidName(char *);
-
 #include "RBufferUtils.h"
 
 typedef R_StringBuffer DeparseBuffer;
@@ -356,7 +354,7 @@ SEXP attribute_hidden do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
     Rboolean wasopen, havewarned = FALSE, evaluate;
     Rconnection con;
     int opts;
-    char *obj_name;
+    const char *obj_name;
 
     checkArity(op, args);
 
@@ -418,7 +416,7 @@ SEXP attribute_hidden do_dump(SEXP call, SEXP op, SEXP args, SEXP rho)
                     error(_("cannot open the connection"));
             for (i = 0, nout = 0; i < nobjs; i++)
             {
-                char *s;
+                const char *s;
                 if (CAR(o) == R_UnboundValue)
                     continue;
                 SET_STRING_ELT(outnames, nout++, STRING_ELT(names, i));

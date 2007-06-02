@@ -613,7 +613,7 @@ static SEXP EncodeVars(SEXP formula)
             /* prior to 1.7.0 this made term.labels in reverse order. */
             SEXP r = R_NilValue, v = R_NilValue; /* -Wall */
             int i, j;
-            char *c;
+            const char *c;
 
             if (!LENGTH(framenames))
                 return r;
@@ -1055,7 +1055,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(v = allocList(i));
         for (j = 0, t = v; j < i; j++, t = CDR(t))
         {
-            char *ss = translateChar(STRING_ELT(specials, j));
+            const char *ss = translateChar(STRING_ELT(specials, j));
             SET_TAG(t, install(ss));
             n = strlen(ss);
             SETCAR(t, allocVector(INTSXP, 0));
@@ -1427,7 +1427,7 @@ SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     for (i = 0, j = 0; i < ndots; i++)
     {
-        char *ss;
+        const char *ss;
         if (VECTOR_ELT(dots, i) == R_NilValue)
             continue;
         ss = translateChar(STRING_ELT(dotnames, i));
@@ -1642,7 +1642,7 @@ static void addvar(double *x, int nrx, int ncx, double *c, int nrc, int ncc)
 
 #define BUFSIZE 4096
 
-static char *AppendString(char *buf, char *str)
+static char *AppendString(char *buf, const char *str)
 {
     while (*str)
         *buf++ = *str++;
@@ -1675,7 +1675,9 @@ SEXP attribute_hidden do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP variable, var_i;
     int fik, first, i, j, k, kk, ll, n, nc, nterms, nVar;
     int intrcept, jstart, jnext, risponse, indx, rhs_response;
-    char buf[BUFSIZE] = "\0", *bufp, *addp;
+    char buf[BUFSIZE] = "\0";
+    char *bufp;
+    const char *addp;
 
     checkArity(op, args);
 

@@ -55,7 +55,7 @@ static int R_mkdir(char *path)
 }
 
 #define BUF_SIZE 4096
-static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *nnames)
+static int extract_one(unzFile uf, const char *const dest, const char *const filename, SEXP names, int *nnames)
 {
     int err = UNZ_OK;
     FILE *fout;
@@ -136,7 +136,7 @@ static int extract_one(unzFile uf, char *dest, char *filename, SEXP names, int *
     return err;
 }
 
-static int do_unzip(char *zipname, char *dest, int nfiles, char **files, SEXP *pnames, int *nnames)
+static int do_unzip(const char *zipname, const char *dest, int nfiles, char **files, SEXP *pnames, int *nnames)
 {
     int i, err = UNZ_OK;
     unzFile uf;
@@ -212,7 +212,7 @@ SEXP attribute_hidden do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isString(fn) || ntopics > 500)
             error(_("invalid '%s' argument"), "topics");
         for (i = 0; i < ntopics; i++)
-            topics[i] = translateChar(STRING_ELT(fn, i));
+            topics[i] = (char *)translateChar(STRING_ELT(fn, i));
     }
     args = CDR(args);
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
@@ -362,7 +362,7 @@ static int null_fflush(Rconnection con)
     return 0;
 }
 
-Rconnection attribute_hidden R_newunz(char *description, char *mode)
+Rconnection attribute_hidden R_newunz(const char *description, const char *const mode)
 {
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
