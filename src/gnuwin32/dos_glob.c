@@ -125,7 +125,7 @@ static int ci_compare(const void *, const void *);
 static int g_Ctoc(const Char *, char *, STRLEN);
 static int g_lstat(Char *, Stat_t *, glob_t *);
 static DIR *g_opendir(Char *, glob_t *);
-static Char *g_strchr(Char *, int);
+static const Char *g_strchr(const Char *, int);
 static int glob0(const Char *, glob_t *);
 static int glob1(Char *, Char *, glob_t *, size_t *);
 static int glob2(Char *, Char *, Char *, Char *, Char *, Char *, glob_t *, size_t *);
@@ -236,7 +236,7 @@ static int globexp1(const Char *pattern, glob_t *pglob)
     if (pattern[0] == BG_LBRACE && pattern[1] == BG_RBRACE && pattern[2] == BG_EOS)
         return glob0(pattern, pglob);
 
-    while ((ptr = (const Char *)g_strchr((Char *)ptr, BG_LBRACE)) != NULL)
+    while ((ptr = (const Char *)g_strchr(ptr, BG_LBRACE)) != NULL)
         if (!globexp2(ptr, pattern, pglob, &rv))
             return rv;
 
@@ -897,7 +897,7 @@ static int g_lstat(register Char *fn, Stat_t *sb, glob_t *pglob)
     return (stat(buf, sb));
 }
 
-static Char *g_strchr(Char *str, int ch)
+static const Char *g_strchr(const Char *str, int ch)
 {
     do
     {

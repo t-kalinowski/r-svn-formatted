@@ -50,7 +50,7 @@
 #define GN_(String) String
 #endif
 
-static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
+static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
                                Rboolean buffered, SEXP psenv, Rboolean restoreConsole);
 
@@ -222,9 +222,10 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
 static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
 static void GA_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
 static void GA_Resize(NewDevDesc *dd);
-static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
-static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
-static Rboolean GA_Open(NewDevDesc *, gadesc *, char *, double, double, Rboolean, int, int, double, int, int, int);
+static double GA_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dd);
+static void GA_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+static Rboolean GA_Open(NewDevDesc *, gadesc *, const char *, double, double, Rboolean, int, int, double, int, int,
+                        int);
 static Rboolean GA_NewFrameConfirm();
 
 /********************************************************/
@@ -238,15 +239,15 @@ Rboolean winNewFrameConfirm();
 static double pixelHeight(drawing d);
 static double pixelWidth(drawing d);
 static void SetColor(int, double, NewDevDesc *);
-static void SetFont(char *, int, int, double, NewDevDesc *);
+static void SetFont(const char *, int, int, double, NewDevDesc *);
 static int Load_Rbitmap_Dll();
 void UnLoad_Rbitmap_Dll();
-static void SaveAsPng(NewDevDesc *dd, char *fn);
-static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn);
-static void SaveAsBmp(NewDevDesc *dd, char *fn);
+static void SaveAsPng(NewDevDesc *dd, const char *fn);
+static void SaveAsJpeg(NewDevDesc *dd, int quality, const char *fn);
+static void SaveAsBmp(NewDevDesc *dd, const char *fn);
 static void SaveAsBitmap(NewDevDesc *dd, int res);
 
-static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, char *name)
+static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, const char *name)
 {
     GEDevDesc *gdd;
     int saveDev = curDevice();
@@ -263,7 +264,7 @@ static void PrivateCopyDevice(NewDevDesc *dd, NewDevDesc *ndd, char *name)
     show(xd->gawin);
 }
 
-static void SaveAsWin(NewDevDesc *dd, char *display, Rboolean restoreConsole)
+static void SaveAsWin(NewDevDesc *dd, const char *display, Rboolean restoreConsole)
 {
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
     GEDevDesc *gdd = (GEDevDesc *)GetDevice(devNumber((DevDesc *)dd));
@@ -287,7 +288,7 @@ static void SaveAsWin(NewDevDesc *dd, char *display, Rboolean restoreConsole)
         PrivateCopyDevice(dd, ndd, display);
 }
 
-static void SaveAsPostscript(NewDevDesc *dd, char *fn)
+static void SaveAsPostscript(NewDevDesc *dd, const char *fn)
 {
     SEXP s;
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
@@ -354,7 +355,7 @@ static void SaveAsPostscript(NewDevDesc *dd, char *fn)
         PrivateCopyDevice(dd, ndd, "postscript");
 }
 
-static void SaveAsPDF(NewDevDesc *dd, char *fn)
+static void SaveAsPDF(NewDevDesc *dd, const char *fn)
 {
     SEXP s;
     NewDevDesc *ndd = (NewDevDesc *)calloc(1, sizeof(NewDevDesc));
@@ -555,7 +556,7 @@ static char *SaveFontSpec(SEXP sxp, int offset)
  * OR IF can't find gcontext fontfamily in font database
  * THEN return NULL
  */
-static char *translateFontFamily(char *family)
+static char *translateFontFamily(const char *family)
 {
     SEXP graphicsNS, windowsenv, fontdb, fontnames;
     int i, nfonts;
@@ -596,7 +597,7 @@ static char *translateFontFamily(char *family)
 
 #define SMALLEST 1
 
-static void SetFont(char *family, int face, int size, double rot, NewDevDesc *dd)
+static void SetFont(const char *family, int face, int size, double rot, NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     char *fontfamily;
@@ -1784,7 +1785,7 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     return 1;
 }
 
-static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double h, Rboolean recording, int resize,
+static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, const char *dsp, double w, double h, Rboolean recording, int resize,
                         int canvascolor, double gamma, int xpos, int ypos, int bg)
 {
     rect rr;
@@ -1953,7 +1954,7 @@ static Rboolean GA_Open(NewDevDesc *dd, gadesc *xd, char *dsp, double w, double 
 /* asked for						*/
 /********************************************************/
 
-static double GA_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
+static double GA_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     double a;
@@ -2541,7 +2542,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
 /* location to DEVICE coordinates using GConvert	*/
 /********************************************************/
 
-static void GA_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+static void GA_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int size;
     double pixs, xl, yl, rot1;
@@ -2703,7 +2704,7 @@ static void GA_Hold(NewDevDesc *dd)
 /* the clean-up itself					*/
 /********************************************************/
 
-static Rboolean GADeviceDriver(NewDevDesc *dd, char *display, double width, double height, double pointsize,
+static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
                                Rboolean buffered, SEXP psenv, Rboolean restoreConsole)
 {
@@ -2987,7 +2988,7 @@ static void SaveAsBitmap(NewDevDesc *dd, int res)
 }
 
 /* These are the menu item versions */
-static void SaveAsPng(NewDevDesc *dd, char *fn)
+static void SaveAsPng(NewDevDesc *dd, const char *fn)
 {
     FILE *fp;
     rect r, r2;
@@ -3023,7 +3024,7 @@ static void SaveAsPng(NewDevDesc *dd, char *fn)
     fclose(fp);
 }
 
-static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
+static void SaveAsJpeg(NewDevDesc *dd, int quality, const char *fn)
 {
     FILE *fp;
     rect r, r2;
@@ -3058,7 +3059,7 @@ static void SaveAsJpeg(NewDevDesc *dd, int quality, char *fn)
     fclose(fp);
 }
 
-static void SaveAsBmp(NewDevDesc *dd, char *fn)
+static void SaveAsBmp(NewDevDesc *dd, const char *fn)
 {
     FILE *fp;
     rect r, r2;
