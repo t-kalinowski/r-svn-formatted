@@ -54,7 +54,7 @@ static DL_FUNC getRoutine(DllInfo *info, char const *name);
 static void R_deleteCachedSymbols(DllInfo *dll);
 
 static void R_getDLLError(char *buf, int len);
-static void GetFullDLLPath(SEXP call, char *buf, char *path);
+static void GetFullDLLPath(SEXP call, char *buf, const char *path);
 
 static void closeLibrary(HINSTANCE handle)
 {
@@ -137,7 +137,7 @@ static void R_getDLLError(char *buf, int len)
     LocalFree(lpMsgBuf);
 }
 
-static void GetFullDLLPath(SEXP call, char *buf, char *path)
+static void GetFullDLLPath(SEXP call, char *buf, const char *path)
 {
     char *p;
 
