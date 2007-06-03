@@ -3766,7 +3766,7 @@ static void PS_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
 }
 
 #ifdef Win32
-int Rf_runcmd(const char *cmd, int wait, int visible, const char *finput);
+#include "run.h" /* for runcmd */
 #endif
 static void PostScriptClose(NewDevDesc *dd)
 {
