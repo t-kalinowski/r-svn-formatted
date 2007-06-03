@@ -30,9 +30,10 @@
 
 #define COMPRESS_WHITESPACE 0
 
-static char *get_next_line(char *line, int width, char *s)
+static const char *get_next_line(char *line, int width, const char *s)
 {
-    char *t, *k;
+    const char *t;
+    char *k;
     int word_width, line_width;
     int sp, tab, nl;
 
@@ -114,7 +115,7 @@ static char *get_next_line(char *line, int width, char *s)
     return (*s == '\0') ? NULL : s;
 }
 
-int textheight(int width, char *s)
+int textheight(int width, const char *s)
 {
     int y;
     char line[256];
@@ -130,7 +131,7 @@ int textheight(int width, char *s)
     return y;
 }
 
-static char *draw_text_left(char *line, rect r, int line_height, int underline, char *s)
+static const char *draw_text_left(char *line, rect r, int line_height, int underline, const char *s)
 {
     char *k;
     point p;
@@ -161,7 +162,7 @@ static char *draw_text_left(char *line, rect r, int line_height, int underline, 
     return s;
 }
 
-static char *draw_text_right(char *line, rect r, int line_height, int underline, char *s)
+static const char *draw_text_right(char *line, rect r, int line_height, int underline, const char *s)
 {
     char *k;
     int w;
@@ -198,7 +199,7 @@ static char *draw_text_right(char *line, rect r, int line_height, int underline,
     return s;
 }
 
-static char *draw_text_centered(char *line, rect r, int line_height, int underline, char *s)
+static const char *draw_text_centered(char *line, rect r, int line_height, int underline, const char *s)
 {
     char *k;
     int w;
@@ -235,7 +236,7 @@ static char *draw_text_centered(char *line, rect r, int line_height, int underli
     return s;
 }
 
-static char *draw_text_justified(char *line, rect r, int line_height, int underline, char *s)
+static const char *draw_text_justified(char *line, rect r, int line_height, int underline, const char *s)
 {
     char *j, *k;
     int w, xw, nl, sc, sw, space_width;
@@ -298,19 +299,19 @@ static char *draw_text_justified(char *line, rect r, int line_height, int underl
     return s;
 }
 
-char *drawtext(rect r, int alignment, char *s)
+const char *drawtext(rect r, int alignment, const char *s)
 {
     int h;
     int nlines;
     int line_height;
     int u = 0;
     rect clip;
-    char *remains;
+    const char *remains;
     char line[256];
 
     initapp(0, 0);
     if (!s)
-        return s;
+        return (char *)NULL;
     if (!current->fnt)
         current->fnt = SystemFont;
 
@@ -357,7 +358,7 @@ char *drawtext(rect r, int alignment, char *s)
     return remains;
 }
 
-int gprintf(char *fmt, ...)
+int gprintf(const char *fmt, ...)
 {
     static point p = {0, 0};
     int count;

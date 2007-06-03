@@ -94,7 +94,7 @@ static HDC chooseprinter()
     return dc;
 }
 
-printer newprinter(double width, double height, char *name)
+printer newprinter(double width, double height, const char *name)
 {
     DOCINFO docinfo;
     printer obj;

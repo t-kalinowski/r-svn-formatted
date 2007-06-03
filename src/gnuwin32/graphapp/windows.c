@@ -175,7 +175,7 @@ static void make_client_window(HWND hwnd)
  *  Return the new class name.
  */
 
-static char *register_new_class(char *extra, WNDPROC proc)
+static char *register_new_class(const char *extra, WNDPROC proc)
 {
     WNDCLASS wndclass;
     int length;
@@ -207,7 +207,7 @@ static char *register_new_class(char *extra, WNDPROC proc)
     return new_class_name;
 }
 
-static HWND new_mdi_window(char *name, rect r, unsigned long sty)
+static HWND new_mdi_window(const char *name, rect r, unsigned long sty)
 {
     HWND hwnd;
     MDICREATESTRUCT mdi;
@@ -390,7 +390,7 @@ static void private_delwindow(window obj)
 /*
  *  Private object constructor.
  */
-static object new_window_object(HWND hwnd, char *name, rect r, long flags, long state)
+static object new_window_object(HWND hwnd, const char *name, rect r, long flags, long state)
 {
     object obj;
 
@@ -418,7 +418,7 @@ static object new_window_object(HWND hwnd, char *name, rect r, long flags, long 
  *  Create and return a new window.
  */
 static int MDIsizeSet = 0;
-window newwindow(char *name, rect r, long flags)
+window newwindow(const char *name, rect r, long flags)
 {
     object obj;
     HWND hwnd;

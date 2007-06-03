@@ -75,6 +75,15 @@ static void my_onintr(int sig)
 {
     UserBreak = 1;
 }
+static void wrap_askok(char *info)
+{
+    askok(info);
+}
+
+static int wrap_askyesnocancel(char *question)
+{
+    return askyesnocancel(question);
+}
 
 int Rf_initialize_R(int argc, char **argv)
 {
@@ -102,8 +111,8 @@ int Rf_initialize_R(int argc, char **argv)
     Rp->ReadConsole = myReadConsole;
     Rp->WriteConsole = myWriteConsole;
     Rp->CallBack = myCallBack;
-    Rp->ShowMessage = askok;
-    Rp->YesNoCancel = askyesnocancel;
+    Rp->ShowMessage = wrap_askok;
+    Rp->YesNoCancel = wrap_askyesnocancel;
     Rp->Busy = myBusy;
 
     Rp->R_Quiet = TRUE;

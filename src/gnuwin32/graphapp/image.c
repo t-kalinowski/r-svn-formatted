@@ -574,7 +574,7 @@ void sortpalette(image img)
 /*
  *  Load and save images (utility functions):
  */
-static int string_ends_with(char *name, char *ending)
+static int string_ends_with(const char *name, const char *ending)
 {
     int i, j, result;
 
@@ -663,11 +663,11 @@ static unsigned long read_hex_long(FILE *file)
     return result;
 }
 
-static char *header_comment = "/* GraphApp image type 1 */\n";
-static char *depth_comment = "/* depth  = %d */\n";
-static char *width_comment = "/* width  = %d */\n";
-static char *height_comment = "/* height = %d */\n";
-static char *cmapsize_comment = "/* cmapsize = %d */\n";
+static const char *header_comment = "/* GraphApp image type 1 */\n";
+static const char *depth_comment = "/* depth  = %d */\n";
+static const char *width_comment = "/* width  = %d */\n";
+static const char *height_comment = "/* height = %d */\n";
+static const char *cmapsize_comment = "/* cmapsize = %d */\n";
 
 static image load_header_image_file(FILE *file)
 {
@@ -825,7 +825,7 @@ static void save_header_image_file(FILE *file, char *name, image img)
     fprintf(file, "\n");
 }
 
-static image load_header_image(char *filename)
+static image load_header_image(const char *filename)
 {
     FILE *file;
     image img;
@@ -836,7 +836,7 @@ static image load_header_image(char *filename)
     return img;
 }
 
-static char *base_file_name(char *filename)
+static char *base_file_name(const char *filename)
 {
     char *name = NULL;
     int i, start, end;
@@ -857,7 +857,7 @@ static char *base_file_name(char *filename)
     return name;
 }
 
-static void save_header_image(image img, char *filename)
+static void save_header_image(image img, const char *filename)
 {
     FILE *file;
     char *name;
@@ -872,7 +872,7 @@ static void save_header_image(image img, char *filename)
 /*
  *  Top-level functions for loading and saving images:
  */
-image loadimage(char *filename)
+image loadimage(const char *filename)
 {
     if (string_ends_with(filename, ".gif"))
         return load_gif(filename);
@@ -884,7 +884,7 @@ image loadimage(char *filename)
         return NULL;
 }
 
-void saveimage(image img, char *filename)
+void saveimage(image img, const char *filename)
 {
     if (string_ends_with(filename, ".gif"))
         save_gif(img, filename);

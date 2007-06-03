@@ -1367,7 +1367,7 @@ menuItems *wingetmenuitems(const char *mname, char *errmsg)
 
     for (i = 0; i < nitems; i++)
     {
-        p = (char *)strstr(umitems[i]->name, mitem);
+        p = strstr(umitems[i]->name, mitem);
 
         if (p == NULL)
             continue;
@@ -1418,9 +1418,7 @@ void freemenuitems(menuItems *items)
     free(items);
 }
 
-extern menu getGraphMenu(char *); /* from devga.c */
-
-static menu getMenu(char *name)
+static menu getMenu(const char *name)
 {
     int i;
     for (i = 0; i < nmenus; i++)
@@ -1442,7 +1440,7 @@ int winaddmenu(const char *name, char *errmsg)
     char *p, start[501];
     menu parent;
 
-    if (getMenu((char *)name))
+    if (getMenu(name))
         return 0; /* Don't add repeats */
 
     if (nmenus >= alloc_menus)
@@ -1477,12 +1475,12 @@ int winaddmenu(const char *name, char *errmsg)
             strcpy(errmsg, G_("base menu does not exist"));
             return 3;
         }
-        m = newsubmenu(parent, (char *)submenu);
+        m = newsubmenu(parent, submenu);
     }
     else
     {
         addto(RMenuBar);
-        m = newmenu((char *)submenu);
+        m = newmenu(submenu);
     }
     if (m)
     {
@@ -1560,7 +1558,7 @@ int winaddmenuitem(const char *item, const char *menu, const char *action, char 
     else
     {
         addto(usermenus[im]);
-        m = newmenuitem((char *)item, 0, menuuser);
+        m = newmenuitem(item, 0, menuuser);
         if (m)
         {
             if (alloc_items <= nitems)
