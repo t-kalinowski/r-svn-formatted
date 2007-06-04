@@ -353,7 +353,7 @@ Rcomplex attribute_hidden ComplexFromString(SEXP x, int *warn)
     char *endp;
 
     z.r = z.i = NA_REAL;
-    if (x != R_NaString && !isBlankString(endp))
+    if (x != R_NaString && !isBlankString(xx))
     {
         xr = R_strtod(xx, &endp);
         if (isBlankString(endp))
@@ -363,7 +363,7 @@ Rcomplex attribute_hidden ComplexFromString(SEXP x, int *warn)
         }
         else if (*endp == '+' || *endp == '-')
         {
-            xi = R_strtod(xx, &endp);
+            xi = R_strtod(endp, &endp);
             if (*endp++ == 'i' && isBlankString(endp))
             {
                 z.r = xr;
