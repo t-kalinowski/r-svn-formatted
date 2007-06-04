@@ -1739,9 +1739,9 @@ char *R_alloc(long nelem, int eltsize)
         ATTRIB(s) = R_VStack;
         R_VStack = s;
 #if VALGRIND_LEVEL > 0
-        VALGRIND_MAKE_WRITABLE(CHAR(s), (int)dsize);
+        VALGRIND_MAKE_WRITABLE(CHAR_RW(s), (int)dsize);
 #endif
-        return CHAR(s);
+        return CHAR_RW(s);
     }
     else
         return NULL;
@@ -2151,7 +2151,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
 #if VALGRIND_LEVEL > 0
         VALGRIND_MAKE_WRITABLE(CHAR(s), actual_size);
 #endif
-        CHAR(s)[length] = 0;
+        CHAR_RW(s)[length] = 0;
     }
     else if (type == REALSXP)
     {
@@ -3269,7 +3269,7 @@ static void R_EndMemReporting()
     return;
 }
 
-static void R_InitMemReporting(char *filename, int append, R_size_t threshold)
+static void R_InitMemReporting(const char *filename, int append, R_size_t threshold)
 {
     if (R_MemReportingOutfile != NULL)
         R_EndMemReporting();
@@ -3283,7 +3283,7 @@ static void R_InitMemReporting(char *filename, int append, R_size_t threshold)
 
 SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    char *filename;
+    const char *filename;
     R_size_t threshold;
     int append_mode;
 

@@ -391,7 +391,7 @@ SEXP eval(SEXP e, SEXP rho)
         /* if ..d is missing then ddfindVar will signal */
         else if (tmp == R_MissingArg && !DDVAL(e))
         {
-            char *n = CHAR(PRINTNAME(e));
+            const char *n = CHAR(PRINTNAME(e));
             if (*n)
                 error(_("argument \"%s\" is missing, with no default"), CHAR(PRINTNAME(e)));
             else
@@ -1847,8 +1847,8 @@ static SEXP evalArgs(SEXP el, SEXP rho, SEXP op, int dropmissing)
  * To call this an ugly hack would be to insult all existing ugly hacks
  * at large in the world.
  */
-attribute_hidden int DispatchOrEval(SEXP call, SEXP op, char *generic, SEXP args, SEXP rho, SEXP *ans, int dropmissing,
-                                    int argsevald)
+attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEXP args, SEXP rho, SEXP *ans,
+                                    int dropmissing, int argsevald)
 {
     /* DispatchOrEval is called very frequently, most often in cases where
        no dispatching is needed and the isObject or the string-based

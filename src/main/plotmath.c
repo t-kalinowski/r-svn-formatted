@@ -1166,7 +1166,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, R_GE_gcontext 
             n -= used;
         }
 #else
-        char *s = str;
+        const char *s = str;
         while (*s)
         {
             glyphBBox = GlyphBBox(*s, gc, dd);

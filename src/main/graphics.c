@@ -4673,7 +4673,7 @@ static int nlinetype = (sizeof(linetype) / sizeof(LineTYPE) - 2);
 
 unsigned int LTYpar(SEXP value, int ind)
 {
-    char *p;
+    const char *p;
     int i, code, shift, digit, len;
     double rcode;
 

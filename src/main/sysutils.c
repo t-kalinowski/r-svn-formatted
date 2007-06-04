@@ -469,7 +469,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans, x = CAR(args);
     void *obj;
     int i, j;
-    char *inbuf; /* Solaris headers have const char*  here */
+    const char *inbuf; /* Solaris headers have const char*  here */
     char *outbuf;
     const char *sub;
     size_t inb, outb, res;
@@ -527,7 +527,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < LENGTH(x); i++)
         {
         top_of_loop:
-            inbuf = (char *)CHAR(STRING_ELT(x, i));
+            inbuf = CHAR(STRING_ELT(x, i));
             inb = strlen(inbuf);
             outbuf = cbuff.data;
             outb = cbuff.bufsize - 1;
@@ -616,7 +616,7 @@ void *Riconv_open(const char *tocode, const char *fromcode)
 #endif
 }
 
-size_t Riconv(void *cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
+size_t Riconv(void *cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
 {
     return iconv((iconv_t)cd, inbuf, inbytesleft, outbuf, outbytesleft);
 }
@@ -713,7 +713,8 @@ void *Riconv_open(const char *tocode, const char *fromcode)
     return (void *)-1;
 }
 
-size_t Riconv(void *cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
+size_t Riconv(void *cd, const char *domain = "", const char **inbuf, size_t *inbytesleft, char **outbuf,
+              size_t *outbytesleft)
 {
     error(_("'iconv' is not available on this system"));
     return 0;
@@ -725,7 +726,7 @@ int Riconv_close(void *cd)
     return -1;
 }
 
-char *translateChar(SEXP x)
+const char *translateChar(SEXP x)
 {
     return CHAR(x);
 }

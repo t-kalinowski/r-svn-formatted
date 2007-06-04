@@ -414,7 +414,8 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
             if (strlen(encname))
             {
 #ifdef HAVE_ICONV
-                char *inbuf, *outbuf;
+                char *outbuf;
+                const char *inbuf;
                 size_t inb, outb, outb0, res;
                 void *obj = Riconv_open("", encname); /* (to, from) */
                 if (obj == (void *)-1)
@@ -559,7 +560,8 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
             if (strlen(encname))
             {
 #ifdef HAVE_ICONV
-                char *inbuf, *outbuf, *p;
+                const char *inbuf;
+                char *outbuf, *p;
                 size_t inb, outb, outb0, res;
                 void *obj = Riconv_open(encname, ""); /* (to, from) */
                 if (obj == (void *)(-1))
@@ -806,7 +808,7 @@ static SEXP enctrim(SEXP args, char *name, int len)
 SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
-    const char *sym, *pkg = "", *type = "";
+    const char *sym, *type = "", *pkg = "";
     int val = 1, nargs = length(args);
     R_RegisteredNativeSymbol symbol = {R_FORTRAN_SYM, {NULL}, NULL};
 

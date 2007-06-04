@@ -167,7 +167,7 @@ static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
     return n / size;
 }
 
-static Rconnection in_R_newurl(char *description, const char *const mode)
+static Rconnection in_R_newurl(const char *description, const char *const mode)
 {
     Rconnection new;
 

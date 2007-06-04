@@ -588,7 +588,7 @@ static char *R_completion_generator(const char *text, int state);
 static SEXP RComp_assignBufferSym, RComp_assignStartSym, RComp_assignEndSym, RComp_assignTokenSym,
     RComp_completeTokenSym, RComp_getFileCompSym, RComp_retrieveCompsSym;
 
-void set_rl_word_breaks(char *str)
+void set_rl_word_breaks(const char *str)
 {
     static char p1[201], p2[203];
     strncpy(p1, str, 200);
@@ -816,7 +816,8 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
 #if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             size_t res, inb = strlen((char *)buf), onb = len;
             char obuf[CONSOLE_BUFFER_SIZE + 1];
-            char *ib = (char *)buf, *ob = obuf;
+            const char *ib = (const char *)buf;
+            char *ob = obuf;
             if (!cd)
             {
                 cd = Riconv_open("", R_StdinEnc);

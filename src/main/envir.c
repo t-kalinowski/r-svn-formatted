@@ -1135,7 +1135,8 @@ static SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits, Rbo
 */
 static int ddVal(SEXP symbol)
 {
-    char *buf, *endp;
+    const char *buf;
+    char *endp;
     int rval;
 
     buf = CHAR(PRINTNAME(symbol));
@@ -3514,7 +3515,7 @@ SEXP mkCharEnc(const char *name, int enc)
     if (cval == R_NilValue)
     {
         PROTECT(cval = allocString(strlen(name)));
-        strcpy(CHAR(cval), name);
+        strcpy(CHAR_RW(cval), name);
         switch (enc)
         {
         case 0:

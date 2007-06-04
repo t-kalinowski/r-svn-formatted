@@ -603,7 +603,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     int nexact = 0;
     int *used = NULL, *ians;
     char *vmax;
-    char **in, **tar;
+    const char **in, **tar;
     Rboolean no_dups;
 
     checkArity(op, args);
@@ -628,8 +628,8 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
             used[j] = 0;
     }
 
-    in = (char **)R_alloc(n_input, sizeof(char *));
-    tar = (char **)R_alloc(n_target, sizeof(char *));
+    in = (const char **)R_alloc(n_input, sizeof(char *));
+    tar = (const char **)R_alloc(n_target, sizeof(char *));
     PROTECT(ans = allocVector(INTSXP, n_input));
     ians = INTEGER(ans);
     for (i = 0; i < n_input; i++)
@@ -645,7 +645,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         for (i = 0; i < n_input; i++)
         {
-            char *ss = in[i];
+            const char *ss = in[i];
             if (strlen(ss) == 0)
                 continue;
             for (j = 0; j < n_target; j++)
@@ -689,7 +689,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             for (i = 0; i < n_input; i++)
             {
-                char *ss = in[i];
+                const char *ss = in[i];
                 if (strlen(ss) == 0)
                     continue;
                 for (j = 0; j < n_target; j++)
@@ -708,7 +708,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
         /* Second pass, partial matching */
         for (i = 0; i < n_input; i++)
         {
-            char *ss;
+            const char *ss;
             if (ians[i])
                 continue;
             ss = in[i];
