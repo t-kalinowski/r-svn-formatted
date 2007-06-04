@@ -535,7 +535,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             Riconv(obj, NULL, NULL, &outbuf, &outb);
         next_char:
             /* Then convert input  */
-            res = iconv(obj, &inbuf, &inb, &outbuf, &outb);
+            res = iconv(obj, (char **)&inbuf, &inb, &outbuf, &outb);
             *outbuf = '\0';
             /* other possible error conditions are incomplete
                and invalid multibyte chars */
@@ -618,7 +618,7 @@ void *Riconv_open(const char *tocode, const char *fromcode)
 
 size_t Riconv(void *cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
 {
-    return iconv((iconv_t)cd, inbuf, inbytesleft, outbuf, outbytesleft);
+    return iconv((iconv_t)cd, (char **)inbuf, inbytesleft, outbuf, outbytesleft);
 }
 
 int Riconv_close(void *cd)
