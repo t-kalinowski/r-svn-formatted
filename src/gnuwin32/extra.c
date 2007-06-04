@@ -881,7 +881,8 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP text;
     int i, n, format;
     HGLOBAL hglb;
-    char *s, *p;
+    char *s;
+    const char *p;
     Rboolean success = FALSE, raw = FALSE;
 
     checkArity(op, args);
@@ -1083,7 +1084,8 @@ SEXP do_shortpath(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, def, caption, filters;
-    char *temp, *cfilters, list[65520], *p;
+    char *temp, *cfilters, list[65520];
+    const char *p;
     char path[MAX_PATH], filename[MAX_PATH];
     int multi, filterindex, i, count, lfilters, pathlen;
 
@@ -1178,7 +1180,8 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP do_chooseDir(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, def, caption;
-    char *p, path[MAX_PATH];
+    const char *p;
+    char path[MAX_PATH];
 
     checkArity(op, args);
     def = CAR(args);
@@ -1304,7 +1307,7 @@ SEXP do_setStatusBar(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-int getConsoleHandle(char *which)
+int getConsoleHandle(const char *which)
 {
     if (CharacterMode != RGui)
         return (0);
