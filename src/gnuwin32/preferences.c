@@ -461,7 +461,7 @@ static void load(button b) /* button callback */
     }
 }
 
-int loadRconsole(Gui gui, char *optf)
+int loadRconsole(Gui gui, const char *optf)
 {
     int ok, done, cfgerr;
     char *opt[2];

@@ -295,7 +295,8 @@ static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
     if (strlen(R_StdinEnc) && strcmp(R_StdinEnc, "native.enc"))
     {
         size_t res, inb = strlen(buf), onb = len;
-        char *ib = buf, *ob, *obuf;
+        const char *ib = buf;
+        char *ob, *obuf;
         ob = obuf = alloca(len + 1);
         if (!cd)
         {
@@ -562,7 +563,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
  *     editor  = editor to be used.
  */
 
-int R_EditFiles(int nfile, const char **file, const char **title, const char *editor)
+int R_EditFiles(int nfile, char **file, char **title, char *editor)
 {
     int i;
     char buf[1024];
