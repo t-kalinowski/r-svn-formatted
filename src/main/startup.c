@@ -51,7 +51,7 @@ void attribute_hidden R_InitialData(void)
     R_RestoreGlobalEnv();
 }
 
-FILE *R_OpenLibraryFile(char *file)
+FILE *R_OpenLibraryFile(const char *file)
 {
     char buf[256];
     FILE *fp;
@@ -61,7 +61,7 @@ FILE *R_OpenLibraryFile(char *file)
     return fp;
 }
 
-char *R_LibraryFileName(char *file, char *buf, size_t bsize)
+char *R_LibraryFileName(const char *file, char *buf, size_t bsize)
 {
     if (snprintf(buf, bsize, "%s/library/base/R/%s", R_Home, file) < 0)
         error(_("R_LibraryFileName: buffer too small"));
