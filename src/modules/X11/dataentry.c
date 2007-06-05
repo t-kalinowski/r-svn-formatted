@@ -52,7 +52,7 @@
 #include <Print.h>
 /* For the input handlers of the event loop mechanism: */
 #include <R_ext/eventloop.h>
-
+#include <R_ext/RS.h> /* for CallocCharBuf */
 #ifdef SUPPORT_MBCS
 /* This only uses a FontSet in a MBCS */
 #define USE_FONTSET 1
@@ -147,7 +147,7 @@ static char *GetCharP(DEEvent *);
 static KeySym GetKey(DEEvent *);
 static void handlechar(DEstruct, char *);
 static void highlightrect(DEstruct);
-static Rboolean initwin(DEstruct, char *);
+static Rboolean initwin(DEstruct, const char *);
 static void jumppage(DEstruct, DE_DIRECTION);
 static void jumpwin(DEstruct, int, int);
 static void pastecell(DEstruct, int, int);
@@ -155,7 +155,7 @@ static void popdownmenu(DEstruct);
 static void popupmenu(DEstruct, int, int, int, int);
 static void printlabs(DEstruct);
 static void printrect(DEstruct, int, int);
-static void printstring(DEstruct, char *, int, int, int, int);
+static void printstring(DEstruct, const char *, int, int, int, int);
 static void printelt(DEstruct, SEXP, int, int, int);
 static void RefreshKeyboardMapping(DEEvent *);
 static void cell_cursor_init(DEstruct);
@@ -170,12 +170,12 @@ static void drawrectangle(DEstruct, int, int, int, int, int, int);
 static void drawtext(DEstruct, int, int, char *, int);
 static void RefreshKeyboardMapping(DEEvent *ioevent);
 static void Rsync(DEstruct);
-static int textwidth(DEstruct, char *, int);
+static int textwidth(DEstruct, const char *, int);
 static int WhichEvent(DEEvent ioevent);
 
 static void R_ProcessX11Events(void *data);
 
-static char *get_col_name(DEstruct, int col);
+static const char *get_col_name(DEstruct, int col);
 static int get_col_width(DEstruct, int col);
 static CellType get_col_type(DEstruct, int col);
 #ifdef USE_FONTSET
@@ -816,9 +816,10 @@ static void cell_cursor_init(DEstruct DE)
     bufp = buf + clength;
 }
 
-static char *get_col_name(DEstruct DE, int col)
+static const char *get_col_name(DEstruct DE, int col)
 {
     static char clab[25];
+    int nwrote;
     if (col <= DE->xmaxused)
     {
         /* don't use NA labels */
@@ -826,14 +827,16 @@ static char *get_col_name(DEstruct DE, int col)
         if (tmp != NA_STRING)
             return (CHAR(tmp));
     }
-    sprintf(clab, "var%d", col);
-    return clab;
+    nwrote = snprintf(clab, 25, "var%d", col);
+    if (nwrote >= 25)
+        error("get_col_name: column number too big to stringify");
+    return (const char *)clab;
 }
 
 static int get_col_width(DEstruct DE, int col)
 {
     int i, w = 0, w1;
-    char *strp;
+    const char *strp;
     SEXP tmp, lab;
 
     if (DE->nboxchars > 0)
@@ -890,7 +893,7 @@ static CellType get_col_type(DEstruct DE, int col)
 static void drawcol(DEstruct DE, int whichcol)
 {
     int i, src_x, src_y, len, col = whichcol - DE->colmin + 1, bw = BOXW(whichcol);
-    char *clab;
+    const char *clab;
     SEXP tmp;
 
     find_coords(DE, 0, col, &src_x, &src_y);
@@ -978,7 +981,7 @@ static void printelt(DEstruct DE, SEXP invec, int vrow, int ssrow, int sscol)
 static void drawelt(DEstruct DE, int whichrow, int whichcol)
 {
     int i;
-    char *clab;
+    const char *clab;
     SEXP tmp;
 
     if (whichrow == 0)
@@ -1215,7 +1218,7 @@ static void closerect(DEstruct DE)
 
 /* This version will only display 200 chars, but the maximum col width
    will not allow that many */
-static void printstring(DEstruct DE, char *ibuf, int buflen, int row, int col, int left)
+static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int col, int left)
 {
     int i, x_pos, y_pos, bw, bufw;
     char pbuf[BOOSTED_BUF_SIZE];
@@ -1513,7 +1516,8 @@ donehc:
 
 static void printlabs(DEstruct DE)
 {
-    char clab[15], *p;
+    char clab[15];
+    const char *p;
     int i;
 
     for (i = DE->colmin; i <= DE->colmax; i++)
@@ -2054,7 +2058,7 @@ static int R_X11IOErr(Display *dsp)
 
 /* set up the window, print the grid and column/row labels */
 
-static Rboolean initwin(DEstruct DE, char *title) /* TRUE = Error */
+static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
 {
     int i, twidth, w, minwidth, labdigs;
     int ioscreen;
@@ -2108,7 +2112,7 @@ static Rboolean initwin(DEstruct DE, char *title) /* TRUE = Error */
         /*
           options("X11fonts")[1] read font name
         */
-        char *s = CHAR(STRING_ELT(GetOption(install("X11fonts"), R_NilValue), 0));
+        const char *s = CHAR(STRING_ELT(GetOption(install("X11fonts"), R_NilValue), 0));
 
         if (s == NULL)
         {
@@ -2463,21 +2467,27 @@ static void Rsync(DEstruct DE)
     XSync(iodisplay, 0);
 }
 
-static int textwidth(DEstruct DE, char *text, int nchar)
+static int textwidth(DEstruct DE, const char *text, int nchar)
 {
-
+    int ans;
+    char *buf = CallocCharBuf(nchar);
+    strncpy(buf, text, nchar);
 #ifdef USE_FONTSET
     if (mbcslocale)
     {
 #ifdef HAVE_XUTF8TEXTESCAPEMENT
         if (utf8locale)
-            return Xutf8TextEscapement(font_set, text, nchar);
+            ans = Xutf8TextEscapement(font_set, buf, nchar);
         else
 #endif
-            return XmbTextEscapement(font_set, text, nchar);
+            ans = XmbTextEscapement(font_set, buf, nchar);
+        Free(buf);
+        return ans;
     }
 #endif
-    return XTextWidth(DE->font_info, text, nchar);
+    ans = XTextWidth(DE->font_info, buf, nchar);
+    Free(buf);
+    return ans;
 }
 
 /* Menus */
@@ -2485,7 +2495,8 @@ static int textwidth(DEstruct DE, char *text, int nchar)
 void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
 {
     int i, button, popupcol = col + DE->colmin - 1;
-    char *name, clab[20];
+    const char *name;
+    char clab[20];
     XEvent event;
     Window selected_pane;
     SEXP tvec;

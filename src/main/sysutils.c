@@ -232,8 +232,13 @@ int R_system(const char *command)
     sigaddset(&ss, SIGPROF);
     sigprocmask(SIG_BLOCK, &ss, NULL);
 #ifdef HAVE_AQUA
+    char *cmdcpy;
     if (useaqua)
-        val = ptr_CocoaSystem(command);
+    {
+        /* FIXME, is Cocoa's interface not const char*? */
+        cmdcpy = acopy_string(command);
+        val = ptr_CocoaSystem(cmdcpy);
+    }
     else
 #endif
         val = system(command);

@@ -1470,7 +1470,7 @@ static char *translateFontFamily(char *family, newX11Desc *xd)
         int found = 0;
         for (i = 0; i < nfonts && !found; i++)
         {
-            char *fontFamily = CHAR(STRING_ELT(fontnames, i));
+            const char *fontFamily = CHAR(STRING_ELT(fontnames, i));
             if (strcmp(family, fontFamily) == 0)
             {
                 found = 1;
@@ -2155,7 +2155,7 @@ Rboolean newX11DeviceDriver(DevDesc *dd, char *disp_name, double width, double h
                             SEXP sfonts, int res, int xpos, int ypos)
 {
     newX11Desc *xd;
-    char *fn;
+    const char *fn;
 
     xd = Rf_allocNewX11DeviceDesc(pointsize);
     if (!xd)
@@ -2480,7 +2480,8 @@ static DevDesc *Rf_addX11Device(char *display, double width, double height, doub
 
 SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    char *display, *vmax, *cname, *devname;
+    char *display, *vmax, *devname;
+    const char *cname;
     double height, width, ps, gamma;
     int colormodel, maxcubesize, bgcolor, canvascolor, res, xpos, ypos;
     SEXP sc, sfonts;
