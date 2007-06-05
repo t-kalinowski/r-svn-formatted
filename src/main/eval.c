@@ -437,6 +437,7 @@ SEXP eval(SEXP e, SEXP rho)
         if (TYPEOF(op) == SPECIALSXP)
         {
             int save = R_PPStackTop, flag = PRIMPRINT(op);
+            char *vmax = vmaxget();
             PROTECT(CDR(e));
             R_Visible = flag != 1;
             tmp = PRIMFUN(op)(e, op, CDR(e), rho);
@@ -453,10 +454,12 @@ SEXP eval(SEXP e, SEXP rho)
                 R_Visible = flag != 1;
             UNPROTECT(1);
             check_stack_balance(op, save);
+            vmaxset(vmax);
         }
         else if (TYPEOF(op) == BUILTINSXP)
         {
             int save = R_PPStackTop, flag = PRIMPRINT(op);
+            char *vmax = vmaxget();
             RCNTXT cntxt;
             PROTECT(tmp = evalList(CDR(e), rho, op));
             if (flag < 2)
@@ -484,6 +487,7 @@ SEXP eval(SEXP e, SEXP rho)
                 R_Visible = flag != 1;
             UNPROTECT(1);
             check_stack_balance(op, save);
+            vmaxset(vmax);
         }
         else if (TYPEOF(op) == CLOSXP)
         {
@@ -3441,6 +3445,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP args = R_BCNodeStackTop[-2];
             int flag;
+            char *vmax = vmaxget();
             if (TYPEOF(fun) != BUILTINSXP)
                 error(_("not a BUILTIN function"));
             flag = PRIMPRINT(fun);
@@ -3448,6 +3453,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             value = PRIMFUN(fun)(call, fun, args, rho);
             if (flag < 2)
                 R_Visible = flag != 1;
+            vmaxset(vmax);
             R_BCNodeStackTop -= 2;
             R_BCNodeStackTop[-1] = value;
             NEXT();
@@ -3458,6 +3464,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             SEXP symbol = CAR(call);
             SEXP fun = SYMVALUE(symbol);
             int flag;
+            char *vmax = vmaxget();
             if (TYPEOF(value) == PROMSXP)
             {
                 value = forcePromise(value);
@@ -3475,6 +3482,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             value = PRIMFUN(fun)(call, fun, CDR(call), rho);
             if (flag < 2)
                 R_Visible = flag != 1;
+            vmaxset(vmax);
             BCNPUSH(value);
             NEXT();
         }

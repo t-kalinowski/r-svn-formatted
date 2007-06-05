@@ -106,11 +106,13 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
     if (TYPEOF(op) == SPECIALSXP)
     {
         int save = R_PPStackTop, flag = PRIMPRINT(op);
+        char *vmax = vmaxget();
         R_Visible = flag != 1;
         ans = PRIMFUN(op)(call, op, args, rho);
         if (flag < 2)
             R_Visible = flag != 1;
         check_stack_balance(op, save);
+        vmaxset(vmax);
     }
     /* In other places we add a context to builtins when profiling,
        but we have not bothered here (as there seem to be no primitives
@@ -120,6 +122,7 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
     else if (TYPEOF(op) == BUILTINSXP)
     {
         int save = R_PPStackTop, flag = PRIMPRINT(op);
+        char *vmax = vmaxget();
         PROTECT(args = evalList(args, rho, op));
         R_Visible = flag != 1;
         ans = PRIMFUN(op)(call, op, args, rho);
@@ -127,6 +130,7 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
             R_Visible = flag != 1;
         UNPROTECT(1);
         check_stack_balance(op, save);
+        vmaxset(vmax);
     }
     else if (TYPEOF(op) == CLOSXP)
     {
