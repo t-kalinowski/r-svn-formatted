@@ -1211,7 +1211,7 @@ found:
                         goto resize_freemem;
 
                     outleft = freemem_size - sizeof(size_t);
-                    if (Riconv(convd->conv, (char **)&inptr, &inleft, &outptr, &outleft) != (size_t)(-1))
+                    if (Riconv(convd->conv, &inptr, &inleft, &outptr, &outleft) != (size_t)(-1))
                     {
                         outbuf = (unsigned char *)outptr;
                         break;
