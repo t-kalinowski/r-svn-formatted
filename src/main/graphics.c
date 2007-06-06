@@ -3656,7 +3656,8 @@ void rgb2hsv(double r, double g, double b, double *h, double *s, double *v)
  * in response to user suggestion
  */
 
-attribute_hidden char *DefaultPalette[] = {"black", "red", "green3", "blue", "cyan", "magenta", "yellow", "grey", NULL};
+attribute_hidden const char *DefaultPalette[] = {"black",   "red",    "green3", "blue", "cyan",
+                                                 "magenta", "yellow", "grey",   NULL};
 
 /* The Table of Known Color Names */
 /* Adapted from the X11 RGB database */
@@ -4483,7 +4484,7 @@ attribute_hidden char *RGBA2rgb(unsigned int r, unsigned int g, unsigned int b, 
 /* If this fails, create an #RRGGBB string */
 
 /* used in grid */
-char *col2name(unsigned int col)
+const char *col2name(unsigned int col)
 {
     int i;
 
