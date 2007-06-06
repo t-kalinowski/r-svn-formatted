@@ -206,12 +206,10 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, tl, hd, pg;
     char **f, **h, *t, *pager;
-    char *vmax;
     Rboolean dl;
     int i, n;
 
     checkArity(op, args);
-    vmax = vmaxget();
     fn = CAR(args);
     args = CDR(args);
     hd = CAR(args);
@@ -253,7 +251,6 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         pager = acopy_string(CHAR(R_BlankString));
     R_ShowFiles(n, f, h, t, dl, pager);
-    vmaxset(vmax);
     return R_NilValue;
 }
 
@@ -269,11 +266,9 @@ SEXP attribute_hidden do_fileedit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ti, ed;
     char **f, **title, *editor;
-    char *vm;
     int i, n;
 
     checkArity(op, args);
-    vm = vmaxget();
     fn = CAR(args);
     args = CDR(args);
     ti = CAR(args);
@@ -316,7 +311,6 @@ SEXP attribute_hidden do_fileedit(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         editor = acopy_string(CHAR(R_BlankString));
     R_EditFiles(n, f, title, editor);
-    vmaxset(vm);
     return R_NilValue;
 }
 

@@ -602,12 +602,10 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, mtch, n_input, n_target, mtch_count, temp, dups_ok, no_match;
     int nexact = 0;
     int *used = NULL, *ians;
-    char *vmax;
     const char **in, **tar;
     Rboolean no_dups;
 
     checkArity(op, args);
-    vmax = vmaxget();
     input = CAR(args);
     n_input = LENGTH(input);
     target = CADR(args);
@@ -740,7 +738,6 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
                 ians[i] = no_match;
     }
     UNPROTECT(1);
-    vmaxset(vmax);
     return ans;
 }
 
@@ -1264,10 +1261,8 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     HashData data;
     const char *csep, *ss;
     char *buf;
-    char *vmax;
 
     checkArity(op, args);
-    vmax = vmaxget();
     names = CAR(args);
     if (!isString(names))
         error(_("'names' must be a character vector"));
@@ -1326,7 +1321,6 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(3);
     }
     UNPROTECT(1);
-    vmaxset(vmax);
     return ans;
 }
 

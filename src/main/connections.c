@@ -3083,7 +3083,6 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
     void *p = NULL;
     Rboolean wasopen = TRUE, isRaw = FALSE;
     Rconnection con = NULL;
-    char *vmax = vmaxget();
     Rbyte *bytes = NULL;
 
     checkArity(op, args);
@@ -3327,7 +3326,6 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
-    vmaxset(vmax);
     if (!wasopen)
         con->close(con);
     if (m < n)
@@ -3657,7 +3655,6 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean wasopen = TRUE;
     Rboolean isRaw = FALSE;
     Rconnection con = NULL;
-    char *vmax = vmaxget();
     Rbyte *bytes = NULL;
 
     checkArity(op, args);
@@ -3701,7 +3698,6 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             break;
     }
-    vmaxset(vmax);
     if (!wasopen)
         con->close(con);
     if (m < n)
@@ -3722,7 +3718,6 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *s, *ssep = "";
     Rboolean wasopen = TRUE, usesep, isRaw = FALSE;
     Rconnection con = NULL;
-    char *vmax = vmaxget();
 #ifdef SUPPORT_MBCS
     mbstate_t mb_st;
 #endif
@@ -3853,7 +3848,6 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             buf += lenb;
     }
-    vmaxset(vmax);
     if (!wasopen)
         con->close(con);
     if (isRaw)
