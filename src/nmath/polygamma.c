@@ -152,8 +152,6 @@ void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)
         6.19212318840579710e+03, -8.65802531135531136e+04, 1.42551716666666667e+06, -2.72982310678160920e+07,
         6.01580873900642368e+08, -1.51163157670921569e+10, 4.29614643061166667e+11, -1.37116552050883328e+13,
         4.88332318973593167e+14, -1.92965793419400681e+16};
-    /*    const static double *b = (double *)&bvalues -1; /* ==> b[1] = bvalues[0], etc */
-    const int nmax = n_max;
 
     int i, j, k, mm, mx, nn, np, nx, fn;
     double arg, den, elim, eps, fln, fx, rln, rxsq, r1m4, r1m5, s, slope, t, ta, tk, tol, tols, tss, tst, tt, t1, t2,
@@ -385,7 +383,7 @@ L10:
 
         nx = (int)xinc;
         np = nn + 1;
-        if (nx > nmax)
+        if (nx > n_max)
         {
             *nz = 0;
             *ierr = 3;
