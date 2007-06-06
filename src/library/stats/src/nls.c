@@ -39,7 +39,7 @@
  * get the list element named str. names is the name attribute of list
  */
 
-static SEXP getListElement(SEXP list, SEXP names, char *str)
+static SEXP getListElement(SEXP list, SEXP names, const char *str)
 {
     SEXP elmt = (SEXP)NULL;
     const char *tempChar;
