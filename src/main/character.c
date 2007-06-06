@@ -1165,10 +1165,16 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         return ans;
     }
 
+    cpat = translateChar(STRING_ELT(pat, 0));
     if (perl_opt)
     {
         if (igcase_opt)
+        {
             cflags |= PCRE_CASELESS;
+            if (useBytes && utf8locale && !utf8strIsASCII(cpat))
+                warning(
+                    _("ignore.case = TRUE, perl = TRUE in UTF-8 locales\n  only works caselessly for ASCII patterns"));
+        }
 #ifdef SUPPORT_UTF8
         if (useBytes)
             ;
@@ -1186,7 +1192,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= REG_ICASE;
     }
 
-    cpat = translateChar(STRING_ELT(pat, 0));
 #ifdef SUPPORT_MBCS
     if (!useBytes && mbcslocale && !mbcsValid(cpat))
         error(_("regular expression is invalid in this locale"));
@@ -1635,6 +1640,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (STRING_ELT(pat, 0) == NA_STRING)
         error(R_MSG_IA);
 
+    spat = translateChar(STRING_ELT(pat, 0));
     if (perl_opt)
     {
 #ifdef SUPPORT_UTF8
@@ -1646,7 +1652,12 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
 #endif
         if (igcase_opt)
+        {
             cflags |= PCRE_CASELESS;
+            if (useBytes && utf8locale && !utf8strIsASCII(spat))
+                warning(
+                    _("ignore.case = TRUE, perl = TRUE in UTF-8 locales\n  only works caselessly for ASCII patterns"));
+        }
     }
     else
     {
@@ -1656,7 +1667,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= REG_ICASE;
     }
 
-    spat = translateChar(STRING_ELT(pat, 0));
 #ifdef SUPPORT_MBCS
     if (!useBytes && mbcslocale && !mbcsValid(spat))
         error(_("regular expression is invalid in this locale"));

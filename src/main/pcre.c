@@ -231,7 +231,11 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
 #endif
 
     if (igcase_opt)
+    {
         options |= PCRE_CASELESS;
+        if (useBytes && utf8locale && !utf8strIsASCII(spat))
+            warning(_("ignore.case = TRUE, perl = TRUE in UTF-8 locales\n  only works caselessly for ASCII patterns"));
+    }
 
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
@@ -394,7 +398,11 @@ SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, 
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
 #endif
     if (igcase_opt)
+    {
         options |= PCRE_CASELESS;
+        if (useBytes && utf8locale && !utf8strIsASCII(spat))
+            warning(_("ignore.case = TRUE, perl = TRUE in UTF-8 locales\n  only works caselessly for ASCII patterns"));
+    }
 
 #ifdef SUPPORT_UTF8
     if (!useBytes && mbcslocale && !mbcsValid(spat))
