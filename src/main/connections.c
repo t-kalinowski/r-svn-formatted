@@ -492,7 +492,7 @@ void init_con(Rconnection new, const char *description, const char *const mode)
 
 static Rboolean file_open(Rconnection con)
 {
-    char *name;
+    const char *name;
     FILE *fp = NULL;
     Rfileconn this = con->private;
     Rboolean temp = FALSE;
@@ -507,7 +507,7 @@ static Rboolean file_open(Rconnection con)
         name = R_tmpnam("Rf", R_TempDir);
     }
     else
-        name = (char *)R_ExpandFileName(con->description);
+        name = R_ExpandFileName(con->description);
     errno = 0; /* some systems require this */
     if (strcmp(name, "stdin"))
     {
@@ -536,7 +536,7 @@ static Rboolean file_open(Rconnection con)
 #ifdef Win32
         strncpy(this->name, name, PATH_MAX);
 #endif
-        free(name);
+        free((char *)name); /* only free if allocated by R_tmpnam */
     }
 #ifdef Win32
     this->anon_file = temp;
@@ -841,7 +841,10 @@ static Rboolean fifo_open(Rconnection con)
 #endif
                 return FALSE;
                 if (temp)
+                {
                     unlink(name);
+                    free((char *)name); /* only free if allocated by R_tmpnam */
+                }
             }
         }
         else
