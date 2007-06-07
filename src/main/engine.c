@@ -2436,7 +2436,7 @@ double GEStrWidth(const char *str, R_GE_gcontext *gc, GEDevDesc *dd)
     {
         gc->fontfamily[0] = vfontcode;
         gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
-        return R_GE_VStrWidth((unsigned char *)str, gc, dd);
+        return R_GE_VStrWidth(str, gc, dd);
     }
     else
     {
@@ -2490,7 +2490,7 @@ double GEStrHeight(const char *str, R_GE_gcontext *gc, GEDevDesc *dd)
     {
         gc->fontfamily[0] = vfontcode;
         gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
-        return R_GE_VStrHeight((unsigned char *)str, gc, dd);
+        return R_GE_VStrHeight(str, gc, dd);
     }
     else
     {
