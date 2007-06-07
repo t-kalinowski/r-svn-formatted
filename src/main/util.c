@@ -67,10 +67,6 @@ Rboolean tsConform(SEXP x, SEXP y)
     return FALSE;
 }
 
-const static char *const truenames[] = {
-    "T", "True", "TRUE", "true", (char *)0,
-};
-
 int nrows(SEXP s)
 {
     SEXP t;
@@ -125,8 +121,12 @@ void attribute_hidden internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
     }
 }
 
+const static char *const truenames[] = {
+    "T", "True", "TRUE", "true", (char *)NULL,
+};
+
 const static char *const falsenames[] = {
-    "F", "False", "FALSE", "false", (char *)0,
+    "F", "False", "FALSE", "false", (char *)NULL,
 };
 
 SEXP asChar(SEXP x)
@@ -215,7 +215,7 @@ const static struct
                  {"numeric", REALSXP},
                  {"name", SYMSXP},
 
-                 {(char *)0, -1}};
+                 {(char *)NULL, -1}};
 
 SEXPTYPE str2type(const char *s)
 {
@@ -1152,7 +1152,7 @@ void F77_SYMBOL(rexitc)(char *msg, int *nchar)
     }
     strncpy(buf, msg, nc);
     buf[nc] = '\0';
-    error(buf);
+    error("%s", buf);
 }
 
 void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
@@ -1166,7 +1166,7 @@ void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
     }
     strncpy(buf, msg, nc);
     buf[nc] = '\0';
-    warning(buf);
+    warning("%s", buf);
 }
 
 void F77_SYMBOL(rchkusr)(void)
