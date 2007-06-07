@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-6   The R Development Core Team.
+ *  Copyright (C) 2001-7   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,8 +36,8 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int nwhat, nret, nc, nr, m, k, lastm, need;
     Rboolean blank_skip, field_skip = FALSE;
-    int whatlen, dynwhat, buflen = 0;
-    char *line, *buf;
+    int whatlen, dynwhat, buflen = 100;
+    char line[MAXELTSIZE], *buf;
     regex_t blankline, contline, trailblank, regline;
     regmatch_t regmatch[1];
     SEXP file, what, what2, retval, retval2, dims, dimnames;
@@ -59,10 +59,6 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     nwhat = LENGTH(what);
     dynwhat = (nwhat == 0);
 
-    line = (char *)malloc(MAXELTSIZE);
-    if (!line)
-        error(_("could not allocate memory for 'read.dcf'"));
-    buflen = 100;
     buf = (char *)malloc(buflen);
     if (!buf)
         error(_("could not allocate memory for 'read.dcf'"));
@@ -198,7 +194,6 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!wasopen)
         con->close(con);
-    free(line);
     free(buf);
     regfree(&blankline);
     regfree(&contline);
@@ -230,9 +225,7 @@ static SEXP allocMatrixNA(SEXPTYPE mode, int nrow, int ncol)
 
     PROTECT(retval = allocMatrix(mode, nrow, ncol));
     for (k = 0; k < LENGTH(retval); k++)
-    {
         SET_STRING_ELT(retval, k, NA_STRING);
-    }
     UNPROTECT(1);
     return (retval);
 }
