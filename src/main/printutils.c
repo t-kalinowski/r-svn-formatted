@@ -46,7 +46,7 @@
  *
  * Here, the following UTILITIES are provided:
  *
- * The utilities EncodeLogical, EncodeFactor, EncodeInteger, EncodeReal
+ * The utilities EncodeLogical, EncodeInteger, EncodeReal
  * and EncodeString can be used to convert R objects to a form suitable
  * for printing.  These print the values passed in a formatted form
  * or, in the case of NA values, an NA indicator.  EncodeString takes
@@ -134,7 +134,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
 /* There is no documented (or enforced) limit on 'w' here,
    so use snprintf */
 #define NB 1000
-char *EncodeLogical(int x, int w)
+const char *EncodeLogical(int x, int w)
 {
     static char buff[NB];
     if (x == NA_LOGICAL)
@@ -147,7 +147,7 @@ char *EncodeLogical(int x, int w)
     return buff;
 }
 
-char *EncodeInteger(int x, int w)
+const char *EncodeInteger(int x, int w)
 {
     static char buff[NB];
     if (x == NA_INTEGER)
@@ -158,14 +158,14 @@ char *EncodeInteger(int x, int w)
     return buff;
 }
 
-char *EncodeRaw(Rbyte x)
+const char *EncodeRaw(Rbyte x)
 {
     static char buff[10];
     sprintf(buff, "%02x", x);
     return buff;
 }
 
-char *EncodeReal(double x, int w, int d, int e, char cdec)
+const char *EncodeReal(double x, int w, int d, int e, char cdec)
 {
     static char buff[NB];
     char *p, fmt[20];
@@ -212,7 +212,7 @@ char *EncodeReal(double x, int w, int d, int e, char cdec)
     return buff;
 }
 
-attribute_hidden char *EncodeReal2(double x, int w, int d, int e)
+attribute_hidden const char *EncodeReal2(double x, int w, int d, int e)
 {
     static char buff[NB];
     char fmt[20];
@@ -255,10 +255,11 @@ attribute_hidden char *EncodeReal2(double x, int w, int d, int e)
 
 void z_prec_r(Rcomplex *r, Rcomplex *x, double digits);
 
-char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, char cdec)
+const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, char cdec)
 {
     static char buff[NB];
-    char Re[NB], *Im, *tmp;
+    char Re[NB];
+    const char *Im, *tmp;
     int flagNegIm = 0;
     Rcomplex y;
 
@@ -462,7 +463,7 @@ int Rstrlen(SEXP s, int quote)
    If 'quote' is non-zero the result should be quoted (and internal quotes
    escaped and NA strings handled differently).
  */
-char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
+const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
     int b, b0, i, j, cnt;
     const char *p;
@@ -744,10 +745,10 @@ char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     return buffer->data;
 }
 
-char *EncodeElement(SEXP x, int indx, int quote, char dec)
+const char *EncodeElement(SEXP x, int indx, int quote, char dec)
 {
     int w, d, e, wi, di, ei;
-    char *res;
+    const char *res;
 
     switch (TYPEOF(x))
     {

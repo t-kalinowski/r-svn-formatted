@@ -712,7 +712,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         break;
     case CHARSXP:
         Rprintf("<CHARSXP: ");
-        Rprintf(EncodeString(s, 0, '"', Rprt_adj_left));
+        Rprintf("%s", EncodeString(s, 0, '"', Rprt_adj_left));
         Rprintf(">\n");
         break;
     case EXPRSXP:
@@ -1012,7 +1012,7 @@ void attribute_hidden CustomPrintValue(SEXP s, SEXP env)
    The actual interfaces are now in xxxpr.f
  */
 
-attribute_hidden int F77_NAME(dblep0)(char *label, int *nchar, double *data, int *ndata)
+attribute_hidden int F77_NAME(dblep0)(const char *label, int *nchar, double *data, int *ndata)
 {
     int k, nc = *nchar;
 
@@ -1034,7 +1034,7 @@ attribute_hidden int F77_NAME(dblep0)(char *label, int *nchar, double *data, int
     return (0);
 }
 
-attribute_hidden int F77_NAME(intpr0)(char *label, int *nchar, int *data, int *ndata)
+attribute_hidden int F77_NAME(intpr0)(const char *label, int *nchar, int *data, int *ndata)
 {
     int k, nc = *nchar;
 
@@ -1056,7 +1056,7 @@ attribute_hidden int F77_NAME(intpr0)(char *label, int *nchar, int *data, int *n
     return (0);
 }
 
-attribute_hidden int F77_NAME(realp0)(char *label, int *nchar, float *data, int *ndata)
+attribute_hidden int F77_NAME(realp0)(const char *label, int *nchar, float *data, int *ndata)
 {
     int k, nc = *nchar, nd = *ndata;
     double *ddata;
@@ -1089,7 +1089,7 @@ attribute_hidden int F77_NAME(realp0)(char *label, int *nchar, float *data, int 
 
 /* Fortran-callable error routine for lapack */
 
-void F77_NAME(xerbla)(char *srname, int *info)
+void F77_NAME(xerbla)(const char *srname, int *info)
 {
     /* srname is not null-terminated.  It should be 6 characters. */
     char buf[7];
