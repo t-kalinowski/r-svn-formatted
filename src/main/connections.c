@@ -810,8 +810,15 @@ static Rboolean fifo_open(Rconnection con)
     int fd, flags, res;
     int mlen = strlen(con->mode);
     struct stat sb;
+    Rboolean temp = FALSE;
 
-    name = R_ExpandFileName(con->description);
+    if (strlen(con->description) == 0)
+    {
+        temp = TRUE;
+        name = R_tmpnam("Rf", R_TempDir);
+    }
+    else
+        name = R_ExpandFileName(con->description);
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
     if (mlen >= 2 && con->mode[1] == '+')
@@ -833,6 +840,8 @@ static Rboolean fifo_open(Rconnection con)
                 warning(_("cannot create fifo '%s'"), name);
 #endif
                 return FALSE;
+                if (temp)
+                    unlink(name);
             }
         }
         else
@@ -975,6 +984,16 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100) /* ASCII */
         error(_("invalid '%s' argument"), "encoding");
     open = CHAR(STRING_ELT(sopen, 0)); /* ASCII */
+    if (strlen(file) == 0)
+    {
+        if (!strlen(open))
+            open = "w+";
+        if (strcmp(open, "w+") != 0 && strcmp(open, "w+b") != 0)
+        {
+            open = "w+";
+            warning(_("fifo(\"\") only supports open = \"w+\" and open = \"w+b\": using the former"));
+        }
+    }
     ncon = NextConnection();
     con = Connections[ncon] = newfifo(file, strlen(open) ? open : "r");
     con->blocking = block;
