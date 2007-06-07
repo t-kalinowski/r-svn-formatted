@@ -436,7 +436,7 @@ void PrintWarnings(void)
     header = P_("Warning message:\n", "Warning messages:\n", R_CollectWarnings);
     if (R_CollectWarnings == 1)
     {
-        REprintf(header);
+        REprintf("%s", header);
         names = CAR(ATTRIB(R_Warnings));
         if (VECTOR_ELT(R_Warnings, 0) == R_NilValue)
             REprintf("%s \n", CHAR(STRING_ELT(names, 0)));
@@ -475,7 +475,7 @@ void PrintWarnings(void)
     }
     else if (R_CollectWarnings <= 10)
     {
-        REprintf(header);
+        REprintf("%s", header);
         names = CAR(ATTRIB(R_Warnings));
         for (i = 0; i < R_CollectWarnings; i++)
         {
