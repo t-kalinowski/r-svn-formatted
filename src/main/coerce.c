@@ -32,14 +32,6 @@
 /* of data vectors.  Type coercion throughout R should use these */
 /* routines to ensure consistency. */
 
-const static char *const truenames[] = {
-    "T", "True", "TRUE", "true", (char *)0,
-};
-
-const static char *const falsenames[] = {
-    "F", "False", "FALSE", "false", (char *)0,
-};
-
 /* Coercion warnings will be OR'ed : */
 #define WARN_NA 1
 #define WARN_INACC 2
@@ -189,13 +181,10 @@ int attribute_hidden LogicalFromString(SEXP x, int *warn)
 {
     if (x != R_NaString)
     {
-        int i;
-        for (i = 0; truenames[i]; i++)
-            if (!strcmp(CHAR(x), truenames[i])) /* ASCII */
-                return 1;
-        for (i = 0; falsenames[i]; i++)
-            if (!strcmp(CHAR(x), falsenames[i])) /* ASCII */
-                return 0;
+        if (StringTrue(CHAR(x)))
+            return 1;
+        if (StringFalse(CHAR(x)))
+            return 0;
     }
     return NA_LOGICAL;
 }
@@ -2529,15 +2518,21 @@ typedef struct
     Rboolean canChange;
 } classType;
 
-static classType classTable[] = {{"logical", LGLSXP, TRUE},         {"integer", INTSXP, TRUE},
-                                 {"double", REALSXP, TRUE},         {"raw", RAWSXP, TRUE},
-                                 {"complex", CPLXSXP, TRUE},        {"character", STRSXP, TRUE},
-                                 {"expression", EXPRSXP, TRUE},     {"list", VECSXP, TRUE},
-                                 {"environment", ENVSXP, FALSE},    {"char", CHARSXP, TRUE},
-                                 {"externalptr", EXTPTRSXP, FALSE}, {"weakref", WEAKREFSXP, FALSE},
+static classType classTable[] = {{"logical", LGLSXP, TRUE},
+                                 {"integer", INTSXP, TRUE},
+                                 {"double", REALSXP, TRUE},
+                                 {"raw", RAWSXP, TRUE},
+                                 {"complex", CPLXSXP, TRUE},
+                                 {"character", STRSXP, TRUE},
+                                 {"expression", EXPRSXP, TRUE},
+                                 {"list", VECSXP, TRUE},
+                                 {"environment", ENVSXP, FALSE},
+                                 {"char", CHARSXP, TRUE},
+                                 {"externalptr", EXTPTRSXP, FALSE},
+                                 {"weakref", WEAKREFSXP, FALSE},
                                  {"name", SYMSXP, FALSE},
 
-                                 {(char *)0, (SEXPTYPE)-1, FALSE}};
+                                 {(char *)NULL, (SEXPTYPE)-1, FALSE}};
 
 static int class2type(const char *s)
 {
