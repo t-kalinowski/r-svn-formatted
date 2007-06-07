@@ -1259,9 +1259,9 @@ SEXP setTitle(const char *title)
     {
     case RGui:
         if (RguiMDI & RW_MDI)
-            settext(RFrame, (char *)title);
+            settext(RFrame, title);
         else
-            settext(RConsole, (char *)title);
+            settext(RConsole, title);
         break;
     case RTerm:
         SetConsoleTitle(title);

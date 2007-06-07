@@ -617,7 +617,7 @@ void *Riconv_open(const char *tocode, const char *fromcode)
     else
         return iconv_open(tocode, fromcode);
 #else
-    return iconv_open((char *)tocode, (char *)fromcode);
+    return iconv_open(tocode, fromcode);
 #endif
 }
 
@@ -636,8 +636,8 @@ static void *latin1_obj = NULL, *utf8_obj = NULL;
 const char *translateChar(SEXP x)
 {
     void *obj;
-    char *inbuf, *outbuf, *p;
-    const char *ans = CHAR(x);
+    const char *inbuf, *ans = CHAR(x);
+    char *outbuf, *p;
     size_t inb, outb, res;
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
@@ -676,7 +676,7 @@ const char *translateChar(SEXP x)
     }
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
-    inbuf = (char *)ans;
+    inbuf = ans;
     inb = strlen(inbuf);
     outbuf = cbuff.data;
     outb = cbuff.bufsize - 1;

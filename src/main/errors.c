@@ -992,10 +992,10 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 strcat(tmp, tr);
                 if (itail > 0)
                     strcat(tmp, tail);
+                SET_STRING_ELT(ans, i, mkChar(tmp));
             }
             else
-                tmp = (char *)This;
-            SET_STRING_ELT(ans, i, mkChar(tmp));
+                SET_STRING_ELT(ans, i, mkChar(This));
         }
         UNPROTECT(1);
         return ans;
