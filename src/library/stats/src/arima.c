@@ -836,7 +836,7 @@ SEXP ARIMA_Like(SEXP sy, SEXP sPhi, SEXP sTheta, SEXP sDelta, SEXP sa, SEXP sP, 
 /* arma is p, q, sp, sq, ns, d, sd */
 SEXP ARIMA_CSS(SEXP sy, SEXP sarma, SEXP sPhi, SEXP sTheta, SEXP sncond, SEXP giveResid)
 {
-    SEXP res, nres, sResid = R_NilValue;
+    SEXP res, sResid = R_NilValue;
     double ssq = 0.0, *y = REAL(sy), tmp;
     double *phi = REAL(sPhi), *theta = REAL(sTheta), *w, *resid;
     int n = LENGTH(sy), *arma = INTEGER(sarma), p = LENGTH(sPhi), q = LENGTH(sTheta), ncond = asInteger(sncond);
