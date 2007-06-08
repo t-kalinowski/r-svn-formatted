@@ -97,9 +97,9 @@ SEXP attribute_hidden do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP en
 #define middleButton 2
 #define rightButton 4
 
-static char *mouseHandlers[] = {"onMouseDown", "onMouseUp", "onMouseMove"};
+static const char *mouseHandlers[] = {"onMouseDown", "onMouseUp", "onMouseMove"};
 
-/* used in devWindows.c */
+/* used in devWindows.c and cairoDevice */
 SEXP doMouseEvent(SEXP eventRho, NewDevDesc *dd, R_MouseEvent event, int buttons, double x, double y)
 {
     int i;
@@ -140,10 +140,10 @@ SEXP doMouseEvent(SEXP eventRho, NewDevDesc *dd, R_MouseEvent event, int buttons
     return result;
 }
 
-static char *keynames[] = {"Left", "Up", "Right", "Down", "F1",  "F2",   "F3",   "F4",  "F5",   "F6",  "F7",
-                           "F8",   "F9", "F10",   "F11",  "F12", "PgUp", "PgDn", "End", "Home", "Ins", "Del"};
+static const char *keynames[] = {"Left", "Up", "Right", "Down", "F1",  "F2",   "F3",   "F4",  "F5",   "F6",  "F7",
+                                 "F8",   "F9", "F10",   "F11",  "F12", "PgUp", "PgDn", "End", "Home", "Ins", "Del"};
 
-/* used in devWindows.c */
+/* used in devWindows.c and cairoDevice */
 SEXP doKeybd(SEXP eventRho, NewDevDesc *dd, R_KeyName rkey, const char *keyname)
 {
     SEXP handler, skey, temp, result;
