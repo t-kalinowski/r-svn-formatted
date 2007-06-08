@@ -400,11 +400,7 @@ SEXP RTcl_ObjAsDoubleVector(SEXP args)
     /* First try for single value */
     ret = Tcl_GetDoubleFromObj(RTcl_interp, obj, &x);
     if (ret == TCL_OK)
-    {
-        ans = allocVector(REALSXP, 1);
-        REAL(ans)[0] = x;
-        return ans;
-    }
+        return ScalarReal(x);
 
     /* Then try as list */
     ret = Tcl_ListObjGetElements(RTcl_interp, obj, &count, &elem);
@@ -470,11 +466,7 @@ SEXP RTcl_ObjAsIntVector(SEXP args)
     /* First try for single value */
     ret = Tcl_GetIntFromObj(RTcl_interp, obj, &x);
     if (ret == TCL_OK)
-    {
-        ans = allocVector(INTSXP, 1);
-        INTEGER(ans)[0] = x;
-        return ans;
-    }
+        return ScalarInteger(x);
 
     /* Then try as list */
     ret = Tcl_ListObjGetElements(RTcl_interp, obj, &count, &elem);
@@ -800,7 +792,6 @@ void tcltk_init(void)
 
 SEXP RTcl_ServiceMode(SEXP args)
 {
-    SEXP ans;
     int value;
 
     if (!isLogical(CADR(args)) || length(CADR(args)) > 1)
@@ -815,9 +806,7 @@ SEXP RTcl_ServiceMode(SEXP args)
             Tcl_SetServiceMode(value); /* Tcl_GetServiceMode was not found */
     }
 
-    ans = allocVector(LGLSXP, 1);
-    LOGICAL(ans)[0] = value == TCL_SERVICE_ALL;
-    return ans;
+    return ScalarLogical(value == TCL_SERVICE_ALL);
 }
 
 #ifndef Win32

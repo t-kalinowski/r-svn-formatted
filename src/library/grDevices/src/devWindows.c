@@ -1070,8 +1070,7 @@ static SEXP NewPlotHistory(int n)
     pCURRENTPOS = -1;
     for (i = 0; i < n; i++)
         SET_VECTOR_ELT(pHISTORY, i, R_NilValue);
-    PROTECT(class = allocVector(STRSXP, 1));
-    SET_STRING_ELT(class, 0, mkChar("SavedPlots"));
+    PROTECT(class = mkString("SavedPlots"));
     classgets(vDL, class);
     SETDL;
     UNPROTECT(7);
@@ -1118,8 +1117,7 @@ static void AddtoPlotHistory(SEXP snapshot, int replace)
     else
         where = pNUMPLOTS;
 
-    PROTECT(class = allocVector(STRSXP, 1));
-    SET_STRING_ELT(class, 0, mkChar("recordedplot"));
+    PROTECT(class = mkString("recordedplot"));
     classgets(snapshot, class);
     SET_VECTOR_ELT(pHISTORY, where, snapshot);
     pCURRENTPOS = where;
@@ -2052,8 +2050,7 @@ static void GA_Size(double *left, double *right, double *bottom, double *top, Ne
 static void GA_Resize(NewDevDesc *dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    SEXP scale;
-    PROTECT(scale = allocVector(REALSXP, 1));
+
     if (xd->resize)
     {
         int iw, ih, iw0 = dd->right - dd->left, ih0 = dd->bottom - dd->top;
@@ -2083,9 +2080,12 @@ static void GA_Resize(NewDevDesc *dd)
             rf = min(fw, fh);
             xd->rescale_factor *= rf;
             xd->wanteddpi = xd->rescale_factor * xd->truedpi;
-            /* dd->ps *= rf; dd->cra[0] *= rf; dd->cra[1] *= rf; */
-            REAL(scale)[0] = rf;
-            GEHandleEvent(GE_ScalePS, dd, scale);
+            {
+                SEXP scale;
+                PROTECT(scale = ScalarReal(rf));
+                GEHandleEvent(GE_ScalePS, dd, scale);
+                UNPROTECT(1);
+            }
             if (fw < fh)
             {
                 dd->left = 0.0;
@@ -2145,7 +2145,6 @@ static void GA_Resize(NewDevDesc *dd)
             gfillrect(xd->bm, xd->outcolor, getrect(xd->bm));
         }
     }
-    UNPROTECT(1);
 }
 
 /********************************************************/

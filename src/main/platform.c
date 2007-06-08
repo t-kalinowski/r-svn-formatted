@@ -674,8 +674,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
-    PROTECT(xxclass = allocVector(STRSXP, 1));
-    SET_STRING_ELT(xxclass, 0, mkChar("octmode"));
+    PROTECT(xxclass = mkString("octmode"));
     classgets(mode, xxclass);
     UNPROTECT(3);
     return ans;
@@ -1138,7 +1137,7 @@ static int R_unlink(char *name, int recursive)
 
 SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP fn, ans;
+    SEXP fn;
     int i, j, nfiles, res, failures = 0, recursive;
     const char *names;
     glob_t globbuf;
@@ -1174,13 +1173,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
         }
     }
-    PROTECT(ans = allocVector(INTSXP, 1));
-    if (!failures)
-        INTEGER(ans)[0] = 0;
-    else
-        INTEGER(ans)[0] = 1;
-    UNPROTECT(1);
-    return (ans);
+    return ScalarInteger(failures ? 1 : 0);
 }
 
 #ifdef HAVE_LOCALE_H
@@ -1193,7 +1186,6 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
 #ifdef HAVE_LOCALE_H
-    SEXP ans;
     int cat;
     char *p = NULL;
 
@@ -1241,13 +1233,7 @@ SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (cat != NA_INTEGER)
         p = setlocale(cat, NULL);
-    PROTECT(ans = allocVector(STRSXP, 1));
-    if (p)
-        SET_STRING_ELT(ans, 0, mkChar(p));
-    else
-        SET_STRING_ELT(ans, 0, mkChar(""));
-    UNPROTECT(1);
-    return ans;
+    return mkString(p ? p : "");
 #else
     return R_NilValue;
 #endif
@@ -1683,9 +1669,7 @@ SEXP attribute_hidden do_nsl(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             warning(_("unknown format returned by gethostbyname"));
         }
-        PROTECT(ans = allocVector(STRSXP, 1));
-        SET_STRING_ELT(ans, 0, mkChar(ip));
-        UNPROTECT(1);
+        ans = mkString(ip);
     }
     return ans;
 }
@@ -1699,19 +1683,15 @@ SEXP attribute_hidden do_nsl(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans;
-
-    PROTECT(ans = allocVector(INTSXP, 1));
-    INTEGER(ans)[0] = getpid();
-    UNPROTECT(1);
-    return ans;
+    checkArity(op, args);
+    return ScalarInteger(getpid());
 }
 
 #ifndef Win32
 /* mkdir is defined in <sys/stat.h> */
 SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP path, ans;
+    SEXP path;
     int res, show, recursive;
     char *p, dir[PATH_MAX];
 
@@ -1746,16 +1726,13 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (show && res && errno == EEXIST)
         warning(_("'%s' already exists"), dir);
 end:
-    PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = (res == 0);
-    UNPROTECT(1);
-    return (ans);
+    return ScalarLogical(res == 0);
 }
 #else
 #include <io.h> /* mkdir is defined here */
 SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP path, ans;
+    SEXP path;
     char *p, dir[MAX_PATH];
     int res, show, recursive;
 
@@ -1795,10 +1772,7 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (show && res && errno == EEXIST)
         warning(_("'%s' already exists"), dir);
 end:
-    PROTECT(ans = allocVector(LGLSXP, 1));
-    LOGICAL(ans)[0] = (res == 0);
-    UNPROTECT(1);
-    return (ans);
+    return ScalarLogical(res == 0);
 }
 #endif
 

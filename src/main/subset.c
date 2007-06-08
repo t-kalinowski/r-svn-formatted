@@ -612,8 +612,6 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* By default we drop extents of length 1 */
 
-    PROTECT(args);
-
     /* Handle case of extracting a single element from a simple vector
        directly to improve speed for this simple case. */
     if (CDDR(args) == R_NilValue)
@@ -638,12 +636,7 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                     i = -1;
                 }
                 if (i >= 1 && i <= LENGTH(x))
-                {
-                    ans = allocVector(REALSXP, 1);
-                    REAL(ans)[0] = REAL(x)[i - 1];
-                    UNPROTECT(1);
-                    return ans;
-                }
+                    return ScalarReal(REAL(x)[i - 1]);
                 break;
             case INTSXP:
                 switch (TYPEOF(s))
@@ -658,18 +651,15 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                     i = -1;
                 }
                 if (i >= 1 && i <= LENGTH(x))
-                {
-                    ans = allocVector(INTSXP, 1);
-                    INTEGER(ans)[0] = INTEGER(x)[i - 1];
-                    UNPROTECT(1);
-                    return ans;
-                }
+                    return ScalarInteger(INTEGER(x)[i - 1]);
                 break;
             default:
                 break;
             }
         }
     }
+
+    PROTECT(args);
 
     drop = 1;
     ExtractDropArg(args, &drop);

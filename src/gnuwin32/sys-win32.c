@@ -297,8 +297,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        tlist = allocVector(INTSXP, 1);
-        INTEGER(tlist)[0] = ll;
+        tlist = ScalarLogical(ll);
         R_Visible = 0;
         return tlist;
     }

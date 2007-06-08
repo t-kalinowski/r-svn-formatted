@@ -346,8 +346,7 @@ static SEXP modLa_zgeqp3(SEXP Ain)
         error(_("error code %d from Lapack routine '%s'"), info, "zgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
-    rank = PROTECT(allocVector(INTSXP, 1));
-    INTEGER(rank)[0] = m < n ? m : n;
+    rank = PROTECT(ScalarInteger(m < n ? m : n));
     SET_STRING_ELT(nm, 0, mkChar("qr"));
     SET_STRING_ELT(nm, 1, mkChar("rank"));
     SET_STRING_ELT(nm, 2, mkChar("qraux"));
@@ -768,8 +767,7 @@ static SEXP modLa_dgeqp3(SEXP Ain)
         error(_("error code %d from Lapack routine '%s'"), info, "dgeqp3");
     val = PROTECT(allocVector(VECSXP, 4));
     nm = PROTECT(allocVector(STRSXP, 4));
-    rank = PROTECT(allocVector(INTSXP, 1));
-    INTEGER(rank)[0] = m < n ? m : n;
+    rank = PROTECT(ScalarInteger(m < n ? m : n));
     SET_STRING_ELT(nm, 0, mkChar("qr"));
     SET_STRING_ELT(nm, 1, mkChar("rank"));
     SET_STRING_ELT(nm, 2, mkChar("qraux"));

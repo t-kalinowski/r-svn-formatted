@@ -81,7 +81,6 @@ static Rboolean tracing_state = TRUE;
 
 SEXP R_traceOnOff(SEXP onOff)
 {
-    SEXP value;
     Rboolean prev = GET_TRACE_STATE;
     if (length(onOff) > 0)
     {
@@ -91,9 +90,7 @@ SEXP R_traceOnOff(SEXP onOff)
         else
             error("Value for tracingState must be TRUE or FALSE");
     }
-    value = allocVector(LGLSXP, 1);
-    LOGICAL(value)[0] = prev;
-    return value;
+    return ScalarLogical(prev);
 }
 
 Rboolean attribute_hidden R_current_trace_state()

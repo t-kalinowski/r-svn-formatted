@@ -79,8 +79,7 @@ static SEXP cross_colon(SEXP call, SEXP s, SEXP t)
         setAttrib(a, R_LevelsSymbol, la);
         UNPROTECT(1);
     }
-    PROTECT(la = allocVector(STRSXP, 1));
-    SET_STRING_ELT(la, 0, mkChar("factor"));
+    PROTECT(la = mkString("factor"));
     setAttrib(a, R_ClassSymbol, la);
     UNPROTECT(2);
     return (a);
@@ -232,8 +231,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
         }
         else
         {
-            PROTECT(tmp = allocVector(STRSXP, 1));
-            SET_STRING_ELT(tmp, 0, mkChar("factor"));
+            PROTECT(tmp = mkString("factor"));
         }
         setAttrib(a, R_ClassSymbol, tmp);
         UNPROTECT(1);
@@ -321,8 +319,7 @@ static SEXP rep1(SEXP s, SEXP ncopy)
         }
         else
         {
-            PROTECT(tmp = allocVector(STRSXP, 1));
-            SET_STRING_ELT(tmp, 0, mkChar("factor"));
+            PROTECT(tmp = mkString("factor"));
         }
         setAttrib(a, R_ClassSymbol, tmp);
         UNPROTECT(1);

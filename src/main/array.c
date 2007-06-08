@@ -358,10 +358,8 @@ SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (isObject(CAR(args)) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
         return (ans);
 
-    ans = allocVector(INTSXP, 1);
     len = length(CAR(args));
-    INTEGER(ans)[0] = (len <= INT_MAX) ? len : NA_INTEGER;
-    return ans;
+    return ScalarInteger((len <= INT_MAX) ? len : NA_INTEGER);
 }
 
 SEXP attribute_hidden do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)

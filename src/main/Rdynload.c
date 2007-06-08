@@ -928,8 +928,7 @@ static SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
     /* The (void *) here is illegal C */
     PROTECT(ref = R_MakeExternalPtr((void *)f, Rf_install("native symbol"), R_NilValue));
 
-    PROTECT(klass = allocVector(STRSXP, 1));
-    SET_STRING_ELT(klass, 0, mkChar("NativeSymbol"));
+    PROTECT(klass = mkString("NativeSymbol"));
     setAttrib(ref, R_ClassSymbol, klass);
 
     UNPROTECT(2);
@@ -959,8 +958,7 @@ static SEXP Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
     PROTECT(ref = R_MakeExternalPtr((void *)copy, Rf_install("registered native symbol"), R_NilValue));
     R_RegisterCFinalizer(ref, freeRegisteredNativeSymbolCopy);
 
-    PROTECT(klass = allocVector(STRSXP, 1));
-    SET_STRING_ELT(klass, 0, mkChar("RegisteredNativeSymbol"));
+    PROTECT(klass = mkString("RegisteredNativeSymbol"));
     setAttrib(ref, R_ClassSymbol, klass);
 
     UNPROTECT(2);

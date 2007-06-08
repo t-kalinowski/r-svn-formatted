@@ -683,8 +683,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     classgets(ans, klass);
     if (isgmt)
     {
-        PROTECT(tzone = allocVector(STRSXP, 1));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
+        PROTECT(tzone = mkString(tz));
     }
     else
     {
@@ -1030,8 +1029,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     classgets(ans, klass);
     if (isgmt)
     {
-        PROTECT(tzone = allocVector(STRSXP, 1));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
+        PROTECT(tzone = mkString(tz));
         setAttrib(ans, install("tzone"), tzone);
         UNPROTECT(1);
     }
@@ -1163,8 +1161,7 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
-    PROTECT(klass = allocVector(STRSXP, 1));
-    SET_STRING_ELT(klass, 0, mkChar("Date"));
+    PROTECT(klass = mkString("Date"));
     classgets(ans, klass);
     UNPROTECT(3);
     return ans;

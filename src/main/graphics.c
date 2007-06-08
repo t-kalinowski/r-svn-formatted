@@ -4731,17 +4731,14 @@ unsigned int LTYpar(SEXP value, int ind)
 
 SEXP LTYget(unsigned int lty)
 {
-    SEXP ans;
     int i, ndash;
     unsigned char dash[8];
     unsigned int l;
-    char *cbuf;
+    char cbuf[17]; /* 8 hex digits plus nul */
 
     for (i = 0; linetype[i].name; i++)
-    {
         if (linetype[i].pattern == lty)
             return mkString(linetype[i].name);
-    }
 
     l = lty;
     ndash = 0;
@@ -4750,16 +4747,9 @@ SEXP LTYget(unsigned int lty)
         dash[ndash++] = l & 15;
         l = l >> 4;
     }
-    PROTECT(ans = allocVector(STRSXP, 1));
-    cbuf = CallocCharBuf(ndash);
     for (i = 0; i < ndash; i++)
-    {
         cbuf[i] = HexDigits[dash[i]];
-    }
-    SET_STRING_ELT(ans, 0, mkChar(cbuf));
-    Free(cbuf);
-    UNPROTECT(1);
-    return ans;
+    return mkString(cbuf);
 }
 
 /*

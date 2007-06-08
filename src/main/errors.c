@@ -1066,8 +1066,7 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (strlen(domain) && length(STRING_ELT(msg1, 0)))
     {
         char *fmt = dngettext(domain, translateChar(STRING_ELT(msg1, 0)), translateChar(STRING_ELT(msg2, 0)), n);
-        PROTECT(ans = allocVector(STRSXP, 1));
-        SET_STRING_ELT(ans, 0, mkChar(fmt));
+        PROTECT(ans = mkString(fmt));
         UNPROTECT(1);
         return ans;
     }

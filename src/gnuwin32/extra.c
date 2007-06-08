@@ -788,10 +788,8 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-    {
-        PROTECT(ans = allocVector(STRSXP, 1));
-        SET_STRING_ELT(ans, 0, mkChar(selected));
-    }
+        PROTECT(ans = mkString(selected));
+
     cleanup();
     show(RConsole);
     UNPROTECT(1);
@@ -858,8 +856,7 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (!raw)
             {
-                PROTECT(ans = allocVector(STRSXP, 1));
-                SET_STRING_ELT(ans, 0, mkChar(pc));
+                PROTECT(ans = mkString(pc));
             }
             else
             {

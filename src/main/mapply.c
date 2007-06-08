@@ -63,9 +63,8 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
 
     for (j = m - 1; j >= 0; j--)
     {
-        SET_VECTOR_ELT(mindex, j, allocVector(INTSXP, 1));
+        SET_VECTOR_ELT(mindex, j, ScalarInteger(j + 1));
         SET_VECTOR_ELT(nindex, j, allocVector(INTSXP, 1));
-        INTEGER(VECTOR_ELT(mindex, j))[0] = j + 1;
 
         PROTECT(tmp1 = lang3(R_Bracket2Symbol, install("dots"), VECTOR_ELT(mindex, j)));
 
