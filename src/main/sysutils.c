@@ -520,7 +520,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         if (obj == (iconv_t)(-1))
             error(_("unsupported conversion"));
         PROTECT(ans = duplicate(x));
-        R_AllocStringBuffer(0, &cbuff); /* just default */
+        R_AllocStringBuffer(0, &cbuff); /* 0 -> default */
         for (i = 0; i < LENGTH(x); i++)
         {
         top_of_loop:

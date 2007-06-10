@@ -335,6 +335,8 @@ static Rboolean Walker_warn = FALSE;
 /* A  version using Walker's alias method, based on Alg 3.13B in
    Ripley (1987).
  */
+
+#define SMALL 10000
 static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *ans)
 {
     double *q, rU;
@@ -352,7 +354,7 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
        and L ... H[n-1] label those >= 1.
        By rounding error we could have q[i] < 1. or > 1. for all entries.
      */
-    if (n <= 10000)
+    if (n <= SMALL)
     {
         /* might do this repeatedly, so speed matters */
         HL = (int *)alloca(n * sizeof(int));
@@ -399,7 +401,7 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
         k = (int)rU;
         ans[i] = (rU < q[k]) ? k + 1 : a[k] + 1;
     }
-    if (n > 10000)
+    if (n > SMALL)
     {
         Free(HL);
         Free(q);
