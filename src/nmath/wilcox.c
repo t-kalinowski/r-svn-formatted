@@ -72,19 +72,17 @@ static void w_init_maybe(int m, int n)
 {
     int i;
 
-    if (w)
+    if (m > n)
     {
-        if (m > allocated_m || n > allocated_n)
-            w_free(allocated_m, allocated_n); /* zeroes w */
+        i = n;
+        n = m;
+        m = i;
     }
+    if (w && (m > allocated_m || n > allocated_n))
+        w_free(allocated_m, allocated_n); /* zeroes w */
+
     if (!w)
     { /* initialize w[][] */
-        if (m > n)
-        {
-            i = n;
-            n = m;
-            m = i;
-        }
         m = imax2(m, WILCOX_MAX);
         n = imax2(n, WILCOX_MAX);
         w = (double ***)calloc(m + 1, sizeof(double **));
