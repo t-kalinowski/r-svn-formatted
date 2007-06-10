@@ -72,6 +72,9 @@ typedef struct
     int type;
 } DllReference;
 
+/* Maximum length of entry-point name, including nul terminator */
+#define MaxSymbolBytes 128
+
 /* This looks up entry points in DLLs in a platform specific way. */
 #define MAX_ARGS 65
 
@@ -99,7 +102,7 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
     *fun = NULL;
     if (TYPEOF(op) == EXTPTRSXP)
     {
-        char *q, *p = NULL;
+        char *p = NULL;
         if (R_ExternalPtrTag(op) == Rf_install("native symbol"))
             *fun = (DL_FUNC)R_ExternalPtrAddr(op);
         else if (R_ExternalPtrTag(op) == Rf_install("registered native symbol"))
@@ -144,12 +147,15 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
         /* copy the symbol name. */
         if (p)
         {
+            if (strlen(p) >= MaxSymbolBytes)
+                error(_("symbol '%s' is too long"), p);
+            memcpy(buf, p, strlen(p) + 1);
+            /* Ouch, no length check
             q = buf;
-            while ((*q = *p) != '\0')
-            {
+            while ((*q = *p) != '\0') {
                 p++;
                 q++;
-            }
+            } */
         }
 
         return;
@@ -173,6 +179,7 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
   provided, we check whether the calling function is in a namespace
   and look there.
 */
+
 static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymbol *symbol, char *buf, int *nargs,
                                  int *naok, int *dup, SEXP call)
 {
@@ -213,6 +220,8 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
     if (TYPEOF(op) == STRSXP)
     {
         p = translateChar(STRING_ELT(op, 0));
+        if (strlen(p) >= MaxSymbolBytes)
+            error(_("symbol '%s' is too long"), p);
         q = buf;
         while ((*q = *p) != '\0')
         {
@@ -863,9 +872,8 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     R_ExternalRoutine fun = NULL;
     SEXP retval;
     R_RegisteredNativeSymbol symbol = {R_EXTERNAL_SYM, {NULL}, NULL};
-    /* I don't like this messing with vmax <TSL> */
-    /* But it is needed for clearing R_alloc and to be like .Call <BDR>*/
-    char *vmax = vmaxget(), buf[128];
+    void *vmax = vmaxget();
+    char buf[MaxSymbolBytes];
 
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
     fun = (R_ExternalRoutine)ofun;
@@ -904,8 +912,8 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP retval, nm, cargs[MAX_ARGS], pargs;
     R_RegisteredNativeSymbol symbol = {R_CALL_SYM, {NULL}, NULL};
     int nargs;
-    char *vmax = vmaxget();
-    char buf[128];
+    void *vmax = vmaxget();
+    char buf[MaxSymbolBytes];
 
     nm = CAR(args);
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
@@ -1499,7 +1507,8 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     R_RegisteredNativeSymbol symbol = {R_C_SYM, {NULL}, NULL};
     R_NativePrimitiveArgType *checkTypes = NULL;
     R_NativeArgStyle *argStyles = NULL;
-    char *vmax, symName[128], encname[101];
+    void *vmax;
+    char symName[MaxSymbolBytes], encname[101];
 
     if (NaokSymbol == NULL || DupSymbol == NULL || PkgSymbol == NULL)
     {

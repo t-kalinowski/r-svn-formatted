@@ -1680,12 +1680,12 @@ void attribute_hidden InitMemory()
    allocates off the heap as CHARSXP's and maintains the stack of
    allocations through the ATTRIB pointer.  The stack pointer R_VStack
    is traced by the collector. */
-char *vmaxget(void)
+void *vmaxget(void)
 {
-    return (char *)R_VStack;
+    return (void *)R_VStack;
 }
 
-void vmaxset(const char *ovmax)
+void vmaxset(const void *ovmax)
 {
     R_VStack = (SEXP)ovmax;
 }
@@ -3307,6 +3307,14 @@ attribute_hidden void *R_AllocStringBuffer(size_t blen, R_StringBuffer *buf)
 {
     size_t blen1, bsize = buf->defaultSize;
 
+    /* for backwards compatibility, probably no longer needed */
+    if (blen == (size_t)-1)
+    {
+        warning("R_AllocStringBuffer(-1) used: please report");
+        R_FreeStringBufferL(buf);
+        return NULL;
+    }
+
     if (blen * sizeof(char) < buf->bufsize)
         return buf->data;
     blen1 = blen = (blen + 1) * sizeof(char);
@@ -3325,7 +3333,9 @@ attribute_hidden void *R_AllocStringBuffer(size_t blen, R_StringBuffer *buf)
     if (!buf->data)
     {
         buf->bufsize = 0;
-        error(_("could not allocate memory in C function 'R_AllocStringBuffer'"));
+        /* don't translate internal error message */
+        error("could not allocate memory (%u Mb) in C function 'R_AllocStringBuffer'",
+              (unsigned int)blen / 1024 / 1024);
     }
     return buf->data;
 }

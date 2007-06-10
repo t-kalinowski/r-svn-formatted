@@ -862,7 +862,7 @@ static void CScliplines(int n, double *x, double *y, R_GE_gcontext *gc, int toDe
     double *xx, *yy;
     double x1, y1, x2, y2;
     cliprect cr;
-    char *vmax = vmaxget();
+    void *vmax = vmaxget();
 
     if (toDevice)
         getClipRectToDevice(&cr.xl, &cr.yb, &cr.xr, &cr.yt, dd);
@@ -1194,7 +1194,7 @@ void GEPolygon(int n, double *x, double *y, R_GE_gcontext *gc, GEDevDesc *dd)
      * Save (and reset below) the heap pointer to clean up
      * after any R_alloc's done by functions I call.
      */
-    char *vmaxsave = vmaxget();
+    void *vmaxsave = vmaxget();
     if (gc->lty == LTY_BLANK)
         /* "transparent" border */
         gc->col = R_TRANWHITE;
@@ -1292,7 +1292,7 @@ static int clipCircleCode(double x, double y, double r, int toDevice, GEDevDesc 
  */
 void GECircle(double x, double y, double radius, R_GE_gcontext *gc, GEDevDesc *dd)
 {
-    char *vmax;
+    void *vmax;
     double *xc, *yc;
     int result;
 
@@ -1414,7 +1414,7 @@ static int clipRectCode(double x0, double y0, double x1, double y1, int toDevice
 /* These may both be fully transparent */
 void GERect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, GEDevDesc *dd)
 {
-    char *vmax;
+    void *vmax;
     double *xc, *yc;
     int result;
 
@@ -1901,7 +1901,7 @@ SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, Rboolean r
      * Save (and reset below) the heap pointer to clean up
      * after any R_alloc's done by functions I call.
      */
-    char *vmaxsave = vmaxget();
+    void *vmaxsave = vmaxget();
     if (open)
     {
         compute_open_spline(n, x, y, s, repEnds, LOW_PRECISION, dd);

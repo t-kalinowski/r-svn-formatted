@@ -853,7 +853,7 @@ static int addContourLines(double *x, int nx, double *y, int ny, double *z, doub
  */
 SEXP GEcontourLines(double *x, int nx, double *y, int ny, double *z, double *levels, int nl)
 {
-    char *vmax;
+    void *vmax;
     int i, nlines, len;
     double atom, zmin, zmax;
     SEGP *segmentDB;

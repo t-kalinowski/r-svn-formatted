@@ -2991,7 +2991,7 @@ void GPolygon(int n, double *x, double *y, int coords, int bg, int fg, DevDesc *
     int i;
     double *xx;
     double *yy;
-    char *vmaxsave = vmaxget();
+    void *vmaxsave = vmaxget();
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
 
@@ -3032,7 +3032,7 @@ void GPolyline(int n, double *x, double *y, int coords, DevDesc *dd)
     int i;
     double *xx;
     double *yy;
-    char *vmaxsave = vmaxget();
+    void *vmaxsave = vmaxget();
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
 
