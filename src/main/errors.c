@@ -260,6 +260,23 @@ static void reset_inWarning(void *data)
     inWarning = 0;
 }
 
+#ifdef SUPPORT_MBCS
+#include <R_ext/rlocale.h>
+
+static int wd(const char *buf)
+{
+    int nc = mbstowcs(NULL, buf, 0), nw;
+    if (nc >= 0 || nc < 200)
+    {
+        wchar_t wc[200];
+        mbstowcs(wc, buf, nc + 1);
+        nw = Ri18n_wcswidth(wc, 2147483647);
+        return (nw < 1) ? nc : nw;
+    }
+    return nc;
+}
+#endif
+
 static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
 {
     int w;
@@ -324,14 +341,14 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
         if (dcall[0] == '\0')
             REprintf(_("Warning: %s\n"), buf);
 #ifdef SUPPORT_MBCS
-        else if (mbcslocale && 18 + mbstowcs(NULL, dcall, 0) + mbstowcs(NULL, buf, 0) <= LONGWARN)
+        else if (mbcslocale && 18 + wd(dcall) + wd(buf) <= LONGWARN)
             REprintf(_("Warning in %s : %s\n"), dcall, buf);
 #endif
         else if (18 + strlen(dcall) + strlen(buf) <= LONGWARN)
             REprintf(_("Warning in %s : %s\n"), dcall, buf);
         else
             REprintf(_("Warning in %s :\n  %s\n"), dcall, buf);
-        if (R_ShowCalls && call != R_NilValue)
+        if (R_ShowWarnCalls && call != R_NilValue)
         {
             tr = R_ConciseTraceback(call, 0);
             if (strlen(tr))
@@ -350,7 +367,7 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
         Rvsnprintf(buf, min(BUFSIZE, R_WarnLength + 1), format, ap);
         if (R_WarnLength < BUFSIZE - 20 && strlen(buf) == R_WarnLength)
             strcat(buf, " [... truncated]");
-        if (R_ShowCalls && call != R_NilValue)
+        if (R_ShowWarnCalls && call != R_NilValue)
         {
             tr = R_ConciseTraceback(call, 0);
             nc = strlen(tr);
@@ -452,12 +469,12 @@ void PrintWarnings(void)
                 if (p)
                 {
                     *p = '\0';
-                    msgline1 = mbstowcs(NULL, msg, 0);
+                    msgline1 = wd(msg);
                     *p = '\n';
                 }
                 else
-                    msgline1 = mbstowcs(NULL, msg, 0);
-                if (6 + mbstowcs(NULL, dcall, 0) + msgline1 > LONGWARN)
+                    msgline1 = wd(msg);
+                if (6 + wd(dcall) + msgline1 > LONGWARN)
                     sep = "\n  ";
             }
             else
@@ -493,12 +510,12 @@ void PrintWarnings(void)
                     if (p)
                     {
                         *p = '\0';
-                        msgline1 = mbstowcs(NULL, msg, 0);
+                        msgline1 = wd(msg);
                         *p = '\n';
                     }
                     else
-                        msgline1 = mbstowcs(NULL, msg, 0);
-                    if (10 + mbstowcs(NULL, dcall, 0) + msgline1 > LONGWARN)
+                        msgline1 = wd(msg);
+                    if (10 + wd(dcall) + msgline1 > LONGWARN)
                         sep = "\n  ";
                 }
                 else
@@ -610,12 +627,12 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
                 if (p)
                 {
                     *p = '\0';
-                    msgline1 = mbstowcs(NULL, tmp, 0);
+                    msgline1 = wd(tmp);
                     *p = '\n';
                 }
                 else
-                    msgline1 = mbstowcs(NULL, tmp, 0);
-                if (14 + mbstowcs(NULL, dcall, 0) + mbstowcs(NULL, tmp, 0) > LONGWARN)
+                    msgline1 = wd(tmp);
+                if (14 + wd(dcall) + wd(tmp) > LONGWARN)
                     strcat(errbuf, tail);
             }
             else
@@ -647,7 +664,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
     if (*p != '\n')
         strcat(errbuf, "\n");
 
-    if (R_ShowCalls && call != R_NilValue)
+    if (R_ShowErrorCalls && call != R_NilValue)
     { /* assume we want to avoid deparse */
         tr = R_ConciseTraceback(call, 0);
         nc = strlen(tr);
@@ -1354,7 +1371,7 @@ SEXP R_GetTraceback(int skip)
 
 static char *R_ConciseTraceback(SEXP call, int skip)
 {
-    static char buf[260];
+    static char buf[560];
     RCNTXT *c;
     int nl, ncalls = 0;
     Rboolean too_many = FALSE;
@@ -1384,7 +1401,7 @@ static char *R_ConciseTraceback(SEXP call, int skip)
                     {
                         top = this;
                     }
-                    else if (strlen(buf) > 200)
+                    else if (strlen(buf) > R_NShowCalls)
                     {
                         memmove(buf + 4, buf, strlen(buf) + 1);
                         memcpy(buf, "... ", 4);
