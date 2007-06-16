@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-6 The R Development Core Team
+ *  Copyright (C) 2001-7 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ static void vfonts_Init(void)
     return;
 }
 
-double GVStrWidth(const char *s, int typeface, int fontindex, int unit, DevDesc *dd)
+attribute_hidden double GVStrWidth(const char *s, int typeface, int fontindex, int unit, DevDesc *dd)
 {
     R_GE_gcontext gc;
     char *str = (char *)s;
@@ -80,7 +80,7 @@ double GVStrWidth(const char *s, int typeface, int fontindex, int unit, DevDesc 
     return GConvertXUnits(R_GE_VStrWidth(str, &gc, (GEDevDesc *)dd), DEVICE, unit, dd);
 }
 
-double R_GE_VStrWidth(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
+attribute_hidden double R_GE_VStrWidth(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();
@@ -93,7 +93,7 @@ double R_GE_VStrWidth(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
     }
 }
 
-double GVStrHeight(const char *s, int typeface, int fontindex, int unit, DevDesc *dd)
+attribute_hidden double GVStrHeight(const char *s, int typeface, int fontindex, int unit, DevDesc *dd)
 {
     R_GE_gcontext gc;
     char *str = (char *)s;
@@ -120,7 +120,7 @@ double GVStrHeight(const char *s, int typeface, int fontindex, int unit, DevDesc
     return GConvertYUnits(R_GE_VStrHeight(str, &gc, (GEDevDesc *)dd), DEVICE, unit, dd);
 }
 
-double R_GE_VStrHeight(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
+attribute_hidden double R_GE_VStrHeight(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();
@@ -133,8 +133,8 @@ double R_GE_VStrHeight(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
     }
 }
 
-void GVText(double x, double y, int unit, const char *s, int typeface, int fontindex, double x_justify,
-            double y_justify, double rotation, DevDesc *dd)
+attribute_hidden void GVText(double x, double y, int unit, const char *s, int typeface, int fontindex, double x_justify,
+                             double y_justify, double rotation, DevDesc *dd)
 {
     R_GE_gcontext gc;
     const char *str = s;
@@ -166,8 +166,8 @@ void GVText(double x, double y, int unit, const char *s, int typeface, int fonti
     R_GE_VText(x, y, str, x_justify, y_justify, rotation, &gc, (GEDevDesc *)dd);
 }
 
-void R_GE_VText(double x, double y, const char *const s, double x_justify, double y_justify, double rotation,
-                R_GE_gcontext *gc, GEDevDesc *dd)
+attribute_hidden void R_GE_VText(double x, double y, const char *const s, double x_justify, double y_justify,
+                                 double rotation, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();
