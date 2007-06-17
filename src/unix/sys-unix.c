@@ -55,7 +55,7 @@ extern Rboolean LoadInitFile;
  *  4) INITIALIZATION AND TERMINATION ACTIONS
  */
 
-FILE *R_OpenInitFile(void)
+attribute_hidden FILE *R_OpenInitFile(void)
 {
     char buf[256], *home;
     FILE *fp;
