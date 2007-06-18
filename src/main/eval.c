@@ -310,6 +310,43 @@ void attribute_hidden check_stack_balance(SEXP op, int save)
     REprintf("Warning: stack imbalance in '%s', %d then %d\n", PRIMNAME(op), save, R_PPStackTop);
 }
 
+static SEXP forcePromise(SEXP e)
+{
+    if (PRVALUE(e) == R_UnboundValue)
+    {
+        RPRSTACK prstack;
+        SEXP val;
+        if (PRSEEN(e))
+        {
+            if (PRSEEN(e) == 1)
+                errorcall(
+                    R_GlobalContext->call,
+                    _("promise already under evaluation: recursive default argument reference or earlier problems?"));
+            else
+                warningcall(R_GlobalContext->call, _("restarting interrupted promise evaluation"));
+        }
+        /* Mark the promise as under evaluation and push it on a stack
+           that can be used to unmark pending promises if a jump out
+           of the evaluation occurs. */
+        SET_PRSEEN(e, 1);
+        prstack.promise = e;
+        prstack.next = R_PendingPromises;
+        R_PendingPromises = &prstack;
+
+        val = eval(PRCODE(e), PRENV(e));
+
+        /* Pop the stack, unmark the promise and set its value field.
+           Also set the environment to R_NilValue to allow GC to
+           reclaim the promise environment; this is also useful for
+           fancy games with delayedAssign() */
+        R_PendingPromises = prstack.next;
+        SET_PRSEEN(e, 0);
+        SET_PRVALUE(e, val);
+        SET_PRENV(e, R_NilValue);
+    }
+    return PRVALUE(e);
+}
+
 /* Return value of "e" evaluated in "rho". */
 
 SEXP eval(SEXP e, SEXP rho)
@@ -409,19 +446,10 @@ SEXP eval(SEXP e, SEXP rho)
         break;
     case PROMSXP:
         if (PRVALUE(e) == R_UnboundValue)
-        {
-            if (PRSEEN(e))
-                errorcall(
-                    R_GlobalContext->call,
-                    _("promise already under evaluation: recursive default argument reference or earlier problems?"));
-            SET_PRSEEN(e, 1);
-            val = eval(PRCODE(e), PRENV(e));
-            SET_PRSEEN(e, 0);
-            SET_PRVALUE(e, val);
-            /* allow GC to reclaim;
-               also useful for fancy games with delayedAssign() */
-            SET_PRENV(e, R_NilValue);
-        }
+            /* We could just unconditionally use the return value from
+               forcePromise; the test avoids the function call if the
+               promise is already evaluated. */
+            forcePromise(e);
         tmp = PRVALUE(e);
         break;
     case LANGSXP:
@@ -1215,8 +1243,6 @@ SEXP attribute_hidden do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     return R_NilValue; /*NOTREACHED*/
 }
-
-static SEXP forcePromise(SEXP e);
 
 SEXP attribute_hidden do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -2649,21 +2675,6 @@ SEXP R_PromiseExpr(SEXP p)
 SEXP R_ClosureExpr(SEXP p)
 {
     return bytecodeExpr(BODY(p));
-}
-
-static SEXP forcePromise(SEXP e)
-{
-    if (PRVALUE(e) == R_UnboundValue)
-    {
-        SEXP val;
-        if (PRSEEN(e))
-            errorcall(R_GlobalContext->call, _("recursive default argument reference"));
-        SET_PRSEEN(e, 1);
-        val = eval(PRCODE(e), PRENV(e));
-        SET_PRSEEN(e, 0);
-        SET_PRVALUE(e, val);
-    }
-    return PRVALUE(e);
 }
 
 #ifdef THREADED_CODE
