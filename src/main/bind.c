@@ -1384,11 +1384,12 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 case STRSXP:
                 case VECSXP:
                 case LISTSXP:
-                    u = coerceVector(u, mode);
+                    PROTECT(u = coerceVector(u, mode));
                     k = LENGTH(u);
                     idx = (!isMatrix(u)) ? rows : k;
                     for (i = 0; i < idx; i++)
                         SET_VECTOR_ELT(result, n++, duplicate(VECTOR_ELT(u, i % k)));
+                    UNPROTECT(1);
                     break;
                 default:
                     for (i = 0; i < rows; i++)
@@ -1635,13 +1636,14 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
             u = PRVALUE(CAR(t));
             if (isMatrix(u) || length(u) >= lenmin)
             {
-                u = coerceVector(u, mode);
+                PROTECT(u = coerceVector(u, mode));
                 k = LENGTH(u);
                 idx = (isMatrix(u)) ? nrows(u) : (k > 0);
                 for (i = 0; i < idx; i++)
                     for (j = 0; j < cols; j++)
                         SET_VECTOR_ELT(result, i + n + (j * rows), duplicate(VECTOR_ELT(u, (i + j * idx) % k)));
                 n += idx;
+                UNPROTECT(1);
             }
         }
     }
