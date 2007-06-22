@@ -53,7 +53,7 @@ double bessel_y(double x, double alpha)
     {
         /* Using Abramowitz & Stegun  9.1.2
          * this may not be quite optimal (CPU and accuracy wise) */
-        return (bessel_y(x, -alpha) + bessel_j(x, -alpha) * sin(-M_PI * alpha));
+        return (bessel_y(x, -alpha) * cos(M_PI * alpha) - bessel_j(x, -alpha) * sin(M_PI * alpha));
     }
     nb = 1 + (long)floor(alpha); /* nb-1 <= alpha < nb */
     alpha -= (nb - 1);
