@@ -1983,14 +1983,18 @@ SEXP attribute_hidden R_serializeb(SEXP object, SEXP icon, SEXP fun)
 
 typedef struct membuf_st
 {
-    int size;
-    int count;
+    R_size_t size;
+    R_size_t count;
     unsigned char *buf;
 } * membuf_t;
 
-static void resize_buffer(membuf_t mb, int needed)
+static void resize_buffer(membuf_t mb, R_size_t needed)
 {
-    int newsize = 2 * needed;
+    /* This used to allocate double 'needed', but that was problematic for
+       large buffers */
+    R_size_t newsize = needed;
+    if (needed < R_SIZE_T_MAX - MAXELTSIZE)
+        needed += MAXELTSIZE;
     mb->buf = realloc(mb->buf, newsize);
     if (mb->buf == NULL)
         error(_("cannot allocate buffer"));
@@ -2008,13 +2012,17 @@ static void OutCharMem(R_outpstream_t stream, int c)
 static void OutBytesMem(R_outpstream_t stream, void *buf, int length)
 {
     membuf_t mb = stream->data;
-    if (mb->count + length > mb->size)
-        resize_buffer(mb, mb->count + length);
+    R_size_t needed = mb->count + (R_size_t)length;
+    /* There is a potential overflow here on 32-bit systems */
+    if ((double)mb->count + length > (double)R_SIZE_T_MAX)
+        error(_("cannot allocate buffer"));
+    if (needed > mb->size)
+        resize_buffer(mb, needed);
     memcpy(mb->buf + mb->count, buf, length);
-    mb->count += length;
+    mb->count = needed;
 }
 
-static int InCHarMem(R_inpstream_t stream)
+static int InCharMem(R_inpstream_t stream)
 {
     membuf_t mb = stream->data;
     if (mb->count >= mb->size)
@@ -2025,7 +2033,7 @@ static int InCHarMem(R_inpstream_t stream)
 static void InBytesMem(R_inpstream_t stream, void *buf, int length)
 {
     membuf_t mb = stream->data;
-    if (mb->count + length > mb->size)
+    if (mb->count + (R_size_t)length > mb->size)
         error(_("read error"));
     memcpy(buf, mb->buf + mb->count, length);
     mb->count += length;
@@ -2037,7 +2045,7 @@ static void InitMemInPStream(R_inpstream_t stream, membuf_t mb, void *buf, int l
     mb->count = 0;
     mb->size = length;
     mb->buf = buf;
-    R_InitInPStream(stream, (R_pstream_data_t)mb, R_pstream_any_format, InCHarMem, InBytesMem, phook, pdata);
+    R_InitInPStream(stream, (R_pstream_data_t)mb, R_pstream_any_format, InCharMem, InBytesMem, phook, pdata);
 }
 
 static void InitMemOutPStream(R_outpstream_t stream, membuf_t mb, R_pstream_format_t type, int version,
