@@ -132,7 +132,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
 
                     has_star = 0;
-                    starc = strchr(fmt, '*');
+                    starc = Rf_strchr(fmt, '*');
                     if (starc)
                     { /* handle * format if present */
                         nstar = -1;
@@ -163,7 +163,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                             nstar = cnt++;
                         }
 
-                        if (strchr(starc + 1, '*'))
+                        if (Rf_strchr(starc + 1, '*'))
                             error(_("at most one asterisk `*' is supported in each conversion specification"));
 
                         _this = a[nstar];
@@ -292,7 +292,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                             }
                             else
                             {
-                                char *p = strchr(fmtp, '.');
+                                char *p = Rf_strchr(fmtp, '.');
                                 if (p)
                                 {
                                     *p++ = 's';
@@ -353,9 +353,9 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
             else
-            {                                               /* not '%' : handle string part */
-                char *ch = strchr(formatString + cur, '%'); /* MBCS-aware
-                                           version used */
+            {                                                  /* not '%' : handle string part */
+                char *ch = Rf_strchr(formatString + cur, '%'); /* MBCS-aware
+                                          version used */
                 if (ch)
                     chunk = ch - formatString - cur;
                 else
