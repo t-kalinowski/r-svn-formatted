@@ -686,6 +686,11 @@ void R_SetWin32(Rstart Rp)
     strcat(UserRHome, Rp->home);
     putenv(UserRHome);
 
+    /* Rterm and Rgui set CharacterMode during startup, then set Rp->CharacterMode
+       from it in cmdlineoptions().  Rproxy never calls cmdlineoptions, so we need the
+       line below */
+
+    CharacterMode = Rp->CharacterMode;
     switch (CharacterMode)
     {
     case RGui:
