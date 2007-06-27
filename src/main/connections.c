@@ -839,13 +839,14 @@ static Rboolean fifo_open(Rconnection con)
 #else
                 warning(_("cannot create fifo '%s'"), name);
 #endif
-                return FALSE;
-                if (temp)
-                {
-                    unlink(name);
-                    free((char *)name); /* only free if allocated by R_tmpnam */
-                }
             }
+            if (temp)
+            {
+                unlink(name);
+                free((char *)name); /* only free if allocated by R_tmpnam */
+            }
+            if (res)
+                return FALSE;
         }
         else
         {
