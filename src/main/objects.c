@@ -849,6 +849,11 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("'which' must be a length 1 logical vector"));
     isvec = asLogical(which);
 
+#ifdef _be_too_picky_
+    if (IS_S4_OBJECT(x) && nwhat == 1 && !isvec && !isNull(R_getClassDef(translateChar(STRING_ELT(what, 0)))))
+        warning(_("use 'is()' instead of 'inherits()' on S4 objects"));
+#endif
+
     if (isvec)
         rval = allocVector(INTSXP, nwhat);
 
@@ -1356,6 +1361,23 @@ SEXP R_do_MAKE_CLASS(const char *what)
         s_getClass = Rf_install("getClass");
     PROTECT(call = allocVector(LANGSXP, 2));
     SETCAR(call, s_getClass);
+    SETCAR(CDR(call), mkString(what));
+    e = eval(call, R_GlobalEnv);
+    UNPROTECT(1);
+    return (e);
+}
+
+/* this very similar, but gives NULL instead of an error for a non-existing class */
+SEXP R_getClassDef(const char *what)
+{
+    static SEXP s_getClassDef = NULL;
+    SEXP e, call;
+    if (!what)
+        error(_("R_getClassDef(.) called with NULL string pointer"));
+    if (!s_getClassDef)
+        s_getClassDef = Rf_install("getClassDef");
+    PROTECT(call = allocVector(LANGSXP, 2));
+    SETCAR(call, s_getClassDef);
     SETCAR(CDR(call), mkString(what));
     e = eval(call, R_GlobalEnv);
     UNPROTECT(1);
