@@ -42,6 +42,13 @@
 #include <windows.h>
 #include "devWindows.h"
 #include "grDevices.h"
+
+/* there are conflicts with Rmath.h */
+#define imax2 Rf_imax2
+#define imin2 Rf_imin2
+int imax2(int, int);
+int imin2(int, int);
+
 #ifdef ENABLE_NLS
 #define G_(String) libintl_dgettext("RGui", String)
 #define GN_(String) gettext_noop(String)
@@ -119,9 +126,6 @@ static drawing _d;
                 CLIP;                                                                                                  \
                 a;                                                                                                     \
             }                                                                                                          \
-            _d = xd->bm;                                                                                               \
-            CLIP;                                                                                                      \
-            a;                                                                                                         \
         }                                                                                                              \
     }
 
@@ -1728,6 +1732,7 @@ static int setupScreenDevice(NewDevDesc *dd, gadesc *xd, double w, double h, Rbo
     gchangepopup(xd->gawin, xd->grpopup);
 
     MCHECK(xd->bm = newbitmap(getwidth(xd->gawin), getheight(xd->gawin), getdepth(xd->gawin)));
+    MCHECK(xd->bm2 = newbitmap(getwidth(xd->gawin), getheight(xd->gawin), getdepth(xd->gawin)));
     gfillrect(xd->gawin, xd->outcolor, getrect(xd->gawin));
     gfillrect(xd->bm, xd->outcolor, getrect(xd->bm));
     addto(xd->gawin);
@@ -2141,6 +2146,10 @@ static void GA_Resize(NewDevDesc *dd)
                 R_ShowMessage(_("Insufficient memory for resize. Killing device"));
                 KillDevice(GetDevice(devNumber((DevDesc *)dd)));
             }
+            xd->bm2 = newbitmap(iw, ih, getdepth(xd->gawin));
+            if (!xd->bm2)
+                R_ShowMessage(_("Insufficient memory for resize. Disabling alphablending"));
+
             gfillrect(xd->gawin, xd->outcolor, getrect(xd->gawin));
             gfillrect(xd->bm, xd->outcolor, getrect(xd->bm));
         }
@@ -2259,6 +2268,8 @@ static void GA_Close(NewDevDesc *dd)
         hide(xd->gawin);
 
         del(xd->bm);
+        if (xd->bm2)
+            del(xd->bm2);
         /* If this is the active device and buffered, shut updates off */
         if (xd == GA_xd)
             GA_xd = NULL;
@@ -2370,11 +2381,25 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
         SetColor(gc->fill, gc->gamma, dd);
         DRAW(gfillrect(_d, xd->fgcolor, r));
     }
+    else if (R_ALPHA(gc->fill) > 0 && xd->have_alpha)
+    {
+        SetColor(gc->fill, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        gfillrect(xd->bm2, xd->fgcolor, r);
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->fill)));
+    }
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
         SetLineStyle(gc, dd);
         DRAW(gdrawrect(_d, xd->lwd, xd->lty, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre));
+    }
+    else if (R_ALPHA(gc->col) > 0 && xd->have_alpha)
+    {
+        SetColor(gc->col, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        gdrawrect(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre);
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
     }
     SH;
 }
@@ -2414,11 +2439,25 @@ static void GA_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
         SetColor(gc->fill, gc->gamma, dd);
         DRAW(gfillellipse(_d, xd->fgcolor, rr));
     }
+    else if (R_ALPHA(gc->fill) > 0 && xd->have_alpha)
+    {
+        SetColor(gc->fill, gc->gamma, dd);
+        gcopy(xd->bm2, _d, rr);
+        gfillellipse(xd->bm2, xd->fgcolor, rr);
+        DRAW(gcopyalpha(_d, xd->bm2, rr, R_ALPHA(gc->fill)));
+    }
     if (R_OPAQUE(gc->col))
     {
         SetLineStyle(gc, dd);
         SetColor(gc->col, gc->gamma, dd);
         DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre));
+    }
+    else if (R_ALPHA(gc->col) > 0 && xd->have_alpha)
+    {
+        SetColor(gc->col, gc->gamma, dd);
+        gcopy(xd->bm2, _d, rr);
+        gdrawellipse(xd->bm2, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
+        DRAW(gcopyalpha(_d, xd->bm2, rr, R_ALPHA(gc->col)));
     }
     SH;
 }
@@ -2467,7 +2506,7 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
     char *vmax = vmaxget();
     point *p = (point *)R_alloc(n, sizeof(point));
     double devx, devy;
-    int i;
+    int i, mx0 = 0, mx1 = 0, my0 = 0, my1 = 0;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     TRACEDEVGA("pl");
@@ -2477,12 +2516,28 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
         devy = y[i];
         p[i].x = (int)devx;
         p[i].y = (int)devy;
+        mx0 = imin2(mx0, p[i].x);
+        mx1 = imax2(mx1, p[i].x);
+        my0 = imin2(my0, p[i].y);
+        my1 = imax2(my1, p[i].y);
     }
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
         SetLineStyle(gc, dd);
         DRAW(gdrawpolyline(_d, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre));
+    }
+    else if (R_ALPHA(gc->col) > 0 && xd->have_alpha)
+    {
+        rect r;
+        r.x = mx0;
+        r.width = mx1 - mx0;
+        r.y = my0;
+        r.height = my1 = my0;
+        SetColor(gc->col, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        gdrawpolyline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre);
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
     }
     vmaxset(vmax);
     SH;
@@ -2505,7 +2560,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
     char *vmax = vmaxget();
     point *points;
     double devx, devy;
-    int i;
+    int i, mx0 = 0, mx1 = 0, my0 = 0, my1 = 0;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     TRACEDEVGA("plg");
@@ -2518,17 +2573,45 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
         devy = y[i];
         points[i].x = (int)(devx);
         points[i].y = (int)(devy);
+        mx0 = imin2(mx0, points[i].x);
+        mx1 = imax2(mx1, points[i].x);
+        my0 = imin2(my0, points[i].y);
+        my1 = imax2(my1, points[i].y);
     }
     if (R_OPAQUE(gc->fill))
     {
         SetColor(gc->fill, gc->gamma, dd);
         DRAW(gfillpolygon(_d, xd->fgcolor, points, n));
     }
+    else if (R_ALPHA(gc->fill) > 0 && xd->have_alpha)
+    {
+        rect r;
+        r.x = mx0;
+        r.width = mx1 - mx0;
+        r.y = my0;
+        r.height = my1 = my0;
+        SetColor(gc->fill, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        gfillpolygon(xd->bm2, xd->fgcolor, points, n);
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->fill)));
+    }
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, gc->gamma, dd);
         SetLineStyle(gc, dd);
         DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre));
+    }
+    else if (R_ALPHA(gc->col) > 0 && xd->have_alpha)
+    {
+        rect r;
+        r.x = mx0;
+        r.width = mx1 - mx0;
+        r.y = my0;
+        r.height = my1 = my0;
+        SetColor(gc->col, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre);
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
     }
     vmaxset(vmax);
     SH;
@@ -2569,6 +2652,21 @@ static void GA_Text(double x, double y, const char *str, double rot, double hadj
         {
             DRAW(gdrawstr1(_d, xd->font, xd->fgcolor, pt(x, y), str, hadj));
         }
+    }
+    else if (R_ALPHA(gc->col) > 0 && xd->have_alpha)
+    {
+        rect r = xd->clip; /*  it is to hard to get a correct bounding box */
+        SetColor(gc->col, gc->gamma, dd);
+        gcopy(xd->bm2, _d, r);
+        if (mbcslocale && gc->fontface != 5)
+        {
+            DRAW(gwdrawstr1(xd->bm2, xd->font, xd->fgcolor, pt(x, y), str, hadj));
+        }
+        else
+        {
+            DRAW(gdrawstr1(xd->bm2, xd->font, xd->fgcolor, pt(x, y), str, hadj));
+        }
+        DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
     }
     SH;
 }
@@ -2736,6 +2834,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width
     dd->startps = ps;
     dd->startlty = LTY_SOLID;
     dd->startgamma = gamma;
+    xd->bm2 = NULL;
 
     /* Start the Device Driver and Hardcopy.  */
 
@@ -2769,6 +2868,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width
     dd->metricInfo = GA_MetricInfo;
     xd->newFrameConfirm = GA_NewFrameConfirm;
     xd->cntxt = NULL;
+    xd->have_alpha = (xd->kind == SCREEN) ? 1 : 0;
 
     /* set graphics parameters that must be set by device driver */
     /* Window Dimensions in Pixels */
