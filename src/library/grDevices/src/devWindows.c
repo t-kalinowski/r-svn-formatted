@@ -2386,9 +2386,13 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
     {
         if (xd->have_alpha)
         {
+            /* We are only working with the screen device here, so
+               we can assume that x->bm is the current state.
+               Copying from the screen window does not work. */
             SetColor(gc->fill, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gfillrect(xd->bm2, xd->fgcolor, r);
+            /* If unbuffered this writes twice: could bitblt the second time */
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->fill)));
         }
         else
@@ -2409,7 +2413,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
         if (xd->have_alpha)
         {
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gdrawrect(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
         }
@@ -2463,7 +2467,7 @@ static void GA_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
         if (xd->have_alpha)
         {
             SetColor(gc->fill, gc->gamma, dd);
-            gcopy(xd->bm2, _d, rr);
+            gcopy(xd->bm2, xd->bm, rr);
             gfillellipse(xd->bm2, xd->fgcolor, rr);
             DRAW(gcopyalpha(_d, xd->bm2, rr, R_ALPHA(gc->fill)));
         }
@@ -2485,7 +2489,7 @@ static void GA_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
         if (xd->have_alpha)
         {
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, rr);
+            gcopy(xd->bm2, xd->bm, rr);
             gdrawellipse(xd->bm2, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW(gcopyalpha(_d, xd->bm2, rr, R_ALPHA(gc->col)));
         }
@@ -2542,7 +2546,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *g
             r.y = my0;
             r.height = my1 = my0;
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gdrawline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0, xd->lend, xd->ljoin,
                       xd->lmitre);
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
@@ -2602,7 +2606,7 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
             r.y = my0;
             r.height = my1 = my0;
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gdrawpolyline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
         }
@@ -2667,7 +2671,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
             r.y = my0;
             r.height = my1 = my0;
             SetColor(gc->fill, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gfillpolygon(xd->bm2, xd->fgcolor, points, n);
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->fill)));
         }
@@ -2694,7 +2698,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
             r.y = my0;
             r.height = my1 = my0;
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW(gcopyalpha(_d, xd->bm2, r, R_ALPHA(gc->col)));
         }
@@ -2751,7 +2755,7 @@ static void GA_Text(double x, double y, const char *str, double rot, double hadj
         {
             rect r = xd->clip; /*  it is to hard to get a correct bounding box */
             SetColor(gc->col, gc->gamma, dd);
-            gcopy(xd->bm2, _d, r);
+            gcopy(xd->bm2, xd->bm, r);
             if (mbcslocale && gc->fontface != 5)
             {
                 DRAW(gwdrawstr1(xd->bm2, xd->font, xd->fgcolor, pt(x, y), str, hadj));
@@ -3031,9 +3035,6 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width
     xd->resize = (resize == 3);
     xd->locator = FALSE;
     xd->buffered = buffered;
-    /* alpha-blending does not work properly directly on-screen */
-    if (xd->kind == SCREEN)
-        xd->have_alpha &= buffered;
     xd->psenv = psenv;
     {
         SEXP timeouts = GetOption(install("windowsTimeouts"), R_BaseEnv);
