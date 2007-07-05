@@ -2380,7 +2380,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
 {
     int tmp;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    rect r;
+    rect r, rr;
 
     /* These in-place conversions are ok */
     TRACEDEVGA("rect");
@@ -2429,8 +2429,14 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
     {
         if (xd->have_alpha)
         {
+            int tol = xd->lwd; /* only half needed */
+            rr = r;
+            r.x -= tol;
+            r.y -= tol;
+            r.width += 2 * tol;
+            r.height += 2 * tol;
             gcopy(xd->bm2, xd->bm, r);
-            gdrawrect(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre);
+            gdrawrect(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
         }
         else
@@ -2458,7 +2464,7 @@ static void GA_Circle(double x, double y, double radius, R_GE_gcontext *gc, NewD
 {
     int ir, ix, iy;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    rect r;
+    rect r, rr;
 
     TRACEDEVGA("circle");
     ir = floor(radius + 0.5);
@@ -2468,19 +2474,19 @@ static void GA_Circle(double x, double y, double radius, R_GE_gcontext *gc, NewD
 
     ix = (int)x;
     iy = (int)y;
-    r = rect(ix - ir, iy - ir, 2 * ir, 2 * ir);
+    r = rr = rect(ix - ir, iy - ir, 2 * ir, 2 * ir);
 
     SetColor(gc->fill, gc->gamma, dd);
     if (R_OPAQUE(gc->fill))
     {
-        DRAW(gfillellipse(_d, xd->fgcolor, r));
+        DRAW(gfillellipse(_d, xd->fgcolor, rr));
     }
     else if (R_ALPHA(gc->fill) > 0)
     {
         if (xd->have_alpha)
         {
             gcopy(xd->bm2, xd->bm, r);
-            gfillellipse(xd->bm2, xd->fgcolor, r);
+            gfillellipse(xd->bm2, xd->fgcolor, rr);
             DRAW2(gc->fill);
         }
         else
@@ -2491,14 +2497,19 @@ static void GA_Circle(double x, double y, double radius, R_GE_gcontext *gc, NewD
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
-        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre));
+        DRAW(gdrawellipse(_d, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre));
     }
     else if (R_ALPHA(gc->col) > 0)
     {
         if (xd->have_alpha)
         {
+            int tol = xd->lwd; /* only half needed */
+            r.x -= tol;
+            r.y -= tol;
+            r.width += 2 * tol;
+            r.height += 2 * tol;
             gcopy(xd->bm2, xd->bm, r);
-            gdrawellipse(xd->bm2, xd->lwd, xd->fgcolor, r, 0, xd->lend, xd->ljoin, xd->lmitre);
+            gdrawellipse(xd->bm2, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
         }
         else
@@ -2539,16 +2550,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *g
     {
         if (xd->have_alpha)
         {
-            int mx0, mx1, my0, my1;
-            rect r;
-            mx0 = imin2(xx1, xx2);
-            mx1 = imax2(xx1, xx2);
-            my0 = imin2(yy1, yy2);
-            my1 = imax2(yy1, yy2);
-            r.x = mx0;
-            r.width = mx1 - mx0;
-            r.y = my0;
-            r.height = my1 = my0;
+            rect r = xd->clip;
             gcopy(xd->bm2, xd->bm, r);
             gdrawline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0, xd->lend, xd->ljoin,
                       xd->lmitre);
@@ -2574,7 +2576,7 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
     char *vmax = vmaxget();
     point *p = (point *)R_alloc(n, sizeof(point));
     double devx, devy;
-    int i, mx0 = 0, mx1 = 0, my0 = 0, my1 = 0;
+    int i;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
     TRACEDEVGA("pl");
@@ -2584,10 +2586,6 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
         devy = y[i];
         p[i].x = (int)devx;
         p[i].y = (int)devy;
-        mx0 = imin2(mx0, p[i].x);
-        mx1 = imax2(mx1, p[i].x);
-        my0 = imin2(my0, p[i].y);
-        my1 = imax2(my1, p[i].y);
     }
 
     SetColor(gc->col, gc->gamma, dd);
@@ -2600,11 +2598,7 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
     {
         if (xd->have_alpha)
         {
-            rect r;
-            r.x = mx0;
-            r.width = mx1 - mx0;
-            r.y = my0;
-            r.height = my1 = my0;
+            rect r = xd->clip; /* lines can go well outside bbox of points */
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolyline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
@@ -2684,6 +2678,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
     {
         if (xd->have_alpha)
         {
+            r = xd->clip;
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
