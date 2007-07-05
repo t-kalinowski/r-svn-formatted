@@ -413,10 +413,6 @@ static SEXP integerSubscript(SEXP s, int ns, int nx, int *stretch, SEXP call)
         else
             isna = TRUE;
     }
-    if (min < -nx)
-    {
-        ECALL(call, _("subscript out of bounds"));
-    }
     if (max > nx)
     {
         if (canstretch)
