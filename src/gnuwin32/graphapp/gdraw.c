@@ -33,7 +33,7 @@ extern unsigned int TopmostDialogs; /* from dialogs.c */
 
 static int getcharset(void);
 
-/* Some of the ideas here are borrowed from Cairo */
+/* Some of the ideas in haveAlpha are borrowed from Cairo */
 typedef BOOL(WINAPI *alpha_blend_t)(HDC, int, int, int, int, HDC, int, int, int, int, BLENDFUNCTION);
 
 static alpha_blend_t AlphaBlend;
