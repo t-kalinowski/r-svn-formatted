@@ -2358,6 +2358,7 @@ typedef struct
 
     Rboolean onefile;      /* EPSF header etc*/
     Rboolean paperspecial; /* suppress %%Orientation */
+    Rboolean warn_trans;   /* have we warned about translucent cols? */
 
     /* This group of variables track the current device status.
      * They should only be set by routines that emit PostScript code. */
@@ -3443,6 +3444,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, con
     }
     pd->maxpointsize = 72.0 * ((pd->pageheight > pd->pagewidth) ? pd->pageheight : pd->pagewidth);
     pd->pageno = pd->fileno = 0;
+    pd->warn_trans = FALSE;
 
     /* Base Pointsize */
     /* Nominal Character Sizes in Pixels */
@@ -3534,6 +3536,16 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, con
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
     return TRUE;
+}
+
+static void CheckAlpha(int color, PostScriptDesc *pd)
+{
+    unsigned int alpha = R_ALPHA(color);
+    if (alpha > 0 && alpha < 255 && !pd->warn_trans)
+    {
+        warning(_("semi-transparency is not supported on this device: reported only once"));
+        pd->warn_trans = TRUE;
+    }
 }
 
 static void SetColor(int color, NewDevDesc *dd)
@@ -3922,6 +3934,8 @@ static void PS_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
+    CheckAlpha(gc->fill, pd);
+    CheckAlpha(gc->col, pd);
     code = 2 * (R_OPAQUE(gc->fill)) + (R_OPAQUE(gc->col));
 
     if (code)
@@ -3949,6 +3963,8 @@ static void PS_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
+    CheckAlpha(gc->fill, pd);
+    CheckAlpha(gc->col, pd);
     code = 2 * (R_OPAQUE(gc->fill)) + (R_OPAQUE(gc->col));
 
     if (code)
@@ -3969,6 +3985,7 @@ static void PS_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *g
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
+    CheckAlpha(gc->col, pd);
     /* FIXME : clip to the device extents here */
     if (R_OPAQUE(gc->col))
     {
@@ -3995,6 +4012,8 @@ static void PS_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
     /* code == 2, fill only */
     /* code == 3, outline and fill */
 
+    CheckAlpha(gc->fill, pd);
+    CheckAlpha(gc->col, pd);
     code = 2 * (R_OPAQUE(gc->fill)) + (R_OPAQUE(gc->col));
 
     if (code)
@@ -4023,6 +4042,7 @@ static void PS_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
     int i;
 
     pd = (PostScriptDesc *)dd->deviceSpecific;
+    CheckAlpha(gc->col, pd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -4109,6 +4129,7 @@ static void drawSimpleText(double x, double y, const char *str, double rot, doub
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
 
     SetFont(font, (int)floor(gc->cex * gc->ps + 0.5), dd);
+    CheckAlpha(gc->col, pd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -4190,6 +4211,7 @@ static void PS_Text(double x, double y, const char *str, double rot, double hadj
         if (!strcmp(locale2charset(NULL), cidfont->encoding))
         {
             SetFont(translateCIDFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
+            CheckAlpha(gc->col, pd);
             if (R_OPAQUE(gc->col))
             {
                 SetColor(gc->col, dd);
@@ -4231,6 +4253,7 @@ static void PS_Text(double x, double y, const char *str, double rot, double hadj
             else
             {
                 SetFont(translateCIDFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
+                CheckAlpha(gc->col, pd);
                 if (R_OPAQUE(gc->col))
                 {
                     SetColor(gc->col, dd);
@@ -4314,8 +4337,9 @@ typedef struct
     char tmpname[PATH_MAX];
 
     Rboolean onefile;
-    int ymax;          /* used to invert coord system */
-    char encoding[50]; /* for writing text */
+    Rboolean warn_trans; /* have we warned about translucent cols? */
+    int ymax;            /* used to invert coord system */
+    char encoding[50];   /* for writing text */
 
     /*
      * Fonts and encodings used on the device
@@ -4377,10 +4401,25 @@ static void XF_WriteString(FILE *fp, const char *str)
     }
 }
 
+static void XF_CheckAlpha(int color, XFigDesc *pd)
+{
+    unsigned int alpha = R_ALPHA(color);
+    if (alpha > 0 && alpha < 255 && !pd->warn_trans)
+    {
+        warning(_("semi-transparency is not supported on this device: reported only once"));
+        pd->warn_trans = TRUE;
+    }
+}
+
 static int XF_SetColor(int color, XFigDesc *pd)
 {
     int i;
     unsigned int alpha = color & 0xff000000;
+    if (alpha > 0 && alpha < 0xff && !pd->warn_trans)
+    {
+        warning(_("semi-transparent colors are not supported on the xfig"));
+        pd->warn_trans = FALSE;
+    }
     if (alpha < 0xff)
         return -1;
     color = color & 0xffffff;
@@ -4532,6 +4571,7 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, const char *file, const char *p
         free(pd);
         error(_("invalid foreground/background color (xfig)"));
     }
+    pd->warn_trans = FALSE;
 
     /*
      * Load the default encoding AS THE FIRST ENCODING FOR THIS DEVICE.
@@ -4837,6 +4877,7 @@ static void XFig_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
         XF_FileHeader(pd->psfp, pd->papername, pd->landscape, pd->onefile);
         XF_resetColors(pd);
     }
+    XF_CheckAlpha(gc->fill, pd);
     if (R_OPAQUE(gc->fill))
     {
         FILE *fp = pd->tmpfp;
@@ -4911,6 +4952,8 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext 
     if (lty < 0)
         return;
 
+    XF_CheckAlpha(gc->col, pd);
+    XF_CheckAlpha(gc->fill, pd);
     cpen = (R_OPAQUE(gc->col)) ? cfg : -1;
     dofill = (R_OPAQUE(gc->fill)) ? 20 : -1;
 
@@ -4944,6 +4987,8 @@ static void XFig_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevD
     if (lty < 0)
         return;
 
+    XF_CheckAlpha(gc->col, pd);
+    XF_CheckAlpha(gc->fill, pd);
     cpen = (R_OPAQUE(gc->col)) ? cfg : -1;
     dofill = (R_OPAQUE(gc->fill)) ? 20 : -1;
 
@@ -4971,6 +5016,7 @@ static void XFig_Line(double x1, double y1, double x2, double y2, R_GE_gcontext 
 
     XFconvert(&x1, &y1, pd);
     XFconvert(&x2, &y2, pd);
+    XF_CheckAlpha(gc->col, pd);
     if (R_OPAQUE(gc->col))
     {
         fprintf(fp, "2 1 ");                           /* Polyline */
@@ -4996,6 +5042,8 @@ static void XFig_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevD
     if (lty < 0)
         return;
 
+    XF_CheckAlpha(gc->col, pd);
+    XF_CheckAlpha(gc->fill, pd);
     cpen = (R_OPAQUE(gc->col)) ? cfg : -1;
     dofill = (R_OPAQUE(gc->fill)) ? 20 : -1;
 
@@ -5022,6 +5070,7 @@ static void XFig_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDev
     double xx, yy;
     int i, lty = XF_SetLty(gc->lty), lwd = gc->lwd * 0.833 + 0.5;
 
+    XF_CheckAlpha(gc->col, pd);
     if (R_OPAQUE(gc->col) && lty >= 0)
     {
         fprintf(fp, "2 1 ");                                /* Polyline */
@@ -5074,6 +5123,7 @@ static void XFig_Text(double x, double y, const char *str, double rot, double ha
 #endif /* SUPPORT_MBCS */
 
     XFconvert(&x, &y, pd);
+    XF_CheckAlpha(gc->col, pd);
     if (R_OPAQUE(gc->col))
     {
         fprintf(fp, "4 %d ", (int)floor(2 * hadj)); /* Text, how justified */
