@@ -2212,10 +2212,18 @@ static void GA_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
             xd->needsave = TRUE;
     }
     xd->bg = gc->fill;
-    if (!R_OPAQUE(xd->bg))
-        xd->bgcolor = xd->canvascolor;
-    else
-        xd->bgcolor = GArgb(xd->bg, gc->gamma);
+    xd->warn_trans = FALSE;
+    {
+        unsigned int alpha = R_ALPHA(xd->bg);
+        if (alpha == 0)
+            xd->bgcolor = xd->canvascolor;
+        else
+        {
+            xd->bgcolor = GArgb(xd->bg, gc->gamma);
+            if (alpha < 255)
+                xd->bgcolor = (alpha * xd->bgcolor + (255 - alpha) * xd->canvascolor) / 255;
+        }
+    }
     if (xd->kind != SCREEN)
     {
         xd->needsave = TRUE;
@@ -2351,7 +2359,7 @@ static void GA_Deactivate(NewDevDesc *dd)
 #define WARN_SEMI_TRANS                                                                                                \
     {                                                                                                                  \
         if (!xd->warn_trans)                                                                                           \
-            warning(_("semi-transparency is not supported on this device: reported only once"));                       \
+            warning(_("semi-transparency is not supported on this device: reported only once per page"));              \
         xd->warn_trans = TRUE;                                                                                         \
     }
 
