@@ -976,6 +976,16 @@ static void SetFont(char *family, int face, int size, NewDevDesc *dd)
     }
 }
 
+static void CheckAlpha(int color, newX11Desc *xd)
+{
+    unsigned int alpha = R_ALPHA(color);
+    if (alpha > 0 && alpha < 255 && !xd->warn_trans)
+    {
+        warning(_("semi-transparency is not supported on this device: reported only once"));
+        xd->warn_trans = TRUE;
+    }
+}
+
 static void SetColor(int color, NewDevDesc *dd)
 {
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
@@ -1719,6 +1729,7 @@ static void newX11_NewPage(R_GE_gcontext *gc, NewDevDesc *dd)
         }
         /* we want to override the default bg="transparent" */
         /*	xd->fill = R_OPAQUE(dd->bg) ? dd->bg : xd->canvas; */
+        CheckAlpha(gc->fill, xd);
         xd->fill = R_OPAQUE(gc->fill) ? gc->fill : PNG_TRANS;
         SetColor(xd->fill, dd);
         xd->clip.x = 0;
@@ -1923,11 +1934,13 @@ static void newX11_Rect(double x0, double y0, double x1, double y1, R_GE_gcontex
         y0 = y1;
         y1 = tmp;
     }
+    CheckAlpha(gc->fill, xd);
     if (R_OPAQUE(gc->fill))
     {
         SetColor(gc->fill, dd);
         XFillRectangle(display, xd->window, xd->wgc, (int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
     }
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -1949,11 +1962,13 @@ static void newX11_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDe
 
     ix = (int)x;
     iy = (int)y;
+    CheckAlpha(gc->fill, xd);
     if (R_OPAQUE(gc->fill))
     {
         SetColor(gc->fill, dd);
         XFillArc(display, xd->window, xd->wgc, ix - ir, iy - ir, 2 * ir, 2 * ir, 0, 23040);
     }
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetLinetype(gc, dd);
@@ -1974,6 +1989,7 @@ static void newX11_Line(double x1, double y1, double x2, double y2, R_GE_gcontex
     xx2 = (int)x2;
     yy2 = (int)y2;
 
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -2001,6 +2017,7 @@ static void newX11_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewD
         points[i].y = (int)(y[i]);
     }
 
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -2037,6 +2054,7 @@ static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
     }
     points[n].x = (int)(x[0]);
     points[n].y = (int)(y[0]);
+    CheckAlpha(gc->fill, xd);
     if (R_OPAQUE(gc->fill))
     {
         SetColor(gc->fill, dd);
@@ -2046,6 +2064,7 @@ static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
             XSync(display, 0);
 #endif
     }
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
@@ -2067,6 +2086,7 @@ static void newX11_Text(double x, double y, char *str, double rot, double hadj, 
 
     size = gc->cex * gc->ps + 0.5;
     SetFont(translateFontFamily(gc->fontfamily, xd), gc->fontface, size, dd);
+    CheckAlpha(gc->col, xd);
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
