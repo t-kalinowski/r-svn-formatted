@@ -368,6 +368,7 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
     pcre_free(re_pe);
     pcre_free(re_pcre);
     pcre_free((void *)tables);
+    DUPLICATE_ATTRIB(ans, vec);
     UNPROTECT(1);
     return ans;
 }
