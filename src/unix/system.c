@@ -171,7 +171,6 @@ int Rf_initialize_R(int ac, char **av)
     char *p, msg[1024], cmdlines[10000], **avv;
     structRstart rstart;
     Rstart Rp = &rstart;
-    cmdlines[0] = '\0';
 
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
@@ -272,6 +271,7 @@ int Rf_initialize_R(int ac, char **av)
        by the R option handler.
      */
     R_set_command_line_arguments(ac, av);
+    cmdlines[0] = '\0';
 
     /* first task is to select the GUI */
     for (i = 0, avv = av; i < ac; i++, avv++)
