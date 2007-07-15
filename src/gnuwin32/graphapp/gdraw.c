@@ -36,7 +36,7 @@ static int getcharset(void);
 /* Some of the ideas in haveAlpha are borrowed from Cairo */
 typedef BOOL(WINAPI *alpha_blend_t)(HDC, int, int, int, int, HDC, int, int, int, int, BLENDFUNCTION);
 
-static alpha_blend_t AlphaBlend;
+static alpha_blend_t pAlphaBlend;
 
 static int haveAlpha()
 {
@@ -54,7 +54,7 @@ static int haveAlpha()
             HMODULE msimg32 = LoadLibrary("msimg32");
             if (msimg32)
             {
-                AlphaBlend = (alpha_blend_t)GetProcAddress(msimg32, "AlphaBlend");
+                pAlphaBlend = (alpha_blend_t)GetProcAddress(msimg32, "AlphaBlend");
                 haveAlphaBlend = 1;
                 /* printf("loaded AlphaBlend %p\n", (void *) AlphaBlend); */
             }
@@ -374,7 +374,7 @@ void gcopyalpha(drawing d, drawing d2, rect r, int alpha)
         bl.BlendFlags = 0;
         bl.SourceConstantAlpha = alpha;
         bl.AlphaFormat = 0;
-        AlphaBlend(dc, r.x, r.y, r.width, r.height, sdc, r.x, r.y, r.width, r.height, bl);
+        pAlphaBlend(dc, r.x, r.y, r.width, r.height, sdc, r.x, r.y, r.width, r.height, bl);
     }
 }
 
