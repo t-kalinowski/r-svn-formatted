@@ -1467,7 +1467,7 @@ int winAccess(const char *path, int mode)
     {
         /* Now look for file security info, which is NT only */
         SECURITY_DESCRIPTOR *sdPtr = NULL;
-        unsigned long size = 0;
+        DWORD size = 0;
         GENERIC_MAPPING genMap;
         HANDLE hToken = NULL;
         DWORD desiredAccess = 0;
