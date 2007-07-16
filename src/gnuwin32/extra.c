@@ -150,12 +150,12 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
 void internal_shellexec(const char *file)
 {
     const char *home;
-    unsigned int ret;
+    uintptr_t ret;
 
     home = getenv("R_HOME");
     if (home == NULL)
         error(_("R_HOME not set"));
-    ret = (unsigned int)ShellExecute(NULL, "open", file, NULL, home, SW_SHOW);
+    ret = (uintptr_t)ShellExecute(NULL, "open", file, NULL, home, SW_SHOW);
     if (ret <= 32)
     { /* an error condition */
         if (ret == ERROR_FILE_NOT_FOUND || ret == ERROR_PATH_NOT_FOUND || ret == SE_ERR_FNF || ret == SE_ERR_PNF)
@@ -1305,7 +1305,10 @@ SEXP do_setStatusBar(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-int getConsoleHandle(const char *which)
+/* Note that a HANDLE is a pointer and hence will not necesarily fit into
+   an int, so this is fundamentally broken */
+
+static void *getConsoleHandle(const char *which)
 {
     if (CharacterMode != RGui)
         return (0);
@@ -1314,18 +1317,18 @@ int getConsoleHandle(const char *which)
     else if (strcmp(which, "Frame") == 0 && RFrame)
         return getHandle(RFrame);
     else if (strcmp(which, "Process") == 0)
-        return (int)GetCurrentProcess();
+        return GetCurrentProcess();
     else if (strcmp(which, "ProcessId") == 0)
-        return (int)GetCurrentProcessId();
+        return (void *)GetCurrentProcessId(); /* an integer */
     else
         return 0;
 }
 
-static int getDeviceHandle(int);
+static void *getDeviceHandle(int);
 
 SEXP do_getWindowHandle(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    int handle;
+    void *handle;
     SEXP which = CAR(args);
 
     checkArity(op, args);
@@ -1338,7 +1341,7 @@ SEXP do_getWindowHandle(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         handle = 0;
 
-    return ScalarInteger(handle);
+    return ScalarInteger((int)handle); /* NB, may not fit */
 }
 
 #include "devWindows.h"
@@ -1377,7 +1380,7 @@ SEXP do_bringtotop(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-static int getDeviceHandle(int dev)
+static void *getDeviceHandle(int dev)
 {
     GEDevDesc *gdd;
     gadesc *xd;
@@ -1392,7 +1395,7 @@ static int getDeviceHandle(int dev)
     xd = (gadesc *)gdd->dev->deviceSpecific;
     if (!xd)
         return (0);
-    return (getHandle(xd->gawin));
+    return getHandle(xd->gawin);
 }
 
 /* This assumes a menuname of the form $Graph<nn>Main, $Graph<nn>Popup, $Graph<nn>LocMain,
