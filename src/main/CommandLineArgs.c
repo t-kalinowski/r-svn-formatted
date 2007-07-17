@@ -88,9 +88,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
 {
     int ac = *pac, newac = 1; /* argv[0] is process name */
     int ierr;
-    /* <FIXME> 'long' would need to be something else on Win64.
-       Perhaps use doubles? */
-    long lval;
+    long lval; /* this is only used for ppval, so 32-bit long is fine */
     R_size_t value;
     char *p, **av = argv, msg[1024];
     Rboolean processing = TRUE;

@@ -144,7 +144,7 @@ typedef struct _FILETIME {
 
 void R_getProcTime(double *data)
 {
-    long elapsed;
+    DWORD elapsed;
     double kernel, user;
     OSVERSIONINFO verinfo;
     /* This is in msec, but to clock-tick accuracy,
