@@ -321,7 +321,7 @@ menubar newmenubar(actionfn adjust_menus)
     return (menubar)obj;
 }
 
-BOOL myAppendMenu(HMENU h, UINT flags, UINT id, LPCTSTR name)
+BOOL myAppendMenu(HMENU h, UINT flags, UINT_PTR id, LPCTSTR name)
 {
     if (is_NT && (localeCP != GetACP()))
     {
@@ -371,7 +371,7 @@ menu newsubmenu(menu parent, const char *name)
         current_menu = obj;
     }
     if (parent->kind != WindowObject)
-        myAppendMenu(parent->handle, flags, (UINT)hm, name);
+        myAppendMenu(parent->handle, flags, (UINT_PTR)hm, name);
     if (parent == current_menubar)
         DrawMenuBar(current_menubar->parent->handle);
 
