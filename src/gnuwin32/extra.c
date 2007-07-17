@@ -1311,17 +1311,15 @@ SEXP do_setStatusBar(SEXP call, SEXP op, SEXP args, SEXP rho)
 static void *getConsoleHandle(const char *which)
 {
     if (CharacterMode != RGui)
-        return (0);
+        return (NULL);
     else if (strcmp(which, "Console") == 0 && RConsole)
         return getHandle(RConsole);
     else if (strcmp(which, "Frame") == 0 && RFrame)
         return getHandle(RFrame);
     else if (strcmp(which, "Process") == 0)
         return GetCurrentProcess();
-    else if (strcmp(which, "ProcessId") == 0)
-        return (void *)GetCurrentProcessId(); /* an integer */
     else
-        return 0;
+        return NULL;
 }
 
 static void *getDeviceHandle(int);
@@ -1339,9 +1337,12 @@ SEXP do_getWindowHandle(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isInteger(which))
         handle = getDeviceHandle(INTEGER(which)[0]);
     else
-        handle = 0;
+        handle = NULL;
 
-    return ScalarInteger((int)handle); /* NB, may not fit */
+    if (handle)
+        return R_MakeExternalPtr(handle, R_NilValue, R_NilValue);
+    else
+        return R_NilValue;
 }
 
 #include "devWindows.h"
@@ -1391,10 +1392,10 @@ static void *getDeviceHandle(int dev)
         return (0);
     gdd = (GEDevDesc *)GetDevice(dev - 1);
     if (!gdd)
-        return (0);
+        return (NULL);
     xd = (gadesc *)gdd->dev->deviceSpecific;
     if (!xd)
-        return (0);
+        return (NULL);
     return getHandle(xd->gawin);
 }
 
