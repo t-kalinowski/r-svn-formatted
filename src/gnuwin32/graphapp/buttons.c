@@ -71,11 +71,14 @@ static void ensure_window(void)
  */
 static void set_new_winproc(object obj)
 {
-#if TRUE
     HWND hwnd;
     hwnd = obj->handle;
+#ifdef WIN64
+    obj->winproc = (WNDPROC)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+    SetWindowLongPtr(hwnd, GWL_WNDPROC, app_control_proc);
+#else
     obj->winproc = (WNDPROC)GetWindowLong(hwnd, GWL_WNDPROC);
-    SetWindowLong(hwnd, GWL_WNDPROC, (LONG)app_control_proc);
+    SetWindowLongPtr(hwnd, GWL_WNDPROC, (LONG)app_control_proc);
 #endif
 }
 
