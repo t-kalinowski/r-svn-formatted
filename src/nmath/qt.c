@@ -79,7 +79,14 @@ double qt(double p, double ndf, int lower_tail, int log_p)
     if (fabs(ndf - 2) < eps)
     { /* df ~= 2 */
         if (P > 0)
-            q = sqrt(2 / (P * (2 - P)) - 2);
+        {
+            if (3 * P < DBL_EPSILON) /* P ~= 0 */
+                q = 1 / sqrt(P);
+            else if (P > 0.9) /* P ~= 1 */
+                q = (1 - P) * sqrt(2 / (P * (2 - P)));
+            else /* eps/3 <= P <= 0.9 */
+                q = sqrt(2 / (P * (2 - P)) - 2);
+        }
         else
         { /* P = 0, but maybe = exp(p) ! */
             if (log_p)
@@ -91,7 +98,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
     else if (ndf < 1 + eps)
     { /* df ~= 1  (df < 1 excluded above): Cauchy */
         if (P > 0)
-            q = 1 / tan(P * M_PI_2); /* == - tan((P+1) * M_PI_2) --- suffers for P ~= 0 */
+            q = 1 / tan(P * M_PI_2); /* == - tan((P+1) * M_PI_2) -- suffers for P ~= 0 */
 
         else
         { /* P = 0, but maybe p_ = exp(p) ! */
