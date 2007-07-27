@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2002 The R Development Core Team
+ *  Copyright (C) 2000-2007 The R Development Core Team
  *  Copyright (C) 2003	    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -78,7 +78,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
 
     if (fabs(ndf - 2) < eps)
     { /* df ~= 2 */
-        if (P > 0)
+        if (P > DBL_MIN)
         {
             if (3 * P < DBL_EPSILON) /* P ~= 0 */
                 q = 1 / sqrt(P);
@@ -88,9 +88,9 @@ double qt(double p, double ndf, int lower_tail, int log_p)
                 q = sqrt(2 / (P * (2 - P)) - 2);
         }
         else
-        { /* P = 0, but maybe = exp(p) ! */
+        { /* P has underflowed */
             if (log_p)
-                q = M_SQRT2 * exp(-.5 * R_D_Lval(p));
+                q = exp(-0.5 * R_D_Lval(p)) / M_SQRT2;
             else
                 q = ML_POSINF;
         }
