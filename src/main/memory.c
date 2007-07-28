@@ -3141,6 +3141,12 @@ void attribute_hidden(UNLOCK_BINDING)(SEXP b)
     UNLOCK_BINDING(b);
 }
 
+/* Primval accessor */
+int(PRIMVAL)(SEXP x)
+{
+    return PRIMVAL(x);
+}
+
 /* for use when testing the write barrier */
 int attribute_hidden(IS_LATIN1)(SEXP x)
 {
