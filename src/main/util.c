@@ -1070,7 +1070,7 @@ size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, void *ps)
 {
     return (size_t)(-1);
 }
-Rboolean mbcsValid(const CHAR *str)
+Rboolean mbcsValid(const char *str)
 {
     return TRUE;
 }
