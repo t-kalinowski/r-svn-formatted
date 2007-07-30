@@ -3141,10 +3141,18 @@ void attribute_hidden(UNLOCK_BINDING)(SEXP b)
     UNLOCK_BINDING(b);
 }
 
-/* Primval accessor */
+/* R_FunTab accessors */
 int(PRIMVAL)(SEXP x)
 {
     return PRIMVAL(x);
+}
+CCODE(PRIMFUN)(SEXP x)
+{
+    return PRIMFUN(x);
+}
+void(SET_PRIMFUN)(SEXP x, CCODE f)
+{
+    PRIMFUN(x) = f;
 }
 
 /* for use when testing the write barrier */
