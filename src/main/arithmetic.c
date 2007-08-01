@@ -294,6 +294,11 @@ double R_pow_di(double x, int n)
 
 /* General Base Logarithms */
 
+/* Note that the behaviour of log(0) required is not necessarily that
+   mandated by C99 (-HUGE_VAL), and the behaviour of log(x < 0) is
+   optional in C99.  Some systems return -Inf for log(x < 0), e.g.
+   libsunmath on Solaris.
+*/
 static double logbase(double x, double base)
 {
 #ifdef HAVE_LOG10
