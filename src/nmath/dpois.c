@@ -42,7 +42,7 @@ double attribute_hidden dpois_raw(double x, double lambda, int give_log)
     */
     if (lambda == 0)
         return ((x == 0) ? R_D__1 : R_D__0);
-    if (!R_finite(lambda))
+    if (!R_FINITE(lambda))
         return R_D__0;
     if (x < 0)
         return (R_D__0);
