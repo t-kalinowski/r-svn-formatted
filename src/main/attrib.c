@@ -27,7 +27,6 @@
 
 #include <Defn.h>
 #include <Rmath.h>
-#include <Rdefines.h>
 
 static void checkNames(SEXP, SEXP);
 static SEXP installAttrib(SEXP, SEXP, SEXP);
@@ -1391,7 +1390,7 @@ SEXP R_do_slot(SEXP obj, SEXP name)
             if (isSymbol(name))
             {
                 input = PROTECT(ScalarString(PRINTNAME(name)));
-                classString = GET_CLASS(obj);
+                classString = getAttrib(obj, R_ClassSymbol);
                 if (isNull(classString))
                 {
                     UNPROTECT(1);
