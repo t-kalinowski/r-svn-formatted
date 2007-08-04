@@ -396,7 +396,7 @@ static double pd_lower_cf(double i, double d)
             }
     }
 
-    REprintf(" ** NON-convergence in pgamma()'s pd_lower_cf() f= %g.\n", f);
+    MATHLIB_WARNING(" ** NON-convergence in pgamma()'s pd_lower_cf() f= %g.\n", f);
     return f; /* should not happen ... */
 } /* pd_lower_cf() */
 #undef NEEDED_SCALE
