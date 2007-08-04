@@ -2338,7 +2338,7 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
 
     *itncnt = 0;
     iretcd = -1;
-    epsm = d1mach(4);
+    epsm = Rf_d1mach(4);
     optchk(n, x, typsiz, sx, &fscale, gradtl, &itnlim, &ndigit, epsm, &dlt, &method, &iexp, &iagflg, &iahflg, &stepmx,
            msg);
     if (*msg < 0)
@@ -2591,7 +2591,7 @@ static void dfault(int n, double *x, double *typsiz, double *fscale, int *method
 
     /* set tolerances */
 
-    epsm = d1mach(4);             /* for IEEE : = 2^-52	  ~= 2.22  e-16 */
+    epsm = Rf_d1mach(4);          /* for IEEE : = 2^-52	  ~= 2.22  e-16 */
     *gradtl = pow(epsm, 1. / 3.); /* for IEEE : = 2^(-52/3) ~= 6.055 e-6 */
     *steptl = sqrt(epsm);         /* for IEEE : = 2^-26	  ~= 1.490 e-8 */
     *stepmx = 0.;                 /* -> compute default in optchk() */
