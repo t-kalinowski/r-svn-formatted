@@ -37,9 +37,9 @@
 #undef __LIBM_PRIVATE
 #endif
 
-#define MATHLIB_PRIVATE
 #include <Rmath.h>
-#undef MATHLIB_PRIVATE
+extern double Rf_gamma_cody(double);
+
 #include "arithmetic.h"
 
 #include <errno.h>
@@ -1216,7 +1216,7 @@ SEXP attribute_hidden do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         */
 
     case 46:
-        return MATH1(gamma_cody);
+        return MATH1(Rf_gamma_cody);
 
     default:
         errorcall(call, _("unimplemented real function of 1 argument"));
