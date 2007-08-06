@@ -4841,9 +4841,9 @@ DevDesc *CurrentDevice(void)
         if (isString(defdev) && length(defdev) > 0)
         {
             SEXP devName = install(CHAR(STRING_ELT(defdev, 0)));
-            /*  not clear where this should be evaluated, since
+            /*  Not clear where this should be evaluated, since
             grDevices need not be in the search path.
-            So we look for it first.
+            So we look for it first on the global search path.
             */
             defdev = findVar(devName, R_GlobalEnv);
             if (defdev != R_UnboundValue)
@@ -4856,7 +4856,8 @@ DevDesc *CurrentDevice(void)
             {
                 /* Not globally visible:
                    try grDevices namespace if loaded.
-                   The option is unlikely to be set if it is not loaded.
+                   The option is unlikely to be set if it is not loaded,
+                   as the default setting is in grDevices:::.onLoad.
                 */
                 SEXP ns = findVarInFrame(R_NamespaceRegistry, install("grDevices"));
                 if (ns != R_UnboundValue && findVar(devName, ns) != R_UnboundValue)
