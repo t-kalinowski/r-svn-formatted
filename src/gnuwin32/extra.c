@@ -36,6 +36,7 @@
 #include <windows.h>
 #include "graphapp/ga.h"
 #include "rui.h"
+extern __declspec(dllimport) int GA_isNT;
 
 SEXP do_flushconsole(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1446,8 +1447,6 @@ Rboolean winNewFrameConfirm(void)
    Replacement for MSVCRT's access.
    Coded looking at tcl's tclWinFile.c
 */
-
-extern int GA_isNT;
 
 int winAccess(const char *path, int mode)
 {
