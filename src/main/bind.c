@@ -1153,9 +1153,11 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
                         if (strcmp(klass, s))
                         {
                             method = R_NilValue;
-                            break;
+                            /* need to end both loops */
+                            a = R_NilValue;
                         }
                     }
+                    break; /* go to next parameter */
                 }
             }
         }
