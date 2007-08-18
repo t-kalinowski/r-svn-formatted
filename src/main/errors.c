@@ -895,9 +895,10 @@ static void jump_to_top_ex(Rboolean traceback, Rboolean tryUserHandler, Rboolean
     R_GlobalContext = R_ToplevelContext;
     R_restore_globals(R_GlobalContext);
     LONGJMP(R_ToplevelContext->cjmpbuf, 0);
-    /* not reached */
+    /* not reached
     endcontext(&cntxt);
     inError = oldInError;
+    */
 }
 
 void jump_to_toplevel()
