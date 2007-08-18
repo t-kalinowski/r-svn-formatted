@@ -180,7 +180,7 @@ double gammafn(double x)
         if (x < xmin)
         { /* Underflow */
             ML_ERROR(ME_UNDERFLOW, "gammafn");
-            return ML_UNDERFLOW;
+            return 0.;
         }
 
         if (y <= 50 && y == (int)y)
