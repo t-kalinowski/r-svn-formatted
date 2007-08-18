@@ -31,6 +31,12 @@
 #include <R_ext/Utils.h> /* for R_rsort */
 #include <R_ext/Applic.h>
 
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+#define attribute_hidden __attribute__((visibility("hidden")))
+#else
+#define attribute_hidden
+#endif
+
 static void stem_print(int close, int dist, int ndigits)
 {
     if ((close / 10 == 0) && (dist < 0))
@@ -151,7 +157,7 @@ static Rboolean stem_leaf(double *x, int n, double scale, int width, double atom
     return TRUE;
 }
 
-Rboolean stemleaf(double *x, int *n, double *scale, int *width, double *atom)
+Rboolean attribute_hidden stemleaf(double *x, int *n, double *scale, int *width, double *atom)
 {
     return stem_leaf(x, *n, *scale, *width, *atom);
 }
