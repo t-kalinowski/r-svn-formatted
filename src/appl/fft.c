@@ -26,11 +26,6 @@
 #include <math.h>
 #include <Rmath.h> /* for imax2(.),..*/
 #include <R_ext/Applic.h>
-#ifdef HAVE_VISIBILITY_ATTRIBUTE
-#define attribute_hidden __attribute__((visibility("hidden")))
-#else
-#define attribute_hidden
-#endif
 
 /*  Fast Fourier Transform
  *
@@ -841,7 +836,8 @@ static int maxp;
  *	m_fac	contains the number of factors and
  *	kt	contains the number of square factors  */
 
-attribute_hidden void fft_factor(int n, int *pmaxf, int *pmaxp)
+/* non-API, but used by package RandomFields */
+void fft_factor(int n, int *pmaxf, int *pmaxp)
 {
     /* fft_factor - factorization check and determination of memory
      *		requirements for the fft.
@@ -956,7 +952,7 @@ attribute_hidden void fft_factor(int n, int *pmaxf, int *pmaxp)
     *pmaxp = maxp;
 }
 
-attribute_hidden Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *work, int *iwork)
+Rboolean fft_work(double *a, double *b, int nseg, int n, int nspn, int isn, double *work, int *iwork)
 {
     int nf, nspan, ntot;
 

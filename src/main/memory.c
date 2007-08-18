@@ -2938,12 +2938,11 @@ void(SET_DEBUG)(SEXP x, int v)
 }
 
 /* Primitive Accessors */
-int(PRIMOFFSET)(SEXP x)
+attribute_hidden int(PRIMOFFSET)(SEXP x)
 {
     return PRIMOFFSET(x);
 }
-
-void(SET_PRIMOFFSET)(SEXP x, int v)
+attribute_hidden void(SET_PRIMOFFSET)(SEXP x, int v)
 {
     SET_PRIMOFFSET(x, v);
 }

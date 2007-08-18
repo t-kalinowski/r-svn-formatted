@@ -64,6 +64,12 @@
 #include <Rmath.h> /* for R_pow_di */
 #include <R_ext/Applic.h>
 
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+#define attribute_hidden __attribute__((visibility("hidden")))
+#else
+#define attribute_hidden
+#endif
+
 #ifndef HAVE_HYPOT
 #define hypot pythag
 #endif
@@ -105,7 +111,7 @@ static const double are = /* eta = */ DBL_EPSILON;
 static const double mre = 2. * M_SQRT2 * /* eta, i.e. */ DBL_EPSILON;
 static const double infin = DBL_MAX;
 
-void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, double *zeroi, Rboolean *fail)
+attribute_hidden void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, double *zeroi, Rboolean *fail)
 {
     static const double smalno = DBL_MIN;
     static const double base = (double)FLT_RADIX;
