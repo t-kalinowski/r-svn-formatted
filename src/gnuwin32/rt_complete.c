@@ -27,7 +27,10 @@
 #include <stdlib.h> /* for getenv */
 
 extern char *alloca(size_t);
+#ifndef min
+/* in stdlib.h in Win64 headers */
 #define min(a, b) (a < b ? a : b)
+#endif
 
 #include <Rinternals.h>
 #include <R_ext/Parse.h>
