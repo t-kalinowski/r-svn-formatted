@@ -1179,8 +1179,8 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
 #endif
         }
     }
-    /* not reached */
-    return (-1);
+    /* not reached
+    return(-1); */
 }
 
 /**

@@ -548,8 +548,8 @@ int R_SockConnect(int port, char *host)
 #endif
         }
     }
-    /* not reached */
-    return (-1);
+    /* not reached
+    return(-1); */
 }
 
 int R_SockClose(int sockp)
