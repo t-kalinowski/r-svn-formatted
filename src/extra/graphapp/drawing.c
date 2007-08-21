@@ -257,7 +257,7 @@ void scrollrect(point dp, rect r)
         return;
 
     enable_drawing();
-    ScrollDC(dc, dp.x - r.x, dp.y - r.y, (RECT *)&r, (RECT *)&cliprect, 0, NULL);
+    ScrollDC(dc, dp.x - r.x, dp.y - r.y, rect2RECT(&r), rect2RECT(&cliprect), 0, NULL);
 }
 
 void copyrect(bitmap sb, point p, rect r)

@@ -921,7 +921,7 @@ rect objrect(object obj)
         r = obj->rect;
         break;
     default:
-        GetClientRect(obj->handle, (RECT *)&r);
+        GetClientRect(obj->handle, rect2RECT(&r));
         break;
     }
     return r;
