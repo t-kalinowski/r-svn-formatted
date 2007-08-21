@@ -925,12 +925,9 @@ static SEXP Rf_MakeNativeSymbolRef(DL_FUNC f)
 {
     SEXP ref, klass;
 
-    /* The (void *) here is illegal C */
-    PROTECT(ref = R_MakeExternalPtr((void *)f, Rf_install("native symbol"), R_NilValue));
-
+    PROTECT(ref = R_MakeExternalPtrFn(f, Rf_install("native symbol"), R_NilValue));
     PROTECT(klass = mkString("NativeSymbol"));
     setAttrib(ref, R_ClassSymbol, klass);
-
     UNPROTECT(2);
     return (ref);
 }
@@ -955,7 +952,7 @@ static SEXP Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
     }
     *copy = *symbol;
 
-    PROTECT(ref = R_MakeExternalPtr((void *)copy, Rf_install("registered native symbol"), R_NilValue));
+    PROTECT(ref = R_MakeExternalPtr(copy, Rf_install("registered native symbol"), R_NilValue));
     R_RegisterCFinalizer(ref, freeRegisteredNativeSymbolCopy);
 
     PROTECT(klass = mkString("RegisteredNativeSymbol"));
@@ -1338,7 +1335,7 @@ static SEXP get_package_CEntry_table(const char *package)
 void R_RegisterCCallable(const char *package, const char *name, DL_FUNC fptr)
 {
     SEXP penv = get_package_CEntry_table(package);
-    SEXP eptr = R_MakeExternalPtr((void *)fptr, R_NilValue, R_NilValue);
+    SEXP eptr = R_MakeExternalPtrFn(fptr, R_NilValue, R_NilValue);
     PROTECT(eptr);
     defineVar(install(name), eptr, penv);
     UNPROTECT(1);
@@ -1352,5 +1349,5 @@ DL_FUNC R_GetCCallable(const char *package, const char *name)
         error(_("function '%s' not provided by package '%s'"), name, package);
     else if (TYPEOF(eptr) != EXTPTRSXP)
         error(_("table entry must be an external pointer"));
-    return (DL_FUNC)R_ExternalPtrAddr(eptr);
+    return R_ExternalPtrAddrFn(eptr);
 }
