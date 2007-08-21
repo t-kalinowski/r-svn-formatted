@@ -156,7 +156,7 @@ static int computeDLOpenFlag(int asLocal, int now)
 #define DL_WARN(i)                                                                                                     \
     if (asInteger(GetOption(install("warn"), R_BaseEnv)) == 1 ||                                                       \
         asInteger(GetOption(install("verbose"), R_BaseEnv)) > 0)                                                       \
-        warning(_(warningMessages[i]));
+    warning(_(warningMessages[i]))
 #endif
 
     int openFlag = 0; /* Default value so no-ops for undefined
@@ -166,7 +166,9 @@ static int computeDLOpenFlag(int asLocal, int now)
     if (asLocal != 0)
     {
 #ifndef RTLD_LOCAL
-        DL_WARN(0)
+#ifndef __CYGWIN__
+        DL_WARN(0);
+#endif
 #else
         openFlag = RTLD_LOCAL;
 #endif
@@ -174,7 +176,9 @@ static int computeDLOpenFlag(int asLocal, int now)
     else
     {
 #ifndef RTLD_GLOBAL
-        DL_WARN(1)
+#ifndef __CYGWIN__
+        DL_WARN(1);
+#endif
 #else
         openFlag = RTLD_GLOBAL;
 #endif
@@ -183,7 +187,9 @@ static int computeDLOpenFlag(int asLocal, int now)
     if (now != 0)
     {
 #ifndef RTLD_NOW
-        DL_WARN(2)
+#ifndef __CYGWIN__
+        DL_WARN(2);
+#endif
 #else
         openFlag |= RTLD_NOW;
 #endif
@@ -191,7 +197,9 @@ static int computeDLOpenFlag(int asLocal, int now)
     else
     {
 #ifndef RTLD_LAZY
-        DL_WARN(3)
+#ifndef __CYGWIN__
+        DL_WARN(3);
+#endif
 #else
         openFlag |= RTLD_LAZY;
 #endif
