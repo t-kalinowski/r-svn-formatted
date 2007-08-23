@@ -148,7 +148,10 @@ static HANDLE pcreate(const char *cmd, const char *finput, int newconsole, int v
     sa.bInheritHandle = TRUE;
 
     if (!(ecmd = expandcmd(cmd)))
+    {
+        strcpy(RunError, _("Problem with command expansion"));
         return NULL;
+    }
     hTHIS = GetCurrentProcess();
     if (finput && finput[0])
     {
@@ -256,7 +259,11 @@ int runcmd(const char *cmd, int wait, int visible, const char *finput)
     if (!(p = pcreate(cmd, finput, !wait, visible, 0)))
         return NOLAUNCH;
     if (wait)
+    {
         ret = pwait(p);
+        sprintf(RunError, _("Exit code was %d"), ret);
+        ret &= 0xffff;
+    }
     else
         ret = 0;
     CloseHandle(p);
@@ -428,7 +435,7 @@ int rpipeClose(rpipe *r)
     CloseHandle(r->process);
     i = r->exitcode;
     free(r);
-    return i;
+    return i &= 0xffff;
 }
 
 /* ------------------- Windows pipe connections --------------------- */
