@@ -265,6 +265,7 @@ bitmap imagetobitmap(image img)
     return obj;
 }
 
+#ifdef UNUSED
 /*
  *  The loadicon function returns a HBITMAP of an ICON from resources.
  */
@@ -423,6 +424,7 @@ bitmap createbitmap(int width, int height, int depth, unsigned char *data)
         setbitmapdata(obj, data);
     return obj;
 }
+#endif
 
 void getbitmapdata2(bitmap obj, unsigned char **data)
 {
