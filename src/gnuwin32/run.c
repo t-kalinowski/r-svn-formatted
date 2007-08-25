@@ -32,7 +32,7 @@
 #include <ctype.h>
 #include "run.h"
 
-static char RunError[256] = "";
+static char RunError[501] = "";
 
 static char *expandcmd(const char *cmd)
 {
@@ -147,11 +147,8 @@ static HANDLE pcreate(const char *cmd, const char *finput, int newconsole, int v
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
 
-    if (!(ecmd = expandcmd(cmd)))
-    {
-        strcpy(RunError, _("Problem with command expansion"));
+    if (!(ecmd = expandcmd(cmd))) /* error message already set */
         return NULL;
-    }
     hTHIS = GetCurrentProcess();
     if (finput && finput[0])
     {
