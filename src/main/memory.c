@@ -2546,7 +2546,8 @@ typedef union {
     DL_FUNC fn;
 } fn_ptr;
 
-attribute_hidden SEXP R_MakeExternalPtrFn(DL_FUNC p, SEXP tag, SEXP prot)
+/* used in package methods */
+SEXP R_MakeExternalPtrFn(DL_FUNC p, SEXP tag, SEXP prot)
 {
     fn_ptr tmp;
     SEXP s = allocSExp(EXTPTRSXP);
