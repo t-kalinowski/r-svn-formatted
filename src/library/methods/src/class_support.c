@@ -30,5 +30,5 @@ SEXP R_dummy_extern_place()
 
 SEXP R_externalptr_prototype_object()
 {
-    return R_MakeExternalPtrFn(R_dummy_extern_place, R_NilValue, R_NilValue);
+    return R_MakeExternalPtr(R_dummy_extern_place, R_NilValue, R_NilValue);
 }
