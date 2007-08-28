@@ -1548,7 +1548,6 @@ SEXP attribute_hidden do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP res;
-    ;
     int n;
 
     if (length(args) >= 2 && isSymbol(CADR(args)) && R_isMissing(CADR(args), env))
