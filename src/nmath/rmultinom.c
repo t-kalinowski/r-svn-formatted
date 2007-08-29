@@ -1,6 +1,6 @@
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 2003-2006     The R Foundation
+ *  Copyright (C) 2003-2007     The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,7 +60,12 @@ void rmultinom(int n, double *prob, int K, int *rN)
  */
 {
     int k;
-    double pp, p_tot = 0.;
+    double pp;
+    LDOUBLE p_tot = 0.;
+    /* This calculation is sensitive to exact values, so we try to
+       ensure that the calculations are as accurate as possible
+       so different platforms are more likely to give the same
+       result. */
 
 #ifdef MATHLIB_STANDALONE
     if (K < 1)
@@ -105,6 +110,7 @@ void rmultinom(int n, double *prob, int K, int *rN)
         if (prob[k])
         {
             pp = prob[k] / p_tot;
+            /* printf("[%d] %.17f\n", k+1, pp); */
             rN[k] = ((pp < 1.) ? (int)rbinom((double)n, pp) :
                                /*>= 1; > 1 happens because of rounding */
                          n);
