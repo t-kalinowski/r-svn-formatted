@@ -854,7 +854,10 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
             buf[ll] = '\0';
         }
         if (!R_Slave)
+        {
             fputs((char *)buf, stdout);
+            fflush(stdout);
+        }
         return 1;
     }
     else
@@ -931,6 +934,7 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
 void attribute_hidden Rstd_WriteConsole(char *buf, int len)
 {
     printf("%s", buf);
+    fflush(stdout);
 }
 
 /* The extended version allows the distinction of errors and warnings.
@@ -941,6 +945,7 @@ void attribute_hidden Rstd_WriteConsoleEx(char *buf, int len, int otype)
         printf("\033[1m%s\033[0m", buf);
     else
         printf("%s", buf);
+    fflush(stdout);
 }
 
 /* Indicate that input is coming from the console */
