@@ -43,7 +43,7 @@ static int pwait(HANDLE p)
 
 void rcmdusage(char *RCMD)
 {
-    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
+    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
             "  INSTALL  Install add-on packages.\n", "  REMOVE   Remove add-on packages.\n",
             "  SHLIB    Make a DLL for use with dyn.load.\n", "  BATCH    Run R in batch mode.\n",
             "  build    Build add-on packages.\n", "  check    Check add-on packages.\n",
@@ -52,7 +52,8 @@ void rcmdusage(char *RCMD)
             "           LaTeX, plain text, and S documentation format.\n", "  Rdiff    difference R output files.\n",
             "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Rd2txt   Convert Rd format to text.\n",
             "  Sd2Rd    Convert S documentation to Rd format.\n",
-            "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n");
+            "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n",
+            "  config   Obtain configuration information about R.\n");
 
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
 }
@@ -321,6 +322,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcpy(cmd, "sh ");
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Stangle.sh");
+            }
+            else if (strcmp(p, "config") == 0)
+            {
+                strcpy(cmd, "sh ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/config.sh");
             }
             else
             {
