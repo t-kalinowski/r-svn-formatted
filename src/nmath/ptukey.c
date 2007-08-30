@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998       Ross Ihaka
- *  Copyright (C) 2000--2005 The R Development Core Team
+ *  Copyright (C) 2000--2007 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -92,7 +92,8 @@ static double wprob(double w, double rr, double cc)
     const static double aleg[ihalf] = {0.047175336386511827194615961485, 0.106939325995318430960254718194,
                                        0.160078328543346226334652529543, 0.203167426723065921749064455810,
                                        0.233492536538354808760849898925, 0.249147045813402785000562436043};
-    double a, ac, pr_w, b, binc, blb, bub, c, cc1, einsum, elsum, pminus, pplus, qexpo, qsqz, rinsum, wi, wincr, xx;
+    double a, ac, pr_w, b, binc, blb, c, cc1, pminus, pplus, qexpo, qsqz, rinsum, wi, wincr, xx;
+    LDOUBLE bub, einsum, elsum;
     int j, jj;
 
     qsqz = w * 0.5;
