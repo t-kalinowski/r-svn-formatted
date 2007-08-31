@@ -1318,9 +1318,9 @@ static void polygonEdge(double *x, double *y, int n, double theta, double *edgex
     int i, v1, v2;
     double xm, ym;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     int found = 0;
     double angle = theta / 180 * M_PI;
     double vangle1, vangle2;
@@ -1778,9 +1778,9 @@ SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index, d
     SEXP result = R_NilValue;
     double edgex, edgey;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     /* Get the current device
      */
     GEDevDesc *dd = getDevice();
@@ -2230,9 +2230,9 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, double theta, Rboolean draw)
     SEXP currentvp, currentgp;
     SEXP result = R_NilValue;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     double edgex, edgey;
     /* Get the current device
      */
@@ -2372,9 +2372,9 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, dou
     SEXP result = R_NilValue;
     double edgex, edgey;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     /* Get the current device
      */
     GEDevDesc *dd = getDevice();
@@ -2583,9 +2583,9 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
     SEXP txt, result = R_NilValue;
     double edgex, edgey;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     /*
      * Bounding rectangles for checking overlapping
      * Initialised to shut up compiler
@@ -3042,9 +3042,9 @@ SEXP L_locnBounds(SEXP x, SEXP y, SEXP theta)
     SEXP result = R_NilValue;
     char *vmax;
     double xmin = DOUBLE_XMAX;
-    double xmax = DOUBLE_XMIN;
+    double xmax = -DOUBLE_XMAX;
     double ymin = DOUBLE_XMAX;
-    double ymax = DOUBLE_XMIN;
+    double ymax = -DOUBLE_XMAX;
     double edgex, edgey;
     /* Get the current device
      */
