@@ -1115,6 +1115,8 @@ int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
                 if (headers[i] && *headers[i])
                     fprintf(tfp, "%s\n\n", headers[i]);
                 errno = 0; /* some systems require this */
+                /* File expansion is now done in file.show(), but
+                   left here in case other callers assumed it */
                 if ((fp = R_fopen(R_ExpandFileName(file[i]), "r")) != NULL)
                 {
                     while ((c = fgetc(fp)) != EOF)
