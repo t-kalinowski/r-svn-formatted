@@ -2699,7 +2699,6 @@ static struct
 #define BEGIN_MACHINE                                                                                                  \
     NEXT();                                                                                                            \
     init : {                                                                                                           \
-        int which = 0;                                                                                                 \
     loop:                                                                                                              \
         switch (which++)
 #define LASTOP                                                                                                         \
@@ -3048,6 +3047,9 @@ static SEXP bcEval(SEXP body, SEXP rho)
 #endif
 #ifdef BC_PROFILING
     int old_current_opcode = current_opcode;
+#endif
+#ifdef THREADED_CODE
+    int which = 0;
 #endif
 
     BC_CHECK_SIGINT();
