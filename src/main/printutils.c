@@ -853,7 +853,10 @@ void Rcons_vprintf(const char *format, va_list arg)
     va_end(aq);
 #ifdef HAVE_VASPRINTF
     if (res >= R_BUFSIZE || res < 0)
+    {
         vasprintf(&p, format, arg);
+        usedVasprintf = TRUE;
+    }
 #else
     if (res >= R_BUFSIZE)
     { /* res is the desired output length */
