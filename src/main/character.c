@@ -398,7 +398,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, len, tlen, ntok, slen;
     int extended_opt, cflags, fixed_opt, perl_opt;
     char *pt = NULL;
-    const char *buf, *split = "", *bufp, *laststart;
+    const char *buf, *split = "", *bufp, *laststart, *ebuf = NULL;
     regex_t reg;
     regmatch_t regmatch[1];
     pcre *re_pcre = NULL;
@@ -472,7 +472,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 /* This is UTF-8 safe since it compares whole strings */
                 laststart = buf;
-                for (bufp = buf; bufp - buf < strlen(buf); bufp++)
+                ebuf = buf + strlen(buf);
+                for (bufp = buf; bufp < ebuf; bufp++)
                 {
                     if ((slen == 1 && *bufp != *split) || (slen > 1 && strncmp(bufp, split, slen)))
                         continue;
@@ -542,7 +543,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     /* This is UTF-8 safe since it compares whole strings,
                        but it would be more efficient to skip along by chars.
                      */
-                    for (; bufp - buf < strlen(buf); bufp++)
+                    for (; bufp < ebuf; bufp++)
                     {
                         if ((slen == 1 && *bufp != *split) || (slen > 1 && strncmp(bufp, split, slen)))
                             continue;

@@ -572,7 +572,7 @@ static int XRotDrawHorizontalString(Display *dpy, XFontStruct *font, Drawable dr
 
     /* count number of sections in string */
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 nl++;
 
@@ -818,7 +818,7 @@ static RotatedTextItem *XRotCreateTextItem(Display *dpy, XFontStruct *font, doub
     /* count number of sections in string */
     item->nl = 1;
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 item->nl++;
 
@@ -1342,7 +1342,7 @@ XPoint *XRotTextExtents(Display *dpy, XFontStruct *font, double angle, int x, in
     /* count number of sections in string */
     nl = 1;
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 nl++;
 
@@ -1707,7 +1707,7 @@ static int XmbRotDrawHorizontalString(Display *dpy, XFontSet font, Drawable draw
 
     /* count number of sections in string */
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 nl++;
 
@@ -1951,7 +1951,7 @@ static RotatedTextItem *XmbRotCreateTextItem(Display *dpy, XFontSet font, double
     /* count number of sections in string */
     item->nl = 1;
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 item->nl++;
 
@@ -2229,7 +2229,7 @@ XPoint *XmbRotTextExtents(Display *dpy, XFontSet font, double angle, int x, int 
     /* count number of sections in string */
     nl = 1;
     if (align != NONE)
-        for (i = 0; i < strlen(text) - 1; i++)
+        for (i = strlen(text) - 2; i >= 0; i--)
             if (text[i] == '\n')
                 nl++;
 
