@@ -1321,17 +1321,7 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     case 3:
         cat = LC_CTYPE;
-#ifdef Win32
-        /* LC_CTYPE=C bombs in mingwex */
-        p = CHAR(STRING_ELT(locale, 0));
-        /* LC_CTYPE=C bombs in mingwex */
-        if (strcmp(p, "C") == 0)
-            setlocale(LC_CTYPE, "en");
-        else
-            setlocale(LC_CTYPE, p);
-#else
         p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
-#endif
         break;
     case 4:
         cat = LC_MONETARY;
@@ -1346,14 +1336,12 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         cat = LC_TIME;
         p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
-#ifdef LC_MESSAGES
-/* this seems to exist in MinGW, but it does not work in Windows */
-#ifndef Win32
+#if defined LC_MESSAGES && !defined Win32
+        /* this seems to exist in MinGW, but it does not work in Windows */
     case 7:
         cat = LC_MESSAGES;
         p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
         break;
-#endif
 #endif
 #ifdef LC_PAPER
     case 8:
@@ -1394,7 +1382,7 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (p && isdigit(p[1]))
             localeCP = atoi(p + 1);
         else
-            localeCP = 1252;
+            localeCP = 0;
         /* Not 100% correct */
         known_to_be_latin1 = latin1locale = (localeCP == 1252);
     }

@@ -744,7 +744,7 @@ void settext(control obj, const char *text)
         if (obj->kind & ControlObject)
         {
             text = to_dos_string(text);
-            if (is_NT && (localeCP != GetACP()))
+            if (is_NT && localeCP > 0 && (localeCP != GetACP()))
             {
                 wchar_t *wc;
                 int nc = strlen(text) + 1;
@@ -758,7 +758,7 @@ void settext(control obj, const char *text)
         }
         if (obj->kind == MenuitemObject)
         {
-            if (is_NT && (localeCP != GetACP()))
+            if (is_NT && localeCP > 0 && (localeCP != GetACP()))
             {
                 wchar_t wc[1000];
                 mbstowcs(wc, text, 1000);

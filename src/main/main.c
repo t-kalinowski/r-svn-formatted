@@ -709,9 +709,9 @@ void setup_Rmainloop(void)
            Also cannot translate. */
         if (!setlocale(LC_CTYPE, p))
             snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_CTYPE=%s failed\n", p);
-        /* LC_CTYPE=C bombs in mingwex */
-        if (strcmp(setlocale(LC_CTYPE, NULL), "C") == 0)
-            setlocale(LC_CTYPE, "en");
+        /* LC_CTYPE=C bombs in mingwex
+        if(strcmp(setlocale(LC_CTYPE, NULL), "C") == 0)
+            setlocale(LC_CTYPE, "en"); */
 
         if ((p = getenv("LC_COLLATE")))
         {
@@ -808,7 +808,7 @@ void setup_Rmainloop(void)
         if (p && isdigit(p[1]))
             localeCP = atoi(p + 1);
         else
-            localeCP = 1252;
+            localeCP = 0;
         /* Not 100% correct */
         known_to_be_latin1 = latin1locale = (localeCP == 1252);
     }
