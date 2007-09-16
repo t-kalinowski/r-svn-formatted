@@ -702,17 +702,13 @@ void setup_Rmainloop(void)
     {
         char *p, Rlocale[1000]; /* Windows' locales can be very long */
         p = getenv("LC_ALL");
-        strcpy(Rlocale, p ? p : "");
+        strncpy(Rlocale, p ? p : "", 1000);
         if (!(p = getenv("LC_CTYPE")))
             p = Rlocale;
-        /* We'd like to use warning, but cannot yet.
+        /* We'd like to use warning, but need to defer.
            Also cannot translate. */
         if (!setlocale(LC_CTYPE, p))
             snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_CTYPE=%s failed\n", p);
-        /* LC_CTYPE=C bombs in mingwex
-        if(strcmp(setlocale(LC_CTYPE, NULL), "C") == 0)
-            setlocale(LC_CTYPE, "en"); */
-
         if ((p = getenv("LC_COLLATE")))
         {
             if (!setlocale(LC_COLLATE, p))
@@ -736,7 +732,7 @@ void setup_Rmainloop(void)
             setlocale(LC_MONETARY, Rlocale);
         /* Windows does not have LC_MESSAGES */
     }
-#else
+#else /* not Win32 */
     setlocale(LC_CTYPE, "");    /*- make ISO-latin1 etc. work for LOCALE users */
     setlocale(LC_COLLATE, "");  /*- alphabetically sorting */
     setlocale(LC_TIME, "");     /*- names and defaults for date-time formats */
@@ -751,7 +747,7 @@ void setup_Rmainloop(void)
 #ifdef LC_MEASUREMENT
     setlocale(LC_MEASUREMENT, "");
 #endif
-#endif
+#endif /* not Win32 */
 #ifdef ENABLE_NLS
     /* This ought to have been done earlier, but be sure */
     textdomain(PACKAGE);
@@ -809,7 +805,7 @@ void setup_Rmainloop(void)
             localeCP = atoi(p + 1);
         else
             localeCP = 0;
-        /* Not 100% correct */
+        /* Not 100% correct, but CP1252 is a superset */
         known_to_be_latin1 = latin1locale = (localeCP == 1252);
     }
 #endif
@@ -887,7 +883,7 @@ void setup_Rmainloop(void)
     /* methods package needs to trample here */
     R_LockEnvironment(R_BaseEnv, TRUE);
 #endif
-    /* At least temporarily unlock some bindings uses in graphics */
+    /* At least temporarily unlock some bindings used in graphics */
     R_unLockBinding(install(".Device"), R_BaseEnv);
     R_unLockBinding(install(".Devices"), R_BaseEnv);
     R_unLockBinding(install(".Library.site"), R_BaseEnv);
