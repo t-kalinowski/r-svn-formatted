@@ -2418,6 +2418,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
             /* We are only working with the screen device here, so
                we can assume that x->bm is the current state.
                Copying from the screen window does not work. */
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gfillrect(xd->bm2, xd->fgcolor, r);
             DRAW2(gc->fill);
@@ -2442,6 +2443,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *g
             r.y -= tol;
             r.width += 2 * tol;
             r.height += 2 * tol;
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawrect(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
@@ -2492,6 +2494,7 @@ static void GA_Circle(double x, double y, double radius, R_GE_gcontext *gc, NewD
     {
         if (xd->have_alpha)
         {
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gfillellipse(xd->bm2, xd->fgcolor, rr);
             DRAW2(gc->fill);
@@ -2515,6 +2518,7 @@ static void GA_Circle(double x, double y, double radius, R_GE_gcontext *gc, NewD
             r.y -= tol;
             r.width += 2 * tol;
             r.height += 2 * tol;
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawellipse(xd->bm2, xd->lwd, xd->fgcolor, rr, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
@@ -2558,6 +2562,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *g
         if (xd->have_alpha)
         {
             rect r = xd->clip;
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0, xd->lend, xd->ljoin,
                       xd->lmitre);
@@ -2606,6 +2611,7 @@ static void GA_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDe
         if (xd->have_alpha)
         {
             rect r = xd->clip; /* lines can go well outside bbox of points */
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolyline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
@@ -2667,6 +2673,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
     {
         if (xd->have_alpha)
         {
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gfillpolygon(xd->bm2, xd->fgcolor, points, n);
             DRAW2(gc->fill);
@@ -2686,6 +2693,7 @@ static void GA_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDes
         if (xd->have_alpha)
         {
             r = xd->clip;
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre);
             DRAW2(gc->col);
@@ -2740,6 +2748,7 @@ static void GA_Text(double x, double y, const char *str, double rot, double hadj
         if (xd->have_alpha)
         {
             rect r = xd->clip;
+            gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             if (mbcslocale && gc->fontface != 5)
                 gwdrawstr1(xd->bm2, xd->font, xd->fgcolor, pt(x, y), str, hadj);
