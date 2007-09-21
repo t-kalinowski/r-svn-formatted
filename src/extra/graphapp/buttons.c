@@ -1004,6 +1004,7 @@ textbox newrichtextarea(const char *text, rect r)
                       r, NULL);
     if (obj)
     {
+        sendmessage(obj->handle, EM_SETTEXTMODE, TM_PLAINTEXT, 0);
         obj->kind = TextboxObject;
         settext(obj, text);
     }
