@@ -1723,7 +1723,7 @@ SEXP attribute_hidden do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP path;
-    int res, show, recursive;
+    int res, show, recursive, mode;
     char *p, dir[PATH_MAX];
 
     checkArity(op, args);
@@ -1736,6 +1736,9 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     recursive = asLogical(CADDR(args));
     if (recursive == NA_LOGICAL)
         recursive = 0;
+    mode = asInteger(CADDDR(args));
+    if (mode == NA_LOGICAL)
+        mode = 0777;
     strcpy(dir, R_ExpandFileName(translateChar(STRING_ELT(path, 0))));
     /* remove trailing slashes */
     p = dir + strlen(dir) - 1;
@@ -1747,13 +1750,13 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
         while ((p = Rf_strchr(p + 1, '/')))
         {
             *p = '\0';
-            res = mkdir(dir, 0777);
+            res = mkdir(dir, mode);
             if (res && errno != EEXIST)
                 goto end;
             *p = '/';
         }
     }
-    res = mkdir(dir, 0777);
+    res = mkdir(dir, mode);
     if (show && res && errno == EEXIST)
         warning(_("'%s' already exists"), dir);
 end:
