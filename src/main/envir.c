@@ -3425,7 +3425,7 @@ void attribute_hidden InitStringHash()
 #define STRINGHASHCMP(s, k, e)                                                                                         \
     (((INT_IS_UTF8(e) == IS_UTF8(s)) && (INT_IS_LATIN1(e) == IS_LATIN1(s))) && strcmp(CHAR(s), k) == 0)
 
-#define CHARENCCMP(a, b) (((IS_UTF8(a) == IS_UTF8(b)) && (IS_UTF8(a) == IS_UTF8(b))))
+#define CHARENCCMP(a, b) (((IS_UTF8(a) == IS_UTF8(b)) && (IS_LATIN1(a) == IS_LATIN1(b))))
 
 /* Resize a hash table with char* based keys. */
 static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
