@@ -150,6 +150,9 @@ static SEXP getActiveValue(SEXP fun)
     return expr;
 }
 
+/* Macro version of isNull for only the test against R_NilValue */
+#define ISNULL(x) ((x) == R_NilValue)
+
 /*----------------------------------------------------------------------
 
   Hash Tables
@@ -220,7 +223,7 @@ static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value, Rboolea
     chain = VECTOR_ELT(table, hashcode);
 
     /* Search for the value in the chain */
-    for (; !isNull(chain); chain = CDR(chain))
+    for (; !ISNULL(chain); chain = CDR(chain))
         if (TAG(chain) == symbol)
         {
             SET_BINDING_VALUE(chain, value);
@@ -229,7 +232,7 @@ static void R_HashSet(int hashcode, SEXP symbol, SEXP table, SEXP value, Rboolea
         }
     if (frame_locked)
         error(_("cannot add bindings to a locked environment"));
-    if (isNull(chain))
+    if (ISNULL(chain))
         SET_HASHPRI(table, HASHPRI(table) + 1);
     /* Add the value into the chain */
     SET_VECTOR_ELT(table, hashcode, CONS(value, VECTOR_ELT(table, hashcode)));
@@ -278,7 +281,7 @@ static SEXP R_HashGetLoc(int hashcode, SEXP symbol, SEXP table)
     /* Grab the chain from the hashtable */
     chain = VECTOR_ELT(table, hashcode);
     /* Retrieve the value from the chain */
-    for (; !isNull(chain); chain = CDR(chain))
+    for (; !ISNULL(chain); chain = CDR(chain))
         if (TAG(chain) == symbol)
             return chain;
     /* If not found */
@@ -386,12 +389,12 @@ static SEXP R_HashResize(SEXP table)
     for (counter = 0; counter < length(table); counter++)
     {
         chain = VECTOR_ELT(table, counter);
-        while (!isNull(chain))
+        while (!ISNULL(chain))
         {
             new_hashcode = R_Newhashpjw(CHAR(PRINTNAME(TAG(chain)))) % HASHSIZE(new_table);
             new_chain = VECTOR_ELT(new_table, new_hashcode);
             /* If using a primary slot then increase HASHPRI */
-            if (isNull(new_chain))
+            if (ISNULL(new_chain))
                 SET_HASHPRI(new_table, HASHPRI(new_table) + 1);
             tmp_chain = chain;
             chain = CDR(chain);
@@ -458,7 +461,7 @@ static SEXP R_HashFrame(SEXP rho)
         error("first argument ('table') not of type ENVSXP, from R_HashVector2Hash");
     table = HASHTAB(rho);
     frame = FRAME(rho);
-    while (!isNull(frame))
+    while (!ISNULL(frame))
     {
         if (!HASHASH(PRINTNAME(TAG(frame))))
         {
@@ -468,7 +471,7 @@ static SEXP R_HashFrame(SEXP rho)
         hashcode = HASHVALUE(PRINTNAME(TAG(frame))) % HASHSIZE(table);
         chain = VECTOR_ELT(table, hashcode);
         /* If using a primary slot then increase HASHPRI */
-        if (isNull(chain))
+        if (ISNULL(chain))
             SET_HASHPRI(table, HASHPRI(table) + 1);
         tmp_chain = frame;
         frame = CDR(frame);
@@ -1728,7 +1731,7 @@ SEXP attribute_hidden do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (TYPEOF(rval) == PROMSXP)
             rval = eval(rval, genv);
 
-        if (!isNull(rval) && NAMED(rval) == 0)
+        if (!ISNULL(rval) && NAMED(rval) == 0)
             SET_NAMED(rval, 1);
         return rval;
     }
@@ -1767,7 +1770,7 @@ static SEXP gfind(const char *name, SEXP env, SEXPTYPE mode, SEXP ifnotfound, in
     /* We need to evaluate if it is a promise */
     if (TYPEOF(rval) == PROMSXP)
         rval = eval(rval, env);
-    if (!isNull(rval) && NAMED(rval) == 0)
+    if (!ISNULL(rval) && NAMED(rval) == 0)
         SET_NAMED(rval, 1);
     return rval;
 }
@@ -1796,7 +1799,7 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* FIXME: should we install them all?) */
 
     env = CADR(args);
-    if (isNull(env))
+    if (ISNULL(env))
     {
         error(_("use of NULL environment is defunct"));
     }
@@ -2484,7 +2487,7 @@ SEXP attribute_hidden do_env2list(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     env = CAR(args);
-    if (isNull(env))
+    if (ISNULL(env))
         error(_("use of NULL environment is defunct"));
     if (!isEnvironment(env))
         error(_("argument must be an environment"));
@@ -2538,7 +2541,7 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     env = eval(CAR(args), rho);
-    if (isNull(env))
+    if (ISNULL(env))
         error(_("use of NULL environment is defunct"));
     if (!isEnvironment(env))
         error(_("argument must be an environment"));
@@ -3442,7 +3445,7 @@ static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
     for (counter = 0; counter < length(table); counter++)
     {
         chain = VECTOR_ELT(table, counter);
-        while (!isNull(chain))
+        while (!ISNULL(chain))
         {
             val = CAR(chain);
             if (*CHAR(val) != '\0')
@@ -3452,7 +3455,7 @@ static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
                 new_hashcode = 0;
             new_chain = VECTOR_ELT(new_table, new_hashcode);
             /* If using a primary slot then increase HASHPRI */
-            if (isNull(new_chain))
+            if (ISNULL(new_chain))
                 SET_HASHPRI(new_table, HASHPRI(new_table) + 1);
             SET_VECTOR_ELT(new_table, new_hashcode, CONS(val, new_chain));
             chain = NEXT_CHAIN_EL(chain);
@@ -3532,7 +3535,7 @@ static void R_CharHashSet(int hashcode, SEXP schar, SEXP table)
     chain = VECTOR_ELT(table, hashcode);
 
     /* Search for the value in the chain */
-    for (; !isNull(chain); chain = CDR(chain))
+    for (; !ISNULL(chain); chain = CDR(chain))
     {
         val = CAR(chain);
         if (CHARENCCMP(val, schar) && strcmp(CHAR(val), CHAR(schar)) == 0)
@@ -3542,7 +3545,7 @@ static void R_CharHashSet(int hashcode, SEXP schar, SEXP table)
         }
     }
     chain = VECTOR_ELT(table, hashcode);
-    if (isNull(chain))
+    if (ISNULL(chain))
         SET_HASHPRI(table, HASHPRI(table) + 1);
     /* Add the value into the chain */
     SET_VECTOR_ELT(table, hashcode, CONS(schar, chain));
