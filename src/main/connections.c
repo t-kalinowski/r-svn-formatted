@@ -2885,11 +2885,12 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
         }
         buf[nbuf] = '\0';
-        tmp = mkChar(buf);
         if (streql(encoding, "latin1"))
-            SET_LATIN1(tmp);
+            tmp = mkCharEnc(buf, LATIN1_MASK);
         else if (streql(encoding, "UTF-8"))
-            SET_UTF8(tmp);
+            tmp = mkCharEnc(buf, UTF8_MASK);
+        else
+            tmp = mkChar(buf);
         SET_STRING_ELT(ans, nread, tmp);
         if (c == R_EOF)
             goto no_more_lines;

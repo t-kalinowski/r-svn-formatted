@@ -283,11 +283,13 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_STRING_ELT(ans, j, STRING_ELT(CADR(args), 0));
             else
             {
-                SEXP tmp = mkChar(s);
+                SEXP tmp;
                 if (known_to_be_latin1)
-                    SET_LATIN1(tmp);
-                if (known_to_be_utf8)
-                    SET_UTF8(tmp);
+                    tmp = mkCharEnc(s, LATIN1_MASK);
+                else if (known_to_be_utf8)
+                    tmp = mkCharEnc(s, UTF8_MASK);
+                else
+                    tmp = mkChar(s);
                 SET_STRING_ELT(ans, j, tmp);
             }
         }
@@ -535,14 +537,14 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 
             if (res != -1 && inb == 0)
             {
-                nout = cbuff.bufsize - 1 - outb;
-                si = allocString(nout);
-                memcpy(CHAR_RW(si), cbuff.data, nout);
-                SET_STRING_ELT(ans, i, si);
+                SEXP tmp;
                 if (isLatin1)
-                    SET_LATIN1(STRING_ELT(ans, i));
-                if (isUTF8)
-                    SET_UTF8(STRING_ELT(ans, i));
+                    tmp = mkCharEnc(cbuff.data, LATIN1_MASK);
+                else if (isUTF8)
+                    tmp = mkCharEnc(cbuff.data, UTF8_MASK);
+                else
+                    tmp = mkChar(cbuff.data);
+                SET_STRING_ELT(ans, i, tmp);
             }
             else
                 SET_STRING_ELT(ans, i, NA_STRING);
