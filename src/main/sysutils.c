@@ -398,9 +398,6 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #if defined(HAVE_ICONV_H) && defined(ICONV_LATIN1)
-/* Unfortunately glibc and Solaris differ in the const in the iconv decl.
-   libiconv agrees with Solaris here.
- */
 #include <iconv.h>
 #endif
 
@@ -430,9 +427,9 @@ static int write_one(unsigned int namescount, const char *const *names, void *da
 SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
 #if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
-    SEXP ans, x = CAR(args);
+    SEXP ans, x = CAR(args), si;
     void *obj;
-    int i, j;
+    int i, j, nout;
     const char *inbuf;
     char *outbuf;
     const char *sub;
@@ -487,9 +484,10 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         R_AllocStringBuffer(0, &cbuff); /* 0 -> default */
         for (i = 0; i < LENGTH(x); i++)
         {
+            si = STRING_ELT(x, i);
         top_of_loop:
-            inbuf = CHAR(STRING_ELT(x, i));
-            inb = strlen(inbuf);
+            inbuf = CHAR(si);
+            inb = LENGTH(si);
             outbuf = cbuff.data;
             outb = cbuff.bufsize - 1;
             /* First initialize output */
@@ -537,7 +535,10 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 
             if (res != -1 && inb == 0)
             {
-                SET_STRING_ELT(ans, i, mkChar(cbuff.data));
+                nout = cbuff.bufsize - 1 - outb;
+                si = allocString(nout);
+                memcpy(CHAR_RW(si), cbuff.data, nout);
+                SET_STRING_ELT(ans, i, si);
                 if (isLatin1)
                     SET_LATIN1(STRING_ELT(ans, i));
                 if (isUTF8)
@@ -578,6 +579,7 @@ void *Riconv_open(const char *tocode, const char *fromcode)
 #endif
 }
 
+/* Should be defined in config.h */
 #ifndef ICONV_CONST
 #define ICONV_CONST
 #endif
