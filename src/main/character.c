@@ -2171,8 +2171,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                     nb = wcstombs(NULL, wc, 0);
                     cbuf = CallocCharBuf(nb);
                     wcstombs(cbuf, wc, nb + 1);
-                    SET_STRING_ELT(y, i, mkChar(cbuf));
-                    markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                    SET_STRING_ELT(y, i, markKnown(cbuf, STRING_ELT(x, i)));
                     Free(cbuf);
                 }
                 else
@@ -2197,8 +2196,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                 strcpy(xi, translateChar(STRING_ELT(x, i)));
                 for (p = xi; *p != '\0'; p++)
                     *p = ul ? toupper(*p) : tolower(*p);
-                SET_STRING_ELT(y, i, mkChar(xi));
-                markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                SET_STRING_ELT(y, i, markKnown(xi, STRING_ELT(x, i)));
                 Free(xi);
             }
         }
@@ -2610,8 +2608,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                 nb = wcstombs(NULL, wc, 0);
                 cbuf = CallocCharBuf(nb);
                 wcstombs(cbuf, wc, nb + 1);
-                SET_STRING_ELT(y, i, mkChar(cbuf));
-                markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                SET_STRING_ELT(y, i, markKnown(cbuf, STRING_ELT(x, i)));
                 Free(cbuf);
             }
         }
@@ -2674,8 +2671,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                 strcpy(cbuf, xi);
                 for (p = (unsigned char *)cbuf; *p != '\0'; p++)
                     *p = xtable[*p];
-                SET_STRING_ELT(y, i, mkChar(cbuf));
-                markKnown(STRING_ELT(y, i), STRING_ELT(x, i));
+                SET_STRING_ELT(y, i, markKnown(cbuf, STRING_ELT(x, i)));
                 Free(cbuf);
             }
         }
