@@ -297,13 +297,10 @@ static SEXP R_HashGetLoc(int hashcode, SEXP symbol, SEXP table)
 
 */
 
-static SEXP R_NewHashTable(int size, int growth_rate)
+static SEXP R_NewHashTable(int size)
 {
     SEXP table;
 
-    /* Some checking */
-    if (growth_rate <= 0)
-        growth_rate = HASHTABLEGROWTHRATE;
     if (size <= 0)
         size = HASHMINSIZE;
 
@@ -320,7 +317,7 @@ static SEXP R_NewHashTable(int size, int growth_rate)
   R_NewHashedEnv
 
   Returns a new environment with a hash table initialized with default
-  size/growth settings.  The only non-static hash table function.
+  size.  The only non-static hash table function.
 */
 
 SEXP R_NewHashedEnv(SEXP enclos, SEXP size)
@@ -328,7 +325,7 @@ SEXP R_NewHashedEnv(SEXP enclos, SEXP size)
     SEXP s;
 
     PROTECT(s = NewEnvironment(R_NilValue, R_NilValue, enclos));
-    SET_HASHTAB(s, R_NewHashTable(asInteger(size), 0));
+    SET_HASHTAB(s, R_NewHashTable(asInteger(size)));
     UNPROTECT(1);
     return s;
 }
@@ -374,7 +371,7 @@ static void R_HashDelete(int hashcode, SEXP symbol, SEXP table)
 static SEXP R_HashResize(SEXP table)
 {
     SEXP new_table, chain, new_chain, tmp_chain;
-    int /*hash_grow,*/ counter, new_hashcode;
+    int counter, new_hashcode;
 
     /* Do some checking */
     if (TYPEOF(table) != VECSXP)
@@ -385,7 +382,7 @@ static SEXP R_HashResize(SEXP table)
     /* hash_grow = HASHSIZE(table); */
 
     /* Allocate the new hash table */
-    new_table = R_NewHashTable(HASHSIZE(table) * HASHTABLEGROWTHRATE, HASHTABLEGROWTHRATE);
+    new_table = R_NewHashTable(HASHSIZE(table) * HASHTABLEGROWTHRATE);
     for (counter = 0; counter < length(table); counter++)
     {
         chain = VECTOR_ELT(table, counter);
@@ -610,11 +607,11 @@ void attribute_hidden InitGlobalEnv()
 {
     R_GlobalEnv = NewEnvironment(R_NilValue, R_NilValue, R_BaseEnv);
 #ifdef NEW_CODE
-    HASHTAB(R_GlobalEnv) = R_NewHashTable(100, HASHTABLEGROWTHRATE);
+    HASHTAB(R_GlobalEnv) = R_NewHashTable(100);
 #endif
 #ifdef USE_GLOBAL_CACHE
     MARK_AS_GLOBAL_FRAME(R_GlobalEnv);
-    R_GlobalCache = R_NewHashTable(INITIAL_CACHE_SIZE, HASHTABLEGROWTHRATE);
+    R_GlobalCache = R_NewHashTable(INITIAL_CACHE_SIZE);
     R_GlobalCachePreserve = CONS(R_GlobalCache, R_NilValue);
     R_PreserveObject(R_GlobalCachePreserve);
 #endif
@@ -2104,7 +2101,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             hsize = length(s);
 
-        SET_HASHTAB(s, R_NewHashTable(hsize, HASHTABLEGROWTHRATE));
+        SET_HASHTAB(s, R_NewHashTable(hsize));
         s = R_HashFrame(s);
 
         /* FIXME: A little inefficient */
@@ -3418,7 +3415,7 @@ static unsigned int char_hash(const char *s)
 
 void attribute_hidden InitStringHash()
 {
-    R_StringHash = R_NewHashTable(char_hash_size, 0);
+    R_StringHash = R_NewHashTable(char_hash_size);
 }
 
 #define NEXT_CHAIN_EL(e) (CDR(e))
@@ -3426,10 +3423,6 @@ void attribute_hidden InitStringHash()
 
 #define INT_IS_LATIN1(x) (x & LATIN1_MASK)
 #define INT_IS_UTF8(x) (x & UTF8_MASK)
-#define STRINGHASHCMP(s, k, e)                                                                                         \
-    (((INT_IS_UTF8(e) == IS_UTF8(s)) && (INT_IS_LATIN1(e) == IS_LATIN1(s))) && strcmp(CHAR(s), k) == 0)
-
-#define CHARENCCMP(a, b) (((IS_UTF8(a) == IS_UTF8(b)) && (IS_LATIN1(a) == IS_LATIN1(b))))
 
 /* Resize a hash table with char* based keys. */
 static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
@@ -3441,8 +3434,11 @@ static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
     if (TYPEOF(table) != VECSXP)
         error("first argument ('table') not of type VECSXP, from R_StringHashResize");
 
-    /* Allocate the new hash table */
-    new_table = R_NewHashTable(newsize, /* unused */ 2);
+    /* Allocate the new hash table.  This could fail to allocate
+       enough memory, and ideally we would recover from that and
+       carry over with a table that was getting full.
+     */
+    new_table = R_NewHashTable(newsize);
     char_hash_size = newsize;
     char_hash_mask = char_hash_size - 1;
     PROTECT(new_table);
@@ -3452,11 +3448,8 @@ static SEXP R_CharHashResize(SEXP table, unsigned int newsize)
         while (!ISNULL(chain))
         {
             val = CAR(chain);
-            if (*CHAR(val) != '\0')
-                /* new_hashcode = char_hash(CHAR(val)) % char_hash_size; */
-                new_hashcode = char_hash(CHAR(val)) & char_hash_mask;
-            else
-                new_hashcode = 0;
+            /* new_hashcode = char_hash(CHAR(val)) % char_hash_size; */
+            new_hashcode = char_hash(CHAR(val)) & char_hash_mask;
             new_chain = VECTOR_ELT(new_table, new_hashcode);
             /* If using a primary slot then increase HASHPRI */
             if (ISNULL(new_chain))
@@ -3498,13 +3491,6 @@ static void R_StringHash_resize(unsigned int newsize)
     R_StringHash = new_table;
 }
 
-/* For experiments with setting the initial hash table size */
-void Rf_ResizeStringHash(unsigned int size)
-{
-    if (size > HASHSIZE(R_StringHash))
-        R_StringHash_resize(size);
-}
-
 /* mkCharEnc - make a character (CHARSXP) variable and set its
    encoding bit.  If a CHARSXP with the same string already exists in
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
@@ -3512,15 +3498,14 @@ void Rf_ResizeStringHash(unsigned int size)
 SEXP mkCharEnc(const char *name, int enc)
 {
     SEXP cval, chain;
-    unsigned int hashcode = 0;
+    unsigned int hashcode;
+    int len = strlen(name);
 
     if (enc != 0 && enc != UTF8_MASK && enc != LATIN1_MASK)
         error("unknown encoding mask: %d", enc);
 
-    /* have to handle "" specially since it doesn't hash */
-    /* if (*name != '\0') hashcode = char_hash(name) % char_hash_size; */
-    if (*name != '\0')
-        hashcode = char_hash(name) & char_hash_mask;
+    /* hashcode = char_hash(name) % char_hash_size; */
+    hashcode = char_hash(name) & char_hash_mask;
 
     /* Search for a cached value */
     cval = R_NilValue;
@@ -3528,7 +3513,10 @@ SEXP mkCharEnc(const char *name, int enc)
     for (; !ISNULL(chain); chain = CDR(chain))
     {
         SEXP val = CAR(chain);
-        if (STRINGHASHCMP(val, name, enc))
+        /* If we had USE_RINTERNALS we could do the two in one step */
+        if (INT_IS_UTF8(enc) == IS_UTF8(val) && INT_IS_LATIN1(enc) == IS_LATIN1(val) &&
+            LENGTH(val) == len && /* quick pretest */
+            strcmp(CHAR(val), name) == 0)
         {
             cval = val;
             break;
@@ -3559,8 +3547,10 @@ SEXP mkCharEnc(const char *name, int enc)
         SET_VECTOR_ELT(R_StringHash, hashcode, CONS(cval, chain));
 
         /* resize the hash table if necessary with the new entry still
-           protected. */
-        if (R_HashSizeCheck(R_StringHash))
+           protected.
+       Maximum possible power of two is 2^30 for a VECSXP.
+    */
+        if (R_HashSizeCheck(R_StringHash) && char_hash_size < 1073741824 /* 2^30 */)
             R_StringHash_resize(char_hash_size * 2);
 
         UNPROTECT(1);
