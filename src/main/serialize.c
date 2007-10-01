@@ -1435,16 +1435,24 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             break;
         case SPECIALSXP:
         case BUILTINSXP:
+            /* These are all short strings */
             length = InInteger(stream);
-            cbuf = CallocCharBuf(length);
+            cbuf = alloca(length + 1);
             InString(stream, cbuf, length);
+            cbuf[length] = '\0';
             PROTECT(s = mkPRIMSXP(StrToInternal(cbuf), type == BUILTINSXP));
-            Free(cbuf);
             break;
         case CHARSXP:
             length = InInteger(stream);
             if (length == -1)
                 PROTECT(s = NA_STRING);
+            else if (length < 1000)
+            {
+                cbuf = alloca(length + 1);
+                InString(stream, cbuf, length);
+                cbuf[length] = '\0';
+                PROTECT(s = mkChar(cbuf));
+            }
             else
             {
                 cbuf = CallocCharBuf(length);
