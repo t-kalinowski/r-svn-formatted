@@ -943,7 +943,7 @@ tailcall:
             OutInteger(stream, R_EnvironmentIsLocked(s) ? 1 : 0);
             WriteItem(ENCLOS(s), ref_table, stream);
             WriteItem(FRAME(s), ref_table, stream);
-            WriteItem(TAG(s), ref_table, stream);
+            WriteItem(HASHTAB(s), ref_table, stream);
             WriteItem(ATTRIB(s), ref_table, stream);
         }
     }
@@ -1374,7 +1374,7 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         /* Now fill it in  */
         SET_ENCLOS(s, ReadItem(ref_table, stream));
         SET_FRAME(s, ReadItem(ref_table, stream));
-        SET_TAG(s, ReadItem(ref_table, stream));
+        SET_HASHTAB(s, ReadItem(ref_table, stream));
         SET_ATTRIB(s, ReadItem(ref_table, stream));
         if (ATTRIB(s) != R_NilValue && getAttrib(s, R_ClassSymbol) != R_NilValue)
             /* We don't write out the object bit for environments,
