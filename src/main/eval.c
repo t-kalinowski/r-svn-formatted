@@ -655,15 +655,18 @@ regdb :
 
     /*  It isn't completely clear that this is the right place to do
     this, but maybe (if the matchArgs above reverses the
-    arguments) it might just be perfect.  */
+    arguments) it might just be perfect.
+
+    This will not currently work as the entry points in envir.c
+    are static.
+    */
 
 #ifdef HASHING
-#define HASHTABLEGROWTHRATE 1.2
 {
-    SEXP R_NewHashTable(int, double);
+    SEXP R_NewHashTable(int);
     SEXP R_HashFrame(SEXP);
     int nargs = length(arglist);
-    HASHTAB(newrho) = R_NewHashTable(nargs, HASHTABLEGROWTHRATE);
+    HASHTAB(newrho) = R_NewHashTable(nargs);
     newrho = R_HashFrame(newrho);
 }
 #endif
