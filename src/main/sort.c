@@ -102,6 +102,8 @@ static int scmp(SEXP x, SEXP y, Rboolean nalast)
         return nalast ? 1 : -1;
     if (y == NA_STRING)
         return nalast ? -1 : 1;
+    if (x == y)
+        return 0; /* same string in cache */
     return STRCOLL(translateChar(x), translateChar(y));
 }
 
