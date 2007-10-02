@@ -3428,7 +3428,7 @@ static void R_StringHash_resize(unsigned int newsize)
 {
     SEXP old_table = R_StringHash;
     SEXP new_table, chain, new_chain, val, next;
-    unsigned int counter, new_hashcode;
+    unsigned int counter, new_hashcode, newmask;
 #ifdef DEBUG_GLOBAL_STRING_HASH
     unsigned int oldsize = HASHSIZE(R_StringHash);
     unsigned int oldpri = HASHPRI(R_StringHash);
@@ -3441,8 +3441,7 @@ static void R_StringHash_resize(unsigned int newsize)
      */
     PROTECT(old_table);
     PROTECT(new_table = R_NewHashTable(newsize));
-    char_hash_size = newsize;
-    char_hash_mask = char_hash_size - 1;
+    newmask = newsize - 1;
 
     /* transfer chains from old table to new table */
     for (counter = 0; counter < LENGTH(old_table); counter++)
@@ -3452,8 +3451,8 @@ static void R_StringHash_resize(unsigned int newsize)
         {
             val = CAR(chain);
             next = CDR(chain);
-            /* new_hashcode = char_hash(CHAR(val)) % char_hash_size; */
-            new_hashcode = char_hash(CHAR(val)) & char_hash_mask;
+            /* new_hashcode = char_hash(CHAR(val)) % newsize; */
+            new_hashcode = char_hash(CHAR(val)) & newmask;
             new_chain = VECTOR_ELT(new_table, new_hashcode);
             /* If using a primary slot then increase HASHPRI */
             if (ISNULL(new_chain))
@@ -3465,6 +3464,8 @@ static void R_StringHash_resize(unsigned int newsize)
     }
     UNPROTECT(2);
     R_StringHash = new_table;
+    char_hash_size = newsize;
+    char_hash_mask = newmask;
 #ifdef DEBUG_GLOBAL_STRING_HASH
     newsize = HASHSIZE(new_table);
     newpri = HASHPRI(new_table);
