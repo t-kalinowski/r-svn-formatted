@@ -419,7 +419,7 @@ static R_size_t R_NodesInUse = 0;
    are themselves CHARSXPs, which is what they will be if they are
    part of a hash chain.  Theoretically, for CHARSXPs the ATTRIB field
    should always be either R_NilValue or a CHARSXP. */
-#define HAS_GENUINE_ATTRIB(x) (ATTRIB(x) != R_NilValue && TYPEOF(ATTRIB(x)) != CHARSXP)
+#define HAS_GENUINE_ATTRIB(x) (ATTRIB(x) != R_NilValue && (TYPEOF(x) != CHARSXP || TYPEOF(ATTRIB(x)) != CHARSXP))
 #else
 #define HAS_GENUINE_ATTRIB(x) (ATTRIB(x) != R_NilValue)
 #endif
