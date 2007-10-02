@@ -949,7 +949,7 @@ tailcall:
     }
     else
     {
-        int flags, hastag;
+        int flags, hastag, hasattr;
         switch (TYPEOF(s))
         {
         case LISTSXP:
@@ -962,7 +962,8 @@ tailcall:
         default:
             hastag = FALSE;
         }
-        flags = PackFlags(TYPEOF(s), LEVELS(s), OBJECT(s), ATTRIB(s) != R_NilValue, hastag);
+        hasattr = ATTRIB(s) != R_NilValue;
+        flags = PackFlags(TYPEOF(s), LEVELS(s), OBJECT(s), hasattr, hastag);
         OutInteger(stream, flags);
         switch (TYPEOF(s))
         {
@@ -974,7 +975,7 @@ tailcall:
             /* Dotted pair objects */
             /* These write their ATTRIB fields first to allow us to avoid
                recursion on the CDR */
-            if (ATTRIB(s) != R_NilValue)
+            if (hasattr)
                 WriteItem(ATTRIB(s), ref_table, stream);
             if (TAG(s) != R_NilValue)
                 WriteItem(TAG(s), ref_table, stream);
@@ -1047,7 +1048,7 @@ tailcall:
         default:
             error(_("WriteItem: unknown type %i"), TYPEOF(s));
         }
-        if (ATTRIB(s) != R_NilValue)
+        if (hasattr)
             WriteItem(ATTRIB(s), ref_table, stream);
     }
 }
