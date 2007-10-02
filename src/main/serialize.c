@@ -962,7 +962,14 @@ tailcall:
         default:
             hastag = FALSE;
         }
+#ifdef USE_ATTRIB_FIELD_FOR_CHARSXP_CACHE_CHAINS
+        /* With the CHARSXP cache chains maintained through the ATTRIB
+           field the content of that field must not be serialized, so
+           we treat it as not there. */
+        hasattr = (TYPEOF(s) != CHARSXP && ATTRIB(s) != R_NilValue);
+#else
         hasattr = ATTRIB(s) != R_NilValue;
+#endif
         flags = PackFlags(TYPEOF(s), LEVELS(s), OBJECT(s), hasattr, hastag);
         OutInteger(stream, flags);
         switch (TYPEOF(s))
@@ -1520,7 +1527,23 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         }
         SETLEVELS(s, levs);
         SET_OBJECT(s, objf);
+#ifdef USE_ATTRIB_FIELD_FOR_CHARSXP_CACHE_CHAINS
+        if (TYPEOF(s) == CHARSXP)
+        {
+            /* With the CHARSXP cache maintained through the ATTRIB
+               field that field has already been filled in by the
+               mkChar/mkCharEnc call above, so we need to leave it
+               alone.  If there is an attribute (as there might be if
+               the serialized data was created by an older version) we
+               read and ignore the value. */
+            if (hasattr)
+                ReadItem(ref_table, stream);
+        }
+        else
+            SET_ATTRIB(s, hasattr ? ReadItem(ref_table, stream) : R_NilValue);
+#else
         SET_ATTRIB(s, hasattr ? ReadItem(ref_table, stream) : R_NilValue);
+#endif
         UNPROTECT(1); /* s */
         return s;
     }
