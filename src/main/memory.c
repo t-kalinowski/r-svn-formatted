@@ -1394,7 +1394,7 @@ again:
     {
         SEXP t;
         int nc = 0;
-        for (i = 0; i < length(R_StringHash); i++)
+        for (i = 0; i < LENGTH(R_StringHash); i++)
         {
             s = VECTOR_ELT(R_StringHash, i);
             t = R_NilValue;
