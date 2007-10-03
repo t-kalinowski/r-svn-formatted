@@ -3601,7 +3601,6 @@ static SEXP readFixedString(Rconnection con, int len)
 {
     char *buf;
     int pos, m;
-    SEXP ans;
 
 #ifdef SUPPORT_UTF8
     if (utf8locale)
@@ -3645,9 +3644,7 @@ static SEXP readFixedString(Rconnection con, int len)
         pos = m;
     }
     /* String may contain nuls so don't use mkChar */
-    ans = allocString(pos);
-    memcpy(CHAR_RW(ans), buf, pos);
-    return ans;
+    return mkCharLen(buf, pos);
 }
 
 /* readChar(con, nchars) */

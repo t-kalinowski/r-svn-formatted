@@ -551,12 +551,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                 if (has_nul)
                 {
-                    si = allocString(nout);
-                    memcpy(CHAR_RW(si), cbuff.data, nout);
-                    if (isLatin1)
-                        SET_LATIN1(si);
-                    if (isUTF8)
-                        SET_UTF8(si);
+                    si = mkCharLen(cbuff.data, nout);
                 }
                 else
                 {
