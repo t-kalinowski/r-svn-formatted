@@ -40,6 +40,10 @@ POSSIBILITY OF SUCH DAMAGE.
 /* This module contains the external function pcre_fullinfo(), which returns
 information about a compiled pattern. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 /*************************************************
@@ -104,7 +108,7 @@ PCRE_EXP_DEFN int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra
 
     case PCRE_INFO_FIRSTBYTE:
         *((int *)where) =
-            ((re->options & PCRE_FIRSTSET) != 0) ? re->first_byte : ((re->options & PCRE_STARTLINE) != 0) ? -1 : -2;
+            ((re->flags & PCRE_FIRSTSET) != 0) ? re->first_byte : ((re->flags & PCRE_STARTLINE) != 0) ? -1 : -2;
         break;
 
         /* Make sure we pass back the pointer to the bit vector in the external
@@ -117,7 +121,7 @@ PCRE_EXP_DEFN int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra
         break;
 
     case PCRE_INFO_LASTLITERAL:
-        *((int *)where) = ((re->options & PCRE_REQCHSET) != 0) ? re->req_byte : -1;
+        *((int *)where) = ((re->flags & PCRE_REQCHSET) != 0) ? re->req_byte : -1;
         break;
 
     case PCRE_INFO_NAMEENTRYSIZE:
@@ -134,6 +138,18 @@ PCRE_EXP_DEFN int pcre_fullinfo(const pcre *argument_re, const pcre_extra *extra
 
     case PCRE_INFO_DEFAULT_TABLES:
         *((const uschar **)where) = (const uschar *)(_pcre_default_tables);
+        break;
+
+    case PCRE_INFO_OKPARTIAL:
+        *((int *)where) = (re->flags & PCRE_NOPARTIAL) == 0;
+        break;
+
+    case PCRE_INFO_JCHANGED:
+        *((int *)where) = (re->flags & PCRE_JCHANGED) != 0;
+        break;
+
+    case PCRE_INFO_HASCRORLF:
+        *((int *)where) = (re->flags & PCRE_HASCRORLF) != 0;
         break;
 
     default:

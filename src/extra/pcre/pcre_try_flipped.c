@@ -41,6 +41,10 @@ POSSIBILITY OF SUCH DAMAGE.
 see if it was compiled with the opposite endianness. If so, it uses an
 auxiliary local function to flip the appropriate bytes. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 /*************************************************
@@ -96,6 +100,7 @@ real_pcre *_pcre_try_flipped(const real_pcre *re, real_pcre *internal_re, const 
     *internal_re = *re; /* To copy other fields */
     internal_re->size = byteflip(re->size, sizeof(re->size));
     internal_re->options = byteflip(re->options, sizeof(re->options));
+    internal_re->flags = (pcre_uint16)byteflip(re->flags, sizeof(re->flags));
     internal_re->top_bracket = (pcre_uint16)byteflip(re->top_bracket, sizeof(re->top_bracket));
     internal_re->top_backref = (pcre_uint16)byteflip(re->top_backref, sizeof(re->top_backref));
     internal_re->first_byte = (pcre_uint16)byteflip(re->first_byte, sizeof(re->first_byte));

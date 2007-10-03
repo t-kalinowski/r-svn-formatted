@@ -40,6 +40,10 @@ POSSIBILITY OF SUCH DAMAGE.
 /* This module contains the external function pcre_study(), along with local
 supporting functions. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 /* Returns from set_start_bits() */
@@ -530,7 +534,7 @@ PCRE_EXP_DEFN pcre_extra *pcre_study(const pcre *external_re, int options, const
     a multiline pattern that matches only at "line starts", no further processing
     at present. */
 
-    if ((re->options & (PCRE_ANCHORED | PCRE_FIRSTSET | PCRE_STARTLINE)) != 0)
+    if ((re->options & PCRE_ANCHORED) != 0 || (re->flags & (PCRE_FIRSTSET | PCRE_STARTLINE)) != 0)
         return NULL;
 
     /* Set the character tables in the block that is passed around */

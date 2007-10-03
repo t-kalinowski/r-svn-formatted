@@ -39,6 +39,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* This module contains the external function pcre_config(). */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 /*************************************************
@@ -77,6 +81,14 @@ PCRE_EXP_DEFN int pcre_config(int what, void *where)
 
     case PCRE_CONFIG_NEWLINE:
         *((int *)where) = NEWLINE;
+        break;
+
+    case PCRE_CONFIG_BSR:
+#ifdef BSR_ANYCRLF
+        *((int *)where) = 1;
+#else
+        *((int *)where) = 0;
+#endif
         break;
 
     case PCRE_CONFIG_LINK_SIZE:

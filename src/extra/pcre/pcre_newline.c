@@ -45,6 +45,10 @@ only NLTYPE_FIXED, which gets handled without these functions, NLTYPE_ANYCRLF,
 and NLTYPE_ANY. The full list of Unicode newline characters is taken from
 http://unicode.org/unicode/reports/tr18/. */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 /*************************************************
@@ -133,6 +137,7 @@ BOOL _pcre_was_newline(const uschar *ptr, int type, const uschar *startptr, int 
 {
     int c;
     ptr--;
+#ifdef SUPPORT_UTF8
     if (utf8)
     {
         BACKCHAR(ptr);
@@ -140,6 +145,9 @@ BOOL _pcre_was_newline(const uschar *ptr, int type, const uschar *startptr, int 
     }
     else
         c = *ptr;
+#else  /* no UTF-8 support */
+    c = *ptr;
+#endif /* SUPPORT_UTF8 */
 
     if (type == NLTYPE_ANYCRLF)
         switch (c)
