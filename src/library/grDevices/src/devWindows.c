@@ -291,6 +291,18 @@ static void SaveAsWin(NewDevDesc *dd, const char *display, Rboolean restoreConso
         PrivateCopyDevice(dd, ndd, display);
 }
 
+static void init_PS_PDF(void)
+{
+    SEXP call, initS, grNS = R_FindNamespace(mkString("grDevices"));
+
+    initS = findVarInFrame3(grNS, install("initPSandPDFfonts"), TRUE);
+    if (initS == R_UnboundValue)
+        error("missing initPSandPDFfonts() in grDevices namespace: this should not happen");
+    PROTECT(call = lang1(initS));
+    eval(call, R_GlobalEnv);
+    UNPROTECT(1);
+}
+
 static void SaveAsPostscript(NewDevDesc *dd, const char *fn)
 {
     SEXP s;
@@ -350,6 +362,8 @@ static void SaveAsPostscript(NewDevDesc *dd, const char *fn)
             }
         }
     }
+    /* need to initialize PS/PDF font database */
+    init_PS_PDF();
     if (PSDeviceDriver(ndd, fn, paper, family, afmpaths, encoding, bg, fg,
                        fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd), (double)0,
@@ -412,6 +426,7 @@ static void SaveAsPDF(NewDevDesc *dd, const char *fn)
             }
         }
     }
+    init_PS_PDF();
     if (PDFDeviceDriver(ndd, fn, "special", family, afmpaths, encoding, bg, fg,
                         fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                         fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
