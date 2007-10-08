@@ -1024,6 +1024,13 @@ static void storekey(control c, int k)
     p->numkeys++;
 }
 
+static void storetab(control c)
+{
+    ConsoleData p = getdata(c);
+    p->kbuf[(p->firstkey + p->numkeys) % NKEYS] = ' ';
+    p->numkeys++;
+}
+
 #include <Rinternals.h>
 #include <R_ext/Parse.h>
 
@@ -1045,7 +1052,10 @@ static void performCompletion(control c)
     ParseStatus status;
 
     if (!rcompgen_available)
+    {
+        storetab(c);
         return;
+    }
 
     if (rcompgen_available < 0)
     {
@@ -1053,6 +1063,7 @@ static void performCompletion(control c)
         if (p && strcmp(p, "FALSE") == 0)
         {
             rcompgen_available = 0;
+            storetab(c);
             return;
         }
         /* First check if namespace is loaded */
