@@ -115,12 +115,13 @@ static R_size_t objectsize(SEXP s)
         cnt += objectsize(EXTPTR_PROT(s));
         cnt += objectsize(EXTPTR_TAG(s));
         break;
-    /* WEAKREFSXP is internally a vector */
     case RAWSXP:
         vcnt = BYTE2VEC(length(s));
         isVec = TRUE;
         break;
     case S4SXP:
+        /* Has TAG and ATRIB but no CAR nor CDR */
+        cnt += objectsize(TAG(s));
         break;
     default:
         UNIMPLEMENTED_TYPE("object.size", s);
@@ -148,8 +149,9 @@ static R_size_t objectsize(SEXP s)
     }
     else
         cnt += sizeof(SEXPREC);
-    /* add in attributes */
-    cnt += objectsize(ATTRIB(s));
+    /* add in attributes: these are fake for CHARXPs */
+    if (TYPEOF(s) != CHARSXP)
+        cnt += objectsize(ATTRIB(s));
     return (cnt);
 }
 
