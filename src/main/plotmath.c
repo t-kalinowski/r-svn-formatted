@@ -1170,7 +1170,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, R_GE_gcontext 
             }
         }
         else
-#else
+#endif
         {
             const char *s = str;
             while (*s)
@@ -1180,8 +1180,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, R_GE_gcontext 
                 s++;
             }
         }
-#endif
-            if (draw)
+        if (draw)
         {
             GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), str, 0.0, 0.0, mc->CurrentAngle, gc, dd);
             PMoveAcross(bboxWidth(resultBBox), mc);
