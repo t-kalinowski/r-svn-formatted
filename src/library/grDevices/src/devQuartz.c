@@ -49,6 +49,7 @@
 #define QBE_COCOA 2  /* internal Cocoa */
 #define QBE_CARBON 3 /* internal Carbon */
 #define QBE_BITMAP 4 /* bitmap file creating */
+#define QBE_PDF 5    /* PDF file creating */
 
 typedef struct moduleTypes_s
 {
@@ -62,6 +63,7 @@ const quartz_module_t quartz_modules[] = {{"", 0, QBE_NATIVE},
                                           {"native", 0, QBE_NATIVE},
                                           {"cocoa", 0, QBE_COCOA},
                                           {"carbon", 0, QBE_CARBON},
+                                          {"pdf", 0, QBE_PDF},
                                           {"png", "public.png", QBE_BITMAP},
                                           {"jpeg", "public.jpeg", QBE_BITMAP},
                                           {"jpg", "public.jpeg", QBE_BITMAP},
@@ -975,6 +977,7 @@ static Rboolean RQuartz_Locator(double *x, double *y, DEVDESC)
 
 #include "qdCocoa.h"
 #include "qdBitmap.h"
+#include "qdPDF.h"
 /* disabled for now until we get to test in on 10.3 #include "qdCarbon.h" */
 
 /* current fake */
@@ -1138,6 +1141,10 @@ SEXP Quartz(SEXP args)
         case QBE_CARBON:
             succ = QuartzCarbon_DeviceCreate(dev, type, file, width, height, ps, family, antialias, smooth, autorefresh,
                                              quartzpos, bg, title, dpi);
+            break;
+        case QBE_PDF:
+            succ = QuartzPDF_DeviceCreate(dev, type, file, width, height, ps, family, antialias, smooth, autorefresh,
+                                          quartzpos, bg, title, dpi);
             break;
         case QBE_BITMAP:
             succ = QuartzBitmap_DeviceCreate(dev, type, file, width, height, ps, family, antialias, smooth, autorefresh,
