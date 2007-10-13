@@ -41,7 +41,7 @@ CGContextRef QuartzPDF_GetCGContext(QuartzDesc_t dev, void *userInfo)
     return ((QuartzPDFDevice *)userInfo)->context;
 }
 
-void QuartzPDF_NewPage(QuartzDesc_t dev, void *userInfo)
+void QuartzPDF_NewPage(QuartzDesc_t dev, void *userInfo, int flags)
 {
     QuartzPDFDevice *qpd = (QuartzPDFDevice *)userInfo;
     if (qpd->context)
@@ -131,7 +131,8 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, const char *type, const char *file, do
         CGContextTranslateCTM(dev->context, 0.0, height * dpi[1]);
         CGContextScaleCTM(dev->context, 1.0, -1.0);
         if (!(qd = QuartzDevice_Create(dd, dpi[0] / 72.0, dpi[1] / 72.0, pointsize, width, height, bg, antialias,
-                                       smooth, QuartzPDF_GetCGContext, NULL,     /* locate */
+                                       0,                                        /* flags - none */
+                                       QuartzPDF_GetCGContext, NULL,             /* locate */
                                        QuartzPDF_Close, QuartzPDF_NewPage, NULL, /* state */
                                        NULL,                                     /* par */
                                        NULL,                                     /* sync */
