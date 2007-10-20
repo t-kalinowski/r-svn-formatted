@@ -1051,7 +1051,7 @@ static SEXP coercePairList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error(_("'pairlist' object cannot be coerced to '%s'"), type2char(type));
+        error(_("'pairlist' object cannot be coerced to type '%s'"), type2char(type));
 
     /* If any tags are non-null then we */
     /* need to add a names attribute. */
@@ -1168,7 +1168,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
         }
     }
     else
-        error(_("(list) object cannot be coerced to '%s'"), type2char(type));
+        error(_("(list) object cannot be coerced to type '%s'"), type2char(type));
 
     if (warn)
         CoercionWarning(warn);
@@ -1266,7 +1266,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     case STRSXP:
     case RAWSXP:
 
-#define COERCE_ERROR error(_("cannot coerce type %s to %s vector"), type2char(TYPEOF(v)), type2char(type))
+#define COERCE_ERROR error(_("cannot coerce type '%s' to vector of type '%s'"), type2char(TYPEOF(v)), type2char(type))
 
         switch (type)
         {
@@ -1407,7 +1407,7 @@ static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
         return v;
     }
     else
-        errorcall(call, _("cannot coerce to vector"));
+        errorcall(call, _("cannot type '%s' coerce to vector"), type2char(TYPEOF(u)));
     return u; /* -Wall */
 }
 
