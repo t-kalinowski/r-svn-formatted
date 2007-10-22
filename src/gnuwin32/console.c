@@ -1067,7 +1067,7 @@ static void performCompletion(control c)
             return;
         }
         /* First check if namespace is loaded */
-        if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
+        if (findVarInFrame(R_NamespaceRegistry, install("utils")) != R_UnboundValue)
             rcompgen_available = 1;
         else
         { /* Then try to load it */
@@ -1080,7 +1080,7 @@ static void performCompletion(control c)
                     eval(VECTOR_ELT(cmdexpr, i), R_GlobalEnv);
             }
             UNPROTECT(2);
-            if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
+            if (findVarInFrame(R_NamespaceRegistry, install("utils")) != R_UnboundValue)
                 rcompgen_available = 1;
             else
             {

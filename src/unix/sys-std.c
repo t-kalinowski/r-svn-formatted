@@ -620,7 +620,7 @@ static void initialize_rlcompletion(void)
             return;
         }
         /* First check if namespace is loaded */
-        if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
+        if (findVarInFrame(R_NamespaceRegistry, install("utils")) != R_UnboundValue)
             rcompgen_active = 1;
         else
         { /* Then try to load it */
@@ -637,7 +637,7 @@ static void initialize_rlcompletion(void)
                     eval(VECTOR_ELT(cmdexpr, i), R_GlobalEnv);
             }
             UNPROTECT(2);
-            if (findVarInFrame(R_NamespaceRegistry, install("rcompgen")) != R_UnboundValue)
+            if (findVarInFrame(R_NamespaceRegistry, install("utils")) != R_UnboundValue)
                 rcompgen_active = 1;
             else
             {
@@ -647,7 +647,7 @@ static void initialize_rlcompletion(void)
         }
     }
 
-    rcompgen_rho = R_FindNamespace(mkString("rcompgen"));
+    rcompgen_rho = R_FindNamespace(mkString("utils"));
 
     RComp_assignBufferSym = install(".assignLinebuffer");
     RComp_assignStartSym = install(".assignStart");
