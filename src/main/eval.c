@@ -953,9 +953,26 @@ static SEXP assignCall(SEXP op, SEXP symbol, SEXP fun, SEXP val, SEXP args, SEXP
 
 static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
 {
-    Rboolean cond = asLogical(s);
+    Rboolean cond = NA_LOGICAL;
+
     if (length(s) > 1)
         warningcall(call, _("the condition has length > 1 and only the first element will be used"));
+    if (length(s) > 0)
+    {
+        /* inline common cases for efficiency */
+        switch (TYPEOF(s))
+        {
+        case LGLSXP:
+            cond = LOGICAL(s)[0];
+            break;
+        case INTSXP:
+            cond = INTEGER(s)[0]; /* relies on NA_INTEGER == NA_LOGICAL */
+            break;
+        default:
+            cond = asLogical(s);
+        }
+    }
+
     if (cond == NA_LOGICAL)
     {
         char *msg = length(s) ? (isLogical(s) ? _("missing value where TRUE/FALSE needed")
