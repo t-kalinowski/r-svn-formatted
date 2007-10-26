@@ -951,9 +951,7 @@ static SEXP assignCall(SEXP op, SEXP symbol, SEXP fun, SEXP val, SEXP args, SEXP
     return lang3(op, symbol, val);
 }
 
-/* It might be a tad more efficient to make the non-error part of this
-   into a macro, especially for while loops. */
-static Rboolean asLogicalNoNA(SEXP s, SEXP call)
+static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
 {
     Rboolean cond = asLogical(s);
     if (length(s) > 1)
