@@ -207,7 +207,7 @@ SEXP doSetViewport(SEXP vp,
     else if (viewportClip(vp))
     {
         double rotationAngle = REAL(viewportRotation(vp))[0];
-        if (rotationAngle != 0)
+        if (rotationAngle != 0 && rotationAngle != 90 && rotationAngle != 270 && rotationAngle != 360)
             warning(_("Cannot clip to rotated viewport"));
         else
         {
