@@ -242,8 +242,6 @@ static PROTECT_INDEX srindex;
 #if defined(SUPPORT_MBCS)
 #include <R_ext/Riconv.h>
 #include <R_ext/rlocale.h>
-#include <wchar.h>
-#include <wctype.h>
 #include <sys/param.h>
 #ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
@@ -4025,7 +4023,7 @@ static void CheckFormalArgs(SEXP formlist, SEXP _new)
     }
 }
 
-static char yytext[100000];
+static char yytext[MAXELTSIZE];
 
 #define DECLARE_YYTEXT_BUFP(bp) char *bp = yytext
 #define YYTEXT_PUSH(c, bp)                                                                                             \
@@ -4169,16 +4167,49 @@ static int NumericValue(int c)
 /* specifications of the form \o, \oo or \ooo, where 'o' */
 /* is an octal digit. */
 
-static int StringValue(int c)
+#define STEXT_PUSH(c)                                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        unsigned int nc = bp - stext;                                                                                  \
+        if (nc >= nstext - 1)                                                                                          \
+        {                                                                                                              \
+            nstext *= 2;                                                                                               \
+            char *old = stext;                                                                                         \
+            stext = malloc(nstext);                                                                                    \
+            if (!stext)                                                                                                \
+                error(_("unable to allocate buffer for long string"));                                                 \
+            memmove(stext, old, nc);                                                                                   \
+            if (old != st0)                                                                                            \
+                free(old);                                                                                             \
+            bp = stext + nc;                                                                                           \
+        }                                                                                                              \
+        *bp++ = (c);                                                                                                   \
+    } while (0)
+#define CTEXT_PUSH(c)                                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (ct - currtext >= 1000)                                                                                     \
+        {                                                                                                              \
+            memmove(currtext, currtext + 100, 901);                                                                    \
+            memmove(currtext, "... ", 4);                                                                              \
+            ct -= 100;                                                                                                 \
+        }                                                                                                              \
+        *ct++ = (c);                                                                                                   \
+    } while (0)
+#define CTEXT_POP() ct--
+
+static int StringValue(int c, Rboolean forSymbol)
 {
     int quote = c;
     int have_warned = 0;
-    char currtext[100000], *ct = currtext;
-    DECLARE_YYTEXT_BUFP(yyp);
+    char currtext[1010], *ct = currtext;
+    char st0[MAXELTSIZE];
+    unsigned int nstext = MAXELTSIZE;
+    char *stext = st0, *bp = st0;
 
     while ((c = xxgetc()) != R_EOF && c != quote)
     {
-        *ct++ = c;
+        CTEXT_PUSH(c);
         if (c == '\n')
         {
             xxungetc(c);
@@ -4191,29 +4222,29 @@ static int StringValue(int c)
         if (c == '\\')
         {
             c = xxgetc();
-            *ct++ = c;
+            CTEXT_PUSH(c);
             if ('0' <= c && c <= '8')
             {
                 int octal = c - '0';
                 if ('0' <= (c = xxgetc()) && c <= '8')
                 {
-                    *ct++ = c;
+                    CTEXT_PUSH(c);
                     octal = 8 * octal + c - '0';
                     if ('0' <= (c = xxgetc()) && c <= '8')
                     {
-                        *ct++ = c;
+                        CTEXT_PUSH(c);
                         octal = 8 * octal + c - '0';
                     }
                     else
                     {
                         xxungetc(c);
-                        ct--;
+                        CTEXT_POP();
                     }
                 }
                 else
                 {
                     xxungetc(c);
-                    ct--;
+                    CTEXT_POP();
                 }
                 c = octal;
             }
@@ -4224,7 +4255,7 @@ static int StringValue(int c)
                 for (i = 0; i < 2; i++)
                 {
                     c = xxgetc();
-                    *ct++ = c;
+                    CTEXT_PUSH(c);
                     if (c >= '0' && c <= '9')
                         ext = c - '0';
                     else if (c >= 'A' && c <= 'F')
@@ -4234,7 +4265,7 @@ static int StringValue(int c)
                     else
                     {
                         xxungetc(c);
-                        ct--;
+                        CTEXT_POP();
                         break;
                     }
                     val = 16 * val + ext;
@@ -4254,14 +4285,14 @@ static int StringValue(int c)
                 if ((c = xxgetc()) == '{')
                 {
                     delim = TRUE;
-                    *ct++ = c;
+                    CTEXT_PUSH(c);
                 }
                 else
                     xxungetc(c);
                 for (i = 0; i < 4; i++)
                 {
                     c = xxgetc();
-                    *ct++ = c;
+                    CTEXT_PUSH(c);
                     if (c >= '0' && c <= '9')
                         ext = c - '0';
                     else if (c >= 'A' && c <= 'F')
@@ -4271,7 +4302,7 @@ static int StringValue(int c)
                     else
                     {
                         xxungetc(c);
-                        ct--;
+                        CTEXT_POP();
                         break;
                     }
                     val = 16 * val + ext;
@@ -4281,7 +4312,7 @@ static int StringValue(int c)
                     if ((c = xxgetc()) != '}')
                         error(_("invalid \\u{xxxx} sequence"));
                     else
-                        *ct++ = c;
+                        CTEXT_PUSH(c);
                 }
                 res = ucstomb(buff, val, NULL);
                 if ((int)res <= 0)
@@ -4292,7 +4323,7 @@ static int StringValue(int c)
                         error(_("invalid \\uxxxx sequence"));
                 }
                 for (i = 0; i < res - 1; i++)
-                    YYTEXT_PUSH(buff[i], yyp);
+                    STEXT_PUSH(buff[i]);
                 c = buff[res - 1]; /* pushed below */
 #endif
             }
@@ -4310,14 +4341,14 @@ static int StringValue(int c)
                     if ((c = xxgetc()) == '{')
                     {
                         delim = TRUE;
-                        *ct++ = c;
+                        CTEXT_PUSH(c);
                     }
                     else
                         xxungetc(c);
                     for (i = 0; i < 8; i++)
                     {
                         c = xxgetc();
-                        *ct++ = c;
+                        CTEXT_PUSH(c);
                         if (c >= '0' && c <= '9')
                             ext = c - '0';
                         else if (c >= 'A' && c <= 'F')
@@ -4327,7 +4358,7 @@ static int StringValue(int c)
                         else
                         {
                             xxungetc(c);
-                            ct--;
+                            CTEXT_POP();
                             break;
                         }
                         val = 16 * val + ext;
@@ -4337,7 +4368,7 @@ static int StringValue(int c)
                         if ((c = xxgetc()) != '}')
                             error(_("invalid \\U{xxxxxxxx} sequence"));
                         else
-                            *ct++ = c;
+                            CTEXT_PUSH(c);
                     }
                     res = ucstomb(buff, val, NULL);
                     if ((int)res <= 0)
@@ -4348,7 +4379,7 @@ static int StringValue(int c)
                             error(_("invalid \\Uxxxxxxxx sequence"));
                     }
                     for (i = 0; i < res - 1; i++)
-                        YYTEXT_PUSH(buff[i], yyp);
+                        STEXT_PUSH(buff[i]);
                     c = buff[res - 1]; /* pushed below */
                 }
 #endif
@@ -4404,15 +4435,15 @@ static int StringValue(int c)
             clen = utf8locale ? utf8clen(c) : mbcs_get_next(c, &wc);
             for (i = 0; i < clen - 1; i++)
             {
-                YYTEXT_PUSH(c, yyp);
+                STEXT_PUSH(c);
                 c = xxgetc();
                 if (c == R_EOF)
                     break;
-                *ct++ = c;
+                CTEXT_PUSH(c);
                 if (c == '\n')
                 {
                     xxungetc(c);
-                    ct--;
+                    CTEXT_POP();
                     c = '\\';
                 }
             }
@@ -4420,31 +4451,35 @@ static int StringValue(int c)
                 break;
         }
 #endif /* SUPPORT_MBCS */
-        YYTEXT_PUSH(c, yyp);
+        STEXT_PUSH(c);
     }
-    YYTEXT_PUSH('\0', yyp);
-    PROTECT(yylval = mkString2(yytext));
-    if (have_warned)
+    STEXT_PUSH('\0');
+    if (forSymbol)
     {
-        *ct = '\0';
-#ifdef ENABLE_NLS
-        warningcall(R_NilValue,
-                    ngettext("unrecognized escape removed from \"%s\"", "unrecognized escapes removed from \"%s\"",
-                             have_warned),
-                    currtext);
-#else
-        warningcall(R_NilValue, "unrecognized escape(s) removed from \"%s\"", currtext);
-#endif
+        PROTECT(yylval = install(stext));
+        if (stext != st0)
+            free(stext);
+        return SYMBOL;
     }
-    return STR_CONST;
-}
-
-static int QuotedSymbolValue(int c)
-{
-    (void)StringValue(c); /* always returns STR_CONST */
-    UNPROTECT(1);
-    PROTECT(yylval = install(yytext));
-    return SYMBOL;
+    else
+    {
+        PROTECT(yylval = mkString2(stext));
+        if (stext != st0)
+            free(stext);
+        if (have_warned)
+        {
+            *ct = '\0';
+#ifdef ENABLE_NLS
+            warningcall(R_NilValue,
+                        ngettext("unrecognized escape removed from \"%s\"", "unrecognized escapes removed from \"%s\"",
+                                 have_warned),
+                        currtext);
+#else
+            warningcall(R_NilValue, "unrecognized escape(s) removed from \"%s\"", currtext);
+#endif
+        }
+        return STR_CONST;
+    }
 }
 
 static int SpecialValue(int c)
@@ -4639,7 +4674,7 @@ static int token()
     /* literal strings */
 
     if (c == '\"' || c == '\'')
-        return StringValue(c);
+        return StringValue(c, FALSE);
 
     /* special functions */
 
@@ -4649,7 +4684,7 @@ static int token()
     /* functions, constants and variables */
 
     if (c == '`')
-        return QuotedSymbolValue(c);
+        return StringValue(c, TRUE);
 symbol:
 
     if (c == '.')
