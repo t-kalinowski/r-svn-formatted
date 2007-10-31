@@ -1906,7 +1906,9 @@ SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, Rboolean r
     {
         compute_open_spline(n, x, y, s, repEnds, LOW_PRECISION, dd);
         if (draw)
+        {
             GEPolyline(npoints, xpoints, ypoints, gc, dd);
+        }
     }
     else
     {
