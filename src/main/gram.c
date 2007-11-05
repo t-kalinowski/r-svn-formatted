@@ -4173,8 +4173,8 @@ static int NumericValue(int c)
         unsigned int nc = bp - stext;                                                                                  \
         if (nc >= nstext - 1)                                                                                          \
         {                                                                                                              \
-            nstext *= 2;                                                                                               \
             char *old = stext;                                                                                         \
+            nstext *= 2;                                                                                               \
             stext = malloc(nstext);                                                                                    \
             if (!stext)                                                                                                \
                 error(_("unable to allocate buffer for long string"));                                                 \
