@@ -88,18 +88,26 @@ int attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *newnam
         {
             /* Try for exact match */
             for (i = 0; i < nx; i++)
-                if (streql(translateChar(STRING_ELT(names, i)), translateChar(STRING_ELT(s, pos))))
+            {
+                const char *tmp = translateChar(STRING_ELT(names, i));
+                if (!tmp[0])
+                    continue;
+                if (streql(tmp, translateChar(STRING_ELT(s, pos))))
                 {
                     indx = i;
                     break;
                 }
+            }
             /* Try for partial match */
             if (partial && indx < 0)
             {
                 len = strlen(translateChar(STRING_ELT(s, pos)));
                 for (i = 0; i < nx; i++)
                 {
-                    if (!strncmp(translateChar(STRING_ELT(names, i)), translateChar(STRING_ELT(s, pos)), len))
+                    const char *tmp = translateChar(STRING_ELT(names, i));
+                    if (!tmp[0])
+                        continue;
+                    if (!strncmp(tmp, translateChar(STRING_ELT(s, pos)), len))
                     {
                         if (indx == -1)
                             indx = i;
@@ -189,6 +197,9 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
     case STRSXP:
         /* NA matches nothing */
         if (STRING_ELT(s, pos) == NA_STRING)
+            break;
+        /* "" matches nothing: see names.Rd */
+        if (!CHAR(STRING_ELT(s, pos))[0])
             break;
 
         /* Try for exact match */
