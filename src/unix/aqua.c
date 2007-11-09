@@ -41,7 +41,7 @@ DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_do_dataentry, ptr_do_brow
 
 DL_FUNC ptr_R_ProcessEvents, ptr_CocoaInnerQuartzDevice, ptr_CocoaGetQuartzParameters, ptr_CocoaSystem;
 
-int (*ptr_Raqua_CustomPrint)(char *, SEXP);
+int (*ptr_Raqua_CustomPrint)(const char *, SEXP);
 
 DL_FUNC ptr_QuartzDeviceCreate;
 
@@ -126,7 +126,7 @@ SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP do_aqua_custom_print(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char *vm;
-    char *ct;
+    const char *ct;
     int cpr;
     SEXP rv, objType, obj;
 
@@ -146,6 +146,7 @@ SEXP do_aqua_custom_print(SEXP call, SEXP op, SEXP args, SEXP env)
     ct = CHAR(STRING_ELT(objType, 0));
     cpr = ptr_Raqua_CustomPrint(ct, obj);
 
+    /* FIXME: trying to store a pointer in an integer is wrong */
     PROTECT(rv = allocVector(INTSXP, 1));
     INTEGER(rv)[0] = cpr;
 
