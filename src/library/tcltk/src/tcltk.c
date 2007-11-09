@@ -646,7 +646,7 @@ static void TclSpinLoop(void *data)
 
 static void TclHandler(void)
 {
-    if (!Tcl_lock)
+    if (!Tcl_lock && Tcl_GetServiceMode() != TCL_SERVICE_NONE)
     {
         Tcl_lock = 1;
         (void)R_ToplevelExec(TclSpinLoop, NULL);
@@ -658,7 +658,7 @@ static void TclHandler(void)
 
 static int Gtk_TclHandler(void)
 {
-    if (!Tcl_lock)
+    if (!Tcl_lock && Tcl_GetServiceMode() != TCL_SERVICE_NONE)
     {
         Tcl_lock = 1;
         (void)R_ToplevelExec(TclSpinLoop, NULL);
@@ -736,7 +736,7 @@ static void RTcl_checkProc(ClientData clientData, int flags)
     Tcl_QueueEvent((Tcl_Event *)evPtr, TCL_QUEUE_HEAD);
 }
 
-#endif
+#endif /* not Win32 */
 
 void tcltk_init(void)
 {
@@ -788,14 +788,13 @@ void tcltk_init(void)
 
     Tcl_CreateCommand(RTcl_interp, "R_call_lang", R_call_lang, (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 
-#ifdef Win32
-    Tcl_SetServiceMode(TCL_SERVICE_ALL);
-#else
+#ifndef Win32
     addTcl(); /* notice: this sets R_wait_usec.... */
     timeout.sec = 0;
     timeout.usec = R_wait_usec;
     Tcl_CreateEventSource(RTcl_setupProc, RTcl_checkProc, 0);
 #endif
+    Tcl_SetServiceMode(TCL_SERVICE_ALL);
 
     /*** We may want to revive this at some point ***/
 
