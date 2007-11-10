@@ -258,15 +258,7 @@ SEXP RTcl_ObjFromVar(SEXP args)
 {
     Tcl_Obj *tclobj;
 
-#ifndef TCL80
     tclobj = Tcl_GetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL, 0);
-#else
-    Tcl_Obj *tclname;
-
-    tclname = Tcl_NewStringObj(translateChar(STRING_ELT(CADR(args), 0)), -1);
-    tclobj = Tcl_ObjGetVar2(RTcl_interp, tclname, NULL, 0);
-    Tcl_DecrRefCount(tclname);
-#endif
     return makeRTclObject(tclobj);
 }
 
@@ -274,17 +266,8 @@ SEXP RTcl_AssignObjToVar(SEXP args)
 {
     Tcl_Obj *tclobj;
 
-#ifndef TCL80
     tclobj = Tcl_SetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL,
                            (Tcl_Obj *)R_ExternalPtrAddr(CADDR(args)), 0);
-#else
-    Tcl_Obj *tclname;
-
-    tclname = Tcl_NewStringObj(translateChar(STRING_ELT(CADR(args), 0)), -1);
-    tclobj = Tcl_ObjSetVar2(RTcl_interp, tclname, NULL, (Tcl_Obj *)R_ExternalPtrAddr(CADDR(args)), 0);
-    Tcl_DecrRefCount(tclname);
-#endif
-
     return R_NilValue;
 }
 
@@ -506,7 +489,6 @@ SEXP RTcl_ObjFromIntVector(SEXP args)
     return makeRTclObject(tclobj);
 }
 
-#ifndef TCL80
 SEXP RTcl_GetArrayElem(SEXP args)
 {
     SEXP x, i;
@@ -557,7 +539,6 @@ SEXP RTcl_RemoveArrayElem(SEXP args)
 
     return R_NilValue;
 }
-#endif /* TCL80 */
 
 static void callback_closure(char *buf, int buflen, SEXP closure)
 {
@@ -637,9 +618,7 @@ void tcltk_init(void)
     /* Unfortunately, *presence* of the line appears to cause crashes
      * with tcl 8.0... */
 
-#ifndef TCL80
     Tcl_FindExecutable(NULL);
-#endif
 
     RTcl_interp = Tcl_CreateInterp();
     code = Tcl_Init(RTcl_interp); /* Undocumented... If omitted, you
