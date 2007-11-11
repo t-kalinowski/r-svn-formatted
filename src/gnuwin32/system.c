@@ -35,10 +35,12 @@
 #include "editor.h"
 #include "getline/getline.h"
 #define WIN32_LEAN_AND_MEAN 1
+#ifndef _WIN32_WINNT        /* currently mingw does not define, mingw64 does */
 #define _WIN32_WINNT 0x0500 /* for MEMORYSTATUSEX */
-#include <windows.h>        /* for CreateEvent,.. */
-#include <process.h>        /* for _beginthread,... */
-#include <io.h>             /* for isatty, chdir */
+#endif
+#include <windows.h> /* for CreateEvent,.. */
+#include <process.h> /* for _beginthread,... */
+#include <io.h>      /* for isatty, chdir */
 #include "run.h"
 #include "Startup.h"
 #include <stdlib.h> /* for exit */
