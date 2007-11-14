@@ -73,8 +73,22 @@ static Rboolean url_open(Rconnection con)
 #ifdef USE_WININET
     case HTTPSsh:
 #endif
-    case HTTPsh:
-        ctxt = in_R_HTTPOpen(url, NULL, 0);
+    case HTTPsh: {
+        SEXP sheaders, agentFun;
+        const char *headers;
+#ifdef USE_WININET
+        PROTECT(agentFun = lang2(install("makeUserAgent"), ScalarLogical(0)));
+#else
+        PROTECT(agentFun = lang1(install("makeUserAgent")));
+#endif
+        PROTECT(sheaders = eval(agentFun, R_FindNamespace(mkString("utils"))));
+
+        if (TYPEOF(sheaders) == NILSXP)
+            headers = NULL;
+        else
+            headers = CHAR(STRING_ELT(sheaders, 0));
+        ctxt = in_R_HTTPOpen(url, headers, 0);
+        UNPROTECT(2);
         if (ctxt == NULL)
         {
             /* if we call error() we get a connection leak*/
@@ -83,7 +97,8 @@ static Rboolean url_open(Rconnection con)
             return FALSE;
         }
         ((Rurlconn)(con->private))->ctxt = ctxt;
-        break;
+    }
+    break;
     case FTPsh:
         ctxt = in_R_FTPOpen(url);
         if (ctxt == NULL)
