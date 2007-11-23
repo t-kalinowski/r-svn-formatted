@@ -34,7 +34,7 @@
  *
  *  We use the simple explicit product formula for  k <= k_small_max
  *  and also have added statements to make sure that the symmetry
- *    (n \\ k ) == (n \\ n-k)  is preserved for integer n.
+ *    (n \\ k ) == (n \\ n-k)  is preserved for non-negative integer n.
  */
 
 #include "nmath.h"
@@ -115,7 +115,7 @@ double choose(double n, double k)
     if (k < k_small_max)
     {
         int j;
-        if (R_IS_INT(n) && n - k < k)
+        if (n - k < k && n >= 0 && R_IS_INT(n))
             k = n - k; /* <- Symmetry */
         if (k < 0)
             return 0.;
