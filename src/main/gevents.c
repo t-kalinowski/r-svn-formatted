@@ -149,7 +149,7 @@ SEXP doKeybd(SEXP eventRho, NewDevDesc *dd, R_KeyName rkey, const char *keyname)
     {
         PROTECT(skey = mkString(keyname ? keyname : keynames[rkey]));
         PROTECT(temp = lang2(handler, skey));
-        PROTECT(result = eval(temp, eventRho)); /* PROTECT not needed? */
+        result = eval(temp, eventRho);
         R_FlushConsole();
         UNPROTECT(2);
     }
