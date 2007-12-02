@@ -2612,7 +2612,7 @@ SEXP attribute_hidden do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(y = coerceVector(CAR(args), REALSXP));
     if (length(y) < 2)
-        error(_("invalid '%s' argument"), "x");
+        error(_("invalid '%s' argument"), "y");
     args = CDR(args);
 
     PROTECT(z = coerceVector(CAR(args), REALSXP));
