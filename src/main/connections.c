@@ -1795,11 +1795,18 @@ static size_t clp_write(const void *ptr, size_t size, size_t nitems, Rconnection
     return (size_t)used / size;
 }
 
-static Rconnection newclp(const char *url, const char *mode)
+static Rconnection newclp(const char *url, const char *inmode)
 {
     Rconnection new;
     const char *description;
     int sizeKB = 32;
+    char mode[3];
+
+    mode[2] = '\0';
+    strncpy(mode, inmode, 2);
+
+    if (strlen(mode) == 2 && mode[1] == 't')
+        mode[1] = '\0';
 
     if (strlen(mode) != 1 || (mode[0] != 'r' && mode[0] != 'w'))
         error(_("'mode' for the clipboard must be 'r' or 'w'"));
