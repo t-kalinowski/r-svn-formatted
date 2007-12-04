@@ -3037,7 +3037,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width
     /* initialise device description (most of the work */
     /* has been done in GA_Open) */
 
-    xd->resize = (resize == 3);
+    xd->resize = (resize == 3) || ismdi(); // MDI windows may be zoomed automatically
     xd->locator = FALSE;
     xd->buffered = buffered;
     xd->psenv = psenv;
