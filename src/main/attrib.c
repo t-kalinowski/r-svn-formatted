@@ -1056,7 +1056,7 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     /* "dim" and "dimnames" are set that the "dim" is attached first. */
 
     SEXP object, attrs, names = R_NilValue /* -Wall */;
-    int i, nattrs;
+    int i, i0 = -1, nattrs;
 
     /* Extract the arguments from the argument list */
 
@@ -1091,9 +1091,10 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         /* Unlikely to have NAMED == 0 here.
-           As from R 2.7.0 we don't optimize NAMED == 1 here,
-           as an error later on would leave 'x' changed */
-        if (NAMED(object))
+           As from R 2.7.0 we don't optimize NAMED == 1 _if_ we are
+           setting any attributes as an error later on would leave
+           'obj' changed */
+        if (NAMED(object) > 1 || (NAMED(object) == 1 && nattrs))
             object = duplicate(object);
         PROTECT(object);
     }
@@ -1117,7 +1118,7 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         UNSET_S4_OBJECT(object);
 
     /* We do two passes through the attributes; the first */
-    /* finding and transferring "dim"s and the second */
+    /* finding and transferring "dim" and the second */
     /* transferring the rest.  This is to ensure that */
     /* "dim" occurs in the attribute list before "dimnames". */
 
@@ -1126,12 +1127,17 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0; i < nattrs; i++)
         {
             if (!strcmp(CHAR(STRING_ELT(names, i)), "dim"))
+            {
+                i0 = i;
                 setAttrib(object, R_DimSymbol, VECTOR_ELT(attrs, i));
+                break;
+            }
         }
         for (i = 0; i < nattrs; i++)
         {
-            if (strcmp(CHAR(STRING_ELT(names, i)), "dim"))
-                setAttrib(object, install(translateChar(STRING_ELT(names, i))), VECTOR_ELT(attrs, i));
+            if (i == i0)
+                continue;
+            setAttrib(object, install(translateChar(STRING_ELT(names, i))), VECTOR_ELT(attrs, i));
         }
     }
     UNPROTECT(1);
