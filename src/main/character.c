@@ -1515,7 +1515,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcat(u, t);
                 } while (global && (st = fgrep_one_bytes(spat, s, useBytes)) >= 0);
                 strcat(u, s);
-                SET_STRING_ELT(ans, i, mkChar(cbuf));
+                if (useBytes)
+                    SET_STRING_ELT(ans, i, mkChar(cbuf));
+                else
+                    SET_STRING_ELT(ans, i, mkCharCopyEnc(cbuf, STRING_ELT(vec, i)));
                 Free(cbuf);
             }
         }
@@ -1584,7 +1587,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     for (j = offset; s[j]; j++)
                         *u++ = s[j];
                 *u = '\0';
-                SET_STRING_ELT(ans, i, mkChar(cbuf));
+                if (useBytes)
+                    SET_STRING_ELT(ans, i, mkChar(cbuf));
+                else
+                    SET_STRING_ELT(ans, i, mkCharCopyEnc(cbuf, STRING_ELT(vec, i)));
                 Free(cbuf);
             }
         }
@@ -3344,7 +3350,7 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
     n = globbuf.gl_pathc;
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
-        SET_STRING_ELT(ans, i, mkChar(globbuf.gl_pathv[i]));
+        SET_STRING_ELT(ans, i, mkCharCopyEnc(globbuf.gl_pathv[i], STRING_ELT(x, i)));
     UNPROTECT(1);
     globfree(&globbuf);
     return ans;
