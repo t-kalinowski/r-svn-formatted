@@ -2135,8 +2135,7 @@ static SEXP CloseMemOutPStream(R_outpstream_t stream)
     return val;
 }
 
-/* This is undocumented and in no header, but used by package taskPR. */
-SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun)
+SEXP attribute_hidden R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun)
 {
     struct R_outpstream_st out;
     R_pstream_format_t type;
@@ -2180,8 +2179,7 @@ SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun)
     }
 }
 
-/* This is undocumented and in no header, but used by package taskPR */
-SEXP R_unserialize(SEXP icon, SEXP fun)
+SEXP attribute_hidden R_unserialize(SEXP icon, SEXP fun)
 {
     struct R_inpstream_st in;
     SEXP (*hook)(SEXP, SEXP);
