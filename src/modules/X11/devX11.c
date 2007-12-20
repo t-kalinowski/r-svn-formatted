@@ -1878,16 +1878,22 @@ static char title[11] = "R Graphics";
 
 static void newX11_Activate(NewDevDesc *dd)
 {
-    char t[50];
+    char t[150];
     char num[3];
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
     if (xd->type > WINDOW)
         return;
-    strcpy(t, title);
-    strcat(t, ": Device ");
-    sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
-    strcat(t, num);
+    if (strlen(xd->title))
+    {
+        strcpy(t, xd->title);
+    }
+    else
+    {
+        strcpy(t, "R Graphics: Device ");
+        sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
+        strcat(t, num);
+    }
     strcat(t, " (ACTIVE)");
     /**
     XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING,
@@ -1899,16 +1905,22 @@ static void newX11_Activate(NewDevDesc *dd)
 
 static void newX11_Deactivate(NewDevDesc *dd)
 {
-    char t[50];
+    char t[150];
     char num[3];
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
     if (xd->type > WINDOW)
         return;
-    strcpy(t, title);
-    strcat(t, ": Device ");
-    sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
-    strcat(t, num);
+    if (strlen(xd->title))
+    {
+        strcpy(t, xd->title);
+    }
+    else
+    {
+        strcpy(t, "R Graphics: Device ");
+        sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
+        strcat(t, num);
+    }
     strcat(t, " (inactive)");
     /**
     XChangeProperty(display, xd->window, XA_WM_NAME, XA_STRING,
@@ -2175,7 +2187,7 @@ static void newX11_Hold(NewDevDesc *dd)
 
 Rboolean newX11DeviceDriver(DevDesc *dd, const char *disp_name, double width, double height, double pointsize,
                             double gamma_fac, X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor,
-                            SEXP sfonts, int res, int xpos, int ypos)
+                            SEXP sfonts, int res, int xpos, int ypos, const char *title)
 {
     newX11Desc *xd;
     const char *fn;
@@ -2217,6 +2229,8 @@ Rboolean newX11DeviceDriver(DevDesc *dd, const char *disp_name, double width, do
     xd->fill = 0xffffffff; /* this is needed to ensure that the
                   first newpage does set whitecolor
                   if par("bg") is not transparent */
+    strncpy(xd->title, title, 100);
+    xd->title[100] = '\0';
 
 #if BUG
     R_ProcessX11Events((void *)NULL);
@@ -2464,7 +2478,7 @@ static char *SaveString(SEXP sxp, int offset)
 
 static DevDesc *Rf_addX11Device(const char *display, double width, double height, double ps, double gamma,
                                 int colormodel, int maxcubesize, int bgcolor, int canvascolor, const char *devname,
-                                SEXP sfonts, int res, int xpos, int ypos)
+                                SEXP sfonts, int res, int xpos, int ypos, const char *title)
 {
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
@@ -2486,7 +2500,7 @@ static DevDesc *Rf_addX11Device(const char *display, double width, double height
          * This is supposed to happen via addDevice now.
          */
         if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor,
-                                canvascolor, sfonts, res, xpos, ypos))
+                                canvascolor, sfonts, res, xpos, ypos, title))
         {
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
@@ -2503,7 +2517,7 @@ static DevDesc *Rf_addX11Device(const char *display, double width, double height
 
 SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    const char *display, *cname, *devname;
+    const char *display, *cname, *devname, *title;
     char *vmax;
     double height, width, ps, gamma;
     int colormodel, maxcubesize, bgcolor, canvascolor, res, xpos, ypos;
@@ -2571,6 +2585,11 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     xpos = asInteger(CAR(args));
     args = CDR(args);
     ypos = asInteger(CAR(args));
+    args = CDR(args);
+    sc = CAR(args);
+    if (!isString(sc) || LENGTH(sc) != 1)
+        error(_("invalid value of 'title' in devWindows"));
+    title = CHAR(STRING_ELT(sc, 0));
 
     devname = "X11";
     if (!strncmp(display, "png::", 5))
@@ -2581,7 +2600,7 @@ SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "XImage";
 
     Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor, devname, sfonts,
-                    res, xpos, ypos);
+                    res, xpos, ypos, title);
     vmaxset(vmax);
     return R_NilValue;
 }
