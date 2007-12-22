@@ -507,7 +507,7 @@ int Rf_initialize_R(int ac, char **av)
  *     file    = array of filenames
  *     editor  = editor to be used.
  */
-int R_EditFiles(int nfile, comst char **file, const char **title, const char *editor)
+int R_EditFiles(int nfile, const char **file, const char **title, const char *editor)
 {
     char buf[1024];
 #if defined(HAVE_AQUA)
