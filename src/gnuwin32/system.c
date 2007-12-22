@@ -554,7 +554,7 @@ int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean d
  *     editor  = editor to be used.
  */
 
-int R_EditFiles(int nfile, char **file, char **title, char *editor)
+int R_EditFiles(int nfile, const char **file, const char **title, const char *editor)
 {
     int i;
     char buf[1024];

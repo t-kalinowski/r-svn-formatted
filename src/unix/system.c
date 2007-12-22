@@ -507,18 +507,12 @@ int Rf_initialize_R(int ac, char **av)
  *     file    = array of filenames
  *     editor  = editor to be used.
  */
-/*#ifdef HAVE_AQUA
-extern DL_FUNC ptr_Raqua_Edit;
-#endif
-*/
-int R_EditFiles(int nfile, char **file, char **title, char *editor)
+int R_EditFiles(int nfile, comst char **file, const char **title, const char *editor)
 {
     char buf[1024];
 #if defined(HAVE_AQUA)
     if (useaqua)
-    {
         return (ptr_R_EditFiles(nfile, file, title, editor));
-    }
 #endif
 
     if (nfile > 0)
@@ -530,17 +524,15 @@ int R_EditFiles(int nfile, char **file, char **title, char *editor)
         if (ptr_R_EditFile)
             ptr_R_EditFile(file[0]);
         else
-        {
 #endif
+        {
             /* Quote path if necessary */
             if (editor[0] != '"' && Rf_strchr(editor, ' '))
                 snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[0]);
             else
                 snprintf(buf, 1024, "%s \"%s\"", editor, file[0]);
             R_system(buf);
-#if defined(HAVE_AQUA)
         }
-#endif
         return 0;
     }
     return 1;
