@@ -67,11 +67,11 @@ static FILE *ifp = NULL;
 
 __declspec(dllexport) UImode CharacterMode;
 int ConsoleAcceptCmd;
-void set_workspace_name(char *fn); /* ../main/startup.c */
+void set_workspace_name(const char *fn); /* ../main/startup.c */
 
 /* used to avoid some flashing during cleaning up */
 Rboolean AllDevicesKilled = FALSE;
-static int (*R_YesNoCancel)(char *s);
+static int (*R_YesNoCancel)(const char *s);
 
 static DWORD mainThreadId;
 
@@ -110,7 +110,7 @@ void R_ProcessEvents(void)
  *  1) FATAL MESSAGES AT STARTUP
  */
 
-void R_Suicide(char *s)
+void R_Suicide(const char *s)
 {
     char pp[1024];
 
@@ -152,16 +152,17 @@ void R_Suicide(char *s)
  */
 
 /* Global variables */
-static int (*TrueReadConsole)(char *, char *, int, int);
-static int (*InThreadReadConsole)(char *, char *, int, int);
-static void (*TrueWriteConsole)(char *, int);
-static void (*TrueWriteConsoleEx)(char *, int, int);
+static int (*TrueReadConsole)(const char *, char *, int, int);
+static int (*InThreadReadConsole)(const char *, char *, int, int);
+static void (*TrueWriteConsole)(const char *, int);
+static void (*TrueWriteConsoleEx)(const char *, int, int);
 HANDLE EhiWakeUp;
-static char *tprompt, *tbuf;
+static const char *tprompt;
+static char *tbuf;
 static int tlen, thist, lineavailable;
 
 /* Fill a text buffer with user typed console input. */
-int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
+int R_ReadConsole(const char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     R_ProcessEvents();
     return TrueReadConsole(prompt, (char *)buf, len, addtohistory);
@@ -170,7 +171,7 @@ int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
 /* Write a text buffer to the console. */
 /* All system output is filtered through this routine. */
 
-void R_WriteConsole(char *buf, int len)
+void R_WriteConsole(const char *buf, int len)
 {
     R_ProcessEvents();
     if (TrueWriteConsole)
@@ -179,7 +180,7 @@ void R_WriteConsole(char *buf, int len)
         TrueWriteConsoleEx(buf, len, 0);
 }
 
-void R_WriteConsoleEx(char *buf, int len, int otype)
+void R_WriteConsoleEx(const char *buf, int len, int otype)
 {
     R_ProcessEvents();
     if (TrueWriteConsole)
@@ -197,7 +198,7 @@ void Rconsolesetwidth(int cols)
         R_SetOptionWidth(cols);
 }
 
-static int GuiReadConsole(char *prompt, char *buf, int len, int addtohistory)
+static int GuiReadConsole(const char *prompt, char *buf, int len, int addtohistory)
 {
     int res;
     const char *NormalPrompt = CHAR(STRING_ELT(GetOption(install("prompt"), R_BaseEnv), 0));
@@ -227,7 +228,7 @@ static void __cdecl ReaderThread(void *unused)
     }
 }
 
-static int ThreadedReadConsole(char *prompt, char *buf, int len, int addtohistory)
+static int ThreadedReadConsole(const char *prompt, char *buf, int len, int addtohistory)
 {
     sighandler_t oldint, oldbreak;
     /*
@@ -261,7 +262,7 @@ static int ThreadedReadConsole(char *prompt, char *buf, int len, int addtohistor
 }
 
 /*2: from character console with getline (only used as InThreadReadConsole)*/
-static int CharReadConsole(char *prompt, char *buf, int len, int addtohistory)
+static int CharReadConsole(const char *prompt, char *buf, int len, int addtohistory)
 {
     int res = getline(prompt, buf, len);
     if (addtohistory)
@@ -272,7 +273,7 @@ static int CharReadConsole(char *prompt, char *buf, int len, int addtohistory)
 /*3: (as InThreadReadConsole) and 4: non-interactive */
 static void *cd = NULL;
 
-static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
+static int FileReadConsole(const char *prompt, char *buf, int len, int addhistory)
 {
     int ll, err = 0;
 
@@ -320,13 +321,11 @@ static int FileReadConsole(char *prompt, char *buf, int len, int addhistory)
 }
 
 /* Rgui */
-static void GuiWriteConsole(char *buf, int len)
+static void GuiWriteConsole(const char *buf, int len)
 {
-    char *p;
+    /*    char *p;
 
-    for (p = buf; *p; p++)
-        if (*p == '\001')
-            *p = EOF;
+        for (p = buf; *p; p++) if (*p == '\001') *p = EOF; */
     if (RConsole)
         consolewrites(RConsole, buf);
     else
@@ -334,7 +333,7 @@ static void GuiWriteConsole(char *buf, int len)
 }
 
 /* Rterm write */
-static void TermWriteConsole(char *buf, int len)
+static void TermWriteConsole(const char *buf, int len)
 {
     printf("%s", buf);
 }
@@ -483,7 +482,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
  *     pager   = pager to be used.
  */
 
-int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean del, char *pager)
+int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del, const char *pager)
 {
     int i;
     char buf[1024];
@@ -597,13 +596,13 @@ int R_ChooseFile(int new, char *buf, int len)
 
 /* code for R_ShowMessage, R_YesNoCancel */
 
-void (*pR_ShowMessage)(char *s);
-void R_ShowMessage(char *s)
+void (*pR_ShowMessage)(const char *s);
+void R_ShowMessage(const char *s)
 {
     (*pR_ShowMessage)(s);
 }
 
-static void char_message(char *s)
+static void char_message(const char *s)
 {
     if (!s)
         return;
@@ -619,7 +618,7 @@ static void char_message(char *s)
         R_WriteConsole(s, strlen(s));
 }
 
-static int char_YesNoCancel(char *s)
+static int char_YesNoCancel(const char *s)
 {
     char ss[128];
     unsigned char a[3];
@@ -713,7 +712,7 @@ void R_SetWin32(Rstart Rp)
 
 /* Remove and process NAME=VALUE command line arguments */
 
-static void Putenv(char *str)
+static void Putenv(const char *str)
 {
     char *buf;
     buf = (char *)malloc((strlen(str) + 1) * sizeof(char));
@@ -808,12 +807,12 @@ void R_setupHistory()
     }
 }
 
-static void wrap_askok(char *info)
+static void wrap_askok(const char *info)
 {
     askok(info);
 }
 
-static int wrap_askyesnocancel(char *question)
+static int wrap_askyesnocancel(const char *question)
 {
     return askyesnocancel(question);
 }

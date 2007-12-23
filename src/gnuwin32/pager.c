@@ -63,7 +63,7 @@ int pagerMultiple, haveusedapager;
    To be fixed: during creation, memory is allocated two times
    (faster for small files but a big waste otherwise)
 */
-static xbuf file2xbuf(char *name, int del)
+static xbuf file2xbuf(const char *name, int del)
 {
     HANDLE f;
     DWORD rr, vv;
@@ -275,7 +275,7 @@ static void pagerupdateview()
     show(c);
 }
 
-static int pageraddfile(char *wtitle, char *filename, int deleteonexit)
+static int pageraddfile(const char *wtitle, const char *filename, int deleteonexit)
 {
     ConsoleData p = getdata(pagerInstance);
     int i;
@@ -546,7 +546,7 @@ static pager pagercreate()
     return (c);
 }
 
-static pager newpager1win(char *wtitle, char *filename, int deleteonexit)
+static pager newpager1win(const char *wtitle, const char *filename, int deleteonexit)
 {
     if (!pagerInstance && !(pagerInstance = pagercreate()))
     {
@@ -559,7 +559,7 @@ static pager newpager1win(char *wtitle, char *filename, int deleteonexit)
     return pagerInstance;
 }
 
-static pager newpagerNwin(char *wtitle, char *filename, int deleteonexit)
+static pager newpagerNwin(const char *wtitle, const char *filename, int deleteonexit)
 {
     pager c = pagercreate();
     ConsoleData p;
@@ -581,7 +581,7 @@ static pager newpagerNwin(char *wtitle, char *filename, int deleteonexit)
     return c;
 }
 
-pager newpager(char *title, char *filename, char *header, int deleteonexit)
+pager newpager(const char *title, const char *filename, const char *header, int deleteonexit)
 {
     char wtitle[PAGERMAXTITLE + 1];
     pager c;

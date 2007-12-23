@@ -64,26 +64,26 @@ attribute_hidden Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/p
 
 /* call pointers to allow interface switching */
 
-void R_Suicide(char *s)
+void R_Suicide(const char *s)
 {
     ptr_R_Suicide(s);
 }
-void R_ShowMessage(char *s)
+void R_ShowMessage(const char *s)
 {
     ptr_R_ShowMessage(s);
 }
-int R_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
+int R_ReadConsole(const char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     return ptr_R_ReadConsole(prompt, buf, len, addtohistory);
 }
-void R_WriteConsole(char *buf, int len)
+void R_WriteConsole(const char *buf, int len)
 {
     if (ptr_R_WriteConsole)
         ptr_R_WriteConsole(buf, len);
     else
         ptr_R_WriteConsoleEx(buf, len, 0);
 }
-void R_WriteConsoleEx(char *buf, int len, int otype)
+void R_WriteConsoleEx(const char *buf, int len, int otype)
 {
     if (ptr_R_WriteConsole)
         ptr_R_WriteConsole(buf, len);
@@ -110,7 +110,7 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
     ptr_R_CleanUp(saveact, status, runLast);
 }
-int R_ShowFiles(int nfile, char **file, char **headers, char *wtitle, Rboolean del, char *pager)
+int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del, const char *pager)
 {
     return ptr_R_ShowFiles(nfile, file, headers, wtitle, del, pager);
 }

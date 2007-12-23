@@ -65,7 +65,7 @@ extern FILE *ifp;
  *  1) FATAL MESSAGES AT STARTUP
  */
 
-void attribute_hidden Rstd_Suicide(char *s)
+void attribute_hidden Rstd_Suicide(const char *s)
 {
     REprintf("Fatal error: %s\n", s);
     /* Might be called before translation is running */
@@ -491,7 +491,7 @@ static struct
   Registers the specified routine and prompt with readline
   and keeps a record of it on the top of the R readline stack.
  */
-static void pushReadline(char *prompt, rl_vcpfunc_t f)
+static void pushReadline(const char *prompt, rl_vcpfunc_t f)
 {
     if (ReadlineStack.current >= ReadlineStack.max)
     {
@@ -797,7 +797,7 @@ static void handleInterrupt(void)
 /* Fill a text buffer from stdin or with user typed console input. */
 static void *cd = NULL;
 
-int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len, int addtohistory)
+int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     if (!R_Interactive)
     {
@@ -930,7 +930,7 @@ int attribute_hidden Rstd_ReadConsole(char *prompt, unsigned char *buf, int len,
 /* Write a text buffer to the console. */
 /* All system output is filtered through this routine (unless R_Consolefile is used). */
 
-void attribute_hidden Rstd_WriteConsole(char *buf, int len)
+void attribute_hidden Rstd_WriteConsole(const char *buf, int len)
 {
     printf("%s", buf);
     fflush(stdout);
@@ -938,7 +938,7 @@ void attribute_hidden Rstd_WriteConsole(char *buf, int len)
 
 /* The extended version allows the distinction of errors and warnings.
    It is not enabled by default unless pretty-printing is desired. */
-void attribute_hidden Rstd_WriteConsoleEx(char *buf, int len, int otype)
+void attribute_hidden Rstd_WriteConsoleEx(const char *buf, int len, int otype)
 {
     if (otype)
         printf("\033[1m%s\033[0m", buf);
@@ -1085,14 +1085,14 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-int attribute_hidden Rstd_ShowFiles(int nfile,      /* number of files */
-                                    char **file,    /* array of filenames */
-                                    char **headers, /* the `headers' args of file.show.
-                                               Printed before each file. */
-                                    char *wtitle,   /* title for window
-                                               = `title' arg of file.show */
-                                    Rboolean del,   /* should files be deleted after use? */
-                                    char *pager)    /* pager to be used */
+int attribute_hidden Rstd_ShowFiles(int nfile,            /* number of files */
+                                    const char **file,    /* array of filenames */
+                                    const char **headers, /* the `headers' args of file.show.
+                                             Printed before each file. */
+                                    const char *wtitle,   /* title for window
+                                                 = `title' arg of file.show */
+                                    Rboolean del,         /* should files be deleted after use? */
+                                    const char *pager)    /* pager to be used */
 
 {
     /*
@@ -1166,12 +1166,12 @@ int attribute_hidden Rstd_ChooseFile(int _new, char *buf, int len)
     return strlen(buf);
 }
 
-void attribute_hidden Rstd_ShowMessage(char *s)
+void attribute_hidden Rstd_ShowMessage(const char *s)
 {
     REprintf("%s\n", s);
 }
 
-void attribute_hidden Rstd_read_history(char *s)
+void attribute_hidden Rstd_read_history(const char *s)
 {
 #ifdef HAVE_LIBREADLINE
 #ifdef HAVE_READLINE_HISTORY_H

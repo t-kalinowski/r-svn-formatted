@@ -46,7 +46,7 @@ extern int R_ReplDLLdo1();
    frequently. See rterm.c and ../system.c for one approach using
    a separate thread for input.
 */
-static int myReadConsole(char *prompt, char *buf, int len, int addtohistory)
+static int myReadConsole(const char *prompt, char *buf, int len, int addtohistory)
 {
     fputs(prompt, stdout);
     fflush(stdout);
@@ -56,7 +56,7 @@ static int myReadConsole(char *prompt, char *buf, int len, int addtohistory)
         return 0;
 }
 
-static void myWriteConsole(char *buf, int len)
+static void myWriteConsole(const char *buf, int len)
 {
     printf("%s", buf);
 }
@@ -75,12 +75,12 @@ static void my_onintr(int sig)
 {
     UserBreak = 1;
 }
-static void wrap_askok(char *info)
+static void wrap_askok(const char *info)
 {
     askok(info);
 }
 
-static int wrap_askyesnocancel(char *question)
+static int wrap_askyesnocancel(const char *question)
 {
     return askyesnocancel(question);
 }
