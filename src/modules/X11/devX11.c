@@ -1888,8 +1888,7 @@ static void newX11_Activate(NewDevDesc *dd)
     }
     else
     {
-        strcpy(t, "R Graphics: Device ");
-        sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
+        sprintf(t, "R Graphics: Device %d", devNumber((DevDesc *)dd) + 1);
     }
     strcat(t, " (ACTIVE)");
     /**
@@ -1914,8 +1913,7 @@ static void newX11_Deactivate(NewDevDesc *dd)
     }
     else
     {
-        strcpy(t, "R Graphics: Device ");
-        sprintf(num, "%i", devNumber((DevDesc *)(dd)) + 1);
+        sprintf(t, "R Graphics: Device %d", devNumber((DevDesc *)dd) + 1);
     }
     strcat(t, " (inactive)");
     /**
