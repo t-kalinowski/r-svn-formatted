@@ -73,7 +73,7 @@ static char *rmspace(char *s)
     return &s[i];
 }
 
-int optread(char *opt[], char sep)
+int optread(char *opt[], const char sep)
 {
     static char sm[120];
     char *p, *s;

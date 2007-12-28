@@ -117,11 +117,11 @@ static void downlightrect(DEstruct);
 static void drawwindow(DEstruct);
 static void drawcol(DEstruct, int);
 /* static void de_drawline(int, int, int, int);*/
-static void de_drawtext(DEstruct, int, int, char *);
+static void de_drawtext(DEstruct, int, int, const char *);
 static void drawrectangle(DEstruct, int, int, int, int, int, int);
 static void drawrow(DEstruct, int);
 static void find_coords(DEstruct, int, int, int *, int *);
-static void handlechar(DEstruct, char *);
+static void handlechar(DEstruct, const char *);
 static void highlightrect(DEstruct);
 static Rboolean initwin(DEstruct, const char *);
 static void jumppage(DEstruct, int);
@@ -141,7 +141,7 @@ static void de_delete(control c);
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h> /* for Sleep */
 
-extern int mb_char_len(char *, int, wchar_t *); /* from console.c */
+extern int mb_char_len(const char *, int, wchar_t *); /* from console.c */
 
 static void moveback(DEstruct DE)
 {
@@ -958,7 +958,7 @@ static void clearrect(DEstruct DE)
 
 /* --- Not true! E.g. ESC ends up in here... */
 
-static void handlechar(DEstruct DE, char *text)
+static void handlechar(DEstruct DE, const char *text)
 {
     int c = text[0];
 
@@ -1084,7 +1084,7 @@ static void drawrectangle(DEstruct DE, int xpos, int ypos, int width, int height
               PS_ENDCAP_SQUARE, PS_JOIN_BEVEL, 10);
 }
 
-static void de_drawtext(DEstruct DE, int xpos, int ypos, char *text)
+static void de_drawtext(DEstruct DE, int xpos, int ypos, const char *text)
 {
     gdrawstr(DE->de, DE->p->f, DE->p->fg, pt(xpos, ypos), text);
 }

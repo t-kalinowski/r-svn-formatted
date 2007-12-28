@@ -96,7 +96,7 @@ static char *expandcmd(const char *cmd)
     else
     {
         int iexts = 0;
-        char *exts[] = {".exe", ".com", ".cmd", ".bat", NULL};
+        const char *exts[] = {".exe", ".com", ".cmd", ".bat", NULL};
         while (exts[iexts])
         {
             strcpy(dest, exts[iexts]);
