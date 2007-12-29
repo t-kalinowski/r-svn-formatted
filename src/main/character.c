@@ -2769,14 +2769,6 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             continue;
         }
         str = translateChar(STRING_ELT(vec, i));
-        /* Set case ignore flag for the whole string to be matched. */
-        if (!apse_set_caseignore_slice(aps, 0, nc, (apse_bool_t)igcase_opt))
-        {
-            /* Most likely, an error in apse_set_caseignore_slice()
-             * means that allocating memory failed (as we ensure that
-             * the slice is contained in the string) ... */
-            error(_("could not perform case insensitive matching"));
-        }
         /* Perform match. */
 #ifdef SUPPORT_MBCS
         if (useMBCS)
@@ -2784,6 +2776,9 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             nc = mbstowcs(NULL, str, 0);
             wstr = Calloc(nc + 1, wchar_t);
             mbstowcs(wstr, str, nc + 1);
+            /* Set case ignore flag for the whole string to be matched. */
+            if (!apse_set_caseignore_slice(aps, 0, nc, (apse_bool_t)igcase_opt))
+                error(_("could not perform case insensitive matching"));
             if (apse_match(aps, (unsigned char *)wstr, (apse_size_t)nc))
             {
                 LOGICAL(ind)[i] = 1;
@@ -2795,13 +2790,18 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
 #endif
-            if (apse_match(aps, (unsigned char *)str, (apse_size_t)strlen(str)))
         {
-            LOGICAL(ind)[i] = 1;
-            nmatches++;
+            /* Set case ignore flag for the whole string to be matched. */
+            if (!apse_set_caseignore_slice(aps, 0, strlen(str), (apse_bool_t)igcase_opt))
+                error(_("could not perform case insensitive matching"));
+            if (apse_match(aps, (unsigned char *)str, (apse_size_t)strlen(str)))
+            {
+                LOGICAL(ind)[i] = 1;
+                nmatches++;
+            }
+            else
+                LOGICAL(ind)[i] = 0;
         }
-        else
-            LOGICAL(ind)[i] = 0;
     }
     apse_destroy(aps);
 
