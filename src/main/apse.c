@@ -39,6 +39,11 @@ Furthermore:
 #define attribute_hidden
 #endif
 
+#ifdef SUPPORT_MBCS
+#include <wctype.h>
+#include <wchar.h>
+#endif
+
 #include "apse.h"
 
 #include <stdio.h>
@@ -135,7 +140,14 @@ static apse_bool_t apse_set_pattern(apse_t *ap, unsigned char *pattern, apse_siz
         goto out;
 
     for (i = 0; i < pattern_size; i++)
-        APSE_BIT_SET(ap->case_mask, (unsigned)pattern[i], ap->bitvectors_in_state, i);
+    {
+#ifdef SUPPORT_MBCS
+        unsigned o = ap->n_alphabet > 256 ? ((wchar_t *)pattern)[i] % ap->n_alphabet : pattern[i];
+#else
+        unsigned o = pattern[i];
+#endif
+        APSE_BIT_SET(ap->case_mask, o, ap->bitvectors_in_state, i);
+    }
 
     ap->pattern_mask = ap->case_mask;
 
@@ -275,6 +287,9 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
     int k;
     apse_ssize_t true_begin, true_size;
     apse_bool_t okay = 0;
+#ifdef SUPPORT_MBCS
+    wctrans_t trl = 0, tru = 0; /* -Wall */
+#endif
 
     if (!ap->fold_mask)
     {
@@ -291,6 +306,14 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
     if (!_apse_wrap_slice(ap, caseignore_begin, caseignore_size, &true_begin, &true_size))
         goto out;
 
+#ifdef SUPPORT_MBCS
+    if (ap->n_alphabet > 256)
+    {
+        trl = wctrans("tolower");
+        tru = wctrans("toupper");
+    }
+#endif
+
     if (caseignore)
     {
         for (i = true_begin, j = true_begin + true_size; i < j && i < ap->pattern_size; i++)
@@ -299,10 +322,22 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
             {
                 if (APSE_BIT_TST(ap->case_mask, k, ap->bitvectors_in_state, i))
                 {
-                    if (isupper(k))
-                        APSE_BIT_SET(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
-                    else if (islower(k))
-                        APSE_BIT_SET(ap->fold_mask, toupper(k), ap->bitvectors_in_state, i);
+#ifdef SUPPORT_MBCS
+                    if (ap->n_alphabet > 256)
+                    {
+                        if (iswupper(k))
+                            APSE_BIT_SET(ap->fold_mask, towctrans(k, trl), ap->bitvectors_in_state, i);
+                        else if (iswlower(k))
+                            APSE_BIT_SET(ap->fold_mask, towctrans(k, tru), ap->bitvectors_in_state, i);
+                    }
+                    else
+#endif
+                    {
+                        if (isupper(k))
+                            APSE_BIT_SET(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
+                        else if (islower(k))
+                            APSE_BIT_SET(ap->fold_mask, toupper(k), ap->bitvectors_in_state, i);
+                    }
                 }
             }
         }
@@ -315,10 +350,22 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
             {
                 if (APSE_BIT_TST(ap->case_mask, k, ap->bitvectors_in_state, i))
                 {
-                    if (isupper(k))
-                        APSE_BIT_CLR(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
-                    else if (islower(k))
-                        APSE_BIT_CLR(ap->fold_mask, toupper(k), ap->bitvectors_in_state, i);
+#ifdef SUPPORT_MBCS
+                    if (ap->n_alphabet > 256)
+                    {
+                        if (iswupper(k))
+                            APSE_BIT_CLR(ap->fold_mask, towctrans(k, trl), ap->bitvectors_in_state, i);
+                        else if (iswlower(k))
+                            APSE_BIT_CLR(ap->fold_mask, towctrans(k, tru), ap->bitvectors_in_state, i);
+                    }
+                    else
+#endif
+                    {
+                        if (isupper(k))
+                            APSE_BIT_CLR(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
+                        else if (islower(k))
+                            APSE_BIT_CLR(ap->fold_mask, toupper(k), ap->bitvectors_in_state, i);
+                    }
                 }
             }
         }
@@ -345,7 +392,8 @@ attribute_hidden void apse_destroy(apse_t *ap)
     free(ap);
 }
 
-attribute_hidden apse_t *apse_create(unsigned char *pattern, apse_size_t pattern_size, apse_size_t edit_distance)
+attribute_hidden apse_t *apse_create(unsigned char *pattern, apse_size_t pattern_size, apse_size_t edit_distance,
+                                     int n_alphabet)
 {
     apse_t *ap;
     apse_bool_t okay = 0;
@@ -399,9 +447,9 @@ attribute_hidden apse_t *apse_create(unsigned char *pattern, apse_size_t pattern
 
     ap->custom_data = 0;
     ap->custom_data_size = 0;
-    ap->n_alphabet = 256;
+    ap->n_alphabet = n_alphabet;
 
-    if (!apse_set_pattern(ap, (unsigned char *)pattern, pattern_size))
+    if (!apse_set_pattern(ap, pattern, pattern_size))
         goto out;
 
     if (!apse_set_edit_distance(ap, edit_distance))
@@ -589,7 +637,9 @@ static apse_bool_t _apse_match_single_simple(apse_t *ap)
 
     for (; ap->text_position < ap->text_size; ap->text_position++)
     {
-        apse_vec_t t = ap->pattern_mask[(unsigned)ap->text[ap->text_position] * ap->bitvectors_in_state];
+        unsigned o = (ap->n_alphabet > 256) ? ((wchar_t *)ap->text)[ap->text_position] % ap->n_alphabet
+                                            : ap->text[ap->text_position];
+        apse_vec_t t = ap->pattern_mask[o * ap->bitvectors_in_state];
         apse_size_t h, g;
         APSE_NEXT_EXACT(ap->state, ap->prev_state, t, (apse_size_t)0, 1);
 
@@ -617,7 +667,9 @@ static apse_bool_t _apse_match_multiple_simple(apse_t *ap)
 
     for (; ap->text_position < ap->text_size; ap->text_position++)
     {
-        apse_vec_t *t = ap->pattern_mask + (unsigned)ap->text[ap->text_position] * ap->bitvectors_in_state;
+        unsigned o = (ap->n_alphabet > 256) ? ((wchar_t *)ap->text)[ap->text_position] % ap->n_alphabet
+                                            : ap->text[ap->text_position];
+        apse_vec_t *t = ap->pattern_mask + o * ap->bitvectors_in_state;
         apse_vec_t c, d;
 
         for (c = 1, i = 0; i < ap->bitvectors_in_state; i++, c = d)
@@ -654,8 +706,9 @@ static apse_bool_t _apse_match_single_complex(apse_t *ap)
     /* single apse_vec_t, has_different_distances */
     for (; ap->text_position < ap->text_size; ap->text_position++)
     {
-        unsigned char o = ap->text[ap->text_position];
-        apse_vec_t t = ap->pattern_mask[(unsigned int)o * ap->bitvectors_in_state];
+        unsigned o = (ap->n_alphabet > 256) ? ((wchar_t *)ap->text)[ap->text_position] % ap->n_alphabet
+                                            : ap->text[ap->text_position];
+        apse_vec_t t = ap->pattern_mask[o * ap->bitvectors_in_state];
         apse_size_t h, g;
 
         APSE_NEXT_EXACT(ap->state, ap->prev_state, t, (apse_size_t)0, 1);
@@ -696,8 +749,9 @@ static apse_bool_t _apse_match_multiple_complex(apse_t *ap)
 
     for (; ap->text_position < ap->text_size; ap->text_position++)
     {
-        unsigned char o = ap->text[ap->text_position];
-        apse_vec_t *t = ap->pattern_mask + (unsigned)o * ap->bitvectors_in_state;
+        unsigned o = (ap->n_alphabet > 256) ? ((wchar_t *)ap->text)[ap->text_position] % ap->n_alphabet
+                                            : ap->text[ap->text_position];
+        apse_vec_t *t = ap->pattern_mask + o * ap->bitvectors_in_state;
         apse_vec_t c, d;
 
         for (c = 1, i = 0; i < ap->bitvectors_in_state; i++, c = d)
