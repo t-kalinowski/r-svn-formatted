@@ -1916,8 +1916,6 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
         res = chmod(R_ExpandFileName(translateChar(STRING_ELT(paths, i))), mode);
         LOGICAL(ans)[i] = res == 0;
     }
-    UNPROTECT(1);
-    return ans;
 #else
     SEXP paths, ans;
     int i, n;
