@@ -45,9 +45,9 @@
 #include <time.h>
 #undef _NO_OLDNAMES
 
+#include <errno.h>
+
 #ifdef Win32
-typedef __int64 R_time_t;
-#define time_t R_time_t
 #define gmtime R_gmtime
 #define localtime R_localtime
 #define mktime R_mktime
@@ -395,7 +395,14 @@ static double mktime0(struct tm *tm, const int local)
 #endif
 
     if (validate_tm(tm) < 0)
+    {
+#ifdef EOVERFLOW
+        errno = EOVERFLOW;
+#else
+        errno = 79;
+#endif
         return (double)(-1);
+    }
     if (!local)
         return mktime00(tm);
 
@@ -535,7 +542,7 @@ SEXP attribute_hidden do_systime(SEXP call, SEXP op, SEXP args, SEXP env)
     time_t res = time(NULL);
     double tmp = res;
     if (res != (time_t)(-1))
-    {
+    { /* -1 must be an error */
 #ifndef HAVE_POSIX_LEAPSECONDS
         if (n_leapseconds < 0)
             set_n_leapseconds();
@@ -550,6 +557,8 @@ SEXP attribute_hidden do_systime(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
         REAL(ans)[0] = tmp;
     }
+    else
+        REAL(ans)[0] = NA_REAL;
     return ans;
 #endif
 }
@@ -791,8 +800,13 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
             REAL(ans)[i] = NA_REAL;
         else
         {
+            errno = 0;
             tmp = mktime0(&tm, 1 - isgmt);
+#ifdef MKTIME_SETS_ERRNO
+            REAL(ans)[i] = errno ? NA_REAL : tmp + (secs - fsecs);
+#else
             REAL(ans)[i] = (tmp == (double)(-1)) ? NA_REAL : tmp + (secs - fsecs);
+#endif
         }
     }
 
@@ -1181,6 +1195,7 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
             REAL(ans)[i] = NA_REAL;
         else
         {
+            /* -1 must be error as seconds were zeroed */
             double tmp = mktime00(&tm);
             REAL(ans)[i] = (tmp == -1) ? NA_REAL : tmp / 86400;
         }

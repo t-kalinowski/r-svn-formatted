@@ -11,9 +11,12 @@
 #include "time.h"
 #undef _NO_OLDNAMES
 
+#include <errno.h>
+#ifndef EOVERFLOW
+#define EOVERFLOW 79
+#endif
+
 #ifdef WIN32
-typedef __int64 R_time_t;
-#define time_t R_time_t
 #define gmtime R_gmtime
 #define localtime R_localtime
 #define mktime R_mktime
@@ -1528,25 +1531,43 @@ const int do_norm_secs;
     if (do_norm_secs)
     {
         if (normalize_overflow(&yourtm.tm_min, &yourtm.tm_sec, SECSPERMIN))
+        {
+            errno = EOVERFLOW;
             return WRONG;
+        }
     }
     if (normalize_overflow(&yourtm.tm_hour, &yourtm.tm_min, MINSPERHOUR))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     if (normalize_overflow(&yourtm.tm_mday, &yourtm.tm_hour, HOURSPERDAY))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     y = yourtm.tm_year;
     if (long_normalize_overflow(&y, &yourtm.tm_mon, MONSPERYEAR))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     /*
     ** Turn y into an actual year number for now.
     ** It is converted back to an offset from TM_YEAR_BASE later.
     */
     if (long_increment_overflow(&y, TM_YEAR_BASE))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     while (yourtm.tm_mday <= 0)
     {
         if (long_increment_overflow(&y, -1))
+        {
+            errno = EOVERFLOW;
             return WRONG;
+        }
         li = y + (1 < yourtm.tm_mon);
         yourtm.tm_mday += year_lengths[isleap(li)];
     }
@@ -1555,7 +1576,10 @@ const int do_norm_secs;
         li = y + (1 < yourtm.tm_mon);
         yourtm.tm_mday -= year_lengths[isleap(li)];
         if (long_increment_overflow(&y, 1))
+        {
+            errno = EOVERFLOW;
             return WRONG;
+        }
     }
     for (;;)
     {
@@ -1567,14 +1591,23 @@ const int do_norm_secs;
         {
             yourtm.tm_mon = 0;
             if (long_increment_overflow(&y, 1))
+            {
+                errno = EOVERFLOW;
                 return WRONG;
+            }
         }
     }
     if (long_increment_overflow(&y, -TM_YEAR_BASE))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     yourtm.tm_year = y;
     if (yourtm.tm_year != y)
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     if (yourtm.tm_sec >= 0 && yourtm.tm_sec < SECSPERMIN)
         saved_seconds = 0;
     else if (y + TM_YEAR_BASE < EPOCH_YEAR)
@@ -1588,7 +1621,11 @@ const int do_norm_secs;
         ** which is a safer assumption than using 58 would be.
         */
         if (increment_overflow(&yourtm.tm_sec, 1 - SECSPERMIN))
+        {
+            errno = EOVERFLOW;
             return WRONG;
+        }
+
         saved_seconds = yourtm.tm_sec;
         yourtm.tm_sec = SECSPERMIN - 1;
     }
@@ -1644,18 +1681,27 @@ const int do_norm_secs;
             {
                 ++t;
                 if (t <= lo)
+                {
+                    errno = EOVERFLOW;
                     return WRONG;
+                }
                 ++lo;
             }
             else if (t == hi)
             {
                 --t;
                 if (t >= hi)
+                {
+                    errno = EOVERFLOW;
                     return WRONG;
+                }
                 --hi;
             }
             if (lo > hi)
+            {
+                errno = EOVERFLOW;
                 return WRONG;
+            }
             if (dir > 0)
                 hi = t;
             else
@@ -1693,12 +1739,16 @@ const int do_norm_secs;
                 goto label;
             }
         }
+        errno = EOVERFLOW;
         return WRONG;
     }
 label:
     newt = t + saved_seconds;
     if ((newt < t) != (saved_seconds < 0))
+    {
+        errno = EOVERFLOW;
         return WRONG;
+    }
     t = newt;
     if ((*funcp)(&t, offset, tmp))
         *okayp = TRUE;
@@ -1752,7 +1802,12 @@ const long offset;
         return t;
 #endif /* !defined PCTS */
 
-    /* Try unknown DST setting, if it was set */
+    /* R change.  This appears to be required by POSIX (it says
+       the setting is used 'initially') and is documented for
+       Solaris.
+
+       Try unknown DST setting, if it was set.
+    */
     if (tmp->tm_isdst >= 0)
     {
         tmp->tm_isdst = -1;
@@ -1796,6 +1851,7 @@ const long offset;
             tmp->tm_isdst = !tmp->tm_isdst;
         }
     }
+    errno = EOVERFLOW;
     return WRONG;
 }
 
