@@ -1258,7 +1258,7 @@ TRIO_PRIVATE int TrioParse TRIO_ARGS5((type, format, parameters, arglist, argarr
     int currentParam;
     int maxParam = -1;
     /* Utility variables */
-    trio_flags_t flags;
+    trio_flags_t flags = FLAGS_NEW;
     int width;
     int precision;
     int varsize;
