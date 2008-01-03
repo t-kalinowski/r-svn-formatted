@@ -456,6 +456,7 @@ window newwindow(const char *name, rect r, long flags)
 
         if (localeCP > 0 && (localeCP != GetACP()))
         {
+            /* This seems not actually to work */
             wchar_t wkind[100], wc[1000];
             mbstowcs(wkind, (flags & Workspace) ? work_class_name : win_class_name, 100);
             mbstowcs(wc, name, 1000);

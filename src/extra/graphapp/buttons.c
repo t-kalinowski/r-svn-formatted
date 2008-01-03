@@ -137,6 +137,7 @@ static object newchildwin(const char *kind, const char *text, unsigned long styl
 
     if (localeCP > 0 && (localeCP != GetACP()))
     {
+        /* This seems not actually to work */
         wchar_t wkind[100], wc[1000];
         mbstowcs(wkind, kind, 100);
         mbstowcs(wc, text, 1000);

@@ -746,6 +746,7 @@ void settext(control obj, const char *text)
             text = to_dos_string(text);
             if (localeCP > 0 && (localeCP != GetACP()))
             {
+                /* This seems not actually to work */
                 wchar_t *wc;
                 int nc = strlen(text) + 1;
                 wc = (wchar_t *)alloca(nc * sizeof(wchar_t));
@@ -760,6 +761,7 @@ void settext(control obj, const char *text)
         {
             if (localeCP > 0 && (localeCP != GetACP()))
             {
+                /* But this does */
                 wchar_t wc[1000];
                 mbstowcs(wc, text, 1000);
                 ModifyMenuW(obj->parent->handle, obj->id, MF_BYCOMMAND | MF_STRING, obj->id, wc);
