@@ -4883,7 +4883,7 @@ int trio_printv_ref TRIO_ARGS3((ref, format, argarray), trio_pointer_t ref, TRIO
 /*************************************************************************
  * trio_print_pointer [public]
  */
-void trio_print_pointer TRIO_ARGS2((ref, pointer), trio_pointer_t ref, trio_pointer_t pointer)
+static void trio_print_pointer TRIO_ARGS2((ref, pointer), trio_pointer_t ref, trio_pointer_t pointer)
 {
     trio_reference_t *self = (trio_reference_t *)ref;
     trio_flags_t flags;
@@ -6652,9 +6652,9 @@ TRIO_PUBLIC int trio_sscanfv TRIO_ARGS3((buffer, format, args), TRIO_CONST char 
 /*************************************************************************
  * trio_strerror
  */
+#if TRIO_FEATURE_STRERR
 TRIO_PUBLIC TRIO_CONST char *trio_strerror TRIO_ARGS1((errorcode), int errorcode)
 {
-#if TRIO_FEATURE_STRERR
     /* Textual versions of the error codes */
     switch (TRIO_ERROR_CODE(errorcode))
     {
@@ -6677,7 +6677,5 @@ TRIO_PUBLIC TRIO_CONST char *trio_strerror TRIO_ARGS1((errorcode), int errorcode
     default:
         return "Unknown";
     }
-#else
-    return "Unknown";
-#endif
 }
+#endif
