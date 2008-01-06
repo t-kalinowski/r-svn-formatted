@@ -228,6 +228,7 @@ Alt or AltGr */
                 }
             }
             else
+                /* There is also UnicodeChar -- not clear how it works */
                 c = r.Event.KeyEvent.uChar.AsciiChar;
         }
         else if (vk == VK_MENU && AltIsDown)
@@ -272,7 +273,7 @@ static void gl_puts(const char *const buf)
     }
 }
 
-static void gl_error(const char *const buf)
+void gl_error(const char *const buf)
 {
     int len = strlen(buf);
 
@@ -593,13 +594,16 @@ static void gl_addchar(int c)
     {
         mbstate_t mb_st;
         wchar_t wc;
-        char s[9];
+        char s[9]; /* only 3 needed */
         int res;
         int clen;
 
         s[0] = c;
         clen = 1;
         res = 0;
+        /* This is a DBCS locale, so input is 1 or 2 bytes.
+           This loop should not be necessary.
+         */
         if ((unsigned int)c >= (unsigned int)0x80)
         {
             while (clen <= MB_CUR_MAX)

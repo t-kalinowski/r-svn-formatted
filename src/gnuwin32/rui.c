@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
  *  Copyright (C) 1998--2005  Guido Masarotto and Brian Ripley
- *  Copyright (C) 2004--2007  The R Foundation
+ *  Copyright (C) 2004--2008  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,8 +45,8 @@
 #include "rui.h"
 #include "preferences.h"
 #include <Rversion.h>
-#include "getline/getline.h" /* for gl_load/savehistory */
-#include <Startup.h>         /* for SA_DEFAULT */
+#include "getline/wc_history.h" /* for wgl_load/savehistory */
+#include <Startup.h>            /* for SA_DEFAULT */
 
 #define TRACERUI(a)
 
@@ -194,7 +194,7 @@ static void menuloadhistory(control m)
     setuserfilter("All files (*.*)\0*.*\0\0");
     fn = askfilename(G_("Load history from"), R_HistoryFile);
     if (fn)
-        gl_loadhistory(fn);
+        wgl_loadhistory(fn);
 }
 
 static void menusavehistory(control m)
@@ -206,7 +206,7 @@ static void menusavehistory(control m)
     if (s)
     {
         R_setupHistory(); /* re-read the history size */
-        gl_savehistory(s, R_HistorySize);
+        wgl_savehistory(s, R_HistorySize);
     }
 }
 
@@ -1274,9 +1274,9 @@ int setupui()
     hmenu = (HelpMenuItems)malloc(sizeof(struct structHelpMenuItems));
     RguiCommonHelp(m, hmenu);
     consolesetbrk(RConsole, menukill, ESC, 0);
-    gl_hist_init(R_HistorySize, 0);
+    wgl_hist_init(R_HistorySize, 0);
     if (R_RestoreHistory)
-        gl_loadhistory(R_HistoryFile);
+        wgl_loadhistory(R_HistoryFile);
     if (ismdi() && !(RguiMDI & RW_TOOLBAR))
         toolbar_hide();
     show(RConsole);
