@@ -563,6 +563,7 @@ char *askcdstring(const char *question, const char *default_str)
     BROWSEINFO bi;
     LPITEMIDLIST pidlBrowse;
     browserInfo info;
+    OSVERSIONINFOEX osvi;
 
     strncpy(info.question, question, 40);
     strncpy(info.default_str, default_str, MAX_PATH);
@@ -571,12 +572,18 @@ char *askcdstring(const char *question, const char *default_str)
     if (!SUCCEEDED(SHGetMalloc(&g_pMalloc)))
         return NULL;
 
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    GetVersionEx((OSVERSIONINFO *)&osvi);
+
     ZeroMemory(&bi, sizeof(bi));
     bi.hwndOwner = 0;
-    /* CSIDL_DESKTOP gets mapped to the User's desktop in Vista
-       (a bug).  SHGetFolderLocation is Win2k or later */
-    if (!SUCCEEDED(SHGetFolderLocation(NULL, CSIDL_DRIVES, NULL, 0, (LPITEMIDLIST *)&bi.pidlRoot)))
-        return NULL;
+    if (osvi.dwMajorVersion >= 6)
+    { /* future proof */
+        /* CSIDL_DESKTOP gets mapped to the User's desktop in Vista
+           (a bug).  SHGetFolderLocation is Win2k or later */
+        if (!SUCCEEDED(SHGetFolderLocation(NULL, CSIDL_DRIVES, NULL, 0, (LPITEMIDLIST *)&bi.pidlRoot)))
+            return NULL;
+    } /* else it is 0, which is CSIDL_DESKTOP */
     bi.pszDisplayName = strbuf;
     bi.lpszTitle = question;
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_USENEWUI;
