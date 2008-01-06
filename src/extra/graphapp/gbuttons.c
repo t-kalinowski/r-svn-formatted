@@ -115,9 +115,12 @@ int ggetkeystate()
 }
 
 /* Extra text editing functions for R, Chris Jackson */
+#include <richedit.h>
 
-/* Move the editor caret position lines down. If lines is negative moves caret up.
-   Stops at the top or the bottom if lines is too big or small */
+/* Move the editor caret position lines down.
+   If lines is negative moves caret up.
+   Stops at the top or the bottom if lines is too big or small.
+*/
 
 void scrollcaret(textbox t, int lines)
 {

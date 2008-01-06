@@ -735,6 +735,7 @@ void replacedialog(textbox t)
     hModelessDlg = ReplaceText(&fr);
 }
 
+#include <richedit.h>
 /* Find and select a string in a rich edit control */
 
 static int richeditfind(HWND hwnd, char *what, int matchcase, int wholeword, int down)
