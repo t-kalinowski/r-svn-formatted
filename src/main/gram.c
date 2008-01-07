@@ -4075,6 +4075,27 @@ static int SkipSpace(void)
             ;
         return c;
     }
+    else
+    {
+        int i, clen;
+        wchar_t wc;
+        while (1)
+        {
+            c = xxgetc();
+            if (c == ' ' || c == '\t' || c == '\f')
+                continue;
+            if (c == '\n' || c == R_EOF)
+                break;
+            if ((unsigned int)c < 0x80)
+                break;
+            clen = mbcs_get_next(c, &wc); /* always 2 */
+            if (!Ri18n_iswctype(wc, Ri18n_wctype("blank")))
+                break;
+            for (i = 1; i < clen; i++)
+                c = xxgetc();
+        }
+        return c;
+    }
 #endif
 #if defined(SUPPORT_UTF8) && defined(__STDC_ISO_10646__)
     if (utf8locale)
