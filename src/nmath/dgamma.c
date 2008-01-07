@@ -46,10 +46,12 @@ double dgamma(double x, double shape, double scale, int give_log)
     if (ISNAN(x) || ISNAN(shape) || ISNAN(scale))
         return x + shape + scale;
 #endif
-    if (shape <= 0 || scale <= 0)
+    if (shape < 0 || scale <= 0)
         ML_ERR_return_NAN;
     if (x < 0)
         return R_D__0;
+    if (shape == 0) /* point mass at 0 */
+        return (x == 0) ? ML_POSINF : R_D__0;
     if (x == 0)
     {
         if (shape < 1)
