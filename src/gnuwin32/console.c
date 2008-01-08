@@ -1215,7 +1215,7 @@ void consolepaste(control c)
         {
             new = malloc((wcslen(pc) + 1) * sizeof(wchar_t));
             if (new)
-                new[0] = '\0';
+                new[0] = L'\0';
             p->already = p->numkeys;
             p->pclp = 0;
         }
@@ -1767,6 +1767,7 @@ static wchar_t consolegetc(control c)
             for (i = 0; i < MB_CUR_MAX; i++)
                 tmp[i] = p->kbuf[(p->firstkey + i) % NKEYS];
             used = mbrtowc(&ch, tmp, MB_CUR_MAX, NULL);
+            p->firstkey = (p->firstkey + used) % NKEYS;
             p->numkeys -= used;
             if (p->already)
                 p->already -= used;
@@ -1877,7 +1878,7 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
         p->input = 1;
         cur_char = consolegetc(c);
         p->input = 0;
-        chtype = ((unsigned char)cur_char > 0x1f);
+        chtype = ((unsigned int)cur_char > 0x1f);
         if (NUMLINES != ns0)
         { /* we scrolled, e.g. cleared screen */
             cur_line = LINE(NUMLINES - 1) + prompt_len;
@@ -2032,6 +2033,14 @@ void console_sbf(control c, int pos)
     }
     else if (FV != pos)
         setfirstvisible(c, pos);
+}
+
+void console_im(control c, font *f, point *pt)
+{
+    ConsoleData p = getdata(c);
+    pt->x = BORDERX + CURCOL * FW;
+    pt->y = BORDERY + CURROW * FH;
+    *f = consolefn;
 }
 
 void Rconsolesetwidth(int);
@@ -2438,6 +2447,7 @@ console newconsole(char *name, int flags)
     setmousedrag(c, console_mousedrag);
     setmouserepeat(c, console_mouserep);
     setmousedown(c, console_mousedown);
+    setim(c, console_im);
     return (c);
 }
 

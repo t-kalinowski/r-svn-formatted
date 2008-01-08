@@ -648,6 +648,23 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
         return (LRESULT)obj->bgbrush;
 #endif
 #endif
+    case WM_IME_STARTCOMPOSITION:
+        if (obj->call && obj->call->im)
+        {
+            HIMC himc;
+            LOGFONT lf;
+            font f;
+            COMPOSITIONFORM cf;
+
+            himc = ImmGetContext(hwnd);
+            obj->call->im(obj, &f, (point *)&cf.ptCurrentPos);
+            GetObject(f->handle, sizeof(LOGFONT), &lf);
+            ImmSetCompositionFont(himc, &lf);
+            cf.dwStyle = CFS_POINT;
+            ImmSetCompositionWindow(himc, &cf);
+            ImmReleaseContext(hwnd, himc);
+        }
+        break;
     case WM_DROPFILES:
         handle_drop(obj, (HANDLE)wParam);
     }
