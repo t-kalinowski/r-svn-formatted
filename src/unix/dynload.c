@@ -52,7 +52,7 @@
 
 #ifdef HAVE_DYNAMIC_LOADING
 
-static void *loadLibrary(const char *path, int asLocal, int now);
+static void *loadLibrary(const char *path, int asLocal, int now, const char *search);
 static void closeLibrary(void *handle);
 static void deleteCachedSymbols(DllInfo *);
 static DL_FUNC R_local_dlsym(DllInfo *info, char const *name);
@@ -79,7 +79,7 @@ static void getSystemError(char *buf, int len)
     strcpy(buf, dlerror());
 }
 
-static void *loadLibrary(const char *path, int asLocal, int now)
+static void *loadLibrary(const char *path, int asLocal, int now, const char *search)
 {
     void *handle;
     int openFlag = 0;

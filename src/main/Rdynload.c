@@ -429,7 +429,7 @@ static Rboolean R_callDLLUnload(DllInfo *dllInfo)
 /* Returns 1 if the DLL was found and removed from */
 /* the list and returns 0 otherwise. */
 
-static int DeleteDLL(char *path)
+static int DeleteDLL(const char *path)
 {
     int i, loc;
 
@@ -496,7 +496,7 @@ static char DLLerror[DLLerrBUFSIZE] = "";
 /* and returns 0 if the library table is full or */
 /* or if dlopen fails for some reason. */
 
-static DllInfo *AddDLL(char *path, int asLocal, int now)
+static DllInfo *AddDLL(const char *path, int asLocal, int now, const char *DLLsearchpath)
 {
     HINSTANCE handle;
     DllInfo *info = NULL;
@@ -508,7 +508,7 @@ static DllInfo *AddDLL(char *path, int asLocal, int now)
         return NULL;
     }
 
-    handle = R_osDynSymbol->loadLibrary(path, asLocal, now);
+    handle = R_osDynSymbol->loadLibrary(path, asLocal, now, DLLsearchpath);
 
     if (handle == NULL)
     {
@@ -878,7 +878,7 @@ SEXP attribute_hidden do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("character argument expected"));
     GetFullDLLPath(call, buf, translateChar(STRING_ELT(CAR(args), 0)));
     /* AddDLL does this DeleteDLL(buf); */
-    info = AddDLL(buf, LOGICAL(CADR(args))[0], LOGICAL(CADDR(args))[0]);
+    info = AddDLL(buf, LOGICAL(CADR(args))[0], LOGICAL(CADDR(args))[0], translateChar(STRING_ELT(CADDDR(args), 0)));
     if (!info)
         error(_("unable to load shared library '%s':\n  %s"), buf, DLLerror);
     return (Rf_MakeDLLInfo(info));
@@ -909,7 +909,7 @@ attribute_hidden int R_moduleCdynload(const char *module, int local, int now)
 #else
     snprintf(dllpath, PATH_MAX, "%s%smodules%s%s%s", p, FILESEP, FILESEP, module, SHLIB_EXT);
 #endif
-    res = AddDLL(dllpath, local, now);
+    res = AddDLL(dllpath, local, now, "");
     if (!res)
         warning(_("unable to load shared library '%s':\n  %s"), dllpath, DLLerror);
     return res != NULL ? 1 : 0;
