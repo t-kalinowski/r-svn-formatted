@@ -2536,16 +2536,16 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 }
             }
-            if (vectorFonts)
+            if (isExpression(txt))
+            {
+                GMathText(xx, yy, INCHES, VECTOR_ELT(txt, i % ntxt), adjx, adjy, Rf_gpptr(dd)->srt, dd);
+            }
+            else if (vectorFonts)
             {
                 string = STRING_ELT(txt, i % ntxt);
                 if (string != NA_STRING)
                     GVText(xx, yy, INCHES, translateChar(string), INTEGER(vfont)[0], INTEGER(vfont)[1], adjx, adjy,
                            Rf_gpptr(dd)->srt, dd);
-            }
-            else if (isExpression(txt))
-            {
-                GMathText(xx, yy, INCHES, VECTOR_ELT(txt, i % ntxt), adjx, adjy, Rf_gpptr(dd)->srt, dd);
             }
             else
             {
