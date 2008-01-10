@@ -65,7 +65,7 @@ attribute_hidden double GVStrWidth(const char *s, int typeface, int fontindex, i
 }
 #endif
 
-attribute_hidden double R_GE_VStrWidth(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
+attribute_hidden double R_GE_VStrWidth(const char *s, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();
@@ -108,7 +108,7 @@ attribute_hidden double GVStrHeight(const char *s, int typeface, int fontindex, 
 }
 #endif
 
-attribute_hidden double R_GE_VStrHeight(const char *s, R_GE_gcontext *gc, GEDevDesc *dd)
+attribute_hidden double R_GE_VStrHeight(const char *s, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)
         vfonts_Init();
@@ -125,8 +125,8 @@ attribute_hidden double R_GE_VStrHeight(const char *s, R_GE_gcontext *gc, GEDevD
 }
 
 #ifdef UNUSED
-attribute_hidden void GVText(double x, double y, int unit, const char *s, int typeface, int fontindex, double x_justify,
-                             double y_justify, double rotation, DevDesc *dd)
+attribute_hidden void GVText(double x, double y, int unit, const char *s, int enc, int typeface, int fontindex,
+                             double x_justify, double y_justify, double rotation, DevDesc *dd)
 {
     R_GE_gcontext gc;
 
@@ -142,7 +142,7 @@ attribute_hidden void GVText(double x, double y, int unit, const char *s, int ty
 }
 #endif
 
-attribute_hidden void R_GE_VText(double x, double y, const char *const s, double x_justify, double y_justify,
+attribute_hidden void R_GE_VText(double x, double y, const char *const s, int enc, double x_justify, double y_justify,
                                  double rotation, R_GE_gcontext *gc, GEDevDesc *dd)
 {
     if (!initialized)

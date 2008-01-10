@@ -804,14 +804,16 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
         if (isExpression(data))
             result = result * fromDeviceWidth(GEExpressionWidth(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd);
         else
-            result = result * fromDeviceWidth(GEStrWidth(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd);
+            /* FIXME: what encoding is this? */
+            result = result * fromDeviceWidth(GEStrWidth(CHAR(STRING_ELT(data, 0)), -1, gc, dd), GE_INCHES, dd);
         break;
     case L_STRINGHEIGHT:
     case L_MYSTRINGHEIGHT: /* FIXME: Remove this when I can */
         if (isExpression(data))
             result = result * fromDeviceHeight(GEExpressionHeight(VECTOR_ELT(data, 0), gc, dd), GE_INCHES, dd);
         else
-            result = result * fromDeviceHeight(GEStrHeight(CHAR(STRING_ELT(data, 0)), gc, dd), GE_INCHES, dd);
+            /* FIXME: what encoding is this? */
+            result = result * fromDeviceHeight(GEStrHeight(CHAR(STRING_ELT(data, 0)), -1, gc, dd), GE_INCHES, dd);
         break;
     case L_GROBX:
         result = evaluateGrobXUnit(value, data, thisCM, otherCM, nullLMode, nullAMode, dd);

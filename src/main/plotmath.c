@@ -1009,7 +1009,7 @@ static BBOX RenderSymbolChar(int ascii, int draw, mathContext *mc, R_GE_gcontext
     {
         asciiStr[0] = ascii;
         asciiStr[1] = '\0';
-        GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), asciiStr, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+        GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), asciiStr, -1 /*FIX*/, 0.0, 0.0, mc->CurrentAngle, gc, dd);
         PMoveAcross(bboxWidth(bbox), mc);
     }
     SetFont(prev, gc);
@@ -1071,7 +1071,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, R_GE_gco
                     if (res == -1)
                         error("invalid multibyte string");
                     PMoveAcross(lastItalicCorr, mc);
-                    GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), chr, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+                    GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), chr, -1 /*FIX*/, 0.0, 0.0, mc->CurrentAngle, gc, dd);
                     PMoveAcross(bboxWidth(glyphBBox), mc);
                 }
                 bboxWidth(resultBBox) += lastItalicCorr;
@@ -1104,7 +1104,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, R_GE_gco
                 {
                     chr[0] = *s;
                     PMoveAcross(lastItalicCorr, mc);
-                    GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), chr, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+                    GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), chr, -1 /*FIX*/, 0.0, 0.0, mc->CurrentAngle, gc, dd);
                     PMoveAcross(bboxWidth(glyphBBox), mc);
                 }
                 bboxWidth(resultBBox) += lastItalicCorr;
@@ -1142,7 +1142,7 @@ static BBOX RenderChar(int ascii, int draw, mathContext *mc, R_GE_gcontext *gc, 
         else
 #endif
             asciiStr[0] = ascii;
-        GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), asciiStr, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+        GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), asciiStr, -1 /*FIX*/, 0.0, 0.0, mc->CurrentAngle, gc, dd);
         PMoveAcross(bboxWidth(bbox), mc);
     }
     return bbox;
@@ -1186,7 +1186,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, R_GE_gcontext 
         }
         if (draw)
         {
-            GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), str, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+            GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), str, -1 /*FIX*/, 0.0, 0.0, mc->CurrentAngle, gc, dd);
             PMoveAcross(bboxWidth(resultBBox), mc);
         }
         if (UsingItalics(gc))

@@ -1953,7 +1953,7 @@ DevDesc *GNewPlot(Rboolean recording)
     {                                                                                                                  \
         int xpdsaved = Rf_gpptr(dd)->xpd;                                                                              \
         Rf_gpptr(dd)->xpd = 2;                                                                                         \
-        GText(0.5, 0.5, NFC, msg, 0.5, 0.5, 0, dd);                                                                    \
+        GText(0.5, 0.5, NFC, msg, -1, 0.5, 0.5, 0, dd);                                                                \
         Rf_gpptr(dd)->xpd = xpdsaved;                                                                                  \
     }
 
@@ -3117,12 +3117,12 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
 }
 
 /* Compute string width. */
-double GStrWidth(const char *str, GUnit units, DevDesc *dd)
+double GStrWidth(const char *str, int enc, GUnit units, DevDesc *dd)
 {
     double w;
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
-    w = GEStrWidth(str, &gc, (GEDevDesc *)dd);
+    w = GEStrWidth(str, enc, &gc, (GEDevDesc *)dd);
     if (units != DEVICE)
         w = GConvertXUnits(w, DEVICE, units, dd);
     return w;
@@ -3130,12 +3130,12 @@ double GStrWidth(const char *str, GUnit units, DevDesc *dd)
 
 /* Compute string height. */
 
-double GStrHeight(const char *str, GUnit units, DevDesc *dd)
+double GStrHeight(const char *str, int enc, GUnit units, DevDesc *dd)
 {
     double h;
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
-    h = GEStrHeight(str, &gc, (GEDevDesc *)dd);
+    h = GEStrHeight(str, enc, &gc, (GEDevDesc *)dd);
     if (units != DEVICE)
         h = GConvertYUnits(h, DEVICE, units, dd);
     return h;
@@ -3144,7 +3144,7 @@ double GStrHeight(const char *str, GUnit units, DevDesc *dd)
 /* Draw text in a plot. */
 /* If you want EXACT centering of text (e.g., like in GSymbol) */
 /* then pass NA_REAL for xc and yc */
-void GText(double x, double y, int coords, const char *str, double xc, double yc, double rot, DevDesc *dd)
+void GText(double x, double y, int coords, const char *str, int enc, double xc, double yc, double rot, DevDesc *dd)
 {
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
@@ -3157,7 +3157,7 @@ void GText(double x, double y, int coords, const char *str, double xc, double yc
      * Ensure that the base clipping region is set on the device
      */
     GClip(dd);
-    GEText(x, y, str, xc, yc, rot, &gc, (GEDevDesc *)dd);
+    GEText(x, y, str, enc, xc, yc, rot, &gc, (GEDevDesc *)dd);
 }
 
 /*-------------------------------------------------------------------
@@ -3398,7 +3398,7 @@ void GSymbol(double x, double y, int coords, int pch, DevDesc *dd)
 }
 
 /* Draw text in plot margins. */
-void GMtext(const char *str, int side, double line, int outer, double at, int las, double yadj, DevDesc *dd)
+void GMtext(const char *str, int enc, int side, double line, int outer, double at, int las, double yadj, DevDesc *dd)
 {
     /* "las" gives the style of axis labels:
          0 = always parallel to the axis [= default],
@@ -3506,7 +3506,7 @@ void GMtext(const char *str, int side, double line, int outer, double at, int la
         }
         break;
     }
-    GText(at, line, coords, str, xadj, yadj, angle, dd);
+    GText(at, line, coords, str, enc, xadj, yadj, angle, dd);
 } /* GMtext */
 
 /* Colour Code */
