@@ -1144,8 +1144,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                     buffer[strlen(buffer) + 1] = '\0';
                     buffer[strlen(buffer)] = ' ';
 
-                    labelDistance = GStrWidth(buffer, 0 /*FIX*/, INCHES, dd);
-                    labelHeight = GStrHeight(buffer, 0 /*FIX*/, INCHES, dd);
+                    labelDistance = GStrWidth(buffer, CE_NATIVE /*FIX*/, INCHES, dd);
+                    labelHeight = GStrHeight(buffer, CE_NATIVE /*FIX*/, INCHES, dd);
 
                     if (labelDistance > 0)
                     {
@@ -1287,7 +1287,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                         if (method == 0)
                         {
                             GPolyline(ns, xxx, yyy, USER, dd);
-                            GText(xxx[indx], yyy[indx], USER, buffer, 0 /*FIX*/, .5, .5, 0, dd);
+                            GText(xxx[indx], yyy[indx], USER, buffer, CE_NATIVE /*FIX*/, .5, .5, 0, dd);
                         }
                         else
                         {
@@ -1401,7 +1401,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                     GConvert(&ux, &uy, USER, INCHES, dd);
                                     GConvert(&vx, &vy, USER, INCHES, dd);
                                     /* 0, .5 => left, centre justified */
-                                    GText(ux, uy, INCHES, buffer, 0 /*FIX*/, 0, .5,
+                                    GText(ux, uy, INCHES, buffer, CE_NATIVE /*FIX*/, 0, .5,
                                           (180 / 3.14) * atan2(vy - uy, vx - ux), dd);
                                 }
                             } /* if (gotLabel) */
@@ -2477,7 +2477,8 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
             /* Draw tick line */
             GLine(v1[0] / v1[3], v1[1] / v1[3], v2[0] / v2[3], v2[1] / v2[3], USER, dd);
             /* Draw tick label */
-            GText(v3[0] / v3[3], v3[1] / v3[3], USER, translateChar(STRING_ELT(lab, i)), 0 /*FIX*/, .5, .5, 0, dd);
+            GText(v3[0] / v3[3], v3[1] / v3[3], USER, translateChar(STRING_ELT(lab, i)),
+                  CE_NATIVE /* getCharEnc(STRING_ELT(lab, i)) */, .5, .5, 0, dd);
         }
         UNPROTECT(2);
         break;
@@ -2494,8 +2495,8 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
  * to decide which of the x- and y-axes to label AND which corner
  * has the lowest x-value to decide which of the z-axes to label
  */
-static void PerspAxes(double *x, double *y, double *z, const char *xlab, const char *ylab, const char *zlab, int enc,
-                      int nTicks, int tickType, DevDesc *dd)
+static void PerspAxes(double *x, double *y, double *z, const char *xlab, int xenc, const char *ylab, int yenc,
+                      const char *zlab, int zenc, int nTicks, int tickType, DevDesc *dd)
 {
     int xAxis = 0, yAxis = 0, zAxis = 0; /* -Wall */
     int xpdsave;
@@ -2549,8 +2550,8 @@ static void PerspAxes(double *x, double *y, double *z, const char *xlab, const c
     }
     else
         warning(_("Axis orientation not calculated"));
-    PerspAxis(x, y, z, xAxis, 0, nTicks, tickType, xlab, enc, dd);
-    PerspAxis(x, y, z, yAxis, 1, nTicks, tickType, ylab, enc, dd);
+    PerspAxis(x, y, z, xAxis, 0, nTicks, tickType, xlab, xenc, dd);
+    PerspAxis(x, y, z, yAxis, 1, nTicks, tickType, ylab, yenc, dd);
     /* Figure out which Z axis to draw */
     if (lowest(v0[0] / v0[3], v1[0] / v1[3], v2[0] / v2[3], v3[0] / v3[3]))
     {
@@ -2570,7 +2571,7 @@ static void PerspAxes(double *x, double *y, double *z, const char *xlab, const c
     }
     else
         warning(_("Axis orientation not calculated"));
-    PerspAxis(x, y, z, zAxis, 2, nTicks, tickType, zlab, enc, dd);
+    PerspAxis(x, y, z, zAxis, 2, nTicks, tickType, zlab, zenc, dd);
 
     Rf_gpptr(dd)->xpd = xpdsave;
 }
@@ -2771,9 +2772,9 @@ SEXP attribute_hidden do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
         if (doaxes)
         {
             SEXP xl = STRING_ELT(xlab, 0), yl = STRING_ELT(ylab, 0), zl = STRING_ELT(zlab, 0);
-            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : translateChar(xl),
-                      (yl == NA_STRING) ? "" : translateChar(yl), (zl == NA_STRING) ? "" : translateChar(zl), 0 /*FIX*/,
-                      nTicks, tickType, dd);
+            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : translateChar(xl), CE_NATIVE,
+                      (yl == NA_STRING) ? "" : translateChar(yl), CE_NATIVE, (zl == NA_STRING) ? "" : translateChar(zl),
+                      CE_NATIVE, nTicks, tickType, dd);
         }
     }
 
