@@ -832,7 +832,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP arg, ans;
     int i, l, n, allow_;
     char *p, *tmp = NULL, *cbuf;
-    const char *This, *pp;
+    const char *This;
     Rboolean need_prefix;
 
     checkArity(op, args);
@@ -857,7 +857,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
             int nc = l, used;
             wchar_t wc;
             mbstate_t mb_st;
-            pp = This;
+            const char *pp = This;
             mbs_init(&mb_st);
             used = Mbrtowc(&wc, pp, MB_CUR_MAX, &mb_st);
             pp += used;
@@ -1602,7 +1602,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *errorptr;
     pcre *re_pcre = NULL /* -Wall */;
     const unsigned char *tables = NULL /* -Wall */;
-    char *buf;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -1735,6 +1734,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_UTF8
                     if (!useBytes && mbcslocale)
                     {
+                        char *buf;
                         int mlen = ovector[1] - st;
                         /* Unfortunately these are in bytes, so we need to
                            use chars instead */
@@ -1769,6 +1769,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef SUPPORT_MBCS
                     if (mbcslocale)
                     { /* we don't support useBytes here */
+                        char *buf;
                         int mlen = regmatch[0].rm_eo - st;
                         /* Unfortunately these are in bytes, so we need to
                            use chars instead */
@@ -1819,7 +1820,6 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
     SEXP ans, matchlen;         /* Return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* Buffers for storing multiple matches */
     int bufsize = 1024;         /* Starting size for buffers */
-    char *buf;
 
     PROTECT(matchbuf = allocVector(INTSXP, bufsize));
     PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
@@ -1862,6 +1862,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
 #ifdef SUPPORT_MBCS
             if (!useBytes && mbcslocale)
             {
+                char *buf;
                 int mlen = regmatch[0].rm_eo - st;
                 /* Unfortunately these are in bytes, so we need to
                    use chars instead */
@@ -2680,14 +2681,13 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
-    int i, j, n, nmatches;
+    int i, j, n, nmatches, nc;
     int igcase_opt, value_opt, max_distance_opt;
     int max_deletions_opt, max_insertions_opt, max_substitutions_opt;
     apse_t *aps;
     const char *str;
 #ifdef SUPPORT_MBCS
     Rboolean useMBCS = FALSE;
-    int nc;
     wchar_t *wstr, *wpat = NULL;
 #endif
 
@@ -2833,8 +2833,10 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+#ifdef SUPPORT_MBCS
     if (wpat)
         Free(wpat);
+#endif
     UNPROTECT(2);
     return ans;
 }
