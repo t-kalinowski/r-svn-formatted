@@ -2465,7 +2465,7 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
         return R_GE_VStrWidth(str, enc, gc, dd);
     else if (vfontcode >= 0)
     {
-        gc->fontfamily[0] = vfontcode;
+        gc->fontfamily[3] = vfontcode;
         gc->fontface = VFontFaceCode(vfontcode, gc->fontface);
         return R_GE_VStrWidth(str, enc, gc, dd);
     }
