@@ -177,9 +177,10 @@ void textRect(double x, double y, SEXP text, int i, R_GE_gcontext *gc, double xa
     }
     else
     {
-        const char *string = translateChar(STRING_ELT(text, i % LENGTH(text)));
-        w = fromDeviceWidth(GEStrWidth(string, CE_NATIVE /*FIX*/, gc, dd), GE_INCHES, dd);
-        h = fromDeviceHeight(GEStrHeight(string, CE_NATIVE /*FIX*/, gc, dd), GE_INCHES, dd);
+        const char *string = CHAR(STRING_ELT(text, i % LENGTH(text)));
+        w = fromDeviceWidth(GEStrWidth(string, getCharEnc(STRING_ELT(text, i % LENGTH(text))), gc, dd), GE_INCHES, dd);
+        h = fromDeviceHeight(GEStrHeight(string, getCharEnc(STRING_ELT(text, i % LENGTH(text))), gc, dd), GE_INCHES,
+                             dd);
     }
     location(0, 0, bl);
     location(w, 0, br);
