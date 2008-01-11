@@ -23,13 +23,14 @@
    More safe in case of multiple redrawing
  */
 
-#include <config.h> /* for SUPPORT_UTF8 */
-
 #include "internal.h"
 extern unsigned int TopmostDialogs; /* from dialogs.c */
 #include <winbase.h>
 #include <wchar.h>
-#define alloca(x) __builtin_alloca((x)) /* always GNUC */
+#define alloca(x) __builtin_alloca((x)) /* always GNU C */
+
+/* from extra.c */
+extern size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
 
 /* Some of the ideas in haveAlpha are borrowed from Cairo */
 typedef BOOL(WINAPI *alpha_blend_t)(HDC, int, int, int, int, HDC, int, int, int, int, BLENDFUNCTION);
@@ -42,23 +43,16 @@ static int haveAlpha()
 
     if (haveAlphaBlend < 0)
     {
-        /* AlphaBlend is in msimg32.dll.
-           It is apparently is broken on Win 98, so we require NT >= 5 */
-        OSVERSIONINFO os;
-        os.dwOSVersionInfoSize = sizeof(os);
-        GetVersionEx(&os);
-        if (os.dwPlatformId == VER_PLATFORM_WIN32_NT && os.dwMajorVersion >= 5)
+        /* AlphaBlend is in msimg32.dll.  */
+        HMODULE msimg32 = LoadLibrary("msimg32");
+        if (msimg32)
         {
-            HMODULE msimg32 = LoadLibrary("msimg32");
-            if (msimg32)
-            {
-                pAlphaBlend = (alpha_blend_t)GetProcAddress(msimg32, "AlphaBlend");
-                haveAlphaBlend = 1;
-                /* printf("loaded AlphaBlend %p\n", (void *) AlphaBlend); */
-            }
-            else
-                haveAlphaBlend = 0;
+            pAlphaBlend = (alpha_blend_t)GetProcAddress(msimg32, "AlphaBlend");
+            haveAlphaBlend = 1;
+            /* printf("loaded AlphaBlend %p\n", (void *) AlphaBlend); */
         }
+        else
+            haveAlphaBlend = 0;
     }
     return haveAlphaBlend;
 }
@@ -592,6 +586,9 @@ int gdrawwcs(drawing d, font f, rgb c, point p, const wchar_t *s)
     return width;
 }
 
+#define CE_NATIVE 0
+#define CE_UTF8 1
+
 /* This version aligns on baseline, and allows hadj = 0, 0.5, 1 */
 void gdrawstr1(drawing d, font f, rgb c, point p, const char *s, double hadj)
 {
@@ -614,45 +611,13 @@ void gdrawstr1(drawing d, font f, rgb c, point p, const char *s, double hadj)
     SelectObject(dc, old);
 }
 
-/* This version interprets 's' as MBCS in the current locale */
-void gwdrawstr1(drawing d, font f, rgb c, point p, const char *s, double hadj)
+/* widechar version */
+void gwdrawstr1(drawing d, font f, rgb c, point p, const wchar_t *wc, int cnt, double hadj)
 {
     HFONT old;
     HDC dc = GETHDC(d);
     UINT flags = TA_BASELINE | TA_UPDATECP;
-    wchar_t *wc;
-    int n = strlen(s), cnt;
-    wc = alloca((n + 1) * sizeof(wchar_t));
 
-    SetTextColor(dc, getwinrgb(d, c));
-    old = SelectObject(dc, f->handle);
-    MoveToEx(dc, p.x, p.y, NULL);
-    SetBkMode(dc, TRANSPARENT);
-    if (hadj < 0.25)
-        flags |= TA_LEFT;
-    else if (hadj < 0.75)
-        flags |= TA_CENTER;
-    else
-        flags |= TA_RIGHT;
-    SetTextAlign(dc, flags);
-    cnt = mbstowcs(wc, s, n); /* This is OK if we get an error */
-    TextOutW(dc, p.x, p.y, wc, cnt);
-    SelectObject(dc, old);
-}
-
-#ifdef SUPPORT_UTF8
-#include <wchar.h>
-size_t Rmbstowcs(wchar_t *wc, const char *s, size_t n);
-
-void gwdrawstr(drawing d, font f, rgb c, point p, const char *s, double hadj)
-{
-    HFONT old;
-    HDC dc = GETHDC(d);
-    UINT flags = TA_BASELINE | TA_UPDATECP;
-    wchar_t wc[1000];
-    int cnt;
-
-    cnt = Rmbstowcs(wc, s, 1000);
     SetTextColor(dc, getwinrgb(d, c));
     old = SelectObject(dc, f->handle);
     MoveToEx(dc, p.x, p.y, NULL);
@@ -667,7 +632,6 @@ void gwdrawstr(drawing d, font f, rgb c, point p, const char *s, double hadj)
     TextOutW(dc, p.x, p.y, wc, cnt);
     SelectObject(dc, old);
 }
-#endif
 
 rect gstrrect(drawing d, font f, const char *s)
 {
@@ -725,36 +689,22 @@ int gwcswidth(drawing d, font f, const wchar_t *s)
     return r.width;
 }
 
-#ifdef SUPPORT_UTF8
-static rect gwstrrect(drawing d, font f, const char *s)
+int gstrwidth1(drawing d, font f, const char *s, int enc)
 {
-    SIZE size;
-    HFONT old;
-    HDC dc;
-    wchar_t wc[1000];
-    int cnt;
-
-    cnt = Rmbstowcs(wc, s, 1000);
-    if (!f)
-        f = SystemFont;
-    if (d)
-        dc = GETHDC(d);
+    rect r;
+    if (enc == CE_UTF8)
+    {
+        wchar_t *wc;
+        int n = strlen(s);
+        wc = alloca((n + 1) * sizeof(wchar_t));
+        Rf_utf8towcs(wc, s, n + 1);
+        r = gwcsrect(d, f, wc);
+    }
     else
-        dc = GetDC(0);
-    old = SelectObject(dc, f->handle);
-    GetTextExtentPoint32W(dc, wc, cnt, &size);
-    SelectObject(dc, old);
-    if (!d)
-        ReleaseDC(0, dc);
-    return rect(0, 0, size.cx, size.cy);
-}
+        r = gstrrect(d, f, s);
 
-int gwstrwidth(drawing d, font f, const char *s)
-{
-    rect r = gwstrrect(d, f, s);
     return r.width;
 }
-#endif
 
 int ghasfixedwidth(font f)
 {
