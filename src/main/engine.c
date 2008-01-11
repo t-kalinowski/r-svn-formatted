@@ -1489,7 +1489,7 @@ void GERect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, GEDev
    0 means totally outside clip region
    1 means totally inside clip region
    2 means intersects clip region */
-static int clipTextCode(double x, double y, char *str, int enc, double rot, double hadj, R_GE_gcontext *gc,
+static int clipTextCode(double x, double y, const char *str, int enc, double rot, double hadj, R_GE_gcontext *gc,
                         int toDevice, GEDevDesc *dd)
 {
     double x0, x1, x2, x3, y0, y1, y2, y3, left, right, bottom, top;
@@ -1520,8 +1520,8 @@ static int clipTextCode(double x, double y, char *str, int enc, double rot, doub
     return clipRectCode(left, bottom, right, top, toDevice, dd);
 }
 
-static void clipText(double x, double y, char *str, int enc, double rot, double hadj, R_GE_gcontext *gc, int toDevice,
-                     GEDevDesc *dd)
+static void clipText(double x, double y, const char *str, int enc, double rot, double hadj, R_GE_gcontext *gc,
+                     int toDevice, GEDevDesc *dd)
 {
     int result = clipTextCode(x, y, str, enc, rot, hadj, gc, toDevice, dd);
     switch (result)
@@ -1696,7 +1696,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
         {
             const char *s;
             char *sb;
-            int i, n;
+            int i, n, enc2 = (gc->fontface == 5) ? CE_SYMBOL : CE_NATIVE;
             double xoff, yoff, hadj;
             double sin_rot, cos_rot; /* sin() & cos() of rot{ation} in radians */
             double xleft, ybottom;
@@ -1707,10 +1707,9 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             n = 1;
             for (s = str; *s; s++)
                 if (*s == '\n')
-                    n += 1;
+                    n++;
             /* Allocate a temporary buffer */
-            sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
-            sb = sbuf;
+            sb = sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             i = 0;
             sin_rot = DEG2RAD * rot;
             cos_rot = cos(sin_rot);
@@ -1719,7 +1718,9 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             {
                 if (*s == '\n' || *s == '\0')
                 {
+                    const char *str;
                     *sb = '\0';
+                    str = reEnc(sbuf, enc, enc2, 2);
                     if (n > 1)
                     {
                         /* first determine location of THIS line */
@@ -1752,7 +1753,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                     if (xc != 0.0 || yc != 0)
                     {
                         double width, height;
-                        width = fromDeviceWidth(GEStrWidth(sbuf, enc, gc, dd), GE_INCHES, dd);
+                        width = fromDeviceWidth(GEStrWidth(str, enc2, gc, dd), GE_INCHES, dd);
                         if (!R_FINITE(xc))
                             xc = 0.5;
                         if (!R_FINITE(yc))
@@ -1765,17 +1766,16 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                             GEMetricInfo(0, gc, &h, &d, &w, dd);
                             if (n > 1 || (h == 0 && d == 0 && w == 0))
                             {
-                                height = fromDeviceHeight(GEStrHeight(sbuf, enc, gc, dd), GE_INCHES, dd);
+                                height = fromDeviceHeight(GEStrHeight(str, enc2, gc, dd), GE_INCHES, dd);
                                 yc = dd->dev->yCharOffset;
                             }
                             else
                             {
                                 double maxHeight = 0.0;
                                 double maxDepth = 0.0;
-                                char *ss = sbuf;
+                                const char *ss = str;
                                 int charNum = 0;
 
-                                /* FIX: should re-encode here */
 #ifdef SUPPORT_MBCS
                                 /* Symbol fonts are not encoded in MBCS ever */
                                 if (gc->fontface != 5 && mbcslocale && !utf8strIsASCII(ss))
@@ -1813,7 +1813,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                 }
                                 else
 #endif
-                                    for (ss = sbuf; *ss; ss++)
+                                    for (ss = str; *ss; ss++)
                                     {
                                         GEMetricInfo((unsigned char)*ss, gc, &h, &d, &w, dd);
                                         h = fromDeviceHeight(h, GE_INCHES, dd);
@@ -1844,7 +1844,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                         }
                         else
                         {
-                            height = fromDeviceHeight(GEStrHeight(sbuf, enc, gc, dd), GE_INCHES, dd);
+                            height = fromDeviceHeight(GEStrHeight(str, CE_NATIVE, gc, dd), GE_INCHES, dd);
                         }
                         if (dd->dev->canHAdj == 2)
                             hadj = xc;
@@ -1869,15 +1869,9 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                      */
                     xleft = toDeviceX(xleft, GE_INCHES, dd);
                     ybottom = toDeviceY(ybottom, GE_INCHES, dd);
-                    /* FIX make sure we are working with re-encoded text here */
-                    if (dd->dev->canClip)
-                    {
-                        clipText(xleft, ybottom, sbuf, enc, rot, hadj, gc, 1, dd);
-                    }
-                    else
-                        clipText(xleft, ybottom, sbuf, enc, rot, hadj, gc, 0, dd);
+                    clipText(xleft, ybottom, str, enc2, rot, hadj, gc, dd->dev->canClip, dd);
                     sb = sbuf;
-                    i += 1;
+                    i++;
                 }
                 else
                     *sb++ = *s;
@@ -2037,7 +2031,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
                 int cnt = wcrtomb(str, pch, NULL);
                 if (cnt == -1)
                     error("invalid multibyte string");
-                str[cnt] = 0;
+                str[cnt] = '\0';
             }
             else
 #endif
@@ -2045,7 +2039,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
                 str[0] = pch;
                 str[1] = '\0';
             }
-            GEText(x, y, str, CE_NATIVE /*FIX*/, NA_REAL, NA_REAL, 0., gc, dd);
+            GEText(x, y, str, CE_NATIVE, NA_REAL, NA_REAL, 0., gc, dd);
         }
     }
     else
@@ -2479,6 +2473,7 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
             const char *s;
             char *sb;
             double wdash;
+            int enc2 = (gc->fontface == 5) ? CE_SYMBOL : CE_NATIVE;
             sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             sb = sbuf;
             for (s = str;; s++)
@@ -2492,8 +2487,7 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
                      * if it wants to.
                      * NOTE: fontface corresponds to old "font"
                      */
-                    /* FIX: encode to native */
-                    wdash = dd->dev->strWidth(sbuf, gc, dd->dev);
+                    wdash = dd->dev->strWidth(reEnc(sbuf, enc, enc2, 2), gc, dd->dev);
                     if (wdash > w)
                         w = wdash;
                     sb = sbuf;
