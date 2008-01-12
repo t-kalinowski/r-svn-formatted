@@ -1088,6 +1088,7 @@ static SEXP Query(const char *what, DevDesc *dd)
     }
     else if (streql(what, "pch"))
     {
+        /* FIXME: see FixupPch */
         if (Rf_dpptr(dd)->pch < ' ' || Rf_dpptr(dd)->pch > 255)
         {
             value = ScalarInteger(Rf_dpptr(dd)->pch);
