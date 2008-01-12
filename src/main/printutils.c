@@ -483,6 +483,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     }
     else
     {
+        /* FIXME: render declared strings directly, especially UTF-8 */
         p = translateChar(s);
         if (p == CHAR(s))
         {
