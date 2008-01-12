@@ -5027,10 +5027,14 @@ PCRE_EXP_DEFN int pcre_exec(const pcre *argument_re, const pcre_extra *extra_dat
         {
             if (first_byte_caseless)
                 while (start_match < end_subject && md->lcc[*start_match] != first_byte)
-                    start_match++;
+                {
+                    NEXTCHAR(start_match);
+                }
             else
                 while (start_match < end_subject && *start_match != first_byte)
-                    start_match++;
+                {
+                    NEXTCHAR(start_match);
+                }
         }
 
         /* Or to just after a linebreak for a multiline match if possible */
@@ -5040,7 +5044,9 @@ PCRE_EXP_DEFN int pcre_exec(const pcre *argument_re, const pcre_extra *extra_dat
             if (start_match > md->start_subject + start_offset)
             {
                 while (start_match <= end_subject && !WAS_NEWLINE(start_match))
-                    start_match++;
+                {
+                    NEXTCHAR(start_match);
+                }
 
                 /* If we have just passed a CR and the newline option is ANY or ANYCRLF,
                 and we are now at a LF, advance the match position by one more character.
@@ -5060,7 +5066,9 @@ PCRE_EXP_DEFN int pcre_exec(const pcre *argument_re, const pcre_extra *extra_dat
             {
                 register unsigned int c = *start_match;
                 if ((start_bits[c / 8] & (1 << (c & 7))) == 0)
-                    start_match++;
+                {
+                    NEXTCHAR(start_match);
+                }
                 else
                     break;
             }
