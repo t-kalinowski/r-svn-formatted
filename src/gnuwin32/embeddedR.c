@@ -76,6 +76,8 @@ static void my_onintr(int sig)
     UserBreak = 1;
 }
 
+extern Rboolean R_LoadRconsole;
+
 int Rf_initialize_R(int argc, char **argv)
 {
     structRstart rp;
@@ -117,6 +119,7 @@ int Rf_initialize_R(int argc, char **argv)
 
     signal(SIGBREAK, my_onintr);
     GA_initapp(0, 0);
+    R_LoadRconsole = FALSE;
     readconsolecfg();
 
     return 0;
