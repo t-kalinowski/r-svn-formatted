@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-1998, 2000-2001, 2003, 2005 Free Software Foundation, Inc.
+/* Copyright (C) 1995-1998, 2000-2001, 2003, 2005, 2007 Free Software Foundation, Inc.
    Contributed by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
 
    This program is free software; you can redistribute it and/or modify it
@@ -99,7 +99,9 @@ int _nl_explode_name(char *name, const char **language, const char **modifier, c
             if (*codeset != cp && (*codeset)[0] != '\0')
             {
                 *normalized_codeset = _nl_normalize_codeset(*codeset, cp - *codeset);
-                if (strcmp(*codeset, *normalized_codeset) == 0)
+                if (*normalized_codeset == NULL)
+                    return -1;
+                else if (strcmp(*codeset, *normalized_codeset) == 0)
                     free((char *)*normalized_codeset);
                 else
                     mask |= XPG_NORM_CODESET;

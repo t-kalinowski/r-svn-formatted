@@ -1,5 +1,5 @@
 /* Implementation of the internal dcigettext function.
-   Copyright (C) 1995-1999, 2000-2006 Free Software Foundation, Inc.
+   Copyright (C) 1995-1999, 2000-2007 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU Library General Public License as published
@@ -89,8 +89,11 @@ extern int errno;
 #include <sys/param.h>
 #endif
 
-#if !defined _LIBC && HAVE_NL_LOCALE_NAME
+#if !defined _LIBC
+#if HAVE_NL_LOCALE_NAME
 #include <langinfo.h>
+#endif
+#include "localcharset.h"
 #endif
 
 #include "gettextP.h"
@@ -126,16 +129,6 @@ extern int errno;
          TYPE dummy2;                                                                                                  \
      } *)0)                                                                                                            \
          ->dummy2)
-#endif
-
-/* The internal variables in the standalone libintl.a must have different
-   names than the internal variables in GNU libc, otherwise programs
-   using libintl.a cannot be linked statically.  */
-#if !defined _LIBC
-#define _nl_default_default_domain libintl_nl_default_default_domain
-#define _nl_current_default_domain libintl_nl_current_default_domain
-#define _nl_default_dirname libintl_nl_default_dirname
-#define _nl_domain_bindings libintl_nl_domain_bindings
 #endif
 
 /* Some compilers, like SunOS4 cc, don't have offsetof in <stddef.h>.  */
@@ -174,6 +167,22 @@ static char *stpcpy(char *dest, const char *src);
 #ifndef HAVE_MEMPCPY
 static void *mempcpy(void *dest, const void *src, size_t n);
 #endif
+#endif
+
+/* Use a replacement if the system does not provide the `tsearch' function
+   family.  */
+#if HAVE_TSEARCH || defined _LIBC
+#include <search.h>
+#else
+#define tsearch libintl_tsearch
+#define tfind libintl_tfind
+#define tdelete libintl_tdelete
+#define twalk libintl_twalk
+#include "tsearch.h"
+#endif
+
+#ifdef _LIBC
+#define tsearch __tsearch
 #endif
 
 /* Amount to increase buffer size by in each try.  */
@@ -270,18 +279,10 @@ struct known_translation_t
         char msgid[ZERO];
 };
 
-/* Root of the search tree with known translations.  We can use this
-   only if the system provides the `tsearch' function family.  */
-#if defined HAVE_TSEARCH || defined _LIBC
-#include <search.h>
-
 gl_rwlock_define_initialized(static, tree_lock)
 
+    /* Root of the search tree with known translations.  */
     static void *root;
-
-#ifdef _LIBC
-#define tsearch __tsearch
-#endif
 
 /* Function to compare two entries in the table of known translations.  */
 static int transcmp(const void *p1, const void *p2)
@@ -318,7 +319,6 @@ static int transcmp(const void *p1, const void *p2)
 
     return result;
 }
-#endif
 
 /* Name of the default domain used for gettext(3) prior any call to
    textdomain(3).  The default value for this is "messages".  */
@@ -494,13 +494,11 @@ char *DCIGETTEXT(const char *domainname, const char *msgid1, const char *msgid2,
     char *retval;
     size_t retlen;
     int saved_errno;
-#if defined HAVE_TSEARCH || defined _LIBC
     struct known_translation_t *search;
     struct known_translation_t **foundp = NULL;
     size_t msgid_len;
 #if defined HAVE_PER_THREAD_LOCALE && !defined IN_LIBGLOCALE
     const char *localename;
-#endif
 #endif
     size_t domainname_len;
 
@@ -516,6 +514,9 @@ char *DCIGETTEXT(const char *domainname, const char *msgid1, const char *msgid2,
                             : n == 1 ? (char *)msgid1 : (char *)msgid2);
 #endif
 
+    /* Preserve the `errno' value.  */
+    saved_errno = errno;
+
     gl_rwlock_rdlock(_nl_state_lock);
 
     /* If DOMAINNAME is NULL, we are interested in the default domain.  If
@@ -530,7 +531,6 @@ char *DCIGETTEXT(const char *domainname, const char *msgid1, const char *msgid2,
         category = LC_MESSAGES;
 #endif
 
-#if defined HAVE_TSEARCH || defined _LIBC
     msgid_len = strlen(msgid1) + 1;
 
     /* Try to find the translation among those which we found at
@@ -566,7 +566,6 @@ char *DCIGETTEXT(const char *domainname, const char *msgid1, const char *msgid2,
 #ifdef IN_LIBGLOCALE
     search->encoding = encoding;
 #endif
-#endif
 
     /* Since tfind/tsearch manage a balanced tree, concurrent tfind and
        tsearch calls can be fatal.  */
@@ -586,12 +585,10 @@ char *DCIGETTEXT(const char *domainname, const char *msgid1, const char *msgid2,
             retval = (char *)(*foundp)->translation;
 
         gl_rwlock_unlock(_nl_state_lock);
+        __set_errno(saved_errno);
         return retval;
     }
 #endif
-
-    /* Preserve the `errno' value.  */
-    saved_errno = errno;
 
     /* See whether this is a SUID binary or not.  */
     DETERMINE_SECURE;
@@ -672,7 +669,7 @@ domainname_len = strlen(domainname);
 xdomainname = (char *)alloca(strlen(categoryname) + domainname_len + 5);
 ADD_BLOCK(block_list, xdomainname);
 
-stpcpy(mempcpy(stpcpy(stpcpy(xdomainname, categoryname), "/"), domainname, domainname_len), ".mo");
+stpcpy((char *)mempcpy(stpcpy(stpcpy(xdomainname, categoryname), "/"), domainname, domainname_len), ".mo");
 
 /* Creating working area.  */
 single_locale = (char *)alloca(strlen(categoryvalue) + 1);
@@ -756,7 +753,6 @@ while (1)
             /* Found the translation of MSGID1 in domain DOMAIN:
            starting at RETVAL, RETLEN bytes.  */
             FREE_BLOCKS(block_list);
-#if defined HAVE_TSEARCH || defined _LIBC
             if (foundp == NULL)
             {
                 /* Create a new entry and add it to the search tree.  */
@@ -775,7 +771,7 @@ while (1)
                     char *new_localename;
 #endif
 
-                    new_domainname = mempcpy(newp->msgid, msgid1, msgid_len);
+                    new_domainname = (char *)mempcpy(newp->msgid, msgid1, msgid_len);
                     memcpy(new_domainname, domainname, domainname_len + 1);
 #ifdef HAVE_PER_THREAD_LOCALE
                     new_localename = new_domainname + domainname_len + 1;
@@ -814,7 +810,7 @@ while (1)
                 (*foundp)->translation = retval;
                 (*foundp)->translation_length = retlen;
             }
-#endif
+
             __set_errno(saved_errno);
 
             /* Now deal with plural.  */
@@ -967,12 +963,17 @@ found:
 #ifndef IN_LIBGLOCALE
         const char *encoding = get_output_charset(domainbinding);
 #endif
+        size_t nconversions;
+        struct converted_domain *convd;
+        size_t i;
+
+        /* Protect against reallocation of the table.  */
+        gl_rwlock_rdlock(domain->conversions_lock);
 
         /* Search whether a table with converted translations for this
        encoding has already been allocated.  */
-        size_t nconversions = domain->nconversions;
-        struct converted_domain *convd = NULL;
-        size_t i;
+        nconversions = domain->nconversions;
+        convd = NULL;
 
         for (i = nconversions; i > 0;)
         {
@@ -984,130 +985,160 @@ found:
             }
         }
 
+        gl_rwlock_unlock(domain->conversions_lock);
+
         if (convd == NULL)
         {
-            /* Allocate a table for the converted translations for this
-               encoding.  */
-            struct converted_domain *new_conversions =
-                (struct converted_domain *)(domain->conversions != NULL
-                                                ? realloc(domain->conversions,
-                                                          (nconversions + 1) * sizeof(struct converted_domain))
-                                                : malloc((nconversions + 1) * sizeof(struct converted_domain)));
+            /* We have to allocate a new conversions table.  */
+            gl_rwlock_wrlock(domain->conversions_lock);
 
-            if (__builtin_expect(new_conversions == NULL, 0))
-                /* Nothing we can do, no more memory.  We cannot use the
-                   translation because it might be encoded incorrectly.  */
-                return (char *)-1;
-
-            domain->conversions = new_conversions;
-
-            /* Copy the 'encoding' string to permanent storage.  */
-            encoding = strdup(encoding);
-            if (__builtin_expect(encoding == NULL, 0))
-                /* Nothing we can do, no more memory.  We cannot use the
-                   translation because it might be encoded incorrectly.  */
-                return (char *)-1;
-
-            convd = &new_conversions[nconversions];
-            convd->encoding = encoding;
-
-            /* Find out about the character set the file is encoded with.
-               This can be found (in textual form) in the entry "".  If this
-               entry does not exist or if this does not contain the 'charset='
-               information, we will assume the charset matches the one the
-               current locale and we don't have to perform any conversion.  */
-#ifdef _LIBC
-            convd->conv = (__gconv_t)-1;
-#else
-#if HAVE_ICONV
-            convd->conv = (iconv_t)-1;
-#endif
-#endif
+            /* Maybe in the meantime somebody added the translation.
+               Recheck.  */
+            for (i = nconversions; i > 0;)
             {
-                char *nullentry;
-                size_t nullentrylen;
-
-                /* Get the header entry.  This is a recursion, but it doesn't
-                   reallocate domain->conversions because we pass
-                   encoding = NULL or convert = 0, respectively.  */
-                nullentry =
-#ifdef IN_LIBGLOCALE
-                    _nl_find_msg(domain_file, domainbinding, NULL, "", &nullentrylen);
-#else
-                    _nl_find_msg(domain_file, domainbinding, "", 0, &nullentrylen);
-#endif
-
-                if (nullentry != NULL)
+                i--;
+                if (strcmp(domain->conversions[i].encoding, encoding) == 0)
                 {
-                    const char *charsetstr;
-
-                    charsetstr = strstr(nullentry, "charset=");
-                    if (charsetstr != NULL)
-                    {
-                        size_t len;
-                        char *charset;
-                        const char *outcharset;
-
-                        charsetstr += strlen("charset=");
-                        len = strcspn(charsetstr, " \t\n");
-
-                        charset = (char *)alloca(len + 1);
-#if defined _LIBC || HAVE_MEMPCPY
-                        *((char *)mempcpy(charset, charsetstr, len)) = '\0';
-#else
-                        memcpy(charset, charsetstr, len);
-                        charset[len] = '\0';
-#endif
-
-                        outcharset = encoding;
-
-#ifdef _LIBC
-                        /* We always want to use transliteration.  */
-                        outcharset = norm_add_slashes(outcharset, "TRANSLIT");
-                        charset = norm_add_slashes(charset, "");
-                        int r = __gconv_open(outcharset, charset, &convd->conv, GCONV_AVOID_NOCONV);
-                        if (__builtin_expect(r != __GCONV_OK, 0))
-                        {
-                            /* If the output encoding is the same there is
-                               nothing to do.  Otherwise do not use the
-                               translation at all.  */
-                            if (__builtin_expect(r != __GCONV_NOCONV, 1))
-                                return NULL;
-
-                            convd->conv = (__gconv_t)-1;
-                        }
-#else
-#if HAVE_ICONV
-                        /* When using GNU libc >= 2.2 or GNU libiconv >= 1.5,
-                           we want to use transliteration.  */
-#if (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2) || __GLIBC__ > 2 || _LIBICONV_VERSION >= 0x0105
-                        if (strchr(outcharset, '/') == NULL)
-                        {
-                            char *tmp;
-
-                            len = strlen(outcharset);
-                            tmp = (char *)alloca(len + 10 + 1);
-                            memcpy(tmp, outcharset, len);
-                            memcpy(tmp + len, "//TRANSLIT", 10 + 1);
-                            outcharset = tmp;
-
-                            convd->conv = iconv_open(outcharset, charset);
-
-                            freea(outcharset);
-                        }
-                        else
-#endif
-                            convd->conv = iconv_open(outcharset, charset);
-#endif
-#endif
-
-                        freea(charset);
-                    }
+                    convd = &domain->conversions[i];
+                    goto found_convd;
                 }
             }
-            convd->conv_tab = NULL;
-            /* Here domain->conversions is still == new_conversions.  */
-            domain->nconversions++;
+
+            {
+                /* Allocate a table for the converted translations for this
+                   encoding.  */
+                struct converted_domain *new_conversions =
+                    (struct converted_domain *)(domain->conversions != NULL
+                                                    ? realloc(domain->conversions,
+                                                              (nconversions + 1) * sizeof(struct converted_domain))
+                                                    : malloc((nconversions + 1) * sizeof(struct converted_domain)));
+
+                if (__builtin_expect(new_conversions == NULL, 0))
+                {
+                    /* Nothing we can do, no more memory.  We cannot use the
+                       translation because it might be encoded incorrectly.  */
+                unlock_fail:
+                    gl_rwlock_unlock(domain->conversions_lock);
+                    return (char *)-1;
+                }
+
+                domain->conversions = new_conversions;
+
+                /* Copy the 'encoding' string to permanent storage.  */
+                encoding = strdup(encoding);
+                if (__builtin_expect(encoding == NULL, 0))
+                    /* Nothing we can do, no more memory.  We cannot use the
+                   translation because it might be encoded incorrectly.  */
+                    goto unlock_fail;
+
+                convd = &new_conversions[nconversions];
+                convd->encoding = encoding;
+
+                /* Find out about the character set the file is encoded with.
+                   This can be found (in textual form) in the entry "".  If this
+                   entry does not exist or if this does not contain the 'charset='
+                   information, we will assume the charset matches the one the
+                   current locale and we don't have to perform any conversion.  */
+#ifdef _LIBC
+                convd->conv = (__gconv_t)-1;
+#else
+#if HAVE_ICONV
+                convd->conv = (iconv_t)-1;
+#endif
+#endif
+                {
+                    char *nullentry;
+                    size_t nullentrylen;
+
+                    /* Get the header entry.  This is a recursion, but it doesn't
+                   reallocate domain->conversions because we pass
+                   encoding = NULL or convert = 0, respectively.  */
+                    nullentry =
+#ifdef IN_LIBGLOCALE
+                        _nl_find_msg(domain_file, domainbinding, NULL, "", &nullentrylen);
+#else
+                        _nl_find_msg(domain_file, domainbinding, "", 0, &nullentrylen);
+#endif
+
+                    if (nullentry != NULL)
+                    {
+                        const char *charsetstr;
+
+                        charsetstr = strstr(nullentry, "charset=");
+                        if (charsetstr != NULL)
+                        {
+                            size_t len;
+                            char *charset;
+                            const char *outcharset;
+
+                            charsetstr += strlen("charset=");
+                            len = strcspn(charsetstr, " \t\n");
+
+                            charset = (char *)alloca(len + 1);
+#if defined _LIBC || HAVE_MEMPCPY
+                            *((char *)mempcpy(charset, charsetstr, len)) = '\0';
+#else
+                            memcpy(charset, charsetstr, len);
+                            charset[len] = '\0';
+#endif
+
+                            outcharset = encoding;
+
+#ifdef _LIBC
+                            /* We always want to use transliteration.  */
+                            outcharset = norm_add_slashes(outcharset, "TRANSLIT");
+                            charset = norm_add_slashes(charset, "");
+                            int r = __gconv_open(outcharset, charset, &convd->conv, GCONV_AVOID_NOCONV);
+                            if (__builtin_expect(r != __GCONV_OK, 0))
+                            {
+                                /* If the output encoding is the same there is
+                                   nothing to do.  Otherwise do not use the
+                                   translation at all.  */
+                                if (__builtin_expect(r != __GCONV_NULCONV, 1))
+                                {
+                                    gl_rwlock_unlock(domain->conversions_lock);
+                                    free((char *)encoding);
+                                    return NULL;
+                                }
+
+                                convd->conv = (__gconv_t)-1;
+                            }
+#else
+#if HAVE_ICONV
+                            /* When using GNU libc >= 2.2 or GNU libiconv >= 1.5,
+                           we want to use transliteration.  */
+#if (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2) || __GLIBC__ > 2 || _LIBICONV_VERSION >= 0x0105
+                            if (strchr(outcharset, '/') == NULL)
+                            {
+                                char *tmp;
+
+                                len = strlen(outcharset);
+                                tmp = (char *)alloca(len + 10 + 1);
+                                memcpy(tmp, outcharset, len);
+                                memcpy(tmp + len, "//TRANSLIT", 10 + 1);
+                                outcharset = tmp;
+
+                                convd->conv = iconv_open(outcharset, charset);
+
+                                freea(outcharset);
+                            }
+                            else
+#endif
+                                convd->conv = iconv_open(outcharset, charset);
+#endif
+#endif
+
+                            freea(charset);
+                        }
+                    }
+                }
+                convd->conv_tab = NULL;
+                /* Here domain->conversions is still == new_conversions.  */
+                domain->nconversions++;
+            }
+
+        found_convd:
+            gl_rwlock_unlock(domain->conversions_lock);
         }
 
         if (
@@ -1551,7 +1582,6 @@ static const char *internal_function get_output_charset(struct binding *domainbi
             return _NL_CURRENT(LC_CTYPE, CODESET);
 #else
 #if HAVE_ICONV
-            extern const char *locale_charset(void);
             return locale_charset();
 #endif
 #endif
@@ -1580,6 +1610,10 @@ static void *mempcpy(void *dest, const void *src, size_t n)
 {
     return (void *)((char *)memcpy(dest, src, n) + n);
 }
+#endif
+
+#if !_LIBC && !HAVE_TSEARCH
+#include "tsearch.c"
 #endif
 
 #ifdef _LIBC

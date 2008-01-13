@@ -1,5 +1,5 @@
-/* Determine the current selected locale.
-   Copyright (C) 1995-1999, 2000-2006 Free Software Foundation, Inc.
+/* Determine name of the currently selected locale.
+   Copyright (C) 1995-1999, 2000-2007 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU Library General Public License as published
@@ -22,6 +22,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+/* Specification.  */
+#ifdef IN_LIBINTL
+#include "gettextP.h"
+#else
+#include "localename.h"
 #endif
 
 #include <stdlib.h>
@@ -494,10 +501,10 @@
 #define SUBLANG_AZERI_CYRILLIC 0x02
 #endif
 #ifndef SUBLANG_BENGALI_INDIA
-#define SUBLANG_BENGALI_INDIA 0x00
+#define SUBLANG_BENGALI_INDIA 0x01
 #endif
 #ifndef SUBLANG_BENGALI_BANGLADESH
-#define SUBLANG_BENGALI_BANGLADESH 0x01
+#define SUBLANG_BENGALI_BANGLADESH 0x02
 #endif
 #ifndef SUBLANG_CHINESE_MACAU
 #define SUBLANG_CHINESE_MACAU 0x05
@@ -590,16 +597,16 @@
 #define SUBLANG_NEPALI_INDIA 0x02
 #endif
 #ifndef SUBLANG_PUNJABI_INDIA
-#define SUBLANG_PUNJABI_INDIA 0x00
+#define SUBLANG_PUNJABI_INDIA 0x01
 #endif
 #ifndef SUBLANG_PUNJABI_PAKISTAN
-#define SUBLANG_PUNJABI_PAKISTAN 0x01
+#define SUBLANG_PUNJABI_PAKISTAN 0x02
 #endif
 #ifndef SUBLANG_ROMANIAN_ROMANIA
-#define SUBLANG_ROMANIAN_ROMANIA 0x00
+#define SUBLANG_ROMANIAN_ROMANIA 0x01
 #endif
 #ifndef SUBLANG_ROMANIAN_MOLDOVA
-#define SUBLANG_ROMANIAN_MOLDOVA 0x01
+#define SUBLANG_ROMANIAN_MOLDOVA 0x02
 #endif
 #ifndef SUBLANG_SERBIAN_LATIN
 #define SUBLANG_SERBIAN_LATIN 0x02
@@ -607,11 +614,11 @@
 #ifndef SUBLANG_SERBIAN_CYRILLIC
 #define SUBLANG_SERBIAN_CYRILLIC 0x03
 #endif
-#ifndef SUBLANG_SINDHI_INDIA
-#define SUBLANG_SINDHI_INDIA 0x00
-#endif
 #ifndef SUBLANG_SINDHI_PAKISTAN
 #define SUBLANG_SINDHI_PAKISTAN 0x01
+#endif
+#ifndef SUBLANG_SINDHI_AFGHANISTAN
+#define SUBLANG_SINDHI_AFGHANISTAN 0x02
 #endif
 #ifndef SUBLANG_SPANISH_GUATEMALA
 #define SUBLANG_SPANISH_GUATEMALA 0x04
@@ -670,14 +677,14 @@
 #ifndef SUBLANG_TAMAZIGHT_ARABIC
 #define SUBLANG_TAMAZIGHT_ARABIC 0x01
 #endif
-#ifndef SUBLANG_TAMAZIGHT_LATIN
-#define SUBLANG_TAMAZIGHT_LATIN 0x02
+#ifndef SUBLANG_TAMAZIGHT_ALGERIA_LATIN
+#define SUBLANG_TAMAZIGHT_ALGERIA_LATIN 0x02
 #endif
 #ifndef SUBLANG_TIGRINYA_ETHIOPIA
-#define SUBLANG_TIGRINYA_ETHIOPIA 0x00
+#define SUBLANG_TIGRINYA_ETHIOPIA 0x01
 #endif
 #ifndef SUBLANG_TIGRINYA_ERITREA
-#define SUBLANG_TIGRINYA_ERITREA 0x01
+#define SUBLANG_TIGRINYA_ERITREA 0x02
 #endif
 #ifndef SUBLANG_URDU_PAKISTAN
 #define SUBLANG_URDU_PAKISTAN 0x01
@@ -700,7 +707,11 @@
    NAME is a sufficiently large buffer.
    On input, it contains the MacOS X locale name.
    On output, it contains the Unix locale name.  */
-void _nl_locale_name_canonicalize(char *name)
+#if !defined IN_LIBINTL
+static
+#endif
+    void
+    gl_locale_name_canonicalize(char *name)
 {
     /* This conversion is based on a posting by
        Deborah GoldSmith <goldsmit@apple.com> on 2005-03-08,
@@ -983,7 +994,7 @@ void _nl_locale_name_canonicalize(char *name)
    should be used for codeset information instead.
    The result must not be freed; it is statically allocated.  */
 
-const char *_nl_locale_name_posix(int category, const char *categoryname)
+const char *gl_locale_name_posix(int category, const char *categoryname)
 {
     /* Use the POSIX methods of looking to 'LC_ALL', 'LC_xxx', and 'LANG'.
        On some systems this can be done by the 'setlocale' function itself.  */
@@ -1009,7 +1020,7 @@ const char *_nl_locale_name_posix(int category, const char *categoryname)
 #endif
 }
 
-const char *_nl_locale_name_default(void)
+const char *gl_locale_name_default(void)
 {
     /* POSIX:2001 says:
        "All implementations shall define a locale as the default locale, to be
@@ -1048,7 +1059,7 @@ const char *_nl_locale_name_default(void)
 
             if (CFStringGetCString(name, namebuf, sizeof(namebuf), kCFStringEncodingASCII))
             {
-                _nl_locale_name_canonicalize(namebuf);
+                gl_locale_name_canonicalize(namebuf);
                 cached_localename = strdup(namebuf);
             }
             CFRelease(locale);
@@ -1057,7 +1068,7 @@ const char *_nl_locale_name_default(void)
             if (value != NULL && CFGetTypeID(value) == CFStringGetTypeID() &&
                 CFStringGetCString((CFStringRef)value, namebuf, sizeof(namebuf), kCFStringEncodingASCII))
             {
-                _nl_locale_name_canonicalize(namebuf);
+                gl_locale_name_canonicalize(namebuf);
                 cached_localename = strdup(namebuf);
             }
 #endif
@@ -1161,7 +1172,8 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_BENGALI_INDIA:
                 return "bn_IN";
-                // case SUBLANG_BENGALI_BANGLADESH: return "bn_BD";
+            case SUBLANG_BENGALI_BANGLADESH:
+                return "bn_BD";
             }
             return "bn";
         case LANG_BULGARIAN:
@@ -1485,7 +1497,8 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_PUNJABI_INDIA:
                 return "pa_IN"; /* Gurmukhi script */
-                // case SUBLANG_PUNJABI_PAKISTAN: return "pa_PK"; /* Arabic script */
+            case SUBLANG_PUNJABI_PAKISTAN:
+                return "pa_PK"; /* Arabic script */
             }
             return "pa";
         case LANG_RHAETO_ROMANCE:
@@ -1495,7 +1508,8 @@ const char *_nl_locale_name_default(void)
             {
             case SUBLANG_ROMANIAN_ROMANIA:
                 return "ro_RO";
-                // case SUBLANG_ROMANIAN_MOLDOVA: return "ro_MD";
+            case SUBLANG_ROMANIAN_MOLDOVA:
+                return "ro_MD";
             }
             return "ro";
         case LANG_RUSSIAN:
@@ -1512,10 +1526,10 @@ const char *_nl_locale_name_default(void)
         case LANG_SINDHI:
             switch (sub)
             {
-            case SUBLANG_SINDHI_INDIA:
-                return "sd_IN";
             case SUBLANG_SINDHI_PAKISTAN:
                 return "sd_PK";
+            case SUBLANG_SINDHI_AFGHANISTAN:
+                return "sd_AF";
             }
             return "sd";
         case LANG_SINHALESE:
@@ -1599,8 +1613,8 @@ const char *_nl_locale_name_default(void)
             /* FIXME: Adjust this when Tamazight locales appear on Unix.  */
             case SUBLANG_TAMAZIGHT_ARABIC:
                 return "ber_MA@arabic";
-            case SUBLANG_TAMAZIGHT_LATIN:
-                return "ber_MA@latin";
+            case SUBLANG_TAMAZIGHT_ALGERIA_LATIN:
+                return "ber_DZ@latin";
             }
             return "ber_MA";
         case LANG_TAMIL:
@@ -1679,13 +1693,13 @@ const char *_nl_locale_name_default(void)
 #endif
 }
 
-const char *_nl_locale_name(int category, const char *categoryname)
+const char *gl_locale_name(int category, const char *categoryname)
 {
     const char *retval;
 
-    retval = _nl_locale_name_posix(category, categoryname);
+    retval = gl_locale_name_posix(category, categoryname);
     if (retval != NULL)
         return retval;
 
-    return _nl_locale_name_default();
+    return gl_locale_name_default();
 }

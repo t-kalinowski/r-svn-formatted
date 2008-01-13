@@ -1,5 +1,5 @@
 /* Load needed message catalogs.
-   Copyright (C) 1995-1999, 2000-2005 Free Software Foundation, Inc.
+   Copyright (C) 1995-1999, 2000-2007 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU Library General Public License as published
@@ -933,7 +933,7 @@ void internal_function _nl_load_domain(struct loaded_l10nfile *domain_file, stru
                 n_sysdep_segments = W(domain->must_swap, data->n_sysdep_segments);
                 sysdep_segments =
                     (const struct sysdep_segment *)((char *)data + W(domain->must_swap, data->sysdep_segments_offset));
-                sysdep_segment_values = alloca(n_sysdep_segments * sizeof(const char *));
+                sysdep_segment_values = (const char **)alloca(n_sysdep_segments * sizeof(const char *));
                 for (i = 0; i < n_sysdep_segments; i++)
                 {
                     const char *name = (char *)data + W(domain->must_swap, sysdep_segments[i].offset);
@@ -1199,6 +1199,7 @@ void internal_function _nl_load_domain(struct loaded_l10nfile *domain_file, stru
     /* No caches of converted translations so far.  */
     domain->conversions = NULL;
     domain->nconversions = 0;
+    gl_rwlock_init(domain->conversions_lock);
 
     /* Get the header entry and look for a plural specification.  */
 #ifdef IN_LIBGLOCALE
@@ -1224,7 +1225,7 @@ void internal_function __libc_freeres_fn_section _nl_unload_domain(struct loaded
     size_t i;
 
     if (domain->plural != &__gettext_germanic_plural)
-        __gettext_free_exp(domain->plural);
+        __gettext_free_exp((struct expression *)domain->plural);
 
     for (i = 0; i < domain->nconversions; i++)
     {
@@ -1238,6 +1239,7 @@ void internal_function __libc_freeres_fn_section _nl_unload_domain(struct loaded
     }
     if (domain->conversions != NULL)
         free(domain->conversions);
+    __libc_rwlock_fini(domain->conversions_lock);
 
     if (domain->malloced)
         free(domain->malloced);
