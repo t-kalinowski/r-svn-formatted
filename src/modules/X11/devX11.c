@@ -2261,6 +2261,7 @@ int Rf_setNewX11DeviceData(NewDevDesc *dd, double gamma_fac, newX11Desc *xd)
     dd->mode = newX11_Mode;
     dd->hold = newX11_Hold;
     dd->metricInfo = newX11_MetricInfo;
+    dd->hasTextUTF8 = FALSE;
 
     /* Set required graphics parameters. */
 
