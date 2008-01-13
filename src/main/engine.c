@@ -2512,7 +2512,10 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
             double wdash;
             int enc2;
 
-            enc2 = (gc->fontface == 5) ? CE_SYMBOL : (dd->dev->hasTextUTF8 ? CE_UTF8 : CE_NATIVE);
+            enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
+            if (enc2 == CE_NATIVE && dd->dev->hasTextUTF8)
+                enc2 = CE_UTF8;
+
             sb = sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             for (s = str;; s++)
             {
