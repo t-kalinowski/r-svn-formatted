@@ -215,8 +215,8 @@ int Rf_string_to_pch(SEXP pch)
     }
     else if (IS_UTF8(pch))
     {
-        wchar_t wc;
-        if (utf8toucs(&wc, CHAR(pch)) > 0)
+        wchar_t wc = 0;
+        if ((int)utf8toucs(&wc, CHAR(pch)) > 0)
             res = wc;
         else
             error(_("invalid multibyte char in pch=\"c\""));
@@ -225,8 +225,8 @@ int Rf_string_to_pch(SEXP pch)
     }
     else if (mbcslocale)
     {
-        unsigned int ucs;
-        if (mbtoucs(&ucs, CHAR(pch), MB_CUR_MAX) > 0)
+        unsigned int ucs = 0;
+        if ((int)mbtoucs(&ucs, CHAR(pch), MB_CUR_MAX) > 0)
             res = ucs;
         else
             error(_("invalid multibyte char in pch=\"c\""));
