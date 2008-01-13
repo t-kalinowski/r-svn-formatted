@@ -1707,6 +1707,8 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
             if (enc2 == CE_NATIVE && dd->dev->hasTextUTF8)
                 enc2 = CE_UTF8;
+            else if (enc2 == CE_UTF8 && !dd->dev->hasTextUTF8)
+                enc2 = CE_NATIVE;
 
 #ifdef DEBUG_MI
             printf("string %s, enc %d, %d\n", str, enc, enc2);
