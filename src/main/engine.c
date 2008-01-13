@@ -1708,6 +1708,10 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             if (enc2 == CE_NATIVE && dd->dev->hasTextUTF8)
                 enc2 = CE_UTF8;
 
+#ifdef DEBUG_MI
+            printf("string %s, enc %d, %d\n", str, enc, enc2);
+#endif
+
             /* We work in GE_INCHES */
             x = fromDeviceX(x, GE_INCHES, dd);
             y = fromDeviceY(y, GE_INCHES, dd);
@@ -1798,7 +1802,9 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                         mbs_init(&mb_st);
                                         while ((used = mbrtowc(&wc, ss, n, &mb_st)) > 0)
                                         {
-                                            /* printf(" centring %s aka %d in MBCS\n", ss, wc); */
+#ifdef DEBUG_MI
+                                            printf(" centring %s aka %d in MBCS\n", ss, wc);
+#endif
                                             GEMetricInfo((int)wc, gc, &h, &d, &w, dd);
                                             h = fromDeviceHeight(h, GE_INCHES, dd);
                                             d = fromDeviceHeight(d, GE_INCHES, dd);
@@ -1827,10 +1833,12 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                         {
                                             /* This is only used on Windows and hence
                                                we fudge this via a -ve number */
-                                            /* printf(" centring %s aka %d in UTF-8\n", ss, wc); */
                                             GEMetricInfo(-(int)wc, gc, &h, &d, &w, dd);
                                             h = fromDeviceHeight(h, GE_INCHES, dd);
                                             d = fromDeviceHeight(d, GE_INCHES, dd);
+#ifdef DEBUG_MI
+                                            printf(" centring %s aka %d in UTF-8, %f %f\n", ss, wc, h, d);
+#endif
                                             if (charNum++ == 0)
                                             {
                                                 maxHeight = h;
@@ -1857,6 +1865,9 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                         GEMetricInfo((unsigned char)*ss, gc, &h, &d, &w, dd);
                                         h = fromDeviceHeight(h, GE_INCHES, dd);
                                         d = fromDeviceHeight(d, GE_INCHES, dd);
+#ifdef DEBUG_MI
+                                        printf("metric info for %d, %f %f\n", (unsigned char)*ss, h, d);
+#endif
                                         /* Set maxHeight and maxDepth from height
                                            and depth of first char.
                                            Must NOT set to 0 in case there is
@@ -2021,7 +2032,9 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
 {
     double r, xc, yc;
     double xx[4], yy[4];
+    unsigned int maxchar;
 
+    maxchar = (mbcslocale && gc->fontface != 5) ? 127 : 255;
     /* Special cases for plotting pch="." or pch=<character>
      */
     if (pch == NA_INTEGER) /* do nothing */
@@ -2040,7 +2053,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
         GEText(x, y, str, CE_UTF8, NA_REAL, NA_REAL, 0., gc, dd);
     }
 #endif
-    else if (' ' <= pch && pch <= (mbcslocale ? 127 : 255))
+    else if (' ' <= pch && pch <= maxchar)
     {
         if (pch == '.')
         {
@@ -2075,9 +2088,11 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
             char str[2];
             str[0] = pch;
             str[1] = '\0';
-            GEText(x, y, str, CE_ANY, NA_REAL, NA_REAL, 0., gc, dd);
+            GEText(x, y, str, (gc->fontface == 5) ? CE_SYMBOL : CE_NATIVE, NA_REAL, NA_REAL, 0., gc, dd);
         }
     }
+    else if (pch > maxchar)
+        warning(_("pch value '%d' is invalid in this locale"), pch);
     else
     {
         double GSTR_0 = fromDeviceWidth(size, GE_INCHES, dd);
@@ -2479,7 +2494,7 @@ void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, dou
         dd->dev->metricInfo(c, gc, ascent, descent, width, dd->dev);
     else
 #endif
-        dd->dev->metricInfo(c & 0xFF, gc, ascent, descent, width, dd->dev);
+        dd->dev->metricInfo(c, gc, ascent, descent, width, dd->dev);
 }
 
 /****************************************************************

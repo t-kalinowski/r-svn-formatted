@@ -807,7 +807,8 @@ next_char:
                 R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
                 goto top_of_loop;
             }
-            *outbuf++ = *inbuf++;
+            *outbuf++ = '.';
+            inbuf++;
             outb--;
             inb--;
             goto next_char;
