@@ -938,6 +938,7 @@ static void RQuartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double 
     }
     SET(RQUARTZ_FONT);
     {
+        /* FIXME: in a mbcslocale, c is a Unicode point */
         char text[2] = {c, 0};
         CGFontRef font = CGContextGetFont(ctx);
         float aScale = (gc->cex * gc->ps * xd->tscale) / CGFontGetUnitsPerEm(font);
