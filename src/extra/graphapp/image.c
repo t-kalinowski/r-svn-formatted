@@ -831,7 +831,7 @@ static image load_header_image(const char *filename)
     FILE *file;
     image img;
 
-    file = fopen(filename, "r");
+    file = fopen(filename, "rt");
     img = load_header_image_file(file);
     fclose(file);
     return img;
@@ -863,7 +863,7 @@ static void save_header_image(image img, const char *filename)
     FILE *file;
     char *name;
 
-    file = fopen(filename, "w");
+    file = fopen(filename, "wt");
     name = base_file_name(filename);
     save_header_image_file(file, name, img);
     discard(name);

@@ -639,7 +639,7 @@ PROTECTED
 void print_object_list(void)
 {
     static int start_again = 1;
-    char *mode = "a";
+    char *mode = "at"; /* to ensure text mode */
     FILE *f;
 
     if (!app_initialised)
