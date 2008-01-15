@@ -97,33 +97,52 @@ FILE *R_fopen(const char *filename, const char *mode)
 
    On NT-based versions of Windows, file names are stored in 'Unicode'
    (UCS-2), and _wfopen is provided to access them by UCS-2 names.
+
+   Turned off until we have wide interfaces to dir.create,
+   file.exists, file.remove, file.info, Sys.chmod ...
 */
 
-#if 0 && defined(Win32)
+#if defined(Win32)
+
+wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
+{
+    static wchar_t filename[MAX_PATH + 1];
+    void *obj;
+    const char *from = "", *inbuf;
+    char *outbuf;
+    size_t inb, outb, res;
+
+    if (IS_LATIN1(fn))
+        from = "latin1";
+    if (IS_UTF8(fn))
+        from = "UTF=8";
+    obj = Riconv_open("UCS-2LE", from);
+    if (obj == (void *)(-1))
+        error(_("unsupported conversion in 'filenameToWchar'"));
+
+    if (expand)
+        inbuf = R_ExpandFileName(CHAR(fn));
+    else
+        inbuf = CHAR(fn);
+
+    inb = strlen(inbuf) + 1;
+    outb = 2 * (MAX_PATH + 1);
+    outbuf = (char *)filename;
+    res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
+    Riconv_close(obj);
+    if (res == -1 || inb > 0)
+        error(_("file name conversion problem"));
+
+    return filename;
+}
+
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {
     wchar_t wmode[10];
-    void *obj;
-    char *from = "", *inbuf, *outbuf;
-    size_t inb, outb, res;
-    
-    if(IS_LATIN1(fn)) from = "latin1";
-    if(IS_UTF8(fn)) from = "UTF=8";
-    obj = Riconv_open("UCS-2LE", from);
-    if(obj == (void *)(-1)) error(_("unsupported conversion"));
-
-    if(expand) inbuf = R_ExpandFileName(CHAR(fn)); else inbuf = CHAR(fn);
-
-    inb = strlen(inbuf)+1; outb = 2*(MAX_PATH+1);
-    outbuf = (char *) filename;
-    res = Riconv(obj, &inbuf , &inb, &outbuf, &outb);
-    Riconv_close(obj);
-    if(res == -1 || inb > 0) error(_("file name conversion problem"));
 
     mbstowcs(wmode, mode, 10);
-    return _wfopen(filename, wmode);
+    return _wfopen(filenameToWchar(fn, expand), wmode);
 }
-
 #else
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {

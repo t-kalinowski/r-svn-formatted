@@ -4223,7 +4223,7 @@ static int NumericValue(int c)
             wcs[wcnt++] = c;                                                                                           \
     } while (0)
 
-extern ssize_t Rf_wctoutf8(char *s, const wchar_t *wc, size_t n);
+extern ssize_t Rf_wcstoutf8(char *s, const wchar_t *wc, size_t n);
 static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
 {
     SEXP t;
@@ -4236,7 +4236,7 @@ static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
     s = alloca(cnt * 6); /* max 6 bytes per wchar_t */
 #endif
     R_CheckStack();
-    Rf_wctoutf8(s, wcs, cnt);
+    Rf_wcstoutf8(s, wcs, cnt);
     PROTECT(t = allocVector(STRSXP, 1));
     SET_STRING_ELT(t, 0, mkCharEnc(s, UTF8_MASK));
     UNPROTECT(1);
