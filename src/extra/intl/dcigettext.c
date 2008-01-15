@@ -827,16 +827,20 @@ return_untranslated :
     /* Return the untranslated MSGID.  */
     FREE_BLOCKS(block_list);
 gl_rwlock_unlock(_nl_state_lock);
+#if 0
 #ifndef _LIBC
-if (!ENABLE_SECURE)
-{
-    extern void _nl_log_untranslated(const char *logfilename, const char *domainname, const char *msgid1,
-                                     const char *msgid2, int plural);
-    const char *logfilename = getenv("GETTEXT_LOG_UNTRANSLATED");
+  if (!ENABLE_SECURE)
+    {
+      extern void _nl_log_untranslated (const char *logfilename,
+					const char *domainname,
+					const char *msgid1, const char *msgid2,
+					int plural);
+      const char *logfilename = getenv ("GETTEXT_LOG_UNTRANSLATED");
 
-    if (logfilename != NULL && logfilename[0] != '\0')
-        _nl_log_untranslated(logfilename, domainname, msgid1, msgid2, plural);
-}
+      if (logfilename != NULL && logfilename[0] != '\0')
+	_nl_log_untranslated (logfilename, domainname, msgid1, msgid2, plural);
+    }
+#endif
 #endif
 __set_errno(saved_errno);
 return (plural == 0 ? (char *)msgid1
