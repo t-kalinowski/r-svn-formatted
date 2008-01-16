@@ -482,10 +482,15 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
  *     pager   = pager to be used.
  */
 
+/* As from R 2.7.0 we assume file[i] and pager are in UTF-8 */
+extern FILE *R_wfopen(const wchar_t *filename, const wchar_t *mode);
+extern size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
+
 int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del, const char *pager)
 {
     int i;
     char buf[1024];
+    wchar_t wfn[PATH_MAX + 1];
 
     if (nfile > 0)
     {
@@ -497,12 +502,14 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
             {
                 if (!strcmp(pager, "internal"))
                 {
-                    newpager(wtitle, file[i], headers[i], del);
+                    newpager(wtitle, file[i], CE_UTF8, headers[i], del);
                 }
                 else if (!strcmp(pager, "console"))
                 {
                     size_t len;
-                    FILE *f = R_fopen(file[i], "rt");
+                    FILE *f;
+                    Rf_utf8towcs(wfn, file[i], PATH_MAX + 1);
+                    f = R_wfopen(wfn, L"rt");
                     if (f)
                     {
                         while ((len = fread(buf, 1, 1023, f)))
@@ -512,7 +519,7 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
                         }
                         fclose(f);
                         if (del)
-                            DeleteFile(file[i]);
+                            DeleteFileW(wfn);
                     }
                     else
                     {
@@ -553,6 +560,7 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
  *     editor  = editor to be used.
  */
 
+/* As from R 2.7.0 we assume file, editor are in UTF-8 */
 int R_EditFiles(int nfile, const char **file, const char **title, const char *editor)
 {
     int i;
@@ -566,7 +574,7 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
         {
             if (!strcmp(editor, "internal"))
             {
-                Rgui_Edit(file[i], title[i], 0);
+                Rgui_Edit(file[i], CE_UTF8, title[i], 0);
             }
             else
             {
@@ -575,7 +583,7 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
                     snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[i]);
                 else
                     snprintf(buf, 1024, "%s \"%s\"", editor, file[i]);
-                runcmd(buf, CE_NATIVE, 0, 1, "");
+                runcmd(buf, CE_UTF8, 0, 1, "");
             }
         }
         return 0;
@@ -591,7 +599,7 @@ extern int DialogSelectFile(char *buf, int len); /* from rui.c */
 
 int R_ChooseFile(int new, char *buf, int len)
 {
-    return (DialogSelectFile(buf, len));
+    return DialogSelectFile(buf, len);
 }
 
 /* code for R_ShowMessage, R_YesNoCancel */
