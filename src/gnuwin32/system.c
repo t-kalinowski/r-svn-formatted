@@ -527,7 +527,7 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
                         snprintf(buf, 1024, "\"%s\" \"%s\"", pager, file[i]);
                     else
                         snprintf(buf, 1024, "%s \"%s\"", pager, file[i]);
-                    runcmd(buf, 0, 1, "");
+                    runcmd(buf, CE_NATIVE, 0, 1, "");
                 }
             }
             else
@@ -575,7 +575,7 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
                     snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[i]);
                 else
                     snprintf(buf, 1024, "%s \"%s\"", editor, file[i]);
-                runcmd(buf, 0, 1, "");
+                runcmd(buf, CE_NATIVE, 0, 1, "");
             }
         }
         return 0;

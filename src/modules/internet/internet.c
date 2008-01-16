@@ -203,7 +203,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode)
         free(new);
         error(_("allocation of url connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->canwrite = FALSE;
     new->open = &url_open;
     new->close = &url_close;

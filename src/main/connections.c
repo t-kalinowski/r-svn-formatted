@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-7   The R Development Core Team.
+ *  Copyright (C) 2000-8   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -441,9 +441,10 @@ static size_t null_write(const void *ptr, size_t size, size_t nitems, Rconnectio
     return 0; /* -Wall */
 }
 
-void init_con(Rconnection new, const char *description, const char *const mode)
+void init_con(Rconnection new, const char *description, int enc, const char *const mode)
 {
     strcpy(new->description, description);
+    new->enc = enc;
     strncpy(new->mode, mode, 4);
     new->mode[4] = '\0';
     new->isopen = new->incomplete = new->blocking = new->isGzcon = FALSE;
@@ -487,6 +488,10 @@ void init_con(Rconnection new, const char *description, const char *const mode)
 #endif
 #endif
 
+#ifdef Win32
+size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
+#endif
+
 static Rboolean file_open(Rconnection con)
 {
     const char *name;
@@ -508,7 +513,19 @@ static Rboolean file_open(Rconnection con)
     errno = 0; /* some systems require this */
     if (strcmp(name, "stdin"))
     {
-        fp = R_fopen(name, con->mode);
+#ifdef Win32
+        if (con->enc == CE_UTF8)
+        {
+            int n = strlen(name);
+            wchar_t *wname = (wchar_t *)alloca(2 * (n + 1)), wmode[10];
+            R_CheckStack();
+            Rf_utf8towcs(wname, name, n + 1);
+            mbstowcs(wmode, con->mode, 10);
+            fp = _wfopen(wname, wmode);
+        }
+        else
+#endif
+            fp = R_fopen(name, con->mode);
     }
     else
     { /* use file("stdin") to refer to the file and not the console */
@@ -740,7 +757,7 @@ static size_t file_write(const void *ptr, size_t size, size_t nitems, Rconnectio
     return fwrite(ptr, size, nitems, fp);
 }
 
-static Rconnection newfile(const char *description, const char *mode)
+static Rconnection newfile(const char *description, int enc, const char *mode)
 {
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
@@ -760,7 +777,7 @@ static Rconnection newfile(const char *description, const char *mode)
         free(new);
         error(_("allocation of file connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, enc, mode);
     new->open = &file_open;
     new->close = &file_close;
     new->vfprintf = &file_vfprintf;
@@ -937,7 +954,7 @@ static Rconnection newfifo(const char *description, const char *mode)
         free(new);
         error(_("allocation of fifo connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->open = &fifo_open;
     new->close = &fifo_close;
     new->vfprintf = &dummy_vfprintf;
@@ -1044,7 +1061,19 @@ static Rboolean pipe_open(Rconnection con)
     mode[1] = '\0';
 #endif
     errno = 0;
-    fp = R_popen(con->description, mode);
+#ifdef Win32
+    if (con->enc == CE_UTF8)
+    {
+        int n = strlen(con->description);
+        wchar_t *wname = (wchar_t *)alloca(2 * (n + 1)), wmode[10];
+        R_CheckStack();
+        Rf_utf8towcs(wname, con->description, n + 1);
+        mbstowcs(wmode, con->mode, 10);
+        fp = _wpopen(wname, wmode);
+    }
+    else
+#endif
+        fp = R_popen(con->description, mode);
     if (!fp)
     {
 #ifdef HAVE_STRERROR
@@ -1073,7 +1102,7 @@ static void pipe_close(Rconnection con)
     con->isopen = FALSE;
 }
 
-static Rconnection newpipe(const char *description, const char *mode)
+static Rconnection newpipe(const char *description, int ienc, const char *mode)
 {
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
@@ -1093,7 +1122,7 @@ static Rconnection newpipe(const char *description, const char *mode)
         free(new);
         error(_("allocation of pipe connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, ienc, mode);
     new->open = &pipe_open;
     new->close = &pipe_close;
     new->vfprintf = &file_vfprintf;
@@ -1115,7 +1144,7 @@ static Rconnection newpipe(const char *description, const char *mode)
 #endif
 
 #ifdef Win32
-extern Rconnection newWpipe(const char *description, const char *mode);
+extern Rconnection newWpipe(const char *description, int enc, const char *mode);
 #endif
 
 SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -1123,7 +1152,7 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_POPEN
     SEXP scmd, sopen, ans, class, enc;
     const char *file, *open;
-    int ncon;
+    int ncon, ienc = CE_NATIVE;
     Rconnection con = NULL;
 
     checkArity(op, args);
@@ -1132,7 +1161,13 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "description");
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
-    file = translateChar(STRING_ELT(scmd, 0));
+#ifdef Win32
+    ienc = getCharEnc(STRING_ELT(scmd, 0));
+    if (ienc == CE_UTF8)
+        file = CHAR(STRING_ELT(scmd, 0));
+    else
+#endif
+        file = translateChar(STRING_ELT(scmd, 0));
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
         error(_("invalid '%s' argument"), "open");
@@ -1144,12 +1179,10 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     ncon = NextConnection();
 #ifdef Win32
     if (CharacterMode != RTerm)
-        con = newWpipe(file, strlen(open) ? open : "r");
+        con = newWpipe(file, ienc, strlen(open) ? open : "r");
     else
-        con = newpipe(file, strlen(open) ? open : "r");
-#else
-    con = newpipe(file, strlen(open) ? open : "r");
 #endif
+        con = newpipe(file, ienc, strlen(open) ? open : "r");
     Connections[ncon] = con;
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
 
@@ -1301,7 +1334,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
         free(new);
         error(_("allocation of gzfile connection failed"));
     }
-    init_con(new, description, "");
+    init_con(new, description, CE_NATIVE, "");
     strncpy(new->mode, mode, 1);
     sprintf(new->mode + 1, "b%1d", compress);
 
@@ -1498,7 +1531,7 @@ static Rconnection newbzfile(const char *description, const char *mode)
         free(new);
         error(_("allocation of bzfile connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
 
     new->canseek = FALSE;
     new->open = &bzfile_open;
@@ -1835,7 +1868,7 @@ static Rconnection newclp(const char *url, const char *inmode)
         free(new);
         error(_("allocation of clipboard connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->open = &clp_open;
     new->close = &clp_close;
     new->vfprintf = &dummy_vfprintf;
@@ -1946,7 +1979,7 @@ static Rconnection newterminal(const char *description, const char *mode)
         free(new);
         error(_("allocation of terminal connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->isopen = TRUE;
     new->canread = (strcmp(mode, "r") == 0);
     new->canwrite = (strcmp(mode, "w") == 0);
@@ -2091,7 +2124,7 @@ static Rconnection newtext(const char *description, SEXP text)
         free(new);
         error(_("allocation of text connection failed"));
     }
-    init_con(new, description, "r");
+    init_con(new, description, CE_NATIVE, "r");
     new->isopen = TRUE;
     new->canwrite = FALSE;
     new->open = &text_open;
@@ -2313,7 +2346,7 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
         free(new);
         error(_("allocation of text connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->isopen = TRUE;
     new->canread = FALSE;
     new->open = &text_open;
@@ -4209,7 +4242,7 @@ SEXP attribute_hidden do_getconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, names;
+    SEXP ans, names, tmp;
     Rconnection Rcon;
 
     checkArity(op, args);
@@ -4217,7 +4250,12 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(VECSXP, 7));
     PROTECT(names = allocVector(STRSXP, 7));
     SET_STRING_ELT(names, 0, mkChar("description"));
-    SET_VECTOR_ELT(ans, 0, mkString(Rcon->description));
+    PROTECT(tmp = allocVector(STRSXP, 1));
+    if (Rcon->enc == CE_UTF8)
+        SET_STRING_ELT(tmp, 0, mkCharEnc(Rcon->description, UTF8_MASK));
+    else
+        SET_STRING_ELT(tmp, 0, mkChar(Rcon->description));
+    SET_VECTOR_ELT(ans, 0, tmp);
     SET_STRING_ELT(names, 1, mkChar("class"));
     SET_VECTOR_ELT(ans, 1, mkString(Rcon->class));
     SET_STRING_ELT(names, 2, mkChar("mode"));
@@ -4231,7 +4269,7 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(names, 6, mkChar("can write"));
     SET_VECTOR_ELT(ans, 6, mkString(Rcon->canwrite ? "yes" : "no"));
     setAttrib(ans, R_NamesSymbol, names);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return ans;
 }
 
@@ -4245,7 +4283,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block;
+    int ncon, block, ienc = CE_NATIVE;
     Rconnection con = NULL;
 #ifdef HAVE_INTERNET
     UrlScheme type = HTTPsh; /* -Wall */
@@ -4258,6 +4296,13 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
     url = CHAR(STRING_ELT(scmd, 0)); /* ASCII */
+#ifdef Win32
+    ienc = getCharEnc(STRING_ELT(scmd, 0));
+    if (ienc == CE_UTF8)
+        url = CHAR(STRING_ELT(scmd, 0));
+    else
+#endif
+        url = translateChar(STRING_ELT(scmd, 0));
 #ifdef HAVE_INTERNET
     if (strncmp(url, "http://", 7) == 0)
         type = HTTPsh;
@@ -4288,7 +4333,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (strlen(url) > 9 && url[7] == '/' && url[9] == ':')
             nh = 8;
 #endif
-        con = newfile(url + nh, strlen(open) ? open : "r");
+        con = newfile(url + nh, ienc, strlen(open) ? open : "r");
         class2 = "file";
 #ifdef HAVE_INTERNET
     }
@@ -4322,7 +4367,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             )
                 con = newclp(url, strlen(open) ? open : "r");
             else
-                con = newfile(url, strlen(open) ? open : "r");
+                con = newfile(url, ienc, strlen(open) ? open : "r");
             class2 = "file";
         }
         else
@@ -4740,7 +4785,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         free(new);
         error(_("allocation of 'gzcon' connection failed"));
     }
-    init_con(new, description, mode);
+    init_con(new, description, CE_NATIVE, mode);
     new->text = FALSE;
     new->isGzcon = TRUE;
     new->open = &gzcon_open;

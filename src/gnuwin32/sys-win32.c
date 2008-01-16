@@ -240,7 +240,8 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (flag < 2)
     {
-        ll = runcmd(CHAR(STRING_ELT(CAR(args), 0)), flag, vis, CHAR(STRING_ELT(CADDR(args), 0)));
+        ll = runcmd(CHAR(STRING_ELT(CAR(args), 0)), getCharEnc(STRING_ELT(CAR(args), 0)), flag, vis,
+                    CHAR(STRING_ELT(CADDR(args), 0)));
         if (ll == NOLAUNCH)
             warning(runerror());
     }
@@ -251,7 +252,8 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             m = 2;
         if (ignore_stderr)
             m = 0;
-        fp = rpipeOpen(CHAR(STRING_ELT(CAR(args), 0)), vis, CHAR(STRING_ELT(CADDR(args), 0)), m);
+        fp = rpipeOpen(CHAR(STRING_ELT(CAR(args), 0)), getCharEnc(STRING_ELT(CAR(args), 0)), vis,
+                       CHAR(STRING_ELT(CADDR(args), 0)), m);
         if (!fp)
         {
             /* If we are capturing standard output generate an error */
