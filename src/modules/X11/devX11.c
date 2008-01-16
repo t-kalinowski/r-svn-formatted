@@ -1529,6 +1529,9 @@ static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
     int size = gc->cex * gc->ps + 0.5;
     XFontStruct *f = NULL;
 
+    if (c < 0)
+        error(_("invalid use of %d < 0 in '%s'"), c, "newX11_MetricInfo");
+
     SetFont(translateFontFamily(gc->fontfamily, xd), gc->fontface, size, dd);
 
 #ifdef USE_FONTSET
@@ -1570,16 +1573,12 @@ static void newX11_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *
     }
 
     if (xd->font->type != One_Font)
-    {
-        char buf[10];
-        wchar_t wc[2] = L" ";
+    { /* so an MBCS */
         XRectangle ink, log;
-        wchar_t *wcs = wc;
+        char buf[10];
 
-        wc[0] = (unsigned int)c;
-
-        /* FIXME should be ucstomb(buf, wc) */
-        wcsrtombs(buf, (const wchar_t **)&wcs, sizeof(wc), NULL);
+        ucstomb(buf, (unsigned int)c);
+        /* wcsrtombs(buf, (const wchar_t **)&wcs, sizeof(wc), NULL); */
 #ifdef HAVE_XUTF8TEXTEXTENTS
         if (utf8locale)
             Xutf8TextExtents(xd->font->fontset, buf, strlen(buf), &ink, &log);
