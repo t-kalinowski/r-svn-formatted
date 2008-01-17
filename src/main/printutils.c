@@ -320,7 +320,7 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
    and allowing for embedded nuls.
    In MBCS locales it works in characters, and reports in display width.
  */
-int Rstrwid(const char *str, int slen, int quote)
+attribute_hidden int Rstrwid(const char *str, int slen, int quote)
 {
     const char *p = str;
     int len = 0, i;
@@ -454,7 +454,7 @@ int Rstrwid(const char *str, int slen, int quote)
     return len;
 }
 
-int Rstrlen(SEXP s, int quote)
+attribute_hidden int Rstrlen(SEXP s, int quote)
 {
     return Rstrwid(CHAR(s), LENGTH(s), quote);
 }

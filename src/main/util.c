@@ -1033,6 +1033,7 @@ size_t attribute_hidden utf8toucs(wchar_t *wc, const char *s)
         if (strlen(s) < 4)
             return -2;
         *w = (wchar_t)(((byte & 0x0F) << 18) | ((s[1] & 0x3F) << 12) | ((s[2] & 0x3F) << 6) | (s[3] & 0x3F));
+        return 4;
     }
     else if (byte < 0xFC)
     {
@@ -1040,6 +1041,7 @@ size_t attribute_hidden utf8toucs(wchar_t *wc, const char *s)
             return -2;
         *w = (wchar_t)(((byte & 0x0F) << 24) | ((s[1] & 0x3F) << 12) | ((s[2] & 0x3F) << 12) | ((s[3] & 0x3F) << 6) |
                        (s[4] & 0x3F));
+        return 5;
     }
     else
     {
@@ -1047,6 +1049,7 @@ size_t attribute_hidden utf8toucs(wchar_t *wc, const char *s)
             return -2;
         *w = (wchar_t)(((byte & 0x0F) << 30) | ((s[1] & 0x3F) << 24) | ((s[2] & 0x3F) << 18) | ((s[3] & 0x3F) << 12) |
                        ((s[4] & 0x3F) << 6) | (s[5] & 0x3F));
+        return 6;
     }
 }
 
