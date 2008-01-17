@@ -4180,6 +4180,18 @@ SEXP attribute_hidden do_sinknumber(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ScalarInteger(errcon ? R_SinkNumber : R_ErrorCon);
 }
 
+#ifdef Win32
+#include <R_ext/RStartup.h>
+extern UImode CharacterMode;
+void WinCheckUTF8(void)
+{
+    if (CharacterMode == RGui)
+        WinUTF8out = (SinkCons[R_SinkNumber] == 1);
+    else
+        WinUTF8out = FALSE;
+}
+#endif
+
 /* ------------------- admin functions  --------------------- */
 
 void attribute_hidden InitConnections()

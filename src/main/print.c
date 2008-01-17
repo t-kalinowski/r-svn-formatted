@@ -643,6 +643,9 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
     int i;
     SEXP t;
 
+#ifdef Win32
+    WinCheckUTF8();
+#endif
     if (!isMethodsDispatchOn() && (IS_S4_OBJECT(s) || TYPEOF(s) == S4SXP))
     {
         SEXP cl = getAttrib(s, install("class"));
@@ -823,6 +826,9 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         UNIMPLEMENTED_TYPE("PrintValueRec", s);
     }
     printAttributes(s, env, FALSE);
+#ifdef Win32
+    WinUTF8out = FALSE;
+#endif
 }
 
 /* 2000-12-30 PR#715: remove list tags from tagbuf here
