@@ -22,6 +22,7 @@
 #include "grid.h"
 #include <math.h>
 #include <float.h>
+#include <string.h>
 
 /* NOTE:
  * The extensive use of L or L_ prefixes dates back to when this
@@ -2851,7 +2852,11 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
             {
                 if (isString(pch))
                 {
-                    ipch = Rf_string_to_pch(STRING_ELT(pch, i % npch));
+                    /* special case for efficiency: pch = "." */
+                    if (strcmp(CHAR(STRING_ELT(pch, i % npch)), ".") == 0)
+                        ipch = 46;
+                    else
+                        ipch = Rf_string_to_pch(STRING_ELT(pch, i % npch));
                 }
                 else if (isInteger(pch))
                 {
