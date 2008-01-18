@@ -204,6 +204,8 @@ static char *string_adj(char *target, const char *orig, const char *repl, int *o
     return t;
 }
 
+/* FIXME: this should be using UTF-8 when the strings concerned are
+   UTF-8 */
 SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int global, int igcase_opt, int useBytes)
 {
     SEXP ans;
@@ -377,6 +379,8 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
 
 #include "RBufferUtils.h"
 
+/* FIXME: this should be using UTF-8 when the strings concerned are
+   UTF-8 */
 SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, int useBytes)
 {
     SEXP ansList, ans, matchlen;
