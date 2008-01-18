@@ -493,6 +493,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     }
     else
     {
+#ifdef Win32
         if (WinUTF8out)
         {
             ienc = getCharEnc(s);
@@ -511,6 +512,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             }
         }
         else
+#endif
         {
             p = translateChar(s);
             if (p == CHAR(s))
