@@ -258,7 +258,7 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
 #ifdef HAVE_VASPRINTF
     if (res >= BUFSIZE || res < 0)
     {
-        vasprintf(&b, format, ap);
+        (void)vasprintf(&b, format, ap);
         usedVasprintf = TRUE;
     }
 #else
@@ -3106,26 +3106,6 @@ static SEXP rawOneString(Rbyte *bytes, int nbytes, int *np)
     return res;
 }
 
-static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np)
-{
-    char *buf;
-    SEXP res;
-
-    if (*np + len > nbytes)
-    {
-        len = nbytes - *np;
-        if (!len)
-            return (R_NilValue);
-    }
-    /* no terminator */
-    buf = R_chk_calloc(len + 1, 1);
-    memcpy(buf, bytes + (*np), len);
-    *np += len;
-    res = mkChar(buf);
-    Free(buf);
-    return res;
-}
-
 /* readBin(con, what, n, swap) */
 SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -3649,13 +3629,13 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* FIXME: why not all mbcslocales? */
+/* FIXME: could do any MBCS locale, but would need pushback */
 static SEXP readFixedString(Rconnection con, int len)
 {
     char *buf;
     int pos, m;
 
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
     if (utf8locale)
     {
         int i, clen;
@@ -3680,6 +3660,7 @@ static SEXP readFixedString(Rconnection con, int len)
                 if (m < clen - 1)
                     error(_("invalid UTF-8 input in readChar()"));
                 p += clen - 1;
+                /* NB: this only checks validity of multi-byte characters */
                 if ((int)mbrtowc(NULL, q, clen, NULL) < 0)
                     error(_("invalid UTF-8 input in readChar()"));
             }
@@ -3698,6 +3679,53 @@ static SEXP readFixedString(Rconnection con, int len)
     }
     /* String may contain nuls so don't use mkChar */
     return mkCharLen(buf, pos);
+}
+
+static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np)
+{
+    char *buf;
+    SEXP res;
+
+    if (*np + len > nbytes)
+    {
+        len = nbytes - *np;
+        if (!len)
+            return (R_NilValue);
+    }
+
+#ifdef SUPPORT_MBCS
+    if (utf8locale)
+    {
+        int i, clen, iread = *np;
+        char *p;
+        Rbyte *q;
+        p = buf = (char *)R_alloc(MB_CUR_MAX * len + 1, sizeof(char));
+        for (i = 0; i < len; i++, p += clen, iread += clen)
+        {
+            if (iread >= nbytes)
+                break;
+            q = bytes + iread;
+            clen = utf8clen(*q);
+            if (iread + clen > nbytes)
+                error(_("invalid UTF-8 input in readChar()"));
+            memcpy(p, q, clen);
+        }
+        clen = iread - (*np);
+        *np = iread;
+        *p = '\0';
+        return mkCharLen(buf, clen);
+    }
+    else
+#endif
+    {
+        /* no terminator */
+        buf = R_chk_calloc(len + 1, 1);
+        memcpy(buf, bytes + (*np), len);
+        *np += len;
+        res = mkCharLen(buf, len);
+        Free(buf);
+    }
+    return res;
 }
 
 /* readChar(con, nchars) */
@@ -3736,6 +3764,8 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
             if (!con->open(con))
                 error(_("cannot open the connection"));
     }
+    if (mbcslocale && !utf8locale)
+        warning(_("can only read in bytes in a non-UTF-8 MBCS locale"));
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0, m = 0; i < n; i++)
     {
