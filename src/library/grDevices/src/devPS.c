@@ -4246,13 +4246,11 @@ static void mbcsToSbcs(const char *in, char *out, const char *encoding, int enc)
     char *o_buf;
     size_t i_len, o_len, status;
 
-#if 0
-    if(enc != CE_UTF8 &&
-       ( !strcmp(encoding, "latin1") || !strcmp(encoding, "ISOLatin1")) ) {
-	mbcsToLatin1(in, out);
-	return;
+    if (enc != CE_UTF8 && (!strcmp(encoding, "latin1") || !strcmp(encoding, "ISOLatin1")))
+    {
+        mbcsToLatin1(in, out); /* more tolerant */
+        return;
     }
-#endif
 
     if ((void *)-1 == (cd = Riconv_open(encoding, (enc == CE_UTF8) ? "UTF-8" : "")))
         error(_("unknown encoding '%s' in 'mbcsToSbcs'"), encoding);
@@ -4261,11 +4259,20 @@ static void mbcsToSbcs(const char *in, char *out, const char *encoding, int enc)
     i_len = strlen(in) + 1; /* include terminator */
     o_buf = (char *)out;
     o_len = i_len; /* must be the same or fewer chars */
-    status = Riconv(cd, &i_buf, (size_t *)&i_len, &o_buf, (size_t *)&o_len);
+next_char:
+    status = Riconv(cd, &i_buf, &i_len, &o_buf, &o_len);
+    if (status == (size_t)-1 && errno == EILSEQ)
+    {
+        warning(_("conversion failure on '%s' in 'mbcsToSbcs': dots substituted"), in), *o_buf++ = '.';
+        i_buf++;
+        o_len--;
+        i_len--;
+        goto next_char;
+    }
 
     Riconv_close(cd);
-    if (status == (size_t)-1)
-        error(_("conversion failure from %s to %s on '%s' in 'mbcsToSbcs'"), (enc == CE_UTF8) ? "UTF-8" : "native",
+    if (status == (size_t)-1) /* internal error? */
+        error("conversion failure from %s to %s on '%s' in 'mbcsToSbcs'", (enc == CE_UTF8) ? "UTF-8" : "native",
               encoding, in);
 }
 
