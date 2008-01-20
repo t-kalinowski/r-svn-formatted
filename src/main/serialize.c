@@ -2195,7 +2195,7 @@ SEXP attribute_hidden R_unserialize(SEXP icon, SEXP fun)
         return R_Unserialize(&in);
     }
     else if (TYPEOF(icon) == RAWSXP)
-    { /* for future use */
+    {
         struct membuf_st mbs;
         void *data = RAW(icon);
         int length = LENGTH(icon);
