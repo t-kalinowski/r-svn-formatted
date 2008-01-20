@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2008  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,8 @@ static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexp
                 if (k > nsubexpr)
                     error(_("invalid backreference %d in regular expression"), k);
                 nb = ovec[2 * k + 1] - ovec[2 * k];
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
+                /* assume for now that in UTF-8 upper/lower pairs are same len */
                 if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
                 {
                     wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
@@ -125,7 +126,7 @@ static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexp
     return n;
 }
 
-static char *string_adj(char *target, const char *orig, const char *repl, int *ovec, Rboolean useBytes)
+static char *string_adj(char *target, const char *orig, const char *repl, int *ovec, Rboolean useBytes, int ienc)
 {
     int i, k, nb;
     const char *p = repl;
@@ -141,8 +142,33 @@ static char *string_adj(char *target, const char *orig, const char *repl, int *o
                 k = p[1] - '0';
                 /* Here we need to work in chars */
                 nb = ovec[2 * k + 1] - ovec[2 * k];
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
                 if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
+                {
+                    wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
+                    int j, nc;
+                    char *xi, *p;
+                    wchar_t *wc;
+                    p = xi = (char *)alloca((nb + 1) * sizeof(char));
+                    R_CheckStack();
+                    for (j = 0; j < nb; j++)
+                        *p++ = orig[ovec[2 * k] + j];
+                    *p = '\0';
+                    nc = utf8towcs(NULL, xi, 0);
+                    if (nc >= 0)
+                    {
+                        wc = (wchar_t *)alloca((nc + 1) * sizeof(wchar_t));
+                        R_CheckStack();
+                        utf8towcs(wc, xi, nc + 1);
+                        for (j = 0; j < nc; j++)
+                            wc[j] = towctrans(wc[j], tr);
+                        nb = wcstoutf8(NULL, wc, 0);
+                        wcstoutf8(xi, wc, nb + 1);
+                        for (j = 0; j < nb; j++)
+                            *t++ = *xi++;
+                    }
+                }
+                else if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
                 {
                     wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
                     int j, nc;
@@ -204,25 +230,46 @@ static char *string_adj(char *target, const char *orig, const char *repl, int *o
     return t;
 }
 
-/* FIXME: this should be using UTF-8 when the strings concerned are
-   UTF-8 */
-SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int global, int igcase_opt, int useBytes)
+SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igcase_opt, int useBytes)
 {
     SEXP ans;
-    int i, j, n, ns, nns, nmatch, offset, re_nsub;
+    int i, j, n, ns, nns, nmatch, offset, re_nsub, ienc;
     int erroffset, eflag, last_end;
     int options = 0;
-    const char *s, *t;
+    const char *spat, *srep, *s, *t;
     char *u, *cbuf;
     const char *errorptr;
     pcre *re_pcre;
-    pcre_extra *re_pe;
+    pcre_extra *re_pe = NULL;
     const unsigned char *tables;
+    Rboolean use_UTF8 = FALSE;
 
-#ifdef SUPPORT_UTF8
+    if (getCharEnc(STRING_ELT(pat, 0)) == CE_UTF8)
+        use_UTF8 = TRUE;
+    if (getCharEnc(STRING_ELT(rep, 0)) == CE_UTF8)
+        use_UTF8 = TRUE;
+    n = LENGTH(vec);
+    for (i = 0; i < n; i++)
+        if (getCharEnc(STRING_ELT(vec, 0)) == CE_UTF8)
+            use_UTF8 = TRUE;
+
+    if (use_UTF8)
+    {
+        spat = translateCharUTF8(STRING_ELT(pat, 0));
+        srep = translateCharUTF8(STRING_ELT(rep, 0));
+        ienc = CE_UTF8;
+    }
+    else
+    {
+        spat = translateChar(STRING_ELT(pat, 0));
+        srep = translateChar(STRING_ELT(rep, 0));
+        ienc = CE_NATIVE;
+    }
+
+#ifdef SUPPORT_MBCS
     if (useBytes)
         ;
-    else if (utf8locale)
+    else if (utf8locale || use_UTF8)
         options = PCRE_UTF8;
     else if (mbcslocale)
         warning(_("perl = TRUE is only fully implemented in UTF-8 locales"));
@@ -242,11 +289,18 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
+    {
+        if (errorptr)
+            warning(_("PCRE pattern compilation error\n\t'%s'\n\tat '%s'\n"), errorptr, spat + erroffset);
         error(_("invalid regular expression '%s'"), spat);
+    }
     re_nsub = pcre_info(re_pcre, NULL, NULL);
-    re_pe = pcre_study(re_pcre, 0, &errorptr);
-
-    n = length(vec);
+    if (n > 10)
+    {
+        re_pe = pcre_study(re_pcre, 0, &errorptr);
+        if (errorptr)
+            warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
+    }
     PROTECT(ans = allocVector(STRSXP, n));
 
     for (i = 0; i < n; i++)
@@ -255,11 +309,15 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
         offset = 0;
         nmatch = 0;
 
-        s = translateChar(STRING_ELT(vec, i));
+        if (use_UTF8)
+            s = translateCharUTF8(STRING_ELT(vec, i));
+        else
+            s = translateChar(STRING_ELT(vec, i));
+
         t = srep;
         nns = ns = strlen(s);
 
-#ifdef SUPPORT_UTF8
+#ifdef SUPPORT_MBCS
         if (!useBytes && mbcslocale && !mbcsValid(s))
             error(_("input string %d is invalid in this locale"), i + 1);
 #endif
@@ -283,8 +341,21 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
             /* If we have a 0-length match, move on a char */
             if (ovector[1] == ovector[0])
             {
-#ifdef SUPPORT_UTF8
-                if (!useBytes && mbcslocale)
+#ifdef SUPPORT_MBCS
+                if (!useBytes && ienc == CE_UTF8)
+                {
+                    int used, pos = 0;
+                    while ((used = utf8clen(s[pos])))
+                    {
+                        pos += used;
+                        if (pos > offset)
+                        {
+                            offset = pos;
+                            break;
+                        }
+                    }
+                }
+                else if (!useBytes && mbcslocale)
                 {
                     wchar_t wc;
                     int used, pos = 0;
@@ -324,7 +395,7 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
                     *u++ = s[j];
                 if (ovector[1] > last_end)
                 {
-                    u = string_adj(u, s, t, ovector, useBytes);
+                    u = string_adj(u, s, t, ovector, useBytes, ienc);
                     last_end = ovector[1];
                 }
                 offset = ovector[1];
@@ -333,8 +404,23 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
                 if (ovector[1] == ovector[0])
                 {
                     /* advance by a char */
-#ifdef SUPPORT_UTF8
-                    if (!useBytes && mbcslocale)
+#ifdef SUPPORT_MBCS
+                    if (!useBytes && ienc == CE_UTF8)
+                    {
+                        int used, pos = 0;
+                        while ((used = utf8clen(s[pos])))
+                        {
+                            pos += used;
+                            if (pos > offset)
+                            {
+                                for (j = offset; j < pos; j++)
+                                    *u++ = s[j];
+                                offset = pos;
+                                break;
+                            }
+                        }
+                    }
+                    else if (!useBytes && mbcslocale)
                     {
                         wchar_t wc;
                         int used, pos = 0;
@@ -364,12 +450,20 @@ SEXP attribute_hidden do_pgsub(const char *spat, const char *srep, SEXP vec, int
             *u = '\0';
             if (useBytes)
                 SET_STRING_ELT(ans, i, mkChar(cbuf));
+            else if (use_UTF8)
+            {
+                if (utf8strIsASCII(cbuf))
+                    SET_STRING_ELT(ans, i, mkChar(cbuf));
+                else
+                    SET_STRING_ELT(ans, i, mkCharEnc(cbuf, UTF8_MASK));
+            }
             else
                 SET_STRING_ELT(ans, i, markKnown(cbuf, STRING_ELT(vec, i)));
             Free(cbuf);
         }
     }
-    pcre_free(re_pe);
+    if (re_pe)
+        pcre_free(re_pe);
     pcre_free(re_pcre);
     pcre_free((void *)tables);
     DUPLICATE_ATTRIB(ans, vec);
@@ -390,6 +484,7 @@ SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, 
     int options = 0;
     const char *errorptr;
     pcre *re_pcre;
+    pcre_extra *re_pe = NULL;
     const unsigned char *tables;
 
     /* To make this thread-safe remove static here use
@@ -418,8 +513,18 @@ SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, 
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, options, &errorptr, &erroffset, tables);
     if (!re_pcre)
+    {
+        if (errorptr)
+            warning(_("PCRE pattern compilation error\n\t'%s'\n\tat '%s'\n"), errorptr, spat + erroffset);
         error(_("invalid regular expression '%s'"), spat);
-    n = length(text);
+    }
+    n = LENGTH(text);
+    if (n > 10)
+    {
+        re_pe = pcre_study(re_pcre, 0, &errorptr);
+        if (errorptr)
+            warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
+    }
     PROTECT(ansList = allocVector(VECSXP, n));
     matchbuf = PROTECT(allocVector(INTSXP, bufsize));
     matchlenbuf = PROTECT(allocVector(INTSXP, bufsize));
@@ -457,7 +562,7 @@ SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, 
         while (!foundAll)
         {
             int rc, ovector[3];
-            rc = pcre_exec(re_pcre, NULL, s, strlen(s), start, 0, ovector, 3);
+            rc = pcre_exec(re_pcre, re_pe, s, strlen(s), start, 0, ovector, 3);
             if (rc >= 0)
             {
                 if ((matchIndex + 1) == bufsize)
@@ -547,6 +652,8 @@ SEXP attribute_hidden do_gpregexpr(const char *spat, SEXP text, int igcase_opt, 
     }
     /* see comment above */
     R_FreeStringBufferL(&cbuff);
+    if (re_pe)
+        pcre_free(re_pe);
     pcre_free(re_pcre);
     pcre_free((void *)tables);
     UNPROTECT(3);
