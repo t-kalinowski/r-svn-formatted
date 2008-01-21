@@ -52,13 +52,15 @@ static R_len_t asVecSize(SEXP x)
             return res;
         case REALSXP:
             d = REAL(x)[0];
+            if (ISNAN(d))
+                error(_("vector size cannot be NA/NaN"));
+            if (!R_FINITE(d))
+                error(_("vector size cannot be infinite"));
             if (d < 0)
                 error(_("vector size cannot be negative"));
             if (d > R_LEN_T_MAX)
                 error(_("vector size specified is too large"));
             return (R_size_t)d;
-        default:
-            UNIMPLEMENTED_TYPE("asVecSize", x);
         }
     }
     return -1;
@@ -577,12 +579,18 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (isString(s))
                 p = translateChar(STRING_ELT(s, 0));
-            else if (isSymbol(s))
+            else if (isSymbol(s)) /* length 1 */
                 p = CHAR(PRINTNAME(s));
             else if (isVectorAtomic(s))
             {
+                /* Not a string, as that is covered above.
+                   Thus the maximum size is about 60.
+                   The copy is needed as cat_newline might reuse the buffer.
+                   Use strncpy is in case these assumptions change.
+                */
                 p = EncodeElement(s, 0, 0, OutDec);
-                strcpy(buf, p);
+                strncpy(buf, p, 512);
+                buf[511] = '\0';
                 p = buf;
             }
 #ifdef fixed_cat
@@ -618,7 +626,8 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                     else
                     {
                         p = EncodeElement(s, i + 1, 0, OutDec);
-                        strcpy(buf, p);
+                        strncpy(buf, p, 512);
+                        buf[511] = '\0';
                         p = buf;
                     }
                     w = strlen(p);
@@ -724,6 +733,8 @@ SEXP attribute_hidden do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXPTYPE mode;
     checkArity(op, args);
     len = asVecSize(CADR(args));
+    if (len < 0)
+        error(_("invalid '%s' argument"), "length");
     s = coerceVector(CAR(args), STRSXP);
     if (length(s) == 0)
         error(_("vector: zero-length 'type' argument"));
@@ -890,6 +901,8 @@ SEXP attribute_hidden do_lengthgets(SEXP call, SEXP op, SEXP args, SEXP rho)
     len = asVecSize(CADR(args));
     if (len == NA_INTEGER)
         error(_("missing value for 'length'"));
+    if (len < 0)
+        error(_("invalid value"));
     return lengthgets(x, len);
 }
 
