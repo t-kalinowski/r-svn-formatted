@@ -1082,7 +1082,7 @@ size_t attribute_hidden utf8towcs(wchar_t *wc, const char *s, size_t n)
                 error(_("invalid input '%s' in 'utf8towcs'"), s);
             if (m == 0)
                 break;
-            res += m;
+            res++;
             if (res >= n)
                 break;
         }

@@ -427,6 +427,30 @@ SEXP attribute_hidden do_envirName(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+#ifdef Win32
+static const char *trChar(SEXP x)
+{
+    char *p;
+    static char buf[106];
+    int n = strlen(CHAR(x));
+    if (n < 100)
+        p = buf;
+    else
+        p = R_alloc(n + 7, 1);
+    if (WinUTF8out && getCharEnc(x) == CE_UTF8)
+    {
+        strcpy(p, "\002\377\376");
+        strcat(p, CHAR(x));
+        strcat(p, "\003\377\376");
+        return p;
+    }
+    else
+        return translateChar(x);
+}
+#else
+#define trChar(x) translateChar(x)
+#endif
+
 static void cat_newline(SEXP labels, int *width, int lablen, int ntot)
 {
     Rprintf("\n");
@@ -452,7 +476,7 @@ static void cat_printsep(SEXP sep, int ntot)
     if (sep == R_NilValue || LENGTH(sep) == 0)
         return;
 
-    sepchar = translateChar(STRING_ELT(sep, ntot % LENGTH(sep)));
+    sepchar = trChar(STRING_ELT(sep, ntot % LENGTH(sep)));
     Rprintf("%s", sepchar);
     return;
 }
@@ -573,12 +597,12 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (labs != R_NilValue && (iobj == 0) && (asInteger(fill) > 0))
             {
-                Rprintf("%s ", translateChar(STRING_ELT(labs, nlines)));
-                width += strlen(translateChar(STRING_ELT(labs, nlines % lablen))) + 1;
+                Rprintf("%s ", trChar(STRING_ELT(labs, nlines % lablen)));
+                width += Rstrlen(translateChar(STRING_ELT(labs, nlines % lablen)), 0) + 1;
                 nlines++;
             }
             if (isString(s))
-                p = translateChar(STRING_ELT(s, 0));
+                p = trChar(STRING_ELT(s, 0));
             else if (isSymbol(s)) /* length 1 */
                 p = CHAR(PRINTNAME(s));
             else if (isVectorAtomic(s))
@@ -622,7 +646,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     cat_printsep(sepr, ntot);
                     if (isString(s))
-                        p = translateChar(STRING_ELT(s, i + 1));
+                        p = trChar(STRING_ELT(s, i + 1));
                     else
                     {
                         p = EncodeElement(s, i + 1, 0, OutDec);
