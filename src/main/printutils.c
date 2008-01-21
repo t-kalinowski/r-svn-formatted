@@ -317,6 +317,11 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
 #include <wchar.h>
 #include <wctype.h>
 #endif
+
+#ifdef Win32
+#include "rgui_UTF8.h"
+#endif
+
 /* strlen() using escaped rather than literal form,
    and allowing for embedded nuls.
    In MBCS locales it works in characters, and reports in display width.
@@ -562,14 +567,13 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 
         if (ienc != CE_UTF8)
             mbs_init(&mb_st);
-        /* \001 is STX, \002 is ETX: they should not occur in other text,
-           But we use a 3-byte escape to be even safer. */
-        else
+#ifdef Win32
+        else if (WinUTF8out)
         {
-            *q++ = '\002';
-            *q++ = '\377';
-            *q++ = '\376';
+            memcpy(q, UTF8in, 3);
+            q += 3;
         }
+#endif
         for (i = 0; i < cnt; i++)
         {
             res = (ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL);
@@ -781,12 +785,11 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             }
         }
 
-#ifdef SUPPORT_MBCS
-    if (ienc == CE_UTF8)
+#ifdef Win32
+    if (WinUTF8out && ienc == CE_UTF8)
     {
-        *q++ = '\003';
-        *q++ = '\377';
-        *q++ = '\376';
+        memcpy(q, UTF8out, 3);
+        q += 3;
     }
 #endif
     if (quote)
