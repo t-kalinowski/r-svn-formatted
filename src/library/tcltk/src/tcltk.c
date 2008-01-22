@@ -320,7 +320,7 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
 #ifdef Win32
     encoding = Tcl_GetEncoding(RTcl_interp, "unicode");
 #else
-    encoding = NULL
+    encoding = NULL;
 #endif
     if (count == 1 && LOGICAL(drop)[0])
     {
@@ -344,7 +344,7 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
 #ifdef Win32
                                          (char *)filenameToWchar(STRING_ELT(val, i), FALSE),
 #else
-                                     translateChar(STRING_ELT(val, i)),
+                                         translateChar(STRING_ELT(val, i)),
 #endif
                                          -1, &s_ds);
             Tcl_SetStringObj(elem, s, -1);
