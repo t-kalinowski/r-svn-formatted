@@ -162,6 +162,7 @@ attribute_hidden Rconnection getConnection_no_err(int n)
 void set_iconv(Rconnection con)
 {
     void *tmp;
+
     /* need to test if this is text, open for reading to writing or both,
        and set inconv and/or outconv */
     if (!con->text || !strlen(con->encname) || strcmp(con->encname, "native.enc") == 0)
@@ -170,7 +171,11 @@ void set_iconv(Rconnection con)
     {
         size_t onb = 50;
         char *ob = con->oconvbuff;
-        tmp = Riconv_open("", con->encname);
+#ifndef Win32
+        con->UTF8out = FALSE; /* No point in converting to UTF-8
+                     unless in a UTF-8 locale */
+#endif
+        tmp = Riconv_open(con->UTF8out ? "UTF-8" : "", con->encname);
         if (tmp != (void *)-1)
             con->inconv = tmp;
         else
@@ -465,6 +470,7 @@ void init_con(Rconnection new, const char *description, int enc, const char *con
     new->save = new->save2 = -1000;
     new->private = NULL;
     new->inconv = new->outconv = NULL;
+    new->UTF8out = FALSE;
     /* increment id, avoid NULL */
     current_id = (void *)((size_t)current_id + 1);
     if (!current_id)
@@ -2865,8 +2871,9 @@ int Rconn_printf(Rconnection con, const char *format, ...)
 #define BUF_SIZE 1000
 SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans = R_NilValue, ans2, tmp;
+    SEXP ans = R_NilValue, ans2;
     int i, n, nn, nnn, ok, warn, nread, c, nbuf, buf_size = BUF_SIZE;
+    int oenc = 0;
     Rconnection con = NULL;
     Rboolean wasopen;
     char *buf;
@@ -2890,9 +2897,11 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(CAD4R(args)) || LENGTH(CAD4R(args)) != 1)
         error(_("invalid '%s' value"), "encoding");
     encoding = CHAR(STRING_ELT(CAD4R(args), 0)); /* ASCII */
+
     wasopen = con->isopen;
     if (!wasopen)
     {
+        con->UTF8out = TRUE; /* a request */
         if (!con->open(con))
             error(_("cannot open the connection"));
     }
@@ -2903,6 +2912,10 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
             con->seek(con, con->seek(con, -1, 1, 1), 1, 1);
     }
     con->incomplete = FALSE;
+    if (con->UTF8out | streql(encoding, "UTF-8"))
+        oenc = UTF8_MASK;
+    else if (streql(encoding, "latin1"))
+        oenc = LATIN1_MASK;
 
     buf = (char *)malloc(buf_size);
     if (!buf)
@@ -2937,13 +2950,7 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
         }
         buf[nbuf] = '\0';
-        if (streql(encoding, "latin1"))
-            tmp = mkCharEnc(buf, LATIN1_MASK);
-        else if (streql(encoding, "UTF-8"))
-            tmp = mkCharEnc(buf, UTF8_MASK);
-        else
-            tmp = mkChar(buf);
-        SET_STRING_ELT(ans, nread, tmp);
+        SET_STRING_ELT(ans, nread, mkCharEnc(buf, oenc));
         if (c == R_EOF)
             goto no_more_lines;
     }
