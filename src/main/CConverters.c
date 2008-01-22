@@ -184,6 +184,7 @@ Rboolean R_converterMatchClass(SEXP obj, R_CConvertInfo *inf, R_toCConverter *el
     SEXP klasses = getAttrib(obj, R_ClassSymbol);
     int i, n;
     n = length(klasses);
+    /* assumes class names are ASCII */
     for (i = 0; i < n; i++)
     {
         if (strcmp(translateChar(STRING_ELT(klasses, i)), (char *)el->userData) == 0)
