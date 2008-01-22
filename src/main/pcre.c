@@ -282,7 +282,7 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
     if (igcase_opt)
     {
         options |= PCRE_CASELESS;
-        if (useBytes && utf8locale && !utf8strIsASCII(spat))
+        if (useBytes && utf8locale && !strIsASCII(spat))
             warning(_("ignore.case = TRUE, perl = TRUE, useBytes = TRUE\n  in UTF-8 locales only works caselessly for "
                       "ASCII patterns"));
     }
@@ -453,10 +453,7 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
                 SET_STRING_ELT(ans, i, mkChar(cbuf));
             else if (use_UTF8)
             {
-                if (utf8strIsASCII(cbuf))
-                    SET_STRING_ELT(ans, i, mkChar(cbuf));
-                else
-                    SET_STRING_ELT(ans, i, mkCharEnc(cbuf, UTF8_MASK));
+                SET_STRING_ELT(ans, i, mkCharEnc(cbuf, UTF8_MASK));
             }
             else
                 SET_STRING_ELT(ans, i, markKnown(cbuf, STRING_ELT(vec, i)));
@@ -525,7 +522,7 @@ SEXP attribute_hidden do_gpregexpr(SEXP pat, SEXP text, int igcase_opt, int useB
     if (igcase_opt)
     {
         options |= PCRE_CASELESS;
-        if (useBytes && utf8locale && !utf8strIsASCII(spat))
+        if (useBytes && utf8locale && !strIsASCII(spat))
             warning(_("ignore.case = TRUE, perl = TRUE, useBytes = TRUE\n  in UTF-8 locales only works caselessly for "
                       "ASCII patterns"));
     }

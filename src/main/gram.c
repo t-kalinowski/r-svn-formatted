@@ -2922,7 +2922,7 @@ static SEXP xxfuncall(SEXP expr, SEXP args)
 
 static SEXP mkChar2(const char *name)
 {
-    if (!utf8strIsASCII(name))
+    if (!strIsASCII(name))
     {
         if (known_to_be_latin1)
             return mkCharEnc(name, LATIN1_MASK);

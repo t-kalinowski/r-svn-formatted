@@ -81,7 +81,7 @@ typedef struct
 
 static SEXP insertString(char *str, LocalData *l)
 {
-    if (!utf8strIsASCII(str))
+    if (!strIsASCII(str))
     {
         if (l->isLatin1)
             return mkCharEnc(str, LATIN1_MASK);

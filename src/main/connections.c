@@ -2151,7 +2151,7 @@ static SEXP mkCharLocal(const char *s)
         ienc = LATIN1_MASK;
     if (known_to_be_utf8)
         ienc = UTF8_MASK;
-    if (ienc > 0 && utf8strIsASCII(s))
+    if (ienc > 0 && strIsASCII(s))
         ienc = 0;
     return mkCharEnc(s, ienc);
 }

@@ -3384,7 +3384,7 @@ SEXP mkCharEnc(const char *name, int enc)
 {
     SEXP c = allocString(strlen(name));
     strcpy(CHAR_RW(c), name);
-    if (utf8strIsASCII(name))
+    if (enc && strIsASCII(name))
         enc = 0;
     switch (enc)
     {
@@ -3515,6 +3515,9 @@ SEXP mkCharEnc(const char *name, int enc)
 
     if (enc != 0 && enc != UTF8_MASK && enc != LATIN1_MASK)
         error("unknown encoding mask: %d", enc);
+
+    if (enc && strIsASCII(name))
+        enc = 0;
 
     /* hashcode = char_hash(name) % char_hash_size; */
     hashcode = char_hash(name) & char_hash_mask;

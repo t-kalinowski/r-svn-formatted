@@ -1792,7 +1792,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                 Rboolean done = FALSE;
 #ifdef SUPPORT_MBCS
                                 /* Symbol fonts are not encoded in MBCS ever */
-                                if (gc->fontface != 5 && !utf8strIsASCII(ss))
+                                if (gc->fontface != 5 && !strIsASCII(ss))
                                 {
                                     if (mbcslocale && enc2 == CE_NATIVE)
                                     {

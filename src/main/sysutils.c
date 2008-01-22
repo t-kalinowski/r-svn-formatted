@@ -777,7 +777,7 @@ const char *translateChar(SEXP x)
         return ans;
     if (latin1locale && IS_LATIN1(x))
         return ans;
-    if (utf8strIsASCII(CHAR(x)))
+    if (strIsASCII(CHAR(x)))
         return ans;
 
     if (IS_LATIN1(x))
@@ -888,7 +888,7 @@ const char *translateCharUTF8(SEXP x)
         return ans;
     if (IS_UTF8(x))
         return ans;
-    if (utf8strIsASCII(CHAR(x)))
+    if (strIsASCII(CHAR(x)))
         return ans;
 
     obj = Riconv_open("UTF-8", IS_LATIN1(x) ? "latin1" : "");
@@ -1039,7 +1039,7 @@ const char *reEnc(const char *x, int ce_in, int ce_out, int subst)
     if (latin1locale && ce_out == CE_NATIVE && ce_in == CE_LATIN1)
         return x;
 
-    if (utf8strIsASCII(x))
+    if (strIsASCII(x))
         return x;
 
     switch (ce_in)
