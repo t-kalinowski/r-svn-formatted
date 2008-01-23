@@ -1048,7 +1048,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, R_GE_gco
                 wc = 0;
                 res = mbrtowc(&wc, s, MB_LEN_MAX, &mb_st);
                 if (res == -1)
-                    error("invalid multibyte string");
+                    error("invalid multibyte string '%s'", s);
                 if (iswdigit(wc) && font != PlainFont)
                 {
                     font = PlainFont;
@@ -1067,6 +1067,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, R_GE_gco
                 if (draw)
                 {
                     memset(chr, 0, sizeof(chr));
+                    /* should not be possible, as we just converted to wc */
                     if (wcrtomb(chr, wc, &mb_st) == -1)
                         error("invalid multibyte string");
                     PMoveAcross(lastItalicCorr, mc);
