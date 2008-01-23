@@ -171,6 +171,7 @@ int Rf_initialize_R(int ac, char **av)
     char *p, msg[1024], cmdlines[10000], **avv;
     structRstart rstart;
     Rstart Rp = &rstart;
+    Rboolean force_interactive = FALSE;
 
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
@@ -411,6 +412,11 @@ int Rf_initialize_R(int ac, char **av)
             {
                 break;
             }
+            else if (!strcmp(*av, "--interactive"))
+            {
+                force_interactive = TRUE;
+                break;
+            }
             else
             {
 #ifdef HAVE_AQUA
@@ -458,7 +464,7 @@ int Rf_initialize_R(int ac, char **av)
         R_Interactive = useaqua;
     else
 #endif
-        R_Interactive = R_Interactive && isatty(0);
+        R_Interactive = R_Interactive && (force_interactive || isatty(0));
 
 #ifdef HAVE_AQUA
     /* for Aqua and non-dumb terminal use callbacks instead of connections
