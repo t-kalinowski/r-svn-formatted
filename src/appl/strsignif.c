@@ -104,8 +104,8 @@ attribute_hidden void str_signif(char *x, int *n, const char **type, int *width,
     double xx;
     int iex, j, jL, len_flag = strlen(*flag);
 
-    char *f0 = R_alloc(do_fg ? 1 + len_flag + 3 : 1, sizeof(char));
-    char *form = R_alloc(len_flag + 4 + strlen(*format), sizeof(char));
+    char *f0 = R_alloc(do_fg ? 1 + 1 + len_flag + 3 : 1, sizeof(char));
+    char *form = R_alloc(1 + 1 + len_flag + 3 + strlen(*format), sizeof(char));
 
     if (wid == 0)
         error(_(".C(..): Width cannot be zero"));
