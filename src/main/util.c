@@ -1155,7 +1155,7 @@ size_t attribute_hidden utf8towcs(wchar_t *wc, const char *s, size_t n)
                 break;
         }
     else
-        for (t = s;; res += m, t += m)
+        for (t = s;; res++, t += m)
         {
             m = utf8toucs(&local, t);
             if (m < 0)
