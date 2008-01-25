@@ -1707,8 +1707,8 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             double xleft, ybottom;
 
             enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
-            if (enc2 == CE_UTF8 && !dd->dev->hasTextUTF8 == TRUE)
-                enc2 = CE_NATIVE;
+            if (enc2 != CE_SYMBOL)
+                enc2 = (dd->dev->hasTextUTF8 == TRUE) ? CE_UTF8 : CE_NATIVE;
 
 #ifdef DEBUG_MI
             printf("string %s, enc %d, %d\n", str, enc, enc2);
@@ -2530,8 +2530,8 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, GEDevDesc *dd)
             int enc2;
 
             enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
-            if (enc2 == CE_NATIVE && dd->dev->hasTextUTF8 == TRUE)
-                enc2 = CE_UTF8;
+            if (enc2 != CE_SYMBOL)
+                enc2 = (dd->dev->hasTextUTF8 == TRUE) ? CE_UTF8 : CE_NATIVE;
 
             sb = sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             for (s = str;; s++)
