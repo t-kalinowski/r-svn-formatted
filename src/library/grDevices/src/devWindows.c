@@ -3040,6 +3040,7 @@ static Rboolean GADeviceDriver(NewDevDesc *dd, const char *display, double width
     dd->hasTextUTF8 = TRUE;
     dd->strWidthUTF8 = GA_StrWidth_UTF8;
     dd->textUTF8 = GA_Text_UTF8;
+    dd->useRotatedTextInContour = TRUE;
     xd->cntxt = NULL;
 
     /* set graphics parameters that must be set by device driver */

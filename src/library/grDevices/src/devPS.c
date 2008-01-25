@@ -3589,6 +3589,7 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, con
 #else
     dd->hasTextUTF8 = FALSE;
 #endif
+    dd->useRotatedTextInContour = TRUE;
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
@@ -4902,6 +4903,7 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, const char *file, const char *p
     dd->mode = XFig_Mode;
     dd->hold = XFig_Hold;
     dd->hasTextUTF8 = FALSE;
+    dd->useRotatedTextInContour = FALSE; /* maybe */
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
@@ -5956,6 +5958,7 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, co
 #else
     dd->hasTextUTF8 = FALSE;
 #endif
+    dd->useRotatedTextInContour = TRUE;
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;

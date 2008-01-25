@@ -2790,10 +2790,10 @@ GEDevDesc *GEcurrentDevice()
 void GEcopyDisplayList(int fromDevice)
 {
     SEXP tmp;
-    GEDevDesc *dd = GEcurrentDevice();
-    DevDesc *fromDev = GetDevice(fromDevice);
+    GEDevDesc *dd = GEcurrentDevice(), *gd = (GEDevDesc *)GetDevice(fromDevice);
     int i;
-    tmp = Rf_displayList(fromDev);
+
+    tmp = gd->dev->displayList;
     if (!isNull(tmp))
         tmp = duplicate(tmp);
     dd->dev->displayList = tmp;
@@ -2803,7 +2803,7 @@ void GEcopyDisplayList(int fromDevice)
      */
     for (i = 0; i < numGraphicsSystems; i++)
         if (dd->gesd[i] != NULL)
-            (dd->gesd[i]->callback)(GE_CopyState, (GEDevDesc *)fromDev, R_NilValue);
+            (dd->gesd[i]->callback)(GE_CopyState, (GEDevDesc *)gd, R_NilValue);
     GEplayDisplayList(dd);
     if (!dd->dev->displayListOn)
         GEinitDisplayList(dd);
