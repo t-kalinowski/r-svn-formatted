@@ -64,6 +64,7 @@ int setDLLSearchPath(const char *path)
         if (path)
         {
             GetCurrentDirectory(MAX_PATH, wd);
+            SetCurrentDirectory(path);
         }
         else if (wd[0])
         {
