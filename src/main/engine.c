@@ -2045,7 +2045,7 @@ void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, GEDev
     else if (pch < 0)
     {
         int res;
-        char str[7];
+        char str[16];
         if (gc->fontface == 5)
             error("use of negative pch with symbol font is invalid");
         res = ucstoutf8(str, -pch);
