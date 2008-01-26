@@ -593,7 +593,7 @@ static SEXP lang2str(SEXP obj, SEXPTYPE t)
 
 /* the S4-style class: for dispatch required to be a single string;
    for the new class() function;
-   if(singleString) , keeps S3-style multiple classes.
+   if(!singleString) , keeps S3-style multiple classes.
    Called from the methods package, so exposed.
  */
 SEXP R_data_class(SEXP obj, Rboolean singleString)
@@ -715,6 +715,7 @@ SEXP attribute_hidden R_data_class2(SEXP obj)
     }
 }
 
+/* class() : */
 SEXP attribute_hidden R_do_data_class(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
