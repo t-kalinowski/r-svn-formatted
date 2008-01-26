@@ -4345,7 +4345,7 @@ static int StringValue(int c, Rboolean forSymbol)
                 unsigned int val = 0;
                 int i, ext;
                 size_t res;
-                char buff[16];
+                char buff[MB_CUR_MAX + 1];
                 Rboolean delim = FALSE;
                 if ((c = xxgetc()) == '{')
                 {
@@ -4412,7 +4412,7 @@ static int StringValue(int c, Rboolean forSymbol)
                     unsigned int val = 0;
                     int i, ext;
                     size_t res;
-                    char buff[16];
+                    char buff[MB_CUR_MAX + 1];
                     Rboolean delim = FALSE;
                     if ((c = xxgetc()) == '{')
                     {

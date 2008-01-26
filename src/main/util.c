@@ -1273,6 +1273,7 @@ Rboolean mbcsValid(const char *str)
     return ((int)mbstowcs(NULL, str, 0) >= 0);
 }
 
+#ifdef UNUSED
 /* We do this conversion ourselves to do our own error recovery */
 void mbcsToLatin1(const char *in, char *out)
 {
@@ -1329,6 +1330,7 @@ void mbcsToLatin1(const char *in, char *out)
     }
     out[res] = '\0';
 }
+#endif
 
 /* MBCS-aware versions of common comparisons.  Only used for ASCII c */
 char *Rf_strchr(const char *s, int c)
@@ -1380,9 +1382,11 @@ Rboolean mbcsValid(const char *str)
 {
     return TRUE;
 }
+#ifdef UNUSED
 void mbcsToLatin1(char *in, char *out)
 {
 }
+#endif
 #undef Rf_strchr
 char *Rf_strchr(const char *s, int c)
 {
