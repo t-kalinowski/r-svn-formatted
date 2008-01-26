@@ -147,6 +147,7 @@ static Rboolean nullDeviceDriver(NewDevDesc *dev)
     dev->hold = NULL_Hold;
     dev->metricInfo = NULL_MetricInfo;
     dev->hasTextUTF8 = FALSE;
+    dev->useRotatedTextInContour = FALSE;
     /*
      * Initial graphical settings
      */
