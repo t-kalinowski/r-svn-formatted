@@ -4340,7 +4340,7 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
             size_t nb, i_len, o_len, buflen = ucslen * sizeof(ucs2_t);
             size_t status;
 
-            cd = (void *)Riconv_open(cidfont->encoding, (enc = CE_UTF8) ? "UTF-8" : "");
+            cd = (void *)Riconv_open(cidfont->encoding, (enc == CE_UTF8) ? "UTF-8" : "");
             if (cd == (void *)-1)
             {
                 warning(_("failed open converter to encoding '%s'"), cidfont->encoding);
