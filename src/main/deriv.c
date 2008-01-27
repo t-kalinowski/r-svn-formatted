@@ -56,7 +56,7 @@ static SEXP PsiSymbol;
 
 static Rboolean Initialized = FALSE;
 
-static void InitDerivSymbols()
+static void InitDerivSymbols(void)
 {
     /* Called from do_D() and do_deriv() */
     if (Initialized)
@@ -893,7 +893,7 @@ static SEXP HessAssign2(SEXP name1, SEXP name2, SEXP expr)
 
 /* attr(.value, "gradient") <- .grad */
 
-static SEXP AddGrad()
+static SEXP AddGrad(void)
 {
     SEXP ans;
     PROTECT(ans = mkString("gradient"));
@@ -903,7 +903,7 @@ static SEXP AddGrad()
     return ans;
 }
 
-static SEXP AddHess()
+static SEXP AddHess(void)
 {
     SEXP ans;
     PROTECT(ans = mkString("hessian"));

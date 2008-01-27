@@ -34,7 +34,6 @@
 #define __MAIN__
 #include "Defn.h"
 #include "Rinterface.h"
-#include "Graphics.h"
 #include <Rdevices.h> /* for InitGraphics */
 #include "IOStuff.h"
 #include "Fileio.h"
@@ -50,7 +49,7 @@
 #endif
 
 #ifdef ENABLE_NLS
-void attribute_hidden nl_Rdummy()
+void attribute_hidden nl_Rdummy(void)
 {
     /* force this in as packages use it */
     dgettext("R", "dummy - do not translate");
@@ -77,7 +76,7 @@ void Rf_callToplevelHandlers(SEXP expr, SEXP value, Rboolean succeeded, Rboolean
 
 static int ParseBrowser(SEXP, SEXP);
 
-extern void InitDynload();
+extern void InitDynload(void);
 
 /* Read-Eval-Print Loop [ =: REPL = repl ] with input from a file */
 
@@ -325,7 +324,7 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
 
 static unsigned char DLLbuf[CONSOLE_BUFFER_SIZE + 1], *DLLbufp;
 
-void R_ReplDLLinit()
+void R_ReplDLLinit(void)
 {
     R_IoBufferInit(&R_ConsoleIob);
     R_GlobalContext = R_ToplevelContext = &R_Toplevel;
@@ -335,7 +334,7 @@ void R_ReplDLLinit()
     DLLbufp = DLLbuf;
 }
 
-int R_ReplDLLdo1()
+int R_ReplDLLdo1(void)
 {
     int c;
     ParseStatus status;
@@ -459,7 +458,7 @@ static void win32_segv(int signum)
    2005-12-17 BDR */
 
 static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE];
-extern void R_CleanTempDir();
+extern void R_CleanTempDir(void);
 
 static void sigactionSegv(int signum, siginfo_t *ip, void *context)
 {
@@ -622,7 +621,7 @@ static struct sigaltstack sigstk;
 static void *signal_stack;
 
 #define R_USAGE 100000 /* Just a guess */
-static void init_signal_handlers()
+static void init_signal_handlers(void)
 {
     /* <FIXME> may need to reinstall this if we do recover. */
     struct sigaction sa;
@@ -653,7 +652,7 @@ static void init_signal_handlers()
 }
 
 #else /* not sigaltstack and sigaction and sigemptyset*/
-static void init_signal_handlers()
+static void init_signal_handlers(void)
 {
     signal(SIGINT, handleInterrupt);
     signal(SIGUSR1, onsigusr1);
@@ -1438,7 +1437,7 @@ SEXP R_removeTaskCallback(SEXP which)
     return ScalarLogical(val);
 }
 
-SEXP R_getTaskCallbackNames()
+SEXP R_getTaskCallbackNames(void)
 {
     SEXP ans;
     R_ToplevelCallbackEl *el;

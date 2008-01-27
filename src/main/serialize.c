@@ -1061,7 +1061,7 @@ tailcall:
 }
 
 #ifdef BYTECODE
-static SEXP MakeCircleHashTable()
+static SEXP MakeCircleHashTable(void)
 {
     return CONS(R_NilValue, allocVector(VECSXP, HASHSIZE));
 }

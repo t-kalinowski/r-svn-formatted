@@ -76,7 +76,7 @@ static void *current_id = NULL;
 
 /* ------------- admin functions (see also at end) ----------------- */
 
-static int NextConnection()
+static int NextConnection(void)
 {
     int i;
     for (i = 3; i < NCONNECTIONS; i++)
@@ -1618,7 +1618,7 @@ SEXP attribute_hidden do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
-extern int GA_clipboardhastext(); /* from ga.h */
+extern int GA_clipboardhastext(void); /* from ga.h */
 #endif
 
 #ifdef Unix
@@ -1915,7 +1915,7 @@ static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE + 1];
 static unsigned char *ConsoleBufp;
 static int ConsoleBufCnt;
 
-static int ConsoleGetchar()
+static int ConsoleGetchar(void)
 {
     if (--ConsoleBufCnt < 0)
     {
