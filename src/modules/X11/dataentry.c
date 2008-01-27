@@ -1341,7 +1341,7 @@ static void clearrect(DEstruct DE)
    do as we get a char at a time */
 static void handlechar(DEstruct DE, char *text)
 {
-    int i, c = text[0], j;
+    int c = text[0], j;
 #ifdef USE_FONTSET
     wchar_t wcs[BOOSTED_BUF_SIZE];
 
@@ -1395,7 +1395,7 @@ static void handlechar(DEstruct DE, char *text)
 
 #ifdef USE_FONTSET
         char *mbs = text;
-        int cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
+        int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
 
         for (i = 0; i < cnt; i++)
         {
@@ -1477,7 +1477,7 @@ static void handlechar(DEstruct DE, char *text)
     {
 #ifdef USE_FONTSET
         char *mbs = text;
-        int cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
+        int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
         for (i = 0; i < cnt; i++)
         {
             if (iswspace(wcs[i]))
