@@ -309,7 +309,7 @@ static SEXP baseCallback(GEevent task, GEDevDesc *dd, SEXP data)
 
 /* Register the base graphics system with the graphics engine
  */
-void registerBase()
+void registerBase(void)
 {
     GEregisterSystem(baseCallback, &baseRegisterIndex);
 }

@@ -511,7 +511,7 @@ static void pushReadline(const char *prompt, rl_vcpfunc_t f)
   Unregister the current readline handler and pop it from R's readline
   stack, followed by re-registering the previous one.
 */
-static void popReadline()
+static void popReadline(void)
 {
     if (ReadlineStack.current > -1)
     {
