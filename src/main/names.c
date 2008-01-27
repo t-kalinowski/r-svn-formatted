@@ -972,7 +972,7 @@ static void installFunTab(int i)
         SET_SYMVALUE(install(R_FunTab[i].name), mkPRIMSXP(i, R_FunTab[i].eval % 10));
 }
 
-static void SymbolShortcuts()
+static void SymbolShortcuts(void)
 {
     R_Bracket2Symbol = install("[[");
     R_BracketSymbol = install("[");

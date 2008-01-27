@@ -198,7 +198,7 @@ static int PaletteSize;
 /* RGB values to luminance and then thresholding. */
 /* See: Foley & van Damm. */
 
-static void SetupMonochrome()
+static void SetupMonochrome(void)
 {
     depth = 1;
 }
@@ -272,7 +272,7 @@ static Rboolean GetGrayPalette(Display *displ, Colormap cmap, int n)
         return TRUE;
 }
 
-static void SetupGrayScale()
+static void SetupGrayScale(void)
 {
     int res = 0, d;
     PaletteSize = 0;
@@ -351,7 +351,7 @@ static int GetColorPalette(Display *dpy, Colormap cmap, int nr, int ng, int nb)
         return 1;
 }
 
-static void SetupPseudoColor()
+static void SetupPseudoColor(void)
 {
     int i, size;
     PaletteSize = 0;
@@ -438,7 +438,7 @@ static unsigned int RMask, RShift;
 static unsigned int GMask, GShift;
 static unsigned int BMask, BShift;
 
-static void SetupTrueColor()
+static void SetupTrueColor(void)
 {
     RMask = visual->red_mask;
     GMask = visual->green_mask;
@@ -492,7 +492,7 @@ static unsigned int GetX11Pixel(int r, int g, int b)
     return 0;
 }
 
-static void FreeX11Colors()
+static void FreeX11Colors(void)
 {
     int i;
     if (model == PSEUDOCOLOR2)
@@ -503,7 +503,7 @@ static void FreeX11Colors()
     }
 }
 
-static Rboolean SetupX11Color()
+static Rboolean SetupX11Color(void)
 {
     if (depth <= 1)
     {
@@ -2406,7 +2406,7 @@ static Rboolean in_R_GetX11Image(int d, void *pximage, int *pwidth, int *pheight
 /**
    Allows callers to retrieve the current Display setting for the process.
  */
-Display *Rf_getX11Display()
+Display *Rf_getX11Display(void)
 {
     return (display);
 }
