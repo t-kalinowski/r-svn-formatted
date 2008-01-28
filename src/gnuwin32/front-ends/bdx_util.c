@@ -48,7 +48,7 @@ int bdx_trace_printf(char const *pFormat, ...)
 #endif
 
 /* 05-05-15 | baier | now WINAPI */
-BDX_Data *WINAPI bdx_alloc()
+BDX_Data *WINAPI bdx_alloc(void)
 {
     BDX_Data *lData = NULL;
 
