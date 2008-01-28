@@ -1525,7 +1525,7 @@ static void clipText(double x, double y, const char *str, int enc, double rot, d
 {
     int result = clipTextCode(x, y, str, enc, rot, hadj, gc, toDevice, dd);
     void (*textfn)(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
-    /* This guards against unitialized values, e.g. devices installed
+    /* This guards against uninitialized values, e.g. devices installed
        in earlier versions of R */
     textfn = (dd->dev->hasTextUTF8 == TRUE) && enc == CE_UTF8 ? dd->dev->textUTF8 : dd->dev->text;
 
