@@ -290,7 +290,7 @@ static DWORD CALLBACK threadedwait(LPVOID param)
     return 0;
 }
 
-char *runerror()
+char *runerror(void)
 {
     return RunError;
 }

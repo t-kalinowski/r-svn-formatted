@@ -49,7 +49,7 @@ extern UImode CharacterMode;
         del(c);                                                                                                        \
         return NULL;                                                                                                   \
     }
-RECT *RgetMDIsize();
+RECT *RgetMDIsize(void);
 
 /* Pointers to currently open editors */
 static editor REditors[MAXNEDITORS];
@@ -338,7 +338,7 @@ static void menueditorclose(control m)
 
 /* Called when exiting Rgui, check if any open editors need saving */
 
-void editorcleanall()
+void editorcleanall(void)
 {
     int i;
     for (i = neditors - 1; i >= 0; --i)
@@ -349,7 +349,7 @@ void editorcleanall()
     }
 }
 
-static void editornew()
+static void editornew(void)
 {
     Rgui_Edit("", CE_NATIVE, "", 0);
 }
@@ -597,7 +597,7 @@ static void editorfocus(editor c)
     show(t);
 }
 
-static void editorhelp()
+static void editorhelp(void)
 {
     char s[4096];
 
@@ -635,7 +635,7 @@ static MenuItem EditorPopup[] = {                                               
                                  {GN_("Select all"), editorselectall, 'A', 0}, /* 9 */
                                  LASTMENUITEM};
 
-static editor neweditor()
+static editor neweditor(void)
 {
     int x, y, w, h, w0, h0;
     editor c;

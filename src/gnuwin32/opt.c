@@ -34,7 +34,7 @@ static FILE *ff = NULL;
 static char optfl[MAX_PATH];
 static int optln;
 
-void optclosefile()
+void optclosefile(void)
 {
     if (!ff)
         return;
@@ -52,12 +52,12 @@ int optopenfile(const char *fname)
     return 1;
 }
 
-char *optfile()
+char *optfile(void)
 {
     return optfl;
 }
 
-int optline()
+int optline(void)
 {
     return optln;
 }

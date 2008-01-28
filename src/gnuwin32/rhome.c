@@ -43,7 +43,7 @@ static char rhomebuf[MAX_PATH];
     *p = '\0'
 
 /* get R_HOME from the module path: used in Rgui and Rterm */
-char *getRHOME()
+char *getRHOME(void)
 {
     DWORD nc;
     char *p;
@@ -65,7 +65,7 @@ char *getRHOME()
 }
 
 /* get R_HOME from environment or registry: used in embedded apps */
-char *get_R_HOME()
+char *get_R_HOME(void)
 {
     LONG rc;
     HKEY hkey;

@@ -1415,7 +1415,7 @@ SEXP attribute_hidden do_dotcallgr(SEXP call, SEXP op, SEXP args, SEXP env)
     return retval;
 }
 
-static SEXP Rf_getCallingDLL()
+static SEXP Rf_getCallingDLL(void)
 {
     SEXP e, ans;
     RCNTXT *cptr;

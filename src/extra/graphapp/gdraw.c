@@ -37,7 +37,7 @@ typedef BOOL(WINAPI *alpha_blend_t)(HDC, int, int, int, int, HDC, int, int, int,
 
 static alpha_blend_t pAlphaBlend;
 
-static int haveAlpha()
+static int haveAlpha(void)
 {
     static int haveAlphaBlend = -1;
 

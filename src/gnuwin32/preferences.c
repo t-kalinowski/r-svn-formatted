@@ -229,7 +229,7 @@ static int has_changed(Gui a, Gui b)
            a->user != b->user || a->hlt != b->hlt;
 }
 
-static void cleanup()
+static void cleanup(void)
 {
     hide(wconfig);
     delobj(l_mdi);
@@ -410,7 +410,7 @@ void applyGUI(Gui newGUI)
     Rwin_graphicsy = newGUI->gry;
 }
 
-static void do_apply()
+static void do_apply(void)
 {
     struct structGUI newGUI;
 

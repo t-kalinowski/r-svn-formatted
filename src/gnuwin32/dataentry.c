@@ -104,7 +104,7 @@ typedef struct
 /* Local Function Definitions */
 
 static void advancerect(DEstruct, int);
-static void bell();
+static void bell(void);
 static void cleararea(DEstruct, int, int, int, int, rgb);
 static void clearrect(DEstruct);
 static void closerect(DEstruct);
@@ -1829,7 +1829,7 @@ static void depopupact(control m)
         return NULL;                                                                                                   \
     }
 
-RECT *RgetMDIsize(); /* in rui.c */
+RECT *RgetMDIsize(void); /* in rui.c */
 
 static dataeditor newdataeditor(DEstruct DE, const char *title)
 {
