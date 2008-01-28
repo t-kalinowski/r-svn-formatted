@@ -123,7 +123,7 @@ static int MatchVar(SEXP var1, SEXP var2)
 }
 
 /* InstallVar locates a ``variable'' in the model */
-/* variable list;  adding it to the list if not found. */
+/* variable list;  adding it to the global varlist if not found. */
 
 static int InstallVar(SEXP var)
 {
