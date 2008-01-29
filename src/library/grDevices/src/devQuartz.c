@@ -378,7 +378,7 @@ static void RQuartz_MetricInfo(int, R_GE_gcontext *, double *, double *, double 
 
 void *QuartzDevice_Create(
     void *_dev, double scalex, double scaley, double ps, double width, double height, int bg, int aa, int fs,
-    CGContextRef (*getCGContext)(QuartzDesc_t dev, void *userInfo), // Get the context for this device
+    CGContextRef (*getCGContext)(QuartzDesc_t dev, void *userInfo), /* Get the context for this device */
     int (*locatePoint)(QuartzDesc_t dev, void *userInfo, double *x, double *y),
     void (*close)(QuartzDesc_t dev, void *userInfo), void (*newPage)(QuartzDesc_t dev, void *userInfo, int flags),
     void (*state)(QuartzDesc_t dev, void *userInfo, int state),
@@ -395,7 +395,7 @@ void *QuartzDevice_Create(
     dev->startlty = LTY_SOLID;
     dev->startgamma = 1;
 
-    // Set up some happy pointers
+    /* Set up some happy pointers */
     dev->newDevStruct = 1;
     dev->open = RQuartz_Open;
     dev->close = RQuartz_Close;
@@ -420,10 +420,10 @@ void *QuartzDevice_Create(
     dev->left = 0;
     dev->top = 0;
 
-    // Magic numbers from on high.
+    /* Magic numbers from on high. */
     dev->xCharOffset = 0.4900;
     dev->yCharOffset = 0.3333;
-    dev->yLineBias = 0.20; // This is .2 for PS/PDF devices...
+    dev->yLineBias = 0.20; /* This is .2 for PS/PDF devices... */
 
     dev->canResizePlot = TRUE;
     dev->canChangeFont = TRUE;
@@ -533,7 +533,7 @@ CGFontRef RQuartz_Font(CTXDESC)
         CFStringRef font = RQuartz_FindFont(gc->fontface, gc->fontfamily);
         if (CFStringGetLength(font) > 0)
         {
-            fontface = 1; // This is handled by the lookup process
+            fontface = 1; /* This is handled by the lookup process */
             CFStringAppend(fontName, font);
         }
         CFRelease(font);
@@ -551,7 +551,7 @@ CGFontRef RQuartz_Font(CTXDESC)
     CGFontRef font = CGFontCreateWithFontName(fontName);
     if (font == 0)
     {
-        // Fall back on ATS
+        /* Fall back on ATS */
         ATSFontRef tmp = ATSFontFindFromName(fontName, kATSOptionFlagsDefault);
         font = CGFontCreateWithPlatformFont(&tmp);
     }
@@ -648,7 +648,6 @@ void RQuartz_Set(CGContextRef ctx, R_GE_gcontext *gc, int flags)
 
 static Rboolean RQuartz_Open(DEVDESC, QuartzDesc *xd, char *display, double width, double height, int bg)
 {
-    // We don't do anything here.
     return TRUE;
 }
 
@@ -739,7 +738,7 @@ CFStringRef prepareText(CTXDESC, char *text, UniChar **buffer, int *free)
     else
     {
         str = CFStringCreateWithCString(NULL, text, kCFStringEncodingUTF8);
-        // Try fallback string encodings if UTF8 doesn't work.
+        /* Try fallback Latin1 encoding if UTF8 doesn't work. */
         if (NULL == str)
             CFStringCreateWithCString(NULL, text, kCFStringEncodingISOLatin1);
     }
@@ -758,7 +757,7 @@ static double RQuartz_StrWidth(char *text, CTXDESC)
 {
     DEVSPEC;
     if (!ctx)
-        NOCTXR(strlen(text) * 10.0); // for sanity reasons
+        NOCTXR(strlen(text) * 10.0); /* for sanity reasons */
     SET(RQUARTZ_FONT);
     {
         CGFontRef font = CGContextGetFont(ctx);
@@ -774,8 +773,7 @@ static double RQuartz_StrWidth(char *text, CTXDESC)
         CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
         CGFontGetGlyphAdvances(font, glyphs, len, advances);
         {
-            float width = 0.0; // aScale*CGFontGetLeading(CGContextGetFont(ctx));
-
+            float width = 0.0; /* aScale*CGFontGetLeading(CGContextGetFont(ctx)); */
             for (i = 0; i < len; i++)
                 width += aScale * advances[i];
             free(advances);
