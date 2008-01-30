@@ -624,7 +624,7 @@ static void handleEvent(XEvent event)
         {
             XFindContext(display, event.xclient.window, devPtrContext, &temp);
             dd = (NewDevDesc *)temp;
-            KillDevice((DevDesc *)GetDevice(devNumber((DevDesc *)dd)));
+            killDevice(ndevNumber(dd));
         }
 
     if (do_update)
@@ -635,7 +635,7 @@ static void handleEvent(XEvent event)
          * so devNumber becomes 0 (the null device) and it is not
          * a good idea to pass the null device to GEplayDisplayList
          */
-        devNum = devNumber((DevDesc *)dd);
+        devNum = ndevNumber(dd);
         if (devNum > 0)
             GEplayDisplayList((GEDevDesc *)GetDevice(devNum));
     }
@@ -1882,12 +1882,12 @@ static void newX11_Activate(NewDevDesc *dd)
         return;
     if (strlen(xd->title))
     {
-        snprintf(t, 140, xd->title, devNumber((DevDesc *)dd) + 1);
+        snprintf(t, 140, xd->title, ndevNumber(dd) + 1);
         t[139] = '\0';
     }
     else
     {
-        sprintf(t, "R Graphics: Device %d", devNumber((DevDesc *)dd) + 1);
+        sprintf(t, "R Graphics: Device %d", ndevNumber(dd) + 1);
     }
     strcat(t, " (ACTIVE)");
     /**
@@ -1907,12 +1907,12 @@ static void newX11_Deactivate(NewDevDesc *dd)
         return;
     if (strlen(xd->title))
     {
-        snprintf(t, 140, xd->title, devNumber((DevDesc *)dd) + 1);
+        snprintf(t, 140, xd->title, ndevNumber(dd) + 1);
         t[139] = '\0';
     }
     else
     {
-        sprintf(t, "R Graphics: Device %d", devNumber((DevDesc *)dd) + 1);
+        sprintf(t, "R Graphics: Device %d", ndevNumber(dd) + 1);
     }
     strcat(t, " (inactive)");
     /**
