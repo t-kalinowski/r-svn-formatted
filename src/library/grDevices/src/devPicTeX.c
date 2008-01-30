@@ -581,8 +581,8 @@ static Rboolean PicTeXDeviceDriver(NewDevDesc *dd, const char *filename, const c
 
     strcpy(ptd->filename, filename);
 
-    dd->startfill = str2col(bg);
-    dd->startcol = str2col(fg);
+    dd->startfill = R_GE_str2col(bg);
+    dd->startcol = R_GE_str2col(fg);
     dd->startps = 10;
     dd->startlty = 0;
     dd->startfont = 1;

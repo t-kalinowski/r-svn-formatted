@@ -468,7 +468,7 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
     setAttrib(ans, R_DimNamesSymbol, dmns);
     for (i = i4 = 0; i < n; i++, i4 += 4)
     {
-        col = str2col(CHAR(STRING_ELT(colors, i)));
+        col = R_GE_str2col(CHAR(STRING_ELT(colors, i)));
         INTEGER(ans)[i4 + 0] = R_RED(col);
         INTEGER(ans)[i4 + 1] = R_GREEN(col);
         INTEGER(ans)[i4 + 2] = R_BLUE(col);
@@ -1541,7 +1541,7 @@ const char *col2name(unsigned int col)
 /* assumes that `s' is a name */
 
 /* used in grDevices */
-unsigned int str2col(const char *s)
+unsigned int R_GE_str2col(const char *s)
 {
     if (s[0] == '#')
         return rgb2col(s);
@@ -1560,7 +1560,7 @@ unsigned int RGBpar(SEXP x, int i)
     int indx;
     if (isString(x))
     {
-        return str2col(CHAR(STRING_ELT(x, i)));
+        return R_GE_str2col(CHAR(STRING_ELT(x, i)));
     }
     else if (isLogical(x))
     {
@@ -1646,6 +1646,6 @@ void attribute_hidden InitColors(void)
 
     /* Install Default Palette */
     for (i = 0; DefaultPalette[i]; i++)
-        R_ColorTable[i] = str2col(DefaultPalette[i]);
+        R_ColorTable[i] = R_GE_str2col(DefaultPalette[i]);
     R_ColorTableSize = i;
 }

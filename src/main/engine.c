@@ -26,10 +26,7 @@
 #endif
 
 #include <Defn.h>
-/* REALLY shouldn't have to include Graphics.h once engine.h is
- * properly set up
- */
-#include <Graphics.h>
+#include <R_ext/GraphicsEngine.h>
 #include <Rdevices.h>
 #include <R_ext/Applic.h> /* pretty0() */
 #include <Rmath.h>
@@ -204,13 +201,7 @@ void GEregisterSystem(GEcallback cb, int *systemRegisterIndex)
         while (i++ < NumDevices())
         {
             dd = GetDevice(devNum);
-            /* FIXME:  won't need this check once engine.c has
-             * replaced graphics.c
-             */
-            if (dd->newDevStruct)
-            {
-                registerOne((GEDevDesc *)dd, numGraphicsSystems, cb);
-            }
+            registerOne((GEDevDesc *)dd, numGraphicsSystems, cb);
             devNum = nextDevice(devNum);
         }
     }
@@ -252,13 +243,7 @@ void GEunregisterSystem(int registerIndex)
         while (i++ < NumDevices())
         {
             dd = GetDevice(devNum);
-            /* FIXME:  won't need this check once engine.c has
-             * replaced graphics.c
-             */
-            if (dd->newDevStruct)
-            {
-                unregisterOne((GEDevDesc *)dd, registerIndex);
-            }
+            unregisterOne((GEDevDesc *)dd, registerIndex);
             devNum = nextDevice(devNum);
         }
     }
@@ -616,21 +601,6 @@ SEXP GE_LJOINget(R_GE_linejoin ljoin)
      * Should never get here
      */
     return ans;
-}
-
-/****************************************************************
- * Code to convert string colour name/description to internal colour
- ****************************************************************
- */
-
-unsigned int R_GE_str2col(const char *s)
-{
-    /*
-     * Call the one in graphics.c
-     * Ideally, move colour stuff from graphics.c to here
-     * and have the traditional graphics code call this.
-     */
-    return str2col(s);
 }
 
 /****************************************************************
