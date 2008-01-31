@@ -285,7 +285,6 @@ void GEaddDevice(pGEDevDesc gdd)
     Rboolean appnd;
     SEXP s, t;
     pGEDevDesc oldd;
-    pGEDev dd = (pGEDev)gdd; /* temporary */
 
     PROTECT(s = getSymbolValue(".Devices"));
 
@@ -329,8 +328,11 @@ void GEaddDevice(pGEDevDesc gdd)
 
     UNPROTECT(2);
 
-    copyGPar(Rf_dpptr(dd), Rf_gpptr(dd));
-    GReset(dd);
+#if 1
+    /* FIXME this section depends on base system */
+    copyGPar(Rf_dpptr(gdd), Rf_gpptr(gdd));
+    GReset(gdd);
+#endif
 
     /* In case a device driver did not call R_CheckDeviceAvailable
        before starting its allocation, we complete the allocation and
@@ -456,10 +458,15 @@ static void removeDevice(int devNum, Rboolean findNext)
                 if (R_CurrentDevice)
                 {
                     pGEDevDesc gdd = GEcurrentDevice();
-                    pGEDev dd = (pGEDev)gdd;
                     gdd->dev->activate(gdd->dev);
-                    copyGPar(Rf_dpptr(dd), Rf_gpptr(dd));
-                    GReset(dd);
+#if 1
+                    /* FIXME this section depends on base system.
+                       It's strange to do this: it is not done when
+                       the current device is changed in any other way.
+                     */
+                    copyGPar(Rf_dpptr(gdd), Rf_gpptr(gdd));
+                    GReset(gdd);
+#endif
                 }
             }
         }
