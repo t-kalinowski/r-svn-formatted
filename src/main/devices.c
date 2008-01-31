@@ -176,6 +176,7 @@ pGEDevDesc GEGetDevice(int i)
     return R_Devices[i];
 }
 
+/* FIXME: remove in due course */
 DevDesc *Rf_GetDevice(int i)
 {
     return (pGEDev)R_Devices[i];
@@ -346,7 +347,7 @@ void GEaddDevice(pGEDevDesc gdd)
 /* FIXME; remove in due course */
 void Rf_addDevice(pGEDev dd)
 {
-    GEaddDevice((pGEDevDesc)dd);
+    GEaddDevice(dd);
 }
 
 /* This should be called if you have a DevDesc or a GEDevDesc
@@ -367,7 +368,7 @@ static int deviceNumber(pGEDev dd)
 {
     int i;
     for (i = 1; i < R_MaxDevices; i++)
-        if (R_Devices[i] == (pGEDevDesc)dd)
+        if (R_Devices[i] == dd)
             return i;
     return 0;
 }
@@ -509,12 +510,6 @@ void KillAllDevices(void)
      * but this is a good proxy for now.
      */
     unregisterBase();
-}
-
-/* FIXME: remove in due course */
-void recordGraphicOperation(SEXP op, SEXP args, pGEDev dd)
-{
-    GErecordGraphicOperation(op, args, ((pGEDevDesc)dd));
 }
 
 /* FIXME:  NewFrameConfirm should be a standard device function */

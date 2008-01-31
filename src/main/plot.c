@@ -52,7 +52,7 @@ static R_INLINE double fmax2(double x, double y)
 /* ProcessInLinePars handles inline par specifications in graphics functions.
  * It does this by calling Specify2() from ./par.c */
 
-attribute_hidden void ProcessInlinePars(SEXP s, pGEDev dd, SEXP call)
+attribute_hidden void ProcessInlinePars(SEXP s, pGEDevDesc dd, SEXP call)
 {
     if (isList(s))
     {
@@ -475,7 +475,7 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* plot.new() - create a new plot "frame" */
 
-    pGEDev dd;
+    pGEDevDesc dd;
 
     checkArity(op, args);
 
@@ -496,7 +496,7 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GSetState(1, dd);
 
     if (GRecording(call, dd))
-        recordGraphicOperation(op, args, dd);
+        GErecordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
 
@@ -530,7 +530,7 @@ SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean logscale;
     const char *p;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     if (length(args) < 3)
         error(_("at least 3 arguments required"));
@@ -647,7 +647,7 @@ SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* NOTE: the operation is only recorded if there was no "error" */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -1004,7 +1004,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     double axis_base, axis_tick, axis_lab, axis_low, axis_high;
 
     SEXP originalArgs = args, label;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     /* Arity Check */
     /* This is a builtin function, so it should always have */
@@ -1552,7 +1552,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(4); /* lab, at, lab, padj again */
     return at;
 } /* do_axis */
@@ -1573,7 +1573,7 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     void *vmax = NULL /* -Wall */;
 
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     /* Basic Checks */
     GCheckState(dd);
@@ -1878,7 +1878,7 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(6);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_plot_xy */
 
@@ -1924,7 +1924,7 @@ SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     double xx[2], yy[2];
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -1992,7 +1992,7 @@ SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2003,7 +2003,7 @@ SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt, ncol, nlty, nlwd, nborder;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -2073,7 +2073,7 @@ SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(4);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2087,7 +2087,7 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     int code;
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd, thiscol;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -2167,11 +2167,11 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-static void drawPolygon(int n, double *x, double *y, int lty, int fill, int border, pGEDev dd)
+static void drawPolygon(int n, double *x, double *y, int lty, int fill, int border, pGEDevDesc dd)
 {
     if (lty == NA_INTEGER)
         Rf_gpptr(dd)->lty = Rf_dpptr(dd)->lty;
@@ -2190,7 +2190,7 @@ SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     double *x, *y, xx, yy, xold, yold;
 
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2256,7 +2256,7 @@ SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(3);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2272,7 +2272,7 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     double xx, yy;
     Rboolean vectorFonts = FALSE;
     SEXP string, originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2440,7 +2440,7 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(7);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2501,7 +2501,7 @@ static double ComputeAdjValue(double adj, int side, int las)
     return adj;
 }
 
-static double ComputeAtValueFromAdj(double adj, int side, int outer, pGEDev dd)
+static double ComputeAtValueFromAdj(double adj, int side, int outer, pGEDevDesc dd)
 {
     double at = 0; /* -Wall */
     switch (side % 2)
@@ -2516,7 +2516,7 @@ static double ComputeAtValueFromAdj(double adj, int side, int outer, pGEDev dd)
     return at;
 }
 
-static double ComputeAtValue(double at, double adj, int side, int las, int outer, pGEDev dd)
+static double ComputeAtValue(double at, double adj, int side, int las, int outer, pGEDevDesc dd)
 {
     if (!R_FINITE(at))
     {
@@ -2593,7 +2593,7 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, n, fontsave, colsave;
     double cexsave;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2777,7 +2777,7 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_mtext */
 
@@ -2794,7 +2794,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     int col, font, outer;
     int i, n;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -3018,14 +3018,14 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_title */
 
 /*  abline(a, b, h, v, col, lty, lwd, ...)
     draw lines in intercept/slope form.	 */
 
-static void getxlimits(double *x, pGEDev dd)
+static void getxlimits(double *x, pGEDevDesc dd)
 {
     /*
      * xpd = 0 means clip to current plot region
@@ -3049,7 +3049,7 @@ static void getxlimits(double *x, pGEDev dd)
     }
 }
 
-static void getylimits(double *y, pGEDev dd)
+static void getylimits(double *y, pGEDevDesc dd)
 {
     switch (Rf_gpptr(dd)->xpd)
     {
@@ -3074,7 +3074,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, ncol, nlines, nlty, nlwd, lstart, lstop;
     double aa, bb, x[2], y[2] = {0., 0.} /* -Wall */;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -3264,7 +3264,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 } /* do_abline */
 
@@ -3276,7 +3276,7 @@ SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     int which, col;
     SEXP colsxp, fgsxp;
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     GCheckState(dd);
     GSavePars(dd);
@@ -3310,11 +3310,11 @@ SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-static void drawPointsLines(double xp, double yp, double xold, double yold, char type, int first, pGEDev dd)
+static void drawPointsLines(double xp, double yp, double xold, double yold, char type, int first, pGEDevDesc dd)
 {
     if (type == 'p' || type == 'o')
         GSymbol(xp, yp, DEVICE, Rf_gpptr(dd)->pch, dd);
@@ -3327,7 +3327,7 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP x, y, nobs, ans, saveans, stype = R_NilValue;
     int i, n, type = 'p';
     double xp, yp, xold = 0, yold = 0;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     /* If replaying, just draw the points and lines that were recorded */
     if (call == R_NilValue)
@@ -3410,13 +3410,13 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
         SETCADDR(saveans, nobs);
         SETCADDDR(saveans, CAR(args));
         /* Record the points and lines that were drawn in the display list */
-        recordGraphicOperation(op, saveans, dd);
+        GErecordGraphicOperation(op, saveans, dd);
         UNPROTECT(5);
         return ans;
     }
 }
 
-static void drawLabel(double xi, double yi, int pos, double offset, const char *l, int enc, pGEDev dd)
+static void drawLabel(double xi, double yi, int pos, double offset, const char *l, int enc, pGEDevDesc dd)
 {
     switch (pos)
     {
@@ -3448,7 +3448,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset, tol;
     int atpen, i, imin, k, n, nl, npts, plot, posi, warn;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
 
     /* If we are replaying the display list, then just redraw the
        labels beside the identified points */
@@ -3661,7 +3661,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         /* If we are recording, save enough information to be able to
            redraw the text labels beside identified points */
         if (GRecording(call, dd))
-            recordGraphicOperation(op, saveans, dd);
+            GErecordGraphicOperation(op, saveans, dd);
         UNPROTECT(6);
 
         R_Visible = TRUE;
@@ -3675,7 +3675,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP ans, str, ch;                                                                                             \
         int i, n, units;                                                                                               \
         double cex, cexsave;                                                                                           \
-        pGEDev dd = CurrentDevice();                                                                                   \
+        pGEDevDesc dd = CurrentDevice();                                                                               \
                                                                                                                        \
         checkArity(op, args);                                                                                          \
         /* GCheckState(dd); */                                                                                         \
@@ -3727,7 +3727,7 @@ static double *dnd_xpos;
 static double dnd_hang;
 static double dnd_offset;
 
-static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, pGEDev dd)
+static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, pGEDevDesc dd)
 {
     /* Recursive function for 'hclust' dendrogram drawing:
      * Do left + Do right + Do myself
@@ -3782,7 +3782,7 @@ SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     int n;
 
     SEXP originalArgs, dnd_llabels, xpos;
-    pGEDev dd;
+    pGEDevDesc dd;
 
     dd = CurrentDevice();
     GCheckState(dd);
@@ -3846,7 +3846,7 @@ SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(1);
     return R_NilValue;
 
@@ -3861,7 +3861,7 @@ SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     double pin, *ll, tmp, yval, *y, ymin, ymax, yrange, m;
     SEXP originalArgs, merge, height, llabels, str;
     void *vmax;
-    pGEDev dd;
+    pGEDevDesc dd;
 
     dd = CurrentDevice();
     GCheckState(dd);
@@ -3966,7 +3966,7 @@ SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     vmaxset(vmax);
     return R_NilValue;
 badargs:
@@ -3978,7 +3978,7 @@ SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP col;
     int ncol;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
     checkArity(op, args);
     PROTECT(col = FixupCol(CAR(args), R_TRANWHITE));
     ncol = LENGTH(col);
@@ -4006,14 +4006,14 @@ SEXP attribute_hidden do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
     SEXP theList;
     int ask;
 
     checkArity(op, args);
     if (!isList(theList = CAR(args)))
         error(_("invalid argument"));
-    ((pGEDevDesc)dd)->dev->displayList = theList;
+    dd->dev->displayList = theList;
     if (theList != R_NilValue)
     {
         ask = Rf_gpptr(dd)->ask;
@@ -4036,7 +4036,7 @@ SEXP attribute_hidden do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_setGPar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
     int lGPar = 1 + sizeof(GPar) / sizeof(int);
     SEXP GP;
 
@@ -4103,7 +4103,7 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     void *vmax;
 
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
     GCheckState(dd);
 
     if (length(args) < 7)
@@ -4389,7 +4389,7 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(5);
     return R_NilValue;
 }
@@ -4407,7 +4407,7 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     R_GE_gcontext gc;
 
     SEXP originalArgs = args;
-    pGEDev dd = CurrentDevice();
+    pGEDevDesc dd = CurrentDevice();
     gcontextFromGP(&gc, dd);
 
     GCheckState(dd);
@@ -4466,7 +4466,7 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     GClip(dd);
     gc.col = INTEGER(border)[0];
     gc.fill = INTEGER(col)[0];
-    res = GEXspline(nx, xx, yy, REAL(ss), open, repEnds, draw, &gc, (pGEDevDesc)dd);
+    res = GEXspline(nx, xx, yy, REAL(ss), open, repEnds, draw, &gc, dd);
     vmaxset(vmaxsave);
     UNPROTECT(2);
 
@@ -4501,6 +4501,6 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
-        recordGraphicOperation(op, originalArgs, dd);
+        GErecordGraphicOperation(op, originalArgs, dd);
     return ans;
 }

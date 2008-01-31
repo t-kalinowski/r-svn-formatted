@@ -13,7 +13,7 @@
 
 int attribute_hidden baseRegisterIndex = -1;
 
-static void restoredpSaved(pGEDev dd)
+static void restoredpSaved(pGEDevDesc dd)
 {
     /* NOTE that not all params should be restored before playing */
     /* the display list (e.g., don't restore the device size) */
@@ -227,10 +227,10 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
         curdd = GEcurrentDevice();
         copyGPar(&(((baseSystemState *)sd->systemSpecific)->dpSaved),
                  &(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->dpSaved));
-        restoredpSaved((pGEDev)curdd);
+        restoredpSaved(curdd);
         copyGPar(&(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->dp),
                  &(((baseSystemState *)curdd->gesd[baseRegisterIndex]->systemSpecific)->gp));
-        GReset((pGEDev)curdd);
+        GReset(curdd);
         break;
     case GE_SaveState:
         sd = dd->gesd[baseRegisterIndex];
@@ -238,9 +238,9 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
         break;
     case GE_RestoreState:
         sd = dd->gesd[baseRegisterIndex];
-        restoredpSaved((pGEDev)dd);
+        restoredpSaved(dd);
         copyGPar(&(((baseSystemState *)sd->systemSpecific)->dp), &(((baseSystemState *)sd->systemSpecific)->gp));
-        GReset((pGEDev)dd);
+        GReset(dd);
         break;
     case GE_SaveSnapshotState:
         sd = dd->gesd[baseRegisterIndex];
@@ -257,9 +257,9 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
     case GE_RestoreSnapshotState:
         sd = dd->gesd[baseRegisterIndex];
         copyGPar((GPar *)INTEGER(data), &(((baseSystemState *)sd->systemSpecific)->dpSaved));
-        restoredpSaved((pGEDev)dd);
+        restoredpSaved(dd);
         copyGPar(&(((baseSystemState *)sd->systemSpecific)->dp), &(((baseSystemState *)sd->systemSpecific)->gp));
-        GReset((pGEDev)dd);
+        GReset(dd);
         break;
     case GE_CheckPlot:
         /* Check that the current plotting state is "valid"
@@ -322,22 +322,22 @@ void attribute_hidden unregisterBase(void)
 /* FIXME: Make this a macro to avoid function call overhead?
    Inline it if you really think it matters.
  */
-attribute_hidden GPar *Rf_gpptr(pGEDev dd)
+attribute_hidden GPar *Rf_gpptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState((pGEDevDesc)dd, baseRegisterIndex))->gp);
+    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->gp);
 }
 
-attribute_hidden GPar *Rf_dpptr(pGEDev dd)
+attribute_hidden GPar *Rf_dpptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState((pGEDevDesc)dd, baseRegisterIndex))->dp);
+    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->dp);
 }
 
-attribute_hidden GPar *Rf_dpSavedptr(pGEDev dd)
+attribute_hidden GPar *Rf_dpSavedptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState((pGEDevDesc)dd, baseRegisterIndex))->dpSaved);
+    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->dpSaved);
 }
 
-void Rf_setBaseDevice(Rboolean val, pGEDev dd)
+void Rf_setBaseDevice(Rboolean val, pGEDevDesc dd)
 {
-    ((baseSystemState *)GEsystemState((pGEDevDesc)dd, baseRegisterIndex))->baseDevice = val;
+    ((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->baseDevice = val;
 }
