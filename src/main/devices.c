@@ -72,9 +72,7 @@
  *
  */
 
-void DevNull(void)
-{
-}
+// void DevNull(void) {}
 
 static int R_CurrentDevice = 0;
 static int R_NumDevices = 1;
@@ -170,6 +168,7 @@ static GEDevDesc *GECurrentDevice(void)
     return R_Devices[R_CurrentDevice];
 }
 
+/* FIXME: remove in due course */
 DevDesc *CurrentDevice(void)
 {
     return (DevDesc *)GECurrentDevice();
@@ -347,6 +346,7 @@ void GEaddDevice(GEDevDesc *gdd)
     }
 }
 
+/* FIXME; remove in due course */
 void addDevice(DevDesc *dd)
 {
     GEaddDevice((GEDevDesc *)dd);
@@ -355,20 +355,22 @@ void addDevice(DevDesc *dd)
 /* This should be called if you have a DevDesc or a GEDevDesc
  * and you want to find the corresponding device number
  */
-int deviceNumber(DevDesc *dd)
-{
-    int i;
-    for (i = 1; i < R_MaxDevices; i++)
-        if (R_Devices[i] == (GEDevDesc *)dd)
-            return i;
-    return 0;
-}
 
 int GEdeviceNumber(GEDevDesc *dd)
 {
     int i;
     for (i = 1; i < R_MaxDevices; i++)
         if (R_Devices[i] == dd)
+            return i;
+    return 0;
+}
+
+/* FIXME when KillDevice is removed */
+static int deviceNumber(DevDesc *dd)
+{
+    int i;
+    for (i = 1; i < R_MaxDevices; i++)
+        if (R_Devices[i] == (GEDevDesc *)dd)
             return i;
     return 0;
 }
@@ -469,6 +471,7 @@ static void removeDevice(int devNum, Rboolean findNext)
     }
 }
 
+/* FIXME; remove in due course */
 void KillDevice(DevDesc *dd)
 {
     removeDevice(deviceNumber(dd), TRUE);
@@ -511,6 +514,7 @@ void KillAllDevices(void)
     GEunregisterSystem(baseRegisterIndex);
 }
 
+/* FIXME: remove in due course */
 void recordGraphicOperation(SEXP op, SEXP args, DevDesc *dd)
 {
     GErecordGraphicOperation(op, args, ((GEDevDesc *)dd));
