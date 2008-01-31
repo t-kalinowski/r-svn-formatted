@@ -189,7 +189,6 @@ static Rboolean nullDeviceDriver(NewDevDesc *dev)
     dev->canChangeGamma = FALSE;
     dev->displayListOn = TRUE;
 
-    dev->newDevStruct = 1;
     return TRUE;
 }
 

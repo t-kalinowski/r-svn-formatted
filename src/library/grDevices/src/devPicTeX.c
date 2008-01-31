@@ -589,8 +589,6 @@ static Rboolean PicTeXDeviceDriver(NewDevDesc *dd, const char *filename, const c
     dd->startfont = 1;
     dd->startgamma = 1;
 
-    dd->newDevStruct = 1;
-
     dd->activate = PicTeX_Activate;
     dd->deactivate = PicTeX_Deactivate;
     dd->open = PicTeX_Open;
