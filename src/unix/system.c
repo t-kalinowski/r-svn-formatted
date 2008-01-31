@@ -49,7 +49,6 @@
 #endif
 
 #include "Fileio.h"
-#include <Rdevices.h> /* KillAllDevices() [nothing else?] */
 
 #define __SYSTEM__
 #define R_INTERFACE_PTRS 1

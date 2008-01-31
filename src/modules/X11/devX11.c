@@ -50,12 +50,12 @@
 #endif
 
 #include <R_ext/GraphicsEngine.h>
-#include "Fileio.h"  /* R_fopen */
-#include "rotated.h" /* 'Public' routines from here */
+#include <Rgraphics.h> /* RGBpar */
+#include "Fileio.h"    /* R_fopen */
+#include "rotated.h"   /* 'Public' routines from here */
 /* For the input handlers of the event loop mechanism: */
 #include <R_ext/eventloop.h>
 #include <R_ext/Memory.h> /* vmaxget */
-#include <Rdevices.h>
 
 #ifdef SUPPORT_MBCS
 /* This uses fontsets only in mbcslocales */
@@ -2178,7 +2178,7 @@ static void newX11_Hold(NewDevDesc *dd)
 /*	 see X_COLORTYPE at top of file */
 /*	7) maxcube			*/
 
-Rboolean newX11DeviceDriver(DevDesc *dd, const char *disp_name, double width, double height, double pointsize,
+Rboolean newX11DeviceDriver(NewDevDesc *dd, const char *disp_name, double width, double height, double pointsize,
                             double gamma_fac, X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor,
                             SEXP sfonts, int res, int xpos, int ypos, const char *title)
 {
@@ -2211,14 +2211,14 @@ Rboolean newX11DeviceDriver(DevDesc *dd, const char *disp_name, double width, do
 
     /*	Start the Device Driver and Hardcopy.  */
 
-    if (!newX11_Open((NewDevDesc *)(dd), xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor,
-                     canvascolor, res, xpos, ypos))
+    if (!newX11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor, canvascolor, res, xpos,
+                     ypos))
     {
         free(xd);
         return FALSE;
     }
 
-    Rf_setNewX11DeviceData((NewDevDesc *)(dd), gamma_fac, xd);
+    Rf_setNewX11DeviceData(dd, gamma_fac, xd);
     xd->fill = 0xffffffff; /* this is needed to ensure that the
                   first newpage does set whitecolor
                   if par("bg") is not transparent */
@@ -2392,7 +2392,7 @@ static Rboolean in_R_GetX11Image(int d, void *pximage, int *pwidth, int *pheight
         return FALSE;
     else
     {
-        NewDevDesc *dd = ((GEDevDesc *)GetDevice(d))->dev;
+        NewDevDesc *dd = GEGetDevice(d)->dev;
         newX11Desc *xd = dd->deviceSpecific;
 
         *((XImage **)pximage) =
@@ -2455,7 +2455,7 @@ int Rf_setX11Display(Display *dpy, double gamma_fac, X_COLORTYPE colormodel, int
     return (TRUE);
 }
 
-typedef Rboolean (*X11DeviceDriverRoutine)(DevDesc *, char *, double, double, double, double, X_COLORTYPE, int, int);
+typedef Rboolean (*X11DeviceDriverRoutine)(NewDevDesc *, char *, double, double, double, double, X_COLORTYPE, int, int);
 
 static SEXP gcall;
 
@@ -2490,8 +2490,8 @@ static void Rf_addX11Device(const char *display, double width, double height, do
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor,
-                                canvascolor, sfonts, res, xpos, ypos, title))
+        if (!newX11DeviceDriver(dev, display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor,
+                                sfonts, res, xpos, ypos, title))
         {
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
