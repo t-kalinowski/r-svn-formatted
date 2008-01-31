@@ -27,7 +27,6 @@
 
 #include <Defn.h>
 #include <R_ext/GraphicsEngine.h>
-#include <Rdevices.h>
 #include <R_ext/Applic.h> /* pretty0() */
 #include <Rmath.h>
 
@@ -2727,16 +2726,6 @@ void GEplayDisplayList(GEDevDesc *dd)
         selectDevice(savedDevice);
     }
     UNPROTECT(1);
-}
-
-/****************************************************************
- * GEcurrentDevice
- ****************************************************************
- */
-
-GEDevDesc *GEcurrentDevice()
-{
-    return (GEDevDesc *)CurrentDevice();
 }
 
 /****************************************************************
