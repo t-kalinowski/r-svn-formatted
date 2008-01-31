@@ -7458,7 +7458,6 @@ static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *des
 
 SEXP PostScript(SEXP args)
 {
-    NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
     const char *file, *paper, *family = NULL, *bg, *fg, *cmd;
@@ -7526,6 +7525,7 @@ SEXP PostScript(SEXP args)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
+        NewDevDesc *dev;
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
@@ -7542,7 +7542,7 @@ SEXP PostScript(SEXP args)
         }
         gsetVar(install(".Device"), mkString("postscript"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        addDevice((DevDesc *)dd);
+        GEaddDevice(dd);
         GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;
@@ -7568,7 +7568,6 @@ SEXP PostScript(SEXP args)
 
 SEXP XFig(SEXP args)
 {
-    NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
     const char *file, *paper, *family, *bg, *fg, *encoding;
@@ -7606,6 +7605,7 @@ SEXP XFig(SEXP args)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
+        NewDevDesc *dev;
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
@@ -7622,7 +7622,7 @@ SEXP XFig(SEXP args)
         }
         gsetVar(install(".Device"), mkString("xfig"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        addDevice((DevDesc *)dd);
+        GEaddDevice(dd);
         GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;
@@ -7651,7 +7651,6 @@ SEXP XFig(SEXP args)
 
 SEXP PDF(SEXP args)
 {
-    NewDevDesc *dev = NULL;
     GEDevDesc *dd;
     char *vmax;
     const char *file, *paper, *encoding, *family = NULL /* -Wall */, *bg, *fg, *title, call[] = "PDF";
@@ -7709,6 +7708,7 @@ SEXP PDF(SEXP args)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
+        NewDevDesc *dev;
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
@@ -7725,7 +7725,7 @@ SEXP PDF(SEXP args)
         }
         gsetVar(install(".Device"), mkString("pdf"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        addDevice((DevDesc *)dd);
+        GEaddDevice(dd);
         GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;

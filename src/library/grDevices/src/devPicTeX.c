@@ -671,7 +671,6 @@ static Rboolean PicTeXDeviceDriver(NewDevDesc *dd, const char *filename, const c
 
 SEXP PicTeX(SEXP args)
 {
-    NewDevDesc *dev;
     GEDevDesc *dd;
     char *vmax;
     const char *file, *bg, *fg;
@@ -698,6 +697,7 @@ SEXP PicTeX(SEXP args)
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
+        NewDevDesc *dev;
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
             return 0;
         /* Do this for early redraw attempts */
@@ -713,7 +713,7 @@ SEXP PicTeX(SEXP args)
         }
         gsetVar(install(".Device"), mkString("pictex"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        addDevice((DevDesc *)dd);
+        GEaddDevice(dd);
         GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;

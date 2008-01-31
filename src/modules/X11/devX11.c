@@ -637,7 +637,7 @@ static void handleEvent(XEvent event)
          */
         devNum = ndevNumber(dd);
         if (devNum > 0)
-            GEplayDisplayList((GEDevDesc *)GetDevice(devNum));
+            GEplayDisplayList(GEGetDevice(devNum));
     }
 }
 
@@ -2471,9 +2471,9 @@ static char *SaveString(SEXP sxp, int offset)
     return s;
 }
 
-static DevDesc *Rf_addX11Device(const char *display, double width, double height, double ps, double gamma,
-                                int colormodel, int maxcubesize, int bgcolor, int canvascolor, const char *devname,
-                                SEXP sfonts, int res, int xpos, int ypos, const char *title)
+static void Rf_addX11Device(const char *display, double width, double height, double ps, double gamma, int colormodel,
+                            int maxcubesize, int bgcolor, int canvascolor, const char *devname, SEXP sfonts, int res,
+                            int xpos, int ypos, const char *title)
 {
     NewDevDesc *dev = NULL;
     GEDevDesc *dd;
@@ -2482,7 +2482,7 @@ static DevDesc *Rf_addX11Device(const char *display, double width, double height
     {
         /* Allocate and initialize the device driver data */
         if (!(dev = (NewDevDesc *)calloc(1, sizeof(NewDevDesc))))
-            return 0;
+            return;
         /* Do this for early redraw attempts */
         dev->newDevStruct = 1;
         dev->displayList = R_NilValue;
@@ -2490,10 +2490,6 @@ static DevDesc *Rf_addX11Device(const char *display, double width, double height
          * This (and displayList) get protected during GC
          */
         dev->savedSnapshot = R_NilValue;
-        /* Took out the GInit because MOST of it is setting up
-         * R base graphics parameters.
-         * This is supposed to happen via addDevice now.
-         */
         if (!newX11DeviceDriver((DevDesc *)(dev), display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor,
                                 canvascolor, sfonts, res, xpos, ypos, title))
         {
@@ -2502,12 +2498,10 @@ static DevDesc *Rf_addX11Device(const char *display, double width, double height
         }
         gsetVar(install(".Device"), mkString(devname), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        addDevice((DevDesc *)dd);
+        GEaddDevice(dd);
         GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;
-
-    return ((DevDesc *)dd);
 }
 
 SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
