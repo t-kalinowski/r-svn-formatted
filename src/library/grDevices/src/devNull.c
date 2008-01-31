@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2004  The R Development Core Team
+ *  Copyright (C) 2004-8  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +23,7 @@
 
 #include <Rinternals.h>
 #include <Rgraphics.h>
-//#include <Rdevices.h>
-#include <R_ext/GraphicsDevice.h>
+#define R_USE_PROTOTYPES 1
 #include <R_ext/GraphicsEngine.h>
 
 #include "grDevices.h"
@@ -66,7 +65,7 @@ static void NULL_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDev
 static void NULL_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dev)
 {
 }
-static void NULL_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dev)
+static void NULL_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dev)
 {
 }
 static void NULL_NewPage(R_GE_gcontext *gc, NewDevDesc *dev)
@@ -108,7 +107,7 @@ static void NULL_Size(double *left, double *right, double *bottom, double *top, 
     *bottom = dev->bottom;
     *top = dev->top;
 }
-static double NULL_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dev)
+static double NULL_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dev)
 {
     return 0.0;
 }
