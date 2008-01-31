@@ -49,8 +49,8 @@
 #include <X11/Xmu/Atoms.h>
 #endif
 
+#define R_USE_PROTOTYPES 1
 #include <R_ext/GraphicsEngine.h>
-#include <R_ext/GraphicsDevice.h>
 #include "Fileio.h"  /* R_fopen */
 #include "rotated.h" /* 'Public' routines from here */
 /* For the input handlers of the event loop mechanism: */
@@ -158,8 +158,9 @@ static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
 static void newX11_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, NewDevDesc *dd);
 static void newX11_Size(double *left, double *right, double *bottom, double *top, NewDevDesc *dd);
-static double newX11_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd);
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+static double newX11_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dd);
+static void newX11_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc,
+                        NewDevDesc *dd);
 
 /*************************************************/
 /* End of list of required device driver actions */
@@ -1495,7 +1496,7 @@ static char *translateFontFamily(char *family, newX11Desc *xd)
     return result;
 }
 
-static double newX11_StrWidth(char *str, R_GE_gcontext *gc, NewDevDesc *dd)
+static double newX11_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
 
@@ -2085,7 +2086,7 @@ static void newX11_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, NewDe
     vmaxset(vmax);
 }
 
-static void newX11_Text(double x, double y, char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
+static void newX11_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     int size;
     newX11Desc *xd = (newX11Desc *)dd->deviceSpecific;
