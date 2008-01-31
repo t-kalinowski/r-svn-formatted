@@ -50,9 +50,9 @@
 #endif
 
 #include <R_ext/GraphicsEngine.h>
-#include <Rgraphics.h> /* RGBpar */
-#include "Fileio.h"    /* R_fopen */
-#include "rotated.h"   /* 'Public' routines from here */
+#include <R_ext/GraphicsDevice.h>
+#include "Fileio.h"  /* R_fopen */
+#include "rotated.h" /* 'Public' routines from here */
 /* For the input handlers of the event loop mechanism: */
 #include <R_ext/eventloop.h>
 #include <R_ext/Memory.h> /* vmaxget */
