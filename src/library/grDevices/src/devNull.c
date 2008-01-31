@@ -127,7 +127,6 @@ static Rboolean nullDeviceDriver(NewDevDesc *dev)
     /*
      * Device functions
      */
-    dev->open = NULL_Open;
     dev->close = NULL_Close;
     dev->activate = NULL_Activate;
     dev->deactivate = NULL_Deactivate;

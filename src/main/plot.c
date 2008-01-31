@@ -52,7 +52,7 @@ static R_INLINE double fmax2(double x, double y)
 /* ProcessInLinePars handles inline par specifications in graphics functions.
  * It does this by calling Specify2() from ./par.c */
 
-attribute_hidden void ProcessInlinePars(SEXP s, DevDesc *dd, SEXP call)
+attribute_hidden void ProcessInlinePars(SEXP s, pGEDev dd, SEXP call)
 {
     if (isList(s))
     {
@@ -475,7 +475,7 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* plot.new() - create a new plot "frame" */
 
-    DevDesc *dd;
+    pGEDev dd;
 
     checkArity(op, args);
 
@@ -530,7 +530,7 @@ SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean logscale;
     const char *p;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     if (length(args) < 3)
         error(_("at least 3 arguments required"));
@@ -1004,7 +1004,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     double axis_base, axis_tick, axis_lab, axis_low, axis_high;
 
     SEXP originalArgs = args, label;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     /* Arity Check */
     /* This is a builtin function, so it should always have */
@@ -1573,7 +1573,7 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     void *vmax = NULL /* -Wall */;
 
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     /* Basic Checks */
     GCheckState(dd);
@@ -1924,7 +1924,7 @@ SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     double xx[2], yy[2];
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -2003,7 +2003,7 @@ SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt, ncol, nlty, nlwd, nborder;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -2087,7 +2087,7 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     int code;
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd, thiscol;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     if (length(args) < 4)
         error(_("too few arguments"));
@@ -2171,7 +2171,7 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-static void drawPolygon(int n, double *x, double *y, int lty, int fill, int border, DevDesc *dd)
+static void drawPolygon(int n, double *x, double *y, int lty, int fill, int border, pGEDev dd)
 {
     if (lty == NA_INTEGER)
         Rf_gpptr(dd)->lty = Rf_dpptr(dd)->lty;
@@ -2190,7 +2190,7 @@ SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     double *x, *y, xx, yy, xold, yold;
 
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2272,7 +2272,7 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     double xx, yy;
     Rboolean vectorFonts = FALSE;
     SEXP string, originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2501,7 +2501,7 @@ static double ComputeAdjValue(double adj, int side, int las)
     return adj;
 }
 
-static double ComputeAtValueFromAdj(double adj, int side, int outer, DevDesc *dd)
+static double ComputeAtValueFromAdj(double adj, int side, int outer, pGEDev dd)
 {
     double at = 0; /* -Wall */
     switch (side % 2)
@@ -2516,7 +2516,7 @@ static double ComputeAtValueFromAdj(double adj, int side, int outer, DevDesc *dd
     return at;
 }
 
-static double ComputeAtValue(double at, double adj, int side, int las, int outer, DevDesc *dd)
+static double ComputeAtValue(double at, double adj, int side, int las, int outer, pGEDev dd)
 {
     if (!R_FINITE(at))
     {
@@ -2593,7 +2593,7 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, n, fontsave, colsave;
     double cexsave;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2794,7 +2794,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     int col, font, outer;
     int i, n;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -3025,7 +3025,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
 /*  abline(a, b, h, v, col, lty, lwd, ...)
     draw lines in intercept/slope form.	 */
 
-static void getxlimits(double *x, DevDesc *dd)
+static void getxlimits(double *x, pGEDev dd)
 {
     /*
      * xpd = 0 means clip to current plot region
@@ -3049,7 +3049,7 @@ static void getxlimits(double *x, DevDesc *dd)
     }
 }
 
-static void getylimits(double *y, DevDesc *dd)
+static void getylimits(double *y, pGEDev dd)
 {
     switch (Rf_gpptr(dd)->xpd)
     {
@@ -3074,7 +3074,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, ncol, nlines, nlty, nlwd, lstart, lstop;
     double aa, bb, x[2], y[2] = {0., 0.} /* -Wall */;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -3276,7 +3276,7 @@ SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     int which, col;
     SEXP colsxp, fgsxp;
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
     GSavePars(dd);
@@ -3314,7 +3314,7 @@ SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-static void drawPointsLines(double xp, double yp, double xold, double yold, char type, int first, DevDesc *dd)
+static void drawPointsLines(double xp, double yp, double xold, double yold, char type, int first, pGEDev dd)
 {
     if (type == 'p' || type == 'o')
         GSymbol(xp, yp, DEVICE, Rf_gpptr(dd)->pch, dd);
@@ -3327,7 +3327,7 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP x, y, nobs, ans, saveans, stype = R_NilValue;
     int i, n, type = 'p';
     double xp, yp, xold = 0, yold = 0;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     /* If replaying, just draw the points and lines that were recorded */
     if (call == R_NilValue)
@@ -3416,7 +3416,7 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
-static void drawLabel(double xi, double yi, int pos, double offset, const char *l, int enc, DevDesc *dd)
+static void drawLabel(double xi, double yi, int pos, double offset, const char *l, int enc, pGEDev dd)
 {
     switch (pos)
     {
@@ -3448,7 +3448,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset, tol;
     int atpen, i, imin, k, n, nl, npts, plot, posi, warn;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     /* If we are replaying the display list, then just redraw the
        labels beside the identified points */
@@ -3675,7 +3675,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP ans, str, ch;                                                                                             \
         int i, n, units;                                                                                               \
         double cex, cexsave;                                                                                           \
-        DevDesc *dd = CurrentDevice();                                                                                 \
+        pGEDev dd = CurrentDevice();                                                                                   \
                                                                                                                        \
         checkArity(op, args);                                                                                          \
         /* GCheckState(dd); */                                                                                         \
@@ -3727,7 +3727,7 @@ static double *dnd_xpos;
 static double dnd_hang;
 static double dnd_offset;
 
-static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, DevDesc *dd)
+static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, pGEDev dd)
 {
     /* Recursive function for 'hclust' dendrogram drawing:
      * Do left + Do right + Do myself
@@ -3782,7 +3782,7 @@ SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     int n;
 
     SEXP originalArgs, dnd_llabels, xpos;
-    DevDesc *dd;
+    pGEDev dd;
 
     dd = CurrentDevice();
     GCheckState(dd);
@@ -3861,7 +3861,7 @@ SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     double pin, *ll, tmp, yval, *y, ymin, ymax, yrange, m;
     SEXP originalArgs, merge, height, llabels, str;
     void *vmax;
-    DevDesc *dd;
+    pGEDev dd;
 
     dd = CurrentDevice();
     GCheckState(dd);
@@ -3978,7 +3978,7 @@ SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP col;
     int ncol;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     checkArity(op, args);
     PROTECT(col = FixupCol(CAR(args), R_TRANWHITE));
     ncol = LENGTH(col);
@@ -3993,45 +3993,27 @@ SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_getSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    GEDevDesc *gdd = (GEDevDesc *)CurrentDevice();
-
     checkArity(op, args);
-    return GEcreateSnapshot(gdd);
+    return GEcreateSnapshot(GEcurrentDevice());
 }
 
 SEXP attribute_hidden do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    GEDevDesc *gdd = (GEDevDesc *)CurrentDevice();
-
     checkArity(op, args);
-    GEplaySnapshot(CAR(args), gdd);
-    return R_NilValue;
-}
-
-/* I don't think this gets called in any base R code
- */
-SEXP attribute_hidden do_replay(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    if (!NoDevices())
-    {
-        GEDevDesc *dd = GEcurrentDevice();
-        checkArity(op, args);
-        /*     Rf_dpptr(dd)->resize(); */
-        GEplayDisplayList(dd);
-    }
+    GEplaySnapshot(CAR(args), GEcurrentDevice());
     return R_NilValue;
 }
 
 SEXP attribute_hidden do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     SEXP theList;
     int ask;
 
     checkArity(op, args);
     if (!isList(theList = CAR(args)))
         error(_("invalid argument"));
-    ((GEDevDesc *)dd)->dev->displayList = theList;
+    ((pGEDevDesc)dd)->dev->displayList = theList;
     if (theList != R_NilValue)
     {
         ask = Rf_gpptr(dd)->ask;
@@ -4054,7 +4036,7 @@ SEXP attribute_hidden do_playDL(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_setGPar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     int lGPar = 1 + sizeof(GPar) / sizeof(int);
     SEXP GP;
 
@@ -4121,7 +4103,7 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     void *vmax;
 
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     GCheckState(dd);
 
     if (length(args) < 7)
@@ -4425,7 +4407,7 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     R_GE_gcontext gc;
 
     SEXP originalArgs = args;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     gcontextFromGP(&gc, dd);
 
     GCheckState(dd);
@@ -4484,7 +4466,7 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     GClip(dd);
     gc.col = INTEGER(border)[0];
     gc.fill = INTEGER(col)[0];
-    res = GEXspline(nx, xx, yy, REAL(ss), open, repEnds, draw, &gc, (GEDevDesc *)dd);
+    res = GEXspline(nx, xx, yy, REAL(ss), open, repEnds, draw, &gc, (pGEDevDesc)dd);
     vmaxset(vmaxsave);
     UNPROTECT(2);
 

@@ -172,8 +172,7 @@ static void Perspective(double d)
    Adapted by Paul Murrell
 */
 
-static void FindCorners(double width, double height, SEXP label, double x0, double y0, double x1, double y1,
-                        DevDesc *dd)
+static void FindCorners(double width, double height, SEXP label, double x0, double y0, double x1, double y1, pGEDev dd)
 {
     double delta = height / width;
     double dx = GConvertXUnits(x1 - x0, USER, INCHES, dd) * delta;
@@ -246,7 +245,7 @@ static int TestLabelIntersection(SEXP label1, SEXP label2)
 }
 
 /*** Checks whether a label window is inside view region ***/
-static int LabelInsideWindow(SEXP label, DevDesc *dd)
+static int LabelInsideWindow(SEXP label, pGEDev dd)
 {
     int i = 0;
     double x, y;
@@ -414,13 +413,13 @@ static SEGP ctr_segupdate(double xend, double yend, int dir, Rboolean tail, SEGP
 */
 static SEXP labelList;
 
-static double distFromEdge(double *xxx, double *yyy, int iii, DevDesc *dd)
+static double distFromEdge(double *xxx, double *yyy, int iii, pGEDev dd)
 {
     return fmin2(fmin2(xxx[iii] - Rf_gpptr(dd)->usr[0], Rf_gpptr(dd)->usr[1] - xxx[iii]),
                  fmin2(yyy[iii] - Rf_gpptr(dd)->usr[2], Rf_gpptr(dd)->usr[3] - yyy[iii]));
 }
 
-static Rboolean useStart(double *xxx, double *yyy, int ns, DevDesc *dd)
+static Rboolean useStart(double *xxx, double *yyy, int ns, pGEDev dd)
 {
     if (distFromEdge(xxx, yyy, 0, dd) < distFromEdge(xxx, yyy, ns - 1, dd))
         return TRUE;
@@ -428,7 +427,7 @@ static Rboolean useStart(double *xxx, double *yyy, int ns, DevDesc *dd)
         return FALSE;
 }
 
-static int findGapUp(double *xxx, double *yyy, int ns, double labelDistance, DevDesc *dd)
+static int findGapUp(double *xxx, double *yyy, int ns, double labelDistance, pGEDev dd)
 {
     double dX, dY;
     double dXC, dYC;
@@ -454,7 +453,7 @@ static int findGapUp(double *xxx, double *yyy, int ns, double labelDistance, Dev
         return n;
 }
 
-static int findGapDown(double *xxx, double *yyy, int ns, double labelDistance, DevDesc *dd)
+static int findGapDown(double *xxx, double *yyy, int ns, double labelDistance, pGEDev dd)
 {
     double dX, dY;
     double dXC, dYC;
@@ -993,7 +992,7 @@ SEXP attribute_hidden do_contourLines(SEXP call, SEXP op, SEXP args, SEXP env)
  */
 
 static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labels, int cnum, Rboolean drawLabels,
-                    int method, double atom, DevDesc *dd)
+                    int method, double atom, pGEDev dd)
 {
     /* draw a contour for one given contour level 'zc' */
 
@@ -1430,10 +1429,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 
 SEXP attribute_hidden do_contourDef(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    DevDesc *dd = CurrentDevice();
-
     checkArity(op, args);
-    return ScalarLogical(((GEDevDesc *)dd)->dev->useRotatedTextInContour);
+    return ScalarLogical(GEcurrentDevice()->dev->useRotatedTextInContour);
 }
 
 /* contour(x, y, z, levels, labels, labcex, drawlabels,
@@ -1450,7 +1447,7 @@ SEXP attribute_hidden do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     int method;
     Rboolean drawLabels;
     double labcex;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
     SEXP result = R_NilValue;
 
     GCheckState(dd);
@@ -1759,7 +1756,7 @@ SEXP attribute_hidden do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
     unsigned *col;
     int i, j, k, npt, nx, ny, nz, nc, ncol, colsave, xpdsave;
     double px[8], py[8], pz[8];
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -1876,7 +1873,7 @@ SEXP attribute_hidden do_image(SEXP call, SEXP op, SEXP args, SEXP env)
     int *z, tmp;
     unsigned *c;
     int i, j, nx, ny, nc, colsave, xpdsave;
-    DevDesc *dd = CurrentDevice();
+    pGEDev dd = CurrentDevice();
 
     GCheckState(dd);
 
@@ -2020,7 +2017,7 @@ static void DrawFacets(double *z, double *x, double *y, int nx, int ny, int *ind
     Vector3d u, v;
     int i, j, k, n, nx1, ny1, icol, nv;
     unsigned int newcol, r, g, b;
-    DevDesc *dd;
+    pGEDev dd;
     dd = CurrentDevice();
     nx1 = nx - 1;
     ny1 = ny - 1;
@@ -2125,7 +2122,7 @@ static void CheckRange(double *x, int n, double min, double max)
 }
 #endif
 
-static void PerspWindow(double *xlim, double *ylim, double *zlim, DevDesc *dd)
+static void PerspWindow(double *xlim, double *ylim, double *zlim, pGEDev dd)
 {
     double pin1, pin2, scale, xdelta, ydelta, xscale, yscale, xadd, yadd;
     double xmax, xmin, ymax, ymin, xx, yy;
@@ -2207,7 +2204,7 @@ static short int Edge[6][4] = {
 /* Which edges have been drawn previously */
 static char EdgeDone[12];
 
-static void PerspBox(int front, double *x, double *y, double *z, DevDesc *dd)
+static void PerspBox(int front, double *x, double *y, double *z, pGEDev dd)
 {
     Vector3d u0, v0, u1, v1, u2, v2, u3, v3;
     double d[3], e[3];
@@ -2311,7 +2308,7 @@ static double labelAngle(double x1, double y1, double x2, double y2)
 }
 
 static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, int nTicks, int tickType,
-                      const char *label, int enc, DevDesc *dd)
+                      const char *label, int enc, pGEDev dd)
 {
     Vector3d u1, u2, u3, v1, v2, v3;
     double tickLength = .03; /* proportion of axis length */
@@ -2508,7 +2505,7 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
  * has the lowest x-value to decide which of the z-axes to label
  */
 static void PerspAxes(double *x, double *y, double *z, const char *xlab, int xenc, const char *ylab, int yenc,
-                      const char *zlab, int zenc, int nTicks, int tickType, DevDesc *dd)
+                      const char *zlab, int zenc, int nTicks, int tickType, pGEDev dd)
 {
     int xAxis = 0, yAxis = 0, zAxis = 0; /* -Wall */
     int xpdsave;
@@ -2597,7 +2594,7 @@ SEXP attribute_hidden do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
     double ltheta, lphi;
     double expand, xc = 0.0, yc = 0.0, zc = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
     int i, j, scale, ncol, dobox, doaxes, nTicks, tickType;
-    DevDesc *dd;
+    pGEDev dd;
 
     if (length(args) < 24)
         error(_("too few parameters"));

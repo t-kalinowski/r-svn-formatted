@@ -240,7 +240,7 @@ static void BoundsCheck(double x, double a, double b, const char *s)
      "R_DEV_2(\\1)" nil nil nil)
 */
 
-static void Specify(const char *what, SEXP value, DevDesc *dd, SEXP call)
+static void Specify(const char *what, SEXP value, pGEDev dd, SEXP call)
 {
     /* If you ADD a NEW par, then do NOT forget to update the code in
      *			 ../library/base/R/par.R
@@ -724,7 +724,7 @@ static void Specify(const char *what, SEXP value, DevDesc *dd, SEXP call)
 /* Now defined differently in Specify2() : */
 #define R_DEV__(_P_) Rf_gpptr(dd)->_P_
 
-void attribute_hidden Specify2(const char *what, SEXP value, DevDesc *dd, SEXP call)
+void attribute_hidden Specify2(const char *what, SEXP value, pGEDev dd, SEXP call)
 {
     double x;
     int ix = 0, ptype = ParCode(what);
@@ -795,7 +795,7 @@ void attribute_hidden Specify2(const char *what, SEXP value, DevDesc *dd, SEXP c
 /* Do NOT forget to update  ../library/base/R/par.R */
 /* if you  ADD a NEW  par !! */
 
-static SEXP Query(const char *what, DevDesc *dd)
+static SEXP Query(const char *what, pGEDev dd)
 {
     SEXP value;
 
@@ -1252,7 +1252,7 @@ SEXP attribute_hidden do_par(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP value;
     SEXP originalArgs = args;
-    DevDesc *dd;
+    pGEDev dd;
     int new_spec, nargs;
 
     checkArity(op, args);
@@ -1315,7 +1315,7 @@ SEXP attribute_hidden do_par(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_readonlypars(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP result;
-    GEDevDesc *dd;
+    pGEDevDesc dd;
     Rboolean canChangeGamma;
     int nreadonly;
 
@@ -1363,7 +1363,7 @@ SEXP attribute_hidden do_layout(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, j, nrow, ncol, ncmrow, ncmcol;
     SEXP originalArgs = args;
-    DevDesc *dd;
+    pGEDev dd;
 
     checkArity(op, args);
 

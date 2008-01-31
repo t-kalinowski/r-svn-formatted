@@ -45,7 +45,7 @@ static double *ypoints;
 
 /************* Code begins here *************/
 
-static Rboolean add_point(double x, double y, GEDevDesc *dd)
+static Rboolean add_point(double x, double y, pGEDevDesc dd)
 {
     if (npoints >= max_points)
     {
@@ -187,7 +187,7 @@ static void positive_s2_influence(double k, double t, double s2, double *A1, dou
     *A3 = (t + k + 1 > Tk) ? f_blend(t + k + 1 - Tk, k + 3 - Tk) : 0.0;
 }
 
-static void point_adding(double *A_blend, double *px, double *py, GEDevDesc *dd)
+static void point_adding(double *A_blend, double *px, double *py, pGEDevDesc dd)
 {
     double weights_sum;
 
@@ -324,7 +324,7 @@ static float step_computing(int k, double *px, double *py, double s1, double s2,
     return (step);
 }
 
-static void spline_segment_computing(float step, int k, double *px, double *py, double s1, double s2, GEDevDesc *dd)
+static void spline_segment_computing(float step, int k, double *px, double *py, double s1, double s2, pGEDevDesc dd)
 {
     double A_blend[4];
     double t;
@@ -380,7 +380,7 @@ static void spline_segment_computing(float step, int k, double *px, double *py, 
  * (i.e., can't just connect to last control point)
  */
 static void spline_last_segment_computing(float step, int k, double *px, double *py, double s1, double s2,
-                                          GEDevDesc *dd)
+                                          pGEDevDesc dd)
 {
     double A_blend[4];
     double t = 1;
@@ -448,7 +448,7 @@ static void spline_last_segment_computing(float step, int k, double *px, double 
     spline_segment_computing(step, K, PX, PY, S1, S2, dd)
 
 static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboolean repEnds, float precision,
-                                    GEDevDesc *dd)
+                                    pGEDevDesc dd)
 {
     int k;
     float step = 0.0 /* -Wall */;
@@ -512,7 +512,7 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboo
     return TRUE;
 }
 
-static Rboolean compute_closed_spline(int n, double *x, double *y, double *s, float precision, GEDevDesc *dd)
+static Rboolean compute_closed_spline(int n, double *x, double *y, double *s, float precision, pGEDevDesc dd)
 {
     int k;
     float step;
