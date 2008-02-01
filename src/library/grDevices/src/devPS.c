@@ -3029,7 +3029,6 @@ static void PS_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDes
 static void PS_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void PS_Close(NewDevDesc *dd);
 static void PS_Deactivate(NewDevDesc *dd);
-static void PS_Hold(NewDevDesc *dd);
 static Rboolean PS_Locator(double *x, double *y, NewDevDesc *dd);
 static void PS_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PS_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
@@ -3578,7 +3577,6 @@ Rboolean PSDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, con
     dd->polyline = PS_Polyline;
     dd->locator = PS_Locator;
     dd->mode = PS_Mode;
-    dd->hold = PS_Hold;
 #ifdef SUPPORT_MBCS
     dd->hasTextUTF8 = TRUE;
     dd->textUTF8 = PS_TextUTF8;
@@ -4414,10 +4412,6 @@ static void PS_Mode(int mode, NewDevDesc *dd)
 {
 }
 
-static void PS_Hold(NewDevDesc *dd)
-{
-}
-
 /***********************************************************************
 
                  XFig driver shares font handling
@@ -4580,7 +4574,6 @@ static void XFig_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevD
 static void XFig_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void XFig_Close(NewDevDesc *dd);
 static void XFig_Deactivate(NewDevDesc *dd);
-static void XFig_Hold(NewDevDesc *dd);
 static Rboolean XFig_Locator(double *x, double *y, NewDevDesc *dd);
 static void XFig_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
 static void XFig_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
@@ -4895,7 +4888,6 @@ static Rboolean XFigDeviceDriver(NewDevDesc *dd, const char *file, const char *p
     dd->polyline = XFig_Polyline;
     dd->locator = XFig_Locator;
     dd->mode = XFig_Mode;
-    dd->hold = XFig_Hold;
     dd->hasTextUTF8 = FALSE;
     dd->useRotatedTextInContour = FALSE; /* maybe */
 
@@ -5294,10 +5286,6 @@ static void XFig_Mode(int mode, NewDevDesc *dd)
 {
 }
 
-static void XFig_Hold(NewDevDesc *dd)
-{
-}
-
 static double XFig_StrWidth(const char *str, R_GE_gcontext *gc, NewDevDesc *dd)
 {
     XFigDesc *pd = (XFigDesc *)dd->deviceSpecific;
@@ -5423,7 +5411,6 @@ static void PDF_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDevDe
 static void PDF_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void PDF_Close(NewDevDesc *dd);
 static void PDF_Deactivate(NewDevDesc *dd);
-static void PDF_Hold(NewDevDesc *dd);
 static Rboolean PDF_Locator(double *x, double *y, NewDevDesc *dd);
 static void PDF_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PDF_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
@@ -5941,7 +5928,6 @@ Rboolean PDFDeviceDriver(NewDevDesc *dd, const char *file, const char *paper, co
     dd->polyline = PDF_Polyline;
     dd->locator = PDF_Locator;
     dd->mode = PDF_Mode;
-    dd->hold = PDF_Hold;
 #ifdef SUPPORT_MBCS
     dd->hasTextUTF8 = TRUE;
     dd->textUTF8 = PDF_TextUTF8;
@@ -7204,10 +7190,6 @@ static Rboolean PDF_Locator(double *x, double *y, NewDevDesc *dd)
 }
 
 static void PDF_Mode(int mode, NewDevDesc *dd)
-{
-}
-
-static void PDF_Hold(NewDevDesc *dd)
 {
 }
 

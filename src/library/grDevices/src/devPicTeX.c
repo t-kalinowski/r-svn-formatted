@@ -127,7 +127,6 @@ static void PicTeX_Circle(double x, double y, double r, R_GE_gcontext *gc, NewDe
 static void PicTeX_Clip(double x0, double x1, double y0, double y1, NewDevDesc *dd);
 static void PicTeX_Close(NewDevDesc *dd);
 static void PicTeX_Deactivate(NewDevDesc *dd);
-static void PicTeX_Hold(NewDevDesc *dd);
 static Rboolean PicTeX_Locator(double *x, double *y, NewDevDesc *dd);
 static void PicTeX_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, NewDevDesc *dd);
 static void PicTeX_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, NewDevDesc *dd);
@@ -568,10 +567,6 @@ static void PicTeX_Mode(int mode, NewDevDesc *dd)
 {
 }
 
-static void PicTeX_Hold(NewDevDesc *dd)
-{
-}
-
 static Rboolean PicTeXDeviceDriver(NewDevDesc *dd, const char *filename, const char *bg, const char *fg, double width,
                                    double height, Rboolean debug)
 {
@@ -604,7 +599,6 @@ static Rboolean PicTeXDeviceDriver(NewDevDesc *dd, const char *filename, const c
     dd->polyline = PicTeX_Polyline;
     dd->locator = PicTeX_Locator;
     dd->mode = PicTeX_Mode;
-    dd->hold = PicTeX_Hold;
     dd->metricInfo = PicTeX_MetricInfo;
     dd->hasTextUTF8 = FALSE;
     dd->useRotatedTextInContour = FALSE;
