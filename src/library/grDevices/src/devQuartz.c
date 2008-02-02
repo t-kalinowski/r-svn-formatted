@@ -570,7 +570,7 @@ CGFontRef RQuartz_Font(CTXDESC)
 #define RQUARTZ_LINE (1 << 2)
 #define RQUARTZ_FONT (1 << 3)
 
-void RQuartz_Set(CGContextRef ctx, pGEgcontext gc, int flags)
+void RQuartz_Set(CGContextRef ctx, pGEcontext gc, int flags)
 {
     if (flags & RQUARTZ_FILL)
     {
