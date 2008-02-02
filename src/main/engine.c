@@ -64,33 +64,6 @@ static int numGraphicsSystems = 0;
 static GESystemDesc *registeredSystems[MAX_GRAPHICS_SYSTEMS];
 
 /****************************************************************
- * GEcreateDevDesc
- ****************************************************************
- */
-
-/* Create a GEDevDesc, given a NewDevDesc*
- */
-pGEDevDesc GEcreateDevDesc(NewDevDesc *dev)
-{
-    /* Wrap the device description within a graphics engine
-     * device description (add graphics engine information
-     * to the device description).
-     */
-    pGEDevDesc dd = (GEDevDesc *)calloc(1, sizeof(GEDevDesc));
-    /* NULL the gesd array
-     */
-    int i;
-    if (!dd)
-        error(_("not enough memory to allocate device (in addDevice)"));
-    for (i = 0; i < MAX_GRAPHICS_SYSTEMS; i++)
-        dd->gesd[i] = NULL;
-    dd->dev = dev;
-    dd->dirty = FALSE;
-    dd->recordGraphics = TRUE;
-    return dd;
-}
-
-/****************************************************************
  * GEdestroyDevDesc
  ****************************************************************
  */
@@ -105,7 +78,7 @@ static void unregisterOne(pGEDevDesc dd, int systemNumber)
     }
 }
 
-/* NOTE that the NewDevDesc* dev has been shut down by a call
+/* NOTE that the pDevDesc dd.dev has been shut down by a call
  * to dev->close within graphics.c
  */
 void GEdestroyDevDesc(pGEDevDesc dd)
@@ -124,6 +97,8 @@ void GEdestroyDevDesc(pGEDevDesc dd)
 /****************************************************************
  * GEsystemState
  ****************************************************************
+
+ Currently unused, but future systems might need it.
  */
 
 void *GEsystemState(pGEDevDesc dd, int index)
@@ -271,7 +246,7 @@ void GEunregisterSystem(int registerIndex)
  * It calls back to registered graphics systems and passes on the event
  * so that the graphics systems can respond however they want to.
  */
-SEXP GEHandleEvent(GEevent event, NewDevDesc *dev, SEXP data)
+SEXP GEHandleEvent(GEevent event, pDevDesc dev, SEXP data)
 {
     int i;
     pGEDevDesc gdd = desc2GEDesc(dev);
@@ -1484,7 +1459,7 @@ static void clipText(double x, double y, const char *str, int enc, double rot, d
                      int toDevice, pGEDevDesc dd)
 {
     int result = clipTextCode(x, y, str, enc, rot, hadj, gc, toDevice, dd);
-    void (*textfn)(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, NewDevDesc *dd);
+    void (*textfn)(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, pDevDesc dd);
     /* This guards against uninitialized values, e.g. devices installed
        in earlier versions of R */
     textfn = (dd->dev->hasTextUTF8 == TRUE) && enc == CE_UTF8 ? dd->dev->textUTF8 : dd->dev->text;
@@ -2941,7 +2916,7 @@ void GEonExit()
      */
     int i, devNum;
     pGEDevDesc gd;
-    NewDevDesc *dd;
+    pDevDesc dd;
     i = 1;
     if (!NoDevices())
     {

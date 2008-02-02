@@ -34,7 +34,7 @@
 SEXP attribute_hidden do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP prompt, onMouseDown, onMouseMove, onMouseUp, onKeybd;
-    NewDevDesc *nd = GEcurrentDevice()->dev;
+    pDevDesc nd = GEcurrentDevice()->dev;
 
     checkArity(op, args);
     if (!nd->getEvent)
@@ -88,7 +88,7 @@ SEXP attribute_hidden do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP en
 static const char *mouseHandlers[] = {"onMouseDown", "onMouseUp", "onMouseMove"};
 
 /* used in devWindows.c and cairoDevice */
-SEXP doMouseEvent(SEXP eventRho, NewDevDesc *dd, R_MouseEvent event, int buttons, double x, double y)
+SEXP doMouseEvent(SEXP eventRho, pDevDesc dd, R_MouseEvent event, int buttons, double x, double y)
 {
     int i;
     SEXP handler, bvec, sx, sy, temp, result;
@@ -128,7 +128,7 @@ static const char *keynames[] = {"Left", "Up", "Right", "Down", "F1",  "F2",   "
                                  "F8",   "F9", "F10",   "F11",  "F12", "PgUp", "PgDn", "End", "Home", "Ins", "Del"};
 
 /* used in devWindows.c and cairoDevice */
-SEXP doKeybd(SEXP eventRho, NewDevDesc *dd, R_KeyName rkey, const char *keyname)
+SEXP doKeybd(SEXP eventRho, pDevDesc dd, R_KeyName rkey, const char *keyname)
 {
     SEXP handler, skey, temp, result;
 

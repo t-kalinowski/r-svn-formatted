@@ -167,7 +167,7 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
 {
     pGEDevDesc curdd;
     GESystemDesc *sd;
-    NewDevDesc *dev;
+    pDevDesc dev;
     GPar *ddp;
     GPar *ddpSaved;
     SEXP state;
@@ -319,25 +319,32 @@ void attribute_hidden unregisterBase(void)
     GEunregisterSystem(baseRegisterIndex);
 }
 
+static baseSystemState *baseGEsystemState(pGEDevDesc dd)
+{
+    return dd->gesd[baseRegisterIndex]->systemSpecific;
+}
+
 /* FIXME: Make this a macro to avoid function call overhead?
    Inline it if you really think it matters.
  */
 attribute_hidden GPar *Rf_gpptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->gp);
+    return &(baseGEsystemState(dd)->gp);
 }
 
 attribute_hidden GPar *Rf_dpptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->dp);
+    return &(baseGEsystemState(dd)->dp);
 }
 
 attribute_hidden GPar *Rf_dpSavedptr(pGEDevDesc dd)
 {
-    return &(((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->dpSaved);
+    return &(baseGEsystemState(dd)->dpSaved);
 }
 
-void Rf_setBaseDevice(Rboolean val, pGEDevDesc dd)
+attribute_hidden /* used in GNewPlot */
+    void
+    Rf_setBaseDevice(Rboolean val, pGEDevDesc dd)
 {
-    ((baseSystemState *)GEsystemState(dd, baseRegisterIndex))->baseDevice = val;
+    baseGEsystemState(dd)->baseDevice = val;
 }
