@@ -53,25 +53,25 @@ void GEnullDevice()
     }
     END_SUSPEND_INTERRUPTS;
 }
-static void NULL_Circle(double x, double y, double r, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Circle(double x, double y, double r, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Line(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Line(double x1, double y1, double x2, double y2, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Polygon(int n, double *x, double *y, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Polygon(int n, double *x, double *y, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Polyline(int n, double *x, double *y, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Polyline(int n, double *x, double *y, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Rect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Rect(double x0, double y0, double x1, double y1, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Text(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_NewPage(R_GE_gcontext *gc, pDevDesc dev)
+static void NULL_NewPage(pGEcontext gc, pDevDesc dev)
 {
 }
 static void NULL_Close(pDevDesc dev)
@@ -97,7 +97,7 @@ static Rboolean NULL_Locator(double *x, double *y, pDevDesc dev)
 {
     return FALSE;
 }
-static void NULL_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, pDevDesc dev)
+static void NULL_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dev)
 {
     Rboolean Unicode = mbcslocale;
 
@@ -127,7 +127,7 @@ static void NULL_Size(double *left, double *right, double *bottom, double *top, 
     *bottom = dev->bottom;
     *top = dev->top;
 }
-static double NULL_StrWidth(const char *str, R_GE_gcontext *gc, pDevDesc dev)
+static double NULL_StrWidth(const char *str, pGEcontext gc, pDevDesc dev)
 {
     return 0.0;
 }

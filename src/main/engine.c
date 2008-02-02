@@ -766,7 +766,7 @@ static Rboolean clipLine(double *x1, double *y1, double *x2, double *y2, int toD
  */
 /* If the device canClip, R clips line to device extent and
    device does all other clipping. */
-void GELine(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, pGEDevDesc dd)
+void GELine(double x1, double y1, double x2, double y2, pGEcontext gc, pGEDevDesc dd)
 {
     Rboolean clip_ok;
     if (gc->lty == LTY_BLANK)
@@ -788,7 +788,7 @@ void GELine(double x1, double y1, double x2, double y2, R_GE_gcontext *gc, pGEDe
  ****************************************************************
  */
 
-static void CScliplines(int n, double *x, double *y, R_GE_gcontext *gc, int toDevice, pGEDevDesc dd)
+static void CScliplines(int n, double *x, double *y, pGEcontext gc, int toDevice, pGEDevDesc dd)
 {
     int ind1, ind2;
     /*int firstPoint = 1;*/
@@ -868,7 +868,7 @@ static void CScliplines(int n, double *x, double *y, R_GE_gcontext *gc, int toDe
 /* Clip and draw the polyline.
    If clipToDevice = 0, clip according to dd->dev->gp.xpd
    If clipToDevice = 1, clip to the device extent */
-static void clipPolyline(int n, double *x, double *y, R_GE_gcontext *gc, int clipToDevice, pGEDevDesc dd)
+static void clipPolyline(int n, double *x, double *y, pGEcontext gc, int clipToDevice, pGEDevDesc dd)
 {
     CScliplines(n, x, y, gc, clipToDevice, dd);
 }
@@ -876,7 +876,7 @@ static void clipPolyline(int n, double *x, double *y, R_GE_gcontext *gc, int cli
 /* Draw a series of line segments. */
 /* If the device canClip, R clips to the device extent and the device
    does all other clipping */
-void GEPolyline(int n, double *x, double *y, R_GE_gcontext *gc, pGEDevDesc dd)
+void GEPolyline(int n, double *x, double *y, pGEcontext gc, pGEDevDesc dd)
 {
     if (gc->lty == LTY_BLANK)
         return;
@@ -1084,7 +1084,7 @@ static int clipPoly(double *x, double *y, int n, int store, int toDevice, double
     return (cnt);
 }
 
-static void clipPolygon(int n, double *x, double *y, R_GE_gcontext *gc, int toDevice, pGEDevDesc dd)
+static void clipPolygon(int n, double *x, double *y, pGEcontext gc, int toDevice, pGEDevDesc dd)
 {
     double *xc = NULL, *yc = NULL;
     /* if bg not specified then draw as polyline rather than polygon
@@ -1123,7 +1123,7 @@ static void clipPolygon(int n, double *x, double *y, R_GE_gcontext *gc, int toDe
  * GEPolygon
  ****************************************************************
  */
-void GEPolygon(int n, double *x, double *y, R_GE_gcontext *gc, pGEDevDesc dd)
+void GEPolygon(int n, double *x, double *y, pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * Save (and reset below) the heap pointer to clean up
@@ -1225,7 +1225,7 @@ static int clipCircleCode(double x, double y, double r, int toDevice, pGEDevDesc
  * GECircle
  ****************************************************************
  */
-void GECircle(double x, double y, double radius, R_GE_gcontext *gc, pGEDevDesc dd)
+void GECircle(double x, double y, double radius, pGEcontext gc, pGEDevDesc dd)
 {
     void *vmax;
     double *xc, *yc;
@@ -1347,7 +1347,7 @@ static int clipRectCode(double x0, double y0, double x1, double y1, int toDevice
  */
 /* Filled with color fill and outlined with color col  */
 /* These may both be fully transparent */
-void GERect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, pGEDevDesc dd)
+void GERect(double x0, double y0, double x1, double y1, pGEcontext gc, pGEDevDesc dd)
 {
     void *vmax;
     double *xc, *yc;
@@ -1424,7 +1424,7 @@ void GERect(double x0, double y0, double x1, double y1, R_GE_gcontext *gc, pGEDe
    0 means totally outside clip region
    1 means totally inside clip region
    2 means intersects clip region */
-static int clipTextCode(double x, double y, const char *str, int enc, double rot, double hadj, R_GE_gcontext *gc,
+static int clipTextCode(double x, double y, const char *str, int enc, double rot, double hadj, pGEcontext gc,
                         int toDevice, pGEDevDesc dd)
 {
     double x0, x1, x2, x3, y0, y1, y2, y3, left, right, bottom, top;
@@ -1455,11 +1455,11 @@ static int clipTextCode(double x, double y, const char *str, int enc, double rot
     return clipRectCode(left, bottom, right, top, toDevice, dd);
 }
 
-static void clipText(double x, double y, const char *str, int enc, double rot, double hadj, R_GE_gcontext *gc,
-                     int toDevice, pGEDevDesc dd)
+static void clipText(double x, double y, const char *str, int enc, double rot, double hadj, pGEcontext gc, int toDevice,
+                     pGEDevDesc dd)
 {
     int result = clipTextCode(x, y, str, enc, rot, hadj, gc, toDevice, dd);
-    void (*textfn)(double x, double y, const char *str, double rot, double hadj, R_GE_gcontext *gc, pDevDesc dd);
+    void (*textfn)(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd);
     /* This guards against uninitialized values, e.g. devices installed
        in earlier versions of R */
     textfn = (dd->dev->hasTextUTF8 == TRUE) && enc == CE_UTF8 ? dd->dev->textUTF8 : dd->dev->text;
@@ -1610,7 +1610,7 @@ static int VFontFaceCode(int familycode, int fontface)
  */
 /* If you want EXACT centering of text (e.g., like in GSymbol) */
 /* then pass NA_REAL for xc and yc */
-void GEText(double x, double y, const char *const str, int enc, double xc, double yc, double rot, R_GE_gcontext *gc,
+void GEText(double x, double y, const char *const str, int enc, double xc, double yc, double rot, pGEcontext gc,
             pGEDevDesc dd)
 {
     /*
@@ -1883,7 +1883,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
  */
 SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, Rboolean repEnds,
                Rboolean draw, /* May be called just to get points */
-               R_GE_gcontext *gc, pGEDevDesc dd)
+               pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * Use xspline.c code to generate points to draw
@@ -1965,7 +1965,7 @@ void GEMode(int mode, pGEDevDesc dd)
  * angles -- in those cases, a conversion to and from GE_INCHES is done
  * to preserve angles.
  */
-void GESymbol(double x, double y, int pch, double size, R_GE_gcontext *gc, pGEDevDesc dd)
+void GESymbol(double x, double y, int pch, double size, pGEcontext gc, pGEDevDesc dd)
 {
     double r, xc, yc;
     double xx[4], yy[4];
@@ -2409,7 +2409,7 @@ void GEPretty(double *lo, double *up, int *ndiv)
   otherwise it had better be wchar_t (and the interpretation seems
   to be UCS-2/4).  Something like uint32 would be better.
  */
-void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, pGEDevDesc dd)
+void GEMetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pGEDevDesc dd)
 {
     /*
      * If the fontfamily is a Hershey font family, call R_GE_VText
@@ -2438,7 +2438,7 @@ void GEMetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, dou
  * GEStrWidth
  ****************************************************************
  */
-double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, pGEDevDesc dd)
+double GEStrWidth(const char *str, int enc, pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * If the fontfamily is a Hershey font family, call R_GE_VStrWidth
@@ -2508,7 +2508,7 @@ double GEStrWidth(const char *str, int enc, R_GE_gcontext *gc, pGEDevDesc dd)
  * the string only through the number of lines of text (via embedded
  * \n) and we assume they are never part of an mbc.
  */
-double GEStrHeight(const char *str, int enc, R_GE_gcontext *gc, pGEDevDesc dd)
+double GEStrHeight(const char *str, int enc, pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * If the fontfamily is a Hershey font family, call R_GE_VStrHeight
@@ -2555,7 +2555,7 @@ double GEStrHeight(const char *str, int enc, R_GE_gcontext *gc, pGEDevDesc dd)
  ****************************************************************
  */
 
-void GENewPage(R_GE_gcontext *gc, pGEDevDesc dd)
+void GENewPage(pGEcontext gc, pGEDevDesc dd)
 {
     dd->dev->newPage(gc, dd->dev);
 }

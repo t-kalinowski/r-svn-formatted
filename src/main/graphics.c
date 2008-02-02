@@ -2649,7 +2649,7 @@ void GForceClip(pGEDevDesc dd)
  * (eps. the fill setting)
  */
 /* Used here and in do_xspline */
-attribute_hidden void gcontextFromGP(R_GE_gcontext *gc, pGEDevDesc dd)
+attribute_hidden void gcontextFromGP(pGEcontext gc, pGEDevDesc dd)
 {
     gc->col = Rf_gpptr(dd)->col;
     gc->fill = Rf_gpptr(dd)->bg; /* This may need manual adjusting */

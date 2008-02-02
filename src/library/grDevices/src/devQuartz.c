@@ -365,18 +365,18 @@ static void RQuartz_Close(pDevDesc);
 static void RQuartz_Activate(pDevDesc);
 static void RQuartz_Deactivate(pDevDesc);
 static void RQuartz_Size(double *, double *, double *, double *, pDevDesc);
-static void RQuartz_NewPage(R_GE_gcontext *, pDevDesc);
+static void RQuartz_NewPage(pGEcontext, pDevDesc);
 static void RQuartz_Clip(double, double, double, double, pDevDesc);
-static double RQuartz_StrWidth(const char *, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Text(double, double, const char *, double, double, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Rect(double, double, double, double, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Circle(double, double, double, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Line(double, double, double, double, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Polyline(int, double *, double *, R_GE_gcontext *, pDevDesc);
-static void RQuartz_Polygon(int, double *, double *, R_GE_gcontext *, pDevDesc);
+static double RQuartz_StrWidth(const char *, pGEcontext, pDevDesc);
+static void RQuartz_Text(double, double, const char *, double, double, pGEcontext, pDevDesc);
+static void RQuartz_Rect(double, double, double, double, pGEcontext, pDevDesc);
+static void RQuartz_Circle(double, double, double, pGEcontext, pDevDesc);
+static void RQuartz_Line(double, double, double, double, pGEcontext, pDevDesc);
+static void RQuartz_Polyline(int, double *, double *, pGEcontext, pDevDesc);
+static void RQuartz_Polygon(int, double *, double *, pGEcontext, pDevDesc);
 static Rboolean RQuartz_Locator(double *, double *, pDevDesc);
 static void RQuartz_Mode(int mode, pDevDesc);
-static void RQuartz_MetricInfo(int, R_GE_gcontext *, double *, double *, double *, pDevDesc);
+static void RQuartz_MetricInfo(int, pGEcontext, double *, double *, double *, pDevDesc);
 
 #pragma mark Quartz device implementation
 
@@ -487,7 +487,7 @@ extern CGFontRef CGContextGetFont(CGContextRef);
 extern void CGFontGetGlyphsForUnichars(CGFontRef, const UniChar[], const CGGlyph[], size_t);
 
 #define DEVDESC pDevDesc dd
-#define CTXDESC R_GE_gcontext *gc, pDevDesc dd
+#define CTXDESC pGEcontext gc, pDevDesc dd
 
 #define DEVSPEC                                                                                                        \
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;                                                                 \
@@ -570,7 +570,7 @@ CGFontRef RQuartz_Font(CTXDESC)
 #define RQUARTZ_LINE (1 << 2)
 #define RQUARTZ_FONT (1 << 3)
 
-void RQuartz_Set(CGContextRef ctx, R_GE_gcontext *gc, int flags)
+void RQuartz_Set(CGContextRef ctx, pGEgcontext gc, int flags)
 {
     if (flags & RQUARTZ_FILL)
     {
@@ -923,7 +923,7 @@ static void RQuartz_Mode(int mode, DEVDESC)
     }
 }
 
-static void RQuartz_MetricInfo(int c, R_GE_gcontext *gc, double *ascent, double *descent, double *width, pDevDesc dd)
+static void RQuartz_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {
     DRAWSPEC;
     if (!ctx)
