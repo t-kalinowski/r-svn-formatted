@@ -1428,9 +1428,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                   to be preserved across calls */
 }
 
-SEXP attribute_hidden do_contourDef(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden Rg_contourDef(void)
 {
-    checkArity(op, args);
     return ScalarLogical(GEcurrentDevice()->dev->useRotatedTextInContour);
 }
 
