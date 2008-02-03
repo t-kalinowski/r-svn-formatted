@@ -1542,7 +1542,7 @@ SEXP attribute_hidden do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
 /* The S4 Math2 group, round and signif */
 SEXP attribute_hidden do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP res;
+    SEXP res, ap;
     int n, nprotect = 1;
 
     if (length(args) >= 2 && isSymbol(CADR(args)) && R_isMissing(CADR(args), env))
@@ -1575,8 +1575,20 @@ SEXP attribute_hidden do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
                 digits = 6.0;
             SETCDR(args, CONS(ScalarReal(digits), R_NilValue));
         }
-        else if (length(CADR(args)) == 0)
-            errorcall(call, _("invalid second argument of length 0"));
+        else
+        {
+            /* If named, do argument matching by name */
+            if (TAG(args) != R_NilValue || TAG(CDR(args)) != R_NilValue)
+            {
+                PROTECT(ap = CONS(R_NilValue, list1(R_NilValue)));
+                SET_TAG(ap, install("x"));
+                SET_TAG(CDR(ap), install("digits"));
+                PROTECT(args = matchArgs(ap, args, call));
+                nprotect += 2;
+            }
+            if (length(CADR(args)) == 0)
+                errorcall(call, _("invalid second argument of length 0"));
+        }
         res = do_math2(call, op, args, env);
     }
     UNPROTECT(nprotect);
