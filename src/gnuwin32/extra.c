@@ -1479,13 +1479,6 @@ menu getGraphMenu(const char *menuname)
         return (NULL);
 }
 
-Rboolean winNewFrameConfirm(void)
-{
-    GEDevDesc *gdd = GEcurrentDevice();
-    gadesc *xd = gdd->dev->deviceSpecific;
-    return xd->newFrameConfirm();
-}
-
 /*
    Replacement for MSVCRT's access.
    Coded looking at tcl's tclWinFile.c

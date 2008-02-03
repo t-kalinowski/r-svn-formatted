@@ -232,13 +232,11 @@ static void GA_Resize(pDevDesc dd);
 static double GA_StrWidth(const char *str, pGEcontext gc, pDevDesc dd);
 static void GA_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd);
 static Rboolean GA_Open(pDevDesc, gadesc *, const char *, double, double, Rboolean, int, int, double, int, int, int);
-static Rboolean GA_NewFrameConfirm();
+static Rboolean GA_NewFrameConfirm(pDevDesc);
 
 /********************************************************/
 /* end of list of required device driver actions 	*/
 /********************************************************/
-
-Rboolean winNewFrameConfirm();
 
 /* Support Routines */
 
@@ -3012,7 +3010,7 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     dd->locator = GA_Locator;
     dd->mode = GA_Mode;
     dd->metricInfo = GA_MetricInfo;
-    xd->newFrameConfirm = GA_NewFrameConfirm;
+    dd->newFrameConfirm = GA_NewFrameConfirm;
     dd->hasTextUTF8 = TRUE;
     dd->strWidthUTF8 = GA_StrWidth_UTF8;
     dd->textUTF8 = GA_Text_UTF8;
@@ -3093,7 +3091,7 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
             xd->timesince = 500;
         }
     }
-    xd->newFrameConfirm = GA_NewFrameConfirm;
+    dd->newFrameConfirm = GA_NewFrameConfirm;
     dd->displayListOn = (xd->kind == SCREEN);
     if (RConsole && restoreConsole)
         show(RConsole);
@@ -3461,11 +3459,10 @@ static void GA_onExit(pDevDesc dd)
     GA_Activate(dd);
 }
 
-static Rboolean GA_NewFrameConfirm()
+static Rboolean GA_NewFrameConfirm(pDevDesc dev)
 {
     char *msg;
-    GEDevDesc *dd = GEcurrentDevice();
-    gadesc *xd = dd->dev->deviceSpecific;
+    gadesc *xd = dev->deviceSpecific;
 
     if (!xd || xd->kind != SCREEN)
         return FALSE;
@@ -3483,14 +3480,14 @@ static Rboolean GA_NewFrameConfirm()
     R_WriteConsole("\n", 1);
     R_FlushConsole();
     settext(xd->gawin, G_("Click or hit ENTER for next page"));
-    dd->dev->onExit = GA_onExit; /* install callback for cleanup */
+    dev->onExit = GA_onExit; /* install callback for cleanup */
     while (!xd->clicked && !xd->enterkey)
     {
         SH;
         WaitMessage();
         R_ProcessEvents(); /* May not return if user interrupts */
     }
-    dd->dev->onExit(dd->dev);
+    dev->onExit(dev);
 
     return TRUE;
 }
