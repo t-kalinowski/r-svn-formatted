@@ -35,7 +35,11 @@ void *getQuartzAPI();
 #name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
     }
 
-static R_CMethodDef CEntries[] = {CDEF(R_chull), {"getQuartzAPI", (DL_FUNC)getQuartzAPI, 0}, {NULL, NULL, 0}};
+static R_CMethodDef CEntries[] = {CDEF(R_chull),
+#ifndef WIN32
+                                  {"getQuartzAPI", (DL_FUNC)getQuartzAPI, 0},
+#endif
+                                  {NULL, NULL, 0}};
 
 #define CALLDEF(name, n)                                                                                               \
     {                                                                                                                  \
