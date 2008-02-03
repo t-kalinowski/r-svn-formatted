@@ -26,12 +26,16 @@
 
 static R_NativePrimitiveArgType R_chull_t[] = {INTSXP, REALSXP, INTSXP, INTSXP, INTSXP, INTSXP, INTSXP, INTSXP, INTSXP};
 
+#ifndef WIN32
+void *getQuartzAPI();
+#endif
+
 #define CDEF(name)                                                                                                     \
     {                                                                                                                  \
 #name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
     }
 
-static R_CMethodDef CEntries[] = {CDEF(R_chull), {NULL, NULL, 0}};
+static R_CMethodDef CEntries[] = {CDEF(R_chull), {"getQuartzAPI", (DL_FUNC)getQuartzAPI, 0}, {NULL, NULL, 0}};
 
 #define CALLDEF(name, n)                                                                                               \
     {                                                                                                                  \

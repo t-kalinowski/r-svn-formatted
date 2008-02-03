@@ -36,6 +36,8 @@ typedef struct
     CGRect bbox;
 } QuartzPDFDevice;
 
+static QuartzFunctions_t *qf;
+
 CGContextRef QuartzPDF_GetCGContext(QuartzDesc_t dev, void *userInfo)
 {
     return ((QuartzPDFDevice *)userInfo)->context;
@@ -69,15 +71,18 @@ void QuartzPDF_Close(QuartzDesc_t dev, void *userInfo)
     free(qpd);
 }
 
-Rboolean QuartzPDF_DeviceCreate(void *dd, const char *type, const char *file, double width, double height,
-                                double pointsize, const char *family, Rboolean antialias, Rboolean smooth,
-                                Rboolean autorefresh, int quartzpos, int bg, const char *title, double *dpi)
+Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameters_t *par)
 {
+    double *dpi = par->dpi;
     double mydpi[2] = {72.0, 72.0};
+    double width = par->width, height = par->height;
     Rboolean ret = FALSE;
     /* DPI is ignored, because PDF is resolution independent. More precisely 72dpi is used to guatantee that PDF and GE
      * coordinates are the same */
     dpi = mydpi;
+
+    if (!qf)
+        qf = fn;
 
     size_t w = dpi[0] * width;
     size_t h = dpi[1] * height;
@@ -86,11 +91,11 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, const char *type, const char *file, do
     QuartzDesc_t qd;
     QuartzPDFDevice *dev = malloc(sizeof(QuartzPDFDevice) + s);
 
-    if (file && *file)
+    if (par->file && *par->file)
     {
         CGRect bbox;
-        CFStringRef path =
-            CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)file, strlen(file), kCFStringEncodingUTF8, FALSE);
+        CFStringRef path = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)par->file, strlen(par->file),
+                                                   kCFStringEncodingUTF8, FALSE);
         if (!path || !(dev->url = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, false)))
         {
             free(dev);
@@ -104,10 +109,10 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, const char *type, const char *file, do
             CFStringRef keys[2], values[2];
             keys[0] = kCGPDFContextCreator;
             values[0] = CFSTR("Quartz R Device");
-            if (title)
+            if (par->title)
             {
                 keys[numK] = kCGPDFContextTitle;
-                values[numK] = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)title, strlen(title),
+                values[numK] = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)par->title, strlen(par->title),
                                                        kCFStringEncodingUTF8, FALSE);
                 numK++;
             }
@@ -130,18 +135,31 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, const char *type, const char *file, do
         /* we need to flip the y coordinates */
         CGContextTranslateCTM(dev->context, 0.0, height * dpi[1]);
         CGContextScaleCTM(dev->context, 1.0, -1.0);
-        if (!(qd = QuartzDevice_Create(dd, dpi[0] / 72.0, dpi[1] / 72.0, pointsize, width, height, bg, antialias,
-                                       0,                                        /* flags - none */
-                                       QuartzPDF_GetCGContext, NULL,             /* locate */
-                                       QuartzPDF_Close, QuartzPDF_NewPage, NULL, /* state */
-                                       NULL,                                     /* par */
-                                       NULL,                                     /* sync */
-                                       dev)))
+
+        QuartzBackend_t qdef = {sizeof(qdef),
+                                width,
+                                height,
+                                dpi[0] / 72.0,
+                                dpi[1] / 72.0,
+                                par->pointsize,
+                                par->bg,
+                                par->canvas,
+                                par->flags,
+                                dev,
+                                QuartzPDF_GetCGContext,
+                                NULL, /* locate */
+                                QuartzPDF_Close,
+                                QuartzPDF_NewPage,
+                                NULL, /* state */
+                                NULL, /* par */
+                                NULL};
+
+        if (!qf->Create(dd, &qdef))
             QuartzPDF_Close(NULL, dev);
         else
         {
             ret = TRUE;
-            QuartzDevice_ResetContext(qd);
+            qf->ResetContext(qd);
         }
     }
     return ret;
