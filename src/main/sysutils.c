@@ -1028,7 +1028,7 @@ top_of_loop:
 }
 #endif
 
-extern const char *Rf_AdobeSymbol2utf8(const char *c0); /* from util.c */
+extern void *Rf_AdobeSymbol2utf8(char *work, const char *c0, int nwork); /* from util.c */
 
 const char *reEnc(const char *x, int ce_in, int ce_out, int subst)
 {
@@ -1048,7 +1048,12 @@ const char *reEnc(const char *x, int ce_in, int ce_out, int subst)
     if (ce_in == CE_SYMBOL)
     {
         if (ce_out == CE_UTF8)
-            return Rf_AdobeSymbol2utf8(x);
+        {
+            int nc = 3 * strlen(x) + 1; /* all in BMP */
+            p = R_alloc(nc, 1);
+            Rf_AdobeSymbol2utf8(p, x, nc);
+            return p;
+        }
         else
             return x;
     }

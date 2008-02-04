@@ -1593,21 +1593,17 @@ static int s2u[224] = {
     0xF8EA, 0x2211, 0xF8EB, 0xF8EC, 0xF8ED, 0xF8EE, 0xF8EF, 0xF8F0, 0xF8F1, 0xF8F2, 0xF8F3, 0xF8F4, 0x0020, 0x232A,
     0x222B, 0x2320, 0xF8F5, 0x2321, 0xF8F6, 0xF8F7, 0xF8F8, 0xF8F9, 0xF8FA, 0xF8FB, 0xF8FC, 0xF8FD, 0xF8FE, 0x0020};
 
-#define WORK 32768 /* maximum string length */
-
-static unsigned char work[WORK];
-
-const char *Rf_AdobeSymbol2utf8(const char *c0)
+void *Rf_AdobeSymbol2utf8(char *work, const char *c0, int nwork)
 {
     const unsigned char *c = (unsigned char *)c0;
-    unsigned char *t = work;
+    unsigned char *t = (unsigned char *)work;
     while (*c)
     {
         if (*c < 32)
             *t++ = ' ';
         else
         {
-            int u = s2u[*c - 32];
+            unsigned int u = s2u[*c - 32];
             if (u < 128)
                 *t++ = u;
             else if (u < 0x800)
@@ -1622,7 +1618,7 @@ const char *Rf_AdobeSymbol2utf8(const char *c0)
                 *t++ = 0x80 | (u & 0x3f);
             }
         }
-        if (t + 6 > work + WORK)
+        if (t + 6 > (unsigned char *)(work + nwork))
             break;
         c++;
     }
