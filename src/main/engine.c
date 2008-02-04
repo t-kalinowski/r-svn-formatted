@@ -1644,6 +1644,8 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
             enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
             if (enc2 != CE_SYMBOL)
                 enc2 = (dd->dev->hasTextUTF8 == TRUE) ? CE_UTF8 : CE_NATIVE;
+            else if (dd->dev->wantSymbolUTF8 == TRUE)
+                enc2 = CE_UTF8;
 
 #ifdef DEBUG_MI
             printf("string %s, enc %d, %d\n", str, enc, enc2);
@@ -1727,7 +1729,7 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                 Rboolean done = FALSE;
 #ifdef SUPPORT_MBCS
                                 /* Symbol fonts are not encoded in MBCS ever */
-                                if (gc->fontface != 5 && !strIsASCII(ss))
+                                if (enc2 != CE_SYMBOL && !strIsASCII(ss))
                                 {
                                     if (mbcslocale && enc2 == CE_NATIVE)
                                     {
@@ -1768,8 +1770,6 @@ void GEText(double x, double y, const char *const str, int enc, double xc, doubl
                                         wchar_t wc;
                                         while ((used = utf8toucs(&wc, ss)) > 0)
                                         {
-                                            /* This is only used on Windows and hence
-                                               we fudge this via a -ve number */
                                             GEMetricInfo(-(int)wc, gc, &h, &d, &w, dd);
                                             h = fromDeviceHeight(h, GE_INCHES, dd);
                                             d = fromDeviceHeight(d, GE_INCHES, dd);
@@ -2467,6 +2467,8 @@ double GEStrWidth(const char *str, int enc, pGEcontext gc, pGEDevDesc dd)
             enc2 = (gc->fontface == 5) ? CE_SYMBOL : enc;
             if (enc2 != CE_SYMBOL)
                 enc2 = (dd->dev->hasTextUTF8 == TRUE) ? CE_UTF8 : CE_NATIVE;
+            else if (dd->dev->wantSymbolUTF8 == TRUE)
+                enc2 = CE_UTF8;
 
             sb = sbuf = (char *)R_alloc(strlen(str) + 1, sizeof(char));
             for (s = str;; s++)
