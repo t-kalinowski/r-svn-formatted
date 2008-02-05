@@ -1410,10 +1410,7 @@ static unsigned int digithex(int digit)
 }
 #endif
 
-/* #RRGGBB String to Internal Color Code */
-/*
- * Paul:  Add ability to handle #RRGGBBAA
- */
+/* #RRGGBB[AA] String to Internal Color Code */
 static unsigned int rgb2col(const char *rgb)
 {
     unsigned int r = 0, g = 0, b = 0, a = 0; /* -Wall */
@@ -1444,7 +1441,7 @@ unsigned int attribute_hidden name2col(const char *nm)
     int i;
     if (strcmp(nm, "NA") == 0 || strcmp(nm, "transparent") == 0)
         /*
-         * Paul 01/07/04
+         * Paul 01/07/04 (2004-07-01?)
          *
          * Used to be set to NA_INTEGER.
          *
