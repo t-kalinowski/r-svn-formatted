@@ -3188,15 +3188,12 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
     BBOX bbox;
     mathContext mc;
 
-#ifdef BUG61
-#else
-    /* IF font metric information is not available for device */
-    /* then bail out */
+    /* If font metric information is not available for device
+       then bail out */
     double ascent, descent, width;
-    GEMetricInfo(0, gc, &ascent, &descent, &width, dd);
-    if ((ascent == 0) && (descent == 0) && (width == 0))
-        error(_("Metric information not available for this device"));
-#endif
+    GEMetricInfo('M', gc, &ascent, &descent, &width, dd);
+    if ((ascent == 0.0) && (descent == 0.0) && (width == 0.0))
+        error(_("Metric information not available for this family/device"));
 
     /*
      * Build a "drawing context" for the current expression
@@ -3204,6 +3201,7 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
     mc.BaseCex = gc->cex;
     mc.BoxColor = name2col("pink");
     mc.CurrentStyle = STYLE_D;
+
     /*
      * Some "empty" values.  Will be filled in after BBox is calc'ed
      */
@@ -3222,7 +3220,7 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
     if (R_FINITE(xc))
         mc.CurrentX = mc.ReferenceX - xc * bboxWidth(bbox);
     else
-        /* Paul 11/2/02
+        /* Paul 2002-02-11
          * If xc == NA then should centre horizontally.
          * Used to left-adjust.
          */
