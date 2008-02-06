@@ -1476,7 +1476,7 @@ unsigned int attribute_hidden name2col(const char *nm)
         if (StrMatch(ColorDataBase[i].name, nm))
             return ColorDataBase[i].code;
     }
-    error(_("invalid color name"));
+    error(_("invalid color name '%s'"), nm);
     return 0; /* never occurs but avoid compiler warnings */
 }
 
@@ -1486,10 +1486,9 @@ static unsigned int number2col(const char *nm, unsigned int bg)
     char *ptr;
     indx = strtod(nm, &ptr);
     if (*ptr)
-        error(_("invalid color specification"));
-    /* FIXME depends on base graphics */
+        error(_("invalid color specification '%s'"), nm);
     if (indx == 0)
-        return dpptr(CurrentDevice())->bg;
+        return bg;
     else
         return R_ColorTable[(indx - 1) % R_ColorTableSize];
 }
@@ -1651,7 +1650,7 @@ Rboolean attribute_hidden isNAcol(SEXP col, int index, int ncol)
         else if (isReal(col))
             result = !R_FINITE(REAL(col)[index % ncol]);
         else
-            error(_("Invalid color"));
+            error(_("Invalid color specification"));
     }
     return result;
 }
