@@ -3002,7 +3002,7 @@ no_more_lines:
 /* writeLines(text, con = stdout(), sep = "\n") */
 SEXP attribute_hidden do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int i;
+    int i, con_num;
     Rboolean wasopen;
     Rconnection con = NULL;
     const char *ssep;
@@ -3014,7 +3014,8 @@ SEXP attribute_hidden do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "text");
     if (!inherits(CADR(args), "connection"))
         error(_("'con' is not a connection"));
-    con = getConnection(asInteger(CADR(args)));
+    con_num = asInteger(CADR(args));
+    con = getConnection(con_num);
     sep = CADDR(args);
     if (!isString(sep))
         error(_("invalid '%s' argument"), "sep");
@@ -3028,8 +3029,29 @@ SEXP attribute_hidden do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("cannot open the connection"));
     }
     ssep = translateChar(STRING_ELT(sep, 0));
-    for (i = 0; i < length(text); i++)
-        Rconn_printf(con, "%s%s", translateChar(STRING_ELT(text, i)), ssep);
+
+    /* New for 2.7.0: split the output if sink was split.
+       It would be slightly simpler just to cal Rvprintf if the
+       connection was stdout(), but this way is more efficent */
+    if (con_num == R_OutputCon)
+    {
+        int j = 0;
+        Rconnection con0;
+        do
+        {
+            con0 = getConnection(con_num);
+            for (i = 0; i < length(text); i++)
+                Rconn_printf(con0, "%s%s", translateChar(STRING_ELT(text, i)), ssep);
+            con0->fflush(con0);
+            con_num = getActiveSink(j++);
+        } while (con_num > 0);
+    }
+    else
+    {
+        for (i = 0; i < length(text); i++)
+            Rconn_printf(con, "%s%s", translateChar(STRING_ELT(text, i)), ssep);
+    }
+
     if (!wasopen)
         con->close(con);
     return R_NilValue;
