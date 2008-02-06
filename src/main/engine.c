@@ -238,15 +238,17 @@ void GEunregisterSystem(int registerIndex)
 }
 
 /****************************************************************
- * GEHandleEvent
+ * GEhandleEvent
  ****************************************************************
  */
 
 /* This guy can be called by device drivers.
  * It calls back to registered graphics systems and passes on the event
  * so that the graphics systems can respond however they want to.
+ *
+ * Currently only used for GE_ScalePS in devWindows.c
  */
-SEXP GEHandleEvent(GEevent event, pDevDesc dev, SEXP data)
+SEXP GEhandleEvent(GEevent event, pDevDesc dev, SEXP data)
 {
     int i;
     pGEDevDesc gdd = desc2GEDesc(dev);
@@ -2797,7 +2799,12 @@ SEXP GEcreateSnapshot(pGEDevDesc dd)
  * (Thus, it can assume that registered graphics systems are
  *  in the same order as they were when the snapshot was
  *  created -- in patricular, state information will be sent
- *  to the appropriate graphics system)
+ *  to the appropriate graphics system.)
+ * [With only two systems and base registered on each device at
+ * creation, that has to be true: and grid does not save any state.]
+ *
+ *  It also assumes that the system that created the snapshot is
+ *  still loaded (e.g. the grid namespace has not been unloaded).
  *
  * It is possible to save a snapshot to an R variable
  * (and therefore save and reload it between sessions and
