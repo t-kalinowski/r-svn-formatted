@@ -2908,7 +2908,7 @@ static Rboolean GA_Locator(double *x, double *y, pDevDesc dd)
 
 /********************************************************/
 /* device_Mode is called whenever the graphics engine 	*/
-/* starts drawing (mode=1) or stops drawing (mode=1)	*/
+/* starts drawing (mode=1) or stops drawing (mode=0)	*/
 /* the device is not required to do anything		*/
 /********************************************************/
 

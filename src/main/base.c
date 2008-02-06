@@ -184,26 +184,30 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
         bss = sd->systemSpecific = malloc(sizeof(baseSystemState));
         ddp = &(bss->dp);
         GInit(ddp);
-        /* Some things are set by the device, so copy them across now.
-         */
-        ddp->ipr[0] = dev->ipr[0];
-        ddp->ipr[1] = dev->ipr[1];
         ddp->cra[0] = dev->cra[0];
         ddp->cra[1] = dev->cra[1];
-        ddp->asp = dev->asp;
-        ddp->left = dev->left;
-        ddp->right = dev->right;
-        ddp->top = dev->top;
-        ddp->bottom = dev->bottom;
-        ddp->xCharOffset = dev->xCharOffset;
-        ddp->yCharOffset = dev->yCharOffset;
-        ddp->yLineBias = dev->yLineBias;
-        ddp->canResizePlot = dev->canResizePlot;
-        ddp->canChangeFont = dev->canChangeFont;
-        ddp->canRotateText = dev->canRotateText;
-        ddp->canResizeText = dev->canResizeText;
-        ddp->canClip = dev->canClip;
-        ddp->canHAdj = dev->canHAdj;
+#if 0
+	/* Some things are set by the device, so copy them across now.
+	 */
+	ddp->ipr[0] = dev->ipr[0];
+	ddp->ipr[1] = dev->ipr[1];
+	ddp->cra[0] = dev->cra[0];
+	ddp->cra[1] = dev->cra[1];
+	ddp->asp = dev->asp;
+	ddp->left = dev->left;
+	ddp->right = dev->right;
+	ddp->top = dev->top;
+	ddp->bottom = dev->bottom;
+	ddp->xCharOffset = dev->xCharOffset;
+	ddp->yCharOffset = dev->yCharOffset;
+	ddp->yLineBias = dev->yLineBias;
+	ddp->canResizePlot = dev->canResizePlot;
+	ddp->canChangeFont = dev->canChangeFont;
+	ddp->canRotateText = dev->canRotateText;
+	ddp->canResizeText = dev->canResizeText;
+	ddp->canClip = dev->canClip;
+	ddp->canHAdj = dev->canHAdj;
+#endif
         /* For some things, the device sets the starting value at least.
          */
         ddp->ps = dev->startps;
@@ -285,7 +289,7 @@ static SEXP baseCallback(GEevent task, pGEDevDesc dd, SEXP data)
             ddpSaved->cra[1] *= rf;
         }
         else
-            error(_("Event UpdatePS requires a single numeric value"));
+            error(_("Event GE_ScalePS requires a single numeric value"));
         break;
     }
     }
