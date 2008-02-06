@@ -237,6 +237,8 @@ attribute_hidden SEXP FixupCol(SEXP col, unsigned int dflt)
 {
     int i, n;
     SEXP ans;
+    unsigned int bg = dpptr(GEcurrentDevice())->bg; /* col = 0 */
+
     n = length(col);
     if (n == 0)
     {
@@ -248,12 +250,12 @@ attribute_hidden SEXP FixupCol(SEXP col, unsigned int dflt)
         if (isList(col))
             for (i = 0; i < n; i++)
             {
-                INTEGER(ans)[i] = RGBpar(CAR(col), 0);
+                INTEGER(ans)[i] = RGBpar3(CAR(col), 0, bg);
                 col = CDR(col);
             }
         else
             for (i = 0; i < n; i++)
-                INTEGER(ans)[i] = RGBpar(col, i);
+                INTEGER(ans)[i] = RGBpar3(col, i, bg);
     }
     UNPROTECT(1);
     return ans;

@@ -98,30 +98,27 @@ else if (streql(what, "col"))
        (as e.g. pch always did) */
     if (!isVector(value) || LENGTH(value) < 1)
         par_error(what);
-    R_DEV__(col) = RGBpar(value, 0);
+    R_DEV__(col) = RGBpar3(value, 0, dpptr(dd)->bg);
 }
 else if (streql(what, "col.main"))
 {
     lengthCheck(what, value, 1, call);
-    ix = RGBpar(value, 0);
-    /*	naIntCheck(ix, what); */
-    R_DEV__(colmain) = ix;
-    R_DEV__(col) = RGBpar(value, 0);
+    R_DEV__(colmain) = RGBpar3(value, 0, dpptr(dd)->bg);
 }
 else if (streql(what, "col.lab"))
 {
     lengthCheck(what, value, 1, call);
-    R_DEV__(collab) = RGBpar(value, 0);
+    R_DEV__(collab) = RGBpar3(value, 0, dpptr(dd)->bg);
 }
 else if (streql(what, "col.sub"))
 {
     lengthCheck(what, value, 1, call);
-    R_DEV__(colsub) = RGBpar(value, 0);
+    R_DEV__(colsub) = RGBpar3(value, 0, dpptr(dd)->bg);
 }
 else if (streql(what, "col.axis"))
 {
     lengthCheck(what, value, 1, call);
-    R_DEV__(colaxis) = RGBpar(value, 0);
+    R_DEV__(colaxis) = RGBpar3(value, 0, dpptr(dd)->bg);
 }
 else if (streql(what, "crt"))
 {
