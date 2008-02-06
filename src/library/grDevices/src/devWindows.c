@@ -257,6 +257,7 @@ static void PrivateCopyDevice(pDevDesc dd, pDevDesc ndd, const char *name)
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     gsetcursor(xd->gawin, WatchCursor);
     gsetVar(install(".Device"), mkString(name), R_BaseEnv);
+    ndd->displayListOn = FALSE;
     gdd = GEcreateDevDesc(ndd);
     GEaddDevice(gdd);
     GEcopyDisplayList(ndevNumber(dd));
@@ -269,7 +270,6 @@ static void PrivateCopyDevice(pDevDesc dd, pDevDesc ndd, const char *name)
 static void SaveAsWin(pDevDesc dd, const char *display, Rboolean restoreConsole)
 {
     pDevDesc ndd = (pDevDesc)calloc(1, sizeof(NewDevDesc));
-    GEDevDesc *gdd = desc2GEDesc(dd);
     if (!ndd)
     {
         R_ShowMessage(_("Not enough memory to copy graphics window"));
@@ -282,7 +282,7 @@ static void SaveAsWin(pDevDesc dd, const char *display, Rboolean restoreConsole)
         return;
     }
 
-    ndd->displayList = R_NilValue;
+    GEDevDesc *gdd = desc2GEDesc(dd);
     if (GADeviceDriver(ndd, display, fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, White, 1, NA_INTEGER, NA_INTEGER,
@@ -325,8 +325,6 @@ static void SaveAsPostscript(pDevDesc dd, const char *fn)
 
     if (strchr(fn, '%'))
         error(_("'%%' is not allowed in file name"));
-
-    ndd->displayList = R_NilValue;
 
     /* need to initialize PS/PDF font database:
        also sets .PostScript.Options */
@@ -401,8 +399,6 @@ static void SaveAsPDF(pDevDesc dd, const char *fn)
 
     if (strchr(fn, '%'))
         error(_("'%%' is not allowed in file name"));
-
-    ndd->displayList = R_NilValue;
 
     /* Set default values... */
     init_PS_PDF();
@@ -1229,12 +1225,16 @@ static void menuprev(control m)
     pCHECK;
     if (pNUMPLOTS)
     {
-        if (xd->recording && xd->needsave && (dd->displayList != R_NilValue))
+        if (xd->recording && xd->needsave)
         {
-            AddtoPlotHistory(GEcreateSnapshot(desc2GEDesc(dd)), 0);
-            xd->needsave = FALSE;
-            vDL = findVar(install(".SavedPlots"), R_GlobalEnv);
-            /* may have changed vDL pointer */
+            pGEDevDesc gdd = desc2GEDesc(dd);
+            if (gdd->displayList != R_NilValue)
+            {
+                AddtoPlotHistory(GEcreateSnapshot(gdd), 0);
+                xd->needsave = FALSE;
+                vDL = findVar(install(".SavedPlots"), R_GlobalEnv);
+                /* may have changed vDL pointer */
+            }
         }
         pMOVE((xd->needsave) ? 0 : -1);
     }
@@ -1436,7 +1436,7 @@ static void NHelpKeyIn(control w, int key)
         key = 'A' + key - 1;
         if (key == 'C')
             menuclpbm(xd->mclpbm);
-        if (dd->displayList == R_NilValue)
+        if (desc2GEDesc(dd)->displayList == R_NilValue)
             return;
         if (key == 'W')
             menuclpwm(xd->mclpwm);
@@ -1455,7 +1455,7 @@ static void mbarf(control m)
     {
         enable(xd->mnext);
         enable(xd->mprev);
-        if ((pCURRENTPOS >= 0) && (dd->displayList != R_NilValue))
+        if (pCURRENTPOS >= 0 && desc2GEDesc(dd)->displayList != R_NilValue)
             enable(xd->mreplace);
         else
             disable(xd->mreplace);
@@ -1474,7 +1474,7 @@ static void mbarf(control m)
         enable(xd->mgvar);
     else
         disable(xd->mgvar);
-    if ((dd->displayList != R_NilValue) && !xd->replaying)
+    if (!xd->replaying && desc2GEDesc(dd)->displayList != R_NilValue)
     {
         enable(xd->madd);
         enable(xd->mprint);
@@ -2235,7 +2235,7 @@ static void GA_NewPage(pGEcontext gc, pDevDesc dd)
         if (xd->buffered)
             SHOW;
         if (xd->recording && xd->needsave)
-            AddtoPlotHistory(dd->savedSnapshot, 0);
+            AddtoPlotHistory(desc2GEDesc(dd)->savedSnapshot, 0);
         if (xd->replaying)
             xd->needsave = FALSE;
         else
@@ -3414,12 +3414,6 @@ SEXP devga(SEXP args)
         /* Allocate and initialize the device driver data */
         if (!(dev = (pDevDesc)calloc(1, sizeof(NewDevDesc))))
             return 0;
-        /* Do this for early redraw attempts */
-        dev->displayList = R_NilValue;
-        /* Make sure that this is initialised before a GC can occur.
-         * This (and displayList) get protected during GC
-         */
-        dev->savedSnapshot = R_NilValue;
         GAsetunits(xpinch, ypinch);
         if (!GADeviceDriver(dev, display, width, height, ps, (Rboolean)recording, resize, bg, canvas, gamma, xpos, ypos,
                             (Rboolean)buffered, psenv, restoreConsole, title))

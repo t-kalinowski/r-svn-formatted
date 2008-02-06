@@ -1314,10 +1314,10 @@ again:
     for (i = 0; i < R_MaxDevices; i++)
     { /* Device display lists */
         pGEDevDesc gdd = GEGetDevice(i);
-        if (gdd && gdd->dev)
+        if (gdd)
         {
-            FORWARD_NODE(gdd->dev->displayList);
-            FORWARD_NODE(gdd->dev->savedSnapshot);
+            FORWARD_NODE(gdd->displayList);
+            FORWARD_NODE(gdd->savedSnapshot);
         }
     }
 

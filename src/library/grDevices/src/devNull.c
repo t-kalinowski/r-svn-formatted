@@ -40,7 +40,6 @@ void GEnullDevice()
     {
         if (!(dev = (pDevDesc)calloc(1, sizeof(NewDevDesc))))
             error(_("unable to start NULL device"));
-        dev->displayList = R_NilValue;
         if (!nullDeviceDriver(dev))
         {
             free(dev);
