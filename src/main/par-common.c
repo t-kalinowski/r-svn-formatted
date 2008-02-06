@@ -304,7 +304,7 @@ else if (streql(what, "tck"))
     R_DEV__(tck) = x;
     if (R_FINITE(x))
         R_DEV__(tcl) = NA_REAL;
-    else if (!R_FINITE(Rf_dpptr(dd)->tcl))
+    else if (!R_FINITE(dpptr(dd)->tcl))
         R_DEV__(tcl) = -0.5;
 }
 else if (streql(what, "tcl"))
@@ -314,7 +314,7 @@ else if (streql(what, "tcl"))
     R_DEV__(tcl) = x;
     if (R_FINITE(x))
         R_DEV__(tck) = NA_REAL;
-    else if (!R_FINITE(Rf_dpptr(dd)->tck))
+    else if (!R_FINITE(dpptr(dd)->tck))
         R_DEV__(tck) = -0.01; /* S Default -- was 0.02 till R 1.5.x */
 }
 else if (streql(what, "xaxp"))

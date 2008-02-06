@@ -26,7 +26,7 @@
 #endif
 
 #include <Defn.h>
-#include <Graphics.h> /* for Rf_dpptr, CurrentDevice : FIXME */
+#include <Graphics.h> /* for dpptr, CurrentDevice : FIXME */
 #include <Colors.h>
 #include <R_ext/GraphicsEngine.h>
 #include <Rmath.h>
@@ -1473,7 +1473,7 @@ static unsigned int number2col(const char *nm)
         error(_("invalid color specification"));
     /* FIXME depends on base graphics */
     if (indx == 0)
-        return Rf_dpptr(CurrentDevice())->bg;
+        return dpptr(CurrentDevice())->bg;
     else
         return R_ColorTable[(indx - 1) % R_ColorTableSize];
 }
@@ -1588,7 +1588,7 @@ unsigned int RGBpar(SEXP x, int i)
         indx = LOGICAL(x)[i] - 1;
         /* FIXME depends on base graphics */
         if (indx < 0)
-            return Rf_dpptr(CurrentDevice())->bg;
+            return dpptr(CurrentDevice())->bg;
         else
             return R_ColorTable[indx % R_ColorTableSize];
     }
@@ -1602,7 +1602,7 @@ unsigned int RGBpar(SEXP x, int i)
             return R_TRANWHITE;
         indx = INTEGER(x)[i] - 1;
         if (indx < 0)
-            return Rf_dpptr(CurrentDevice())->bg;
+            return dpptr(CurrentDevice())->bg;
         else
             return R_ColorTable[indx % R_ColorTableSize];
     }
@@ -1616,7 +1616,7 @@ unsigned int RGBpar(SEXP x, int i)
             return R_TRANWHITE;
         indx = REAL(x)[i] - 1;
         if (indx < 0)
-            return Rf_dpptr(CurrentDevice())->bg;
+            return dpptr(CurrentDevice())->bg;
         else
             return R_ColorTable[indx % R_ColorTableSize];
     }
