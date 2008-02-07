@@ -477,8 +477,10 @@ int SYSCALL R_set_graphics_device(struct _SC_Proxy_Object *object, struct _SC_Gr
         R_Proxy_Graphics_CB *lDev = (R_Proxy_Graphics_CB *)calloc(1, sizeof(R_Proxy_Graphics_CB));
 
         R_Proxy_Graphics_Driver_CB(lDev, "ActiveXDevice 1", 100.0, 100.0, 10.0, 0, 0);
+        gsetVar(install(".Device"), mkString("ActiveXDevice 1"), R_BaseEnv);
         lDD = GEcreateDevDesc(DEVDESC(lDev));
-        GEaddDevice(lDD, "ActiveXDevice 1");
+        GEaddDevice(lDD);
+        GEinitDisplayList(lDD);
     }
     return SC_PROXY_OK;
 }

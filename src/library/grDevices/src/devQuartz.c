@@ -308,7 +308,7 @@ void QuartzDevice_ReplayDisplayList(QuartzDesc_t desc)
     pGEDevDesc gdd = desc2GEDesc(qd->dev);
     qd->redraw = 1;
     /* CHECK this */
-    if (gdd->dirty && gdd->displayList != R_NilValue)
+    if (gdd->displayList != R_NilValue)
         GEplayDisplayList(gdd);
     qd->redraw = 0;
     qd->dirty = _dirty; /* we do NOT change the dirty flag */
@@ -1014,7 +1014,6 @@ int Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create)
     {
         char *vmax = vmaxget();
         R_CheckDeviceAvailable();
-        BEGIN_SUSPEND_INTERRUPTS
         {
             /* FIXME: check this allocation */
             pDevDesc dev = calloc(1, sizeof(NewDevDesc));
@@ -1028,11 +1027,12 @@ int Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create)
                 free(dev);
                 return -2;
             }
+            gsetVar(install(".Device"), mkString("quartz"), R_BaseEnv);
             GEDevDesc *dd = GEcreateDevDesc(dev);
-            GEaddDevice(dd, "quartz");
+            GEaddDevice(dd);
+            GEinitDisplayList(dd);
             vmaxset(vmax);
         }
-        END_SUSPEND_INTERRUPTS;
     }
     return 0;
 }
@@ -1180,8 +1180,10 @@ SEXP Quartz(SEXP args)
             free(dev);
             error(_("Unable to create Quartz device target, given type may not be supported."));
         }
+        gsetVar(install(".Device"), mkString("quartz"), R_BaseEnv);
         GEDevDesc *dd = GEcreateDevDesc(dev);
-        GEaddDevice(dd, "quartz");
+        GEaddDevice(dd);
+        GEinitDisplayList(dd);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
