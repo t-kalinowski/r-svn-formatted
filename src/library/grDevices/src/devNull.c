@@ -45,10 +45,8 @@ void GEnullDevice()
             free(dev);
             error(_("unable to start NULL device"));
         }
-        gsetVar(install(".Device"), mkString("NULL"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        GEaddDevice(dd);
-        GEinitDisplayList(dd);
+        GEaddDevice2(dd, "NULL");
     }
     END_SUSPEND_INTERRUPTS;
 }

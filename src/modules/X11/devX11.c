@@ -2481,10 +2481,8 @@ static void Rf_addX11Device(const char *display, double width, double height, do
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
         }
-        gsetVar(install(".Device"), mkString(devname), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        GEaddDevice(dd);
-        GEinitDisplayList(dd);
+        GEaddDevice2(dd, devname);
     }
     END_SUSPEND_INTERRUPTS;
 }
