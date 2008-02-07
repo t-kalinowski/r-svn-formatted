@@ -630,12 +630,18 @@ static void handleEvent(XEvent event)
         /* It appears possible that a device may receive an expose
          * event in the middle of the device being "kill"ed by R
          * This means that R knows nothing about the device
-         * so devNumber becomes 0 (the null device) and it is not
+         * so devNumber becomes 0 (the null device) and it was not
          * a good idea to pass the null device to GEplayDisplayList
+         * -- although GEplayDisplayList now checks this.
          */
         devNum = ndevNumber(dd);
         if (devNum > 0)
-            GEplayDisplayList(GEGetDevice(devNum));
+        {
+            pGEDevDesc gdd = GEGetDevice(devNum);
+            /* avoid replying a device list until something has been drawn */
+            if (gdd->dirty)
+                GEplayDisplayList(gdd);
+        }
     }
 }
 
@@ -2475,10 +2481,8 @@ static void Rf_addX11Device(const char *display, double width, double height, do
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
         }
-        gsetVar(install(".Device"), mkString(devname), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        GEaddDevice(dd);
-        GEinitDisplayList(dd);
+        GEaddDevice(dd, devname);
     }
     END_SUSPEND_INTERRUPTS;
 }

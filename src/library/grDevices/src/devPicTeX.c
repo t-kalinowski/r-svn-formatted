@@ -699,10 +699,8 @@ SEXP PicTeX(SEXP args)
             free(dev);
             error(_("unable to start device PicTeX"));
         }
-        gsetVar(install(".Device"), mkString("pictex"), R_BaseEnv);
         dd = GEcreateDevDesc(dev);
-        GEaddDevice(dd);
-        GEinitDisplayList(dd);
+        GEaddDevice(dd, "pictex");
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);

@@ -479,8 +479,9 @@ pGEDevDesc desc2GEDesc(pDevDesc dd)
     for (i = 1; i < R_MaxDevices; i++)
         if (R_Devices[i] != NULL && R_Devices[i]->dev == dd)
             return R_Devices[i];
-    /* shouldn't happen ... */
-    return R_Devices[0];
+    /* shouldn't happen ...
+       but might if device is not yet registered or being killed */
+    return R_Devices[0]; /* safe as will not replay a displayList */
 }
 
 /* ------- interface for creating devices ---------- */
@@ -499,7 +500,7 @@ Rboolean R_CheckDeviceAvailableBool(void)
         return TRUE;
 }
 
-void GEaddDevice(pGEDevDesc gdd)
+static void GEaddDevice0(pGEDevDesc gdd)
 {
     int i;
     Rboolean appnd;
@@ -563,7 +564,14 @@ void GEaddDevice(pGEDevDesc gdd)
 /* FIXME; remove in due course */
 void Rf_addDevice(pGEDev dd)
 {
-    GEaddDevice(dd);
+    GEaddDevice0(dd);
+}
+
+void GEaddDevice(pGEDevDesc gdd, const char *name)
+{
+    gsetVar(install(".Device"), mkString(name), R_BaseEnv);
+    GEaddDevice0(gdd);
+    GEinitDisplayList(gdd);
 }
 
 /* Create a GEDevDesc, given a pDevDesc
@@ -574,21 +582,21 @@ pGEDevDesc GEcreateDevDesc(pDevDesc dev)
      * device description (add graphics engine information
      * to the device description).
      */
-    pGEDevDesc dd = (GEDevDesc *)calloc(1, sizeof(GEDevDesc));
+    pGEDevDesc gdd = (GEDevDesc *)calloc(1, sizeof(GEDevDesc));
     /* NULL the gesd array
      */
     int i;
-    if (!dd)
-        error(_("not enough memory to allocate device (in addDevice)"));
+    if (!gdd)
+        error(_("not enough memory to allocate device (in GEcreateDevDesc)"));
     for (i = 0; i < MAX_GRAPHICS_SYSTEMS; i++)
-        dd->gesd[i] = NULL;
-    dd->dev = dev;
-    dd->displayListOn = dev->displayListOn;
-    dd->displayList = R_NilValue;   /* gc needs this */
-    dd->savedSnapshot = R_NilValue; /* gc needs this */
-    dd->dirty = FALSE;
-    dd->recordGraphics = TRUE;
-    return dd;
+        gdd->gesd[i] = NULL;
+    gdd->dev = dev;
+    gdd->displayListOn = dev->displayListOn;
+    gdd->displayList = R_NilValue;   /* gc needs this */
+    gdd->savedSnapshot = R_NilValue; /* gc needs this */
+    gdd->dirty = FALSE;
+    gdd->recordGraphics = TRUE;
+    return gdd;
 }
 
 void attribute_hidden InitGraphics(void)
