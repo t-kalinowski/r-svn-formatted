@@ -939,10 +939,13 @@ static void RQuartz_MetricInfo(int c, pGEcontext gc, double *ascent, double *des
         CGGlyph glyphs[8];
         CFStringRef str = NULL;
         int free_buffer = 0, len;
+        *width = *ascent = *descent = 0.0; /* data for bail-out cases */
         if (c >= 0 && c <= ((mbcslocale && gc->fontface != 5) ? 127 : 255))
         {
             char text[2] = {c, 0};
             str = text2unichar(gc, dd, text, &buffer, &free_buffer);
+            if (!str)
+                return;
             len = CFStringGetLength(str);
             if (len > 7)
                 return; /* this is basically impossible,
