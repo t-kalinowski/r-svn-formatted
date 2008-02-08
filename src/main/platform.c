@@ -1218,12 +1218,12 @@ static int R_unlink(wchar_t *name, int recursive)
                     else
                         ans += (_wunlink(p) == 0) ? 0 : 1;
                 }
+                _wclosedir(dir);
             }
             else
             { /* we were unable to read a dir */
                 ans++;
             }
-            _wclosedir(dir);
             ans += (R_rmdir(name) == 0) ? 0 : 1;
             return ans;
         }
@@ -1281,12 +1281,12 @@ static int R_unlink(char *name, int recursive)
                     else
                         ans += (unlink(p) == 0) ? 0 : 1;
                 }
+                closedir(dir);
             }
             else
             { /* we were unable to read a dir */
                 ans++;
             }
-            closedir(dir);
             ans += (rmdir(name) == 0) ? 0 : 1;
             return ans;
         }
