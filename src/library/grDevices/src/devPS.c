@@ -7493,6 +7493,7 @@ SEXP PostScript(SEXP args)
     if (!isNull(fonts) && !isString(fonts))
         error(_("invalid 'fonts' parameter in %s"), call);
 
+    R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
@@ -7565,6 +7566,7 @@ SEXP XFig(SEXP args)
     args = CDR(args);
     encoding = CHAR(asChar(CAR(args)));
 
+    R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
@@ -7660,6 +7662,7 @@ SEXP PDF(SEXP args)
     args = CDR(args);
     minor = asInteger(CAR(args));
 
+    R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {

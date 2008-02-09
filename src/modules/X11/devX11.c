@@ -2469,6 +2469,8 @@ static void Rf_addX11Device(const char *display, double width, double height, do
 {
     pDevDesc dev = NULL;
     GEDevDesc *dd;
+
+    R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
