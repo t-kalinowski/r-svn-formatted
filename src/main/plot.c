@@ -3656,15 +3656,16 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 }
 
-/* strheight(str, units)  ||  strwidth(str, units) */
+/* strheight(str, units, cex, font, vfont, ...)  ||  strwidth() */
 #define DO_STR_DIM(KIND)                                                                                               \
     {                                                                                                                  \
-        SEXP ans, str, ch;                                                                                             \
+        SEXP ans, str, ch, font, vfont;                                                                                \
         int i, n, units;                                                                                               \
         double cex, cexsave;                                                                                           \
         pGEDevDesc dd = CurrentDevice();                                                                               \
                                                                                                                        \
-        checkArity(op, args);                                                                                          \
+        if (length(args) < 5)                                                                                          \
+            error(_("too few arguments"));                                                                             \
         /* GCheckState(dd); */                                                                                         \
                                                                                                                        \
         str = CAR(args);                                                                                               \
@@ -3683,6 +3684,23 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
             cex = gpptr(dd)->cex;                                                                                      \
         else if (!R_FINITE((cex = asReal(CAR(args)))) || cex <= 0.0)                                                   \
             error(_("invalid '%s' value"), "cex");                                                                     \
+        args = CDR(args);                                                                                              \
+        PROTECT(font = FixupFont(CAR(args), NA_INTEGER));                                                              \
+        args = CDR(args);                                                                                              \
+        PROTECT(vfont = FixupVFont(CAR(args)));                                                                        \
+        args = CDR(args);                                                                                              \
+        GSavePars(dd);                                                                                                 \
+        ProcessInlinePars(args, dd, call);                                                                             \
+                                                                                                                       \
+        /* 'vfont' trumps inline 'family' */                                                                           \
+        if (!isNull(vfont) && !isExpression(str))                                                                      \
+        {                                                                                                              \
+            strncpy(gpptr(dd)->family, "Her ", 201);                                                                   \
+            gpptr(dd)->family[3] = INTEGER(vfont)[0];                                                                  \
+            gpptr(dd)->font = INTEGER(vfont)[1];                                                                       \
+        }                                                                                                              \
+        else                                                                                                           \
+            gpptr(dd)->font = INTEGER(font)[0];                                                                        \
                                                                                                                        \
         n = LENGTH(str);                                                                                               \
         PROTECT(ans = allocVector(REALSXP, n));                                                                        \
@@ -3697,7 +3715,8 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
                 REAL(ans)[i] = (ch == NA_STRING) ? 0.0 : GStr##KIND(CHAR(ch), getCharEnc(ch), GMapUnits(units), dd);   \
             }                                                                                                          \
         gpptr(dd)->cex = cexsave;                                                                                      \
-        UNPROTECT(2);                                                                                                  \
+        GRestorePars(dd);                                                                                              \
+        UNPROTECT(4);                                                                                                  \
         return ans;                                                                                                    \
     }
 
