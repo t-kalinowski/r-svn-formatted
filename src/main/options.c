@@ -138,7 +138,7 @@ int GetOptionDigits(SEXP rho)
     return d;
 }
 
-int attribute_hidden Rf_GetOptionParAsk()
+int Rf_GetOptionParAsk(void)
 {
     int ask;
     ask = asLogical(GetOption(install("par.ask.default"), R_BaseEnv));
