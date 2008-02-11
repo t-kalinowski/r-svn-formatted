@@ -3059,13 +3059,6 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
         dd->ipr[1] = pixelHeight(xd->gawin);
 
     /* Device capabilities */
-    /* Clipping is problematic for X11 */
-    /* Graphics is clipped, text is not */
-
-    dd->canResizePlot = TRUE;
-    dd->canChangeFont = FALSE;
-    dd->canRotateText = TRUE;
-    dd->canResizeText = TRUE;
     dd->canClip = TRUE;
     dd->canHAdj = 1; /* 0, 0.5, 1 */
     dd->canChangeGamma = TRUE;

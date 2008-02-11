@@ -187,10 +187,6 @@ static Rboolean nullDeviceDriver(pDevDesc dev)
     /*
      * Device capabilities
      */
-    dev->canResizePlot = FALSE;
-    dev->canChangeFont = FALSE;
-    dev->canRotateText = TRUE;
-    dev->canResizeText = TRUE;
     dev->canClip = TRUE;
     dev->canHAdj = 2;
     dev->canChangeGamma = FALSE;
