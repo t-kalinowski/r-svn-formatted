@@ -958,7 +958,7 @@ static BBOX GlyphBBox(int chr, pGEcontext gc, pGEDevDesc dd)
     BBOX bbox;
     double height, depth, width;
     int chr1 = chr;
-    if (dd->dev->wantSymbolUTF8)
+    if (dd->dev->wantSymbolUTF8 && gc->fontface == 5)
         chr1 = -Rf_AdobeSymbol2ucs2(chr);
     GEMetricInfo(chr1, gc, &height, &depth, &width, dd);
     bboxHeight(bbox) = fromDeviceHeight(height, MetricUnit, dd);
