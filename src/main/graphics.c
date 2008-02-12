@@ -3542,7 +3542,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
     /* IF font metric information is not available for device */
     /* then bail out */
     double ascent, descent, width;
-    GMetricInfo(0, &ascent, &descent, &width, DEVICE, dd);
+    GMetricInfo('M', &ascent, &descent, &width, DEVICE, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
         error(_("Metric information not available for this device"));
 
