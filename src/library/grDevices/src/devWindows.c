@@ -466,7 +466,7 @@ static void RStandardFonts()
     int i;
 
     for (i = 0; i < 4; i++)
-        fontname[i] = "Times New Roman";
+        fontname[i] = "Arial";
     fontname[4] = "Symbol";
     fontstyle[0] = fontstyle[4] = Plain;
     fontstyle[1] = Bold;
@@ -541,24 +541,6 @@ static void RFontInit()
     }
 }
 
-static int SetBaseFont(gadesc *xd)
-{
-    xd->fontface = 1;
-    xd->fontsize = xd->basefontsize;
-    xd->fontangle = 0.0;
-    xd->usefixed = FALSE;
-    xd->fontfamily[0] = '\0';
-    xd->font = gnewfont(xd->gawin, fontname[0], fontstyle[0], xd->fontsize, 0.0);
-    if (!xd->font)
-    {
-        xd->usefixed = TRUE;
-        xd->font = xd->fixedfont = FixedFont;
-        if (!xd->fixedfont)
-            return 0;
-    }
-    return 1;
-}
-
 /* Return a non-relocatable copy of a string */
 
 static char *SaveFontSpec(SEXP sxp, int offset)
@@ -630,8 +612,7 @@ static void SetFont(const char *family, int face, int size, double rot, pDevDesc
         face = 1;
     if (size < SMALLEST)
         size = SMALLEST;
-    if (!xd->usefixed &&
-        (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle || strcmp(family, xd->fontfamily)))
+    if (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle || strcmp(family, xd->fontfamily))
     {
         del(xd->font);
         doevent();
@@ -663,7 +644,17 @@ static void SetFont(const char *family, int face, int size, double rot, pDevDesc
         }
         else
         {
-            SetBaseFont(xd);
+            /* Fallback: set Arial */
+            if (face > 4)
+                face = 1;
+            xd->font = gnewfont(xd->gawin, "Arial", fontstyle[face - 1], size, rot);
+            if (!xd->font)
+                error("unable to set or substitute a suitable font");
+            xd->fontface = face;
+            xd->fontsize = size;
+            xd->fontangle = rot;
+            strcpy(xd->fontfamily, "Arial");
+            warning("unable to set font: using Arial");
         }
     }
 }
@@ -1951,14 +1942,6 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
         xd->wanteddpi = 72;
     else
         xd->wanteddpi = xd->truedpi;
-    if (!SetBaseFont(xd))
-    {
-        warning(_("can't find any fonts"));
-        del(xd->gawin);
-        if (xd->kind == SCREEN)
-            del(xd->bm);
-        return FALSE;
-    }
     xd->lwdscale = xd->truedpi / 96.0; /* matches ps/pdf */
     if (xd->lwdscale < 1.0)
         xd->lwdscale = 1.0; /* at least one pixel */
@@ -2957,7 +2940,6 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     int ps;
     gadesc *xd;
     rect rr;
-    int a = 0, d = 0, w = 0;
 
     /* allocate new device description */
     if (!(xd = (gadesc *)malloc(sizeof(gadesc))))
@@ -2966,13 +2948,13 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     /* from here on, if need to bail out with "error", must also */
     /* free(xd) */
 
-    /* Font will load at first use  */
-
     ps = pointsize;
     if (ps < 1)
         ps = 12;
+    /* Ensures a font is selected at first use */
     xd->fontface = -1;
     xd->fontsize = -1;
+    xd->fontangle = 0.0;
     xd->basefontsize = ps;
     dd->startfont = 1;
     dd->startps = ps;
@@ -3031,11 +3013,21 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
         xd->origWidth = dd->right = iw;
         xd->origHeight = dd->bottom = ih;
     }
+    dd->startps = ps * xd->rescale_factor;
 
-    /* Nominal Character Sizes in Pixels */
-    gcharmetric(xd->gawin, xd->font, -1, &a, &d, &w);
-    dd->cra[0] = w * xd->rescale_factor;
-    dd->cra[1] = (a + d) * xd->rescale_factor;
+#if 0
+    {
+	/* What font was this supposed to be? */
+	int a=0, d=0, w=0;
+	/* Nominal Character Sizes in Pixels */
+	gcharmetric(xd->gawin, xd->font, -1, &a, &d, &w);
+	dd->cra[0] = w * xd->rescale_factor;
+	dd->cra[1] = (a + d) * xd->rescale_factor;
+    }
+#endif
+    dd->cra[0] = 0.9 * ps * xd->rescale_factor;
+    dd->cra[1] = 1.2 * ps * xd->rescale_factor;
+
     /* Set basefont to full size: now allow for initial re-scale */
     xd->wanteddpi = xd->truedpi * xd->rescale_factor;
 
