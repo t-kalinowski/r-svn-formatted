@@ -1129,8 +1129,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
     /* That means the *caller*: the X11DeviceDriver code frees xd, for example */
 
     XEvent event;
-    int iw, ih;
-    int blackpixel;
+    int iw, ih, blackpixel;
     X_GTYPE type;
     const char *p = dsp;
     XGCValues gcv;
@@ -2434,7 +2433,7 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     sc = CAR(args);
     if (!isString(sc) || LENGTH(sc) != 1)
-        error(_("invalid value of 'title' in devWindows"));
+        errorcall(call, _("invalid '%s' value"), "title");
     title = CHAR(STRING_ELT(sc, 0));
 
     devname = "X11";
