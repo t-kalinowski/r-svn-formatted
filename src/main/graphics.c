@@ -1882,7 +1882,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
         {
             if (recording)
             {
-                if (gpptr(dd)->ask)
+                if (dd->ask)
                 {
                     NewFrameConfirm(dd->dev);
                     if (NoDevices())
@@ -1905,7 +1905,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
         gcontextFromGP(&gc, dd);
         if (recording)
         {
-            if (gpptr(dd)->ask)
+            if (dd->ask)
             {
                 NewFrameConfirm(dd->dev);
                 if (NoDevices())
@@ -2219,7 +2219,6 @@ void GSetupAxis(int axis, pGEDevDesc dd)
 
  * Called from baseCallback.
  */
-int Rf_GetOptionParAsk(void); /* from options.c */
 
 void attribute_hidden GInit(GPar *dp)
 {
@@ -2227,7 +2226,6 @@ void attribute_hidden GInit(GPar *dp)
     dp->valid = FALSE;
 
     dp->ann = TRUE;
-    dp->ask = Rf_GetOptionParAsk();
     dp->err = 0;
     dp->bty = 'o';
 

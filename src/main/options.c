@@ -138,13 +138,13 @@ int GetOptionDigits(SEXP rho)
     return d;
 }
 
-int Rf_GetOptionParAsk(void)
+Rboolean Rf_GetOptionDeviceAsk(void)
 {
     int ask;
-    ask = asLogical(GetOption(install("par.ask.default"), R_BaseEnv));
+    ask = asLogical(GetOption(install("device.ask.default"), R_BaseEnv));
     if (ask == NA_LOGICAL)
     {
-        warning(_("invalid par(\"par.ask.default\"), using FALSE"));
+        warning(_("invalid value for \"device.ask.default\", using FALSE"));
         return FALSE;
     }
     return ask != 0;
@@ -590,6 +590,11 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
                 R_NShowCalls = k;
                 SET_VECTOR_ELT(value, i, SetOption(tag, ScalarInteger(k)));
             }
+            else if (streql(CHAR(namei), "par.ask.default"))
+            {
+                warning(_("\"par.ask.default\" has been replaced by \"device.ask.default\""));
+                SET_VECTOR_ELT(value, i, SetOption(install("device.ask.default"), duplicate(argi)));
+            }
             else
             {
                 SET_VECTOR_ELT(value, i, SetOption(tag, duplicate(argi)));
@@ -598,9 +603,18 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else
         { /* querying arg */
+            const char *tag;
             if (!isString(argi) || LENGTH(argi) <= 0)
                 error(R_MSG_IA);
-            SET_VECTOR_ELT(value, i, duplicate(CAR(FindTaggedItem(options, install(CHAR(STRING_ELT(argi, 0)))))));
+            tag = CHAR(STRING_ELT(argi, 0));
+            if (streql(tag, "par.ask.default"))
+            {
+                warning(_("\"par.ask.default\" has been replaced by \"device.ask.default\""));
+                tag = "device.ask.default";
+                argi = mkString(tag);
+            }
+
+            SET_VECTOR_ELT(value, i, duplicate(CAR(FindTaggedItem(options, install(tag)))));
             SET_STRING_ELT(names, i, STRING_ELT(argi, 0));
             R_Visible = TRUE;
         }
