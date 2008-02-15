@@ -1885,6 +1885,9 @@ pGEDevDesc GNewPlot(Rboolean recording)
                 if (dd->ask)
                 {
                     NewFrameConfirm(dd->dev);
+                    /*
+                     * User may have killed device during pause for prompt
+                     */
                     if (NoDevices())
                         error(_("attempt to plot on null device"));
                     else
@@ -1908,6 +1911,9 @@ pGEDevDesc GNewPlot(Rboolean recording)
             if (dd->ask)
             {
                 NewFrameConfirm(dd->dev);
+                /*
+                 * User may have killed device during pause for prompt
+                 */
                 if (NoDevices())
                     error(_("attempt to plot on null device"));
                 else
