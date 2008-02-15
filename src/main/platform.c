@@ -169,6 +169,7 @@ void attribute_hidden Init_R_Variables(SEXP rho)
     Init_R_Platform(rho);
 }
 
+#ifdef HAVE_LANGINFO_CODESET
 /* case-insensitive string comparison (needed for locale check) */
 int static R_strieql(const char *a, const char *b)
 {
@@ -179,6 +180,7 @@ int static R_strieql(const char *a, const char *b)
     }
     return (*a == 0 && *b == 0);
 }
+#endif
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
@@ -1979,24 +1981,26 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (recursive == NA_LOGICAL)
         recursive = 0;
     wcscpy(dir, filenameToWchar(STRING_ELT(path, 0), TRUE));
-    /* need DOS paths on Win 9x R_fixbackslash(dir); */
+    for (p = dir; *p; p++)
+        if (*p == L'/')
+            *p = L'\\';
     /* remove trailing slashes */
     p = dir + wcslen(dir) - 1;
-    while (*p == '\\' && wcslen(dir) > 1 && *(p - 1) != ':')
-        *p-- = '\0';
+    while (*p == L'\\' && wcslen(dir) > 1 && *(p - 1) != L':')
+        *p-- = L'\0';
     if (recursive)
     {
         p = dir;
-        while ((p = wcschr(p + 1, '\\')))
+        while ((p = wcschr(p + 1, L'\\')))
         {
-            *p = '\0';
-            if (*(p - 1) != ':')
+            *p = L'\0';
+            if (*(p - 1) != L':')
             {
                 res = _wmkdir(dir);
                 if (res && errno != EEXIST)
                     goto end;
             }
-            *p = '\\';
+            *p = L'\\';
         }
     }
     res = _wmkdir(dir);
