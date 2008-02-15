@@ -799,6 +799,9 @@ void setup_Rmainloop(void)
             known_to_be_utf8 = utf8locale = TRUE;
         if (streql(p, "ISO-8859-1"))
             known_to_be_latin1 = latin1locale = TRUE;
+        /* for Darwin */
+        if (streql(p, "ISO8859-1"))
+            known_to_be_latin1 = latin1locale = TRUE;
         /* fprintf(stderr, "using %s\n", p); */
     }
 #endif
