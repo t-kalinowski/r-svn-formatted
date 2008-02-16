@@ -735,11 +735,9 @@ void *Riconv_open(const char *tocode, const char *fromcode)
         cp = "ISO-8859-1";
     else if (!utf8locale)
         cp = locale2charset(NULL);
-    /* [SU] I'm not sure why the Windows code excludes this case -
-       although it's pathological, it is valid when specified directly */
+#endif
     if (!*tocode && !*fromcode)
         return iconv_open(cp, cp);
-#endif
     if (strcmp(tocode, "") == 0)
         return iconv_open(cp, fromcode);
     else if (strcmp(fromcode, "") == 0)
