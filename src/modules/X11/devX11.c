@@ -137,21 +137,21 @@ static int numX11Devices = 0;
 /* Device Driver Actions */
 
 static void X11_Activate(pDevDesc dd);
-static void X11_Circle(double x, double y, double r, pGEcontext gc, pDevDesc dd);
+static void X11_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd);
 static void X11_Clip(double x0, double x1, double y0, double y1, pDevDesc dd);
 static void X11_Close(pDevDesc dd);
 static void X11_Deactivate(pDevDesc dd);
 static Rboolean X11_Locator(double *x, double *y, pDevDesc dd);
-static void X11_Line(double x1, double y1, double x2, double y2, pGEcontext gc, pDevDesc dd);
-static void X11_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd);
+static void X11_Line(double x1, double y1, double x2, double y2, const pGEcontext gc, pDevDesc dd);
+static void X11_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd);
 static void X11_Mode(int mode, pDevDesc dd);
-static void X11_NewPage(pGEcontext gc, pDevDesc dd);
-static void X11_Polygon(int n, double *x, double *y, pGEcontext gc, pDevDesc dd);
-static void X11_Polyline(int n, double *x, double *y, pGEcontext gc, pDevDesc dd);
-static void X11_Rect(double x0, double y0, double x1, double y1, pGEcontext gc, pDevDesc dd);
+static void X11_NewPage(const pGEcontext gc, pDevDesc dd);
+static void X11_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
+static void X11_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
+static void X11_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
 static void X11_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
-static double X11_StrWidth(const char *str, pGEcontext gc, pDevDesc dd);
-static void X11_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd);
+static double X11_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
+static void X11_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
 
 /*************************************************/
 /* End of list of required device driver actions */
@@ -163,8 +163,8 @@ static void *RLoadFont(pX11Desc, char *, int, int);
 static double pixelHeight(void);
 static double pixelWidth(void);
 static void SetColor(unsigned int, pX11Desc);
-static void SetFont(pGEcontext, pX11Desc);
-static void SetLinetype(pGEcontext, pX11Desc);
+static void SetFont(const pGEcontext, pX11Desc);
+static void SetLinetype(const pGEcontext, pX11Desc);
 static void X11_Close_bitmap(pX11Desc xd);
 static char *translateFontFamily(char *family, pX11Desc xd);
 
@@ -924,7 +924,7 @@ static void *RLoadFont(pX11Desc xd, char *family, int face, int size)
     return tmp;
 }
 
-static void SetFont(pGEcontext gc, pX11Desc xd)
+static void SetFont(const pGEcontext gc, pX11Desc xd)
 {
     R_XFont *tmp;
     char *family = translateFontFamily(gc->fontfamily, xd);
@@ -1020,7 +1020,7 @@ static int gcToX11ljoin(R_GE_linejoin ljoin)
  */
 
 /* Not at all clear the optimization here is worth it */
-static void SetLinetype(pGEcontext gc, pX11Desc xd)
+static void SetLinetype(const pGEcontext gc, pX11Desc xd)
 {
     int i, newlty, newlwd, newlend, newljoin;
 
@@ -1456,7 +1456,7 @@ static char *translateFontFamily(char *family, pX11Desc xd)
     return result;
 }
 
-static double X11_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
+static double X11_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
@@ -1482,7 +1482,7 @@ static double X11_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
 /* Character Metric Information */
 /* Passing c == 0 gets font information */
 
-static void X11_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
+static void X11_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     int first = 0, last = 0;
@@ -1650,7 +1650,7 @@ static void X11_Size(double *left, double *right, double *bottom, double *top, p
     *top = 0.0;
 }
 
-static void X11_NewPage(pGEcontext gc, pDevDesc dd)
+static void X11_NewPage(const pGEcontext gc, pDevDesc dd)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
@@ -1865,7 +1865,7 @@ static void X11_Deactivate(pDevDesc dd)
     XSync(display, 0);
 }
 
-static void X11_Rect(double x0, double y0, double x1, double y1, pGEcontext gc, pDevDesc dd)
+static void X11_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd)
 {
     int tmp;
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
@@ -1897,7 +1897,7 @@ static void X11_Rect(double x0, double y0, double x1, double y1, pGEcontext gc, 
     }
 }
 
-static void X11_Circle(double x, double y, double r, pGEcontext gc, pDevDesc dd)
+static void X11_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd)
 {
     int ir, ix, iy;
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
@@ -1921,7 +1921,7 @@ static void X11_Circle(double x, double y, double r, pGEcontext gc, pDevDesc dd)
     }
 }
 
-static void X11_Line(double x1, double y1, double x2, double y2, pGEcontext gc, pDevDesc dd)
+static void X11_Line(double x1, double y1, double x2, double y2, const pGEcontext gc, pDevDesc dd)
 {
     int xx1, yy1, xx2, yy2;
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
@@ -1942,7 +1942,7 @@ static void X11_Line(double x1, double y1, double x2, double y2, pGEcontext gc, 
     }
 }
 
-static void X11_Polyline(int n, double *x, double *y, pGEcontext gc, pDevDesc dd)
+static void X11_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -1974,7 +1974,7 @@ static void X11_Polyline(int n, double *x, double *y, pGEcontext gc, pDevDesc dd
     vmaxset(vmax);
 }
 
-static void X11_Polygon(int n, double *x, double *y, pGEcontext gc, pDevDesc dd)
+static void X11_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
 {
     char *vmax = vmaxget();
     XPoint *points;
@@ -2007,7 +2007,7 @@ static void X11_Polygon(int n, double *x, double *y, pGEcontext gc, pDevDesc dd)
     vmaxset(vmax);
 }
 
-static void X11_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd)
+static void X11_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
@@ -2340,7 +2340,7 @@ static void Rf_addX11Device(const char *display, double width, double height, do
                             int xpos, int ypos, const char *title)
 {
     pDevDesc dev = NULL;
-    GEDevDesc *dd;
+    pGEDevDesc dd;
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();

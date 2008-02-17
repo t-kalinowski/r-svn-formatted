@@ -225,7 +225,7 @@ static unsigned int combineAlpha(double alpha, int col)
 /*
  * Generate an R_GE_gcontext from a gpar
  */
-void gcontextFromgpar(SEXP gp, int i, R_GE_gcontext *gc, GEDevDesc *dd)
+void gcontextFromgpar(SEXP gp, int i, const pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * Combine gpAlpha with col and fill
@@ -260,7 +260,7 @@ SEXP L_setGPar(SEXP gpars)
      */
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_GPAR, gpars);
     return R_NilValue;
 }
@@ -273,7 +273,7 @@ SEXP L_getGPar(void)
      */
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_GPAR);
 }
 
@@ -281,7 +281,7 @@ SEXP L_getGPsaved()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_GPSAVED);
 }
 
@@ -289,12 +289,12 @@ SEXP L_setGPsaved(SEXP gpars)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_GPSAVED, gpars);
     return R_NilValue;
 }
 
-void initGPar(GEDevDesc *dd)
+void initGPar(pGEDevDesc dd)
 {
     pDevDesc dev = dd->dev;
     SEXP gpar, gparnames, class;

@@ -40,27 +40,27 @@
 
 /* 06-08-20 | baier | R_Proxy_Graphics_CB instead of NewDevDesc */
 static void R_Proxy_Graphics_Activate_CB(R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Circle_CB(double x, double y, double r, pGEcontext gc, R_Proxy_Graphics_CB *dd);
+static void R_Proxy_Graphics_Circle_CB(double x, double y, double r, const pGEcontext gc, R_Proxy_Graphics_CB *dd);
 static void R_Proxy_Graphics_Clip_CB(double x0, double x1, double y0, double y1, R_Proxy_Graphics_CB *dd);
 static void R_Proxy_Graphics_Close_CB(R_Proxy_Graphics_CB *dd);
 static void R_Proxy_Graphics_Deactivate_CB(R_Proxy_Graphics_CB *dd);
 static Rboolean R_Proxy_Graphics_Locator_CB(double *x, double *y, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Line_CB(double x1, double y1, double x2, double y2, pGEcontext gc,
+static void R_Proxy_Graphics_Line_CB(double x1, double y1, double x2, double y2, const pGEcontext gc,
                                      R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_MetricInfo_CB(int c, pGEcontext gc, double *ascent, double *descent, double *width,
+static void R_Proxy_Graphics_MetricInfo_CB(int c, const pGEcontext gc, double *ascent, double *descent, double *width,
                                            R_Proxy_Graphics_CB *dd);
 static void R_Proxy_Graphics_Mode_CB(int mode, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_NewPage_CB(pGEcontext gc, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Polygon_CB(int n, double *x, double *y, pGEcontext gc, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Polyline_CB(int n, double *x, double *y, pGEcontext gc, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Rect_CB(double x0, double y0, double x1, double y1, pGEcontext gc,
+static void R_Proxy_Graphics_NewPage_CB(const pGEcontext gc, R_Proxy_Graphics_CB *dd);
+static void R_Proxy_Graphics_Polygon_CB(int n, double *x, double *y, const pGEcontext gc, R_Proxy_Graphics_CB *dd);
+static void R_Proxy_Graphics_Polyline_CB(int n, double *x, double *y, const pGEcontext gc, R_Proxy_Graphics_CB *dd);
+static void R_Proxy_Graphics_Rect_CB(double x0, double y0, double x1, double y1, const pGEcontext gc,
                                      R_Proxy_Graphics_CB *dd);
 static void R_Proxy_Graphics_Size_CB(double *left, double *right, double *bottom, double *top, R_Proxy_Graphics_CB *dd);
 #ifdef UNUSED
 static void R_Proxy_Graphics_Resize_CB(R_Proxy_Graphics_CB *dd);
 #endif
-static double R_Proxy_Graphics_StrWidth_CB(char *str, pGEcontext gc, R_Proxy_Graphics_CB *dd);
-static void R_Proxy_Graphics_Text_CB(double x, double y, char *str, double rot, double hadj, pGEcontext gc,
+static double R_Proxy_Graphics_StrWidth_CB(char *str, const pGEcontext gc, R_Proxy_Graphics_CB *dd);
+static void R_Proxy_Graphics_Text_CB(double x, double y, char *str, double rot, double hadj, const pGEcontext gc,
                                      R_Proxy_Graphics_CB *dd);
 static Rboolean R_Proxy_Graphics_Open_CB(R_Proxy_Graphics_CB *pDD, void *pAXD, char *pDisplay, double pWidth,
                                          double pHeight, Rboolean pRecording, int pResize);
@@ -78,7 +78,7 @@ static void R_Proxy_Graphics_Activate_CB(R_Proxy_Graphics_CB *pDD)
 /* 00-06-22 | baier | added line type and width */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Circle_CB(double pX, double pY, double pRad, pGEcontext gc, R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_Circle_CB(double pX, double pY, double pRad, const pGEcontext gc, R_Proxy_Graphics_CB *pDD)
 {
     /*  OutputDebugString("R_Proxy_Graphics_Circle()\n"); */
     if (HASGFXDEV())
@@ -132,7 +132,7 @@ static void R_Proxy_Graphics_Deactivate_CB(R_Proxy_Graphics_CB *pDD)
 /* 00-06-22 | baier | added color, line type and width */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Line_CB(double pX0, double pY0, double pX1, double pY1, pGEcontext gc,
+static void R_Proxy_Graphics_Line_CB(double pX0, double pY0, double pX1, double pY1, const pGEcontext gc,
                                      R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
@@ -173,7 +173,7 @@ static void R_Proxy_Graphics_Mode_CB(int pMode, R_Proxy_Graphics_CB *dd)
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_NewPage_CB(pGEcontext gc, R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_NewPage_CB(const pGEcontext gc, R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -201,7 +201,8 @@ static Rboolean R_Proxy_Graphics_Open_CB(R_Proxy_Graphics_CB *pDD, void *pAXD, c
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Polygon_CB(int pCount, double *pX, double *pY, pGEcontext gc, R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_Polygon_CB(int pCount, double *pX, double *pY, const pGEcontext gc,
+                                        R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -233,7 +234,8 @@ static void R_Proxy_Graphics_Polygon_CB(int pCount, double *pX, double *pY, pGEc
 /* 06-05-16 | baier | added "lty" and "lwd" parameters */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Polyline_CB(int pCount, double *pX, double *pY, pGEcontext gc, R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_Polyline_CB(int pCount, double *pX, double *pY, const pGEcontext gc,
+                                         R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -267,7 +269,7 @@ static void R_Proxy_Graphics_Polyline_CB(int pCount, double *pX, double *pY, pGE
 /* 00-06-22 | baier | added line type and width */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Rect_CB(double pX0, double pY0, double pX1, double pY1, pGEcontext gc,
+static void R_Proxy_Graphics_Rect_CB(double pX0, double pY0, double pX1, double pY1, const pGEcontext gc,
                                      R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
@@ -305,7 +307,7 @@ static void R_Proxy_Graphics_Resize_CB(R_Proxy_Graphics_CB *pDD)
 /* 00-06-22 | baier | added font and size parameters */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static double R_Proxy_Graphics_StrWidth_CB(char *pString, pGEcontext gc, R_Proxy_Graphics_CB *pDD)
+static double R_Proxy_Graphics_StrWidth_CB(char *pString, const pGEcontext gc, R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -320,8 +322,8 @@ static double R_Proxy_Graphics_StrWidth_CB(char *pString, pGEcontext gc, R_Proxy
 /* 00-06-22 | baier | added color, font and size */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Text_CB(double pX, double pY, char *pString, double pRot, double pHadj, pGEcontext gc,
-                                     R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_Text_CB(double pX, double pY, char *pString, double pRot, double pHadj,
+                                     const pGEcontext gc, R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -336,13 +338,13 @@ static void R_Proxy_Graphics_Text_CB(double pX, double pY, char *pString, double
 
 /* 00-06-22 | baier | added font and size parameters */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_MetricInfo_CB(int c, pGEcontext gc, double *ascent, double *descent, double *width,
+static void R_Proxy_Graphics_MetricInfo_CB(int c, const pGEcontext gc, double *ascent, double *descent, double *width,
                                            R_Proxy_Graphics_CB *dd);
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_MetricInfo_CB(int pC, pGEcontext gc, double *pAscent, double *pDescent, double *pWidth,
-                                           R_Proxy_Graphics_CB *pDD)
+static void R_Proxy_Graphics_MetricInfo_CB(int pC, const pGEcontext gc, double *pAscent, double *pDescent,
+                                           double *pWidth, R_Proxy_Graphics_CB *pDD)
 {
     if (HASGFXDEV())
     {
@@ -431,31 +433,31 @@ int R_Proxy_Graphics_Driver_CB(R_Proxy_Graphics_CB *pDD, char *pDisplay, double 
  Recorder Device
  ******************************************************************************/
 static void R_Proxy_Graphics_Activate_Recorder(R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Circle_Recorder(double x, double y, double r, pGEcontext gc,
+static void R_Proxy_Graphics_Circle_Recorder(double x, double y, double r, const pGEcontext gc,
                                              R_Proxy_Graphics_Recorder *dd);
 static void R_Proxy_Graphics_Clip_Recorder(double x0, double x1, double y0, double y1, R_Proxy_Graphics_Recorder *dd);
 static void R_Proxy_Graphics_Close_Recorder(R_Proxy_Graphics_Recorder *dd);
 static void R_Proxy_Graphics_Deactivate_Recorder(R_Proxy_Graphics_Recorder *dd);
 static Rboolean R_Proxy_Graphics_Locator_Recorder(double *x, double *y, R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Line_Recorder(double x1, double y1, double x2, double y2, pGEcontext gc,
+static void R_Proxy_Graphics_Line_Recorder(double x1, double y1, double x2, double y2, const pGEcontext gc,
                                            R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_MetricInfo_Recorder(int c, pGEcontext gc, double *ascent, double *descent, double *width,
-                                                 R_Proxy_Graphics_Recorder *dd);
+static void R_Proxy_Graphics_MetricInfo_Recorder(int c, const pGEcontext gc, double *ascent, double *descent,
+                                                 double *width, R_Proxy_Graphics_Recorder *dd);
 static void R_Proxy_Graphics_Mode_Recorder(int mode, R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_NewPage_Recorder(pGEcontext gc, R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Polygon_Recorder(int n, double *x, double *y, pGEcontext gc,
+static void R_Proxy_Graphics_NewPage_Recorder(const pGEcontext gc, R_Proxy_Graphics_Recorder *dd);
+static void R_Proxy_Graphics_Polygon_Recorder(int n, double *x, double *y, const pGEcontext gc,
                                               R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Polyline_Recorder(int n, double *x, double *y, pGEcontext gc,
+static void R_Proxy_Graphics_Polyline_Recorder(int n, double *x, double *y, const pGEcontext gc,
                                                R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Rect_Recorder(double x0, double y0, double x1, double y1, pGEcontext gc,
+static void R_Proxy_Graphics_Rect_Recorder(double x0, double y0, double x1, double y1, const pGEcontext gc,
                                            R_Proxy_Graphics_Recorder *dd);
 static void R_Proxy_Graphics_Size_Recorder(double *left, double *right, double *bottom, double *top,
                                            R_Proxy_Graphics_Recorder *dd);
 #ifdef UNUSED
 static void R_Proxy_Graphics_Resize_Recorder(R_Proxy_Graphics_Recorder *dd);
 #endif
-static double R_Proxy_Graphics_StrWidth_Recorder(char *str, pGEcontext gc, R_Proxy_Graphics_Recorder *dd);
-static void R_Proxy_Graphics_Text_Recorder(double x, double y, char *str, double rot, double hadj, pGEcontext gc,
+static double R_Proxy_Graphics_StrWidth_Recorder(char *str, const pGEcontext gc, R_Proxy_Graphics_Recorder *dd);
+static void R_Proxy_Graphics_Text_Recorder(double x, double y, char *str, double rot, double hadj, const pGEcontext gc,
                                            R_Proxy_Graphics_Recorder *dd);
 static Rboolean R_Proxy_Graphics_Open_Recorder(R_Proxy_Graphics_Recorder *pDD, void *pAXD, char *pDisplay,
                                                double pWidth, double pHeight, Rboolean pRecording, int pResize);
@@ -464,7 +466,7 @@ static void R_Proxy_Graphics_Activate_Recorder(R_Proxy_Graphics_Recorder *pDD)
 {
 }
 
-static void R_Proxy_Graphics_Circle_Recorder(double pX, double pY, double pRad, pGEcontext gc,
+static void R_Proxy_Graphics_Circle_Recorder(double pX, double pY, double pRad, const pGEcontext gc,
                                              R_Proxy_Graphics_Recorder *pDD)
 {
 }
@@ -503,7 +505,7 @@ static void R_Proxy_Graphics_Deactivate_Recorder(R_Proxy_Graphics_Recorder *pDD)
 /* 00-06-22 | baier | added color, line type and width */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Line_Recorder(double pX0, double pY0, double pX1, double pY1, pGEcontext gc,
+static void R_Proxy_Graphics_Line_Recorder(double pX0, double pY0, double pX1, double pY1, const pGEcontext gc,
                                            R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
@@ -544,7 +546,7 @@ static void R_Proxy_Graphics_Mode_Recorder(int pMode, R_Proxy_Graphics_Recorder 
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_NewPage_Recorder(pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
+static void R_Proxy_Graphics_NewPage_Recorder(const pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
     {
@@ -572,7 +574,7 @@ static Rboolean R_Proxy_Graphics_Open_Recorder(R_Proxy_Graphics_Recorder *pDD, v
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Polygon_Recorder(int pCount, double *pX, double *pY, pGEcontext gc,
+static void R_Proxy_Graphics_Polygon_Recorder(int pCount, double *pX, double *pY, const pGEcontext gc,
                                               R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
@@ -605,7 +607,7 @@ static void R_Proxy_Graphics_Polygon_Recorder(int pCount, double *pX, double *pY
 /* 06-05-16 | baier | added "lty" and "lwd" parameters */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Polyline_Recorder(int pCount, double *pX, double *pY, pGEcontext gc,
+static void R_Proxy_Graphics_Polyline_Recorder(int pCount, double *pX, double *pY, const pGEcontext gc,
                                                R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
@@ -640,7 +642,7 @@ static void R_Proxy_Graphics_Polyline_Recorder(int pCount, double *pX, double *p
 /* 00-06-22 | baier | added line type and width */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_Rect_Recorder(double pX0, double pY0, double pX1, double pY1, pGEcontext gc,
+static void R_Proxy_Graphics_Rect_Recorder(double pX0, double pY0, double pX1, double pY1, const pGEcontext gc,
                                            R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
@@ -679,7 +681,7 @@ static void R_Proxy_Graphics_Resize_Recorder(R_Proxy_Graphics_Recorder *pDD)
 /* 00-06-22 | baier | added font and size parameters */
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static double R_Proxy_Graphics_StrWidth_Recorder(char *pString, pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
+static double R_Proxy_Graphics_StrWidth_Recorder(char *pString, const pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
 {
 #if 0
   if(HASGFXDEV()) {
@@ -699,7 +701,7 @@ static double R_Proxy_Graphics_StrWidth_Recorder(char *pString, pGEcontext gc, R
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
 static void R_Proxy_Graphics_Text_Recorder(double pX, double pY, char *pString, double pRot, double pHadj,
-                                           pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
+                                           const pGEcontext gc, R_Proxy_Graphics_Recorder *pDD)
 {
     if (HASGFXDEV())
     {
@@ -714,12 +716,12 @@ static void R_Proxy_Graphics_Text_Recorder(double pX, double pY, char *pString, 
 
 /* 00-06-22 | baier | added font and size parameters */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_MetricInfo_Recorder(int c, pGEcontext gc, double *ascent, double *descent, double *width,
-                                                 R_Proxy_Graphics_Recorder *dd);
+static void R_Proxy_Graphics_MetricInfo_Recorder(int c, const pGEcontext gc, double *ascent, double *descent,
+                                                 double *width, R_Proxy_Graphics_Recorder *dd);
 
 /* 06-05-17 | baier | use GFX access macros */
 /* 06-08-20 | baier | R_Proxy_Graphics instead of NewDevDesc, Recorder device */
-static void R_Proxy_Graphics_MetricInfo_Recorder(int pC, pGEcontext gc, double *pAscent, double *pDescent,
+static void R_Proxy_Graphics_MetricInfo_Recorder(int pC, const pGEcontext gc, double *pAscent, double *pDescent,
                                                  double *pWidth, R_Proxy_Graphics_Recorder *pDD)
 {
 #if 1

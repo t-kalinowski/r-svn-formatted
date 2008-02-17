@@ -265,7 +265,7 @@ void QuartzDevice_SetAntialias(QuartzDesc_t desc, int aa)
 
 void QuartzDevice_Kill(QuartzDesc_t desc)
 {
-    GEDevDesc *dd = GEgetDevice(ndevNumber(((QuartzDesc *)desc)->dev));
+    pGEDevDesc dd = GEgetDevice(ndevNumber(((QuartzDesc *)desc)->dev));
     if (dd)
         GEkillDevice(dd);
 }
@@ -317,7 +317,7 @@ void QuartzDevice_ReplayDisplayList(QuartzDesc_t desc)
 void *QuartzDevice_GetSnapshot(QuartzDesc_t desc, int last)
 {
     QuartzDesc *qd = (QuartzDesc *)desc;
-    GEDevDesc *gd = GEgetDevice(ndevNumber(qd->dev));
+    pGEDevDesc gd = GEgetDevice(ndevNumber(qd->dev));
     SEXP snap;
     if (last)
         snap = desc2GEDesc(qd->dev)->savedSnapshot;
@@ -331,7 +331,7 @@ void *QuartzDevice_GetSnapshot(QuartzDesc_t desc, int last)
 void QuartzDevice_RestoreSnapshot(QuartzDesc_t desc, void *snap)
 {
     QuartzDesc *qd = (QuartzDesc *)desc;
-    GEDevDesc *gd = GEgetDevice(ndevNumber(qd->dev));
+    pGEDevDesc gd = GEgetDevice(ndevNumber(qd->dev));
     if (NULL == snap)
         return; /*Aw, hell no!*/
     PROTECT((SEXP)snap);
@@ -351,18 +351,18 @@ static void RQuartz_Close(pDevDesc);
 static void RQuartz_Activate(pDevDesc);
 static void RQuartz_Deactivate(pDevDesc);
 static void RQuartz_Size(double *, double *, double *, double *, pDevDesc);
-static void RQuartz_NewPage(pGEcontext, pDevDesc);
+static void RQuartz_NewPage(const pGEcontext, pDevDesc);
 static void RQuartz_Clip(double, double, double, double, pDevDesc);
-static double RQuartz_StrWidth(const char *, pGEcontext, pDevDesc);
-static void RQuartz_Text(double, double, const char *, double, double, pGEcontext, pDevDesc);
-static void RQuartz_Rect(double, double, double, double, pGEcontext, pDevDesc);
-static void RQuartz_Circle(double, double, double, pGEcontext, pDevDesc);
-static void RQuartz_Line(double, double, double, double, pGEcontext, pDevDesc);
-static void RQuartz_Polyline(int, double *, double *, pGEcontext, pDevDesc);
-static void RQuartz_Polygon(int, double *, double *, pGEcontext, pDevDesc);
+static double RQuartz_StrWidth(const char *, const pGEcontext, pDevDesc);
+static void RQuartz_Text(double, double, const char *, double, double, const pGEcontext, pDevDesc);
+static void RQuartz_Rect(double, double, double, double, const pGEcontext, pDevDesc);
+static void RQuartz_Circle(double, double, double, const pGEcontext, pDevDesc);
+static void RQuartz_Line(double, double, double, double, const pGEcontext, pDevDesc);
+static void RQuartz_Polyline(int, double *, double *, const pGEcontext, pDevDesc);
+static void RQuartz_Polygon(int, double *, double *, const pGEcontext, pDevDesc);
 static Rboolean RQuartz_Locator(double *, double *, pDevDesc);
 static void RQuartz_Mode(int mode, pDevDesc);
-static void RQuartz_MetricInfo(int, pGEcontext, double *, double *, double *, pDevDesc);
+static void RQuartz_MetricInfo(int, const pGEcontext, double *, double *, double *, pDevDesc);
 
 #pragma mark Quartz device implementation
 
@@ -476,7 +476,7 @@ extern CGFontRef CGContextGetFont(CGContextRef);
 extern void CGFontGetGlyphsForUnichars(CGFontRef, const UniChar[], const CGGlyph[], size_t);
 
 #define DEVDESC pDevDesc dd
-#define CTXDESC pGEcontext gc, pDevDesc dd
+#define CTXDESC const pGEcontext gc, pDevDesc dd
 
 #define DEVSPEC                                                                                                        \
     QuartzDesc *xd = (QuartzDesc *)dd->deviceSpecific;                                                                 \
@@ -559,7 +559,7 @@ CGFontRef RQuartz_Font(CTXDESC)
 #define RQUARTZ_LINE (1 << 2)
 #define RQUARTZ_FONT (1 << 3)
 
-void RQuartz_Set(CGContextRef ctx, pGEcontext gc, int flags)
+void RQuartz_Set(CGContextRef ctx, const pGEcontext gc, int flags)
 {
     if (flags & RQUARTZ_FILL)
     {
@@ -917,7 +917,7 @@ static void RQuartz_Mode(int mode, DEVDESC)
     }
 }
 
-static void RQuartz_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
+static void RQuartz_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {
     DRAWSPEC;
     if (!ctx)
@@ -1028,7 +1028,7 @@ int Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create)
                 return -2;
             }
             gsetVar(install(".Device"), mkString("quartz"), R_BaseEnv);
-            GEDevDesc *dd = GEcreateDevDesc(dev);
+            pGEDevDesc dd = GEcreateDevDesc(dev);
             GEaddDevice(dd);
             GEinitDisplayList(dd);
             vmaxset(vmax);
@@ -1182,7 +1182,7 @@ SEXP Quartz(SEXP args)
             error(_("Unable to create Quartz device target, given type may not be supported."));
         }
         gsetVar(install(".Device"), mkString("quartz"), R_BaseEnv);
-        GEDevDesc *dd = GEcreateDevDesc(dev);
+        pGEDevDesc dd = GEcreateDevDesc(dev);
         GEaddDevice(dd);
         GEinitDisplayList(dd);
     }

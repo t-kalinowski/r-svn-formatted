@@ -31,7 +31,7 @@
 
 extern int gridRegisterIndex;
 
-void getDeviceSize(GEDevDesc *dd, double *devWidthCM, double *devHeightCM)
+void getDeviceSize(pGEDevDesc dd, double *devWidthCM, double *devHeightCM)
 {
     double left, right, bottom, top;
     dd->dev->size(&left, &right, &bottom, &top, dd->dev);
@@ -78,7 +78,7 @@ SEXP L_killGrid()
 
 /* Get the current device (the graphics engine creates one if nec.)
  */
-GEDevDesc *getDevice()
+pGEDevDesc getDevice()
 {
     return GEcurrentDevice();
 }
@@ -86,7 +86,7 @@ GEDevDesc *getDevice()
 /* If this is the first time that a grid operation has occurred for
  * this device, do some initialisation.
  */
-void dirtyGridDevice(GEDevDesc *dd)
+void dirtyGridDevice(pGEDevDesc dd)
 {
     if (!LOGICAL(gridStateElement(dd, GSS_GRIDDEVICE))[0])
     {
@@ -123,7 +123,7 @@ SEXP L_gridDirty()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     dirtyGridDevice(dd);
     return R_NilValue;
 }
@@ -137,7 +137,7 @@ SEXP L_currentViewport()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_VP);
 }
 
@@ -150,7 +150,7 @@ SEXP doSetViewport(SEXP vp,
                     * Are we pushing a new viewport?
                     * (or just revisiting an already-pushed viewport?)
                     */
-                   Rboolean pushing, GEDevDesc *dd)
+                   Rboolean pushing, pGEDevDesc dd)
 {
     int i, j;
     double devWidthCM, devHeightCM;
@@ -299,7 +299,7 @@ SEXP L_setviewport(SEXP invp, SEXP hasParent)
     SEXP vp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /*
      * Duplicate the viewport passed in because we are going
      * to modify it to hell and gone.
@@ -462,7 +462,7 @@ SEXP L_downviewport(SEXP name, SEXP strict)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /* Get the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
@@ -592,7 +592,7 @@ SEXP L_downvppath(SEXP path, SEXP name, SEXP strict)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /* Get the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
@@ -628,7 +628,7 @@ SEXP L_unsetviewport(SEXP n)
     SEXP parentClip;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /* Get the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
@@ -729,7 +729,7 @@ SEXP L_upviewport(SEXP n)
     SEXP parentClip;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /* Get the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
@@ -782,7 +782,7 @@ SEXP L_getDisplayList()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_DL);
 }
 
@@ -790,7 +790,7 @@ SEXP L_setDisplayList(SEXP dl)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_DL, dl);
     return R_NilValue;
 }
@@ -802,7 +802,7 @@ SEXP L_getDLelt(SEXP index)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     SEXP dl, result;
     PROTECT(dl = gridStateElement(dd, GSS_DL));
     result = VECTOR_ELT(dl, INTEGER(index)[0]);
@@ -817,7 +817,7 @@ SEXP L_setDLelt(SEXP value)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     SEXP dl;
     PROTECT(dl = gridStateElement(dd, GSS_DL));
     SET_VECTOR_ELT(dl, INTEGER(gridStateElement(dd, GSS_DLINDEX))[0], value);
@@ -829,7 +829,7 @@ SEXP L_getDLindex()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_DLINDEX);
 }
 
@@ -837,7 +837,7 @@ SEXP L_setDLindex(SEXP index)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_DLINDEX, index);
     return R_NilValue;
 }
@@ -846,7 +846,7 @@ SEXP L_getDLon()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_DLON);
 }
 
@@ -854,7 +854,7 @@ SEXP L_setDLon(SEXP value)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     SEXP prev;
     prev = gridStateElement(dd, GSS_DLON);
     setGridStateElement(dd, GSS_DLON, value);
@@ -865,7 +865,7 @@ SEXP L_getEngineDLon()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_ENGINEDLON);
 }
 
@@ -873,47 +873,47 @@ SEXP L_setEngineDLon(SEXP value)
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_ENGINEDLON, value);
     return R_NilValue;
 }
 
 SEXP L_getCurrentGrob()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_CURRGROB);
 }
 
 SEXP L_setCurrentGrob(SEXP value)
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_CURRGROB, value);
     return R_NilValue;
 }
 
 SEXP L_getEngineRecording()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_ENGINERECORDING);
 }
 
 SEXP L_setEngineRecording(SEXP value)
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     setGridStateElement(dd, GSS_ENGINERECORDING, value);
     return R_NilValue;
 }
 
 SEXP L_getAsk()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     /*    return gridStateElement(dd, GSS_ASK); */
     return ScalarLogical(dd->ask);
 }
 
 SEXP L_setAsk(SEXP value)
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     int val = asLogical(value);
     if (val != NA_LOGICAL)
         dd->ask = val;
@@ -927,13 +927,13 @@ SEXP L_currentGPar()
 {
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     return gridStateElement(dd, GSS_GPAR);
 }
 
 SEXP L_newpagerecording()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     if (dd->ask)
     {
         NewFrameConfirm(dd->dev);
@@ -954,7 +954,7 @@ SEXP L_newpagerecording()
 
 SEXP L_newpage()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     R_GE_gcontext gc;
     /*
      * Has the device been drawn on yet?
@@ -987,26 +987,26 @@ SEXP L_newpage()
 
 SEXP L_initGPar()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     initGPar(dd);
     return R_NilValue;
 }
 
 SEXP L_initViewportStack()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     initVP(dd);
     return R_NilValue;
 }
 
 SEXP L_initDisplayList()
 {
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     initDL(dd);
     return R_NilValue;
 }
 
-void getViewportTransform(SEXP currentvp, GEDevDesc *dd, double *vpWidthCM, double *vpHeightCM, LTransform transform,
+void getViewportTransform(SEXP currentvp, pGEDevDesc dd, double *vpWidthCM, double *vpHeightCM, LTransform transform,
                           double *rotationAngle)
 {
     int i, j;
@@ -1069,7 +1069,7 @@ SEXP L_convert(SEXP x, SEXP whatfrom, SEXP whatto, SEXP unitto)
     /*
      * Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     /*
@@ -1181,7 +1181,7 @@ SEXP L_layoutRegion(SEXP layoutPosRow, SEXP layoutPosCol)
     /*
      * Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     /*
@@ -1494,7 +1494,7 @@ static void hullEdge(double *x, double *y, int n, double theta, double *edgex, d
  * Draw an arrow head, given the vertices of the arrow head.
  * Assume vertices are in DEVICE coordinates.
  */
-static void drawArrow(double *x, double *y, SEXP type, int i, R_GE_gcontext *gc, GEDevDesc *dd)
+static void drawArrow(double *x, double *y, SEXP type, int i, const pGEcontext gc, pGEDevDesc dd)
 {
     int nt = LENGTH(type);
     switch (INTEGER(type)[i % nt])
@@ -1514,8 +1514,8 @@ static void drawArrow(double *x, double *y, SEXP type, int i, R_GE_gcontext *gc,
  * Returns vertices in DEVICE coordinates.
  */
 static void calcArrow(double x1, double y1, double x2, double y2, SEXP angle, SEXP length, int i, LViewportContext vpc,
-                      double vpWidthCM, double vpHeightCM, double *vertx, double *verty, R_GE_gcontext *gc,
-                      GEDevDesc *dd)
+                      double vpWidthCM, double vpHeightCM, double *vertx, double *verty, const pGEcontext gc,
+                      pGEDevDesc dd)
 {
     int na = LENGTH(angle);
     int nl = LENGTH(length);
@@ -1547,7 +1547,7 @@ static void arrows(double *x, double *y, int n, SEXP arrow, int i,
                     *  broken by NAs)
                     */
                    Rboolean start, Rboolean end, LViewportContext vpc, double vpWidthCM, double vpHeightCM,
-                   R_GE_gcontext *gc, GEDevDesc *dd)
+                   const pGEcontext gc, pGEDevDesc dd)
 {
     /*
      * Write a checkArrow() function to make
@@ -1601,7 +1601,7 @@ SEXP L_moveTo(SEXP x, SEXP y)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     PROTECT(prevloc = gridStateElement(dd, GSS_PREVLOC));
@@ -1637,7 +1637,7 @@ SEXP L_lineTo(SEXP x, SEXP y, SEXP arrow)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     PROTECT(prevloc = gridStateElement(dd, GSS_PREVLOC));
@@ -1692,7 +1692,7 @@ SEXP L_lines(SEXP x, SEXP y, SEXP index, SEXP arrow)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -1790,7 +1790,7 @@ SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index, d
     double ymax = -DOUBLE_XMAX;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -1966,7 +1966,7 @@ SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1, SEXP arrow)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2075,7 +2075,7 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
     SEXP devloc = R_NilValue; /* -Wall */
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2167,7 +2167,7 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2243,7 +2243,7 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, double theta, Rboolean draw)
     double edgex, edgey;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2384,7 +2384,7 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, dou
     double ymax = -DOUBLE_XMAX;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2605,7 +2605,7 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2818,7 +2818,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
     SEXP currentvp, currentgp;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -2891,7 +2891,7 @@ SEXP L_clip(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust)
     SEXP currentvp, currentgp, currentClip;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
@@ -3008,7 +3008,7 @@ SEXP L_locator()
     SEXP answer;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     GEMode(2, dd);
     PROTECT(answer = allocVector(REALSXP, 2));
     /*
@@ -3064,7 +3064,7 @@ SEXP L_locnBounds(SEXP x, SEXP y, SEXP theta)
     double edgex, edgey;
     /* Get the current device
      */
-    GEDevDesc *dd = getDevice();
+    pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);

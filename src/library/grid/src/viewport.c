@@ -215,7 +215,7 @@ void copyViewportContext(LViewportContext vpc1, LViewportContext *vpc2)
     vpc2->yscalemax = vpc1.yscalemax;
 }
 
-void gcontextFromViewport(SEXP vp, R_GE_gcontext *gc, GEDevDesc *dd)
+void gcontextFromViewport(SEXP vp, const pGEcontext gc, pGEDevDesc dd)
 {
     gcontextFromgpar(viewportgpar(vp), 0, gc, dd);
 }
@@ -229,7 +229,7 @@ void gcontextFromViewport(SEXP vp, R_GE_gcontext *gc, GEDevDesc *dd)
  * values of the parent.  Otherwise, we have to recurse and recalculate
  * everything from scratch.
  */
-void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc *dd)
+void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, pGEDevDesc dd)
 {
     int i, j;
     double vpWidthCM, vpHeightCM, rotationAngle;
@@ -384,7 +384,7 @@ void calcViewportTransform(SEXP vp, SEXP parent, Rboolean incremental, GEDevDesc
     UNPROTECT(4);
 }
 
-void initVP(GEDevDesc *dd)
+void initVP(pGEDevDesc dd)
 {
     SEXP vpfnname, vpfn, vp;
     SEXP xscale, yscale;

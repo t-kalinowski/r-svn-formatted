@@ -304,9 +304,9 @@ double pureNullUnitValue(SEXP unit, int index)
     return result;
 }
 
-int pureNullUnitArithmetic(SEXP unit, int index, GEDevDesc *dd);
+int pureNullUnitArithmetic(SEXP unit, int index, pGEDevDesc dd);
 
-int pureNullUnit(SEXP unit, int index, GEDevDesc *dd)
+int pureNullUnit(SEXP unit, int index, pGEDevDesc dd)
 {
     int result;
     if (isUnitArithmetic(unit))
@@ -421,7 +421,7 @@ int pureNullUnit(SEXP unit, int index, GEDevDesc *dd)
     return result;
 }
 
-int pureNullUnitArithmetic(SEXP unit, int index, GEDevDesc *dd)
+int pureNullUnitArithmetic(SEXP unit, int index, pGEDevDesc dd)
 {
     /*
      * Initialised to shut up compiler
@@ -471,7 +471,7 @@ double evaluateGrobUnit(double value, SEXP grob, double vpwidthCM, double vpheig
                          * Evaluation type
                          * 0 = x, 1 = y, 2 = width, 3 = height
                          */
-                        int evalType, GEDevDesc *dd)
+                        int evalType, pGEDevDesc dd)
 {
     double vpWidthCM, vpHeightCM;
     double rotationAngle;
@@ -704,25 +704,25 @@ double evaluateGrobUnit(double value, SEXP grob, double vpwidthCM, double vpheig
 }
 
 double evaluateGrobXUnit(double value, SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
-                         GEDevDesc *dd)
+                         pGEDevDesc dd)
 {
     return evaluateGrobUnit(value, grob, vpheightCM, vpwidthCM, nullLMode, nullAMode, 0, dd);
 }
 
 double evaluateGrobYUnit(double value, SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
-                         GEDevDesc *dd)
+                         pGEDevDesc dd)
 {
     return evaluateGrobUnit(value, grob, vpheightCM, vpwidthCM, nullLMode, nullAMode, 1, dd);
 }
 
 double evaluateGrobWidthUnit(SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
-                             GEDevDesc *dd)
+                             pGEDevDesc dd)
 {
     return evaluateGrobUnit(1, grob, vpheightCM, vpwidthCM, nullLMode, nullAMode, 2, dd);
 }
 
 double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, int nullLMode, int nullAMode,
-                              GEDevDesc *dd)
+                              pGEDevDesc dd)
 {
     return evaluateGrobUnit(1, grob, vpheightCM, vpwidthCM, nullLMode, nullAMode, 3, dd);
 }
@@ -739,8 +739,8 @@ double evaluateGrobHeightUnit(SEXP grob, double vpheightCM, double vpwidthCM, in
  * If L_nullLayoutMode = 1 then the value returned is a NULL unit value
  * Otherwise it is an INCHES value
  */
-double transform(double value, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc, double thisCM,
-                 double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
+double transform(double value, int unit, SEXP data, double scalemin, double scalemax, const pGEcontext gc,
+                 double thisCM, double otherCM, int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result = value;
     switch (unit)
@@ -862,8 +862,8 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
 }
 
 /* FIXME:  scales are only linear at the moment */
-double transformLocation(double location, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc,
-                         double thisCM, double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformLocation(double location, int unit, SEXP data, double scalemin, double scalemax, const pGEcontext gc,
+                         double thisCM, double otherCM, int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result = location;
     switch (unit)
@@ -877,11 +877,11 @@ double transformLocation(double location, int unit, SEXP data, double scalemin, 
     return result;
 }
 
-double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            int nullLMode, GEDevDesc *dd);
+double transformXArithmetic(SEXP x, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                            double heightCM, int nullLMode, pGEDevDesc dd);
 
-double transformX(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                  int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformX(SEXP x, int index, LViewportContext vpc, const pGEcontext gc, double widthCM, double heightCM,
+                  int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result;
     int unit;
@@ -910,11 +910,11 @@ double transformX(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, do
     return result;
 }
 
-double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            int nullLMode, GEDevDesc *dd);
+double transformYArithmetic(SEXP y, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                            double heightCM, int nullLMode, pGEDevDesc dd);
 
-double transformY(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                  int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformY(SEXP y, int index, LViewportContext vpc, const pGEcontext gc, double widthCM, double heightCM,
+                  int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result;
     int unit;
@@ -943,8 +943,8 @@ double transformY(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, do
     return result;
 }
 
-double transformDimension(double dim, int unit, SEXP data, double scalemin, double scalemax, R_GE_gcontext *gc,
-                          double thisCM, double otherCM, int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformDimension(double dim, int unit, SEXP data, double scalemin, double scalemax, const pGEcontext gc,
+                          double thisCM, double otherCM, int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result = dim;
     switch (unit)
@@ -958,11 +958,11 @@ double transformDimension(double dim, int unit, SEXP data, double scalemin, doub
     return result;
 }
 
-double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                double heightCM, int nullLMode, GEDevDesc *dd);
+double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                                double heightCM, int nullLMode, pGEDevDesc dd);
 
-double transformWidth(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                      int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformWidth(SEXP width, int index, LViewportContext vpc, const pGEcontext gc, double widthCM, double heightCM,
+                      int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result;
     int unit;
@@ -991,11 +991,11 @@ double transformWidth(SEXP width, int index, LViewportContext vpc, R_GE_gcontext
     return result;
 }
 
-double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                 double heightCM, int nullLMode, GEDevDesc *dd);
+double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                                 double heightCM, int nullLMode, pGEDevDesc dd);
 
-double transformHeight(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                       int nullLMode, int nullAMode, GEDevDesc *dd)
+double transformHeight(SEXP height, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                       double heightCM, int nullLMode, int nullAMode, pGEDevDesc dd)
 {
     double result;
     int unit;
@@ -1025,8 +1025,8 @@ double transformHeight(SEXP height, int index, LViewportContext vpc, R_GE_gconte
     return result;
 }
 
-double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            int nullLMode, GEDevDesc *dd)
+double transformXArithmetic(SEXP x, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                            double heightCM, int nullLMode, pGEDevDesc dd)
 {
     int i;
     double result = 0;
@@ -1083,8 +1083,8 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, R_GE_gconte
     return result;
 }
 
-double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                            int nullLMode, GEDevDesc *dd)
+double transformYArithmetic(SEXP y, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                            double heightCM, int nullLMode, pGEDevDesc dd)
 {
     int i;
     double result = 0;
@@ -1141,8 +1141,8 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, R_GE_gconte
     return result;
 }
 
-double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                double heightCM, int nullLMode, GEDevDesc *dd)
+double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                                double heightCM, int nullLMode, pGEDevDesc dd)
 {
     int i;
     double result = 0;
@@ -1199,8 +1199,8 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, R_G
     return result;
 }
 
-double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                                 double heightCM, int nullLMode, GEDevDesc *dd)
+double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                                 double heightCM, int nullLMode, pGEDevDesc dd)
 {
     int i;
     double result = 0;
@@ -1282,20 +1282,20 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, R
  * to INCHES;  the latter are converting from INCHES relative to
  * the parent to INCHES relative to the device.
  */
-double transformXtoINCHES(SEXP x, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                          GEDevDesc *dd)
+double transformXtoINCHES(SEXP x, int index, LViewportContext vpc, const pGEcontext gc, double widthCM, double heightCM,
+                          pGEDevDesc dd)
 {
     return transformX(x, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
-double transformYtoINCHES(SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                          GEDevDesc *dd)
+double transformYtoINCHES(SEXP y, int index, LViewportContext vpc, const pGEcontext gc, double widthCM, double heightCM,
+                          pGEDevDesc dd)
 {
     return transformY(y, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
-void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                   GEDevDesc *dd, LTransform t, double *xx, double *yy)
+void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                   double heightCM, pGEDevDesc dd, LTransform t, double *xx, double *yy)
 {
     LLocation lin, lout;
     /* x and y are unit objects (i.e., values in any old coordinate
@@ -1309,20 +1309,20 @@ void transformLocn(SEXP x, SEXP y, int index, LViewportContext vpc, R_GE_gcontex
     *yy = locationY(lout);
 }
 
-double transformWidthtoINCHES(SEXP w, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                              double heightCM, GEDevDesc *dd)
+double transformWidthtoINCHES(SEXP w, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                              double heightCM, pGEDevDesc dd)
 {
     return transformWidth(w, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
-double transformHeighttoINCHES(SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM,
-                               double heightCM, GEDevDesc *dd)
+double transformHeighttoINCHES(SEXP h, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                               double heightCM, pGEDevDesc dd)
 {
     return transformHeight(h, index, vpc, gc, widthCM, heightCM, 0, 0, dd);
 }
 
-void transformDimn(SEXP w, SEXP h, int index, LViewportContext vpc, R_GE_gcontext *gc, double widthCM, double heightCM,
-                   GEDevDesc *dd, double rotationAngle, double *ww, double *hh)
+void transformDimn(SEXP w, SEXP h, int index, LViewportContext vpc, const pGEcontext gc, double widthCM,
+                   double heightCM, pGEDevDesc dd, double rotationAngle, double *ww, double *hh)
 {
     LLocation din, dout;
     LTransform r;
@@ -1346,7 +1346,7 @@ void transformDimn(SEXP w, SEXP h, int index, LViewportContext vpc, R_GE_gcontex
  * other coordinate system
  */
 
-double transformFromINCHES(double value, int unit, R_GE_gcontext *gc, double thisCM, double otherCM, GEDevDesc *dd)
+double transformFromINCHES(double value, int unit, const pGEcontext gc, double thisCM, double otherCM, pGEDevDesc dd)
 {
     /*
      * Convert to NPC
@@ -1457,8 +1457,8 @@ double transformFromINCHES(double value, int unit, R_GE_gcontext *gc, double thi
  * unit must be performed by the calling function (or higher).
  * This is probably easiest done right up in R code.
  */
-double transformXYFromINCHES(double location, int unit, double scalemin, double scalemax, R_GE_gcontext *gc,
-                             double thisCM, double otherCM, GEDevDesc *dd)
+double transformXYFromINCHES(double location, int unit, double scalemin, double scalemax, const pGEcontext gc,
+                             double thisCM, double otherCM, pGEDevDesc dd)
 {
     double result = location;
     switch (unit)
@@ -1472,8 +1472,8 @@ double transformXYFromINCHES(double location, int unit, double scalemin, double 
     return result;
 }
 
-double transformWidthHeightFromINCHES(double dimension, int unit, double scalemin, double scalemax, R_GE_gcontext *gc,
-                                      double thisCM, double otherCM, GEDevDesc *dd)
+double transformWidthHeightFromINCHES(double dimension, int unit, double scalemin, double scalemax, const pGEcontext gc,
+                                      double thisCM, double otherCM, pGEDevDesc dd)
 {
     double result = dimension;
     switch (unit)
