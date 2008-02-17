@@ -79,7 +79,7 @@
    Added typeface and fontindex arguments
 */
 
-attribute_hidden unsigned short *_controlify(GEDevDesc *dd, const unsigned char *src, int typeface, int fontindex)
+attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char *src, int typeface, int fontindex)
 {
     unsigned short *dest;
     unsigned char c, d;
