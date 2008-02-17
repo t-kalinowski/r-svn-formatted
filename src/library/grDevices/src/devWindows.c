@@ -253,7 +253,7 @@ static void SaveAsBitmap(pDevDesc dd, int res);
 
 static void PrivateCopyDevice(pDevDesc dd, pDevDesc ndd, const char *name)
 {
-    GEDevDesc *gdd;
+    pGEDevDesc gdd;
     int saveDev = curDevice();
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     gsetcursor(xd->gawin, WatchCursor);
@@ -3349,7 +3349,7 @@ static void SaveAsBmp(pDevDesc dd, const char *fn)
 
 SEXP devga(SEXP args)
 {
-    GEDevDesc *gdd;
+    pGEDevDesc gdd;
     const char *display, *title;
     char *vmax;
     double height, width, ps, xpinch, ypinch, gamma;
