@@ -3375,6 +3375,7 @@ SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
                 yp = REAL(y)[i];
                 GConvert(&xp, &yp, USER, DEVICE, dd);
                 drawPointsLines(xp, yp, xold, yold, type, i == 0, dd);
+                GMode(0, dd);
                 GMode(2, dd);
                 xold = xp;
                 yold = yp;
@@ -3628,8 +3629,12 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                 }
                 if (plot)
+                {
                     drawLabel(xi, yi, INTEGER(pos)[imin], offset, CHAR(STRING_ELT(l, imin % nl)),
                               getCharEnc(STRING_ELT(l, imin % nl)), dd);
+                    GMode(0, dd);
+                    GMode(2, dd);
+                }
             }
         }
         GMode(0, dd);
