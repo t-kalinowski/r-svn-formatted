@@ -495,7 +495,7 @@ SEXP attribute_hidden do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
     case 1: /* parent */
         if (n == NA_INTEGER)
-            error(_("invalid value for '%s'"), "n");
+            error(_("invalid '%s' argument"), "n");
         i = nframe = framedepth(cptr);
         /* This is a pretty awful kludge, but the alternative would be
            a major redesign of everything... -pd */
@@ -504,11 +504,11 @@ SEXP attribute_hidden do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         return ScalarInteger(i);
     case 2: /* call */
         if (n == NA_INTEGER)
-            error(_("invalid value for '%s'"), "which");
+            error(_("invalid '%s' argument"), "which");
         return R_syscall(n, cptr);
     case 3: /* frame */
         if (n == NA_INTEGER)
-            error(_("invalid value for '%s'"), "which");
+            error(_("invalid '%s' argument"), "which");
         return R_sysframe(n, cptr);
     case 4: /* sys.nframe */
         return ScalarInteger(framedepth(cptr));
@@ -541,7 +541,7 @@ SEXP attribute_hidden do_sys(SEXP call, SEXP op, SEXP args, SEXP rho)
         return rval;
     case 9: /* sys.function */
         if (n == NA_INTEGER)
-            error(_("invalid value for 'which'"));
+            error(_("invalid '%s' value"), "which");
         return (R_sysfunction(n, cptr));
     default:
         error(_("internal error in 'do_sys'"));
@@ -560,7 +560,7 @@ SEXP attribute_hidden do_parentframe(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = asInteger(t);
 
     if (n == NA_INTEGER || n < 1)
-        error(_("invalid value for 'n'"));
+        error(_("invalid '%s' value"), "n");
 
     cptr = R_GlobalContext;
     t = cptr->sysparent;

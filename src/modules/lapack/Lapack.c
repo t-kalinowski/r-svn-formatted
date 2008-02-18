@@ -102,7 +102,7 @@ static SEXP modLa_rs(SEXP xin, SEXP only_values)
         error(_("'x' must be a square numeric matrix"));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error(_("invalid 'only.values'"));
+        error(_("invalid '%s' argument"), "only.values");
     if (ov)
         jobv[0] = 'N';
     else
@@ -204,7 +204,7 @@ static SEXP modLa_rg(SEXP x, SEXP only_values)
     Memcpy(xvals, REAL(x), (size_t)(n * n));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error(_("invalid 'only.values'"));
+        error(_("invalid '%s' argument"), "only.values");
     vectors = !ov;
     jobVL[0] = jobVR[0] = 'N';
     left = right = (double *)0;
@@ -414,7 +414,7 @@ static SEXP modqr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
         error(_("'b' must be a complex matrix"));
     tr = asLogical(trans);
     if (tr == NA_LOGICAL)
-        error(_("invalid 'trans' parameter"));
+        error(_("invalid '%s' argument"), "trans");
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
@@ -506,7 +506,7 @@ static SEXP modLa_rs_cmplx(SEXP xin, SEXP only_values)
         error(_("'x' must be a square numeric matrix"));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error(_("invalid 'only.values'"));
+        error(_("invalid '%s' argument"), "only.values");
     if (ov)
         jobv[0] = 'N';
     else
@@ -567,7 +567,7 @@ static SEXP modLa_rg_cmplx(SEXP x, SEXP only_values)
     Memcpy(xvals, COMPLEX(x), (size_t)(n * n));
     ov = asLogical(only_values);
     if (ov == NA_LOGICAL)
-        error(_("invalid 'only.values'"));
+        error(_("invalid '%s' argument"), "only.values");
     jobVL[0] = jobVR[0] = 'N';
     left = right = (Rcomplex *)0;
     if (!ov)
@@ -825,7 +825,7 @@ static SEXP modqr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
         error(_("'b' must be a numeric matrix"));
     tr = asLogical(trans);
     if (tr == NA_LOGICAL)
-        error(_("invalid 'trans' parameter"));
+        error(_("invalid '%s' argument"), "trans");
 
     PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
