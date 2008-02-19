@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999, 2001, 2004  Guido Masarotto and the R Development Core Team
+ *  Copyright (C) 1999-2008  Guido Masarotto and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,9 +48,9 @@
 
 /* 8 bits red, green and blue channel */
 #define DECLARESHIFTS int RSHIFT = (bgr) ? 0 : 16, GSHIFT = 8, BSHIFT = (bgr) ? 16 : 0
-#define GETRED(col) (((col) >> RSHIFT) & 0xFFUL)
-#define GETGREEN(col) (((col) >> GSHIFT) & 0xFFUL)
-#define GETBLUE(col) (((col) >> BSHIFT) & 0xFFUL)
+#define GETRED(col) (((col) >> RSHIFT) & 0xFF)
+#define GETGREEN(col) (((col) >> GSHIFT) & 0xFF)
+#define GETBLUE(col) (((col) >> BSHIFT) & 0xFF)
 
 #include <R_ext/Error.h>
 
@@ -77,12 +77,12 @@ static void my_png_warning(png_structp png_ptr, png_const_charp msg)
     warning("libpng: %s", (char *)msg);
 }
 
-int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, FILE *fp,
+int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, FILE *fp,
                 unsigned int transparent, int res)
 {
     png_structp png_ptr;
     png_infop info_ptr;
-    unsigned long col, palette[256];
+    unsigned int col, palette[256];
     png_color pngpalette[256];
     png_bytep pscanline, scanline = (png_bytep)calloc(3 * width, sizeof(png_byte));
     png_byte trans[256];
@@ -140,7 +140,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
     {
         for (j = 0; (j < width) && withpalette; j++)
         {
-            col = gp(d, i, j) & 0xFFFFFFUL;
+            col = gp(d, i, j) & 0xFFFFFF;
             /* binary search the palette: */
             low = 0;
             high = ncols - 1;
@@ -200,7 +200,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
         if (withpalette)
         {
             for (i = 0; i < ncols; i++)
-                trans[i] = (palette[i] == (transparent & 0xFFFFFFUL)) ? 0 : 255;
+                trans[i] = (palette[i] == (transparent & 0xFFFFFF)) ? 0 : 255;
         }
         else
         {
@@ -226,7 +226,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned long (*gp)(void *, int,
         pscanline = scanline;
         for (j = 0; j < width; j++)
         {
-            col = gp(d, i, j);
+            col = gp(d, i, j) & 0xFFFFFF;
             if (withpalette)
             {
                 /* binary search the palette (the colour must be there): */
@@ -320,7 +320,7 @@ static void my_output_message(j_common_ptr cinfo)
     R_ShowMessage(buffer);
 }
 
-int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int, int), int bgr, int quality,
+int R_SaveAsJpeg(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, int quality,
                  FILE *outfile, int res)
 {
     struct jpeg_compress_struct cinfo;
@@ -328,7 +328,7 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
     /* More stuff */
     JSAMPLE *pscanline, *scanline = (JSAMPLE *)calloc(3 * width, sizeof(JSAMPLE));
     int i, j;
-    unsigned long col;
+    unsigned int col;
     DECLARESHIFTS;
 
     /* Have we enough memory?*/
@@ -389,7 +389,7 @@ int R_SaveAsJpeg(void *d, int width, int height, unsigned long (*gp)(void *, int
         pscanline = scanline;
         for (j = 0; j < width; j++)
         {
-            col = gp(d, i, j);
+            col = gp(d, i, j) & 0xFFFFFF;
             *pscanline++ = GETRED(col);
             *pscanline++ = GETGREEN(col);
             *pscanline++ = GETBLUE(col);
