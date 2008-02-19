@@ -1157,6 +1157,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
 {
     BBOX glyphBBox = NullBBox(); /* might be use do italic corr on str="" */
     BBOX resultBBox = NullBBox();
+    int nc = 0;
 
     if (str)
     {
@@ -1175,6 +1176,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
                 resultBBox = CombineBBoxes(resultBBox, glyphBBox);
                 p += used;
                 n -= used;
+                nc++;
             }
         }
         else
@@ -1186,7 +1188,14 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
                 glyphBBox = GlyphBBox(*s, gc, dd);
                 resultBBox = CombineBBoxes(resultBBox, glyphBBox);
                 s++;
+                nc++;
             }
+        }
+        if (nc > 1)
+        {
+            /* Finding the width by adding up boxes is incorrect (kerning) */
+            double wd = GEStrWidth(str, CE_NATIVE, gc, dd);
+            bboxWidth(resultBBox) = fromDeviceHeight(wd, MetricUnit, dd);
         }
         if (draw)
         {
