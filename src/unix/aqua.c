@@ -52,7 +52,7 @@ Rboolean (*ptr_QuartzBackend)(void *dd, QuartzFunctions_t *fn, QuartzParameters_
 
 static QuartzFunctions_t *qfn;
 
-QuartzFunctions_t *getQuartzAPI(void)
+QuartzFunctions_t *getQuartzFunctions(void)
 {
     if (qfn)
         return qfn;
