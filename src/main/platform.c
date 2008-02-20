@@ -1730,10 +1730,10 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         for (j = 0; j < LENGTH(what); j++)
             if (streql(CHAR(STRING_ELT(what, j)), "X11")
-#ifdef HAVE_JPEG
+#if defined HAVE_JPEG & !defined HAVE_WORKING_CAIRO
                 || streql(CHAR(STRING_ELT(what, j)), "jpeg")
 #endif
-#ifdef HAVE_PNG
+#if defined HAVE_PNG & !defined HAVE_WORKING_CAIRO
                 || streql(CHAR(STRING_ELT(what, j)), "png")
 #endif
             )
@@ -1742,14 +1742,14 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
                 break;
             }
 #endif
-    PROTECT(ans = allocVector(LGLSXP, 12));
-    PROTECT(ansnames = allocVector(STRSXP, 12));
+    PROTECT(ans = allocVector(LGLSXP, 13));
+    PROTECT(ansnames = allocVector(STRSXP, 13));
 
     SET_STRING_ELT(ansnames, i, mkChar("jpeg"));
 #ifdef HAVE_JPEG
-#ifdef Unix
+#if defined Unix && !defined HAVE_WORKING_CAIRO
     LOGICAL(ans)[i++] = X11;
-#else /* Windows */
+#else
     LOGICAL(ans)[i++] = TRUE;
 #endif
 #else
@@ -1758,7 +1758,7 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     SET_STRING_ELT(ansnames, i, mkChar("png"));
 #ifdef HAVE_PNG
-#ifdef Unix
+#if defined Unix && !defined HAVE_WORKING_CAIRO
     LOGICAL(ans)[i++] = X11;
 #else /* Windows */
     LOGICAL(ans)[i++] = TRUE;
@@ -1854,6 +1854,13 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     SET_STRING_ELT(ansnames, i, mkChar("profmem"));
 #ifdef R_MEMORY_PROFILING
+    LOGICAL(ans)[i++] = TRUE;
+#else
+    LOGICAL(ans)[i++] = FALSE;
+#endif
+
+    SET_STRING_ELT(ansnames, i, mkChar("cairo"));
+#ifdef HAVE_WORKING_CAIRO
     LOGICAL(ans)[i++] = TRUE;
 #else
     LOGICAL(ans)[i++] = FALSE;
