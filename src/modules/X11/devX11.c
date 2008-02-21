@@ -2264,6 +2264,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
  */
 int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
 {
+    double ps = xd->pointsize;
     /*	Set up Data Structures. */
 
 #ifdef HAVE_WORKING_CAIRO
@@ -2318,11 +2319,18 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
     dd->bottom = dd->clipBottom = xd->windowHeight; /* bottom */
     dd->top = dd->clipTop = 0;                      /* top */
 
+#ifdef HAVE_WORKING_CAIRO
+    if (xd->useCairo)
+    {
+        ps *= 1 / (96.0 * pixelWidth());
+        xd->pointsize = ps;
+    }
+#endif
     /* Nominal Character Sizes in Pixels */
 
     /* Recommendation from 'R internals': changed for 2.7.0 */
-    dd->cra[0] = 0.9 * xd->pointsize;
-    dd->cra[1] = 1.2 * xd->pointsize;
+    dd->cra[0] = 0.9 * ps;
+    dd->cra[1] = 1.2 * ps;
 
     /* Character Addressing Offsets */
     /* These are used to plot a single plotting character */
@@ -2347,7 +2355,7 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
 #endif
     dd->canChangeGamma = FALSE;
 
-    dd->startps = xd->pointsize;
+    dd->startps = ps;
     dd->startcol = xd->col;
     dd->startfill = xd->fill;
     dd->startlty = LTY_SOLID;
@@ -2755,6 +2763,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     xd->quality = quality;
     xd->windowWidth = width;
     xd->windowHeight = height;
+    ps *= (res == NA_INTEGER ? 72 : res) / 96.0;
     xd->pointsize = ps;
     xd->bg = bg;
     xd->res_dpi = res;
