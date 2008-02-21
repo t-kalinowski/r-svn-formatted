@@ -243,8 +243,8 @@ static Rboolean GA_NewFrameConfirm(pDevDesc);
 
 static double pixelHeight(drawing d);
 static double pixelWidth(drawing d);
-static void SetColor(int, double, pDevDesc);
-static void SetFont(const char *, int, int, double, pDevDesc);
+static void SetColor(int, double, gadesc *);
+static void SetFont(pGEcontext, double, gadesc *);
 static int Load_Rbitmap_Dll();
 static void SaveAsPng(pDevDesc dd, const char *fn);
 static void SaveAsJpeg(pDevDesc dd, int quality, const char *fn);
@@ -604,16 +604,16 @@ static char *translateFontFamily(const char *family)
 
 #define SMALLEST 1
 
-static void SetFont(const char *family, int face, int size, double rot, pDevDesc dd)
+static void SetFont(pGEcontext gc, double rot, gadesc *xd)
 {
-    gadesc *xd = (gadesc *)dd->deviceSpecific;
+    int size = gc->cex * gc->ps + 0.5, face = gc->fontface;
     char *fontfamily;
 
     if (face < 1 || face > fontnum)
         face = 1;
     if (size < SMALLEST)
         size = SMALLEST;
-    if (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle || strcmp(family, xd->fontfamily))
+    if (size != xd->fontsize || face != xd->fontface || rot != xd->fontangle || strcmp(gc->fontfamily, xd->fontfamily))
     {
         if (xd->font)
             del(xd->font);
@@ -627,12 +627,12 @@ static void SetFont(const char *family, int face, int size, double rot, pDevDesc
          * If specify face > 4 then get font from face via Rdevga
          * (whether specifed family or not).
          */
-        fontfamily = translateFontFamily(family);
+        fontfamily = translateFontFamily(gc->fontfamily);
         if (fontfamily && face <= 4)
         {
             xd->font = gnewfont(xd->gawin, fontfamily, fontstyle[face - 1], size, rot);
             if (xd->font)
-                strcpy(xd->fontfamily, family);
+                strcpy(xd->fontfamily, gc->fontfamily);
         }
         else
         {
@@ -661,10 +661,8 @@ static void SetFont(const char *family, int face, int size, double rot, pDevDesc
     }
 }
 
-static void SetColor(int color, double gamma, pDevDesc dd)
+static void SetColor(int color, double gamma, gadesc *xd)
 {
-    gadesc *xd = (gadesc *)dd->deviceSpecific;
-
     if (color != xd->col)
     {
         xd->col = color;
@@ -1979,9 +1977,8 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
 static double GA_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd)
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
-    int size = gc->cex * gc->ps + 0.5;
 
-    SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
+    SetFont(gc, 0.0, xd);
     return (double)gstrwidth1(xd->gawin, xd->font, str, CE_NATIVE);
 }
 
@@ -1989,10 +1986,9 @@ static double GA_StrWidth_UTF8(const char *str, const pGEcontext gc, pDevDesc dd
 {
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     double a;
-    int size = gc->cex * gc->ps + 0.5;
 
     /* This should never be called for symbol fonts */
-    SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
+    SetFont(gc, 0.0, xd);
     if (gc->fontface != 5)
         a = (double)gstrwidth1(xd->gawin, xd->font, str, CE_UTF8);
     else
@@ -2017,7 +2013,6 @@ static double GA_StrWidth_UTF8(const char *str, const pGEcontext gc, pDevDesc dd
 static void GA_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {
     int a, d, w;
-    int size = gc->cex * gc->ps + 0.5;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     Rboolean Unicode = mbcslocale;
 
@@ -2026,7 +2021,7 @@ static void GA_MetricInfo(int c, const pGEcontext gc, double *ascent, double *de
         Unicode = TRUE;
         c = -c;
     }
-    SetFont(gc->fontfamily, gc->fontface, size, 0.0, dd);
+    SetFont(gc, 0.0, xd);
     if (Unicode && gc->fontface != 5 && c > 127)
         gwcharmetric(xd->gawin, xd->font, c, &a, &d, &w);
     else
@@ -2454,7 +2449,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext
     }
     r = rect((int)x0, (int)y0, (int)x1 - (int)x0, (int)y1 - (int)y0);
 
-    SetColor(gc->fill, gc->gamma, dd);
+    SetColor(gc->fill, gc->gamma, xd);
     if (R_OPAQUE(gc->fill))
     {
         DRAW(gfillrect(_d, xd->fgcolor, r));
@@ -2475,7 +2470,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext
             WARN_SEMI_TRANS;
     }
 
-    SetColor(gc->col, gc->gamma, dd);
+    SetColor(gc->col, gc->gamma, xd);
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
@@ -2533,7 +2528,7 @@ static void GA_Circle(double x, double y, double radius, const pGEcontext gc, pD
     iy = (int)y;
     r = rr = rect(ix - ir, iy - ir, 2 * ir, 2 * ir);
 
-    SetColor(gc->fill, gc->gamma, dd);
+    SetColor(gc->fill, gc->gamma, xd);
     if (R_OPAQUE(gc->fill))
     {
         DRAW(gfillellipse(_d, xd->fgcolor, rr));
@@ -2551,7 +2546,7 @@ static void GA_Circle(double x, double y, double radius, const pGEcontext gc, pD
             WARN_SEMI_TRANS;
     }
 
-    SetColor(gc->col, gc->gamma, dd);
+    SetColor(gc->col, gc->gamma, xd);
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
@@ -2597,7 +2592,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, const pGEcontext
     xx2 = (int)x2;
     yy2 = (int)y2;
 
-    SetColor(gc->col, gc->gamma, dd);
+    SetColor(gc->col, gc->gamma, xd);
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
@@ -2648,7 +2643,7 @@ static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDe
         p[i].y = (int)devy;
     }
 
-    SetColor(gc->col, gc->gamma, dd);
+    SetColor(gc->col, gc->gamma, xd);
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
@@ -2712,7 +2707,7 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     r.y = my0;
     r.height = my1 - my0;
 
-    SetColor(gc->fill, gc->gamma, dd);
+    SetColor(gc->fill, gc->gamma, xd);
     if (R_OPAQUE(gc->fill))
     {
         DRAW(gfillpolygon(_d, xd->fgcolor, points, n));
@@ -2730,7 +2725,7 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
             WARN_SEMI_TRANS;
     }
 
-    SetColor(gc->col, gc->gamma, dd);
+    SetColor(gc->col, gc->gamma, xd);
     SetLineStyle(gc, dd);
     if (R_OPAQUE(gc->col))
     {
@@ -2765,11 +2760,9 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
 static void GA_Text0(double x, double y, const char *str, int enc, double rot, double hadj, const pGEcontext gc,
                      pDevDesc dd)
 {
-    int size;
     double pixs, xl, yl, rot1;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
 
-    size = gc->cex * gc->ps + 0.5;
     pixs = -1;
     xl = 0.0;
     yl = -pixs;
@@ -2777,13 +2770,13 @@ static void GA_Text0(double x, double y, const char *str, int enc, double rot, d
     x += -xl * cos(rot1) + yl * sin(rot1);
     y -= -xl * sin(rot1) - yl * cos(rot1);
 
-    SetFont(gc->fontfamily, gc->fontface, size, rot, dd);
-    SetColor(gc->col, gc->gamma, dd);
+    SetFont(gc, rot, xd);
+    SetColor(gc->col, gc->gamma, xd);
     if (R_OPAQUE(gc->col))
     {
-        /* As from 2.7.0 can use Unicode always */
         if (gc->fontface != 5)
         {
+            /* As from 2.7.0 can use Unicode always */
             wchar_t *wc;
             int n = strlen(str), cnt;
             wc = alloca((n + 1) * sizeof(wchar_t)); /* only need terminator to
