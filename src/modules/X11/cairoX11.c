@@ -226,6 +226,7 @@ static void Cairo_Circle(double x, double y, double r, const pGEcontext gc, pDev
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
     cairo_new_path(xd->cc);
+    /* FIXME: do we want +0.5, or minimum 0.5 or 1? */
     cairo_arc(xd->cc, x, y, r + 0.5, 0.0, 2 * M_PI);
 
     if (R_ALPHA(gc->fill) > 0)
