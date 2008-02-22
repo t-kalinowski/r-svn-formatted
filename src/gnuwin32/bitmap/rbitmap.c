@@ -22,9 +22,9 @@
  * structures only using:
  * void *d : an 'opaque' view of the source of the pixels;
  * int width, height: dimensions in pixels;
- * unsigned long (*gp)(void *d, int x, int y): a function which
+ * unsigned int (*gp)(void *d, int x, int y): a function which
  *     returns the colour of the (x,y) pixels stored either as
- *     BGR (R model, see include/Graphics.h) or as RGB in the
+ *     BGR (R model, see GraphicsDevice.h) or as RGB in the
  *     24 least sig. bits (8 bit for channel).
  *     (0,0) is the left-top corner. (3,2) is the third pixel
  *     in the fourth scanline.
@@ -43,6 +43,7 @@
 #define GETRED(col) (((col) >> RSHIFT) & 0xFF)
 #define GETGREEN(col) (((col) >> GSHIFT) & 0xFF)
 #define GETBLUE(col) (((col) >> BSHIFT) & 0xFF)
+#define GETALPHA(col) (((col) >> 24) & 0xFF)
 
 #include <R_ext/Error.h>
 
@@ -127,7 +128,7 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
     /* Have we less than 256 different colors? */
     ncols = 0;
     if (transparent)
-        palette[ncols++] = transparent & 0xFFFFFFUL;
+        palette[ncols++] = transparent & 0xFFFFFF;
     mid = ncols;
     withpalette = 1;
     for (i = 0; (i < height) && withpalette; i++)
@@ -450,7 +451,7 @@ __declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned i
     {
         for (j = 0; (j < width) && withpalette; j++)
         {
-            col = gp(d, i, j) & 0xFFFFFFU;
+            col = gp(d, i, j) & 0xFFFFFF;
             /* binary search the palette: */
             low = 0;
             high = ncols - 1;
@@ -536,7 +537,7 @@ __declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned i
         {
             for (j = 0; j < width; j++)
             {
-                col = gp(d, i, j) & 0xFFFFFFU;
+                col = gp(d, i, j) & 0xFFFFFF;
                 /* binary search the palette (the colour must be there): */
                 low = 0;
                 high = ncols - 1;
@@ -566,7 +567,7 @@ __declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned i
         {
             for (j = 0; j < width; j++)
             {
-                col = gp(d, i, j) & 0xFFFFFFU;
+                col = gp(d, i, j) & 0xFFFFFF;
                 BMPPUTC(GETBLUE(col));
                 BMPPUTC(GETGREEN(col));
                 BMPPUTC(GETRED(col));
