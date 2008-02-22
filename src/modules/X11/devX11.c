@@ -1327,9 +1327,6 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                 xtdpy = XtOpenDisplay(app_con, dsp, "r_x11", "R_x11", NULL, 0, &zero, NULL);
                 toplevel = XtAppCreateShell(NULL, "R_x11", applicationShellWidgetClass, xtdpy, NULL, 0);
                 XtGetApplicationResources(toplevel, (XtPointer)&xdev, x_resources, x_resource_count, NULL, 0);
-                XtDestroyWidget(toplevel);
-                XtCloseDisplay(xtdpy);
-                XtDestroyApplicationContext(app_con);
                 if (xdev.geometry != NULL)
                 {
                     char gstr[40];
@@ -1353,6 +1350,9 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                     if (!ISNA(h))
                         hint->height = ih;
                 }
+                XtDestroyWidget(toplevel);
+                XtCloseDisplay(xtdpy);
+                XtDestroyApplicationContext(app_con);
             }
 #endif
             xd->windowWidth = hint->width;
@@ -1873,6 +1873,7 @@ static void X11_Close(pDevDesc dd)
 #endif
 
         XFreeCursor(display, xd->gcursor);
+        XFreeGC(display, xd->wgc);
         XDestroyWindow(display, xd->window);
         XSync(display, 0);
     }
@@ -2743,6 +2744,7 @@ static void BM_Close(pDevDesc dd)
         fclose(xd->fp);
     cairo_surface_destroy(xd->cs);
     cairo_destroy(xd->cc);
+    free(xd);
 }
 
 static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int quality, int width, int height, int ps,
@@ -2826,8 +2828,8 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     dd->top = 0;
     dd->bottom = height;
     /* rescale points to pixels */
-    dd->cra[0] = 0.9 * ps0 * res / 72.0;
-    dd->cra[1] = 1.2 * ps0 * res / 72.0;
+    dd->cra[0] = 0.9 * ps0 * res0 / 72.0;
+    dd->cra[1] = 1.2 * ps0 * res0 / 72.0;
     dd->startps = ps;
     dd->ipr[0] = dd->ipr[1] = 1.0 / res0;
     dd->xCharOffset = 0.4900;
