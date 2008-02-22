@@ -2167,7 +2167,7 @@ void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, in
     consolefn = NULL;
     if (strcmp(fontname, "FixedFont"))
     {
-        consolefn = gnewfont(NULL, fnname, fnsty | FixedWidth, fnpoints, 0.0);
+        consolefn = gnewfont(NULL, fnname, fnsty | FixedWidth, fnpoints, 0.0, 1);
         if (!consolefn)
         {
             /* This is unlikely to happen: it will find some match */
@@ -2222,7 +2222,7 @@ void consoleprint(console c)
      * If possible, we avoid to use FixedFont for printer since it hasn't the
      * right size
      */
-    f = gnewfont(lpr, strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize, 0.0);
+    f = gnewfont(lpr, strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize, 0.0, 1);
     if (!f)
     {
         /* Should not happen but....*/

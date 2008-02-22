@@ -224,7 +224,7 @@ static void editorprint(control m)
 
     if (!(lpr = newprinter(0.0, 0.0, "")))
         return;
-    f = gnewfont(lpr, strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize, 0.0);
+    f = gnewfont(lpr, strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize, 0.0, 1);
     top = devicepixelsy(lpr) / 5;
     left = devicepixelsx(lpr) / 5;
     fh = fontheight(f);
