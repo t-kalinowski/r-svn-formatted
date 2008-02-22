@@ -195,13 +195,31 @@ int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, 
         for (i = 0; i < ncols; i++)
         {
             col = palette[i];
-            pngpalette[i].red = GETRED(col);
-            pngpalette[i].green = GETGREEN(col);
-            pngpalette[i].blue = GETBLUE(col);
             if (transparent)
+            {
                 trans[i] = (col == transparent) ? 0 : 255;
+                pngpalette[i].red = GETRED(col);
+                pngpalette[i].green = GETGREEN(col);
+                pngpalette[i].blue = GETBLUE(col);
+            }
             else
-                trans[i] = GETALPHA(col);
+            {
+                /* PNG needs NON-premultiplied alpha */
+                int a = GETALPHA(col);
+                trans[i] = a;
+                if (a == 255 || a == 0)
+                {
+                    pngpalette[i].red = GETRED(col);
+                    pngpalette[i].green = GETGREEN(col);
+                    pngpalette[i].blue = GETBLUE(col);
+                }
+                else
+                {
+                    pngpalette[i].red = 0.49 + 255.0 * GETRED(col) / a;
+                    pngpalette[i].green = 0.49 + 255.0 * GETGREEN(col) / a;
+                    pngpalette[i].blue = 0.49 + 255.0 * GETBLUE(col) / a;
+                }
+            }
         }
         png_set_PLTE(png_ptr, info_ptr, pngpalette, ncols);
         if (transparent || have_alpha)
@@ -251,12 +269,31 @@ int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, 
             }
             else
             {
-                /* PNG needs NON-premultiplied */
-                *pscanline++ = GETRED(col);
-                *pscanline++ = GETGREEN(col);
-                *pscanline++ = GETBLUE(col);
                 if (have_alpha)
-                    *pscanline++ = GETALPHA(col);
+                {
+                    /* PNG needs NON-premultiplied alpha */
+                    int a = GETALPHA(col);
+                    if (a == 255 || a == 0)
+                    {
+                        *pscanline++ = GETRED(col);
+                        *pscanline++ = GETGREEN(col);
+                        *pscanline++ = GETBLUE(col);
+                        *pscanline++ = a;
+                    }
+                    else
+                    {
+                        *pscanline++ = 0.49 + 255.0 * GETRED(col) / a;
+                        *pscanline++ = 0.49 + 255.0 * GETGREEN(col) / a;
+                        *pscanline++ = 0.49 + 255.0 * GETBLUE(col) / a;
+                        *pscanline++ = a;
+                    }
+                }
+                else
+                {
+                    *pscanline++ = GETRED(col);
+                    *pscanline++ = GETGREEN(col);
+                    *pscanline++ = GETBLUE(col);
+                }
             }
         }
         png_write_row(png_ptr, scanline);
