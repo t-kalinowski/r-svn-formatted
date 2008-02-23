@@ -51,6 +51,9 @@
     cairo_xlib_surface_create
     cairo_xlib_surface_set_size
 
+    cairo_show_text
+    cairo_text_extents
+
     g_object_unref  (glib)
 
     pango_cairo_create_layout
@@ -277,7 +280,10 @@ static void Cairo_Polygon(int n, double *x, double *y, const pGEcontext gc, pDev
     }
 }
 
-static PangoFontDescription *getFont(const pGEcontext gc)
+#ifdef HAVE_PANGOCAIRO
+/* ------------- pangocairo section --------------- */
+
+static PangoFontDescription *PG_getFont(const pGEcontext gc)
 {
     PangoFontDescription *fontdesc;
     gint face = gc->fontface;
@@ -309,7 +315,7 @@ static PangoFontDescription *getFont(const pGEcontext gc)
     return fontdesc;
 }
 
-static PangoLayout *layoutText(PangoFontDescription *desc, cairo_t *cc, const char *str)
+static PangoLayout *PG_layout(PangoFontDescription *desc, cairo_t *cc, const char *str)
 {
     PangoLayout *layout;
 
@@ -319,8 +325,8 @@ static PangoLayout *layoutText(PangoFontDescription *desc, cairo_t *cc, const ch
     return layout;
 }
 
-static void text_extents(cairo_t *cc, PangoLayout *layout, gint *lbearing, gint *rbearing, gint *width, gint *ascent,
-                         gint *descent, int ink)
+static void PG_text_extents(cairo_t *cc, PangoLayout *layout, gint *lbearing, gint *rbearing, gint *width, gint *ascent,
+                            gint *descent, int ink)
 {
     PangoRectangle rect, lrect;
 
@@ -358,7 +364,7 @@ static void PangoCairo_MetricInfo(int c, const pGEcontext gc, double *ascent, do
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     char str[16];
     int Unicode = mbcslocale;
-    PangoFontDescription *desc = getFont(gc);
+    PangoFontDescription *desc = PG_getFont(gc);
     PangoLayout *layout;
     gint iascent, idescent, iwidth;
 
@@ -380,8 +386,8 @@ static void PangoCairo_MetricInfo(int c, const pGEcontext gc, double *ascent, do
         str[0] = c;
         str[1] = 0;
     }
-    layout = layoutText(desc, xd->cc, str);
-    text_extents(xd->cc, layout, NULL, NULL, &iwidth, &iascent, &idescent, 1);
+    layout = PG_layout(desc, xd->cc, str);
+    PG_text_extents(xd->cc, layout, NULL, NULL, &iwidth, &iascent, &idescent, 1);
     g_object_unref(layout);
     pango_font_description_free(desc);
     *ascent = iascent;
@@ -397,10 +403,10 @@ static double PangoCairo_StrWidth(const char *str, const pGEcontext gc, pDevDesc
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     gint width;
-    PangoFontDescription *desc = getFont(gc);
-    PangoLayout *layout = layoutText(desc, xd->cc, str);
+    PangoFontDescription *desc = PG_getFont(gc);
+    PangoLayout *layout = PG_layout(desc, xd->cc, str);
 
-    text_extents(xd->cc, layout, NULL, NULL, &width, NULL, NULL, 0);
+    PG_text_extents(xd->cc, layout, NULL, NULL, &width, NULL, NULL, 0);
     g_object_unref(layout);
     pango_font_description_free(desc);
     return (double)width;
@@ -415,10 +421,10 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
 
     if (R_ALPHA(gc->col) > 0)
     {
-        PangoFontDescription *desc = getFont(gc);
+        PangoFontDescription *desc = PG_getFont(gc);
         cairo_save(xd->cc);
-        layout = layoutText(desc, xd->cc, str);
-        text_extents(xd->cc, layout, &lbearing, NULL, &width, &ascent, NULL, 0);
+        layout = PG_layout(desc, xd->cc, str);
+        PG_text_extents(xd->cc, layout, &lbearing, NULL, &width, &ascent, NULL, 0);
         cairo_move_to(xd->cc, x, y);
         if (rot != 0.0)
             cairo_rotate(xd->cc, -rot / 180. * M_PI);
@@ -431,3 +437,102 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
         pango_font_description_free(desc);
     }
 }
+
+#else
+/* ------------- cairo-ft section --------------- */
+
+static void FT_getFont(pGEcontext gc, pDevDesc dd)
+{
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    int face = gc->fontface;
+    double size = gc->cex * gc->ps;
+    char *family = "Helvetica";
+    int slant = CAIRO_FONT_SLANT_NORMAL, wt = CAIRO_FONT_WEIGHT_NORMAL;
+
+    if (face < 1 || face > 5)
+        face = 1;
+    if (face == 5)
+        family = "Symbol";
+    else if (gc->fontfamily[0])
+        family = gc->fontfamily;
+    if (face == 2 || face == 4)
+        wt = CAIRO_FONT_WEIGHT_BOLD;
+    if (face == 3 || face == 4)
+        slant = CAIRO_FONT_SLANT_ITALIC;
+
+    cairo_select_font_face(xd->cc, family, slant, wt);
+    /* FIXME: this should really use a matrix if pixels are non-square */
+    cairo_set_font_size(xd->cc, size);
+}
+
+static void Cairo_MetricInfo(int c, pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
+{
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    cairo_text_extents_t exts;
+    char str[16];
+    int Unicode = mbcslocale;
+
+    if (c == 0)
+        c = 77;
+    if (c < 0)
+    {
+        c = -c;
+        Unicode = 1;
+    }
+
+    if (Unicode)
+    {
+        Rf_ucstoutf8(str, (unsigned int)c);
+    }
+    else
+    {
+        /* Here, we assume that c < 256 */
+        str[0] = c;
+        str[1] = 0;
+    }
+
+    FT_getFont(gc, dd);
+    cairo_text_extents(xd->cc, str, &exts);
+    *ascent = -exts.y_bearing;
+    *descent = exts.height + exts.y_bearing;
+    *width = exts.x_advance;
+#if 0
+    printf("c = %d, '%s', face %d %f %f %f\n", 
+	   c, str, gc->fontface, *width, *ascent, *descent);
+#endif
+}
+
+static double Cairo_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
+{
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    cairo_text_extents_t exts;
+
+    FT_getFont(gc, dd);
+    cairo_text_extents(xd->cc, str, &exts);
+    return exts.x_advance;
+}
+
+static void Cairo_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd)
+{
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+
+    if (R_ALPHA(gc->col) > 0)
+    {
+        cairo_save(xd->cc);
+        FT_getFont(gc, dd);
+        cairo_move_to(xd->cc, x, y);
+        if (hadj != 0.0 || rot != 0.0)
+        {
+            cairo_text_extents_t te;
+            cairo_text_extents(xd->cc, str, &te);
+            if (rot != 0.0)
+                cairo_rotate(xd->cc, -rot / 180. * M_PI);
+            if (hadj != 0.0)
+                cairo_rel_move_to(xd->cc, -te.x_advance * hadj, 0);
+        }
+        CairoColor(gc->col, xd);
+        cairo_show_text(xd->cc, str);
+        cairo_restore(xd->cc);
+    }
+}
+#endif
