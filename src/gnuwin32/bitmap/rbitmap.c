@@ -118,7 +118,7 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
     {
         /* If we get here, we had a problem writing the file */
         free(scanline);
-        png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+        png_destroy_write_struct(&png_ptr, &info_ptr);
         return 0;
     }
     png_set_error_fn(png_ptr, NULL, my_png_error, my_png_warning);
@@ -254,7 +254,7 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
 
     /* clean up after the write, and free any memory allocated */
     free(scanline);
-    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
 
     /* that's it */
     return 1;
