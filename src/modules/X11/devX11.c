@@ -1249,9 +1249,14 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
         warning(_("no tiff support in this version of R"));
         return FALSE;
 #else
-        if (strlen(dsp + 6) >= PATH_MAX)
+        char tmp[PATH_MAX], *pp;
+        strcpy(tmp, dsp + 6);
+        pp = strchr(tmp, ':');
+        *pp = '\0';
+        xd->quality = atoi(dsp + 6);
+        if (strlen(pp + 1) >= PATH_MAX)
             error(_("filename too long in tiff() call"));
-        strcpy(xd->filename, dsp + 6);
+        strcpy(xd->filename, pp + 1);
         xd->fp = NULL;
         type = TIFF;
         p = "";
@@ -1809,7 +1814,7 @@ extern int R_SaveAsJpeg(void *d, int width, int height, unsigned int (*gp)(void 
                         FILE *outfile, int res);
 
 extern int R_SaveAsTIFF(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
-                        const char *outfile, int res);
+                        const char *outfile, int res, int compression);
 
 static int knowncols[512];
 
@@ -1883,7 +1888,7 @@ static void X11_Close_bitmap(pX11Desc xd)
     {
         char buf[PATH_MAX];
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, bitgp, 0, R_ExpandFileName(buf), xd->res_dpi);
+        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, bitgp, 0, R_ExpandFileName(buf), xd->res_dpi, xd->quality);
     }
 
     XDestroyImage(xi);
@@ -2771,7 +2776,7 @@ static void BM_Close_bitmap(pX11Desc xd)
     {
         char buf[PATH_MAX];
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, R_ExpandFileName(buf), xd->res_dpi);
+        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, R_ExpandFileName(buf), xd->res_dpi, xd->quality);
     }
 }
 
