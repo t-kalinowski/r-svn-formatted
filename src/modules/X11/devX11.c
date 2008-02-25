@@ -2920,8 +2920,10 @@ static void BM_Close(pDevDesc dd)
     }
     if (xd->fp)
         fclose(xd->fp);
-    cairo_surface_destroy(xd->cs);
-    cairo_destroy(xd->cc);
+    if (xd->cs)
+        cairo_surface_destroy(xd->cs);
+    if (xd->cc)
+        cairo_destroy(xd->cc);
     free(xd);
 }
 
@@ -2933,7 +2935,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     double ps0 = ps;
 
     /* allocate new device description */
-    if (!(xd = (pX11Desc)malloc(sizeof(X11Desc))))
+    if (!(xd = (pX11Desc)calloc(1, sizeof(X11Desc))))
         return FALSE;
     strcpy(xd->filename, filename);
     xd->quality = quality;
