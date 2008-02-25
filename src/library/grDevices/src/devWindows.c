@@ -3210,6 +3210,10 @@ SEXP savePlot(SEXP args)
         /*Default quality suggested in libjpeg*/
         SaveAsJpeg(dd, 75, fn);
     }
+    else if (!strcmp(tp, "tiff") || !strcmp(tp, "tif"))
+    {
+        SaveAsTiff(dd, fn);
+    }
     else if (!strcmp(tp, "wmf") || !strcmp(tp, "emf"))
     {
         if (strlen(fn) > 512)
