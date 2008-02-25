@@ -249,6 +249,7 @@ static int Load_Rbitmap_Dll();
 static void SaveAsPng(pDevDesc dd, const char *fn);
 static void SaveAsJpeg(pDevDesc dd, int quality, const char *fn);
 static void SaveAsBmp(pDevDesc dd, const char *fn);
+static void SaveAsTiff(pDevDesc dd, const char *fn);
 static void SaveAsBitmap(pDevDesc dd, int res);
 
 static void PrivateCopyDevice(pDevDesc dd, pDevDesc ndd, const char *name)
@@ -906,6 +907,11 @@ static void menufilebitmap(control m)
         setuserfilter(G_("Windows bitmap files (*.bmp)\0*.bmp\0\0"));
         fn = askfilesave(G_("Windows bitmap file"), "|.bmp");
     }
+    else if (m == xd->mtiff)
+    {
+        setuserfilter(G_("TIFF files (*.tiff,*tif)\0*.tiff;*.tif\0\0"));
+        fn = askfilesave(G_("TIFF file"), "|.tif");
+    }
     else
     {
         setuserfilter(G_("Jpeg files (*.jpeg,*jpg)\0*.jpeg;*.jpg\0\0"));
@@ -919,6 +925,8 @@ static void menufilebitmap(control m)
         SaveAsPng(dd, fn);
     else if (m == xd->mbmp)
         SaveAsBmp(dd, fn);
+    else if (m == xd->mtiff)
+        SaveAsTiff(dd, fn);
     else if (m == xd->mjpeg50)
         SaveAsJpeg(dd, 50, fn);
     else if (m == xd->mjpeg75)
@@ -1472,6 +1480,7 @@ static void mbarf(control m)
         enable(xd->mprint);
         enable(xd->mpng);
         enable(xd->mbmp);
+        enable(xd->mtiff);
         enable(xd->mjpeg50);
         enable(xd->mjpeg75);
         enable(xd->mjpeg100);
@@ -1488,6 +1497,7 @@ static void mbarf(control m)
         disable(xd->msubsave);
         disable(xd->mpng);
         disable(xd->mbmp);
+        disable(xd->mtiff);
         disable(xd->mjpeg50);
         disable(xd->mjpeg75);
         disable(xd->mjpeg100);
@@ -1678,6 +1688,7 @@ static int setupScreenDevice(pDevDesc dd, gadesc *xd, double w, double h, Rboole
     MCHECK(xd->mpdf = newmenuitem(G_("PDF..."), 0, menupdf));
     MCHECK(xd->mpng = newmenuitem(G_("Png..."), 0, menufilebitmap));
     MCHECK(xd->mbmp = newmenuitem(G_("Bmp..."), 0, menufilebitmap));
+    MCHECK(xd->mtiff = newmenuitem(G_("TIFF..."), 0, menufilebitmap));
     MCHECK(newsubmenu(xd->msubsave, G_("Jpeg")));
     /* avoid gettext confusion with % */
     snprintf(buf, 100, G_("%s quality..."), "50%");
@@ -1749,6 +1760,7 @@ static int setupScreenDevice(pDevDesc dd, gadesc *xd, double w, double h, Rboole
     setdata(xd->mbar, (void *)dd);
     setdata(xd->mpng, (void *)dd);
     setdata(xd->mbmp, (void *)dd);
+    setdata(xd->mtiff, (void *)dd);
     setdata(xd->mjpeg50, (void *)dd);
     setdata(xd->mjpeg75, (void *)dd);
     setdata(xd->mjpeg100, (void *)dd);
@@ -1914,6 +1926,40 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
         {
             del(xd->gawin);
             warning(_("Unable to open file '%s' for writing"), buf);
+            return FALSE;
+        }
+        xd->have_alpha = TRUE;
+    }
+    else if (!strncmp(dsp, "tiff:", 5))
+    {
+        char *p = strchr(&dsp[5], ':');
+        xd->res_dpi = (xpos == NA_INTEGER) ? 0 : xpos;
+        xd->bg = dd->startfill = canvascolor;
+        xd->kind = TIFF;
+        if (!p)
+            return FALSE;
+        if (!Load_Rbitmap_Dll())
+        {
+            warning(_("Unable to load Rbitmap.dll"));
+            return FALSE;
+        }
+        *p = '\0';
+        xd->quality = atoi(&dsp[5]);
+        *p = ':';
+        if (strlen(p + 1) >= 512)
+            error(_("filename too long in tiff() call"));
+        strcpy(xd->filename, p + 1);
+        if (w < 20 && h < 20)
+            warning(_("'width=%d, height=%d' are unlikely values in pixels"), (int)w, (int)h);
+        if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
+        {
+            warning(_("Unable to allocate bitmap"));
+            return FALSE;
+        }
+        xd->bm = xd->gawin;
+        if ((xd->bm2 = newbitmap(w, h, 256)) == NULL)
+        {
+            warning(_("Unable to allocate bitmap"));
             return FALSE;
         }
         xd->have_alpha = TRUE;
@@ -2225,6 +2271,10 @@ static void GA_NewPage(const pGEcontext gc, pDevDesc dd)
         if ((xd->fp = R_fopen(buf, "wb")) == NULL)
             error(_("Unable to open file '%s' for writing"), buf);
     }
+    if (xd->kind == TIFF && xd->needsave)
+    {
+        SaveAsBitmap(dd, xd->res_dpi);
+    }
     if (xd->kind == SCREEN)
     {
         if (xd->buffered)
@@ -2253,7 +2303,7 @@ static void GA_NewPage(const pGEcontext gc, pDevDesc dd)
     {
         xd->needsave = TRUE;
         xd->clip = getrect(xd->gawin);
-        if (R_OPAQUE(xd->bg) || xd->kind == BMP || xd->kind == JPEG)
+        if (R_OPAQUE(xd->bg) || xd->kind == BMP || xd->kind == JPEG || xd->kind == TIFF)
         {
             DRAW(gfillrect(_d, xd->bgcolor, xd->clip));
         }
@@ -2321,7 +2371,7 @@ static void GA_Close(pDevDesc dd)
         if (xd == GA_xd)
             GA_xd = NULL;
     }
-    else if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP))
+    else if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP) || (xd->kind == TIFF))
     {
         SaveAsBitmap(dd, xd->res_dpi);
     }
@@ -3151,6 +3201,10 @@ SEXP savePlot(SEXP args)
     {
         SaveAsBmp(dd, fn);
     }
+    else if (!strcmp(tp, "tiff"))
+    {
+        SaveAsTiff(dd, fn);
+    }
     else if (!strcmp(tp, "jpeg") || !strcmp(tp, "jpg"))
     {
         /*Default quality suggested in libjpeg*/
@@ -3182,7 +3236,7 @@ SEXP savePlot(SEXP args)
 /* Rbitmap  */
 #define BITMAP_DLL_NAME "\\library\\grDevices\\libs\\Rbitmap.dll"
 typedef int (*R_SaveAsBitmap)(/* variable set of args */);
-static R_SaveAsBitmap R_SaveAsPng, R_SaveAsJpeg, R_SaveAsBmp;
+static R_SaveAsBitmap R_SaveAsPng, R_SaveAsJpeg, R_SaveAsBmp, R_SaveAsTIFF;
 
 static int RbitmapAlreadyLoaded = 0;
 static HINSTANCE hRbitmapDll;
@@ -3197,7 +3251,8 @@ static int Load_Rbitmap_Dll()
         if (((hRbitmapDll = LoadLibrary(szFullPath)) != NULL) &&
             ((R_SaveAsPng = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsPng")) != NULL) &&
             ((R_SaveAsBmp = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsBmp")) != NULL) &&
-            ((R_SaveAsJpeg = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsJpeg")) != NULL))
+            ((R_SaveAsJpeg = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsJpeg")) != NULL) &&
+            ((R_SaveAsTIFF = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsTIFF")) != NULL))
         {
             RbitmapAlreadyLoaded = 1;
         }
@@ -3230,7 +3285,7 @@ static void SaveAsBitmap(pDevDesc dd, int res)
 
     r = ggetcliprect(xd->gawin);
     gsetcliprect(xd->gawin, r2 = getrect(xd->gawin));
-    if (xd->fp)
+    if (xd->fp || xd->kind == TIFF)
     {
         getbitmapdata2(xd->gawin, &data);
         if (data)
@@ -3241,13 +3296,20 @@ static void SaveAsBitmap(pDevDesc dd, int res)
                             R_OPAQUE(xd->bg) ? 0 : xd->pngtrans, res);
             else if (xd->kind == JPEG)
                 R_SaveAsJpeg(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->quality, xd->fp, res);
+            else if (xd->kind == TIFF)
+            {
+                char buf[600];
+                snprintf(buf, 600, xd->filename, xd->npage);
+                R_SaveAsTIFF(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, buf, res, xd->quality);
+            }
             else
                 R_SaveAsBmp(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, xd->fp, res);
             free(data);
         }
         else
             warning(_("processing of the plot ran out of memory"));
-        fclose(xd->fp);
+        if (xd->fp)
+            fclose(xd->fp);
     }
     gsetcliprect(xd->gawin, r);
     xd->fp = NULL;
@@ -3360,6 +3422,32 @@ static void SaveAsBmp(pDevDesc dd, const char *fn)
         warning(_("processing of the plot ran out of memory"));
     gsetcliprect(xd->bm, r);
     fclose(fp);
+}
+
+static void SaveAsTiff(pDevDesc dd, const char *fn)
+{
+    rect r, r2;
+    unsigned char *data;
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    if (!Load_Rbitmap_Dll())
+    {
+        R_ShowMessage(_("Impossible to load Rbitmap.dll"));
+        return;
+    }
+    r = ggetcliprect(xd->bm);
+    gsetcliprect(xd->bm, r2 = getrect(xd->bm));
+
+    getbitmapdata2(xd->bm, &data);
+    if (data)
+    {
+        png_rows = r2.width;
+        R_SaveAsTIFF(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, fn, 0, 1 /* no compression */);
+        free(data);
+    }
+    else
+        warning(_("processing of the plot ran out of memory"));
+    gsetcliprect(xd->bm, r);
 }
 
 /* This is Guido's devga device, 'ga' for GraphApp. */
