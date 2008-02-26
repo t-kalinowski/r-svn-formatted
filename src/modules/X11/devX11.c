@@ -2747,9 +2747,9 @@ static SEXP in_do_saveplot(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 #else
     else if (streql(type, "jpeg"))
-        error(_("type = \"%s\" requires cairo >= 1.2"), "jpeg");
+        error(_("type = \"%s\" requires cairo >= 1.2: try \"png\""), "jpeg");
     else if (streql(type, "tiff"))
-        error(_("type = \"%s\" requires cairo >= 1.2"), "tiff");
+        error(_("type = \"%s\" requires cairo >= 1.2: try \"png\""), "tiff");
 #endif
     else
         error(_("invalid '%s' argument"), "type");
@@ -2893,6 +2893,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     {
         if (xd->npages > 1)
         {
+            cairo_show_page(xd->cc);
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
         }
@@ -2917,12 +2918,23 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     {
         if (xd->npages > 1)
         {
+            cairo_show_page(xd->cc);
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
         }
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
         xd->cs = cairo_pdf_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+        res = cairo_surface_status(xd->cs);
+        if (res != CAIRO_STATUS_SUCCESS)
+        {
+            error("cairo error '%s'", cairo_status_to_string(res));
+        }
         xd->cc = cairo_create(xd->cs);
+        res = cairo_status(xd->cc);
+        if (res != CAIRO_STATUS_SUCCESS)
+        {
+            error("cairo error '%s'", cairo_status_to_string(res));
+        }
         cairo_set_antialias(xd->cc, xd->antialias);
     }
 #endif
@@ -2931,12 +2943,23 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     {
         if (xd->npages > 1)
         {
+            cairo_show_page(xd->cc);
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
         }
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
         xd->cs = cairo_ps_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+        res = cairo_surface_status(xd->cs);
+        if (res != CAIRO_STATUS_SUCCESS)
+        {
+            error("cairo error '%s'", cairo_status_to_string(res));
+        }
         xd->cc = cairo_create(xd->cs);
+        res = cairo_status(xd->cc);
+        if (res != CAIRO_STATUS_SUCCESS)
+        {
+            error("cairo error '%s'", cairo_status_to_string(res));
+        }
         cairo_set_antialias(xd->cc, xd->antialias);
     }
 #endif
@@ -2994,6 +3017,8 @@ static void BM_Close(pDevDesc dd)
     }
     if (xd->fp)
         fclose(xd->fp);
+    if (xd->cc)
+        cairo_show_page(xd->cc);
     if (xd->cs)
         cairo_surface_destroy(xd->cs);
     if (xd->cc)
@@ -3164,7 +3189,9 @@ static SEXP in_do_cairo(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "quality");
 
 #if CAIRO_VERSION < 10200
-    if (type != 5)
+    if (type == 2)
+        error(_("'type = \"Cairo\"' requires cairo >= 1.2 : try 'type = \"dCairo\"'"));
+    else if (type != 5)
         error(_("device '%s' requires cairo >= 1.2"), devtable[type]);
 #endif
     R_GE_checkVersionOrDie(R_GE_version);
