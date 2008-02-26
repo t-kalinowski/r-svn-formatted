@@ -2894,23 +2894,29 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         if (xd->npages > 1)
         {
             cairo_show_page(xd->cc);
-            cairo_surface_destroy(xd->cs);
-            cairo_destroy(xd->cc);
+            if (!xd->onefile)
+            {
+                cairo_surface_destroy(xd->cs);
+                cairo_destroy(xd->cc);
+            }
         }
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        xd->cs = cairo_svg_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
-        res = cairo_surface_status(xd->cs);
-        if (res != CAIRO_STATUS_SUCCESS)
+        if (xd->npages == 1 || !xd->onefile)
         {
-            error("cairo error '%s'", cairo_status_to_string(res));
+            snprintf(buf, PATH_MAX, xd->filename, xd->npages);
+            xd->cs = cairo_svg_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+            res = cairo_surface_status(xd->cs);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            xd->cc = cairo_create(xd->cs);
+            res = cairo_status(xd->cc);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            cairo_set_antialias(xd->cc, xd->antialias);
         }
-        xd->cc = cairo_create(xd->cs);
-        res = cairo_status(xd->cc);
-        if (res != CAIRO_STATUS_SUCCESS)
-        {
-            error("cairo error '%s'", cairo_status_to_string(res));
-        }
-        cairo_set_antialias(xd->cc, xd->antialias);
     }
 #endif
 #ifdef HAVE_CAIRO_PDF
@@ -2919,48 +2925,57 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         if (xd->npages > 1)
         {
             cairo_show_page(xd->cc);
-            cairo_surface_destroy(xd->cs);
-            cairo_destroy(xd->cc);
+            if (!xd->onefile)
+            {
+                cairo_surface_destroy(xd->cs);
+                cairo_destroy(xd->cc);
+            }
         }
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        xd->cs = cairo_pdf_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
-        res = cairo_surface_status(xd->cs);
-        if (res != CAIRO_STATUS_SUCCESS)
+        if (xd->npages == 1 || !xd->onefile)
         {
-            error("cairo error '%s'", cairo_status_to_string(res));
+            snprintf(buf, PATH_MAX, xd->filename, xd->npages);
+            xd->cs = cairo_pdf_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+            res = cairo_surface_status(xd->cs);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            xd->cc = cairo_create(xd->cs);
+            res = cairo_status(xd->cc);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            cairo_set_antialias(xd->cc, xd->antialias);
         }
-        xd->cc = cairo_create(xd->cs);
-        res = cairo_status(xd->cc);
-        if (res != CAIRO_STATUS_SUCCESS)
-        {
-            error("cairo error '%s'", cairo_status_to_string(res));
-        }
-        cairo_set_antialias(xd->cc, xd->antialias);
     }
 #endif
 #ifdef HAVE_CAIRO_PS
     else if (xd->type == PS)
     {
-        if (xd->npages > 1)
+        if (xd->npages > 1 && !xd->onefile)
         {
             cairo_show_page(xd->cc);
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
         }
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        xd->cs = cairo_ps_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
-        res = cairo_surface_status(xd->cs);
-        if (res != CAIRO_STATUS_SUCCESS)
+        if (xd->npages == 1 || !xd->onefile)
         {
-            error("cairo error '%s'", cairo_status_to_string(res));
+            snprintf(buf, PATH_MAX, xd->filename, xd->npages);
+            xd->cs = cairo_ps_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+            res = cairo_surface_status(xd->cs);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            xd->cc = cairo_create(xd->cs);
+            res = cairo_status(xd->cc);
+            if (res != CAIRO_STATUS_SUCCESS)
+            {
+                error("cairo error '%s'", cairo_status_to_string(res));
+            }
+            cairo_set_antialias(xd->cc, xd->antialias);
         }
-        xd->cc = cairo_create(xd->cs);
-        res = cairo_status(xd->cc);
-        if (res != CAIRO_STATUS_SUCCESS)
-        {
-            error("cairo error '%s'", cairo_status_to_string(res));
-        }
-        cairo_set_antialias(xd->cc, xd->antialias);
     }
 #endif
     else
@@ -3079,6 +3094,8 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
         free(xd);
         return FALSE;
     }
+    if (xd->type == SVG || xd->type == PDF || xd->type == PS)
+        xd->onefile = quality != 0;
 
     /* Set up Data Structures  */
     dd->activate = null_Activate;
