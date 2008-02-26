@@ -49,6 +49,7 @@
     cairo_set_source_rgba
     cairo_set_source_surface
     cairo_status
+    cairo_status_to_string
     cairo_stroke
     cairo_surface_destroy
     cairo_surface_status
@@ -98,7 +99,12 @@ static void CairoColor(unsigned int col, pX11Desc xd)
     green = pow(green, GreenGamma);
     blue = pow(blue, BlueGamma);
 
-    cairo_set_source_rgba(xd->cc, red, green, blue, alpha / 255.0);
+    /* These optimizations should not be necessary, but alpha = 1
+       seems to cause image fallback in some backends */
+    if (alpha == 255)
+        cairo_set_source_rgb(xd->cc, red, green, blue);
+    else
+        cairo_set_source_rgba(xd->cc, red, green, blue, alpha / 255.0);
 }
 
 static void CairoLineType(const pGEcontext gc, pX11Desc xd)
@@ -451,7 +457,9 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
 /* ------------- cairo-ft section --------------- */
 
 /* FIXME: although this should work on all platforms, I didn't get to
-   test it (yet) anywhere else, hence the __APPLE__ condition for now [SU] */
+   test it (yet) anywhere else, hence the __APPLE__ condition for now [SU]
+   r44621: now works on Linux, just finds the same fonts as before. [BDR]
+*/
 #if CAIRO_HAS_FT_FONT && __APPLE__
 /* FT implies FC in Cairo */
 #include <cairo-ft.h>
@@ -459,6 +467,7 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
 static cairo_font_face_t *default_faces[5];
 static const char *default_patterns[5] = {"Helvetica:style=Regular", "Helvetica:style=Bold", "Helvetica:style=Italic",
                                           "Helvetica:style=Bold Italic,BoldItalic", "Symbol"};
+
 static int fc_loaded;
 static FT_Library ft_library;
 
@@ -505,7 +514,6 @@ static cairo_font_face_t *FC_getFont(const char *fcname, int encoding)
             if (FcPatternGetString(fs->fonts[j++], FC_FILE, 0, &file) == FcResultMatch)
             {
                 FT_Face face;
-                FT_Error er;
                 FT_CharMap charmap;
                 int n;
 
@@ -515,13 +523,14 @@ static cairo_font_face_t *FC_getFont(const char *fcname, int encoding)
                     FcFontSetDestroy(fs);
                     return NULL;
                 }
-                if (!FT_New_Face(ft_library, file, 0, &face))
+                if (!FT_New_Face(ft_library, (const char *)file, 0, &face))
                 {
 #if 0
-		  for (n = 0; n < face->num_charmaps; n++ ) {
-		    charmap = face->charmaps[n];
-		    printf("   charmap%d: enc=%d platf=%d\n", n, charmap->encoding_id, charmap->platform_id);
-		  }
+		    for (n = 0; n < face->num_charmaps; n++) {
+			charmap = face->charmaps[n];
+			printf("   charmap%d: enc=%d platf=%d\n", n, 
+			       charmap->encoding_id, charmap->platform_id);
+		    }
 #endif
 
                     if (encoding)
@@ -578,12 +587,19 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd)
     char *family = "Helvetica";
     int slant = CAIRO_FONT_SLANT_NORMAL, wt = CAIRO_FONT_WEIGHT_NORMAL;
 
+    char *fm = gc->fontfamily;
+    if (streql(fm, "mono"))
+        family = "courier";
+    else if (streql(fm, "serif"))
+        family = "times";
+    else if (streql(fm, "sans"))
+        family = "helvetica";
+    else if (fm[0])
+        family = fm;
     if (face < 1 || face > 5)
         face = 1;
     if (face == 5)
         family = "Symbol";
-    else if (gc->fontfamily[0])
-        family = gc->fontfamily;
     if (face == 2 || face == 4)
         wt = CAIRO_FONT_WEIGHT_BOLD;
     if (face == 3 || face == 4)
