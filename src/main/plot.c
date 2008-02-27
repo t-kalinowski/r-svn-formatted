@@ -3581,7 +3581,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (warn >= 0)
                 {
-                    REprintf(_("warning: no point with %.2f inches\n"), tol);
+                    REprintf(_("warning: no point within %.2f inches\n"), tol);
                     R_FlushConsole();
                 }
             }
