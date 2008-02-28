@@ -44,6 +44,8 @@ extern void R_ProcessEvents(void);
 #include <R_ext/eventloop.h> /* for R_PolledEvents */
 #endif
 
+extern SEXP deparse1s(SEXP call);
+
 #ifndef min
 #define min(a, b) (a < b ? a : b)
 #endif
@@ -333,7 +335,7 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
         char *tr;
         if (call != R_NilValue)
         {
-            dcall = CHAR(STRING_ELT(deparse1(call, 0, DEFAULTDEPARSE), 0));
+            dcall = CHAR(STRING_ELT(deparse1s(call), 0));
         }
         else
             dcall = "";
@@ -462,7 +464,7 @@ void PrintWarnings(void)
         else
         {
             const char *dcall, *sep = " ", *msg = CHAR(STRING_ELT(names, 0));
-            dcall = CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, 0), 0, DEFAULTDEPARSE), 0));
+            dcall = CHAR(STRING_ELT(deparse1s(VECTOR_ELT(R_Warnings, 0)), 0));
 #ifdef SUPPORT_MBCS
             if (mbcslocale)
             {
@@ -503,7 +505,7 @@ void PrintWarnings(void)
             else
             {
                 const char *dcall, *sep = " ", *msg = CHAR(STRING_ELT(names, i));
-                dcall = CHAR(STRING_ELT(deparse1(VECTOR_ELT(R_Warnings, i), 0, DEFAULTDEPARSE), 0));
+                dcall = CHAR(STRING_ELT(deparse1s(VECTOR_ELT(R_Warnings, i)), 0));
 #ifdef SUPPORT_MBCS
                 if (mbcslocale)
                 {
@@ -617,7 +619,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
         int len = strlen(head) + strlen(mid) + strlen(tail);
 
         Rvsnprintf(tmp, min(BUFSIZE, R_WarnLength) - strlen(head), format, ap);
-        dcall = CHAR(STRING_ELT(deparse1(call, 0, DEFAULTDEPARSE), 0));
+        dcall = CHAR(STRING_ELT(deparse1s(call), 0));
         if (len + strlen(dcall) + strlen(tmp) < BUFSIZE)
         {
             sprintf(errbuf, "%s%s%s", head, dcall, mid);
@@ -939,7 +941,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (cptr->callflag & CTXT_FUNCTION)
             {
                 /* stop() etc have internal call to .makeMessage */
-                cfn = CHAR(STRING_ELT(deparse1(CAR(cptr->call), FALSE, 0), 0));
+                cfn = CHAR(STRING_ELT(deparse1s(CAR(cptr->call)), 0));
                 if (streql(cfn, "stop") || streql(cfn, "warning") || streql(cfn, "message"))
                     continue;
                 rho = cptr->cloenv;

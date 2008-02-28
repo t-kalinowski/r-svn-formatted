@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2008  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -126,9 +126,11 @@ typedef struct
     int opts;
     int sourceable;
     int longstring;
+    int maxlines;
+    Rboolean active;
 } LocalParseData;
 
-static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts);
+static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts, int nlines);
 static void args2buff(SEXP, int, int, LocalParseData *);
 static void deparse2buff(SEXP, LocalParseData *);
 static void print2buff(const char *, LocalParseData *);
@@ -143,7 +145,7 @@ static void deparse2(SEXP, SEXP, LocalParseData *);
 SEXP attribute_hidden do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ca1;
-    int cut0, backtick, opts;
+    int cut0, backtick, opts, nlines;
 
     checkArity(op, args);
 
@@ -170,17 +172,21 @@ SEXP attribute_hidden do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
     opts = SHOWATTRIBUTES;
     if (!isNull(CAR(args)))
         opts = asInteger(CAR(args));
-    ca1 = deparse1WithCutoff(ca1, 0, cut0, backtick, opts);
+    args = CDR(args);
+    nlines = asInteger(CAR(args));
+    if (nlines == NA_INTEGER)
+        nlines = -1;
+    ca1 = deparse1WithCutoff(ca1, 0, cut0, backtick, opts, nlines);
     return ca1;
 }
 
 SEXP deparse1(SEXP call, Rboolean abbrev, int opts)
 {
     Rboolean backtick = TRUE;
-    return (deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, opts));
+    return deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, opts, -1);
 }
 
-static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts)
+static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts, int nlines)
 {
     /* Arg. abbrev:
         If abbrev is TRUE, then the returned value
@@ -189,6 +195,7 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     */
     SEXP svec;
     int savedigits;
+    Rboolean need_ellipses = FALSE;
     LocalParseData localData = {0,
                                 0,
                                 0,
@@ -201,7 +208,9 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
                                 FALSE,
                                 0,
                                 TRUE,
-                                FALSE};
+                                FALSE,
+                                INT_MAX,
+                                TRUE};
     localData.cutoff = cutoff;
     localData.backtick = backtick;
     localData.opts = opts;
@@ -212,7 +221,20 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     R_print.digits = DBL_DIG; /* MAX precision */
 
     svec = R_NilValue;
-    deparse2(call, svec, &localData); /* just to determine linenumber..*/
+    if (nlines > 0)
+    {
+        localData.linenumber = localData.maxlines = nlines;
+    }
+    else
+    {
+        deparse2(call, svec, &localData); /* just to determine linenumber..*/
+        localData.active = TRUE;
+        if (R_BrowseLines > 0 && localData.linenumber > R_BrowseLines)
+        {
+            localData.linenumber = localData.maxlines = R_BrowseLines + 1;
+            need_ellipses = TRUE;
+        }
+    }
     PROTECT(svec = allocVector(STRSXP, localData.linenumber));
     deparse2(call, svec, &localData);
     UNPROTECT(1);
@@ -225,12 +247,9 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
             strcat(data, "...");
         svec = mkString(data);
     }
-    else if (R_BrowseLines > 0 && localData.linenumber > R_BrowseLines)
+    else if (need_ellipses)
     {
-        /* we need to truncate to fewer lines in the browser call */
-        PROTECT(svec = lengthgets(svec, R_BrowseLines + 1));
         SET_STRING_ELT(svec, R_BrowseLines, mkChar("  ..."));
-        UNPROTECT(1);
     }
     R_print.digits = savedigits;
     if ((opts & WARNINCOMPLETE) && !localData.sourceable)
@@ -251,7 +270,16 @@ SEXP deparse1line(SEXP call, Rboolean abbrev)
     SEXP temp;
     Rboolean backtick = TRUE;
 
-    temp = deparse1WithCutoff(call, abbrev, MAX_Cutoff, backtick, SIMPLEDEPARSE);
+    temp = deparse1WithCutoff(call, abbrev, MAX_Cutoff, backtick, SIMPLEDEPARSE, 1);
+    return (temp);
+}
+
+SEXP attribute_hidden deparse1s(SEXP call)
+{
+    SEXP temp;
+    Rboolean backtick = TRUE;
+
+    temp = deparse1WithCutoff(call, FALSE, DEFAULT_Cutoff, backtick, DEFAULTDEPARSE, 1);
     return (temp);
 }
 
@@ -664,6 +692,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     Rboolean lookahead = FALSE, lbreak = FALSE, parens;
     SEXP op, t;
     int localOpts = d->opts, i, n;
+
+    if (!d->active)
+        return;
 
     switch (TYPEOF(s))
     {
@@ -1198,9 +1229,11 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 
 static void writeline(LocalParseData *d)
 {
-    if (d->strvec != R_NilValue)
+    if (d->strvec != R_NilValue && d->linenumber < d->maxlines)
         SET_STRING_ELT(d->strvec, d->linenumber, mkChar(d->buffer.data));
     d->linenumber++;
+    if (d->linenumber >= d->maxlines)
+        d->active = FALSE;
     /* reset */
     d->len = 0;
     d->buffer.data[0] = '\0';
@@ -1322,6 +1355,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                     print2buff(", ", d);
                 if (tlen > 1 && d->len > d->cutoff)
                     writeline(d);
+                if (!d->active)
+                    break;
             }
             if (tlen > 1)
                 print2buff(")", d);
@@ -1415,6 +1450,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 print2buff(", ", d);
             if (tlen > 1 && d->len > d->cutoff)
                 writeline(d);
+            if (!d->active)
+                break;
         }
         if (tlen > 1)
             print2buff(")", d);
