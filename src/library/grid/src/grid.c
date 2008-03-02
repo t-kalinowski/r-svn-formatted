@@ -2682,8 +2682,9 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
                                    dd);
                     else
                         GEText(xx[i], yy[i], CHAR(STRING_ELT(txt, i % LENGTH(txt))),
-                               getCharEnc(STRING_ELT(txt, i % LENGTH(txt))), REAL(hjust)[i % LENGTH(hjust)],
-                               REAL(vjust)[i % LENGTH(vjust)], numeric(rot, i % LENGTH(rot)) + rotationAngle, &gc, dd);
+                               (gc.fontface == 5) ? CE_SYMBOL : getCharEnc(STRING_ELT(txt, i % LENGTH(txt))),
+                               REAL(hjust)[i % LENGTH(hjust)], REAL(vjust)[i % LENGTH(vjust)],
+                               numeric(rot, i % LENGTH(rot)) + rotationAngle, &gc, dd);
                 }
             }
             if (!draw)

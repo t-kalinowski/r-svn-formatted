@@ -3101,7 +3101,6 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     dps *= res0 / 72.0;
 #endif
     xd->pointsize = dps;
-    printf("pointsize was %d now %f\n", ps, xd->pointsize);
     xd->bg = bg;
     xd->res_dpi = res;
     switch (antialias)
