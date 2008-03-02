@@ -293,7 +293,7 @@ static double yDevtoCharUnits(double y, pGEDevDesc dd)
 
 static void BadUnitsError(const char *where)
 {
-    error(_("bad units specified in %s, please report!"), where);
+    error(_("bad units specified in '%s'"), where);
 }
 
 /* GConvertXUnits() and GConvertYUnits() convert
@@ -1033,6 +1033,9 @@ double GConvertX(double x, GUnit from, GUnit to, pGEDevDesc dd)
         x = xDevtoMAR3(devx, dd);
         break;
     /*case MAR4:	x <--> y */
+    case NPC:
+        x = xDevtoNPC(devx, dd);
+        break;
     default:
         BadUnitsError("GConvertX");
     }
@@ -1128,6 +1131,9 @@ double GConvertY(double y, GUnit from, GUnit to, pGEDevDesc dd)
         y = yDevtoMAR3(devy, dd);
         break;
     /*case MAR4:	x <--> y */
+    case NPC:
+        y = yDevtoNPC(devy, dd);
+        break;
     default:
         BadUnitsError("GConvertY");
     }
