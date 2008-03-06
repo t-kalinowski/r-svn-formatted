@@ -1406,17 +1406,35 @@ static SEXP set_data_part(SEXP obj, SEXP rhs)
     return (val);
 }
 
+/* Slots are stored as attributes to
+   provide some back-compatibility
+*/
+
+/**
+ * R_has_slot() : a C-level test if a obj@<name> is available;
+ *                as R_do_slot() gives an error when there's no such slot.
+ */
+int R_has_slot(SEXP obj, SEXP name)
+{
+
+#define R_SLOT_INIT                                                                                                    \
+    if (!(isSymbol(name) || (isString(name) && LENGTH(name) == 1)))                                                    \
+        error(_("invalid type or length for slot name"));                                                              \
+    if (!s_dot_Data)                                                                                                   \
+        init_slot_handling();                                                                                          \
+    if (isString(name))                                                                                                \
+    name = install(CHAR(STRING_ELT(name, 0)))
+
+    R_SLOT_INIT;
+    if (name == s_dot_Data)
+        return (1);
+    /* else */
+    return (getAttrib(obj, name) != R_NilValue);
+}
+
 SEXP R_do_slot(SEXP obj, SEXP name)
 {
-    /* Slots are stored as attributes to
-       provide some back-compatibility
-    */
-    if (!(isSymbol(name) || (isString(name) && LENGTH(name) == 1)))
-        error(_("invalid type or length for slot name"));
-    if (!s_dot_Data)
-        init_slot_handling();
-    if (isString(name))
-        name = install(translateChar(STRING_ELT(name, 0)));
+    R_SLOT_INIT;
     if (name == s_dot_Data)
         return data_part(obj);
     else
@@ -1451,6 +1469,7 @@ SEXP R_do_slot(SEXP obj, SEXP name)
         return value;
     }
 }
+#undef R_SLOT_INIT
 
 SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
 {
@@ -1541,6 +1560,7 @@ SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
                       CHAR(PRINTNAME(nlist)), translateChar(STRING_ELT(klass, 0)));
         }
     }
+
     ans = R_do_slot(object, nlist);
     UNPROTECT(1);
     return ans;
