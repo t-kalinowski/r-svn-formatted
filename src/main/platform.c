@@ -477,12 +477,12 @@ SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
         FILE *fp1, *fp2;
         char buf[APPENDBUFSIZE];
         int nchar, status = 0;
-        if (STRING_ELT(f1, 0) == NA_STRING || !(fp1 = RC_fopen(STRING_ELT(f1, 0), "ab", TRUE)))
+        if (!(fp1 = RC_fopen(STRING_ELT(f1, 0), "ab", TRUE)))
             goto done;
         for (i = 0; i < n; i++)
         {
             status = 0;
-            if (STRING_ELT(f2, i) || !(fp2 = RC_fopen(STRING_ELT(f2, i), "rb", TRUE)))
+            if (!(fp2 = RC_fopen(STRING_ELT(f2, i), "rb", TRUE)))
                 continue;
             while ((nchar = fread(buf, 1, APPENDBUFSIZE, fp2)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp1) != APPENDBUFSIZE)
