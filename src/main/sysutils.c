@@ -174,13 +174,15 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
 
 FILE *R_wfopen(const wchar_t *filename, const wchar_t *mode)
 {
-    return (filename ? _wfopen(filename, wcfixmode(mode)) : NULL);
+    return filename ? _wfopen(filename, wcfixmode(mode)) : NULL;
 }
 
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {
     wchar_t wmode[10];
 
+    if (fn == NA_STRING)
+        return NULL;
     mbstowcs(wmode, fixmode(mode), 10);
     return _wfopen(filenameToWchar(fn, expand), wmode);
 }
@@ -188,7 +190,7 @@ FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {
     const char *filename = translateChar(fn);
-    if (!filename)
+    if (fn == NA_STRING || !filename)
         return NULL;
     if (expand)
         return fopen(R_ExpandFileName(filename), mode);
