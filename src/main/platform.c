@@ -1002,7 +1002,7 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     p = CAR(args);
     args = CDR(args);
     pattern = 0;
-    if (isString(p) && length(p) >= 1 && STRING_ELT(p, 0) != R_NilValue)
+    if (isString(p) && length(p) >= 1 && STRING_ELT(p, 0) != NA_STRING)
         pattern = 1;
     else if (!isNull(p) && !(isString(p) && length(p) < 1))
         error(_("invalid '%s' argument"), "pattern");
@@ -1023,6 +1023,8 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     count = 0;
     for (i = 0; i < ndir; i++)
     {
+        if (STRING_ELT(d, i) == NA_STRING)
+            continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
         count_files(dnp, &count, allfiles, recursive, pattern, reg);
     }
@@ -1030,11 +1032,10 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     count = 0;
     for (i = 0; i < ndir; i++)
     {
+        if (STRING_ELT(d, i) == NA_STRING)
+            continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
-        if (fullnames)
-            list_files(dnp, dnp, &count, ans, allfiles, recursive, pattern, reg);
-        else
-            list_files(dnp, NULL, &count, ans, allfiles, recursive, pattern, reg);
+        list_files(dnp, fullnames ? dnp : NULL, &count, ans, allfiles, recursive, pattern, reg);
     }
     if (pattern)
         regfree(&reg);
