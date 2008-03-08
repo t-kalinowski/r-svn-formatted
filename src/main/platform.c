@@ -477,12 +477,12 @@ SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
         FILE *fp1, *fp2;
         char buf[APPENDBUFSIZE];
         int nchar, status = 0;
-        if (!(fp1 = RC_fopen(STRING_ELT(f1, 0), "ab", TRUE)))
+        if (STRING_ELT(f1, 0) == NA_STRING || !(fp1 = RC_fopen(STRING_ELT(f1, 0), "ab", TRUE)))
             goto done;
         for (i = 0; i < n; i++)
         {
             status = 0;
-            if (!(fp2 = RC_fopen(STRING_ELT(f2, i), "rb", TRUE)))
+            if (STRING_ELT(f2, i) || !(fp2 = RC_fopen(STRING_ELT(f2, i), "rb", TRUE)))
                 continue;
             while ((nchar = fread(buf, 1, APPENDBUFSIZE, fp2)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp1) != APPENDBUFSIZE)
@@ -533,7 +533,7 @@ SEXP attribute_hidden do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         LOGICAL(ans)[i] = 0;
-        if (STRING_ELT(fn, i) != R_NilValue && (fp = RC_fopen(STRING_ELT(fn, i), "w", TRUE)) != NULL)
+        if (STRING_ELT(fn, i) != NA_STRING && (fp = RC_fopen(STRING_ELT(fn, i), "w", TRUE)) != NULL)
         {
             LOGICAL(ans)[i] = 1;
             fclose(fp);
@@ -555,7 +555,8 @@ SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
     {
-        if (STRING_ELT(f, i) != R_NilValue)
+        if (STRING_ELT(f, i) != NA_STRING)
+        {
             LOGICAL(ans)
             [i] =
 #ifdef Win32
@@ -563,6 +564,9 @@ SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
                 (remove(R_ExpandFileName(translateChar(STRING_ELT(f, i)))) == 0);
 #endif
+        }
+        else
+            LOGICAL(ans)[i] = FALSE;
     }
     UNPROTECT(1);
     return ans;
@@ -600,7 +604,7 @@ SEXP attribute_hidden do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
     {
-        if (STRING_ELT(f1, i % n1) == R_NilValue || STRING_ELT(f2, i % n2) == R_NilValue)
+        if (STRING_ELT(f1, i % n1) == NA_STRING || STRING_ELT(f2, i % n2) == NA_STRING)
             LOGICAL(ans)[i] = 0;
         else
         {
@@ -651,6 +655,8 @@ SEXP attribute_hidden do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(CADR(args)) != STRSXP || LENGTH(CADR(args)) != 1)
         error(_("'destination' must be a single string"));
 
+    if (STRING_ELT(CAR(args), 0) == NA_STRING || STRING_ELT(CADR(args), 0) == NA_STRING)
+        error(_("missing values are not allowed"));
 #ifdef Win32
     w = filenameToWchar(STRING_ELT(CAR(args), 0), TRUE);
     if (wcslen(w) >= PATH_MAX - 1)
@@ -759,7 +765,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
         const char *efn = R_ExpandFileName(translateChar(STRING_ELT(fn, i)));
 #endif
-        if (STRING_ELT(fn, i) != R_NilValue &&
+        if (STRING_ELT(fn, i) != NA_STRING &&
 #ifdef Win32
             _wstati64(wfn, &sb)
 #else
@@ -1066,19 +1072,21 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < nfile; i++)
     {
         LOGICAL(ans)[i] = 0;
-        if (STRING_ELT(file, i) != R_NilValue)
-#ifdef Win32
+        if (STRING_ELT(file, i) != NA_STRING)
         {
+#ifdef Win32
             /* Package XML sends arbitrarily long strings to file.exists! */
             int len = strlen(CHAR(STRING_ELT(file, i)));
             if (len > MAX_PATH)
                 LOGICAL(ans)[i] = FALSE;
             else
                 LOGICAL(ans)[i] = R_WFileExists(filenameToWchar(STRING_ELT(file, i), TRUE));
-        }
 #else
             LOGICAL(ans)[i] = R_FileExists(translateChar(STRING_ELT(file, i)));
 #endif
+        }
+        else
+            LOGICAL(ans)[i] = FALSE;
     }
     return ans;
 }
@@ -1218,13 +1226,18 @@ SEXP attribute_hidden do_fileaccess(SEXP call, SEXP op, SEXP args, SEXP rho)
         modemask |= R_OK;
     PROTECT(ans = allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
-        INTEGER(ans)
-        [i] =
+        if (STRING_ELT(fn, i) != NA_STRING)
+        {
+            INTEGER(ans)
+            [i] =
 #ifdef Win32
-            winAccessW(filenameToWchar(STRING_ELT(fn, i), TRUE), modemask);
+                winAccessW(filenameToWchar(STRING_ELT(fn, i), TRUE), modemask);
 #else
-            access(R_ExpandFileName(translateChar(STRING_ELT(fn, i))), modemask);
+                access(R_ExpandFileName(translateChar(STRING_ELT(fn, i))), modemask);
 #endif
+        }
+        else
+            INTEGER(ans)[i] = FALSE;
     UNPROTECT(1);
     return ans;
 }
@@ -1392,15 +1405,18 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("invalid '%s' argument"), "recursive");
         for (i = 0; i < nfiles; i++)
         {
-            names = filenameToWchar(STRING_ELT(fn, i), FALSE);
-            res = dos_wglob(names, 0, NULL, &globbuf);
-            if (res == GLOB_NOSPACE)
-                error(_("internal out-of-memory condition"));
-            for (j = 0; j < globbuf.gl_pathc; j++)
+            if (STRING_ELT(fn, i) != NA_STRING)
             {
-                failures += R_unlink(globbuf.gl_pathv[j], recursive);
+                names = filenameToWchar(STRING_ELT(fn, i), FALSE);
+                res = dos_wglob(names, 0, NULL, &globbuf);
+                if (res == GLOB_NOSPACE)
+                    error(_("internal out-of-memory condition"));
+                for (j = 0; j < globbuf.gl_pathc; j++)
+                    failures += R_unlink(globbuf.gl_pathv[j], recursive);
+                dos_wglobfree(&globbuf);
             }
-            dos_wglobfree(&globbuf);
+            else
+                failures++;
         }
     }
     return ScalarInteger(failures ? 1 : 0);
@@ -1431,22 +1447,27 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("invalid '%s' argument"), "recursive");
         for (i = 0; i < nfiles; i++)
         {
-            names = translateChar(STRING_ELT(fn, i));
+            if (STRING_ELT(fn, i) != NA_STRING)
+            {
+                names = translateChar(STRING_ELT(fn, i));
 #if defined(HAVE_GLOB)
-            res = glob(names, 0, NULL, &globbuf);
+                res = glob(names, 0, NULL, &globbuf);
 #ifdef GLOB_ABORTED
-            if (res == GLOB_ABORTED)
-                warning(_("read error on '%s'"), names);
+                if (res == GLOB_ABORTED)
+                    warning(_("read error on '%s'"), names);
 #endif
 #ifdef GLOB_NOSPACE
-            if (res == GLOB_NOSPACE)
-                error(_("internal out-of-memory condition"));
+                if (res == GLOB_NOSPACE)
+                    error(_("internal out-of-memory condition"));
 #endif
-            for (j = 0; j < globbuf.gl_pathc; j++)
-                failures += R_unlink(globbuf.gl_pathv[j], recursive);
-            globfree(&globbuf);
+                for (j = 0; j < globbuf.gl_pathc; j++)
+                    failures += R_unlink(globbuf.gl_pathv[j], recursive);
+                globfree(&globbuf);
+            }
+            else
+                failures++;
 #else /* HAVE_GLOB */
-            failures += R_unlink(names, recursive);
+                failures += R_unlink(names, recursive);
 #endif
         }
     }
@@ -1944,6 +1965,8 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     path = CAR(args);
     if (!isString(path) || length(path) != 1)
         error(_("invalid '%s' argument"), "path");
+    if (STRING_ELT(path, 0) == NA_STRING)
+        return ScalarLogical(FALSE);
     show = asLogical(CADR(args));
     if (show == NA_LOGICAL)
         show = 0;
@@ -1988,6 +2011,8 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     path = CAR(args);
     if (!isString(path) || length(path) != 1)
         error(_("invalid '%s' argument"), "path");
+    if (STRING_ELT(path, 0) == NA_STRING)
+        return ScalarLogical(FALSE);
     show = asLogical(CADR(args));
     if (show == NA_LOGICAL)
         show = 0;
@@ -2127,11 +2152,16 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
     {
+        if (STRING_ELT(paths, i) != NA_STRING)
+        {
 #ifdef Win32
-        res = _wchmod(filenameToWchar(STRING_ELT(paths, i), TRUE), mode);
+            res = _wchmod(filenameToWchar(STRING_ELT(paths, i), TRUE), mode);
 #else
-        res = chmod(R_ExpandFileName(translateChar(STRING_ELT(paths, i))), mode);
+            res = chmod(R_ExpandFileName(translateChar(STRING_ELT(paths, i))), mode);
 #endif
+        }
+        else
+            res = 1;
         LOGICAL(ans)[i] = res == 0;
     }
 #else
