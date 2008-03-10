@@ -834,7 +834,7 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
             err = res == (size_t)(-1);
             /* errors lead to part of the input line being ignored */
             if (err)
-                printf(_("<ERROR: invalid input in encoding '%s'>\n"), R_StdinEnc);
+                printf(_("<ERROR: re-encoding failure from encoding '%s'>\n"), R_StdinEnc);
             strncpy((char *)buf, obuf, len);
 #else
             if (!cd)
