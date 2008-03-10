@@ -45,8 +45,8 @@ static Rboolean random1(double (*f)(double), double *a, int na, double *x, int n
     {
         ai = a[i % na];
         x[i] = f(ai);
-        if (!R_FINITE(x[i]))
-            naflag = 1;
+        if (ISNAN(x[i]))
+            naflag = TRUE;
     }
     return (naflag);
 }
@@ -63,7 +63,6 @@ SEXP attribute_hidden do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a;
     int i, n, na;
-    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)))
         invalid(call);
@@ -86,11 +85,12 @@ SEXP attribute_hidden do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         for (i = 0; i < n; i++)
             REAL(x)[i] = NA_REAL;
+        warning(_("NAs produced"));
     }
     else
     {
+        Rboolean naflag = FALSE;
         PROTECT(a = coerceVector(CADR(args), REALSXP));
-        naflag = FALSE;
         GetRNGstate();
         switch (PRIMVAL(op))
         {
@@ -124,15 +124,15 @@ static Rboolean random2(double (*f)(double, double), double *a, int na, double *
         ai = a[i % na];
         bi = b[i % nb];
         x[i] = f(ai, bi);
-        if (!R_FINITE(x[i]))
-            naflag = 1;
+        if (ISNAN(x[i]))
+            naflag = TRUE;
     }
     return (naflag);
 }
 
 #define RAND2(num, name)                                                                                               \
     case num:                                                                                                          \
-        random2(name, REAL(a), na, REAL(b), nb, REAL(x), n);                                                           \
+        naflag = random2(name, REAL(a), na, REAL(b), nb, REAL(x), n);                                                  \
         break
 
 /* "do_random2" - random sampling from 2 parameter families. */
@@ -142,7 +142,6 @@ SEXP attribute_hidden do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b;
     int i, n, na, nb;
-    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)) || !isNumeric(CADR(args)) || !isNumeric(CADDR(args)))
         invalid(call);
@@ -166,12 +165,13 @@ SEXP attribute_hidden do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         for (i = 0; i < n; i++)
             REAL(x)[i] = NA_REAL;
+        warning(_("NAs produced"));
     }
     else
     {
+        Rboolean naflag = FALSE;
         PROTECT(a = coerceVector(CADR(args), REALSXP));
         PROTECT(b = coerceVector(CADDR(args), REALSXP));
-        naflag = 0;
         GetRNGstate();
         switch (PRIMVAL(op))
         {
@@ -214,7 +214,7 @@ static Rboolean random3(double (*f)(double, double, double), double *a, int na, 
         bi = b[i % nb];
         ci = c[i % nc];
         x[i] = f(ai, bi, ci);
-        if (!R_FINITE(x[i]))
+        if (ISNAN(x[i]))
             naflag = TRUE;
     }
     return (naflag);
@@ -222,7 +222,7 @@ static Rboolean random3(double (*f)(double, double, double), double *a, int na, 
 
 #define RAND3(num, name)                                                                                               \
     case num:                                                                                                          \
-        random3(name, REAL(a), na, REAL(b), nb, REAL(c), nc, REAL(x), n);                                              \
+        naflag = random3(name, REAL(a), na, REAL(b), nb, REAL(c), nc, REAL(x), n);                                     \
         break
 
 /* "do_random3" - random sampling from 3 parameter families. */
@@ -232,7 +232,6 @@ SEXP attribute_hidden do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b, c;
     int i, n, na, nb, nc;
-    Rboolean naflag = FALSE;
     checkArity(op, args);
     if (!isVector(CAR(args)))
         invalid(call);
@@ -266,13 +265,14 @@ SEXP attribute_hidden do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         for (i = 0; i < n; i++)
             REAL(x)[i] = NA_REAL;
+        warning(_("NAs produced"));
     }
     else
     {
+        Rboolean naflag = FALSE;
         PROTECT(a = coerceVector(a, REALSXP));
         PROTECT(b = coerceVector(b, REALSXP));
         PROTECT(c = coerceVector(c, REALSXP));
-        naflag = 0;
         GetRNGstate();
         switch (PRIMVAL(op))
         {
