@@ -105,7 +105,7 @@ attribute_hidden FILE *R_OpenSiteFile(void)
 static char workspace_name[100] = ".RData";
 
 #else
-static char workspace_name[MAX_PATH] = ".RData";
+static char workspace_name[PATH_MAX] = ".RData";
 
 void set_workspace_name(const char *fn)
 {
