@@ -555,6 +555,14 @@ static Rboolean file_open(Rconnection con)
     }
     if (temp)
     {
+        /* This will fail on Windows, so arrange to remove in
+         * file_close.  An alternative strategy would be to manipulate
+         * the underlying file handle to add FILE_SHARE_DELETE (so the
+         * unlink is valid) or FILE_FLAG_DELETE_ON_CLOSE.  E.g. create
+         * via CreateFile, get an fd by _open_osfhandle and a file
+         * stream by fdopen.  See
+         * e.g. http://www.codeproject.com/KB/files/handles.aspx
+         */
         unlink(name);
 #ifdef Win32
         strncpy(this->name, name, PATH_MAX);
