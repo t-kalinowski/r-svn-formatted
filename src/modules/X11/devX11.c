@@ -2948,6 +2948,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             {
                 error("cairo error '%s'", cairo_status_to_string(res));
             }
+            if (xd->onefile)
+                cairo_svg_surface_restrict_to_version(xd->cs, CAIRO_SVG_VERSION_1_2);
             xd->cc = cairo_create(xd->cs);
             res = cairo_status(xd->cc);
             if (res != CAIRO_STATUS_SUCCESS)
