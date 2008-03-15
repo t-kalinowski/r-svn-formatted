@@ -965,6 +965,8 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+extern wchar_t *wtransChar(SEXP x);
+
 SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP text;
@@ -991,7 +993,7 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
             len = n;
         else if (format == CF_UNICODETEXT)
             for (i = 0; i < n; i++)
-                len += 2 * (wcslen(filenameToWchar(STRING_ELT(text, i), FALSE)) + 2);
+                len += 2 * (wcslen(wtransChar(STRING_ELT(text, i))) + 2);
         else
             for (i = 0; i < n; i++)
                 len += strlen(translateChar(STRING_ELT(text, i))) + 2;
@@ -1006,7 +1008,7 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
                 wchar_t *wp, *ws = (wchar_t *)s;
                 for (i = 0; i < n; i++)
                 {
-                    wp = filenameToWchar(STRING_ELT(text, i), FALSE);
+                    wp = wtransChar(STRING_ELT(text, i));
                     while (*wp)
                         *ws++ = *wp++;
                     *ws++ = L'\r';
