@@ -171,8 +171,10 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
     outbuf = (char *)filename;
     res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
     Riconv_close(obj);
-    if (res == -1 || inb > 0)
+    if (res == -1)
         error(_("file name conversion problem"));
+    if (inb > 0)
+        error(_("file name conversion problem -- name too long?"));
 
     return filename;
 }
