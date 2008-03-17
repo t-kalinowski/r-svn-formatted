@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2000-2006   The R Development Core Team
+ *  Copyright (C) 2000-2008   The R Development Core Team
  *  Copyright (C) 2004	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #include "nmath.h"
 #include "dpq.h"
 
-double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
+double qnchisq(double p, double df, double ncp, int lower_tail, int log_p)
 {
     const static double accu = 1e-13;
     const static double racc = 4 * DBL_EPSILON;
@@ -33,17 +33,17 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
     double ux, lx, nx, pp;
 
 #ifdef IEEE_754
-    if (ISNAN(p) || ISNAN(df) || ISNAN(lambda))
-        return p + df + lambda;
+    if (ISNAN(p) || ISNAN(df) || ISNAN(ncp))
+        return p + df + ncp;
 #endif
     if (!R_FINITE(df))
         ML_ERR_return_NAN;
 
     /* Was
      * df = floor(df + 0.5);
-     * if (df < 1 || lambda < 0) ML_ERR_return_NAN;
+     * if (df < 1 || ncp < 0) ML_ERR_return_NAN;
      */
-    if (df < 0 || lambda < 0)
+    if (df < 0 || ncp < 0)
         ML_ERR_return_NAN;
 
     R_Q_P01_boundaries(p, 0, ML_POSINF);
@@ -54,9 +54,9 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
         /* This is Pearson's (1959) approximation,
            which is usually good to 4 figs or so.  */
         double b, c, ff;
-        b = (lambda * lambda) / (df + 3 * lambda);
-        c = (df + 3 * lambda) / (df + 2 * lambda);
-        ff = (df + 2 * lambda) / (c * c);
+        b = (ncp * ncp) / (df + 3 * ncp);
+        c = (df + 3 * ncp) / (df + 2 * ncp);
+        ff = (df + 2 * ncp) / (c * c);
         ux = b + c * qchisq(p, ff, lower_tail, log_p);
         if (ux < 0)
             ux = 1;
@@ -68,11 +68,10 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
         if (p > 1 - DBL_EPSILON)
             return ML_POSINF;
         pp = fmin2(1 - DBL_EPSILON, p * (1 + Eps));
-        for (ux = ux; ux < DBL_MAX && pnchisq_raw(ux, df, lambda, Eps, rEps, 10000, TRUE) < pp; ux *= 2)
+        for (ux = ux; ux < DBL_MAX && pnchisq_raw(ux, df, ncp, Eps, rEps, 10000, TRUE) < pp; ux *= 2)
             ;
         pp = p * (1 - Eps);
-        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, lambda, Eps, rEps, 10000, TRUE) > pp;
-             lx *= 0.5)
+        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, ncp, Eps, rEps, 10000, TRUE) > pp; lx *= 0.5)
             ;
     }
     else
@@ -80,11 +79,10 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
         if (p > 1 - DBL_EPSILON)
             return 0.0;
         pp = fmin2(1 - DBL_EPSILON, p * (1 + Eps));
-        for (ux = ux; ux < DBL_MAX && pnchisq_raw(ux, df, lambda, Eps, rEps, 10000, FALSE) > pp; ux *= 2)
+        for (ux = ux; ux < DBL_MAX && pnchisq_raw(ux, df, ncp, Eps, rEps, 10000, FALSE) > pp; ux *= 2)
             ;
         pp = p * (1 - Eps);
-        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, lambda, Eps, rEps, 10000, FALSE) < pp;
-             lx *= 0.5)
+        for (lx = fmin2(ux, DBL_MAX); lx > DBL_MIN && pnchisq_raw(lx, df, ncp, Eps, rEps, 10000, FALSE) < pp; lx *= 0.5)
             ;
     }
 
@@ -94,7 +92,7 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
         do
         {
             nx = 0.5 * (lx + ux);
-            if (pnchisq_raw(nx, df, lambda, accu, racc, 100000, TRUE) > p)
+            if (pnchisq_raw(nx, df, ncp, accu, racc, 100000, TRUE) > p)
                 ux = nx;
             else
                 lx = nx;
@@ -105,7 +103,7 @@ double qnchisq(double p, double df, double lambda, int lower_tail, int log_p)
         do
         {
             nx = 0.5 * (lx + ux);
-            if (pnchisq_raw(nx, df, lambda, accu, racc, 100000, FALSE) < p)
+            if (pnchisq_raw(nx, df, ncp, accu, racc, 100000, FALSE) < p)
                 ux = nx;
             else
                 lx = nx;
