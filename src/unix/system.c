@@ -361,7 +361,11 @@ int Rf_initialize_R(int ac, char **av)
                     ifp = R_fopen(*av, "r");
                     if (!ifp)
                     {
+#ifdef HAVE_STRERROR
+                        snprintf(msg, 1024, _("cannot open file '%s': %s"), *av, strerror(errno));
+#else
                         snprintf(msg, 1024, _("cannot open file '%s'"), *av);
+#endif
                         R_Suicide(msg);
                     }
                 }
@@ -374,7 +378,11 @@ int Rf_initialize_R(int ac, char **av)
                     ifp = R_fopen((*av) + 7, "r");
                     if (!ifp)
                     {
+#ifdef HAVE_STRERROR
+                        snprintf(msg, 1024, _("cannot open file '%s': %s"), (*av) + 7, sterror(errno));
+#else
                         snprintf(msg, 1024, _("cannot open file '%s'"), (*av) + 7);
+#endif
                         R_Suicide(msg);
                     }
                 }
