@@ -1041,7 +1041,7 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -1210,7 +1210,7 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -1416,7 +1416,7 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -1614,7 +1614,7 @@ SEXP attribute_hidden do_bzfile(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -2528,7 +2528,7 @@ SEXP attribute_hidden do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -2582,7 +2582,7 @@ SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 
@@ -2635,7 +2635,7 @@ SEXP attribute_hidden do_open(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!success)
     {
         /* con_close(i); user might have a reference */
-        error(_("unable to open connection"));
+        error(_("cannot open the connection"));
     }
     return R_NilValue;
 }
@@ -4481,7 +4481,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!success)
         {
             con_close(ncon);
-            error(_("unable to open connection"));
+            error(_("cannot open the connection"));
         }
     }
 

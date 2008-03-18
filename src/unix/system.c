@@ -48,6 +48,10 @@
 #include <unistd.h> /* isatty() */
 #endif
 
+#ifdef HAVE_STRERROR
+#include <errno.h>
+#endif
+
 #include "Fileio.h"
 
 #define __SYSTEM__
@@ -379,7 +383,7 @@ int Rf_initialize_R(int ac, char **av)
                     if (!ifp)
                     {
 #ifdef HAVE_STRERROR
-                        snprintf(msg, 1024, _("cannot open file '%s': %s"), (*av) + 7, sterror(errno));
+                        snprintf(msg, 1024, _("cannot open file '%s': %s"), (*av) + 7, strerror(errno));
 #else
                         snprintf(msg, 1024, _("cannot open file '%s'"), (*av) + 7);
 #endif
