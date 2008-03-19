@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2007  The R Foundation
+ *  Copyright (C) 2007-8  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,12 +28,14 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/QuartzDevice.h>
+#define _(String) (String)
 
 typedef struct
 {
     CGContextRef bitmap;
-    char *uti;           /* Type of bitmap to produce */
-    char *path;          /* Path for file save during close (can be NULL) */
+    char *uti;  /* Type of bitmap to produce */
+    char *path; /* Path for file save during close (can be NULL) */
+    int page;
     unsigned int length; /* Size of the bitmap */
     char data[1];        /* Actual bitmap bytes */
 } QuartzBitmapDevice;
@@ -45,17 +47,18 @@ CGContextRef QuartzBitmap_GetCGContext(QuartzDesc_t dev, void *userInfo)
     return ((QuartzBitmapDevice *)userInfo)->bitmap;
 }
 
-void QuartzBitmap_Close(QuartzDesc_t dev, void *userInfo)
+void QuartzBitmap_Output(QuartzDesc_t dev, QuartzBitmapDevice *qbd)
 {
-    QuartzBitmapDevice *qbd = (QuartzBitmapDevice *)userInfo;
-
     if (qbd->path && qbd->uti)
     {
         /* On 10.4+ we can employ the CGImageDestination API to create a
            variety of different bitmap formats */
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4
-        CFStringRef pathString = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)qbd->path, strlen(qbd->path),
-                                                         kCFStringEncodingUTF8, FALSE);
+        char buf[PATH_MAX + 1];
+        snprintf(buf, PATH_MAX, qbd->path, qbd->page);
+        buf[PATH_MAX] = '\0';
+        CFStringRef pathString =
+            CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)buf, strlen(buf), kCFStringEncodingUTF8, FALSE);
         CFURLRef path;
         if (CFStringFind(pathString, CFSTR("://"), 0).location != kCFNotFound)
         {
@@ -66,8 +69,7 @@ void QuartzBitmap_Close(QuartzDesc_t dev, void *userInfo)
         }
         else
         {
-            path = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (const UInt8 *)qbd->path,
-                                                           strlen(qbd->path), FALSE);
+            path = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (const UInt8 *)buf, strlen(buf), FALSE);
         }
         CFRelease(pathString);
 
@@ -100,13 +102,31 @@ void QuartzBitmap_Close(QuartzDesc_t dev, void *userInfo)
             CFRelease(data);
         }
         else
-            warning("Not a supported scheme, no image data written.");
+            warning(_("Not a supported scheme, no image data written"));
         CFRelease(scheme);
         CFRelease(type);
         CFRelease(path);
         CFRelease(image);
 #endif
     }
+}
+
+void QuartzBitmap_NewPage(QuartzDesc_t dev, void *userInfo, int flags)
+{
+    QuartzBitmapDevice *qbd = (QuartzBitmapDevice *)userInfo;
+
+    if (qbd->page)
+        QuartzBitmap_Output(dev, qbd);
+    qbd->page++;
+}
+
+void QuartzBitmap_Close(QuartzDesc_t dev, void *userInfo)
+{
+    QuartzBitmapDevice *qbd = (QuartzBitmapDevice *)userInfo;
+
+    /* FIXME: do this only if device is used? */
+    QuartzBitmap_Output(dev, qbd);
+
     /* Free ourselves */
     if (qbd->bitmap)
         CFRelease(qbd->bitmap);
@@ -150,6 +170,7 @@ Rboolean QuartzBitmap_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParame
         dev->length = s;
         dev->uti = type ? strdup(type) : NULL;
         dev->path = par->file ? strdup(par->file) : NULL;
+        dev->page = 0;
         memset(dev->data, 0, s);
         dev->bitmap = CGBitmapContextCreate(dev->data, w, h, 8, rb, CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB),
                                             kCGImageAlphaPremultipliedLast);
@@ -170,7 +191,7 @@ Rboolean QuartzBitmap_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParame
             QuartzBitmap_GetCGContext,
             NULL, /* locate */
             QuartzBitmap_Close,
-            NULL, /* new page */
+            QuartzBitmap_NewPage,
             NULL, /* state */
             NULL, /* par */
             NULL, /* sync */

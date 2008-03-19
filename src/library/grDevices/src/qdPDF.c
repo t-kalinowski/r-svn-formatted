@@ -26,6 +26,7 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/QuartzDevice.h>
+#define _(String) (String)
 
 typedef struct
 {
@@ -78,7 +79,7 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
     double width = par->width, height = par->height;
     Rboolean ret = FALSE;
     /* DPI is ignored, because PDF is resolution independent.
-       More precisely 72dpi is used to guatantee that PDF and GE
+       More precisely 72dpi is used to guarantee that PDF and GE
        coordinates are the same */
     dpi = mydpi;
 
@@ -92,6 +93,9 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
     QuartzDesc_t qd;
     QuartzPDFDevice *dev = malloc(sizeof(QuartzPDFDevice) + s);
 
+    if (!par->file || !*par->file)
+        par->file = "Rplots.pdf";
+
     if (par->file && *par->file)
     {
         CGRect bbox;
@@ -99,6 +103,7 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
                                                    kCFStringEncodingUTF8, FALSE);
         if (!path || !(dev->url = CFURLCreateWithFileSystemPath(NULL, path, kCFURLPOSIXPathStyle, false)))
         {
+            warning(_("cannot open file '%s'"), par->file);
             free(dev);
             return ret;
         }
@@ -163,5 +168,6 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
             qf->ResetContext(qd);
         }
     }
+
     return ret;
 }

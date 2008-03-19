@@ -61,7 +61,7 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostS
 #ifdef WIN32
                                                  EXTDEF(devga, 16), EXTDEF(savePlot, 3),
 #else
-                                                 EXTDEF(Quartz, -1),
+                                                 EXTDEF(Quartz, 12),
 #endif
                                                  {NULL, NULL, 0}};
 
