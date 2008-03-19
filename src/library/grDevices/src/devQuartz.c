@@ -531,14 +531,11 @@ CGFontRef RQuartz_Font(CTXDESC)
     }
     if (CFStringGetLength(fontName) == 0)
         CFStringAppend(fontName, CFSTR("Arial"));
+    /* FIXME: what about bold italic? */
     if (fontface == 2 || fontface == 4)
-    {
         CFStringAppend(fontName, CFSTR(" Bold"));
-    }
     if (fontface == 3)
-    {
         CFStringAppend(fontName, CFSTR(" Italic"));
-    }
     CGFontRef font = CGFontCreateWithFontName(fontName);
     if (font == 0)
     {
@@ -547,9 +544,7 @@ CGFontRef RQuartz_Font(CTXDESC)
         font = CGFontCreateWithPlatformFont(&tmp);
     }
     if (NULL == font)
-    {
         CFShow(fontName);
-    }
     CFRelease(fontName);
     return font;
 }
@@ -564,6 +559,7 @@ void RQuartz_Set(CGContextRef ctx, const pGEcontext gc, int flags)
     if (flags & RQUARTZ_FILL)
     {
         int fill = gc->fill;
+        /* FIXME: surely 255? */
         CGContextSetRGBFillColor(ctx, R_RED(fill) / 256.0, R_GREEN(fill) / 256.0, R_BLUE(fill) / 256.0,
                                  R_ALPHA(fill) / 256.0);
     }
@@ -578,6 +574,7 @@ void RQuartz_Set(CGContextRef ctx, const pGEcontext gc, int flags)
         CGFloat dashlist[8];
         int i, ndash = 0;
         int lty = gc->lty;
+        /* FIXME: units for lwd -- 1/96" preferred */
         CGContextSetLineWidth(ctx, gc->lwd);
 
         float lwd = gc->lwd * 0.75;
@@ -721,6 +718,7 @@ static void RQuartz_Clip(double x0, double x1, double y0, double y1, DEVDESC)
     CGContextClipToRect(ctx, xd->clipRect);
 }
 
+/* FIXME: better to let the engine do this */
 static CFStringRef text2unichar(CTXDESC, const char *text, UniChar **buffer, int *free)
 {
     CFStringRef str;
@@ -792,7 +790,7 @@ static void RQuartz_Text(double x, double y, const char *text, double rot, doubl
     SET(RQUARTZ_FILL | RQUARTZ_STROKE | RQUARTZ_FONT);
     gc->fill = fill;
     CGFontRef font = CGContextGetFont(ctx);
-    float aScale = (gc->cex * gc->ps * xd->tscale) / (CGFontGetUnitsPerEm(font));
+    float aScale = (gc->cex * gc->ps * xd->tscale) / CGFontGetUnitsPerEm(font);
     UniChar *buffer;
     CGGlyph *glyphs;
 
@@ -1037,7 +1035,7 @@ int Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create)
     return 0;
 }
 
-/* ARGS: type, file, widht, height, ps, family, antialias, fontsm, title, bg, dpi */
+/* ARGS: type, file, width, height, ps, family, antialias, fontsm, title, bg, dpi */
 SEXP Quartz(SEXP args)
 {
     SEXP tmps, bgs;

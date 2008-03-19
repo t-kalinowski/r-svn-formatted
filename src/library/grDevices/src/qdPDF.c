@@ -77,8 +77,9 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
     double mydpi[2] = {72.0, 72.0};
     double width = par->width, height = par->height;
     Rboolean ret = FALSE;
-    /* DPI is ignored, because PDF is resolution independent. More precisely 72dpi is used to guatantee that PDF and GE
-     * coordinates are the same */
+    /* DPI is ignored, because PDF is resolution independent.
+       More precisely 72dpi is used to guatantee that PDF and GE
+       coordinates are the same */
     dpi = mydpi;
 
     if (!qf)
