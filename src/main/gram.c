@@ -3785,51 +3785,12 @@ static int KeywordLookup(const char *s)
 
 static SEXP mkFloat(const char *s)
 {
-    double f;
-    if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
-    {
-        double ret = 0;
-        const char *p = s + 2;
-        for (; p; p++)
-        {
-            if ('0' <= *p && *p <= '9')
-                ret = 16 * ret + (*p - '0');
-            else if ('a' <= *p && *p <= 'f')
-                ret = 16 * ret + (*p - 'a' + 10);
-            else if ('A' <= *p && *p <= 'F')
-                ret = 16 * ret + (*p - 'A' + 10);
-            else
-                break;
-        }
-        f = ret;
-    }
-    else
-        f = atof(s);
-    return ScalarReal(f);
+    return ScalarReal(R_atof(s));
 }
 
 static SEXP mkInt(const char *s)
 {
-    double f;
-    if (strlen(s) > 2 && (s[1] == 'x' || s[1] == 'X'))
-    {
-        double ret = 0;
-        const char *p = s + 2;
-        for (; p; p++)
-        {
-            if ('0' <= *p && *p <= '9')
-                ret = 16 * ret + (*p - '0');
-            else if ('a' <= *p && *p <= 'f')
-                ret = 16 * ret + (*p - 'a' + 10);
-            else if ('A' <= *p && *p <= 'F')
-                ret = 16 * ret + (*p - 'A' + 10);
-            else
-                break;
-        }
-        f = ret;
-    }
-    else
-        f = atof(s);
+    double f = R_atof(s); /* or R_strtol? */
     return ScalarInteger((int)f);
 }
 
@@ -3837,7 +3798,7 @@ static SEXP mkComplex(const char *s)
 {
     SEXP t = R_NilValue;
     double f;
-    f = atof(s); /* make certain the value is legitimate. */
+    f = R_atof(s); /* FIXME: make certain the value is legitimate. */
 
     if (GenerateCode)
     {
@@ -4152,8 +4113,8 @@ static int NumericValue(int c)
     /* Make certain that things are okay. */
     if (c == 'L')
     {
-        double a = atof(yytext);
-        int b = (int)atof(yytext);
+        double a = R_atof(yytext);
+        int b = (int)a;
         /* We are asked to create an integer via the L, so we check that the
            double and int values are the same. If not, this is a problem and we
            will not lose information and so use the numeric value.
