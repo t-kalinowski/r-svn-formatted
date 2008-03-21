@@ -734,23 +734,23 @@ void setup_Rmainloop(void)
     }
 #else /* not Win32 */
     if (!setlocale(LC_CTYPE, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_CTYPE failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_CTYPE failed, using \"C\"\n");
     if (!setlocale(LC_COLLATE, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_COLLATE failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_COLLATE failed, using \"C\"\n");
     if (!setlocale(LC_TIME, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_TIME failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_TIME failed, using \"C\"\n");
 #ifdef ENABLE_NLS
     if (!setlocale(LC_MESSAGES, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MESSAGES failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MESSAGES failed, using \"C\"\n");
 #endif
         /* NB: we do not set LC_NUMERIC */
 #ifdef LC_PAPER
     if (!setlocale(LC_PAPER, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed, using \"C\"\n");
 #endif
 #ifdef LC_MEASUREMENT
     if (!setlocale(LC_MEASUREMENT, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MEASUREMENT failed\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MEASUREMENT failed, using \"C\"\n");
 #endif
 #endif /* not Win32 */
 #ifdef ENABLE_NLS
