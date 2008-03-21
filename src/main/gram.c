@@ -4080,6 +4080,22 @@ static int NumericValue(int c)
             }
             if (nd == 0)
                 return ERROR;
+            if (c == 'p' || c == 'P')
+            {
+                YYTEXT_PUSH(c, yyp);
+                c = xxgetc();
+                if (!isdigit(c) && c != '+' && c != '-')
+                    return ERROR;
+                if (c == '+' || c == '-')
+                {
+                    YYTEXT_PUSH(c, yyp);
+                    c = xxgetc();
+                }
+                for (nd = 0; isdigit(c); c = xxgetc(), nd++)
+                    YYTEXT_PUSH(c, yyp);
+                if (nd == 0)
+                    return ERROR;
+            }
             break;
         }
         if (c == 'E' || c == 'e')
