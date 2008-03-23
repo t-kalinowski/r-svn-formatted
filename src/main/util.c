@@ -1666,6 +1666,13 @@ double R_strtod4(const char *str, char **endptr, char dec, Rboolean NA)
     while (isspace(*p))
         p++;
 
+    if (NA && strncmp(p, "NA", 2) == 0)
+    {
+        ans = NA_REAL;
+        p += 2;
+        goto done;
+    }
+
     /* optional sign */
     switch (*p)
     {
@@ -1676,13 +1683,7 @@ double R_strtod4(const char *str, char **endptr, char dec, Rboolean NA)
     default:;
     }
 
-    if (NA && strncmp(p, "NA", 2) == 0)
-    {
-        ans = NA_REAL;
-        p += 2;
-        goto done;
-    }
-    else if (strncasecmp(p, "NaN", 3) == 0)
+    if (strncasecmp(p, "NaN", 3) == 0)
     {
         ans = R_NaN;
         p += 3;
