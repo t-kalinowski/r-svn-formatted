@@ -148,17 +148,23 @@ static int shash(SEXP x, int indx, HashData *d)
 
 static int lequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     return (LOGICAL(x)[i] == LOGICAL(y)[j]);
 }
 
 static int iequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     return (INTEGER(x)[i] == INTEGER(y)[j]);
 }
 
 /* BDR 2002-1-17  We don't want NA and other NaNs to be equal */
 static int requal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     if (!ISNAN(REAL(x)[i]) && !ISNAN(REAL(y)[j]))
         return (REAL(x)[i] == REAL(y)[j]);
     else if (R_IsNA(REAL(x)[i]) && R_IsNA(REAL(y)[j]))
@@ -171,6 +177,8 @@ static int requal(SEXP x, int i, SEXP y, int j)
 
 static int cequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     if (!ISNAN(COMPLEX(x)[i].r) && !ISNAN(COMPLEX(x)[i].i) && !ISNAN(COMPLEX(y)[j].r) && !ISNAN(COMPLEX(y)[j].i))
         return COMPLEX(x)[i].r == COMPLEX(y)[j].r && COMPLEX(x)[i].i == COMPLEX(y)[j].i;
     else if ((R_IsNA(COMPLEX(x)[i].r) || R_IsNA(COMPLEX(x)[i].i)) &&
@@ -185,6 +193,8 @@ static int cequal(SEXP x, int i, SEXP y, int j)
 
 static int sequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     /* Two strings which have the same address must be the same,
        so avoid looking at the contents */
     if (STRING_ELT(x, i) == STRING_ELT(y, j))
@@ -203,6 +213,8 @@ static int rawhash(SEXP x, int indx, HashData *d)
 
 static int rawequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     return (RAW(x)[i] == RAW(y)[j]);
 }
 
@@ -274,6 +286,8 @@ static int vhash(SEXP x, int indx, HashData *d)
 
 static int vequal(SEXP x, int i, SEXP y, int j)
 {
+    if (i < 0 || j < 0)
+        return 0;
     return compute_identical(VECTOR_ELT(x, i), VECTOR_ELT(y, j));
 }
 
