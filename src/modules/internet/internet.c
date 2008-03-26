@@ -329,7 +329,7 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         headers = CHAR(STRING_ELT(sheaders, 0));
 #ifdef Win32
-    if (!pbar.wprog)
+    if (!quiet && !pbar.wprog)
     {
         pbar.wprog = newwindow(_("Download progress"), rect(0, 0, 540, 100), Titlebar | Centered);
         setbackground(pbar.wprog, dialog_bg());
@@ -432,12 +432,15 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 strcat(buf, url);
-            settext(pbar.l_url, buf);
-            setprogressbarrange(pbar.pb, 0, guess);
-            show(pbar.wprog);
-            begincontext(&(pbar.cntxt), CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-            pbar.cntxt.cend = &doneprogressbar;
-            pbar.cntxt.cenddata = &pbar;
+            if (!quiet)
+            {
+                settext(pbar.l_url, buf);
+                setprogressbarrange(pbar.pb, 0, guess);
+                show(pbar.wprog);
+                begincontext(&(pbar.cntxt), CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+                pbar.cntxt.cend = &doneprogressbar;
+                pbar.cntxt.cenddata = &pbar;
+            }
 #endif
             while ((len = in_R_HTTPRead(ctxt, buf, sizeof(buf))) > 0)
             {
@@ -446,12 +449,15 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                     error(_("write failed"));
                 nbytes += len;
 #ifdef Win32
-                if (nbytes > guess)
+                if (!quiet)
                 {
-                    guess *= 2;
-                    setprogressbarrange(pbar.pb, 0, guess);
+                    if (nbytes > guess)
+                    {
+                        guess *= 2;
+                        setprogressbarrange(pbar.pb, 0, guess);
+                    }
+                    setprogressbar(pbar.pb, nbytes);
                 }
-                setprogressbar(pbar.pb, nbytes);
 #else
                 if (!quiet)
                 {
@@ -478,8 +484,11 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             }
 #ifdef Win32
             R_FlushConsole();
-            endcontext(&(pbar.cntxt));
-            doneprogressbar(&pbar);
+            if (!quiet)
+            {
+                endcontext(&(pbar.cntxt));
+                doneprogressbar(&pbar);
+            }
 #endif
             if (total > 0 && total != nbytes)
                 warning(_("downloaded length %d != reported length %d"), nbytes, total);
@@ -535,14 +544,17 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 strcat(buf, url);
-            settext(pbar.l_url, buf);
-            setprogressbarrange(pbar.pb, 0, guess);
-            show(pbar.wprog);
+            if (!quiet)
+            {
+                settext(pbar.l_url, buf);
+                setprogressbarrange(pbar.pb, 0, guess);
+                show(pbar.wprog);
 
-            /* set up a context which will close progressbar on error. */
-            begincontext(&(pbar.cntxt), CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
-            pbar.cntxt.cend = &doneprogressbar;
-            pbar.cntxt.cenddata = &pbar;
+                /* set up a context which will close progressbar on error. */
+                begincontext(&(pbar.cntxt), CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
+                pbar.cntxt.cend = &doneprogressbar;
+                pbar.cntxt.cenddata = &pbar;
+            }
 
 #endif
             while ((len = in_R_FTPRead(ctxt, buf, sizeof(buf))) > 0)
@@ -552,12 +564,15 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
                     error(_("write failed"));
                 nbytes += len;
 #ifdef Win32
-                if (nbytes > guess)
+                if (!quiet)
                 {
-                    guess *= 2;
-                    setprogressbarrange(pbar.pb, 0, guess);
+                    if (nbytes > guess)
+                    {
+                        guess *= 2;
+                        setprogressbarrange(pbar.pb, 0, guess);
+                    }
+                    setprogressbar(pbar.pb, nbytes);
                 }
-                setprogressbar(pbar.pb, nbytes);
 #else
                 if (!quiet)
                 {
@@ -584,8 +599,11 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
             }
 #ifdef Win32
             R_FlushConsole();
-            endcontext(&(pbar.cntxt));
-            doneprogressbar(&pbar);
+            if (!quiet)
+            {
+                endcontext(&(pbar.cntxt));
+                doneprogressbar(&pbar);
+            }
 #endif
             if (total > 0 && total != nbytes)
                 warning(_("downloaded length %d != reported length %d"), nbytes, total);
