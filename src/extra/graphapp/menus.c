@@ -146,6 +146,14 @@ static void set_search_string(char *search, const char *name, int key)
     if (!string_diff(name, "?"))
         search[dest++] = '?';
 
+    if (MB_CUR_MAX == 1)
+    {
+        /* If there is an '&' in the string, use the next letter first */
+        char *p = strchr(name, '&');
+        if (p && *(p + 1))
+            search[dest++] = *(p + 1);
+    }
+
     /* add the accelerator key if it is in the name string */
     if (key)
     {
@@ -263,10 +271,12 @@ static void setmenustring(object obj, char *buf, const char *name, int key)
             if (mb_len > 1)
             {
                 for (i = 0; i < mb_len; i++)
-                {
                     buf[dest++] = name[source + i];
-                }
                 source += mb_len - 1;
+            }
+            else if (name[source] == '&')
+            {
+                /* skip it */
             }
             else
                 buf[dest++] = name[source];
@@ -275,10 +285,11 @@ static void setmenustring(object obj, char *buf, const char *name, int key)
         for (; name[source]; source++)
             buf[dest++] = name[source];
     }
-    else /* no shortcut key, just copy the name string */
+    else /* no shortcut key, just copy the name string except '&' */
     {
         for (source = 0; name[source]; source++)
-            buf[dest++] = name[source];
+            if (MB_CUR_MAX == 1 && name[source] != '&')
+                buf[dest++] = name[source];
     }
 
     if (key)
