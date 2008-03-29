@@ -487,7 +487,11 @@ static int handle_message_dialog(window w)
 
     show(w);
     while (d->hit == NOT_CHOSEN_YET)
+    {
+        if (!peekevent())
+            WaitMessage();
         doevent();
+    }
     hide(w);
 
     if (old)

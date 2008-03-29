@@ -241,7 +241,8 @@ static int ThreadedReadConsole(const char *prompt, char *buf, int len, int addto
     SetEvent(EhiWakeUp);
     while (1)
     {
-        WaitMessage();
+        if (!peekevent())
+            WaitMessage();
         if (lineavailable)
             break;
         doevent();
