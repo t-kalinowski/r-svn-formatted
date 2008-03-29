@@ -525,11 +525,11 @@ SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
     SET_STRING_ELT(ans, 2, mkChar(ver));
     GetComputerNameW(name, &namelen);
     wcstoutf8(buf, name, 1000);
-    SET_STRING_ELT(ans, 3, mkCharEnc(buf, UTF8_MASK));
+    SET_STRING_ELT(ans, 3, mkCharCE(buf, CE_UTF8));
     SET_STRING_ELT(ans, 4, mkChar("x86"));
     GetUserNameW(user, &userlen);
     wcstoutf8(buf, user, 1000);
-    SET_STRING_ELT(ans, 5, mkCharEnc(buf, UTF8_MASK));
+    SET_STRING_ELT(ans, 5, mkCharCE(buf, CE_UTF8));
     SET_STRING_ELT(ans, 6, STRING_ELT(ans, 5));
     PROTECT(ansnames = allocVector(STRSXP, 7));
     SET_STRING_ELT(ansnames, 0, mkChar("sysname"));
@@ -894,7 +894,7 @@ static SEXP splitClipboardText(const char *s, int ienc)
         if (*p == eol)
         {
             *q = '\0';
-            SET_STRING_ELT(ans, nl++, mkCharEnc(line, ienc));
+            SET_STRING_ELT(ans, nl++, mkCharCE(line, ienc));
             q = line;
             *q = '\0';
         }
@@ -906,7 +906,7 @@ static SEXP splitClipboardText(const char *s, int ienc)
     if (!last)
     {
         *q = '\0';
-        SET_STRING_ELT(ans, nl, mkCharEnc(line, ienc));
+        SET_STRING_ELT(ans, nl, mkCharCE(line, ienc));
     }
     R_chk_free(line);
     UNPROTECT(1);
@@ -941,14 +941,14 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
             else if (format == CF_UNICODETEXT)
             {
                 char *text;
-                int n, ienc = 0;
+                int n, ienc = CE_NATIVE;
                 const wchar_t *wpc = (wchar_t *)pc;
                 n = wcslen(wpc);
                 text = alloca(2 * (n + 1)); /* UTF-8 is at most 1.5x longer */
                 R_CheckStack();
                 wcstoutf8(text, wpc, n + 1);
                 if (!strIsASCII(text))
-                    ienc = UTF8_MASK;
+                    ienc = CE_UTF8;
                 ans = splitClipboardText(text, ienc);
             }
             else if (format == CF_TEXT || format == CF_OEMTEXT)
@@ -1065,12 +1065,12 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         el = STRING_ELT(paths, i);
-        if (getCharEnc(el) == CE_UTF8)
+        if (getCharCE(el) == CE_UTF8)
         {
             GetFullPathNameW(filenameToWchar(el, FALSE), MAX_PATH, wtmp, &wtmp2);
             GetLongPathNameW(wtmp, wlongpath, MAX_PATH);
             wcstoutf8(longpath, wlongpath, wcslen(wlongpath) + 1);
-            SET_STRING_ELT(ans, i, mkCharEnc(longpath, UTF8_MASK));
+            SET_STRING_ELT(ans, i, mkCharCE(longpath, CE_UTF8));
         }
         else
         {
@@ -1099,9 +1099,8 @@ SEXP do_shortpath(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         el = STRING_ELT(paths, i);
-        if (getCharEnc(el) == CE_UTF8)
+        if (getCharCE(el) == CE_UTF8)
         {
-            int ienc = 0;
             res = GetShortPathNameW(filenameToWchar(el, FALSE), wtmp, MAX_PATH);
             if (res)
                 wcstoutf8(tmp, wtmp, wcslen(wtmp) + 1);
@@ -1110,7 +1109,7 @@ SEXP do_shortpath(SEXP call, SEXP op, SEXP args, SEXP rho)
             /* documented to return paths using \, which the API call does
                not necessarily do */
             R_fixbackslash(tmp);
-            SET_STRING_ELT(ans, i, mkCharEnc(tmp, ienc));
+            SET_STRING_ELT(ans, i, mkCharCE(tmp, CE_UTF8));
         }
         else
         {
@@ -1129,7 +1128,7 @@ SEXP do_shortpath(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static SEXP mkCharUTF8(const char *s)
 {
-    return mkCharEnc(reEnc(s, CE_NATIVE, CE_UTF8, 1), UTF8_MASK);
+    return mkCharCE(reEnc(s, CE_NATIVE, CE_UTF8, 1), CE_UTF8);
 }
 
 SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1633,7 +1632,7 @@ static SEXP mkCharUcs(wchar_t *name)
     R_CheckStack();
     wcstombs(buf, name, N);
     buf[N - 1] = '\0';
-    return mkCharEnc(buf, UTF8_MASK);
+    return mkCharCE(buf, CE_UTF8);
 }
 
 static SEXP readRegistryKey1(HKEY hkey, const wchar_t *name)

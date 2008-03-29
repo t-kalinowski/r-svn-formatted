@@ -3100,7 +3100,7 @@ void GRect(double x0, double y0, double x1, double y1, int coords, int bg, int f
 }
 
 /* Compute string width. */
-double GStrWidth(const char *str, int enc, GUnit units, pGEDevDesc dd)
+double GStrWidth(const char *str, cetype_t enc, GUnit units, pGEDevDesc dd)
 {
     double w;
     R_GE_gcontext gc;
@@ -3113,7 +3113,7 @@ double GStrWidth(const char *str, int enc, GUnit units, pGEDevDesc dd)
 
 /* Compute string height. */
 
-double GStrHeight(const char *str, int enc, GUnit units, pGEDevDesc dd)
+double GStrHeight(const char *str, cetype_t enc, GUnit units, pGEDevDesc dd)
 {
     double h;
     R_GE_gcontext gc;
@@ -3127,7 +3127,8 @@ double GStrHeight(const char *str, int enc, GUnit units, pGEDevDesc dd)
 /* Draw text in a plot. */
 /* If you want EXACT centering of text (e.g., like in GSymbol) */
 /* then pass NA_REAL for xc and yc */
-void GText(double x, double y, int coords, const char *str, int enc, double xc, double yc, double rot, pGEDevDesc dd)
+void GText(double x, double y, int coords, const char *str, cetype_t enc, double xc, double yc, double rot,
+           pGEDevDesc dd)
 {
     R_GE_gcontext gc;
     gcontextFromGP(&gc, dd);
@@ -3381,7 +3382,8 @@ void GSymbol(double x, double y, int coords, int pch, pGEDevDesc dd)
 }
 
 /* Draw text in plot margins. */
-void GMtext(const char *str, int enc, int side, double line, int outer, double at, int las, double yadj, pGEDevDesc dd)
+void GMtext(const char *str, cetype_t enc, int side, double line, int outer, double at, int las, double yadj,
+            pGEDevDesc dd)
 {
     /* "las" gives the style of axis labels:
          0 = always parallel to the axis [= default],

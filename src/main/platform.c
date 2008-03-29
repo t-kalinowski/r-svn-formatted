@@ -302,7 +302,7 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
         SEXP el = STRING_ELT(fn, 0);
         if (!isNull(el))
 #ifdef Win32
-            f[i] = acopy_string(reEnc(CHAR(el), getCharEnc(el), CE_UTF8, 1));
+            f[i] = acopy_string(reEnc(CHAR(el), getCharCE(el), CE_UTF8, 1));
 #else
             f[i] = acopy_string(translateChar(el));
 #endif
@@ -321,7 +321,7 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         SEXP pg0 = STRING_ELT(pg, 0);
 #ifdef Win32
-        pager = acopy_string(reEnc(CHAR(pg0), getCharEnc(pg0), CE_UTF8, 1));
+        pager = acopy_string(reEnc(CHAR(pg0), getCharCE(pg0), CE_UTF8, 1));
 #else
         pager = acopy_string(CHAR(pg0));
 #endif
@@ -368,7 +368,7 @@ SEXP attribute_hidden do_fileedit(SEXP call, SEXP op, SEXP args, SEXP rho)
             SEXP el = STRING_ELT(fn, 0);
             if (!isNull(el))
 #ifdef Win32
-                f[i] = acopy_string(reEnc(CHAR(el), getCharEnc(el), CE_UTF8, 1));
+                f[i] = acopy_string(reEnc(CHAR(el), getCharCE(el), CE_UTF8, 1));
 #else
                 f[i] = acopy_string(translateChar(el));
 #endif
@@ -392,7 +392,7 @@ SEXP attribute_hidden do_fileedit(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         SEXP ed0 = STRING_ELT(ed, 0);
 #ifdef Win32
-        editor = acopy_string(reEnc(CHAR(ed0), getCharEnc(ed0), CE_UTF8, 1));
+        editor = acopy_string(reEnc(CHAR(ed0), getCharCE(ed0), CE_UTF8, 1));
 #else
         editor = acopy_string(translateChar(ed0));
 #endif

@@ -84,11 +84,11 @@ static SEXP insertString(char *str, LocalData *l)
     if (!strIsASCII(str))
     {
         if (l->con->UTF8out || l->isUTF8)
-            return mkCharEnc(str, UTF8_MASK);
+            return mkCharCE(str, CE_UTF8);
         else if (l->isLatin1)
-            return mkCharEnc(str, LATIN1_MASK);
+            return mkCharCE(str, CE_LATIN1);
     }
-    return mkCharEnc(str, 0);
+    return mkChar(str);
 }
 
 static R_INLINE Rboolean Rspace(unsigned int c)

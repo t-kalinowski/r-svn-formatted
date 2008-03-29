@@ -440,7 +440,7 @@ static const char *trChar(SEXP x)
         p = buf;
     else
         p = R_alloc(n + 7, 1);
-    if (WinUTF8out && getCharEnc(x) == CE_UTF8)
+    if (WinUTF8out && getCharCE(x) == CE_UTF8)
     {
         strcpy(p, UTF8in);
         strcat(p, CHAR(x));

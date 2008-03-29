@@ -1129,13 +1129,13 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 {
                     /* If user supplied labels, use i'th one of them
                        Otherwise stringify the z-value of the contour */
-                    int enc = CE_NATIVE;
+                    cetype_t enc = CE_NATIVE;
                     buffer[0] = ' ';
                     if (!isNull(labels))
                     {
                         int numl = length(labels);
                         strcpy(&buffer[1], CHAR(STRING_ELT(labels, cnum % numl)));
-                        enc = getCharEnc(STRING_ELT(labels, cnum % numl));
+                        enc = getCharCE(STRING_ELT(labels, cnum % numl));
                     }
                     else
                     {
@@ -2310,7 +2310,7 @@ static double labelAngle(double x1, double y1, double x2, double y2)
 }
 
 static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, int nTicks, int tickType,
-                      const char *label, int enc, pGEDevDesc dd)
+                      const char *label, cetype_t enc, pGEDevDesc dd)
 {
     Vector3d u1, u2, u3, v1, v2, v3;
     double tickLength = .03; /* proportion of axis length */
@@ -2488,7 +2488,7 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
             /* Draw tick line */
             GLine(v1[0] / v1[3], v1[1] / v1[3], v2[0] / v2[3], v2[1] / v2[3], USER, dd);
             /* Draw tick label */
-            GText(v3[0] / v3[3], v3[1] / v3[3], USER, CHAR(STRING_ELT(lab, i)), getCharEnc(STRING_ELT(lab, i)), .5, .5,
+            GText(v3[0] / v3[3], v3[1] / v3[3], USER, CHAR(STRING_ELT(lab, i)), getCharCE(STRING_ELT(lab, i)), .5, .5,
                   0, dd);
         }
         UNPROTECT(2);
@@ -2506,8 +2506,8 @@ static void PerspAxis(double *x, double *y, double *z, int axis, int axisType, i
  * to decide which of the x- and y-axes to label AND which corner
  * has the lowest x-value to decide which of the z-axes to label
  */
-static void PerspAxes(double *x, double *y, double *z, const char *xlab, int xenc, const char *ylab, int yenc,
-                      const char *zlab, int zenc, int nTicks, int tickType, pGEDevDesc dd)
+static void PerspAxes(double *x, double *y, double *z, const char *xlab, cetype_t xenc, const char *ylab, cetype_t yenc,
+                      const char *zlab, cetype_t zenc, int nTicks, int tickType, pGEDevDesc dd)
 {
     int xAxis = 0, yAxis = 0, zAxis = 0; /* -Wall */
     int xpdsave;
@@ -2783,9 +2783,9 @@ SEXP attribute_hidden do_persp(SEXP call, SEXP op, SEXP args, SEXP env)
         if (doaxes)
         {
             SEXP xl = STRING_ELT(xlab, 0), yl = STRING_ELT(ylab, 0), zl = STRING_ELT(zlab, 0);
-            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : CHAR(xl), getCharEnc(xl),
-                      (yl == NA_STRING) ? "" : CHAR(yl), getCharEnc(yl), (zl == NA_STRING) ? "" : CHAR(zl),
-                      getCharEnc(zl), nTicks, tickType, dd);
+            PerspAxes(REAL(xlim), REAL(ylim), REAL(zlim), (xl == NA_STRING) ? "" : CHAR(xl), getCharCE(xl),
+                      (yl == NA_STRING) ? "" : CHAR(yl), getCharCE(yl), (zl == NA_STRING) ? "" : CHAR(zl),
+                      getCharCE(zl), nTicks, tickType, dd);
         }
     }
 

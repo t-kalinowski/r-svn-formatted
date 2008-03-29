@@ -1169,7 +1169,8 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_POPEN
     SEXP scmd, sopen, ans, class, enc;
     const char *file, *open;
-    int ncon, ienc = CE_NATIVE;
+    int ncon;
+    cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 
     checkArity(op, args);
@@ -1179,7 +1180,7 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
 #ifdef Win32
-    ienc = getCharEnc(STRING_ELT(scmd, 0));
+    ienc = getCharCE(STRING_ELT(scmd, 0));
     if (ienc == CE_UTF8)
         file = CHAR(STRING_ELT(scmd, 0));
     else
@@ -2175,12 +2176,12 @@ static SEXP mkCharLocal(const char *s)
 {
     int ienc = 0;
     if (known_to_be_latin1)
-        ienc = LATIN1_MASK;
+        ienc = CE_LATIN1;
     if (known_to_be_utf8)
-        ienc = UTF8_MASK;
+        ienc = CE_UTF8;
     if (ienc > 0 && strIsASCII(s))
-        ienc = 0;
-    return mkCharEnc(s, ienc);
+        ienc = CE_NATIVE;
+    return mkCharCE(s, ienc);
 }
 
 static void outtext_close(Rconnection con)
@@ -2894,7 +2895,7 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans = R_NilValue, ans2;
     int i, n, nn, nnn, ok, warn, nread, c, nbuf, buf_size = BUF_SIZE;
-    int oenc = 0;
+    int oenc = CE_NATIVE;
     Rconnection con = NULL;
     Rboolean wasopen;
     char *buf;
@@ -2933,9 +2934,9 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     con->incomplete = FALSE;
     if (con->UTF8out || streql(encoding, "UTF-8"))
-        oenc = UTF8_MASK;
+        oenc = CE_UTF8;
     else if (streql(encoding, "latin1"))
-        oenc = LATIN1_MASK;
+        oenc = CE_LATIN1;
 
     buf = (char *)malloc(buf_size);
     if (!buf)
@@ -2970,7 +2971,7 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
         }
         buf[nbuf] = '\0';
-        SET_STRING_ELT(ans, nread, mkCharEnc(buf, oenc));
+        SET_STRING_ELT(ans, nread, mkCharCE(buf, oenc));
         if (c == R_EOF)
             goto no_more_lines;
     }
@@ -4346,7 +4347,7 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(names, 0, mkChar("description"));
     PROTECT(tmp = allocVector(STRSXP, 1));
     if (Rcon->enc == CE_UTF8)
-        SET_STRING_ELT(tmp, 0, mkCharEnc(Rcon->description, UTF8_MASK));
+        SET_STRING_ELT(tmp, 0, mkCharCE(Rcon->description, CE_UTF8));
     else
         SET_STRING_ELT(tmp, 0, mkChar(Rcon->description));
     SET_VECTOR_ELT(ans, 0, tmp);
@@ -4377,7 +4378,8 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, ienc = CE_NATIVE;
+    int ncon, block;
+    cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 #ifdef HAVE_INTERNET
     UrlScheme type = HTTPsh; /* -Wall */
@@ -4391,7 +4393,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("only first element of 'description' argument used"));
     url = CHAR(STRING_ELT(scmd, 0)); /* ASCII */
 #ifdef Win32
-    ienc = getCharEnc(STRING_ELT(scmd, 0));
+    ienc = getCharCE(STRING_ELT(scmd, 0));
     if (ienc == CE_UTF8)
         url = CHAR(STRING_ELT(scmd, 0));
     else

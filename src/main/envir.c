@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1999-2007 the R Development Core Group.
+ *  Copyright (C) 1999-2008 the R Development Core Group.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3380,7 +3380,8 @@ SEXP mkChar(const char *name)
     strcpy(CHAR_RW(c), name);
     return c;
 }
-SEXP mkCharEnc(const char *name, int enc)
+
+SEXP mkCharCE(const char *name, cetype_t enc)
 {
     SEXP c = allocString(strlen(name));
     strcpy(CHAR_RW(c), name);
@@ -3390,14 +3391,14 @@ SEXP mkCharEnc(const char *name, int enc)
     {
     case 0:
         break; /* don't set encoding */
-    case UTF8_MASK:
+    case CE_UTF8:
         SET_UTF8(c);
         break;
-    case LATIN1_MASK:
+    case CE_LATIN1:
         SET_LATIN1(c);
         break;
     default:
-        error("unknown encoding mask: %d", enc);
+        error("unknown encoding: %d", enc);
     }
     return c;
 }
@@ -3503,18 +3504,27 @@ static void R_StringHash_resize(unsigned int newsize)
 #endif
 }
 
-/* mkCharEnc - make a character (CHARSXP) variable and set its
+/* mkCharCE - make a character (CHARSXP) variable and set its
    encoding bit.  If a CHARSXP with the same string already exists in
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
    a new CHARSXP is created, added to the cache and then returned. */
-SEXP mkCharEnc(const char *name, int enc)
+SEXP mkCharCE(const char *name, cetype_t enc)
 {
     SEXP cval, chain;
     unsigned int hashcode;
     int len = strlen(name);
 
-    if (enc != 0 && enc != UTF8_MASK && enc != LATIN1_MASK)
-        error("unknown encoding mask: %d", enc);
+    switch (enc)
+    {
+    case CE_NATIVE:
+    case CE_UTF8:
+    case CE_LATIN1:
+    case CE_SYMBOL:
+    case CE_ANY:
+        break;
+    default:
+        error("unknown encoding: %d", enc);
+    }
 
     if (enc && strIsASCII(name))
         enc = 0;
@@ -3533,7 +3543,7 @@ SEXP mkCharEnc(const char *name, int enc)
             break; /* sanity check */
 #endif
         /* If we had USE_RINTERNALS we could do the two in one step */
-        if (INT_IS_UTF8(enc) == IS_UTF8(val) && INT_IS_LATIN1(enc) == IS_LATIN1(val) &&
+        if ((enc == CE_UTF8) == IS_UTF8(val) && (enc == CE_LATIN1) == IS_LATIN1(val) &&
             LENGTH(val) == len && /* quick pretest */
             strcmp(CHAR(val), name) == 0)
         {
@@ -3550,10 +3560,10 @@ SEXP mkCharEnc(const char *name, int enc)
         {
         case 0:
             break; /* don't set encoding */
-        case UTF8_MASK:
+        case CE_UTF8:
             SET_UTF8(cval);
             break;
-        case LATIN1_MASK:
+        case CE_LATIN1:
             SET_LATIN1(cval);
             break;
         default:
@@ -3589,7 +3599,7 @@ SEXP mkCharEnc(const char *name, int enc)
    added to the cache and then returned. */
 SEXP mkChar(const char *name)
 {
-    return mkCharEnc(name, 0);
+    return mkCharCE(name, CE_NATIVE);
 }
 
 #ifdef DEBUG_SHOW_CHARSXP_CACHE

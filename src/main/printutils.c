@@ -327,7 +327,7 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
    In MBCS locales it works in characters, and reports in display width.
    Also used in printarray.c.
  */
-attribute_hidden int Rstrwid(const char *str, int slen, int ienc, int quote)
+attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote)
 {
     const char *p = str;
     int len = 0, i;
@@ -464,7 +464,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, int ienc, int quote)
 
 attribute_hidden int Rstrlen(SEXP s, int quote)
 {
-    return Rstrwid(CHAR(s), LENGTH(s), getCharEnc(s), quote);
+    return Rstrwid(CHAR(s), LENGTH(s), getCharCE(s), quote);
 }
 
 /* Here w is the minimum field width
@@ -483,7 +483,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     const char *p;
     char *q, buf[11];
 #ifdef SUPPORT_MBCS /* always true on Win32 */
-    int ienc = CE_NATIVE;
+    cetype_t ienc = CE_NATIVE;
 #endif
 
     /* We have to do something like this as the result is returned, and
@@ -504,7 +504,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 #ifdef Win32
         if (WinUTF8out)
         {
-            ienc = getCharEnc(s);
+            ienc = getCharCE(s);
             if (ienc == CE_UTF8)
             {
                 p = CHAR(s);
