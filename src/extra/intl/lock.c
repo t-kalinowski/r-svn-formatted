@@ -339,6 +339,7 @@ void glthread_recursive_lock_destroy(gl_recursive_lock_t *lock)
 
 /* -------------------------- gl_once_t datatype -------------------------- */
 
+/* Solaris antrs braces here, MacOS wants no braces ... */
 static const pthread_once_t fresh_once = {PTHREAD_ONCE_INIT};
 
 int glthread_once_singlethreaded(pthread_once_t *once_control)
