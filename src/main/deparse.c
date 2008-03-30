@@ -128,6 +128,7 @@ typedef struct
     int longstring;
     int maxlines;
     Rboolean active;
+    int isS4;
 } LocalParseData;
 
 static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts, int nlines);
@@ -210,7 +211,8 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
                                 TRUE,
                                 FALSE,
                                 INT_MAX,
-                                TRUE};
+                                TRUE,
+                                0};
     localData.cutoff = cutoff;
     localData.backtick = backtick;
     localData.opts = opts;
@@ -252,7 +254,9 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
         SET_STRING_ELT(svec, R_BrowseLines, mkChar("  ..."));
     }
     R_print.digits = savedigits;
-    if ((opts & WARNINCOMPLETE) && !localData.sourceable)
+    if ((opts & WARNINCOMPLETE) && localData.isS4)
+        warning(_("deparse of an S4 object will not be source()able"));
+    else if ((opts & WARNINCOMPLETE) && !localData.sourceable)
         warning(_("deparse may be incomplete"));
     if ((opts & WARNINCOMPLETE) && localData.longstring)
         warning(_("deparse may be not be source()able in R < 2.7.0"));
@@ -695,6 +699,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 
     if (!d->active)
         return;
+
+    if (IS_S4_OBJECT(s))
+        d->isS4 = TRUE;
 
     switch (TYPEOF(s))
     {
@@ -1214,6 +1221,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         break;
     case S4SXP:
         d->sourceable = FALSE;
+        d->isS4 = TRUE;
         print2buff("<S4 object of class ", d);
         deparse2buff(getAttrib(s, R_ClassSymbol), d);
         print2buff(">", d);
