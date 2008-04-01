@@ -23,7 +23,7 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Copyright (C) 2004 	The R Foundation
+/* Copyright (C) 2004	The R Foundation
 
    Changes for R, Chris Jackson, 2004
    Handle find-and-replace modeless dialogs
@@ -334,8 +334,8 @@ static void handle_close(object obj)
 static void handle_destroy(object obj)
 {
     /*
-    drawto(obj);
-    del_object(obj);
+      drawto(obj);
+      del_object(obj);
     */
 }
 
@@ -384,13 +384,13 @@ static void handle_scroll(object obj, HWND hwnd, UINT message, WPARAM wParam, LP
     {
     case SB_PAGEDOWN:
         where += (size_shown - 1);
-        /* fall through to next case */
+    /* fall through to next case */
     case SB_LINEDOWN:
         where = min(max_value, where + 1);
         break;
     case SB_PAGEUP:
         where -= (size_shown - 1);
-        /* fall through to next case */
+    /* fall through to next case */
     case SB_LINEUP:
         where = max(0, where - 1);
         break;

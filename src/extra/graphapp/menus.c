@@ -30,7 +30,7 @@
  *  menuitems are added to the current_menu.
  */
 
-/* Copyright (C) 2004 	The R Foundation
+/* Copyright (C) 2004	The R Foundation
 
    Change for R - Chris Jackson.  Enabled menu shortcut keys, don't
    execute shortcut if menu item is grayed out */
@@ -444,23 +444,23 @@ menuitem newmenuitem(const char *name, int key, menufn fn)
 PROTECTED
 object parent_menubar(object obj)
 {
-	while (obj) {
-		if (obj->kind == MenubarObject)
-			break;
-		obj = obj->parent;
-	}
-	return obj;
+    while (obj) {
+	if (obj->kind == MenubarObject)
+	    break;
+	obj = obj->parent;
+    }
+    return obj;
 }
 
 PROTECTED
 object parent_menu(object obj)
 {
-	while (obj) {
-		if (obj->kind == MenuObject)
-			break;
-		obj = obj->parent;
-	}
-	return obj;
+    while (obj) {
+	if (obj->kind == MenuObject)
+	    break;
+	obj = obj->parent;
+    }
+    return obj;
 }
 #endif
 

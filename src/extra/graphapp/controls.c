@@ -25,7 +25,7 @@
    See the file COPYLIB.TXT for details.
 */
 
-/*  Copyright (C) 2004 	The R Foundation
+/*  Copyright (C) 2004	The R Foundation
 
     Changes for R:
 
@@ -255,9 +255,9 @@ void resize(control obj, rect r)
             dx = r.x - obj->rect.x;
             dy = r.y - obj->rect.y;
             /* don't believe current sizes!
-            dw = r.width - obj->rect.width;
-            dh = r.height - obj->rect.height;
-            Rprintf("dw %d dh %d\n", dw, dh); */
+               dw = r.width - obj->rect.width;
+               dh = r.height - obj->rect.height;
+               Rprintf("dw %d dh %d\n", dw, dh); */
             GetClientRect(obj->handle, &R);
             dw = r.width - (R.right - R.left);
             dh = r.height - (R.bottom - R.top);
@@ -621,16 +621,16 @@ void activatecontrol(control obj)
 #if 0
 void setstate(control obj, long state)
 {
-	if (obj)
-		obj->state = state;
+    if (obj)
+	obj->state = state;
 }
 
 long getstate(control obj)
 {
-	if (obj)
-		return obj->state;
-	else
-		return 0;
+    if (obj)
+	return obj->state;
+    else
+	return 0;
 }
 #endif
 
@@ -825,7 +825,7 @@ char *GA_gettext(control obj)
         arg1 = arg2 = index;
         break;
     case DropfieldObject:
-        // use default mechanism
+    // use default mechanism
     default:
         len_msg = WM_GETTEXTLENGTH;
         gettext_msg = WM_GETTEXT;

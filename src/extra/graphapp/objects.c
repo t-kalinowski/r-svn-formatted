@@ -611,8 +611,8 @@ static void print_objects(FILE *f, object obj, int indent)
     if (obj->text)
         fprintf(f, ", text: \"%s\"", obj->text);
     /*
-    if (! obj->child)
-        fprintf(f, ", child: null");
+      if (! obj->child)
+      fprintf(f, ", child: null");
     */
     if (!obj->handle)
         fprintf(f, ", handle: null");

@@ -325,8 +325,8 @@ static void fix_win_style(long *flags_ptr, long *state_ptr, unsigned long *style
     if (flags & Workspace)
         style |= (MDIS_ALLCHILDSTYLES | WS_CLIPCHILDREN | WS_OVERLAPPED);
     /*
-    if (flags & Document)
-            flags |= StandardWindow;
+      if (flags & Document)
+      flags |= StandardWindow;
     */
     if (flags & Resize)
         style |= WS_THICKFRAME;
@@ -657,11 +657,11 @@ void show_window(object obj)
             DrawMenuBar(hwnd);
     }
 #if 0
-        if (obj->toolbar) {
-            if (MDIToolbar) hide(MDIToolbar);
-            MDIToolbar = obj->toolbar;
-            SendMessage(hwndFrame,WM_PAINT,(WPARAM) 0,(LPARAM) 0);
-        }
+    if (obj->toolbar) {
+	if (MDIToolbar) hide(MDIToolbar);
+	MDIToolbar = obj->toolbar;
+	SendMessage(hwndFrame,WM_PAINT,(WPARAM) 0,(LPARAM) 0);
+    }
 #endif
     SetFocus(hwnd);
     UpdateWindow(hwnd);

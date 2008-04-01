@@ -707,9 +707,9 @@ static void draw_checkbox(control c, rect r)
     if (isenabled(c))
     {
         /* if (hasfocus(c)) {
-            style |= Underline;
-            setlinewidth(2);
-        } */
+           style |= Underline;
+           setlinewidth(2);
+           } */
         setcolour(getforeground(c));
     }
     drawtext(textrect, style, name);
@@ -787,9 +787,9 @@ static void draw_radio(control c, rect r)
     if (isenabled(c))
     {
         /* if (hasfocus(c)) {
-            style |= Underline;
-            setlinewidth(2);
-        } */
+           style |= Underline;
+           setlinewidth(2);
+           } */
         setcolour(getforeground(c));
     }
     drawtext(textrect, style, name);
@@ -1317,8 +1317,8 @@ void handle_control(HWND hwnd, UINT message)
             return;
         index = sendmessage(hwnd, LB_GETCARETINDEX, 0, 0L);
         /* We do want to see de-selection events too
-        if (! sendmessage(hwnd, LB_GETSEL, index, 0L))
-          return;*/
+           if (! sendmessage(hwnd, LB_GETSEL, index, 0L))
+           return;*/
         obj->value = index;
         break;
 

@@ -23,7 +23,7 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Copyright (C) 2004--2008 	The R Foundation
+/* Copyright (C) 2004--2008	The R Foundation
 
    Additions for R, Chris Jackson
    Find and replace dialog boxes and dialog handlers */

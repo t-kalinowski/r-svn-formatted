@@ -156,10 +156,10 @@ void app_init_printf(void)
 {
 #ifdef __BORLANDC__
 #if __BORLANDC__ <= 0x410
- 		_InitEasyWin();
+    _InitEasyWin();
 #endif
 #else
- 	printf(" ");
+    printf(" ");
 #endif
 }
 #endif

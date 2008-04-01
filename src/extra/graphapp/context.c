@@ -26,7 +26,7 @@
    See the file COPYLIB.TXT for details.
 */
 
-/* Copyright (C) 2004 	The R Foundation
+/* Copyright (C) 2004	The R Foundation
 
       Changes for R:  allow 32 contexts not 4
       Remove assumption that current->dest is non-NULL
