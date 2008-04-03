@@ -64,10 +64,7 @@ attribute_hidden FILE *R_OpenInitFile(void)
     if (LoadInitFile)
     {
         if (p && strlen(p))
-        {
-            fp = R_fopen(R_ExpandFileName(p), "r");
-            return fp;
-        }
+            return R_fopen(R_ExpandFileName(p), "r");
         if ((fp = R_fopen(".Rprofile", "r")))
             return fp;
         if ((home = getenv("HOME")) == NULL)
