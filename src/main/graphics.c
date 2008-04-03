@@ -1864,7 +1864,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
 
     /* Restore Default Parameters */
 
-    dd = CurrentDevice();
+    dd = GEcurrentDevice();
     GRestore(dd);
 
     /* GNewPlot always starts a new plot UNLESS the user has set
@@ -1897,7 +1897,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
                     if (NoDevices())
                         error(_("attempt to plot on null device"));
                     else
-                        dd = CurrentDevice();
+                        dd = GEcurrentDevice();
                 }
                 GEinitDisplayList(dd);
             }
@@ -1923,7 +1923,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
                 if (NoDevices())
                     error(_("attempt to plot on null device"));
                 else
-                    dd = CurrentDevice();
+                    dd = GEcurrentDevice();
             }
             GEinitDisplayList(dd);
         }
