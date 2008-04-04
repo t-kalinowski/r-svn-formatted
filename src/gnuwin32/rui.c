@@ -518,7 +518,7 @@ static void menupkgupdatebioc(control m)
 }
 
 
-static void menupkginstallbioc(control m) 
+static void menupkginstallbioc(control m)
 {
     if (!ConsoleAcceptCmd) return;
     consolecmd(RConsole, "utils:::menuInstallBioc()");
@@ -1111,7 +1111,7 @@ int setupui(void)
     }
 #endif
     TRACERUI("Console");
-    if (!(RConsole = newconsole("R Console", StandardWindow | Document | Menubar)))
+    if (!(RConsole = newconsole("R Console", StandardWindow | Document | Menubar | UseUnicode)))
         return 0;
     TRACERUI("Console done");
 #ifdef USE_MDI

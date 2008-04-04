@@ -146,7 +146,6 @@ static void set_search_string(char *search, const char *name, int key)
     if (!string_diff(name, "?"))
         search[dest++] = '?';
 
-    if (MB_CUR_MAX == 1)
     {
         /* If there is an '&' in the string, use the next letter first */
         char *p = strchr(name, '&');
@@ -288,7 +287,7 @@ static void setmenustring(object obj, char *buf, const char *name, int key)
     else /* no shortcut key, just copy the name string except '&' */
     {
         for (source = 0; name[source]; source++)
-            if (MB_CUR_MAX == 1 && name[source] != '&')
+            if (name[source] != '&')
                 buf[dest++] = name[source];
     }
 

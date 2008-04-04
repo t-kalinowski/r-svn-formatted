@@ -331,7 +331,7 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
             free(p);
             return NULL;
         }
-        p->kbuf = malloc(NKEYS * sizeof(char));
+        p->kbuf = malloc(NKEYS * sizeof(wchar_t));
         if (!p->kbuf)
         {
             xbufdel(p->lbuf);
@@ -963,7 +963,7 @@ static void storekey(control c, int k)
 static void storetab(control c)
 {
     ConsoleData p = getdata(c);
-    p->kbuf[(p->firstkey + p->numkeys) % NKEYS] = ' ';
+    p->kbuf[(p->firstkey + p->numkeys) % NKEYS] = L' ';
     p->numkeys++;
 }
 
@@ -1787,34 +1787,11 @@ static wchar_t consolegetc(control c)
     }
     else
     {
-        if (mbcslocale)
-        {
-            /* Possibly multiple 'keys' for a single keystroke */
-            char tmp[20];
-            unsigned int used, i;
-
-            for (i = 0; i < MB_CUR_MAX; i++)
-                tmp[i] = p->kbuf[(p->firstkey + i) % NKEYS];
-            used = mbrtowc(&ch, tmp, MB_CUR_MAX, NULL);
-            p->firstkey = (p->firstkey + used) % NKEYS;
-            p->numkeys -= used;
-            if (p->already)
-                p->already -= used;
-        }
-        else
-        {
-            ch = (unsigned char)p->kbuf[p->firstkey];
-            if (ch >= 128)
-            {
-                char tmp[2] = " ";
-                tmp[0] = ch;
-                mbrtowc(&ch, tmp, 2, NULL);
-            }
-            p->firstkey = (p->firstkey + 1) % NKEYS;
-            p->numkeys--;
-            if (p->already)
-                p->already--;
-        }
+        ch = p->kbuf[p->firstkey];
+        p->firstkey = (p->firstkey + 1) % NKEYS;
+        p->numkeys--;
+        if (p->already)
+            p->already--;
     }
     return ch;
 }
@@ -2186,7 +2163,7 @@ void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, in
     /*    if (!ghasfixedwidth(consolefn)) {
            sprintf(msg,
                "Font %s-%d-%d has variable width.\nUsing system fixed font.",
-                   fontname, fontsty, pointsize);
+               fontname, fontsty, pointsize);
            R_ShowMessage(msg);
            consolefn = FixedFont;
            } */
