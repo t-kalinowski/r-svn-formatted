@@ -584,8 +584,8 @@ static void editorcontrolkeydown(textbox t, int key)
 static void editorasciikeydown(textbox t, int key)
 {
     /* check whether the text limit is about to be exceeded and
-     increase it if necessary.  Ugh - this callback is called after
-     the text is inserted, so we make space for two characters */
+       increase it if necessary.  Ugh - this callback is called after
+       the text is inserted, so we make space for two characters */
     checklimittext(t, 2);
 }
 
@@ -748,8 +748,8 @@ static editor neweditor(void)
     MCHECK(m = newmenuitem(G_("Close script"), 0, menueditorclose));
     setdata(m, c);
     /* MCHECK(m = newmenuitem("-", 0, NULL));
-    MCHECK(m = newmenuitem(G_("Exit"), 0, closeconsole));
-    setdata(m, c); */
+       MCHECK(m = newmenuitem(G_("Exit"), 0, closeconsole));
+       setdata(m, c); */
     MCHECK(newmenu(G_("Edit")));
     MCHECK(m = newmenuitem(G_("Undo"), 'Z', editorundo));
     setdata(m, t);

@@ -345,12 +345,12 @@ void applyGUI(Gui newGUI)
             consolefn = FixedFont;
         }
         /* if (!ghasfixedwidth(consolefn)) {
-            sprintf(msg,
-                G_("Font %s-%d-%d has variable width.\nUsing system fixed font"),
-                fontname, fontsty, pointsize);
-            R_ShowMessage(msg);
-            consolefn = FixedFont;
-            } */
+           sprintf(msg,
+           G_("Font %s-%d-%d has variable width.\nUsing system fixed font"),
+           fontname, fontsty, pointsize);
+           R_ShowMessage(msg);
+           consolefn = FixedFont;
+           } */
         p->f = consolefn;
         FH = fontheight(p->f);
         FW = fontwidth(p->f);

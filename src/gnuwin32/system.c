@@ -318,9 +318,6 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
 /* Rgui */
 static void GuiWriteConsole(const char *buf, int len)
 {
-    /*    char *p;
-
-        for (p = buf; *p; p++) if (*p == '\001') *p = EOF; */
     if (RConsole)
         consolewrites(RConsole, buf);
     else
@@ -851,7 +848,7 @@ int cmdlineoptions(int ac, char **av)
        we get all the name=value pairs. Otherwise these will
        have been removed by the time we get to call
        R_common_command_line().
-     */
+    */
     R_set_command_line_arguments(ac, av);
 
     /* set defaults for R_max_memory. This is set here so that

@@ -400,14 +400,14 @@ static pager pagercreate(void)
         return NULL;
 
     /*    if (ismdi()) {
-        x = y = w = h = 0;
-        }
-        else {
-        w = WIDTH ;
-        h = HEIGHT;
-        x = (devicewidth(NULL) - w) / 2;
-        y = (deviceheight(NULL) - h) / 2 ;
-        } */
+          x = y = w = h = 0;
+          }
+          else {
+          w = WIDTH ;
+          h = HEIGHT;
+          x = (devicewidth(NULL) - w) / 2;
+          y = (deviceheight(NULL) - h) / 2 ;
+          } */
     w = WIDTH;
     h = HEIGHT;
     /* centre a single pager, randomly place each of multiple pagers */

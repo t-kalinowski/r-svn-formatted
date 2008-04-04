@@ -127,16 +127,16 @@ static BOOL CALLBACK hwIntrHandler(DWORD type)
     case CTRL_C_EVENT:
     case CTRL_BREAK_EVENT:
         /*
-        Why SIGBREAK? SIGINT is used internally by R and the signal
-        handler for SIGINT ends with a 'longjmp'. But, under Windows,
-        hardware interrupt handler runs in a different thread. So,
-        longjmp fails (tipically it will crash R). So, we raise a SIGBREAK
-        to record that the user want to stop. This is then
-        processed at due time. Drawback of this approach: if R is lost
-        inside a C or Fortran routine we don't break it. I (g.m.) have
-        tried to raise a signal in the appropriate thread using
-        SuspendThread/GetThreadContext/setting Eip to the signal handler/
-        SetThreadContext/ResumeThread but I had success only under NT.
+          Why SIGBREAK? SIGINT is used internally by R and the signal
+          handler for SIGINT ends with a 'longjmp'. But, under Windows,
+          hardware interrupt handler runs in a different thread. So,
+          longjmp fails (tipically it will crash R). So, we raise a SIGBREAK
+          to record that the user want to stop. This is then
+          processed at due time. Drawback of this approach: if R is lost
+          inside a C or Fortran routine we don't break it. I (g.m.) have
+          tried to raise a signal in the appropriate thread using
+          SuspendThread/GetThreadContext/setting Eip to the signal handler/
+          SetThreadContext/ResumeThread but I had success only under NT.
         */
         raise(SIGBREAK);
         /* Seems that SIGBREAK is not working under 1,4,0, so do it via

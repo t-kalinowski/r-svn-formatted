@@ -1284,10 +1284,10 @@ SEXP do_chooseFiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     strcpy(path, R_ExpandFileName(p));
     R_fixbackslash(path);
     /*    temp = Rf_strchr(path,'/');
-        while (temp) {
-        *temp = '\\';
-        temp = strchr(temp,'/');
-        }*/
+          while (temp) {
+          *temp = '\\';
+          temp = strchr(temp,'/');
+          }*/
     if (length(caption) != 1)
         errorcall(call, _("'caption' must be a character string"));
     if (multi == NA_LOGICAL)
