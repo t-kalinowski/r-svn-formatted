@@ -368,8 +368,8 @@ SEXP eval(SEXP e, SEXP rho)
         errorcall(R_NilValue, _("evaluation nested too deeply: infinite recursion / options(expressions=)?"));
     }
     R_CheckStack();
-    if (++evalcount > 100)
-    {
+    if (++evalcount > 1000)
+    { /* was 100 before 2.8.0 */
         R_CheckUserInterrupt();
         evalcount = 0;
     }
