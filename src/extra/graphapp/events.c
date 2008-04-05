@@ -538,6 +538,59 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
     case WM_KEYDOWN: /* record state of shift and control keys */
         handle_keydown(LOWORD(wParam));
         handle_virtual_keydown(obj, LOWORD(wParam));
+
+        if (obj->flags & UseUnicode)
+        {
+            BYTE sta[256];
+            wchar_t wcs[3];
+            HKL dwhkl;
+            static wchar_t deadkey = L'\0';
+
+            dwhkl = GetKeyboardLayout((DWORD)0);
+            GetKeyboardState(sta);
+            if (ToUnicodeEx(wParam, lParam, sta, wcs, /* 3 */ sizeof(wcs) / sizeof(wchar_t), 0, dwhkl) == 1)
+            {
+                if (deadkey != L'\0')
+                {
+                    wchar_t wcs_in[3];
+                    wchar_t wcs_out[3];
+                    wcs_in[0] = wcs[0];
+                    wcs_in[1] = deadkey;
+                    wcs_in[2] = L'\0';
+                    /* from accent char to unicode */
+                    if (FoldStringW(MAP_PRECOMPOSED, wcs_in, 3, wcs_out, 3))
+                        handle_char(obj, wcs_out[0]);
+                    /* deadchar convert failure to skip. */
+                }
+                else
+                    handle_char(obj, wcs[0]);
+                deadkey = L'\0';
+            }
+            else
+            {
+                switch (wcs[0])
+                {
+                case 0x5e: /* circumflex */
+                    deadkey = 0x302;
+                    break;
+                case 0x60: /* grave accent */
+                    deadkey = 0x300;
+                    break;
+                case 0xa8: /* diaeresis */
+                    deadkey = 0x308;
+                    break;
+                case 0xb4: /* acute accent */
+                    deadkey = 0x301;
+                    break;
+                case 0xb8: /* cedilla */
+                    deadkey = 0x327;
+                    break;
+                default:
+                    deadkey = wcs[0];
+                    break;
+                }
+            }
+        }
         break;
 
     case WM_KEYUP: /* record state of shift and control keys */
@@ -545,8 +598,13 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
         break;
 
     case WM_CHAR: /* SBCS Only */
-        handle_char(obj, LOWORD(wParam));
-        return 0;
+        if (obj->flags & UseUnicode)
+            return 0;
+        else
+        {
+            handle_char(obj, LOWORD(wParam));
+            return 0;
+        }
 
     case WM_IME_COMPOSITION: /* DBCS Only */
         if (lParam & GCS_RESULTSTR)
@@ -569,9 +627,7 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
                 ImmGetCompositionStringW(himc, GCS_RESULTSTR, p, len);
                 ImmReleaseContext(hwnd, himc);
                 for (i = 0; i < (len / sizeof(wchar_t)); i++)
-                {
                     handle_char(obj, p[i]);
-                }
                 if (p != buf)
                     free(p);
                 return 0;
