@@ -609,6 +609,8 @@ static void handleEvent(XEvent event)
         xd = (pX11Desc)dd->deviceSpecific;
         if (xd->windowWidth != event.xconfigure.width || xd->windowHeight != event.xconfigure.height)
         {
+            xd->windowWidth = event.xconfigure.width;
+            xd->windowHeight = event.xconfigure.height;
             do_update = 2;
 #if defined HAVE_WORKING_CAIRO
             if (xd->useCairo)
@@ -621,19 +623,16 @@ static void handleEvent(XEvent event)
                     xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
                                                         (double)xd->windowHeight);
                     xd->cc = cairo_create(xd->cs);
-                    /* cairo_set_operator(xd->cc, CAIRO_OPERATOR_OVER);
-                       cairo_reset_clip(xd->cc); */
                     cairo_set_antialias(xd->cc, xd->antialias);
                 }
                 else
                 {
                     cairo_xlib_surface_set_size(xd->cs, xd->windowWidth, xd->windowHeight);
+                    cairo_reset_clip(xd->cc);
                 }
             }
 #endif
         }
-        xd->windowWidth = event.xconfigure.width;
-        xd->windowHeight = event.xconfigure.height;
         dd->size(&(dd->left), &(dd->right), &(dd->bottom), &(dd->top), dd);
 
         if (do_update) /* Gobble Expose events; we'll redraw anyway */
