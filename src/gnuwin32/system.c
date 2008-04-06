@@ -84,7 +84,24 @@ static void (*my_R_Busy)(int);
  *   Called at I/O, during eval etc to process GUI events.
  */
 
-void (*R_tcldo)(void) = NULL; /* Initialized to be sure */
+static void (*R_Tcl_do)(void) = NULL; /* Initialized to be sure */
+void set_R_Tcldo(void *ptr)
+{
+    if (R_Tcl_do)
+        error("Thief about! Something other than package tcltk has set or is attempting to set R_Tcl_do");
+    R_Tcl_do = ptr;
+    return;
+}
+
+void unset_R_Tcldo(void *ptr)
+{
+    /* This needs to be a warning not an error, or tcltk will not be able
+       to be detached. */
+    if (R_Tcl_do != ptr)
+        warning("Thief about! Something other than package tcltk has set or is attempting to unset R_Tcl_do");
+    R_Tcl_do = NULL;
+    return;
+}
 
 void R_ProcessEvents(void)
 {
@@ -124,8 +141,8 @@ void R_ProcessEvents(void)
         onintr();
     }
     R_CallBackHook();
-    if (R_tcldo)
-        R_tcldo();
+    if (R_Tcl_do)
+        R_Tcl_do();
 }
 
 /*
@@ -274,8 +291,8 @@ static int ThreadedReadConsole(const char *prompt, char *buf, int len, int addto
         if (lineavailable)
             break;
         doevent();
-        if (R_tcldo)
-            R_tcldo();
+        if (R_Tcl_do)
+            R_Tcl_do();
     }
     lineavailable = 0;
     /* restore handler  */
