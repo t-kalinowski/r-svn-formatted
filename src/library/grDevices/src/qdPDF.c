@@ -139,9 +139,8 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
             CFRelease(ai);
         dev->page = 0;
         /* we need to flip the y coordinates */
-        CGContextTranslateCTM(dev->context, 0.0, height * dpi[1]);
+        CGContextTranslateCTM(dev->context, 0.0, dev->bbox.size.height);
         CGContextScaleCTM(dev->context, 1.0, -1.0);
-
         QuartzBackend_t qdef = {sizeof(qdef),
                                 width,
                                 height,
@@ -160,11 +159,12 @@ Rboolean QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParameter
                                 NULL, /* par */
                                 NULL};
 
-        if (!qf->Create(dd, &qdef))
+        if (!(qd = qf->Create(dd, &qdef)))
             QuartzPDF_Close(NULL, dev);
         else
         {
             ret = TRUE;
+            qf->SetSize(qd, width, height);
             qf->ResetContext(qd);
         }
     }
