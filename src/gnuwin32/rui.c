@@ -554,6 +554,13 @@ static void menupkginstalllocal(control m)
     consolecmd(RConsole, "utils:::menuInstallLocal()");
 }
 
+static void menupkginstalllocaldir(control m)
+{
+    if (!ConsoleAcceptCmd)
+        return;
+    consolecmd(RConsole, "utils:::menuInstallLocalDir()");
+}
+
 static void menuconsolehelp(control m)
 {
     consolehelp();
@@ -738,6 +745,7 @@ void pkgmenuact(PkgMenuItems pmenu)
         enable(pmenu->mpkgm);
         enable(pmenu->mpkgi);
         enable(pmenu->mpkgil);
+        enable(pmenu->mpkgid);
         enable(pmenu->mpkgu);
         enable(pmenu->mrepos);
     }
@@ -747,6 +755,7 @@ void pkgmenuact(PkgMenuItems pmenu)
         disable(pmenu->mpkgm);
         disable(pmenu->mpkgi);
         disable(pmenu->mpkgil);
+        disable(pmenu->mpkgid);
         disable(pmenu->mpkgu);
         disable(pmenu->mrepos);
     }
@@ -991,11 +1000,8 @@ int RguiPackageMenu(PkgMenuItems pmenu)
     MCHECK(pmenu->mpkgu = newmenuitem(G_("Update packages..."), 0, menupkgupdate));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(pmenu->mpkgil = newmenuitem(G_("Install package(s) from local zip files..."), 0, menupkginstalllocal));
-    /*    MCHECK(newmenuitem("-", 0, NULL));
-        MCHECK(mpkgb = newmenuitem(G_("Install package(s) from Bioconductor..."),
-                       0, menupkginstallbioc));
-        MCHECK(mpkgbu = newmenuitem(G_("Update packages from Bioconductor"),
-        0, menupkgupdatebioc)); */
+
+    MCHECK(pmenu->mpkgid = newmenuitem(G_("Install source package from local folder..."), 0, menupkginstalllocaldir));
     return 0;
 }
 
