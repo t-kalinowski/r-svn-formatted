@@ -291,6 +291,8 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         tmax = asInteger(getListElement(options, "tmax"));
         temp = asReal(getListElement(options, "temp"));
+        if (trace)
+            trace = asInteger(getListElement(options, "REPORT"));
         if (tmax == NA_INTEGER)
             error(_("'tmax' is not an integer"));
         if (!isNull(gr))
@@ -1285,7 +1287,6 @@ void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmi
 }
 
 #define E1 1.7182818 /* exp(1.0)-1.0 */
-#define STEPS 100
 
 void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, double ti, int trace, void *ex)
 
@@ -1302,6 +1303,10 @@ void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, d
     int k, its, itdoc;
     double t, y, dy, ytry, scale;
     double *p, *dp, *ptry;
+
+    /* Above have: if(trace != 0) trace := REPORT control argument = STEPS */
+    if (trace < 0)
+        error(_("trace, REPORT must be >= 0 (method = \"SANN\")"));
 
     if (n == 0)
     { /* don't even attempt to optimize */
@@ -1351,7 +1356,7 @@ void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, d
             its++;
             k++;
         }
-        if ((trace) && ((itdoc % STEPS) == 0))
+        if (trace && ((itdoc % trace) == 0))
             Rprintf("iter %8d value %f\n", its - 1, *yb);
         itdoc++;
     }
@@ -1364,4 +1369,3 @@ void samin(int n, double *pb, double *yb, optimfn fminfn, int maxit, int tmax, d
 }
 
 #undef E1
-#undef STEPS
