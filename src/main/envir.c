@@ -3361,26 +3361,30 @@ SEXP attribute_hidden do_envprofile(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP mkCharCE(const char *name, cetype_t enc)
-{
-    return mkCharLenCE(name, strlen(name), enc);
-}
-
+/*
+   Version for strings with embedded nuls:
+   these do not currently go in the cache,
+   and do not have an encoding.
+*/
 SEXP mkCharLen(const char *name, int len)
-{
-    return mkCharLenCE(name, len, CE_NATIVE);
-}
-
-SEXP mkChar(const char *name)
-{
-    return mkCharLenCE(name, strlen(name), CE_NATIVE);
-}
-
-#ifndef USE_CHAR_HASHING
-SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 {
     SEXP c = allocString(len);
     memcpy(CHAR_RW(c), name, len);
+    return c;
+}
+
+#ifndef USE_CHAR_HASHING
+SEXP mkChar(const char *name)
+{
+    SEXP c = allocString(strlen(name));
+    strcpy(CHAR_RW(c), name);
+    return c;
+}
+
+SEXP mkCharCE(const char *name, cetype_t enc)
+{
+    SEXP c = allocString(strlen(name));
+    strcpy(CHAR_RW(c), name);
     if (enc && strIsASCII(name))
         enc = 0;
     switch (enc)
@@ -3415,13 +3419,12 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 static unsigned int char_hash_size = 65536;
 static unsigned int char_hash_mask = 65535;
 
-static unsigned int char_hash(const char *s, int len)
+static unsigned int char_hash(const char *s)
 {
     /* djb2 as from http://www.cse.yorku.ca/~oz/hash.html */
     char *p;
-    int i;
     unsigned int h = 5381;
-    for (p = (char *)s, i = 0; i < len; p++, i++)
+    for (p = (char *)s; *p; p++)
         h = ((h << 5) + h) + (*p);
     return h;
 }
@@ -3471,7 +3474,8 @@ static void R_StringHash_resize(unsigned int newsize)
         {
             val = CXHEAD(chain);
             next = CXTAIL(chain);
-            new_hashcode = char_hash(CHAR(val), LENGTH(val)) & newmask;
+            /* new_hashcode = char_hash(CHAR(val)) % newsize; */
+            new_hashcode = char_hash(CHAR(val)) & newmask;
             new_chain = VECTOR_ELT(new_table, new_hashcode);
             /* If using a primary slot then increase HASHPRI */
             if (ISNULL(new_chain))
@@ -3504,23 +3508,11 @@ static void R_StringHash_resize(unsigned int newsize)
    encoding bit.  If a CHARSXP with the same string already exists in
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
    a new CHARSXP is created, added to the cache and then returned. */
-
-static Rboolean IsASCII(const char *str, int len)
-{
-    const char *p = str;
-    int i;
-
-    for (i = 0; i < len; p++)
-        if ((unsigned int)*p > 0x7F)
-            return FALSE;
-    return TRUE;
-}
-
-SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
+SEXP mkCharCE(const char *name, cetype_t enc)
 {
     SEXP cval, chain;
     unsigned int hashcode;
-    int need_enc;
+    int len = strlen(name), need_enc;
 
     switch (enc)
     {
@@ -3534,7 +3526,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         error("unknown encoding: %d", enc);
     }
 
-    if (enc && IsASCII(name, len))
+    if (enc && strIsASCII(name))
         enc = CE_NATIVE;
     switch (enc)
     {
@@ -3548,7 +3540,8 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         need_enc = 0;
     }
 
-    hashcode = char_hash(name, len) & char_hash_mask;
+    /* hashcode = char_hash(name) % char_hash_size; */
+    hashcode = char_hash(name) & char_hash_mask;
 
     /* Search for a cached value */
     cval = R_NilValue;
@@ -3561,7 +3554,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
             break;                                              /* sanity check */
 #endif
         if (need_enc == ENC_KNOWN(val) && LENGTH(val) == len && /* quick pretest */
-            memcmp(CHAR(val), name, len) == 0)
+            strcmp(CHAR(val), name) == 0)
         {
             cval = val;
             break;
@@ -3571,7 +3564,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
     {
         /* no cached value; need to allocate one and add to the cache */
         PROTECT(cval = allocString(len));
-        memcpy(CHAR_RW(cval), name, len);
+        strcpy(CHAR_RW(cval), name);
         switch (enc)
         {
         case 0:
@@ -3607,6 +3600,15 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         UNPROTECT(1);
     }
     return cval;
+}
+
+/* mkChar - make a character (CHARSXP) variable.  If a CHARSXP with
+   the same string already exists in the global CHARSXP cache,
+   R_StringHash, it is returned.  Otherwise, a new CHARSXP is created,
+   added to the cache and then returned. */
+SEXP mkChar(const char *name)
+{
+    return mkCharCE(name, CE_NATIVE);
 }
 
 #ifdef DEBUG_SHOW_CHARSXP_CACHE
