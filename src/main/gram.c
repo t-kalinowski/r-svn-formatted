@@ -4217,10 +4217,13 @@ static int NumericValue(int c)
             wcs[wcnt++] = c;                                                                                           \
     } while (0)
 
+extern size_t wcstoutf8em(char *s, const wchar_t *wc, size_t n);
+
 static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
 {
     SEXP t;
     char *s;
+    int nb;
 
 /* NB: cnt includes the terminator */
 #ifdef Win32
@@ -4232,9 +4235,9 @@ static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
     R_CheckStack();
     memset(s, 0, cnt * 6);
 #endif
-    wcstoutf8(s, wcs, cnt);
+    nb = wcstoutf8em(s, wcs, cnt);
     PROTECT(t = allocVector(STRSXP, 1));
-    SET_STRING_ELT(t, 0, mkCharCE(s, CE_UTF8));
+    SET_STRING_ELT(t, 0, mkCharLenCE(s, nb, CE_UTF8));
     UNPROTECT(1);
     return t;
 }
