@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1999--2007  The R Development Core Team
+ *  Copyright (C) 1999--2008  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -514,8 +514,16 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             else
             {
                 p = translateChar(s);
-                cnt = strlen(p);
-                i = Rstrwid(p, cnt, CE_NATIVE, quote);
+                if (p == CHAR(s))
+                {
+                    i = Rstrlen(s, quote);
+                    cnt = LENGTH(s);
+                }
+                else
+                { /* drop anything after embedded nul */
+                    cnt = strlen(p);
+                    i = Rstrwid(p, cnt, CE_NATIVE, quote);
+                }
                 ienc = CE_NATIVE;
             }
         }
