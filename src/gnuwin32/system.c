@@ -84,8 +84,10 @@ static void (*my_R_Busy)(int);
  *   Called at I/O, during eval etc to process GUI events.
  */
 
+typedef void (*DO_FUNC)();
 static void (*R_Tcl_do)(void) = NULL; /* Initialized to be sure */
-void set_R_Tcldo(void *ptr)
+
+void set_R_Tcldo(DO_FUNC ptr)
 {
     if (R_Tcl_do)
         error("Thief about! Something other than package tcltk has set or is attempting to set R_Tcl_do");
@@ -93,7 +95,7 @@ void set_R_Tcldo(void *ptr)
     return;
 }
 
-void unset_R_Tcldo(void *ptr)
+void unset_R_Tcldo(DO_FUNC ptr)
 {
     /* This needs to be a warning not an error, or tcltk will not be able
        to be detached. */
