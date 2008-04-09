@@ -3504,6 +3504,18 @@ static void R_StringHash_resize(unsigned int newsize)
    encoding bit.  If a CHARSXP with the same string already exists in
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
    a new CHARSXP is created, added to the cache and then returned. */
+
+static Rboolean IsASCII(const char *str, int len)
+{
+    const char *p = str;
+    int i;
+
+    for (i = 0; i < len; i++)
+        if ((unsigned int)*p++ > 0x7F)
+            return FALSE;
+    return TRUE;
+}
+
 SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 {
     SEXP cval, chain;
@@ -3522,7 +3534,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         error("unknown encoding: %d", enc);
     }
 
-    if (enc && strIsASCII(name))
+    if (enc && IsASCII(name, len))
         enc = CE_NATIVE;
     switch (enc)
     {
