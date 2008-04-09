@@ -2932,12 +2932,18 @@ static SEXP mkChar2(const char *name)
     return mkChar(name);
 }
 
-static SEXP mkString2(const char *s)
+static SEXP mkString2(const char *s, int len)
 {
     SEXP t;
+    cetype_t enc = CE_NATIVE;
+
+    if (known_to_be_latin1)
+        enc = CE_LATIN1;
+    else if (known_to_be_utf8)
+        enc = CE_UTF8;
 
     PROTECT(t = allocVector(STRSXP, 1));
-    SET_STRING_ELT(t, 0, mkChar2(s));
+    SET_STRING_ELT(t, 0, mkCharLenCE(s, len, enc));
     UNPROTECT(1);
     return t;
 }
@@ -4211,10 +4217,13 @@ static int NumericValue(int c)
             wcs[wcnt++] = c;                                                                                           \
     } while (0)
 
+extern size_t wcstoutf8em(char *s, const wchar_t *wc, size_t n);
+
 static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
 {
     SEXP t;
     char *s;
+    int nb;
 
 /* NB: cnt includes the terminator */
 #ifdef Win32
@@ -4226,9 +4235,9 @@ static SEXP mkStringUTF8(const wchar_t *wcs, int cnt)
     R_CheckStack();
     memset(s, 0, cnt * 6);
 #endif
-    wcstoutf8(s, wcs, cnt);
+    nb = wcstoutf8em(s, wcs, cnt);
     PROTECT(t = allocVector(STRSXP, 1));
-    SET_STRING_ELT(t, 0, mkCharCE(s, CE_UTF8));
+    SET_STRING_ELT(t, 0, mkCharLenCE(s, nb, CE_UTF8));
     UNPROTECT(1);
     return t;
 }
@@ -4560,7 +4569,7 @@ static int StringValue(int c, Rboolean forSymbol)
         }
         else
 #endif
-            PROTECT(yylval = mkString2(stext));
+            PROTECT(yylval = mkString2(stext, bp - stext - 1));
         if (stext != st0)
             free(stext);
         if (have_warned)
