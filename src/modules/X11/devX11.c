@@ -2717,10 +2717,8 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "BMP";
     else if (!strcmp(display, "XImage"))
         devname = "XImage";
-    else if (useCairo == 1)
+    else if (useCairo)
         devname = "X11cairo";
-    else if (useCairo == 2)
-        devname = "X11cairo_nob";
     else
         devname = "X11";
 
