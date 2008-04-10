@@ -1111,7 +1111,10 @@ int setupui(void)
     }
 #endif
     TRACERUI("Console");
-    if (!(RConsole = newconsole("R Console", StandardWindow | Document | Menubar | UseUnicode)))
+    int flags = StandardWindow | Document | Menubar;
+    if (mbcslocale)
+        flags |= UseUnicode;
+    if (!(RConsole = newconsole("R Console", flags)))
         return 0;
     TRACERUI("Console done");
 #ifdef USE_MDI
