@@ -771,31 +771,26 @@ DL_FUNC attribute_hidden R_dlsym(DllInfo *info, char const *name, R_RegisteredNa
 #ifdef HAVE_F77_UNDERSCORE
     if (symbol && symbol->type == R_FORTRAN_SYM)
     {
-        buf[strlen(buf)] = '_';
-        buf[strlen(buf) + 1] = '\0'; /* but snprintf zeroed the buffer ... */
-    }
-#endif
 #ifdef HAVE_F77_EXTRA_UNDERSCORE
-    if (strchr(name, '_') && symbol && symbol->type == R_FORTRAN_SYM)
-    {
-        buf[strlen(buf)] = '_';
-        buf[strlen(buf) + 1] = '\0';
+        strcat(buf, "__");
+#elif HAVE_F77_UNDERSCORE
+        strcat(buf, "_");
+#endif
     }
 #endif
 
     f = (DL_FUNC)R_osDynSymbol->dlsym(info, buf);
+#ifdef HAVE_F77_UNDERSCORE
     if (!f && symbol && symbol->type == R_ANY_SYM)
     {
-#ifdef HAVE_F77_UNDERSCORE
-        buf[strlen(buf)] = '_';
-        buf[strlen(buf) + 1] = '\0';
-#endif
 #ifdef HAVE_F77_EXTRA_UNDERSCORE
-        buf[strlen(buf)] = '_';
-        buf[strlen(buf) + 1] = '\0';
+        strcat(buf, "__");
+#elif HAVE_F77_UNDERSCORE
+        strcat(buf, "_");
 #endif
         f = (DL_FUNC)R_osDynSymbol->dlsym(info, buf);
     }
+#endif
 
     return f;
 }
