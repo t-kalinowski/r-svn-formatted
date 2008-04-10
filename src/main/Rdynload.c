@@ -771,19 +771,33 @@ DL_FUNC attribute_hidden R_dlsym(DllInfo *info, char const *name, R_RegisteredNa
 #ifdef HAVE_F77_UNDERSCORE
     if (symbol && symbol->type == R_FORTRAN_SYM)
     {
-        buf[strlen(buf) + 1] = '\0';
         buf[strlen(buf)] = '_';
+        buf[strlen(buf) + 1] = '\0'; /* but snprintf zeroed the buffer ... */
     }
 #endif
 #ifdef HAVE_F77_EXTRA_UNDERSCORE
     if (strchr(name, '_') && symbol && symbol->type == R_FORTRAN_SYM)
     {
-        buf[strlen(buf) + 1] = '\0';
         buf[strlen(buf)] = '_';
+        buf[strlen(buf) + 1] = '\0';
     }
 #endif
 
-    return (DL_FUNC)R_osDynSymbol->dlsym(info, buf);
+    f = (DL_FUNC)R_osDynSymbol->dlsym(info, buf);
+    if (!f && symbol && symbol->type == R_ANY_SYM)
+    {
+#ifdef HAVE_F77_UNDERSCORE
+        buf[strlen(buf)] = '_';
+        buf[strlen(buf) + 1] = '\0';
+#endif
+#ifdef HAVE_F77_EXTRA_UNDERSCORE
+        buf[strlen(buf)] = '_';
+        buf[strlen(buf) + 1] = '\0';
+#endif
+        f = (DL_FUNC)R_osDynSymbol->dlsym(info, buf);
+    }
+
+    return f;
 }
 
 /* R_FindSymbol checks whether one of the libraries */
@@ -1053,18 +1067,14 @@ SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegist
     if (length(spackage))
     {
         if (TYPEOF(spackage) == STRSXP)
-        {
             package = translateChar(STRING_ELT(spackage, 0));
-        }
         else if (TYPEOF(spackage) == EXTPTRSXP && R_ExternalPtrTag(spackage) == Rf_install("DLLInfo"))
         {
             f = R_dlsym((DllInfo *)R_ExternalPtrAddr(spackage), name, &symbol);
             package = NULL;
         }
         else
-        {
             error(_("must pass package name or DllInfo reference"));
-        }
     }
 
     if (package)
@@ -1229,22 +1239,17 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
 
 SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
 {
-
     DllInfo *info;
     SEXP ans, snames;
     int i;
     const char *const names[] = {".C", ".Call", ".Fortran", ".External"};
 
     if (TYPEOF(dll) != EXTPTRSXP && R_ExternalPtrTag(dll) != Rf_install("DLLInfo"))
-    {
         error(_("R_getRegisteredRoutines() expects a DllInfo reference"));
-    }
 
     info = (DllInfo *)R_ExternalPtrAddr(dll);
     if (!info)
-    {
         error(_("NULL value passed for DllInfo"));
-    }
 
     PROTECT(ans = allocVector(VECSXP, 4));
 
@@ -1255,9 +1260,7 @@ SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
 
     PROTECT(snames = allocVector(STRSXP, 4));
     for (i = 0; i < 4; i++)
-    {
         SET_STRING_ELT(snames, i, mkChar(names[i]));
-    }
     setAttrib(ans, R_NamesSymbol, snames);
     UNPROTECT(2);
     return (ans);
