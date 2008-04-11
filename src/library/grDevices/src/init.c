@@ -49,6 +49,9 @@ static R_CMethodDef CEntries[] = {CDEF(R_chull),
 static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
                                               CALLDEF(CIDFontInUse, 2),
                                               {"R_GD_nullDevice", (DL_FUNC)&R_GD_nullDevice, 0},
+#ifndef WIN32
+                                              CALLDEF(makeQuartzDefault, 0),
+#endif
                                               {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
