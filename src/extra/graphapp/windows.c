@@ -701,6 +701,11 @@ int ismdi()
     return (hwndClient != NULL);
 }
 
+int isUnicodeWindow(object obj)
+{
+    return (obj->flags & UseUnicode);
+}
+
 int isiconic(window w)
 {
     return IsIconic(w->handle);

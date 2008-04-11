@@ -1806,17 +1806,45 @@ static wchar_t consolegetc(control c)
     }
     else
     {
-        ch = (unsigned char)p->kbuf[p->firstkey];
-        if (ch >= 128 && !mbcslocale)
+        if (isUnicodeWindow(c))
         {
-            char tmp[2] = " ";
-            tmp[0] = ch;
-            mbrtowc(&ch, tmp, 2, NULL);
+            ch = p->kbuf[p->firstkey];
+            p->firstkey = (p->firstkey + 1) % NKEYS;
+            p->numkeys--;
+            if (p->already)
+                p->already--;
         }
-        p->firstkey = (p->firstkey + 1) % NKEYS;
-        p->numkeys--;
-        if (p->already)
-            p->already--;
+        else
+        {
+            if (mbcslocale)
+            {
+                /* Possibly multiple 'keys' for a single keystroke */
+                char tmp[20];
+                unsigned int used, i;
+
+                for (i = 0; i < MB_CUR_MAX; i++)
+                    tmp[i] = p->kbuf[(p->firstkey + i) % NKEYS];
+                used = mbrtowc(&ch, tmp, MB_CUR_MAX, NULL);
+                p->firstkey = (p->firstkey + used) % NKEYS;
+                p->numkeys -= used;
+                if (p->already)
+                    p->already -= used;
+            }
+            else
+            {
+                ch = (unsigned char)p->kbuf[p->firstkey];
+                if (ch >= 128)
+                {
+                    char tmp[2] = " ";
+                    tmp[0] = ch;
+                    mbrtowc(&ch, tmp, 2, NULL);
+                }
+                p->firstkey = (p->firstkey + 1) % NKEYS;
+                p->numkeys--;
+                if (p->already)
+                    p->already--;
+            }
+        }
     }
     return ch;
 }
