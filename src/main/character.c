@@ -194,10 +194,11 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     return s;
 }
 
-static void substr(char *buf, const char *str, int ienc, int sa, int so)
+static int substr(char *buf, const char *str, int ienc, int sa, int so)
 {
     /* Store the substring	str [sa:so]  into buf[] */
     int i, j, used;
+    char *b0 = buf;
 
     if (ienc == CE_UTF8)
     {
@@ -240,6 +241,7 @@ static void substr(char *buf, const char *str, int ienc, int sa, int so)
                 *buf++ = *str++;
     }
     *buf = '\0';
+    return (buf - b0);
 }
 
 SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -278,7 +280,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             ienc = getCharCE(el);
             ss = CHAR(el);
-            slen = strlen(ss); /* FIXME -- should handle embedded nuls */
+            slen = LENGTH(el);
             buf = R_AllocStringBuffer(slen + 1, &cbuff);
             if (start < 1)
                 start = 1;
@@ -290,9 +292,9 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (stop > slen)
                     stop = slen;
-                substr(buf, ss, ienc, start, stop);
+                slen = substr(buf, ss, ienc, start, stop);
             }
-            SET_STRING_ELT(s, i, mkCharCE(buf, ienc));
+            SET_STRING_ELT(s, i, mkCharLenCE(buf, slen, ienc));
         }
         R_FreeStringBufferL(&cbuff);
     }
@@ -314,7 +316,7 @@ static void substrset(char *buf, const char *const str, cetype_t ienc, int sa, i
         for (i = sa; i <= so; i++)
         {
             in += utf8clen(str[in]);
-            out += utf8clen(str[in]);
+            out += utf8clen(buf[out]);
             if (!str[in])
                 break;
         }
