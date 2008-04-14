@@ -121,7 +121,7 @@ static double K(int n, double d)
 {
     /* Compute Kolmogorov's distribution.
        Code published in
-         George Marsaglia and Wai Wan Tsang and Jingbo Wang (2003),
+     George Marsaglia and Wai Wan Tsang and Jingbo Wang (2003),
      "Evaluating Kolmogorov's distribution".
      Journal of Statistical Software, Volume 8, 2003, Issue 18.
      URL: http://www.jstatsoft.org/v08/i18/.

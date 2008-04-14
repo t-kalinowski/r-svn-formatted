@@ -64,9 +64,9 @@ void fexact(int *nrow, int *ncol, int *table, int *ldtabl, double *expect, doubl
         NROW    - The number of rows in the table.			(Input)
         NCOL    - The number of columns in the table.		(Input)
         TABLE   - NROW by NCOL matrix containing the contingency
-                  table.						(Input)
+              table.						(Input)
         LDTABL  - Leading dimension of TABLE exactly as specified
-                  in the dimension statement in the calling
+              in the dimension statement in the calling
               program.						(Input)
         EXPECT  - Expected value used in the hybrid algorithm for
               deciding when to use asymptotic theory
@@ -81,7 +81,7 @@ void fexact(int *nrow, int *ncol, int *table, int *ldtabl, double *expect, doubl
               manual document for details.
               Use EXPECT = 5.0 to obtain the 'Cochran' condition.
         PERCNT  - Percentage of remaining cells that must have
-                  estimated expected values greater than EXPECT
+              estimated expected values greater than EXPECT
               before asymptotic probabilities can be used.	(Input)
               See argument EXPECT for details.
               Use PERCNT = 80.0 to obtain the 'Cochran' condition.
@@ -90,7 +90,7 @@ void fexact(int *nrow, int *ncol, int *table, int *ldtabl, double *expect, doubl
               See argument EXPECT for details.
               Use EMIN = 1.0 to obtain the 'Cochran' condition.
         PRT     - Probability of the observed table for fixed
-                  marginal totals.					(Output)
+              marginal totals.					(Output)
         PRE     - Table p-value.					(Output)
               PRE is the probability of a more extreme table,
               where `extreme' is in a probabilistic sense.
@@ -218,16 +218,16 @@ void fexact(int *nrow, int *ncol, int *table, int *ldtabl, double *expect, doubl
     /* NOTE:
        What follows below splits the remaining amount iwkmax - iwkpt of
        (int) workspace into hash tables as follows.
-           type  size       index
+       type  size       index
        INT   2 * ldkey  i4 i5 i11
        REAL  2 * ldkey  i8 i9 i10
        REAL  2 * ldstp  i6
        INT   6 * ldstp  i7
        Hence, we need ldkey times
-           3 * 2 + 3 * 2 * s + 2 * mult * s + 6 * mult
+       3 * 2 + 3 * 2 * s + 2 * mult * s + 6 * mult
        chunks of integer memory, where s = sizeof(REAL) / sizeof(INT).
        If doubles are used and are twice as long as ints, this gives
-           18 + 10 * mult
+       18 + 10 * mult
        so that the value of ldkey can be obtained by dividing available
        (int) workspace by this number.
 
@@ -809,10 +809,10 @@ double f3xact(int nrow, int *irow, int ncol, int *icol, int ntot, double *fact, 
       Arguments:
         NROW    - The number of rows in the table.			(Input)
         IROW    - Vector of length NROW containing the row sums
-                  for the table.					(Input)
+              for the table.					(Input)
         NCOL    - The number of columns in the table.		(Input)
         ICOL    - Vector of length K containing the column sums
-                  for the table.					(Input)
+              for the table.					(Input)
         NTOT    - The total count in the table.			(Input)
         FACT    - Vector containing the logarithms of factorials.	(Input)
         ICO     - Work vector of length MAX(NROW,NCOL).
@@ -1391,26 +1391,26 @@ void f5xact(double *pastp, const double *tol, int *kval, int *key, int *ldkey, i
 
       Arguments:
          PASTP  - The past path length.				(Input)
-         TOL    - Tolerance for equivalence of past path lengths.  	(Input)
-         KVAL   - Key value.  					(Input)
+         TOL    - Tolerance for equivalence of past path lengths.	(Input)
+         KVAL   - Key value.					(Input)
          KEY    - Vector of length LDKEY containing the key values.	(in/out)
-         LDKEY  - Length of vector KEY.  				(Input)
+         LDKEY  - Length of vector KEY.				(Input)
          IPOIN  - Vector of length LDKEY pointing to the
-              linked list of past path lengths.  		(in/out)
+              linked list of past path lengths.		(in/out)
          STP    - Vector of length LSDTP containing the
-              linked lists of past path lengths.  		(in/out)
-         LDSTP  - Length of vector STP.  				(Input)
+              linked lists of past path lengths.		(in/out)
+         LDSTP  - Length of vector STP.				(Input)
          IFRQ   - Vector of length LDSTP containing the past path
-              frequencies.  					(in/out)
+              frequencies.					(in/out)
          NPOIN  - Vector of length LDSTP containing the pointers to
-              the next past path length.  			(in/out)
+              the next past path length.			(in/out)
          NR	    - Vector of length LDSTP containing the right object
               pointers in the tree of past path lengths.        (in/out)
          NL	    - Vector of length LDSTP containing the left object
               pointers in the tree of past path lengths.        (in/out)
          IFREQ  - Frequency of the current path length.             (Input)
-         ITOP   - Pointer to the top of STP.  			(Input)
-         PSH    - Logical.		 				(Input)
+         ITOP   - Pointer to the top of STP.			(Input)
+         PSH    - Logical.						(Input)
               If PSH is true, the past path length is found in the
               table KEY.  Otherwise the location of the past path
               length is assumed known and to have been found in
@@ -1563,11 +1563,11 @@ Rboolean f6xact(int nrow, int *irow, int *kyy, int *key, int *ldkey, int *last, 
       Arguments:
         NROW    - The number of rows in the table.			(Input)
         IROW    - Vector of length nrow containing the row sums on
-                  output.						(Output)
+              output.						(Output)
         KYY     - Constant mutlipliers used in forming the hash
-                  table key.					(Input)
+              table key.					(Input)
         KEY     - Vector of length LDKEY containing the hash table
-                  keys.						(In/out)
+              keys.						(In/out)
         LDKEY   - Length of vector KEY.				(Input)
         LAST    - Index of the last key popped off the stack.	(In/out)
         IPN     - Pointer to the linked list of past path lengths.	(Output)
@@ -1772,10 +1772,10 @@ double f9xact(int n, int ntot, int *ir, double *fact)
          N	    - Length of IR.					(Input)
          NTOT   - Number for factorial in numerator.		(Input)
          IR	    - Vector of length N containing the numbers for
-                  the denominator of the factorial.			(Input)
+              the denominator of the factorial.			(Input)
          FACT   - Table of log factorials.				(Input)
       Returns:
-                - The log of the multinomal coefficient.		(Output)
+            - The log of the multinomal coefficient.		(Output)
       -----------------------------------------------------------------------
       */
     double d;
@@ -1797,16 +1797,16 @@ Rboolean f10act(int nrow, int *irow, int ncol, int *icol, double *val, double *f
       Arguments:
          NROW   - The number of rows in the table.			(Input)
          IROW   - Vector of length NROW containing the row totals.	(Input)
-         NCOL   - The number of columns in the table.  		(Input)
+         NCOL   - The number of columns in the table.		(Input)
          ICO    - Vector of length NCOL containing the column totals.(Input)
-         VAL    - The shortest path.  				(Input/Output)
+         VAL    - The shortest path.				(Input/Output)
          FACT   - Vector containing the logarithms of factorials.   (Input)
          ND	    - Workspace vector of length NROW.			(Input)
          NE	    - Workspace vector of length NCOL.			(Input)
          M	    - Workspace vector of length NCOL.			(Input)
 
       Returns (VAL and):
-         XMIN   - Set to true if shortest path obtained.  		(Output)
+         XMIN   - Set to true if shortest path obtained.		(Output)
       -----------------------------------------------------------------------
       */
     /* Local variables */
@@ -1864,7 +1864,7 @@ void f11act(int *irow, int i1, int i2, int *new)
       Arguments:
          IROW   - Vector containing the row totals.	(Input)
          I1	    - Indicator.			(Input)
-         I2	    - Indicator.  			(Input)
+         I2	    - Indicator.			(Input)
          NEW    - Vector containing the row totals.	(Output)
       -----------------------------------------------------------------------
       */
@@ -1911,7 +1911,7 @@ int iwork(int iwkmax, int *iwkpt, int number, int itype)
             3    float
             4    double
          iwork(): Index in rwrk, dwrk, or iwrk of the beginning of
-                  the first free element in the workspace array.	(Output)
+              the first free element in the workspace array.	(Output)
       -----------------------------------------------------------------------
       */
     int i;

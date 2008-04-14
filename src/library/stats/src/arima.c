@@ -1002,9 +1002,9 @@ SEXP getQ0(SEXP sPhi, SEXP sTheta)
     if (p > 0)
     {
         /*      The set of equations s * vec(P0) = vec(v) is solved for
-                vec(P0).  s is generated row by row in the array xnext.  The
-                order of elements in P is changed, so as to bring more leading
-                zeros into the rows of s. */
+            vec(P0).  s is generated row by row in the array xnext.  The
+            order of elements in P is changed, so as to bring more leading
+            zeros into the rows of s. */
 
         for (i = 0; i < nrbar; i++)
             rbar[i] = 0.0;

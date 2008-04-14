@@ -43,14 +43,14 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
        n		number of data points
        ys(n)	vector of length n containing the observations
        ws(n)	vector containing the weights given to each data point
-                    NB: the code alters the values here.
+            NB: the code alters the values here.
        xs(n)	vector containing the ordinates of the observations
        ssw          `centered weighted sum of y^2'
        nk		number of b-spline coefficients to be estimated
-                    nk <= n+2
+            nk <= n+2
        knot(nk+4)	vector of knot points defining the cubic b-spline basis.
-                    To obtain full cubic smoothing splines one might
-                    have (provided the xs-values are strictly increasing)
+            To obtain full cubic smoothing splines one might
+            have (provided the xs-values are strictly increasing)
        spar		penalised likelihood smoothing parameter
        ispar	indicating if spar is supplied (ispar=1) or to be estimated
        lspar, uspar lower and upper values for spar search;  0.,1. are good values
@@ -82,7 +82,7 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
        abd (ld4,nk)		[ X'WX + lambda*SIGMA ] in diagonal form
        p1ip(ld4,nk)		inner products between columns of L inverse
        p2ip(ldnk,nk)	all inner products between columns of L inverse
-                            where  L'L = [X'WX + lambda*SIGMA]  NOT REFERENCED
+                where  L'L = [X'WX + lambda*SIGMA]  NOT REFERENCED
     */
 
 #define CRIT(FX) (*icrit == 3 ? FX - 3. : FX)
@@ -167,9 +167,9 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
        ax	 left endpoint of initial interval
        bx	 right endpoint of initial interval
        f	 function subprogram which evaluates  f(x)  for any  x
-             in the interval  (ax,bx)
+         in the interval  (ax,bx)
        tol	 desired length of the interval of uncertainty of the final
-             result ( >= 0 )
+         result ( >= 0 )
 
        OUTPUT
 

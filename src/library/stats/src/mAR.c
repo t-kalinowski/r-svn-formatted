@@ -531,12 +531,12 @@ static double ldet(Array x)
 /* Burg's algorithm for autoregression estimation
 
    multi_burg  is the interface to R. It also handles model selection
-               using AIC
+           using AIC
 
    burg        implements the main part of the algorithm
 
    burg2       estimates the partial correlation coefficient. This
-               requires iteration in the multivariate case.
+           requires iteration in the multivariate case.
 
    Notation
 
@@ -854,7 +854,7 @@ static void burg2(Array ss_ff, Array ss_bb, Array ss_fb, Array E, Array KA, Arra
    multi_yw  is the interface to R. It also handles model selection using AIC
 
    whittle,whittle2     implement Whittle's recursion for solving the multivariate
-                        Yule-Walker equations.
+            Yule-Walker equations.
 
    Notation
 

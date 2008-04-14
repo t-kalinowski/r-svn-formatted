@@ -35,7 +35,7 @@ static int imed3(double u, double v, double w)
 {
     /* Return (Index-1) of  median(u,v,w) , i.e.,
        -1 : u
-        0 : v
+    0 : v
     1 : w
      */
     if ((u <= v && v <= w) || (u >= v && v >= w))
