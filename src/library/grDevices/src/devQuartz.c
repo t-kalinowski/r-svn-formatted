@@ -623,7 +623,14 @@ CGFontRef RQuartz_Font(CTXDESC)
         font = CGFontCreateWithPlatformFont(&tmp);
     }
     if (font == NULL)
-        CFShow(fontName); /* FIXME needs warning message */
+    {
+        char cFontName[128];
+        cFontName[0] = '\0';
+        CFStringGetCString(
+            fontName, cFontName, 128,
+            kCFStringEncodingUTF8); /* FIXME: potentially UTF-8 is not the current locale - does it matter? */
+        warning(_("font \"%s\" could not be found"), cFontName);
+    }
     CFRelease(fontName);
     return font;
 }
