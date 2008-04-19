@@ -763,6 +763,7 @@ int Riconv_close(void *cd)
 
 static void *latin1_obj = NULL, *utf8_obj = NULL, *ucsmb_obj = NULL;
 
+/* This version truncates at the first nul, if it translates */
 const char *translateChar(SEXP x)
 {
     void *obj;
@@ -813,7 +814,7 @@ const char *translateChar(SEXP x)
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
     inbuf = ans;
-    inb = strlen(inbuf);
+    inb = strlen(inbuf); /* truncates at the first nul */
     outbuf = cbuff.data;
     outb = cbuff.bufsize - 1;
     /* First initialize output */
@@ -880,6 +881,153 @@ next_char:
             inbuf++;
             inb--;
         }
+        goto next_char;
+    }
+    *outbuf = '\0';
+    res = strlen(cbuff.data) + 1;
+    p = R_alloc(res, 1);
+    memcpy(p, cbuff.data, res);
+    R_FreeStringBuffer(&cbuff);
+    return p;
+}
+
+/* This version maps embedded nuls to '\0' */
+const char *translateChar0(SEXP x)
+{
+    void *obj;
+    const char *inbuf, *ans = CHAR(x);
+    char *outbuf, *p;
+    size_t inb, outb, res, lenx, tot;
+#ifdef SUPPORT_MBCS
+    cetype_t ienc = getCharCE(x);
+#endif
+    R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
+
+    if (TYPEOF(x) != CHARSXP)
+        error(_("'%s' must be called on a CHARSXP"), "translateChar0");
+    if (x == NA_STRING)
+        return ans;
+
+    lenx = LENGTH(x);
+    for (inbuf = ans, inb = 0; inb < lenx; inb++)
+        if (!*inbuf++)
+            break;
+    /* bail out if no embedded zeroes */
+    if (inb == lenx)
+        return translateChar(x);
+
+    if (IS_LATIN1(x))
+    {
+        if (!latin1_obj)
+        {
+            obj = Riconv_open("", "latin1");
+            /* should never happen */
+            if (obj == (void *)(-1))
+                error(_("unsupported conversion"));
+            latin1_obj = obj;
+        }
+        obj = latin1_obj;
+    }
+    else
+    {
+        if (!utf8_obj)
+        {
+            obj = Riconv_open("", "UTF-8");
+            /* should never happen */
+            if (obj == (void *)(-1))
+                error(_("unsupported conversion"));
+            utf8_obj = obj;
+        }
+        obj = utf8_obj;
+    }
+
+    R_AllocStringBuffer(0, &cbuff);
+top_of_loop:
+    inbuf = ans;
+    inb = strlen(inbuf);
+    tot = inb;
+    outbuf = cbuff.data;
+    outb = cbuff.bufsize - 1;
+    /* First initialize output */
+    Riconv(obj, NULL, NULL, &outbuf, &outb);
+next_char:
+    /* Then convert input  */
+    res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
+    if (res == -1 && errno == E2BIG)
+    {
+        R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
+        goto top_of_loop;
+    }
+    else if (res == -1 && errno == EILSEQ)
+    {
+        if (outb < 13)
+        {
+            R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
+            goto top_of_loop;
+        }
+#ifdef SUPPORT_MBCS
+        if (ienc == CE_UTF8)
+        {
+            /* if starting in UTF-8, use \uxxxx */
+            /* This must be the first byte */
+            int clen;
+            wchar_t wc;
+            clen = utf8toucs(&wc, inbuf);
+            if (clen > 0 && inb >= clen)
+            {
+                inbuf += clen;
+                inb -= clen;
+#ifndef Win32
+                if ((unsigned int)wc < 65536)
+                {
+#endif
+                    snprintf(outbuf, 9, "<U+%04X>", (unsigned int)wc);
+                    outbuf += 8;
+                    outb -= 8;
+#ifndef Win32
+                }
+                else
+                {
+                    snprintf(outbuf, 13, "<U+%08X>", (unsigned int)wc);
+                    outbuf += 12;
+                    outb -= 12;
+                }
+#endif
+            }
+            else
+            {
+                snprintf(outbuf, 5, "<%02x>", (unsigned char)*inbuf);
+                outbuf += 4;
+                outb -= 4;
+                inbuf++;
+                inb--;
+            }
+        }
+        else
+#endif
+        {
+            snprintf(outbuf, 5, "<%02x>", (unsigned char)*inbuf);
+            outbuf += 4;
+            outb -= 4;
+            inbuf++;
+            inb--;
+        }
+        goto next_char;
+    }
+    tot -= inb;
+    if (tot < lenx)
+    {
+        if (outb < 3)
+        {
+            R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
+            goto top_of_loop;
+        }
+        snprintf(outbuf, 3, "\\0");
+        outbuf += 2;
+        outb -= 2;
+        inbuf++;
+        inb = strlen(inbuf);
+        tot += inb + 1;
         goto next_char;
     }
     *outbuf = '\0';
@@ -1365,6 +1513,12 @@ int Riconv_close(void *cd)
 
 const char *translateChar(SEXP x)
 {
+    return CHAR(x);
+}
+
+const char *translateChar0(SEXP x)
+{
+    /* FIXME -- escape embedded nuls */
     return CHAR(x);
 }
 
