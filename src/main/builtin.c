@@ -499,10 +499,10 @@ static void cat_cleanup(void *data)
     int changedcon = pci->changedcon;
 
     con->fflush(con);
-    if (!wasopen)
-        con->close(con); /**** do this second? */
     if (changedcon)
         switch_stdout(-1, 0);
+    if (!wasopen)
+        con->close(con);
 #ifdef Win32
     WinUTF8out = FALSE;
 #endif
@@ -601,6 +601,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (labs != R_NilValue && (iobj == 0) && (asInteger(fill) > 0))
             {
                 Rprintf("%s ", trChar(STRING_ELT(labs, nlines % lablen)));
+                /* FIXME -- Rstrlen allows for embedded nuls, double-width chars */
                 width += Rstrlen(STRING_ELT(labs, nlines % lablen), 0) + 1;
                 nlines++;
             }
@@ -755,7 +756,7 @@ SEXP attribute_hidden do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* vector(mode="logical", length=0) */
 SEXP attribute_hidden do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    R_len_t len /*, i*/;
+    R_len_t len;
     SEXP s;
     SEXPTYPE mode;
     checkArity(op, args);
@@ -788,18 +789,10 @@ SEXP attribute_hidden do_makevector(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (mode == INTSXP || mode == LGLSXP)
         memset(INTEGER(s), 0, len * sizeof(int));
-    /*for (i = 0; i < len; i++) INTEGER(s)[i] = 0; */
     else if (mode == REALSXP)
         memset(REAL(s), 0, len * sizeof(double));
-    /*for (i = 0; i < len; i++) REAL(s)[i] = 0.;*/
     else if (mode == CPLXSXP)
         memset(COMPLEX(s), 0, len * sizeof(Rcomplex));
-    /*
-    for (i = 0; i < len; i++) {
-        COMPLEX(s)[i].r = 0.;
-        COMPLEX(s)[i].i = 0.;
-    }
-    */
     else if (mode == RAWSXP)
         memset(RAW(s), 0, len);
     /* other cases: list/expression have "NULL", ok */
