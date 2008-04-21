@@ -79,16 +79,16 @@ typedef struct
     char convbuf[100];
 } LocalData;
 
-static SEXP insertString(char *str, int len, LocalData *l)
+static SEXP insertString(char *str, LocalData *l)
 {
     if (!strIsASCII(str))
     {
         if (l->con->UTF8out || l->isUTF8)
-            return mkCharLenCE(str, len, CE_UTF8);
+            return mkCharCE(str, CE_UTF8);
         else if (l->isLatin1)
-            return mkCharLenCE(str, len, CE_LATIN1);
+            return mkCharCE(str, CE_LATIN1);
     }
-    return mkCharLen(str, len);
+    return mkChar(str);
 }
 
 static R_INLINE Rboolean Rspace(unsigned int c)
@@ -381,7 +381,7 @@ static void scan_cleanup(void *data)
    what if this appends to the existing content. Appears it writes in
    directly at position 0.
  */
-static char *fillBuffer(SEXPTYPE type, int strip, int *bch, LocalData *d, R_StringBuffer *buffer, int *nbytes)
+static char *fillBuffer(SEXPTYPE type, int strip, int *bch, LocalData *d, R_StringBuffer *buffer)
 {
     /* The basic reader function, called from scanVector() and scanFrame().
        Reads into _buffer_	which later will be read out by extractItem().
@@ -541,7 +541,6 @@ donefill:
     }
     *bufp = '\0';
     *bch = filled;
-    *nbytes = m;
     return buffer->data;
 }
 
@@ -571,7 +570,7 @@ static R_INLINE void expected(char *what, char *got, LocalData *d)
     error(_("scan() expected '%s', got '%s'"), what, got);
 }
 
-static void extractItem(char *buffer, SEXP ans, int i, int nbytes, LocalData *d)
+static void extractItem(char *buffer, SEXP ans, int i, LocalData *d)
 {
     char *endp;
     switch (TYPEOF(ans))
@@ -624,7 +623,7 @@ static void extractItem(char *buffer, SEXP ans, int i, int nbytes, LocalData *d)
         if (isNAstring(buffer, 1, d))
             SET_STRING_ELT(ans, i, NA_STRING);
         else
-            SET_STRING_ELT(ans, i, insertString(buffer, nbytes, d));
+            SET_STRING_ELT(ans, i, insertString(buffer, d));
         break;
     case RAWSXP:
         if (isNAstring(buffer, 0, d))
@@ -644,7 +643,7 @@ static void extractItem(char *buffer, SEXP ans, int i, int nbytes, LocalData *d)
 static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEXP stripwhite, int blskip, LocalData *d)
 {
     SEXP ans, bns;
-    int blocksize, c, i, n, linesread, nprev, strip, bch, nbytes;
+    int blocksize, c, i, n, linesread, nprev, strip, bch;
     char *buffer;
     R_StringBuffer strBuf = {NULL, 0, MAXELTSIZE};
 
@@ -695,7 +694,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
             PROTECT(ans);
             copyVector(ans, bns);
         }
-        buffer = fillBuffer(type, strip, &bch, d, &strBuf, &nbytes);
+        buffer = fillBuffer(type, strip, &bch, d, &strBuf);
         if (nprev == n && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (d->ttyflag || bch == R_EOF)
@@ -703,7 +702,7 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         }
         else
         {
-            extractItem(buffer, ans, n, nbytes, d);
+            extractItem(buffer, ans, n, d);
             if (++n == maxitems)
             {
                 if (d->ttyflag && bch != '\n')
@@ -776,7 +775,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
 {
     SEXP ans, new, old, w;
     char *buffer = NULL;
-    int blksize, c, i, ii, j, n, nc, linesread, colsread, strip, bch, nbytes;
+    int blksize, c, i, ii, j, n, nc, linesread, colsread, strip, bch;
     int badline, nstring = 0;
     R_StringBuffer buf = {NULL, 0, MAXELTSIZE};
 
@@ -845,7 +844,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
                     buffer[0] = '\0';
                     for (ii = colsread; ii < nc; ii++)
                     {
-                        extractItem(buffer, VECTOR_ELT(ans, ii), n, nbytes, d);
+                        extractItem(buffer, VECTOR_ELT(ans, ii), n, d);
                     }
                     n++;
                     ii = 0;
@@ -878,7 +877,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
             }
         }
 
-        buffer = fillBuffer(TYPEOF(VECTOR_ELT(ans, ii)), strip, &bch, d, &buf, &nbytes);
+        buffer = fillBuffer(TYPEOF(VECTOR_ELT(ans, ii)), strip, &bch, d, &buf);
         if (colsread == 0 && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
         {
             if (d->ttyflag || bch == R_EOF)
@@ -886,7 +885,7 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         }
         else
         {
-            extractItem(buffer, VECTOR_ELT(ans, ii), n, nbytes, d);
+            extractItem(buffer, VECTOR_ELT(ans, ii), n, d);
             ii++;
             colsread++;
             if (length(stripwhite) == length(what))
@@ -917,7 +916,7 @@ done:
         buffer[0] = '\0'; /* this is an NA */
         for (ii = colsread; ii < nc; ii++)
         {
-            extractItem(buffer, VECTOR_ELT(ans, ii), n, nbytes, d);
+            extractItem(buffer, VECTOR_ELT(ans, ii), n, d);
         }
         n++;
     }
