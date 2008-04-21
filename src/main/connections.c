@@ -2985,17 +2985,17 @@ no_more_lines:
         con->close(con);
     if (nbuf > 0)
     { /* incomplete last line */
-        if (con->text && con->blocking)
-        {
-            nread++;
-            if (warn)
-                warning(_("incomplete final line found on '%s'"), con->description);
-        }
-        else
+        if (con->text && !con->blocking)
         {
             /* push back the rest */
             con_pushback(con, 0, buf);
             con->incomplete = TRUE;
+        }
+        else
+        {
+            nread++;
+            if (warn)
+                warning(_("incomplete final line found on '%s'"), con->description);
         }
     }
     free(buf);
