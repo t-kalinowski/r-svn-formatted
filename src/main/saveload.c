@@ -37,10 +37,10 @@
  * may require changes in the save file format.  Here are some
  * guidelines on handling format changes:
  *
- *    Starting with 1.4 there is a version number associated with save
- *    file formats.  This version number should be incremented when
- *    the format is changed so older versions of R can recognize and
- *    reject the new format with a meaningful error message.
+ *    Starting with R 1.4.0 there is a version number associated with
+ *    save file formats.  This version number should be incremented
+ *    when the format is changed so older versions of R can recognize
+ *    and reject the new format with a meaningful error message.
  *
  *    R should remain able to write older workspace formats.  An error
  *    should be signaled if the contents to be saved is not compatible
@@ -577,7 +577,7 @@ static void RemakeNextSEXP(FILE *fp, NodeInfo *node, int version, InputRoutines 
         break;
     case CHARSXP:
         len = m->InInteger(fp, d);
-        s = allocCharsxp(len);
+        s = allocCharsxp(len); /* This is not longer correct */
         R_AllocStringBuffer(len, &(d->buffer));
         /* skip over the string */
         /* string = */ m->InString(fp, d);
@@ -656,6 +656,7 @@ static void RestoreSEXP(SEXP s, FILE *fp, InputRoutines *m, NodeInfo *node, int 
     case CHARSXP:
         len = m->InInteger(fp, d);
         R_AllocStringBuffer(len, &(d->buffer));
+        /* Better to use a fresh copy in the cache */
         strcpy(CHAR_RW(s), m->InString(fp, d));
         break;
     case REALSXP:
@@ -699,6 +700,7 @@ static void RestoreError(/* const */ char *msg, int startup)
         error("%s", msg);
 }
 
+/* used for pre-version 1 formats */
 static SEXP DataLoad(FILE *fp, int startup, InputRoutines *m, int version, SaveLoadData *d)
 {
     int i, j;

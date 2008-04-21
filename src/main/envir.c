@@ -3379,7 +3379,7 @@ SEXP mkChar(const char *name)
 #ifndef USE_CHAR_HASHING
 SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 {
-    SEXP c = allocVector(CHARSXP, len);
+    SEXP c = allocCharsxp(len);
     memcpy(CHAR_RW(c), name, len);
     if (enc && strIsASCII(name))
         enc = 0;
@@ -3570,7 +3570,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
     if (cval == R_NilValue)
     {
         /* no cached value; need to allocate one and add to the cache */
-        PROTECT(cval = allocVector(CHARSXP, len));
+        PROTECT(cval = allocCharsxp(len));
         memcpy(CHAR_RW(cval), name, len);
         switch (enc)
         {
