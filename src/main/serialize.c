@@ -2201,6 +2201,7 @@ SEXP attribute_hidden R_unserialize(SEXP icon, SEXP fun)
     {
         /* was the format in R < 2.4.0, removed in R 2.8.0 */
         error("character vectors are no longer accepted by unserialize()");
+        return R_NilValue; /* -Wall */
     }
     else if (TYPEOF(icon) == RAWSXP)
     {
