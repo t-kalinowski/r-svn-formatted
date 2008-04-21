@@ -1036,6 +1036,8 @@ SEXP attribute_hidden do_setencoding(SEXP call, SEXP op, SEXP args, SEXP rho)
         else if (streql(this, "UTF-8"))
             ienc = CE_UTF8;
         tmp = STRING_ELT(x, i);
+        if (tmp == NA_STRING)
+            continue;
         if (!((ienc == CE_LATIN1 && IS_LATIN1(tmp)) || (ienc == CE_UTF8 && IS_UTF8(tmp)) ||
               (ienc == CE_NATIVE && !IS_LATIN1(tmp) && !IS_UTF8(tmp))))
             SET_STRING_ELT(x, i, mkCharLenCE(CHAR(tmp), LENGTH(tmp), ienc));
