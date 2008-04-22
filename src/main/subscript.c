@@ -151,7 +151,7 @@ int attribute_hidden get1index(SEXP s, SEXP names, int len, int pok, int pos, SE
     /* Get a single index for the [[ operator.
        Check that only one index is being selected.
        pok : is "partial ok" ?
-             if pok is -1, warn if partial matching occurs
+         if pok is -1, warn if partial matching occurs
     */
     int indx, i, warn_pok = 0;
     double dblind;

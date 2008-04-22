@@ -405,9 +405,9 @@ SEXP eval(SEXP e, SEXP rho)
     case EXPRSXP:
         tmp = e;
         /* Make sure constants in expressions are NAMED before being
-               used as values.  Setting NAMED to 2 makes sure weird calls
-               to assignment functions won't modify constants in
-               expressions.  */
+           used as values.  Setting NAMED to 2 makes sure weird calls
+           to assignment functions won't modify constants in
+           expressions.  */
         if (NAMED(tmp) != 2)
             SET_NAMED(tmp, 2);
         break;
@@ -569,7 +569,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 
     /*  Use the default code for unbound formals.  FIXME: It looks like
     this code should preceed the building of the environment so that
-        this will also go into the hash table.  */
+    this will also go into the hash table.  */
 
     /* This piece of code is destructively modifying the actuals list,
        which is now also the list of bindings in the frame of newrho.
@@ -603,13 +603,13 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
                     break;
             if (a == R_NilValue)
                 /* Use defineVar instead of earlier version that added
-                           bindings manually */
+                   bindings manually */
                 defineVar(TAG(tmp), CAR(tmp), newrho);
         }
     }
 
     /*  Terminate the previous context and start a new one with the
-        correct environment. */
+    correct environment. */
 
     endcontext(&cntxt);
 
@@ -1358,10 +1358,10 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(saverhs = rhs = eval(CADR(args), rho));
 
     /*  FIXME: We need to ensure that this works for hashed
-        environments.  This code only works for unhashed ones.  the
-        syntax error here is a deliberate marker so I don't forget that
-        this needs to be done.  The code used in "missing" will help
-        here.  */
+    environments.  This code only works for unhashed ones.  the
+    syntax error here is a deliberate marker so I don't forget that
+    this needs to be done.  The code used in "missing" will help
+    here.  */
 
     /*  FIXME: This strategy will not work when we are working in the
     data frame defined by the system hash table.  The structure there
@@ -3967,7 +3967,7 @@ char *R_CompiledFileName(char *fname, char *buf, size_t bsize)
     else if (ext == NULL)
     {
         /* if the requested file has no extention, make a name that
-               has the extenrion added on to the expanded name */
+           has the extenrion added on to the expanded name */
         if (snprintf(buf, bsize, "%s%s", fname, R_COMPILED_EXTENSION) < 0)
             error(_("R_CompiledFileName: buffer too small"));
         return buf;

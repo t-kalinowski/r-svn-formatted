@@ -47,7 +47,7 @@
 
    level 0 is no additional instrumentation
    level 1 marks uninitialized numeric, logical, integer vectors
-           and R_alloc memory
+       and R_alloc memory
    level 2 marks free memory as inaccessible
 
    It may be necessary to define NVALGRIND for a non-gcc

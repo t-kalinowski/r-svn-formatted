@@ -638,9 +638,9 @@ static int strcmpcasenosensitive_internal(const char *fileName1, const char *fil
    Compare two filename (fileName1,fileName2).
    If iCaseSensitivity = 1, comparision is case sensitivity (like strcmp)
    If iCaseSensitivity = 2, comparision is not case sensitivity (like strcmpi
-                                                                or strcasecmp)
+                                or strcasecmp)
    If iCaseSensitivity = 0, case sensitivity is defaut of your operating system
-        (like 1 on Unix, 2 on Windows)
+    (like 1 on Unix, 2 on Windows)
 
 */
 static int unzStringFileNameCompare(const char *fileName1, const char *fileName2, int iCaseSensitivity)
@@ -1106,9 +1106,9 @@ static int unzLocateFile(unzFile file, const char *szFileName, int iCaseSensitiv
 /*
   Read the local header of the current zipfile
   Check the coherency of the local header and info in the end of central
-        directory about this file
+    directory about this file
   store in *piSizeVar the size of extra info in local header
-        (filename and size of extra field data)
+    (filename and size of extra field data)
 */
 static int unzlocal_CheckCurrentFileCoherencyHeader(unz_s *s, uInt *piSizeVar, uLong *poffset_local_extrafield,
                                                     uInt *psize_local_extrafield)

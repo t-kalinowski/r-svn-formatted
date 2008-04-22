@@ -618,7 +618,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
             /* Can REprintf generate an error? If so we should guard for it */
             REprintf(_("Error during wrapup: "));
             /* this does NOT try to print the call since that could
-                   cause a cascade of error calls */
+               cause a cascade of error calls */
             Rvsnprintf(errbuf, sizeof(errbuf), format, ap);
             REprintf("%s\n", errbuf);
         }

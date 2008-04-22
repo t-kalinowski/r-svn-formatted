@@ -55,7 +55,7 @@ void Rsockread(int *sockp, char **buf, int *maxlen)
 void Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 
 int Rsockselect(int nsock, int *insockfd, int *ready, int *write,
-                double timeout)
+        double timeout)
  */
 
 static int initialized = 0;

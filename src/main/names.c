@@ -42,7 +42,7 @@
  *  printname	c-entry	 offset	 eval	arity	  pp-kind   precedence	    rightassoc
  *  ---------	-------	 ------	 ----	-----	  -------   ----------	    ----------
  *2 name	cfun	 code	 eval	arity	  gram.kind gram.precedence gram.rightassoc
- *3 PRIMNAME	PRIMFUN	 PRIMVAL [*]    PRIMARITY PPINFO    PPINFO 	    PPINFO
+ *3 PRIMNAME	PRIMFUN	 PRIMVAL [*]    PRIMARITY PPINFO    PPINFO	    PPINFO
  *
  * where "2" are the component names of the FUNTAB struct (Defn.h)
  * and	 "3" are the accessor macros. [*]: PRIMPRINT(.) uses the eval component

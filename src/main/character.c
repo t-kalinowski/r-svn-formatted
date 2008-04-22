@@ -2633,7 +2633,7 @@ static wchar_t wtr_get_next_char_from_spec(struct wtr_spec **p)
         return ('\0');
     switch (This->type)
     {
-        /* Note: this code does not deal with the WTR_INIT case. */
+    /* Note: this code does not deal with the WTR_INIT case. */
     case WTR_CHAR:
         c = This->u.c;
         *p = This->next;
@@ -2735,7 +2735,7 @@ static unsigned char tr_get_next_char_from_spec(struct tr_spec **p)
         return ('\0');
     switch (This->type)
     {
-        /* Note: this code does not deal with the TR_INIT case. */
+    /* Note: this code does not deal with the TR_INIT case. */
     case TR_CHAR:
         c = This->u.c;
         *p = This->next;

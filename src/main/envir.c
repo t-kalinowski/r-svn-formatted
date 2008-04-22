@@ -489,11 +489,11 @@ static SEXP R_HashFrame(SEXP rho)
    size: the total size of the hash table
 
    nchains: the number of non-null chains in the table (as reported by
-            HASHPRI())
+        HASHPRI())
 
    counts: an integer vector the same length as size giving the length of
-           each chain (or zero if no chain is present).  This allows
-           for assessing collisions in the hash table.
+       each chain (or zero if no chain is present).  This allows
+       for assessing collisions in the hash table.
  */
 
 static SEXP R_HashProfile(SEXP table)
@@ -3603,8 +3603,8 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 
         /* resize the hash table if necessary with the new entry still
            protected.
-       Maximum possible power of two is 2^30 for a VECSXP.
-    */
+           Maximum possible power of two is 2^30 for a VECSXP.
+        */
         if (R_HashSizeCheck(R_StringHash) && char_hash_size < 1073741824 /* 2^30 */)
             R_StringHash_resize(char_hash_size * 2);
 

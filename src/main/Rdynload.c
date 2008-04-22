@@ -28,13 +28,13 @@
   The aim is to consolidate these different implementations into
       i) a generic or platform-independent common core
      ii) platform-dependent routines that are registered
-         as function pointers.
+     as function pointers.
   The reason for using function pointers rather than explicit
   linking of symbols is
      a) to avoid confusion in the linking
      b) to allow for easily overriding these in embedded applications
-        in which a host application needs to control how R finds
-        symbols. This may be necessary for security reasons.
+    in which a host application needs to control how R finds
+    symbols. This may be necessary for security reasons.
  */
 
 /*  Dynamic Loading Support

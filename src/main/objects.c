@@ -378,10 +378,10 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     /* We need to find the generic to find out where it is defined.
        This is set up to avoid getting caught by things like
 
-        mycoef <- function(x)
+    mycoef <- function(x)
        {
-           mycoef <- function(x) stop("not this one")
-           UseMethod("mycoef")
+       mycoef <- function(x) stop("not this one")
+       UseMethod("mycoef")
        }
 
     The generic need not be a closure (Henrik Bengtsson writes
@@ -395,7 +395,7 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
         defenv = R_BaseNamespace;
     /*
         if(defenv !=  ENCLOS(env)) {
-            printf("*** problem ***\n");
+        printf("*** problem ***\n");
         PrintValue(generic);
         PrintValue(ENCLOS(env));
         }

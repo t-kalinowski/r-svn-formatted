@@ -1040,7 +1040,7 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
 	     * that is really desirable though....
 	     */
 	    else if (isSymbol(VECTOR_ELT(v, i)))
-	    	SET_STRING_ELT(rval, i, PRINTNAME(VECTOR_ELT(v, i)));
+		SET_STRING_ELT(rval, i, PRINTNAME(VECTOR_ELT(v, i)));
 #endif
             else
                 SET_STRING_ELT(rval, i, STRING_ELT(deparse1line(VECTOR_ELT(v, i), 0), 0));
@@ -2294,15 +2294,15 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
     /*
     cptr = R_GlobalContext;
     while (cptr->nextcontext != NULL) {
-        if (cptr->callflag & CTXT_FUNCTION ) {
+    if (cptr->callflag & CTXT_FUNCTION ) {
         if(cptr->cloenv == rho)
            break;
     }
     }
     if( cptr->cloenv == rho )
-        call = eval(call, cptr->sysparent);
+    call = eval(call, cptr->sysparent);
     else
-        error(_("do.call: could not find parent environment"));
+    error(_("do.call: could not find parent environment"));
     */
 
     UNPROTECT(1);

@@ -152,8 +152,8 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
             /* Ouch, no length check
             q = buf;
             while ((*q = *p) != '\0') {
-                p++;
-                q++;
+            p++;
+            q++;
             } */
         }
 
@@ -241,7 +241,7 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
             /* need to continue if there is no PACKAGE arg or if the
                namespace search failed
                if(!fun)
-                   errorcall(call, _("cannot resolve native routine"));
+               errorcall(call, _("cannot resolve native routine"));
             */
         }
 

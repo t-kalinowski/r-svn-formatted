@@ -39,7 +39,7 @@
  *  NB these tables are out of date, and exclude tupes 21, 22, 23, 24 ...
  *
  x \ y   NIL  SYM CLOS  ENV PROM LANG SPE- BUI-  LGL  INT REAL CPLX  STR  VEC EXPR  FUN
-                          CIAL LTIN
+                      CIAL LTIN
  LANG    600  601  603  604  605  606  607  608  610  613  614  615  616  619  620  699
  LGL    1000 1001 1003 1004 1005 1006 1007 1008 1010 1013 1014 1015 1016 1019 1020 1099
  INT    1300 1301 1303 1304 1305 1306 1307 1308 1310 1313 1314 1315 1316 1319 1320 1399
@@ -1695,7 +1695,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
 
         case 1010: /* logical   <- logical	  */
         case 1310: /* integer   <- logical	  */
-                   /* case 1013:	   logical   <- integer	  */
+        /* case 1013:	   logical   <- integer	  */
         case 1313: /* integer   <- integer	  */
 
             INTEGER(x)[offset] = INTEGER(y)[0];
@@ -1709,7 +1709,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             else
                 REAL(x)[offset] = INTEGER(y)[0];
             break;
-            /* case 1014:	   logical   <- real	  */
+        /* case 1014:	   logical   <- real	  */
         /* case 1314:	   integer   <- real	  */
         case 1414: /* real	     <- real	  */
 

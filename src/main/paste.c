@@ -311,7 +311,7 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* format.default(x, trim, digits, nsmall, width, justify, na.encode,
-                  scientific) */
+          scientific) */
 SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP l, x, y, swd;

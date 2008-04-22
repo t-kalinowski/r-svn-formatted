@@ -1171,11 +1171,11 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
     attr <- function (x, which)
     {
-        if (!is.character(which))
-            stop("attribute name must be of mode character")
-        if (length(which) != 1)
-            stop("exactly one attribute name must be given")
-        attributes(x)[[which]]
+    if (!is.character(which))
+        stop("attribute name must be of mode character")
+    if (length(which) != 1)
+        stop("exactly one attribute name must be given")
+    attributes(x)[[which]]
    }
 
 The R functions was being called very often and replacing it by

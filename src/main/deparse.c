@@ -1521,7 +1521,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
             print2buff(", ", d);
         linebreak(&lbreak, d);
         if (!isNull(nv) && !isNull(STRING_ELT(nv, i)) && *CHAR(STRING_ELT(nv, i)))
-        {   /* length test */
+        { /* length test */
             /* d->opts = SIMPLEDEPARSE; This seems pointless */
             if (isValidName(translateChar(STRING_ELT(nv, i))))
                 deparse2buff(STRING_ELT(nv, i), d);

@@ -876,7 +876,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(formula = EncodeVars(CAR(args)));
 
     nvar = length(varlist) - 1; /* need to recompute, in case
-                                   EncodeVars stretched it */
+                   EncodeVars stretched it */
 
     /* Step 2a: Compute variable names */
 

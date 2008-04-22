@@ -1149,7 +1149,7 @@ static void WriteBCLang(SEXP s, SEXP ref_table, SEXP reps, R_outpstream_t stream
             if (TAG(r) == R_NilValue)
             {
                 /* this is the first reference, so update and register
-                           the counter */
+                   the counter */
                 int i = INTEGER(CAR(reps))[0]++;
                 SET_TAG(r, allocVector(INTSXP, 1));
                 INTEGER(TAG(r))[0] = i;
@@ -1404,13 +1404,13 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
     case PROMSXP:
     case DOTSXP:
         /* This handling of dotted pair objects still uses recursion
-               on the CDR and so will overflow the PROTECT stack for long
-               lists.  The save format does permit using an iterative
-               approach; it just has to pass around the place to write the
-               CDR into when it is allocated.  It's more trouble than it
-               is worth to write the code to handle this now, but if it
-               becomes necessary we can do it without needing to change
-               the save format. */
+           on the CDR and so will overflow the PROTECT stack for long
+           lists.  The save format does permit using an iterative
+           approach; it just has to pass around the place to write the
+           CDR into when it is allocated.  It's more trouble than it
+           is worth to write the code to handle this now, but if it
+           becomes necessary we can do it without needing to change
+           the save format. */
         PROTECT(s = allocSExp(type));
         SETLEVELS(s, levs);
         SET_OBJECT(s, objf);

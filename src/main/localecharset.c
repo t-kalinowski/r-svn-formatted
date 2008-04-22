@@ -72,9 +72,9 @@ typedef struct
        sed -e '/\/$/d' | \
        sort | uniq | \
        awk '{NAME=$1;gsub(/-/,"_",NAME);
-             printf("static  const   char    ENC_%-20s\"%s\";\n",
-             NAME "[]=" ,
-             $1)}'
+         printf("static  const   char    ENC_%-20s\"%s\";\n",
+         NAME "[]=" ,
+         $1)}'
   */
 static char ENC_ARMSCII_8[] = "ARMSCII-8";
 static char ENC_BIG5[] = "BIG5";

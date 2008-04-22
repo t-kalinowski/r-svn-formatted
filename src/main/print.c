@@ -164,7 +164,7 @@ SEXP attribute_hidden do_prmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 } /* do_prmatrix */
 
 /* .Internal(print.default(x, digits, quote, na.print, print.gap,
-                           right, max, useS4)) */
+               right, max, useS4)) */
 SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, naprint;

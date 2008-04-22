@@ -121,7 +121,7 @@ typedef struct
 
     R_StringBuffer buffer;
     char smbuf[512]; /* Small buffer for temp use */
-                     /* smbuf is only used by Ascii. */
+    /* smbuf is only used by Ascii. */
     XDR xdrs;
 
 } SaveLoadData;
@@ -2422,11 +2422,11 @@ void R_RestoreGlobalEnvFromFile(const char *name, Rboolean quiet)
 /* Ideally it should be possible to do this entirely in R code with
    something like
 
-        magic <- if (ascii) "RDA2\n" else
-        writeChar(magic, con, eos = NULL)
-        val <- lapply(list, get, envir = envir)
+    magic <- if (ascii) "RDA2\n" else
+    writeChar(magic, con, eos = NULL)
+    val <- lapply(list, get, envir = envir)
     names(val) <- list
-        invisible(serialize(val, con, ascii = ascii))
+    invisible(serialize(val, con, ascii = ascii))
 
    Unfortunately, this will result in too much duplication in the lapply
    (and any other way of doing this).  Hence we need an internal version. */
