@@ -3376,52 +3376,6 @@ SEXP mkChar(const char *name)
     return mkCharLenCE(name, strlen(name), CE_NATIVE);
 }
 
-#ifndef USE_CHAR_HASHING
-SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
-{
-    int slen = strlen(name);
-    SEXP c;
-    if (slen < len)
-    {
-        /* This is tricky: we want to make a reasonable job of
-           representing this string, and EncodeString() is the most
-           comprehensive */
-        c = allocCharsxp(len);
-        memcpy(CHAR_RW(c), name, len);
-        switch (enc)
-        {
-        case CE_UTF8:
-            SET_UTF8(c);
-            break;
-        case CE_LATIN1:
-            SET_LATIN1(c);
-            break;
-        default:
-            break;
-        }
-        warning(_("truncating string with embedded nuls: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
-        len = slen;
-    }
-    c = allocCharsxp(len);
-    memcpy(CHAR_RW(c), name, len);
-    if (enc && strIsASCII(name))
-        enc = 0;
-    switch (enc)
-    {
-    case 0:
-        break; /* don't set encoding */
-    case CE_UTF8:
-        SET_UTF8(c);
-        break;
-    case CE_LATIN1:
-        SET_LATIN1(c);
-        break;
-    default:
-        error("unknown encoding: %d", enc);
-    }
-    return c;
-}
-#else
 /* Global CHARSXP cache and code for char-based hash tables */
 
 /* We can reuse the hash structure, but need separate code for get/set
@@ -3579,7 +3533,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
             default:
                 break;
             }
-            warning(_("truncating string with embedded nuls: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
+            warning(_("truncating string with embedded nul: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
         }
         len = slen;
     }
@@ -3608,7 +3562,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         SEXP val = CXHEAD(chain);
 #ifdef USE_ATTRIB_FIELD_FOR_CHARSXP_CACHE_CHAINS
         if (TYPEOF(val) != CHARSXP)
-            break;                                              /* sanity check */
+            break; /* sanity check */
 #endif
         if (need_enc == ENC_KNOWN(val) && LENGTH(val) == len && /* quick pretest */
             memcmp(CHAR(val), name, len) == 0)
@@ -3721,4 +3675,3 @@ void do_write_cache()
     }
 }
 #endif /* DEBUG_SHOW_CHARSXP_CACHE */
-#endif

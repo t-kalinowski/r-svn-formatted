@@ -1396,7 +1396,6 @@ again:
 
     DEBUG_CHECK_NODE_COUNTS("after processing forwarded list");
 
-#ifdef USE_CHAR_HASHING
     /* process CHARSXP cache */
     {
         SEXP t;
@@ -1428,7 +1427,6 @@ again:
     }
     FORWARD_NODE(R_StringHash);
     PROCESS_NODES();
-#endif
 
     /* release large vector allocations */
     ReleaseLargeFreeVectors();
