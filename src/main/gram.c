@@ -4537,7 +4537,8 @@ static int StringValue(int c, Rboolean forSymbol)
         {
             int i, clen;
             wchar_t wc = L'\0';
-            clen = utf8locale ? utf8clen(c) : mbcs_get_next(c, &wc);
+            /* We can't assume this is valid UTF-8 */
+            clen = /* utf8locale ? utf8clen(c):*/ mbcs_get_next(c, &wc);
             WTEXT_PUSH(wc);
             for (i = 0; i < clen - 1; i++)
             {
@@ -4705,7 +4706,8 @@ static int SymbolValue(int c)
     {
         wchar_t wc;
         int i, clen;
-        clen = utf8locale ? utf8clen(c) : mbcs_get_next(c, &wc);
+        /* We can't assume this is valid UTF-8 */
+        clen = /* utf8locale ? utf8clen(c) :*/ mbcs_get_next(c, &wc);
         while (1)
         {
             /* at this point we have seen one char, so push its bytes
