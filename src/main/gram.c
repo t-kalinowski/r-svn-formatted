@@ -4332,6 +4332,15 @@ static int StringValue(int c, Rboolean forSymbol)
                     {
                         xxungetc(c);
                         CTEXT_POP();
+                        if (i == 0)
+                        { /* was just \x */
+                            if (GenerateCode && R_WarnEscapes)
+                            {
+                                have_warned++;
+                                warningcall(R_NilValue, _("'\\x used without hex digits"));
+                            }
+                            val = 'x';
+                        }
                         break;
                     }
                     val = 16 * val + ext;
@@ -4369,6 +4378,15 @@ static int StringValue(int c, Rboolean forSymbol)
                     {
                         xxungetc(c);
                         CTEXT_POP();
+                        if (i == 0)
+                        { /* was just \x */
+                            if (GenerateCode && R_WarnEscapes)
+                            {
+                                have_warned++;
+                                warningcall(R_NilValue, _("'\\u used without hex digits"));
+                            }
+                            val = 'u';
+                        }
                         break;
                     }
                     val = 16 * val + ext;
@@ -4436,6 +4454,15 @@ static int StringValue(int c, Rboolean forSymbol)
                         {
                             xxungetc(c);
                             CTEXT_POP();
+                            if (i == 0)
+                            { /* was just \x */
+                                if (GenerateCode && R_WarnEscapes)
+                                {
+                                    have_warned++;
+                                    warningcall(R_NilValue, _("'\\U used without hex digits"));
+                                }
+                                val = 'U';
+                            }
                             break;
                         }
                         val = 16 * val + ext;
