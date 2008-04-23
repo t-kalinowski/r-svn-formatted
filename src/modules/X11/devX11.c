@@ -78,7 +78,7 @@
 
 #define X_BELL_VOLUME                                                                                                  \
     0 /* integer between -100 and 100 for the volume                                                                   \
-          of the bell in locator. */
+of the bell in locator. */
       /* Note: This is in relation to
       the general bell level. Was 50, but if > 0
       then "xset b off" will not disable the
@@ -2211,7 +2211,7 @@ static Rboolean X11_Locator(double *x, double *y, pDevDesc dd)
                     *x = event.xbutton.x;
                     *y = event.xbutton.y;
                     /* Make a beep! Was print "\07", but that
-                               messes up some terminals. */
+                   messes up some terminals. */
                     if (useBeep)
                         XBell(display, X_BELL_VOLUME);
                     XSync(display, 0);
@@ -2229,7 +2229,7 @@ static Rboolean X11_Locator(double *x, double *y, pDevDesc dd)
 }
 
 /********************************************************/
-/* device_Mode is called whenever the graphics engine 	*/
+/* device_Mode is called whenever the graphics engine	*/
 /* starts drawing (mode=1) or stops drawing (mode=0)	*/
 /* the device is not required to do anything		*/
 /********************************************************/

@@ -1031,7 +1031,7 @@ static void jumppage(DEstruct DE, DE_DIRECTION dir)
     case RIGHT:
         oldcol = DE->colmin;
         wcol = DE->colmin + DE->ccol + 1; /* column to be selected */
-                                          /* There may not be room to fit the next column in */
+        /* There may not be room to fit the next column in */
         w = DE->fullwindowWidth - DE->boxw[0] - BOXW(DE->colmax + 1);
         for (i = DE->colmax; i >= oldcol; i--)
         {

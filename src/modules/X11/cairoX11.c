@@ -417,7 +417,7 @@ static void PangoCairo_MetricInfo(int c, const pGEcontext gc, double *ascent, do
     *descent = idescent;
     *width = iwidth;
 #if 0
-    printf("c = %d, '%s', face %d %f %f %f\n", 
+    printf("c = %d, '%s', face %d %f %f %f\n",
 	   c, str, gc->fontface, *width, *ascent, *descent);
 #endif
 }
@@ -705,7 +705,7 @@ static void Cairo_MetricInfo(int c, pGEcontext gc, double *ascent, double *desce
     *descent = exts.height + exts.y_bearing;
     *width = exts.x_advance;
 #if 0
-    printf("c = %d, '%s', face %d %f %f %f\n", 
+    printf("c = %d, '%s', face %d %f %f %f\n",
 	   c, str, gc->fontface, *width, *ascent, *descent);
 #endif
 }

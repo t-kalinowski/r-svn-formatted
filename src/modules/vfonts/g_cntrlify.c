@@ -40,14 +40,14 @@
    codes (unsigned shorts with particular bit patterns in their high
    bytes), which are produced by the escape sequences:
 
-        \sp  start superscript
-        \ep  end superscript
+    \sp  start superscript
+    \ep  end superscript
 
-        \sb  start subscript
-        \eb  end subscript
+    \sb  start subscript
+    \eb  end subscript
 
-        \mk  mark location
-        \rt  return to mark
+    \mk  mark location
+    \rt  return to mark
          [useful e.g. for underlining, and filling square roots]
 
     There are also control codes for horizontal shifts.  \r1, \r2, \r4,
@@ -207,7 +207,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
         }
 
         /* if current font is Hershey, first try to match each ligature
-           pattern (no ligatures supported in non-Hershey fonts) */
+       pattern (no ligatures supported in non-Hershey fonts) */
         if (1) /* _plotter->drawstate->font_type == F_HERSHEY) */
         {
             int i;
@@ -270,7 +270,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
                 }
 
                 /* since current font is an ISO-Latin-1 Hershey font, also
-                       check if this char should be deligatured */
+               check if this char should be deligatured */
                 for (i = 0; i < NUM_DELIGATURED_CHARS; i++)
                     if (c == _deligature_char_tbl[i].from)
                     {
@@ -340,7 +340,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
 
 #ifndef NO_KANJI
             /* is this an escape seq. (e.g. \#N0001) for a raw Japanese
-                   Hershey glyph (Kanji), as numbered in Nelson's dictionary? */
+               Hershey glyph (Kanji), as numbered in Nelson's dictionary? */
             if (1 /* _plotter->drawstate->font_type == F_HERSHEY */
                 && esc[0] == '#' && esc[1] == 'N' && src[0] >= '0' && src[0] <= '9' && src[1] >= '0' && src[1] <= '9' &&
                 src[2] >= '0' && src[2] <= '9' && src[3] >= '0' && src[3] <= '9')
@@ -358,7 +358,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
 #endif /* not NO_KANJI */
 
             /* is this an escape seq. (e.g. \#J0001) for a raw Japanese
-                   Hershey glyph (JIS numbering, in hex)? */
+               Hershey glyph (JIS numbering, in hex)? */
             if (1 /* _plotter->drawstate->font_type == F_HERSHEY */
                 && esc[0] == '#' && esc[1] == 'J' &&
                 ((src[0] >= '0' && src[0] <= '9') || (src[0] >= 'a' && src[0] <= 'f') ||
@@ -507,9 +507,9 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
             }
 
             /* if the current font is an ISO-Latin-1 font (no matter whether
-                   font is a a Hershey font, a PS or PCL/Stick font, or a
-                   device-specific font for which we have no table entry), is
-                   this an escape seq. for an 8-bit (non-ASCII) ISO8859-1 char?  */
+               font is a a Hershey font, a PS or PCL/Stick font, or a
+               device-specific font for which we have no table entry), is
+               this an escape seq. for an 8-bit (non-ASCII) ISO8859-1 char?  */
 
             /* PAUL MURRELL
                Only concerned with Hershey fonts
@@ -541,7 +541,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
                 if (matched) /* it's an 8-bit ISO8859-1 character */
                 {
                     /* certain such characters are drawn in the Hershey fonts
-                               as superscripts */
+                       as superscripts */
                     if (1) /* _plotter->drawstate->font_type == F_HERSHEY) */
                     {
                         int k;

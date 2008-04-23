@@ -515,7 +515,7 @@ int R_SaveAsTIFF(void *d, int width, int height, unsigned int (*gp)(void *, int,
        COMPRESSION_LZW = 5;
        COMPRESSION_JPEG = 7;
        COMPRESSION_DEFLATE = 32946;
-       COMPRESSION_ADOBE_DEFLATE = 8;  
+       COMPRESSION_ADOBE_DEFLATE = 8;
     */
     TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 #endif

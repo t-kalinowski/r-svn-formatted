@@ -220,7 +220,7 @@ int Rf_initialize_R(int ac, char **av)
             R_CStackLimit = -1; /* never set */
 
         /* printf("stack limit %ld, start %lx dir %d \n", R_CStackLimit,
-                  R_CStackStart, R_CStackDir); */
+              R_CStackStart, R_CStackDir); */
     }
 #endif
 

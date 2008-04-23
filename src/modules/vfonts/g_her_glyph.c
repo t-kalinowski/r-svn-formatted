@@ -30,8 +30,8 @@
    @TechReport{Wolcott76,
      author =       {Norman M. Wolcott and Joseph Hilsenrath},
      title =        {A Contribution to Computer Typesetting Techniques:
-                     Tables of Coordinates for {Hershey's} Repertory of
-                     Occidental Type Fonts and Graphic Symbols},
+             Tables of Coordinates for {Hershey's} Repertory of
+             Occidental Type Fonts and Graphic Symbols},
      institution =  {U.S. National Bureau of Standards},
      year =         {1976},
      month =        {April},
@@ -46,11 +46,11 @@
    oriental glyphs:
 
    @TechReport{Hershey67,
-     author = 	 {Allen V. Hershey},
-     title = 	 {Calligraphy for Computers},
+     author =	 {Allen V. Hershey},
+     title =	 {Calligraphy for Computers},
      institution =  {U.S. Naval Weapons Laboratory},
      address =	 {Dahlgren, VA},
-     year = 	 {1967},
+     year =	 {1967},
      type =	 {Report},
      number =	 {TR--2101},
      month =	 {Aug},
