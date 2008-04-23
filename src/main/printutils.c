@@ -376,7 +376,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                     case L'\r':
                     case L'\t':
                     case L'\v':
-                    case L'\0': /* historical */
+                    case L'\0':
                         len += 2;
                         break;
                     default:
@@ -438,7 +438,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                     case '\r':
                     case '\t':
                     case '\v':
-                    case '\0': /* historical */
+                    case '\0':
                         len += 2;
                         break;
                     default:
@@ -591,7 +591,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             if (res >= 0)
             { /* res = 0 is a terminator */
                 k = wc;
-                /* historical: To be portable, treat \0 explicitly */
+                /* To be portable, treat \0 explicitly */
                 if (res == 0)
                 {
                     k = 0;
@@ -654,7 +654,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                     case L'\0':
                         *q++ = '\\';
                         *q++ = '0';
-                        break; /* historical */
+                        break;
 
                     default:
                         /* print in octal */
@@ -766,7 +766,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                     case '\0':
                         *q++ = '\\';
                         *q++ = '0';
-                        break; /* historical */
+                        break;
 
                     default:
                         /* print in octal */
