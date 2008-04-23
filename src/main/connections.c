@@ -3727,8 +3727,9 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
             return R_NilValue;
         pos = m;
     }
-    /* String may contain nuls so don't use mkChar */
-    return mkCharLen(buf, pos);
+    /* String may contain nuls which we now (R >= 2.8.0) assume to be
+       padding and ignore silently */
+    return mkChar(buf);
 }
 
 static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBytes)
