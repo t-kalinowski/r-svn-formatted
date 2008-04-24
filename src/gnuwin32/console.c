@@ -1241,7 +1241,6 @@ void consolepaste(control c)
     }
     if (p->kind == PAGER)
         return;
-    ;
     if (OpenClipboard(NULL) && (hglb = GetClipboardData(CF_UNICODETEXT)) && (pc = (wchar_t *)GlobalLock(hglb)))
     {
         if (p->clp)
@@ -1894,7 +1893,36 @@ static void draweditline(control c)
     }
 }
 
-/* Here multibyte characters will be entered as individual bytes */
+/* This needs to convert the nul-terminated wchar_t string 'in' to a
+   sensible strinf in buf[len].  It must not be empty, as R will
+   interpret that as EOF, and it should end in \n, as 'in' should do.
+
+   Our strategy is to convert character by character to the current
+   Windows locale, using \uxxxx escapes for invalid characters.
+*/
+
+static void wcstobuf(char *buf, int len, const wchar_t *in)
+{
+    int used, tot = 0;
+    char *p = buf, tmp[7];
+    const wchar_t *wc = in;
+
+    for (; wc; wc++, p += used, tot += used)
+    {
+        if (tot >= len - 2)
+            break;
+        used = wctomb(p, *wc);
+        if (used < 0)
+        {
+            snprintf(tmp, 7, "\\u%x", *wc);
+            used = strlen(tmp);
+            memcpy(p, tmp, used);
+        }
+    }
+    *p++ = '\n';
+    *p = '\0';
+}
+
 int consolereads(control c, const char *prompt, char *buf, int len, int addtohistory)
 {
     ConsoleData p = getdata(c);
@@ -2066,8 +2094,9 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
                     }
                     else
                         cur_line[max_pos] = L'\0';
-                    /* just to be safe */
-                    sprintf(buf, "%ls", cur_line);
+                    wcstobuf(buf, len, cur_line);
+                    // sprintf(buf, "%ls", cur_line);
+                    // if(strlen(buf) == 0) strcpy(buf, "invalid input\n");
                     p->r = -1;
                     cur_line[max_pos] = L'\0';
                     if (max_pos && addtohistory)
