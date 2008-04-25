@@ -67,7 +67,8 @@ void rcmdusage(char *RCMD)
             "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Rd2txt   Convert Rd format to text.\n",
             "  Sd2Rd    Convert S documentation to Rd format.\n",
             "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n",
-            "  config   Obtain configuration information about R.\n");
+            "  config   Obtain configuration information about R.\n"
+            "  open     Open a file via Windows file associations.\n");
 
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
 }
