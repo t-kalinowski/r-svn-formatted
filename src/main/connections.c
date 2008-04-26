@@ -2174,13 +2174,11 @@ static Rconnection newtext(const char *description, SEXP text)
 
 static SEXP mkCharLocal(const char *s)
 {
-    int ienc = 0;
+    int ienc = CE_NATIVE;
     if (known_to_be_latin1)
         ienc = CE_LATIN1;
     if (known_to_be_utf8)
         ienc = CE_UTF8;
-    if (ienc > 0 && strIsASCII(s))
-        ienc = CE_NATIVE;
     return mkCharCE(s, ienc);
 }
 
@@ -3764,7 +3762,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         clen = iread - (*np);
         *np = iread;
         *p = '\0';
-        return mkCharLen(buf, clen);
+        return mkCharLenCE(buf, clen, CE_NATIVE);
     }
     else
 #endif
@@ -3773,7 +3771,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         buf = R_chk_calloc(len + 1, 1);
         memcpy(buf, bytes + (*np), len);
         *np += len;
-        res = mkCharLen(buf, len);
+        res = mkCharLenCE(buf, len, CE_NATIVE);
         Free(buf);
     }
     return res;
