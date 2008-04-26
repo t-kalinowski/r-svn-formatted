@@ -2999,7 +2999,7 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
                     nc = p - p0;
                     if (*p != '\n')
                         nc++;
-                    if (nc <= MAXLINESIZE)
+                    if (nc < MAXLINESIZE)
                     {
                         strncpy((char *)SourceLine, (char *)p0, nc);
                         SourceLine[nc] = '\0';
