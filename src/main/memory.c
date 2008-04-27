@@ -3401,26 +3401,6 @@ void attribute_hidden R_FreeStringBufferL(R_StringBuffer *buf)
 
 /* FIXME: consider inlining here */
 #ifdef Win32
-
-static int Rstrcoll(const char *s1, const char *s2)
-{
-    wchar_t *w1, *w2;
-    w1 = (wchar_t *)alloca((strlen(s1) + 1) * sizeof(wchar_t));
-    w2 = (wchar_t *)alloca((strlen(s2) + 1) * sizeof(wchar_t));
-    R_CheckStack();
-    utf8towcs(w1, s1, strlen(s1));
-    utf8towcs(w2, s2, strlen(s2));
-    return wcscoll(w1, w2);
-}
-
-int Scollate(SEXP a, SEXP b)
-{
-    if (getCharCE(a) == CE_UTF8 || getCharCE(b) == CE_UTF8)
-        return Rstrcoll(translateCharUTF8(a), translateCharUTF8(b));
-    else
-        return strcoll(translateChar(a), translateChar(b));
-}
-
 int Seql(SEXP a, SEXP b)
 {
     if (a == b)
@@ -3433,17 +3413,6 @@ int Seql(SEXP a, SEXP b)
 }
 
 #else
-
-#ifdef HAVE_STRCOLL
-#define STRCOLL strcoll
-#else
-#define STRCOLL strcmp
-#endif
-
-int Scollate(SEXP a, SEXP b)
-{
-    return STRCOLL(translateChar(a), translateChar(b));
-}
 
 /* this has NA_STRING = NA_STRING */
 int Seql(SEXP a, SEXP b)
