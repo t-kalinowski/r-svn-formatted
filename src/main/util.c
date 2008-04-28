@@ -1821,13 +1821,25 @@ static const struct
 {
     const char *const str;
     int val;
-} ATtable[] = {{"on", UCOL_ON},
-               {"off", UCOL_OFF},
+} ATtable[] = {{"case_first", UCOL_CASE_FIRST},
                {"upper", UCOL_UPPER_FIRST},
                {"lower", UCOL_LOWER_FIRST},
                {"default ", UCOL_DEFAULT},
+               {"strength", 999},
+               {"primary ", UCOL_PRIMARY},
+               {"secondary ", UCOL_SECONDARY},
+               {"teritary ", UCOL_TERTIARY},
+               {"guaternary ", UCOL_QUATERNARY},
+               {"identical ", UCOL_IDENTICAL},
                {"french_collation", UCOL_FRENCH_COLLATION},
-               {"case_first", UCOL_CASE_FIRST},
+               {"on", UCOL_ON},
+               {"off", UCOL_OFF},
+               {"normalization", UCOL_NORMALIZATION_MODE},
+               {"alternate_handling", UCOL_ALTERNATE_HANDLING},
+               {"non_ignorable", UCOL_NON_IGNORABLE},
+               {"shifted", UCOL_SHIFTED},
+               {"case_level", UCOL_CASE_LEVEL},
+               {"hiragana_quaternary", UCOL_HIRAGANA_QUATERNARY_MODE},
                {NULL, 0}};
 
 SEXP do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1870,7 +1882,11 @@ SEXP do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
                     val = ATtable[i].val;
                     break;
                 }
-            if (collator && at >= 0 && val >= 0)
+            if (collator && at == 999 && val >= 0)
+            {
+                ucol_setStrength(collator, val);
+            }
+            else if (collator && at >= 0 && val >= 0)
             {
                 ucol_setAttribute(collator, at, val, &status);
                 if (U_FAILURE(status))
