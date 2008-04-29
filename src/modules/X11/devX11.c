@@ -3170,7 +3170,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     /* rescale points to pixels */
     dd->cra[0] = 0.9 * ps * res0 / 72.0;
     dd->cra[1] = 1.2 * ps * res0 / 72.0;
-    dd->startps = ps;
+    dd->startps = dps;
     dd->ipr[0] = dd->ipr[1] = 1.0 / res0;
     xd->lwdscale = res0 / 96.0;
     dd->xCharOffset = 0.4900;
@@ -3179,7 +3179,6 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     dd->canClip = TRUE;
     dd->canHAdj = 2;
     dd->canChangeGamma = FALSE;
-    dd->startps = ps;
     dd->startcol = xd->col;
     dd->startfill = xd->fill;
     dd->startlty = LTY_SOLID;
