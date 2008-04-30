@@ -1746,7 +1746,11 @@ double R_strtod4(const char *str, char **endptr, char dec, Rboolean NA)
         for (p++; *p >= '0' && *p <= '9'; p++, ndigits++, expn--)
             ans = 10 * ans + (*p - '0');
     if (ndigits == 0)
-        goto done; /* maybe throw an error? */
+    {
+        ans = NA_REAL;
+        p = str; /* back out */
+        goto done;
+    }
 
     if (*p == 'e' || *p == 'E')
     {
