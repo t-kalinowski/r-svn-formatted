@@ -3707,6 +3707,8 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
                                                                                                                        \
         if ((units = asInteger(CAR(args))) == NA_INTEGER || units < 0)                                                 \
             error(_("invalid units"));                                                                                 \
+        if (units == 1)                                                                                                \
+            GCheckState(dd);                                                                                           \
         args = CDR(args);                                                                                              \
                                                                                                                        \
         if (isNull(CAR(args)))                                                                                         \
