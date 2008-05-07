@@ -621,23 +621,6 @@ static void PrintExpression(SEXP s)
 
  * This is the "dispatching" function for  print.default()
  */
-
-static void PrintEnvir(SEXP rho)
-{
-    if (rho == R_GlobalEnv)
-        Rprintf("<environment: R_GlobalEnv>\n");
-    else if (rho == R_BaseEnv)
-        Rprintf("<environment: base>\n");
-    else if (rho == R_EmptyEnv)
-        Rprintf("<environment: R_EmptyEnv>\n");
-    else if (R_IsPackageEnv(rho))
-        Rprintf("<environment: %s>\n", translateChar(STRING_ELT(R_PackageEnvName(rho), 0)));
-    else if (R_IsNamespaceEnv(rho))
-        Rprintf("<environment: namespace:%s>\n", translateChar(STRING_ELT(R_NamespaceEnvSpec(rho), 0)));
-    else
-        Rprintf("<environment: %p>\n", rho);
-}
-
 void attribute_hidden PrintValueRec(SEXP s, SEXP env)
 {
     int i;
@@ -733,14 +716,14 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
             Rprintf("<bytecode: %p>\n", BODY(s));
 #endif
         if (TYPEOF(s) == CLOSXP)
+        {
             t = CLOENV(s);
-        else
-            t = R_GlobalEnv;
-        if (t != R_GlobalEnv)
-            PrintEnvir(t);
+            if (t != R_GlobalEnv)
+                Rprintf("%s\n", EncodeEnvironment(t));
+        }
         break;
     case ENVSXP:
-        PrintEnvir(s);
+        Rprintf("%s\n", EncodeEnvironment(s));
         break;
     case PROMSXP:
         Rprintf("<promise: %p>\n", s);
