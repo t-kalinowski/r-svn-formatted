@@ -168,13 +168,6 @@ enum yytokentype
  *  http://www.r-project.org/Licenses/
  */
 
-/* <UTF8>
-   This uses byte-level access, which is generally OK as comparisons
-   are with ASCII chars.
-
-   typeofnext SymbolValue isValidName have been changed to cope.
- */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
