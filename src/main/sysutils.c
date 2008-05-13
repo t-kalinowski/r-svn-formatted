@@ -157,7 +157,7 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
         from = "UTF-8";
     obj = Riconv_open("UCS-2LE", from);
     if (obj == (void *)(-1))
-        error(_("unsupported conversion in 'filenameToWchar'"));
+        error(_("unsupported conversion from '%s' in 'filenameToWchar' in codepage %d"), from, localeCP);
 
     if (expand)
         inbuf = R_ExpandFileName(CHAR(fn));
