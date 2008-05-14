@@ -820,6 +820,9 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
         {
 #if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             size_t res, inb = strlen((char *)buf), onb = len;
+            /* NB: this is somewhat dangerous.  R's main loop and
+               scan will not call it with a larger value, but
+               contributed code might. */
             char obuf[CONSOLE_BUFFER_SIZE + 1];
             const char *ib = (const char *)buf;
             char *ob = obuf;
