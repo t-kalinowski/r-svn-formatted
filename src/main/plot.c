@@ -1158,7 +1158,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Determine the tickmark positions.  Note that these may fall */
     /* outside the plot window. We will clip them in the code below. */
 
-    create_at = (length(at) == 0);
+    create_at = isNull(at);
     if (create_at)
     {
         PROTECT(at = CreateAtVector(axp, usr, nint, logflag));
@@ -1205,9 +1205,9 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         if (R_FINITE(REAL(at)[i]))
             ntmp = i + 1;
     }
-    n = ntmp;
-    if (n == 0)
+    if (n > 0 && ntmp == 0)
         error(_("no locations are finite"));
+    n = ntmp;
 
     /* Ok, all systems are "GO".  Let's get to it. */
 
@@ -1215,7 +1215,8 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
      * so we test to see whether the relevant one is "n".
      * If it is, we just bail out at this point. */
 
-    if (((side == 1 || side == 3) && gpptr(dd)->xaxt == 'n') || ((side == 2 || side == 4) && gpptr(dd)->yaxt == 'n'))
+    if ((n == 0) || ((side == 1 || side == 3) && gpptr(dd)->xaxt == 'n') ||
+        ((side == 2 || side == 4) && gpptr(dd)->yaxt == 'n'))
     {
         GRestorePars(dd);
         UNPROTECT(4);
