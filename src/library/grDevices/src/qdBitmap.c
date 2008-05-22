@@ -186,7 +186,7 @@ QuartzDesc_t QuartzBitmap_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzPa
             par->pointsize,
             par->bg,
             par->canvas,
-            par->flags,
+            par->flags | QDFLAG_RASTERIZED,
             dev,
             QuartzBitmap_GetCGContext,
             NULL, /* locate */
