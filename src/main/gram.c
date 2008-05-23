@@ -3646,8 +3646,6 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
                 break;
         }
 
-        rval = R_Parse1Buffer(buffer, 1, status);
-
         /* Was a call to R_Parse1Buffer, but we don't want to reset xxlineno and xxcolno */
         ParseInit();
         ParseContextInit();
