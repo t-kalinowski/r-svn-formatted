@@ -57,7 +57,8 @@
 #include <config.h>
 #endif
 
-#include <R_ext/Arith.h> /* for declaration of hypot */
+#include <R_ext/Arith.h>  /* for declaration of hypot */
+#include <R_ext/Memory.h> /* for declaration of R_alloc */
 
 #include <float.h> /* for FLT_RADIX */
 
@@ -89,9 +90,10 @@ static void cdivid(double, double, double, double, double *, double *);
 
 /* Global Variables (too many!) */
 
+static int nn;
+#if 0
 #define NMAX 50
 
-static int nn;
 static double pr[NMAX];
 static double pi[NMAX];
 static double hr[NMAX];
@@ -102,6 +104,9 @@ static double qhr[NMAX];
 static double qhi[NMAX];
 static double shr[NMAX];
 static double shi[NMAX];
+#else
+static double *pr, *pi, *hr, *hi, *qpr, *qpi, *qhr, *qhi, *shr, *shi;
+#endif
 static double sr, si;
 static double tr, ti;
 static double pvr, pvi;
@@ -120,6 +125,7 @@ attribute_hidden void R_cpolyroot(double *opr, double *opi, int *degree, double 
     static double bnd, xxx;
     Rboolean conv;
     int d1;
+    double *tmp;
     static const double cosr = /* cos 94 */ -0.06975647374412529990;
     static const double sinr = /* sin 94 */ 0.99756405025982424767;
     xx = M_SQRT1_2; /* 1/sqrt(2) = 0.707.... */
@@ -152,6 +158,19 @@ attribute_hidden void R_cpolyroot(double *opr, double *opi, int *degree, double 
 
     if (nn == 1)
         return;
+
+    /* Use a single allocation as these as small */
+    tmp = (double *)R_alloc(10 * nn, sizeof(double));
+    pr = tmp;
+    pi = tmp + nn;
+    hr = tmp + 2 * nn;
+    hi = tmp + 3 * nn;
+    qpr = tmp + 4 * nn;
+    qpi = tmp + 5 * nn;
+    qhr = tmp + 6 * nn;
+    qhi = tmp + 7 * nn;
+    shr = tmp + 8 * nn;
+    shi = tmp + 9 * nn;
 
     /* make a copy of the coefficients and shr[] = | p[] | */
     for (i = 0; i < nn; i++)
@@ -238,6 +257,7 @@ attribute_hidden void R_cpolyroot(double *opr, double *opi, int *degree, double 
 
     /*	calculate the final zero and return */
     cdivid(-pr[1], -pi[1], pr[0], pi[0], &zeror[d1], &zeroi[d1]);
+
     return;
 }
 
