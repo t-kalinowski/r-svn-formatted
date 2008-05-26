@@ -189,7 +189,7 @@ Rconnection in_R_newsock(const char *host, int port, int server, const char *con
         free(new);
         error(_("allocation of socket connection failed"));
     }
-    strcpy(new->class, "socket");
+    strcpy(new->class, "sockconn");
     new->description = (char *)malloc(strlen(host) + 10);
     if (!new->description)
     {
