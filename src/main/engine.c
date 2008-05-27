@@ -2250,6 +2250,7 @@ void GESymbol(double x, double y, int pch, double size, const pGEcontext gc, pGE
         case 16: /* S filled octagon (circle) */
             xc = RADIUS * size;
             gc->fill = gc->col;
+            gc->col = R_TRANWHITE;
             GECircle(x, y, xc, gc, dd);
             break;
 
