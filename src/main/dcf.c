@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-7   The R Development Core Team.
+ *  Copyright (C) 2001-8   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (lastm == -1 && !field_skip)
                 {
                     line[20] = '\0';
-                    warning("Found continuation line starting '%s ...' at begin of record.", line);
+                    error(_("Found continuation line starting '%s ...' at begin of record."), line);
                     continue;
                 }
                 if (lastm >= 0)
@@ -199,8 +199,9 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
+                    /* Must be a regular line with no tag ... */
                     line[20] = '\0';
-                    warning("Line starting '%s ...' is malformed!", line);
+                    error(_("Line starting '%s ...' is malformed!"), line);
                 }
             }
         }
