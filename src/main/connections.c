@@ -4136,6 +4136,7 @@ SEXP attribute_hidden do_clearpushback(SEXP call, SEXP op, SEXP args, SEXP env)
         for (j = 0; j < con->nPushBack; j++)
             free(con->PushBack[j]);
         free(con->PushBack);
+        con->nPushBack = 0;
     }
     return R_NilValue;
 }
