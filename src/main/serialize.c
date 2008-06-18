@@ -2256,20 +2256,12 @@ static SEXP appendRawToFile(SEXP file, SEXP bytes)
     /* Windows' ftell returns position 0 with "ab" */
     if ((fp = R_fopen(CHAR(STRING_ELT(file, 0)), "ab")) == NULL)
     {
-#ifdef HAVE_STRERROR
         error(_("cannot open file '%s': %s"), CHAR(STRING_ELT(file, 0)), strerror(errno));
-#else
-        error(_("cannot open file '%s'"), CHAR(STRING_ELT(file, 0)));
-#endif
     }
 #else
     if ((fp = R_fopen(CHAR(STRING_ELT(file, 0)), "r+b")) == NULL)
     {
-#ifdef HAVE_STRERROR
         error(_("cannot open file '%s': %s"), CHAR(STRING_ELT(file, 0)), strerror(errno));
-#else
-        error(_("cannot open file '%s'"), CHAR(STRING_ELT(file, 0)));
-#endif
     }
     fseek(fp, 0, SEEK_END);
 #endif
@@ -2361,13 +2353,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
     {
         strcpy(names[icache], cfile);
         if ((fp = R_fopen(cfile, "rb")) == NULL)
-        {
-#ifdef HAVE_STRERROR
             error(_("cannot open file '%s': %s"), cfile, strerror(errno));
-#else
-            error(_("cannot open file '%s'"), cfile);
-#endif
-        }
         if (fseek(fp, 0, SEEK_END) != 0)
         {
             fclose(fp);
@@ -2391,13 +2377,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
     else
     {
         if ((fp = R_fopen(cfile, "rb")) == NULL)
-        {
-#ifdef HAVE_STRERROR
             error(_("cannot open file '%s': %s"), cfile, strerror(errno));
-#else
-            error(_("cannot open file '%s'"), cfile);
-#endif
-        }
         if (fseek(fp, offset, SEEK_SET) != 0)
         {
             fclose(fp);

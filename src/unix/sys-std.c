@@ -1133,11 +1133,7 @@ int attribute_hidden Rstd_ShowFiles(int nfile,            /* number of files */
                         unlink(R_ExpandFileName(file[i]));
                 }
                 else
-#ifdef HAVE_STRERROR
                     fprintf(tfp, _("Cannot open file '%s': %s\n\n"), file[i], strerror(errno));
-#else
-                    fprintf(tfp, _("Cannot open file '%s'\n\n"), file[i]);
-#endif
             }
             fclose(tfp);
         }

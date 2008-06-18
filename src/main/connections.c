@@ -546,11 +546,7 @@ static Rboolean file_open(Rconnection con)
     }
     if (!fp)
     {
-#ifdef HAVE_STRERROR
         warning(_("cannot open file '%s': %s"), name, strerror(errno));
-#else
-        warning(_("cannot open file '%s'"), name);
-#endif
         return FALSE;
     }
     if (temp)
@@ -865,11 +861,7 @@ static Rboolean fifo_open(Rconnection con)
             res = mkfifo(name, 00644);
             if (res)
             {
-#ifdef HAVE_STRERROR
                 warning(_("cannot create fifo '%s', reason '%s'"), name, strerror(errno));
-#else
-                warning(_("cannot create fifo '%s'"), name);
-#endif
             }
             if (res)
                 return FALSE;
@@ -1093,11 +1085,7 @@ static Rboolean pipe_open(Rconnection con)
         fp = R_popen(con->description, mode);
     if (!fp)
     {
-#ifdef HAVE_STRERROR
         warning(_("cannot open pipe() cmd '%s': %s"), con->description, strerror(errno));
-#else
-        warning(_("cannot open pipe() cmd '%s'"), con->description);
-#endif
         return FALSE;
     }
     ((Rfileconn)(con->private))->fp = fp;
@@ -1250,12 +1238,8 @@ static Rboolean gzfile_open(Rconnection con)
     fp = gzopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
-#ifdef HAVE_STRERROR
         warning(_("cannot open compressed file '%s', probable reason '%s'"), R_ExpandFileName(con->description),
                 strerror(errno));
-#else
-        warning(_("cannot open compressed file '%s'"), R_ExpandFileName(con->description));
-#endif
         return FALSE;
     }
     ((Rgzfileconn)(con->private))->fp = fp;
@@ -1453,12 +1437,8 @@ static Rboolean bzfile_open(Rconnection con)
     fp = R_fopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
-#ifdef HAVE_STRERROR
         warning(_("cannot open bzip2-ed file '%s', probable reason '%s'"), R_ExpandFileName(con->description),
                 strerror(errno));
-#else
-        warning(_("cannot open bzip2-ed file '%s'"), R_ExpandFileName(con->description));
-#endif
         return FALSE;
     }
     if (con->canread)
