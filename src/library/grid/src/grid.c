@@ -2835,6 +2835,11 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
             symbolSize = toDeviceWidth(symbolSize, GE_INCHES, dd);
             if (R_FINITE(symbolSize))
             {
+                /*
+                 * FIXME:
+                 * Resolve any differences between this and FixupPch()
+                 * in plot.c ?
+                 */
                 if (isString(pch))
                 {
                     ipch = GEstring_to_pch(STRING_ELT(pch, i % npch));
@@ -2854,6 +2859,12 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
                  */
                 if (ipch == 46)
                     symbolSize = gpCex(currentgp, i);
+                /*
+                 * FIXME:
+                 * For character-based symbols, we need to modify
+                 * gc->cex so that the FONT size corresponds to
+                 * the specified symbolSize.
+                 */
                 GESymbol(xx[i], yy[i], ipch, symbolSize, &gc, dd);
             }
         }
