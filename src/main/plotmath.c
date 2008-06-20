@@ -1152,6 +1152,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
     BBOX glyphBBox = NullBBox(); /* might be use do italic corr on str="" */
     BBOX resultBBox = NullBBox();
     int nc = 0;
+    cetype_t enc = (gc->fontface == 5) ? CE_SYMBOL : CE_NATIVE;
 
     if (str)
     {
@@ -1188,12 +1189,12 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
         if (nc > 1)
         {
             /* Finding the width by adding up boxes is incorrect (kerning) */
-            double wd = GEStrWidth(str, CE_NATIVE, gc, dd);
+            double wd = GEStrWidth(str, enc, gc, dd);
             bboxWidth(resultBBox) = fromDeviceHeight(wd, MetricUnit, dd);
         }
         if (draw)
         {
-            GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), str, CE_NATIVE, 0.0, 0.0, mc->CurrentAngle, gc, dd);
+            GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), str, enc, 0.0, 0.0, mc->CurrentAngle, gc, dd);
             PMoveAcross(bboxWidth(resultBBox), mc);
         }
         if (UsingItalics(gc))
