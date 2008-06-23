@@ -1059,7 +1059,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, pGEconte
                     font = prevfont;
                     SetFont(prevfont, gc);
                 }
-                glyphBBox = GlyphBBox((int)wc, gc, dd);
+                glyphBBox = GlyphBBox((unsigned int)wc, gc, dd);
                 if (UsingItalics(gc))
                     bboxItalic(glyphBBox) = ItalicFactor * bboxHeight(glyphBBox);
                 else
@@ -1095,7 +1095,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, pGEconte
                     font = prevfont;
                     SetFont(prevfont, gc);
                 }
-                glyphBBox = GlyphBBox(*s, gc, dd);
+                glyphBBox = GlyphBBox((unsigned char)*s, gc, dd);
                 if (UsingItalics(gc))
                     bboxItalic(glyphBBox) = ItalicFactor * bboxHeight(glyphBBox);
                 else
@@ -1169,7 +1169,8 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
             mbs_init(&mb_st);
             while ((used = Mbrtowc(&wc, p, n, &mb_st)) > 0)
             {
-                glyphBBox = GlyphBBox(wc, gc, dd);
+                /* On Windows could have sign extension here */
+                glyphBBox = GlyphBBox((unsigned int)wc, gc, dd);
                 resultBBox = CombineBBoxes(resultBBox, glyphBBox);
                 p += used;
                 n -= used;
@@ -1182,7 +1183,8 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
             const char *s = str;
             while (*s)
             {
-                glyphBBox = GlyphBBox(*s, gc, dd);
+                /* Watch for sign extension here - fixed > 2.7.1 */
+                glyphBBox = GlyphBBox((unsigned char)*s, gc, dd);
                 resultBBox = CombineBBoxes(resultBBox, glyphBBox);
                 s++;
                 nc++;
