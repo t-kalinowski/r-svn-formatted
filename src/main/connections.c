@@ -4123,7 +4123,7 @@ SEXP attribute_hidden do_clearpushback(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* ------------------- sink functions  --------------------- */
 
-/* Switch output to connection number icon, or popd stack if icon < 0
+/* Switch output to connection number icon, or pop stack if icon < 0
  */
 
 static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
@@ -4147,12 +4147,20 @@ static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
     else if (icon >= 3)
     {
         Rconnection con = getConnection(icon); /* checks validity */
+        if (!con->canwrite)
+            error(_("connection is not writable"));
         toclose = 2 * closeOnExit;
         if (!con->isopen)
         {
             if (!con->open(con))
                 error(_("cannot open the connection"));
             toclose = 1;
+            /* Once open, writability may have changed */
+            if (!con->canwrite)
+            {
+                con->close(con);
+                error(_("connection is not writable"));
+            }
         }
         R_OutputCon = SinkCons[++R_SinkNumber] = icon;
         SinkConsClose[R_SinkNumber] = toclose;
@@ -4186,7 +4194,7 @@ static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
 /* This is not only used by cat(), but is in a public
    header, so we need a wrapper
 
-   Mo, Rconnections.h is not public and not installed.
+   No, Rconnections.h is not public and not installed.
 */
 
 Rboolean attribute_hidden switch_stdout(int icon, int closeOnExit)
