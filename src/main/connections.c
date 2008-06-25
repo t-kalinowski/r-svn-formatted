@@ -3019,9 +3019,15 @@ SEXP attribute_hidden do_writelines(SEXP call, SEXP op, SEXP args, SEXP env)
     wasopen = con->isopen;
     if (!wasopen)
     {
+        /* Documented behaviour */
         strcpy(con->mode, "wt");
         if (!con->open(con))
             error(_("cannot open the connection"));
+        if (!con->canwrite)
+        { /* unlikely, but be safe */
+            con->close(con);
+            error(_("cannot write to this connection"));
+        }
     }
     ssep = translateChar(STRING_ELT(sep, 0));
 
@@ -3193,8 +3199,17 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("cannot read from this connection"));
         wasopen = con->isopen;
         if (!wasopen)
+        {
+            /* Documented behaviour */
+            strcpy(con->mode, "rb");
             if (!con->open(con))
                 error(_("cannot open the connection"));
+            if (!con->canread)
+            {
+                con->close(con);
+                error(_("cannot read from this connection"));
+            }
+        }
     }
 
     if (!strcmp(what, "character"))
@@ -3448,8 +3463,17 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     if (!wasopen)
+    {
+        /* Documented behaviour */
+        strcpy(con->mode, "wb");
         if (!con->open(con))
             error(_("cannot open the connection"));
+        if (!con->canwrite)
+        {
+            con->close(con);
+            error(_("cannot write to this connection"));
+        }
+    }
 
     if (TYPEOF(object) == STRSXP)
     {
@@ -3800,8 +3824,17 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         wasopen = con->isopen;
         if (!wasopen)
+        {
+            /* Documented behaviour */
+            strcpy(con->mode, "rb");
             if (!con->open(con))
                 error(_("cannot open the connection"));
+            if (!con->canread)
+            {
+                con->close(con);
+                error(_("cannot read from this connection"));
+            }
+        }
     }
     if (mbcslocale && !utf8locale && !useBytes)
         warning(_("can only read in bytes in a non-UTF-8 MBCS locale"));
@@ -3913,8 +3946,17 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     if (!wasopen)
+    {
+        /* Documented behaviour */
+        strcpy(con->mode, "wb");
         if (!con->open(con))
             error(_("cannot open the connection"));
+        if (!con->canwrite)
+        {
+            con->close(con);
+            error(_("cannot write to this connection"));
+        }
+    }
 
     for (i = 0; i < n; i++)
     {
@@ -4148,7 +4190,7 @@ static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
     {
         Rconnection con = getConnection(icon); /* checks validity */
         if (!con->canwrite)
-            error(_("connection is not writable"));
+            error(_("cannot write to this connection"));
         toclose = 2 * closeOnExit;
         if (!con->isopen)
         {
@@ -4159,7 +4201,7 @@ static Rboolean switch_or_tee_stdout(int icon, int closeOnExit, int tee)
             if (!con->canwrite)
             {
                 con->close(con);
-                error(_("connection is not writable"));
+                error(_("cannot write to this connection"));
             }
         }
         R_OutputCon = SinkCons[++R_SinkNumber] = icon;
