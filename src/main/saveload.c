@@ -2470,7 +2470,11 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!wasopen && !con->open(con))
         error(_("cannot open the connection"));
     if (!con->canwrite)
+    {
+        if (!wasopen)
+            con->close(con);
         error(_("connection not open for writing"));
+    }
 
     if (ascii)
     {
@@ -2555,6 +2559,12 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!wasopen)
         if (!con->open(con))
             error(_("cannot open the connection"));
+    if (!con->canread)
+    {
+        if (!wasopen)
+            con->close(con);
+        error(_("connection not open for reading"));
+    }
 
     aenv = CADR(args);
     if (TYPEOF(aenv) == NILSXP)
