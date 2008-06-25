@@ -2162,7 +2162,7 @@ SEXP attribute_hidden do_save(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!fp)
     {
         const char *cfile = CHAR(STRING_ELT(CADR(args), 0));
-        error(_("cannot open file '%s': %s"), cfile, strerror(error));
+        error(_("cannot open file '%s': %s"), cfile, strerror(errno));
     }
 
     /* set up a context which will close the file if there is an error */
