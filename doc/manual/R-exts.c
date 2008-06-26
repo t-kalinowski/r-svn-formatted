@@ -226,9 +226,9 @@ SEXP lapply(SEXP list, SEXP expr, SEXP rho)
     SEXP ans;
 
     if (!isNewList(list))
-        error("`list' must be a list");
+        error("'list' must be a list");
     if (!isEnvironment(rho))
-        error("`rho' should be an environment");
+        error("'rho' should be an environment");
     PROTECT(ans = allocVector(VECSXP, n));
     for (i = 0; i < n; i++)
     {
@@ -246,11 +246,11 @@ SEXP lapply2(SEXP list, SEXP fn, SEXP rho)
     SEXP R_fcall, ans;
 
     if (!isNewList(list))
-        error("`list' must be a list");
+        error("'list' must be a list");
     if (!isFunction(fn))
-        error("`fn' must be a function");
+        error("'fn' must be a function");
     if (!isEnvironment(rho))
-        error("`rho' should be an environment");
+        error("'rho' should be an environment");
     PROTECT(R_fcall = lang2(fn, R_NilValue));
     PROTECT(ans = allocVector(VECSXP, n));
     for (i = 0; i < n; i++)
