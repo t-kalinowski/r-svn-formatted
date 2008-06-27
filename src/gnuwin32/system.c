@@ -1008,6 +1008,7 @@ int cmdlineoptions(int ac, char **av)
                 Rp->R_Interactive = TRUE;
                 Rp->ReadConsole = ThreadedReadConsole;
                 InThreadReadConsole = FileReadConsole;
+                setvbuf(stdout, NULL, _IONBF, 0);
             }
             else if (!strcmp(*av, "--internet2"))
             {
