@@ -2324,9 +2324,6 @@ static void GA_NewPage(const pGEcontext gc, pDevDesc dd)
         else if (xd->kind == PNG)
         {
             DRAW(gfillrect(_d, PNG_TRANS, xd->clip));
-            /* disable support for semi-transparency as alpha-blending
-               with this false colour does not work */
-            // xd->have_alpha = FALSE;
         }
         if (xd->kind == PNG)
             xd->pngtrans = ggetpixel(xd->gawin, pt(0, 0));
@@ -3604,6 +3601,7 @@ static Rboolean GA_NewFrameConfirm(pDevDesc dev)
     R_WriteConsole("\n", 1);
     R_FlushConsole();
     settext(xd->gawin, G_("Click or hit ENTER for next page"));
+    BringToTop(xd->gawin, 1);
     dev->onExit = GA_onExit; /* install callback for cleanup */
     while (!xd->clicked && !xd->enterkey)
     {
