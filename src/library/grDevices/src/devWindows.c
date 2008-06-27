@@ -1795,6 +1795,7 @@ static Rboolean setupScreenDevice(pDevDesc dd, gadesc *xd, double w, double h, R
     setredraw(xd->gawin, HelpExpose);
     setmousedown(xd->gawin, HelpMouseClick);
     setmousemove(xd->gawin, HelpMouseMove);
+    setmousedrag(xd->gawin, HelpMouseMove);
     setmouseup(xd->gawin, HelpMouseUp);
     setkeydown(xd->gawin, NHelpKeyIn);
     setkeyaction(xd->gawin, CHelpKeyIn);
