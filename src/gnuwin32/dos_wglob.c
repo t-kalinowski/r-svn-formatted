@@ -80,31 +80,35 @@ void Rprintf(const char *, ...);
 #define DOSISH
 #define ARG_MAX 14500
 
-#define BG_DOLLAR '$'
-#define BG_DOT '.'
-#define BG_EOS '\0'
-#define BG_LBRACKET '['
-#define BG_NOT '!'
-#define BG_QUESTION '?'
-#define BG_QUOTE '\\'
-#define BG_RANGE '-'
-#define BG_RBRACKET ']'
-#define BG_SEP '/'
+#define BG_DOLLAR L'$'
+#define BG_DOT L'.'
+#define BG_EOS L'\0'
+#define BG_LBRACKET L'['
+#define BG_NOT L'!'
+#define BG_QUESTION L'?'
+#define BG_QUOTE L'\\'
+#define BG_RANGE L'-'
+#define BG_RBRACKET L']'
+#define BG_SEP L'/'
 #ifdef DOSISH
-#define BG_SEP2 '\\'
+#define BG_SEP2 L'\\'
 #endif
-#define BG_STAR '*'
-#define BG_TILDE '~'
-#define BG_UNDERSCORE '_'
-#define BG_LBRACE '{'
-#define BG_RBRACE '}'
-#define BG_SLASH '/'
-#define BG_COMMA ','
+#define BG_STAR L'*'
+#define BG_TILDE L'~'
+#define BG_UNDERSCORE L'_'
+#define BG_LBRACE L'{'
+#define BG_RBRACE L'}'
+#define BG_SLASH L'/'
+#define BG_COMMA L','
 
-#define M_QUOTE 0x80
-#define M_PROTECT 0x40
-#define M_MASK 0xff
-#define M_ASCII 0x7f
+/*
+   The DOS version set the upper bit of bytes for meta characters.
+   Here we set the top bit of a wchar_t, which is safer (but not safe).
+ */
+#define M_QUOTE 0x8000
+#define M_ASCII 0x3fff
+#define M_PROTECT 0x4000
+#define M_MASK 0xffff /* pointless in current setup */
 
 #include <stdlib.h>
 #include <dirent.h>
@@ -119,12 +123,12 @@ typedef struct _wdirent Direntry_t;
 
 #define CHAR(c) ((wchar_t)((c)&M_ASCII))
 #define META(c) ((wchar_t)((c) | M_QUOTE))
-#define M_ALL META('*')
-#define M_END META(']')
-#define M_NOT META('!')
-#define M_ONE META('?')
-#define M_RNG META('-')
-#define M_SET META('[')
+#define M_ALL META(L'*')
+#define M_END META(L']')
+#define M_NOT META(L'!')
+#define M_ONE META(L'?')
+#define M_RNG META(L'-')
+#define M_SET META(L'[')
 #define ismeta(c) (((c)&M_QUOTE) != 0)
 
 static int compare(const void *, const void *);
@@ -182,12 +186,12 @@ int dos_wglob(const wchar_t *pattern, int flags, int (*errfunc)(const wchar_t *,
      * add an explicit "./" at the start (just after the drive
      * letter and colon - ie change to "C:./").
      */
-    if (iswalpha(pattern[0]) && pattern[1] == ':' && pattern[2] != BG_SEP && pattern[2] != BG_SEP2 &&
+    if (iswalpha(pattern[0]) && pattern[1] == L':' && pattern[2] != BG_SEP && pattern[2] != BG_SEP2 &&
         bufend - bufnext > 4)
     {
         *bufnext++ = pattern[0];
-        *bufnext++ = ':';
-        *bufnext++ = '.';
+        *bufnext++ = L':';
+        *bufnext++ = L'.';
         *bufnext++ = BG_SEP;
         patnext += 2;
     }
@@ -205,7 +209,8 @@ int dos_wglob(const wchar_t *pattern, int flags, int (*errfunc)(const wchar_t *,
                  * if it precedes one of the
                  * metacharacters []-{}~\
                  */
-                if ((c = *patnext++) != '[' && c != ']' && c != '-' && c != '{' && c != '}' && c != '~' && c != '\\')
+                if ((c = *patnext++) != L'[' && c != L']' && c != L'-' && c != L'{' && c != L'}' && c != L'~' &&
+                    c != L'\\')
                 {
 #else
                 if ((c = *patnext++) == BG_EOS)
@@ -637,7 +642,7 @@ static int glob2(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
 static int glob3(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wchar_t *pathend_last, wchar_t *pattern,
                  wchar_t *pattern_last, wchar_t *restpattern, wchar_t *restpattern_last, wglob_t *pglob, size_t *limitp)
 {
-    register Direntry_t *dp;
+    Direntry_t *dp;
     _WDIR *dirp;
     int err;
     int nocase;
@@ -647,22 +652,6 @@ static int glob3(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
         return (1);
     *pathend = BG_EOS;
     errno = 0;
-
-#ifdef VMS
-    {
-        wchar_t *q = pathend;
-        if (q - pathbuf > 5)
-        {
-            q -= 5;
-            if (q[0] == '.' && towlower(q[1]) == 'd' && towlower(q[2]) == 'i' && towlower(q[3]) == 'r' && q[4] == '/')
-            {
-                q[0] = '/';
-                q[1] = BG_EOS;
-                pathend = q + 1;
-            }
-        }
-    }
-#endif
 
     if ((dirp = g_opendir(pathbuf, pglob)) == NULL)
     {
@@ -731,8 +720,8 @@ static int glob3(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
  */
 static int globextend(const wchar_t *path, wglob_t *pglob, size_t *limitp)
 {
-    register wchar_t **pathv;
-    register int i;
+    wchar_t **pathv;
+    int i;
     STRLEN newsize, len;
     wchar_t *copy;
     const wchar_t *p;
@@ -797,7 +786,7 @@ static int globextend(const wchar_t *path, wglob_t *pglob, size_t *limitp)
  * pattern matching function for filenames.  Each occurrence of the *
  * pattern causes a recursion level.
  */
-static int match(register wchar_t *name, register wchar_t *pat, register wchar_t *patend, int nocase)
+static int match(wchar_t *name, wchar_t *pat, wchar_t *patend, int nocase)
 {
     int ok, negate_range;
     wchar_t c, k;
@@ -858,8 +847,8 @@ static int match(register wchar_t *name, register wchar_t *pat, register wchar_t
 /* Free allocated data belonging to a wglob_t structure. */
 void dos_wglobfree(wglob_t *pglob)
 {
-    register int i;
-    register wchar_t **pp;
+    int i;
+    wchar_t **pp;
 
     if (pglob->gl_pathv != NULL)
     {
@@ -872,7 +861,7 @@ void dos_wglobfree(wglob_t *pglob)
     }
 }
 
-static _WDIR *g_opendir(register wchar_t *str, wglob_t *pglob)
+static _WDIR *g_opendir(wchar_t *str, wglob_t *pglob)
 {
     wchar_t buf[MAXPATHLEN];
 
@@ -883,7 +872,7 @@ static _WDIR *g_opendir(register wchar_t *str, wglob_t *pglob)
     return _wopendir(buf);
 }
 
-static int g_lstat(register wchar_t *fn, Stat_t *sb, wglob_t *pglob)
+static int g_lstat(wchar_t *fn, Stat_t *sb, wglob_t *pglob)
 {
     wchar_t buf[MAXPATHLEN];
 
@@ -902,30 +891,30 @@ static const wchar_t *g_strchr(const wchar_t *str, int ch)
     return (NULL);
 }
 
-static int g_Ctoc(register const wchar_t *str, wchar_t *buf, STRLEN len)
+static int g_Ctoc(const wchar_t *str, wchar_t *buf, STRLEN len)
 {
     while (len--)
-    {
-        if ((*buf++ = (char)*str++) == BG_EOS)
-            return (0);
-    }
-    return (1);
+        if ((*buf++ = *str++) == BG_EOS)
+            return 0;
+    return 1;
 }
 
 #ifdef GLOB_DEBUG
-static void qprintf(const char *str, register wchar_t *s)
+static void qprintf(const char *str, wchar_t *s)
 {
-    register wchar_t *p;
+    wchar_t *p;
 
     (void)Rprintf("%s:\n", str);
     for (p = s; *p; p++)
         (void)Rprintf("%lc", CHAR(*p));
     (void)Rprintf("\n");
+#if 0
     for (p = s; *p; p++)
-        (void)Rprintf("%lc", *p & M_PROTECT ? '"' : ' ');
+	(void)Rprintf("%lc", *p & M_PROTECT ? L'"' : L' ');
     (void)Rprintf("\n");
+#endif
     for (p = s; *p; p++)
-        (void)Rprintf("%lc", ismeta(*p) ? '_' : ' ');
+        (void)Rprintf("%lc", ismeta(*p) ? L'_' : L' ');
     (void)Rprintf("\n");
 }
 #endif /* GLOB_DEBUG */
