@@ -70,6 +70,12 @@ static char sscsid[]=  "$OpenBSD: glob.c,v 1.8.10.1 2001/04/10 jason Exp $";
 #include <wchar.h>
 #include "dos_wglob.h"
 
+//#define GLOB_DEBUG
+
+#ifdef GLOB_DEBUG
+void Rprintf(const char *, ...);
+#endif
+
 #define MAXPATHLEN 255
 #define DOSISH
 #define ARG_MAX 14500
@@ -500,7 +506,7 @@ static int glob0(const wchar_t *pattern, wglob_t *pglob)
         ((pglob->gl_flags & GLOB_NOCHECK) || ((pglob->gl_flags & GLOB_NOMAGIC) && !(pglob->gl_flags & GLOB_MAGCHAR))))
     {
 #ifdef GLOB_DEBUG
-        printf("calling globextend from glob0\n");
+        Rprintf("calling globextend from glob0\n");
 #endif /* GLOB_DEBUG */
         pglob->gl_flags = oldflags;
         return (globextend(qpat, pglob, &limit));
@@ -584,7 +590,7 @@ static int glob2(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
             }
             ++pglob->gl_matchc;
 #ifdef GLOB_DEBUG
-            printf("calling globextend from glob2\n");
+            Rprintf("calling globextend from glob2\n");
 #endif /* GLOB_DEBUG */
             return (globextend(pathbuf, pglob, limitp));
         }
@@ -732,10 +738,10 @@ static int globextend(const wchar_t *path, wglob_t *pglob, size_t *limitp)
     const wchar_t *p;
 
 #ifdef GLOB_DEBUG
-    printf("Adding ");
+    Rprintf("Adding ");
     for (p = path; *p; p++)
-        (void)printf("%c", CHAR(*p));
-    printf("\n");
+        (void)Rprintf("%c", CHAR(*p));
+    Rprintf("\n");
 #endif /* GLOB_DEBUG */
 
     newsize = sizeof(*pathv) * (2 + pglob->gl_pathc + pglob->gl_offs);
@@ -907,19 +913,19 @@ static int g_Ctoc(register const wchar_t *str, wchar_t *buf, STRLEN len)
 }
 
 #ifdef GLOB_DEBUG
-static void qprintf(const wchar_t *str, register wchar_t *s)
+static void qprintf(const char *str, register wchar_t *s)
 {
     register wchar_t *p;
 
-    (void)printf("%ls:\n", str);
+    (void)Rprintf("%s:\n", str);
     for (p = s; *p; p++)
-        (void)printf("%lc", CHAR(*p));
-    (void)printf("\n");
+        (void)Rprintf("%lc", CHAR(*p));
+    (void)Rprintf("\n");
     for (p = s; *p; p++)
-        (void)printf("%lc", *p & M_PROTECT ? '"' : ' ');
-    (void)printf("\n");
+        (void)Rprintf("%lc", *p & M_PROTECT ? '"' : ' ');
+    (void)Rprintf("\n");
     for (p = s; *p; p++)
-        (void)printf("%lc", iswmeta(*p) ? '_' : ' ');
-    (void)printf("\n");
+        (void)Rprintf("%lc", ismeta(*p) ? '_' : ' ');
+    (void)Rprintf("\n");
 }
 #endif /* GLOB_DEBUG */
