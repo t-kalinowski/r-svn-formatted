@@ -1286,6 +1286,8 @@ static int R_unlink(wchar_t *name, int recursive)
     if (wcscmp(name, L".") == 0 || wcscmp(name, L"..") == 0)
         return 0;
     /* printf("R_unlink(%ls)\n", name); */
+    if (!R_FileExists(name))
+        return 0;
     if (recursive)
     {
         _WDIR *dir;
@@ -1358,6 +1360,8 @@ static int R_unlink(char *name, int recursive)
 {
     if (streql(name, ".") || streql(name, ".."))
         return 0;
+    if (!R_FileExists(name))
+        return 0;
     if (recursive)
     {
         DIR *dir;
@@ -1375,7 +1379,6 @@ static int R_unlink(char *name, int recursive)
                 {
                     if (streql(de->d_name, ".") || streql(de->d_name, ".."))
                         continue;
-                    /* On Windows we need to worry about trailing seps */
                     n = strlen(name);
                     if (name[n] == R_FileSep[0])
                         snprintf(p, PATH_MAX, "%s%s", name, de->d_name);
@@ -1472,7 +1475,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 names = translateChar(STRING_ELT(fn, i));
 #if defined(HAVE_GLOB)
-                res = glob(names, 0, NULL, &globbuf);
+                res = glob(names, GLOB_NOCHECK, NULL, &globbuf);
 #ifdef GLOB_ABORTED
                 if (res == GLOB_ABORTED)
                     warning(_("read error on '%s'"), names);
