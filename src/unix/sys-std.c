@@ -552,6 +552,7 @@ static void readline_handler(char *line)
         rl_top->readline_buf[0] = '\n';
         rl_top->readline_buf[1] = '\0';
     }
+    free(line);
     rl_top->readline_gotaline = 1;
 }
 
