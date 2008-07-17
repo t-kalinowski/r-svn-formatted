@@ -1137,6 +1137,8 @@ static void RQuartz_Polyline(int n, double *x, double *y, CTXDESC)
         if (j > n)
             j = n;
         CGContextBeginPath(ctx);
+        if (i)
+            i--; /* start at the last point of the preceding chunk */
         CGContextMoveToPoint(ctx, x[i], y[i]);
         while (++i < j)
             CGContextAddLineToPoint(ctx, x[i], y[i]);
