@@ -90,6 +90,10 @@ void swilk(int *init,                                    /* logical: is a[] alre
             *ifault = 5;
             return;
         }
+    } /* just for -Wall:*/
+    else
+    {
+        delta = 0.f;
     }
 
     --a; /* so we can keep using 1-based indices */
