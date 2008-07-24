@@ -6202,6 +6202,12 @@ static void PDF_SetLineStyle(const pGEcontext gc, pDevDesc dd)
     }
 }
 
+/* This was an optimization that has effectively been disabled in
+   2.8.0, to avoid repeatedly going in and out of text mode.  Howver,
+   Acrobat puts all text rendering calls in BT...ET into a single
+   transparency group, and other viewers do not.  So for consistent
+   rendering we put each text() call into a separate group.
+*/
 static void texton(PDFDesc *pd)
 {
     fprintf(pd->pdffp, "BT\n");
@@ -6861,6 +6867,7 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
                 texton(pd);
             fprintf(pd->pdffp, "/F1 1 Tf %d Tr %.2f 0 0 %.2f %.2f %.2f Tm", tr, a, a, xx, yy);
             fprintf(pd->pdffp, " (l) Tj 0 Tr\n");
+            textoff(pd); /* added in 2.8.0 */
         }
     }
 }
@@ -7069,6 +7076,7 @@ static void PDFSimpleText(double x, double y, const char *str, double rot, doubl
     fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", font, a, b, -b, a, x, y);
     PostScriptWriteString(pd->pdffp, str1);
     fprintf(pd->pdffp, " Tj\n");
+    textoff(pd); /* added in 2.8.0 */
 }
 
 #ifndef SUPPORT_MBCS
@@ -7221,6 +7229,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     }
     PostScriptWriteString(pd->pdffp, str1);
     fprintf(pd->pdffp, " Tj\n");
+    textoff(pd); /* added in 2.8.0 */
 }
 
 static void PDF_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd)
