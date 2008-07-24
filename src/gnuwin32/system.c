@@ -828,7 +828,9 @@ char *PrintUsage(void)
          msg4[] = "  --ess                 Don't use getline for command-line editing\n                          and "
                   "assert interactive use\n  -f file               Take input from 'file'\n  --file=file           "
                   "ditto\n  -e expression         Use 'expression' as input\n\nOne or more -e options can be used, but "
-                  "not together with -f or --file";
+                  "not together with -f or --file\n",
+         msg5[] = "\nAn argument ending in .RData (in any case) is taken as the path\nto the workspace to be restored "
+                  "(and implies --restore)";
     if (CharacterMode == RTerm)
         strcpy(msg, "Usage: Rterm [options] [< infile] [> outfile] [EnvVars]\n\n");
     else
@@ -840,6 +842,7 @@ char *PrintUsage(void)
     strcat(msg, msg3);
     if (CharacterMode == RTerm)
         strcat(msg, msg4);
+    strcat(msg, msg5);
     strcat(msg, "\n");
     return msg;
 }
@@ -1145,7 +1148,8 @@ int cmdlineoptions(int ac, char **av)
         }
         else
         {
-            /* Look for *.RData, as given by drag-and-drop */
+            /* Look for *.RData, as given by drag-and-drop
+               and file association */
             char path[MAX_PATH];
 
             if (!usedRdata && strlen(*av) >= 6 && stricmp(*av + strlen(*av) - 6, ".RData") == 0)
