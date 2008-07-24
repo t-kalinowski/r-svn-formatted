@@ -1198,6 +1198,8 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
     {
         errorcall(call, "$ operator not defined for this S4 class");
     }
+    else /* e.g. a function */
+        errorcall(call, R_MSG_ob_nonsub);
     UNPROTECT(2);
     return R_NilValue;
 }
