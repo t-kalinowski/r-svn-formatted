@@ -301,7 +301,7 @@ SEXP R_quick_dispatch(SEXP args, SEXP mtable, SEXP fdef)
         if (ptr > buf)
         {
             ptr = strcpy(ptr, "#");
-            ptr += 2;
+            ptr += 1;
         }
         ptr = strcpy(ptr, class);
         ptr += strlen(class);

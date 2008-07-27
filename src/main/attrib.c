@@ -643,12 +643,21 @@ SEXP R_data_class(SEXP obj, Rboolean singleString)
     return value;
 }
 
+static SEXP s_dot_S3Class;
 /* Version for S3-dispatch */
 SEXP attribute_hidden R_data_class2(SEXP obj)
 {
     SEXP klass = getAttrib(obj, R_ClassSymbol);
     if (length(klass) > 0)
+    {
+        if (IS_S4_OBJECT(obj))
+        { /* try for an S4 object with an S3Class slot */
+            SEXP S3Class = getAttrib(obj, s_dot_S3Class);
+            if (S3Class != R_NilValue)
+                klass = S3Class;
+        }
         return (klass);
+    }
     else
     {
         SEXPTYPE t;
@@ -1366,6 +1375,7 @@ static SEXP s_setDataPart;
 static void init_slot_handling(void)
 {
     s_dot_Data = install(".Data");
+    s_dot_S3Class = install(".S3Class");
     s_getDataPart = install("getDataPart");
     s_setDataPart = install("setDataPart");
     /* create and preserve an object that is NOT R_NilValue, and is used
@@ -1447,6 +1457,8 @@ SEXP R_do_slot(SEXP obj, SEXP name)
         if (value == R_NilValue)
         {
             SEXP input = name, classString;
+            if (name == s_dot_S3Class) /* defaults to class(obj) */
+                return R_data_class(obj, FALSE);
             if (isSymbol(name))
             {
                 input = PROTECT(ScalarString(PRINTNAME(name)));
