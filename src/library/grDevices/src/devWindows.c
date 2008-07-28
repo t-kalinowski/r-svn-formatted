@@ -2843,7 +2843,6 @@ static void GA_Text0(double x, double y, const char *str, int enc, double rot, d
 
     SetFont(gc, rot, xd);
     SetColor(gc->col, gc->gamma, xd);
-    printf("text in %08x\n", gc->col);
     if (R_OPAQUE(gc->col))
     {
         if (gc->fontface != 5)
