@@ -627,7 +627,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
             error("unsupported conversion from '%s' to '%s' in codepage %d", from, to, localeCP);
 #else
-            error("unsupported conversion from '%s' to '%s'", from, to);
+            error(_("unsupported conversion from '%s' to '%s'"), from, to);
 #endif
         PROTECT(ans = duplicate(x));
         R_AllocStringBuffer(0, &cbuff); /* 0 -> default */
@@ -763,7 +763,7 @@ int Riconv_close(void *cd)
     return iconv_close((iconv_t)cd);
 }
 
-static void *latin1_obj = NULL, *utf8_obj = NULL, *ucsmb_obj = NULL;
+static void *latin1_obj = NULL, *utf8_obj = NULL, *ucsmb_obj = NULL, *ucsutf8_obj = NULL;
 
 const char *translateChar(SEXP x)
 {
@@ -797,7 +797,7 @@ const char *translateChar(SEXP x)
 #ifdef Win32
                 error("unsupported conversion from %s in codepage %d", "latin1", localeCP);
 #else
-                error("unsupported conversion from %s", "latin1");
+                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "");
 #endif
             latin1_obj = obj;
         }
@@ -813,7 +813,7 @@ const char *translateChar(SEXP x)
 #ifdef Win32
                 error("unsupported conversion from %s in codepage %d", "latin1", localeCP);
 #else
-                error("unsupported conversion from %s", "latin1");
+                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "");
 #endif
             utf8_obj = obj;
         }
@@ -922,7 +922,7 @@ const char *translateCharUTF8(SEXP x)
 #ifdef Win32
         error("unsupported conversion from %s in codepage %d", "latin1", localeCP);
 #else
-        error("unsupported conversion from %s", "latin1");
+        error(_("unsupported conversion from '%s' to '%s'"), "latin1", "UTF-8");
 #endif
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
@@ -988,7 +988,7 @@ const wchar_t *wtransChar(SEXP x)
         {
             obj = Riconv_open("UCS-2LE", "latin1");
             if (obj == (void *)(-1))
-                error("unsupported conversion from latin1 to UCS-2LE");
+                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "UCS-2LE");
             latin1_wobj = obj;
         }
         else
@@ -1001,7 +1001,7 @@ const wchar_t *wtransChar(SEXP x)
         {
             obj = Riconv_open("UCS-2LE", "UTF-8");
             if (obj == (void *)(-1))
-                error("unsupported conversion from UTF-8 to UCS-2LE");
+                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "UCS-2LE");
             utf8_wobj = obj;
         }
         else
@@ -1012,7 +1012,7 @@ const wchar_t *wtransChar(SEXP x)
     {
         obj = Riconv_open("UCS-2LE", "");
         if (obj == (void *)(-1))
-            error("unsupported conversion to %s from codepage %d", "UCS-2LE", localeCP);
+            error("unsupported conversion to '%s' from codepage %d", "UCS-2LE", localeCP);
     }
 
     R_AllocStringBuffer(0, &cbuff);
@@ -1308,6 +1308,7 @@ size_t attribute_hidden mbtoucs(unsigned int *wc, const char *s, size_t n)
             return (size_t)-1;
         }
     }
+    Riconv_close(cd);
     *wc = wcs[0];
     return (size_t)1;
 }
@@ -1334,9 +1335,17 @@ size_t ucstoutf8(char *s, const unsigned int wc)
     wcs[0] = wc;
     wcs[1] = 0;
 
-    if ((void *)(-1) == (cd = Riconv_open("UTF-8", UNICODE)))
-        return (size_t)(-1);
-    status = Riconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+    if (ucsutf8_obj == NULL)
+    {
+        if ((void *)(-1) == (cd = Riconv_open("UTF-8", UNICODE)))
+        {
+            error(_("unsupported conversion from '%s' to '%s'"), UNICODE, "UTF-8");
+            return (size_t)(-1);
+        }
+        ucsutf8_obj = cd;
+    }
+
+    status = Riconv(ucsutf8_obj, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
 
     if (status == (size_t)-1)
     {
@@ -1355,7 +1364,6 @@ size_t ucstoutf8(char *s, const unsigned int wc)
     }
     *outbuf = '\0';
     strcpy(s, buf);
-    Riconv_close(cd);
     return strlen(buf);
 }
 
