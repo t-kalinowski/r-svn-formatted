@@ -1102,12 +1102,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
      * The values in the par value "mgp" are interpreted
      * relative to this value. */
     line = asReal(CAR(args));
-    if (!R_FINITE(line))
-    {
-        /* Except that here mgp values are not relative to themselves */
-        line = gpptr(dd)->mgp[2];
-        lineoff = line;
-    }
+    /* defer processing until after in-line pars */
     args = CDR(args);
 
     /* Optional argument: "pos" */
@@ -1116,10 +1111,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     /* are interpreted relative to this value. */
 
     pos = asReal(CAR(args));
-    if (!R_FINITE(pos))
-        pos = NA_REAL;
-    else
-        lineoff = 0;
+    /* defer processing until after in-line pars */
     args = CDR(args);
 
     /* Optional argument: "outer" */
@@ -1203,6 +1195,18 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         nint = dpptr(dd)->lab[1];
         break;
     }
+
+    /* Deferred processing */
+    if (!R_FINITE(line))
+    {
+        /* Except that here mgp values are not relative to themselves */
+        line = gpptr(dd)->mgp[2];
+        lineoff = line;
+    }
+    if (!R_FINITE(pos))
+        pos = NA_REAL;
+    else
+        lineoff = 0;
 
     /* Determine the tickmark positions.  Note that these may fall */
     /* outside the plot window. We will clip them in the code below. */
