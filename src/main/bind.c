@@ -1081,7 +1081,8 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP a, t, obj, classlist, classname, method, classmethod, rho;
     const char *generic;
-    int mode, deparse_level, compatible = 1;
+    int mode, deparse_level;
+    Rboolean compatible = TRUE;
     struct BindData data;
     char buf[512];
     const char *s, *klass;
@@ -1105,7 +1106,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
      *	  memberships from the class attribute.
      *
      * 2) We inspect each class in turn to see if there is an
-     *	  an applicable method.
+     *	  applicable method.
      *
      * 3) If we find an applicable method we make sure that it is
      *	  identical to any method determined for prior arguments.
@@ -1152,7 +1153,7 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
                         {
                             method = R_NilValue;
                             /* need to end both loops */
-                            compatible = 0;
+                            compatible = FALSE;
                         }
                     }
                     break; /* go to next parameter */
