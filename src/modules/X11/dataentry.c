@@ -2070,6 +2070,7 @@ void closewin(DEstruct DE)
 #endif
     XDestroyWindow(iodisplay, DE->iowindow);
     /* XCloseDisplay(iodisplay); */
+    Rsync(DE);
 }
 
 #define USE_Xt 1
