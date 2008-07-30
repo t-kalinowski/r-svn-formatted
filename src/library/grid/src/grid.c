@@ -762,14 +762,16 @@ SEXP L_upviewport(SEXP n)
     xx2 = REAL(parentClip)[2];
     yy2 = REAL(parentClip)[3];
     GESetClip(xx1, yy1, xx2, yy2, dd);
-    /* This is a VERY short term fix to avoid mucking
-     * with the core graphics during feature freeze
-     * It should be removed post R 1.4 release
-     */
-    dd->dev->clipLeft = fmin2(xx1, xx2);
-    dd->dev->clipRight = fmax2(xx1, xx2);
-    dd->dev->clipTop = fmax2(yy1, yy2);
-    dd->dev->clipBottom = fmin2(yy1, yy2);
+#if 0
+	    /* This is a VERY short term fix to avoid mucking
+	     * with the core graphics during feature freeze
+	     * It should be removed post R 1.4 release
+	     */
+	    dd->dev->clipLeft = fmin2(xx1, xx2);
+	    dd->dev->clipRight = fmax2(xx1, xx2);
+	    dd->dev->clipTop = fmax2(yy1, yy2);
+	    dd->dev->clipBottom = fmin2(yy1, yy2);
+#endif
     /* Set the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
