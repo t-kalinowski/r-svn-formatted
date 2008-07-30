@@ -18,15 +18,15 @@
    http://www.r-project.org/Licenses/ MA
    02111-1301 USA.  */
 
-/* constructed from glibc 2.5/posix via
+/* constructed from glibc 2.7/posix via
    cat regex.c regex_internal.h regex_internal.c regcomp.c regexec.c > Rregex.c
    passing through protoize and hand-editing.
-   See also change at line 1706.
 */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 /* Make sure noone compiles this code with a C++ compiler.  */
 #ifdef __cplusplus
 #error "This is C code, use a C compiler"
@@ -111,7 +111,7 @@
 #if defined _LIBC
 #include <bits/libc-lock.h>
 #else
-/* gettext adds definitions to config.h for some of these */
+/* R CHANGE gettext adds definitions to config.h for some of these */
 #undef __libc_lock_define
 #define __libc_lock_define(CLASS, NAME)
 #undef __libc_lock_init
@@ -155,7 +155,7 @@
 # ifdef _LIBC
 #  undef gettext
 #  define gettext(msgid) \
-  INTUSE(__dcgettext) (INTUSE(_libc_intl_domainname), msgid, LC_MESSAGES)
+  INTUSE(__dcgettext) (_libc_intl_domainname, msgid, LC_MESSAGES)
 # endif
 #else
 # define gettext(msgid) (msgid)
@@ -397,7 +397,7 @@ typedef struct
         int idx;                  /* for BACK_REF */
         re_context_type ctx_type; /* for ANCHOR */
     } opr;
-#if __GNUC__ >= 2
+#if __GNUC__ >= 2 /* R CHANGE add __extension__ */
     __extension__ re_token_type_t type : 8;
 #else
     re_token_type_t type;
@@ -490,6 +490,7 @@ typedef struct re_dfa_t re_dfa_t;
 static reg_errcode_t re_string_realloc_buffers(re_string_t *pstr, int new_buf_len) internal_function;
 #ifdef RE_ENABLE_I18N
 static void build_wcs_buffer(re_string_t *pstr) internal_function;
+/* R CHANGE: incorrect forward declaration */
 static reg_errcode_t build_wcs_upper_buffer(re_string_t *pstr) internal_function;
 #endif /* RE_ENABLE_I18N */
 static void build_upper_buffer(re_string_t *pstr) internal_function;
@@ -548,7 +549,7 @@ char *alloca();
 #endif
 #endif
 
-/* This is a workaround for AIX, which returns NULL if n == 0 */
+/* R CHANGE: This is a workaround for AIX, which returns NULL if n == 0 */
 #define re_malloc(t, n) ((t *)malloc((n > 0 ? n : 1) * sizeof(t)))
 #define re_realloc(p, t, n) ((t *)realloc(p, (n > 0 ? n : 1) * sizeof(t)))
 #define re_free(p) free(p)
@@ -840,6 +841,7 @@ static inline wint_t internal_function __attribute((pure)) re_string_wchar_at(co
     return (wint_t)pstr->wcs[idx];
 }
 
+#ifndef NOT_IN_libc
 static int internal_function __attribute((pure)) re_string_elem_size_at(const re_string_t *pstr, int idx)
 {
 #ifdef _LIBC
@@ -862,6 +864,7 @@ static int internal_function __attribute((pure)) re_string_elem_size_at(const re
 #endif /* _LIBC */
         return 1;
 }
+#endif
 #endif /* RE_ENABLE_I18N */
 
 static void re_string_construct_common(const char *str, int len, re_string_t *pstr, RE_TRANSLATE_TYPE trans, int icase,
@@ -1300,7 +1303,7 @@ static int internal_function re_string_skip_chars(re_string_t *pstr, int new_raw
     mbstate_t prev_st;
     int rawbuf_idx;
     size_t mbclen;
-    wchar_t wc = (wchar_t)WEOF; /* R change, for Sun Studio 12 on Linux */
+    wchar_t wc = (wchar_t)WEOF; /* R CHANGE, for Sun Studio 12 on Linux */
 
     /* Skip the characters which are not necessary to check.  */
     for (rawbuf_idx = pstr->raw_mbs_idx + pstr->valid_raw_len; rawbuf_idx < new_raw_idx;)
@@ -1477,7 +1480,7 @@ static reg_errcode_t internal_function re_string_reconstruct(re_string_t *pstr, 
         else
         {
             /* No, skip all characters until IDX.  */
-#ifdef RE_ENABLE_I18N
+#ifdef RE_ENABLE_I18N /* R CHANGE: moved up a line */
             int prev_valid_len = pstr->valid_len;
 
             if (BE(pstr->offsets_needed, 0))
@@ -2149,7 +2152,7 @@ static void internal_function re_node_set_remove_at(re_node_set *set, int idx)
 
 static int internal_function re_dfa_add_node(re_dfa_t *dfa, re_token_t token)
 {
-#ifdef RE_ENABLE_I18N
+#ifdef RE_ENABLE_I18N /* R CHANGE */
     int type = token.type;
 #endif
     if (BE(dfa->nodes_len >= dfa->nodes_alloc, 0))
@@ -2520,59 +2523,61 @@ static reg_errcode_t mark_opt_subexp(void *extra, bin_tree_t *node);
    POSIX doesn't require that we do anything for REG_NOERROR,
    but why not be nice?  */
 
-static const char __re_error_msgid[] = {
+static const char __re_error_msgid[] = /* R CHANGE, was attribute_hidden */
+    {
 #define REG_NOERROR_IDX 0
-    gettext_noop("Success") /* REG_NOERROR */
-    "\0"
+        gettext_noop("Success") /* REG_NOERROR */
+        "\0"
 #define REG_NOMATCH_IDX (REG_NOERROR_IDX + sizeof "Success")
-    gettext_noop("No match") /* REG_NOMATCH */
-    "\0"
+        gettext_noop("No match") /* REG_NOMATCH */
+        "\0"
 #define REG_BADPAT_IDX (REG_NOMATCH_IDX + sizeof "No match")
-    gettext_noop("Invalid regular expression") /* REG_BADPAT */
-    "\0"
+        gettext_noop("Invalid regular expression") /* REG_BADPAT */
+        "\0"
 #define REG_ECOLLATE_IDX (REG_BADPAT_IDX + sizeof "Invalid regular expression")
-    gettext_noop("Invalid collation character") /* REG_ECOLLATE */
-    "\0"
+        gettext_noop("Invalid collation character") /* REG_ECOLLATE */
+        "\0"
 #define REG_ECTYPE_IDX (REG_ECOLLATE_IDX + sizeof "Invalid collation character")
-    gettext_noop("Invalid character class name") /* REG_ECTYPE */
-    "\0"
+        gettext_noop("Invalid character class name") /* REG_ECTYPE */
+        "\0"
 #define REG_EESCAPE_IDX (REG_ECTYPE_IDX + sizeof "Invalid character class name")
-    gettext_noop("Trailing backslash") /* REG_EESCAPE */
-    "\0"
+        gettext_noop("Trailing backslash") /* REG_EESCAPE */
+        "\0"
 #define REG_ESUBREG_IDX (REG_EESCAPE_IDX + sizeof "Trailing backslash")
-    gettext_noop("Invalid back reference") /* REG_ESUBREG */
-    "\0"
+        gettext_noop("Invalid back reference") /* REG_ESUBREG */
+        "\0"
 #define REG_EBRACK_IDX (REG_ESUBREG_IDX + sizeof "Invalid back reference")
-    gettext_noop("Unmatched [ or [^") /* REG_EBRACK */
-    "\0"
+        gettext_noop("Unmatched [ or [^") /* REG_EBRACK */
+        "\0"
 #define REG_EPAREN_IDX (REG_EBRACK_IDX + sizeof "Unmatched [ or [^")
-    gettext_noop("Unmatched ( or \\(") /* REG_EPAREN */
-    "\0"
+        gettext_noop("Unmatched ( or \\(") /* REG_EPAREN */
+        "\0"
 #define REG_EBRACE_IDX (REG_EPAREN_IDX + sizeof "Unmatched ( or \\(")
-    gettext_noop("Unmatched \\{") /* REG_EBRACE */
-    "\0"
+        gettext_noop("Unmatched \\{") /* REG_EBRACE */
+        "\0"
 #define REG_BADBR_IDX (REG_EBRACE_IDX + sizeof "Unmatched \\{")
-    gettext_noop("Invalid content of \\{\\}") /* REG_BADBR */
-    "\0"
+        gettext_noop("Invalid content of \\{\\}") /* REG_BADBR */
+        "\0"
 #define REG_ERANGE_IDX (REG_BADBR_IDX + sizeof "Invalid content of \\{\\}")
-    gettext_noop("Invalid range end") /* REG_ERANGE */
-    "\0"
+        gettext_noop("Invalid range end") /* REG_ERANGE */
+        "\0"
 #define REG_ESPACE_IDX (REG_ERANGE_IDX + sizeof "Invalid range end")
-    gettext_noop("Memory exhausted") /* REG_ESPACE */
-    "\0"
+        gettext_noop("Memory exhausted") /* REG_ESPACE */
+        "\0"
 #define REG_BADRPT_IDX (REG_ESPACE_IDX + sizeof "Memory exhausted")
-    gettext_noop("Invalid preceding regular expression") /* REG_BADRPT */
-    "\0"
+        gettext_noop("Invalid preceding regular expression") /* REG_BADRPT */
+        "\0"
 #define REG_EEND_IDX (REG_BADRPT_IDX + sizeof "Invalid preceding regular expression")
-    gettext_noop("Premature end of regular expression") /* REG_EEND */
-    "\0"
+        gettext_noop("Premature end of regular expression") /* REG_EEND */
+        "\0"
 #define REG_ESIZE_IDX (REG_EEND_IDX + sizeof "Premature end of regular expression")
-    gettext_noop("Regular expression too big") /* REG_ESIZE */
-    "\0"
+        gettext_noop("Regular expression too big") /* REG_ESIZE */
+        "\0"
 #define REG_ERPAREN_IDX (REG_ESIZE_IDX + sizeof "Regular expression too big")
-    gettext_noop("Unmatched ) or \\)") /* REG_ERPAREN */
+        gettext_noop("Unmatched ) or \\)") /* REG_ERPAREN */
 };
 
+/* R CHANGE, was attribute_hidden */
 static const size_t __re_error_msgid_idx[] = {
     REG_NOERROR_IDX, REG_NOMATCH_IDX, REG_BADPAT_IDX, REG_ECOLLATE_IDX, REG_ECTYPE_IDX, REG_EESCAPE_IDX,
     REG_ESUBREG_IDX, REG_EBRACK_IDX,  REG_EPAREN_IDX, REG_EBRACE_IDX,   REG_BADBR_IDX,  REG_ERANGE_IDX,
@@ -2879,7 +2884,7 @@ weak_alias(__regcomp, regcomp)
            to this routine.  If we are given anything else, or if other regex
            code generates an invalid error code, then the program has a bug.
            Dump core so we can fix it.  */
-        error("internal error in 'regex' code");
+        error("internal error in 'regex' code"); /* R CHANGE, was abort() */
 
     msg = gettext(__re_error_msgid + __re_error_msgid_idx[errcode]);
 
@@ -2911,7 +2916,7 @@ weak_alias(__regerror, regerror)
    UTF-8 is used.  Otherwise we would allocate memory just to initialize
    it the same all the time.  UTF-8 is the preferred encoding so this is
    a worthwhile optimization.  */
-#if 0
+#if 0 /* R CHANGE to use ISO C */
 static const bitset_t utf8_sb_map =
 {
   /* Set the first 128 bits: not ISO C.  */
@@ -2979,7 +2984,8 @@ static void free_dfa_content(re_dfa_t *dfa)
 
 /* Free dynamically allocated space used by PREG.  */
 
-void regfree(regex_t *preg)
+void atttribute_hidden /* R CHANGE */
+regfree(regex_t *preg)
 /*    regex_t *preg; */
 {
     re_dfa_t *dfa = (re_dfa_t *)preg->buffer;
@@ -3164,7 +3170,7 @@ static reg_errcode_t re_compile_internal(regex_t *preg, const char *pattern, siz
 
 /* Initialize DFA.  We use the length of the regular expression PAT_LEN
    as the initial length of some arrays.  */
-extern Rboolean utf8locale;
+extern Rboolean utf8locale; /* R CHANGE */
 
 static reg_errcode_t init_dfa(re_dfa_t *dfa, size_t pat_len)
 {
@@ -3406,7 +3412,7 @@ static void optimize_utf8(re_dfa_t *dfa)
                     return;
             break;
         default:
-            return;
+            return; /* R CHANGE< was abort() */
         }
 
     if (mb_chars || has_period)
@@ -5017,7 +5023,7 @@ static bin_tree_t *parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_toke
         return elem;
     }
 
-    /* Local function for parse_bracket_exp used in _LIBC environement.
+    /* Local function for parse_bracket_exp used in _LIBC environment.
        Look up the collation sequence value of BR_ELEM.
        Return the value if succeeded, UINT_MAX otherwise.  */
 
@@ -5039,7 +5045,8 @@ static bin_tree_t *parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_toke
         }
         else if (br_elem->type == MB_CHAR)
         {
-            return __collseq_table_lookup(collseqwc, br_elem->opr.wch);
+            if (nrules != 0)
+                return __collseq_table_lookup(collseqwc, br_elem->opr.wch);
         }
         else if (br_elem->type == COLL_SYM)
         {
@@ -5275,7 +5282,7 @@ static bin_tree_t *parse_bracket_exp(re_string_t *regexp, re_dfa_t *dfa, re_toke
 #endif /* not RE_ENABLE_I18N */
         non_match = 1;
         if (syntax & RE_HAT_LISTS_NOT_NEWLINE)
-            bitset_set(sbcset, '\0');
+            bitset_set(sbcset, '\n');
         re_string_skip_bytes(regexp, token_len); /* Skip a token.  */
         token_len = peek_token_bracket(token, regexp, syntax);
         if (BE(token->type == END_OF_RE, 0))
@@ -5617,7 +5624,7 @@ build_equiv_class(bitset_t sbcset, const unsigned char *name)
 
         /* Build single byte matcing table for this equivalence class.  */
         char_buf[1] = (unsigned char)'\0';
-        len = weights[idx1];
+        len = weights[idx1 & 0xffffff];
         for (ch = 0; ch < SBC_MAX; ++ch)
         {
             char_buf[0] = ch;
@@ -5629,10 +5636,13 @@ build_equiv_class(bitset_t sbcset, const unsigned char *name)
             if (idx2 == 0)
                 /* This isn't a valid character.  */
                 continue;
-            if (len == weights[idx2])
+            /* Compare only if the length matches and the collation rule
+               index is the same.  */
+            if (len == weights[idx2 & 0xffffff] && (idx1 >> 24) == (idx2 >> 24))
             {
                 int cnt = 0;
-                while (cnt <= len && weights[idx1 + 1 + cnt] == weights[idx2 + 1 + cnt])
+
+                while (cnt <= len && weights[(idx1 & 0xffffff) + 1 + cnt] == weights[(idx2 & 0xffffff) + 1 + cnt])
                     ++cnt;
 
                 if (cnt > len)
@@ -5780,10 +5790,6 @@ static bin_tree_t *build_charclass_op(re_dfa_t *dfa, RE_TRANSLATE_TYPE trans, co
     if (non_match)
     {
 #ifdef RE_ENABLE_I18N
-        /*
-        if (syntax & RE_HAT_LISTS_NOT_NEWLINE)
-      bitset_set(cset->sbcset, '\0');
-        */
         mbcset->non_match = 1;
 #endif /* not RE_ENABLE_I18N */
     }
@@ -5893,7 +5899,7 @@ static void free_charset(re_charset_t *cset)
     re_free(cset->equiv_classes);
 #endif
     /* R CHANGE July 2008
-       moved up two lines follwing R-devel post
+       moved up two lines following R-devel post
        https://stat.ethz.ch/pipermail/r-devel/2008-July/050136.html
      */
     re_free(cset->range_starts);
@@ -8736,7 +8742,7 @@ static reg_errcode_t internal_function check_arrival_add_next_nodes(re_match_con
     const re_dfa_t *const dfa = mctx->dfa;
     int result;
     int cur_idx;
-#ifdef RE_ENABLE_I18N
+#ifdef RE_ENABLE_I18N /* R CHANGE */
     reg_errcode_t err = REG_NOERROR;
 #endif
     re_node_set union_set;
@@ -9489,8 +9495,8 @@ static int internal_function check_node_accept_bytes(const re_dfa_t *dfa, int no
             const int32_t *table, *indirect;
             const unsigned char *weights, *extra;
             const char *collseqwc;
-            int32_t idx;
-            /* This #include defines a local function!  */
+            int32_t idx; /* R CHANGE, declare before code */
+                         /* This #include defines a local function!  */
 #include <locale/weight.h>
 
             /* match with collating_symbol?  */
@@ -9541,15 +9547,19 @@ static int internal_function check_node_accept_bytes(const re_dfa_t *dfa, int no
                 weights = (const unsigned char *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_WEIGHTMB);
                 extra = (const unsigned char *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_EXTRAMB);
                 indirect = (const int32_t *)_NL_CURRENT(LC_COLLATE, _NL_COLLATE_INDIRECTMB);
-                idx = findidx(&cp);
+                idx = findidx(&cp); /* R CHANGE, move declaration to top */
                 if (idx > 0)
                     for (i = 0; i < cset->nequiv_classes; ++i)
                     {
                         int32_t equiv_class_idx = cset->equiv_classes[i];
-                        size_t weight_len = weights[idx];
-                        if (weight_len == weights[equiv_class_idx])
+                        size_t weight_len = weights[idx & 0xffffff];
+                        if (weight_len == weights[equiv_class_idx & 0xffffff] && (idx >> 24) == (equiv_class_idx >> 24))
                         {
                             int cnt = 0;
+
+                            idx &= 0xffffff;
+                            equiv_class_idx &= 0xffffff;
+
                             while (cnt <= weight_len && (weights[equiv_class_idx + 1 + cnt] == weights[idx + 1 + cnt]))
                                 ++cnt;
                             if (cnt > weight_len)
@@ -9565,7 +9575,7 @@ static int internal_function check_node_accept_bytes(const re_dfa_t *dfa, int no
 #endif /* _LIBC */
         {
             /* match with range expression?  */
-#if __GNUC__ >= 2
+#if __GNUC__ >= 2 /* R CHANGE, add  __extension__ */
             __extension__ wchar_t cmp_buf[] = {L'\0', L'\0', wc, L'\0', L'\0', L'\0'};
 #else
             wchar_t cmp_buf[] = {L'\0', L'\0', L'\0', L'\0', L'\0', L'\0'};
@@ -9946,6 +9956,7 @@ static void internal_function sift_ctx_init(re_sift_context_t *sctx, re_dfastate
     re_node_set_init_empty(&sctx->limits);
 }
 
+/* R addition */
 int attribute_hidden Rregexec(const regex_t *__restrict preg, const char *__restrict string, size_t nmatch,
                               regmatch_t pmatch[], int eflags, int offset)
 {
