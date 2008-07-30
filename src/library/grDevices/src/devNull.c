@@ -39,7 +39,7 @@ void GEnullDevice()
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
     {
-        if (!(dev = (pDevDesc)calloc(1, sizeof(NewDevDesc))))
+        if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             error(_("unable to start NULL device"));
         if (!nullDeviceDriver(dev))
         {

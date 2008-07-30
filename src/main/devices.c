@@ -239,7 +239,7 @@ int GEdeviceNumber(pGEDevDesc dd)
     return 0;
 }
 
-/* This should be called if you have a pointer to a NewDevDesc
+/* This should be called if you have a pointer to a DevDesc
  * and you want to find the corresponding device number
  */
 int ndevNumber(pDevDesc dd)
@@ -317,15 +317,6 @@ static void removeDevice(int devNum, Rboolean findNext)
                 {
                     pGEDevDesc gdd = GEcurrentDevice();
                     gdd->dev->activate(gdd->dev);
-#if 0
-		    /* This section depends on base system.
-		       It's strange to do this: it is not done when
-		       the current device is changed in any other way.
-		       So no longer do it in 2.7.0.
-		     */
-		    copyGPar(dpptr(gdd), gpptr(gdd));
-		    GReset(gdd);
-#endif
                 }
             }
         }

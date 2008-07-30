@@ -272,7 +272,7 @@ static void PrivateCopyDevice(pDevDesc dd, pDevDesc ndd, const char *name)
 
 static void SaveAsWin(pDevDesc dd, const char *display, Rboolean restoreConsole)
 {
-    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(NewDevDesc));
+    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(DevDesc));
     if (!ndd)
     {
         R_ShowMessage(_("Not enough memory to copy graphics window"));
@@ -308,7 +308,7 @@ static void init_PS_PDF(void)
 static void SaveAsPostscript(pDevDesc dd, const char *fn)
 {
     SEXP s;
-    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(NewDevDesc));
+    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(DevDesc));
     pGEDevDesc gdd = desc2GEDesc(dd);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     char family[256], encoding[256], paper[256], bg[256], fg[256];
@@ -382,7 +382,7 @@ static void SaveAsPostscript(pDevDesc dd, const char *fn)
 static void SaveAsPDF(pDevDesc dd, const char *fn)
 {
     SEXP s;
-    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(NewDevDesc));
+    pDevDesc ndd = (pDevDesc)calloc(1, sizeof(DevDesc));
     pGEDevDesc gdd = desc2GEDesc(dd);
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     char family[256], encoding[256], bg[256], fg[256];
@@ -3551,7 +3551,7 @@ SEXP devga(SEXP args)
     {
         pDevDesc dev;
         /* Allocate and initialize the device driver data */
-        if (!(dev = (pDevDesc)calloc(1, sizeof(NewDevDesc))))
+        if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         GAsetunits(xpinch, ypinch);
         if (!GADeviceDriver(dev, display, width, height, ps, (Rboolean)recording, resize, bg, canvas, gamma, xpos, ypos,
