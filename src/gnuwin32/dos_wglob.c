@@ -90,7 +90,7 @@ void Rprintf(const char *, ...);
 #define BG_RANGE L'-'
 #define BG_RBRACKET L']'
 #define BG_SEP L'/'
-#ifdef DOSISH
+#ifdef DOSISH /* true */
 #define BG_SEP2 L'\\'
 #endif
 #define BG_STAR L'*'
@@ -177,7 +177,7 @@ int dos_wglob(const wchar_t *pattern, int flags, int (*errfunc)(const wchar_t *,
 
     bufnext = patbuf;
     bufend = bufnext + MAXPATHLEN - 1;
-#ifdef DOSISH
+#ifdef DOSISH /* true */
     /* Nasty hack to treat patterns like "C:*" correctly. In this
      * case, the * should match any file in the current directory
      * on the C: drive. However, the glob code does not treat the
@@ -203,7 +203,7 @@ int dos_wglob(const wchar_t *pattern, int flags, int (*errfunc)(const wchar_t *,
         while (bufnext < bufend && (c = *patnext++) != BG_EOS)
             if (c == BG_QUOTE)
             {
-#ifdef DOSISH
+#ifdef DOSISH /* true */
                 /* To avoid backslashitis on Win32,
                  * we only treat \ as a quoting character
                  * if it precedes one of the
@@ -582,7 +582,7 @@ static int glob2(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
                 return (0);
 
             if (((pglob->gl_flags & GLOB_MARK) && pathend[-1] != BG_SEP
-#ifdef DOSISH
+#ifdef DOSISH /* true */
                  && pathend[-1] != BG_SEP2
 #endif
                  ) &&
@@ -604,7 +604,7 @@ static int glob2(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
         q = pathend;
         p = pattern;
         while (*p != BG_EOS && *p != BG_SEP
-#ifdef DOSISH
+#ifdef DOSISH /* true */
                && *p != BG_SEP2
 #endif
         )
@@ -621,7 +621,7 @@ static int glob2(wchar_t *pathbuf, wchar_t *pathbuf_last, wchar_t *pathend, wcha
             pathend = q;
             pattern = p;
             while (*pattern == BG_SEP
-#ifdef DOSISH
+#ifdef DOSISH /* true */
                    || *pattern == BG_SEP2
 #endif
             )
