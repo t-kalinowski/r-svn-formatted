@@ -225,6 +225,7 @@ int removeInputHandler(InputHandler **handlers, InputHandler *it)
     if (*handlers == it)
     {
         *handlers = (*handlers)->next;
+        free(it);
         return (1);
     }
 
@@ -235,6 +236,7 @@ int removeInputHandler(InputHandler **handlers, InputHandler *it)
         if (tmp->next == it)
         {
             tmp->next = it->next;
+            free(it);
             return (1);
         }
         tmp = tmp->next;
@@ -353,16 +355,19 @@ static int setSelectMask(InputHandler *handlers, fd_set *readMask)
 
 void R_runHandlers(InputHandler *handlers, fd_set *readMask)
 {
-    InputHandler *tmp = handlers;
+    InputHandler *tmp = handlers, *next;
 
     if (readMask == NULL)
         R_PolledEvents();
     else
         while (tmp)
         {
+            /* Do this way as the handler function might call
+               removeInputHandlers */
+            next = tmp->next;
             if (FD_ISSET(tmp->fileDescriptor, readMask) && tmp->handler != NULL)
                 tmp->handler((void *)NULL);
-            tmp = tmp->next;
+            tmp = next;
         }
 }
 
