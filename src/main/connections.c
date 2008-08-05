@@ -2058,9 +2058,7 @@ static void raw_init(Rconnection con, SEXP raw)
     Rrawconn this = (Rrawconn)con->private;
 
     this->data = NAMED(raw) ? duplicate(raw) : raw;
-
     R_PreserveObject(this->data);
-
     this->nbytes = length(this->data);
     this->pos = 0;
 }
@@ -2084,10 +2082,9 @@ static void raw_destroy(Rconnection con)
 
 static void raw_resize(Rrawconn this, int needed)
 {
-    int newsize = 64;
     SEXP tmp;
-    while (newsize < needed)
-        newsize *= 2;
+
+    /* NB: this does not set the size on the connection: raw_write does */
     PROTECT(tmp = lengthgets(this->data, needed));
     R_ReleaseObject(this->data);
     this->data = tmp;
@@ -2098,38 +2095,17 @@ static void raw_resize(Rrawconn this, int needed)
 static size_t raw_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
 {
     Rrawconn this = (Rrawconn)con->private;
-    int freespace = length(this->data) - this->pos;
+    int freespace = LENGTH(this->data) - this->pos;
     int bytes = size * nitems;
 
+    /* resize may fail, when this will give an error */
     if (bytes >= freespace)
-    {
         raw_resize(this, bytes + this->pos);
-    }
     memmove(RAW(this->data) + this->pos, ptr, bytes);
     this->pos += bytes;
     if (this->pos > this->nbytes)
         this->nbytes = this->pos;
-
     return nitems;
-}
-
-static int raw_vfprintf(Rconnection con, const char *format, va_list ap)
-{
-    Rrawconn this = (Rrawconn)con->private;
-    int freespace = length(this->data) - this->pos;
-    int res;
-
-    res = vsnprintf((char *)(RAW(this->data) + this->pos), freespace, format, ap);
-    if (res >= freespace)
-    {
-        raw_resize(this, res + this->pos + 1);
-        res = vsprintf((char *)(RAW(this->data) + this->pos), format, ap);
-    }
-    this->pos += res;
-    if (this->pos > this->nbytes)
-        this->nbytes = this->pos;
-
-    return res;
 }
 
 static void raw_truncate(Rconnection con)
@@ -2186,6 +2162,7 @@ static double raw_seek(Rconnection con, double where, int origin, int rw)
 static Rconnection newraw(const char *description, SEXP raw, const char *mode)
 {
     Rconnection new;
+
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
         error(_("allocation of raw connection failed"));
@@ -2218,7 +2195,7 @@ static Rconnection newraw(const char *description, SEXP raw, const char *mode)
     if (new->canwrite)
     {
         new->write = &raw_write;
-        new->vfprintf = &raw_vfprintf;
+        new->vfprintf = &dummy_vfprintf;
         new->truncate = &raw_truncate;
     }
     if (new->canread)
