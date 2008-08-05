@@ -933,8 +933,15 @@ void Rcons_vprintf(const char *format, va_list arg)
 #ifdef HAVE_VASPRINTF
     if (res >= R_BUFSIZE || res < 0)
     {
-        vasprintf(&p, format, arg);
-        usedVasprintf = TRUE;
+        res = vasprintf(&p, format, arg);
+        if (res < 0)
+        {
+            p = buf;
+            buf[R_BUFSIZE - 1] = '\0';
+            warning("printing of extremely long output is truncated");
+        }
+        else
+            usedVasprintf = TRUE;
     }
 #else
     if (res >= R_BUFSIZE)
@@ -949,7 +956,7 @@ void Rcons_vprintf(const char *format, va_list arg)
         res = vsnprintf(p, 10 * R_BUFSIZE, format, arg);
         if (res < 0)
         {
-            *(p + 10 * R_BUFSIZE) = '\0';
+            *(p + 10 * R_BUFSIZE - 1) = '\0';
             warning("printing of extremely long output is truncated");
         }
     }
