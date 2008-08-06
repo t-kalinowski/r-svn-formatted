@@ -2111,7 +2111,8 @@ static size_t raw_write(const void *ptr, size_t size, size_t nitems, Rconnection
     /* the source just might be this raw vector */
     memmove(RAW(this->data) + this->pos, ptr, bytes);
     this->pos += bytes;
-    this->nbytes = max(this->nbytes, this->pos);
+    if (this->nbytes < this->pos)
+        this->nbytes = this->pos;
     return nitems;
 }
 
@@ -2126,7 +2127,7 @@ static size_t raw_read(void *ptr, size_t size, size_t nitems, Rconnection con)
     Rrawconn this = (Rrawconn)con->private;
     size_t available = this->nbytes - this->pos, request = size * nitems, used;
 
-    used = max(request, available);
+    used = (request < available) ? request : available;
     memmove(ptr, RAW(this->data) + this->pos, used);
     return used / size;
 }
