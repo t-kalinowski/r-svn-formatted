@@ -246,6 +246,7 @@ SEXP attribute_hidden do_optim(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     options = CAR(args);
     PROTECT(OS->R_fcall = lang2(fn, R_NilValue));
+    /* I don't think duplication is needed here */
     PROTECT(par = coerceVector(duplicate(par), REALSXP));
     npar = LENGTH(par);
     dpar = vect(npar);
