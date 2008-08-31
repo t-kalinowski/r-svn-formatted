@@ -305,7 +305,7 @@ static void Randomize(RNGtype kind)
     RNG_Init(kind, seed);
 }
 
-static SEXP GetRNGkind(SEXP seeds)
+static void GetRNGkind(SEXP seeds)
 {
     /* Load RNG_kind, N01_kind from .Random.seed if present */
     int tmp, *is;
@@ -315,15 +315,12 @@ static SEXP GetRNGkind(SEXP seeds)
     if (isNull(seeds))
         seeds = findVarInFrame(R_GlobalEnv, R_SeedsSymbol);
     if (seeds == R_UnboundValue)
-        return seeds;
+        return;
     if (!isInteger(seeds))
     {
         if (seeds == R_MissingArg) /* How can this happen? */
             error(_(".Random.seed is a missing argument with no default"));
-        warning(_(".Random.seed is not an integer vector but of type '%s'"), type2char(TYPEOF(seeds)));
-        seeds = coerceVector(seeds, INTSXP);
-        if (!isInteger(seeds))
-            error(_("unable to coerce .Random.seed to an integer vector"));
+        error(_(".Random.seed is not an integer vector but of type '%s'"), type2char(TYPEOF(seeds)));
     }
     is = INTEGER(seeds);
     tmp = is[0];
@@ -351,7 +348,7 @@ static SEXP GetRNGkind(SEXP seeds)
     }
     RNG_kind = newRNG;
     N01_kind = newN01;
-    return seeds;
+    return;
 }
 
 void GetRNGstate()
@@ -368,7 +365,7 @@ void GetRNGstate()
     }
     else
     {
-        seeds = GetRNGkind(seeds);
+        GetRNGkind(seeds);
         len_seed = RNG_Table[RNG_kind].n_seed;
         /* Not sure whether this test is needed: wrong for USER_UNIF */
         if (LENGTH(seeds) > 1 && LENGTH(seeds) < len_seed + 1)
