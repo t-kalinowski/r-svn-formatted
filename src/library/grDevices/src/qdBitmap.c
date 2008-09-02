@@ -80,9 +80,14 @@ void QuartzBitmap_Output(QuartzDesc_t dev, QuartzBitmapDevice *qbd)
         if (CFStringCompare(scheme, CFSTR("file"), 0) == 0)
         { /* file output */
             CGImageDestinationRef dest = CGImageDestinationCreateWithURL(path, type, 1, NULL);
-            CGImageDestinationAddImage(dest, image, NULL);
-            CGImageDestinationFinalize(dest);
-            CFRelease(dest);
+            if (dest)
+            {
+                CGImageDestinationAddImage(dest, image, NULL);
+                CGImageDestinationFinalize(dest);
+                CFRelease(dest);
+            }
+            else
+                error(_("QuartzBitmap_Output - unable to open file '%s'"), buf);
         }
         else if (CFStringCompare(scheme, CFSTR("clipboard"), 0) == 0)
         { /* clipboard output */
