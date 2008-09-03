@@ -1793,6 +1793,9 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 #if defined HAVE_PNG & !defined HAVE_WORKING_CAIRO
                 || streql(CHAR(STRING_ELT(what, j)), "png")
 #endif
+#if defined HAVE_TIFF & !defined HAVE_WORKING_CAIRO
+                || streql(CHAR(STRING_ELT(what, j)), "tiff")
+#endif
             )
             {
                 X11 = R_can_use_X11();
