@@ -2068,6 +2068,12 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (recursive)
     {
         p = dir;
+        /* skip leading \\share */
+        if (*p == L'\\' && *(p + 1) == L'\\')
+        {
+            p += 2;
+            p = wcschr(p, L'\\');
+        }
         while ((p = wcschr(p + 1, L'\\')))
         {
             *p = L'\0';
