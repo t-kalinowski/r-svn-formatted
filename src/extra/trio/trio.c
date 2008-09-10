@@ -2849,7 +2849,24 @@ reprocess:
             isExponentNegative = (exponent < 0);
             uExponent = (isExponentNegative) ? -exponent : exponent;
             if (isHex)
+            {
                 uExponent *= 4; /* log16(2) */
+                if (number >= 8)
+                {
+                    uExponent -= 3;
+                    number /= 8;
+                }
+                else if (number >= 4)
+                {
+                    uExponent -= 2;
+                    number /= 4;
+                }
+                else if (number >= 2)
+                {
+                    uExponent -= 1;
+                    number /= 2;
+                }
+            }
 #if TRIO_FEATURE_QUOTE
             /* No thousand separators */
             flags &= ~FLAGS_QUOTE;
