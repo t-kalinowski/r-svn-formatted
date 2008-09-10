@@ -4067,7 +4067,7 @@ static int NumericValue(int c)
             if (last != '0')
                 break;
             YYTEXT_PUSH(c, yyp);
-            while (isdigit(c = xxgetc()) || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F'))
+            while (isdigit(c = xxgetc()) || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F') || c == '.')
             {
                 YYTEXT_PUSH(c, yyp);
                 nd++;
