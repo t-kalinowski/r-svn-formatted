@@ -377,7 +377,7 @@ static int isDuplicated(SEXP x, int indx, HashData *d)
     return 0;
 }
 
-static void removeEntry(SEXP x, int indx, HashData *d)
+static void removeEntry(SEXP table, SEXP x, int indx, HashData *d)
 {
     int i, *h;
 
@@ -385,7 +385,7 @@ static void removeEntry(SEXP x, int indx, HashData *d)
     i = d->hash(x, indx, d);
     while (h[i] != NIL)
     {
-        if (d->equal(x, h[i], x, indx))
+        if (d->equal(table, h[i], x, indx))
         {
             h[i] = NA_INTEGER; /* < 0, only index values are inserted */
             return;
@@ -577,14 +577,14 @@ static void DoHashing(SEXP table, HashData *d)
 }
 
 /* invalidate entries */
-static void UndoHashing(SEXP table, HashData *d)
+static void UndoHashing(SEXP x, SEXP table, HashData *d)
 {
     int *h, i, n;
 
-    n = LENGTH(table);
+    n = LENGTH(x);
     h = INTEGER(d->HashTable);
     for (i = 0; i < n; i++)
-        removeEntry(table, i, d);
+        removeEntry(table, x, i, d);
 }
 
 static int Lookup(SEXP table, SEXP x, int indx, HashData *d)
@@ -689,7 +689,7 @@ SEXP match4(SEXP itable, SEXP ix, int nmatch, SEXP incomp)
     HashTableSetup(table, &data);
     PROTECT(data.HashTable);
     DoHashing(table, &data);
-    UndoHashing(incomp, &data);
+    UndoHashing(incomp, itable, &data);
     ans = HashLookup(table, x, &data);
     UNPROTECT(4);
     return ans;
