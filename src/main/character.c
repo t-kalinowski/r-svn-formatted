@@ -3365,12 +3365,13 @@ SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, x = CAR(args);
+    SEXP ans, x;
     int i, j = 0, k;
     unsigned int tmp;
 
+    PROTECT(x = coerceVector(CAR(args), INTSXP));
     if (!isInteger(x))
-        error(_("argument 'x' must be a integer vector"));
+        error(_("argument 'x' must be an integer vector"));
     PROTECT(ans = allocVector(RAWSXP, 32 * LENGTH(x)));
     for (i = 0; i < LENGTH(x); i++)
     {
@@ -3378,7 +3379,7 @@ SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
         for (k = 0; k < 32; k++, tmp >>= 1)
             RAW(ans)[j++] = tmp & 0x1;
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
@@ -3590,13 +3591,15 @@ static size_t inttomb(char *s, const int wc)
 
 SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans, x = CAR(args);
-    int i, nc = LENGTH(x), multiple, len, used;
+    SEXP ans, x;
+    int i, nc, multiple, len, used;
     char buf[10], *tmp;
 
     checkArity(op, args);
+    PROTECT(x = coerceVector(CAR(args), INTSXP));
     if (!isInteger(x))
         error(_("argument 'x' must be an integer vector"));
+    nc = LENGTH(x);
     multiple = asLogical(CADR(args));
     if (multiple == NA_LOGICAL)
         error(_("argument 'multiple' must be TRUE or FALSE"));
@@ -3627,7 +3630,7 @@ SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(ans = allocVector(STRSXP, 1));
         SET_STRING_ELT(ans, 0, mkCharLenCE(tmp, len, CE_UTF8));
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     return ans;
 }
 
