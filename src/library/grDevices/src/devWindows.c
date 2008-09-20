@@ -636,8 +636,6 @@ static void SetFont(pGEcontext gc, double rot, gadesc *xd)
         if (fontfamily && face <= 4)
         {
             xd->font = gnewfont(xd->gawin, fontfamily, fontstyle[face - 1], size, rot, usePoints);
-            if (xd->font)
-                strcpy(xd->fontfamily, gc->fontfamily);
         }
         else
         {
@@ -645,6 +643,7 @@ static void SetFont(pGEcontext gc, double rot, gadesc *xd)
         }
         if (xd->font)
         {
+            strcpy(xd->fontfamily, gc->fontfamily);
             xd->fontface = face;
             xd->fontsize = size;
             xd->fontangle = rot;
