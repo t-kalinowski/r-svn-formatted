@@ -2919,6 +2919,100 @@ static void PostScriptCircle(FILE *fp, double x, double y, double r)
     fprintf(fp, "%.2f %.2f %.2f c ", x, y, r);
 }
 
+/* added for 2.8.0 (donated by Ei-ji Nakama) : */
+#define KERNING_PS 0
+#define KERNING_PDF 1
+static void PostScriptWriteT1KerningString(FILE *fp, const char *str, const int mode, FontMetricInfo *metrics,
+                                           const pGEcontext gc)
+{
+    const unsigned char *p = NULL, *str1 = str;
+    unsigned char p1, p2;
+    int i, j;
+    double ary_buf[128];
+    double *ary;
+
+    if (strlen(str) > sizeof(ary_buf) / sizeof(double))
+    {
+        ary = calloc(strlen(str), sizeof(double));
+        if (!ary)
+            return;
+    }
+    else
+        ary = ary_buf;
+
+    for (i = 0; str1[i] && str1[i + 1]; i++)
+    {
+        ary[i] = 0.;
+        p1 = str1[i];
+        p2 = str1[i + 1];
+#ifdef USE_HYPHEN
+        if (p1 == '-' && !isdigit((int)p2))
+            p1 = (unsigned char)PS_hyphen;
+#endif
+        if (mode == KERNING_PS)
+            ary[i] = (double)metrics->CharInfo[p1].WX;
+        for (j = metrics->KPstart[p1]; j < metrics->KPend[p1]; j++)
+        {
+            if (metrics->KernPairs[j].c2 == p2 && metrics->KernPairs[j].c1 == p1)
+            {
+                ary[i] += (double)metrics->KernPairs[j].kern;
+                break;
+            }
+        }
+        if (mode == KERNING_PS)
+            ary[i] *= 0.001 * floor(gc->cex * gc->ps + 0.5);
+    }
+
+    if (mode == KERNING_PDF)
+        fputc('[', fp);
+    fputc('(', fp);
+    for (i = 0; str1[i]; i++)
+    {
+        switch (str1[i])
+        {
+        case '\n':
+            fprintf(fp, "\\n");
+            break;
+        case '\\':
+            fprintf(fp, "\\\\");
+            break;
+        case '-':
+#ifdef USE_HYPHEN
+            if (!isdigit((int)str1[i + 1]))
+                fputc(PS_hyphen, fp);
+            else
+#endif
+                fputc(str1[i], fp);
+            break;
+        case '(':
+        case ')':
+            fprintf(fp, "\\%c", str1[i]);
+            break;
+        default:
+            fputc(str1[i], fp);
+            break;
+        }
+        if (mode == KERNING_PDF && (int)ary[i] != 0 && str1[i + 1])
+            fprintf(fp, ") %d (", (int)(ary[i] * -1));
+    }
+    fputc(')', fp);
+    if (mode == KERNING_PDF)
+        fputc(']', fp);
+
+    fputc(' ', fp);
+
+    if (mode == KERNING_PS)
+    {
+        fputc('[', fp);
+        for (i = 0; str1[i] && str1[i + 1]; i++)
+            fprintf(fp, "%.2f ", ary[i]);
+        fputc(']', fp);
+    }
+    if (ary != ary_buf)
+        free(ary);
+}
+
+static FontMetricInfo *metricInfo(const char *, int, PostScriptDesc *);
 static void PostScriptWriteString(FILE *fp, const char *str)
 {
     fputc('(', fp);
@@ -2950,10 +3044,20 @@ static void PostScriptWriteString(FILE *fp, const char *str)
     fputc(')', fp);
 }
 
-static void PostScriptText(FILE *fp, double x, double y, const char *str, double xc, double yc, double rot)
+static void PostScriptText(FILE *fp, double x, double y, const char *str, double xc, double yc, double rot,
+                           const pGEcontext gc, pDevDesc dd)
 {
+    PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
+    int face = gc->fontface;
+    if (face < 1 || face > 5)
+        face = 1;
+
     fprintf(fp, "%.2f %.2f ", x, y);
-    PostScriptWriteString(fp, str);
+
+    if (isType1Font(gc->fontfamily, PostScriptFonts, pd->defaultFont))
+        PostScriptWriteT1KerningString(fp, str, KERNING_PS, metricInfo(gc->fontfamily, face, pd), gc);
+    else
+        PostScriptWriteString(fp, str);
 
     if (xc == 0)
         fprintf(fp, " 0");
@@ -2980,7 +3084,10 @@ static void PostScriptText(FILE *fp, double x, double y, const char *str, double
     else
         fprintf(fp, " %.2f", rot);
 
-    fprintf(fp, " t\n");
+    if (isType1Font(gc->fontfamily, PostScriptFonts, pd->defaultFont))
+        fprintf(fp, " tk\n");
+    else
+        fprintf(fp, " t\n");
 }
 
 #ifdef SUPPORT_MBCS
@@ -3542,7 +3649,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     /* GREset(.)  dd->gp.mkh = dd->gp.cra[0] * dd->gp.ipr[0]; */
 
     dd->canClip = TRUE;
-    dd->canHAdj = 2;
+    dd->canHAdj = 0;
     dd->canChangeGamma = FALSE;
 
     /*	Start the driver */
@@ -4219,7 +4326,7 @@ static void drawSimpleText(double x, double y, const char *str, double rot, doub
     if (R_OPAQUE(gc->col))
     {
         SetColor(gc->col, dd);
-        PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot);
+        PostScriptText(pd->psfp, x, y, str, hadj, 0.0, rot, gc, dd);
     }
 }
 
@@ -7045,6 +7152,7 @@ static int PDFfontNumber(const char *family, int face, PDFDesc *pd)
     return num;
 }
 
+static FontMetricInfo *PDFmetricInfo(const char *, int, PDFDesc *);
 static void PDFSimpleText(double x, double y, const char *str, double rot, double hadj, int font, const pGEcontext gc,
                           pDevDesc dd)
 {
@@ -7074,8 +7182,16 @@ static void PDFSimpleText(double x, double y, const char *str, double rot, doubl
         texton(pd);
     PDF_SetFill(gc->col, dd);
     fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", font, a, b, -b, a, x, y);
-    PostScriptWriteString(pd->pdffp, str1);
-    fprintf(pd->pdffp, " Tj\n");
+    if (isType1Font(gc->fontfamily, PDFFonts, pd->defaultFont))
+    {
+        PostScriptWriteT1KerningString(pd->pdffp, str1, KERNING_PDF, PDFmetricInfo(gc->fontfamily, face, pd), gc);
+        fprintf(pd->pdffp, " TJ\n");
+    }
+    else
+    {
+        PostScriptWriteString(pd->pdffp, str1);
+        fprintf(pd->pdffp, " Tj\n");
+    }
     textoff(pd); /* added in 2.8.0 */
 }
 
@@ -7227,8 +7343,17 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
         mbcsToSbcs(str, buff, PDFconvname(gc->fontfamily, pd), enc);
         str1 = buff;
     }
-    PostScriptWriteString(pd->pdffp, str1);
-    fprintf(pd->pdffp, " Tj\n");
+
+    if (isType1Font(gc->fontfamily, PDFFonts, pd->defaultFont))
+    {
+        PostScriptWriteT1KerningString(pd->pdffp, str1, KERNING_PDF, PDFmetricInfo(gc->fontfamily, face, pd), gc);
+        fprintf(pd->pdffp, " TJ\n");
+    }
+    else
+    {
+        PostScriptWriteString(pd->pdffp, str1);
+        fprintf(pd->pdffp, " Tj\n");
+    }
     textoff(pd); /* added in 2.8.0 */
 }
 
