@@ -2925,11 +2925,10 @@ static void PostScriptCircle(FILE *fp, double x, double y, double r)
 static void PostScriptWriteT1KerningString(FILE *fp, const char *str, const int mode, FontMetricInfo *metrics,
                                            const pGEcontext gc)
 {
-    const unsigned char *p = NULL, *str1 = str;
+    const char *str1 = str;
     unsigned char p1, p2;
     int i, j;
-    double ary_buf[128];
-    double *ary;
+    double ary_buf[128], *ary;
 
     if (strlen(str) > sizeof(ary_buf) / sizeof(double))
     {
@@ -6084,7 +6083,7 @@ static int alphaIndex(int alpha, short *alphas)
             alphas[i] = alpha;
             found = 1;
         }
-        if (alpha == alphas[i])
+        else if (alpha == alphas[i])
             found = 1;
     }
     if (!found)
