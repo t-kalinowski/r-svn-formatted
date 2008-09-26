@@ -2356,6 +2356,9 @@ SEXP substitute(SEXP lang, SEXP rho)
                     {
                         t = PREXPR(t);
                     } while (TYPEOF(t) == PROMSXP);
+                    /* make sure code will not be modified: */
+                    if (NAMED(t) < 2)
+                        SET_NAMED(t, 2);
                     return t;
                 }
                 else if (TYPEOF(t) == DOTSXP)
