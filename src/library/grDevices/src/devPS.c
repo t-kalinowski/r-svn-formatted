@@ -985,10 +985,10 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
         else
         {
             /* convert to UCS-2 to use wcwidth. */
-            char str;
+            char str[2] = {0, 0};
             ucs2_t out;
-            str = c;
-            if (mbcsToUcs2(&str, &out, 1, CE_NATIVE) == (size_t)-1)
+            str[0] = c;
+            if (mbcsToUcs2(str, &out, 1, CE_NATIVE) == (size_t)-1)
                 error(_("invalid character sent to 'PostScriptCIDMetricInfo' in a single-byte locale"));
             c = out;
         }
@@ -3005,7 +3005,7 @@ static void PostScriptWriteT1KerningString(FILE *fp, const char *str, const int 
         fputc('[', fp);
         for (i = 0; str1[i] && str1[i + 1]; i++)
             fprintf(fp, "%.2f ", ary[i]);
-        fputc(']', fp);
+        fprintf(fp, "0]"); /* newer GS (8.61) does not accept an empty array */
     }
     if (ary != ary_buf)
         free(ary);
