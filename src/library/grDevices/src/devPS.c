@@ -4416,6 +4416,9 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
          * CID convert optimize PS encoding == locale encode case
          */
         cidfontfamily cidfont = findDeviceCIDFont(gc->fontfamily, pd->cidfonts, &fontIndex);
+        if (!cidfont)
+            error(_("family '%s' not included in PostScript device"), gc->fontfamily);
+
         if (!dd->hasTextUTF8 && !strcmp(locale2charset(NULL), cidfont->encoding))
         {
             SetFont(translateCIDFont(gc->fontfamily, gc->fontface, pd), (int)floor(gc->cex * gc->ps + 0.5), dd);
