@@ -4523,7 +4523,7 @@ static void PS_Mode(int mode, pDevDesc dd)
 
 /***********************************************************************
 
-                 XFig driver shares font handling
+         XFig driver shares font handling
 
 ************************************************************************/
 
@@ -5420,7 +5420,7 @@ static void XFig_MetricInfo(int c, const pGEcontext gc, double *ascent, double *
 
 /***********************************************************************
 
-                 PDF driver also shares font handling
+         PDF driver also shares font handling
 
 ************************************************************************/
 
