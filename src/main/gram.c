@@ -4322,7 +4322,7 @@ static int StringValue(int c, Rboolean forSymbol)
                             if (GenerateCode && R_WarnEscapes)
                             {
                                 have_warned++;
-                                warningcall(R_NilValue, _("'\\x used without hex digits"));
+                                warningcall(R_NilValue, _("'\\x' used without hex digits"));
                             }
                             val = 'x';
                         }
