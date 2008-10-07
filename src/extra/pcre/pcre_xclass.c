@@ -103,8 +103,7 @@ BOOL _pcre_xclass(int c, const uschar *data)
 #ifdef SUPPORT_UCP
         else /* XCL_PROP & XCL_NOTPROP */
         {
-            int chartype, script;
-            int category = _pcre_ucp_findprop(c, &chartype, &script);
+            const ucd_record *prop = GET_UCD(c);
 
             switch (*data)
             {
@@ -114,22 +113,23 @@ BOOL _pcre_xclass(int c, const uschar *data)
                 break;
 
             case PT_LAMP:
-                if ((chartype == ucp_Lu || chartype == ucp_Ll || chartype == ucp_Lt) == (t == XCL_PROP))
+                if ((prop->chartype == ucp_Lu || prop->chartype == ucp_Ll || prop->chartype == ucp_Lt) ==
+                    (t == XCL_PROP))
                     return !negated;
                 break;
 
             case PT_GC:
-                if ((data[1] == category) == (t == XCL_PROP))
+                if ((data[1] == _pcre_ucp_gentype[prop->chartype]) == (t == XCL_PROP))
                     return !negated;
                 break;
 
             case PT_PC:
-                if ((data[1] == chartype) == (t == XCL_PROP))
+                if ((data[1] == prop->chartype) == (t == XCL_PROP))
                     return !negated;
                 break;
 
             case PT_SC:
-                if ((data[1] == script) == (t == XCL_PROP))
+                if ((data[1] == prop->script) == (t == XCL_PROP))
                     return !negated;
                 break;
 

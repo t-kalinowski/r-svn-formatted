@@ -153,6 +153,9 @@ int _pcre_valid_utf8(const uschar *string, int length)
                 return p - string;
         }
     }
+#else
+    (void)(string); /* Keep picky compilers happy */
+    (void)(length);
 #endif
 
     return -1;

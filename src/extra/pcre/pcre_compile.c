@@ -438,7 +438,8 @@ static const char *find_error_text(int n)
     const char *s = error_texts;
     for (; n > 0; n--)
         while (*s++ != 0)
-            ;
+        {
+        };
     return s;
 }
 
@@ -1016,7 +1017,8 @@ static int find_parens(const uschar *ptr, compile_data *cd, const uschar *name, 
                 for (;;)
                 {
                     while (*(++ptr) != 0 && *ptr != '\\')
-                        ;
+                    {
+                    };
                     if (*ptr == 0)
                         return -1;
                     if (*(++ptr) == 'E')
@@ -1069,7 +1071,8 @@ static int find_parens(const uschar *ptr, compile_data *cd, const uschar *name, 
                         for (;;)
                         {
                             while (*(++ptr) != 0 && *ptr != '\\')
-                                ;
+                            {
+                            };
                             if (*ptr == 0)
                                 return -1;
                             if (*(++ptr) == 'E')
@@ -1086,7 +1089,8 @@ static int find_parens(const uschar *ptr, compile_data *cd, const uschar *name, 
         if (xmode && *ptr == '#')
         {
             while (*(++ptr) != 0 && *ptr != '\n')
-                ;
+            {
+            };
             if (*ptr == 0)
                 return -1;
             continue;
@@ -1493,6 +1497,8 @@ static const uschar *find_bracket(const uschar *code, BOOL utf8, int number)
                         code += _pcre_utf8_table4[code[-1] & 0x3f];
                     break;
                 }
+#else
+            (void)(utf8);      /* Keep compiler happy by referencing function argument */
 #endif
         }
     }
@@ -1590,6 +1596,8 @@ static const uschar *find_recurse(const uschar *code, BOOL utf8)
                         code += _pcre_utf8_table4[code[-1] & 0x3f];
                     break;
                 }
+#else
+            (void)(utf8);      /* Keep compiler happy by referencing function argument */
 #endif
         }
     }
@@ -2050,7 +2058,7 @@ static BOOL get_othercase_range(unsigned int *cptr, unsigned int d, unsigned int
 
     for (c = *cptr; c <= d; c++)
     {
-        if ((othercase = _pcre_ucp_othercase(c)) != NOTACHAR)
+        if ((othercase = UCD_OTHERCASE(c)) != c)
             break;
     }
 
@@ -2062,7 +2070,7 @@ static BOOL get_othercase_range(unsigned int *cptr, unsigned int d, unsigned int
 
     for (++c; c <= d; c++)
     {
-        if (_pcre_ucp_othercase(c) != next)
+        if (UCD_OTHERCASE(c) != next)
             break;
         next++;
     }
@@ -2191,6 +2199,8 @@ static BOOL check_auto_possessive(int op_code, int item, BOOL utf8, uschar *utf8
             {
                 GETCHAR(item, utf8_char);
             }
+#else
+            (void)(utf8_char); /* Keep compiler happy by referencing function argument */
 #endif
             return item != next;
 
@@ -2215,7 +2225,7 @@ static BOOL check_auto_possessive(int op_code, int item, BOOL utf8, uschar *utf8
                     othercase = cd->fcc[next];
                 else
 #ifdef SUPPORT_UCP
-                    othercase = _pcre_ucp_othercase((unsigned int)next);
+                    othercase = UCD_OTHERCASE((unsigned int)next);
 #else
                     othercase = NOTACHAR;
 #endif
@@ -2240,7 +2250,7 @@ static BOOL check_auto_possessive(int op_code, int item, BOOL utf8, uschar *utf8
                     othercase = cd->fcc[next];
                 else
 #ifdef SUPPORT_UCP
-                    othercase = _pcre_ucp_othercase(next);
+                    othercase = UCD_OTHERCASE(next);
 #else
                     othercase = NOTACHAR;
 #endif
@@ -3459,7 +3469,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                         if ((options & PCRE_CASELESS) != 0)
                         {
                             unsigned int othercase;
-                            if ((othercase = _pcre_ucp_othercase(c)) != NOTACHAR)
+                            if ((othercase = UCD_OTHERCASE(c)) != c)
                             {
                                 *class_utf8data++ = XCL_SINGLE;
                                 class_utf8data += _pcre_ord2utf8(othercase, class_utf8data);
@@ -4368,7 +4378,8 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                 const uschar *name = ++ptr;
                 previous = NULL;
                 while ((cd->ctypes[*++ptr] & ctype_letter) != 0)
-                    ;
+                {
+                };
                 if (*ptr == ':')
                 {
                     *errorcodeptr = ERR59; /* Not supported */
@@ -5088,10 +5099,8 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     both phases.
 
                     If we are not at the pattern start, compile code to change the ims
-                    options if this setting actually changes any of them. We also pass the
-                    new setting back so that it can be put at the start of any following
-                    branches, and when this group ends (if we are in a group), a resetting
-                    item can be compiled. */
+                    options if this setting actually changes any of them, and reset the
+                    greedy defaults and the case value for firstbyte and reqbyte. */
 
                     if (*ptr == ')')
                     {
@@ -5099,7 +5108,6 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                             (lengthptr == NULL || *lengthptr == 2 + 2 * LINK_SIZE))
                         {
                             cd->external_options = newoptions;
-                            options = newoptions;
                         }
                         else
                         {
@@ -5108,17 +5116,17 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                                 *code++ = OP_OPT;
                                 *code++ = newoptions & PCRE_IMS;
                             }
-
-                            /* Change options at this level, and pass them back for use
-                            in subsequent branches. Reset the greedy defaults and the case
-                            value for firstbyte and reqbyte. */
-
-                            *optionsptr = options = newoptions;
                             greedy_default = ((newoptions & PCRE_UNGREEDY) != 0);
                             greedy_non_default = greedy_default ^ 1;
-                            req_caseopt = ((options & PCRE_CASELESS) != 0) ? REQ_CASELESS : 0;
+                            req_caseopt = ((newoptions & PCRE_CASELESS) != 0) ? REQ_CASELESS : 0;
                         }
 
+                        /* Change options at this level, and pass them back for use
+                        in subsequent branches. When not at the start of the pattern, this
+                        information is also necessary so that a resetting item can be
+                        compiled at the end of a group (if we are in a group). */
+
+                        *optionsptr = options = newoptions;
                         previous = NULL; /* This item can't be repeated */
                         continue;        /* It is complete */
                     }
@@ -6120,14 +6128,15 @@ Returns:        pointer to compiled data block, or NULL on error,
                 with errorptr and erroroffset set
 */
 
-PCRE_EXP_DEFN pcre *pcre_compile(const char *pattern, int options, const char **errorptr, int *erroroffset,
-                                 const unsigned char *tables)
+PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile(const char *pattern, int options, const char **errorptr,
+                                                      int *erroroffset, const unsigned char *tables)
 {
     return pcre_compile2(pattern, options, NULL, errorptr, erroroffset, tables);
 }
 
-PCRE_EXP_DEFN pcre *pcre_compile2(const char *pattern, int options, int *errorcodeptr, const char **errorptr,
-                                  int *erroroffset, const unsigned char *tables)
+PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int options, int *errorcodeptr,
+                                                       const char **errorptr, int *erroroffset,
+                                                       const unsigned char *tables)
 {
     real_pcre *re;
     int length = 1; /* For final END opcode */

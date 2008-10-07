@@ -62,7 +62,7 @@ Returns:      the number of the named parentheses, or a negative number
                 (PCRE_ERROR_NOSUBSTRING) if not found
 */
 
-int pcre_get_stringnumber(const pcre *code, const char *stringname)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_get_stringnumber(const pcre *code, const char *stringname)
 {
     int rc;
     int entrysize;
@@ -113,7 +113,8 @@ Returns:      the length of each entry, or a negative number
                 (PCRE_ERROR_NOSUBSTRING) if not found
 */
 
-int pcre_get_stringtable_entries(const pcre *code, const char *stringname, char **firstptr, char **lastptr)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_get_stringtable_entries(const pcre *code, const char *stringname,
+                                                                    char **firstptr, char **lastptr)
 {
     int rc;
     int entrysize;
@@ -230,7 +231,8 @@ Returns:         if successful:
                    PCRE_ERROR_NOSUBSTRING (-7) no such captured substring
 */
 
-int pcre_copy_substring(const char *subject, int *ovector, int stringcount, int stringnumber, char *buffer, int size)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_copy_substring(const char *subject, int *ovector, int stringcount,
+                                                           int stringnumber, char *buffer, int size)
 {
     int yield;
     if (stringnumber < 0 || stringnumber >= stringcount)
@@ -272,8 +274,9 @@ Returns:         if successful:
                    PCRE_ERROR_NOSUBSTRING (-7) no such captured substring
 */
 
-int pcre_copy_named_substring(const pcre *code, const char *subject, int *ovector, int stringcount,
-                              const char *stringname, char *buffer, int size)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_copy_named_substring(const pcre *code, const char *subject, int *ovector,
+                                                                 int stringcount, const char *stringname, char *buffer,
+                                                                 int size)
 {
     int n = get_first_set(code, stringname, ovector);
     if (n <= 0)
@@ -302,7 +305,8 @@ Returns:         if successful: 0
                    PCRE_ERROR_NOMEMORY (-6) failed to get store
 */
 
-int pcre_get_substring_list(const char *subject, int *ovector, int stringcount, const char ***listptr)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_get_substring_list(const char *subject, int *ovector, int stringcount,
+                                                               const char ***listptr)
 {
     int i;
     int size = sizeof(char *);
@@ -344,7 +348,7 @@ Argument:   the result of a previous pcre_get_substring_list()
 Returns:    nothing
 */
 
-void pcre_free_substring_list(const char **pointer)
+PCRE_EXP_DEFN void PCRE_CALL_CONVENTION pcre_free_substring_list(const char **pointer)
 {
     (pcre_free)((void *)pointer);
 }
@@ -374,7 +378,8 @@ Returns:         if successful:
                    PCRE_ERROR_NOSUBSTRING (-7) substring not present
 */
 
-int pcre_get_substring(const char *subject, int *ovector, int stringcount, int stringnumber, const char **stringptr)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_get_substring(const char *subject, int *ovector, int stringcount,
+                                                          int stringnumber, const char **stringptr)
 {
     int yield;
     char *substring;
@@ -418,8 +423,9 @@ Returns:         if successful:
                    PCRE_ERROR_NOSUBSTRING (-7) no such captured substring
 */
 
-int pcre_get_named_substring(const pcre *code, const char *subject, int *ovector, int stringcount,
-                             const char *stringname, const char **stringptr)
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_get_named_substring(const pcre *code, const char *subject, int *ovector,
+                                                                int stringcount, const char *stringname,
+                                                                const char **stringptr)
 {
     int n = get_first_set(code, stringname, ovector);
     if (n <= 0)
@@ -438,7 +444,7 @@ Argument:   the result of a previous pcre_get_substring()
 Returns:    nothing
 */
 
-void pcre_free_substring(const char *pointer)
+PCRE_EXP_DEFN void PCRE_CALL_CONVENTION pcre_free_substring(const char *pointer)
 {
     (pcre_free)((void *)pointer);
 }
