@@ -1126,11 +1126,11 @@ static void deleteselected(ConsoleData p)
     }
 }
 
+/* cmd is in native encoding */
 void consolecmd(control c, const char *cmd)
 {
     ConsoleData p = getdata(c);
 
-    const char *ch;
     int i;
     if (p->sel)
     {
@@ -1141,8 +1141,14 @@ void consolecmd(control c, const char *cmd)
     }
     storekey(c, BEGINLINE);
     storekey(c, KILLRESTOFLINE);
-    for (ch = cmd; *ch; ch++)
-        storekey(c, *ch);
+    {
+        size_t sz = (strlen(cmd) + 1) * sizeof(wchar_t);
+        wchar_t *wcs = (wchar_t *)alloca(sz);
+        memset(wcs, 0, sz);
+        mbstowcs(wcs, cmd, sz - 1);
+        for (i = 0; wcs[i]; i++)
+            storekey(c, wcs[i]);
+    }
     storekey(c, '\n');
     /* if we are editing we save the actual line */
     if (p->r > -1)
