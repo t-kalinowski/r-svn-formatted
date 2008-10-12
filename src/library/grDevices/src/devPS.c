@@ -3144,7 +3144,7 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
                     }
         }
         PostScriptText2(fp, x, y, str + nout, n - nout, relative, rot, gc, dd);
-        fprintf(fp, " tc\n");
+        fprintf(fp, " gr\n");
     }
     else
         PostScriptText(fp, x, y, str, strlen(str), xc, rot, gc, dd);
