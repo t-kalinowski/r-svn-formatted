@@ -898,8 +898,8 @@ void readconsolecfg()
         sprintf(buf, "LANGUAGE=%s", gui.language);
         putenv(buf);
     }
-    setconsoleoptions(fn, sty, gui.pointsize, gui.crows, gui.ccols, gui.cx, gui.cy, gui.fg, gui.user, gui.bg, gui.hlt,
-                      gui.prows, gui.pcols, gui.pagerMultiple, gui.setWidthOnResize, gui.cbb, gui.cbl, gui.buffered);
+    setconsoleoptions(fn, sty, gui.pointsize, gui.crows, gui.ccols, gui.cx, gui.cy, gui.guiColors, gui.prows, gui.pcols,
+                      gui.pagerMultiple, gui.setWidthOnResize, gui.cbb, gui.cbl, gui.buffered);
 }
 
 static void dropconsole(control m, char *fn)

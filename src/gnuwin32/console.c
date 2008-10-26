@@ -317,11 +317,16 @@ static void xbuffixl(xbuf p)
 
 /* console */
 
-rgb consolebg = White, consolefg = Black, consoleuser = gaRed, pagerhighlight = gaRed;
+rgb guiColors[numGuiColors] = {
+    White, Black, gaRed, /* consolebg, consolefg, consoleuser, */
+    White, Black, gaRed, /* pagerbg, pagerfg, pagerhighlight,  */
+    White, Black, gaRed, /* dataeditbg, dataeditfg, dataedituser */
+    White, Black         /* editorbg, editorfg                 */
+};
 
 extern int R_HistorySize; /* from Defn.h */
 
-ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int buflines, rgb fg, rgb ufg, rgb bg, int kind,
+ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int buflines, rgb *guiColors, int kind,
                            int buffered)
 {
     ConsoleData p;
@@ -355,9 +360,8 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
     p->bm = NULL;
     p->rows = rows;
     p->cols = cols;
-    p->fg = fg;
-    p->bg = bg;
-    p->ufg = ufg;
+    for (int i = 0; i < numGuiColors; i++)
+        p->guiColors[i] = guiColors[i];
     p->f = f;
     FH = fontheight(f);
     FW = fontwidth(f);
@@ -541,6 +545,18 @@ static int writeline(ConsoleData p, int i, int j)
     int insel, len, col1, d;
     int c1, c2, c3, x0, y0, x1, y1;
     rect r;
+    int bg, fg, highlight, base;
+
+    if (p->kind == CONSOLE)
+        base = consolebg;
+    else if (p->kind == PAGER)
+        base = pagerbg;
+    else
+        base = dataeditbg;
+
+    bg = p->guiColors[base];
+    fg = p->guiColors[base + 1];
+    highlight = p->guiColors[base + 2];
 
     if ((i < 0) || (i >= NUMLINES))
         return 0;
@@ -574,26 +590,26 @@ static int writeline(ConsoleData p, int i, int j)
     insel = p->sel ? ((i - p->my0) * (i - p->my1)) : 1;
     if (insel < 0)
     {
-        WLHELPER(0, col1, White, DarkBlue);
+        WLHELPER(0, col1, bg, fg);
         return len;
     }
     if ((USER(i) >= 0) && (USER(i) < FC + COLS))
     {
         if (USER(i) <= FC)
-            WLHELPER(0, col1, p->ufg, p->bg);
+            WLHELPER(0, col1, highlight, bg);
         else
         {
             d = USER(i) - FC;
-            WLHELPER(0, d - 1, p->fg, p->bg);
-            WLHELPER(d, col1, p->ufg, p->bg);
+            WLHELPER(0, d - 1, fg, bg);
+            WLHELPER(d, col1, highlight, bg);
         }
     }
     else if (USER(i) == -2)
     {
-        WLHELPER(0, col1, pagerhighlight, p->bg);
+        WLHELPER(0, col1, highlight, bg);
     }
     else
-        WLHELPER(0, col1, p->fg, p->bg);
+        WLHELPER(0, col1, fg, bg);
     /* This is the cursor, and it may need to be variable-width */
     if ((p->r >= 0) && (CURCOL >= FC) && (CURCOL < FC + COLS) && (i == NUMLINES - 1) &&
         (p->sel == 0 || !intersect_input(p, 0)))
@@ -601,7 +617,7 @@ static int writeline(ConsoleData p, int i, int j)
         if (!p->overwrite)
         {
             r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, FW / 4, FH);
-            gfillrect(p->bm, p->ufg, r);
+            gfillrect(p->bm, highlight, r);
         }
         else if (mbcslocale)
         { /* determine the width of the current char */
@@ -618,11 +634,11 @@ static int writeline(ConsoleData p, int i, int j)
             w0 = wc ? Ri18n_wcwidth(wc) : 1;
             nn[0] = wc;
             r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
-            gfillrect(p->bm, p->ufg, r);
-            gdrawwcs(p->bm, p->f, p->bg, pt(r.x, r.y), nn);
+            gfillrect(p->bm, highlight, r);
+            gdrawwcs(p->bm, p->f, bg, pt(r.x, r.y), nn);
         }
         else
-            WLHELPER(CURCOL - FC, CURCOL - FC, p->bg, p->ufg);
+            WLHELPER(CURCOL - FC, CURCOL - FC, bg, highlight);
     }
     if (insel != 0)
         return len;
@@ -685,7 +701,7 @@ static int writeline(ConsoleData p, int i, int j)
     }
     else
         c2 = COLS - 1;
-    WLHELPER(c1, c2, White, DarkBlue);
+    WLHELPER(c1, c2, bg, fg);
     return len;
 }
 
@@ -700,7 +716,10 @@ void drawconsole(control c, rect r) /* r is unused here */
         return;
     ; /* This is a workaround for PR#1711.
 BM should never be null here */
-    gfillrect(BM, p->bg, getrect(BM));
+    if (p->kind == PAGER)
+        gfillrect(BM, p->guiColors[pagerbg], getrect(BM));
+    else
+        gfillrect(BM, p->guiColors[consolebg], getrect(BM));
     if (!ll)
         return;
     ;
@@ -762,13 +781,19 @@ void setfirstvisible(control c, int fv)
     if (ds == 1)
     {
         gscroll(BM, pt(0, -FH), RMLINES(0, ROWS - 1));
-        gfillrect(BM, p->bg, RLINE(ROWS - 1));
+        if (p->kind == PAGER)
+            gfillrect(BM, p->guiColors[pagerbg], RLINE(ROWS - 1));
+        else
+            gfillrect(BM, p->guiColors[consolebg], RLINE(ROWS - 1));
         WRITELINE(fv + ROWS - 1, ROWS - 1);
     }
     else if (ds == -1)
     {
         gscroll(BM, pt(0, FH), RMLINES(0, ROWS - 1));
-        gfillrect(BM, p->bg, RLINE(0));
+        if (p->kind == PAGER)
+            gfillrect(BM, p->guiColors[pagerbg], RLINE(0));
+        else
+            gfillrect(BM, p->guiColors[consolebg], RLINE(0));
         WRITELINE(fv, 0);
     }
     RSHOW(getrect(c));
@@ -2222,9 +2247,9 @@ int pagerrow = 25, pagercol = 80;
 int pagerMultiple = 1, haveusedapager = 0;
 int consolebufb = DIMLBUF, consolebufl = MLBUF, consolebuffered = 1;
 
-void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, int cols, int consx, int consy, rgb nfg,
-                       rgb nufg, rgb nbg, rgb high, int pgr, int pgc, int multiplewindows, int widthonresize,
-                       int bufbytes, int buflines, int buffered)
+void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, int cols, int consx, int consy,
+                       rgb *nguiColors, int pgr, int pgc, int multiplewindows, int widthonresize, int bufbytes,
+                       int buflines, int buffered)
 {
     char msg[LF_FACESIZE + 128];
     strncpy(fontname, fnname, LF_FACESIZE);
@@ -2257,10 +2282,8 @@ void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, in
     consolec = cols;
     consolex = consx;
     consoley = consy;
-    consolefg = nfg;
-    consoleuser = nufg;
-    consolebg = nbg;
-    pagerhighlight = high;
+    for (int i = 0; i < numGuiColors; i++)
+        guiColors[i] = nguiColors[i];
     pagerrow = pgr;
     pagercol = pgc;
     pagerMultiple = multiplewindows;
@@ -2513,8 +2536,8 @@ console newconsole(char *name, int flags)
     console c;
     ConsoleData p;
 
-    p = newconsoledata((consolefn) ? consolefn : FixedFont, consoler, consolec, consolebufb, consolebufl, consolefg,
-                       consoleuser, consolebg, CONSOLE, consolebuffered);
+    p = newconsoledata((consolefn) ? consolefn : FixedFont, consoler, consolec, consolebufb, consolebufl, guiColors,
+                       CONSOLE, consolebuffered);
     if (!p)
         return NULL;
     c = (console)newwindow(name, rect(consolex, consoley, WIDTH, HEIGHT), flags | TrackMouse | VScrollbar | HScrollbar);
@@ -2527,7 +2550,7 @@ console newconsole(char *name, int flags)
     gchangescrollbar(c, HWINSB, 0, COLS - 1, COLS, 1);
     BORDERX = (WIDTH - COLS * FW) / 2;
     BORDERY = (HEIGHT - ROWS * FH) / 2;
-    setbackground(c, consolebg);
+    setbackground(c, guiColors[consolebg]);
     BM = newbitmap(WIDTH, HEIGHT, 2);
     if (!c || !BM)
     {
