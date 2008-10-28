@@ -2953,7 +2953,11 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     else if (xd->type == TIFF)
     {
         if (xd->npages > 1)
+        {
+            xd->npages--;
             BM_Close_bitmap(xd);
+            xd->npages++;
+        }
     }
 #endif
 #ifdef HAVE_CAIRO_SVG
@@ -3098,6 +3102,8 @@ static void BM_Close(pDevDesc dd)
             char buf[PATH_MAX];
             snprintf(buf, PATH_MAX, xd->filename, xd->npages);
             res = cairo_surface_write_to_png(xd->cs, R_ExpandFileName(buf));
+            if (res != CAIRO_STATUS_SUCCESS)
+                warning("cairo error '%s'", cairo_status_to_string(res));
         }
     }
     if (xd->fp)
