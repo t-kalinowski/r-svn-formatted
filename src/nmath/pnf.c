@@ -26,7 +26,6 @@
 #include "dpq.h"
 
 double pnf(double x, double df1, double df2, double ncp, int lower_tail, int log_p)
-
 {
     double y;
 #ifdef IEEE_754

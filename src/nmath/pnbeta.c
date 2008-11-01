@@ -11,7 +11,7 @@
  *
  *  Auxiliary routines required:
  *	lgamma - log-gamma function
- *      pbeta  - incomplete-beta function
+ *      pbeta  - incomplete-beta function {nowadays: pbeta_raw() -> bratio()}
  */
 
 #include "nmath.h"

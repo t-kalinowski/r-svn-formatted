@@ -46,9 +46,7 @@ double qnt(double p, double df, double ncp, int lower_tail, int log_p)
 
     R_Q_P01_boundaries(p, ML_NEGINF, ML_POSINF);
 
-    p = R_D_qIv(p);
-    if (!lower_tail)
-        p = 1 - p;
+    p = R_DT_qIv(p);
 
     /* Invert pnt(.) :
      * 1. finding an upper and lower bound */
