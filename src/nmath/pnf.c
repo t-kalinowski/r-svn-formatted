@@ -45,5 +45,5 @@ double pnf(double x, double df1, double df2, double ncp, int lower_tail, int log
         return pnchisq(x * df1, df1, ncp, lower_tail, log_p);
 
     y = (df1 / df2) * x;
-    return pnbeta(y / (1 + y), df1 / 2., df2 / 2., ncp, lower_tail, log_p);
+    return pnbeta2(y / (1. + y), 1. / (1. + y), df1 / 2., df2 / 2., ncp, lower_tail, log_p);
 }
