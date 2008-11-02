@@ -357,12 +357,12 @@ register const int doextend;
         }
         if (doaccess && access(name, R_OK) != 0)
         {
-            Rf_warning("unknwon timezone '%s'", sname);
+            Rf_warning("unknown timezone '%s'", sname);
             return -1;
         }
         if ((fid = open(name, OPEN_MODE)) == -1)
         {
-            Rf_warning("unknwon timezone '%s'", sname);
+            Rf_warning("unknown timezone '%s'", sname);
             return -1;
         }
     }
