@@ -1166,6 +1166,7 @@ void consolecmd(control c, const char *cmd)
     }
     storekey(c, BEGINLINE);
     storekey(c, KILLRESTOFLINE);
+    if (isUnicodeWindow(c))
     {
         size_t sz = (strlen(cmd) + 1) * sizeof(wchar_t);
         wchar_t *wcs = (wchar_t *)alloca(sz);
@@ -1174,8 +1175,15 @@ void consolecmd(control c, const char *cmd)
         for (i = 0; wcs[i]; i++)
             storekey(c, wcs[i]);
     }
+    else
+    {
+        const char *ch;
+        for (ch = cmd; *ch; ch++)
+            storekey(c, (unsigned char)*ch);
+    }
     storekey(c, '\n');
-    /* if we are editing we save the actual line */
+    /* if we are editing we save the actual line
+       FIXME: not right if Unicode */
     if (p->r > -1)
     {
         char buf[2000], *cp; /* maximum 2 bytes/char */
