@@ -3002,7 +3002,7 @@ static void PostScriptText2(FILE *fp, double x, double y, const char *str, int n
 
     if (relative)
     {
-        fprintf(fp, "\n%.2f ", x);
+        fprintf(fp, "\n%.3f ", x);
         PostScriptWriteString(fp, str, nb);
         fprintf(fp, " tb");
     }
