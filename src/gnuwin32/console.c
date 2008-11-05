@@ -2447,11 +2447,13 @@ void consoleprint(console c)
     setcursor(cur);
 }
 
+FILE *R_wfopen(const wchar_t *filename, const wchar_t *mode);
+
 void consolesavefile(console c, int pager)
 {
     ConsoleData p = getdata(c);
 
-    char *fn;
+    wchar_t *fn;
     cursor cur;
     FILE *fp;
     int x0, y0, x1, y1, cl;
@@ -2459,13 +2461,13 @@ void consolesavefile(console c, int pager)
 
     setuserfilter("Text files (*.txt)\0*.txt\0All files (*.*)\0*.*\0\0");
     if (p->sel)
-        fn = askfilesave(G_("Save selection to"), "lastsave.txt");
+        fn = askfilesaveW(G_("Save selection to"), "lastsave.txt");
     else
-        fn = askfilesave(G_("Save console contents to"), "lastsave.txt");
+        fn = askfilesaveW(G_("Save console contents to"), "lastsave.txt");
     show(c);
     if (fn)
     {
-        fp = R_fopen(fn, "wt");
+        fp = R_wfopen(fn, L"wt");
         if (!fp)
             return;
         cur = currentcursor();
