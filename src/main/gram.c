@@ -3035,7 +3035,7 @@ static SEXP xxdefun(SEXP fname, SEXP formals, SEXP body)
             /*  If the function ends with an endline comment,  e.g.
 
             function()
-                print("Hey") # This comment
+                    print("Hey") # This comment
 
             we need some special handling to keep it from getting
             chopped off. Normally, we will have read one token too
@@ -3904,11 +3904,11 @@ static void yyerror(char *s)
     char *expecting;
 #if 0
  /* these are just here to trigger the internationalization */
-    _("input");
+    _("input"); 	
     _("end of input");
     _("string constant");
     _("numeric constant");
-    _("symbol");
+    _("symbol");	
     _("assignment");
     _("end of line");
 #endif
@@ -4157,7 +4157,7 @@ static int NumericValue(int c)
 	if(c != 'L') xxungetc(c);
 	if (GenerateCode) {
 	    double a = R_atof(yytext);
-	    int b = (int) a;
+	    int b = (int) a; 
 	    yylval = (a != (double) b) ? mkFloat(yytext) : mkInt(yytext);
 	} else yylval = R_NilValue;
 #endif
@@ -4201,7 +4201,9 @@ static int NumericValue(int c)
    string.  Needs wide-char support.
 */
 #ifdef SUPPORT_MBCS
+#ifdef Win32
 #define USE_UTF8_IF_POSSIBLE
+#endif
 #endif
 
 #ifdef USE_UTF8_IF_POSSIBLE
@@ -4465,27 +4467,17 @@ static int StringValue(int c, Rboolean forSymbol)
                     else
                         CTEXT_PUSH(c);
                 }
-                WTEXT_PUSH(val);
                 res = ucstomb(buff, val);
                 if ((int)res <= 0)
                 {
-#ifdef USE_UTF8_IF_POSSIBLE
-                    if (!forSymbol)
-                    {
-                        use_wcs = TRUE;
-                    }
+                    if (delim)
+                        error(_("invalid \\U{xxxxxxxx} sequence (line %d)"), xxlineno);
                     else
-#endif
-                    {
-                        if (delim)
-                            error(_("invalid \\U{xxxxxxxx} sequence (line %d)"), xxlineno);
-                        else
-                            error(_("invalid \\Uxxxxxxxx sequence (line %d)"), xxlineno);
-                    }
+                        error(_("invalid \\Uxxxxxxxx sequence (line %d)"), xxlineno);
                 }
-                else
-                    for (i = 0; i < res; i++)
-                        STEXT_PUSH(buff[i]);
+                for (i = 0; i < res; i++)
+                    STEXT_PUSH(buff[i]);
+                WTEXT_PUSH(val);
                 continue;
 #endif
             }
