@@ -1183,12 +1183,19 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
 #ifdef Win32
-    ienc = getCharCE(STRING_ELT(scmd, 0));
-    if (ienc == CE_UTF8)
-        file = CHAR(STRING_ELT(scmd, 0));
+    if (!strIsASCII(CHAR(STRING_ELT(scmd, 0))))
+    {
+        ienc = CE_UTF8;
+        file = translateCharUTF8(STRING_ELT(scmd, 0));
+    }
     else
-#endif
+    {
+        ienc = CE_NATIVE;
         file = translateChar(STRING_ELT(scmd, 0));
+    }
+#else
+    file = translateChar(STRING_ELT(scmd, 0));
+#endif
     sopen = CADR(args);
     if (!isString(sopen) || length(sopen) != 1)
         error(_("invalid '%s' argument"), "open");
@@ -4756,12 +4763,22 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("only first element of 'description' argument used"));
     url = CHAR(STRING_ELT(scmd, 0)); /* ASCII */
 #ifdef Win32
-    ienc = getCharCE(STRING_ELT(scmd, 0));
-    if (ienc == CE_UTF8)
-        url = CHAR(STRING_ELT(scmd, 0));
+    if (PRIMVAL(op) && !strIsASCII(CHAR(STRING_ELT(scmd, 0))))
+    {
+        ienc = CE_UTF8;
+        url = translateCharUTF8(STRING_ELT(scmd, 0));
+    }
     else
+    {
+        ienc = getCharCE(STRING_ELT(scmd, 0));
+        if (ienc == CE_UTF8)
+            url = CHAR(STRING_ELT(scmd, 0));
+        else
+            url = translateChar(STRING_ELT(scmd, 0));
+    }
+#else
+    url = translateChar(STRING_ELT(scmd, 0));
 #endif
-        url = translateChar(STRING_ELT(scmd, 0));
 #ifdef HAVE_INTERNET
     if (strncmp(url, "http://", 7) == 0)
         type = HTTPsh;

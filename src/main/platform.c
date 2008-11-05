@@ -321,11 +321,7 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(pg) >= 1 || !isNull(STRING_ELT(pg, 0)))
     {
         SEXP pg0 = STRING_ELT(pg, 0);
-#ifdef Win32
-        pager = acopy_string(reEnc(CHAR(pg0), getCharCE(pg0), CE_UTF8, 1));
-#else
         pager = acopy_string(CHAR(pg0));
-#endif
     }
     else
         pager = "";
@@ -1201,6 +1197,7 @@ SEXP attribute_hidden do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #define CHOOSEBUFSIZE 1024
 
+#ifndef Win32
 SEXP attribute_hidden do_filechoose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int _new, len;
@@ -1211,12 +1208,9 @@ SEXP attribute_hidden do_filechoose(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("file choice cancelled"));
     if (len >= CHOOSEBUFSIZE - 1)
         error(_("file name too long"));
-#ifdef WIn32
-    return mkString(reEnc(R_ExpandFileName(buf), CE_NATIVE, CE_UTF8, 1));
-#else
     return mkString(R_ExpandFileName(buf));
-#endif
 }
+#endif
 
 /* needed for access, and perhaps for realpath */
 #ifdef HAVE_UNISTD_H
