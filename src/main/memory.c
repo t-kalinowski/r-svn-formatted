@@ -3410,7 +3410,7 @@ int Seql(SEXP a, SEXP b)
         return 1;
     if (LENGTH(a) != LENGTH(b))
         return 0;
-    if (IS_CACHED(a) && IS_CACHED(b) && (!ENC_KNOWN(a) || !ENC_KNOWN(b) || ENC_KNOWN(a) == ENC_KNOWN(b)))
+    if (IS_CACHED(a) && IS_CACHED(b) && ENC_KNOWN(a) == ENC_KNOWN(b))
         return 0;
     return !strcmp(translateCharUTF8(a), translateCharUTF8(b));
 }
@@ -3421,15 +3421,15 @@ int Seql(SEXP a, SEXP b)
 int Seql(SEXP a, SEXP b)
 {
     /* The only case where pointer comparisons do not suffice is where
-      we have two strings in different marked encodings, since in
-      R > 2.8.0 ASCII strings in the cache are never marked.
-    */
+      we have two strings in different encodings (which must be
+      non-ASCII strings). Note that one of the strings could be marked
+      as unknown. */
     if (a == b)
         return 1;
     if (LENGTH(a) != LENGTH(b))
         return 0;
     /* Leave this to compiler to optimize */
-    if (IS_CACHED(a) && IS_CACHED(b) && (!ENC_KNOWN(a) || !ENC_KNOWN(b) || ENC_KNOWN(a) == ENC_KNOWN(b)))
+    if (IS_CACHED(a) && IS_CACHED(b) && ENC_KNOWN(a) == ENC_KNOWN(b))
         return 0;
     return !strcmp(translateChar(a), translateChar(b));
 }
