@@ -1492,7 +1492,7 @@ static Rboolean src2buff(SEXP sv, int k, LocalParseData *d)
     SEXP t;
     int i, n;
 
-    if (length(sv) > k && !isNull(t = VECTOR_ELT(sv, k)))
+    if (TYPEOF(sv) == VECSXP && length(sv) > k && !isNull(t = VECTOR_ELT(sv, k)))
     {
         PROTECT(t);
 
@@ -1528,7 +1528,11 @@ static void vec2buff(SEXP v, LocalParseData *d)
         nv = R_NilValue;
 
     if (d->opts & USESOURCE)
+    {
         sv = getAttrib(v, R_SrcrefSymbol);
+        if (TYPEOF(sv) != VECSXP)
+            sv = R_NilValue;
+    }
     else
         sv = R_NilValue;
 
