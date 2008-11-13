@@ -5021,7 +5021,7 @@ again:
             while (tok == '\n')
                 tok = token();
 
-            /* If we enounter "}", ")" or "]" then */
+            /* If we encounter "}", ")" or "]" then */
             /* we know that all immediately preceding */
             /* "if" bodies have been terminated. */
             /* The corresponding "i" values are */
