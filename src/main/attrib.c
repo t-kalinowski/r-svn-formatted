@@ -178,6 +178,8 @@ SEXP attribute_hidden getAttrib0(SEXP vec, SEXP name)
 
 SEXP getAttrib(SEXP vec, SEXP name)
 {
+    if (TYPEOF(vec) == CHARSXP)
+        error("cannot have attributes on a CHARSXP");
     /* pre-test to avoid expensive operations if clearly not needed -- LT */
     if (ATTRIB(vec) == R_NilValue && !(TYPEOF(vec) == LISTSXP || TYPEOF(vec) == LANGSXP))
         return R_NilValue;
@@ -351,6 +353,8 @@ static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
 {
     SEXP s, t;
 
+    if (TYPEOF(vec) == CHARSXP)
+        error("cannot set attribute on a CHARSXP");
     PROTECT(vec);
     PROTECT(name);
     PROTECT(val);
@@ -380,6 +384,8 @@ static SEXP installAttrib(SEXP vec, SEXP name, SEXP val)
 static SEXP removeAttrib(SEXP vec, SEXP name)
 {
     SEXP t;
+    if (TYPEOF(vec) == CHARSXP)
+        error("cannot set attribute on a CHARSXP");
     if (name == R_NamesSymbol && isList(vec))
     {
         for (t = vec; t != R_NilValue; t = CDR(t))
