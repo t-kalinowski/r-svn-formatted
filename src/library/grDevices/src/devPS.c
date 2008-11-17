@@ -7184,7 +7184,7 @@ static void PDFWriteT1KerningString(FILE *fp, const char *str, FontMetricInfo *m
 
     n = strlen(str);
     if (n > sizeof(ary_buf) / sizeof(int))
-        ary = Calloc(strlen(str), int);
+        ary = Calloc(n, int);
     else
         ary = ary_buf;
 
@@ -7205,6 +7205,7 @@ static void PDFWriteT1KerningString(FILE *fp, const char *str, FontMetricInfo *m
                 break;
             }
     }
+    ary[i] = 0;
     if (haveKerning)
     {
         fputc('[', fp);
