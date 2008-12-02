@@ -1041,7 +1041,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         PROTECT(ans = asCharacterFactor(val));
         val = ans;
-        UNPROTECT(2);
+        UNPROTECT(2); /* ans and val from above */
         PROTECT(val);
     }
 
