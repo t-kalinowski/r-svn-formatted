@@ -939,6 +939,8 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         UNPROTECT(1);
         PROTECT(val = newval);
     }
+    if (k != length(val))
+        error(_("length of 'dimnames' [%d] must match that of 'dims' [%d]"), length(val), k);
     for (i = 0; i < k; i++)
     {
         SEXP _this = VECTOR_ELT(val, i);
