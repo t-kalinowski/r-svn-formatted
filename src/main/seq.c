@@ -222,6 +222,11 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     default:
         UNIMPLEMENTED_TYPE("rep2", s);
     }
+    if (IS_S4_OBJECT(s))
+    { /* e.g. contains = "list" */
+        setAttrib(a, R_ClassSymbol, getAttrib(s, R_ClassSymbol));
+        SET_S4_OBJECT(a);
+    }
     if (inherits(s, "factor"))
     {
         SEXP tmp;
@@ -243,6 +248,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     return a;
 }
 
+/* called in do_rep_int() only */
 static SEXP rep1(SEXP s, SEXP ncopy)
 {
     int i, ns, na, nc;
@@ -270,6 +276,12 @@ static SEXP rep1(SEXP s, SEXP ncopy)
     else
         a = allocList(na);
     PROTECT(a);
+
+    if (IS_S4_OBJECT(s))
+    { /* e.g. contains = "list" */
+        setAttrib(a, R_ClassSymbol, getAttrib(s, R_ClassSymbol));
+        SET_S4_OBJECT(a);
+    }
 
     switch (TYPEOF(s))
     {
@@ -444,6 +456,11 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 done:
     ans = do_subset_dflt(R_NilValue, R_NilValue, list2(x, ind), rho);
+    if (IS_S4_OBJECT(x))
+    { /* e.g. contains = "list" */
+        setAttrib(ans, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
+        SET_S4_OBJECT(ans);
+    }
     /* 1D arrays get dimensions preserved */
     setAttrib(ans, R_DimSymbol, R_NilValue);
     UNPROTECT(nprotect);
