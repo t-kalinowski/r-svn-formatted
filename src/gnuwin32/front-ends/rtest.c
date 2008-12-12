@@ -26,7 +26,7 @@
 #include <Rembedded.h>
 #include <R_ext/RStartup.h>
 /* for askok and askyesnocancel */
-#include <graphapp/graphapp.h>
+#include <graphapp.h>
 
 /* for signal-handling code */
 #include <psignal.h>
@@ -53,7 +53,7 @@ void myWriteConsoleEx(const char *buf, int len, int otype)
     printf("%s", buf);
 }
 
-void myCallBack()
+void myCallBack(void)
 {
     /* called during i/o, eval, graphics in ProcessEvents */
 }
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     Rp->home = getRUser();
     Rp->CharacterMode = LinkDLL;
     Rp->ReadConsole = myReadConsole;
-    Rp->WriteConsole = NULL; /* for illustration purposes we use more flexibe WriteConsoleEx */
+    Rp->WriteConsole = NULL; /* for illustration purposes we use more flexible WriteConsoleEx */
     Rp->WriteConsoleEx = myWriteConsoleEx;
     Rp->CallBack = myCallBack;
     Rp->ShowMessage = askok;
