@@ -340,6 +340,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Stangle.sh");
             }
+            else if (strcmp(p, "rtags") == 0)
+            {
+                strcpy(cmd, "sh ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/rtags.sh");
+            }
             else if (strcmp(p, "config") == 0)
             {
                 strcpy(cmd, "sh ");
