@@ -2253,8 +2253,9 @@ static int xxungetc(int c)
     else
         xxcolno--;
 
-    R_ParseContext[R_ParseContextLast--] = '\0';
-    R_ParseContextLast = R_ParseContextLast % PARSE_CONTEXT_SIZE;
+    R_ParseContext[R_ParseContextLast] = '\0';
+    /* Mac OS X requires us to keep this non-negative */
+    R_ParseContextLast = (R_ParseContextLast + PARSE_CONTEXT_SIZE - 1) % PARSE_CONTEXT_SIZE;
     if (npush >= 16)
         return EOF;
     pushback[npush++] = c;
