@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- * $Id: triostr.c,v 1.30 2005/11/26 14:47:54 breese Exp $
+ * $Id: triostr.c,v 1.34 2008/11/09 12:17:39 breese Exp $
  *
  * Copyright (C) 2001 Bjorn Reese and Daniel Stenberg.
  *
@@ -100,12 +100,18 @@
 
 #if defined(TRIO_PLATFORM_WIN32)
 #define USE_STRCASECMP
+#if defined(TRIO_PLATFORM_WINCE)
+#define strcasecmp(x, y) _stricmp(x, y)
+#else
 #define strcasecmp(x, y) strcmpi(x, y)
 #endif
+#endif
 
+#if !defined(HAVE_CONFIG_H)
 #if !(defined(TRIO_PLATFORM_SUNOS))
-#define USE_TOLOWER
-#define USE_TOUPPER
+#define HAVE_TOLOWER
+#define HAVE_TOUPPER
+#endif
 #endif
 
 #if defined(USE_MATH)
@@ -150,7 +156,7 @@ struct _trio_string_t
  */
 
 #if !defined(TRIO_EMBED_STRING)
-static TRIO_CONST char rcsid[] = "@(#)$Id: triostr.c,v 1.30 2005/11/26 14:47:54 breese Exp $";
+static TRIO_CONST char rcsid[] = "@(#)$Id: triostr.c,v 1.34 2008/11/09 12:17:39 breese Exp $";
 #endif
 
 /*************************************************************************
@@ -259,7 +265,7 @@ TRIO_PRIVATE_STRING BOOLEAN_T internal_string_grow_to TRIO_ARGS2((self, length),
 
 TRIO_PRIVATE_STRING TRIO_INLINE int internal_to_upper TRIO_ARGS1((source), int source)
 {
-#if defined(USE_TOUPPER)
+#if defined(HAVE_TOUPPER)
 
     return toupper(source);
 
@@ -316,6 +322,29 @@ TRIO_PUBLIC_STRING void trio_destroy TRIO_ARGS1((string), char *string)
 TRIO_PUBLIC_STRING size_t trio_length TRIO_ARGS1((string), TRIO_CONST char *string)
 {
     return strlen(string);
+}
+
+#endif
+
+/**
+   Count at most @p max characters in a string.
+
+   @param string String to measure.
+   @param max Maximum number of characters to count.
+   @return The maximum value of @p max and number of characters in @p string.
+*/
+#if defined(TRIO_FUNC_LENGTH)
+
+TRIO_PUBLIC_STRING size_t trio_length_max TRIO_ARGS2((string, max), TRIO_CONST char *string, size_t max)
+{
+    size_t i;
+
+    for (i = 0; i < max; ++i)
+    {
+        if (string[i] == 0)
+            break;
+    }
+    return i;
 }
 
 #endif
@@ -1229,7 +1258,7 @@ TRIO_PUBLIC_STRING long trio_to_long TRIO_ARGS3((string, endp, base), TRIO_CONST
 
 TRIO_PUBLIC_STRING int trio_to_lower TRIO_ARGS1((source), int source)
 {
-#if defined(USE_TOLOWER)
+#if defined(HAVE_TOLOWER)
 
     return tolower(source);
 
