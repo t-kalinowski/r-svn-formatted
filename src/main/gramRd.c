@@ -2965,6 +2965,7 @@ static int mkMarkup(int c)
             TEXT_PUSH('\0');
             retval = TEXT;
             c = xxgetc();
+            break;
         }
         else
         {
