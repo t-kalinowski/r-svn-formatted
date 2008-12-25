@@ -3021,8 +3021,7 @@ static void PostScriptText2(FILE *fp, double x, double y, const char *str, int n
 }
 
 #ifdef SUPPORT_MBCS
-static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int strlen, double xc, double yc,
-                              double rot)
+static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int strlen, double xc, double rot)
 {
     unsigned char *p = (unsigned char *)str;
     int i;
@@ -3041,15 +3040,6 @@ static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int
         fprintf(fp, " 1");
     else
         fprintf(fp, " %.2f", xc);
-
-    if (yc == 0)
-        fprintf(fp, " 0");
-    else if (yc == 0.5)
-        fprintf(fp, " .5");
-    else if (yc == 1)
-        fprintf(fp, " 1");
-    else
-        fprintf(fp, " %.2f", yc);
 
     if (rot == 0)
         fprintf(fp, " 0");
@@ -4444,7 +4434,7 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
             if (R_OPAQUE(gc->col))
             {
                 SetColor(gc->col, dd);
-                PostScriptHexText(pd->psfp, x, y, str, strlen(str), hadj, 0.0, rot);
+                PostScriptHexText(pd->psfp, x, y, str, strlen(str), hadj, rot);
             }
             return;
         }
@@ -4489,7 +4479,7 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
                 if (R_OPAQUE(gc->col))
                 {
                     SetColor(gc->col, dd);
-                    PostScriptHexText(pd->psfp, x, y, (char *)buf, nb - o_len, hadj, 0.0, rot);
+                    PostScriptHexText(pd->psfp, x, y, (char *)buf, nb - o_len, hadj, rot);
                 }
             }
             return;
