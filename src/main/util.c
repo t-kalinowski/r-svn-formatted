@@ -451,13 +451,13 @@ SEXP nthcdr(SEXP s, int n)
         while (n-- > 0)
         {
             if (s == R_NilValue)
-                error(_("\"nthcdr\" list shorter than %d"), n);
+                error(_("'nthcdr' list shorter than %d"), n);
             s = CDR(s);
         }
         return s;
     }
     else
-        error(_("\"nthcdr\" needs a list to CDR down"));
+        error(_("'nthcdr' needs a list to CDR down"));
     return R_NilValue; /* for -Wall */
 }
 
