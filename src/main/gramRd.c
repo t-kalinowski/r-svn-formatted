@@ -2537,9 +2537,9 @@ static void yyerror(char *s)
     */
 #define YYENGLISH 16
         "$undefined",     "input",          "SECTIONHEADER",
-        "macro",          "RSECTIONHEADER", "macro",
-        "VSECTIONHEADER", "macro",          "LISTSECTION",
-        "macro",
+        "section header", "RSECTIONHEADER", "section header",
+        "VSECTIONHEADER", "section header", "LISTSECTION",
+        "section header",
 
         "LATEXMACRO",     "macro",          "LATEXMACRO2",
         "macro",          "RCODEMACRO",     "macro",
@@ -2548,7 +2548,7 @@ static void yyerror(char *s)
 
         "ESCAPE",         "macro",          "ITEMIZE",
         "macro",          "IFDEF",          "conditional",
-        "SECTIONHEADER2", "macro",          "OPTMACRO",
+        "SECTIONHEADER2", "section header", "OPTMACRO",
         "macro",
 
         "DESCRIPTION",    "macro",          0};
@@ -2560,6 +2560,7 @@ static void yyerror(char *s)
     _("input"); 	
     _("macro");
     _("conditional");
+    _("section header");
 #endif
 
     R_ParseError = xxlineno;
