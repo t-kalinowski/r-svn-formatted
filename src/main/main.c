@@ -206,7 +206,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
             return (-1);
         state->bufp = state->buf;
     }
-#ifdef SHELL_ESCAPE
+#ifdef SHELL_ESCAPE /* not default */
     if (*state->bufp == '!')
     {
 #ifdef HAVE_SYSTEM

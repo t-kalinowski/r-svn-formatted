@@ -475,19 +475,14 @@ typedef SEXP (*StringEltGetter)(SEXP x, int i);
  * large, then it will be too slow unless ns is very small.
  */
 
-#define USE_HASHING 1
 static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter strg, int *stretch, Rboolean in,
                             SEXP call)
 {
     SEXP indx, indexnames;
     int i, j, nnames, sub, extra;
     int canstretch = *stretch;
-#ifdef USE_HASHING
     /* product may overflow, so check factors as well. */
     Rboolean usehashing = in && (((ns > 1000 && nx) || (nx > 1000 && ns)) && (ns * nx > 15 * nx + ns));
-#else
-    Rboolean usehashing = FALSE;
-#endif
 
     PROTECT(s);
     PROTECT(names);
@@ -502,7 +497,6 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
      * nonmatch will have given an error.)
      */
 
-#ifdef USE_HASHING
     if (usehashing)
     {
         /* must be internal, so names contains a character vector */
@@ -513,12 +507,12 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
         for (i = 0; i < ns; i++)
             if (STRING_ELT(s, i) == NA_STRING || !CHAR(STRING_ELT(s, i))[0])
                 INTEGER(indx)[i] = 0;
+        /* FIXME: this should not be allowed, CHARSXPs only */
         for (i = 0; i < ns; i++)
             SET_STRING_ELT(indexnames, i, R_NilValue);
     }
     else
     {
-#endif
         PROTECT(indx = allocVector(INTSXP, ns));
         for (i = 0; i < ns; i++)
         {
@@ -535,6 +529,7 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
                     if (NonNullStringMatch(STRING_ELT(s, i), names_j))
                     {
                         sub = j + 1;
+                        /* FIXME: this should not be allowed, CHARSXPs only */
                         SET_STRING_ELT(indexnames, i, R_NilValue);
                         break;
                     }
@@ -542,9 +537,7 @@ static SEXP stringSubscript(SEXP s, int ns, int nx, SEXP names, StringEltGetter 
             }
             INTEGER(indx)[i] = sub;
         }
-#ifdef USE_HASHING
     }
-#endif
 
     for (i = 0; i < ns; i++)
     {

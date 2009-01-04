@@ -629,9 +629,6 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
     return s;
 }
 
-#define THROW_REGISTRATION_TYPE_ERROR
-
-#ifdef THROW_REGISTRATION_TYPE_ERROR
 static Rboolean comparePrimitiveTypes(R_NativePrimitiveArgType type, SEXP s, Rboolean dup)
 {
     if (type == ANYSXP || TYPEOF(s) == type)
@@ -642,7 +639,6 @@ static Rboolean comparePrimitiveTypes(R_NativePrimitiveArgType type, SEXP s, Rbo
 
     return (FALSE);
 }
-#endif /* end of THROW_REGISTRATION_TYPE_ERROR */
 
 /* Foreign Function Interface.  This code allows a user to call C */
 /* or Fortran code which is either statically or dynamically linked. */
@@ -1550,7 +1546,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     nargs = 0;
     for (pargs = args; pargs != R_NilValue; pargs = CDR(pargs))
     {
-#ifdef THROW_REGISTRATION_TYPE_ERROR
         if (checkTypes && !comparePrimitiveTypes(checkTypes[nargs], CAR(pargs), dup))
         {
             /* We can loop over all the arguments and report all the
@@ -1563,7 +1558,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                dup, etc. */
             errorcall(call, _("Wrong type for argument %d in call to %s"), nargs + 1, symName);
         }
-#endif
         cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, symName, argConverters + nargs,
                                   checkTypes ? checkTypes[nargs] : 0, encname);
 #ifdef R_MEMORY_PROFILING
