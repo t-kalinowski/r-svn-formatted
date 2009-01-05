@@ -1974,6 +1974,9 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
 
     if ((isList(x) || isLanguage(x)) && !isNull(x))
     {
+        /* Here we do need to duplicate */
+        if (maybe_duplicate)
+            REPROTECT(val = duplicate(val), pvalidx);
         if (TAG(x) == nlist)
         {
             if (val == R_NilValue)
