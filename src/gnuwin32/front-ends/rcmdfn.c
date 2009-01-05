@@ -379,6 +379,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/config.sh");
             }
+            else if (strcmp(p, "RINSTALL") == 0)
+            {
+                strcpy(cmd, "sh ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/RINSTALL.sh");
+            }
             else
             {
                 if (!strcmp(".sh", p + strlen(p) - 3))
