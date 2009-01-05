@@ -80,7 +80,10 @@ SEXP attribute_hidden getParseContext(void)
     }
     /* get rid of empty line after last newline */
     if (nread && !length(STRING_ELT(ans, nread - 1)))
+    {
         nread--;
+        R_ParseContextLine--;
+    }
     PROTECT(ans2 = allocVector(STRSXP, nread));
     for (i = 0; i < nread; i++)
         SET_STRING_ELT(ans2, i, STRING_ELT(ans, i));
@@ -110,19 +113,21 @@ void attribute_hidden parseError(SEXP call, int linenum)
     {
         getParseFilename(filename, sizeof(filename) - 2);
         if (strlen(filename))
-            strcpy(filename + strlen(filename), ": ");
+            strcpy(filename + strlen(filename), ":");
 
         switch (len)
         {
         case 0:
-            error(_("%s%s on line %d"), filename, R_ParseErrorMsg, linenum);
+            error(_("%s%d:%d: %s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg);
             break;
         case 1:
-            error(_("%s%s at\n%d: %s"), filename, R_ParseErrorMsg, linenum, CHAR(STRING_ELT(context, 0)));
+            error(_("%s%d:%d: %s\n%d: %s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg, R_ParseContextLine,
+                  CHAR(STRING_ELT(context, 0)));
             break;
         default:
-            error(_("%s%s at\n%d: %s\n%d: %s"), filename, R_ParseErrorMsg, linenum - 1,
-                  CHAR(STRING_ELT(context, len - 2)), linenum, CHAR(STRING_ELT(context, len - 1)));
+            error(_("%s%d:%d: %s\n%d: %s\n%d: %s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg,
+                  R_ParseContextLine - 1, CHAR(STRING_ELT(context, len - 2)), R_ParseContextLine,
+                  CHAR(STRING_ELT(context, len - 1)));
             break;
         }
     }

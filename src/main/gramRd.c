@@ -1735,7 +1735,7 @@ yyreduce:
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist((yyvsp[(2) - (2)]));
         warning(_("bad markup (extra space?) at %s:%d:%d"), xxBasename, (yylsp[(2) - (2)]).first_line,
-                (yylsp[(2) - (2)]).first_column + 1);
+                (yylsp[(2) - (2)]).first_column);
         ;
     }
     break;
@@ -2309,6 +2309,8 @@ static int xxgetc(void)
     else
         xxcolno++;
 
+    R_ParseContextLine = xxlineno;
+
     return c;
 }
 
@@ -2319,6 +2321,7 @@ static int xxungetc(int c)
         xxlineno -= 1;
         xxcolno = xxlastlinelen; /* FIXME:  could we push back more than one line? */
         xxlastlinelen = 0;
+        R_ParseContextLine = xxlineno;
     }
     else
         xxcolno--;
@@ -2651,7 +2654,8 @@ static void yyerror(char *s)
 
     xxWarnNewline(); /* post newline warning if necessary */
 
-    R_ParseError = xxlineno;
+    R_ParseError = yylloc.first_line;
+    R_ParseErrorCol = yylloc.first_column;
     R_ParseErrorFile = SrcFile;
 
     if (!strncmp(s, yyunexpected, sizeof yyunexpected - 1))
@@ -2665,17 +2669,16 @@ static void yyerror(char *s)
         {
             if (!strcmp(s + sizeof yyunexpected - 1, yytname_translations[i]))
             {
-                sprintf(R_ParseErrorMsg, _("%d:%d: unexpected %s"), yylloc.first_line, yylloc.first_column + 1,
+                sprintf(R_ParseErrorMsg, _("unexpected %s"),
                         i / 2 < YYENGLISH ? _(yytname_translations[i + 1]) : yytname_translations[i + 1]);
                 return;
             }
         }
-        sprintf(R_ParseErrorMsg, _("%d:%d: unexpected %s"), yylloc.first_line, yylloc.first_column + 1,
-                s + sizeof yyunexpected - 1);
+        sprintf(R_ParseErrorMsg, _("unexpected %s"), s + sizeof yyunexpected - 1);
     }
     else
     {
-        sprintf(R_ParseErrorMsg, _("%d:%d: %s"), yylloc.first_line, yylloc.first_column + 1, s);
+        sprintf(R_ParseErrorMsg, _("%s"), s);
     }
 }
 
@@ -2718,8 +2721,8 @@ static int token(void)
     int c;
     int outsideLiteral = xxmode == LATEXLIKE || xxmode == INOPTION || xxbraceDepth == 0;
 
-    setfirstloc();
     c = xxgetc();
+    setfirstloc();
 
     /* % comments are active everywhere */
 
@@ -3139,7 +3142,7 @@ static int yylex(void)
 
     if (xxDebugTokens)
     {
-        Rprintf("%d:%d: %s", yylloc.first_line, yylloc.first_column + 1, yytname[YYTRANSLATE(tok)]);
+        Rprintf("%d:%d: %s", yylloc.first_line, yylloc.first_column, yytname[YYTRANSLATE(tok)]);
         if (xxinRString)
             Rprintf("(in %c%c)", xxinRString, xxinRString);
         if (tok > 255 && tok != END_OF_INPUT)
