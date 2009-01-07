@@ -1528,8 +1528,7 @@ const char *gl_locale_name_default(void)
             {
             case SUBLANG_SINDHI_PAKISTAN:
                 return "sd_PK";
-            case SUBLANG_SINDHI_AFGHANISTAN:
-                return "sd_AF";
+                // case SUBLANG_SINDHI_AFGHANISTAN: return "sd_AF";
             }
             return "sd";
         case LANG_SINHALESE:
