@@ -27,15 +27,14 @@
 extern unsigned int TopmostDialogs; /* from dialogs.c */
 #include <winbase.h>
 #include <wchar.h>
-#if defined __GNUC__
+#ifdef __GNUC__
 #define alloca(x) __builtin_alloca((x))
-else
+#else
 #error need appropriate declaration for alloca
 #endif
 
-    /* from extra.c */
-    extern size_t
-    Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
+/* from extra.c */
+extern size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
 
 /* Some of the ideas in haveAlpha are borrowed from Cairo */
 typedef BOOL(WINAPI *alpha_blend_t)(HDC, int, int, int, int, HDC, int, int, int, int, BLENDFUNCTION);

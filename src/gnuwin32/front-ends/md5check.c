@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 #ifdef DEBUG
             printf("missing\n");
 #endif
-            if (found || nnames = 0)
+            if (found || nnames == 0)
             {
                 fprintf(stderr, "file %s: missing\n", line + 34);
                 miss++;
