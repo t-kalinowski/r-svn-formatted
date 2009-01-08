@@ -379,11 +379,11 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/config.sh");
             }
-            else if (strcmp(p, "RINSTALL") == 0)
+            else if (strcmp(p, "INSTALL") == 0)
             {
                 strcpy(cmd, "sh ");
                 strcat(cmd, RHome);
-                strcat(cmd, "/bin/RINSTALL.sh");
+                strcat(cmd, "/bin/INSTALL.sh");
             }
             else
             {
