@@ -3062,6 +3062,11 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
     Rboolean relative = FALSE;
     Rboolean haveKerning = FALSE;
 
+    if (face < 1 || face > 5)
+    {
+        warning(_("attempt to use invalid font %d replaced by font 1"), face);
+        face = 1;
+    }
     /* check if this is T1 -- should be, but be safe*/
     if (!isType1Font(gc->fontfamily, PostScriptFonts, pd->defaultFont))
     {
@@ -4010,7 +4015,14 @@ static FontMetricInfo *metricInfo(const char *family, int face, PostScriptDesc *
     int fontIndex;
     type1fontfamily fontfamily = findDeviceFont(family, pd->fonts, &fontIndex);
     if (fontfamily)
+    {
+        if (face < 1 || face > 5)
+        {
+            warning(_("attempt to use invalid font %d replaced by font 1"), face);
+            face = 1;
+        }
         result = &(fontfamily->fonts[face - 1]->metrics);
+    }
     else
         error(_("family '%s' not included in PostScript device"), family);
     return result;
