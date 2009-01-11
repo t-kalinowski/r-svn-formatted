@@ -56,7 +56,9 @@ static void mbcsToSbcs(const char *in, char *out, const char *encoding, int enc)
 extern int errno;
 #endif
 
+#ifdef Win32
 #define USE_GZIO
+#endif
 
 #ifdef USE_GZIO
 #include <zlib.h>
