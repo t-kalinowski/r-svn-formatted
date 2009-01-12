@@ -2626,22 +2626,43 @@ static void yyerror(char *s)
        to see these.
     */
 #define YYENGLISH 16
-        "$undefined",     "input",          "SECTIONHEADER",
-        "section header", "RSECTIONHEADER", "section header",
-        "VSECTIONHEADER", "section header", "LISTSECTION",
+        "$undefined",
+        "input",
+        "SECTIONHEADER",
+        "section header",
+        "RSECTIONHEADER",
+        "section header",
+        "VSECTIONHEADER",
+        "section header",
+        "LISTSECTION",
         "section header",
 
-        "LATEXMACRO",     "macro",          "LATEXMACRO2",
-        "macro",          "RCODEMACRO",     "macro",
-        "VERBMACRO",      "macro",          "VERBMACRO2",
+        "LATEXMACRO",
+        "macro",
+        "LATEXMACRO2",
+        "macro",
+        "RCODEMACRO",
+        "macro",
+        "VERBMACRO",
+        "macro",
+        "VERBMACRO2",
         "macro",
 
-        "ESCAPE",         "macro",          "ITEMIZE",
-        "macro",          "IFDEF",          "conditional",
-        "SECTIONHEADER2", "section header", "OPTMACRO",
+        "ESCAPE",
+        "macro",
+        "ITEMIZE",
+        "macro",
+        "IFDEF",
+        "conditional",
+        "SECTIONHEADER2",
+        "section header",
+        "OPTMACRO",
         "macro",
 
-        "DESCRIPTION",    "macro",          0};
+        "DESCRIPTION",
+        "macro",
+        0,
+        0};
     static char const yyunexpected[] = "syntax error, unexpected ";
     static char const yyexpecting[] = ", expecting ";
     char *expecting;
