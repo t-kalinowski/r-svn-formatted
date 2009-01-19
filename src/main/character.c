@@ -1199,7 +1199,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP pat, vec, ind, ans;
     regex_t reg;
     int i, j, n, nmatches = 0, cflags = 0, ov, erroffset, ienc, rc;
-    int igcase_opt, extended_opt, value_opt, perl_opt, fixed_opt, useBytes;
+    int igcase_opt, extended_opt, value_opt, perl_opt, fixed_opt, useBytes, invert;
     const char *cpat, *errorptr;
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
@@ -1223,6 +1223,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     useBytes = asLogical(CAR(args));
     args = CDR(args);
+    invert = asLogical(CAR(args));
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
     if (extended_opt == NA_INTEGER)
@@ -1235,6 +1236,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         fixed_opt = 0;
     if (useBytes == NA_INTEGER)
         useBytes = 0;
+    if (invert == NA_INTEGER)
+        invert = 0;
     if (fixed_opt && igcase_opt)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
@@ -1381,7 +1384,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             else if (regexec(&reg, s, 0, NULL, 0) == 0)
                 LOGICAL(ind)[i] = 1;
         }
-        if (LOGICAL(ind)[i])
+        if (invert ^ LOGICAL(ind)[i])
             nmatches++;
     }
     if (fixed_opt)
@@ -1401,14 +1404,14 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP nmold = getAttrib(vec, R_NamesSymbol), nm;
         ans = allocVector(STRSXP, nmatches);
         for (i = 0, j = 0; i < n; i++)
-            if (LOGICAL(ind)[i])
+            if (invert ^ LOGICAL(ind)[i])
                 SET_STRING_ELT(ans, j++, STRING_ELT(vec, i));
         /* copy across names and subset */
         if (!isNull(nmold))
         {
             nm = allocVector(STRSXP, nmatches);
             for (i = 0, j = 0; i < n; i++)
-                if (LOGICAL(ind)[i])
+                if (invert ^ LOGICAL(ind)[i])
                     SET_STRING_ELT(nm, j++, STRING_ELT(nmold, i));
             setAttrib(ans, R_NamesSymbol, nm);
         }
@@ -1418,7 +1421,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         ans = allocVector(INTSXP, nmatches);
         j = 0;
         for (i = 0; i < n; i++)
-            if (LOGICAL(ind)[i])
+            if (invert ^ LOGICAL(ind)[i])
                 INTEGER(ans)[j++] = i + 1;
     }
     UNPROTECT(1);
