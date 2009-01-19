@@ -212,7 +212,6 @@ static int xxgetc();
 static int xxungetc(int);
 static int xxlineno, xxbyteno, xxcolno;
 static int xxlastlinebytes, xxlastlinecols;
-static int xxhavetab;
 static int xxmode, xxitemType, xxbraceDepth; /* context for lexer */
 static int xxDebugTokens;                    /* non-zero causes debug output to R console */
 static const char *xxBasename;               /* basename of file for error messages */
@@ -288,7 +287,7 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 /* Line 216 of yacc.c.  */
-#line 304 "gramRd.c"
+#line 303 "gramRd.c"
 
 #ifdef short
 #undef short
@@ -540,10 +539,10 @@ static const yytype_int8 yyrhs[] = {
     51, 29, -1, 47, 23, -1, -1, -1, -1, -1, -1, -1, -1, 28, 36, 29, -1, 28, 29, -1, 30, 37, 31, -1};
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] = {0,   146, 146, 147, 150, 151, 153, 154, 155, 156, 157, 158, 159, 160,
-                                       162, 163, 165, 166, 167, 168, 169, 170, 171, 173, 174, 175, 176, 177,
-                                       178, 179, 180, 181, 182, 183, 184, 185, 187, 189, 190, 194, 196, 198,
-                                       200, 204, 205, 207, 210, 212, 214, 216, 218, 220, 222, 224, 225, 227};
+static const yytype_uint8 yyrline[] = {0,   145, 145, 146, 149, 150, 152, 153, 154, 155, 156, 157, 158, 159,
+                                       161, 162, 164, 165, 166, 167, 168, 169, 170, 172, 173, 174, 175, 176,
+                                       177, 178, 179, 180, 181, 182, 183, 184, 186, 188, 189, 193, 195, 197,
+                                       199, 203, 204, 206, 209, 211, 213, 215, 217, 219, 221, 223, 224, 226};
 #endif
 
 #if YYDEBUG || YYERROR_VERBOSE || YYTOKEN_TABLE
@@ -1455,7 +1454,7 @@ yyreduce:
     switch (yyn)
     {
     case 2:
-#line 146 "gramRd.y"
+#line 145 "gramRd.y"
     {
         xxsavevalue((yyvsp[(1) - (2)]), &(yyloc));
         return 0;
@@ -1464,7 +1463,7 @@ yyreduce:
     break;
 
     case 3:
-#line 147 "gramRd.y"
+#line 146 "gramRd.y"
     {
         PROTECT(Value = R_NilValue);
         YYABORT;
@@ -1473,7 +1472,7 @@ yyreduce:
     break;
 
     case 4:
-#line 150 "gramRd.y"
+#line 149 "gramRd.y"
     {
         (yyval) = xxnewlist((yyvsp[(1) - (1)]));
         ;
@@ -1481,7 +1480,7 @@ yyreduce:
     break;
 
     case 5:
-#line 151 "gramRd.y"
+#line 150 "gramRd.y"
     {
         (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
@@ -1489,7 +1488,7 @@ yyreduce:
     break;
 
     case 6:
-#line 153 "gramRd.y"
+#line 152 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1497,7 +1496,7 @@ yyreduce:
     break;
 
     case 7:
-#line 154 "gramRd.y"
+#line 153 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1505,7 +1504,7 @@ yyreduce:
     break;
 
     case 8:
-#line 155 "gramRd.y"
+#line 154 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1513,7 +1512,7 @@ yyreduce:
     break;
 
     case 9:
-#line 156 "gramRd.y"
+#line 155 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1521,7 +1520,7 @@ yyreduce:
     break;
 
     case 10:
-#line 157 "gramRd.y"
+#line 156 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
         ;
@@ -1529,7 +1528,7 @@ yyreduce:
     break;
 
     case 11:
-#line 158 "gramRd.y"
+#line 157 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), &(yyloc));
         UNPROTECT_PTR((yyvsp[(4) - (4)]));
@@ -1538,7 +1537,7 @@ yyreduce:
     break;
 
     case 12:
-#line 159 "gramRd.y"
+#line 158 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
         ;
@@ -1546,7 +1545,7 @@ yyreduce:
     break;
 
     case 13:
-#line 160 "gramRd.y"
+#line 159 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
         ;
@@ -1554,7 +1553,7 @@ yyreduce:
     break;
 
     case 14:
-#line 162 "gramRd.y"
+#line 161 "gramRd.y"
     {
         (yyval) = xxnewlist((yyvsp[(1) - (1)]));
         ;
@@ -1562,7 +1561,7 @@ yyreduce:
     break;
 
     case 15:
-#line 163 "gramRd.y"
+#line 162 "gramRd.y"
     {
         (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
@@ -1570,7 +1569,7 @@ yyreduce:
     break;
 
     case 16:
-#line 165 "gramRd.y"
+#line 164 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
         ;
@@ -1578,7 +1577,7 @@ yyreduce:
     break;
 
     case 17:
-#line 166 "gramRd.y"
+#line 165 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), RCODE, &(yyloc));
         ;
@@ -1586,7 +1585,7 @@ yyreduce:
     break;
 
     case 18:
-#line 167 "gramRd.y"
+#line 166 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), VERB, &(yyloc));
         ;
@@ -1594,7 +1593,7 @@ yyreduce:
     break;
 
     case 19:
-#line 168 "gramRd.y"
+#line 167 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
         ;
@@ -1602,7 +1601,7 @@ yyreduce:
     break;
 
     case 20:
-#line 169 "gramRd.y"
+#line 168 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), UNKNOWN, &(yyloc));
         ;
@@ -1610,7 +1609,7 @@ yyreduce:
     break;
 
     case 21:
-#line 170 "gramRd.y"
+#line 169 "gramRd.y"
     {
         (yyval) = xxmarkup(R_NilValue, (yyvsp[(1) - (1)]), &(yyloc));
         ;
@@ -1618,7 +1617,7 @@ yyreduce:
     break;
 
     case 22:
-#line 171 "gramRd.y"
+#line 170 "gramRd.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -1626,7 +1625,7 @@ yyreduce:
     break;
 
     case 23:
-#line 173 "gramRd.y"
+#line 172 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1634,7 +1633,7 @@ yyreduce:
     break;
 
     case 24:
-#line 174 "gramRd.y"
+#line 173 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
         ;
@@ -1642,7 +1641,7 @@ yyreduce:
     break;
 
     case 25:
-#line 175 "gramRd.y"
+#line 174 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1650,7 +1649,7 @@ yyreduce:
     break;
 
     case 26:
-#line 176 "gramRd.y"
+#line 175 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1658,7 +1657,7 @@ yyreduce:
     break;
 
     case 27:
-#line 177 "gramRd.y"
+#line 176 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
         xxpopMode((yyvsp[(2) - (3)]));
@@ -1667,7 +1666,7 @@ yyreduce:
     break;
 
     case 28:
-#line 178 "gramRd.y"
+#line 177 "gramRd.y"
     {
         (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), &(yyloc));
         xxpopMode((yyvsp[(2) - (4)]));
@@ -1676,7 +1675,7 @@ yyreduce:
     break;
 
     case 29:
-#line 179 "gramRd.y"
+#line 178 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1684,7 +1683,7 @@ yyreduce:
     break;
 
     case 30:
-#line 180 "gramRd.y"
+#line 179 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(2) - (3)]), &(yyloc));
         ;
@@ -1692,7 +1691,7 @@ yyreduce:
     break;
 
     case 31:
-#line 181 "gramRd.y"
+#line 180 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1700,7 +1699,7 @@ yyreduce:
     break;
 
     case 32:
-#line 182 "gramRd.y"
+#line 181 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), &(yyloc));
         ;
@@ -1708,7 +1707,7 @@ yyreduce:
     break;
 
     case 33:
-#line 183 "gramRd.y"
+#line 182 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
         ;
@@ -1716,7 +1715,7 @@ yyreduce:
     break;
 
     case 34:
-#line 184 "gramRd.y"
+#line 183 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (1)]), R_NilValue, &(yyloc));
         ;
@@ -1724,7 +1723,7 @@ yyreduce:
     break;
 
     case 35:
-#line 185 "gramRd.y"
+#line 184 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), &(yyloc));
         UNPROTECT_PTR((yyvsp[(4) - (4)]));
@@ -1733,7 +1732,7 @@ yyreduce:
     break;
 
     case 36:
-#line 187 "gramRd.y"
+#line 186 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1742,7 +1741,7 @@ yyreduce:
     break;
 
     case 37:
-#line 189 "gramRd.y"
+#line 188 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1751,7 +1750,7 @@ yyreduce:
     break;
 
     case 38:
-#line 190 "gramRd.y"
+#line 189 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist((yyvsp[(2) - (2)]));
@@ -1762,7 +1761,7 @@ yyreduce:
     break;
 
     case 39:
-#line 194 "gramRd.y"
+#line 193 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1771,7 +1770,7 @@ yyreduce:
     break;
 
     case 40:
-#line 196 "gramRd.y"
+#line 195 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1780,7 +1779,7 @@ yyreduce:
     break;
 
     case 41:
-#line 198 "gramRd.y"
+#line 197 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1789,7 +1788,7 @@ yyreduce:
     break;
 
     case 42:
-#line 200 "gramRd.y"
+#line 199 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -1798,7 +1797,7 @@ yyreduce:
     break;
 
     case 43:
-#line 204 "gramRd.y"
+#line 203 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (4)]));
         (yyval) = (yyvsp[(3) - (4)]);
@@ -1807,7 +1806,7 @@ yyreduce:
     break;
 
     case 44:
-#line 205 "gramRd.y"
+#line 204 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (3)]));
         (yyval) = xxnewlist(NULL);
@@ -1816,7 +1815,7 @@ yyreduce:
     break;
 
     case 45:
-#line 207 "gramRd.y"
+#line 206 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist((yyvsp[(2) - (2)]));
@@ -1825,7 +1824,7 @@ yyreduce:
     break;
 
     case 46:
-#line 210 "gramRd.y"
+#line 209 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, UNKNOWN);
         ;
@@ -1833,7 +1832,7 @@ yyreduce:
     break;
 
     case 47:
-#line 212 "gramRd.y"
+#line 211 "gramRd.y"
     {
         (yyval) = xxpushMode(RLIKE, UNKNOWN);
         ;
@@ -1841,7 +1840,7 @@ yyreduce:
     break;
 
     case 48:
-#line 214 "gramRd.y"
+#line 213 "gramRd.y"
     {
         (yyval) = xxpushMode(INOPTION, UNKNOWN);
         ;
@@ -1849,7 +1848,7 @@ yyreduce:
     break;
 
     case 49:
-#line 216 "gramRd.y"
+#line 215 "gramRd.y"
     {
         (yyval) = xxpushMode(VERBATIM, UNKNOWN);
         ;
@@ -1857,7 +1856,7 @@ yyreduce:
     break;
 
     case 50:
-#line 218 "gramRd.y"
+#line 217 "gramRd.y"
     {
         xxbraceDepth--;
         (yyval) = xxpushMode(VERBATIM, UNKNOWN);
@@ -1867,7 +1866,7 @@ yyreduce:
     break;
 
     case 51:
-#line 220 "gramRd.y"
+#line 219 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, ESCAPE);
         ;
@@ -1875,7 +1874,7 @@ yyreduce:
     break;
 
     case 52:
-#line 222 "gramRd.y"
+#line 221 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, LATEXMACRO2);
         ;
@@ -1883,7 +1882,7 @@ yyreduce:
     break;
 
     case 53:
-#line 224 "gramRd.y"
+#line 223 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (3)]);
         ;
@@ -1891,7 +1890,7 @@ yyreduce:
     break;
 
     case 54:
-#line 225 "gramRd.y"
+#line 224 "gramRd.y"
     {
         (yyval) = xxnewlist(NULL);
         ;
@@ -1899,7 +1898,7 @@ yyreduce:
     break;
 
     case 55:
-#line 227 "gramRd.y"
+#line 226 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (3)]);
         ;
@@ -1907,7 +1906,7 @@ yyreduce:
     break;
 
 /* Line 1267 of yacc.c.  */
-#line 1900 "gramRd.c"
+#line 1899 "gramRd.c"
     default:
         break;
     }
@@ -2119,7 +2118,7 @@ yyreturn:
     return YYID(yyresult);
 }
 
-#line 229 "gramRd.y"
+#line 228 "gramRd.y"
 
 static SEXP xxpushMode(int newmode, int newitem)
 {
@@ -2307,20 +2306,25 @@ static int (*ptr_getc)(void);
 static int pushback[PUSHBACK_BUFSIZE];
 static unsigned int npush = 0;
 
+static int prevpos = 0;
+static int prevlines[PUSHBACK_BUFSIZE];
+static int prevcols[PUSHBACK_BUFSIZE];
+static int prevbytes[PUSHBACK_BUFSIZE];
+
 static int xxgetc(void)
 {
     int c;
-
-    if (xxhavetab)
-    {
-        xxcolno = (xxcolno + 7) & ~7;
-        xxhavetab = 0;
-    }
 
     if (npush)
         c = pushback[--npush];
     else
         c = ptr_getc();
+
+    prevpos = (prevpos + 1) % PUSHBACK_BUFSIZE;
+    prevcols[prevpos] = xxcolno;
+    prevbytes[prevpos] = xxbyteno;
+    prevlines[prevpos] = xxlineno;
+
     if (c == EOF)
         return R_EOF;
 
@@ -2331,24 +2335,21 @@ static int xxgetc(void)
     {
         xxlineno += 1;
         xxlastlinecols = xxcolno;
-        xxcolno = 0;
+        xxcolno = 1;
         xxlastlinebytes = xxbyteno;
-        xxbyteno = 0;
-        xxhavetab = 0;
+        xxbyteno = 1;
     }
     else
     {
-        /* FIXME:  we should recognize bytes that don't move to a new column and
-                   not increment xxcolno for those */
         xxcolno++;
         xxbyteno++;
     }
-
-    if (0x80 <= c && c <= 0xBF && known_to_be_utf8) /* only advance column for 1st byte in UTF-8 */
+    /* only advance column for 1st byte in UTF-8 */
+    if (0x80 <= (unsigned char)c && (unsigned char)c <= 0xBF && known_to_be_utf8)
         xxcolno--;
 
     if (c == '\t')
-        xxhavetab = xxcolno;
+        xxcolno = ((xxcolno + 6) & ~7) + 1;
 
     R_ParseContextLine = xxlineno;
 
@@ -2357,32 +2358,13 @@ static int xxgetc(void)
 
 static int xxungetc(int c)
 {
-    if (xxhavetab)
-    {
-        if (c == '\t')
-            xxcolno = xxhavetab;
-        xxhavetab = 0; /* FIXME: may be wrong in case of multiple tabs */
-    }
+    /* this assumes that c was the result of xxgetc; if not, some edits will be needed */
+    xxlineno = prevlines[prevpos];
+    xxbyteno = prevbytes[prevpos];
+    xxcolno = prevcols[prevpos];
+    prevpos = (prevpos + PUSHBACK_BUFSIZE - 1) % PUSHBACK_BUFSIZE;
 
-    if (0x80 <= c && c <= 0xBF && known_to_be_utf8)
-        xxcolno++;
-
-    if (c == '\n')
-    {
-        xxlineno -= 1;
-        xxcolno = xxlastlinecols; /* FIXME:  could we push back more than one line? */
-        xxbyteno = xxlastlinebytes;
-
-        xxlastlinecols = 0;
-        xxlastlinebytes = 0;
-
-        R_ParseContextLine = xxlineno;
-    }
-    else
-    {
-        xxcolno--; /* FIXME: may be wrong in case of multibyte character */
-        xxbyteno--;
-    }
+    R_ParseContextLine = xxlineno;
 
     R_ParseContext[R_ParseContextLast] = '\0';
     /* Mac OS X requires us to keep this non-negative */
@@ -2390,6 +2372,7 @@ static int xxungetc(int c)
     if (npush >= PUSHBACK_BUFSIZE - 2)
         return EOF;
     pushback[npush++] = c;
+
     return c;
 }
 
@@ -2471,9 +2454,8 @@ static SEXP ParseRd(ParseStatus *status, SEXP srcfile)
     R_ParseContext[0] = '\0';
 
     xxlineno = 1;
-    xxcolno = 0;
-    xxbyteno = 0;
-    xxhavetab = 0;
+    xxcolno = 1;
+    xxbyteno = 1;
 
     if (!isNull(srcfile))
         SrcFile = srcfile;
@@ -2794,9 +2776,9 @@ static void setfirstloc(void)
 
 static void setlastloc(void)
 {
-    yylloc.last_line = xxlineno;
-    yylloc.last_column = xxcolno;
-    yylloc.last_byte = xxbyteno;
+    yylloc.last_line = prevlines[prevpos];
+    yylloc.last_column = prevcols[prevpos];
+    yylloc.last_byte = prevbytes[prevpos];
 }
 
 /* Split the input stream into tokens. */
@@ -2807,8 +2789,8 @@ static int token(void)
     int c;
     int outsideLiteral = xxmode == LATEXLIKE || xxmode == INOPTION || xxbraceDepth == 0;
 
-    c = xxgetc();
     setfirstloc();
+    c = xxgetc();
 
     /* % comments are active everywhere */
 
@@ -2935,8 +2917,12 @@ static int mkComment(int c)
     do
         TEXT_PUSH(c);
     while ((c = xxgetc()) != '\n' && c != R_EOF);
+
     if (c == R_EOF)
         xxungetc(c);
+    else
+        TEXT_PUSH(c);
+
     PROTECT(yylval = mkString2(stext, bp - stext));
     if (stext != st0)
         free(stext);
