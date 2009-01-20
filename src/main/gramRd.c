@@ -2782,68 +2782,49 @@ static void setlastloc(void)
 
 static int token(void)
 {
-    int c;
+    int c, lookahead;
     int outsideLiteral = xxmode == LATEXLIKE || xxmode == INOPTION || xxbraceDepth == 0;
 
     setfirstloc();
     c = xxgetc();
 
-    /* % comments are active everywhere */
-
-    if (c == '%')
+    switch (c)
+    {
+    case '%':
         return mkComment(c);
-
-    if (c == '\\')
-    {
-        int lookahead = xxgetc();
-        xxungetc(lookahead);
-        if (xxmode == VERBATIM)
-        {
-            if (lookahead == LBRACE || lookahead == RBRACE)
-                return mkVerb(c);
-        }
-        else
-        {
-            if (xxinRString && lookahead != 'l')
-                return mkCode(c);
-
+    case '\\':
+        lookahead = xxungetc(xxgetc());
+        if (isalpha(lookahead) && xxmode != VERBATIM && (lookahead == 'l' || !xxinRString))
             return mkMarkup(c);
-        }
-    }
-
-    if (xxinRString)
-    {
-        if (c == R_EOF)
+        break;
+    case R_EOF:
+        if (xxinRString)
         {
             xxWarnNewline();
             error(_("Unexpected end of input (in %c quoted string opened at %s:%d:%d)"), xxinRString, xxBasename,
                   xxQuoteLine, xxQuoteCol);
         }
-        return mkCode(c);
-    }
-
-    if (c == R_EOF)
         return END_OF_INPUT;
-
-    if (c == '#' && yylloc.first_column == 1)
-        return mkIfdef(c);
-
-    if (c == LBRACE)
-    {
+    case '#':
+        if (yylloc.first_column == 1)
+            return mkIfdef(c);
+        break;
+    case LBRACE:
         xxbraceDepth++;
         if (outsideLiteral)
             return c;
-    }
-
-    if (c == RBRACE)
-    {
+        break;
+    case RBRACE:
         xxbraceDepth--;
         if (outsideLiteral || xxbraceDepth == 0)
             return c;
+        break;
+    case '[':
+    case ']':
+        if (xxmode == INOPTION)
+            return c;
+        break;
     }
-
-    if ((c == '[' || c == ']') && xxmode == INOPTION)
-        return c;
 
     switch (xxmode)
     {
@@ -2873,13 +2854,14 @@ static int mkText(int c)
         {
         case '\\':
             lookahead = xxgetc();
-            if (lookahead == LBRACE || lookahead == RBRACE || lookahead == '%')
+            if (lookahead == LBRACE || lookahead == RBRACE || lookahead == '%' || lookahead == '\\')
             {
                 c = lookahead;
                 break;
             }
             xxungetc(lookahead);
-            goto stop;
+            if (isalpha(lookahead))
+                goto stop;
         case ']':
             if (xxmode == INOPTION)
                 goto stop;
