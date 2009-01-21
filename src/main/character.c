@@ -1399,6 +1399,12 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         regfree(&reg);
 
+    if (PRIMVAL(op))
+    { /* grepl case */
+        UNPROTECT(1);
+        return ind;
+    }
+
     if (value_opt)
     {
         SEXP nmold = getAttrib(vec, R_NamesSymbol), nm;
