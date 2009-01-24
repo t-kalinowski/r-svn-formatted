@@ -6200,9 +6200,9 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
             }
             fprintf(pd->pdffp, "%.3f %.3f %.3f %.3f K\n", c, m, y, k);
         }
-        else
-            fprintf(pd->pdffp, "%.3f %.3f %.3f RG\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                    R_BLUE(color) / 255.0);
+        else if (!streql(pd->colormodel, "rgb"))
+            warning(_("unknown 'colormodel', using 'rgb'"));
+        fprintf(pd->pdffp, "%.3f %.3f %.3f RG\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0, R_BLUE(color) / 255.0);
 
         pd->current.col = color;
     }
@@ -6227,7 +6227,7 @@ static void PDF_SetFill(int color, pDevDesc dd)
         if (streql(pd->colormodel, "gray"))
         {
             double r = R_RED(color) / 255.0, g = R_GREEN(color) / 255.0, b = R_BLUE(color) / 255.0;
-            fprintf(pd->pdffp, "%.3f G\n", (0.213 * r + 0.715 * g + 0.072 * b));
+            fprintf(pd->pdffp, "%.3f g\n", (0.213 * r + 0.715 * g + 0.072 * b));
         }
         else if (streql(pd->colormodel, "cmyk"))
         {
@@ -6246,8 +6246,12 @@ static void PDF_SetFill(int color, pDevDesc dd)
             fprintf(pd->pdffp, "%.3f %.3f %.3f %.3f k\n", c, m, y, k);
         }
         else
+        {
+            if (!streql(pd->colormodel, "rgb"))
+                warning(_("unknown 'colormodel', using 'rgb'"));
             fprintf(pd->pdffp, "%.3f %.3f %.3f rg\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
                     R_BLUE(color) / 255.0);
+        }
 
         pd->current.fill = color;
     }
