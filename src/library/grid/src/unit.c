@@ -1498,16 +1498,52 @@ typedef struct
 
 /* NOTE this table must match the order in grid.h
  */
-static UnitTab UnitTable[] = {
-    {"npc", 0},      {"cm", 1},         {"inches", 2},      {"lines", 3},        {"native", 4},      {"null", 5},
-    {"snpc", 6},     {"mm", 7},         {"points", 8},      {"picas", 9},        {"bigpts", 10},     {"dida", 11},
-    {"cicero", 12},  {"scaledpts", 13}, {"strwidth", 14},   {"strheight", 15},
+static UnitTab UnitTable[] = {{"npc", 0},
+                              {"cm", 1},
+                              {"inches", 2},
+                              {"lines", 3},
+                              {"native", 4},
+                              {"null", 5},
+                              {"snpc", 6},
+                              {"mm", 7},
+                              {"points", 8},
+                              {"picas", 9},
+                              {"bigpts", 10},
+                              {"dida", 11},
+                              {"cicero", 12},
+                              {"scaledpts", 13},
+                              {"strwidth", 14},
+                              {"strheight", 15},
 
-    {"char", 18},    {"grobx", 19},     {"groby", 20},      {"grobwidth", 21},   {"grobheight", 22},
+                              {"char", 18},
+                              {"grobx", 19},
+                              {"groby", 20},
+                              {"grobwidth", 21},
+                              {"grobheight", 22},
 
-    {"mylines", 23}, {"mychar", 24},    {"mystrwidth", 25}, {"mystrheight", 26},
+                              {"mylines", 23},
+                              {"mychar", 24},
+                              {"mystrwidth", 25},
+                              {"mystrheight", 26},
 
-    {NULL, -1}};
+                              /*
+                               * Some pseudonyms
+                               */
+                              {"centimetre", 1001},
+                              {"centimetres", 1001},
+                              {"centimeter", 1001},
+                              {"centimeters", 1001},
+                              {"in", 1002},
+                              {"inch", 1002},
+                              {"line", 1003},
+                              {"millimetre", 1007},
+                              {"millimetres", 1007},
+                              {"millimeter", 1007},
+                              {"millimeters", 1007},
+                              {"point", 1008},
+                              {"pt", 1008},
+
+                              {NULL, -1}};
 
 int convertUnit(SEXP unit, int index)
 {
@@ -1522,7 +1558,14 @@ int convertUnit(SEXP unit, int index)
         {
             found = !strcmp(CHAR(STRING_ELT(unit, index)), UnitTable[i].name);
             if (found)
+            {
                 result = UnitTable[i].code;
+                /* resolve pseudonyms */
+                if (result > 1000)
+                {
+                    result = result - 1000;
+                }
+            }
         }
         i += 1;
     }
