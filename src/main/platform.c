@@ -2212,7 +2212,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
     const char *filesep = "\\", *cur = ".\\", sep = '\\';
 #else
-    const char *filesep = "/", cur = "./", sep = '/';
+    const char *filesep = "/", *cur = "./", sep = '/';
 #endif
 
     checkArity(op, args);
