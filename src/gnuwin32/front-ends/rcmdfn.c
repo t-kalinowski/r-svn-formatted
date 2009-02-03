@@ -149,19 +149,19 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         {
             if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
             {
-                fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", "Usage: ", RCMD,
-                        " BATCH [options] infile [outfile]\n\n",
-                        "Run R non-interactively with input from infile and place output (stdout\n",
-                        "and stderr) to another file.  If not given, the name of the output file\n",
-                        "is the one of the input file, with a possible '.R' extension stripped,\n",
-                        "and '.Rout' appended.\n\n",
-                        "Options:\n"
-                        "  -h, --help		print short help message and exit\n",
-                        "  -v, --version		print version info and exit\n",
-                        "  --			end processing of options\n\n",
-                        "Further arguments starting with a '-' are considered as options as long\n",
-                        "as '--' was not encountered, and are passed on to the R process, which\n",
-                        "by default is started with '--restore --save'.\n\n", "Report bugs to <r-bugs@r-project.org>.");
+                fprintf(
+                    stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", "Usage: ", RCMD, " BATCH [options] infile [outfile]\n\n",
+                    "Run R non-interactively with input from infile and place output (stdout\n",
+                    "and stderr) to another file.  If not given, the name of the output file\n",
+                    "is the one of the input file, with a possible '.R' extension stripped,\n",
+                    "and '.Rout' appended.\n\n",
+                    "Options:\n"
+                    "  -h, --help		print short help message and exit\n",
+                    "  -v, --version		print version info and exit\n",
+                    "  --no-timing		do not report the timings\n", "  --			end processing of options\n\n",
+                    "Further arguments starting with a '-' are considered as options as long\n",
+                    "as '--' was not encountered, and are passed on to the R process, which\n",
+                    "by default is started with '--restore --save'.\n\n", "Report bugs to <r-bugs@r-project.org>.");
                 return (0);
             }
             if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version"))
