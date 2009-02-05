@@ -2785,8 +2785,8 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     fontsave = gpptr(dd)->font;
     colsave = gpptr(dd)->col;
 
-    /* override par("xpd") and force clipping to figure region */
-    /* NOTE: don't override to _reduce_ clipping region */
+    /* override par("xpd") and force clipping to figure region
+       NOTE: don't override to _reduce_ clipping region */
     if (gpptr(dd)->xpd < 1)
         gpptr(dd)->xpd = 1;
 
@@ -2906,8 +2906,8 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     GSavePars(dd);
     ProcessInlinePars(args, dd, call);
 
-    /* override par("xpd") and force clipping to figure region */
-    /* NOTE: don't override to _reduce_ clipping region */
+    /* override par("xpd") and force clipping to figure region
+       NOTE: don't override to _reduce_ clipping region */
     if (gpptr(dd)->xpd < 1)
         gpptr(dd)->xpd = 1;
     if (outer)
@@ -3153,7 +3153,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     nlines = 0;
 
     if (a != R_NilValue)
-    {
+    { /* case where a ans b are supplied */
         if (b == R_NilValue)
         {
             if (LENGTH(a) != 2)
@@ -3175,13 +3175,14 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             gpptr(dd)->lty = dpptr(dd)->lty;
         GMode(1, dd);
+
         /* FIXME?
          * Seems like the logic here is just draw from xmin to xmax
          * and you're guaranteed to draw at least from ymin to ymax
          * This MAY cause a problem at some stage when the line being
          * drawn is VERY steep -- and the problem is worse now that
          * abline will potentially draw to the extents of the device
-         * (when xpd=NA).  NOTE that R's internal clipping protects the
+         * (when xpd = NA).  NOTE that R's internal clipping protects the
          * device drivers from stupidly large numbers, BUT there is
          * still a risk that we could produce a number which is too
          * big for the computer's brain.
@@ -3195,38 +3196,41 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (LOGICAL(untf)[0] == 1 && (gpptr(dd)->xlog || gpptr(dd)->ylog))
             {
-                double xx[101], yy[101];
-                double xstep = (x[1] - x[0]) / 100;
-                for (i = 0; i < 100; i++)
+#define NS 100
+                /* Plot curve, linear on original scales */
+                double xx[NS + 1], yy[NS + 1];
+                double xstep = (x[1] - x[0]) / NS;
+                for (i = 0; i < NS; i++)
                 {
                     xx[i] = x[0] + i * xstep;
                     yy[i] = aa + xx[i] * bb;
                 }
-                xx[100] = x[1];
-                yy[100] = aa + x[1] * bb;
+                xx[NS] = x[1];
+                yy[NS] = aa + x[1] * bb;
 
                 /* now get rid of -ve values */
                 lstart = 0;
-                lstop = 100;
+                lstop = NS;
                 if (gpptr(dd)->xlog)
                 {
-                    for (; xx[lstart] <= 0 && lstart < 101; lstart++)
+                    for (; xx[lstart] <= 0 && lstart < NS + 1; lstart++)
                         ;
                     for (; xx[lstop] <= 0 && lstop > 0; lstop--)
                         ;
                 }
                 if (gpptr(dd)->ylog)
                 {
-                    for (; yy[lstart] <= 0 && lstart < 101; lstart++)
+                    for (; yy[lstart] <= 0 && lstart < NS + 1; lstart++)
                         ;
                     for (; yy[lstop] <= 0 && lstop > 0; lstop--)
                         ;
                 }
 
                 GPolyline(lstop - lstart + 1, xx + lstart, yy + lstart, USER, dd);
+#undef NS
             }
             else
-            {
+            { /* non-log plots, possibly with log scales */
                 double x0, x1;
 
                 x0 = (gpptr(dd)->xlog) ? log10(x[0]) : x[0];
@@ -3248,7 +3252,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         nlines++;
     }
     if (h != R_NilValue)
-    {
+    { /* horizontal liee */
         GMode(1, dd);
         for (i = 0; i < LENGTH(h); i++)
         {
@@ -3271,7 +3275,7 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
         GMode(0, dd);
     }
     if (v != R_NilValue)
-    {
+    { /* vertical line */
         GMode(1, dd);
         for (i = 0; i < LENGTH(v); i++)
         {
@@ -3894,8 +3898,8 @@ SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     gpptr(dd)->cex = gpptr(dd)->cexbase * gpptr(dd)->cex;
     dnd_offset = GConvertYUnits(GStrWidth("m", CE_ANY, INCHES, dd), INCHES, USER, dd);
 
-    /* override par("xpd") and force clipping to figure region */
-    /* NOTE: don't override to _reduce_ clipping region */
+    /* override par("xpd") and force clipping to figure region
+       NOTE: don't override to _reduce_ clipping region */
     if (gpptr(dd)->xpd < 1)
         gpptr(dd)->xpd = 1;
 
@@ -4538,6 +4542,8 @@ SEXP attribute_hidden do_clip(SEXP call, SEXP op, SEXP args, SEXP env)
     GConvert(&x1, &y1, USER, DEVICE, dd);
     GConvert(&x2, &y2, USER, DEVICE, dd);
     GESetClip(x1, y1, x2, y2, dd);
+    /* avoid GClip resetting this */
+    gpptr(dd)->oldxpd = gpptr(dd)->xpd;
 
     /* NOTE: only record operation if no "error"  */
     if (GRecording(call, dd))
