@@ -63,8 +63,9 @@ typedef unsigned int uint32_t;
 #define IsSurrogatePairsHi(_h) (SURROGATE_PAIRS_HI_MIN == ((uint16_t)(_h) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 #define IsSurrogatePairsLo(_l) (SURROGATE_PAIRS_LO_MIN == ((uint16_t)(_l) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 
-#ifndef W64
-extern char *alloca(size_t);
+#ifdef __GNUC__
+#undef alloca
+#define alloca(x) __builtin_alloca((x))
 #endif
 
 extern UImode CharacterMode;
