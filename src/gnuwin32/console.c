@@ -48,6 +48,11 @@ extern void R_ProcessEvents(void);
 #include "Startup.h" /* for UImode */
 #include <Fileio.h>
 
+#ifdef W64
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+#endif
+
 /* Surrogate Pairs Macro */
 #define SURROGATE_PAIRS_HI_MIN ((uint16_t)0xd800)
 #define SURROGATE_PAIRS_HI_MAX ((uint16_t)0xdbff)
@@ -58,7 +63,7 @@ extern void R_ProcessEvents(void);
 #define IsSurrogatePairsHi(_h) (SURROGATE_PAIRS_HI_MIN == ((uint16_t)(_h) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 #define IsSurrogatePairsLo(_l) (SURROGATE_PAIRS_LO_MIN == ((uint16_t)(_l) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 
-extern char *alloca(size_t);
+// extern char *alloca(size_t);
 
 extern UImode CharacterMode;
 
