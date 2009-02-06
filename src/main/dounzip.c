@@ -57,7 +57,7 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
     int err = UNZ_OK;
     FILE *fout;
     char outname[PATH_MAX], dirs[PATH_MAX], buf[BUF_SIZE], *p, *pp;
-    char *fn, fn0[MAX_PATH];
+    char *fn, fn0[PATH_MAX];
 
     err = unzOpenCurrentFile(uf);
     if (err != UNZ_OK)
