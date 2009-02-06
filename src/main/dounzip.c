@@ -51,11 +51,13 @@ static int R_mkdir(char *path)
 }
 
 #define BUF_SIZE 4096
-static int extract_one(unzFile uf, const char *const dest, const char *const filename, SEXP names, int *nnames)
+static int extract_one(unzFile uf, const char *const dest, const char *const filename, SEXP names, int *nnames,
+                       int overwrite, int junk)
 {
     int err = UNZ_OK;
     FILE *fout;
     char outname[PATH_MAX], dirs[PATH_MAX], buf[BUF_SIZE], *p, *pp;
+    const char *fn;
 
     err = unzOpenCurrentFile(uf);
     if (err != UNZ_OK)
@@ -68,24 +70,38 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
     {
         if (strlen(dest) + strlen(filename) > PATH_MAX - 2)
             return 1;
-        strcat(outname, filename);
+        fn = filename;
     }
     else
     {
         unz_file_info file_info;
         char filename_inzip[PATH_MAX];
         err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
-        strcat(outname, filename_inzip);
+        fn = filename_inzip;
     }
+#ifdef Win32
+    R_fixslash(fn);
+#endif
+    if (junk && strlen(fn) >= 2)
+    { /* need / and basename */
+        p = Rf_strrchr(fn, '/');
+        if (p)
+            fn = p + 1;
+    }
+    strcat(outname, fn);
+
 #ifdef Win32
     R_fixslash(outname);
 #endif
     p = outname + strlen(outname) - 1;
     if (*p == '/')
     { /* Don't know how these are stored in Mac zip files */
-        *p = '\0';
-        if (!R_FileExists(outname))
-            err = R_mkdir(outname);
+        if (!junk)
+        {
+            *p = '\0';
+            if (!R_FileExists(outname))
+                err = R_mkdir(outname);
+        }
     }
     else
     {
@@ -101,6 +117,10 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
             pp = p + 1;
         }
         /* Rprintf("extracting %s\n", outname); */
+        if (!overwrite && R_FileExists(outname))
+        {
+            warning(_(" not overwriting file '%s"), outname);
+        }
         fout = R_fopen(outname, "wb");
         if (!fout)
         {
@@ -132,7 +152,8 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
     return err;
 }
 
-static int do_unzip(const char *zipname, const char *dest, int nfiles, const char **files, SEXP *pnames, int *nnames)
+static int zipunzip(const char *zipname, const char *dest, int nfiles, const char **files, SEXP *pnames, int *nnames,
+                    int overwrite, int junk)
 {
     int i, err = UNZ_OK;
     unzFile uf;
@@ -158,7 +179,7 @@ static int do_unzip(const char *zipname, const char *dest, int nfiles, const cha
                 PROTECT(names);
                 copyVector(names, onames);
             }
-            if ((err = extract_one(uf, dest, NULL, names, nnames)) != UNZ_OK)
+            if ((err = extract_one(uf, dest, NULL, names, nnames, overwrite, junk)) != UNZ_OK)
                 break;
 #ifdef Win32
             R_ProcessEvents();
@@ -173,7 +194,7 @@ static int do_unzip(const char *zipname, const char *dest, int nfiles, const cha
         {
             if ((err = unzLocateFile(uf, files[i], 1)) != UNZ_OK)
                 break;
-            if ((err = extract_one(uf, dest, files[i], names, nnames)) != UNZ_OK)
+            if ((err = extract_one(uf, dest, files[i], names, nnames, overwrite, junk)) != UNZ_OK)
                 break;
 #ifdef Win32
             R_ProcessEvents();
@@ -187,7 +208,7 @@ static int do_unzip(const char *zipname, const char *dest, int nfiles, const cha
     return err;
 }
 
-static SEXP do_list(const char *zipname)
+static SEXP ziplist(const char *zipname)
 {
     SEXP ans = R_NilValue, names, lengths, dates;
     unzFile uf;
@@ -237,18 +258,12 @@ static SEXP do_list(const char *zipname)
     return ans;
 }
 
-/* called as int.unzip(file.path(path, zipname), topic, dir)
-   in src/library/utils/R/zip.R
-
-   and as int.unzip(zipname, NULL, dest)
-   in src/library/utils/R/windows/install.packages.R
-*/
-SEXP attribute_hidden do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP attribute_hidden do_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn, ans, names = R_NilValue;
     char zipname[PATH_MAX], dest[PATH_MAX];
     const char *p, **topics = NULL;
-    int i, ntopics, list, rc, nnames = 0;
+    int i, ntopics, list, overwrite, junk, rc, nnames = 0;
 
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         error(_("invalid zip name argument"));
@@ -281,13 +296,21 @@ SEXP attribute_hidden do_int_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     if (list == NA_LOGICAL)
         error(_("invalid '%s' argument"), "list");
     if (list)
-        return (do_list(zipname));
+        return (ziplist(zipname));
+    args = CDR(args);
+    overwrite = asLogical(CAR(args));
+    if (overwrite == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "overwrtie");
+    args = CDR(args);
+    junk = asLogical(CAR(args));
+    if (junk == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "junkpaths");
 
     if (ntopics > 0)
         PROTECT(names = allocVector(STRSXP, ntopics));
     else
         PROTECT(names = allocVector(STRSXP, 5000));
-    rc = do_unzip(zipname, dest, ntopics, topics, &names, &nnames);
+    rc = zipunzip(zipname, dest, ntopics, topics, &names, &nnames, overwrite, junk);
     if (rc != UNZ_OK)
         switch (rc)
         {
