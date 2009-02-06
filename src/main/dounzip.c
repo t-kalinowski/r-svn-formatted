@@ -57,7 +57,7 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
     int err = UNZ_OK;
     FILE *fout;
     char outname[PATH_MAX], dirs[PATH_MAX], buf[BUF_SIZE], *p, *pp;
-    const char *fn;
+    char *fn, fn0[MAX_PATH];
 
     err = unzOpenCurrentFile(uf);
     if (err != UNZ_OK)
@@ -70,7 +70,8 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
     {
         if (strlen(dest) + strlen(filename) > PATH_MAX - 2)
             return 1;
-        fn = filename;
+        strncpy(fn0, filename, PATH_MAX);
+        fn = fn0;
     }
     else
     {
