@@ -280,7 +280,7 @@ static struct
     {51932, "CP51932"},
     {51932, "MS51932"},
     {51932, "WINDOWS-51932"},
-    {51932, "EUC-JP"},
+    // {51932, "EUC-JP"},
 
     {932, "CP932"},
     {932, "MS932"},
@@ -309,6 +309,8 @@ static struct
 
     {950, "CP950"},
     {950, "BIG5"},
+    {950, "BIG-5"},
+    {950, "BIG-FIVE"},
 
     {949, "CP949"},
     {949, "UHC"},
@@ -440,32 +442,32 @@ static struct
     {1258, "windows-1258"},  /* ANSI/OEM Vietnamese; Vietnamese (Windows) */
     {1361, "Johab"},         /* Korean (Johab) */
     {10000, "macintosh"},    /* MAC Roman; Western European (Mac) */
-    {10001, "x-mac-japanese"},          /* Japanese (Mac) */
-    {10002, "x-mac-chinesetrad"},       /* MAC Traditional Chinese (Big5); Chinese Traditional (Mac) */
-    {10003, "x-mac-korean"},            /* Korean (Mac) */
-    {10004, "x-mac-arabic"},            /* Arabic (Mac) */
-    {10005, "x-mac-hebrew"},            /* Hebrew (Mac) */
-    {10006, "x-mac-greek"},             /* Greek (Mac) */
-    {10007, "x-mac-cyrillic"},          /* Cyrillic (Mac) */
-    {10008, "x-mac-chinesesimp"},       /* MAC Simplified Chinese (GB 2312); Chinese Simplified (Mac) */
-    {10010, "x-mac-romanian"},          /* Romanian (Mac) */
-    {10017, "x-mac-ukrainian"},         /* Ukrainian (Mac) */
-    {10021, "x-mac-thai"},              /* Thai (Mac) */
-    {10029, "x-mac-ce"},                /* MAC Latin 2; Central European (Mac) */
-    {10079, "x-mac-icelandic"},         /* Icelandic (Mac) */
-    {10081, "x-mac-turkish"},           /* Turkish (Mac) */
-    {10082, "x-mac-croatian"},          /* Croatian (Mac) */
-    {20000, "x-Chinese_CNS"},           /* CNS Taiwan; Chinese Traditional (CNS) */
-    {20001, "x-cp20001"},               /* TCA Taiwan */
-    {20002, "x_Chinese-Eten"},          /* Eten Taiwan; Chinese Traditional (Eten) */
-    {20003, "x-cp20003"},               /* IBM5550 Taiwan */
-    {20004, "x-cp20004"},               /* TeleText Taiwan */
-    {20005, "x-cp20005"},               /* Wang Taiwan */
-    {20105, "x-IA5"},                   /* IA5 (IRV International Alphabet No. 5, 7-bit); Western European (IA5) */
-    {20106, "x-IA5-German"},            /* IA5 German (7-bit) */
-    {20107, "x-IA5-Swedish"},           /* IA5 Swedish (7-bit) */
-    {20108, "x-IA5-Norwegian"},         /* IA5 Norwegian (7-bit) */
-    {20127, "us-ascii"},                /* US-ASCII (7-bit) */
+    {10001, "x-mac-japanese"},    /* Japanese (Mac) */
+    {10002, "x-mac-chinesetrad"}, /* MAC Traditional Chinese (Big5); Chinese Traditional (Mac) */
+    {10003, "x-mac-korean"},      /* Korean (Mac) */
+    {10004, "x-mac-arabic"},      /* Arabic (Mac) */
+    {10005, "x-mac-hebrew"},      /* Hebrew (Mac) */
+    {10006, "x-mac-greek"},       /* Greek (Mac) */
+    {10007, "x-mac-cyrillic"},    /* Cyrillic (Mac) */
+    {10008, "x-mac-chinesesimp"}, /* MAC Simplified Chinese (GB 2312); Chinese Simplified (Mac) */
+    {10010, "x-mac-romanian"},    /* Romanian (Mac) */
+    {10017, "x-mac-ukrainian"},   /* Ukrainian (Mac) */
+    {10021, "x-mac-thai"},        /* Thai (Mac) */
+    {10029, "x-mac-ce"},          /* MAC Latin 2; Central European (Mac) */
+    {10079, "x-mac-icelandic"},   /* Icelandic (Mac) */
+    {10081, "x-mac-turkish"},     /* Turkish (Mac) */
+    {10082, "x-mac-croatian"},    /* Croatian (Mac) */
+    {20000, "x-Chinese_CNS"},     /* CNS Taiwan; Chinese Traditional (CNS) */
+    {20001, "x-cp20001"},         /* TCA Taiwan */
+    {20002, "x_Chinese-Eten"},    /* Eten Taiwan; Chinese Traditional (Eten) */
+    {20003, "x-cp20003"},         /* IBM5550 Taiwan */
+    {20004, "x-cp20004"},         /* TeleText Taiwan */
+    {20005, "x-cp20005"},         /* Wang Taiwan */
+    {20105, "x-IA5"},             /* IA5 (IRV International Alphabet No. 5, 7-bit); Western European (IA5) */
+    {20106, "x-IA5-German"},      /* IA5 German (7-bit) */
+    {20107, "x-IA5-Swedish"},     /* IA5 Swedish (7-bit) */
+    {20108, "x-IA5-Norwegian"},   /* IA5 Norwegian (7-bit) */
+    // {20127, "us-ascii"}, /* US-ASCII (7-bit) */
     {20261, "x-cp20261"},               /* T.61 */
     {20269, "x-cp20269"},               /* ISO 6937 Non-Spacing Accent */
     {20273, "IBM273"},                  /* IBM EBCDIC Germany */
@@ -486,13 +488,13 @@ static struct
     {20880, "IBM880"},                  /* IBM EBCDIC Cyrillic Russian */
     {20905, "IBM905"},                  /* IBM EBCDIC Turkish */
     {20924, "IBM00924"},                /* IBM EBCDIC Latin 1/Open System (1047 + Euro symbol) */
-    {20932, "EUC-JP"},                  /* Japanese (JIS 0208-1990 and 0121-1990) */
-    {20936, "x-cp20936"},               /* Simplified Chinese (GB2312); Chinese Simplified (GB2312-80) */
-    {20949, "x-cp20949"},               /* Korean Wansung */
-    {21025, "cp1025"},                  /* IBM EBCDIC Cyrillic Serbian-Bulgarian */
+    //{20932, "EUC-JP"}, /* Japanese (JIS 0208-1990 and 0121-1990) */
+    {20936, "x-cp20936"}, /* Simplified Chinese (GB2312); Chinese Simplified (GB2312-80) */
+    {20949, "x-cp20949"}, /* Korean Wansung */
+    {21025, "cp1025"},    /* IBM EBCDIC Cyrillic Serbian-Bulgarian */
     /* 21027		(deprecated) */
-    {21866, "koi8-u"},     /* Ukrainian (KOI8-U); Cyrillic (KOI8-U) */
-    {28591, "iso-8859-1"}, /* ISO 8859-1 Latin 1; Western European (ISO) */
+    {21866, "koi8-u"}, /* Ukrainian (KOI8-U); Cyrillic (KOI8-U) */
+    //{28591, "iso-8859-1"}, /* ISO 8859-1 Latin 1; Western European (ISO) */
     {28591, "iso8859-1"},
     {28592, "iso-8859-2"}, /* ISO 8859-2 Central European; Central European (ISO) */
     {28592, "iso8859-2"},
@@ -502,6 +504,7 @@ static struct
     {28593, "latin3"},
     {28594, "iso-8859-4"}, /* ISO 8859-4 Baltic */
     {28594, "iso8859-4"},
+    {28594, "latin4"},
     {28595, "iso-8859-5"}, /* ISO 8859-5 Cyrillic */
     {28595, "iso8859-5"},
     {28596, "iso-8859-6"}, /* ISO 8859-6 Arabic */
@@ -512,6 +515,7 @@ static struct
     {28598, "iso8859-8"},
     {28599, "iso-8859-9"}, /* ISO 8859-9 Turkish */
     {28599, "iso8859-9"},
+    {28599, "latin5"},
     {28603, "iso-8859-13"}, /* ISO 8859-13 Estonian */
     {28603, "iso8859-13"},
     {28603, "latin7"},
