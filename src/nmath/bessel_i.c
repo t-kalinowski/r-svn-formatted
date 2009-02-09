@@ -31,6 +31,7 @@
 
 static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, long *ncalc);
 
+/* .Internal(besselI(*)) : */
 double bessel_i(double x, double alpha, double expo)
 {
     long nb, ncalc, ize;
@@ -99,7 +100,8 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
      X     - Non-negative argument for which
          I's or exponentially scaled I's (I*EXP(-X))
          are to be calculated.	If I's are to be calculated,
-         X must be less than EXPARG_BESS (see bessel.h).
+         X must be less than exparg_BESS (IZE=1) or xlrg_BESS_IJ (IZE=2),
+         (see bessel.h).
      ALPHA - Fractional part of order for which
          I's or exponentially scaled I's (I*EXP(-X)) are
          to be calculated.  0 <= ALPHA < 1.0.
@@ -198,16 +200,19 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
     {
 
         *ncalc = *nb;
-        if ((*ize == 1 && *x > exparg_BESS) || (*ize == 2 && *x > xlrg_BESS_IJ))
+        if (*ize == 1 && *x > exparg_BESS)
         {
-            /* If a warning, then about precision loss;
-             * but the limit *is* = Inf :
-             * was:   ML_ERROR(ME_RANGE, "I_bessel"); */
             for (k = 1; k <= *nb; k++)
-                bi[k] = ML_POSINF;
+                bi[k] = ML_POSINF; /* the limit *is* = Inf */
             return;
         }
-        intx = (long)(*x); /* --> we will probably fail when *x > LONG_MAX */
+        if (*ize == 2 && *x > xlrg_BESS_IJ)
+        {
+            for (k = 1; k <= *nb; k++)
+                bi[k] = 0.; /* The limit exp(-x) * I_nu(x) --> 0 : */
+            return;
+        }
+        intx = (long)(*x); /* fine, since *x <= xlrg_BESS_IJ <<< LONG_MAX */
         if (*x >= rtnsig_BESS)
         {   /* "non-small" x */
             /* -------------------------------------------------------------------
@@ -347,12 +352,23 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
                        Recur backward via difference equation,
                        calculating (but not storing) BI[N], until N = NB.
                        --------------------------------------------------- */
+
                     for (l = 1; l <= nend; ++l)
                     {
                         --n;
                         en -= 2.;
                         cc = bb;
                         bb = aa;
+                        /* for x ~= 1500,  sum would overflow to 'inf' here,
+                         * and the final bi[] /= sum would give 0 wrongly;
+                         * RE-normalize (aa, sum) here -- no need to undo */
+                        if (nend > 100 && aa > 1e200)
+                        {
+                            /* multiply by  2^-900 = 1.18e-271 */
+                            cc = ldexp(cc, -900);
+                            bb = ldexp(bb, -900);
+                            sum = ldexp(sum, -900);
+                        }
                         aa = en * bb / *x + cc;
                         em -= 1.;
                         emp2al -= 1.;
@@ -502,7 +518,7 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
         }
     }
     else
-    {
+    { /* argument out of range */
         *ncalc = imin2(*nb, 0) - 1;
     }
 }
