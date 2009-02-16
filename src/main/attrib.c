@@ -586,7 +586,11 @@ SEXP attribute_hidden do_class(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!R_S3ClassSymbol)
             R_S3ClassSymbol = install(".S3Class");
         if ((S3Class = getAttrib(x, R_S3ClassSymbol)) != R_NilValue)
+        {
+            warning(_(
+                "oldClass() is ambiguous for an S4 extension of an S3 class; will retun the value of S3Class(object)"));
             return S3Class;
+        }
     } /* else */
     return getAttrib(x, R_ClassSymbol);
 }
@@ -1468,7 +1472,7 @@ int R_has_slot(SEXP obj, SEXP name)
     name = install(CHAR(STRING_ELT(name, 0)))
 
     R_SLOT_INIT;
-    if (name == s_dot_Data)
+    if (name == s_dot_Data && TYPEOF(obj) != S4SXP)
         return (1);
     /* else */
     return (getAttrib(obj, name) != R_NilValue);
@@ -1515,6 +1519,10 @@ SEXP R_do_slot(SEXP obj, SEXP name)
 }
 #undef R_SLOT_INIT
 
+/* the @ operator, and its assignment form.  Processed much like $
+   (see do_subset3) but without S3-style methods.
+*/
+
 SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
 {
     PROTECT(obj);
@@ -1544,9 +1552,6 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     return obj;
 }
 
-/* the @ operator, and its assignment form.  Processed much like $
-   (see do_subset3) but without S3-style methods.
-*/
 SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP nlist, object, ans, klass;
@@ -1577,4 +1582,27 @@ SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
     ans = R_do_slot(object, nlist);
     UNPROTECT(1);
     return ans;
+}
+
+/* the mechanism for extending abnormal types.  In the future, would b
+   good to consolidate under the ".Data" slot, but this has
+   been used to mean S4 objects with non-S4 type, so for now
+   a secondary slot name, ".xData" is used to avoid confusion
+*/
+SEXP attribute_hidden R_getS4DataSlot(SEXP obj, SEXPTYPE type)
+{
+    static SEXP s_xData, s_dotData;
+    SEXP value;
+    if (!s_xData)
+    {
+        s_xData = install(".xData");
+        s_dotData = install(".Data");
+    }
+    value = getAttrib(obj, s_dotData);
+    if (value == R_NilValue)
+        value = getAttrib(obj, s_xData);
+    if (value != R_NilValue && (type == ANYSXP || type == TYPEOF(value)))
+        return value;
+    else
+        return R_NilValue;
 }

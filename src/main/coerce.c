@@ -1118,6 +1118,16 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
 
     if (TYPEOF(v) == type)
         return v;
+    /* code to allow classes to extend ENVSXP, SYMSXP, etc */
+    if (IS_S4_OBJECT(v) && TYPEOF(v) == S4SXP)
+    {
+        SEXP vv = R_getS4DataSlot(v, ANYSXP);
+        if (vv == R_NilValue)
+            error(_("no method for coercing this S4 class to a vector"));
+        else if (TYPEOF(vv) == type)
+            return vv;
+        v = vv;
+    }
 
     switch (TYPEOF(v))
     {
@@ -1439,6 +1449,14 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
             return x;
         default:;
         }
+    }
+
+    if (IS_S4_OBJECT(x) && TYPEOF(x) == S4SXP)
+    {
+        SEXP v = R_getS4DataSlot(x, ANYSXP);
+        if (v == R_NilValue)
+            error(_("no method for coercing this S4 class to a vector"));
+        x = v;
     }
 
     switch (type)
@@ -2528,6 +2546,22 @@ static int class2type(const char *s)
     /* cannot get here return -1; */
 }
 
+static SEXP do_unsetS4(SEXP obj, SEXP newClass)
+{
+    if (isNull(newClass))
+    { /* NULL class is only valid for S3 objects */
+        warning(_("Setting class(x) to NULL;   result will no longer be an S4 object"));
+    }
+    else if (length(newClass) > 1)
+        warning(_("Setting class(x) to multiple strings (\"%s\", \"%s\", ...); result will no longer be an S4 object"),
+                translateChar(STRING_ELT(newClass, 0)), translateChar(STRING_ELT(newClass, 1)));
+    else
+        warning(_("Setting class(x) to \"%s\" sets attribut to NULL;   result will no longer be an S4 object"),
+                CHAR(asChar(newClass)));
+    UNSET_S4_OBJECT(obj);
+    return obj;
+}
+
 /* set the class to value, and return the modified object.  This is
    NOT a primitive assignment operator , because there is no code in R
    that changes type in place. */
@@ -2538,7 +2572,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     {
         setAttrib(obj, R_ClassSymbol, value);
         if (IS_S4_OBJECT(obj)) /* NULL class is only valid for S3 objects */
-            UNSET_S4_OBJECT(obj);
+            do_unsetS4(obj, value);
         return obj;
     }
     if (TYPEOF(value) != STRSXP)
@@ -2552,7 +2586,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     {
         setAttrib(obj, R_ClassSymbol, value);
         if (IS_S4_OBJECT(obj)) /*  multiple strings only valid for S3 objects */
-            UNSET_S4_OBJECT(obj);
+            do_unsetS4(obj, value);
     }
     else if (length(value) == 0)
     {
@@ -2577,7 +2611,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
         {
             setAttrib(obj, R_ClassSymbol, R_NilValue);
             if (IS_S4_OBJECT(obj)) /* NULL class is only valid for S3 objects */
-                UNSET_S4_OBJECT(obj);
+                do_unsetS4(obj, value);
             if (classTable[whichType].canChange)
             {
                 PROTECT(obj = ascommon(call, obj, valueType));
@@ -2592,7 +2626,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
         {
             setAttrib(obj, R_ClassSymbol, R_NilValue);
             if (IS_S4_OBJECT(obj)) /* NULL class is only valid for S3 objects */
-                UNSET_S4_OBJECT(obj);
+                do_unsetS4(obj, value);
             switch (TYPEOF(obj))
             {
             case INTSXP:
@@ -2611,8 +2645,8 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
                 error(_("invalid to set the class to matrix unless the dimension attribute is of length 2 (was %d)"),
                       length(getAttrib(obj, R_DimSymbol)));
             setAttrib(obj, R_ClassSymbol, R_NilValue);
-            if (IS_S4_OBJECT(obj)) /* NULL class is only valid for S3 objects */
-                UNSET_S4_OBJECT(obj);
+            if (IS_S4_OBJECT(obj))
+                do_unsetS4(obj, value);
         }
         else if (!strcmp("array", valueString))
         {
