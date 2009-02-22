@@ -490,7 +490,6 @@ SEXP attribute_hidden do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isVector(x))
     {
-        PrintValue(x);
         error(_("%s() applies only to vectors"), (PRIMVAL(op) == 0 ? "duplicated" : "unique"));
     }
 
