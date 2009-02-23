@@ -38,7 +38,7 @@ SEXP attribute_hidden do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (DispatchGroup("Ops", call, op, args, env, &ans))
         return ans;
-
+    checkArity(op, args);
     return do_relop_dflt(call, op, CAR(args), CADR(args));
 }
 
