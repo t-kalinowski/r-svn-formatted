@@ -281,7 +281,8 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
 
     if (ISNA(x.r) || ISNA(x.i))
     {
-        snprintf(buff, NB, "%*s%*s", R_print.gap, "", wr + wi + 2, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s", /* was "%*s%*s", R_print.gap, "", */
+                 wr + wi + 2, CHAR(R_print.na_string));
     }
     else
     {
