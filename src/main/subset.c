@@ -40,6 +40,9 @@
 
 #include "Defn.h"
 
+/* JMC convinced MM that this was not a good idea: */
+#undef _S4_subsettable
+
 /* ExtractSubset does the transfer of elements from "x" to "result" */
 /* according to the integer subscripts given in "indx". */
 
@@ -191,11 +194,13 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
             setAttrib(result, R_SrcrefSymbol, nattrib);
             UNPROTECT(1);
         }
+#ifdef _S4_subsettable
         if (IS_S4_OBJECT(x))
         { /* e.g. contains = "list" */
             setAttrib(result, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
             SET_S4_OBJECT(result);
         }
+#endif
     }
     UNPROTECT(3);
     return result;
@@ -783,7 +788,9 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (ATTRIB(ans) != R_NilValue)
     {
         setAttrib(ans, R_TspSymbol, R_NilValue);
+#ifdef _S4_subsettable
         if (!IS_S4_OBJECT(x))
+#endif
             setAttrib(ans, R_ClassSymbol, R_NilValue);
     }
     UNPROTECT(4);
