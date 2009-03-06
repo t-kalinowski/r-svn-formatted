@@ -294,7 +294,7 @@ int usemethod(const char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEX
     nclass = length(klass);
     for (i = 0; i < nclass + S4toS3; i++)
     {
-        const char *ss = translateChar((S4toS3 && i == nclass) ? type2str(S4SXP) : STRING_ELT(klass, i));
+        const char *ss = translateChar((S4toS3 && (i == nclass)) ? type2str(S4SXP) : STRING_ELT(klass, i));
         if (strlen(generic) + strlen(ss) + 2 > 512)
             error(_("class name too long in '%s'"), generic);
         sprintf(buf, "%s.%s", generic, ss);
