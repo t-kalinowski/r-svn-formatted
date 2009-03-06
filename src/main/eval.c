@@ -2134,7 +2134,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 {
     int i, j, nargs, lwhich, rwhich, set;
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
-    SEXP rclass, rmeth, rgr, rsxp;
+    SEXP rclass, rmeth, rgr, rsxp, value;
     char lbuf[512], rbuf[512], generic[128], *pt;
     Rboolean useS4 = TRUE, isOps = FALSE;
 
@@ -2154,16 +2154,13 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
         useS4 = FALSE;
     if (length(args) == 2 && !IS_S4_OBJECT(CAR(args)) && !IS_S4_OBJECT(CADR(args)))
         useS4 = FALSE;
-    if (useS4 && R_has_methods(op))
+    if (useS4)
     {
-        SEXP value;
         /* Remove argument names to ensure positional matching */
         if (isOps)
             for (s = args; s != R_NilValue; s = CDR(s))
                 SET_TAG(s, R_NilValue);
-
-        value = R_possible_dispatch(call, op, args, rho, FALSE);
-        if (value)
+        if (R_has_methods(op) && (value = R_possible_dispatch(call, op, args, rho, FALSE)))
         {
             *ans = value;
             return 1;
@@ -2215,11 +2212,32 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 
     findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, lbuf, rho);
     PROTECT(lgr);
+    if (isFunction(lsxp) && IS_S4_OBJECT(CAR(args)))
+    {
+        value = CAR(args);
+        if (NAMED(value))
+            SET_NAMED(value, 2);
+        value = asS4(value, 0, 2);
+        if (TYPEOF(value) == S4SXP)
+            error(_("Non-vector S4 object as first argument to operator"));
+        SETCAR(args, value);
+    }
 
     if (nargs == 2)
         findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, rbuf, rho);
     else
         rwhich = 0;
+
+    if (isFunction(rsxp) && IS_S4_OBJECT(CADR(args)))
+    {
+        value = CADR(args);
+        if (NAMED(value))
+            SET_NAMED(value, 2);
+        value = asS4(value, 0, 2);
+        if (TYPEOF(value) == S4SXP)
+            error(_("Non-vector S4 object as second argument to binary operator"));
+        SETCADR(args, value);
+    }
 
     PROTECT(rgr);
 
