@@ -675,7 +675,7 @@ static SEXP s_dot_S3Class;
 
 SEXP S3Class(SEXP obj)
 {
-    getAttrib(obj, s_dot_S3Class);
+    return getAttrib(obj, s_dot_S3Class);
 }
 
 /* Version for S3-dispatch */
