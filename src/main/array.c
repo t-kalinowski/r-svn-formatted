@@ -661,7 +661,7 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (sym && (PRIMVAL(op) > 0))
         y = x;
     if (!(isNumeric(x) || isComplex(x)) || !(isNumeric(y) || isComplex(y)))
-        errorcall(call, _("requires numeric matrix/vector arguments"));
+        errorcall(call, _("requires numeric/complex matrix/vector arguments"));
 
     xdims = getAttrib(x, R_DimSymbol);
     ydims = getAttrib(y, R_DimSymbol);
@@ -694,7 +694,7 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (LENGTH(x) == nry)
             { /* x as row vector */
                 nrx = 1;
-                ncx = LENGTH(x);
+                ncx = nry; /* == LENGTH(x) */
             }
             else if (nry == 1)
             { /* x as col vector */
@@ -705,8 +705,8 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         { /* crossprod */
             if (LENGTH(x) == nry)
-            { /* x is a col vector */
-                nrx = LENGTH(x);
+            {              /* x is a col vector */
+                nrx = nry; /* == LENGTH(x) */
                 ncx = 1;
             }
         }
@@ -720,8 +720,8 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (PRIMVAL(op) == 0)
         {
             if (LENGTH(y) == ncx)
-            { /* y as col vector */
-                nry = LENGTH(y);
+            {              /* y as col vector */
+                nry = ncx; /* == LENGTH(y) */
                 ncy = 1;
             }
             else if (ncx == 1)
@@ -733,8 +733,8 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (LENGTH(y) == nrx)
-            { /* y is a col vector */
-                nry = LENGTH(y);
+            {              /* y is a col vector */
+                nry = nrx; /* == LENGTH(y) */
                 ncy = 1;
             }
         }
