@@ -2318,7 +2318,7 @@ int attribute_hidden R_XDRDecodeInteger(void *buf)
     return i;
 }
 
-/* Next two used in gnomeGUI package */
+/* Next two were used in gnomeGUI package, are in Rintterface.h  */
 void R_SaveGlobalEnvToFile(const char *name)
 {
     SEXP sym = install("sys.save.image");
