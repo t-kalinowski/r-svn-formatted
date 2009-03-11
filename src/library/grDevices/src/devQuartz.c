@@ -618,6 +618,7 @@ static void RQuartz_CacheAddFont(const char *family, int face, ATSFontRef font)
     }
 }
 
+#ifdef UNUSED
 static void RQuartz_CacheRelease()
 {
     font_cache_t *fc = &font_cache;
@@ -633,6 +634,7 @@ static void RQuartz_CacheRelease()
     }
     font_cache.fonts = 0;
 }
+#endif
 
 #pragma mark Device Implementation
 
@@ -695,16 +697,19 @@ CGFontRef RQuartz_Font(CTXDESC)
     else
     { /* the real font name could not be looked up. We must use cache and/or find the right font by family and face */
         if (!fontFamily[0])
-            fontFamily = "Arial"; /* Arial the the default, because Helvetica doesn't have Oblique on 10.4 - maybe
-                                     change later? */
+            fontFamily = "Arial";
+        /* Arial is the default, because Helvetica doesn't have Oblique
+           on 10.4 - maybe change later? */
         atsFont = RQuartz_CacheGetFont(fontFamily, fontFace);
         if (!atsFont)
-        { /* not in the cache? Then we need to find the proper font name from the family name and face */
-            /* as it turns out kATSFontFilterSelectorFontFamily is not implemented in OS X (!!) so there is no way to
-             * query for a font from a specific family. Therefore we have to use text-matching heuristics ... very nasty
-             * ... */
+        { /* not in the cache? Then we need to find the
+ proper font name from the family name and face */
+            /* as it turns out kATSFontFilterSelectorFontFamily is not
+           implemented in OS X (!!) so there is no way to query for a
+           font from a specific family. Therefore we have to use
+           text-matching heuristics ... very nasty ... */
             char compositeFontName[256];
-            CFStringRef cfFontName;
+            /* CFStringRef cfFontName; */
             if (strlen(fontFamily) > 210)
                 error(_("font family name is too long"));
             while (!atsFont)
