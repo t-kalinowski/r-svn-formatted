@@ -1992,7 +1992,7 @@ int attribute_hidden R_isMissing(SEXP symbol, SEXP rho)
         if (MISSING(vl) == 1 || CAR(vl) == R_MissingArg)
             return 1;
         if (IS_ACTIVE_BINDING(vl))
-            return 1;
+            return 0;
         if (TYPEOF(CAR(vl)) == PROMSXP && PRVALUE(CAR(vl)) == R_UnboundValue && TYPEOF(PREXPR(CAR(vl))) == SYMSXP)
         {
             /* This code uses the PRSEEN bit to detect cycles.  If a
