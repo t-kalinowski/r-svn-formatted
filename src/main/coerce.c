@@ -1606,6 +1606,8 @@ int asLogical(SEXP x)
             return Rf_LogicalFromComplex(COMPLEX(x)[0], &warn);
         case STRSXP:
             return Rf_LogicalFromString(STRING_ELT(x, 0), &warn);
+        case RAWSXP:
+            return Rf_LogicalFromInteger((int)RAW(x)[0], &warn);
         default:
             UNIMPLEMENTED_TYPE("asLogical", x);
         }
