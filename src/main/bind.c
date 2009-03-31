@@ -287,6 +287,11 @@ static void LogicalAnswer(SEXP x, struct BindData *data, SEXP call)
         for (i = 0; i < n; i++)
             LOGICAL(data->ans_ptr)[data->ans_length++] = INTEGER(x)[i];
         break;
+    case RAWSXP:
+        n = LENGTH(x);
+        for (i = 0; i < n; i++)
+            LOGICAL(data->ans_ptr)[data->ans_length++] = (int)RAW(x)[i];
+        break;
     default:
         errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "LogicalAnswer");
     }
@@ -321,6 +326,11 @@ static void IntegerAnswer(SEXP x, struct BindData *data, SEXP call)
         n = LENGTH(x);
         for (i = 0; i < n; i++)
             INTEGER(data->ans_ptr)[data->ans_length++] = INTEGER(x)[i];
+        break;
+    case RAWSXP:
+        n = LENGTH(x);
+        for (i = 0; i < n; i++)
+            INTEGER(data->ans_ptr)[data->ans_length++] = (int)RAW(x)[i];
         break;
     default:
         errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "IntegerAnswer");
@@ -373,6 +383,11 @@ static void RealAnswer(SEXP x, struct BindData *data, SEXP call)
             else
                 REAL(data->ans_ptr)[data->ans_length++] = xi;
         }
+        break;
+    case RAWSXP:
+        n = LENGTH(x);
+        for (i = 0; i < n; i++)
+            REAL(data->ans_ptr)[data->ans_length++] = (int)RAW(x)[i];
         break;
     default:
         errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "RealAnswer");
@@ -449,6 +464,17 @@ static void ComplexAnswer(SEXP x, struct BindData *data, SEXP call)
             data->ans_length++;
         }
         break;
+
+    case RAWSXP:
+        n = LENGTH(x);
+        for (i = 0; i < n; i++)
+        {
+            COMPLEX(data->ans_ptr)[data->ans_length].r = (int)RAW(x)[i];
+            COMPLEX(data->ans_ptr)[data->ans_length].i = 0.0;
+            data->ans_length++;
+        }
+        break;
+
     default:
         errorcall(call, _("type '%s' is unimplemented in '%s'"), type2char(TYPEOF(x)), "ComplexAnswer");
     }
