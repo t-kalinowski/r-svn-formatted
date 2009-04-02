@@ -1468,7 +1468,15 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(args) != 2)
         WrongArgCount(asym[PRIMVAL(op)]);
     if (isString(CAR(args)))
+    {
+        /* fix up a duplicate or args and recursively call do_set */
+        SEXP val;
+        PROTECT(args = duplicate(args));
         SETCAR(args, install(translateChar(STRING_ELT(CAR(args), 0))));
+        val = do_set(call, op, args, rho);
+        UNPROTECT(1);
+        return val;
+    }
 
     switch (PRIMVAL(op))
     {
