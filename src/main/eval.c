@@ -630,7 +630,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     SET_DEBUG(newrho, DEBUG(op) || STEP(op));
     if (STEP(op))
         SET_STEP(op, 0);
-    if (DEBUG(rho))
+    if (DEBUG(newrho))
     {
         Rprintf("debugging in: ");
         PrintValueRec(call, rho);
