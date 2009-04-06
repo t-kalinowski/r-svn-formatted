@@ -529,6 +529,12 @@ void gfillellipse(drawing d, rgb fill, rect r)
     DeleteObject(br);
 }
 
+void gsetpolyfillmode(drawing d, int oddeven)
+{
+    HDC dc = GETHDC(d);
+    SetPolyFillMode(dc, oddeven ? ALTERNATE : WINDING);
+}
+
 void gfillpolygon(drawing d, rgb fill, point *p, int n)
 {
     HDC dc = GETHDC(d);
