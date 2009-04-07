@@ -2418,6 +2418,7 @@ typedef struct
     Rboolean paperspecial; /* suppress %%Orientation */
     Rboolean warn_trans;   /* have we warned about translucent cols? */
     Rboolean useKern;
+    Rboolean fillOddEven; /* polygon fill mode */
 
     /* This group of variables track the current device status.
      * They should only be set by routines that emit PostScript code. */
@@ -3270,7 +3271,8 @@ static void Invalidate(pDevDesc);
 Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                         const char *encoding, const char *bg, const char *fg, double width, double height,
                         Rboolean horizontal, double ps, Rboolean onefile, Rboolean pagecentre, Rboolean printit,
-                        const char *cmd, const char *title, SEXP fonts, const char *colormodel, int useKern)
+                        const char *cmd, const char *title, SEXP fonts, const char *colormodel, int useKern,
+                        Rboolean fillOddEven)
 {
     /* If we need to bail out with some sort of "error"
        then we must free(dd) */
@@ -3306,6 +3308,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     strncpy(pd->title, title, 1024);
     strncpy(pd->colormodel, colormodel, 30);
     pd->useKern = (useKern != 0);
+    pd->fillOddEven = fillOddEven;
 
     if (strlen(encoding) > PATH_MAX - 1)
     {
@@ -4233,7 +4236,11 @@ static void PS_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     if (code)
     {
         if (code & 2)
+        {
             SetFill(gc->fill, dd);
+            if (pd->fillOddEven)
+                code |= 4;
+        }
         if (code & 1)
         {
             SetColor(gc->col, dd);
@@ -5525,6 +5532,7 @@ typedef struct
     char title[1024];
     char colormodel[30];
     Rboolean dingbats, useKern;
+    Rboolean fillOddEven; /* polygon fill mode */
 
     /*
      * Fonts and encodings used on the device
@@ -5634,7 +5642,7 @@ static Rboolean addPDFDevicefont(type1fontfamily family, PDFDesc *pd, int *fontI
 Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                          const char *encoding, const char *bg, const char *fg, double width, double height, double ps,
                          int onefile, int pagecentre, const char *title, SEXP fonts, int versionMajor, int versionMinor,
-                         const char *colormodel, int dingbats, int useKern)
+                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -5691,6 +5699,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     strncpy(pd->colormodel, colormodel, 30);
     pd->dingbats = (dingbats != 0);
     pd->useKern = (useKern != 0);
+    pd->fillOddEven = fillOddEven;
 
     pd->width = width;
     pd->height = height;
@@ -7059,17 +7068,35 @@ static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDe
             yy = y[i];
             fprintf(pd->pdffp, "  %.2f %.2f l\n", xx, yy);
         }
-        switch (code)
+        if (pd->fillOddEven)
         {
-        case 1:
-            fprintf(pd->pdffp, "s\n");
-            break;
-        case 2:
-            fprintf(pd->pdffp, "h f\n");
-            break;
-        case 3:
-            fprintf(pd->pdffp, "b\n");
-            break;
+            switch (code)
+            {
+            case 1:
+                fprintf(pd->pdffp, "s\n");
+                break;
+            case 2:
+                fprintf(pd->pdffp, "h f*\n");
+                break;
+            case 3:
+                fprintf(pd->pdffp, "b*\n");
+                break;
+            }
+        }
+        else
+        {
+            switch (code)
+            {
+            case 1:
+                fprintf(pd->pdffp, "s\n");
+                break;
+            case 2:
+                fprintf(pd->pdffp, "h f\n");
+                break;
+            case 3:
+                fprintf(pd->pdffp, "b\n");
+                break;
+            }
         }
     }
 }
@@ -7735,6 +7762,10 @@ static void PDF_MetricInfo(int c, const pGEcontext gc, double *ascent, double *d
  *  printit     = 'print' after closing device?
  *  command     = 'print' command
  *  title       = character string
+ *  fonts
+ *  colorModel
+ *  useKerning
+ *  fillOddEven
  */
 
 SEXP PostScript(SEXP args)
@@ -7747,6 +7778,7 @@ SEXP PostScript(SEXP args)
     int i, horizontal, onefile, pagecentre, printit, useKern;
     double height, width, ps;
     SEXP fam, fonts;
+    Rboolean fillOddEven;
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
@@ -7799,13 +7831,17 @@ SEXP PostScript(SEXP args)
     args = CDR(args);
     fonts = CAR(args);
     args = CDR(args);
+    if (!isNull(fonts) && !isString(fonts))
+        error(_("invalid 'fonts' parameter in %s"), call);
     colormodel = CHAR(asChar(CAR(args)));
     args = CDR(args);
     useKern = asLogical(CAR(args));
+    args = CDR(args);
     if (useKern == NA_LOGICAL)
         useKern = 1;
-    if (!isNull(fonts) && !isString(fonts))
-        error(_("invalid 'fonts' parameter in %s"), call);
+    fillOddEven = asLogical(CAR(args));
+    if (fillOddEven == NA_LOGICAL)
+        error(_("invalid value of '%s'"), "fillOddEven");
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -7815,7 +7851,7 @@ SEXP PostScript(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!PSDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, (double)horizontal, ps,
-                            onefile, pagecentre, printit, cmd, title, fonts, colormodel, useKern))
+                            onefile, pagecentre, printit, cmd, title, fonts, colormodel, useKern, fillOddEven))
         {
             /* free(dev); No, dev freed inside PSDeviceDrive */
             error(_("unable to start device PostScript"));
@@ -7928,6 +7964,7 @@ SEXP XFig(SEXP args)
  *  colormodel
  *  useDingbats
  *  forceLetterSpacing
+ *  fillOddEven
  */
 
 SEXP PDF(SEXP args)
@@ -7939,6 +7976,7 @@ SEXP PDF(SEXP args)
     double height, width, ps;
     int i, onefile, pagecentre, major, minor, dingbats, useKern;
     SEXP fam, fonts;
+    Rboolean fillOddEven;
 
     vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
@@ -7993,8 +8031,12 @@ SEXP PDF(SEXP args)
     if (dingbats == NA_LOGICAL)
         dingbats = 1;
     useKern = asLogical(CAR(args));
+    args = CDR(args);
     if (useKern == NA_LOGICAL)
         useKern = 1;
+    fillOddEven = asLogical(CAR(args));
+    if (fillOddEven == NA_LOGICAL)
+        error(_("invalid value of '%s'"), "fillOddEven");
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -8004,7 +8046,7 @@ SEXP PDF(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!PDFDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, ps, onefile, pagecentre,
-                             title, fonts, major, minor, colormodel, dingbats, useKern))
+                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven))
         {
             /* free(dev); PDFDeviceDriver now frees */
             error(_("unable to start device pdf"));
