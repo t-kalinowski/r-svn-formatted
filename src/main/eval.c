@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2006	The R Development Core Team.
+ *  Copyright (C) 1998--2009	The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -632,8 +632,13 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
         SET_STEP(op, 0);
     if (DEBUG(newrho))
     {
+        int old_bl = R_BrowseLines, blines = asInteger(GetOption(install("deparse.max.lines"), R_BaseEnv));
         Rprintf("debugging in: ");
+        if (blines != NA_INTEGER && blines > 0)
+            R_BrowseLines = blines;
         PrintValueRec(call, rho);
+        R_BrowseLines = old_bl;
+
         /* Is the body a bare symbol (PR#6804) */
         if (!isSymbol(body) & !isVectorAtomic(body))
         {
