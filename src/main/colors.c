@@ -34,7 +34,7 @@
 static unsigned int rgb2col(const char *);
 static char *RGB2rgb(unsigned int, unsigned int, unsigned int);
 static char *RGBA2rgb(unsigned int, unsigned int, unsigned int, unsigned int);
-static unsigned int str2col(const char *s, unsigned int bg);
+static double str2col(const char *s, double bg);
 
 static int R_ColorTableSize;
 static unsigned int R_ColorTable[COLOR_TABLE_SIZE];
@@ -423,7 +423,8 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
     /* colorname, "#rrggbb" or "col.number" to (r,g,b) conversion */
 
     SEXP colors, ans, names, dmns;
-    unsigned int col, bg;
+    double col, bg;
+    unsigned int icol;
     int n, i, i4;
 
     checkArity(op, args);
@@ -454,9 +455,10 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* avoid looking up the background unless we will need it;
        this may avoid opening a new window.  Unfortunately, there is no
-       unavailable colour, so */
+       unavailable colour, so we work with doubles and convert at the
+       last minute */
 
-#define BG_NEEDED NA_INTEGER
+#define BG_NEEDED -1.0
 
     bg = BG_NEEDED;
 
@@ -467,10 +469,11 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
             col = str2col(CHAR(STRING_ELT(colors, i)), bg);
             if (col == BG_NEEDED)
                 col = bg = dpptr(GEcurrentDevice())->bg;
-            INTEGER(ans)[i4 + 0] = R_RED(col);
-            INTEGER(ans)[i4 + 1] = R_GREEN(col);
-            INTEGER(ans)[i4 + 2] = R_BLUE(col);
-            INTEGER(ans)[i4 + 3] = R_ALPHA(col);
+            icol = (unsigned int)col;
+            INTEGER(ans)[i4 + 0] = R_RED(icol);
+            INTEGER(ans)[i4 + 1] = R_GREEN(icol);
+            INTEGER(ans)[i4 + 2] = R_BLUE(icol);
+            INTEGER(ans)[i4 + 3] = R_ALPHA(icol);
         }
     }
     else
@@ -483,13 +486,14 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
             else if (col == 0)
                 col = bg;
             else
-                col = R_ColorTable[(col - 1) % R_ColorTableSize];
+                col = R_ColorTable[(unsigned int)(col - 1) % R_ColorTableSize];
             if (col == BG_NEEDED)
                 col = bg = dpptr(GEcurrentDevice())->bg;
-            INTEGER(ans)[i4 + 0] = R_RED(col);
-            INTEGER(ans)[i4 + 1] = R_GREEN(col);
-            INTEGER(ans)[i4 + 2] = R_BLUE(col);
-            INTEGER(ans)[i4 + 3] = R_ALPHA(col);
+            icol = (unsigned int)col;
+            INTEGER(ans)[i4 + 0] = R_RED(icol);
+            INTEGER(ans)[i4 + 1] = R_GREEN(icol);
+            INTEGER(ans)[i4 + 2] = R_BLUE(icol);
+            INTEGER(ans)[i4 + 3] = R_ALPHA(icol);
         }
     }
     UNPROTECT(3);
@@ -1488,7 +1492,7 @@ unsigned int attribute_hidden name2col(const char *nm)
     return 0; /* never occurs but avoid compiler warnings */
 }
 
-static unsigned int number2col(const char *nm, unsigned int bg)
+static double number2col(const char *nm, double bg)
 {
     int indx;
     char *ptr;
@@ -1577,7 +1581,7 @@ const char *col2name(unsigned int col)
     }
 }
 
-static unsigned int str2col(const char *s, unsigned int bg)
+static double str2col(const char *s, double bg)
 {
     if (s[0] == '#')
         return rgb2col(s);
@@ -1594,7 +1598,7 @@ static unsigned int str2col(const char *s, unsigned int bg)
 /* used in grDevices, public */
 unsigned int R_GE_str2col(const char *s)
 {
-    return str2col(s, R_TRANWHITE);
+    return (unsigned int)str2col(s, R_TRANWHITE);
 }
 
 /* Convert a sexp element to an R color desc */
@@ -1607,7 +1611,7 @@ unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
     switch (TYPEOF(x))
     {
     case STRSXP:
-        return str2col(CHAR(STRING_ELT(x, i)), bg);
+        return (unsigned int)str2col(CHAR(STRING_ELT(x, i)), bg);
     case LGLSXP:
         indx = LOGICAL(x)[i];
         if (indx == NA_LOGICAL)
