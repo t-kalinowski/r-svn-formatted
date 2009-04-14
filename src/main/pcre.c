@@ -104,6 +104,13 @@ static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexp
                 upper = FALSE;
                 lower = TRUE;
             }
+            else if (p[1] == 'E')
+            { /* end case modification */
+                p++;
+                n -= 2;
+                upper = FALSE;
+                lower = FALSE;
+            }
             else if (p[1] == 0)
             {
                 /* can't escape the final '\0' */
@@ -207,6 +214,12 @@ static char *string_adj(char *target, const char *orig, const char *repl, int *o
                 p += 2;
                 upper = FALSE;
                 lower = TRUE;
+            }
+            else if (p[1] == 'E')
+            { /* end case modification */
+                p += 2;
+                upper = FALSE;
+                lower = FALSE;
             }
             else if (p[1] == 0)
             {
