@@ -2933,6 +2933,10 @@ int(DEBUG)(SEXP x)
 {
     return DEBUG(x);
 }
+int(STEP)(SEXP x)
+{
+    return STEP(x);
+}
 
 void(SET_FORMALS)(SEXP x, SEXP v)
 {
@@ -2952,6 +2956,10 @@ void(SET_CLOENV)(SEXP x, SEXP v)
 void(SET_DEBUG)(SEXP x, int v)
 {
     SET_DEBUG(x, v);
+}
+void(SET_STEP)(SEXP x, int v)
+{
+    SET_STEP(x, v);
 }
 
 /* Primitive Accessors */
