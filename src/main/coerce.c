@@ -1362,7 +1362,8 @@ SEXP asCharacterFactor(SEXP x)
     return ans;
 }
 
-/* A historical anomaly: as.character is primitive, the other ops are not */
+/* the "ascharacter" name is a historical anomaly: as.character used to be the
+ * only primitive;  now, all these ops are : */
 SEXP attribute_hidden do_ascharacter(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x;
