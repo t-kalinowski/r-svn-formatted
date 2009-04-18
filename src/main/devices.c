@@ -269,7 +269,7 @@ int selectDevice(int devNum)
         R_CurrentDevice = devNum;
 
         /* maintain .Device */
-        gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), devNum), R_BaseEnv);
+        gsetVar(R_DeviceSymbol, elt(getSymbolValue(".Devices"), devNum), R_BaseEnv);
 
         gdd = GEcurrentDevice(); /* will start a device if current is null */
         if (!NoDevices())        /* which it always will be */
@@ -310,7 +310,7 @@ static void removeDevice(int devNum, Rboolean findNext)
             {
                 R_CurrentDevice = nextDevice(R_CurrentDevice);
                 /* maintain .Device */
-                gsetVar(install(".Device"), elt(getSymbolValue(".Devices"), R_CurrentDevice), R_BaseEnv);
+                gsetVar(R_DeviceSymbol, elt(getSymbolValue(".Devices"), R_CurrentDevice), R_BaseEnv);
 
                 /* activate new current device */
                 if (R_CurrentDevice)
@@ -520,7 +520,7 @@ void GEaddDevice(pGEDevDesc gdd)
 /* conveniende wrapper */
 void GEaddDevice2(pGEDevDesc gdd, const char *name)
 {
-    gsetVar(install(".Device"), mkString(name), R_BaseEnv);
+    gsetVar(R_DeviceSymbol, mkString(name), R_BaseEnv);
     GEaddDevice(gdd);
     GEinitDisplayList(gdd);
 }
@@ -568,7 +568,7 @@ void attribute_hidden InitGraphics(void)
 
     /* init .Device and .Devices */
     PROTECT(s = mkString("null device"));
-    gsetVar(install(".Device"), s, R_BaseEnv);
+    gsetVar(R_DeviceSymbol, s, R_BaseEnv);
     PROTECT(t = mkString("null device"));
     gsetVar(install(".Devices"), CONS(t, R_NilValue), R_BaseEnv);
     UNPROTECT(2);

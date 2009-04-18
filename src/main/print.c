@@ -629,7 +629,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
 #endif
     if (!isMethodsDispatchOn() && (IS_S4_OBJECT(s) || TYPEOF(s) == S4SXP))
     {
-        SEXP cl = getAttrib(s, install("class"));
+        SEXP cl = getAttrib(s, R_ClassSymbol);
         if (isNull(cl))
         {
             /* This might be a mistaken S4 bit set */
@@ -640,7 +640,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         }
         else
         {
-            SEXP pkg = getAttrib(s, install("package"));
+            SEXP pkg = getAttrib(s, R_PackageSymbol);
             if (isNull(pkg))
             {
                 Rprintf("<S4 object of class \"%s\">\n", CHAR(STRING_ELT(cl, 0)));

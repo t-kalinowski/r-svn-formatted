@@ -102,9 +102,9 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
     if (TYPEOF(op) == EXTPTRSXP)
     {
         char *p = NULL;
-        if (R_ExternalPtrTag(op) == Rf_install("native symbol"))
+        if (R_ExternalPtrTag(op) == install("native symbol"))
             *fun = R_ExternalPtrAddrFn(op);
-        else if (R_ExternalPtrTag(op) == Rf_install("registered native symbol"))
+        else if (R_ExternalPtrTag(op) == install("registered native symbol"))
         {
             R_RegisteredNativeSymbol *tmp;
             tmp = (R_RegisteredNativeSymbol *)R_ExternalPtrAddr(op);
@@ -1451,7 +1451,7 @@ static SEXP Rf_getCallingDLL(void)
     if (!found)
         return R_NilValue;
 
-    PROTECT(e = lang2(Rf_install("getCallingDLLe"), rho));
+    PROTECT(e = lang2(install("getCallingDLLe"), rho));
     ans = eval(e, R_GlobalEnv);
     UNPROTECT(1);
     return (ans);

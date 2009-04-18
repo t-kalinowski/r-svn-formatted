@@ -2213,7 +2213,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
         setAttrib(s, R_ClassSymbol, getAttrib(HASHTAB(s), R_ClassSymbol));
     }
 
-    setAttrib(s, install("name"), name);
+    setAttrib(s, R_NameSymbol, name);
     for (t = R_GlobalEnv; ENCLOS(t) != R_BaseEnv && pos > 2; t = ENCLOS(t))
         pos--;
 
@@ -2334,7 +2334,7 @@ SEXP attribute_hidden do_search(SEXP call, SEXP op, SEXP args, SEXP env)
     i = 1;
     for (t = ENCLOS(R_GlobalEnv); t != R_BaseEnv; t = ENCLOS(t))
     {
-        name = getAttrib(t, install("name"));
+        name = getAttrib(t, R_NameSymbol);
         if (!isString(name) || length(name) < 1)
             SET_STRING_ELT(ans, i, mkChar("(unknown)"));
         else
@@ -2856,15 +2856,14 @@ SEXP attribute_hidden do_pos2env(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static SEXP matchEnvir(SEXP call, const char *what)
 {
-    SEXP t, name, nameSymbol;
+    SEXP t, name;
     if (!strcmp(".GlobalEnv", what))
         return R_GlobalEnv;
     if (!strcmp("package:base", what))
         return R_BaseEnv;
-    nameSymbol = install("name");
     for (t = ENCLOS(R_GlobalEnv); t != R_EmptyEnv; t = ENCLOS(t))
     {
-        name = getAttrib(t, nameSymbol);
+        name = getAttrib(t, R_NameSymbol);
         if (isString(name) && length(name) > 0 && !strcmp(translateChar(STRING_ELT(name, 0)), what))
             return t;
     }
@@ -3210,10 +3209,9 @@ void R_RestoreHashCount(SEXP rho)
 
 Rboolean R_IsPackageEnv(SEXP rho)
 {
-    SEXP nameSymbol = install("name");
     if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = getAttrib(rho, nameSymbol);
+        SEXP name = getAttrib(rho, R_NameSymbol);
         char *packprefix = "package:";
         int pplen = strlen(packprefix);
         if (isString(name) && length(name) > 0 && !strncmp(packprefix, CHAR(STRING_ELT(name, 0)), pplen)) /* ASCII */
@@ -3227,10 +3225,9 @@ Rboolean R_IsPackageEnv(SEXP rho)
 
 SEXP R_PackageEnvName(SEXP rho)
 {
-    SEXP nameSymbol = install("name");
     if (TYPEOF(rho) == ENVSXP)
     {
-        SEXP name = getAttrib(rho, nameSymbol);
+        SEXP name = getAttrib(rho, R_NameSymbol);
         char *packprefix = "package:";
         int pplen = strlen(packprefix);
         if (isString(name) && length(name) > 0 && !strncmp(packprefix, CHAR(STRING_ELT(name, 0)), pplen)) /* ASCII */
