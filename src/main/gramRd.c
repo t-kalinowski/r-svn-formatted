@@ -2852,15 +2852,19 @@ static int token(void)
         break;
     case LBRACE:
         if (!xxinRString)
+        {
             xxbraceDepth++;
-        if (outsideLiteral)
-            return c;
+            if (outsideLiteral)
+                return c;
+        }
         break;
     case RBRACE:
         if (!xxinRString)
+        {
             xxbraceDepth--;
-        if (outsideLiteral || xxbraceDepth == 0)
-            return c;
+            if (outsideLiteral || xxbraceDepth == 0)
+                return c;
+        }
         break;
     case '[':
     case ']':
@@ -2957,9 +2961,9 @@ static int mkCode(int c)
     char *stext = st0, *bp = st0;
 
     /* Avoid double counting initial braces */
-    if (c == LBRACE)
+    if (c == LBRACE && !xxinRString)
         xxbraceDepth--;
-    if (c == RBRACE)
+    if (c == RBRACE && !xxinRString)
         xxbraceDepth++;
 
     while (1)
