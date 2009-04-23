@@ -27,6 +27,8 @@
 #include "RBufferUtils.h"
 
 #define MAXLINE MAXELTSIZE
+#define MAXNARGS 100
+/*               ^^^ not entirely arbitrary, but strongly linked to allowing %$1 to %$99 !*/
 
 /*
    This is passed a format that started with % and may include other
@@ -37,7 +39,7 @@
 static const char *findspec(const char *str)
 {
     /* This is not strict about checking where '.' is allowed.
-       It should allow  - + ' ' 0 as flags
+       It should allow  - + ' ' # 0 as flags
        m m. .n n.m as width/precision
     */
     const char *p = str;
@@ -56,34 +58,35 @@ static const char *findspec(const char *str)
     return p;
 }
 
-/*   FALSE is success, TRUE is an error. */
+/*   FALSE is success, TRUE is an error: pattern *not* found . */
 static Rboolean checkfmt(const char *fmt, const char *pattern)
 {
     const char *p = fmt;
 
     if (*p != '%')
-        return 1;
+        return TRUE;
     p = findspec(fmt);
-    return strcspn(p, pattern) != 0;
+    return strcspn(p, pattern) ? TRUE : FALSE;
 }
 
 SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, nargs, cnt, v, thislen, nfmt, nprotect = 1;
-    const char *formatString, *ss;
-    char *starc;
     /* fmt2 is a copy of fmt with '*' expanded.
        bit will hold numeric formats and %<w>s, so be quite small. */
-    char fmt[MAXLINE + 1], fmt2[MAXLINE + 10], *fmtp, bit[MAXLINE + 1], *outputString;
+    char fmt[MAXLINE + 1], fmt2[MAXLINE + 10], *fmtp, bit[MAXLINE + 1], *outputString, *formatString;
     size_t n, cur, chunk;
 
-    SEXP format, ans, _this, a[100], tmp;
-    int ns, maxlen, lens[100], nthis, has_star, star_arg = 0, nstar;
+    SEXP format, ans, _this, a[MAXNARGS], tmp;
+    int ns, maxlen, lens[MAXNARGS], nthis, nstar, star_arg = 0;
     static R_StringBuffer outbuff = {NULL, 0, MAXELTSIZE};
-    Rboolean use_UTF8;
+    Rboolean has_star, use_UTF8;
 
-    /* grab the format string */
+#define TRANSLATE_CHAR(_STR_, _i_)                                                                                     \
+    (char *)((use_UTF8) ? translateCharUTF8(STRING_ELT(_STR_, _i_)) : translateChar(STRING_ELT(_STR_, _i_)))
+
     nargs = length(args);
+    /* grab the format string */
     format = CAR(args);
     if (!isString(format))
         error(_("'fmt' is not a character vector"));
@@ -91,8 +94,8 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
         return allocVector(STRSXP, 0);
     args = CDR(args);
     nargs--;
-    if (nargs >= 100)
-        error(_("only 100 arguments are allowed"));
+    if (nargs >= MAXNARGS)
+        error(_("only %d arguments are allowed"), MAXNARGS);
 
     /* record the args for possible coercion and later re-ordering */
     for (i = 0; i < nargs; i++, args = CDR(args))
@@ -135,16 +138,15 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
         }
-        if (use_UTF8)
-            formatString = translateCharUTF8(STRING_ELT(format, ns % nfmt));
-        else
-            formatString = translateChar(STRING_ELT(format, ns % nfmt));
+
+        formatString = TRANSLATE_CHAR(format, ns % nfmt);
         n = strlen(formatString);
         if (n > MAXLINE)
             error(_("'fmt' length exceeds maximal format length %d"), MAXLINE);
         /* process the format string */
         for (cur = 0, cnt = 0; cur < n; cur += chunk)
         {
+            char *curFormat = formatString + cur, *ss, *starc;
             ss = NULL;
             if (formatString[cur] == '%')
             { /* handle special format command */
@@ -158,12 +160,13 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                 {
                     /* recognise selected types from Table B-1 of K&R */
+                    /* NB: we deal with "%%" in branch above. */
                     /* This is MBCS-OK, as we are in a format spec */
-                    chunk = strcspn(formatString + cur + 1, "aAdisfeEgGxX%") + 2;
+                    chunk = strcspn(curFormat + 1, "disfeEgGxXaA") + 2;
                     if (cur + chunk > n)
-                        error(_("unrecognised format at end of string"));
+                        error(_("unrecognised format specification '%s'"), curFormat);
 
-                    strncpy(fmt, formatString + cur, chunk);
+                    strncpy(fmt, curFormat, chunk);
                     fmt[chunk] = '\0';
 
                     nthis = -1;
@@ -188,10 +191,9 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         }
                     }
 
-                    has_star = 0;
                     starc = Rf_strchr(fmt, '*');
                     if (starc)
-                    { /* handle * format if present */
+                    { /* handle  *  format if present */
                         nstar = -1;
                         if (strlen(starc) > 3 && starc[1] >= '1' && starc[1] <= '9')
                         {
@@ -233,9 +235,11 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         if (TYPEOF(_this) != INTSXP || LENGTH(_this) < 1 ||
                             INTEGER(_this)[ns % LENGTH(_this)] == NA_INTEGER)
                             error(_("argument for '*' conversion specification must be a number"));
-                        has_star = 1;
                         star_arg = INTEGER(_this)[ns % LENGTH(_this)];
+                        has_star = TRUE;
                     }
+                    else
+                        has_star = FALSE;
 
                     if (fmt[strlen(fmt) - 1] == '%')
                     {
@@ -268,10 +272,10 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         else
                             fmtp = fmt;
 
+                        /* Now let us see if some minimal coercion
+                           would be sensible, but only do so once, for ns = 0: */
                         if (ns == 0)
                         {
-                            /* Now let us see if some minimal coercion
-                               would be sensible, but only do so once. */
                             switch (*findspec(fmtp))
                             {
                             case 'd':
@@ -405,10 +409,8 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                             /* NA_STRING will be printed as 'NA' */
                             if (checkfmt(fmtp, "s"))
                                 error("%s", _("use format %s for character objects"));
-                            if (use_UTF8)
-                                ss = translateCharUTF8(STRING_ELT(_this, ns % thislen));
-                            else
-                                ss = translateChar(STRING_ELT(_this, ns % thislen));
+
+                            ss = TRANSLATE_CHAR(_this, ns % thislen);
                             if (fmtp[1] != 's')
                             {
                                 if (strlen(ss) > MAXLINE)
@@ -429,14 +431,10 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
             else
-            {                                                  /* not '%' : handle string part */
-                char *ch = Rf_strchr(formatString + cur, '%'); /* MBCS-aware
-                                          version used */
-                if (ch)
-                    chunk = ch - formatString - cur;
-                else
-                    chunk = strlen(formatString + cur);
-                strncpy(bit, formatString + cur, chunk);
+            {                                         /* not '%' : handle string part */
+                char *ch = Rf_strchr(curFormat, '%'); /* MBCS-aware version used */
+                chunk = (ch) ? ch - curFormat : strlen(curFormat);
+                strncpy(bit, curFormat, chunk);
                 bit[chunk] = '\0';
             }
             if (ss)
@@ -449,16 +447,12 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                 outputString = R_AllocStringBuffer(strlen(outputString) + strlen(bit) + 1, &outbuff);
                 strcat(outputString, bit);
             }
-        }
+        } /* end for ( each chunk ) */
+
         SET_STRING_ELT(ans, ns, mkCharCE(outputString, use_UTF8 ? CE_UTF8 : CE_NATIVE));
-    }
+    } /* end for(ns ...) */
 
     UNPROTECT(nprotect);
     R_FreeStringBufferL(&outbuff);
     return ans;
 }
-
-/* Local Variables: */
-/* indent-tabs-mode: t */
-/* c-basic-offset: 4 */
-/* End: */
