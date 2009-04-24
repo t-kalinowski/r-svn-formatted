@@ -1926,13 +1926,10 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
 /* bytes so that alignment is preserved for all objects */
 
 /* Allocate a vector object (and also list-like objects).
-   This ensures only validity of list-like
-   SEXPTYPES (as the elements must be initialized).  Initializing of
-   other vector types is done in do_makevector
-   [That comment seems outdated -- STRSXP, VECSXP, EXPRSXP
-   are initialized and CHARSXP are nul-terminated.]
+   This ensures only validity of list-like (LISTSXP, VECSXP, EXPRSXP),
+   STRSXP and CHARSXP types;  e.g., atomic types remain un-initialized
+   and must be initialized upstream, e.g., in do_makevector().
 */
-
 #define intCHARSXP 73
 
 SEXP allocVector(SEXPTYPE type, R_len_t length)
