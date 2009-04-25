@@ -77,13 +77,20 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
     char fmt[MAXLINE + 1], fmt2[MAXLINE + 10], *fmtp, bit[MAXLINE + 1], *outputString, *formatString;
     size_t n, cur, chunk;
 
-    SEXP format, ans, _this, a[MAXNARGS], tmp;
+    SEXP format, _this, a[MAXNARGS], tmp, ans /* -Wall */ = R_NilValue;
     int ns, maxlen, lens[MAXNARGS], nthis, nstar, star_arg = 0;
     static R_StringBuffer outbuff = {NULL, 0, MAXELTSIZE};
     Rboolean has_star, use_UTF8;
 
 #define TRANSLATE_CHAR(_STR_, _i_)                                                                                     \
     (char *)((use_UTF8) ? translateCharUTF8(STRING_ELT(_STR_, _i_)) : translateChar(STRING_ELT(_STR_, _i_)))
+
+#define _my_sprintf(_X_)                                                                                               \
+    {                                                                                                                  \
+        int nc = snprintf(bit, MAXLINE + 1, fmtp, _X_);                                                                \
+        if (nc > MAXLINE)                                                                                              \
+            error(_("required resulting string length %d is > maximal %d"), nc, MAXLINE);                              \
+    }
 
     nargs = length(args);
     /* grab the format string */
@@ -249,7 +256,8 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         if (has_star)
                             sprintf(bit, fmt, star_arg);
                         else
-                            sprintf(bit, fmt);
+                            strcpy(bit, fmt);
+                        /* was sprintf(..)  for which some compiler warn */
                     }
                     else
                     {
@@ -262,6 +270,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         _this = a[nthis];
                         if (has_star)
                         {
+                            int nf;
                             char *p, *q = fmt2;
                             for (p = fmt; *p; p++)
                                 if (*p == '*')
@@ -269,6 +278,9 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                                 else
                                     *q++ = *p;
                             *q = '\0';
+                            nf = strlen(fmt2);
+                            if (nf > MAXLINE)
+                                error(_("the '%*' constructed 'fmt2' length exceeds maximum of %d"), MAXLINE);
                             fmtp = fmt2;
                         }
                         else
@@ -342,40 +354,42 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                         case LGLSXP: {
                             int x = LOGICAL(_this)[ns % thislen];
                             if (checkfmt(fmtp, "di"))
-                                error("%s", _("use format %d or %i for logical objects"));
+                                error(_("invalid format '%s'; %s"), fmtp, _("use format %d or %i for logical objects"));
                             if (x == NA_LOGICAL)
                             {
                                 fmtp[strlen(fmtp) - 1] = 's';
-                                sprintf(bit, fmtp, "NA");
+                                _my_sprintf("NA")
                             }
                             else
                             {
-                                sprintf(bit, fmtp, x);
+                                _my_sprintf(x)
                             }
                             break;
                         }
                         case INTSXP: {
                             int x = INTEGER(_this)[ns % thislen];
                             if (checkfmt(fmtp, "dixX"))
-                                error("%s", _("use format %d, %i, %x or %X for integer objects"));
+                                error(_("invalid format '%s'; %s"), fmtp,
+                                      _("use format %d, %i, %x or %X for integer objects"));
                             if (x == NA_INTEGER)
                             {
                                 fmtp[strlen(fmtp) - 1] = 's';
-                                sprintf(bit, fmtp, "NA");
+                                _my_sprintf("NA")
                             }
                             else
                             {
-                                sprintf(bit, fmtp, x);
+                                _my_sprintf(x)
                             }
                             break;
                         }
                         case REALSXP: {
                             double x = REAL(_this)[ns % thislen];
                             if (checkfmt(fmtp, "aAfeEgG"))
-                                error("%s", _("use format %f, %e, %g or %a for numeric objects"));
+                                error(_("invalid format '%s'; %s"), fmtp,
+                                      _("use format %f, %e, %g or %a for numeric objects"));
                             if (R_FINITE(x))
                             {
-                                sprintf(bit, fmtp, x);
+                                _my_sprintf(x)
                             }
                             else
                             {
@@ -390,43 +404,35 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                                 if (ISNA(x))
                                 {
                                     if (strcspn(fmtp, " ") < strlen(fmtp))
-                                        sprintf(bit, fmtp, " NA");
-                                    else
-                                        sprintf(bit, fmtp, "NA");
+                                        _my_sprintf(" NA") else _my_sprintf("NA")
                                 }
                                 else if (ISNAN(x))
                                 {
                                     if (strcspn(fmtp, " ") < strlen(fmtp))
-                                        sprintf(bit, fmtp, " NaN");
-                                    else
-                                        sprintf(bit, fmtp, "NaN");
+                                        _my_sprintf(" NaN") else _my_sprintf("NaN")
                                 }
                                 else if (x == R_PosInf)
                                 {
                                     if (strcspn(fmtp, "+") < strlen(fmtp))
-                                        sprintf(bit, fmtp, "+Inf");
-                                    else if (strcspn(fmtp, " ") < strlen(fmtp))
-                                        sprintf(bit, fmtp, " Inf");
-                                    else
-                                        sprintf(bit, fmtp, "Inf");
+                                        _my_sprintf("+Inf") else if (strcspn(fmtp, " ") < strlen(fmtp))
+                                            _my_sprintf(" Inf") else _my_sprintf("Inf")
                                 }
                                 else if (x == R_NegInf)
-                                    sprintf(bit, fmtp, "-Inf");
+                                    _my_sprintf("-Inf")
                             }
                             break;
                         }
                         case STRSXP:
                             /* NA_STRING will be printed as 'NA' */
                             if (checkfmt(fmtp, "s"))
-                                error("%s", _("use format %s for character objects"));
+                                error(_("invalid format '%s'; %s"), fmtp, _("use format %s for character objects"));
 
                             ss = TRANSLATE_CHAR(_this, ns % thislen);
                             if (fmtp[1] != 's')
                             {
                                 if (strlen(ss) > MAXLINE)
                                     warning(_("likely truncation of character string to %d characters"), MAXLINE - 1);
-                                snprintf(bit, MAXLINE, fmtp, ss);
-                                bit[MAXLINE] = '\0';
+                                _my_sprintf(ss) bit[MAXLINE] = '\0';
                                 ss = NULL;
                             }
                             break;
