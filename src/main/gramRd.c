@@ -3024,14 +3024,26 @@ static int mkCode(int c)
             {
                 do
                 {
+                    int escaped = 0;
                     TEXT_PUSH(c);
                     c = xxgetc();
-                    if (c == LBRACE)
+                    if (c == '\\')
+                    {
+                        int lookahead = xxgetc();
+                        if (lookahead == '\\' || lookahead == '%' || lookahead == LBRACE || lookahead == RBRACE)
+                        {
+                            c = lookahead;
+                            escaped = 1;
+                        }
+                        else
+                            xxungetc(lookahead);
+                    }
+                    if (c == LBRACE && !escaped)
                         xxbraceDepth++;
-                    else if (c == RBRACE)
+                    else if (c == RBRACE && !escaped)
                         xxbraceDepth--;
                 } while (c != '\n' && c != R_EOF && xxbraceDepth > 0);
-                if (c == RBRACE)
+                if (c == RBRACE && !escaped)
                     xxbraceDepth++; /* avoid double counting */
             }
             if (c == '\'' || c == '"' || c == '`')
