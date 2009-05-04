@@ -653,7 +653,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
         }
         Rprintf("debug: ");
         PrintValue(body);
-        do_browser(call, op, arglist, newrho);
+        do_browser(call, op, R_NilValue, newrho);
     }
 
 regdb :
@@ -741,7 +741,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
             goto regdb;
         Rprintf("debug: ");
         PrintValue(body);
-        do_browser(call, op, arglist, newrho);
+        do_browser(call, op, R_NilValue, newrho);
     }
 
 regdb :
@@ -1016,7 +1016,7 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
         {                                                                                                              \
             Rprintf("debug: ");                                                                                        \
             PrintValue(CAR(args));                                                                                     \
-            do_browser(call, op, args, rho);                                                                           \
+            do_browser(call, op, R_NilValue, rho);                                                                     \
         }                                                                                                              \
     } while (0)
 
@@ -1228,7 +1228,7 @@ SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 Rprintf("debug: ");
                 PrintValue(CAR(args));
-                do_browser(call, op, args, rho);
+                do_browser(call, op, R_NilValue, rho);
             }
             s = eval(CAR(args), rho);
             args = CDR(args);
