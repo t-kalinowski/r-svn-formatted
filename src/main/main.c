@@ -1105,11 +1105,11 @@ static SEXP matchargs(SEXP args)
 
     /*set default values */
 
-    CAR(argList) = mkString("");
-    CADR(argList) = R_NilValue;
+    SETCAR(argList, mkString(""));
+    SETCADR(argList, R_NilValue);
     PROTECT(tmp = allocVector(LGLSXP, 1));
     LOGICAL(tmp)[0] = 1; /*true*/
-    CADDR(argList) = tmp;
+    SETCADDR(argList, tmp);
     UNPROTECT(1);
 
     /*now match  */
@@ -1135,7 +1135,7 @@ static SEXP matchargs(SEXP args)
                 nmatch++;
                 pos[i] = 1;
                 mt = 1;
-                CAR(argList) = CAR(tmp);
+                SETCAR(argList, CAR(tmp));
             }
             else
                 error(_("duplicate text argument"));
@@ -1147,7 +1147,7 @@ static SEXP matchargs(SEXP args)
                 nmatch++;
                 pos[i] = 1;
                 mc = 1;
-                CADR(argList) = CAR(tmp);
+                SETCADR(argList, CAR(tmp));
             }
             else
                 error(_("duplicate condition argument"));
@@ -1159,7 +1159,7 @@ static SEXP matchargs(SEXP args)
                 nmatch++;
                 pos[i] = 1;
                 me = 1;
-                CADDR(argList) = CAR(tmp);
+                SETCADDR(argList, CAR(tmp));
             }
             else
                 error(_("duplicate expr argument"));
@@ -1179,11 +1179,11 @@ static SEXP matchargs(SEXP args)
         if (pos[i] == 0)
         {
             if (mt == 0) /* first non-named is text */
-                CAR(argList) = tmp;
-            else if (mc == 0) /*second is condition */
-                CADR(argList) = tmp;
+                SETCAR(argList, tmp);
+            else if (mc == 0) /* second is condition */
+                SETCADR(argList, tmp);
             else
-                CADDR(argList) = tmp; /*third is expr */
+                SETCADDR(argList, tmp); /* third is expr */
             nmatch++;
         }
     }
