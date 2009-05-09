@@ -1094,7 +1094,7 @@ static SEXP matchargs(SEXP args)
     int i, nargs = length(args), mt = 0, mc = 0, me = 0, nmatch = 0, pos[3];
     SEXP tmp, tsym, csym, esym, argList;
 
-    /*set up argList and defaults */
+    /* set up argList and defaults */
     PROTECT(argList = allocList(3));
     PROTECT(tmp = allocVector(STRSXP, 3));
     SET_STRING_ELT(tmp, 0, mkChar("text"));
@@ -1103,7 +1103,7 @@ static SEXP matchargs(SEXP args)
     setAttrib(argList, R_NamesSymbol, tmp);
     UNPROTECT(1);
 
-    /*set default values */
+    /* set default values */
 
     SETCAR(argList, mkString(""));
     SETCADR(argList, R_NilValue);
@@ -1112,7 +1112,7 @@ static SEXP matchargs(SEXP args)
     SETCADDR(argList, tmp);
     UNPROTECT(1);
 
-    /*now match  */
+    /* now match  */
     if (nargs == 0)
     {
         UNPROTECT(1);
@@ -1171,7 +1171,7 @@ static SEXP matchargs(SEXP args)
         UNPROTECT(1);
         return (argList);
     }
-    /*otherwise match by position */
+    /* otherwise match by position */
     /* reset tmp */
     tmp = args;
     for (i = 0; i < 3; i++)
@@ -1182,8 +1182,8 @@ static SEXP matchargs(SEXP args)
                 SETCAR(argList, tmp);
             else if (mc == 0) /* second is condition */
                 SETCADR(argList, tmp);
-            else
-                SETCADDR(argList, tmp); /* third is expr */
+            else /* third is expr */
+                SETCADDR(argList, tmp);
             nmatch++;
         }
     }
