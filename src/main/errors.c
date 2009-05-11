@@ -482,7 +482,7 @@ void PrintWarnings(void)
     cntxt.cend = &cleanup_PrintWarnings;
 
     inPrintWarnings = 1;
-    header = P_("Warning message:\n", "Warning messages:\n", R_CollectWarnings);
+    header = ngettext("Warning message:\n", "Warning messages:\n", R_CollectWarnings);
     if (R_CollectWarnings == 1)
     {
         REprintf("%s", header);
