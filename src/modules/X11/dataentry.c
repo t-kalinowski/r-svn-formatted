@@ -1890,7 +1890,8 @@ static void doSpreadKey(DEstruct DE, int key, DEEvent *event)
     char *text;
 
     iokey = GetKey(event);
-    text = GetCharP(event);
+    if (DE->isEditor)
+        text = GetCharP(event);
 
     if (CheckControl(event))
         doControl(DE, event);
@@ -1925,14 +1926,20 @@ static void doSpreadKey(DEstruct DE, int key, DEEvent *event)
         else
         {
             int i = DE->ymaxused - DE->nhigh + 2;
-            jumpwin(DE, DE->colmin, max(i, 1));
+            jumpwin(DE, DE->colmin, min(i, DE->rowmax));
         }
         cell_cursor_init(DE);
     }
 #elif defined(XK_Next)
     else if (iokey == XK_Next)
     {
-        jumpwin(DE, DE->colmin, DE->rowmax);
+        if (DE->isEditor)
+            jumpwin(DE, DE->colmin, DE->rowmax);
+        else
+        {
+            int i = DE->ymaxused - DE->nhigh + 2;
+            jumpwin(DE, DE->colmin, min(i, DE->rowmax));
+        }
         cell_cursor_init(DE);
     }
 #endif
