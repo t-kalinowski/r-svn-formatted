@@ -992,21 +992,32 @@ static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
 
 SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP Cond;
+    SEXP Cond, Stmt = R_NilValue;
+    int vis = 0;
+
     PROTECT(Cond = eval(CAR(args), rho));
     if (asLogicalNoNA(Cond, call))
+        Stmt = CAR(CDR(args));
+    else
     {
-        UNPROTECT(1);
-        return (eval(CAR(CDR(args)), rho));
+        if (length(args) > 2)
+            Stmt = CAR(CDR(CDR(args)));
+        else
+            vis = 1;
     }
-    else if (length(args) > 2)
+    if (DEBUG(rho))
     {
-        UNPROTECT(1);
-        return (eval(CAR(CDR(CDR(args))), rho));
+        Rprintf("debug: ");
+        PrintValue(Stmt);
+        do_browser(call, op, R_NilValue, rho);
     }
-    R_Visible = FALSE; /* case of no 'else' so return invisible NULL */
     UNPROTECT(1);
-    return R_NilValue;
+    if (vis)
+    {
+        R_Visible = FALSE; /* case of no 'else' so return invisible NULL */
+        return Stmt;
+    }
+    return (eval(Stmt, rho));
 }
 
 #define BodyHasBraces(body) ((isLanguage(body) && CAR(body) == R_BraceSymbol) ? 1 : 0)
