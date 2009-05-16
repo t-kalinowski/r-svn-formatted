@@ -726,7 +726,9 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
 
     /* Debugging */
 
-    SET_DEBUG(newrho, DEBUG(op));
+    SET_DEBUG(newrho, DEBUG(op) || STEP(op));
+    if (STEP(op))
+        SET_STEP(op, 0);
     if (DEBUG(op))
     {
         Rprintf("debugging in: ");

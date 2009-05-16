@@ -1227,7 +1227,11 @@ SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
         tmp = asInteger(GetOption(install("deparse.max.lines"), R_BaseEnv));
         if (tmp != NA_INTEGER && tmp > 0)
             R_BrowseLines = tmp;
-        PrintValueRec(cptr->call, rho);
+        if (cptr != R_ToplevelContext)
+            PrintValueRec(cptr->call, rho);
+        else
+            Rprintf("top level \n");
+
         R_BrowseLines = 0;
     }
 
