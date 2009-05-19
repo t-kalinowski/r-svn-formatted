@@ -646,7 +646,8 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP x = CAR(args), y = CADR(args), xdims, ydims, ans;
     Rboolean sym;
 
-    if (PRIMVAL(op) == 0 && (IS_S4_OBJECT(x) || IS_S4_OBJECT(y)) && R_has_methods(op))
+    if (PRIMVAL(op) == 0 && /* %*% is primitive, the others are .Internal() */
+        (IS_S4_OBJECT(x) || IS_S4_OBJECT(y)) && R_has_methods(op))
     {
         SEXP s, value;
         /* Remove argument names to ensure positional matching */
@@ -702,12 +703,20 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ncx = 1;
             }
         }
-        else
-        { /* crossprod */
+        else if (PRIMVAL(op) == 1)
+        { /* crossprod() */
             if (LENGTH(x) == nry)
             {              /* x is a col vector */
                 nrx = nry; /* == LENGTH(x) */
                 ncx = 1;
+            }
+        }
+        else
+        { /* tcrossprod */
+            if (LENGTH(x) == ncy)
+            { /* x as row vector */
+                nrx = 1;
+                ncx = ncy; /* == LENGTH(x) */
             }
         }
     }
@@ -731,7 +740,7 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
         }
         else
-        {
+        { /* (t)crossprod */
             if (LENGTH(y) == nrx)
             {              /* y is a col vector */
                 nry = nrx; /* == LENGTH(y) */
