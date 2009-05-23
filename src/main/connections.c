@@ -161,6 +161,14 @@ attribute_hidden Rconnection getConnection_no_err(int n)
     return con;
 }
 
+static void set_iconv_error(Rconnection con, char *from, char *to)
+{
+    char buf[100];
+    snprintf(buf, 100, _("unsupported conversion from '%s' to '%s'"), from, to);
+    con_destroy(ConnIndex(con));
+    error(buf);
+}
+
 void set_iconv(Rconnection con)
 {
     void *tmp;
@@ -184,7 +192,7 @@ void set_iconv(Rconnection con)
         if (tmp != (void *)-1)
             con->inconv = tmp;
         else
-            error(_("unsupported conversion from '%s' to '%s'"), con->encname, con->UTF8out ? "UTF-8" : "");
+            set_iconv_error(con, con->encname, con->UTF8out ? "UTF-8" : "");
         con->EOF_signalled = FALSE;
         /* initialize state, and prepare any initial bytes */
         Riconv(tmp, NULL, NULL, &ob, &onb);
@@ -203,7 +211,7 @@ void set_iconv(Rconnection con)
         if (tmp != (void *)-1)
             con->outconv = tmp;
         else
-            error(_("unsupported conversion from '%s' to '%s'"), con->encname, "");
+            set_iconv_error(con, con->encname, "");
         /* initialize state, and prepare any initial bytes */
         Riconv(tmp, NULL, NULL, &ob, &onb);
         ob[25 - onb] = '\0';
