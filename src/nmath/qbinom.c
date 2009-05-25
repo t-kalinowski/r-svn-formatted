@@ -1,8 +1,8 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2006 The R Development Core Team
- *  Copyright (C) 2003-2004 The R Foundation
+ *  Copyright (C) 2000-2009 The R Development Core Team
+ *  Copyright (C) 2003-2009 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,9 +43,11 @@ static double do_search(double y, double *z, double p, double n, double pr, doub
 #endif
         for (;;)
         {
-            if (y == 0 || (*z = pbinom(y - incr, n, pr, /*l._t.*/ TRUE, /*log_p*/ FALSE)) < p)
+            double newz;
+            if (y == 0 || (newz = pbinom(y - incr, n, pr, /*l._t.*/ TRUE, /*log_p*/ FALSE)) < p)
                 return y;
             y = fmax2(0, y - incr);
+            *z = newz;
         }
     }
     else
