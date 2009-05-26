@@ -2953,17 +2953,26 @@ reprocess:
                 uExponent *= 4; /* log16(2) */
                 if (number >= 8)
                 {
-                    uExponent -= 3;
+                    if (isExponentNegative)
+                        uExponent -= 3;
+                    else
+                        uExponent += 3;
                     number /= 8;
                 }
                 else if (number >= 4)
                 {
-                    uExponent -= 2;
+                    if (isExponentNegative)
+                        uExponent -= 2;
+                    else
+                        uExponent += 2;
                     number /= 4;
                 }
                 else if (number >= 2)
                 {
-                    uExponent -= 1;
+                    if (isExponentNegative)
+                        uExponent -= 1;
+                    else
+                        uExponent += 1;
                     number /= 2;
                 }
             }
