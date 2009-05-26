@@ -1398,6 +1398,8 @@ SEXP R_GetTraceback(int skip)
             else
             {
                 SETCAR(t, deparse1(c->call, 0, DEFAULTDEPARSE));
+                if (c->srcref && !isNull(c->srcref))
+                    setAttrib(CAR(t), R_SrcrefSymbol, duplicate(c->srcref));
                 t = CDR(t);
             }
         }

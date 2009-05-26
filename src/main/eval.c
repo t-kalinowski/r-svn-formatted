@@ -139,6 +139,20 @@ static void doprof(void)
         fprintf(R_ProfileOutfile, "%s\n", buf);
 }
 
+void SrcrefPrompt(const char *prefix, SEXP srcref)
+{
+    if (srcref && !isNull(srcref))
+    {
+        if (isVectorList(srcref))
+            srcref = VECTOR_ELT(srcref, 0);
+        SEXP srcfile = getAttrib(srcref, R_SrcfileSymbol);
+        SEXP filename = findVar(install("filename"), srcfile);
+        Rprintf(_("%s at %s#%d: "), prefix, CHAR(STRING_ELT(filename, 0)), asInteger(srcref));
+    }
+    else
+        Rprintf("%s: ", prefix);
+}
+
 /* Profiling thread main function */
 static void __cdecl ProfileThread(void *pwait)
 {
@@ -352,6 +366,10 @@ SEXP eval(SEXP e, SEXP rho)
     SEXP op, tmp;
     static int evalcount = 0;
 
+    /* Save the current srcref context. */
+
+    SEXP srcrefsave = R_Srcref;
+
     /* The use of depthsave below is necessary because of the
        possibility of non-local returns from evaluation.  Without this
        an "expression too complex error" is quite likely. */
@@ -533,6 +551,7 @@ SEXP eval(SEXP e, SEXP rho)
         UNIMPLEMENTED_TYPE("eval", e);
     }
     R_EvalDepth = depthsave;
+    R_Srcref = srcrefsave;
     return (tmp);
 }
 
@@ -651,7 +670,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
                 !strcmp(PRIMNAME(tmp), "{") && !strcmp(PRIMNAME(tmp), "repeat") && !strcmp(PRIMNAME(tmp), "while"))
                 goto regdb;
         }
-        Rprintf("debug: ");
+        SrcrefPrompt("debug", getAttrib(body, R_SrcrefSymbol));
         PrintValue(body);
         do_browser(call, op, R_NilValue, newrho);
     }
@@ -741,7 +760,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
         if ((TYPEOF(tmp) == BUILTINSXP || TYPEOF(tmp) == SPECIALSXP) && !strcmp(PRIMNAME(tmp), "for") &&
             !strcmp(PRIMNAME(tmp), "{") && !strcmp(PRIMNAME(tmp), "repeat") && !strcmp(PRIMNAME(tmp), "while"))
             goto regdb;
-        Rprintf("debug: ");
+        SrcrefPrompt("debug", getAttrib(body, R_SrcrefSymbol));
         PrintValue(body);
         do_browser(call, op, R_NilValue, newrho);
     }
@@ -1007,7 +1026,7 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (DEBUG(rho))
     {
-        Rprintf("debug: ");
+        SrcrefPrompt("debug", R_Srcref);
         PrintValue(Stmt);
         do_browser(call, op, R_NilValue, rho);
     }
@@ -1027,7 +1046,7 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
     {                                                                                                                  \
         if (bgn && DEBUG(rho))                                                                                         \
         {                                                                                                              \
-            Rprintf("debug: ");                                                                                        \
+            SrcrefPrompt("debug", R_Srcref);                                                                           \
             PrintValue(CAR(args));                                                                                     \
             do_browser(call, op, R_NilValue, rho);                                                                     \
         }                                                                                                              \
@@ -1228,24 +1247,29 @@ SEXP attribute_hidden do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP s;
-    if (args == R_NilValue)
+    SEXP s = R_NilValue;
+    if (args != R_NilValue)
     {
-        s = R_NilValue;
-    }
-    else
-    {
+        SEXP srcrefs = getAttrib(call, R_SrcrefSymbol);
+        Rboolean usesrcrefs = !isNull(srcrefs);
+        int i = 1;
+        R_Srcref = R_NilValue;
         while (args != R_NilValue)
         {
+            if (usesrcrefs)
+                PROTECT(R_Srcref = VECTOR_ELT(srcrefs, i++));
             if (DEBUG(rho))
             {
-                Rprintf("debug: ");
+                SrcrefPrompt("debug", usesrcrefs ? R_Srcref : R_NilValue);
                 PrintValue(CAR(args));
                 do_browser(call, op, R_NilValue, rho);
             }
             s = eval(CAR(args), rho);
+            if (usesrcrefs)
+                UNPROTECT(1);
             args = CDR(args);
         }
+        R_Srcref = R_NilValue;
     }
     return s;
 }

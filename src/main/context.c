@@ -50,6 +50,7 @@
  *			non-local return (i.e. an error)
  *	cenddata	a void pointer to data for cend to use
  *	vmax		the current setting of the R_alloc stack
+ *	srcref		the srcref at the time of the call
  *
  *  Context types can be one of:
  *
@@ -184,6 +185,7 @@ void attribute_hidden R_restore_globals(RCNTXT *cptr)
     R_BCIntStackTop = cptr->intstack;
 #endif
 #endif
+    R_Srcref = cptr->srcref;
 }
 
 /* jumpfun - jump to the named context */
@@ -240,6 +242,7 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->intstack = R_BCIntStackTop;
 #endif
 #endif
+    cptr->srcref = R_Srcref;
     R_GlobalContext = cptr;
 }
 
@@ -389,6 +392,8 @@ SEXP attribute_hidden R_syscall(int n, RCNTXT *cptr)
 {
     /* negative n counts back from the current frame */
     /* positive n counts up from the globalEnv */
+    SEXP result;
+
     if (n > 0)
         n = framedepth(cptr) - n;
     else
@@ -400,14 +405,26 @@ SEXP attribute_hidden R_syscall(int n, RCNTXT *cptr)
         if (cptr->callflag & CTXT_FUNCTION)
         {
             if (n == 0)
-                return (duplicate(cptr->call));
+            {
+                PROTECT(result = duplicate(cptr->call));
+                if (cptr->srcref && !isNull(cptr->srcref))
+                    setAttrib(result, R_SrcrefSymbol, duplicate(cptr->srcref));
+                UNPROTECT(1);
+                return result;
+            }
             else
                 n--;
         }
         cptr = cptr->nextcontext;
     }
     if (n == 0 && cptr->nextcontext == NULL)
-        return (duplicate(cptr->call));
+    {
+        PROTECT(result = duplicate(cptr->call));
+        if (!isNull(cptr->srcref))
+            setAttrib(result, R_SrcrefSymbol, duplicate(cptr->srcref));
+        UNPROTECT(1);
+        return result;
+    }
     errorcall(R_GlobalContext->call, _("not that many frames on the stack"));
     return R_NilValue; /* just for -Wall */
 }
