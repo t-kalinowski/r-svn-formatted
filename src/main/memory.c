@@ -1348,6 +1348,7 @@ again:
         FORWARD_NODE(ctxt->cloenv);       /* the closure environment */
         FORWARD_NODE(ctxt->handlerstack); /* the condition handler stack */
         FORWARD_NODE(ctxt->restartstack); /* the available restarts stack */
+        FORWARD_NODE(ctxt->srcref);       /* the current source reference */
     }
 
     FORWARD_NODE(framenames); /* used for interprocedure
