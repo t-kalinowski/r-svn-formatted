@@ -1017,7 +1017,6 @@ static void printwhere(void)
 {
     RCNTXT *cptr;
     int lct = 1;
-    SEXP srcref;
 
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
