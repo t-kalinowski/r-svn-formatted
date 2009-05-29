@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-2007  Robert Gentleman, Ross Ihaka and the
  *			     R Development Core Team
+ *  Copyright (C) 2003-2009 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -307,6 +308,25 @@ SEXP attribute_hidden StringFromInteger(int x, int *warn)
         return mkChar(EncodeInteger(x, w));
 }
 
+const char *dropTrailing0(const char *s, char cdec)
+{
+    const char *p;
+    for (p = s; *p; p++)
+    {
+        if (*p == cdec)
+        {
+            char *replace = (char *)p++;
+            while ('0' <= *p && *p <= '9')
+                if (*(p++) != '0')
+                    replace = (char *)p;
+            while ((*(replace++) = *(p++)))
+                ;
+            break;
+        }
+    }
+    return s;
+}
+
 SEXP attribute_hidden StringFromReal(double x, int *warn)
 {
     int w, d, e;
@@ -314,7 +334,7 @@ SEXP attribute_hidden StringFromReal(double x, int *warn)
     if (ISNA(x))
         return NA_STRING;
     else
-        return mkChar(EncodeReal(x, w, d, e, OutDec));
+        return mkChar(dropTrailing0(EncodeReal(x, w, d, e, OutDec), OutDec));
 }
 
 SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
@@ -323,7 +343,7 @@ SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
     formatComplex(&x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
     if (ISNA(x.r) || ISNA(x.i))
         return NA_STRING;
-    else
+    else /* EncodeComplex has its own anti-trailing-0 care :*/
         return mkChar(EncodeComplex(x, wr, dr, er, wi, di, ei, OutDec));
 }
 
@@ -1600,22 +1620,22 @@ int asLogical(SEXP x)
         case LGLSXP:
             return LOGICAL(x)[0];
         case INTSXP:
-            return Rf_LogicalFromInteger(INTEGER(x)[0], &warn);
+            return LogicalFromInteger(INTEGER(x)[0], &warn);
         case REALSXP:
-            return Rf_LogicalFromReal(REAL(x)[0], &warn);
+            return LogicalFromReal(REAL(x)[0], &warn);
         case CPLXSXP:
-            return Rf_LogicalFromComplex(COMPLEX(x)[0], &warn);
+            return LogicalFromComplex(COMPLEX(x)[0], &warn);
         case STRSXP:
-            return Rf_LogicalFromString(STRING_ELT(x, 0), &warn);
+            return LogicalFromString(STRING_ELT(x, 0), &warn);
         case RAWSXP:
-            return Rf_LogicalFromInteger((int)RAW(x)[0], &warn);
+            return LogicalFromInteger((int)RAW(x)[0], &warn);
         default:
             UNIMPLEMENTED_TYPE("asLogical", x);
         }
     }
     else if (TYPEOF(x) == CHARSXP)
     {
-        return Rf_LogicalFromString(x, &warn);
+        return LogicalFromString(x, &warn);
     }
     return NA_LOGICAL;
 }
@@ -1629,20 +1649,20 @@ int asInteger(SEXP x)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            return Rf_IntegerFromLogical(LOGICAL(x)[0], &warn);
+            return IntegerFromLogical(LOGICAL(x)[0], &warn);
         case INTSXP:
             return INTEGER(x)[0];
         case REALSXP:
-            res = Rf_IntegerFromReal(REAL(x)[0], &warn);
-            Rf_CoercionWarning(warn);
+            res = IntegerFromReal(REAL(x)[0], &warn);
+            CoercionWarning(warn);
             return res;
         case CPLXSXP:
-            res = Rf_IntegerFromComplex(COMPLEX(x)[0], &warn);
-            Rf_CoercionWarning(warn);
+            res = IntegerFromComplex(COMPLEX(x)[0], &warn);
+            CoercionWarning(warn);
             return res;
         case STRSXP:
-            res = Rf_IntegerFromString(STRING_ELT(x, 0), &warn);
-            Rf_CoercionWarning(warn);
+            res = IntegerFromString(STRING_ELT(x, 0), &warn);
+            CoercionWarning(warn);
             return res;
         default:
             UNIMPLEMENTED_TYPE("asInteger", x);
@@ -1650,8 +1670,8 @@ int asInteger(SEXP x)
     }
     else if (TYPEOF(x) == CHARSXP)
     {
-        res = Rf_IntegerFromString(x, &warn);
-        Rf_CoercionWarning(warn);
+        res = IntegerFromString(x, &warn);
+        CoercionWarning(warn);
         return res;
     }
     return NA_INTEGER;
@@ -1667,22 +1687,22 @@ double asReal(SEXP x)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            res = Rf_RealFromLogical(LOGICAL(x)[0], &warn);
-            Rf_CoercionWarning(warn);
+            res = RealFromLogical(LOGICAL(x)[0], &warn);
+            CoercionWarning(warn);
             return res;
         case INTSXP:
-            res = Rf_RealFromInteger(INTEGER(x)[0], &warn);
-            Rf_CoercionWarning(warn);
+            res = RealFromInteger(INTEGER(x)[0], &warn);
+            CoercionWarning(warn);
             return res;
         case REALSXP:
             return REAL(x)[0];
         case CPLXSXP:
-            res = Rf_RealFromComplex(COMPLEX(x)[0], &warn);
-            Rf_CoercionWarning(warn);
+            res = RealFromComplex(COMPLEX(x)[0], &warn);
+            CoercionWarning(warn);
             return res;
         case STRSXP:
-            res = Rf_RealFromString(STRING_ELT(x, 0), &warn);
-            Rf_CoercionWarning(warn);
+            res = RealFromString(STRING_ELT(x, 0), &warn);
+            CoercionWarning(warn);
             return res;
         default:
             UNIMPLEMENTED_TYPE("asReal", x);
@@ -1690,8 +1710,8 @@ double asReal(SEXP x)
     }
     else if (TYPEOF(x) == CHARSXP)
     {
-        res = Rf_RealFromString(x, &warn);
-        Rf_CoercionWarning(warn);
+        res = RealFromString(x, &warn);
+        CoercionWarning(warn);
         return res;
     }
     return NA_REAL;
@@ -1709,22 +1729,22 @@ Rcomplex asComplex(SEXP x)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            return Rf_ComplexFromLogical(LOGICAL(x)[0], &warn);
+            return ComplexFromLogical(LOGICAL(x)[0], &warn);
         case INTSXP:
-            return Rf_ComplexFromInteger(INTEGER(x)[0], &warn);
+            return ComplexFromInteger(INTEGER(x)[0], &warn);
         case REALSXP:
-            return Rf_ComplexFromReal(REAL(x)[0], &warn);
+            return ComplexFromReal(REAL(x)[0], &warn);
         case CPLXSXP:
             return COMPLEX(x)[0];
         case STRSXP:
-            return Rf_ComplexFromString(STRING_ELT(x, 0), &warn);
+            return ComplexFromString(STRING_ELT(x, 0), &warn);
         default:
             UNIMPLEMENTED_TYPE("asComplex", x);
         }
     }
     else if (TYPEOF(x) == CHARSXP)
     {
-        return Rf_ComplexFromString(x, &warn);
+        return ComplexFromString(x, &warn);
     }
     return z;
 }
