@@ -896,7 +896,6 @@ SEXP attribute_hidden do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-#ifdef UNUSED
 static SEXP s_S4inherits;
 static SEXP do_S4inherits(SEXP obj, SEXP what, SEXP which)
 {
@@ -915,7 +914,6 @@ static SEXP do_S4inherits(SEXP obj, SEXP what, SEXP which)
     UNPROTECT(1);
     return val;
 }
-#endif
 
 SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -926,7 +924,7 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 
     x = CAR(args);
     if (IS_S4_OBJECT(x))
-        klass = R_data_class2(x); /* the S3 class or extends(class(x)) */
+        return do_S4inherits(x, CADR(args), CADDR(args));
     else
         klass = R_data_class(x, FALSE);
     nclass = length(klass);
