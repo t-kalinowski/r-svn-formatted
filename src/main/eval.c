@@ -1107,7 +1107,14 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     dbg = DEBUG(rho);
     bgn = BodyHasBraces(body);
 
+    /* bump up NAMED count of sequence to avoid modification by loop code */
+    if (NAMED(val) < 2)
+        SET_NAMED(val, NAMED(val) + 1);
+
+    /***** nm may not be needed anymore now that NAMED(val) is at
+       least 1.  LT */
     nm = NAMED(val);
+
     PROTECT_WITH_INDEX(ans, &api);
     begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     switch (SETJMP(cntxt.cjmpbuf))
@@ -3311,6 +3318,10 @@ static SEXP bcEval(SEXP body, SEXP rho)
             else
                 error(_("invalid sequence argument in for loop"));
             BCNPUSH(value);
+
+            /* bump up NAMED count of seq to avoid modification by loop code */
+            if (NAMED(seq) < 2)
+                SET_NAMED(seq, NAMED(seq) + 1);
 
             BCNPUSH(R_NilValue);
 
