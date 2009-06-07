@@ -292,12 +292,7 @@ SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
 
-    /* scale scrollbars as needed */
     DE->xScrollbarScale = DE->yScrollbarScale = 1;
-    if (DE->xmaxused > 10000)
-        DE->xScrollbarScale = DE->xmaxused / 1000;
-    if (DE->ymaxused > 10000)
-        DE->yScrollbarScale = DE->ymaxused / 1000;
 
     /* start up the window, more initializing in here */
     if (initwin(DE, G_("Data Editor")))
@@ -1756,7 +1751,7 @@ static void de_sbf(control c, int pos)
         DE->rowmin = 1 + pos * DE->yScrollbarScale;
         if (DE->rowmin > DE->ymaxused - DE->nhigh + 2)
             DE->rowmin = max(1, DE->ymaxused - DE->nhigh + 2);
-        printf("pos %d, rowmin %d, scale %d\n", pos, DE->rowmin, DE->yScrollbarScale);
+        /*	printf("pos %d, rowmin %d, scale %d\n", pos, DE->rowmin, DE->yScrollbarScale); */
     }
     drawwindow(DE);
 }
@@ -2069,12 +2064,7 @@ SEXP do_dataviewer(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, G_("invalid argument"));
     }
 
-    /* scale scrollbars as needed */
     DE->xScrollbarScale = DE->yScrollbarScale = 1;
-    if (DE->xmaxused > 10000)
-        DE->xScrollbarScale = DE->xmaxused / 1000;
-    if (DE->ymaxused > 10000)
-        DE->yScrollbarScale = DE->ymaxused / 1000;
 
     /* start up the window, more initializing in here */
     if (initwin(DE, CHAR(STRING_ELT(stitle, 0))))
