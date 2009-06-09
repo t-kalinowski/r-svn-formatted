@@ -2856,7 +2856,7 @@ static void null_Mode(int mode, pDevDesc dd)
 static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 {
     cairo_status_t res;
-    if (xd->type == PNG || xd->type == JPEG || xd->type == PNGdirect || xd->type == TIFF || xd->type == BMP)
+    if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
     else if (xd->type == SVG || xd->type == PDF || xd->type == PS)
     {
@@ -2938,17 +2938,6 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         xd->fp = R_fopen(R_ExpandFileName(buf), "w");
         if (!xd->fp)
             error(_("could not open file '%s'"), buf);
-    }
-    else if (xd->type == PNGdirect)
-    {
-        if (xd->npages > 1)
-        {
-            cairo_status_t res;
-            snprintf(buf, PATH_MAX, xd->filename, xd->npages - 1);
-            res = cairo_surface_write_to_png(xd->cs, R_ExpandFileName(buf));
-            if (res != CAIRO_STATUS_SUCCESS)
-                warning("cairo error '%s'", cairo_status_to_string(res));
-        }
     }
 #ifdef HAVE_TIFF
     else if (xd->type == TIFF)
@@ -3055,20 +3044,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
 #endif
     else
         error(_("unimplemented cairo-based device"));
-#else /* cairo 1.0 */
-    if (xd->type == PNGdirect)
-    {
-        if (xd->npages > 1)
-        {
-            cairo_status_t res;
-            snprintf(buf, PATH_MAX, xd->filename, xd->npages - 1);
-            res = cairo_surface_write_to_png(xd->cs, R_ExpandFileName(buf));
-            if (res != CAIRO_STATUS_SUCCESS)
-                warning("cairo error '%s'", cairo_status_to_string(res));
-        }
-    }
-    else
-        error(_("unimplemented cairo-based device"));
+#else /* cairo < 1.2 */
+    error(_("cairo-based devices need cairo >= 1.2"));
 #endif
 
     cairo_reset_clip(xd->cc);
@@ -3097,15 +3074,6 @@ static void BM_Close(pDevDesc dd)
         if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
             BM_Close_bitmap(xd);
 #endif
-        if (xd->type == PNGdirect)
-        {
-            cairo_status_t res;
-            char buf[PATH_MAX];
-            snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-            res = cairo_surface_write_to_png(xd->cs, R_ExpandFileName(buf));
-            if (res != CAIRO_STATUS_SUCCESS)
-                warning("cairo error '%s'", cairo_status_to_string(res));
-        }
     }
     if (xd->fp)
         fclose(xd->fp);
@@ -3233,8 +3201,9 @@ const static struct
 {
     const char *const name;
     X_GTYPE gtype;
-} devtable[] = {{"", WINDOW},       {"", XIMAGE},       {"png", PNG},     {"jpeg", JPEG}, {"svg", SVG},
-                {"png", PNGdirect}, {"cairo_pdf", PDF}, {"cairo_ps", PS}, {"tiff", TIFF}, {"bmp", BMP}};
+} devtable[] = {{"", WINDOW},       {"", XIMAGE},       {"png", PNG},   {"jpeg", JPEG},
+                {"svg", SVG},       {"png", PNGdirect}, /* defunct in 2.10.0 */
+                {"cairo_pdf", PDF}, {"cairo_ps", PS},   {"tiff", TIFF}, {"bmp", BMP}};
 
 /*
    cairo(filename, type, width, height, pointsize, bg, res, antialias, quality)
@@ -3283,9 +3252,9 @@ static SEXP in_do_cairo(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "quality");
 
 #if CAIRO_VERSION < 10200
-    if (type == 2)
-        error(_("'type = \"cairo\"' requires cairo >= 1.2 : try 'type = \"cairo1\"'"));
-    else if (type != 5)
+    if (type == 2 || type == 3 || type == 8 || type == 9)
+        error(_("'type = \"cairo\"' requires cairo >= 1.2"));
+    else
         error(_("device '%s' requires cairo >= 1.2"), devtable[type]);
 #endif
     R_GE_checkVersionOrDie(R_GE_version);
