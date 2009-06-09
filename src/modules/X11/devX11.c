@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2008  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1997--2009  Robert Gentleman, Ross Ihaka and the
  *			      R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -2799,7 +2799,6 @@ static SEXP in_do_saveplot(SEXP call, SEXP op, SEXP args, SEXP env)
         if (res != CAIRO_STATUS_SUCCESS)
             error("cairo error '%s'", cairo_status_to_string(res));
     }
-#if CAIRO_VERSION >= 10200
     /* cairo_image_surface_get_data is from 1.2 */
     else if (streql(type, "jpeg"))
     {
@@ -2817,12 +2816,6 @@ static SEXP in_do_saveplot(SEXP call, SEXP op, SEXP args, SEXP env)
         stride = xd->windowWidth;
         R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Sbitgp, 0, fn, 0, 1L);
     }
-#else
-    else if (streql(type, "jpeg"))
-        error(_("type = \"%s\" requires cairo >= 1.2: try \"png\""), "jpeg");
-    else if (streql(type, "tiff"))
-        error(_("type = \"%s\" requires cairo >= 1.2: try \"png\""), "tiff");
-#endif
     else
         error(_("invalid '%s' argument"), "type");
     return R_NilValue;
@@ -2891,7 +2884,6 @@ static unsigned int Cbitgp(void *xi, int x, int y)
     return data[x * stride + y];
 }
 
-#if CAIRO_VERSION >= 10200
 static void BM_Close_bitmap(pX11Desc xd)
 {
     void *xi = cairo_image_surface_get_data(xd->cs);
@@ -2915,7 +2907,6 @@ static void BM_Close_bitmap(pX11Desc xd)
         R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, R_ExpandFileName(buf), xd->res_dpi, xd->quality);
     }
 }
-#endif
 
 static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
 {
@@ -2924,7 +2915,6 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     cairo_status_t res;
 
     xd->npages++;
-#if CAIRO_VERSION >= 10200
     if (xd->type == PNG || xd->type == JPEG || xd->type == BMP)
     {
         if (xd->npages > 1)
@@ -3044,9 +3034,6 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
 #endif
     else
         error(_("unimplemented cairo-based device"));
-#else /* cairo < 1.2 */
-    error(_("cairo-based devices need cairo >= 1.2"));
-#endif
 
     cairo_reset_clip(xd->cc);
     if (xd->type == PNG || xd->type == TIFF)
@@ -3069,12 +3056,8 @@ static void BM_Close(pDevDesc dd)
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
     if (xd->npages)
-    {
-#if CAIRO_VERSION >= 10200
         if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
             BM_Close_bitmap(xd);
-#endif
-    }
     if (xd->fp)
         fclose(xd->fp);
     if (xd->cc)
@@ -3251,12 +3234,6 @@ static SEXP in_do_cairo(SEXP call, SEXP op, SEXP args, SEXP env)
     if (quality == NA_INTEGER || quality < 0 || quality > 100)
         error(_("invalid '%s' argument"), "quality");
 
-#if CAIRO_VERSION < 10200
-    if (type == 2 || type == 3 || type == 8 || type == 9)
-        error(_("'type = \"cairo\"' requires cairo >= 1.2"));
-    else
-        error(_("device '%s' requires cairo >= 1.2"), devtable[type]);
-#endif
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
     BEGIN_SUSPEND_INTERRUPTS
