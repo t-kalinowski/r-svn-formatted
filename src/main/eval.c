@@ -1115,7 +1115,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
        least 1.  LT */
     nm = NAMED(val);
 
-    PROTECT_WITH_INDEX(ans, &api);
+    PROTECT_WITH_INDEX(ans, &api); /**** ans should no longer be needed. LT */
     begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     switch (SETJMP(cntxt.cjmpbuf))
     {
@@ -1183,16 +1183,15 @@ for_break:
     endcontext(&cntxt);
     UNPROTECT(5);
     SET_DEBUG(rho, dbg);
-    return ans;
+    return R_NilValue;
 }
 
 SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int dbg;
     volatile int bgn;
-    volatile SEXP t, body;
+    volatile SEXP body;
     RCNTXT cntxt;
-    PROTECT_INDEX tpi;
 
     checkArity(op, args);
 
@@ -1200,30 +1199,26 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
     body = CADR(args);
     bgn = BodyHasBraces(body);
 
-    t = R_NilValue;
-    PROTECT_WITH_INDEX(t, &tpi);
     begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     if (SETJMP(cntxt.cjmpbuf) != CTXT_BREAK)
     {
         while (asLogicalNoNA(eval(CAR(args), rho), call))
         {
             DO_LOOP_DEBUG(call, op, args, rho, bgn);
-            REPROTECT(t = eval(body, rho), tpi);
+            eval(body, rho);
         }
     }
     endcontext(&cntxt);
-    UNPROTECT(1);
     SET_DEBUG(rho, dbg);
-    return t;
+    return R_NilValue;
 }
 
 SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int dbg;
     volatile int bgn;
-    volatile SEXP t, body;
+    volatile SEXP body;
     RCNTXT cntxt;
-    PROTECT_INDEX tpi;
 
     checkArity(op, args);
 
@@ -1231,21 +1226,18 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     body = CAR(args);
     bgn = BodyHasBraces(body);
 
-    t = R_NilValue;
-    PROTECT_WITH_INDEX(t, &tpi);
     begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
     if (SETJMP(cntxt.cjmpbuf) != CTXT_BREAK)
     {
         for (;;)
         {
             DO_LOOP_DEBUG(call, op, args, rho, bgn);
-            REPROTECT(t = eval(body, rho), tpi);
+            eval(body, rho);
         }
     }
     endcontext(&cntxt);
-    UNPROTECT(1);
     SET_DEBUG(rho, dbg);
-    return t;
+    return R_NilValue;
 }
 
 SEXP attribute_hidden do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -3381,8 +3373,8 @@ static SEXP bcEval(SEXP body, SEXP rho)
             R_BCNodeStackTop[-1] = value;
             NEXT();
         }
-        OP(SETLOOPVAL, 0) : value = BCNPOP();
-        R_BCNodeStackTop[-1] = value;
+        OP(SETLOOPVAL, 0) : BCNPOP();
+        R_BCNodeStackTop[-1] = R_NilValue;
         NEXT();
         OP(INVISIBLE, 0) : R_Visible = FALSE;
         NEXT();
