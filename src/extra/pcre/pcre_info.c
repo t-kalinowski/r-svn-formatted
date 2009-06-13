@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2008 University of Cambridge
+           Copyright (c) 1997-2009 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_info(const pcre *argument_re, int *o
             return PCRE_ERROR_BADMAGIC;
     }
     if (optptr != NULL)
-        *optptr = (int)(re->options & PUBLIC_OPTIONS);
+        *optptr = (int)(re->options & PUBLIC_COMPILE_OPTIONS);
     if (first_byte != NULL)
         *first_byte =
             ((re->flags & PCRE_FIRSTSET) != 0) ? re->first_byte : ((re->flags & PCRE_STARTLINE) != 0) ? -1 : -2;

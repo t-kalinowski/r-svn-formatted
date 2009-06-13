@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2008 University of Cambridge
+           Copyright (c) 1997-2009 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -373,9 +373,9 @@ typedef struct heapframe
 
     /* Function arguments that may change */
 
-    const uschar *Xeptr;
+    USPTR Xeptr;
     const uschar *Xecode;
-    const uschar *Xmstart;
+    USPTR Xmstart;
     int Xoffset_top;
     long int Xims;
     eptrblock *Xeptrb;
@@ -384,13 +384,15 @@ typedef struct heapframe
 
     /* Function local variables */
 
-    const uschar *Xcallpat;
-    const uschar *Xcharptr;
-    const uschar *Xdata;
-    const uschar *Xnext;
-    const uschar *Xpp;
-    const uschar *Xprev;
-    const uschar *Xsaved_eptr;
+    USPTR Xcallpat;
+#ifdef SUPPORT_UTF8
+    USPTR Xcharptr;
+#endif
+    USPTR Xdata;
+    USPTR Xnext;
+    USPTR Xpp;
+    USPTR Xprev;
+    USPTR Xsaved_eptr;
 
     recursion_info Xnew_recursive;
 
@@ -411,6 +413,7 @@ typedef struct heapframe
     uschar Xocchars[8];
 #endif
 
+    int Xcodelink;
     int Xctype;
     unsigned int Xfc;
     int Xfi;
@@ -472,8 +475,8 @@ Returns:       MATCH_MATCH if matched            )  these values are >= 0
                  (e.g. stopped by repeated call or recursion limit)
 */
 
-static int match(REGISTER USPTR eptr, REGISTER const uschar *ecode, const uschar *mstart, int offset_top,
-                 match_data *md, unsigned long int ims, eptrblock *eptrb, int flags, unsigned int rdepth)
+static int match(REGISTER USPTR eptr, REGISTER const uschar *ecode, USPTR mstart, int offset_top, match_data *md,
+                 unsigned long int ims, eptrblock *eptrb, int flags, unsigned int rdepth)
 {
     /* These variables do not need to be preserved over recursion in this function,
     so they can be ordinary variables in all cases. Mark some of them with
@@ -485,6 +488,7 @@ static int match(REGISTER USPTR eptr, REGISTER const uschar *ecode, const uschar
     register BOOL utf8;      /* Local copy of UTF-8 flag for speed */
 
     BOOL minimize, possessive; /* Quantifier options */
+    int condcode;
 
     /* When recursion is not being used, all "local" variables that have to be
     preserved over calls to RMATCH() are part of a "frame" which is obtained from
@@ -527,6 +531,7 @@ HEAP_RECURSE:
 #define charptr frame->Xcharptr
 #endif
 #define callpat frame->Xcallpat
+#define codelink frame->Xcodelink
 #define data frame->Xdata
 #define next frame->Xnext
 #define pp frame->Xpp
@@ -606,6 +611,7 @@ HEAP_RECURSE:
     uschar occhars[8];
 #endif
 
+    int codelink;
     int ctype;
     int length;
     int max;
@@ -829,21 +835,55 @@ TAIL_RECURSE:
 
         case OP_COND:
         case OP_SCOND:
-            if (ecode[LINK_SIZE + 1] == OP_RREF) /* Recursion test */
+            codelink = GET(ecode, 1);
+
+            /* Because of the way auto-callout works during compile, a callout item is
+            inserted between OP_COND and an assertion condition. */
+
+            if (ecode[LINK_SIZE + 1] == OP_CALLOUT)
+            {
+                if (pcre_callout != NULL)
+                {
+                    pcre_callout_block cb;
+                    cb.version = 1; /* Version 1 of the callout block */
+                    cb.callout_number = ecode[LINK_SIZE + 2];
+                    cb.offset_vector = md->offset_vector;
+                    cb.subject = (PCRE_SPTR)md->start_subject;
+                    cb.subject_length = md->end_subject - md->start_subject;
+                    cb.start_match = mstart - md->start_subject;
+                    cb.current_position = eptr - md->start_subject;
+                    cb.pattern_position = GET(ecode, LINK_SIZE + 3);
+                    cb.next_item_length = GET(ecode, 3 + 2 * LINK_SIZE);
+                    cb.capture_top = offset_top / 2;
+                    cb.capture_last = md->capture_last;
+                    cb.callout_data = md->callout_data;
+                    if ((rrc = (*pcre_callout)(&cb)) > 0)
+                        RRETURN(MATCH_NOMATCH);
+                    if (rrc < 0)
+                        RRETURN(rrc);
+                }
+                ecode += _pcre_OP_lengths[OP_CALLOUT];
+            }
+
+            condcode = ecode[LINK_SIZE + 1];
+
+            /* Now see what the actual condition is */
+
+            if (condcode == OP_RREF) /* Recursion test */
             {
                 offset = GET2(ecode, LINK_SIZE + 2); /* Recursion group number*/
                 condition = md->recursive != NULL && (offset == RREF_ANY || offset == md->recursive->group_num);
                 ecode += condition ? 3 : GET(ecode, 1);
             }
 
-            else if (ecode[LINK_SIZE + 1] == OP_CREF) /* Group used test */
+            else if (condcode == OP_CREF) /* Group used test */
             {
                 offset = GET2(ecode, LINK_SIZE + 2) << 1; /* Doubled ref number */
                 condition = offset < offset_top && md->offset_vector[offset] >= 0;
                 ecode += condition ? 3 : GET(ecode, 1);
             }
 
-            else if (ecode[LINK_SIZE + 1] == OP_DEF) /* DEFINE - always false */
+            else if (condcode == OP_DEF) /* DEFINE - always false */
             {
                 condition = FALSE;
                 ecode += GET(ecode, 1);
@@ -870,7 +910,7 @@ TAIL_RECURSE:
                 else
                 {
                     condition = FALSE;
-                    ecode += GET(ecode, 1);
+                    ecode += codelink;
                 }
             }
 
@@ -893,7 +933,7 @@ TAIL_RECURSE:
                     goto TAIL_RECURSE;
                 }
             }
-            else /* Condition false & no 2nd alternative */
+            else /* Condition false & no alternative */
             {
                 ecode += 1 + LINK_SIZE;
             }
@@ -1120,6 +1160,8 @@ TAIL_RECURSE:
                 else if (rrc != MATCH_NOMATCH && rrc != MATCH_THEN)
                 {
                     DPRINTF(("Recursion gave error %d\n", rrc));
+                    if (new_recursive.offset_save != stacksave)
+                        (pcre_free)(new_recursive.offset_save);
                     RRETURN(rrc);
                 }
 
@@ -1489,7 +1531,7 @@ TAIL_RECURSE:
                     prev_is_word = FALSE;
                 else
                 {
-                    const uschar *lastptr = eptr - 1;
+                    USPTR lastptr = eptr - 1;
                     while ((*lastptr & 0xc0) == 0x80)
                         lastptr--;
                     GETCHAR(c, lastptr);
@@ -2164,7 +2206,8 @@ TAIL_RECURSE:
         /* Control never gets here */
 
         /* Match an extended character class. This opcode is encountered only
-        in UTF-8 mode, because that's the only time it is compiled. */
+        when UTF-8 mode mode is supported. Nevertheless, we may not be in UTF-8
+        mode, because Unicode properties are supported in non-UTF-8 mode. */
 
 #ifdef SUPPORT_UTF8
         case OP_XCLASS: {
@@ -2208,7 +2251,7 @@ TAIL_RECURSE:
             {
                 if (eptr >= md->end_subject)
                     RRETURN(MATCH_NOMATCH);
-                GETCHARINC(c, eptr);
+                GETCHARINCTEST(c, eptr);
                 if (!_pcre_xclass(c, data))
                     RRETURN(MATCH_NOMATCH);
             }
@@ -2231,7 +2274,7 @@ TAIL_RECURSE:
                         RRETURN(rrc);
                     if (fi >= max || eptr >= md->end_subject)
                         RRETURN(MATCH_NOMATCH);
-                    GETCHARINC(c, eptr);
+                    GETCHARINCTEST(c, eptr);
                     if (!_pcre_xclass(c, data))
                         RRETURN(MATCH_NOMATCH);
                 }
@@ -2248,7 +2291,7 @@ TAIL_RECURSE:
                     int len = 1;
                     if (eptr >= md->end_subject)
                         break;
-                    GETCHARLEN(c, eptr, len);
+                    GETCHARLENTEST(c, eptr, len);
                     if (!_pcre_xclass(c, data))
                         break;
                     eptr += len;
@@ -4891,13 +4934,13 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
         newline = NEWLINE;
         break; /* Compile-time default */
     case PCRE_NEWLINE_CR:
-        newline = '\r';
+        newline = CHAR_CR;
         break;
     case PCRE_NEWLINE_LF:
-        newline = '\n';
+        newline = CHAR_NL;
         break;
     case PCRE_NEWLINE_CR + PCRE_NEWLINE_LF:
-        newline = ('\r' << 8) | '\n';
+        newline = (CHAR_CR << 8) | CHAR_NL;
         break;
     case PCRE_NEWLINE_ANY:
         newline = -1;
@@ -4945,11 +4988,11 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
 #ifdef SUPPORT_UTF8
     if (utf8 && (options & PCRE_NO_UTF8_CHECK) == 0)
     {
-        if (_pcre_valid_utf8((uschar *)subject, length) >= 0)
+        if (_pcre_valid_utf8((USPTR)subject, length) >= 0)
             return PCRE_ERROR_BADUTF8;
         if (start_offset > 0 && start_offset < length)
         {
-            int tb = ((uschar *)subject)[start_offset];
+            int tb = ((USPTR)subject)[start_offset];
             if (tb > 127)
             {
                 tb &= 0xc0;
@@ -5058,11 +5101,11 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
                 *iptr++ = -1;
         }
 
-        /* Advance to a unique first char if possible. If firstline is TRUE, the
-        start of the match is constrained to the first line of a multiline string.
-        That is, the match must be before or at the first newline. Implement this by
-        temporarily adjusting end_subject so that we stop scanning at a newline. If
-        the match fails at the newline, later code breaks this loop. */
+        /* If firstline is TRUE, the start of the match is constrained to the first
+        line of a multiline string. That is, the match must be before or at the first
+        newline. Implement this by temporarily adjusting end_subject so that we stop
+        scanning at a newline. If the match fails at the newline, later code breaks
+        this loop. */
 
         if (firstline)
         {
@@ -5084,62 +5127,70 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
             end_subject = t;
         }
 
-        /* Now advance to a unique first byte if there is one. */
+        /* There are some optimizations that avoid running the match if a known
+        starting point is not found, or if a known later character is not present.
+        However, there is an option that disables these, for testing and for ensuring
+        that all callouts do actually occur. */
 
-        if (first_byte >= 0)
+        if ((options & PCRE_NO_START_OPTIMIZE) == 0)
         {
-            if (first_byte_caseless)
-                while (start_match < end_subject && md->lcc[*start_match] != first_byte)
-                    start_match++;
-            else
-                while (start_match < end_subject && *start_match != first_byte)
-                    start_match++;
-        }
+            /* Advance to a unique first byte if there is one. */
 
-        /* Or to just after a linebreak for a multiline match */
-
-        else if (startline)
-        {
-            if (start_match > md->start_subject + start_offset)
+            if (first_byte >= 0)
             {
-#ifdef SUPPORT_UTF8
-                if (utf8)
+                if (first_byte_caseless)
+                    while (start_match < end_subject && md->lcc[*start_match] != first_byte)
+                        start_match++;
+                else
+                    while (start_match < end_subject && *start_match != first_byte)
+                        start_match++;
+            }
+
+            /* Or to just after a linebreak for a multiline match */
+
+            else if (startline)
+            {
+                if (start_match > md->start_subject + start_offset)
                 {
-                    while (start_match < end_subject && !WAS_NEWLINE(start_match))
+#ifdef SUPPORT_UTF8
+                    if (utf8)
                     {
-                        start_match++;
-                        while (start_match < end_subject && (*start_match & 0xc0) == 0x80)
+                        while (start_match < end_subject && !WAS_NEWLINE(start_match))
+                        {
                             start_match++;
+                            while (start_match < end_subject && (*start_match & 0xc0) == 0x80)
+                                start_match++;
+                        }
                     }
-                }
-                else
+                    else
 #endif
-                    while (start_match < end_subject && !WAS_NEWLINE(start_match))
+                        while (start_match < end_subject && !WAS_NEWLINE(start_match))
+                            start_match++;
+
+                    /* If we have just passed a CR and the newline option is ANY or ANYCRLF,
+                    and we are now at a LF, advance the match position by one more character.
+                    */
+
+                    if (start_match[-1] == CHAR_CR && (md->nltype == NLTYPE_ANY || md->nltype == NLTYPE_ANYCRLF) &&
+                        start_match < end_subject && *start_match == CHAR_NL)
                         start_match++;
-
-                /* If we have just passed a CR and the newline option is ANY or ANYCRLF,
-                and we are now at a LF, advance the match position by one more character.
-                */
-
-                if (start_match[-1] == '\r' && (md->nltype == NLTYPE_ANY || md->nltype == NLTYPE_ANYCRLF) &&
-                    start_match < end_subject && *start_match == '\n')
-                    start_match++;
+                }
             }
-        }
 
-        /* Or to a non-unique first byte after study */
+            /* Or to a non-unique first byte after study */
 
-        else if (start_bits != NULL)
-        {
-            while (start_match < end_subject)
+            else if (start_bits != NULL)
             {
-                register unsigned int c = *start_match;
-                if ((start_bits[c / 8] & (1 << (c & 7))) == 0)
-                    start_match++;
-                else
-                    break;
+                while (start_match < end_subject)
+                {
+                    register unsigned int c = *start_match;
+                    if ((start_bits[c / 8] & (1 << (c & 7))) == 0)
+                        start_match++;
+                    else
+                        break;
+                }
             }
-        }
+        } /* Starting optimizations */
 
         /* Restore fudged end_subject */
 
@@ -5151,23 +5202,25 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
         printf("\n");
 #endif
 
-        /* If req_byte is set, we know that that character must appear in the subject
-        for the match to succeed. If the first character is set, req_byte must be
-        later in the subject; otherwise the test starts at the match point. This
-        optimization can save a huge amount of backtracking in patterns with nested
-        unlimited repeats that aren't going to match. Writing separate code for
-        cased/caseless versions makes it go faster, as does using an autoincrement
-        and backing off on a match.
+        /* If req_byte is set, we know that that character must appear in the
+        subject for the match to succeed. If the first character is set, req_byte
+        must be later in the subject; otherwise the test starts at the match point.
+        This optimization can save a huge amount of backtracking in patterns with
+        nested unlimited repeats that aren't going to match. Writing separate code
+        for cased/caseless versions makes it go faster, as does using an
+        autoincrement and backing off on a match.
 
-        HOWEVER: when the subject string is very, very long, searching to its end can
-        take a long time, and give bad performance on quite ordinary patterns. This
-        showed up when somebody was matching something like /^\d+C/ on a 32-megabyte
-        string... so we don't do this when the string is sufficiently long.
+        HOWEVER: when the subject string is very, very long, searching to its end
+        can take a long time, and give bad performance on quite ordinary patterns.
+        This showed up when somebody was matching something like /^\d+C/ on a
+        32-megabyte string... so we don't do this when the string is sufficiently
+        long.
 
-        ALSO: this processing is disabled when partial matching is requested.
-        */
+        ALSO: this processing is disabled when partial matching is requested, or if
+        disabling is explicitly requested. */
 
-        if (req_byte >= 0 && end_subject - start_match < REQ_BYTE_MAX && !md->partial)
+        if ((options & PCRE_NO_START_OPTIMIZE) == 0 && req_byte >= 0 && end_subject - start_match < REQ_BYTE_MAX &&
+            !md->partial)
         {
             register USPTR p = start_match + ((first_byte >= 0) ? 1 : 0);
 
@@ -5283,7 +5336,7 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_exec(const pcre *argument_re, const 
         not contain any explicit matches for \r or \n, and the newline option is CRLF
         or ANY or ANYCRLF, advance the match position by one more character. */
 
-        if (start_match[-1] == '\r' && start_match < end_subject && *start_match == '\n' &&
+        if (start_match[-1] == CHAR_CR && start_match < end_subject && *start_match == CHAR_NL &&
             (re->flags & PCRE_HASCRORLF) == 0 &&
             (md->nltype == NLTYPE_ANY || md->nltype == NLTYPE_ANYCRLF || md->nllen == 2))
             start_match++;
