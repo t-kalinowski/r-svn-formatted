@@ -159,7 +159,7 @@ enum yytokentype
 
 #define YYERROR_VERBOSE 1
 
-static void yyerror(char *);
+static void yyerror(const char *);
 static int yylex();
 static int yyparse(void);
 
@@ -3028,7 +3028,7 @@ static int KeywordLookup(const char *s)
     return UNKNOWN;
 }
 
-static void yyerror(char *s)
+static void yyerror(const char *s)
 {
     static const char *const yytname_translations[] = {
     /* the left column are strings coming from bison, the right
@@ -3504,7 +3504,7 @@ static int mkMarkup(int c)
     char st0[INITBUFSIZE];
     unsigned int nstext = INITBUFSIZE;
     char *stext = st0, *bp = st0;
-    int retval, attempt = 0;
+    int retval = 0, attempt = 0;
 
     TEXT_PUSH(c);
     while (isalnum((c = xxgetc())))
