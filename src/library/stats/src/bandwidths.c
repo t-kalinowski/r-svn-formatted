@@ -57,7 +57,8 @@ void band_bcv_bin(int *n, int *nb, double *d, int *x, double *h, double *u)
     *u = 1 / (2 * nn * hh * sqrt(PI)) + sum / (64 * nn * nn * hh * sqrt(PI));
 }
 
-void band_phi4_bin(int *n, int *nb, double *d, int *x, double *h, double *u)
+/* u := SDh(x, h, n, d) : */
+void band_phi4_bin(int *n, int *nb /* = length(x) */, double *d, int *x, double *h, double *u)
 {
     int i, nn = *n, nbin = *nb;
     double delta, sum, term;
@@ -76,6 +77,7 @@ void band_phi4_bin(int *n, int *nb, double *d, int *x, double *h, double *u)
     *u = sum / (nn * (nn - 1) * pow(*h, 5.0) * sqrt(2 * PI));
 }
 
+/* u := TDh(x, h, n, d) : */
 void band_phi6_bin(int *n, int *nb, double *d, int *x, double *h, double *u)
 {
     int i, nn = *n, nbin = *nb;
