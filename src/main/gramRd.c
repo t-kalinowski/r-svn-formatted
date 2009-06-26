@@ -3112,10 +3112,9 @@ static void yyerror(const char *s)
         {
             if (!strcmp(s + sizeof yyunexpected - 1, yytname_translations[i]))
             {
-                if (yychar < 256)
-                    sprintf(ParseErrorMsg, yychar < 256 ? _(yyshortunexpected) : _(yylongunexpected),
-                            i / 2 < YYENGLISH ? _(yytname_translations[i + 1]) : yytname_translations[i + 1],
-                            CHAR(STRING_ELT(yylval, 0)));
+                sprintf(ParseErrorMsg, yychar < 256 ? _(yyshortunexpected) : _(yylongunexpected),
+                        i / 2 < YYENGLISH ? _(yytname_translations[i + 1]) : yytname_translations[i + 1],
+                        CHAR(STRING_ELT(yylval, 0)));
                 translated = TRUE;
                 break;
             }
