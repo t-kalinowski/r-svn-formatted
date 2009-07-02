@@ -7367,6 +7367,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     if (face == 5)
     {
         PDFSimpleText(x, y, str, rot, hadj, PDFfontNumber(gc->fontfamily, face, pd), gc, dd);
+        return;
     }
 
     rot1 = rot * DEG2RAD;
