@@ -536,9 +536,7 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-#if defined(HAVE_ICONV_H) && defined(ICONV_LATIN1)
 #include <iconv.h>
-#endif
 
 #ifdef HAVE_ICONVLIST
 static unsigned int cnt;
@@ -565,7 +563,6 @@ static int write_one(unsigned int namescount, const char *const *names, void *da
 /* iconv(x, from, to, sub) */
 SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
     SEXP ans, x = CAR(args), si;
     void *obj;
     int i, j, nout;
@@ -700,10 +697,6 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     UNPROTECT(1);
     return ans;
-#else
-    error(_("'iconv' is not available on this system"));
-    return R_NilValue; /* -Wall */
-#endif
 }
 
 cetype_t getCharCE(SEXP x)
@@ -718,7 +711,6 @@ cetype_t getCharCE(SEXP x)
         return CE_NATIVE;
 }
 
-#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
 void *Riconv_open(const char *tocode, const char *fromcode)
 {
 #if defined Win32 || __APPLE__
@@ -1391,48 +1383,6 @@ size_t ucstoutf8(char *s, const unsigned int wc)
     strcpy(s, buf);
     return strlen(buf);
 }
-
-#else
-void *Riconv_open(const char *tocode, const char *fromcode)
-{
-    error(_("'iconv' is not available on this system"));
-    return (void *)-1;
-}
-
-size_t Riconv(void *cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
-{
-    error(_("'iconv' is not available on this system"));
-    return 0;
-}
-
-int Riconv_close(void *cd)
-{
-    error(_("'iconv' is not available on this system"));
-    return -1;
-}
-
-const char *translateChar(SEXP x)
-{
-    return CHAR(x);
-}
-
-const char *translateCharUTF8(SEXP x)
-{
-    return CHAR(x);
-}
-
-const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
-{
-    return x;
-}
-
-void attribute_hidden invalidate_cached_recodings(void)
-{
-}
-size_t ucstoutf8(char *s, const unsigned int wc)
-{
-}
-#endif
 
 /* moved from src/unix/sys-unix.c and src/gnuwin32/extra.c */
 

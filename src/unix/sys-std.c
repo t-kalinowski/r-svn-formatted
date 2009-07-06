@@ -834,7 +834,6 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
         /* translate if necessary */
         if (strlen(R_StdinEnc) && strcmp(R_StdinEnc, "native.enc"))
         {
-#if defined(HAVE_ICONV) && defined(ICONV_LATIN1)
             size_t res, inb = strlen((char *)buf), onb = len;
             /* NB: this is somewhat dangerous.  R's main loop and
                scan will not call it with a larger value, but
@@ -855,13 +854,6 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
             if (err)
                 printf(_("<ERROR: re-encoding failure from encoding '%s'>\n"), R_StdinEnc);
             strncpy((char *)buf, obuf, len);
-#else
-            if (!cd)
-            {
-                warning(_("re-encoding is not available on this system"));
-                cd = (void *)1;
-            }
-#endif
         }
         /* according to system.txt, should be terminated in \n, so check this
            at eof and error */

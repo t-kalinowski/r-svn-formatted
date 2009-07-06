@@ -318,8 +318,7 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
         warning(_("printing of extremely long output is truncated"));
         res = BUFSIZE;
     }
-#endif
-#ifdef HAVE_ICONV
+#endif /* HAVE_VA_COPY */
     if (con->outconv)
     { /* translate the buffer */
         char outbuf[BUFSIZE + 1], *ob;
@@ -350,7 +349,6 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
                            zero-length input */
     }
     else
-#endif /* HAVE_VA_COPY */
         con->write(b, 1, res, con);
 #ifdef HAVE_VA_COPY
     if (usedRalloc)
