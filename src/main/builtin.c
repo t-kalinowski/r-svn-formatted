@@ -796,7 +796,7 @@ SEXP lengthgets(SEXP x, R_len_t len)
     lenx = length(x);
     if (lenx == len)
         return (x);
-    rval = allocVector(TYPEOF(x), len);
+    PROTECT(rval = allocVector(TYPEOF(x), len));
     PROTECT(xnames = getAttrib(x, R_NamesSymbol));
     if (xnames != R_NilValue)
         names = allocVector(STRSXP, len);
@@ -885,7 +885,7 @@ SEXP lengthgets(SEXP x, R_len_t len)
     }
     if (isVector(x) && xnames != R_NilValue)
         setAttrib(rval, R_NamesSymbol, names);
-    UNPROTECT(1);
+    UNPROTECT(2);
     return rval;
 }
 
