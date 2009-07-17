@@ -1668,6 +1668,7 @@ SEXP attribute_hidden do_modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP variable, var_i;
     int fik, first, i, j, k, kk, ll, n, nc, nterms, nVar;
     int intrcept, jstart, jnext, risponse, indx, rhs_response;
+    double dk, dnc;
     char buf[BUFSIZE] = "\0";
     char *bufp;
     const char *addp;
@@ -1883,9 +1884,9 @@ alldone:;
 
     PROTECT(count = allocVector(INTSXP, nterms));
     if (intrcept)
-        nc = 1;
+        dnc = 1;
     else
-        nc = 0;
+        dnc = 0;
     for (j = 0; j < nterms; j++)
     {
         if (j == rhs_response)
@@ -1894,7 +1895,7 @@ alldone:;
             INTEGER(count)[j] = 0; /* need this initialised */
             continue;
         }
-        k = 1;
+        dk = 1; /* accumulate in a double to detect overflow */
         for (i = 0; i < nVar; i++)
         {
             if (INTEGER(factors)[i + j * nVar])
@@ -1904,20 +1905,25 @@ alldone:;
                     switch (INTEGER(factors)[i + j * nVar])
                     {
                     case 1:
-                        k *= ncols(VECTOR_ELT(contr1, i));
+                        dk *= ncols(VECTOR_ELT(contr1, i));
                         break;
                     case 2:
-                        k *= ncols(VECTOR_ELT(contr2, i));
+                        dk *= ncols(VECTOR_ELT(contr2, i));
                         break;
                     }
                 }
                 else
-                    k *= INTEGER(columns)[i];
+                    dk *= INTEGER(columns)[i];
             }
         }
-        INTEGER(count)[j] = k;
-        nc = nc + k;
+        if (dk > INT_MAX)
+            error(_("term %d would require %.0g columns"), j + 1, dk);
+        INTEGER(count)[j] = dk;
+        dnc = dnc + dk;
     }
+    if (dnc > INT_MAX)
+        error(_("matrix would require %.0g columns"), dnc);
+    nc = dnc;
 
     /* Record which columns of the design matrix are associated */
     /* with which model terms. */
