@@ -4922,7 +4922,7 @@ static Rboolean gzcon_open(Rconnection con)
     Rconnection icon = priv->con;
     int err;
 
-    if (!icon->open(icon))
+    if (!icon->isopen && !icon->open(icon))
         return FALSE;
     con->isopen = TRUE;
     con->canwrite = icon->canwrite;
