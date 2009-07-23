@@ -564,6 +564,7 @@ SEXP attribute_hidden do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nx = 0, ny = 0, i, j, k, nans = 0, nx_lone = 0, ny_lone = 0;
     int all_x = 0, all_y = 0, ll = 0 /* "= 0" : for -Wall */;
     int *ix, *iy, tmp, nnx, nny, i0, j0;
+    const char *nms[] = {"xi", "yi", "x.alone", "y.alone", ""};
 
     checkArity(op, args);
     xi = CAR(args);
@@ -615,7 +616,8 @@ SEXP attribute_hidden do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     /* 2. allocate and store result components */
-    PROTECT(ans = allocVector(VECSXP, 4));
+
+    PROTECT(ans = R_make_named(VECSXP, nms));
     ansx = allocVector(INTSXP, nans);
     SET_VECTOR_ELT(ans, 0, ansx);
     ansy = allocVector(INTSXP, nans);
@@ -657,12 +659,6 @@ SEXP attribute_hidden do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
     }
 
-    PROTECT(ansnames = allocVector(STRSXP, 4));
-    SET_STRING_ELT(ansnames, 0, mkChar("xi"));
-    SET_STRING_ELT(ansnames, 1, mkChar("yi"));
-    SET_STRING_ELT(ansnames, 2, mkChar("x.alone"));
-    SET_STRING_ELT(ansnames, 3, mkChar("y.alone"));
-    setAttrib(ans, R_NamesSymbol, ansnames);
     UNPROTECT(2);
     return ans;
 }
