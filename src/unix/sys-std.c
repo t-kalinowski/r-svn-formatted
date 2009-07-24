@@ -187,6 +187,9 @@ InputHandler *initStdinHandler(void)
   This sets the global variable InputHandlers if it is not already set.
   In the standard interactive case, this will have been set to be the
   BasicInputHandler object.
+  Returns the newly created handler which can be used in a call to
+  removeInputHandler (prior to R 2.10.0 it returned the handler root [never
+  used] which made it impossible to identify the new handler).
  */
 InputHandler *addInputHandler(InputHandler *handlers, int fd, InputHandlerProc handler, int activity)
 {
@@ -212,7 +215,7 @@ InputHandler *addInputHandler(InputHandler *handlers, int fd, InputHandlerProc h
     }
     tmp->next = input;
 
-    return (handlers);
+    return (input);
 }
 
 /*
@@ -376,7 +379,7 @@ void R_runHandlers(InputHandler *handlers, fd_set *readMask)
                removeInputHandlers */
             next = tmp->next;
             if (FD_ISSET(tmp->fileDescriptor, readMask) && tmp->handler != NULL)
-                tmp->handler((void *)NULL);
+                tmp->handler((void *)tmp->userData);
             tmp = next;
         }
 }
