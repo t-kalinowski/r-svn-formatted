@@ -918,7 +918,7 @@ static SOCKET srv_sock = INVALID_SOCKET;
  * through a message-only window which is created on the R thread */
 static LRESULT CALLBACK RhttpdWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    Rprintf("RhttpdWindowProc(%x, %x, %x, %x)\n", (int)hwnd, (int)uMsg, (int)wParam, (int)lParam);
+    DBG(Rprintf("RhttpdWindowProc(%x, %x, %x, %x)\n", (int)hwnd, (int)uMsg, (int)wParam, (int)lParam));
     if (hwnd == message_window && uMsg == WM_RHTTP_CALLBACK)
     {
         httpd_conn_t *c = (httpd_conn_t *)lParam;
