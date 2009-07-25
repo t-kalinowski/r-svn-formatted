@@ -2661,9 +2661,9 @@ int(NAMED)(SEXP x)
 {
     return NAMED(x);
 }
-int(TRACE)(SEXP x)
+int(RTRACE)(SEXP x)
 {
-    return TRACE(x);
+    return RTRACE(x);
 }
 int(LEVELS)(SEXP x)
 {
@@ -2689,9 +2689,9 @@ void(SET_NAMED)(SEXP x, int v)
 {
     SET_NAMED(x, v);
 }
-void(SET_TRACE)(SEXP x, int v)
+void(SET_RTRACE)(SEXP x, int v)
 {
-    SET_TRACE(x, v);
+    SET_RTRACE(x, v);
 }
 int(SETLEVELS)(SEXP x, int v)
 {
@@ -2967,13 +2967,13 @@ SEXP(CLOENV)(SEXP x)
 {
     return CLOENV(x);
 }
-int(DEBUG)(SEXP x)
+int(RDEBUG)(SEXP x)
 {
-    return DEBUG(x);
+    return RDEBUG(x);
 }
-int(STEP)(SEXP x)
+int(RSTEP)(SEXP x)
 {
-    return STEP(x);
+    return RSTEP(x);
 }
 
 void(SET_FORMALS)(SEXP x, SEXP v)
@@ -2991,13 +2991,13 @@ void(SET_CLOENV)(SEXP x, SEXP v)
     CHECK_OLD_TO_NEW(x, v);
     CLOENV(x) = v;
 }
-void(SET_DEBUG)(SEXP x, int v)
+void(SET_RDEBUG)(SEXP x, int v)
 {
-    SET_DEBUG(x, v);
+    SET_RDEBUG(x, v);
 }
-void(SET_STEP)(SEXP x, int v)
+void(SET_RSTEP)(SEXP x, int v)
 {
-    SET_STEP(x, v);
+    SET_RSTEP(x, v);
 }
 
 /* Primitive Accessors */

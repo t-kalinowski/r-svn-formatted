@@ -132,18 +132,25 @@ static void inspect(int pre, SEXP v, int deep)
         Rprintf("NAM(%d)", NAMED(v));
         a = 1;
     }
-    if (DEBUG(v))
+    if (RDEBUG(v))
     {
         if (a)
             Rprintf(",");
         Rprintf("DBG");
         a = 1;
     }
-    if (TRACE(v))
+    if (RTRACE(v))
     {
         if (a)
             Rprintf(",");
         Rprintf("TR");
+        a = 1;
+    }
+    if (RSTEP(v))
+    {
+        if (a)
+            Rprintf(",");
+        Rprintf("STP");
         a = 1;
     }
     if (LEVELS(v))

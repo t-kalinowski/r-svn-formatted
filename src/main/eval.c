@@ -461,7 +461,7 @@ SEXP eval(SEXP e, SEXP rho)
         else
             PROTECT(op = eval(CAR(e), rho));
 
-        if (TRACE(op) && R_current_trace_state())
+        if (RTRACE(op) && R_current_trace_state())
         {
             Rprintf("trace: ");
             PrintValue(e);
@@ -654,10 +654,10 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 
     /* Debugging */
 
-    SET_DEBUG(newrho, DEBUG(op) || STEP(op));
-    if (STEP(op))
-        SET_STEP(op, 0);
-    if (DEBUG(newrho))
+    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op));
+    if (RSTEP(op))
+        SET_RSTEP(op, 0);
+    if (RDEBUG(newrho))
     {
         int old_bl = R_BrowseLines, blines = asInteger(GetOption(install("deparse.max.lines"), R_BaseEnv));
         Rprintf("debugging in: ");
@@ -725,7 +725,7 @@ regdb :
 
     endcontext(&cntxt);
 
-    if (DEBUG(op))
+    if (RDEBUG(op))
     {
         Rprintf("exiting from: ");
         PrintValueRec(call, rho);
@@ -753,10 +753,10 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
 
     /* Debugging */
 
-    SET_DEBUG(newrho, DEBUG(op) || STEP(op));
-    if (STEP(op))
-        SET_STEP(op, 0);
-    if (DEBUG(op))
+    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op));
+    if (RSTEP(op))
+        SET_RSTEP(op, 0);
+    if (RDEBUG(op))
     {
         Rprintf("debugging in: ");
         PrintValueRec(call, rho);
@@ -812,7 +812,7 @@ regdb :
 
     endcontext(&cntxt);
 
-    if (DEBUG(op))
+    if (RDEBUG(op))
     {
         Rprintf("exiting from: ");
         PrintValueRec(call, rho);
@@ -1032,7 +1032,7 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             vis = 1;
     }
-    if (DEBUG(rho))
+    if (RDEBUG(rho))
     {
         SrcrefPrompt("debug", R_Srcref);
         PrintValue(Stmt);
@@ -1049,10 +1049,10 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #define BodyHasBraces(body) ((isLanguage(body) && CAR(body) == R_BraceSymbol) ? 1 : 0)
 
-#define DO_LOOP_DEBUG(call, op, args, rho, bgn)                                                                        \
+#define DO_LOOP_RDEBUG(call, op, args, rho, bgn)                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (bgn && DEBUG(rho))                                                                                         \
+        if (bgn && RDEBUG(rho))                                                                                        \
         {                                                                                                              \
             SrcrefPrompt("debug", R_Srcref);                                                                           \
             PrintValue(CAR(args));                                                                                     \
@@ -1104,7 +1104,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     ans = R_NilValue;
 
-    dbg = DEBUG(rho);
+    dbg = RDEBUG(rho);
     bgn = BodyHasBraces(body);
 
     /* bump up NAMED count of sequence to avoid modification by loop code */
@@ -1126,7 +1126,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     for (i = 0; i < n; i++)
     {
-        DO_LOOP_DEBUG(call, op, args, rho, bgn);
+        DO_LOOP_RDEBUG(call, op, args, rho, bgn);
         switch (TYPEOF(val))
         {
         case LGLSXP:
@@ -1182,7 +1182,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 for_break:
     endcontext(&cntxt);
     UNPROTECT(5);
-    SET_DEBUG(rho, dbg);
+    SET_RDEBUG(rho, dbg);
     return R_NilValue;
 }
 
@@ -1195,7 +1195,7 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    dbg = DEBUG(rho);
+    dbg = RDEBUG(rho);
     body = CADR(args);
     bgn = BodyHasBraces(body);
 
@@ -1204,12 +1204,12 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         while (asLogicalNoNA(eval(CAR(args), rho), call))
         {
-            DO_LOOP_DEBUG(call, op, args, rho, bgn);
+            DO_LOOP_RDEBUG(call, op, args, rho, bgn);
             eval(body, rho);
         }
     }
     endcontext(&cntxt);
-    SET_DEBUG(rho, dbg);
+    SET_RDEBUG(rho, dbg);
     return R_NilValue;
 }
 
@@ -1222,7 +1222,7 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    dbg = DEBUG(rho);
+    dbg = RDEBUG(rho);
     body = CAR(args);
     bgn = BodyHasBraces(body);
 
@@ -1231,12 +1231,12 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         for (;;)
         {
-            DO_LOOP_DEBUG(call, op, args, rho, bgn);
+            DO_LOOP_RDEBUG(call, op, args, rho, bgn);
             eval(body, rho);
         }
     }
     endcontext(&cntxt);
-    SET_DEBUG(rho, dbg);
+    SET_RDEBUG(rho, dbg);
     return R_NilValue;
 }
 
@@ -1282,7 +1282,7 @@ SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
                     UNPROTECT(1);
                 }
             }
-            if (DEBUG(rho))
+            if (RDEBUG(rho))
             {
                 SrcrefPrompt("debug", R_Srcref);
                 PrintValue(CAR(args));
@@ -3410,7 +3410,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             /* get the function */
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             value = findFun(symbol, rho);
-            if (TRACE(value))
+            if (RTRACE(value))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
@@ -3431,7 +3431,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             /* get the function */
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             value = findFun(symbol, R_GlobalEnv);
-            if (TRACE(value))
+            if (RTRACE(value))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
@@ -3457,7 +3457,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 value = forcePromise(value);
                 SET_NAMED(value, 2);
             }
-            if (TRACE(value))
+            if (RTRACE(value))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
@@ -3485,7 +3485,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             }
             if (TYPEOF(value) != BUILTINSXP)
                 error(_("not a BUILTIN function"));
-            if (TRACE(value))
+            if (RTRACE(value))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
@@ -3659,7 +3659,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 fun = forcePromise(fun);
                 SET_NAMED(fun, 2);
             }
-            if (TRACE(fun))
+            if (RTRACE(fun))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);

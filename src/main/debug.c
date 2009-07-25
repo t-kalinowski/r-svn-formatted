@@ -43,18 +43,18 @@ SEXP attribute_hidden do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
     switch (PRIMVAL(op))
     {
     case 0:
-        SET_DEBUG(CAR(args), 1);
+        SET_RDEBUG(CAR(args), 1);
         break;
     case 1:
-        if (DEBUG(CAR(args)) != 1)
+        if (RDEBUG(CAR(args)) != 1)
             warningcall(call, "argument is not being debugged");
-        SET_DEBUG(CAR(args), 0);
+        SET_RDEBUG(CAR(args), 0);
         break;
     case 2:
-        ans = ScalarLogical(DEBUG(CAR(args)));
+        ans = ScalarLogical(RDEBUG(CAR(args)));
         break;
     case 3:
-        SET_STEP(CAR(args), 1);
+        SET_RSTEP(CAR(args), 1);
         break;
     }
     return ans;
@@ -72,10 +72,10 @@ SEXP attribute_hidden do_trace(SEXP call, SEXP op, SEXP args, SEXP rho)
     switch (PRIMVAL(op))
     {
     case 0:
-        SET_TRACE(CAR(args), 1);
+        SET_RTRACE(CAR(args), 1);
         break;
     case 1:
-        SET_TRACE(CAR(args), 0);
+        SET_RTRACE(CAR(args), 0);
         break;
     }
     return R_NilValue;
@@ -129,7 +129,7 @@ SEXP attribute_hidden do_memtrace(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(object) == EXTPTRSXP || TYPEOF(object) == WEAKREFSXP)
         errorcall(call, _("'tracemem' is not useful for weak reference or external pointer objects"));
 
-    SET_TRACE(object, 1);
+    SET_RTRACE(object, 1);
     snprintf(buffer, 20, "<%p>", (void *)object);
     return mkString(buffer);
 #else
@@ -149,8 +149,8 @@ SEXP attribute_hidden do_memuntrace(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(object) == CLOSXP || TYPEOF(object) == BUILTINSXP || TYPEOF(object) == SPECIALSXP)
         errorcall(call, _("argument must not be a function"));
 
-    if (TRACE(object))
-        SET_TRACE(object, 0);
+    if (RTRACE(object))
+        SET_RTRACE(object, 0);
 #else
     errorcall(call, _("R was not compiled with support for memory profiling"));
 #endif
@@ -211,7 +211,7 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         origin = R_NilValue;
 
-    if (TRACE(object))
+    if (RTRACE(object))
     {
         snprintf(buffer, 20, "<%p>", (void *)object);
         ans = mkString(buffer);
@@ -221,7 +221,7 @@ SEXP attribute_hidden do_memretrace(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (origin != R_NilValue)
     {
-        SET_TRACE(object, 1);
+        SET_RTRACE(object, 1);
         if (R_current_trace_state())
         {
             Rprintf("tracemem[%s -> %p]: ", translateChar(STRING_ELT(origin, 0)), (void *)object);
