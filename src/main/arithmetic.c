@@ -702,20 +702,20 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     return ans;
     } */
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(s1) || TRACE(s2))
+    if (RTRACE(s1) || RTRACE(s2))
     {
-        if (TRACE(s1) && TRACE(s2))
+        if (RTRACE(s1) && RTRACE(s2))
         {
             if (n1 > n2)
                 memtrace_report(s1, ans);
             else
                 memtrace_report(s2, ans);
         }
-        else if (TRACE(s1))
+        else if (RTRACE(s1))
             memtrace_report(s1, ans);
         else /* only s2 */
             memtrace_report(s2, ans);
-        SET_TRACE(ans, 1);
+        SET_RTRACE(ans, 1);
     }
 #endif
 
@@ -878,20 +878,20 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     n = (n1 > n2) ? n1 : n2;
     PROTECT(ans = allocVector(REALSXP, n));
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(s1) || TRACE(s2))
+    if (RTRACE(s1) || RTRACE(s2))
     {
-        if (TRACE(s1) && TRACE(s2))
+        if (RTRACE(s1) && RTRACE(s2))
         {
             if (n1 > n2)
                 memtrace_report(s1, ans);
             else
                 memtrace_report(s2, ans);
         }
-        else if (TRACE(s1))
+        else if (RTRACE(s1))
             memtrace_report(s1, ans);
         else /* only s2 */
             memtrace_report(s2, ans);
-        SET_TRACE(ans, 1);
+        SET_RTRACE(ans, 1);
     }
 #endif
 
@@ -1107,10 +1107,10 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sy = allocVector(REALSXP, n));
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa))
+    if (RTRACE(sa))
     {
         memtrace_report(sa, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
     a = REAL(sa);
@@ -1291,20 +1291,20 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
     SETUP_Math2;
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb))
+    if (RTRACE(sa) || RTRACE(sb))
     {
-        if (TRACE(sa) && TRACE(sb))
+        if (RTRACE(sa) && RTRACE(sb))
         {
             if (na > nb)
                 memtrace_report(sa, sy);
             else
                 memtrace_report(sb, sy);
         }
-        else if (TRACE(sa))
+        else if (RTRACE(sa))
             memtrace_report(sa, sy);
         else /* only s2 */
             memtrace_report(sb, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 
@@ -1354,20 +1354,20 @@ static SEXP math2_1(SEXP sa, SEXP sb, SEXP sI, double (*f)(double, double, int),
     m_opt = asInteger(sI);
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb))
+    if (RTRACE(sa) || RTRACE(sb))
     {
-        if (TRACE(sa) && TRACE(sb))
+        if (RTRACE(sa) && RTRACE(sb))
         {
             if (na > nb)
                 memtrace_report(sa, sy);
             else
                 memtrace_report(sb, sy);
         }
-        else if (TRACE(sa))
+        else if (RTRACE(sa))
             memtrace_report(sa, sy);
         else /* only s2 */
             memtrace_report(sb, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 
@@ -1401,20 +1401,20 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
     i_2 = asInteger(sI2);
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb))
+    if (RTRACE(sa) || RTRACE(sb))
     {
-        if (TRACE(sa) && TRACE(sb))
+        if (RTRACE(sa) && RTRACE(sb))
         {
             if (na > nb)
                 memtrace_report(sa, sy);
             else
                 memtrace_report(sb, sy);
         }
-        else if (TRACE(sa))
+        else if (RTRACE(sa))
             memtrace_report(sa, sy);
         else /* only s2 */
             memtrace_report(sb, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 
@@ -1717,15 +1717,15 @@ static SEXP math3(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double)
     SETUP_Math3;
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb) || TRACE(sc))
+    if (RTRACE(sa) || RTRACE(sb) || RTRACE(sc))
     {
-        if (TRACE(sa))
+        if (RTRACE(sa))
             memtrace_report(sa, sy);
-        else if (TRACE(sb))
+        else if (RTRACE(sb))
             memtrace_report(sb, sy);
-        else if (TRACE(sc))
+        else if (RTRACE(sc))
             memtrace_report(sc, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 
@@ -1777,15 +1777,15 @@ static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, doub
     i_1 = asInteger(sI);
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb) || TRACE(sc))
+    if (RTRACE(sa) || RTRACE(sb) || RTRACE(sc))
     {
-        if (TRACE(sa))
+        if (RTRACE(sa))
             memtrace_report(sa, sy);
-        else if (TRACE(sb))
+        else if (RTRACE(sb))
             memtrace_report(sb, sy);
-        else if (TRACE(sc))
+        else if (RTRACE(sc))
             memtrace_report(sc, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 
@@ -1820,15 +1820,15 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
     i_2 = asInteger(sJ);
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(sa) || TRACE(sb) || TRACE(sc))
+    if (RTRACE(sa) || RTRACE(sb) || RTRACE(sc))
     {
-        if (TRACE(sa))
+        if (RTRACE(sa))
             memtrace_report(sa, sy);
-        else if (TRACE(sb))
+        else if (RTRACE(sb))
             memtrace_report(sb, sy);
-        else if (TRACE(sc))
+        else if (RTRACE(sc))
             memtrace_report(sc, sy);
-        SET_TRACE(sy, 1);
+        SET_RTRACE(sy, 1);
     }
 #endif
 

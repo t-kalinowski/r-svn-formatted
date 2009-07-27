@@ -2052,10 +2052,10 @@ alldone:;
     PROTECT(x = allocMatrix(REALSXP, n, nc));
 
 #ifdef R_MEMORY_PROFILING
-    if (TRACE(vars))
+    if (RTRACE(vars))
     {
         memtrace_report(vars, x);
-        SET_TRACE(x, 1);
+        SET_RTRACE(x, 1);
     }
 #endif
 
@@ -2082,10 +2082,10 @@ alldone:;
                 continue;
             var_i = VECTOR_ELT(variable, i);
 #ifdef R_MEMORY_PROFILING
-            if (TRACE(var_i))
+            if (RTRACE(var_i))
             {
                 memtrace_report(var_i, x);
-                SET_TRACE(x, 1);
+                SET_RTRACE(x, 1);
             }
 #endif
             fik = INTEGER(factors)[i + k * nVar];

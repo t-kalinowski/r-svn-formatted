@@ -1549,7 +1549,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, symName, argConverters + nargs,
                                   checkTypes ? checkTypes[nargs] : 0, encname);
 #ifdef R_MEMORY_PROFILING
-        if (TRACE(CAR(pargs)) && dup)
+        if (RTRACE(CAR(pargs)) && dup)
             memtrace_report(CAR(pargs), cargs[nargs]);
 #endif
         nargs++;
@@ -1988,10 +1988,10 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), which,
                                        checkTypes ? checkTypes[nargs] : TYPEOF(CAR(pargs)), encname));
 #if R_MEMORY_PROFILING
-                if (TRACE(CAR(pargs)) && dup)
+                if (RTRACE(CAR(pargs)) && dup)
                 {
                     memtrace_report(cargs[nargs], s);
-                    SET_TRACE(s, 1);
+                    SET_RTRACE(s, 1);
                 }
 #endif
                 DUPLICATE_ATTRIB(s, CAR(pargs));
