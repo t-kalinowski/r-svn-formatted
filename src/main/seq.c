@@ -711,7 +711,7 @@ SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef R_291_and_less
     len = length(CAR(args));
 #else
-    if (isObject(CAR(args)) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
+    if (isObject(CAR(args)) && DispatchOrEval(call, /* op = */ ScalarInteger(0), "length", args, rho, &ans, 0, 1))
     {
         len = asInteger(ans);
     }
