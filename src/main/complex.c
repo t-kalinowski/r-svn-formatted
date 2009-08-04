@@ -83,6 +83,7 @@ SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 }
 
 #ifndef HAVE_C99_COMPLEX
+/* c := a / b --- where c may overwrite 'b' but not 'a' */
 static void complex_div(Rcomplex *c, Rcomplex *a, Rcomplex *b)
 {
     double ratio, den;
@@ -111,6 +112,51 @@ static void complex_div(Rcomplex *c, Rcomplex *a, Rcomplex *b)
 
 #ifndef HAVE_C99_COMPLEX
 
+/* "export" this (to be API) : */
+void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
+{
+    if (k == 0)
+    {
+        r->r = x->r;
+        r->i = x->i;
+    }
+    else if (k < 0)
+    {
+        Rcomplex h;
+        R_cpow_n(r, x, -k);
+        /* r := 1/r : */
+        h.r = 1.;
+        h.i = 0;
+        complex_div(r, &h, r);
+    }
+    else
+    { /* k > 0 */
+        Rcomplex X;
+        r->r = X.r = x->r;
+        r->i = X.i = x->i;
+        k--;
+        while (k > 0)
+        {
+            double rr;
+            if (k & 1)
+            { /* r := r * x */
+                rr = r->r * x->r - r->i * x->i;
+                r->i = r->r * x->i + r->i * x->r;
+                r->r = rr;
+            }
+            if (k == 1)
+                break;
+            k >>= 1; /* efficient division by 2; now have k >= 1 */
+
+            /* X := X * X : */
+            rr = (X.r - X.i) * (X.r + X.i); /* = X.r * X.r - X.i * X.i */
+            X.i = 2 * X.r * X.i;            /* = X.r * X.i + X.i * X.r */
+            X.r = rr;
+        }
+        return;
+    }
+}
+
 static void complex_pow(Rcomplex *r, Rcomplex *a, Rcomplex *b)
 {
     /* r := a^b */
@@ -131,18 +177,25 @@ static void complex_pow(Rcomplex *r, Rcomplex *a, Rcomplex *b)
             r->i = 0.;
             return;
         }
-        if (a->r == 0. && b->r == (ib = (int)b->r))
-        { /* (|a|*i)^b */
-            x = R_pow_di(a->i, ib);
-            if (ib % 2)
-            { /* ib is odd ==> imaginary r */
-                r->r = 0.;
-                r->i = ((ib > 0 && ib % 4 == 3) || (ib < 0 && (-ib) % 4 == 1)) ? -x : x;
+        if (b->r == (ib = (int)b->r))
+        { /* z ^ k  (k integer) */
+            if (a->r == 0.)
+            { /* (|a|*i)^b */
+                x = R_pow_di(a->i, ib);
+                if (ib % 2)
+                { /* ib is odd ==> imaginary r */
+                    r->r = 0.;
+                    r->i = ((ib > 0 && ib % 4 == 3) || (ib < 0 && (-ib) % 4 == 1)) ? -x : x;
+                }
+                else
+                { /* even exponent b : real r */
+                    r->r = (ib % 4) ? -x : x;
+                    r->i = 0.;
+                }
             }
             else
-            { /* even exponent b : real r */
-                r->r = (ib % 4) ? -x : x;
-                r->i = 0.;
+            {
+                R_cpow_n(r, a, ib);
             }
             return;
         }
@@ -157,16 +210,46 @@ static void complex_pow(Rcomplex *r, Rcomplex *a, Rcomplex *b)
 
 #else /* HAVE_C99_COMPLEX */
 
+/* "export" this (to be API) : */
+double complex R_cpow_n(double complex X, int k)
+{
+    if (k == 0)
+        return X;
+    else if (k < 0)
+        return 1. / R_cpow_n(X, -k);
+    else
+    { /* k > 0 */
+        double complex z = X;
+        k--;
+        while (k > 0)
+        {
+            if (k & 1)
+                z = z * X;
+            if (k == 1)
+                break;
+            k >>= 1; /* efficient division by 2; now have k >= 1 */
+            /* x := x * x */
+            X = X * X;
+        }
+        return z;
+    }
+}
+
 #ifdef Win32
 /* Need this because the system one is explicitly linked
    against MSVCRT's pow, and gets (0+0i)^Y as 0+0i for all Y */
 static double complex mycpow(double complex X, double complex Y)
 {
     double complex Res;
+    int k;
     if (X == 0.0)
     {
         __real__ Res = R_pow(0.0, __real__ Y);
         __imag__ Res = 0.0;
+    }
+    else if (__imag__ Y == 0.0 && __real__ Y == (k = (int)__real__ Y) && abs(k) <= 65536)
+    {
+        return R_cpow_n(X, k);
     }
     else
     {
@@ -190,14 +273,31 @@ static double complex mycpow(double complex X, double complex Y)
     return Res;
 }
 #else /* not Win32 */
-/* reason for this: glibc gets (0+0i)^y = Inf+NaNi for y < 0
+/* reason for this:
+ * 1) glibc gets (0+0i)^y = Inf+NaNi for y < 0
+ * 2)   X ^ n  (e.g. for n = 2, 3)  is unnecessarily inaccurate;
+ *	cut-off 65536 : guided from empirical speed measurements
  */
+
 static double complex mycpow(double complex X, double complex Y)
 {
-    double tmp = cimag(Y);
-    if (X == 0.0 && tmp == 0)
-    {
-        double complex Z = R_pow(0.0, creal(Y));
+    double iY = cimag(Y);
+    if (iY == 0)
+    { /* X ^ <real> */
+        double complex Z;
+        int k;
+        if (X == 0.)
+        {
+            Z = R_pow(0., creal(Y));
+        }
+        else if (creal(Y) == (k = (int)creal(Y)) && abs(k) <= 65536)
+        {
+            Z = R_cpow_n(X, k);
+        }
+        else
+        {
+            Z = cpow(X, Y);
+        }
         return Z;
     }
     else
