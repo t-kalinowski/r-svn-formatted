@@ -1732,7 +1732,7 @@ SEXP attribute_hidden do_menu(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     if (!isString(CAR(args)))
-        error(_("invalid argument"));
+        error(_("invalid '%s' argument"), "choices");
 
     sprintf(ConsolePrompt, _("Selection: "));
 

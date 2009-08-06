@@ -602,7 +602,7 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
         { /* querying arg */
             const char *tag;
             if (!isString(argi) || LENGTH(argi) <= 0)
-                error(R_MSG_IA);
+                error(_("invalid argument"));
             tag = CHAR(STRING_ELT(argi, 0));
             if (streql(tag, "par.ask.default"))
             {
