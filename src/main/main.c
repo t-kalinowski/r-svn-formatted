@@ -1131,7 +1131,7 @@ static SEXP matchargs(SEXP args)
                 SETCAR(argList, CAR(tmp));
             }
             else
-                error(_("duplicate text argument"));
+                error(_("duplicate '%s' argument"), "text");
         }
         if (TAG(tmp) == csym)
         {
@@ -1143,7 +1143,7 @@ static SEXP matchargs(SEXP args)
                 SETCADR(argList, CAR(tmp));
             }
             else
-                error(_("duplicate condition argument"));
+                error(_("duplicate '%s' argument"), "condition");
         }
         if (TAG(tmp) == esym)
         {
@@ -1155,7 +1155,7 @@ static SEXP matchargs(SEXP args)
                 SETCADDR(argList, CAR(tmp));
             }
             else
-                error(_("duplicate expr argument"));
+                error(_("duplicate '%s' argument"), "expr");
             tmp = CDR(tmp);
         }
     }
