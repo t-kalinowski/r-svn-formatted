@@ -1715,15 +1715,14 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (global)
                 { /* need to find number of matches */
+                    const char *ss = s;
+                    int sst = st;
                     nr = 0;
                     do
                     {
                         nr++;
-                        s += st + patlen;
-                    } while ((st = fgrep_one_bytes(spat, s, useBytes)) >= 0);
-                    /* and reset */
-                    s = translateChar(STRING_ELT(vec, i));
-                    st = fgrep_one_bytes(spat, s, useBytes);
+                        ss += sst + patlen;
+                    } while ((sst = fgrep_one_bytes(spat, ss, useBytes)) >= 0);
                 }
                 else
                     nr = 1;
