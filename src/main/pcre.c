@@ -260,7 +260,13 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
         if (getCharCE(STRING_ELT(vec, 0)) == CE_UTF8)
             use_UTF8 = TRUE;
 
-    if (use_UTF8)
+    if (useBytes)
+    {
+        spat = CHAR(STRING_ELT(pat, 0));
+        srep = CHAR(STRING_ELT(rep, 0));
+        ienc = CE_NATIVE;
+    }
+    else if (use_UTF8)
     {
         spat = translateCharUTF8(STRING_ELT(pat, 0));
         srep = translateCharUTF8(STRING_ELT(rep, 0));
@@ -317,7 +323,9 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
         offset = 0;
         nmatch = 0;
 
-        if (use_UTF8)
+        if (useBytes)
+            s = CHAR(STRING_ELT(vec, i));
+        else if (use_UTF8)
             s = translateCharUTF8(STRING_ELT(vec, i));
         else
             s = translateChar(STRING_ELT(vec, i));
@@ -390,7 +398,9 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
         else
         {
             offset = 0;
-            if (use_UTF8)
+            if (useBytes)
+                s = CHAR(STRING_ELT(vec, i));
+            else if (use_UTF8)
                 s = translateCharUTF8(STRING_ELT(vec, i));
             else
                 s = translateChar(STRING_ELT(vec, i));
@@ -510,7 +520,12 @@ SEXP attribute_hidden do_gpregexpr(SEXP pat, SEXP text, int igcase_opt, int useB
                 use_UTF8 = TRUE;
     }
 
-    if (use_UTF8)
+    if (useBytes)
+    {
+        spat = CHAR(STRING_ELT(pat, 0));
+        ienc = CE_NATIVE;
+    }
+    else if (use_UTF8)
     {
         spat = translateCharUTF8(STRING_ELT(pat, 0));
         ienc = CE_UTF8;
@@ -576,7 +591,9 @@ SEXP attribute_hidden do_gpregexpr(SEXP pat, SEXP text, int igcase_opt, int useB
             UNPROTECT(2);
             continue;
         }
-        if (ienc == CE_UTF8)
+        if (useBytes)
+            s = CHAR(STRING_ELT(text, i));
+        else if (ienc == CE_UTF8)
             s = translateCharUTF8(STRING_ELT(text, i));
         else
             s = translateChar(STRING_ELT(text, i));
