@@ -1780,7 +1780,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 offset = 0;
                 nmatch = 0;
-                s = translateChar(STRING_ELT(vec, i));
+                if (use_UTF8)
+                    s = translateCharUTF8(STRING_ELT(vec, i));
+                else
+                    s = translateChar(STRING_ELT(vec, i));
                 t = srep;
                 cbuf = u = CallocCharBuf(ns);
                 ns = strlen(s);

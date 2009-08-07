@@ -390,7 +390,10 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
         else
         {
             offset = 0;
-            s = translateChar(STRING_ELT(vec, i));
+            if (use_UTF8)
+                s = translateCharUTF8(STRING_ELT(vec, i));
+            else
+                s = translateChar(STRING_ELT(vec, i));
             t = srep;
             cbuf = u = CallocCharBuf(ns);
             eflag = 0;
