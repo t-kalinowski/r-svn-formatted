@@ -560,7 +560,7 @@ static int write_one(unsigned int namescount, const char *const *names, void *da
 
 #include "RBufferUtils.h"
 
-/* iconv(x, from, to, sub) */
+/* iconv(x, from, to, sub, mark) */
 SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args), si;
@@ -587,6 +587,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
+        int mark;
         const char *from, *to;
         Rboolean isLatin1 = FALSE, isUTF8 = FALSE;
 
@@ -602,6 +603,9 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             sub = NULL;
         else
             sub = translateChar(STRING_ELT(CADDDR(args), 0));
+        mark = asLogical(CAD4R(args));
+        if (mark == NA_LOGICAL)
+            error(_("invalid '%s' argument"), "mark");
         from = CHAR(STRING_ELT(CADR(args), 0)); /* ASCII */
         to = CHAR(STRING_ELT(CADDR(args), 0));
         /* some iconv's allow "UTF8", but libiconv does not */
@@ -683,10 +687,13 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                 cetype_t ienc = CE_NATIVE;
 
                 nout = cbuff.bufsize - 1 - outb;
-                if (isLatin1)
-                    ienc = CE_LATIN1;
-                else if (isUTF8)
-                    ienc = CE_UTF8;
+                if (mark)
+                {
+                    if (isLatin1)
+                        ienc = CE_LATIN1;
+                    else if (isUTF8)
+                        ienc = CE_UTF8;
+                }
                 SET_STRING_ELT(ans, i, mkCharLenCE(cbuff.data, nout, ienc));
             }
             else
