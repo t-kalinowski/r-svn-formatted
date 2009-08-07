@@ -2191,6 +2191,7 @@ static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
     if (!isList(ans))
         error(_("loaded data is not in pair list form"));
 
+    PROTECT(ans);
     a = ans;
     while (a != R_NilValue)
     {
@@ -2199,7 +2200,7 @@ static SEXP RestoreToEnv(SEXP ans, SEXP aenv)
     }
     PROTECT(names = allocVector(STRSXP, cnt));
     cnt = 0;
-    PROTECT(a = ans);
+    a = ans;
     while (a != R_NilValue)
     {
         SET_STRING_ELT(names, cnt++, PRINTNAME(TAG(a)));
