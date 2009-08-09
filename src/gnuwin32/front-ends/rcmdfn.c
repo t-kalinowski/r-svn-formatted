@@ -407,6 +407,12 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Rd2txt.sh");
             }
+            else if (strcmp(p, "Rdconv") == 0)
+            {
+                strcpy(cmd, "sh ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/Rdconv.sh");
+            }
             else
             {
                 if (!strcmp(".sh", p + strlen(p) - 3))
