@@ -398,7 +398,7 @@ static void fcn(int n, const double x[], double *f, function_info *state)
             error(_("non-finite value supplied by 'nlm'"));
         REAL(s)[i] = x[i];
     }
-    s = eval(state->R_fcall, state->R_env);
+    s = PROTECT(eval(state->R_fcall, state->R_env));
     switch (TYPEOF(s))
     {
     case INTSXP:
@@ -428,13 +428,14 @@ static void fcn(int n, const double x[], double *f, function_info *state)
     }
     if (state->have_gradient)
     {
-        g = REAL(coerceVector(getAttrib(s, install("gradient")), REALSXP));
+        g = REAL(PROTECT(coerceVector(getAttrib(s, install("gradient")), REALSXP)));
         if (state->have_hessian)
         {
-            h = REAL(coerceVector(getAttrib(s, install("hessian")), REALSXP));
+            h = REAL(PROTECT(coerceVector(getAttrib(s, install("hessian")), REALSXP)));
         }
     }
     FT_store(n, *f, x, g, h, state);
+    UNPROTECT(1 + state->have_gradient + state->have_hessian);
     return;
 
 badvalue:
