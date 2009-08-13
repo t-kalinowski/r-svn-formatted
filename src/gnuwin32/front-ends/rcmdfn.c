@@ -64,8 +64,7 @@ void rcmdusage(char *RCMD)
             "  Rprof    Post process R profiling files.\n",
             "  Rdconv   Convert Rd format to various other formats, including html, Nroff,\n",
             "           LaTeX, plain text, and S documentation format.\n", "  Rdiff    difference R output files.\n",
-            "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Rd2txt   Convert Rd format to text.\n",
-            "  Sd2Rd    Convert S documentation to Rd format.\n",
+            "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Sd2Rd    Convert S documentation to Rd format.\n",
             "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n",
             "  config   Obtain configuration information about R.\n"
             "  open     Open a file via Windows file associations.\n");
@@ -400,12 +399,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcpy(cmd, "sh ");
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/SHLIB.sh");
-            }
-            else if (strcmp(p, "Rd2txt") == 0)
-            {
-                strcpy(cmd, "sh ");
-                strcat(cmd, RHome);
-                strcat(cmd, "/bin/Rd2txt.sh");
             }
             else if (strcmp(p, "Rdconv") == 0)
             {
