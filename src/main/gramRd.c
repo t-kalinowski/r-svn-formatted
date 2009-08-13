@@ -3503,7 +3503,10 @@ static int mkCode(int c)
                         escaped = 1;
                     }
                     else
-                        xxungetc(lookahead);
+                    {
+                        xxungetc(lookahead); /* put back the 4th char */
+                        xxungetc('\\');      /* and the 3rd */
+                    }
                 }
                 else if (lookahead == xxinRString)
                 { /* There could be one or two before this */
@@ -3903,13 +3906,7 @@ SEXP attribute_hidden do_deparseRd(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (xxmode == RLIKE && xxinRString)
                 {
                     lookahead = *(c + 1);
-                    if (lookahead == '\\')
-                    {
-                        *out++ = '\\';
-                        escape = TRUE;
-                        escaped = TRUE;
-                    }
-                    else if (lookahead == xxinRString)
+                    if (lookahead == '\\' || lookahead == xxinRString || lookahead == 'l')
                         escape = TRUE;
                     break;
                 } /* fall through to % case for non-strings... */
