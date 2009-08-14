@@ -91,7 +91,7 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
     * ----------------------------------------------------------------------- */
 
     Rboolean do_swap;
-    int n, ierr1;
+    int n, ierr1 = 0;
     double z, a0, b0, x0, y0, eps, lambda;
 
     /*  eps is a machine dependent constant: the smallest
@@ -210,8 +210,8 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
         {
             goto L100;
         }
-        if (x0 >= 0.3)
-        {
+        if (x0 >= 0.29)
+        { /* was 0.3, PR#13786 */
             goto L110;
         }
         if (x0 < 0.1)
@@ -374,6 +374,8 @@ L211:
     return;
 
 L_end:
+    if (ierr1 > 0)
+        *ierr = 8;
     if (log_p)
     {
         *w = log(*w);
