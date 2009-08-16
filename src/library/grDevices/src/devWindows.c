@@ -101,7 +101,7 @@ static rgb GArgb(int color, double gamma)
 
 /********************************************************/
 /* This device driver has been documented so that it be	*/
-/* used as a template for new drivers 			*/
+/* used as a template for new drivers			*/
 /********************************************************/
 
 #define MM_PER_INCH 25.4 /* mm -> inch conversion */
@@ -151,7 +151,7 @@ static drawing _d;
 /* Each driver can have its own device-specic graphical */
 /* parameters and resources.  these should be wrapped	*/
 /* in a structure (gadesc in devWindows.h)              */
-/* and attached to the overall device description via 	*/
+/* and attached to the overall device description via	*/
 /* the dd->deviceSpecific pointer			*/
 /* NOTE that there are generic graphical parameters	*/
 /* which must be set by the device driver, but are	*/
@@ -203,13 +203,13 @@ static void GA_Timer(gadesc *xd)
 }
 
 /********************************************************/
-/* There are a number of actions that every device 	*/
+/* There are a number of actions that every device	*/
 /* driver is expected to perform (even if, in some	*/
-/* cases it does nothing - just so long as it doesn't 	*/
+/* cases it does nothing - just so long as it doesn't	*/
 /* crash !).  this is how the graphics engine interacts */
-/* with each device. Each action will be documented 	*/
-/* individually. 					*/
-/* hooks for these actions must be set up when the 	*/
+/* with each device. Each action will be documented	*/
+/* individually.					*/
+/* hooks for these actions must be set up when the	*/
 /* device is first created				*/
 /********************************************************/
 
@@ -237,7 +237,7 @@ static Rboolean GA_Open(pDevDesc, gadesc *, const char *, double, double, Rboole
 static Rboolean GA_NewFrameConfirm(pDevDesc);
 
 /********************************************************/
-/* end of list of required device driver actions 	*/
+/* end of list of required device driver actions	*/
 /********************************************************/
 
 /* Support Routines */
@@ -609,10 +609,14 @@ static char *translateFontFamily(const char *family)
 
 static void SetFont(pGEcontext gc, double rot, gadesc *xd)
 {
-    int size = gc->cex * gc->ps + 0.5, face = gc->fontface, usePoints;
+    int size, face = gc->fontface, usePoints;
     char *fontfamily;
+    double fs = gc->cex * gc->ps;
 
     usePoints = xd->kind <= METAFILE;
+    if (!usePoints && xd->res_dpi > 0)
+        fs *= xd->res_dpi / 72.0;
+    size = fs + 0.5;
 
     if (face < 1 || face > fontnum)
         face = 1;
@@ -1513,15 +1517,15 @@ static void mbarf(control m)
 }
 
 /********************************************************/
-/* device_Open is not usually called directly by the 	*/
-/* graphics engine;  it is usually only called from 	*/
+/* device_Open is not usually called directly by the	*/
+/* graphics engine;  it is usually only called from	*/
 /* the device-driver entry point.			*/
 /* this function should set up all of the device-	*/
 /* specific resources for a new device			*/
 /* this function is given a new	structure for device-	*/
-/* specific information AND it must FREE the structure 	*/
+/* specific information AND it must FREE the structure	*/
 /* if anything goes seriously wrong			*/
-/* NOTE that it is perfectly acceptable for this 	*/
+/* NOTE that it is perfectly acceptable for this	*/
 /* function to set generic graphics parameters too	*/
 /* (i.e., override the generic parameter settings	*/
 /* which GInit sets up) all at the author's own risk	*/
@@ -1841,7 +1845,7 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
     xd->xshift = xd->yshift = 0;
     xd->npage = 0;
     xd->fp = NULL; /* not all devices (e.g. TIFF) use the file pointer, but SaveAsBitmap
-                      looks at it */
+              looks at it */
 
     if (!dsp[0])
     {
@@ -2033,7 +2037,7 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
 /********************************************************/
 /* device_StrWidth should return the width of the given */
 /* string in DEVICE units (GStrWidth is responsible for */
-/* converting from DEVICE to whatever units the user 	*/
+/* converting from DEVICE to whatever units the user	*/
 /* asked for						*/
 /********************************************************/
 
@@ -2060,7 +2064,7 @@ static double GA_StrWidth_UTF8(const char *str, const pGEcontext gc, pDevDesc dd
 }
 
 /********************************************************/
-/* device_MetricInfo should return height, depth, and 	*/
+/* device_MetricInfo should return height, depth, and	*/
 /* width information for the given character in DEVICE	*/
 /* units (GMetricInfo does the necessary conversions)	*/
 /* This is used for formatting mathematical expressions	*/
@@ -2105,8 +2109,8 @@ static void GA_MetricInfo(int c, const pGEcontext gc, double *ascent, double *de
 }
 
 /********************************************************/
-/* device_Clip is given the left, right, bottom, and 	*/
-/* top of a rectangle (in DEVICE coordinates).  it 	*/
+/* device_Clip is given the left, right, bottom, and	*/
+/* top of a rectangle (in DEVICE coordinates).  it	*/
 /* should have the side-effect that subsequent output	*/
 /* is clipped to the given rectangle			*/
 /********************************************************/
@@ -2123,9 +2127,9 @@ static void GA_Clip(double x0, double x1, double y0, double y1, pDevDesc dd)
 }
 
 /********************************************************/
-/* device_Resize is called whenever the device is 	*/
-/* resized.  the function must update the GPar 		*/
-/* parameters (left, right, bottom, and top) for the 	*/
+/* device_Resize is called whenever the device is	*/
+/* resized.  the function must update the GPar		*/
+/* parameters (left, right, bottom, and top) for the	*/
 /* new device size					*/
 /* this is not usually called directly by the graphics	*/
 /* engine because the detection of device resizes	*/
@@ -2349,7 +2353,7 @@ static void deleteGraphMenus(int devnum)
 
 /********************************************************/
 /* device_Close is called when the device is killed	*/
-/* this function is responsible for destroying any 	*/
+/* this function is responsible for destroying any	*/
 /* device-specific resources that were created in	*/
 /* device_Open and for FREEing the device-specific	*/
 /* parameters structure					*/
@@ -2403,10 +2407,10 @@ static void GA_Close(pDevDesc dd)
 }
 
 /********************************************************/
-/* device_Activate is called when a device becomes the 	*/
+/* device_Activate is called when a device becomes the	*/
 /* active device.  in this case it is used to change the*/
-/* title of a window to indicate the active status of 	*/
-/* the device to the user.  not all device types will 	*/
+/* title of a window to indicate the active status of	*/
+/* the device to the user.  not all device types will	*/
 /* do anything						*/
 /********************************************************/
 
@@ -2432,7 +2436,7 @@ static void GA_Activate(pDevDesc dd)
 
 /********************************************************/
 /* device_Deactivate is called when a device becomes	*/
-/* inactive.  in this case it is used to change the 	*/
+/* inactive.  in this case it is used to change the	*/
 /* title of a window to indicate the inactive status of */
 /* the device to the user.  not all device types will	*/
 /* do anything						*/
@@ -2478,13 +2482,13 @@ static void GA_Deactivate(pDevDesc dd)
     }
 
 /********************************************************/
-/* device_Rect should have the side-effect that a 	*/
-/* rectangle is drawn with the given locations for its 	*/
+/* device_Rect should have the side-effect that a	*/
+/* rectangle is drawn with the given locations for its	*/
 /* opposite corners.  the border of the rectangle	*/
 /* should be in the given "fg" colour and the rectangle	*/
 /* should be filled with the given "bg" colour		*/
 /* if "fg" is NA_INTEGER then no border should be drawn */
-/* if "bg" is NA_INTEGER then the rectangle should not 	*/
+/* if "bg" is NA_INTEGER then the rectangle should not	*/
 /* be filled						*/
 /* the locations are in an arbitrary coordinate system	*/
 /* and this function is responsible for converting the	*/
@@ -2606,7 +2610,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext
 /* if "col" is NA_INTEGER then no border should be drawn*/
 /* if "border" is NA_INTEGER then the circle should not */
 /* be filled						*/
-/* the location is in arbitrary coordinates and the 	*/
+/* the location is in arbitrary coordinates and the	*/
 /* function is responsible for converting this to	*/
 /* DEVICE coordinates.  the radius is given in DEVICE	*/
 /* coordinates						*/
@@ -2800,14 +2804,14 @@ static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDe
 }
 
 /********************************************************/
-/* device_Polygon should have the side-effect that a 	*/
+/* device_Polygon should have the side-effect that a	*/
 /* polygon is drawn using the given x and y values	*/
-/* the polygon border should be drawn in the "fg" 	*/
+/* the polygon border should be drawn in the "fg"	*/
 /* colour and filled with the "bg" colour		*/
 /* if "fg" is NA_INTEGER don't draw the border		*/
 /* if "bg" is NA_INTEGER don't fill the polygon		*/
-/* the x and y values are in arbitrary coordinates and 	*/
-/* the function is responsible for converting them to 	*/
+/* the x and y values are in arbitrary coordinates and	*/
+/* the function is responsible for converting them to	*/
 /* DEVICE coordinates using GConvert			*/
 /********************************************************/
 
@@ -2888,7 +2892,7 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
 }
 
 /********************************************************/
-/* device_Text should have the side-effect that the 	*/
+/* device_Text should have the side-effect that the	*/
 /* given text is drawn at the given location		*/
 /* the text should be rotated according to rot (degrees)*/
 /* the location is in an arbitrary coordinate system	*/
@@ -3050,7 +3054,7 @@ static Rboolean GA_Locator(double *x, double *y, pDevDesc dd)
 }
 
 /********************************************************/
-/* device_Mode is called whenever the graphics engine 	*/
+/* device_Mode is called whenever the graphics engine	*/
 /* starts drawing (mode=1) or stops drawing (mode=0)	*/
 /* the device is not required to do anything		*/
 /********************************************************/
@@ -3061,8 +3065,8 @@ static void GA_Mode(int mode, pDevDesc dd)
 }
 
 /********************************************************/
-/* the device-driver entry point is given a device 	*/
-/* description structure that it must set up.  this 	*/
+/* the device-driver entry point is given a device	*/
+/* description structure that it must set up.  this	*/
 /* involves several important jobs ...			*/
 /* (1) it must ALLOCATE a new device-specific parameters*/
 /* structure and FREE that structure if anything goes	*/
@@ -3072,7 +3076,7 @@ static void GA_Mode(int mode, pDevDesc dd)
 /* resources or parameters)				*/
 /* (2) it must initialise the device-specific resources */
 /* and parameters (mostly done by calling device_Open)	*/
-/* (3) it must initialise the generic graphical 	*/
+/* (3) it must initialise the generic graphical	*/
 /* parameters that are not initialised by GInit (because*/
 /* only the device knows what values they should have)	*/
 /* see Graphics.h for the official list of these	*/
@@ -3082,11 +3086,11 @@ static void GA_Mode(int mode, pDevDesc dd)
 /* (5) it must attach the device-specific parameters	*/
 /* structure to the device description structure	*/
 /* e.g., dd->deviceSpecific = (void *) xd;		*/
-/* (6) it must FREE the overall device description if 	*/
+/* (6) it must FREE the overall device description if	*/
 /* it wants to bail out to the top-level		*/
-/* the graphics engine is responsible for allocating 	*/
+/* the graphics engine is responsible for allocating	*/
 /* the device description and freeing it in most cases	*/
-/* but if the device driver freaks out it needs to do 	*/
+/* but if the device driver freaks out it needs to do	*/
 /* the clean-up itself					*/
 /********************************************************/
 
@@ -3184,9 +3188,9 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
         xd->origHeight = dd->bottom = ih;
     }
 
+    dd->startps = ps * xd->rescale_factor;
     if (xd->kind > METAFILE && xd->res_dpi > 0)
         ps *= xd->res_dpi / 72.0;
-    dd->startps = ps * xd->rescale_factor;
 
     if (xd->kind <= METAFILE)
     {
