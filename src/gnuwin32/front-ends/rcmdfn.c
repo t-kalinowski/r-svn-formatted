@@ -57,7 +57,7 @@ static int isDir(char *path)
 
 void rcmdusage(char *RCMD)
 {
-    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
+    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
             "  INSTALL  Install add-on packages.\n", "  REMOVE   Remove add-on packages.\n",
             "  SHLIB    Make a DLL for use with dyn.load.\n", "  BATCH    Run R in batch mode.\n",
             "  build    Build add-on packages.\n", "  check    Check add-on packages.\n",
