@@ -57,14 +57,13 @@ static int isDir(char *path)
 
 void rcmdusage(char *RCMD)
 {
-    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
+    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
             "  INSTALL  Install add-on packages.\n", "  REMOVE   Remove add-on packages.\n",
             "  SHLIB    Make a DLL for use with dyn.load.\n", "  BATCH    Run R in batch mode.\n",
             "  build    Build add-on packages.\n", "  check    Check add-on packages.\n",
-            "  Rprof    Post process R profiling files.\n",
-            "  Rdconv   Convert Rd format to various other formats, including html, Nroff,\n",
-            "           LaTeX, plain text, and S documentation format.\n", "  Rdiff    difference R output files.\n",
-            "  Rd2dvi   Convert Rd format to DVI/PDF.\n", "  Sd2Rd    Convert S documentation to Rd format.\n",
+            "  Rprof    Post process R profiling files.\n", "  Rdconv   Convert Rd format to various other formats.\n",
+            "  Rdiff    difference R output files.\n", "  Rd2dvi   Convert Rd format to DVI/PDF.\n",
+            "  Sd2Rd    Convert S documentation to Rd format.\n",
             "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n",
             "  config   Obtain configuration information about R.\n"
             "  open     Open a file via Windows file associations.\n");
