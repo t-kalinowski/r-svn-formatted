@@ -2111,7 +2111,8 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             *p = '\0';
             res = mkdir(dir, mode);
-            if (res && errno != EEXIST)
+            /* Solaris 10 returns ENOSYS on automount, PR#13834 */
+            if (res && errno != EEXIST && errno != ENOSYS)
                 goto end;
             *p = '/';
         }
