@@ -4246,10 +4246,12 @@ static int NumericValue(int c)
 
 /* The idea here is that if a string contains \u escapes that are not
    valid in the current locale, we should switch to UTF-8 for that
-   string.  Needs wide-char support.
+   string.  Needs Unicode wide-char support.
 */
 #ifdef SUPPORT_MBCS
+#if defined(Win32) || defined(__STDC_ISO_10646__)
 #define USE_UTF8_IF_POSSIBLE
+#endif
 #endif
 
 #ifdef USE_UTF8_IF_POSSIBLE
@@ -4438,7 +4440,7 @@ static int StringValue(int c, Rboolean forSymbol)
                     else
                         CTEXT_PUSH(c);
                 }
-                WTEXT_PUSH(val);
+                WTEXT_PUSH(val); /* this assumes wchar_t is Unicode */
                 res = ucstomb(buff, val);
                 if ((int)res <= 0)
                 {
@@ -4610,7 +4612,7 @@ static int StringValue(int c, Rboolean forSymbol)
         STEXT_PUSH(c);
 #ifdef USE_UTF8_IF_POSSIBLE
         if ((unsigned int)c < 0x80)
-            WTEXT_PUSH(c);
+            WTEXT_PUSH(c); /* assumes wchar_t embeds ASCII */
         else
         { /* have an 8-bit char in the current encoding */
             wchar_t wc;
