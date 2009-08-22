@@ -159,6 +159,8 @@ enum yytokentype
 #define DEBUGVALS 0 /* 1 causes detailed internal state output to R console */
 #define DEBUGMODE 0 /* 1 causes Bison output of parse state, to stdout or stderr */
 
+Rboolean wCalls = TRUE;
+
 #define YYERROR_VERBOSE 1
 
 static void yyerror(const char *);
@@ -2161,8 +2163,12 @@ yyreduce:
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist((yyvsp[(2) - (2)]));
-        warning(_("bad markup (extra space?) at %s:%d:%d"), xxBasename, (yylsp[(2) - (2)]).first_line,
-                (yylsp[(2) - (2)]).first_column);
+        if (wCalls)
+            warning(_("bad markup (extra space?) at %s:%d:%d"), xxBasename, (yylsp[(2) - (2)]).first_line,
+                    (yylsp[(2) - (2)]).first_column);
+        else
+            warningcall(R_NilValue, _("bad markup (extra space?) at %s:%d:%d"), xxBasename,
+                        (yylsp[(2) - (2)]).first_line, (yylsp[(2) - (2)]).first_column);
         ;
     }
     break;
@@ -2770,7 +2776,12 @@ static SEXP xxtag(SEXP item, int type, YYLTYPE *lloc)
 static void xxWarnNewline()
 {
     if (xxNewlineInString)
-        warning(_("newline within quoted string at %s:%d"), xxBasename, xxNewlineInString);
+    {
+        if (wCalls)
+            warning(_("newline within quoted string at %s:%d"), xxBasename, xxNewlineInString);
+        else
+            warningcall(R_NilValue, _("newline within quoted string at %s:%d"), xxBasename, xxNewlineInString);
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3267,10 +3278,21 @@ static void yyerror(const char *s)
         strncpy(ParseErrorFilename, CHAR(STRING_ELT(filename, 0)), PARSE_ERROR_SIZE - 1);
     else
         ParseErrorFilename[0] = '\0';
-    if (yylloc.first_line != yylloc.last_line)
-        warning("%s:%d-%d: %s", ParseErrorFilename, yylloc.first_line, yylloc.last_line, ParseErrorMsg);
+    if (wCalls)
+    {
+        if (yylloc.first_line != yylloc.last_line)
+            warning("%s:%d-%d: %s", ParseErrorFilename, yylloc.first_line, yylloc.last_line, ParseErrorMsg);
+        else
+            warning("%s:%d: %s", ParseErrorFilename, yylloc.first_line, ParseErrorMsg);
+    }
     else
-        warning("%s:%d: %s", ParseErrorFilename, yylloc.first_line, ParseErrorMsg);
+    {
+        if (yylloc.first_line != yylloc.last_line)
+            warningcall(R_NilValue, "%s:%d-%d: %s", ParseErrorFilename, yylloc.first_line, yylloc.last_line,
+                        ParseErrorMsg);
+        else
+            warningcall(R_NilValue, "%s:%d: %s", ParseErrorFilename, yylloc.first_line, ParseErrorMsg);
+    }
 }
 
 #define TEXT_PUSH(c)                                                                                                   \
@@ -3784,7 +3806,7 @@ static int yylex(void)
 
 /* "do_parseRd"
 
- .Internal( parseRd(file, srcfile, encoding, verbose, basename) )
+ .Internal( parseRd(file, srcfile, encoding, verbose, basename, warningCalls) )
  If there is text then that is read and the other arguments are ignored.
 */
 
@@ -3793,7 +3815,7 @@ SEXP attribute_hidden do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP s = R_NilValue, source;
     Rconnection con;
     Rboolean wasopen, fragment;
-    int ifile;
+    int ifile, wcall;
     const char *encoding;
     ParseStatus status;
 
@@ -3823,6 +3845,11 @@ SEXP attribute_hidden do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
     xxBasename = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     fragment = asLogical(CAR(args));
+    args = CDR(args);
+    wcall = asLogical(CAR(args));
+    if (wcall == NA_LOGICAL)
+        error(_("invalid '%s' value"), "warningCalls");
+    wCalls = wcall;
 
     if (ifile >= 3)
     { /* file != "" */
