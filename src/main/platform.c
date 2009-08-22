@@ -1652,6 +1652,8 @@ SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 extern void invalidate_cached_recodings(void); /* from sysutils.c */
 
+extern void resetICUcollator(void); /* from util.c */
+
 /* Locale specs are always ASCII */
 SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1675,6 +1677,7 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         if ((p = setlocale(LC_CTYPE, l)))
         {
             setlocale(LC_COLLATE, l);
+            resetICUcollator();
             setlocale(LC_MONETARY, l);
             setlocale(LC_TIME, l);
             /* Need to return value of LC_ALL */
@@ -1685,6 +1688,7 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     case 2:
         cat = LC_COLLATE;
         p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
+        resetICUcollator();
         break;
     case 3:
         cat = LC_CTYPE;
