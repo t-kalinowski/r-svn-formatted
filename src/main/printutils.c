@@ -682,7 +682,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                     {
                         /* The problem here is that wc may be
                            printable according to the Unicode tables,
-                           but it may not be printable on the ouput
+                           but it may not be printable on the output
                            device concerned. */
                         for (j = 0; j < res; j++)
                             *q++ = *p++;
