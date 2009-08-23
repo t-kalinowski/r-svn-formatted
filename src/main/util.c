@@ -1932,6 +1932,10 @@ SEXP attribute_hidden do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
+void resetICUcollator(void)
+{
+}
+
 #ifdef Win32
 
 static int Rstrcoll(const char *s1, const char *s2)
