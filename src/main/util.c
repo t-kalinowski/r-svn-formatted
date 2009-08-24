@@ -1806,7 +1806,7 @@ void uloc_setDefault(const char *localeID, UErrorCode *status);
 static UCollator *collator = NULL;
 
 /* called from platform.c */
-void resetICUcollator(void)
+void attribute_hidden resetICUcollator(void)
 {
     if (collator)
         ucol_close(collator);
@@ -1932,7 +1932,7 @@ SEXP attribute_hidden do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-void resetICUcollator(void)
+void attribute_hidden resetICUcollator(void)
 {
 }
 
