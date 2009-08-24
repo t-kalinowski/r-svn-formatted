@@ -1684,7 +1684,9 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP x, ans;
     int i, n, res, dirmark;
     glob_t globbuf;
+#ifdef Win32
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
+#endif
 
     checkArity(op, args);
     if (!isString(x = CAR(args)))
