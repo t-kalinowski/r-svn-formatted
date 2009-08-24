@@ -40,6 +40,7 @@ struct _HashData
     SEXP HashTable;
 
     int nomatch;
+    Rboolean useUTF8;
 };
 
 /*
@@ -135,7 +136,11 @@ static int chash(SEXP x, int indx, HashData *d)
 static int shash(SEXP x, int indx, HashData *d)
 {
     unsigned int k;
-    const char *p = translateChar(STRING_ELT(x, indx));
+    const char *p;
+    if (d->useUTF8)
+        p = translateCharUTF8(STRING_ELT(x, indx));
+    else
+        p = translateChar(STRING_ELT(x, indx));
     k = 0;
     while (*p++)
         k = 11 * k + *p; /* was 8 but 11 isn't a power of 2 */
@@ -338,6 +343,7 @@ static void HashTableSetup(SEXP x, HashData *d)
     case STRSXP:
         d->hash = shash;
         d->equal = sequal;
+        d->useUTF8 = FALSE;
         MKsetup(LENGTH(x), d);
         break;
     case RAWSXP:
@@ -408,7 +414,16 @@ SEXP duplicated(SEXP x, Rboolean from_last)
                                                                                                                        \
     n = LENGTH(x);                                                                                                     \
     HashTableSetup(x, &data);                                                                                          \
-    h = INTEGER(data.HashTable)
+    h = INTEGER(data.HashTable);                                                                                       \
+    if (TYPEOF(x) == STRSXP)                                                                                           \
+    {                                                                                                                  \
+        for (i = 0; i < length(x); i++)                                                                                \
+            if (IS_UTF8(STRING_ELT(x, i)))                                                                             \
+            {                                                                                                          \
+                data.useUTF8 = TRUE;                                                                                   \
+                break;                                                                                                 \
+            }                                                                                                          \
+    }
 
     DUPLICATED_INIT;
 
@@ -726,6 +741,26 @@ SEXP match(SEXP itable, SEXP ix, int nmatch)
 
     data.nomatch = nmatch;
     HashTableSetup(table, &data);
+    data.nomatch = nmatch;
+    HashTableSetup(table, &data);
+    if (type == STRSXP)
+    {
+        Rboolean useUTF8 = FALSE;
+        for (i = 0; i < length(x); i++)
+            if (IS_UTF8(STRING_ELT(x, i)))
+            {
+                useUTF8 = TRUE;
+                break;
+            }
+        if (!useUTF8)
+            for (i = 0; i < length(table); i++)
+                if (IS_UTF8(STRING_ELT(table, i)))
+                {
+                    useUTF8 = TRUE;
+                    break;
+                }
+        data.useUTF8 = useUTF8;
+    }
     PROTECT(data.HashTable);
     DoHashing(table, &data);
     ans = HashLookup(table, x, &data);
@@ -765,6 +800,24 @@ SEXP match4(SEXP itable, SEXP ix, int nmatch, SEXP incomp)
 
     data.nomatch = nmatch;
     HashTableSetup(table, &data);
+    if (type == STRSXP)
+    {
+        Rboolean useUTF8 = FALSE;
+        for (i = 0; i < length(x); i++)
+            if (IS_UTF8(STRING_ELT(x, i)))
+            {
+                useUTF8 = TRUE;
+                break;
+            }
+        if (!useUTF8)
+            for (i = 0; i < length(table); i++)
+                if (IS_UTF8(STRING_ELT(table, i)))
+                {
+                    useUTF8 = TRUE;
+                    break;
+                }
+        data.useUTF8 = useUTF8;
+    }
     PROTECT(data.HashTable);
     DoHashing(table, &data);
     UndoHashing(incomp, itable, &data);
@@ -886,6 +939,23 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             HashData data;
             HashTableSetup(target, &data);
+            {
+                Rboolean useUTF8 = FALSE;
+                for (i = 0; i < length(input); i++)
+                    if (IS_UTF8(STRING_ELT(input, i)))
+                    {
+                        useUTF8 = TRUE;
+                        break;
+                    }
+                if (!useUTF8)
+                    for (i = 0; i < length(target); i++)
+                        if (IS_UTF8(STRING_ELT(target, i)))
+                        {
+                            useUTF8 = TRUE;
+                            break;
+                        }
+                data.useUTF8 = useUTF8;
+            }
             data.nomatch = 0;
             DoHashing(target, &data);
             for (i = 0; i < n_input; i++)
