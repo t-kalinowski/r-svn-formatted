@@ -1148,6 +1148,7 @@ R_init_internet(DllInfo *info)
     tmp->sockselect = in_Rsockselect;
 
     tmp->HTTPDCreate = in_R_HTTPDCreate;
+    tmp->HTTPDStop = in_R_HTTPDStop;
 
     R_setInternetRoutines(tmp);
 }

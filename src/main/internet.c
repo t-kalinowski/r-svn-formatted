@@ -56,6 +56,7 @@ int Rsockselect(int nsock, int *insockfd, int *ready, int *write,
         double timeout)
 
 int R_HTTPDCreate(const char *ip, int port);
+void R_HTTPDStop(void);
  */
 
 static int initialized = 0;
@@ -241,6 +242,16 @@ attribute_hidden int R_HTTPDCreate(const char *ip, int port)
     return -1;
 }
 
+attribute_hidden int R_HTTPDStop(void)
+{
+    if (!initialized)
+        internet_Init();
+    if (initialized > 0)
+        (*ptr->HTTPDStop)();
+    else
+        error(_("internet routines cannot be loaded"));
+}
+
 SEXP do_startHTTPD(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     const char *ip = 0;
@@ -253,6 +264,13 @@ SEXP do_startHTTPD(SEXP call, SEXP op, SEXP args, SEXP env)
     if (sIP != R_NilValue)
         ip = CHAR(STRING_ELT(sIP, 0));
     return ScalarInteger(R_HTTPDCreate(ip, asInteger(sPort)));
+}
+
+SEXP do_stopHTTPD(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+    R_HTTPDStop();
+    return R_NilValue;
 }
 
 attribute_hidden void Rsockopen(int *port)

@@ -21,8 +21,11 @@
  * the httpd() function and passing the result to the browser. */
 
 /* Example:
-   httpd <- function(path,query=NULL,...) { cat("Request for:", path,"\n"); print(query); list(paste("Hello,
-   <b>world</b>!<p>You asked for \"",path,"\".",sep='')) } .Internal(startHTTPD("127.0.0.1",8080))
+   httpd <- function(path,query=NULL,...) {
+      cat("Request for:", path,"\n"); print(query);
+      list(paste("Hello, <b>world</b>!<p>You asked for \"",path,"\".",sep=''))
+   }
+   .Internal(startHTTPD("127.0.0.1",8080))
  */
 
 /* size of the line buffer for each worker (request and header only)
@@ -75,6 +78,7 @@
 #define initsocks()
 #define donesocks()
 #else
+/* --- Windows-only --- */
 #include <windows.h>
 #include <winsock.h>
 #include <string.h>
@@ -92,7 +96,8 @@
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #define EOPNOTSUPP WSAEOPNOTSUPP
 #define EWOULDBLOCK WSAEWOULDBLOCK
-/* those are occasionally defined by MinGW's errno, so override them with socket equivalents */
+/* those are occasionally defined by MinGW's errno, so override them
+ * with socket equivalents */
 #ifdef EBADF
 #undef EBADF
 #endif
@@ -118,10 +123,9 @@ static int initsocks(void)
 }
 
 #define donesocks() WSACleanup()
-
 typedef int socklen_t;
 
-#endif
+#endif /* WIN32 */
 
 /* --- system-independent part --- */
 
@@ -195,7 +199,8 @@ static void first_init()
 {
     initsocks();
 #ifdef WIN32
-    /* create a dummy message-only window for synchronization with the main event loop */
+    /* create a dummy message-only window for synchronization with the
+     * main event loop */
     HINSTANCE instance = GetModuleHandle(NULL);
     LPCTSTR class = "Rhttpd";
     WNDCLASS wndclass = {0, RhttpdWindowProc, 0, 0, instance, NULL, 0, 0, NULL, class};
@@ -234,8 +239,11 @@ static void finalize_worker(httpd_conn_t *c)
     }
 }
 
-/* adds a worker to the worker list and returns 0. If the list is full, the worker is finalized and returns -1.
- * note that we don't need locking, because add_worker is guaranteed to be called by the same thread (server thread). */
+/* adds a worker to the worker list and returns 0. If the list is
+ * full, the worker is finalized and returns -1.
+ * Note that we don't need locking, because add_worker is guaranteed
+ * to be called by the same thread (server thread).
+ */
 static int add_worker(httpd_conn_t *c)
 {
     unsigned int i = 0;
@@ -250,21 +258,25 @@ static int add_worker(httpd_conn_t *c)
             workers[i] = c;
             return 0;
         }
-    /* FIXME: ok no more space for a new worker - what do we do now? for now we just drop it on the floor .. */
+    /* FIXME: ok no more space for a new worker - what do we do now?
+     * for now we just drop it on the floor .. */
     finalize_worker(c);
     free(c);
     return -1;
 }
 
-/* finalize worker, remove it from the list and free the memory. If the worker is owned by a thread, it is not finalized
- * and the THREAD_DISPOSE flag is set instead. */
+/* finalize worker, remove it from the list and free the memory. If
+ * the worker is owned by a thread, it is not finalized and the
+ * THREAD_DISPOSE flag is set instead. */
 static void remove_worker(httpd_conn_t *c)
 {
     unsigned int i = 0;
     if (!c)
         return;
     if (c->attr & THREAD_OWNED)
-    { /* if the worker is used by a thread, we can only signal for its removal */
+    { /* if the worker is used by a
+       * thread, we can only signal for
+       * its removal */
         c->attr |= THREAD_DISPOSE;
         return;
     }
@@ -328,7 +340,8 @@ static void uri_decode(char *s)
     *t = 0;
 }
 
-/* parse a query string into a named character vector - must NOT be URI decoded */
+/* parse a query string into a named character vector - must NOT be
+ * URI decoded */
 static SEXP parse_query(char *query)
 {
     int parts = 0;
@@ -405,13 +418,14 @@ static SEXP parse_query(char *query)
 }
 
 #ifdef WIN32
-/* on Windows we have to guarantee that process_request is performed on the main thread, so we have to dispatch it
- * through a message */
+/* on Windows we have to guarantee that process_request is performed
+ * on the main thread, so we have to dispatch it through a message */
 static void process_request_main_thread(httpd_conn_t *c);
 
 static void process_request(httpd_conn_t *c)
 {
-    /* SendMessage is synchronous, so it will wait until the message is processed */
+    /* SendMessage is synchronous, so it will wait until the message
+     * is processed */
     DBG(Rprintf("enqueuing process_request_main_thread\n"));
     SendMessage(message_window, WM_RHTTP_CALLBACK, 0, (LPARAM)c);
     DBG(Rprintf("process_request_main_thread returned\n"));
@@ -450,13 +464,25 @@ static void process_request(httpd_conn_t *c)
         x = PROTECT(eval(x, R_FindNamespace(mkString("tools"))));
 
         /* the result is expected to have one of the following forms:
-         * a) character vector of length 1 => error (possibly from try), will create 500 response
-         * b) list(payload[, content-type[, headers[, status code]]])
-         *    payload: can be a character vector of length one or a raw vector. if the character vector is named "file"
-         * then the content of a file of that name is the payload content-type: must be a character vector of length one
-         * or NULL (if present, else default is "text/html") headers: must be a character vector - the elements will
-         * have CRLF appended and neither Content-type nor Content-length may be used
-         *    status code: must be an integer if present (default is 200) */
+
+           a) character vector of length 1 => error (possibly from try),
+              will create 500 response
+
+          b) list(payload[, content-type[, headers[, status code]]])
+
+              payload: can be a character vector of length one or a
+              raw vector. if the character vector is named "file" then
+              the content of a file of that name is the payload
+
+              content-type: must be a character vector of length one
+              or NULL (if present, else default is "text/html")
+
+              headers: must be a character vector - the elements will
+              have CRLF appended and neither Content-type nor
+              Content-length may be used
+
+             status code: must be an integer if present (default is 200)
+         */
 
         if (TYPEOF(x) == STRSXP && LENGTH(x) > 0)
         { /* string means there was an error */
@@ -604,7 +630,8 @@ static void process_request(httpd_conn_t *c)
 #undef process_request
 #endif
 
-/* this function is called to fetch new data from the client connection socket and process it */
+/* this function is called to fetch new data from the client
+ * connection socket and process it */
 static void worker_input_handler(void *data)
 {
     httpd_conn_t *c = (httpd_conn_t *)data;
@@ -617,12 +644,16 @@ static void worker_input_handler(void *data)
     DBG(printf("input handler for worker %p (sock=%d, part=%d, method=%d, line_pos=%d)\n", (void *)c, (int)c->sock,
                (int)c->part, (int)c->method, (int)c->line_pos));
 
-    /* FIXME: there is one edge case that is not caught on unix: if recv reads two or more full requests into the line
-     * buffer then this function exits after the first one, but input handlers may not trigger, because there may be no
-     * further data. It is not trivial to fix, because just checking for a full line at the beginning and not calling
-     * recv won't trigger a new input handler. However, under normal circumstance this should not happen, because
-     * clients should wait for the response and even if they don't it's unlikley that both requests get combined into
-     * one packet. */
+    /* FIXME: there is one edge case that is not caught on unix: if
+     * recv reads two or more full requests into the line buffer then
+     * this function exits after the first one, but input handlers may
+     * not trigger, because there may be no further data. It is not
+     * trivial to fix, because just checking for a full line at the
+     * beginning and not calling recv won't trigger a new input
+     * handler. However, under normal circumstance this should not
+     * happen, because clients should wait for the response and even
+     * if they don't it's unlikely that both requests get combined
+     * into one packet. */
     if (c->part < PART_BODY)
     {
         char *s = c->line_buf;
@@ -814,7 +845,7 @@ static void worker_input_handler(void *data)
         n = recv(c->sock, c->body + c->body_pos, c->content_length - c->body_pos, 0);
         DBG(printf("      [recv n=%d - had %u of %u]\n", n, c->body_pos, c->content_length));
         if (n < 0)
-        { /* error, scrape this worker */
+        { /* error, scrap this worker */
             remove_worker(c);
             return;
         }
@@ -930,8 +961,10 @@ static void srv_input_handler(void *data);
 static SOCKET srv_sock = INVALID_SOCKET;
 
 #ifdef WIN32
-/* Windows implementation uses threads to accept and serve connections, using the main event loop to synchronize with R
- * through a message-only window which is created on the R thread */
+/* Windows implementation uses threads to accept and serve
+   connections, using the main event loop to synchronize with R
+   through a message-only window which is created on the R thread
+ */
 static LRESULT CALLBACK RhttpdWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     DBG(Rprintf("RhttpdWindowProc(%x, %x, %x, %x)\n", (int)hwnd, (int)uMsg, (int)wParam, (int)lParam));
@@ -944,7 +977,9 @@ static LRESULT CALLBACK RhttpdWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-/* server thread - accepts connections on the server socket and creates worker threads */
+/* server thread - accepts connections on the server socket and
+   creates worker threads
+ */
 static DWORD WINAPI ServerThreadProc(LPVOID lpParameter)
 {
     while (srv_sock != INVALID_SOCKET)
@@ -974,7 +1009,8 @@ static DWORD WINAPI WorkerThreadProc(LPVOID lpParameter)
 /* global server thread - currently we support only one server at a time */
 HANDLE server_thread;
 #else
-/* on unix we register all used sockets (server and workers) as input handlers such that we can avoid polling */
+/* on unix we register all used sockets (server and workers) as input
+ * handlers such that we can avoid polling */
 
 /* global input handler for the server socket */
 static InputHandler *srv_handler;
@@ -998,7 +1034,8 @@ static void srv_input_handler(void *data)
     add_worker(c);
 #else
     if (!add_worker(c))
-    { /* create worker thread only if the worked was accepted */
+    { /* create worker thread only if the worker
+       * was accepted */
         if (!(c->thread = CreateThread(NULL, 0, WorkerThreadProc, (LPVOID)c, 0, 0)))
             remove_worker(c);
     }
@@ -1069,13 +1106,39 @@ int in_R_HTTPDCreate(const char *ip, int port)
     return 0;
 }
 
-/** Create an internal http server in R. Note that currently there can only be at most one http server running at any
- * given time so the behavior is undefined if a server already exists (curretnly any previous servers will be shut down
- * by this call but the shutdown may not be clean).
- * @param sIP is the IP to bind to (or NULL for any)
- * @param sPort is the TCP port number to bin to
- * @return returns an integer value - 0L on success, other values denote failures: -2L means that the address/port
- * combination is already in use */
+void in_R_HTTPDStop(void)
+{
+    if (srv_sock != INVALID_SOCKET)
+        closesocket(srv_sock);
+    srv_sock = INVALID_SOCKET;
+
+#ifdef WIN32
+    /* on Windows stop the server thread if it exists */
+    if (server_thread)
+    {
+        DWORD ts = 0;
+        if (GetExitCodeThread(server_thread, &ts) && ts == STILL_ACTIVE)
+            TerminateThread(server_thread, 0);
+        server_thread = 0;
+    }
+#else
+    if (srv_handler)
+        removeInputHandler(&R_InputHandlers, srv_handler);
+#endif
+}
+
+/* Create an internal http server in R. Note that currently there can
+   only be at most one http server running at any given time so the
+   behavior is undefined if a server already exists (currently any
+   previous servers will be shut down by this call but the shutdown
+   may not be clean).
+
+   @param sIP is the IP to bind to (or NULL for any)
+   @param sPort is the TCP port number to bin to
+   @return returns an integer value -- 0L on success, other values
+   denote failures: -2L means that the address/port combination is
+   already in use
+*/
 SEXP R_init_httpd(SEXP sIP, SEXP sPort)
 {
     const char *ip = 0;
