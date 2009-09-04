@@ -242,7 +242,7 @@ attribute_hidden int R_HTTPDCreate(const char *ip, int port)
     return -1;
 }
 
-attribute_hidden int R_HTTPDStop(void)
+attribute_hidden void R_HTTPDStop(void)
 {
     if (!initialized)
         internet_Init();
