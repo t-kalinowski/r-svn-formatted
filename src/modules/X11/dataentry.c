@@ -55,8 +55,6 @@
 /* For the input handlers of the event loop mechanism: */
 #include <R_ext/eventloop.h>
 #include <R_ext/RS.h> /* for CallocCharBuf */
-#ifdef SUPPORT_MBCS
-/* This only uses a FontSet in a MBCS */
 #define USE_FONTSET 1
 /* In theory we should do this, but it works less well
 # ifdef X_HAVE_UTF8_STRING
@@ -64,7 +62,6 @@
 #  define HAVE_XUTF8DRAWSTRING 1
 #  define HAVE_XUTF8DRAWIMAGESTRING 1
 # endif */
-#endif
 
 #ifndef HAVE_KEYSYM
 #define KeySym int
@@ -180,9 +177,7 @@ static void R_ProcessX11Events(void *data);
 static const char *get_col_name(DEstruct, int col);
 static int get_col_width(DEstruct, int col);
 static CellType get_col_type(DEstruct, int col);
-#ifdef USE_FONTSET
 static void calc_pre_edit_pos(DEstruct DE);
-#endif
 static int last_wchar_bytes(char *);
 static SEXP ssNewVector(SEXPTYPE, int);
 static SEXP ssNA_STRING;
@@ -205,7 +200,6 @@ static char *bufp;
 static char copycontents[sizeof(buf) + 1];
 
 /* The next few and used only for the editor in MBCS locales */
-#ifdef USE_FONTSET
 static Status status;
 static XFontSet font_set = NULL;
 static XFontStruct **fs_list;
@@ -231,7 +225,6 @@ static XIMStyle status_styles[] = {
     (XIMStyle)NULL,
 };
 static XIC ioic = NULL;
-#endif
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -419,13 +412,11 @@ SEXP in_RX11_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho)
             removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fdView));
             fdView = -1;
         }
-#ifdef USE_FONTSET
         if (font_set)
         {
             XFreeFontSet(iodisplay, font_set);
             font_set = NULL;
         }
-#endif
         XCloseDisplay(iodisplay);
         iodisplay = NULL;
     }
@@ -1293,7 +1284,6 @@ static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int 
 {
     int i, x_pos, y_pos, bw, bufw;
     char pbuf[BOOSTED_BUF_SIZE];
-#ifdef USE_FONTSET
     int wcsbufw, j;
     wchar_t wcspbuf[BOOSTED_BUF_SIZE], *wcspc = wcspbuf;
     wchar_t wcs[BOOSTED_BUF_SIZE];
@@ -1354,37 +1344,6 @@ static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int 
 
     drawtext(DE, x_pos + DE->text_offset, y_pos + DE->box_h - DE->text_offset, s, cnt);
 
-#else  /* USE_FONTSET */
-    char *pc = pbuf;
-    find_coords(DE, row, col, &x_pos, &y_pos);
-    if (col == 0)
-        bw = DE->boxw[0];
-    else
-        bw = BOXW(col + DE->colmin - 1);
-    cleararea(DE, x_pos + 2, y_pos + 2, bw - 3, DE->box_h - 3);
-    bufw = (buflen > 200) ? 200 : buflen;
-    strncpy(pbuf, ibuf, bufw);
-    if (left)
-    {
-        for (i = bufw; i > 1; i--)
-        {
-            if (textwidth(DE, pc, i) < (bw - DE->text_offset))
-                break;
-            *(++pc) = '<';
-        }
-    }
-    else
-    {
-        for (i = bufw; i > 1; i--)
-        {
-            if (textwidth(DE, pbuf, i) < (bw - DE->text_offset))
-                break;
-            *(pbuf + i - 2) = '>';
-        }
-    }
-    drawtext(DE, x_pos + DE->text_offset, y_pos + DE->box_h - DE->text_offset, pc, i);
-#endif /* USE_FONTSET */
-
     Rsync(DE);
 }
 
@@ -1402,22 +1361,16 @@ static void clearrect(DEstruct DE)
    should get this far */
 
 /* --- Not true! E.g. ESC ends up in here... */
-#ifdef USE_FONTSET
 #include <R_ext/rlocale.h>
-#include <wchar.h>
-#include <wctype.h>
-#endif
 
 /* <FIXME> This is not correct for stateful MBCSs, but that's hard to
    do as we get a char at a time */
 static void handlechar(DEstruct DE, char *text)
 {
     int c = text[0], j;
-#ifdef USE_FONTSET
     wchar_t wcs[BOOSTED_BUF_SIZE];
 
     memset(wcs, 0, sizeof(wcs));
-#endif
 
     if (c == '\033')
     { /* ESC */
@@ -1463,8 +1416,6 @@ static void handlechar(DEstruct DE, char *text)
 
     if (currentexp == 1)
     { /* we are parsing a number */
-
-#ifdef USE_FONTSET
         char *mbs = text;
         int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
 
@@ -1506,47 +1457,9 @@ static void handlechar(DEstruct DE, char *text)
                 break;
             }
         }
-#else
-        switch (c)
-        {
-        case '-':
-            if (nneg == 0)
-                nneg++;
-            else
-                goto donehc;
-            break;
-        case '.':
-            if (ndecimal == 0)
-                ndecimal++;
-            else
-                goto donehc;
-            break;
-        case 'e':
-        case 'E':
-            if (ne == 0)
-            {
-                nneg = ndecimal = 0; /* might have decimal in exponent */
-                ne++;
-            }
-            else
-                goto donehc;
-            break;
-        case 'N':
-            if (nneg)
-                goto donehc;
-        case 'I':
-            inSpecial++;
-            break;
-        default:
-            if (!inSpecial && !isdigit(c))
-                goto donehc;
-            break;
-        }
-#endif
     }
     if (currentexp == 3)
     {
-#ifdef USE_FONTSET
         char *mbs = text;
         int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, strlen(text) + 1, NULL);
         for (i = 0; i < cnt; i++)
@@ -1558,14 +1471,6 @@ static void handlechar(DEstruct DE, char *text)
             else if (wcs[i] != L'.' && !iswalnum(wcs[i]))
                 goto donehc;
         }
-#else
-        if (isspace(c))
-            goto donehc;
-        if (clength == 0 && c != '.' && !isalpha(c))
-            goto donehc;
-        else if (c != '.' && !isalnum(c))
-            goto donehc;
-#endif
     }
 
     if (clength + strlen(text) > BOOSTED_BUF_SIZE - MB_CUR_MAX - 1)
@@ -1740,7 +1645,6 @@ static void eventloop(DEstruct DE)
         }
         else
         {
-#ifdef USE_FONTSET
             if (XFilterEvent(&ioevent, None))
             {
                 if (ioic)
@@ -1751,7 +1655,6 @@ static void eventloop(DEstruct DE)
                 }
                 continue;
             }
-#endif
 
             switch (WhichEvent(ioevent))
             {
@@ -1866,13 +1769,11 @@ static void R_ProcessX11Events(void *data)
                being used: only OK to free here in R > 2.8.0 */
             removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fdView));
             fdView = -1;
-#ifdef USE_FONTSET
             if (font_set)
             {
                 XFreeFontSet(iodisplay, font_set);
                 font_set = NULL;
             }
-#endif
             XCloseDisplay(iodisplay);
             iodisplay = NULL;
         }
@@ -1887,7 +1788,7 @@ static int doMouseDown(DEstruct DE, DEEvent *event)
 static void doSpreadKey(DEstruct DE, int key, DEEvent *event)
 {
     KeySym iokey;
-    char *text;
+    char *text = "";
 
     iokey = GetKey(event);
     if (DE->isEditor)
@@ -2020,7 +1921,6 @@ static char *GetCharP(DEEvent *event)
 
     memset(text, 0, sizeof(text));
 
-#ifdef USE_FONTSET
     if (mbcslocale)
     {
 #ifdef HAVE_XUTF8LOOKUPSTRING
@@ -2034,7 +1934,6 @@ static char *GetCharP(DEEvent *event)
             warning("dataentry: expression too long");
     }
     else
-#endif
         XLookupString((XKeyEvent *)event, text, sizeof(text) - clength, &iokey, NULL);
     return text;
 }
@@ -2097,13 +1996,11 @@ static void RefreshKeyboardMapping(DEEvent *event)
 void closewin(DEstruct DE)
 {
     XFreeGC(iodisplay, DE->iogc);
-#ifdef USE_FONTSET
     if (mbcslocale && DE->isEditor)
     {
         XDestroyIC(ioic);
         XCloseIM(ioim);
     }
-#endif
     XDestroyWindow(iodisplay, DE->iowindow);
     /* XCloseDisplay(iodisplay); */
     Rsync(DE);
@@ -2170,20 +2067,16 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
     XWindowAttributes attribs;
     XSizeHints *hint;
     unsigned long fevent = 0UL;
-#ifdef USE_FONTSET
     int j, k;
     XVaNestedList xva_nlist;
     XPoint xpoint;
-#endif
 
     strcpy(copycontents, "");
 
-#ifdef USE_FONTSET
     if (!XSupportsLocale())
         warning("locale not supported by Xlib: some X ops will operate in C locale");
     if (!XSetLocaleModifiers(""))
         warning("X cannot set locale modifiers");
-#endif
 
     if (!iodisplay)
     {
@@ -2199,7 +2092,6 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
 
     /* Get Font Loaded if we can */
 
-#ifdef USE_FONTSET
     if (mbcslocale)
     {
         int missing_charset_count;
@@ -2231,7 +2123,6 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
         }
     }
     else
-#endif
     {
         DE->font_info = XLoadQueryFont(iodisplay, font_name);
         if (DE->font_info == NULL)
@@ -2253,7 +2144,6 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
     if (DE->nboxchars > 0)
         twidth = (twidth * DE->nboxchars) / 10;
     DE->box_w = twidth + 4;
-#ifdef USE_FONTSET
     if (mbcslocale)
     {
         XFontSetExtents *extent = XExtentsOfFontSet(font_set);
@@ -2263,7 +2153,6 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
         DE->text_offset = 2 + fs_list[0]->max_bounds.descent;
     }
     else
-#endif
     {
         DE->box_h = DE->font_info->max_bounds.ascent + DE->font_info->max_bounds.descent + 4;
         DE->text_offset = 2 + DE->font_info->max_bounds.descent;
@@ -2378,7 +2267,6 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
 
     DE->iogc = XCreateGC(iodisplay, DE->iowindow, 0, 0);
 
-#ifdef USE_FONTSET
     if (mbcslocale && DE->isEditor)
     {
         ioim = XOpenIM(iodisplay, NULL, NULL, NULL);
@@ -2428,12 +2316,10 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
         /* get XIM processes event. */
         XGetICValues(ioic, XNFilterEvents, &fevent, NULL);
     }
-#endif
 
-#ifdef USE_FONTSET
     if (!mbcslocale)
-#endif
         XSetFont(iodisplay, DE->iogc, DE->font_info->fid);
+
     XSetBackground(iodisplay, DE->iogc, iowhite);
     XSetForeground(iodisplay, DE->iogc, ioblack);
     XSetLineAttributes(iodisplay, DE->iogc, 1, LineSolid, CapRound, JoinRound);
@@ -2545,7 +2431,6 @@ static void drawrectangle(DEstruct DE, int xpos, int ypos, int width, int height
 
 static void drawtext(DEstruct DE, int xpos, int ypos, char *text, int len)
 {
-#ifdef USE_FONTSET
     if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWIMAGESTRING
         if (utf8locale)
@@ -2554,7 +2439,6 @@ static void drawtext(DEstruct DE, int xpos, int ypos, char *text, int len)
 #endif
             XmbDrawImageString(iodisplay, DE->iowindow, font_set, DE->iogc, xpos, ypos, text, len);
     else
-#endif
         XDrawImageString(iodisplay, DE->iowindow, DE->iogc, xpos, ypos, text, len);
     Rsync(DE);
 }
@@ -2569,7 +2453,6 @@ static int textwidth(DEstruct DE, const char *text, int nchar)
     int ans;
     char *buf = CallocCharBuf(nchar);
     strncpy(buf, text, nchar);
-#ifdef USE_FONTSET
     if (mbcslocale)
     {
 #ifdef HAVE_XUTF8TEXTESCAPEMENT
@@ -2581,7 +2464,6 @@ static int textwidth(DEstruct DE, const char *text, int nchar)
         Free(buf);
         return ans;
     }
-#endif
     ans = XTextWidth(DE->font_info, buf, nchar);
     Free(buf);
     return ans;
@@ -2619,7 +2501,6 @@ void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
     }
     tvec = VECTOR_ELT(DE->work, popupcol - 1);
     name = CHAR(STRING_ELT(DE->names, popupcol - 1));
-#ifdef USE_FONTSET
     if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWSTRING
         if (utf8locale)
@@ -2628,10 +2509,8 @@ void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
 #endif
             XmbDrawString(iodisplay, menupanes[0], font_set, DE->iogc, 3, DE->box_h - 3, name, strlen(name));
     else
-#endif
         XDrawString(iodisplay, menupanes[0], DE->iogc, 3, DE->box_h - 3, name, strlen(name));
     for (i = 1; i < 4; i++)
-#ifdef USE_FONTSET
         if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWSTRING
             if (utf8locale)
@@ -2642,12 +2521,10 @@ void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
                 XmbDrawString(iodisplay, menupanes[i], font_set, DE->iogc, 3, DE->box_h - 3, menu_label[i - 1],
                               strlen(menu_label[i - 1]));
         else
-#endif
             XDrawString(iodisplay, menupanes[i], DE->iogc, 3, DE->box_h - 3, menu_label[i - 1],
                         strlen(menu_label[i - 1]));
 
     if (isNull(tvec) || TYPEOF(tvec) == REALSXP)
-#ifdef USE_FONTSET
         if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWSTRING
             if (utf8locale)
@@ -2656,11 +2533,8 @@ void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
 #endif
                 XmbDrawString(iodisplay, menupanes[1], font_set, DE->iogc, 0, DE->box_h - 3, "*", 1);
         else
-#endif
             XDrawString(iodisplay, menupanes[1], DE->iogc, 0, DE->box_h - 3, "*", 1);
-    else
-#ifdef USE_FONTSET
-        if (mbcslocale)
+    else if (mbcslocale)
 #ifdef HAVE_XUTF8DRAWSTRING
         if (utf8locale)
             Xutf8DrawString(iodisplay, menupanes[2], font_set, DE->iogc, 0, DE->box_h - 3, "*", 1);
@@ -2668,7 +2542,6 @@ void popupmenu(DEstruct DE, int x_pos, int y_pos, int col, int row)
 #endif
             XmbDrawString(iodisplay, menupanes[2], font_set, DE->iogc, 0, DE->box_h - 3, "*", 1);
     else
-#endif
         XDrawString(iodisplay, menupanes[2], DE->iogc, 0, DE->box_h - 3, "*", 1);
 
     /*
@@ -2811,7 +2684,6 @@ static void pastecell(DEstruct DE, int row, int col)
     highlightrect(DE);
 }
 
-#ifdef USE_FONTSET
 static void calc_pre_edit_pos(DEstruct DE)
 {
     XVaNestedList xva_nlist;
@@ -2845,12 +2717,10 @@ static void calc_pre_edit_pos(DEstruct DE)
     XFree(xva_nlist);
     return;
 }
-#endif
 
 /* last character bytes */
 static int last_wchar_bytes(char *str)
 {
-#ifdef USE_FONTSET
     wchar_t wcs[BOOSTED_BUF_SIZE];
     mbstate_t mb_st;
     int cnt;
@@ -2873,7 +2743,4 @@ static int last_wchar_bytes(char *str)
     memset(last_mbs, 0, sizeof(last_mbs));
     bytes = wcrtomb(last_mbs, wcs[cnt - 1], &mb_st); /* -Wall */
     return (bytes);
-#else
-    return (1);
-#endif
 }

@@ -899,16 +899,7 @@ void setup_Rmainloop(void)
      * the copyleft.
      */
     if (!R_Quiet)
-    {
         PrintGreeting();
-#ifndef SUPPORT_MBCS
-        if (utf8locale)
-            R_ShowMessage(_("WARNING: UTF-8 locales are not supported in this build of R\n"));
-        else if (mbcslocale)
-            R_ShowMessage(_("WARNING: multibyte locales are not supported in this build of R\n"));
-
-#endif
-    }
 
     R_LoadProfile(R_OpenSiteFile(), baseEnv);
     R_LockBinding(install(".Library.site"), R_BaseEnv);

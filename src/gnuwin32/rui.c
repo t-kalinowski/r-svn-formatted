@@ -87,7 +87,6 @@ static void double_backslashes(char *s, char *out)
 {
     char *p = s;
 
-#ifdef SUPPORT_MBCS
     int i;
     if (mbcslocale)
     {
@@ -103,7 +102,6 @@ static void double_backslashes(char *s, char *out)
         }
     }
     else
-#endif
         for (; *p; p++)
             if (*p == '\\')
             {

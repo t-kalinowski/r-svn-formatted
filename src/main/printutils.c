@@ -323,11 +323,7 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
    which Western versions at least do not.).
 */
 
-#ifdef SUPPORT_MBCS
 #include <R_ext/rlocale.h> /* redefines isw* functions */
-#include <wchar.h>
-#include <wctype.h>
-#endif
 
 #ifdef Win32
 #include "rgui_UTF8.h"
@@ -343,7 +339,6 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
     const char *p = str;
     int len = 0, i;
 
-#ifdef SUPPORT_MBCS
     if (mbcslocale || ienc == CE_UTF8)
     {
         int res;
@@ -417,7 +412,6 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
         }
     }
     else
-#endif
         for (i = 0; i < slen; i++)
         {
             /* ASCII */
@@ -464,7 +458,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
 #ifdef Win32  /* It seems Windows does not know what is printable! */
                 len++;
 #else
-            len += isprint((int)*p) ? 1 : 4;
+                len += isprint((int)*p) ? 1 : 4;
 #endif
                 p++;
             }
@@ -493,9 +487,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     int b, b0, i, j, cnt;
     const char *p;
     char *q, buf[11];
-#ifdef SUPPORT_MBCS /* always true on Win32 */
     cetype_t ienc = CE_NATIVE;
-#endif
 
     /* We have to do something like this as the result is returned, and
        passed on by EncodeElement -- so no way could be end user be
@@ -578,7 +570,6 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     }
     if (quote)
         *q++ = quote;
-#ifdef SUPPORT_MBCS
     if (mbcslocale || ienc == CE_UTF8)
     {
         int j, res;
@@ -716,7 +707,6 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 #endif
     }
     else
-#endif
         for (i = 0; i < cnt; i++)
         {
 
@@ -793,16 +783,16 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 #ifdef Win32  /* It seems Windows does not know what is printable! */
                 *q++ = *p++;
 #else
-            if (!isprint((int)*p & 0xff))
-            {
-                /* print in octal */
-                snprintf(buf, 5, "\\%03o", (unsigned char)*p);
-                for (j = 0; j < 4; j++)
-                    *q++ = buf[j];
-                p++;
-            }
-            else
-                *q++ = *p++;
+                if (!isprint((int)*p & 0xff))
+                {
+                    /* print in octal */
+                    snprintf(buf, 5, "\\%03o", (unsigned char)*p);
+                    for (j = 0; j < 4; j++)
+                        *q++ = buf[j];
+                    p++;
+                }
+                else
+                    *q++ = *p++;
 #endif
             }
         }

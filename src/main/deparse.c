@@ -689,7 +689,6 @@ static const char *backquotify(const char *s)
         error("symbol '%s' is too long to be a valid symbol", s);
 
     *t++ = '`';
-#ifdef SUPPORT_MBCS
     if (mbcslocale && !utf8locale)
     {
         mbstate_t mb_st;
@@ -704,7 +703,6 @@ static const char *backquotify(const char *s)
         }
     }
     else
-#endif
         while (*s)
         {
             if (*s == '`' || *s == '\\')

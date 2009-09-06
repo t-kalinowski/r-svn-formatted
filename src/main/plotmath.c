@@ -28,11 +28,7 @@
 #include <Defn.h>
 
 #include <ctype.h>
-#ifdef SUPPORT_MBCS
 #include <R_ext/rlocale.h>
-#include <wchar.h>
-#include <wctype.h>
-#endif
 
 #include <Rmath.h>
 #include <R_ext/GraphicsEngine.h>
@@ -971,7 +967,6 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, pGEconte
 
     if (str)
     {
-#ifdef SUPPORT_MBCS
         /* Need to advance by character, not byte, except in the symbol font.
            The latter would be hard to achieve, but perhaps not impossible.
          */
@@ -1020,7 +1015,6 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, pGEconte
             }
         }
         else
-#endif
         {
             while (*s)
             {
@@ -1071,7 +1065,6 @@ static BBOX RenderChar(int ascii, int draw, mathContext *mc, pGEcontext gc, pGED
     if (draw)
     {
         memset(asciiStr, 0, sizeof(asciiStr));
-#ifdef SUPPORT_MBCS
         if (mbcslocale)
         {
             size_t res = wcrtomb(asciiStr, ascii, NULL);
@@ -1079,7 +1072,6 @@ static BBOX RenderChar(int ascii, int draw, mathContext *mc, pGEcontext gc, pGED
                 error("invalid character in current multibyte locale");
         }
         else
-#endif
             asciiStr[0] = ascii;
         GEText(ConvertedX(mc, dd), ConvertedY(mc, dd), asciiStr, CE_NATIVE, 0.0, 0.0, mc->CurrentAngle, gc, dd);
         PMoveAcross(bboxWidth(bbox), mc);
@@ -1097,7 +1089,6 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
 
     if (str)
     {
-#ifdef SUPPORT_MBCS
         /* need to advance by character, not byte, except in the symbol font */
         if (mbcslocale && gc->fontface != 5)
         {
@@ -1117,7 +1108,6 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
             }
         }
         else
-#endif
         {
             const char *s = str;
             while (*s)

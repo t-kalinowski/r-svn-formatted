@@ -418,7 +418,7 @@ SEXP duplicated(SEXP x, Rboolean from_last)
     if (TYPEOF(x) == STRSXP)                                                                                           \
     {                                                                                                                  \
         for (i = 0; i < length(x); i++)                                                                                \
-            if (IS_UTF8(STRING_ELT(x, i)))                                                                             \
+            if (ENC_KNOWN(STRING_ELT(x, i)))                                                                           \
             {                                                                                                          \
                 data.useUTF8 = TRUE;                                                                                   \
                 break;                                                                                                 \
@@ -747,14 +747,14 @@ SEXP match(SEXP itable, SEXP ix, int nmatch)
     {
         Rboolean useUTF8 = FALSE;
         for (i = 0; i < length(x); i++)
-            if (IS_UTF8(STRING_ELT(x, i)))
+            if (ENC_KNOWN(STRING_ELT(x, i)))
             {
                 useUTF8 = TRUE;
                 break;
             }
         if (!useUTF8)
             for (i = 0; i < length(table); i++)
-                if (IS_UTF8(STRING_ELT(table, i)))
+                if (ENC_KNOWN(STRING_ELT(table, i)))
                 {
                     useUTF8 = TRUE;
                     break;
@@ -804,14 +804,14 @@ SEXP match4(SEXP itable, SEXP ix, int nmatch, SEXP incomp)
     {
         Rboolean useUTF8 = FALSE;
         for (i = 0; i < length(x); i++)
-            if (IS_UTF8(STRING_ELT(x, i)))
+            if (ENC_KNOWN(STRING_ELT(x, i)))
             {
                 useUTF8 = TRUE;
                 break;
             }
         if (!useUTF8)
             for (i = 0; i < length(table); i++)
-                if (IS_UTF8(STRING_ELT(table, i)))
+                if (ENC_KNOWN(STRING_ELT(table, i)))
                 {
                     useUTF8 = TRUE;
                     break;
@@ -896,14 +896,14 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     for (i = 0; i < n_input; i++)
-        if (IS_UTF8(STRING_ELT(input, i)))
+        if (ENC_KNOWN(STRING_ELT(input, i)))
         {
             useUTF8 = TRUE;
             break;
         }
     if (!useUTF8)
         for (i = 0; i < n_target; i++)
-            if (IS_UTF8(STRING_ELT(target, i)))
+            if (ENC_KNOWN(STRING_ELT(target, i)))
             {
                 useUTF8 = TRUE;
                 break;
@@ -1060,14 +1060,14 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     no_match = asInteger(CADDR(args));
 
     for (i = 0; i < n_input; i++)
-        if (IS_UTF8(STRING_ELT(input, i)))
+        if (ENC_KNOWN(STRING_ELT(input, i)))
         {
             useUTF8 = TRUE;
             break;
         }
     if (!useUTF8)
         for (i = 0; i < n_target; i++)
-            if (IS_UTF8(STRING_ELT(target, i)))
+            if (ENC_KNOWN(STRING_ELT(target, i)))
             {
                 useUTF8 = TRUE;
                 break;

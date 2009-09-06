@@ -217,9 +217,7 @@ void attribute_hidden R_check_locale(void)
 #endif
     }
 #endif
-#ifdef SUPPORT_MBCS
     mbcslocale = MB_CUR_MAX > 1;
-#endif
 #ifdef Win32
     {
         char *ctype = setlocale(LC_CTYPE, NULL), *p;
@@ -232,7 +230,7 @@ void attribute_hidden R_check_locale(void)
         known_to_be_latin1 = latin1locale = (localeCP == 1252);
     }
 #endif
-#if defined(Win32) && defined(SUPPORT_UTF8_WIN32)
+#if defined(SUPPORT_UTF8_WIN32) /* never at present */
     utf8locale = mbcslocale = TRUE;
 #endif
 }

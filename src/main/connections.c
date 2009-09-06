@@ -4056,7 +4056,6 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
     char *buf;
     int pos, m;
 
-#ifdef SUPPORT_MBCS
     if (utf8locale && !useBytes)
     {
         int i, clen;
@@ -4089,7 +4088,6 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
         pos = p - buf;
     }
     else
-#endif
     {
         buf = (char *)R_alloc(len + 1, sizeof(char));
         memset(buf, 0, len + 1);
@@ -4115,7 +4113,6 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
             return (R_NilValue);
     }
 
-#ifdef SUPPORT_MBCS
     if (utf8locale && !useBytes)
     {
         int i, clen, iread = *np;
@@ -4138,7 +4135,6 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         return mkCharLenCE(buf, clen, CE_NATIVE);
     }
     else
-#endif
     {
         /* no terminator */
         buf = R_chk_calloc(len + 1, 1);
@@ -4237,9 +4233,7 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *s, *ssep = "";
     Rboolean wasopen = TRUE, usesep, isRaw = FALSE;
     Rconnection con = NULL;
-#ifdef SUPPORT_MBCS
     mbstate_t mb_st;
-#endif
 
     checkArity(op, args);
     object = CAR(args);
@@ -4371,10 +4365,8 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 s = translateChar(si);
             lenb = lenc = strlen(s);
-#ifdef SUPPORT_MBCS
             if (mbcslocale)
                 lenc = mbstowcs(NULL, s, 0);
-#endif
             /* As from 1.8.1, zero-pad if too many chars are requested. */
             if (len > lenc)
             {
@@ -4383,7 +4375,6 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             if (len < lenc)
             {
-#ifdef SUPPORT_MBCS
                 if (mbcslocale)
                 {
                     /* find out how many bytes we need to write */
@@ -4398,7 +4389,6 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                 }
                 else
-#endif
                     lenb = len;
             }
             memset(buf, '\0', lenb + slen);

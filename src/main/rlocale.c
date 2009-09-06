@@ -37,26 +37,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef SUPPORT_MBCS
-void Ri18n_wcswidth(void)
-{
-    return;
-}
-void Ri18n_wcwidth(void)
-{
-    return;
-}
-void Ri18n_wctype(void)
-{
-    return;
-}
-void Ri18n_iswctype(void)
-{
-    return;
-}
-
-#else /* SUPPORT_MBCS */
-
 #define IN_RLOCALE_C 1 /* used in rlocale.h */
 #include <R_ext/rlocale.h>
 #include "rlocale_data.h"
@@ -333,5 +313,3 @@ int Ri18n_iswctype(wint_t wc, wctype_t desc)
         ;
     return (*Ri18n_wctype_func[i].func)(wc);
 }
-
-#endif /* SUPPORT_MBCS */

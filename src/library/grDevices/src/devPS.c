@@ -32,11 +32,9 @@
 /* Formerly in headers, but only used in some devices */
 typedef unsigned int rcolor;
 
-#ifdef SUPPORT_MBCS
 #include <wchar.h>
 #include <wctype.h>
 static void mbcsToSbcs(const char *in, char *out, const char *encoding, int enc);
-#endif
 
 #include <R_ext/Riconv.h>
 
@@ -75,7 +73,6 @@ static char PS_hyphen = 173;
 
 /* Part 0.  AFM File Names */
 
-#ifdef SUPPORT_MBCS
 static const char *CIDBoldFontStr1 = "16 dict begin\n"
                                      "  /basecidfont exch def\n"
                                      "  /basefont-H /.basefont-H /Identity-H [ basecidfont ] composefont def\n"
@@ -110,7 +107,6 @@ static const char *CIDBoldFontStr2 = "  /BuildGlyph {\n"
                                      "  currentdict\n"
                                      "end\n"
                                      "/CIDFont defineresource pop\n";
-#endif
 
 /* Part 1.  AFM File Parsing.  */
 
@@ -455,7 +451,7 @@ static int GetNextItem(FILE *fp, char *dest, int c, EncodingInputState *state)
  *         Also assumes that encpath has ".enc" suffix supplied
  *         (not required by R interface)
  */
-#ifdef SUPPORT_MBCS
+
 static int pathcmp(const char *encpath, const char *comparison)
 {
     char pathcopy[PATH_MAX];
@@ -477,39 +473,34 @@ static int pathcmp(const char *encpath, const char *comparison)
         *p2 = '\0';
     return strcmp(p1, comparison);
 }
-#endif
 
 static void seticonvName(const char *encpath, char *convname)
 {
     /*
      * Default to "latin1"
      */
+    char *p;
     strcpy(convname, "latin1");
-#ifdef SUPPORT_MBCS
+    if (pathcmp(encpath, "ISOLatin1") == 0)
+        strcpy(convname, "latin1");
+    else if (pathcmp(encpath, "ISOLatin2") == 0)
+        strcpy(convname, "latin2");
+    else if (pathcmp(encpath, "ISOLatin7") == 0)
+        strcpy(convname, "latin7");
+    else if (pathcmp(encpath, "ISOLatin9") == 0)
+        strcpy(convname, "latin-9");
+    else if (pathcmp(encpath, "WinAnsi") == 0)
+        strcpy(convname, "CP1252");
+    else
     {
-        char *p;
-        if (pathcmp(encpath, "ISOLatin1") == 0)
-            strcpy(convname, "latin1");
-        else if (pathcmp(encpath, "ISOLatin2") == 0)
-            strcpy(convname, "latin2");
-        else if (pathcmp(encpath, "ISOLatin7") == 0)
-            strcpy(convname, "latin7");
-        else if (pathcmp(encpath, "ISOLatin9") == 0)
-            strcpy(convname, "latin-9");
-        else if (pathcmp(encpath, "WinAnsi") == 0)
-            strcpy(convname, "CP1252");
-        else
-        {
-            /*
-             * Last resort = trim .enc off encpath to produce convname
-             */
-            strcpy(convname, encpath);
-            p = strrchr(convname, '.');
-            if (p)
-                *p = '\0';
-        }
+        /*
+         * Last resort = trim .enc off encpath to produce convname
+         */
+        strcpy(convname, encpath);
+        p = strrchr(convname, '.');
+        if (p)
+            *p = '\0';
     }
-#endif
 }
 
 /* Load encoding array from a file: defaults to the R_HOME/library/grDevices/afm directory */
@@ -789,9 +780,7 @@ pserror:
     return 0;
 }
 
-#ifdef SUPPORT_MBCS
 extern int Ri18n_wcwidth(wchar_t c);
-#endif
 
 static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetricInfo *metrics, Rboolean useKerning,
                                     int face, const char *encoding)
@@ -801,7 +790,6 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
     const unsigned char *p = NULL, *str1 = str;
     unsigned char p1, p2;
 
-#ifdef SUPPORT_MBCS
     char *buff;
     int status;
     if (!metrics && (face % 5) != 0)
@@ -848,7 +836,6 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
         mbcsToSbcs((char *)str, buff, encoding, enc);
         str1 = (unsigned char *)buff;
     }
-#endif
 
     /* safety */
     if (!metrics)
@@ -903,9 +890,7 @@ static const char UCS2ENC[] = "UCS-2LE";
 static void PostScriptMetricInfo(int c, double *ascent, double *descent, double *width, FontMetricInfo *metrics,
                                  Rboolean isSymbol, const char *encoding)
 {
-#ifdef SUPPORT_MBCS
     Rboolean Unicode = mbcslocale;
-#endif
 
     if (c == 0)
     {
@@ -915,7 +900,6 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
         return;
     }
 
-#ifdef SUPPORT_MBCS
     if (c < 0)
     {
         Unicode = TRUE;
@@ -956,7 +940,6 @@ static void PostScriptMetricInfo(int c, double *ascent, double *descent, double 
             c = out[0] & 0xff;
         }
     }
-#endif
 
     if (c > 255)
     { /* Unicode */
@@ -985,7 +968,6 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
 {
     /* calling in a SBCS is probably not intentional, but we should try to
        cope sensibly. */
-#ifdef SUPPORT_MBCS
     if (!mbcslocale && c > 0)
     {
         if (c > 255)
@@ -1001,23 +983,14 @@ static void PostScriptCIDMetricInfo(int c, double *ascent, double *descent, doub
             c = out;
         }
     }
-#endif
 
     /* Design values for all CJK fonts */
     *ascent = 0.880;
     *descent = -0.120;
     if (c == 0 || c > 65535)
-    {
-        *width = 1;
-    }
+        *width = 1.;
     else
-    {
-#ifdef SUPPORT_MBCS
         *width = 0.5 * Ri18n_wcwidth(c);
-#else
-        *width = 0.5;
-#endif
-    }
 }
 
 /*******************************************************
@@ -2560,10 +2533,8 @@ static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
     type1fontlist fonts = pd->fonts;
     int familynum = 1;
     int haveWrittenDefaultEnc = 0;
-#ifdef SUPPORT_MBCS
     cidfontlist cidfonts = pd->cidfonts;
     int cidfamilynum = 1;
-#endif
 
     while (fonts)
     {
@@ -2653,7 +2624,6 @@ static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
         familynum++;
         fonts = fonts->next;
     }
-#ifdef SUPPORT_MBCS
     while (cidfonts)
     {
         int i;
@@ -2703,7 +2673,6 @@ static void PSEncodeFonts(FILE *fp, PostScriptDesc *pd)
         cidfamilynum++;
         cidfonts = cidfonts->next;
     }
-#endif /* SUPPORT_MBCS */
 }
 
 /* The variables "paperwidth" and "paperheight" give the dimensions */
@@ -3023,7 +2992,6 @@ static void PostScriptText2(FILE *fp, double x, double y, const char *str, int n
     }
 }
 
-#ifdef SUPPORT_MBCS
 static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int strlen, double xc, double rot)
 {
     unsigned char *p = (unsigned char *)str;
@@ -3053,7 +3021,6 @@ static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int
 
     fprintf(fp, " t\n");
 }
-#endif
 
 static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, double xc, double rot,
                                const pGEcontext gc, pDevDesc dd)
@@ -3163,10 +3130,8 @@ static void PS_Rect(double x0, double y0, double x1, double y1, const pGEcontext
 static void PS_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double PS_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PS_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
-#ifdef SUPPORT_MBCS
 static double PS_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PS_TextUTF8(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
-#endif
 
 /* PostScript Support (formerly in PostScript.c) */
 
@@ -3698,13 +3663,9 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->polyline = PS_Polyline;
     dd->locator = PS_Locator;
     dd->mode = PS_Mode;
-#ifdef SUPPORT_MBCS
     dd->hasTextUTF8 = TRUE;
     dd->textUTF8 = PS_TextUTF8;
     dd->strWidthUTF8 = PS_StrWidthUTF8;
-#else
-    dd->hasTextUTF8 = FALSE;
-#endif
     dd->useRotatedTextInContour = TRUE;
 
     dd->deviceSpecific = (void *)pd;
@@ -4077,7 +4038,6 @@ static double PS_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd)
     }
 }
 
-#ifdef SUPPORT_MBCS
 static double PS_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd)
 {
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
@@ -4107,7 +4067,6 @@ static double PS_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd)
         }
     }
 }
-#endif
 
 static void PS_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {
@@ -4304,7 +4263,6 @@ static int translateFont(char *family, int style, PostScriptDesc *pd)
     return result;
 }
 
-#ifdef SUPPORT_MBCS
 static int numFonts(type1fontlist fonts)
 {
     int i = 0;
@@ -4340,7 +4298,6 @@ static int translateCIDFont(char *family, int style, PostScriptDesc *pd)
     }
     return result;
 }
-#endif
 
 static void drawSimpleText(double x, double y, const char *str, double rot, double hadj, int font, const pGEcontext gc,
                            pDevDesc dd)
@@ -4359,13 +4316,6 @@ static void drawSimpleText(double x, double y, const char *str, double rot, doub
     }
 }
 
-#ifndef SUPPORT_MBCS
-static void PS_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd)
-{
-    PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
-    drawSimpleText(x, y, str, rot, hadj, translateFont(gc->fontfamily, gc->fontface, pd), gc, dd);
-}
-#else
 /* <FIXME> it would make sense to cache 'cd' here, but we would also
    need to know if the current locale's charset changes.  However,
    currently this is only called in a UTF-8 locale.
@@ -4539,7 +4489,6 @@ static void PS_TextUTF8(double x, double y, const char *str, double rot, double 
 {
     PS_Text0(x, y, str, CE_UTF8, rot, hadj, gc, dd);
 }
-#endif
 
 static Rboolean PS_Locator(double *x, double *y, pDevDesc dd)
 {
@@ -5355,7 +5304,6 @@ static void XFig_Text(double x, double y, const char *str, double rot, double ha
     else
         fontnum = pd->fontnum + styles[style - 1];
 
-#ifdef SUPPORT_MBCS
     /*
      * xfig -international hoge.fig
      * mapping multibyte(EUC only) string Times{Romani,Bold} font Only
@@ -5363,7 +5311,6 @@ static void XFig_Text(double x, double y, const char *str, double rot, double ha
     if (mbcslocale && style != 5)
         if (!strncmp("EUC", locale2charset(NULL), 3))
             fontnum = ((style & 1) ^ 1) << 1;
-#endif /* SUPPORT_MBCS */
 
     XFconvert(&x, &y, pd);
     XF_CheckAlpha(gc->col, pd);
@@ -5560,11 +5507,9 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, const pGEcontex
 static void PDF_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double PDF_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PDF_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
-#ifdef SUPPORT_MBCS
 static double PDF_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PDF_TextUTF8(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc,
                          pDevDesc dd);
-#endif
 
 /*
  * Add a graphics engine font family to the list of fonts used on a
@@ -6066,13 +6011,9 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->polyline = PDF_Polyline;
     dd->locator = PDF_Locator;
     dd->mode = PDF_Mode;
-#ifdef SUPPORT_MBCS
     dd->hasTextUTF8 = TRUE;
     dd->textUTF8 = PDF_TextUTF8;
     dd->strWidthUTF8 = PDF_StrWidthUTF8;
-#else
-    dd->hasTextUTF8 = FALSE;
-#endif
     dd->useRotatedTextInContour = TRUE;
 
     dd->deviceSpecific = (void *)pd;
@@ -7328,14 +7269,6 @@ static void PDFSimpleText(double x, double y, const char *str, double rot, doubl
     textoff(pd); /* added in 2.8.0 */
 }
 
-#ifndef SUPPORT_MBCS
-static void PDF_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd)
-{
-    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
-    PDFSimpleText(x, y, str, rot, hadj, PDFfontNumber(gc->fontfamily, gc->fontface, pd), gc, dd);
-}
-
-#else
 static char *PDFconvname(const char *family, PDFDesc *pd);
 
 static void PDF_Text0(double x, double y, const char *str, int enc, double rot, double hadj, const pGEcontext gc,
@@ -7502,8 +7435,6 @@ static void PDF_TextUTF8(double x, double y, const char *str, double rot, double
     PDF_Text0(x, y, str, CE_UTF8, rot, hadj, gc, dd);
 }
 
-#endif
-
 static Rboolean PDF_Locator(double *x, double *y, pDevDesc dd)
 {
     return FALSE;
@@ -7658,7 +7589,6 @@ static double PDF_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd)
     }
     else
     { /* cidfont(gc->fontfamily) */
-#ifdef SUPPORT_MBCS
         if (gc->fontface < 5)
         {
             return floor(gc->cex * gc->ps + 0.5) *
@@ -7670,14 +7600,9 @@ static double PDF_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd)
                                                                          PDFCIDsymbolmetricInfo(gc->fontfamily, pd),
                                                                          FALSE, gc->fontface, NULL);
         }
-#else
-        error(_("CID fonts are not supported on this platform"));
-
-#endif
     }
 }
 
-#ifdef SUPPORT_MBCS
 static double PDF_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
@@ -7707,7 +7632,6 @@ static double PDF_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd
         }
     }
 }
-#endif
 
 static void PDF_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
 {

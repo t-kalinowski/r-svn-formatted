@@ -26,10 +26,7 @@
 #include <R_ext/Applic.h> /* pretty0() */
 #include <Rmath.h>
 
-#ifdef SUPPORT_MBCS
-#include <wchar.h>
 #include <R_ext/rlocale.h>
-#endif
 
 int R_GE_getVersion()
 {
@@ -1759,7 +1756,6 @@ void GEText(double x, double y, const char *const str, cetype_t enc, double xc, 
                                 const char *ss = str;
                                 int charNum = 0;
                                 Rboolean done = FALSE;
-#ifdef SUPPORT_MBCS
                                 /* Symbol fonts are not encoded in MBCS ever */
                                 if (enc2 != CE_SYMBOL && !strIsASCII(ss))
                                 {
@@ -1826,7 +1822,6 @@ void GEText(double x, double y, const char *const str, cetype_t enc, double xc, 
                                         done = TRUE;
                                     }
                                 }
-#endif
                                 if (!done)
                                 {
                                     for (ss = str; *ss; ss++)
@@ -2017,7 +2012,6 @@ void GESymbol(double x, double y, int pch, double size, const pGEcontext gc, pGE
      */
     if (pch == NA_INTEGER) /* do nothing */
         ;
-#ifdef SUPPORT_MBCS
     else if (pch < 0)
     {
         int res;
@@ -2030,7 +2024,6 @@ void GESymbol(double x, double y, int pch, double size, const pGEcontext gc, pGE
         str[res] = '\0';
         GEText(x, y, str, CE_UTF8, NA_REAL, NA_REAL, 0., gc, dd);
     }
-#endif
     else if (' ' <= pch && pch <= maxchar)
     {
         if (pch == '.')
@@ -3065,7 +3058,6 @@ int GEstring_to_pch(SEXP pch)
     if (pch == last_pch)
         return last_ipch; /* take advantage of CHARSXP cache */
     ipch = (unsigned char)CHAR(pch)[0];
-#ifdef SUPPORT_MBCS
     if (IS_LATIN1(pch))
     {
         if (ipch > 127)
@@ -3095,7 +3087,6 @@ int GEstring_to_pch(SEXP pch)
         if (ipch > 127)
             ipch = -ipch;
     }
-#endif
 
     last_ipch = ipch;
     last_pch = pch;

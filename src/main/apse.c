@@ -39,10 +39,8 @@ Furthermore:
 #define attribute_hidden
 #endif
 
-#ifdef SUPPORT_MBCS
 #include <wctype.h>
 #include <wchar.h>
-#endif
 
 #include "apse.h"
 
@@ -141,11 +139,7 @@ static apse_bool_t apse_set_pattern(apse_t *ap, unsigned char *pattern, apse_siz
 
     for (i = 0; i < pattern_size; i++)
     {
-#ifdef SUPPORT_MBCS
         unsigned o = ap->n_alphabet > 256 ? ((wchar_t *)pattern)[i] % ap->n_alphabet : pattern[i];
-#else
-        unsigned o = pattern[i];
-#endif
         APSE_BIT_SET(ap->case_mask, o, ap->bitvectors_in_state, i);
     }
 
@@ -287,9 +281,7 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
     int k;
     apse_ssize_t true_begin, true_size;
     apse_bool_t okay = 0;
-#ifdef SUPPORT_MBCS
     wctrans_t trl = 0, tru = 0; /* -Wall */
-#endif
 
     if (!ap->fold_mask)
     {
@@ -306,13 +298,11 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
     if (!_apse_wrap_slice(ap, caseignore_begin, caseignore_size, &true_begin, &true_size))
         goto out;
 
-#ifdef SUPPORT_MBCS
     if (ap->n_alphabet > 256)
     {
         trl = wctrans("tolower");
         tru = wctrans("toupper");
     }
-#endif
 
     if (caseignore)
     {
@@ -322,7 +312,6 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
             {
                 if (APSE_BIT_TST(ap->case_mask, k, ap->bitvectors_in_state, i))
                 {
-#ifdef SUPPORT_MBCS
                     if (ap->n_alphabet > 256)
                     {
                         if (iswupper(k))
@@ -331,7 +320,6 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
                             APSE_BIT_SET(ap->fold_mask, towctrans(k, tru), ap->bitvectors_in_state, i);
                     }
                     else
-#endif
                     {
                         if (isupper(k))
                             APSE_BIT_SET(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
@@ -350,7 +338,6 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
             {
                 if (APSE_BIT_TST(ap->case_mask, k, ap->bitvectors_in_state, i))
                 {
-#ifdef SUPPORT_MBCS
                     if (ap->n_alphabet > 256)
                     {
                         if (iswupper(k))
@@ -359,7 +346,6 @@ attribute_hidden apse_bool_t apse_set_caseignore_slice(apse_t *ap, apse_ssize_t 
                             APSE_BIT_CLR(ap->fold_mask, towctrans(k, tru), ap->bitvectors_in_state, i);
                     }
                     else
-#endif
                     {
                         if (isupper(k))
                             APSE_BIT_CLR(ap->fold_mask, tolower(k), ap->bitvectors_in_state, i);
