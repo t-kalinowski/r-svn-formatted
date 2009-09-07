@@ -31,15 +31,10 @@
 #ifdef USE_TRE
 #include <tre/regex.h>
 typedef int apse_size_t;
-/* may need a prefix to avoid conflicts with dynamic libraries */
-#ifdef TRE_REMAP
-#define TRE_regcomp tre_regcomp
-#define TRE_regerror tre_regerror
-#define TRE_regfree tre_regfree
-#else
-#define TRE_regcomp regcomp
-#define TRE_regerror regerror
-#define TRE_regfree regfree
+#ifdef TRE_NO_REMAP
+#define tre_regcomp regcomp
+#define tre_regerror regerror
+#define tre_regfree regfree
 #endif
 #else
 #include "apse.h"
@@ -113,7 +108,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (STRING_ELT(vec, i) == NA_STRING)
                     continue;
-                if (!strIsASCII(translateChar(STRING_ELT(vec, i))))
+                if (!strIsASCII(CHAR(STRING_ELT(vec, i))))
                 {
                     useMBCS = !useBytes;
                     break;
@@ -130,7 +125,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         if ((rc = regwcomp(&reg, wpat, cflags)))
         {
             char errbuf[1001];
-            TRE_regerror(rc, &reg, errbuf, 1001);
+            tre_regerror(rc, &reg, errbuf, 1001);
             error(_("regcomp error:  '%s'"), errbuf);
         }
 #else
@@ -143,10 +138,10 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         nc = strlen(str);
 #ifdef USE_TRE
-        if ((rc = TRE_regcomp(&reg, str, cflags)))
+        if ((rc = tre_regcomp(&reg, str, cflags)))
         {
             char errbuf[1001];
-            TRE_regerror(rc, &reg, errbuf, 1001);
+            tre_regerror(rc, &reg, errbuf, 1001);
             error(_("regcomp error:  '%s'"), errbuf);
         }
 #else
@@ -240,7 +235,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 #ifdef USE_TRE
-    TRE_regfree(&reg);
+    tre_regfree(&reg);
 #else
     apse_destroy(aps);
 #endif
