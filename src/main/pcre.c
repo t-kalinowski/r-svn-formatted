@@ -289,7 +289,7 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
         options |= PCRE_CASELESS;
         if (useBytes && utf8locale && !strIsASCII(spat))
             warning(_("ignore.case = TRUE, perl = TRUE, useBytes = TRUE\n  in UTF-8 locales only works caselessly for "
-                      "ASCII patterns"));
+                      "7-bit patterns"));
     }
 
     tables = pcre_maketables();
@@ -534,7 +534,7 @@ SEXP attribute_hidden do_gpregexpr(SEXP pat, SEXP text, int igcase_opt, int useB
         options |= PCRE_CASELESS;
         if (useBytes && utf8locale && !strIsASCII(spat))
             warning(_("ignore.case = TRUE, perl = TRUE, useBytes = TRUE\n  in UTF-8 locales only works caselessly for "
-                      "ASCII patterns"));
+                      "7-bit patterns"));
     }
     if (!useBytes && mbcslocale && !mbcsValid(spat))
         error(_("regular expression is invalid in this locale"));
