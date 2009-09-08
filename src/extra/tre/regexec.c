@@ -199,6 +199,13 @@ int tre_regexec(const regex_t *preg, const char *str, size_t nmatch, regmatch_t 
     return regnexec(preg, str, (unsigned)-1, nmatch, pmatch, eflags);
 }
 
+int tre_regexecb(const regex_t *preg, const char *str, size_t nmatch, regmatch_t pmatch[], int eflags)
+{
+    tre_tnfa_t *tnfa = (void *)preg->TRE_REGEX_T_FIELD;
+
+    return tre_match(tnfa, str, (unsigned)-1, STR_BYTE, nmatch, pmatch, eflags);
+}
+
 #ifdef TRE_WCHAR
 
 int regwnexec(const regex_t *preg, const wchar_t *str, size_t len, size_t nmatch, regmatch_t pmatch[], int eflags)
