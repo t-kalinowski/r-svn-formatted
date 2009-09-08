@@ -20,25 +20,20 @@
 /* This needs to be separate from grep.c, as TRE has a conflicting
    regcomp and the two headers cannot both be included in one file */
 
+/* FIXME: this could handle marked UTF-8 encodings */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#undef USE_TRE
+#define USE_TRE 1
 
 #include <Defn.h>
 #include <R_ext/RS.h> /* for Calloc/Free */
 #include <wchar.h>
 
-#ifdef USE_TRE
 #include <tre/regex.h>
-typedef int apse_size_t;
-#ifdef TRE_NO_REMAP
-#define tre_regcomp regcomp
-#define tre_regerror regerror
-#define tre_regfree regfree
-#endif
-#else
-#include "apse.h"
-#endif
 
 SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -47,17 +42,13 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     int igcase_opt, value_opt, max_distance_opt, useBytes;
     int max_deletions_opt, max_insertions_opt, max_substitutions_opt;
     const char *str;
-    Rboolean useMBCS = FALSE;
+    Rboolean useWC = FALSE;
     wchar_t *wstr, *wpat = NULL;
 
-#ifdef USE_TRE
     regex_t reg;
     regaparams_t params;
     regamatch_t match;
     int rc, cflags = REG_NOSUB | REG_LITERAL;
-#else
-    apse_t *aps;
-#endif
 
     checkArity(op, args);
     pat = CAR(args);
@@ -68,13 +59,13 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     value_opt = asLogical(CAR(args));
     args = CDR(args);
-    max_distance_opt = (apse_size_t)asInteger(CAR(args));
+    max_distance_opt = asInteger(CAR(args));
     args = CDR(args);
-    max_deletions_opt = (apse_size_t)asInteger(CAR(args));
+    max_deletions_opt = asInteger(CAR(args));
     args = CDR(args);
-    max_insertions_opt = (apse_size_t)asInteger(CAR(args));
+    max_insertions_opt = asInteger(CAR(args));
     args = CDR(args);
-    max_substitutions_opt = (apse_size_t)asInteger(CAR(args));
+    max_substitutions_opt = asInteger(CAR(args));
     args = CDR(args);
     useBytes = asLogical(CAR(args));
 
@@ -97,74 +88,51 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         cflags |= REG_ICASE;
 #endif
 
-    /* Create search pattern object. */
-    str = translateChar(STRING_ELT(pat, 0));
-    if (mbcslocale)
+    str = CHAR(STRING_ELT(pat, 0));
+    useWC = !strIsASCII(str) && !useBytes;
+    if (!useWC)
     {
-        useMBCS = !strIsASCII(str) && !useBytes;
-        if (!useMBCS)
+        for (i = 0; i < LENGTH(vec); i++)
         {
-            for (i = 0; i < LENGTH(vec); i++)
+            if (STRING_ELT(vec, i) == NA_STRING)
+                continue;
+            if (!strIsASCII(CHAR(STRING_ELT(vec, i))))
             {
-                if (STRING_ELT(vec, i) == NA_STRING)
-                    continue;
-                if (!strIsASCII(CHAR(STRING_ELT(vec, i))))
-                {
-                    useMBCS = !useBytes;
-                    break;
-                }
+                useWC = !useBytes;
+                break;
             }
         }
     }
-    if (useMBCS)
+    if (useWC)
     {
         nc = mbstowcs(NULL, str, 0);
         wpat = Calloc(nc + 1, wchar_t);
         mbstowcs(wpat, str, nc + 1);
-#ifdef USE_TRE
         if ((rc = regwcomp(&reg, wpat, cflags)))
         {
             char errbuf[1001];
             tre_regerror(rc, &reg, errbuf, 1001);
             error(_("regcomp error:  '%s'"), errbuf);
         }
-#else
-        aps = apse_create((unsigned char *)wpat, (apse_size_t)nc, max_distance_opt, 65536);
-        if (!aps)
-            error(_("could not allocate memory for approximate matching"));
-#endif
     }
     else
     {
+        str = translateChar(STRING_ELT(pat, 0));
         nc = strlen(str);
-#ifdef USE_TRE
         if ((rc = tre_regcomp(&reg, str, cflags)))
         {
             char errbuf[1001];
             tre_regerror(rc, &reg, errbuf, 1001);
             error(_("regcomp error:  '%s'"), errbuf);
         }
-#else
-        aps = apse_create((unsigned char *)str, (apse_size_t)nc, max_distance_opt, 256);
-        if (!aps)
-            error(_("could not allocate memory for approximate matching"));
-#endif
     }
 
-#ifdef USE_TRE
     regaparams_default(&params);
-    params.cost_ins = params.cost_del = params.cost_subst = 1;
     params.max_cost = max_distance_opt;
     params.max_del = max_deletions_opt;
     params.max_ins = max_insertions_opt;
     params.max_subst = max_substitutions_opt;
     params.max_err = max_distance_opt;
-#else
-    /* Set further restrictions on search distances. */
-    apse_set_deletions(aps, max_deletions_opt);
-    apse_set_insertions(aps, max_insertions_opt);
-    apse_set_substitutions(aps, max_substitutions_opt);
-#endif
 
     /* Matching. */
     n = LENGTH(vec);
@@ -177,16 +145,15 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             LOGICAL(ind)[i] = 0;
             continue;
         }
-        str = translateChar(STRING_ELT(vec, i));
         /* Perform match. */
-        if (useMBCS)
+        /* undocumented, must be zeroed */
+        memset(&match, 0, sizeof(match));
+        if (useWC)
         {
+            str = translateChar(STRING_ELT(vec, i));
             nc = mbstowcs(NULL, str, 0);
             wstr = Calloc(nc + 1, wchar_t);
             mbstowcs(wstr, str, nc + 1);
-#ifdef USE_TRE
-            /* undocumented, must be zeroed */
-            memset(&match, 0, sizeof(match));
             if (regawexec(&reg, wstr, &match, params, 0) == REG_OK)
             {
                 LOGICAL(ind)[i] = 1;
@@ -194,25 +161,11 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 LOGICAL(ind)[i] = 0;
-#else
-            /* Set case ignore flag for the whole string to be matched. */
-            if (!apse_set_caseignore_slice(aps, 0, nc, (apse_bool_t)igcase_opt))
-                error(_("could not perform case insensitive matching"));
-            if (apse_match(aps, (unsigned char *)wstr, (apse_size_t)nc))
-            {
-                LOGICAL(ind)[i] = 1;
-                nmatches++;
-            }
-            else
-                LOGICAL(ind)[i] = 0;
-#endif
             Free(wstr);
         }
         else
         {
-#ifdef USE_TRE
-            /* undocumented, must be zeroed */
-            memset(&match, 0, sizeof(match));
+            str = translateChar(STRING_ELT(vec, i));
             if (regaexec(&reg, str, &match, params, 0) == REG_OK)
             {
                 LOGICAL(ind)[i] = 1;
@@ -220,25 +173,9 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 LOGICAL(ind)[i] = 0;
-#else
-            /* Set case ignore flag for the whole string to be matched. */
-            if (!apse_set_caseignore_slice(aps, 0, strlen(str), (apse_bool_t)igcase_opt))
-                error(_("could not perform case insensitive matching"));
-            if (apse_match(aps, (unsigned char *)str, (apse_size_t)strlen(str)))
-            {
-                LOGICAL(ind)[i] = 1;
-                nmatches++;
-            }
-            else
-                LOGICAL(ind)[i] = 0;
-#endif
         }
     }
-#ifdef USE_TRE
     tre_regfree(&reg);
-#else
-    apse_destroy(aps);
-#endif
 
     PROTECT(ans = value_opt ? allocVector(STRSXP, nmatches) : allocVector(INTSXP, nmatches));
     if (value_opt)
@@ -262,10 +199,8 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         for (j = i = 0; i < n; i++)
-        {
             if (LOGICAL(ind)[i] == 1)
                 INTEGER(ans)[j++] = i + 1;
-        }
     }
 
     if (wpat)
