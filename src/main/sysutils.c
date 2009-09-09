@@ -1037,7 +1037,8 @@ top_of_loop:
     top = outb = cbuff.bufsize - 1;
     /* First initialize output */
     Riconv(obj, NULL, NULL, &outbuf, &outb);
-    /* Then convert input: should always work  */
+next_char:
+    /* Then convert input  */
     res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
     if (res == -1 && errno == E2BIG)
     {
@@ -1046,9 +1047,19 @@ top_of_loop:
     }
     else if (res == -1 && errno == EILSEQ)
     {
-        if (!knownEnc)
-            Riconv_close(obj);
-        error(_("invalid input in wtransChar"));
+        if (outb < 5)
+        {
+            R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
+            goto top_of_loop;
+        }
+        snprintf(outbuf, 5, "<%02x>", (unsigned char)*inbuf);
+        outbuf += 4;
+        outb -= 4;
+        inbuf++;
+        inb--;
+        goto next_char;
+        /* if(!knownEnc) Riconv_close(obj);
+           error(_("invalid input in wtransChar")); */
     }
     if (!knownEnc)
         Riconv_close(obj);
