@@ -25,7 +25,8 @@ Support for UTF-8-encoded strings in non-UTF-8 locales
 ======================================================
 
 strsplit grep [g]sub [g]regexpr
-  handle UTF-8 directly if fixed/perl = TRUE, otherwise translate.
+  handle UTF-8 directly if fixed/perl = TRUE, via wchar_t for basic/extended
+  [ not yet for basic/extended [g]sub ]
 
 */
 
@@ -520,8 +521,6 @@ static int fgrep_one_bytes(const char *pat, const char *target, int useBytes)
     return -1;
 }
 
-/* This should be using UTF-8 when the strings concerned are
-   UTF-8, but we can only do that for perl and fixed.  */
 SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
@@ -637,7 +636,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= PCRE_CASELESS;
             if (useBytes && utf8locale && !strIsASCII(cpat))
                 warning(_("ignore.case = TRUE, perl = TRUE, useBytes = TRUE\n  in UTF-8 locales only works caselessly "
-                          "for ASCII patterns"));
+                          "for 7-bit patterns"));
         }
         if (useBytes)
             ;
@@ -684,6 +683,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
 #ifdef USE_TRE
+        /* Perhaps we can be cleverer here, and use bytes if
+           all the strings are ASCII.  Would it be faster? */
         if (useBytes)
             rc = tre_regcompb(&reg, cpat, cflags);
         else
@@ -792,7 +793,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
  * either once or globally.
  * The functions are loosely patterned on the "sub" and "gsub" in "nawk". */
 
-static int length_adj(const char *repl, regmatch_t *regmatch, int nsubexpr)
+static int length_adj(const char *repl, regmatch_t *regmatch, int nsubexpr, Rboolean useMBCS)
 {
     int k, n;
     const char *p = repl;
@@ -802,7 +803,7 @@ static int length_adj(const char *repl, regmatch_t *regmatch, int nsubexpr)
     n = strlen(repl) - (regmatch[0].rm_eo - regmatch[0].rm_so);
     while (*p)
     {
-        if (mbcslocale)
+        if (useMBCS)
         { /* not a problem in UTF-8 */
             /* skip over multibyte chars, since they could have
                an embedded \ */
@@ -839,7 +840,7 @@ static int length_adj(const char *repl, regmatch_t *regmatch, int nsubexpr)
     return n;
 }
 
-static char *string_adj(char *target, const char *orig, const char *repl, regmatch_t *regmatch)
+static char *string_adj(char *target, const char *orig, const char *repl, regmatch_t *regmatch, Rboolean useMBCS)
 {
     int i, k;
     const char *p = repl;
@@ -849,7 +850,7 @@ static char *string_adj(char *target, const char *orig, const char *repl, regmat
 
     while (*p)
     {
-        if (mbcslocale)
+        if (useMBCS)
         { /* not a problem in UTF-8 */
             /* skip over multibyte chars, since they could have
                an embedded \ */
@@ -1014,7 +1015,11 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
 #ifdef USE_TRE
-        rc = useBytes ? tre_regcompb(&reg, spat, cflags) : tre_regcomp(&reg, spat, cflags);
+        if (useBytes)
+            rc = tre_regcompb(&reg, spat, cflags);
+        else
+            /* rc  = regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags); */
+            rc = tre_regcomp(&reg, spat, cflags);
 #else
         rc = regcomp(&reg, spat, cflags);
 #endif
@@ -1025,9 +1030,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
-        /* NA `pat' are removed in R code */
-        /* the C code is left in case we change our minds again,
-       but this code _is_ used if 'x' contains NAs */
+        /* NA `pat' was removed in R code
+      but this code _is_ used if 'x' contains NAs */
         /* NA matches only itself */
         if (STRING_ELT(vec, i) == NA_STRING)
         {
@@ -1101,7 +1105,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            /* regular regexp, no useBytes nor use_UTF8 */
+            /* basic or extended regexp */
 
             eflags = 0;
             last_end = -1;
@@ -1115,7 +1119,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                    gsub("a*", "x", "baaac") is "xbxcx" not "xbxxcx" */
                 if (offset > last_end)
                 {
-                    ns += length_adj(t, regmatch, reg.re_nsub);
+                    ns += length_adj(t, regmatch, reg.re_nsub, !useBytes && mbcslocale);
                     last_end = offset;
                 }
                 if (s[offset] == '\0' || !global)
@@ -1138,7 +1142,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                    gsub("a*", "x", "baaac") is "xbxcx" not "xbxxcx" */
                 if (offset > last_end)
                 {
-                    ns += length_adj(t, regmatch, reg.re_nsub);
+                    ns += length_adj(t, regmatch, reg.re_nsub, mbcslocale);
                     last_end = offset;
                 }
                 if (s[offset] == '\0' || !global)
@@ -1174,7 +1178,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                         *u++ = s[offset + j];
                     if (offset + regmatch[0].rm_eo > last_end)
                     {
-                        u = string_adj(u, s + offset, t, regmatch);
+                        u = string_adj(u, s + offset, t, regmatch, !useBytes && mbcslocale);
                         last_end = offset + regmatch[0].rm_eo;
                     }
                     offset += regmatch[0].rm_eo;
@@ -1194,7 +1198,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                         *u++ = s[j];
                     if (regmatch[0].rm_eo > last_end)
                     {
-                        u = string_adj(u, s, t, regmatch);
+                        u = string_adj(u, s, t, regmatch, mbcslocale);
                         last_end = regmatch[0].rm_eo;
                     }
                     offset = regmatch[0].rm_eo;
@@ -1528,25 +1532,44 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes)
+static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes)
 {
-    int matchIndex, j, st, foundAll, foundAny, offset, offset0, len;
+    int matchIndex, j, st, foundAll, foundAny, offset, len;
     regmatch_t regmatch[10];
     SEXP ans, matchlen;         /* Return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* Buffers for storing multiple matches */
     int bufsize = 1024;         /* Starting size for buffers */
+    int eflags = 0;
+    const char *string = NULL;
+#ifdef USE_TRE
+    const wchar_t *ws = NULL;
+#endif
 
     PROTECT(matchbuf = allocVector(INTSXP, bufsize));
     PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
     matchIndex = -1;
     foundAll = foundAny = offset = 0;
+#ifdef USE_TRE
+    if (useBytes)
+    {
+        string = CHAR(sstr);
+        len = strlen(string);
+    }
+    else
+    {
+        ws = wtransChar(sstr);
+        len = wcslen(ws);
+    }
+#else
+    string = translateChar(sstr);
     len = strlen(string);
+#endif
     while (!foundAll)
     {
         if (offset < len &&
-#ifdef GSUB_HEAD_CHOP
-            (useBytes ? tre_regexec(reg, string + offset, 1, regmatch, 0)
-                      : regexec(reg, string + offset, 1, regmatch, 0))
+#ifdef USE_TRE
+            (useBytes ? tre_regexecb(reg, string + offset, 1, regmatch, eflags)
+                      : regwexec(reg, ws + offset, 1, regmatch, eflags))
 #else
             Rregexec(reg, string, 1, regmatch, 0, offset)
 #endif
@@ -1575,25 +1598,25 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
             matchIndex++;
             foundAny = 1;
             st = regmatch[0].rm_so;
-#ifndef GSUB_HEAD_CHOP
-            offset = 0;
-#endif
+#ifdef USE_TRE
             INTEGER(matchbuf)[matchIndex] = offset + st + 1; /* index from one */
             INTEGER(matchlenbuf)[matchIndex] = regmatch[0].rm_eo - st;
-            offset0 = offset;
             if (INTEGER(matchlenbuf)[matchIndex] == 0)
                 offset += st + 1;
             else
                 offset += regmatch[0].rm_eo;
-
-            if (!useBytes && mbcslocale)
+#else
+            offset = 0;
+            INTEGER(matchbuf)[matchIndex] = offset + st + 1; /* index from one */
+            INTEGER(matchlenbuf)[matchIndex] = regmatch[0].rm_eo - st;
+            if (INTEGER(matchlenbuf)[matchIndex] == 0)
+                offset = st + 1;
+            else
+                offset = regmatch[0].rm_eo;
+            if (mbcslocale)
             {
                 char *buf;
                 int mlen = regmatch[0].rm_eo - st;
-#ifdef GSUB_HEAD_CHOP
-                st += offset0;
-#endif
-
                 /* Unfortunately these are in bytes, so we need to
                    use chars instead */
                 if (st > 0)
@@ -1619,6 +1642,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
                     foundAll = 1;
                 }
             }
+#endif
         }
         else
         {
@@ -1630,6 +1654,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, const char *string, int useBytes
                 INTEGER(matchlenbuf)[matchIndex] = -1;
             }
         }
+        eflags = REG_NOTBOL;
     }
     R_FreeStringBufferL(&cbuff);
     PROTECT(ans = allocVector(INTSXP, matchIndex + 1));
@@ -1848,7 +1873,10 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!fixed_opt)
     {
 #ifdef USE_TRE
-        rc = useBytes ? tre_regcompb(&reg, spat, cflags) : regcomp(&reg, spat, cflags);
+        if (useBytes)
+            rc = tre_regcompb(&reg, spat, cflags);
+        else
+            rc = regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags);
 #else
         rc = regcomp(&reg, spat, cflags);
 #endif
@@ -1884,7 +1912,7 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (fixed_opt)
                     PROTECT(ans = gregexpr_fixed(spat, s, useBytes, CE_NATIVE));
                 else
-                    PROTECT(ans = gregexpr_Regexc(&reg, s, useBytes));
+                    PROTECT(ans = gregexpr_Regexc(&reg, STRING_ELT(text, i), useBytes));
             }
         }
         SET_VECTOR_ELT(ansList, i, ans);

@@ -42,7 +42,7 @@
  * The functions are loosely patterned on the "sub" and "gsub" in "nawk". */
 
 /* FIXME: use UCP for upper/lower conversion */
-static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexpr, Rboolean useBytes)
+static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexpr, Rboolean useBytes, int ienc)
 {
     int k, n, nb;
     const char *p = repl;
@@ -60,7 +60,7 @@ static int length_adj(const char *orig, const char *repl, int *ovec, int nsubexp
                     error(_("invalid backreference %d in regular expression"), k);
                 nb = ovec[2 * k + 1] - ovec[2 * k];
                 /* assume for now that in UTF-8 upper/lower pairs are same len */
-                if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
+                if (nb > 0 && !useBytes && ienc != CE_UTF8 && mbcslocale && (upper || lower))
                 {
                     wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
                     int j, nc;
@@ -138,7 +138,7 @@ static char *string_adj(char *target, const char *orig, const char *repl, int *o
                 k = p[1] - '0';
                 /* Here we need to work in chars */
                 nb = ovec[2 * k + 1] - ovec[2 * k];
-                if (nb > 0 && !useBytes && mbcslocale && (upper || lower))
+                if (nb > 0 && !useBytes && ienc == CE_UTF8 && (upper || lower))
                 {
                     wctrans_t tr = wctrans(upper ? "toupper" : "tolower");
                     int j, nc;
@@ -340,7 +340,7 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igc
                gsub("a*", "x", "baaac") is "xbxcx" not "xbxxcx" */
             if (ovector[1] > last_end)
             {
-                ns += length_adj(s, t, ovector, re_nsub, useBytes);
+                ns += length_adj(s, t, ovector, re_nsub, useBytes, ienc);
                 last_end = ovector[1];
             }
             offset = ovector[1];
