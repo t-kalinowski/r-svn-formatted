@@ -33,7 +33,7 @@
 #include <pcre.h>
 #endif
 
-#include <R_ext/RS.h> /* for CallocCharBuf and Free */
+#include <R_ext/RS.h> /* for Calloc and Free */
 #include <wchar.h>
 #include <wctype.h>
 
@@ -243,7 +243,7 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP text, int global, int ig
         ns = strlen(s);
         /* worst possible scenario is to put a copy of the
            replacement after every character */
-        nns = ns * (strlen(srep) + 1) + 1000;
+        nns = ns * (replen + 1) + 1000;
         if (nns > 10000)
             nns = 2 * ns;
         u = cbuf = Calloc(nns, char);
@@ -298,6 +298,8 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP text, int global, int ig
         }
         if (nmatch == 0)
             SET_STRING_ELT(ans, i, STRING_ELT(text, i));
+        else if (STRING_ELT(rep, 0) == NA_STRING)
+            SET_STRING_ELT(ans, i, NA_STRING);
         else
         {
             /* copy the tail */
