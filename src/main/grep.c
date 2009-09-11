@@ -1274,7 +1274,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     nns = 2 * ns + replen + 1000;
             }
             else
-                nns = ns + replen + 1;
+                nns = ns + replen + 1000;
             u = cbuf = Calloc(nns, char);
             offset = 0;
             nmatch = 0;
