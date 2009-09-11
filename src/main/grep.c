@@ -33,6 +33,14 @@ strsplit grep [g]sub [g]regexpr
 #include <config.h>
 #endif
 
+/* NB: USE_TRE_FOR_FIXED appears to work, but is minimally tested.
+   The main benefit would be code simplification, but there are
+   cases where code in a non-UTF-8 MBCS would be converted to UTF-8 by
+   the RE engines and handled directly by the existing code.  That
+   might just matter if wchar_t is not Unicode (but we have no known
+   examples).
+ */
+
 #include <Defn.h>
 #include <R_ext/RS.h> /* for Calloc/Free */
 #include <wchar.h>
@@ -102,7 +110,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     int extended_opt, fixed_opt, perl_opt, useBytes;
     char *pt = NULL;
     wchar_t *wpt = NULL;
-    const char *buf, *split = "", *bufp, *laststart, *ebuf = NULL;
+    const char *buf, *split = "", *bufp;
     const unsigned char *tables = NULL;
     int cflags = 0 /* TRE */, options = 0 /* PCRE */;
     Rboolean use_UTF8 = FALSE;
@@ -151,6 +159,10 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (extended_opt)
         cflags = REG_EXTENDED;
+#ifdef USE_TRE_FOR_FIXED
+    if (fixed_opt)
+        cflags = REG_LITERAL;
+#endif
 
     len = LENGTH(x);
     tlen = LENGTH(tok);
@@ -260,8 +272,11 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 UNPROTECT(1);
             }
         }
-        else if (fixed_opt)
+        else
+#ifndef USE_TRE_FOR_FIXED
+            if (fixed_opt)
         {
+            const char *laststart, *ebuf;
             int slen;
             if (useBytes)
                 split = CHAR(STRING_ELT(tok, itok));
@@ -338,7 +353,9 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     SET_STRING_ELT(t, ntok, markKnown(bufp, STRING_ELT(x, i)));
             }
         }
-        else if (perl_opt)
+        else
+#endif
+            if (perl_opt)
         {
             pcre *re_pcre;
             pcre_extra *re_pe;
@@ -587,6 +604,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+#ifndef USE_TRE_FOR_FIXED
 /* This could be faster for plen > 1, but uses in R are for small strings */
 static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, int ienc, int *next)
 {
@@ -694,6 +712,7 @@ static int fgrep_one_bytes(const char *pat, const char *target, Rboolean useByte
                 return i;
     return -1;
 }
+#endif
 
 SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -788,7 +807,11 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!useBytes)
     {
         /* As from R 2.10.0 we use UTF-8 mode in PCRE in all MBCS locales */
-        if (fixed_opt || (!mbcslocale && perl_opt))
+        if (
+#ifndef USE_TRE_FOR_FIXED
+            fixed_opt ||
+#endif
+            (!mbcslocale && perl_opt))
         {
             if (getCharCE(STRING_ELT(pat, 0)) == CE_UTF8)
                 use_UTF8 = TRUE;
@@ -802,10 +825,13 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
     {
     }
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
@@ -824,6 +850,10 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= REG_EXTENDED;
         if (igcase_opt)
             cflags |= REG_ICASE;
+#ifdef USE_TRE_FOR_FIXED
+        if (fixed_opt)
+            cflags = REG_LITERAL;
+#endif
     }
 
     if (useBytes)
@@ -845,9 +875,12 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("regular expression is invalid in this locale"));
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
         ;
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         tables = pcre_maketables();
         re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);
@@ -896,9 +929,12 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
 
+#ifndef USE_TRE_FOR_FIXED
             if (fixed_opt)
                 LOGICAL(ind)[i] = fgrep_one(spat, s, useBytes, ienc, NULL) >= 0;
-            else if (perl_opt)
+            else
+#endif
+                if (perl_opt)
             {
                 if (pcre_exec(re_pcre, re_pe, s, strlen(s), 0, 0, &ov, 0) >= 0)
                     INTEGER(ind)[i] = 1;
@@ -916,9 +952,12 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         if (invert ^ LOGICAL(ind)[i])
             nmatches++;
     }
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
         ;
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         if (re_pe)
             pcre_free(re_pe);
@@ -986,10 +1025,10 @@ static char *string_adj(char *target, const char *orig, const char *repl, regmat
                 p += 2;
             }
             else if (p[1] == 0)
-                p += 1;
+                p++;
             else
             {
-                p += 1;
+                p++;
                 *t++ = *p++;
             }
         }
@@ -997,6 +1036,30 @@ static char *string_adj(char *target, const char *orig, const char *repl, regmat
             *t++ = *p++;
     }
     return t;
+}
+
+static int count_subs(const char *repl)
+{
+    int i = 0;
+    const char *p = repl;
+    while (*p)
+    {
+        if (*p == '\\')
+        {
+            if ('1' <= p[1] && p[1] <= '9')
+            {
+                i++;
+                p += 2;
+            }
+            else if (p[1] == 0)
+                p++;
+            else
+                p += 2;
+        }
+        else
+            p++;
+    }
+    return i;
 }
 
 static wchar_t *wstring_adj(wchar_t *target, const wchar_t *orig, const wchar_t *repl, regmatch_t *regmatch)
@@ -1017,10 +1080,10 @@ static wchar_t *wstring_adj(wchar_t *target, const wchar_t *orig, const wchar_t 
                 p += 2;
             }
             else if (p[1] == 0)
-                p += 1;
+                p++;
             else
             {
-                p += 1;
+                p++;
                 *t++ = *p++;
             }
         }
@@ -1030,10 +1093,33 @@ static wchar_t *wstring_adj(wchar_t *target, const wchar_t *orig, const wchar_t 
     return t;
 }
 
+static int wcount_subs(const wchar_t *repl)
+{
+    int i = 0;
+    const wchar_t *p = repl;
+    while (*p)
+    {
+        if (*p == '\\')
+        {
+            if ('1' <= p[1] && p[1] <= '9')
+            {
+                i++;
+                p += 2;
+            }
+            else if (p[1] == 0)
+                p++;
+            else
+                p += 2;
+        }
+        else
+            p++;
+    }
+    return i;
+}
+
 /* From pcre.c */
 extern SEXP do_pgsub(SEXP pat, SEXP rep, SEXP vec, int global, int igcase_opt, int useBytes);
 
-/* FIXME: do fixed = TRUE via REG_LITERAL in TRE */
 SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, rep, text, ans;
@@ -1042,8 +1128,11 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, n, ns, nns, nmatch, offset, rc;
     int global, igcase_opt, extended_opt, perl_opt, fixed_opt, useBytes, cflags = 0, eflags, last_end;
     char *u, *cbuf;
-    const char *spat, *srep, *s, *t;
-    int patlen = 0, replen = 0, st, nr;
+    const char *spat, *srep, *s;
+#ifndef USE_TRE_FOR_FIXED
+    int patlen = 0;
+#endif
+    int replen = 0;
     Rboolean use_UTF8 = FALSE;
     const wchar_t *wrep = NULL;
 
@@ -1120,6 +1209,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     if (perl_opt && !fixed_opt)
         return do_pgsub(pat, rep, text, global, igcase_opt, useBytes);
 
+#ifndef USE_TRE_FOR_FIXED
     if (!useBytes && fixed_opt)
     {
         if (getCharCE(STRING_ELT(pat, 0)) == CE_UTF8)
@@ -1132,6 +1222,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 }
     }
+#endif
 
     if (useBytes)
     {
@@ -1153,6 +1244,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("'replacement' is invalid in this locale"));
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
     {
         patlen = strlen(spat);
@@ -1161,14 +1253,17 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         replen = strlen(srep);
     }
     else
+#endif
     {
         spat = CHAR(STRING_ELT(pat, 0));
         if (extended_opt)
             cflags |= REG_EXTENDED;
         if (igcase_opt)
             cflags |= REG_ICASE;
+#ifdef USE_TRE_FOR_FIXED
         if (fixed_opt)
-            cflags |= REG_LITERAL;
+            cflags = REG_LITERAL;
+#endif
         if (useBytes)
         {
             rc = tre_regcompb(&reg, spat, cflags);
@@ -1189,23 +1284,12 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
-        /* NA `pat' was removed in R code
-      but this code _is_ used if 'x' contains NAs */
-        /* NA matches only itself */
+        /* NA pattern was handled above */
         if (STRING_ELT(text, i) == NA_STRING)
         {
-            if (STRING_ELT(pat, 0) == NA_STRING)
-                SET_STRING_ELT(ans, i, STRING_ELT(rep, 0));
-            else
-                SET_STRING_ELT(ans, i, NA_STRING);
+            SET_STRING_ELT(ans, i, NA_STRING);
             continue;
         }
-        if (STRING_ELT(pat, 0) == NA_STRING)
-        {
-            SET_STRING_ELT(ans, i, STRING_ELT(text, i));
-            continue;
-        }
-        /* end NA handling */
 
         if (useBytes)
             s = CHAR(STRING_ELT(text, i));
@@ -1213,14 +1297,15 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             s = translateCharUTF8(STRING_ELT(text, i));
         else
             s = translateChar(STRING_ELT(text, i));
-        t = srep;
 
         if (!useBytes && mbcslocale && !mbcsValid(s))
             error(("input string %d is invalid in this locale"), i + 1);
 
         ns = strlen(s);
+#ifndef USE_TRE_FOR_FIXED
         if (fixed_opt)
         {
+            int st, nr;
             st = fgrep_one_bytes(spat, s, useBytes);
             if (st < 0)
                 SET_STRING_ELT(ans, i, STRING_ELT(text, i));
@@ -1229,7 +1314,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 if (global)
-                { /* need to find number of matches */
+                { /* need to find max number of matches */
                     const char *ss = s;
                     int sst = st;
                     nr = 0;
@@ -1249,7 +1334,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     strncat(u, s, st);
                     u[nr + st] = '\0';
                     s += st + patlen;
-                    strcat(u, t);
+                    strcat(u, srep);
                 } while (global && (st = fgrep_one_bytes(spat, s, useBytes)) >= 0);
                 strcat(u, s);
                 if (useBytes)
@@ -1261,20 +1346,25 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 Free(cbuf);
             }
         }
-        else if (useBytes)
+        else
+#endif
+            if (useBytes)
         {
+            int maxrep;
             /* basic or extended regexp  in bytes*/
 
+            /* worst possible scenario is to put a copy of the
+               replacement after every character, unless there are
+               backrefs */
+            maxrep = replen + (ns - 2) * count_subs(srep);
             if (global)
             {
-                /* worst possible scenario is to put a copy of the
-                   replacement after every character */
-                nns = ns * (replen + 1) + 1000;
+                nns = ns * (maxrep + 1) + 1000;
                 if (nns > 10000)
                     nns = 2 * ns + replen + 1000;
             }
             else
-                nns = ns + replen + 1000;
+                nns = ns + maxrep + 1000;
             u = cbuf = Calloc(nns, char);
             offset = 0;
             nmatch = 0;
@@ -1289,7 +1379,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     *u++ = s[offset + j];
                 if (offset + regmatch[0].rm_eo > last_end)
                 {
-                    u = string_adj(u, s + offset, t, regmatch);
+                    u = string_adj(u, s + offset, srep, regmatch);
                     last_end = offset + regmatch[0].rm_eo;
                 }
                 offset += regmatch[0].rm_eo;
@@ -1297,7 +1387,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 if (regmatch[0].rm_eo == regmatch[0].rm_so)
                     *u++ = s[offset++];
-                if (nns < (u - cbuf) + (ns - offset) + replen + 1000)
+                if (nns < (u - cbuf) + (ns - offset) + maxrep + 100)
                 {
                     char *tmp;
                     nns *= 2;
@@ -1335,21 +1425,22 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             /* basic or extended regexp in wchar_t */
-            const wchar_t *s = wtransChar(STRING_ELT(text, i)), *t;
+            const wchar_t *s = wtransChar(STRING_ELT(text, i));
             wchar_t *u, *cbuf;
+            int maxrep;
 
-            t = wrep;
             ns = wcslen(s);
+            maxrep = replen + (ns - 2) * wcount_subs(wrep);
             if (global)
             {
                 /* worst possible scenario is to put a copy of the
                    replacement after every character */
-                nns = ns * (replen + 1) + 1000;
+                nns = ns * (maxrep + 1) + 1000;
                 if (nns > 10000)
-                    nns = 2 * ns + replen + 1000;
+                    nns = 2 * ns + maxrep + 1000;
             }
             else
-                nns = ns + replen + 1;
+                nns = ns + maxrep + 1000;
             u = cbuf = Calloc(nns, wchar_t);
             offset = 0;
             nmatch = 0;
@@ -1362,7 +1453,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     *u++ = s[offset + j];
                 if (offset + regmatch[0].rm_eo > last_end)
                 {
-                    u = wstring_adj(u, s + offset, t, regmatch);
+                    u = wstring_adj(u, s + offset, wrep, regmatch);
                     last_end = offset + regmatch[0].rm_eo;
                 }
                 offset += regmatch[0].rm_eo;
@@ -1370,7 +1461,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 if (regmatch[0].rm_eo == regmatch[0].rm_so)
                     *u++ = s[offset++];
-                if (nns < (u - cbuf) + (ns - offset) + replen + 1000)
+                if (nns < (u - cbuf) + (ns - offset) + maxrep + 100)
                 {
                     wchar_t *tmp;
 
@@ -1409,7 +1500,9 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             Free(cbuf);
         }
     }
+#ifndef USE_TRE_FOR_FIXED
     if (!fixed_opt)
+#endif
         tre_regfree(&reg);
     DUPLICATE_ATTRIB(ans, text);
     /* This copied the class, if any */
@@ -1464,6 +1557,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
     /* allow 'text' to be zero-length from 2.3.1 */
+    /* Note that excluding NAs differs from grep/sub */
     if (!isString(pat) || length(pat) < 1 || STRING_ELT(pat, 0) == NA_STRING)
         error(_("invalid '%s' argument"), "pattern");
     if (length(pat) > 1)
@@ -1485,7 +1579,11 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!useBytes)
     {
         /* As from R 2.10.0 we use UTF-8 mode in PCRE in all MBCS locales */
-        if (fixed_opt || (!mbcslocale && perl_opt))
+        if (
+#ifndef USE_TRE_FOR_FIXED
+            fixed_opt ||
+#endif
+            (!mbcslocale && perl_opt))
         {
             if (getCharCE(STRING_ELT(pat, 0)) == CE_UTF8)
                 use_UTF8 = TRUE;
@@ -1499,10 +1597,13 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
     {
     }
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
@@ -1520,6 +1621,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= REG_EXTENDED;
         if (igcase_opt)
             cflags |= REG_ICASE;
+#ifdef USE_TRE_FOR_FIXED
+        if (fixed_opt)
+            cflags = REG_LITERAL;
+#endif
     }
 
     if (useBytes)
@@ -1538,9 +1643,12 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("regular expression is invalid in this locale"));
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
         ;
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         tables = pcre_maketables();
         re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);
@@ -1592,6 +1700,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     continue;
                 }
             }
+#ifndef USE_TRE_FOR_FIXED
             if (fixed_opt)
             {
                 st = fgrep_one(spat, s, useBytes, ienc, NULL);
@@ -1607,7 +1716,9 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                     INTEGER(matchlen)[i] = INTEGER(ans)[i] >= 0 ? strlen(spat) : -1;
             }
-            else if (perl_opt)
+            else
+#endif
+                if (perl_opt)
             {
                 rc = pcre_exec(re_pcre, re_pe, s, strlen(s), 0, 0, ovector, 3);
                 if (rc >= 0)
@@ -1659,9 +1770,12 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     R_FreeStringBufferL(&cbuff);
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
         ;
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         if (re_pe)
             pcre_free(re_pe);
@@ -1763,6 +1877,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes)
     return ans;
 }
 
+#ifndef USE_TRE_FOR_FIXED
 static SEXP gregexpr_fixed(const char *pattern, const char *string, int useBytes, int ienc)
 {
     int patlen, matchIndex, st, foundAll, foundAny, curpos, j, ansSize, nb = 0;
@@ -1847,6 +1962,7 @@ static SEXP gregexpr_fixed(const char *pattern, const char *string, int useBytes
     UNPROTECT(4);
     return ans;
 }
+#endif
 
 static SEXP gregexpr_NAInputAns(void)
 {
@@ -1915,6 +2031,7 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(text) || length(text) < 1)
         error(_("invalid '%s' argument"), "text");
+    /* Note that excluding NAs differs from grep/sub */
     if (!isString(pat) || length(pat) < 1 || STRING_ELT(pat, 0) == NA_STRING)
         error(_("invalid '%s' argument"), "pattern");
     if (length(pat) > 1)
@@ -1939,7 +2056,11 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!useBytes)
     {
         /* As from R 2.10.0 we use UTF-8 mode in PCRE in all MBCS locales */
-        if (fixed_opt || (!mbcslocale && perl_opt))
+        if (
+#ifndef USE_TRE_FOR_FIXED
+            fixed_opt ||
+#endif
+            (!mbcslocale && perl_opt))
         {
             if (getCharCE(STRING_ELT(pat, 0)) == CE_UTF8)
                 use_UTF8 = TRUE;
@@ -1953,10 +2074,13 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
     {
     }
-    else if (perl_opt)
+    else
+#endif
+        if (perl_opt)
     {
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
@@ -1974,6 +2098,10 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= REG_EXTENDED;
         if (igcase_opt)
             cflags |= REG_ICASE;
+#ifdef USE_TRE_FOR_FIXED
+        if (fixed_opt)
+            cflags = REG_LITERAL;
+#endif
     }
 
     if (useBytes)
@@ -1995,7 +2123,11 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!useBytes && ienc != CE_UTF8 && mbcslocale && !mbcsValid(spat))
         error(_("regular expression is invalid in this locale"));
 
-    if (!fixed_opt)
+#ifndef USE_TRE_FOR_FIXED
+    if (fixed_opt)
+        ;
+    else
+#endif
     {
         if (useBytes)
             rc = tre_regcompb(&reg, spat, cflags);
@@ -2030,16 +2162,20 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
+#ifndef USE_TRE_FOR_FIXED
                 if (fixed_opt)
                     PROTECT(ans = gregexpr_fixed(spat, s, useBytes, CE_NATIVE));
                 else
+#endif
                     PROTECT(ans = gregexpr_Regexc(&reg, STRING_ELT(text, i), useBytes));
             }
         }
         SET_VECTOR_ELT(ansList, i, ans);
         UNPROTECT(1);
     }
+#ifndef USE_TRE_FOR_FIXED
     if (!fixed_opt)
+#endif
         tre_regfree(&reg);
     UNPROTECT(1);
     return ansList;
