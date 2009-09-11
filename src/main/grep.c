@@ -1119,13 +1119,13 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         spat = translateChar(STRING_ELT(pat, 0));
         srep = translateChar(STRING_ELT(rep, 0));
+        if (mbcslocale && !mbcsValid(spat))
+            error(_("'pattern' is invalid in this locale"));
+        if (mbcslocale && !mbcsValid(srep))
+            error(_("'replacement' is invalid in this locale"));
     }
 
-    if (mbcslocale && !mbcsValid(spat))
-        error(_("'pattern' is invalid in this locale"));
-    if (mbcslocale && !mbcsValid(srep))
-        error(_("'replacement' is invalid in this locale"));
-
+#ifndef USE_TRE_FOR_FIXED
     if (fixed_opt)
     {
         patlen = strlen(spat);
@@ -1188,7 +1188,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             s = translateChar(STRING_ELT(text, i));
         t = srep;
 
-        if (mbcslocale && !mbcsValid(s))
+        if (!useBytes && mbcslocale && !mbcsValid(s))
             error(("input string %d is invalid in this locale"), i + 1);
 
         ns = strlen(s);
