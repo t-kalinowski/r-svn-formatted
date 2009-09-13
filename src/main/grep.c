@@ -140,7 +140,9 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
         perl_opt = 0;
     }
-    if (fixed_opt && !extended_opt)
+    if (!extended_opt)
+        warning("'%s' is deprecated", "extended = FALSE");
+    if ((fixed_opt || perl_opt) && !extended_opt)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
     if (!isString(x) || !isString(tok))
@@ -762,6 +764,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
+    if (!extended_opt)
+        warning("'%s' is deprecated", "extended = FALSE");
     if ((fixed_opt || perl_opt) && !extended_opt)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
@@ -1170,6 +1174,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
+    if (!extended_opt)
+        warning("'%s' is deprecated", "extended = FALSE");
     if ((fixed_opt || perl_opt) && !extended_opt)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
@@ -1553,6 +1559,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
+    if (!extended_opt)
+        warning("'%s' is deprecated", "extended = FALSE");
     if ((fixed_opt || perl_opt) && !extended_opt)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
@@ -2026,6 +2034,8 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
+    if (!extended_opt)
+        warning("'%s' is deprecated", "extended = FALSE");
     if ((fixed_opt || perl_opt) && !extended_opt)
         warning(_("argument '%s' will be ignored"), "extended = FALSE");
 
