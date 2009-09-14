@@ -254,7 +254,7 @@ static int xxungetc(int);
 static int xxcharcount, xxcharsave;
 static int xxlineno, xxbyteno, xxcolno, xxlinesave, xxbytesave, xxcolsave;
 
-static SEXP SrcFile = NULL;
+static Rboolean keepSrcRefs = FALSE;
 static SEXP SrcRefs = NULL;
 static PROTECT_INDEX srindex;
 
@@ -2711,8 +2711,8 @@ static int xxvalue(SEXP v, int k, YYLTYPE *lloc)
 {
     if (k > 2)
     {
-        if (SrcFile)
-            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
+        if (keepSrcRefs)
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, R_SrcFile)), srindex);
         UNPROTECT_PTR(v);
     }
     R_CurrentExpr = v;
@@ -2786,7 +2786,7 @@ static SEXP xxexprlist0(void)
     if (GenerateCode)
     {
         PROTECT(ans = NewList());
-        if (SrcFile)
+        if (keepSrcRefs)
         {
             setAttrib(ans, R_SrcrefSymbol, SrcRefs);
             REPROTECT(SrcRefs = NewList(), srindex);
@@ -2803,11 +2803,11 @@ static SEXP xxexprlist1(SEXP expr, YYLTYPE *lloc)
     if (GenerateCode)
     {
         PROTECT(tmp = NewList());
-        if (SrcFile)
+        if (keepSrcRefs)
         {
             setAttrib(tmp, R_SrcrefSymbol, SrcRefs);
             REPROTECT(SrcRefs = NewList(), srindex);
-            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, R_SrcFile)), srindex);
         }
         PROTECT(ans = GrowList(tmp, expr));
         UNPROTECT_PTR(tmp);
@@ -2823,8 +2823,8 @@ static SEXP xxexprlist2(SEXP exprlist, SEXP expr, YYLTYPE *lloc)
     SEXP ans;
     if (GenerateCode)
     {
-        if (SrcFile)
-            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
+        if (keepSrcRefs)
+            REPROTECT(SrcRefs = GrowList(SrcRefs, makeSrcref(lloc, R_SrcFile)), srindex);
         PROTECT(ans = GrowList(exprlist, expr));
     }
     else
@@ -3190,11 +3190,11 @@ static SEXP xxexprlist(SEXP a1, YYLTYPE *lloc, SEXP a2)
     {
         SET_TYPEOF(a2, LANGSXP);
         SETCAR(a2, a1);
-        if (SrcFile)
+        if (keepSrcRefs)
         {
             PROTECT(prevSrcrefs = getAttrib(a2, R_SrcrefSymbol));
-            REPROTECT(SrcRefs = Insert(SrcRefs, makeSrcref(lloc, SrcFile)), srindex);
-            PROTECT(ans = attachSrcrefs(a2, SrcFile));
+            REPROTECT(SrcRefs = Insert(SrcRefs, makeSrcref(lloc, R_SrcFile)), srindex);
+            PROTECT(ans = attachSrcrefs(a2, R_SrcFile));
             REPROTECT(SrcRefs = prevSrcrefs, srindex);
             /* SrcRefs got NAMED by being an attribute... */
             SET_NAMED(SrcRefs, 0);
@@ -3303,12 +3303,9 @@ static SEXP NextArg(SEXP l, SEXP s, SEXP tag)
  *  The following routines parse a single expression:
  *
  *
- *	SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status)
+ *	SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status, Rboolean first)
  *
- *	SEXP R_Parse1Vector(TextBuffer *text, int gencode, ParseStatus *status)
- *      [Unused]
- *
- *	SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status)
+ *	SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status, Rboolean first)
  *
  *
  *  The success of the parse is indicated as folllows:
@@ -3338,6 +3335,15 @@ static SEXP NextArg(SEXP l, SEXP s, SEXP tag)
 static int SavedToken;
 static SEXP SavedLval;
 static char contextstack[CONTEXTSTACK_SIZE], *contextp;
+
+static void ParseSrcRefInit(void)
+{
+    keepSrcRefs = FALSE;
+    R_SrcFile = R_NilValue;
+    xxlineno = 1;
+    xxcolno = 0;
+    xxbyteno = 0;
+}
 
 static void ParseInit(void)
 {
@@ -3393,8 +3399,10 @@ static int file_getc(void)
 }
 
 /* used in main.c and this file */
-attribute_hidden SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status, Rboolean first)
 {
+    if (first)
+        ParseSrcRefInit();
     ParseInit();
     ParseContextInit();
     GenerateCode = gencode;
@@ -3412,10 +3420,10 @@ static int buffer_getc(void)
 }
 
 /* Used only in main.c, rproxy_impl.c */
-attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status)
+attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status, Rboolean first)
 {
-    xxlineno = 1;
-    xxcolno = 0;
+    if (first)
+        ParseSrcRefInit();
     ParseInit();
     ParseContextInit();
     GenerateCode = gencode;
@@ -3438,21 +3446,18 @@ static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
     int i;
     SEXP t, rval;
 
+    ParseSrcRefInit();
     ParseContextInit();
     savestack = R_PPStackTop;
     PROTECT(t = NewList());
 
-    xxlineno = 1;
-    xxcolno = 0;
-    xxbyteno = 0;
-    if (!isNull(srcfile))
+    R_SrcFile = srcfile;
+    if (!isNull(R_SrcFile))
     {
-        SrcFile = srcfile;
+        keepSrcRefs = TRUE;
+
         PROTECT_WITH_INDEX(SrcRefs = NewList(), &srindex);
-        PROTECT(SrcFile); /* It may change during the parse */
     }
-    else
-        SrcFile = NULL;
 
     for (i = 0;;)
     {
@@ -3471,7 +3476,7 @@ static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
         case PARSE_INCOMPLETE:
         case PARSE_ERROR:
             R_PPStackTop = savestack;
-            SrcFile = NULL;
+            R_SrcFile = R_NilValue;
             return R_NilValue;
             break;
         case PARSE_EOF:
@@ -3486,12 +3491,9 @@ finish:
     rval = allocVector(EXPRSXP, length(t));
     for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
         SET_VECTOR_ELT(rval, n, CAR(t));
-    if (SrcFile)
-    {
-        rval = attachSrcrefs(rval, SrcFile);
-        UNPROTECT_PTR(SrcFile);
-        SrcFile = NULL;
-    }
+    if (keepSrcRefs)
+        rval = attachSrcrefs(rval, R_SrcFile);
+    R_SrcFile = R_NilValue;
     R_PPStackTop = savestack;
     *status = PARSE_OK;
     return rval;
@@ -3575,20 +3577,18 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
     savestack = R_PPStackTop;
     PROTECT(t = NewList());
 
-    xxlineno = 1;
-    xxcolno = 0;
-    xxbyteno = 0;
+    ParseSrcRefInit();
+
     GenerateCode = 1;
     iob = buffer;
     ptr_getc = buffer_getc;
 
-    if (!isNull(srcfile))
+    R_SrcFile = srcfile;
+    if (!isNull(R_SrcFile))
     {
-        SrcFile = srcfile;
+        keepSrcRefs = TRUE;
         PROTECT_WITH_INDEX(SrcRefs = NewList(), &srindex);
     }
-    else
-        SrcFile = NULL;
 
     for (i = 0;;)
     {
@@ -3625,7 +3625,7 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
         case PARSE_ERROR:
             R_IoBufferWriteReset(buffer);
             R_PPStackTop = savestack;
-            SrcFile = NULL;
+            R_SrcFile = R_NilValue;
             return R_NilValue;
             break;
         case PARSE_EOF:
@@ -3639,10 +3639,10 @@ finish:
     rval = allocVector(EXPRSXP, length(t));
     for (n = 0; n < LENGTH(rval); n++, t = CDR(t))
         SET_VECTOR_ELT(rval, n, CAR(t));
-    if (SrcFile)
+    if (keepSrcRefs)
     {
-        rval = attachSrcrefs(rval, SrcFile);
-        SrcFile = NULL;
+        rval = attachSrcrefs(rval, R_SrcFile);
+        R_SrcFile = R_NilValue;
     }
     R_PPStackTop = savestack;
     *status = PARSE_OK;
@@ -3962,7 +3962,7 @@ static void yyerror(char *s)
 
     R_ParseError = yylloc.first_line;
     R_ParseErrorCol = yylloc.first_column;
-    R_ParseErrorFile = SrcFile;
+    R_ParseErrorFile = R_SrcFile;
 
     if (!strncmp(s, yyunexpected, sizeof yyunexpected - 1))
     {
@@ -4835,17 +4835,16 @@ static int SymbolValue(int c)
 
 static void setParseFilename(SEXP newname)
 {
-    if (SrcFile && isEnvironment(SrcFile))
+    if (isEnvironment(R_SrcFile))
     {
-        SEXP oldname = findVar(install("filename"), SrcFile);
+        SEXP oldname = findVar(install("filename"), R_SrcFile);
         if (isString(oldname) && length(oldname) > 0 &&
             strcmp(CHAR(STRING_ELT(oldname, 0)), CHAR(STRING_ELT(newname, 0))) == 0)
             return;
-        UNPROTECT_PTR(SrcFile);
-        PROTECT(SrcFile = NewEnvironment(R_NilValue, R_NilValue, ENCLOS(SrcFile)));
-        defineVar(install("filename"), newname, SrcFile);
-        setAttrib(SrcFile, R_ClassSymbol, mkString("srcfile"));
     }
+    R_SrcFile = NewEnvironment(R_NilValue, R_NilValue, R_EmptyEnv);
+    defineVar(install("filename"), newname, R_SrcFile);
+    setAttrib(R_SrcFile, R_ClassSymbol, mkString("srcfile"));
     UNPROTECT_PTR(newname);
 }
 

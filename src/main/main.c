@@ -77,11 +77,13 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 {
     ParseStatus status;
     int count = 0;
+    Rboolean first = TRUE;
 
     for (;;)
     {
         R_PPStackTop = savestack;
-        R_CurrentExpr = R_Parse1File(fp, 1, &status);
+        R_CurrentExpr = R_Parse1File(fp, 1, &status, first);
+        first = FALSE;
         switch (status)
         {
         case PARSE_NULL:
@@ -101,7 +103,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
                 PrintWarnings();
             break;
         case PARSE_ERROR:
-            parseError(R_NilValue, count);
+            parseError(R_NilValue, R_ParseError);
             break;
         case PARSE_EOF:
             return;
@@ -226,7 +228,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     }
 
     R_PPStackTop = savestack;
-    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &state->status);
+    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &state->status, TRUE);
 
     switch (state->status)
     {
@@ -244,7 +246,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     case PARSE_OK:
 
         R_IoBufferReadReset(&R_ConsoleIob);
-        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &state->status);
+        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &state->status, FALSE);
         if (browselevel)
         {
             browsevalue = ParseBrowser(R_CurrentExpr, rho);
@@ -350,7 +352,7 @@ int R_ReplDLLdo1(void)
             break;
     }
     R_PPStackTop = 0;
-    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status);
+    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status, TRUE);
 
     switch (status)
     {
@@ -360,7 +362,7 @@ int R_ReplDLLdo1(void)
         break;
     case PARSE_OK:
         R_IoBufferReadReset(&R_ConsoleIob);
-        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status);
+        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status, FALSE);
         R_Visible = FALSE;
         R_EvalDepth = 0;
         resetTimeLimits();
