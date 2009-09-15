@@ -5436,7 +5436,7 @@ attribute_hidden SEXP R_compress2(SEXP in)
     res = BZ2_bzBuffToBuffCompress(buf + 4, &outlen, (char *)RAW(in), inlen, 9, 0, 0);
     if (res != BZ_OK)
         error(_("internal error in R_decompress2"));
-    printf("compressed %d to %d\n", inlen, outlen);
+    /* printf("compressed %d to %d\n", inlen, outlen); */
     ans = allocVector(RAWSXP, outlen + 4);
     memcpy(RAW(ans), buf, outlen + 4);
     return ans;
