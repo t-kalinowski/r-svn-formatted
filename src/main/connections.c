@@ -1429,6 +1429,22 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     if (compress == NA_LOGICAL || compress < 0 || compress > 9)
         error(_("invalid '%s' argument"), "compress");
     open = CHAR(STRING_ELT(sopen, 0)); /* ASCII */
+    if (!open[0] || open[0] == 'r')
+    {
+        /* check magic no */
+        /* Possible future magic values are
+           "\xFFLZMA" for lzma
+           "\x89LZO" for lzop
+           "\xFD7zXZ" for xz.
+        */
+        FILE *fp = fopen(R_ExpandFileName(file), "rb");
+        char buf[7];
+        memset(buf, 0, 7);
+        fread(buf, 3, 1, fp);
+        fclose(fp);
+        if (streql(buf, "BZh"))
+            return do_bzfile(call, op, args, env);
+    }
     ncon = NextConnection();
     con = Connections[ncon] = newgzfile(file, strlen(open) ? open : "r", compress);
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
@@ -1505,10 +1521,10 @@ static Rboolean bzfile_open(Rconnection con)
     ((Rbzfileconn)(con->private))->fp = fp;
     ((Rbzfileconn)(con->private))->bfp = bfp;
     con->isopen = TRUE;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
-        con->text = FALSE;
-    else
+    if (strlen(con->mode) >= 2 && con->mode[1] == 't')
         con->text = TRUE;
+    else
+        con->text = FALSE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -5368,7 +5384,7 @@ attribute_hidden SEXP R_compress1(SEXP in)
     SEXP ans;
 
     if (TYPEOF(in) != RAWSXP)
-        error(_("R_decompress1 requires a raw vector"));
+        error("R_compress1 requires a raw vector");
     inlen = LENGTH(in);
     outlen = 1.001 * inlen + 20;
     buf = (Bytef *)R_alloc(outlen, sizeof(Bytef));
@@ -5391,7 +5407,7 @@ attribute_hidden SEXP R_decompress1(SEXP in)
     SEXP ans;
 
     if (TYPEOF(in) != RAWSXP)
-        error(_("R_decompress1 requires a raw vector"));
+        error("R_decompress1 requires a raw vector");
     inlen = LENGTH(in);
     outlen = (uLong)uiSwap(*((unsigned int *)p));
     buf = (Bytef *)R_alloc(outlen, sizeof(Bytef));
