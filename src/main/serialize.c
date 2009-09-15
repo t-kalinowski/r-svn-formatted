@@ -2432,12 +2432,14 @@ SEXP attribute_hidden R_getVarsFromFrame(SEXP vars, SEXP env, SEXP forcesxp)
 SEXP attribute_hidden R_lazyLoadDBinsertValue(SEXP value, SEXP file, SEXP ascii, SEXP compsxp, SEXP hook)
 {
     PROTECT_INDEX vpi;
-    Rboolean compress = asLogical(compsxp);
+    Rboolean compress = asInteger(compsxp);
     SEXP key;
 
     value = R_serialize(value, R_NilValue, ascii, hook);
     PROTECT_WITH_INDEX(value, &vpi);
-    if (compress)
+    if (compress == 2)
+        REPROTECT(value = R_compress2(value), vpi);
+    else if (compress)
         REPROTECT(value = R_compress1(value), vpi);
     key = appendRawToFile(file, value);
     UNPROTECT(1);
@@ -2463,10 +2465,12 @@ SEXP attribute_hidden do_lazyLoadDBfetch(SEXP call, SEXP op, SEXP args, SEXP env
     compsxp = CAR(args);
     args = CDR(args);
     hook = CAR(args);
-    compressed = asLogical(compsxp);
+    compressed = asInteger(compsxp);
 
     PROTECT_WITH_INDEX(val = readRawFromFile(file, key), &vpi);
-    if (compressed)
+    if (compressed == 2)
+        REPROTECT(val = R_decompress2(val), vpi);
+    else if (compressed)
         REPROTECT(val = R_decompress1(val), vpi);
     val = R_unserialize(val, hook);
     if (TYPEOF(val) == PROMSXP)
