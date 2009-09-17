@@ -7514,7 +7514,11 @@ static FontMetricInfo *PDFmetricInfo(const char *family, int face, PDFDesc *pd)
             if (fontfamily)
             {
                 int dontcare;
-                if (!addPDFDevicefont(fontfamily, pd, &dontcare))
+                if (addPDFDevicefont(fontfamily, pd, &dontcare))
+                {
+                    result = &(fontfamily->fonts[face - 1]->metrics);
+                }
+                else
                 {
                     fontfamily = NULL;
                 }
@@ -7562,7 +7566,11 @@ static char *PDFconvname(const char *family, PDFDesc *pd)
             if (fontfamily)
             {
                 int dontcare;
-                if (!addPDFDevicefont(fontfamily, pd, &dontcare))
+                if (addPDFDevicefont(fontfamily, pd, &dontcare))
+                {
+                    result = fontfamily->encoding->convname;
+                }
+                else
                 {
                     fontfamily = NULL;
                 }
