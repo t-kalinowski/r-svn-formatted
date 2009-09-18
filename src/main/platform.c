@@ -482,7 +482,8 @@ SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (PRIMVAL(op) == 1)
             { /* codeFiles.append */
                 snprintf(buf, APPENDBUFSIZE, "#line 1 \"%s\"\n", CHAR(STRING_ELT(f2, i)));
-                fwrite(buf, 1, strlen(buf), fp1);
+                if (fwrite(buf, 1, strlen(buf), fp1) != strlen(buf))
+                    goto append_error;
             }
             while ((nchar = fread(buf, 1, APPENDBUFSIZE, fp2)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp1) != APPENDBUFSIZE)
