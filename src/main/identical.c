@@ -70,8 +70,9 @@ SEXP attribute_hidden do_identical(SEXP call, SEXP op, SEXP args, SEXP env)
         R_compute_identical(CAR(args), CADR(args), (Rboolean)num_eq, (Rboolean)single_NA, (Rboolean)attr_as_set));
 }
 
-/* do the two objects compute as identical? */
-Rboolean R_compute_identical(SEXP x, SEXP y, Rboolean num_eq, Rboolean single_NA, Rboolean attr_as_set)
+/* do the two objects compute as identical?
+   used in unique.c */
+Rboolean attribute_hidden R_compute_identical(SEXP x, SEXP y, Rboolean num_eq, Rboolean single_NA, Rboolean attr_as_set)
 {
     SEXP ax, ay, atrx, atry;
     if (x == y) /* same pointer */

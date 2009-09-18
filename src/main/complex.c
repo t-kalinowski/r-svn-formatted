@@ -112,8 +112,7 @@ static void complex_div(Rcomplex *c, Rcomplex *a, Rcomplex *b)
 
 #ifndef HAVE_C99_COMPLEX
 
-/* "export" this (to be API) : */
-void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
+static void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
 {
     if (k == 0)
     {
@@ -210,8 +209,7 @@ static void complex_pow(Rcomplex *r, Rcomplex *a, Rcomplex *b)
 
 #else /* HAVE_C99_COMPLEX */
 
-/* "export" this (to be API) : */
-double complex R_cpow_n(double complex X, int k)
+static double complex R_cpow_n(double complex X, int k)
 {
     if (k == 0)
         return (double complex)1.;

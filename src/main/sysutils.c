@@ -979,7 +979,9 @@ static void *latin1_wobj = NULL, *utf8_wobj = NULL;
 
    Not in a general header, as wchar_t is not needed except where used.
 */
-const wchar_t *wtransChar(SEXP x)
+attribute_hidden /* but not hidden on Windows */
+    const wchar_t *
+    wtransChar(SEXP x)
 {
     void *obj;
     const char *inbuf, *ans = CHAR(x);
