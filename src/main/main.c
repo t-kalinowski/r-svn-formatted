@@ -77,13 +77,13 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
 {
     ParseStatus status;
     int count = 0;
-    Rboolean first = TRUE;
+    SrcRefState ParseState;
+    R_InitSrcRefState(&ParseState);
 
     for (;;)
     {
         R_PPStackTop = savestack;
-        R_CurrentExpr = R_Parse1File(fp, 1, &status, first);
-        first = FALSE;
+        R_CurrentExpr = R_Parse1File(fp, 1, &status, &ParseState);
         switch (status)
         {
         case PARSE_NULL:
@@ -106,6 +106,7 @@ static void R_ReplFile(FILE *fp, SEXP rho, int savestack, int browselevel)
             parseError(R_NilValue, R_ParseError);
             break;
         case PARSE_EOF:
+            R_FinalizeSrcRefState(&ParseState);
             return;
             break;
         case PARSE_INCOMPLETE:
@@ -228,7 +229,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     }
 
     R_PPStackTop = savestack;
-    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &state->status, TRUE);
+    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &state->status, NULL);
 
     switch (state->status)
     {
@@ -246,7 +247,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     case PARSE_OK:
 
         R_IoBufferReadReset(&R_ConsoleIob);
-        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &state->status, FALSE);
+        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &state->status, NULL);
         if (browselevel)
         {
             browsevalue = ParseBrowser(R_CurrentExpr, rho);
@@ -352,7 +353,7 @@ int R_ReplDLLdo1(void)
             break;
     }
     R_PPStackTop = 0;
-    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status, TRUE);
+    R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 0, &status, NULL);
 
     switch (status)
     {
@@ -362,7 +363,7 @@ int R_ReplDLLdo1(void)
         break;
     case PARSE_OK:
         R_IoBufferReadReset(&R_ConsoleIob);
-        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status, FALSE);
+        R_CurrentExpr = R_Parse1Buffer(&R_ConsoleIob, 1, &status, NULL);
         R_Visible = FALSE;
         R_EvalDepth = 0;
         resetTimeLimits();
