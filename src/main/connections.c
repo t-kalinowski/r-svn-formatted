@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-8   The R Development Core Team.
+ *  Copyright (C) 2000-9   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1593,6 +1593,7 @@ static Rboolean xzfile_open(Rconnection con)
     if (con->canread)
     {
         xz->action = LZMA_RUN;
+        /* probably about 80Mb is required, but 512Mb seems OK as a limit */
         if (xz->type == 1)
             ret = lzma_alone_decoder(&xz->stream, 536870912);
         else
@@ -5576,12 +5577,12 @@ attribute_hidden SEXP R_compress1(SEXP in)
         error("R_compress1 requires a raw vector");
     inlen = LENGTH(in);
     outlen = 1.001 * inlen + 20;
-    buf = (Bytef *)R_alloc(outlen, sizeof(Bytef));
+    buf = (Bytef *)R_alloc(outlen + 4, sizeof(Bytef));
     /* we want this to be system-independent */
     *((unsigned int *)buf) = (unsigned int)uiSwap(inlen);
     res = compress(buf + 4, &outlen, (Bytef *)RAW(in), inlen);
     if (res != Z_OK)
-        error(_("internal error in R_compress1"));
+        error("internal error %d in R_compress1");
     ans = allocVector(RAWSXP, outlen + 4);
     memcpy(RAW(ans), buf, outlen + 4);
     return ans;
@@ -5602,7 +5603,7 @@ attribute_hidden SEXP R_decompress1(SEXP in)
     buf = (Bytef *)R_alloc(outlen, sizeof(Bytef));
     res = uncompress(buf, &outlen, (Bytef *)(p + 4), inlen - 4);
     if (res != Z_OK)
-        error(_("internal error in R_decompress1"));
+        error("internal error %d in R_decompress1");
     ans = allocVector(RAWSXP, outlen);
     memcpy(RAW(ans), buf, outlen);
     return ans;
@@ -5618,16 +5619,23 @@ attribute_hidden SEXP R_compress2(SEXP in)
     if (TYPEOF(in) != RAWSXP)
         error("R_compress2 requires a raw vector");
     inlen = LENGTH(in);
-    outlen = 1.2 * inlen + 20; /* guess */
-    buf = R_alloc(outlen, sizeof(char));
+    outlen = 1.01 * inlen + 600;
+    buf = R_alloc(outlen + 5, sizeof(char));
     /* we want this to be system-independent */
     *((unsigned int *)buf) = (unsigned int)uiSwap(inlen);
-    res = BZ2_bzBuffToBuffCompress(buf + 4, &outlen, (char *)RAW(in), inlen, 9, 0, 0);
+    buf[4] = '2';
+    res = BZ2_bzBuffToBuffCompress(buf + 5, &outlen, (char *)RAW(in), inlen, 9, 0, 0);
     if (res != BZ_OK)
-        error(_("internal error in R_decompress2"));
+        error("internal error %d in R_compress2", res);
     /* printf("compressed %d to %d\n", inlen, outlen); */
-    ans = allocVector(RAWSXP, outlen + 4);
-    memcpy(RAW(ans), buf, outlen + 4);
+    if (res != BZ_OK || outlen > inlen)
+    {
+        outlen = inlen;
+        buf[4] = '0';
+        memcpy(buf + 5, (char *)RAW(in), inlen);
+    }
+    ans = allocVector(RAWSXP, outlen + 5);
+    memcpy(RAW(ans), buf, outlen + 5);
     return ans;
 }
 
@@ -5635,7 +5643,7 @@ attribute_hidden SEXP R_decompress2(SEXP in)
 {
     unsigned int inlen, outlen;
     int res;
-    char *buf, *p = (char *)RAW(in);
+    char *buf, *p = (char *)RAW(in), type;
     SEXP ans;
 
     if (TYPEOF(in) != RAWSXP)
@@ -5643,9 +5651,26 @@ attribute_hidden SEXP R_decompress2(SEXP in)
     inlen = LENGTH(in);
     outlen = (uLong)uiSwap(*((unsigned int *)p));
     buf = R_alloc(outlen, sizeof(char));
-    res = BZ2_bzBuffToBuffDecompress(buf, &outlen, p + 4, inlen, 0, 0);
-    if (res != BZ_OK)
-        error(_("internal error in R_decompress2"));
+    type = p[4];
+    if (type == '2')
+    {
+        res = BZ2_bzBuffToBuffDecompress(buf, &outlen, p + 5, inlen - 5, 0, 0);
+        if (res != BZ_OK)
+            error("internal error %d in R_decompress2", res);
+    }
+    else if (type == '1')
+    {
+        uLong outl;
+        res = uncompress((unsigned char *)buf, &outl, (Bytef *)(p + 5), inlen - 5);
+        if (res != Z_OK)
+            error("internal error %d in R_decompress1");
+    }
+    else if (type == '0')
+    {
+        buf = p + 5;
+    }
+    else
+        error("unknown type in R_decompress2");
     ans = allocVector(RAWSXP, outlen);
     memcpy(RAW(ans), buf, outlen);
     return ans;
@@ -5696,3 +5721,140 @@ SEXP attribute_hidden do_sockselect(SEXP call, SEXP op, SEXP args, SEXP rho)
     UNPROTECT(2);
     return val;
 }
+
+#ifdef HAVE_LZMA
+#include <lzma.h>
+
+static lzma_filter filters[LZMA_FILTERS_MAX + 1];
+
+static void init_filters(void)
+{
+    static size_t preset_number = 9 | LZMA_PRESET_EXTREME;
+    static lzma_options_lzma opt_lzma;
+    static Rboolean set = FALSE;
+    if (set)
+        return;
+    if (lzma_lzma_preset(&opt_lzma, preset_number))
+        error("problem setting presets");
+    filters[0].id = LZMA_FILTER_LZMA2;
+    filters[0].options = &opt_lzma;
+    filters[1].id = LZMA_VLI_UNKNOWN;
+    set = TRUE;
+    /*
+      printf("encoding memory usage %lu\n", lzma_raw_encoder_memusage(filters));
+      printf("decoding memory usage %lu\n", lzma_raw_decoder_memusage(filters));
+    */
+}
+
+attribute_hidden SEXP R_compress3(SEXP in)
+{
+    unsigned int inlen, outlen;
+    unsigned char *buf;
+    SEXP ans;
+    lzma_stream strm = LZMA_STREAM_INIT;
+    lzma_ret ret;
+
+    if (TYPEOF(in) != RAWSXP)
+        error("R_compress3 requires a raw vector");
+    inlen = LENGTH(in);
+    outlen = inlen + 5; /* don't allow it to expand */
+    buf = (unsigned char *)R_alloc(outlen + 5, sizeof(unsigned char));
+    /* we want this to be system-independent */
+    *((unsigned int *)buf) = (unsigned int)uiSwap(inlen);
+    buf[4] = 'Z';
+
+    init_filters();
+    ret = lzma_raw_encoder(&strm, filters);
+    if (ret != LZMA_OK)
+        error("internal error %d in R_compress3", ret);
+    strm.next_in = RAW(in);
+    strm.avail_in = inlen;
+    strm.next_out = buf + 5;
+    strm.avail_out = outlen;
+    while (!ret)
+        ret = lzma_code(&strm, LZMA_FINISH);
+    if (ret != LZMA_STREAM_END || (strm.avail_in > 0))
+    {
+        warning("internal error %d in R_compress3", ret);
+        outlen = inlen;
+        buf[4] = '0';
+        memcpy(buf + 5, (char *)RAW(in), inlen);
+    }
+    else
+        outlen = strm.total_out;
+    lzma_end(&strm);
+
+    /* printf("compressed %d to %d\n", inlen, outlen); */
+    ans = allocVector(RAWSXP, outlen + 5);
+    memcpy(RAW(ans), buf, outlen + 5);
+    return ans;
+}
+
+attribute_hidden SEXP R_decompress3(SEXP in)
+{
+    unsigned int inlen, outlen;
+    unsigned char *buf, *p = RAW(in), type = p[4];
+    SEXP ans;
+
+    if (TYPEOF(in) != RAWSXP)
+        error("R_decompress3 requires a raw vector");
+    inlen = LENGTH(in);
+    outlen = (uLong)uiSwap(*((unsigned int *)p));
+    buf = (unsigned char *)R_alloc(outlen, sizeof(unsigned char));
+
+    if (type == 'Z')
+    {
+        lzma_stream strm = LZMA_STREAM_INIT;
+        lzma_ret ret;
+        init_filters();
+        ret = lzma_raw_decoder(&strm, filters);
+        if (ret != LZMA_OK)
+            error("internal error %d in R_decompress3", ret);
+        strm.next_in = p + 5;
+        strm.avail_in = inlen - 5;
+        strm.next_out = buf;
+        strm.avail_out = outlen;
+        ret = lzma_code(&strm, LZMA_RUN);
+        if (ret != LZMA_OK && (strm.avail_in > 0))
+            error("internal error %d in R_decompress3 %d", ret, strm.avail_in);
+        lzma_end(&strm);
+    }
+    else if (type == '2')
+    {
+        int res;
+        res = BZ2_bzBuffToBuffDecompress((char *)buf, &outlen, (char *)(p + 5), inlen - 5, 0, 0);
+        if (res != BZ_OK)
+            error("internal error %d in R_decompress2", res);
+    }
+    else if (type == '1')
+    {
+        uLong outl;
+        int res;
+        res = uncompress(buf, &outl, (Bytef *)(p + 5), inlen - 5);
+        if (res != Z_OK)
+            error("internal error %d in R_decompress1");
+    }
+    else if (type == '0')
+    {
+        buf = p + 5;
+    }
+    else
+        error("unknown type in R_decompress3");
+
+    ans = allocVector(RAWSXP, outlen);
+    memcpy(RAW(ans), buf, outlen);
+    return ans;
+}
+
+#else
+
+attribute_hidden SEXP R_compress3(SEXP in)
+{
+    return in;
+}
+
+attribute_hidden SEXP R_decompress3(SEXP in)
+{
+    return in;
+}
+#endif
