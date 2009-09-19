@@ -935,6 +935,8 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"download", do_download, 0, 11, 5, {PP_FUNCALL, PREC_FN, 0}},
     {"nsl", do_nsl, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"gzcon", do_gzcon, 0, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
+    {"memCompress", do_memCompress, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
+    {"memDecompress", do_memDecompress, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
 
     {"readDCF", do_readDCF, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
 
