@@ -916,6 +916,7 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"fifo", do_fifo, 0, 11, 4, {PP_FUNCALL, PREC_FN, 0}},
     {"gzfile", do_gzfile, 0, 11, 4, {PP_FUNCALL, PREC_FN, 0}},
     {"bzfile", do_gzfile, 1, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
+    {"xzfile", do_gzfile, 2, 11, 4, {PP_FUNCALL, PREC_FN, 0}},
     {"unz", do_unz, 0, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
     {"seek", do_seek, 0, 11, 4, {PP_FUNCALL, PREC_FN, 0}},
     {"truncate", do_truncate, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},

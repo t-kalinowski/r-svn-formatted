@@ -1607,7 +1607,7 @@ static Rboolean xzfile_open(Rconnection con)
     }
     else
     {
-        /* DUMMY */
+        /* to come */
     }
     con->isopen = TRUE;
     if (strlen(con->mode) >= 2 && con->mode[1] == 't')
@@ -1622,7 +1622,10 @@ static Rboolean xzfile_open(Rconnection con)
 static void xzfile_close(Rconnection con)
 {
     Rxzfileconn xz = (Rxzfileconn)con->private;
+    lzma_ret ret;
 
+    if (con->canwrite)
+        ret = lzma_code(&(xz->stream), LZMA_FINISH);
     lzma_end(&(xz->stream));
     fclose(xz->fp);
     con->isopen = FALSE;
@@ -1639,7 +1642,6 @@ static size_t xzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con
     if (!s)
         return 0;
 
-    // printf("request to read %d items of %d bytes\n", nitems, size);
     while (1)
     {
         if (strm->avail_in == 0 && xz->action != LZMA_FINISH)
@@ -1648,9 +1650,7 @@ static size_t xzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con
             strm->avail_in = fread(xz->in_buf, 1, BUFSIZ, xz->fp);
             if (feof(xz->fp))
                 xz->action = LZMA_FINISH;
-            // printf("read on %d, action %d\n", strm->avail_in, xz->action);
         }
-        // printf("available: %d, action: %d\n", strm->avail_in, xz->action);
         strm->avail_out = s;
         strm->next_out = p;
         ret = lzma_code(strm, xz->action);
@@ -1696,7 +1696,7 @@ static int xzfile_fgetc_internal(Rconnection con)
 
 static size_t xzfile_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
 {
-    /* DUMMY */
+    /* to come */
     return 0;
 }
 
@@ -1746,7 +1746,7 @@ static Rconnection newxzfile(const char *description, const char *mode, int type
 }
 #endif
 
-/* op 0 is gzfile, 1 is bzfile, 2 is lzma (decompress only) */
+/* op 0 is gzfile, 1 is bzfile, 2 is xv/lzma (decompress only) */
 SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP sfile, sopen, ans, class, enc;
@@ -1776,6 +1776,16 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
         compress = asInteger(CADDDR(args));
         if (compress == NA_LOGICAL || compress < 0 || compress > 9)
             error(_("invalid '%s' argument"), "compress");
+    }
+    if (type == 2)
+    {
+#ifdef HAVE_LZMA
+        compress = asInteger(CADDDR(args));
+        if (compress == NA_LOGICAL || abs(compress) > 9)
+            error(_("invalid '%s' argument"), "compress");
+#else
+        error(_("'xzfile' is not supported in this build of R"));
+#endif
     }
     open = CHAR(STRING_ELT(sopen, 0)); /* ASCII */
     if (!open[0] || open[0] == 'r')
@@ -1849,6 +1859,7 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_STRING_ELT(class, 0, mkChar("bzfile"));
         break;
 #ifdef HAVE_LZMA
+    case 2:
         SET_STRING_ELT(class, 0, mkChar("xzfile"));
         break;
 #endif
@@ -5723,7 +5734,6 @@ SEXP attribute_hidden do_sockselect(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 #ifdef HAVE_LZMA
-#include <lzma.h>
 
 static lzma_filter filters[LZMA_FILTERS_MAX + 1];
 
