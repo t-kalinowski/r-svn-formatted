@@ -1567,7 +1567,10 @@ typedef struct xzfileconn
     lzma_stream stream;
     unsigned char in_buf[BUFSIZ], out_buf[BUFSIZ];
     lzma_action action;
+    int compress;
     int type;
+    lzma_filter filters[2];
+    lzma_options_lzma opt_lzma;
 } * Rxzfileconn;
 
 static Rboolean xzfile_open(Rconnection con)
@@ -1578,8 +1581,6 @@ static Rboolean xzfile_open(Rconnection con)
 
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
-    if (!con->canread)
-        error("xzfile is supported only for reading");
     /* regardless of the R view of the file, the file must be opened in
        binary mode where it matters */
     mode[0] = con->mode[0];
@@ -1603,11 +1604,26 @@ static Rboolean xzfile_open(Rconnection con)
             warning(_("cannot initialize lzma decoder, error %d"), ret);
             return FALSE;
         }
-        xz->stream.avail_in = xz->stream.avail_out = 0;
+        xz->stream.avail_in = 0;
     }
     else
     {
-        /* to come */
+        lzma_stream *strm = &xz->stream;
+        size_t preset_number = abs(xz->compress);
+        if (xz->compress < 0)
+            preset_number |= LZMA_PRESET_EXTREME;
+        if (lzma_lzma_preset(&xz->opt_lzma, preset_number))
+            error("problem setting presets");
+        xz->filters[0].id = LZMA_FILTER_LZMA2;
+        xz->filters[0].options = &(xz->opt_lzma);
+        xz->filters[1].id = LZMA_VLI_UNKNOWN;
+
+        ret = lzma_stream_encoder(strm, xz->filters, LZMA_CHECK_CRC32);
+        if (ret != LZMA_OK)
+        {
+            warning(_("cannot initialize lzma encoder, error %d"), ret);
+            return FALSE;
+        }
     }
     con->isopen = TRUE;
     if (strlen(con->mode) >= 2 && con->mode[1] == 't')
@@ -1622,10 +1638,21 @@ static Rboolean xzfile_open(Rconnection con)
 static void xzfile_close(Rconnection con)
 {
     Rxzfileconn xz = (Rxzfileconn)con->private;
-    lzma_ret ret;
 
     if (con->canwrite)
-        ret = lzma_code(&(xz->stream), LZMA_FINISH);
+    {
+        lzma_ret ret;
+        lzma_stream *strm = &(xz->stream);
+        while (1)
+        {
+            strm->avail_out = BUFSIZE;
+            strm->next_out = xz->out_buf;
+            ret = lzma_code(strm, LZMA_FINISH);
+            fwrite(xz->out_buf, BUFSIZE - strm->avail_out, 1, xz->fp);
+            if (ret != LZMA_OK)
+                break;
+        }
+    }
     lzma_end(&(xz->stream));
     fclose(xz->fp);
     con->isopen = FALSE;
@@ -1696,11 +1723,41 @@ static int xzfile_fgetc_internal(Rconnection con)
 
 static size_t xzfile_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
 {
-    /* to come */
-    return 0;
+    Rxzfileconn xz = (Rxzfileconn)con->private;
+    lzma_stream *strm = &(xz->stream);
+    lzma_ret ret;
+    size_t s = size * nitems;
+    const unsigned char *p = ptr;
+
+    if (!s)
+        return 0;
+
+    strm->avail_in = s;
+    strm->next_in = p;
+    while (1)
+    {
+        strm->avail_out = BUFSIZE;
+        strm->next_out = xz->out_buf;
+        ret = lzma_code(strm, LZMA_RUN);
+        if (ret > 1)
+        {
+            switch (ret)
+            {
+            case LZMA_MEM_ERROR:
+                warning("lzma encoder needed more memory");
+                break;
+            default:
+                warning("lzma encoding result %d", ret);
+            }
+            return 0;
+        }
+        fwrite(xz->out_buf, BUFSIZE - strm->avail_out, 1, xz->fp);
+        if (strm->avail_in == 0)
+            return nitems;
+    }
 }
 
-static Rconnection newxzfile(const char *description, const char *mode, int type)
+static Rconnection newxzfile(const char *description, const char *mode, int type, int compress)
 {
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
@@ -1742,6 +1799,7 @@ static Rconnection newxzfile(const char *description, const char *mode, int type
         error(_("allocation of xzfile connection failed"));
     }
     ((Rxzfileconn) new->private)->type = type;
+    ((Rxzfileconn) new->private)->compress = compress;
     return new;
 }
 #endif
@@ -1833,7 +1891,7 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
         break;
 #ifdef HAVE_LZMA
     case 2:
-        con = newxzfile(file, strlen(open) ? open : "r", subtype);
+        con = newxzfile(file, strlen(open) ? open : "r", subtype, compress);
         break;
 #endif
     }
@@ -5743,7 +5801,7 @@ static lzma_filter filters[LZMA_FILTERS_MAX + 1];
 
 static void init_filters(void)
 {
-    static size_t preset_number = 9 | LZMA_PRESET_EXTREME;
+    static size_t preset_number = 6; /* 9 | LZMA_PRESET_EXTREME; */
     static lzma_options_lzma opt_lzma;
     static Rboolean set = FALSE;
     if (set)
@@ -5886,8 +5944,9 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (type)
     {
     case 1:
-        break;
-    case 2: {
+        break; /* none */
+    case 2:    /*gzip */
+    {
         Bytef *buf;
         /* could use outlen = compressBound(inlen) */
         uLong inlen = LENGTH(from), outlen = outlen = 1.001 * inlen + 20;
@@ -5899,7 +5958,8 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
         memcpy(RAW(ans), buf, outlen);
         break;
     }
-    case 3: {
+    case 3: /* bzip */
+    {
         char *buf;
         unsigned int inlen = LENGTH(from), outlen = outlen = 1.01 * inlen + 600;
         buf = R_alloc(outlen, sizeof(char));
@@ -5910,7 +5970,7 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
         memcpy(RAW(ans), buf, outlen);
         break;
     }
-    case 4:
+    case 4: /* xv */
 #ifdef HAVE_LZMA
     {
         unsigned char *buf;
@@ -5921,9 +5981,6 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
         size_t preset_number = 9 | LZMA_PRESET_EXTREME;
         lzma_options_lzma opt_lzma;
 
-        outlen = 1.01 * inlen + 600; /* FIXME */
-        buf = (unsigned char *)R_alloc(outlen, sizeof(unsigned char));
-
         if (lzma_lzma_preset(&opt_lzma, preset_number))
             error("problem setting presets");
         filters[0].id = LZMA_FILTER_LZMA2;
@@ -5933,6 +5990,9 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
         ret = lzma_stream_encoder(&strm, filters, LZMA_CHECK_CRC32);
         if (ret != LZMA_OK)
             error("internal error %d in memCompress", ret);
+
+        outlen = 1.01 * inlen + 600; /* FIXME */
+        buf = (unsigned char *)R_alloc(outlen, sizeof(unsigned char));
         strm.next_in = RAW(from);
         strm.avail_in = inlen;
         strm.next_out = buf;
@@ -5941,6 +6001,7 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
             ret = lzma_code(&strm, LZMA_FINISH);
         if (ret != LZMA_STREAM_END || (strm.avail_in > 0))
             error("internal error %d in memCompress", ret);
+        /* If LZMZ_BUF_ERROR, realloc and continue */
         outlen = strm.total_out;
         lzma_end(&strm);
         ans = allocVector(RAWSXP, outlen);
@@ -5991,8 +6052,9 @@ SEXP attribute_hidden do_memDecompress(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (type)
     {
     case 1:
-        break;
-    case 2: {
+        break; /* none */
+    case 2:    /* gzip */
+    {
         uLong inlen = LENGTH(from), outlen = 3 * inlen;
         int res;
         Bytef *buf, *p = (Bytef *)RAW(from);
@@ -6019,7 +6081,8 @@ SEXP attribute_hidden do_memDecompress(SEXP call, SEXP op, SEXP args, SEXP env)
         memcpy(RAW(ans), buf, outlen);
         break;
     }
-    case 3: {
+    case 3: /* bzip2 */
+    {
         unsigned int inlen = LENGTH(from), outlen = 3 * inlen;
         int res;
         char *buf, *p = (char *)RAW(from);
@@ -6040,7 +6103,8 @@ SEXP attribute_hidden do_memDecompress(SEXP call, SEXP op, SEXP args, SEXP env)
         memcpy(RAW(ans), buf, outlen);
         break;
     }
-    case 4: {
+    case 4: /* xz */
+    {
 #ifdef HAVE_LZMA
         unsigned char *buf;
         unsigned int inlen = LENGTH(from), outlen = 3 * inlen;
