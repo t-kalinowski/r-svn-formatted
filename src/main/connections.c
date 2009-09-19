@@ -616,7 +616,7 @@ static Rboolean file_open(Rconnection con)
 static void file_close(Rconnection con)
 {
     Rfileconn this = con->private;
-    if (strcmp(con->description, "stdin"))
+    if (con->isopen && strcmp(con->description, "stdin"))
         fclose(this->fp);
     con->isopen = FALSE;
 #ifdef Win32
