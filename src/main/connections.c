@@ -1591,12 +1591,12 @@ typedef struct xzfileconn
 {
     FILE *fp;
     lzma_stream stream;
-    unsigned char in_buf[BUFSIZ], out_buf[BUFSIZ];
     lzma_action action;
     int compress;
     int type;
     lzma_filter filters[2];
     lzma_options_lzma opt_lzma;
+    unsigned char buf[BUFSIZE];
 } * Rxzfileconn;
 
 static Rboolean xzfile_open(Rconnection con)
@@ -1669,12 +1669,17 @@ static void xzfile_close(Rconnection con)
     {
         lzma_ret ret;
         lzma_stream *strm = &(xz->stream);
+        size_t nout, res;
+        unsigned char buf[BUFSIZE];
         while (1)
         {
             strm->avail_out = BUFSIZE;
-            strm->next_out = xz->out_buf;
+            strm->next_out = buf;
             ret = lzma_code(strm, LZMA_FINISH);
-            fwrite(xz->out_buf, BUFSIZE - strm->avail_out, 1, xz->fp);
+            nout = BUFSIZE - strm->avail_out;
+            res = fwrite(buf, 1, nout, xz->fp);
+            if (res != nout)
+                error("fwrite error");
             if (ret != LZMA_OK)
                 break;
         }
@@ -1699,8 +1704,8 @@ static size_t xzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con
     {
         if (strm->avail_in == 0 && xz->action != LZMA_FINISH)
         {
-            strm->next_in = xz->in_buf;
-            strm->avail_in = fread(xz->in_buf, 1, BUFSIZ, xz->fp);
+            strm->next_in = xz->buf;
+            strm->avail_in = fread(xz->buf, 1, BUFSIZ, xz->fp);
             if (feof(xz->fp))
                 xz->action = LZMA_FINISH;
         }
@@ -1752,8 +1757,9 @@ static size_t xzfile_write(const void *ptr, size_t size, size_t nitems, Rconnect
     Rxzfileconn xz = con->private;
     lzma_stream *strm = &(xz->stream);
     lzma_ret ret;
-    size_t s = size * nitems;
+    size_t s = size * nitems, nout, res;
     const unsigned char *p = ptr;
+    unsigned char buf[BUFSIZE];
 
     if (!s)
         return 0;
@@ -1763,7 +1769,7 @@ static size_t xzfile_write(const void *ptr, size_t size, size_t nitems, Rconnect
     while (1)
     {
         strm->avail_out = BUFSIZE;
-        strm->next_out = xz->out_buf;
+        strm->next_out = buf;
         ret = lzma_code(strm, LZMA_RUN);
         if (ret > 1)
         {
@@ -1777,7 +1783,10 @@ static size_t xzfile_write(const void *ptr, size_t size, size_t nitems, Rconnect
             }
             return 0;
         }
-        fwrite(xz->out_buf, BUFSIZE - strm->avail_out, 1, xz->fp);
+        nout = BUFSIZE - strm->avail_out;
+        res = fwrite(buf, 1, nout, xz->fp);
+        if (res != nout)
+            error("fwrite error");
         if (strm->avail_in == 0)
             return nitems;
     }
