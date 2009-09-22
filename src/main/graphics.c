@@ -2121,6 +2121,11 @@ void GScale(double min, double max, int axis, pGEDevDesc dd)
 
     if (log)
     {
+        /* Avoid infinities */
+        if (max > 308)
+            max = 308;
+        if (min < -307)
+            min = -307;
         min = pow(10., min);
         max = pow(10., max);
         GLPretty(&min, &max, &n);
