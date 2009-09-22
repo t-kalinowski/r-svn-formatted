@@ -910,16 +910,14 @@ static SEXP filename(const char *dir, const char *file)
 }
 
 #include <tre/regex.h>
-#define regcomp tre_regcomp
-#define regexec tre_regexec
-#define regfree tre_regfree
-#define regerror tre_regerror
 
-static void count_files(const char *dnp, int *count, Rboolean allfiles, Rboolean recursive, int pattern, regex_t reg)
+static void count_files(const char *dnp, int *count, Rboolean allfiles, Rboolean recursive, Rboolean incldir,
+                        int pattern, regex_t reg)
 {
     DIR *dir;
     struct dirent *de;
     char p[PATH_MAX];
+    Rboolean isdir;
 #ifdef Windows
     /* For consistency with other functions */
     struct _stati64 sb;
@@ -939,35 +937,27 @@ static void count_files(const char *dnp, int *count, Rboolean allfiles, Rboolean
         {
             if (allfiles || !R_HiddenFile(de->d_name))
             {
-                if (recursive)
-                {
+                if (streql(de->d_name, ".") || streql(de->d_name, ".."))
+                    continue;
 #ifdef Win32
-                    if (strlen(dnp) == 2 && dnp[1] == ':')
-                        snprintf(p, PATH_MAX, "%s%s", dnp, de->d_name);
-                    else
-                        snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
-#else
+                if (strlen(dnp) == 2 && dnp[1] == ':')
+                    snprintf(p, PATH_MAX, "%s%s", dnp, de->d_name);
+                else
                     snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
+#else
+                snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
 #endif
 #ifdef Windows
-                    _stati64(p, &sb);
+                _stati64(p, &sb);
 #else
-                    stat(p, &sb);
+                stat(p, &sb);
 #endif
-                    if ((sb.st_mode & S_IFDIR) > 0)
-                    {
-                        if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
-                            count_files(p, count, allfiles, recursive, pattern, reg);
-                        continue;
-                    }
-                }
-                if (pattern)
-                {
-                    if (regexec(&reg, de->d_name, 0, NULL, 0) == 0)
+                isdir = (sb.st_mode & S_IFDIR) > 0;
+                if (isdir && recursive)
+                    count_files(p, count, allfiles, recursive, incldir, pattern, reg);
+                if (incldir || !isdir)
+                    if (!pattern || !tre_regexec(&reg, de->d_name, 0, NULL, 0))
                         (*count)++;
-                }
-                else
-                    (*count)++;
             }
         }
         closedir(dir);
@@ -975,11 +965,12 @@ static void count_files(const char *dnp, int *count, Rboolean allfiles, Rboolean
 }
 
 static void list_files(const char *dnp, const char *stem, int *count, SEXP ans, Rboolean allfiles, Rboolean recursive,
-                       int pattern, regex_t reg)
+                       Rboolean incldir, int pattern, regex_t reg)
 {
     DIR *dir;
     struct dirent *de;
     char p[PATH_MAX], stem2[PATH_MAX];
+    Rboolean isdir;
 #ifdef Windows
     /* > 2GB files might be skipped otherwise */
     struct _stati64 sb;
@@ -993,50 +984,42 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP ans, 
         {
             if (allfiles || !R_HiddenFile(de->d_name))
             {
-                if (recursive)
-                {
+                if (streql(de->d_name, ".") || streql(de->d_name, ".."))
+                    continue;
 #ifdef Win32
-                    if (strlen(dnp) == 2 && dnp[1] == ':')
-                        snprintf(p, PATH_MAX, "%s%s", dnp, de->d_name);
-                    else
-                        snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
-#else
+                if (strlen(dnp) == 2 && dnp[1] == ':')
+                    snprintf(p, PATH_MAX, "%s%s", dnp, de->d_name);
+                else
                     snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
+#else
+                snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
 #endif
 #ifdef Windows
-                    _stati64(p, &sb);
+                _stati64(p, &sb);
 #else
-                    stat(p, &sb);
+                stat(p, &sb);
 #endif
-                    if ((sb.st_mode & S_IFDIR) > 0)
-                    {
-                        if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
-                        {
-                            if (stem)
-                            {
-#ifdef Win32
-                                if (strlen(stem) == 2 && stem[1] == ':')
-                                    snprintf(stem2, PATH_MAX, "%s%s", stem, de->d_name);
-                                else
-                                    snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
-#else
-                                snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
-#endif
-                            }
-                            else
-                                strcpy(stem2, de->d_name);
-                            list_files(p, stem2, count, ans, allfiles, recursive, pattern, reg);
-                        }
-                        continue;
-                    }
-                }
-                if (pattern)
+                isdir = (sb.st_mode & S_IFDIR) > 0;
+                if (isdir && recursive)
                 {
-                    if (regexec(&reg, de->d_name, 0, NULL, 0) == 0)
-                        SET_STRING_ELT(ans, (*count)++, filename(stem, de->d_name));
+                    if (stem)
+                    {
+#ifdef Win32
+                        if (strlen(stem) == 2 && stem[1] == ':')
+                            snprintf(stem2, PATH_MAX, "%s%s", stem, de->d_name);
+                        else
+                            snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
+#else
+                        snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
+#endif
+                    }
+                    else
+                        strcpy(stem2, de->d_name);
+                    list_files(p, stem2, count, ans, allfiles, recursive, incldir, pattern, reg);
                 }
-                else
-                    SET_STRING_ELT(ans, (*count)++, filename(stem, de->d_name));
+                if (incldir || !isdir)
+                    if (!pattern || !tre_regexec(&reg, de->d_name, 0, NULL, 0))
+                        SET_STRING_ELT(ans, (*count)++, filename(stem, de->d_name));
             }
         }
         closedir(dir);
@@ -1046,7 +1029,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP ans, 
 SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP d, p, ans;
-    int allfiles, fullnames, count, pattern, recursive, igcase, flags;
+    int allfiles, fullnames, count, pattern, recursive, igcase, incldir, flags;
     int i, ndir;
     const char *dnp;
     regex_t reg;
@@ -1065,17 +1048,29 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "pattern");
     allfiles = asLogical(CAR(args));
     args = CDR(args);
+    if (allfiles == NA_LOGICAL)
+        allfiles = 0;
     fullnames = asLogical(CAR(args));
     args = CDR(args);
+    if (fullnames == NA_LOGICAL)
+        fullnames = 0;
     recursive = asLogical(CAR(args));
     args = CDR(args);
+    if (recursive == NA_LOGICAL)
+        recursive = 0;
     igcase = asLogical(CAR(args));
+    args = CDR(args);
+    if (igcase == NA_LOGICAL)
+        igcase = 0;
+    incldir = asLogical(CAR(args));
+    if (incldir == NA_LOGICAL)
+        incldir = 0;
     ndir = length(d);
     flags = REG_EXTENDED;
     if (igcase)
         flags |= REG_ICASE;
 
-    if (pattern && regcomp(&reg, translateChar(STRING_ELT(p, 0)), flags))
+    if (pattern && tre_regcomp(&reg, translateChar(STRING_ELT(p, 0)), flags))
         error(_("invalid 'pattern' regular expression"));
     count = 0;
     for (i = 0; i < ndir; i++)
@@ -1083,7 +1078,7 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
-        count_files(dnp, &count, allfiles, recursive, pattern, reg);
+        count_files(dnp, &count, allfiles, recursive, incldir, pattern, reg);
     }
     PROTECT(ans = allocVector(STRSXP, count));
     count = 0;
@@ -1092,10 +1087,10 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
-        list_files(dnp, fullnames ? dnp : NULL, &count, ans, allfiles, recursive, pattern, reg);
+        list_files(dnp, fullnames ? dnp : NULL, &count, ans, allfiles, recursive, incldir, pattern, reg);
     }
     if (pattern)
-        regfree(&reg);
+        tre_regfree(&reg);
     ssort(STRING_PTR(ans), count);
     UNPROTECT(1);
     return ans;
@@ -2515,8 +2510,8 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP paths = CAR(args), ans;
-    int n = LENGTH(paths);
+    SEXP paths, ans;
+    int n;
 #ifdef HAVE_READLINK
     char buf[PATH_MAX + 1];
     ssize_t res;
@@ -2524,6 +2519,10 @@ SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
     checkArity(op, args);
+    paths = CAR(args);
+    if (!isString(paths))
+        error(_("invalid '%s' argument"), "paths");
+    n = LENGTH(paths);
     PROTECT(ans = allocVector(STRSXP, n));
 #ifdef HAVE_READLINK
     for (i = 0; i < n; i++)
