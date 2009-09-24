@@ -462,7 +462,10 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 {
                     const char *ss = translateChar(STRING_ELT(names, i));
                     if (taglen + strlen(ss) > TAGBUFLEN)
-                        sprintf(ptag, "$...");
+                    {
+                        if (taglen <= TAGBUFLEN)
+                            sprintf(ptag, "$...");
+                    }
                     else
                     {
                         /* we need to distinguish character NA from "NA", which
@@ -478,7 +481,10 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 else
                 {
                     if (taglen + IndexWidth(i) > TAGBUFLEN)
-                        sprintf(ptag, "$...");
+                    {
+                        if (taglen <= TAGBUFLEN)
+                            sprintf(ptag, "$...");
+                    }
                     else
                         sprintf(ptag, "[[%d]]", i + 1);
                 }
@@ -618,7 +624,10 @@ static void printList(SEXP s, SEXP env)
             if (TAG(s) != R_NilValue && isSymbol(TAG(s)))
             {
                 if (taglen + strlen(CHAR(PRINTNAME(TAG(s)))) > TAGBUFLEN)
-                    sprintf(ptag, "$...");
+                {
+                    if (taglen <= TAGBUFLEN)
+                        sprintf(ptag, "$...");
+                }
                 else
                 {
                     /* we need to distinguish character NA from "NA", which
@@ -634,7 +643,10 @@ static void printList(SEXP s, SEXP env)
             else
             {
                 if (taglen + IndexWidth(i) > TAGBUFLEN)
-                    sprintf(ptag, "$...");
+                {
+                    if (taglen <= TAGBUFLEN)
+                        sprintf(ptag, "$...");
+                }
                 else
                     sprintf(ptag, "[[%d]]", i);
             }
