@@ -180,6 +180,11 @@ typedef struct httpd_conn
     char part, method, attr;                         /* request part, method and connection attributes */
 } httpd_conn_t;
 
+/* returns the HTTP/x.x string for a given connection - we support 1.0 and 1.1 only */
+#define HTTP_SIG(C) ((((C)->attr & HTTP_1_0) == 0) ? "HTTP/1.1" : "HTTP/1.0")
+
+#define IS_HTTP_1_1(C) (((C)->attr & HTTP_1_0) == 0)
+
 /* --- static list of currently activbe workers --- */
 static httpd_conn_t *workers[MAX_WORKERS];
 
@@ -299,6 +304,15 @@ static int send_response(SOCKET s, const char *buf, unsigned int len)
         i += n;
     }
     return 0;
+}
+
+/* sends HTTP/x.x plus the text (which should be of the form " XXX ...") */
+static int send_http_response(httpd_conn_t *c, const char *text)
+{
+    const char *s = HTTP_SIG(c);
+    if (send(c->sock, s, 8, 0) < 8)
+        return -1;
+    return send_response(c->sock, text, strlen(text));
 }
 
 /* decode URI in place (decoding never expands) */
@@ -433,6 +447,14 @@ static void process_request(httpd_conn_t *c)
 #define process_request process_request_main_thread
 #endif
 
+/* finalize a request - essentially for HTTP/1.0 it means that
+ * we have to close the connection */
+static void fin_request(httpd_conn_t *c)
+{
+    if (!IS_HTTP_1_1(c))
+        c->attr |= CONNECTION_CLOSE;
+}
+
 /* process a request by calling the httpd() function in R */
 static void process_request(httpd_conn_t *c)
 {
@@ -487,8 +509,7 @@ static void process_request(httpd_conn_t *c)
         if (TYPEOF(x) == STRSXP && LENGTH(x) > 0)
         { /* string means there was an error */
             const char *s = CHAR(STRING_ELT(x, 0));
-            send_response(c->sock,
-                          "HTTP/1.1 500 Evaluation error\r\nConnection: close\r\nContent-type: text/plain\r\n\r\n", 78);
+            send_http_response(c, " 500 Evaluation error\r\nConnection: close\r\nContent-type: text/plain\r\n\r\n");
             DBG(Rprintf("respond with 500 and content: %s\n", s));
             if (c->method != METHOD_HEAD)
                 send_response(c->sock, s, strlen(s));
@@ -520,10 +541,10 @@ static void process_request(httpd_conn_t *c)
                 char buf[64];
                 const char *cs = CHAR(STRING_ELT(y, 0)), *fn = 0;
                 if (code == 200)
-                    send_response(c->sock, "HTTP/1.1 200 OK\r\nContent-type: ", 31);
+                    send_http_response(c, " 200 OK\r\nContent-type: ");
                 else
                 {
-                    sprintf(buf, "HTTP/1.1 %d Code %d\r\nContent-type: ", code, code);
+                    sprintf(buf, "%s %d Code %d\r\nContent-type: ", HTTP_SIG(c), code, code);
                     send_response(c->sock, buf, strlen(buf));
                 }
                 send_response(c->sock, ct, strlen(ct));
@@ -551,6 +572,7 @@ static void process_request(httpd_conn_t *c)
                     {
                         send_response(c->sock, "\r\nContent-length: 0\r\n\r\n", 23);
                         UNPROTECT(3);
+                        fin_request(c);
                         return;
                     }
                     fseek(f, 0, SEEK_END);
@@ -578,6 +600,7 @@ static void process_request(httpd_conn_t *c)
                     }
                     fclose(f);
                     UNPROTECT(3);
+                    fin_request(c);
                     return;
                 }
                 sprintf(buf, "\r\nContent-length: %u\r\n\r\n", (unsigned int)strlen(cs));
@@ -585,6 +608,7 @@ static void process_request(httpd_conn_t *c)
                 if (c->method != METHOD_HEAD)
                     send_response(c->sock, cs, strlen(cs));
                 UNPROTECT(3);
+                fin_request(c);
                 return;
             }
             if (TYPEOF(y) == RAWSXP)
@@ -592,10 +616,10 @@ static void process_request(httpd_conn_t *c)
                 char buf[64];
                 Rbyte *cs = RAW(y);
                 if (code == 200)
-                    send_response(c->sock, "HTTP/1.1 200 OK\r\nContent-type: ", 31);
+                    send_http_response(c, " 200 OK\r\nContent-type: ");
                 else
                 {
-                    sprintf(buf, "HTTP/1.1 %d Code %d\r\nContent-type: ", code, code);
+                    sprintf(buf, "%s %d Code %d\r\nContent-type: ", HTTP_SIG(c), code, code);
                     send_response(c->sock, buf, strlen(buf));
                 }
                 send_response(c->sock, ct, strlen(ct));
@@ -614,15 +638,14 @@ static void process_request(httpd_conn_t *c)
                 if (c->method != METHOD_HEAD)
                     send_response(c->sock, (char *)cs, LENGTH(y));
                 UNPROTECT(3);
+                fin_request(c);
                 return;
             }
         }
         UNPROTECT(3);
     }
-    send_response(c->sock,
-                  "HTTP/1.1 500 Invalid response from R\r\nConnection: close\r\nContent-type: text/plain\r\n\r\nServer "
-                  "error: invalid response from R\r\n",
-                  124);
+    send_http_response(c, " 500 Invalid response from R\r\nConnection: close\r\nContent-type: text/plain\r\n\r\nServer "
+                          "error: invalid response from R\r\n");
     c->attr |= CONNECTION_CLOSE; /* force close */
 }
 
@@ -682,7 +705,7 @@ static void worker_input_handler(void *data)
                 DBG(printf(" end of request, moving to body\n"));
                 if (!(c->attr & HTTP_1_0) && !(c->attr & HOST_HEADER))
                 { /* HTTP/1.1 mandates Host: header */
-                    send(c->sock, "HTTP/1.1 400 Bad Request (Host: missing)\r\nConnection: close\r\n\r\n", 63, 0);
+                    send_http_response(c, " 400 Bad Request (Host: missing)\r\nConnection: close\r\n\r\n");
                     remove_worker(c);
                     return;
                 }
@@ -893,7 +916,7 @@ static void worker_input_handler(void *data)
         {
             if ((s[0] != '\r' || s[1] != '\n') && (s[0] != '\n'))
             {
-                send(c->sock, "HTTP/1.0 411 length is required for non-empty body\r\nConnection: close\r\n\r\n", 73, 0);
+                send_http_response(c, " 411 length is required for non-empty body\r\nConnection: close\r\n\r\n");
                 remove_worker(c);
                 return;
             }
@@ -949,7 +972,7 @@ static void worker_input_handler(void *data)
         }
         if ((s[0] != '\r' || s[1] != '\n') && (s[0] != '\n'))
         {
-            send(c->sock, "HTTP/1.0 411 length is required for non-empty body\r\nConnection: close\r\n\r\n", 73, 0);
+            send_http_response(c, " 411 length is required for non-empty body\r\nConnection: close\r\n\r\n");
             remove_worker(c);
             return;
         }
