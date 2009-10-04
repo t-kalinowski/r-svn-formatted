@@ -3421,7 +3421,10 @@ static int token(void)
         if (!xxinEqn)
         {
             lookahead = xxungetc(xxgetc());
-            if (isalpha(lookahead) && xxmode != VERBATIM && (lookahead == 'l' || !xxinRString))
+            if (isalpha(lookahead) &&
+                xxmode != VERBATIM
+                /* In R strings, only link or var is allowed as markup */
+                && (lookahead == 'l' || lookahead == 'v' || !xxinRString))
                 return mkMarkup(c);
         }
         break;
@@ -3594,8 +3597,9 @@ static int mkCode(int c)
                     c = lookahead;
                     escaped = 1;
                 }
-                else if (!escaped && lookahead == 'l')
-                { /* assume \link */
+                else if (!escaped && (lookahead == 'l' || lookahead == 'v'))
+                {
+                    /* assume \link or \var; this breaks vertical tab, but does anyone ever use that? */
                     xxungetc(lookahead);
                     break;
                 }
