@@ -138,3 +138,44 @@ void R_approx(double *x, double *y, int *nxy, double *xout, int *nout, int *meth
         if (!ISNA(xout[i]))
             xout[i] = approx1(xout[i], x, y, *nxy, &M);
 }
+
+/* Testing done only once - in a separate function */
+void R_approxtest(double *x, double *y, int *nxy, int *method, double *f)
+{
+    int i;
+
+    switch (*method)
+    {
+    case 1: /* linear */
+        break;
+    case 2: /* constant */
+        if (!R_FINITE(*f) || *f < 0 || *f > 1)
+            error(_("approx(): invalid f value"));
+        break;
+    default:
+        error(_("approx(): invalid interpolation method"));
+        break;
+    }
+    /* check interpolation method */
+    for (i = 0; i < *nxy; i++)
+        if (ISNA(x[i]) || ISNA(y[i]))
+            error(_("approx(): attempted to interpolate NA values"));
+}
+
+/* R Frontend for Linear and Constant Interpolation, no testing */
+
+void R_approxfun(double *x, double *y, int *nxy, double *xout, int *nout, int *method, double *yleft, double *yright,
+                 double *f)
+{
+    int i;
+    appr_meth M = {0.0, 0.0, 0.0, 0.0, 0}; /* -Wall */
+
+    M.f2 = *f;
+    M.f1 = 1 - *f;
+    M.kind = *method;
+    M.ylow = *yleft;
+    M.yhigh = *yright;
+    for (i = 0; i < *nout; i++)
+        if (!ISNA(xout[i]))
+            xout[i] = approx1(xout[i], x, y, *nxy, &M);
+}
