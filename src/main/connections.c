@@ -1482,10 +1482,10 @@ static Rboolean bzfile_open(Rconnection con)
     bz->fp = fp;
     bz->bfp = bfp;
     con->isopen = TRUE;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 't')
-        con->text = TRUE;
-    else
+    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
         con->text = FALSE;
+    else
+        con->text = TRUE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -1651,10 +1651,10 @@ static Rboolean xzfile_open(Rconnection con)
         }
     }
     con->isopen = TRUE;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 't')
-        con->text = TRUE;
-    else
+    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
         con->text = FALSE;
+    else
+        con->text = TRUE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -5101,7 +5101,9 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 #define USE_WININET 2
 #endif
 
-/* url(description, open, encoding) */
+/* op = 0: url(description, open, blocking, encoding)
+   op = 1: file(description, open, blocking, encoding)
+*/
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP scmd, sopen, ans, class, enc;
@@ -5202,7 +5204,57 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             )
                 con = newclp(url, strlen(open) ? open : "r");
             else
-                con = newfile(url, ienc, strlen(open) ? open : "r");
+            {
+                if (!strlen(open) || streql(open, "r") || streql(open, "rt"))
+                {
+                    /* check if this is a compressed file */
+                    FILE *fp = fopen(R_ExpandFileName(url), "rb");
+                    char buf[7];
+                    int res, ztype = -1, subtype = 0, compress = 0;
+                    if (fp)
+                    {
+                        memset(buf, 0, 7);
+                        res = fread(buf, 5, 1, fp);
+                        fclose(fp);
+                        if (res == 1)
+                        {
+                            if (buf[0] == '\x1f' && buf[1] == '\x8b')
+                                ztype = 0;
+                            if (!strncmp(buf, "BZh", 3))
+                                ztype = 1;
+                            if ((buf[0] == '\xFD') && !strncmp(buf + 1, "7zXZ", 4))
+                                ztype = 2;
+                            if ((buf[0] == '\xFF') && !strncmp(buf + 1, "LZMA", 4))
+                            {
+                                ztype = 2;
+                                subtype = 1;
+                            }
+                            if (!memcmp(buf, "]\0\0\200\0", 5))
+                            {
+                                ztype = 2;
+                                subtype = 1;
+                            }
+                        }
+                    }
+                    switch (ztype)
+                    {
+                    case -1:
+                        con = newfile(url, ienc, strlen(open) ? open : "r");
+                        break;
+                    case 0:
+                        con = newgzfile(url, strlen(open) ? open : "r", compress);
+                        break;
+                    case 1:
+                        con = newbzfile(url, strlen(open) ? open : "r", compress);
+                        break;
+                    case 2:
+                        con = newxzfile(url, strlen(open) ? open : "r", subtype, compress);
+                        break;
+                    }
+                }
+                else
+                    con = newfile(url, ienc, strlen(open) ? open : "r");
+            }
             class2 = "file";
         }
         else
