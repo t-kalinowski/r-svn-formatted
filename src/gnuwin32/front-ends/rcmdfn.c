@@ -479,6 +479,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                     strcpy(cmd, "");
                 else
                 {
+                    /* FIXME: is this still a sensible default? */
                     strcpy(cmd, "perl ");
                     strcat(cmd, RHome);
                     strcat(cmd, "/bin/");
