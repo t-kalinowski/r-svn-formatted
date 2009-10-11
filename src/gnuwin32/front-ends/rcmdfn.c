@@ -407,12 +407,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/config.sh");
             }
-            else if (strcmp(p, "INSTALL") == 0)
-            {
-                strcpy(cmd, "sh ");
-                strcat(cmd, RHome);
-                strcat(cmd, "/bin/INSTALL.sh");
-            }
             else if (strcmp(p, "SHLIB") == 0)
             {
                 strcpy(cmd, "sh ");
@@ -437,13 +431,47 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Rd2dvi.sh --pdf");
             }
+            else if (strcmp(p, "build") == 0)
+            {
+                strcpy(cmd, "perl ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/build.pl");
+            }
+            else if (strcmp(p, "check") == 0)
+            {
+                strcpy(cmd, "perl ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/check.pl");
+            }
+            else if (strcmp(p, "Rprof") == 0)
+            {
+                strcpy(cmd, "perl ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/Rprof.pl");
+            }
+            else if (strcmp(p, "Sd2Rd") == 0)
+            {
+                strcpy(cmd, "perl ");
+                strcat(cmd, RHome);
+                strcat(cmd, "/bin/Sd2Rd.pl");
+            }
+            else if (strcmp(p, "open") == 0)
+            {
+                strcpy(cmd, RHome);
+                strcat(cmd, "/bin/open.exe");
+            }
             else
             {
+                /* RHOME/bin is first in the path, so looks there first
+                   for .sh, .pl, .bat, .exe
+                */
                 if (!strcmp(".sh", p + strlen(p) - 3))
                 {
                     strcpy(cmd, "sh ");
-                    strcat(cmd, RHome);
-                    strcat(cmd, "/bin/");
+                }
+                else if (!strcmp(".pl", p + strlen(p) - 3))
+                {
+                    strcpy(cmd, "perl ");
                 }
                 else if (!strcmp(".bat", p + strlen(p) - 4))
                     strcpy(cmd, "");
