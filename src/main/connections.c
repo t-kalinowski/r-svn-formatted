@@ -1276,19 +1276,21 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 typedef struct gzfileconn
 {
     void *fp;
-    int cp;
+    int compress;
 } * Rgzfileconn;
 
 static Rboolean gzfile_open(Rconnection con)
 {
     gzFile fp;
-    char mode[6], *p;
+    char mode[6];
+    Rgzfileconn gzcon = con->private;
 
     strcpy(mode, con->mode);
-    /* Must open as binary */
-    if ((p = strchr(mode, 't')))
-        *p = 'b';
-
+    /* Must open as binary, only "r" and "w" are supported */
+    if (strchr(con->mode, 'w'))
+        sprintf(mode, "wb%1d", gzcon->compress);
+    else
+        strcpy(mode, "rb");
     fp = gzopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
@@ -1300,10 +1302,7 @@ static Rboolean gzfile_open(Rconnection con)
     con->isopen = TRUE;
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
-        con->text = FALSE;
-    else
-        con->text = TRUE;
+    con->text = strchr(con->mode, 'b') ? FALSE : TRUE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -1401,12 +1400,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
         free(new);
         error(_("allocation of gzfile connection failed"));
     }
-    init_con(new, description, CE_NATIVE, "");
-    strncpy(new->mode, mode, 1);
-    if (strlen(mode) > 1 && mode[1] == 't')
-        sprintf(new->mode + 1, "t%1d", compress);
-    else
-        sprintf(new->mode + 1, "b%1d", compress);
+    init_con(new, description, CE_NATIVE, mode);
 
     new->canseek = TRUE;
     new->open = &gzfile_open;
@@ -1426,6 +1420,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
         free(new);
         error(_("allocation of gzfile connection failed"));
     }
+    ((Rgzfileconn) new->private)->compress = compress;
     return new;
 }
 
@@ -1482,10 +1477,7 @@ static Rboolean bzfile_open(Rconnection con)
     bz->fp = fp;
     bz->bfp = bfp;
     con->isopen = TRUE;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 't')
-        con->text = TRUE;
-    else
-        con->text = FALSE;
+    con->text = strchr(con->mode, 'b') ? FALSE : TRUE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -1651,10 +1643,7 @@ static Rboolean xzfile_open(Rconnection con)
         }
     }
     con->isopen = TRUE;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 't')
-        con->text = TRUE;
-    else
-        con->text = FALSE;
+    con->text = strchr(con->mode, 'b') ? FALSE : TRUE;
     set_iconv(con);
     con->save = -1000;
     return TRUE;
@@ -1908,13 +1897,13 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (type)
     {
     case 0:
-        con = newgzfile(file, strlen(open) ? open : "r", compress);
+        con = newgzfile(file, strlen(open) ? open : "rb", compress);
         break;
     case 1:
-        con = newbzfile(file, strlen(open) ? open : "r", compress);
+        con = newbzfile(file, strlen(open) ? open : "rb", compress);
         break;
     case 2:
-        con = newxzfile(file, strlen(open) ? open : "r", subtype, compress);
+        con = newxzfile(file, strlen(open) ? open : "rb", subtype, compress);
         break;
     }
     ncon = NextConnection();
@@ -5242,13 +5231,13 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
                         con = newfile(url, ienc, strlen(open) ? open : "r");
                         break;
                     case 0:
-                        con = newgzfile(url, strlen(open) ? open : "r", compress);
+                        con = newgzfile(url, strlen(open) ? open : "rt", compress);
                         break;
                     case 1:
-                        con = newbzfile(url, strlen(open) ? open : "r", compress);
+                        con = newbzfile(url, strlen(open) ? open : "rt", compress);
                         break;
                     case 2:
-                        con = newxzfile(url, strlen(open) ? open : "r", subtype, compress);
+                        con = newxzfile(url, strlen(open) ? open : "rt", subtype, compress);
                         break;
                     }
                 }
@@ -6071,7 +6060,7 @@ SEXP attribute_hidden do_memCompress(SEXP call, SEXP op, SEXP args, SEXP env)
         if (ret != LZMA_OK)
             error("internal error %d in memCompress", ret);
 
-        outlen = 1.01 * inlen + 600; /* FIXME */
+        outlen = 1.01 * inlen + 600; /* FIXME, copied from bzip2 */
         buf = (unsigned char *)R_alloc(outlen, sizeof(unsigned char));
         strm.next_in = RAW(from);
         strm.avail_in = inlen;
