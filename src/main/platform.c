@@ -1149,7 +1149,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* <FIXME> can \n or \r occur as part of a MBCS extra bytes?
+/* <FIXME> can \n or \r occur as part of a MBCS extra byte?
    Not that I know of */
 static int filbuf(char *buf, FILE *fp)
 {
@@ -1166,9 +1166,9 @@ static int filbuf(char *buf, FILE *fp)
     return 0;
 }
 
+/* index.search(topic, path, .Platform$file.sep) */
 SEXP attribute_hidden do_indexsearch(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    /* index.search(topic, path, file, .Platform$file.sep) */
     SEXP topic, path, sep;
     char linebuf[256], topicbuf[256], *p;
     const char *csep;
