@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-8   The R Development Core Team.
+ *  Copyright (C) 2001-9   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,10 +25,6 @@
 #include <Rconnections.h>
 
 #include <tre/tre.h>
-#define regcomp tre_regcomp
-#define regexec tre_regexecb
-#define regfree tre_regfree
-#define regerror tre_regerror
 
 static SEXP allocMatrixNA(SEXPTYPE, int, int);
 static void transferVector(SEXP s, SEXP t);
@@ -74,18 +70,18 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     /* it is easier if we first have a record per column */
     PROTECT(retval = allocMatrixNA(STRSXP, LENGTH(what), nret));
 
-    regcomp(&blankline, "^[[:blank:]]*$", REG_NOSUB & REG_EXTENDED);
-    regcomp(&trailblank, "[[:blank:]]+$", REG_EXTENDED);
-    regcomp(&contline, "^[[:blank:]]+", REG_EXTENDED);
-    regcomp(&regline, "^[^:]+:[[:blank:]]*", REG_EXTENDED);
-    regcomp(&eblankline, "^[[:space:]]+\\.[[:space:]]*$", REG_EXTENDED);
+    tre_regcomp(&blankline, "^[[:blank:]]*$", REG_NOSUB & REG_EXTENDED);
+    tre_regcomp(&trailblank, "[[:blank:]]+$", REG_EXTENDED);
+    tre_regcomp(&contline, "^[[:blank:]]+", REG_EXTENDED);
+    tre_regcomp(&regline, "^[^:]+:[[:blank:]]*", REG_EXTENDED);
+    tre_regcomp(&eblankline, "^[[:space:]]+\\.[[:space:]]*$", REG_EXTENDED);
 
     k = 0;
     lastm = -1; /* index of the field currently being recorded */
     blank_skip = TRUE;
     while (Rconn_getline(con, line, MAXELTSIZE) >= 0)
     {
-        if (strlen(line) == 0 || regexec(&blankline, line, 0, 0, 0) == 0)
+        if (strlen(line) == 0 || tre_regexecb(&blankline, line, 0, 0, 0) == 0)
         {
             /* A blank line.  The first one after a record ends a new
              * record, subsequent ones are skipped */
@@ -109,9 +105,9 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             blank_skip = FALSE;
             /* Remove trailing whitespace. */
-            if (regexec(&trailblank, line, 1, regmatch, 0) == 0)
+            if (tre_regexecb(&trailblank, line, 1, regmatch, 0) == 0)
                 line[regmatch[0].rm_so] = '\0';
-            if (regexec(&contline, line, 1, regmatch, 0) == 0)
+            if (tre_regexecb(&contline, line, 1, regmatch, 0) == 0)
             {
                 /* A continuation line: wrong if at the beginning of a
                    record. */
@@ -124,7 +120,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (lastm >= 0)
                 {
                     need = strlen(CHAR(STRING_ELT(retval, lastm + nwhat * k))) + 2;
-                    if (regexec(&eblankline, line, 0, NULL, 0) == 0)
+                    if (tre_regexecb(&eblankline, line, 0, NULL, 0) == 0)
                     {
                         is_eblankline = TRUE;
                     }
@@ -149,7 +145,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
-                if (regexec(&regline, line, 1, regmatch, 0) == 0)
+                if (tre_regexecb(&regline, line, 1, regmatch, 0) == 0)
                 {
                     for (m = 0; m < nwhat; m++)
                     {
@@ -221,11 +217,11 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!wasopen)
         con->close(con);
     free(buf);
-    regfree(&blankline);
-    regfree(&contline);
-    regfree(&trailblank);
-    regfree(&regline);
-    regfree(&eblankline);
+    tre_regfree(&blankline);
+    tre_regfree(&contline);
+    tre_regfree(&trailblank);
+    tre_regfree(&regline);
+    tre_regfree(&eblankline);
 
     if (!blank_skip)
         k++;
