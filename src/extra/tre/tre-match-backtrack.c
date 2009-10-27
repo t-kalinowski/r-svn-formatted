@@ -69,7 +69,7 @@ char *alloca();
 #include "tre-internal.h"
 #include "tre-mem.h"
 #include "tre-match-utils.h"
-#include "regex.h"
+#include "tre.h"
 #include "xmalloc.h"
 
 typedef struct
