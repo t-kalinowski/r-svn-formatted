@@ -76,6 +76,7 @@ static const R_CallMethodDef callMethods[] = {{"L_initGrid", (DL_FUNC)&L_initGri
                                               {"L_rectBounds", (DL_FUNC)&L_rectBounds, 7},
                                               {"L_textBounds", (DL_FUNC)&L_textBounds, 7},
                                               {"L_xsplineBounds", (DL_FUNC)&L_xsplineBounds, 8},
+                                              {"L_xsplinePoints", (DL_FUNC)&L_xsplinePoints, 8},
                                               {NULL, NULL, 0}};
 
 void
