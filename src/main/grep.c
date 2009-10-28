@@ -116,7 +116,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP args0 = args, ans, tok, x;
     int i, itok, j, len, tlen, ntok;
-    int extended_opt, fixed_opt, perl_opt, useBytes;
+    int fixed_opt, perl_opt, useBytes;
     char *pt = NULL;
     wchar_t *wpt = NULL;
     const char *buf, *split = "", *bufp;
@@ -129,8 +129,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     tok = CAR(args);
     args = CDR(args);
-    extended_opt = asLogical(CAR(args));
-    args = CDR(args);
     fixed_opt = asLogical(CAR(args));
     args = CDR(args);
     perl_opt = asLogical(CAR(args));
@@ -138,8 +136,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     useBytes = asLogical(CAR(args));
     if (fixed_opt == NA_INTEGER)
         fixed_opt = 0;
-    if (extended_opt == NA_INTEGER)
-        extended_opt = 1;
     if (perl_opt == NA_INTEGER)
         perl_opt = 0;
     if (useBytes == NA_INTEGER)
@@ -149,8 +145,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
         perl_opt = 0;
     }
-    if (!extended_opt)
-        error("'%s' is defunct", "extended = FALSE");
 
     if (!isString(x) || !isString(tok))
         error(_("non-character argument"));
@@ -727,7 +721,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP pat, text, ind, ans;
     regex_t reg;
     int i, j, n, nmatches = 0, cflags = 0, ov, erroffset, ienc, rc;
-    int igcase_opt, extended_opt, value_opt, perl_opt, fixed_opt, useBytes, invert;
+    int igcase_opt, value_opt, perl_opt, fixed_opt, useBytes, invert;
     const char *spat, *errorptr;
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
@@ -741,8 +735,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     igcase_opt = asLogical(CAR(args));
     args = CDR(args);
-    extended_opt = asLogical(CAR(args));
-    args = CDR(args);
     value_opt = asLogical(CAR(args));
     args = CDR(args);
     perl_opt = asLogical(CAR(args));
@@ -754,8 +746,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     invert = asLogical(CAR(args));
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
-    if (extended_opt == NA_INTEGER)
-        extended_opt = 1;
     if (value_opt == NA_INTEGER)
         value_opt = 0;
     if (perl_opt == NA_INTEGER)
@@ -770,8 +760,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
-    if (!extended_opt)
-        warning("'%s' is defunct", "extended = FALSE");
 
     if (!isString(pat) || length(pat) < 1)
         error(_("invalid '%s' argument"), "pattern");
@@ -1133,7 +1121,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     regex_t reg;
     regmatch_t regmatch[10];
     int i, j, n, ns, nns, nmatch, offset, rc;
-    int global, igcase_opt, extended_opt, perl_opt, fixed_opt, useBytes, cflags = 0, eflags, last_end;
+    int global, igcase_opt, perl_opt, fixed_opt, useBytes, cflags = 0, eflags, last_end;
     char *u, *cbuf;
     const char *spat, *srep, *s;
 #ifndef USE_TRE_FOR_FIXED
@@ -1155,8 +1143,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     igcase_opt = asLogical(CAR(args));
     args = CDR(args);
-    extended_opt = asLogical(CAR(args));
-    args = CDR(args);
     perl_opt = asLogical(CAR(args));
     args = CDR(args);
     fixed_opt = asLogical(CAR(args));
@@ -1165,8 +1151,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
-    if (extended_opt == NA_INTEGER)
-        extended_opt = 1;
     if (perl_opt == NA_INTEGER)
         perl_opt = 0;
     if (fixed_opt == NA_INTEGER)
@@ -1177,8 +1161,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
-    if (!extended_opt)
-        error("'%s' is defunct", "extended = FALSE");
 
     if (!isString(pat) || length(pat) < 1)
         error(_("invalid '%s' argument"), "pattern");
@@ -1516,7 +1498,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP pat, text, ans, matchlen;
     regex_t reg;
     regmatch_t regmatch[10];
-    int i, n, st, igcase_opt, extended_opt, perl_opt, fixed_opt, useBytes, cflags = 0, erroffset, ienc = CE_NATIVE;
+    int i, n, st, igcase_opt, perl_opt, fixed_opt, useBytes, cflags = 0, erroffset, ienc = CE_NATIVE;
     int rc, ovector[3];
     const char *spat = NULL; /* -Wall */
     const char *s, *errorptr;
@@ -1532,8 +1514,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     igcase_opt = asLogical(CAR(args));
     args = CDR(args);
-    extended_opt = asLogical(CAR(args));
-    args = CDR(args);
     perl_opt = asLogical(CAR(args));
     args = CDR(args);
     fixed_opt = asLogical(CAR(args));
@@ -1542,8 +1522,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
-    if (extended_opt == NA_INTEGER)
-        extended_opt = 1;
     if (perl_opt == NA_INTEGER)
         perl_opt = 0;
     if (fixed_opt == NA_INTEGER)
@@ -1554,8 +1532,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
-    if (!extended_opt)
-        error("'%s' is defunct", "extended = FALSE");
 
     /* allow 'text' to be zero-length from 2.3.1 */
     /* Note that excluding NAs differs from grep/sub */
@@ -1993,7 +1969,7 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, text, ansList, ans;
     regex_t reg;
-    int i, n, igcase_opt, extended_opt, perl_opt, fixed_opt, useBytes, cflags = 0, rc, ienc;
+    int i, n, igcase_opt, perl_opt, fixed_opt, useBytes, cflags = 0, rc, ienc;
     const char *spat, *s;
     Rboolean use_UTF8 = FALSE;
 
@@ -2004,8 +1980,6 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     igcase_opt = asLogical(CAR(args));
     args = CDR(args);
-    extended_opt = asLogical(CAR(args));
-    args = CDR(args);
     perl_opt = asLogical(CAR(args));
     args = CDR(args);
     fixed_opt = asLogical(CAR(args));
@@ -2014,8 +1988,6 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (igcase_opt == NA_INTEGER)
         igcase_opt = 0;
-    if (extended_opt == NA_INTEGER)
-        extended_opt = 1;
     if (perl_opt == NA_INTEGER)
         perl_opt = 0;
     if (useBytes == NA_INTEGER)
@@ -2026,8 +1998,6 @@ SEXP attribute_hidden do_gregexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("argument '%s' will be ignored"), "ignore.case = TRUE");
     if (fixed_opt && perl_opt)
         warning(_("argument '%s' will be ignored"), "perl = TRUE");
-    if (!extended_opt)
-        error("'%s' is defunct", "extended = FALSE");
 
     if (!isString(text) || length(text) < 1)
         error(_("invalid '%s' argument"), "text");
