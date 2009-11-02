@@ -103,7 +103,12 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (useWC)
         rc = tre_regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags);
     else
-        rc = tre_regcomp(&reg, translateChar(STRING_ELT(pat, 0)), cflags);
+    {
+        const char *spat = translateChar(STRING_ELT(pat, 0));
+        if (mbcslocale && !mbcsValid(spat))
+            error(_("regular expression is invalid in this locale"));
+        rc = tre_regcomp(&reg, spat, cflags);
+    }
     if (rc)
     {
         char errbuf[1001];
@@ -137,7 +142,12 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (useWC)
             rc = tre_regawexec(&reg, wtransChar(STRING_ELT(vec, i)), &match, params, 0);
         else
-            rc = tre_regaexec(&reg, translateChar(STRING_ELT(vec, i)), &match, params, 0);
+        {
+            const char *s = translateChar(STRING_ELT(vec, i));
+            if (mbcslocale && !mbcsValid(s))
+                error(_("input string %d is invalid in this locale"), i + 1);
+            rc = tre_regaexec(&reg, s, &match, params, 0);
+        }
         if (rc == REG_OK)
         {
             LOGICAL(ind)[i] = 1;

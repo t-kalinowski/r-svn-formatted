@@ -246,12 +246,17 @@ SEXP attribute_hidden do_pgsub(SEXP pat, SEXP rep, SEXP text, int global, int ig
         if (useBytes)
             s = CHAR(STRING_ELT(text, i));
         else if (use_UTF8)
+        {
             s = translateCharUTF8(STRING_ELT(text, i));
+            if (!utf8Valid(s))
+                error(_("input string %d is invalid UTF-8"), i + 1);
+        }
         else
+        {
             s = translateChar(STRING_ELT(text, i));
-
-        if (!useBytes && mbcslocale && !mbcsValid(s))
-            error(_("input string %d is invalid in this locale"), i + 1);
+            if (mbcslocale && !mbcsValid(s))
+                error(_("input string %d is invalid in this locale"), i + 1);
+        }
 
         /* Looks like PCRE_NOTBOL is not needed in this version,
            but leave in as a precaution */
@@ -423,12 +428,17 @@ SEXP attribute_hidden do_gpregexpr(SEXP pat, SEXP text, int igcase_opt, int useB
     if (useBytes)
         spat = CHAR(STRING_ELT(pat, 0));
     else if (use_UTF8)
+    {
         spat = translateCharUTF8(STRING_ELT(pat, 0));
+        if (!utf8Valid(spat))
+            error(_("regular expression is invalid UTF-8"));
+    }
     else
+    {
         spat = translateChar(STRING_ELT(pat, 0));
-
-    if (!useBytes && mbcslocale && !mbcsValid(spat))
-        error(_("regular expression is invalid in this locale"));
+        if (mbcslocale && !mbcsValid(spat))
+            error(_("regular expression is invalid in this locale"));
+    }
 
     tables = pcre_maketables();
     re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);

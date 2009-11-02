@@ -1285,6 +1285,13 @@ Rboolean mbcsValid(const char *str)
     return ((int)mbstowcs(NULL, str, 0) >= 0);
 }
 
+extern int _pcre_valid_utf8(const char *string, int length);
+
+Rboolean utf8Valid(const char *str)
+{
+    return (_pcre_valid_utf8(str, strlen(str)) < 0);
+}
+
 /* MBCS-aware versions of common comparisons.  Only used for ASCII c */
 char *Rf_strchr(const char *s, int c)
 {
