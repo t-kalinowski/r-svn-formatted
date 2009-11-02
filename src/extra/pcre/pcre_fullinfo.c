@@ -116,9 +116,13 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_fullinfo(const pcre *argument_re, co
         block, not the internal copy (with flipped integer fields). */
 
     case PCRE_INFO_FIRSTTABLE:
-        *((const uschar **)where) = (study != NULL && (study->options & PCRE_STUDY_MAPPED) != 0)
+        *((const uschar **)where) = (study != NULL && (study->flags & PCRE_STUDY_MAPPED) != 0)
                                         ? ((const pcre_study_data *)extra_data->study_data)->start_bits
                                         : NULL;
+        break;
+
+    case PCRE_INFO_MINLENGTH:
+        *((int *)where) = (study != NULL && (study->flags & PCRE_STUDY_MINLEN) != 0) ? study->minlength : -1;
         break;
 
     case PCRE_INFO_LASTLITERAL:
@@ -140,6 +144,9 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_fullinfo(const pcre *argument_re, co
     case PCRE_INFO_DEFAULT_TABLES:
         *((const uschar **)where) = (const uschar *)(_pcre_default_tables);
         break;
+
+        /* From release 8.00 this will always return TRUE because NOPARTIAL is
+        no longer ever set (the restrictions have been removed). */
 
     case PCRE_INFO_OKPARTIAL:
         *((int *)where) = (re->flags & PCRE_NOPARTIAL) == 0;
