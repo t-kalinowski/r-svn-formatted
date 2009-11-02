@@ -1081,7 +1081,7 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
 */
 static SEXP matchargs(SEXP args)
 {
-    int i, nargs = length(args), mt = 0, mc = 0, me = 0, ms = 0, nmatch = 0, pos[3];
+    int i, nargs = length(args), mt = 0, mc = 0, me = 0, ms = 0, nmatch = 0, pos[4];
     SEXP tmp, tsym, csym, esym, ssym, argList;
 
     /* set up argList and defaults */
