@@ -306,17 +306,22 @@ static void Cairo_Polygon(int n, double *x, double *y, const pGEcontext gc, pDev
 static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
                          double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
+    char *vmax = vmaxget();
     int i;
     cairo_surface_t *image;
+    unsigned char *imageData;
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
+    imageData = (unsigned char *)R_alloc(4 * w * h, sizeof(unsigned char));
     /* The R ABGR needs to be converted to a Cairo ARGB */
     for (i = 0; i < w * h; i++)
     {
-        raster[i] = ((((raster[i]) >> 24) & 255) << 24 | ((raster[i]) & 255) << 16 | (((raster[i]) >> 8) & 255) << 8 |
-                     (((raster[i]) >> 16) & 255));
+        imageData[i * 4 + 3] = R_ALPHA(raster[i]);
+        imageData[i * 4 + 2] = R_RED(raster[i]);
+        imageData[i * 4 + 1] = R_GREEN(raster[i]);
+        imageData[i * 4 + 0] = R_BLUE(raster[i]);
     }
-    image = cairo_image_surface_create_for_data(raster, CAIRO_FORMAT_ARGB32, w, h, 4 * w);
+    image = cairo_image_surface_create_for_data(imageData, CAIRO_FORMAT_ARGB32, w, h, 4 * w);
 
     cairo_save(xd->cc);
 
@@ -343,6 +348,8 @@ static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y,
 
     cairo_restore(xd->cc);
     cairo_surface_destroy(image);
+
+    vmaxset(vmax);
 }
 
 static SEXP Cairo_Cap(pDevDesc dd)
@@ -353,7 +360,7 @@ static SEXP Cairo_Cap(pDevDesc dd)
     cairo_format_t format;
     unsigned char *screenData;
     SEXP dim, raster = R_NilValue;
-    int *rint;
+    unsigned int *rint;
 
     screen = cairo_surface_reference(cairo_get_target(xd->cc));
     width = cairo_image_surface_get_width(screen);
@@ -373,7 +380,7 @@ static SEXP Cairo_Cap(pDevDesc dd)
 
     /* Copy each byte of screen to an R matrix.
      * The Cairo RGB24 needs to be converted to an R ABGR32 */
-    rint = INTEGER(raster);
+    rint = (unsigned int *)INTEGER(raster);
     for (i = 0; i < size; i++)
     {
         /* First byte is "black" - WTF?
