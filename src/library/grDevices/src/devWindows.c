@@ -231,6 +231,9 @@ static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDe
 static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
 static void GA_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static void GA_Resize(pDevDesc dd);
+static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP GA_Cap(pDevDesc dd);
 static double GA_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void GA_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
 static Rboolean GA_Open(pDevDesc, gadesc *, const char *, double, double, Rboolean, int, int, double, int, int, int);
@@ -2891,6 +2894,18 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     SH;
 }
 
+static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster rendering");
+}
+
+static SEXP GA_Cap(pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster capture");
+    return R_NilValue;
+}
+
 /********************************************************/
 /* device_Text should have the side-effect that the	*/
 /* given text is drawn at the given location		*/
@@ -3163,6 +3178,8 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     dd->line = GA_Line;
     dd->polyline = GA_Polyline;
     dd->polygon = GA_Polygon;
+    dd->raster = GA_Raster;
+    dd->cap = GA_Cap;
     dd->locator = GA_Locator;
     dd->mode = GA_Mode;
     dd->metricInfo = GA_MetricInfo;

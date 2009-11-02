@@ -150,6 +150,9 @@ static void X11_NewPage(const pGEcontext gc, pDevDesc dd);
 static void X11_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void X11_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void X11_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP X11_Cap(pDevDesc dd);
 static void X11_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double X11_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void X11_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
@@ -2030,6 +2033,18 @@ static void X11_Rect(double x0, double y0, double x1, double y1, const pGEcontex
     }
 }
 
+static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster rendering");
+}
+
+static SEXP X11_Cap(pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster capture");
+    return R_NilValue;
+}
+
 static void X11_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd)
 {
     int ir, ix, iy;
@@ -2332,6 +2347,8 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->line = Cairo_Line;
         dd->polyline = Cairo_Polyline;
         dd->polygon = Cairo_Polygon;
+        dd->raster = Cairo_Raster;
+        dd->cap = Cairo_Cap;
         dd->hasTextUTF8 = TRUE;
         dd->wantSymbolUTF8 = TRUE;
 #ifdef HAVE_PANGOCAIRO
@@ -2352,6 +2369,8 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->strWidth = X11_StrWidth;
         dd->text = X11_Text;
         dd->rect = X11_Rect;
+        dd->raster = X11_Raster;
+        dd->cap = X11_Cap;
         dd->circle = X11_Circle;
         dd->line = X11_Line;
         dd->polyline = X11_Polyline;
@@ -3076,6 +3095,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     dd->line = Cairo_Line;
     dd->polyline = Cairo_Polyline;
     dd->polygon = Cairo_Polygon;
+    dd->raster = Cairo_Raster;
     dd->locator = null_Locator;
     dd->mode = null_Mode;
 #ifdef HAVE_PANGOCAIRO

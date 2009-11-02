@@ -134,6 +134,9 @@ static void PicTeX_Mode(int mode, pDevDesc dd);
 static void PicTeX_NewPage(const pGEcontext gc, pDevDesc dd);
 static void PicTeX_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PicTeX_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void PicTeX_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
+                          double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP PicTeX_Cap(pDevDesc dd);
 static void PicTeX_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double PicTeX_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PicTeX_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
@@ -452,6 +455,18 @@ static void PicTeX_Rect(double x0, double y0, double x1, double y1, const pGEcon
     PicTeX_Polygon(4, x, y, gc, dd);
 }
 
+static void PicTeX_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
+                          double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not available for this device"), "Raster rendering");
+}
+
+static SEXP PicTeX_Cap(pDevDesc dd)
+{
+    warning(_("%s not available for this device"), "Raster capture");
+    return R_NilValue;
+}
+
 static void PicTeX_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd)
 {
     picTeXDesc *ptd = (picTeXDesc *)dd->deviceSpecific;
@@ -592,6 +607,8 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
     dd->text = PicTeX_Text;
     dd->strWidth = PicTeX_StrWidth;
     dd->rect = PicTeX_Rect;
+    dd->raster = PicTeX_Raster;
+    dd->cap = PicTeX_Cap;
     dd->circle = PicTeX_Circle;
     dd->polygon = PicTeX_Polygon;
     dd->polyline = PicTeX_Polyline;

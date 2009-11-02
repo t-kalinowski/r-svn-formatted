@@ -3127,6 +3127,9 @@ static Rboolean PS_Open(pDevDesc, PostScriptDesc *);
 static void PS_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PS_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PS_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void PS_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP PS_Cap(pDevDesc dd);
 static void PS_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double PS_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PS_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
@@ -3657,6 +3660,8 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->strWidth = PS_StrWidth;
     dd->metricInfo = PS_MetricInfo;
     dd->rect = PS_Rect;
+    dd->raster = PS_Raster;
+    dd->cap = PS_Cap;
     dd->circle = PS_Circle;
     dd->line = PS_Line;
     dd->polygon = PS_Polygon;
@@ -4124,6 +4129,18 @@ static void PS_Rect(double x0, double y0, double x1, double y1, const pGEcontext
         PostScriptRectangle(pd->psfp, x0, y0, x1, y1);
         fprintf(pd->psfp, "p%d\n", code);
     }
+}
+
+static void PS_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster rendering");
+}
+
+static SEXP PS_Cap(pDevDesc dd)
+{
+    warning(_("%s not available for this device"), "Raster capture");
+    return R_NilValue;
 }
 
 static void PS_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd)
@@ -4672,6 +4689,9 @@ static void XFig_NewPage(const pGEcontext gc, pDevDesc dd);
 static void XFig_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void XFig_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void XFig_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void XFig_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                        Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP XFig_Cap(pDevDesc dd);
 static void XFig_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double XFig_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void XFig_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
@@ -4971,6 +4991,8 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     dd->strWidth = XFig_StrWidth;
     dd->metricInfo = XFig_MetricInfo;
     dd->rect = XFig_Rect;
+    dd->raster = XFig_Raster;
+    dd->cap = XFig_Cap;
     dd->circle = XFig_Circle;
     dd->line = XFig_Line;
     dd->polygon = XFig_Polygon;
@@ -5168,6 +5190,18 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, const pGEconte
     fprintf(fp, "  %d %d ", ix1, iy1);
     fprintf(fp, "  %d %d ", ix1, iy0);
     fprintf(fp, "  %d %d\n", ix0, iy0);
+}
+
+static void XFig_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                        Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Raster rendering");
+}
+
+static SEXP XFig_Cap(pDevDesc dd)
+{
+    warning(_("%s not available for this device"), "Raster capture");
+    return R_NilValue;
 }
 
 static void XFig_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd)
@@ -5504,6 +5538,9 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd);
 static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PDF_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PDF_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
+static SEXP PDF_Cap(pDevDesc dd);
 static void PDF_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double PDF_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PDF_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
@@ -6005,6 +6042,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->strWidth = PDF_StrWidth;
     dd->metricInfo = PDF_MetricInfo;
     dd->rect = PDF_Rect;
+    dd->raster = PDF_Raster;
+    dd->cap = PDF_Cap;
     dd->circle = PDF_Circle;
     dd->line = PDF_Line;
     dd->polygon = PDF_Polygon;
@@ -6886,6 +6925,81 @@ static void PDF_Rect(double x0, double y0, double x1, double y1, const pGEcontex
             break;
         }
     }
+}
+
+static void PDF_imagedata(unsigned int *raster, int w, int h, PDFDesc *pd)
+{
+    /* Each original byte is translated to two hex digits
+     * (representing a number between 0 and 256)
+     * End-of-data signalled by a '>'
+     */
+    int i;
+    for (i = 0; i < w * h; i++)
+    {
+        fprintf(pd->pdffp, "%02x", raster[i] & 255);
+        fprintf(pd->pdffp, "%02x", raster[i] >> 8 & 255);
+        fprintf(pd->pdffp, "%02x", raster[i] >> 16 & 255);
+    }
+    fprintf(pd->pdffp, ">\n");
+}
+
+static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    double angle, cosa, sina;
+
+    /* This takes the simple approach of creating an inline
+     * image.  This is not recommended for larger images
+     * because it makes more work for the PDF viewer,
+     * but it's a hell of a lot easier to get something
+     * going compared to trying to record and then
+     * save in PDF_endfile() an external XObject
+     * describing the image.
+     */
+    /* FIXME:  the image data does NOT contain an alpha component,
+     * so there needs to be some way to produce, say, a "soft mask"
+     * or something similar based on the alpha channel of the image,
+     * so that the image can be rendered with (variable) semitransparency
+     * (and that looks like it will HAVE to be an external XObject).
+     */
+    if (pd->inText)
+        textoff(pd);
+    /* Save graphics state */
+    fprintf(pd->pdffp, "Q q\n");
+    /* translate */
+    fprintf(pd->pdffp, "1 0 0 1 %.2f %.2f cm\n", x, y);
+    /* rotate */
+    angle = rot * M_PI / 180;
+    cosa = cos(angle);
+    sina = sin(angle);
+    fprintf(pd->pdffp, "%.2f %.2f %.2f %.2f 0 0 cm\n", cosa, sina, -sina, cosa);
+    /* scale */
+    fprintf(pd->pdffp, "%.2f 0 0 %.2f 0 0 cm\n", width, height);
+    /* Begin image */
+    fprintf(pd->pdffp, "BI\n");
+    /* Image characteristics */
+    /* Use ASCIIHexDecode filter for now, just because
+     * it's easier to implement */
+    fprintf(pd->pdffp, "  /W %d\n  /H %d\n  /CS /RGB\n  /BPC 8\n  /F [/AHx]\n", w, h);
+    if (interpolate)
+    {
+        fprintf(pd->pdffp, "  /I true\n");
+    }
+    /* Begin image data */
+    fprintf(pd->pdffp, "ID\n");
+    /* The image stream */
+    PDF_imagedata(raster, w, h, pd);
+    /* End image */
+    fprintf(pd->pdffp, "EI\n");
+    /* Restore graphics state */
+    fprintf(pd->pdffp, "Q q\n");
+}
+
+static SEXP PDF_Cap(pDevDesc dd)
+{
+    warning(_("%s not available for this device"), "Raster capture");
+    return R_NilValue;
 }
 
 /* r is in device coords */
