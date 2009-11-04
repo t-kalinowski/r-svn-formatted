@@ -1534,9 +1534,11 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             maxrep = replen + (ns - 2) * count_subs(srep);
             if (global)
             {
-                nns = ns * (maxrep + 1) + 1000;
-                if (nns > 10000)
-                    nns = 2 * ns + replen + 1000;
+                /* Integer overflow has been seen */
+                double dnns = ns * (maxrep + 1.) + 1000;
+                if (dnns > 10000)
+                    dnns = 2 * ns + replen + 1000;
+                nns = dnns;
             }
             else
                 nns = ns + maxrep + 1000;
@@ -1584,6 +1586,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + maxrep + 100)
                 {
                     char *tmp;
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
@@ -1601,6 +1605,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + 1)
                 {
                     char *tmp;
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
@@ -1630,9 +1636,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             maxrep = replen + (ns - 2) * count_subs(srep);
             if (global)
             {
-                nns = ns * (maxrep + 1) + 1000;
-                if (nns > 10000)
-                    nns = 2 * ns + replen + 1000;
+                double dnns = ns * (maxrep + 1.) + 1000;
+                if (dnns > 10000)
+                    dnns = 2 * ns + replen + 1000;
+                nns = dnns;
             }
             else
                 nns = ns + maxrep + 1000;
@@ -1661,6 +1668,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + maxrep + 100)
                 {
                     char *tmp;
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
@@ -1678,6 +1687,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + 1)
                 {
                     char *tmp;
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
@@ -1706,9 +1717,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 /* worst possible scenario is to put a copy of the
                    replacement after every character */
-                nns = ns * (maxrep + 1) + 1000;
-                if (nns > 10000)
-                    nns = 2 * ns + maxrep + 1000;
+                double dnns = ns * (maxrep + 1.) + 1000;
+                if (dnns > 10000)
+                    dnns = 2 * ns + maxrep + 1000;
+                nns = dnns;
             }
             else
                 nns = ns + maxrep + 1000;
@@ -1735,7 +1747,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + maxrep + 100)
                 {
                     wchar_t *tmp;
-
+                    /* This could fail at smaller value on a 32-bit platform:
+                       it is merely an integer overflow check */
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, wchar_t);
                     u = tmp + (u - cbuf);
@@ -1753,6 +1768,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (nns < (u - cbuf) + (ns - offset) + 1)
                 {
                     wchar_t *tmp;
+                    if (nns > INT_MAX / 2)
+                        error(_("result string is too long"));
                     nns *= 2;
                     tmp = Realloc(cbuf, nns, wchar_t);
                     u = tmp + (u - cbuf);
