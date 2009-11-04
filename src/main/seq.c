@@ -437,7 +437,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
             it = INTEGER(times)[0];
             if (it == NA_INTEGER || it < 0)
                 errorcall(call, _("invalid '%s' argument"), "times");
-            sum = lx * it;
+            len = lx * it * each;
         }
         else
         {
@@ -448,8 +448,8 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
                     errorcall(call, _("invalid '%s' argument"), "times");
                 sum += it;
             }
+            len = sum;
         }
-        len = sum * each;
     }
     PROTECT(ind = allocVector(INTSXP, len));
     if (len > 0 && each == 0)
