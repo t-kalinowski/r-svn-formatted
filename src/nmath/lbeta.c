@@ -39,26 +39,24 @@ double lbeta(double a, double b)
 {
     double corr, p, q;
 
+#ifdef IEEE_754
+    if (ISNAN(a) || ISNAN(b))
+        return a + b;
+#endif
     p = q = a;
     if (b < p)
         p = b; /* := min(a,b) */
     if (b > q)
         q = b; /* := max(a,b) */
 
-#ifdef IEEE_754
-    if (ISNAN(a) || ISNAN(b))
-        return a + b;
-#endif
-
     /* both arguments must be >= 0 */
-
     if (p < 0)
         ML_ERR_return_NAN else if (p == 0)
         {
             return ML_POSINF;
         }
     else if (!R_FINITE(q))
-    {
+    { /* q == +Inf */
         return ML_NEGINF;
     }
 
