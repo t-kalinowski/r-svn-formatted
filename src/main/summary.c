@@ -954,7 +954,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (s = args; s != R_NilValue; s = CDR(s))
     {
-        if (isList(CAR(s)) /* || isFrame(CAR(s)) */)
+        if (isList(CAR(s)))
         {
             for (t = CAR(s); t != R_NilValue; t = CDR(t))
                 if (isMatrix(CAR(t)))
@@ -976,31 +976,43 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
                     error(R_MSG_type, type2char(TYPEOF(CAR(t))));
         }
         /* FIXME : Need to be careful with the use of isVector() */
-        /* since this includes the new list structure and expressions. */
+        /* since this includes lists and expressions. */
         else if (isNewList(CAR(s)))
         {
             int it, nt;
             t = CAR(s);
             nt = length(t);
-            for (it = 0; it < nt; it++)
+            /* 0-column data frames are a special case */
+            if (nt)
             {
-                if (isMatrix(VECTOR_ELT(t, it)))
+                for (it = 0; it < nt; it++)
                 {
-                    u = getAttrib(VECTOR_ELT(t, it), R_DimSymbol);
-                    if (len < 0)
-                        len = INTEGER(u)[0];
-                    else if (len != INTEGER(u)[0])
-                        goto bad;
+                    if (isMatrix(VECTOR_ELT(t, it)))
+                    {
+                        u = getAttrib(VECTOR_ELT(t, it), R_DimSymbol);
+                        if (len < 0)
+                            len = INTEGER(u)[0];
+                        else if (len != INTEGER(u)[0])
+                            goto bad;
+                    }
+                    else if (isVector(VECTOR_ELT(t, it)))
+                    {
+                        if (len < 0)
+                            len = LENGTH(VECTOR_ELT(t, it));
+                        else if (len != LENGTH(VECTOR_ELT(t, it)))
+                            goto bad;
+                    }
+                    else
+                        error(R_MSG_type, "unknown");
                 }
-                else if (isVector(VECTOR_ELT(t, it)))
-                {
-                    if (len < 0)
-                        len = LENGTH(VECTOR_ELT(t, it));
-                    else if (len != LENGTH(VECTOR_ELT(t, it)))
-                        goto bad;
-                }
-                else
-                    error(R_MSG_type, "unknown");
+            }
+            else
+            {
+                u = getAttrib(t, R_RowNamesSymbol);
+                if (len < 0)
+                    len = LENGTH(u);
+                else if (len != INTEGER(u)[0])
+                    goto bad;
             }
         }
         else if (isMatrix(CAR(s)))
@@ -1028,7 +1040,7 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* It should be abstracted out and optimized. */
     for (s = args; s != R_NilValue; s = CDR(s))
     {
-        if (isList(CAR(s)) /* || isFrame(CAR(s))*/)
+        if (isList(CAR(s)))
         {
             /* Now we only need to worry about vectors */
             /* since we use mod to handle arrays. */
