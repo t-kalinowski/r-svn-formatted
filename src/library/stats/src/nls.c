@@ -135,9 +135,9 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 #define NON_CONV_FINIS_1(_ID_, _MSG_, _A1_)                                                                            \
     if (warnOnly)                                                                                                      \
     {                                                                                                                  \
-        char msgbuf[70];                                                                                               \
+        char msgbuf[1000];                                                                                             \
         warning(_MSG_, _A1_);                                                                                          \
-        sprintf(msgbuf, _MSG_, _A1_);                                                                                  \
+        snprintf(msgbuf, 1000, _MSG_, _A1_);                                                                           \
         return CONV_INFO_MSG(msgbuf, _ID_);                                                                            \
     }                                                                                                                  \
     else                                                                                                               \
@@ -146,9 +146,9 @@ SEXP nls_iter(SEXP m, SEXP control, SEXP doTraceArg)
 #define NON_CONV_FINIS_2(_ID_, _MSG_, _A1_, _A2_)                                                                      \
     if (warnOnly)                                                                                                      \
     {                                                                                                                  \
-        char msgbuf[70];                                                                                               \
+        char msgbuf[1000];                                                                                             \
         warning(_MSG_, _A1_, _A2_);                                                                                    \
-        sprintf(msgbuf, _MSG_, _A1_, _A2_);                                                                            \
+        snprintf(msgbuf, 1000, _MSG_, _A1_, _A2_);                                                                     \
         return CONV_INFO_MSG(msgbuf, _ID_);                                                                            \
     }                                                                                                                  \
     else                                                                                                               \
