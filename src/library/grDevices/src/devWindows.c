@@ -2903,11 +2903,19 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     rect sr, dr;
     image img;
     byte *imageData;
+    int anyAlpha = 0;
+    /* Index to pixel that contains fixed alpha for image */
+    int fixedAlpha = -1;
 
     /* These in-place conversions are ok */
     TRACEDEVGA("raster");
 
-    /* Need to handle negative width or height ? */
+    /* The alphablend code cannot handle negative width or height */
+    if (height < 0)
+    {
+        y = y + height;
+        height = -height;
+    }
     dr = rect((int)x, (int)y, (int)width, (int)height);
 
     /* Create image object */
@@ -2918,10 +2926,43 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     imageData = (byte *)R_alloc(4 * w * h, sizeof(byte));
     for (i = 0; i < w * h; i++)
     {
-        imageData[i * 4 + 3] = R_ALPHA(raster[i]);
-        imageData[i * 4 + 2] = R_RED(raster[i]);
-        imageData[i * 4 + 1] = R_GREEN(raster[i]);
-        imageData[i * 4 + 0] = R_BLUE(raster[i]);
+        byte alpha = R_ALPHA(raster[i]);
+        if (alpha < 255)
+        {
+            /* Keep the image alpha for FULLY transparent pixels
+             * because we can also cope with FULLY transparent
+             * areas in the image (?)
+             * BUT all other pixels must be made FULLY opaque
+             * because the conversion to bitmap (in
+             * gdrawimage()) ONLY copies opaque pixels.
+             */
+            byte imgAlpha = 0;
+            if (alpha > 0)
+                imgAlpha = 255;
+            imageData[i * 4 + 3] = imgAlpha;
+            imageData[i * 4 + 2] = R_RED(raster[i]);
+            imageData[i * 4 + 1] = R_GREEN(raster[i]);
+            imageData[i * 4 + 0] = R_BLUE(raster[i]);
+            anyAlpha = 1;
+            /* The current implementation can only cope with
+             * a single constant alpha across the image
+             */
+            if (alpha > 0 && fixedAlpha < 0)
+            {
+                fixedAlpha = i;
+            }
+            if (alpha > 0 && fixedAlpha >= 0 && alpha != R_ALPHA(raster[fixedAlpha]))
+            {
+                warning("Per-pixel alpha not supported on this device");
+            }
+        }
+        else
+        {
+            imageData[i * 4 + 3] = 255;
+            imageData[i * 4 + 2] = R_RED(raster[i]);
+            imageData[i * 4 + 1] = R_GREEN(raster[i]);
+            imageData[i * 4 + 0] = R_BLUE(raster[i]);
+        }
     }
 
     setpixels(img, imageData);
@@ -2930,8 +2971,26 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     sr = getrect(img);
 
     /* Draw the image */
-    /* FIXME:  Need code for semi-transparent image */
-    DRAW(gdrawimage(_d, img, dr, sr));
+    if (!anyAlpha)
+    {
+        DRAW(gdrawimage(_d, img, dr, sr));
+    }
+    else if (xd->have_alpha)
+    {
+        if (fixedAlpha < 0)
+        {
+            warning("Fully transparent image!?");
+        }
+        rect r = dr;
+        gsetcliprect(xd->bm, xd->clip);
+        gcopy(xd->bm2, xd->bm, r);
+        gdrawimage(xd->bm2, img, dr, sr);
+        DRAW2(raster[fixedAlpha]);
+    }
+    else
+    {
+        WARN_SEMI_TRANS;
+    }
 
     /* Tidy up */
     delimage(img);
