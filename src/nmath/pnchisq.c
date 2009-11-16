@@ -77,12 +77,19 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #endif
 
     if (theta < 80)
-    {
-        LDOUBLE sum = 0, lambda = 0.5 * theta, pr = exp(-lambda);
+    { /* ppois(110, 40, lower.tail=FALSE) is 2e-20 */
+        LDOUBLE sum = 0, sum2 = 0, lambda = 0.5 * theta, pr = exp(-lambda);
+        double ans;
         int i;
-        for (i = 0; i < 100; pr *= lambda / ++i)
+        /* we need to renormalize here: the result could be very close to 1 */
+        for (i = 0; i < 110; pr *= lambda / ++i)
+        {
+            sum2 += pr;
+            /* could break once sum2 is essentially 1 */
             sum += pr * pchisq(x, f + 2 * i, lower_tail, FALSE);
-        return sum;
+        }
+        ans = sum / sum2;
+        return ans;
     }
 
 #ifdef DEBUG_pnch
@@ -115,7 +122,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #endif
 
     if (f2 * DBL_EPSILON > 0.125 && /* very large f and x ~= f: probably needs */
-        fabs(t = x2 - f2) <         /* other algorithm anyway */
+        fabs(t = x2 - f2) <         /* another algorithm anyway */
             sqrt(DBL_EPSILON) * f2)
     {
         /* evade cancellation error */

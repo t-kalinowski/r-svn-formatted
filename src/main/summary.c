@@ -1009,10 +1009,13 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
             {
                 u = getAttrib(t, R_RowNamesSymbol);
-                if (len < 0)
-                    len = LENGTH(u);
-                else if (len != INTEGER(u)[0])
-                    goto bad;
+                if (!isNull(u))
+                {
+                    if (len < 0)
+                        len = LENGTH(u);
+                    else if (len != INTEGER(u)[0])
+                        goto bad;
+                }
             }
         }
         else if (isMatrix(CAR(s)))
@@ -1033,6 +1036,9 @@ SEXP attribute_hidden do_compcases(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             error(R_MSG_type, type2char(TYPEOF(CAR(s))));
     }
+
+    if (len < 0)
+        error(_("no input has determined the number of cases"));
     PROTECT(rval = allocVector(LGLSXP, len));
     for (i = 0; i < len; i++)
         INTEGER(rval)[i] = 1;
