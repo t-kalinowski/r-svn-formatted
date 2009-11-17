@@ -344,8 +344,8 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0, w = _wenviron; *w != NULL; i++, w++)
             n = max(n, wcslen(*w));
         N = 3 * n + 1;
+        R_CheckStackN(N);
         buf = alloca(N);
-        R_CheckStack();
         PROTECT(ans = allocVector(STRSXP, i));
         for (i = 0, w = _wenviron; *w != NULL; i++, w++)
         {
@@ -375,8 +375,9 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 int n = wcslen(w), N = 3 * n + 1; /* UCS-2 maps to <=3 UTF-8 */
-                char *buf = alloca(N);
-                R_CheckStack();
+                char *buf;
+                R_CheckStackN(N);
+                buf = alloca(N);
                 wcstoutf8(buf, w, N);
                 buf[N - 1] = '\0'; /* safety */
                 SET_STRING_ELT(ans, j, mkCharCE(buf, CE_UTF8));
@@ -496,8 +497,9 @@ SEXP attribute_hidden do_unsetenv(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         const wchar_t *w = wtransChar(STRING_ELT(vars, i));
-        wchar_t *buf = (wchar_t *)alloca(2 * wcslen(w));
-        R_CheckStack();
+        wchar_t *buf;
+        size_t N = 2 * wcslen(w) R_CheckStackN(N);
+        buf = (wchar_t *)alloca(N);
         wcscpy(buf, w);
         wcscat(buf, L"=");
         _wputenv(buf);

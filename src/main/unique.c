@@ -1602,6 +1602,7 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
         buf = (char *)alloca(maxlen + strlen(csep) + (int)(log((double)n) / log(10.0)) + 2);
         if (n < 10000)
         {
+            R_CheckStackN(n * sizeof(int));
             cnts = (int *)alloca(n * sizeof(int));
         }
         else
@@ -1610,7 +1611,6 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
                that will be recovered if interrupted. */
             cnts = (int *)R_alloc(n, sizeof(int));
         }
-        R_CheckStack();
         for (i = 0; i < n; i++)
             cnts[i] = 1;
         data.nomatch = 0;
