@@ -104,25 +104,6 @@ void R_CheckStack(void)
     }
 }
 
-void R_CheckStackN(size_t n)
-{
-    int dummy;
-    intptr_t usage = R_CStackDir * (R_CStackStart - (uintptr_t)&dummy);
-
-    if (R_CStackLimit != -1 && usage + n > 0.95 * R_CStackLimit)
-    {
-        RCNTXT cntxt;
-        unsigned int stacklimit = R_CStackLimit;
-        R_CStackLimit += 0.05 * R_CStackLimit;
-        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
-        cntxt.cend = &reset_stack_limit;
-        cntxt.cenddata = &stacklimit;
-
-        errorcall(R_NilValue, "C stack usage is too close to the limit");
-        /* Do not translate this, to save stack space */
-    }
-}
-
 void R_CheckUserInterrupt(void)
 {
     R_CheckStack();
@@ -996,8 +977,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         if (strlen(domain))
         {
-            R_CheckStackN(strlen(domain) + 3);
             buf = (char *)alloca(strlen(domain) + 3);
+            R_CheckStack();
             sprintf(buf, "R-%s", domain);
             domain = buf;
         }
@@ -1015,8 +996,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
             int ihead = 0, itail = 0;
             const char *This = translateChar(STRING_ELT(string, i));
             char *tmp, *head = NULL, *tail = NULL, *p, *tr;
-            R_CheckStackN(strlen(This) + 1);
             tmp = (char *)alloca(strlen(This) + 1);
+            R_CheckStack();
             strcpy(tmp, This);
             /* strip leading and trailing white spaces and
                add back after translation */
@@ -1024,8 +1005,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ;
             if (ihead > 0)
             {
-                R_CheckStackN(ihead + 1);
                 head = (char *)alloca(ihead + 1);
+                R_CheckStack();
                 strncpy(head, tmp, ihead);
                 head[ihead] = '\0';
                 tmp += ihead;
@@ -1035,8 +1016,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                     ;
             if (itail > 0)
             {
-                R_CheckStackN(itail + 1);
                 tail = (char *)alloca(itail + 1);
+                R_CheckStack();
                 strcpy(tail, tmp + strlen(tmp) - itail);
                 tmp[strlen(tmp) - itail] = '\0';
             }
@@ -1046,8 +1027,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 REprintf("translating '%s' in domain '%s'\n", tmp, domain);
 #endif
                 tr = dgettext(domain, tmp);
-                R_CheckStackN(strlen(tr) + ihead + itail + 1);
                 tmp = (char *)alloca(strlen(tr) + ihead + itail + 1);
+                R_CheckStack();
                 tmp[0] = '\0';
                 if (ihead > 0)
                     strcat(tmp, head);
@@ -1113,8 +1094,8 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         if (strlen(domain))
         {
-            R_CheckStackN(strlen(domain) + 3);
             buf = (char *)alloca(strlen(domain) + 3);
+            R_CheckStack();
             sprintf(buf, "R-%s", domain);
             domain = buf;
         }

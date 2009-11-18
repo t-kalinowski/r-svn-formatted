@@ -359,9 +359,9 @@ static void walker_ProbSampleReplace(int n, double *p, int *a, int nans, int *an
     if (n <= SMALL)
     {
         /* might do this repeatedly, so speed matters */
-        R_CheckStackN(n * (sizeof(int) + sizeof(double)));
         HL = (int *)alloca(n * sizeof(int));
         q = (double *)alloca(n * sizeof(double));
+        R_CheckStack();
     }
     else
     {
