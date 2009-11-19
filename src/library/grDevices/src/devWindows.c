@@ -2894,8 +2894,8 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     SH;
 }
 
-static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
-                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+static void doRaster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                     pDevDesc dd)
 {
     char *vmax = vmaxget();
     int i;
@@ -2910,12 +2910,6 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     /* These in-place conversions are ok */
     TRACEDEVGA("raster");
 
-    /* The alphablend code cannot handle negative width or height */
-    if (height < 0)
-    {
-        y = y + height;
-        height = -height;
-    }
     dr = rect((int)x, (int)y, (int)width, (int)height);
 
     /* Create image object */
@@ -2996,6 +2990,44 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     delimage(img);
     SH;
     vmaxset(vmax);
+}
+
+static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
+                      Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    /* The alphablend code cannot handle negative width or height */
+    if (height < 0)
+    {
+        y = y + height;
+        height = -height;
+    }
+
+    if (interpolate)
+    {
+        /* Generate a new raster
+         * which is interpolated from the original
+         * Assume a resolution for the new raster of 72 dpi
+         * Ideally would allow user to set this.
+         */
+        char *vmax = vmaxget();
+        int newW = (int)width;
+        int newH = (int)height;
+        unsigned int *newRaster;
+
+        Rprintf("width %.2f\n", width);
+        Rprintf("height %.2f\n", height);
+        Rprintf("newWidth %d\n", newW);
+        Rprintf("newHeight %d\n", newH);
+
+        newRaster = (unsigned int *)R_alloc(newW * newH, sizeof(unsigned int));
+        R_GE_rasterInterpolate(raster, w, h, newRaster, newW, newH);
+        doRaster(newRaster, newW, newH, x, y, width, height, rot, dd);
+        vmaxset(vmax);
+    }
+    else
+    {
+        doRaster(raster, w, h, x, y, width, height, rot, dd);
+    }
 }
 
 static SEXP GA_Cap(pDevDesc dd)
