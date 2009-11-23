@@ -40,11 +40,20 @@ double pnchisq(double x, double df, double ncp, int lower_tail, int log_p)
         ML_ERR_return_NAN;
 
     ans = pnchisq_raw(x, df, ncp, 1e-12, 8 * DBL_EPSILON, 1000000, lower_tail);
-    if (!lower_tail && ncp >= 80)
+    if (ncp >= 80)
     {
-        if (ans < 1e-10)
-            ML_ERROR(ME_PRECISION, "pnchisq");
-        ans = fmax2(ans, 0.0); /* Precaution PR#7099 */
+        if (lower_tail)
+        {
+            if (ans >= 1 - 1e-10)
+                ML_ERROR(ME_PRECISION, "pnchisq");
+            ans = fmin2(ans, 1.0); /* e.g., pchisq(555, 1.01, ncp = 80) */
+        }
+        else
+        { /* !lower_tail */
+            if (ans < 1e-10)
+                ML_ERROR(ME_PRECISION, "pnchisq");
+            ans = fmax2(ans, 0.0); /* Precaution PR#7099 */
+        }
     }
     return log_p ? log(ans) : ans;
 }
@@ -65,7 +74,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
     {
         if (x == 0. && f == 0.)
             return lower_tail ? exp(-0.5 * theta) : -expm1(-0.5 * theta);
-        /* x < 0  or  x==0, f > 0 */
+        /* x < 0  or {x==0, f > 0} */
         return lower_tail ? 0. : 1.;
     }
     if (!R_FINITE(x))
