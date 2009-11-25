@@ -161,23 +161,26 @@ QuartzDesc_t QuartzPDF_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzParam
     CGContextTranslateCTM(dev->context, 0.0, dev->bbox.size.height);
     CGContextScaleCTM(dev->context, 1.0, -1.0);
 
-    QuartzBackend_t qdef = {sizeof(qdef),
-                            width,
-                            height,
-                            dpi[0] / 72.0,
-                            dpi[1] / 72.0,
-                            par->pointsize,
-                            par->bg,
-                            par->canvas,
-                            par->flags,
-                            dev,
-                            QuartzPDF_GetCGContext,
-                            NULL, /* locate */
-                            QuartzPDF_Close,
-                            QuartzPDF_NewPage,
-                            NULL, /* state */
-                            NULL, /* par */
-                            NULL};
+    QuartzBackend_t qdef = {
+        sizeof(qdef),
+        width,
+        height,
+        dpi[0] / 72.0,
+        dpi[1] / 72.0,
+        par->pointsize,
+        par->bg,
+        par->canvas,
+        par->flags,
+        dev,
+        QuartzPDF_GetCGContext,
+        NULL, /* locate */
+        QuartzPDF_Close,
+        QuartzPDF_NewPage,
+        NULL, /* state */
+        NULL, /* par */
+        NULL, /* sync */
+        NULL, /* cap */
+    };
 
     if (!(ret = qf->Create(dd, &qdef)))
         QuartzPDF_Close(NULL, dev);

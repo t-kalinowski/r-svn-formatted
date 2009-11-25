@@ -200,6 +200,7 @@ QuartzDesc_t QuartzBitmap_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzPa
             NULL, /* state */
             NULL, /* par */
             NULL, /* sync */
+            NULL, /* cap */
         };
 
         if (!(ret = qf->Create(dd, &qdef)))

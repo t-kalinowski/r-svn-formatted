@@ -114,6 +114,7 @@ typedef struct QuartzSpecific_s
     void (*state)(QuartzDesc_t dev, void *userInfo, int state);
     void *(*par)(QuartzDesc_t dev, void *userInfo, int set, const char *key, void *value);
     void (*sync)(QuartzDesc_t dev, void *userInfo);
+    void *(*cap)(QuartzDesc_t dev, void *userInfo);
 } QuartzDesc;
 
 /* coordinates:
@@ -479,6 +480,7 @@ void *QuartzDevice_Create(void *_dev, QuartzBackend_t *def)
     qd->newPage = def->newPage;
     qd->state = def->state;
     qd->sync = def->sync;
+    qd->cap = def->cap;
     qd->scalex = def->scalex;
     qd->scaley = def->scaley;
     qd->tscale = 1.0;
@@ -1142,8 +1144,6 @@ static void RQuartz_Raster(unsigned int *raster, int w, int h, double x, double 
         height = -height;
     }
 
-    Rprintf("%.2f %.2f (%.2f,%.2f)\n", x, y, width, height);
-
     CGContextSaveGState(ctx);
     /* Translate by height of image */
     CGContextTranslateCTM(ctx, 0.0, height);
@@ -1174,8 +1174,15 @@ static void RQuartz_Raster(unsigned int *raster, int w, int h, double x, double 
 
 static SEXP RQuartz_Cap(pDevDesc dd)
 {
-    warning(_("%s not yet implemented for this device"), "Raster capture");
-    return R_NilValue;
+    SEXP raster = R_NilValue;
+    DRAWSPEC;
+    if (!ctx)
+        NOCTXR(raster);
+
+    if (xd->cap)
+        raster = (SEXP)xd->cap(xd, xd->userInfo);
+
+    return raster;
 }
 
 static void RQuartz_Circle(double x, double y, double r, CTXDESC)
