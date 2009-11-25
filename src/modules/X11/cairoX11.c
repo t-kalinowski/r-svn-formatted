@@ -395,9 +395,6 @@ static SEXP Cairo_Cap(pDevDesc dd)
     rint = (unsigned int *)INTEGER(raster);
     for (i = 0; i < size; i++)
     {
-        /* First byte is "black" - WTF?
-         * Anyway, I consequently start at byte 2
-         * (Hence 'i' rather than '(i - 1)') */
         rint[i] = 255 << 24 | ((screenData[i * 4]) << 16 | (screenData[i * 4 + 1]) << 8 | (screenData[i * 4 + 2]));
     }
 
