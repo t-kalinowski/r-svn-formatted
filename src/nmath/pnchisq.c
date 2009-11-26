@@ -44,12 +44,11 @@ double pnchisq(double x, double df, double ncp, int lower_tail, int log_p)
     {
         if (lower_tail)
         {
-            /* if(ans >= 1-1e-10) have no idea how close to 1 the true value is,
-             *   but ML_ERROR(ME_PRECISION, "pnchisq") seems too harsh */
             ans = fmin2(ans, 1.0); /* e.g., pchisq(555, 1.01, ncp = 80) */
         }
         else
         { /* !lower_tail */
+            /* since we computed the other tail cancellation is likely */
             if (ans < 1e-10)
                 ML_ERROR(ME_PRECISION, "pnchisq");
             ans = fmax2(ans, 0.0); /* Precaution PR#7099 */
@@ -94,8 +93,9 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
         for (i = 0; i < 110; pr *= lambda / ++i)
         {
             sum2 += pr;
-            /* could break once sum2 is essentially 1 */
             sum += pr * pchisq(x, f + 2 * i, lower_tail, FALSE);
+            if (sum2 >= 1 - 1e-15)
+                break;
         }
         ans = sum / sum2;
         return ans;
