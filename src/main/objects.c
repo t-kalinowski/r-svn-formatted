@@ -1143,6 +1143,7 @@ SEXP attribute_hidden do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env
 }
 
 static int maxMethodsOffset = 0, curMaxOffset;
+static Rboolean allowPrimitiveMethods = TRUE;
 typedef enum
 {
     NO_METHODS,
@@ -1163,6 +1164,27 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
     if (!isValidString(code_vec))
         error(_("argument 'code' must be a character string"));
     code_string = translateChar(asChar(code_vec));
+    /* with a NULL op, turns all primitive matching off or on (used to avoid possible infinite
+     recursion in methods computations*/
+    if (op == R_NilValue)
+    {
+        SEXP value;
+        value = allowPrimitiveMethods ? mkTrue() : mkFalse();
+        switch (code_string[0])
+        {
+        case 'c':
+        case 'C': /* clear */
+            allowPrimitiveMethods = FALSE;
+            break;
+        case 's':
+        case 'S': /* set */
+            allowPrimitiveMethods = TRUE;
+            break;
+        default: /* just report the current state */
+            break;
+        }
+        return value;
+    }
     do_set_prim_method(op, code_string, fundef, mlist);
     return (fname);
 }
@@ -1314,18 +1336,22 @@ SEXP do_set_prim_method(SEXP op, const char *code_string, SEXP fundef, SEXP mlis
 
 static SEXP get_primitive_methods(SEXP op, SEXP rho)
 {
-    SEXP f, e;
+    SEXP f, e, val;
     int nprotect = 0;
     f = PROTECT(allocVector(STRSXP, 1));
     nprotect++;
     SET_STRING_ELT(f, 0, mkChar(PRIMNAME(op)));
     PROTECT(e = allocVector(LANGSXP, 2));
     nprotect++;
-    SETCAR(e, install("getMethods"));
-    SETCAR(CDR(e), f);
-    e = eval(e, rho);
+    SETCAR(e, install("getGeneric"));
+    val = CDR(e);
+    SETCAR(val, f);
+    val = eval(e, rho);
+    /* a rough sanity check that this looks like a generic function */
+    if (TYPEOF(val) != CLOSXP || !IS_S4_OBJECT(val))
+        error(_("object returned as generic function \"%s\" doesn't appear to be one"), PRIMNAME(op));
     UNPROTECT(nprotect);
-    return e;
+    return CLOENV(val);
 }
 
 /* get the generic function, defined to be the function definition for
@@ -1380,6 +1406,8 @@ Rboolean R_has_methods(SEXP op)
         return (FALSE);
     if (!op || TYPEOF(op) == CLOSXP) /* except for primitives, just test for the package */
         return (TRUE);
+    if (!allowPrimitiveMethods) /* all primitives turned off by a call to R_set_prim */
+        return FALSE;
     offset = PRIMOFFSET(op);
     if (offset > curMaxOffset || prim_methods[offset] == NO_METHODS || prim_methods[offset] == SUPPRESSED)
         return (FALSE);
