@@ -517,8 +517,8 @@ static void menupkgload(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "local({pkg <- select.list(sort(.packages(all.available = TRUE)))\nif(nchar(pkg)) "
-                         "library(pkg, character.only=TRUE)})");
+    consolecmd(RConsole, "local({pkg <- select.list(sort(.packages(all.available = "
+                         "TRUE)),graphics=TRUE)\nif(nchar(pkg)) library(pkg, character.only=TRUE)})");
     /*    show(RConsole); */
 }
 
