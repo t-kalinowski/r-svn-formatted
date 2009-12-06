@@ -7117,16 +7117,21 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
     return TRUE;
 }
 
+static void pdfClip(double x0, double x1, double y0, double y1, PDFDesc *pd)
+{
+    if (x0 != 0.0 || y0 != 0.0 || x1 != 72 * pd->width || y1 != 72 * pd->height)
+        fprintf(pd->pdffp, "Q q %.2f %.2f %.2f %.2f re W n\n", x0, y0, x1 - x0, y1 - y0);
+    else
+        fprintf(pd->pdffp, "Q q\n");
+}
+
 static void PDF_Clip(double x0, double x1, double y0, double y1, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
 
     if (pd->inText)
         textoff(pd);
-    if (x0 != 0.0 || y0 != 0.0 || x1 != 72 * pd->width || y1 != 72 * pd->height)
-        fprintf(pd->pdffp, "Q q %.2f %.2f %.2f %.2f re W n\n", x0, y0, x1 - x0, y1 - y0);
-    else
-        fprintf(pd->pdffp, "Q q\n");
+    pdfClip(x0, x1, y0, y1, pd);
     PDF_Invalidate(dd);
 }
 
@@ -7323,8 +7328,8 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
 
     if (pd->inText)
         textoff(pd);
-    /* Save graphics state */
-    fprintf(pd->pdffp, "Q q\n");
+    /* Set clip region and save graphics state */
+    pdfClip(dd->clipLeft, dd->clipRight, dd->clipBottom, dd->clipTop, pd);
     /* Need to set AIS graphics state parameter ? */
     if (alpha)
     {
