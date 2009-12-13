@@ -953,7 +953,7 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
     if (IS_S4_OBJECT(x))
         return do_S4inherits(x, CADR(args), CADDR(args));
     else
-        klass = R_data_class(x, FALSE);
+        PROTECT(klass = R_data_class(x, FALSE));
     nclass = length(klass);
 
     what = CADR(args);
@@ -972,7 +972,7 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
     if (isvec)
-        rval = allocVector(INTSXP, nwhat);
+        PROTECT(rval = allocVector(INTSXP, nwhat));
 
     for (j = 0; j < nwhat; j++)
     {
@@ -986,13 +986,20 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (isvec)
                     INTEGER(rval)[j] = i + 1;
                 else
+                {
+                    UNPROTECT(1);
                     return mkTrue();
+                }
                 break;
             }
         }
     }
     if (!isvec)
+    {
+        UNPROTECT(1);
         return mkFalse();
+    }
+    UNPROTECT(2);
     return rval;
 }
 
