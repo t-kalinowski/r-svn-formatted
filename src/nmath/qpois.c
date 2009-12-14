@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2006 The R Development Core Team
+ *  Copyright (C) 2000-2009 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,13 +66,12 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
 #endif
     if (!R_FINITE(lambda))
         ML_ERR_return_NAN;
-
-    R_Q_P01_boundaries(p, 0, ML_POSINF);
-
     if (lambda < 0)
         ML_ERR_return_NAN;
     if (lambda == 0)
         return 0;
+
+    R_Q_P01_boundaries(p, 0, ML_POSINF);
 
     mu = lambda;
     sigma = sqrt(lambda);
