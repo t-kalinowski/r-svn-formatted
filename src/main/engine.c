@@ -1242,7 +1242,7 @@ static int clipCircleCode(double x, double y, double r, int toDevice, pGEDevDesc
  */
 void GECircle(double x, double y, double radius, const pGEcontext gc, pGEDevDesc dd)
 {
-    void *vmax;
+    const void *vmax;
     double *xc, *yc;
     int result;
 
@@ -1364,7 +1364,7 @@ static int clipRectCode(double x0, double y0, double x1, double y1, int toDevice
 /* These may both be fully transparent */
 void GERect(double x0, double y0, double x1, double y1, const pGEcontext gc, pGEDevDesc dd)
 {
-    void *vmax;
+    const void *vmax;
     double *xc, *yc;
     int result;
 

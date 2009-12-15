@@ -2741,7 +2741,7 @@ static void Rf_addX11Device(const char *display, double width, double height, do
 static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     const char *display, *cname, *devname, *title;
-    char *vmax;
+    const void *vmax;
     double height, width, ps, gamma;
     int colormodel, maxcubesize, bgcolor, canvascolor, res, xpos, ypos, useCairo, antialias;
     SEXP sc, sfonts;

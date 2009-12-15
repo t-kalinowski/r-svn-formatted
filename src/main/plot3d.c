@@ -995,7 +995,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 {
     /* draw a contour for one given contour level 'zc' */
 
-    char *vmax;
+    const void *vmax;
 
     double xend, yend;
     int i, ii, j, jj, ns, ns2, dir;
