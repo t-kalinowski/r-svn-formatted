@@ -306,7 +306,7 @@ static void Cairo_Polygon(int n, double *x, double *y, const pGEcontext gc, pDev
 static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
                          double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
-    char *vmax = vmaxget();
+    const void *vmax = vmaxget();
     int i;
     cairo_surface_t *image;
     unsigned char *imageData;

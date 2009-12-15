@@ -812,7 +812,7 @@ static void CScliplines(int n, double *x, double *y, const pGEcontext gc, int to
     double *xx, *yy;
     double x1, y1, x2, y2;
     cliprect cr;
-    void *vmax = vmaxget();
+    const void *vmax = vmaxget();
 
     if (toDevice)
         getClipRectToDevice(&cr.xl, &cr.yb, &cr.xr, &cr.yt, dd);
@@ -1144,7 +1144,7 @@ void GEPolygon(int n, double *x, double *y, const pGEcontext gc, pGEDevDesc dd)
      * Save (and reset below) the heap pointer to clean up
      * after any R_alloc's done by functions I call.
      */
-    void *vmaxsave = vmaxget();
+    const void *vmaxsave = vmaxget();
     if (gc->lty == LTY_BLANK)
         /* "transparent" border */
         gc->col = R_TRANWHITE;
@@ -1952,7 +1952,7 @@ SEXP GEXspline(int n, double *x, double *y, double *s, Rboolean open, Rboolean r
      * Save (and reset below) the heap pointer to clean up
      * after any R_alloc's done by functions I call.
      */
-    void *vmaxsave = vmaxget();
+    const void *vmaxsave = vmaxget();
     ys = (double *)R_alloc(n, sizeof(double));
     for (i = 0; i < n; i++)
         ys[i] = y[i] * asp;

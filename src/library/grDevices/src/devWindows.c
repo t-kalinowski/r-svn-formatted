@@ -2768,7 +2768,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, const pGEcontext
 
 static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
 {
-    char *vmax = vmaxget();
+    const void *vmax = vmaxget();
     point *p = (point *)R_alloc(n, sizeof(point));
     double devx, devy;
     int i;
@@ -2820,7 +2820,7 @@ static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDe
 
 static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
 {
-    char *vmax = vmaxget();
+    const void *vmax = vmaxget();
     point *points;
     rect r;
     double devx, devy;
@@ -2896,7 +2896,7 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
 
 static void doRaster(unsigned int *raster, int x, int y, int w, int h, double rot, pDevDesc dd)
 {
-    char *vmax = vmaxget();
+    const void *vmax = vmaxget();
     int i;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     rect sr, dr;
@@ -3061,7 +3061,7 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
 static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
-    char *vmax = vmaxget();
+    const void *vmax = vmaxget();
     double angle = rot * M_PI / 180;
     unsigned int *image = raster;
     int imageWidth = w;
@@ -3877,7 +3877,7 @@ SEXP devga(SEXP args)
 {
     pGEDevDesc gdd;
     const char *display, *title;
-    char *vmax;
+    const void *vmax;
     double height, width, ps, xpinch, ypinch, gamma;
     int recording = 0, resize = 1, bg, canvas, xpos, ypos, buffered;
     Rboolean restoreConsole, clickToConfirm, fillOddEven;
