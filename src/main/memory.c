@@ -3440,9 +3440,9 @@ int Seql(SEXP a, SEXP b)
         return 0;
     else
     {
-        char *vmax = vmaxget();
-        int result = !strcmp(translateChar(a), translateChar(b));
-        vmaxset(vmax);
+        SEXP vmax = R_VStack;
+        int result = !strcmp(translateCharUTF8(a), translateCharUTF8(b));
+        R_VStack = vmax; /* discard any memory used by translateCharUTF8 */
         return result;
     }
 }
