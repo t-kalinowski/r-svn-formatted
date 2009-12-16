@@ -1031,7 +1031,6 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
             if (arg_sym == R_dots)
             {
                 thisClass = dots_class(ev, &check_err);
-                nprotect++;
             }
             else
             {
