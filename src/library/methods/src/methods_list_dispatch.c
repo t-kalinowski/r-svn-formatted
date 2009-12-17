@@ -924,7 +924,7 @@ static SEXP do_inherited_table(SEXP class_objs, SEXP fdef, SEXP mtable, SEXP ev)
 static SEXP dots_class(SEXP ev, int *checkerrP)
 {
     static SEXP call = NULL;
-    SEXP e, ee;
+    SEXP ee;
     if (call == NULL)
     {
         SEXP dotFind, f, R_dots;
@@ -963,7 +963,8 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
 {
     static SEXP R_mtable = NULL, R_allmtable, R_sigargs, R_siglength, R_dots, R_dots1;
     int nprotect = 0;
-    SEXP mtable, classes, thisClass, sigargs, siglength, f_env = R_NilValue, method, f, val = R_NilValue;
+    SEXP mtable, classes, thisClass = R_NilValue /* -Wall */, sigargs, siglength, f_env = R_NilValue, method, f,
+                          val = R_NilValue;
     char *buf, *bufptr;
     int nargs, i, lwidth = 0;
     Rboolean prim_case = FALSE;
