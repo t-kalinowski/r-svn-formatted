@@ -85,7 +85,12 @@ void psmirnov2x(double *x, Sint *m, Sint *n)
     }
     md = (double)(*m);
     nd = (double)(*n);
-    q = floor(*x * md * nd - 1e-7) / (md * nd);
+    /*
+       q has 0.5/mn added to ensure that rounding error doesn't
+       turn an equality into an inequality, eg abs(1/2-4/5)>3/10
+
+    */
+    q = (0.5 + floor(*x * md * nd - 1e-7)) / (md * nd);
     u = (double *)R_alloc(*n + 1, sizeof(double));
 
     for (j = 0; j <= *n; j++)
