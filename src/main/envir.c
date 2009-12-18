@@ -3653,7 +3653,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         default:
             break;
         }
-        error(_("truncating string with embedded nul: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
+        error(_("embedded nul in string: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
     }
 
     if (enc && IsASCII(name, len))
