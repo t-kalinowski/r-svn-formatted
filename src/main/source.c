@@ -186,7 +186,7 @@ void attribute_hidden parseError(SEXP call, int linenum)
 
  The internal R_Parse.. functions are defined in ./gram.y (-> gram.c)
 
- .Internal( parse(file, n, text, prompt, srcfile) )
+ .Internal( parse(file, n, text, prompt, srcfile, encoding) )
  If there is text then that is read and the other arguments are ignored.
 */
 SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
