@@ -165,6 +165,8 @@ static void menusource(control m)
         snprintf(cmd, 1024, "source(\"%s\")", local);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menudisplay(control m)
@@ -191,6 +193,8 @@ static void menuloadimage(control m)
         snprintf(cmd, 1024, "load(\"%s\")", s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menusaveimage(control m)
@@ -210,6 +214,8 @@ static void menusaveimage(control m)
         snprintf(cmd, 1024, "save.image(\"%s\")", s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menuloadhistory(control m)
@@ -502,7 +508,8 @@ static void menurm(control m)
         return;
     if (askyesno(G_("Are you sure?")) == YES)
         consolecmd(RConsole, "rm(list=ls(all=TRUE))");
-    /*    show(RConsole); */
+    else
+        show(RConsole);
 }
 
 static void menusearch(control m)
@@ -634,6 +641,8 @@ static void menuhelp(control m)
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menumainman(control m)
@@ -687,6 +696,8 @@ static void menuhelpsearch(control m)
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menusearchRsite(control m)
@@ -705,6 +716,8 @@ static void menusearchRsite(control m)
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menuapropos(control m)
@@ -724,6 +737,8 @@ static void menuapropos(control m)
         strcpy(olds, s);
         consolecmd(RConsole, cmd);
     }
+    else
+        show(RConsole);
 }
 
 static void menuhelpstart(control m)
