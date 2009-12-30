@@ -530,6 +530,26 @@ void init_con(Rconnection new, const char *description, int enc, const char *con
 size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
 #endif
 
+typedef struct fileconn
+{
+    FILE *fp;
+#if defined(HAVE_OFF_T) && defined(HAVE_FSEEKO)
+    off_t rpos, wpos;
+#else
+#ifdef Win32
+    off64_t rpos, wpos;
+#else
+    long rpos, wpos;
+#endif
+#endif
+    Rboolean last_was_write;
+    Rboolean raw;
+#ifdef Win32
+    Rboolean anon_file;
+    char name[PATH_MAX + 1];
+#endif
+} * Rfileconn;
+
 static Rboolean file_open(Rconnection con)
 {
     const char *name;
@@ -799,7 +819,7 @@ static size_t file_write(const void *ptr, size_t size, size_t nitems, Rconnectio
     return fwrite(ptr, size, nitems, fp);
 }
 
-static Rconnection newfile(const char *description, int enc, const char *mode)
+static Rconnection newfile(const char *description, int enc, const char *mode, int raw)
 {
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
@@ -830,7 +850,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode)
     new->fflush = &file_fflush;
     new->read = &file_read;
     new->write = &file_write;
-    new->canseek = TRUE;
+    new->canseek = (raw == 0);
     new->private = (void *)malloc(sizeof(struct fileconn));
     if (!new->private)
     {
@@ -839,6 +859,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode)
         free(new);
         error(_("allocation of file connection failed"));
     }
+    ((Rfileconn)(new->private))->raw = raw;
     return new;
 }
 
@@ -5098,7 +5119,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block;
+    int ncon, block, raw = 0;
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 #ifdef HAVE_INTERNET
@@ -5148,6 +5169,12 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     enc = CADDDR(args);
     if (!isString(enc) || length(enc) != 1 || strlen(CHAR(STRING_ELT(enc, 0))) > 100) /* ASCII */
         error(_("invalid '%s' argument"), "encoding");
+    if (PRIMVAL(op))
+    {
+        raw = asLogical(CAD4R(args));
+        if (raw == NA_LOGICAL)
+            error(_("invalid '%s' argument"), "raw");
+    }
 
     ncon = NextConnection();
     if (strncmp(url, "file://", 7) == 0)
@@ -5159,7 +5186,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (strlen(url) > 9 && url[7] == '/' && url[9] == ':')
             nh = 8;
 #endif
-        con = newfile(url + nh, ienc, strlen(open) ? open : "r");
+        con = newfile(url + nh, ienc, strlen(open) ? open : "r", raw);
         class2 = "file";
 #ifdef HAVE_INTERNET
     }
@@ -5194,7 +5221,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
                 con = newclp(url, strlen(open) ? open : "r");
             else
             {
-                if (!strlen(open) || streql(open, "r") || streql(open, "rt"))
+                if (!raw && (!strlen(open) || streql(open, "r") || streql(open, "rt")))
                 {
                     /* check if this is a compressed file */
                     FILE *fp = fopen(R_ExpandFileName(url), "rb");
@@ -5228,7 +5255,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
                     switch (ztype)
                     {
                     case -1:
-                        con = newfile(url, ienc, strlen(open) ? open : "r");
+                        con = newfile(url, ienc, strlen(open) ? open : "r", raw);
                         break;
                     case 0:
                         con = newgzfile(url, strlen(open) ? open : "rt", compress);
@@ -5242,7 +5269,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                 }
                 else
-                    con = newfile(url, ienc, strlen(open) ? open : "r");
+                    con = newfile(url, ienc, strlen(open) ? open : "r", raw);
             }
             class2 = "file";
         }
