@@ -982,6 +982,7 @@ static CFStringRef text2unichar(CTXDESC, const char *text, UniChar **buffer, int
     if (*buffer == NULL)
     {
         CFIndex length = CFStringGetLength(str);
+        /* FIXME: check allocation */
         *buffer = malloc(length * sizeof(UniChar));
         CFStringGetCharacters(str, CFRangeMake(0, length), *buffer);
         *free = 1;
@@ -1006,6 +1007,7 @@ static double RQuartz_StrWidth(const char *text, CTXDESC)
         if (!str)
             return 0.0; /* invalid text contents */
         len = CFStringGetLength(str);
+        /* FIXME: check allocations */
         glyphs = malloc(sizeof(CGGlyph) * len);
         advances = malloc(sizeof(int) * len);
         CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
@@ -1046,6 +1048,7 @@ static void RQuartz_Text(double x, double y, const char *text, double rot, doubl
     if (!str)
         return; /* invalid text contents */
     len = CFStringGetLength(str);
+    /* FIXME: check allocations */
     glyphs = malloc(sizeof(CGGlyph) * len);
     CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
     int *advances = malloc(sizeof(int) * len);
