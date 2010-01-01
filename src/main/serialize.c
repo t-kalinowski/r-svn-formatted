@@ -2343,20 +2343,37 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
         filelen = ftell(fp);
         if (filelen < LEN_LIMIT)
         {
+            char *p;
             /* fprintf(stderr, "adding file '%s' at pos %d in cache, length %d\n",
                cfile, icache, filelen); */
-            strcpy(names[icache], cfile);
-            ptr[icache] = malloc(filelen);
-            if (fseek(fp, 0, SEEK_SET) != 0)
+            p = (char *)malloc(filelen);
+            if (ptr)
             {
+                strcpy(names[icache], cfile);
+                ptr[icache] = p;
+                if (fseek(fp, 0, SEEK_SET) != 0)
+                {
+                    fclose(fp);
+                    error(_("seek failed on %s"), cfile);
+                }
+                in = fread(p, 1, filelen, fp);
                 fclose(fp);
-                error(_("seek failed on %s"), cfile);
+                if (filelen != in)
+                    error(_("read failed on %s"), cfile);
+                memcpy(RAW(val), p + offset, len);
             }
-            in = fread(ptr[icache], 1, filelen, fp);
-            fclose(fp);
-            if (filelen != in)
-                error(_("read failed on %s"), cfile);
-            memcpy(RAW(val), ptr[icache] + offset, len);
+            else
+            {
+                if (fseek(fp, offset, SEEK_SET) != 0)
+                {
+                    fclose(fp);
+                    error(_("seek failed on %s"), cfile);
+                }
+                in = fread(RAW(val), 1, len, fp);
+                fclose(fp);
+                if (len != in)
+                    error(_("read failed on %s"), cfile);
+            }
             return val;
         }
         else

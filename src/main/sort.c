@@ -25,6 +25,7 @@
 
 #include <Defn.h> /* => Utils.h with the protos from here */
 #include <Rmath.h>
+#include <R_ext/RS.h> /* for Calloc/Free */
 
 /*--- Part I: Comparison Utilities ---*/
 
@@ -864,7 +865,7 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
     if (isNull(rho))
     {
         /* First sort NAs to one end */
-        isna = (int *)malloc(n * sizeof(int));
+        isna = Calloc(n, int);
         switch (TYPEOF(key))
         {
         case LGLSXP:
@@ -986,7 +987,7 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
         }
     }
     if (isna)
-        free(isna);
+        Free(isna);
 }
 
 /* FUNCTION order(...) */
