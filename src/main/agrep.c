@@ -37,6 +37,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     int igcase_opt, value_opt, max_distance_opt, useBytes;
     int max_deletions_opt, max_insertions_opt, max_substitutions_opt;
     Rboolean useWC = FALSE;
+    const void *vmax = NULL;
 
     regex_t reg;
     regaparams_t params;
@@ -125,6 +126,8 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(vec);
     PROTECT(ind = allocVector(LGLSXP, n));
     nmatches = 0;
+    /* wtransChar and translateChar can R_alloc */
+    vmax = vmaxget();
     for (i = 0; i < n; i++)
     {
         if (STRING_ELT(vec, i) == NA_STRING)
@@ -138,13 +141,17 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         if (useBytes)
             rc = tre_regaexecb(&reg, CHAR(STRING_ELT(vec, i)), &match, params, 0);
         else if (useWC)
+        {
             rc = tre_regawexec(&reg, wtransChar(STRING_ELT(vec, i)), &match, params, 0);
+            vmaxset(vmax);
+        }
         else
         {
             const char *s = translateChar(STRING_ELT(vec, i));
             if (mbcslocale && !mbcsValid(s))
                 error(_("input string %d is invalid in this locale"), i + 1);
             rc = tre_regaexec(&reg, s, &match, params, 0);
+            vmaxset(vmax);
         }
         if (rc == REG_OK)
         {

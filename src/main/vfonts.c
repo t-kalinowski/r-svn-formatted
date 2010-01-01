@@ -52,17 +52,21 @@ static void vfonts_Init(void)
 
 attribute_hidden double R_GE_VStrWidth(const char *s, cetype_t enc, const pGEcontext gc, pGEDevDesc dd)
 {
+    double res;
     if (!initialized)
         vfonts_Init();
     if (initialized > 0)
     {
+        const void *vmax = vmaxget();
         const char *str = reEnc(s, enc, CE_LATIN1, 2 /* '.' */);
-        return (*routines.GEVStrWidth)(str, gc, dd);
+        res = (*routines.GEVStrWidth)(str, gc, dd);
+        vmaxset(vmax);
+        return res;
     }
     else
     {
         error(_("Hershey fonts cannot be loaded"));
-        return 0.0;
+        return 0.0; /* -Wall */
     }
 }
 
@@ -89,8 +93,10 @@ attribute_hidden void R_GE_VText(double x, double y, const char *const s, cetype
         vfonts_Init();
     if (initialized > 0)
     {
+        const void *vmax = vmaxget();
         const char *str = reEnc(s, enc, CE_LATIN1, 2 /* '.' */);
         (*routines.GEVText)(x, y, str, x_justify, y_justify, rotation, gc, dd);
+        vmaxset(vmax);
     }
     else
         error(_("Hershey fonts cannot be loaded"));

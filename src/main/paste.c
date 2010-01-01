@@ -52,6 +52,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *s, *csep, *cbuf, *u_csep = NULL;
     char *buf;
     Rboolean allKnown, anyKnown, sepASCII, sepKnown, use_UTF8, sepUTF8;
+    const void *vmax;
 
     checkArity(op, args);
 
@@ -144,6 +145,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                     use_UTF8 = TRUE;
             }
         }
+        vmax = vmaxget();
         for (j = 0; j < nx; j++)
         {
             k = length(VECTOR_ELT(x, j));
@@ -153,6 +155,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                     pwidth += strlen(translateCharUTF8(STRING_ELT(VECTOR_ELT(x, j), i % k)));
                 else
                     pwidth += strlen(translateChar(STRING_ELT(VECTOR_ELT(x, j), i % k)));
+                vmaxset(vmax);
             }
         }
         if (use_UTF8 && !u_csep)
@@ -162,6 +165,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         pwidth += (nx - 1) * (use_UTF8 ? u_sepw : sepw);
         cbuf = buf = R_AllocStringBuffer(pwidth, &cbuff);
+        vmax = vmaxget();
         for (j = 0; j < nx; j++)
         {
             k = length(VECTOR_ELT(x, j));
@@ -196,6 +200,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf += sepw;
                 }
             }
+            vmax = vmaxget();
         }
         ienc = 0;
         if (use_UTF8)
@@ -227,13 +232,18 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         anyKnown = ENC_KNOWN(sep) > 0;
         allKnown = anyKnown || strIsASCII(csep);
         pwidth = 0;
+        vmax = vmaxget();
         for (i = 0; i < nx; i++)
             if (use_UTF8)
+            {
                 pwidth += strlen(translateCharUTF8(STRING_ELT(ans, i)));
+                vmaxset(vmax);
+            }
             else
                 pwidth += strlen(CHAR(STRING_ELT(ans, i)));
         pwidth += (nx - 1) * sepw;
         cbuf = buf = R_AllocStringBuffer(pwidth, &cbuff);
+        vmax = vmaxget();
         for (i = 0; i < nx; i++)
         {
             if (i > 0)
@@ -250,6 +260,8 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
                 buf++;
             allKnown = allKnown && (strIsASCII(s) || (ENC_KNOWN(STRING_ELT(ans, i)) > 0));
             anyKnown = anyKnown || (ENC_KNOWN(STRING_ELT(ans, i)) > 0);
+            if (use_UTF8)
+                vmaxset(vmax);
         }
         UNPROTECT(1);
         ienc = CE_NATIVE;
