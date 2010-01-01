@@ -612,6 +612,7 @@ SEXP R_r2dtable(SEXP n, SEXP r, SEXP c)
     int n_of_samples, n_of_cases;
     double *fact;
     SEXP ans, tmp;
+    const void *vmax = vmaxget();
 
     nr = length(r);
     nc = length(c);
@@ -662,6 +663,7 @@ SEXP R_r2dtable(SEXP n, SEXP r, SEXP c)
     PutRNGstate();
 
     UNPROTECT(1);
+    vmaxset(vmax);
 
     return (ans);
 }

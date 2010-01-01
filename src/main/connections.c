@@ -4010,8 +4010,7 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            /* FIXME: why not buf[size] or even buf[16]? */
-            char *buf = R_alloc(1, size);
+            char buf[size];
             int s;
             if (mode == 1)
             {
@@ -4379,13 +4378,16 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 /* FIXME: could do any MBCS locale, but would need pushback */
 static SEXP readFixedString(Rconnection con, int len, int useBytes)
 {
+    SEXP ans;
     char *buf;
     int pos, m;
+    const void *vmax = vmaxget();
 
     if (utf8locale && !useBytes)
     {
         int i, clen;
         char *p, *q;
+
         p = buf = (char *)R_alloc(MB_CUR_MAX * len + 1, sizeof(char));
         memset(buf, 0, MB_CUR_MAX * len + 1);
         for (i = 0; i < len; i++)
@@ -4424,13 +4426,16 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
     }
     /* String may contain nuls which we now (R >= 2.8.0) assume to be
        padding and ignore silently */
-    return mkChar(buf);
+    ans = mkChar(buf);
+    vmaxset(vmax);
+    return ans;
 }
 
 static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBytes)
 {
     char *buf;
     SEXP res;
+    const void *vmax = vmaxget();
 
     if (*np + len > nbytes)
     {
@@ -4444,6 +4449,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         int i, clen, iread = *np;
         char *p;
         Rbyte *q;
+
         p = buf = (char *)R_alloc(MB_CUR_MAX * len + 1, sizeof(char));
         for (i = 0; i < len; i++, p += clen, iread += clen)
         {
@@ -4458,7 +4464,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         clen = iread - (*np);
         *np = iread;
         *p = '\0';
-        return mkCharLenCE(buf, clen, CE_NATIVE);
+        res = mkCharLenCE(buf, clen, CE_NATIVE);
     }
     else
     {
@@ -4469,6 +4475,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         res = mkCharLenCE(buf, len, CE_NATIVE);
         Free(buf);
     }
+    vmaxset(vmax);
     return res;
 }
 
