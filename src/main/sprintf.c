@@ -25,6 +25,7 @@
 
 #include <Defn.h>
 #include "RBufferUtils.h"
+#include <R_ext/RS.h> /* for Calloc/Free */
 
 #define MAXLINE MAXELTSIZE
 #define MAXNARGS 100
@@ -350,9 +351,15 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                             case 's':
                                 if (TYPEOF(_this) != STRSXP)
                                 {
+                                    /* as.character method might call sprintf() */
+                                    int nc = strlen(outputString);
+                                    char *z = Calloc(nc + 1, char);
+                                    strcpy(z, outputString);
                                     PROTECT(tmp = lang2(install("as.character"), _this));
 
                                     COERCE_THIS_TO_A
+                                    strcpy(outputString, z);
+                                    Free(z);
                                 }
                                 break;
                             default:
