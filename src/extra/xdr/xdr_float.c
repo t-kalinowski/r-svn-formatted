@@ -100,6 +100,10 @@ bool_t xdr_float(xdrs, fp) register XDR *xdrs;
 register float *fp;
 {
 
+#ifdef WIN64
+#define _X86_
+#endif
+
 #ifdef WIN32
 #ifdef _PPC_
 /*Motorola PowerPC is same endian for NT as Intel so...*/
