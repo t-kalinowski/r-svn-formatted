@@ -1326,8 +1326,8 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 warning("number of rows of result is not a multiple of vector length (arg %d)", n);
             }
             dn = getAttrib(u, R_NamesSymbol);
-            if (k >= lenmin &&
-                (TAG(t) != R_NilValue || ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
+            if (k >= lenmin && (TAG(t) != R_NilValue || (deparse_level == 2) ||
+                                ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
                 have_cnames = TRUE;
             nnames = imax2(nnames, length(dn));
         }
@@ -1592,8 +1592,8 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 warning("number of columns of result is not a multiple of vector length (arg %d)", n);
             }
             dn = getAttrib(u, R_NamesSymbol);
-            if (k >= lenmin &&
-                (TAG(t) != R_NilValue || ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
+            if (k >= lenmin && (TAG(t) != R_NilValue || (deparse_level == 2) ||
+                                ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
                 have_rnames = TRUE;
             nnames = imax2(nnames, length(dn));
         }
