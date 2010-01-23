@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2009 University of Cambridge
+           Copyright (c) 1997-2010 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -50,10 +50,11 @@ supporting internal functions that are not used by other modules. */
 
 #include "pcre_internal.h"
 
-/* When DEBUG is defined, we need the pcre_printint() function, which is also
-used by pcretest. DEBUG is not defined when building a production library. */
+/* When PCRE_DEBUG is defined, we need the pcre_printint() function, which is
+also used by pcretest. PCRE_DEBUG is not defined when building a production
+library. */
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 #include "pcre_printint.src"
 #endif
 
@@ -2069,9 +2070,9 @@ Returns:      TRUE if what is matched could be empty
 
 static BOOL could_be_empty(const uschar *code, const uschar *endcode, branch_chain *bcptr, BOOL utf8)
 {
-    while (bcptr != NULL && bcptr->current >= code)
+    while (bcptr != NULL && bcptr->current_branch >= code)
     {
-        if (!could_be_empty_branch(bcptr->current, endcode, utf8))
+        if (!could_be_empty_branch(bcptr->current_branch, endcode, utf8))
             return FALSE;
         bcptr = bcptr->outer;
     }
@@ -2748,7 +2749,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
     uschar *utf8_char = NULL;
 #endif
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
     if (lengthptr != NULL)
         DPRINTF((">> start branch\n"));
 #endif
@@ -2808,7 +2809,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
 
         if (lengthptr != NULL)
         {
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
             if (code > cd->hwm)
                 cd->hwm = code; /* High water info */
 #endif
@@ -4360,12 +4361,14 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     {
                         /* In the pre-compile phase, we don't actually do the replication. We
                         just adjust the length as if we had. Do some paranoid checks for
-                        potential integer overflow. */
+                        potential integer overflow. The INT64_OR_DOUBLE type is a 64-bit
+                        integer type when available, otherwise double. */
 
                         if (lengthptr != NULL)
                         {
                             int delta = (repeat_min - 1) * length_prevgroup;
-                            if ((double)(repeat_min - 1) * (double)length_prevgroup > (double)INT_MAX ||
+                            if ((INT64_OR_DOUBLE)(repeat_min - 1) * (INT64_OR_DOUBLE)length_prevgroup >
+                                    (INT64_OR_DOUBLE)INT_MAX ||
                                 OFLOW_MAX - *lengthptr < delta)
                             {
                                 *errorcodeptr = ERR20;
@@ -4413,13 +4416,15 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     just adjust the length as if we had. For each repetition we must add 1
                     to the length for BRAZERO and for all but the last repetition we must
                     add 2 + 2*LINKSIZE to allow for the nesting that occurs. Do some
-                    paranoid checks to avoid integer overflow. */
+                    paranoid checks to avoid integer overflow. The INT64_OR_DOUBLE type is
+                    a 64-bit integer type when available, otherwise double. */
 
                     if (lengthptr != NULL && repeat_max > 0)
                     {
                         int delta = repeat_max * (length_prevgroup + 1 + 2 + 2 * LINK_SIZE) - 2 -
                                     2 * LINK_SIZE; /* Last one doesn't nest */
-                        if ((double)repeat_max * (double)(length_prevgroup + 1 + 2 + 2 * LINK_SIZE) > (double)INT_MAX ||
+                        if ((INT64_OR_DOUBLE)repeat_max * (INT64_OR_DOUBLE)(length_prevgroup + 1 + 2 + 2 * LINK_SIZE) >
+                                (INT64_OR_DOUBLE)INT_MAX ||
                             OFLOW_MAX - *lengthptr < delta)
                         {
                             *errorcodeptr = ERR20;
@@ -5777,6 +5782,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
 
                 if (-c >= ESC_REF)
                 {
+                    open_capitem *oc;
                     recno = -c - ESC_REF;
 
                 HANDLE_REFERENCE: /* Come here from named backref handling */
@@ -5788,6 +5794,19 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     cd->backref_map |= (recno < 32) ? (1 << recno) : 1;
                     if (recno > cd->top_backref)
                         cd->top_backref = recno;
+
+                    /* Check to see if this back reference is recursive, that it, it
+                    is inside the group that it references. A flag is set so that the
+                    group can be made atomic. */
+
+                    for (oc = cd->open_caps; oc != NULL; oc = oc->next)
+                    {
+                        if (oc->number == recno)
+                        {
+                            oc->flag = TRUE;
+                            break;
+                        }
+                    }
                 }
 
                 /* So are Unicode property matches, if supported. */
@@ -5974,10 +5993,11 @@ static BOOL compile_regex(int options, int oldims, uschar **codeptr, const uscha
     int length;
     int orig_bracount;
     int max_bracount;
+    int old_external_options = cd->external_options;
     branch_chain bc;
 
     bc.outer = bcptr;
-    bc.current = code;
+    bc.current_branch = code;
 
     firstbyte = reqbyte = REQ_UNSET;
 
@@ -5996,13 +6016,15 @@ static BOOL compile_regex(int options, int oldims, uschar **codeptr, const uscha
     pre-compile phase to find out whether anything has yet been compiled or not. */
 
     /* If this is a capturing subpattern, add to the chain of open capturing items
-    so that we can detect them if (*ACCEPT) is encountered. */
+    so that we can detect them if (*ACCEPT) is encountered. This is also used to
+    detect groups that contain recursive back references to themselves. */
 
     if (*code == OP_CBRA)
     {
         capnumber = GET2(code, 1 + LINK_SIZE);
         capitem.number = capnumber;
         capitem.next = cd->open_caps;
+        capitem.flag = FALSE;
         cd->open_caps = &capitem;
     }
 
@@ -6050,6 +6072,15 @@ static BOOL compile_regex(int options, int oldims, uschar **codeptr, const uscha
             *ptrptr = ptr;
             return FALSE;
         }
+
+        /* If the external options have changed during this branch, it means that we
+        are at the top level, and a leading option setting has been encountered. We
+        need to re-set the original option values to take account of this so that,
+        during the pre-compile phase, we know to allow for a re-set at the start of
+        subsequent branches. */
+
+        if (old_external_options != cd->external_options)
+            oldims = cd->external_options & PCRE_IMS;
 
         /* Keep the highest bracket count in case (?| was used and some branch
         has fewer than the rest. */
@@ -6156,18 +6187,33 @@ static BOOL compile_regex(int options, int oldims, uschar **codeptr, const uscha
                 } while (branch_length > 0);
             }
 
-            /* If it was a capturing subpattern, remove it from the chain. */
-
-            if (capnumber > 0)
-                cd->open_caps = cd->open_caps->next;
-
             /* Fill in the ket */
 
             *code = OP_KET;
             PUT(code, 1, code - start_bracket);
             code += 1 + LINK_SIZE;
 
-            /* Resetting option if needed */
+            /* If it was a capturing subpattern, check to see if it contained any
+            recursive back references. If so, we must wrap it in atomic brackets.
+            In any event, remove the block from the chain. */
+
+            if (capnumber > 0)
+            {
+                if (cd->open_caps->flag)
+                {
+                    memmove(start_bracket + 1 + LINK_SIZE, start_bracket, code - start_bracket);
+                    *start_bracket = OP_ONCE;
+                    code += 1 + LINK_SIZE;
+                    PUT(start_bracket, 1, code - start_bracket);
+                    *code = OP_KET;
+                    PUT(code, 1, code - start_bracket);
+                    code += 1 + LINK_SIZE;
+                    length += 2 + 2 * LINK_SIZE;
+                }
+                cd->open_caps = cd->open_caps->next;
+            }
+
+            /* Reset options if needed. */
 
             if ((options & PCRE_IMS) != oldims && *ptr == CHAR_RIGHT_PARENTHESIS)
             {
@@ -6216,7 +6262,7 @@ static BOOL compile_regex(int options, int oldims, uschar **codeptr, const uscha
         {
             *code = OP_ALT;
             PUT(code, 1, code - last_branch);
-            bc.current = last_branch = code;
+            bc.current_branch = last_branch = code;
             code += 1 + LINK_SIZE;
         }
 
@@ -6656,7 +6702,7 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
     /* Can't support UTF8 unless PCRE has been compiled to include the code. */
 
 #ifdef SUPPORT_UTF8
-    if (utf8 && (options & PCRE_NO_UTF8_CHECK) == 0 && (*erroroffset = _pcre_valid_utf8((uschar *)pattern, -1)) >= 0)
+    if (utf8 && (options & PCRE_NO_UTF8_CHECK) == 0 && (*erroroffset = _pcre_valid_utf8((USPTR)pattern, -1)) >= 0)
     {
         errorcode = ERR44;
         goto PCRE_EARLY_ERROR_RETURN2;
@@ -6869,7 +6915,7 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
 
     *code++ = OP_END;
 
-#ifndef DEBUG
+#ifndef PCRE_DEBUG
     if (code - codestart > length)
         errorcode = ERR23;
 #endif
@@ -6994,7 +7040,7 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
     /* Print out the compiled data if debugging is enabled. This is never the
     case when building a production library. */
 
-#ifdef DEBUG
+#ifdef PCRE_DEBUG
 
     printf("Length = %d top_bracket = %d top_backref = %d\n", length, re->top_bracket, re->top_backref);
 
@@ -7034,7 +7080,7 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
             *errorcodeptr = ERR23;
         return NULL;
     }
-#endif /* DEBUG */
+#endif /* PCRE_DEBUG */
 
     return (pcre *)re;
 }
