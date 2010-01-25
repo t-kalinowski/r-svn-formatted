@@ -311,7 +311,7 @@ static SEXP modLa_dlange(SEXP A, SEXP type)
 {
     SEXP x, val;
     int *xdims, m, n, nprot = 1;
-    double *work;
+    double *work = NULL;
     char typNorm[] = {'\0', '\0'};
 
     if (!isString(type))
