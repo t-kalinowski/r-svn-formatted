@@ -564,7 +564,7 @@ SEXP attribute_hidden do_systime(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-#ifdef W64
+#ifdef WIN64
 extern void tzset(void);
 /* tzname is in the headers as an import */
 #define tzname Rtzname
