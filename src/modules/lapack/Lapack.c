@@ -1153,7 +1153,13 @@ static SEXP moddet_ge_real(SEXP Ain, SEXP logarithm)
     else if (info > 0)
     { /* Singular matrix:  U[i,i] (i := info) is 0 */
         /*warning("Lapack dgetrf(): singular matrix: U[%d,%d]=0", info,info);*/
-        modulus = (useLog ? R_NegInf : 0.);
+        modulus =
+#ifdef _not_quite_                                        /* unfortunately does not work -- FIXME */
+            (ISNAN(REAL(A)[(info - 1) * n + (info - 1)])) /* pivot is NA/NaN */
+                ? R_NaN
+                :
+#endif
+                (useLog ? R_NegInf : 0.);
     }
     else
     {
