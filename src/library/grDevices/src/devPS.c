@@ -5515,8 +5515,6 @@ static void XFig_MetricInfo(int c, const pGEcontext gc, double *ascent, double *
    Flate encoding?
 */
 
-#define MAX_RASTERS 64
-
 typedef struct
 {
     rcolorPtr raster;
@@ -5608,10 +5606,11 @@ typedef struct
     Rboolean fontUsed[100];
 
     /* Raster images used on the device */
-    rasterImage rasters[MAX_RASTERS];
+    rasterImage *rasters;
     int numRasters;
+    int maxRasters;
     /* Soft masks for raster images */
-    int masks[MAX_RASTERS];
+    int *masks;
     int numMasks;
 } PDFDesc;
 
@@ -5645,13 +5644,18 @@ static void PDF_TextUTF8(double x, double y, const char *str, double rot, double
  * Some stuff for recording raster images
  */
 /* Detect an image by non-NULL rasters[] */
-static void initRasterArray(rasterImage *rasters)
+static rasterImage *initRasterArray(int numRasters)
 {
     int i;
-    for (i = 0; i < MAX_RASTERS; i++)
+    rasterImage *rasters = malloc(numRasters * sizeof(rasterImage));
+    if (rasters)
     {
-        rasters[i].raster = NULL;
+        for (i = 0; i < numRasters; i++)
+        {
+            rasters[i].raster = NULL;
+        }
     }
+    return rasters;
 }
 
 /* Add a raster (by making a copy)
@@ -5662,7 +5666,7 @@ static int addRaster(rcolorPtr raster, int w, int h, Rboolean interpolate, PDFDe
     int i, alpha = 0;
     rcolorPtr newRaster;
 
-    if (pd->numRasters == MAX_RASTERS)
+    if (pd->numRasters == pd->maxRasters)
         error(_("Too many raster images"));
 
     newRaster = malloc(w * h * sizeof(rcolor));
@@ -5695,10 +5699,10 @@ static int addRaster(rcolorPtr raster, int w, int h, Rboolean interpolate, PDFDe
     return alpha;
 }
 
-static void killRasterArray(rasterImage *rasters)
+static void killRasterArray(rasterImage *rasters, int numRasters)
 {
     int i;
-    for (i = 0; i < MAX_RASTERS; i++)
+    for (i = 0; i < numRasters; i++)
     {
         if (rasters[i].raster != NULL)
         {
@@ -5708,13 +5712,18 @@ static void killRasterArray(rasterImage *rasters)
 }
 
 /* Detect a mask by masks[] >= 0 */
-static void initMaskArray(int *masks)
+static int *initMaskArray(int numRasters)
 {
     int i;
-    for (i = 0; i < MAX_RASTERS; i++)
+    int *masks = malloc(numRasters * sizeof(int));
+    if (masks)
     {
-        masks[i] = -1;
+        for (i = 0; i < numRasters; i++)
+        {
+            masks[i] = -1;
+        }
     }
+    return masks;
 }
 
 static void PDF_maskdata(rcolorPtr raster, int w, int h, PDFDesc *pd)
@@ -5871,10 +5880,34 @@ static Rboolean addPDFDevicefont(type1fontfamily family, PDFDesc *pd, int *fontI
     return result;
 }
 
+static void PDFcleanup(int stage, PDFDesc *pd)
+{
+    switch (stage)
+    {
+    case 6: /* Allocated masks */
+        free(pd->masks);
+    case 5: /* Allocated rasters */
+        free(pd->rasters);
+    case 4: /* Allocated fonts */
+        freeDeviceFontList(pd->fonts);
+        freeDeviceCIDFontList(pd->cidfonts);
+        freeDeviceEncList(pd->encodings);
+        pd->fonts = NULL;
+        pd->cidfonts = NULL;
+        pd->encodings = NULL;
+    case 3: /* Allocated pageobj */
+        free(pd->pageobj);
+    case 2: /* Allocated pos */
+        free(pd->pos);
+    case 1: /* Allocated PDFDesc */
+        free(pd);
+    }
+}
+
 Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                          const char *encoding, const char *bg, const char *fg, double width, double height, double ps,
                          int onefile, int pagecentre, const char *title, SEXP fonts, int versionMajor, int versionMinor,
-                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven)
+                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven, int maxRasters)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -5893,6 +5926,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
 
     if (strlen(file) > PATH_MAX - 1)
     {
+        PDFcleanup(0, pd);
         free(dd);
         error(_("filename too long in pdf"));
     }
@@ -5909,15 +5943,14 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     pd->pos = (int *)calloc(1150, sizeof(int));
     if (!pd->pos)
     {
-        free(pd);
+        PDFcleanup(1, pd);
         free(dd);
         error(_("cannot allocate pd->pos"));
     }
     pd->pageobj = (int *)calloc(100, sizeof(int));
     if (!pd->pageobj)
     {
-        free(pd->pos);
-        free(pd);
+        PDFcleanup(2, pd);
         free(dd);
         error(_("cannot allocate pd->pageobj"));
     }
@@ -5938,10 +5971,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
 
     if (strlen(encoding) > PATH_MAX - 1)
     {
+        PDFcleanup(3, pd);
         free(dd);
-        free(pd->pos);
-        free(pd->pageobj);
-        free(pd);
         error(_("encoding path is too long"));
     }
     /*
@@ -5958,8 +5989,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     }
     else
     {
+        PDFcleanup(3, pd);
         free(dd);
-        free(pd);
         error(_("failed to load default encoding"));
     }
 
@@ -6037,8 +6068,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     }
     if (!gotFont)
     {
+        PDFcleanup(3, pd);
         free(dd);
-        free(pd);
         error(_("Failed to initialise default PostScript font"));
     }
 
@@ -6107,12 +6138,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
         }
         if (gotFonts < nfonts)
         {
-            freeDeviceFontList(pd->fonts);
-            freeDeviceEncList(pd->encodings);
-            pd->fonts = NULL;
-            pd->encodings = NULL;
+            PDFcleanup(4, pd);
             free(dd);
-            free(pd);
             error(_("Failed to initialise additional PostScript fonts"));
         }
     }
@@ -6121,8 +6148,21 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
      *****************************/
 
     pd->numRasters = 0;
-    initRasterArray(pd->rasters);
-    initMaskArray(pd->masks);
+    pd->maxRasters = maxRasters;
+    pd->rasters = initRasterArray(pd->maxRasters);
+    if (!pd->rasters)
+    {
+        PDFcleanup(4, pd);
+        free(dd);
+        error(_("failed to allocate rasters"));
+    }
+    pd->masks = initMaskArray(pd->maxRasters);
+    if (!pd->masks)
+    {
+        PDFcleanup(5, pd);
+        free(dd);
+        error(_("failed to allocate masks"));
+    }
 
     setbg = R_GE_str2col(bg);
     setfg = R_GE_str2col(fg);
@@ -6185,12 +6225,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     }
     else
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
+        PDFcleanup(6, pd);
         free(dd);
-        free(pd);
         error(_("invalid paper type '%s' (pdf)"), pd->papername);
     }
     pd->pagecentre = pagecentre;
@@ -6216,16 +6252,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     pointsize = floor(ps);
     if (R_TRANSPARENT(setbg) && R_TRANSPARENT(setfg))
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        freeDeviceEncList(pd->encodings);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
-        pd->encodings = NULL;
+        PDFcleanup(6, pd);
         free(dd);
-        free(pd->pos);
-        free(pd->pageobj);
-        free(pd);
         error(_("invalid foreground/background color (pdf)"));
     }
 
@@ -6281,16 +6309,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
 
     if (!PDF_Open(dd, pd))
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        freeDeviceEncList(pd->encodings);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
-        pd->encodings = NULL;
+        PDFcleanup(6, pd);
         free(dd);
-        free(pd->pos);
-        free(pd->pageobj);
-        free(pd);
         return 0;
     }
 
@@ -7222,14 +7242,8 @@ static void PDF_Close(pDevDesc dd)
     if (pd->pageno > 0)
         PDF_endpage(pd);
     PDF_endfile(pd);
-    killRasterArray(pd->rasters);
-    freeDeviceFontList(pd->fonts);
-    freeDeviceEncList(pd->encodings);
-    pd->fonts = NULL;
-    pd->encodings = NULL;
-    free(pd->pos);
-    free(pd->pageobj);
-    free(pd);
+    killRasterArray(pd->rasters, pd->maxRasters);
+    PDFcleanup(6, pd);
 }
 
 static void PDF_Activate(pDevDesc dd)
@@ -8375,7 +8389,7 @@ SEXP PDF(SEXP args)
     const char *file, *paper, *encoding, *family = NULL /* -Wall */, *bg, *fg, *title, call[] = "PDF", *colormodel;
     const char *afms[5];
     double height, width, ps;
-    int i, onefile, pagecentre, major, minor, dingbats, useKern;
+    int i, onefile, pagecentre, major, minor, dingbats, useKern, maxRasters;
     SEXP fam, fonts;
     Rboolean fillOddEven;
 
@@ -8436,8 +8450,12 @@ SEXP PDF(SEXP args)
     if (useKern == NA_LOGICAL)
         useKern = 1;
     fillOddEven = asLogical(CAR(args));
+    args = CDR(args);
     if (fillOddEven == NA_LOGICAL)
         error(_("invalid value of '%s'"), "fillOddEven");
+    maxRasters = asInteger(CAR(args));
+    if (maxRasters == NA_INTEGER || maxRasters <= 0)
+        error(_("invalid 'maxRasters' parameter in %s"), call);
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -8447,7 +8465,7 @@ SEXP PDF(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!PDFDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, ps, onefile, pagecentre,
-                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven))
+                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven, maxRasters))
         {
             /* free(dev); PDFDeviceDriver now frees */
             error(_("unable to start device pdf"));
