@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2008  Robert Gentleman, Ross Ihaka and the
+ *  Copyright (C) 1998--2010  Robert Gentleman, Ross Ihaka and the
  *                            R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -5926,7 +5926,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
 
     if (strlen(file) > PATH_MAX - 1)
     {
-        PDFcleanup(0, pd);
+        /* not yet created PDFcleanup(0, pd); */
         free(dd);
         error(_("filename too long in pdf"));
     }
