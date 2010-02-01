@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999-2008  Guido Masarotto and the R Development Core Team
+ *  Copyright (C) 1999-2010  Guido Masarotto and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -272,6 +272,9 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
 
 #ifdef HAVE_JPEG
 
+/* jconfig.h included by jpeglib.h may define these unconditionally */
+#undef HAVE_STDDEF_H
+#undef HAVE_STDLIB_H
 #include <jpeglib.h>
 
 /* Here's the extended error handler struct */
@@ -454,7 +457,7 @@ __declspec(dllexport) int R_SaveAsTIFF(void *d, int width, int height, unsigned 
        COMPRESSION_LZW = 5;
        COMPRESSION_JPEG = 7;
        COMPRESSION_DEFLATE = 32946;
-       COMPRESSION_ADOBE_DEFLATE = 8;  
+       COMPRESSION_ADOBE_DEFLATE = 8;
     */
     TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 #endif

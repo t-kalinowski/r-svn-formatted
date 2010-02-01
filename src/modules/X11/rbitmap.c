@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999-2008  Guido Masarotto and the R Development Core Team
+ *  Copyright (C) 1999-2010  Guido Masarotto and the R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,7 +70,11 @@
 static void my_png_error(png_structp png_ptr, png_const_charp msg)
 {
     R_ShowMessage((char *)msg);
+#if PNG_LIBPNG_VER < 10400
     longjmp(png_ptr->jmpbuf, 1);
+#else
+    longjmp(png_jmpbuf(png_ptr), 1);
+#endif
 }
 
 static void my_png_warning(png_structp png_ptr, png_const_charp msg)
@@ -126,7 +130,11 @@ int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, 
     /* Set error handling.  REQUIRED if you aren't supplying your own
      * error handling functions in the png_create_write_struct() call.
      */
+#if PNG_LIBPNG_VER < 10400
     if (setjmp(png_ptr->jmpbuf))
+#else
+    if (setjmp(png_jmpbuf(png_ptr)))
+#endif
     {
         /* If we get here, we had a problem writing the file */
         free(scanline);
