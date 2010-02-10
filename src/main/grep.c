@@ -765,7 +765,7 @@ static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, Rbo
 /* Returns the match position in bytes, for use in [g]sub */
 static int fgrep_one_bytes(const char *pat, const char *target, Rboolean useBytes, Rboolean use_UTF8)
 {
-    int i = -1, plen = strlen(pat), len = strlen(target);
+    int i = -1, plen = strlen(pat), len;
     const char *p;
 
     if (plen == 0)
@@ -778,6 +778,7 @@ static int fgrep_one_bytes(const char *pat, const char *target, Rboolean useByte
                 return i;
         return -1;
     }
+    len = strlen(target);
     if (!useBytes && mbcslocale)
     { /* skip along by chars */
         mbstate_t mb_st;
