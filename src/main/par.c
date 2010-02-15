@@ -1275,7 +1275,6 @@ SEXP attribute_hidden do_par(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         setAttrib(value, R_NamesSymbol, newnames);
-        UNPROTECT(2);
     }
     else
     {
@@ -1283,8 +1282,11 @@ SEXP attribute_hidden do_par(SEXP call, SEXP op, SEXP args, SEXP env)
         return R_NilValue /* -Wall */;
     }
     /* should really only do this if specifying new pars ?  yes! [MM] */
+
     if (new_spec && GRecording(call, dd))
         GErecordGraphicOperation(op, originalArgs, dd);
+
+    UNPROTECT(2);
     return value;
 }
 
