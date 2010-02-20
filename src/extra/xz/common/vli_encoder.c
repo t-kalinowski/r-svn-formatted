@@ -12,8 +12,8 @@
 
 #include "common.h"
 
-extern LZMA_API(lzma_ret) lzma_vli_encode(lzma_vli vli, size_t *restrict vli_pos, uint8_t *restrict out,
-                                          size_t *restrict out_pos, size_t out_size)
+extern LZMA_API(lzma_ret)
+    lzma_vli_encode(lzma_vli vli, size_t *vli_pos, uint8_t *restrict out, size_t *restrict out_pos, size_t out_size)
 {
     // If we haven't been given vli_pos, work in single-call mode.
     size_t vli_pos_internal = 0;
