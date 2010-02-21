@@ -338,10 +338,14 @@ SEXP attribute_hidden StringFromReal(double x, int *warn)
     if (ISNA(x))
         return NA_STRING;
     else
+    {
         /* Note that we recast EncodeReal()'s value to possibly modify it
          * destructively; this is harmless here (in a sequential
          * environment), as mkChar() creates a copy */
-        return mkChar(dropTrailing0((char *)EncodeReal(x, w, d, e, OutDec), OutDec));
+        /* Do it this way to avoid (3x) warnings in gcc 4.2.x */
+        char *tmp = (char *)EncodeReal(x, w, d, e, OutDec);
+        return mkChar(dropTrailing0(tmp, OutDec));
+    }
 }
 
 SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
