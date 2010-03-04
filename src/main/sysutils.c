@@ -708,7 +708,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 cetype_t getCharCE(SEXP x)
 {
     if (TYPEOF(x) != CHARSXP)
-        error(_("'%s' must be called on a CHARSXP"), "getEncChar");
+        error(_("'%s' must be called on a CHARSXP"), "getCharCE");
     if (IS_UTF8(x))
         return CE_UTF8;
     else if (IS_LATIN1(x))
