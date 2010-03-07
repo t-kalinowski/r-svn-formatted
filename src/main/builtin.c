@@ -945,6 +945,7 @@ static SEXP switchList(SEXP el, SEXP rho)
     }
 }
 
+/* This is a SPECIALSXP */
 SEXP attribute_hidden do_switch(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int argval;
@@ -965,25 +966,30 @@ SEXP attribute_hidden do_switch(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (y = w; y != R_NilValue; y = CDR(y))
             if (TAG(y) != R_NilValue && pmatch(STRING_ELT(x, 0), TAG(y), 1))
             {
+                /* Find the next non-missing argument.
+                   (If there is none, return NULL.) */
                 while (CAR(y) == R_MissingArg && y != R_NilValue)
                     y = CDR(y);
                 UNPROTECT(1);
-                return (eval(CAR(y), rho));
+                return eval(CAR(y), rho);
             }
         for (y = w; y != R_NilValue; y = CDR(y))
             if (TAG(y) == R_NilValue)
             {
                 UNPROTECT(1);
-                return (eval(CAR(y), rho));
+                return eval(CAR(y), rho);
             }
         Return_NULL;
     }
-    argval = asInteger(x);
-    if (argval <= 0 || argval > length(w))
-    {
-        Return_NULL;
+    else
+    { /* Treat as numeric */
+        argval = asInteger(x);
+        if (argval == NA_INTEGER || argval <= 0 || argval > length(w))
+        {
+            Return_NULL;
+        }
+        x = eval(CAR(nthcdr(w, argval - 1)), rho);
+        UNPROTECT(1);
+        return x;
     }
-    x = eval(CAR(nthcdr(w, argval - 1)), rho);
-    UNPROTECT(1);
-    return x;
 }
