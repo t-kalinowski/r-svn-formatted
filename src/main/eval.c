@@ -1588,12 +1588,20 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
    and because it is a little more efficient.
 */
 
+#define COPY_TAG(to, from)                                                                                             \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __tag__ = TAG(from);                                                                                      \
+        if (__tag__ != R_NilValue)                                                                                     \
+            SET_TAG(to, __tag__);                                                                                      \
+    } while (0)
+
 /* Used in eval and applyMethod (object.c) for builtin primitives,
    do_internal (names.c) for builtin .Internals
    and in evalArgs.
 
    'n' is the number of arguments already evaluated and hence not
-   passed to evalArgs and hence here.
+   passed to evalArgs and hence to here.
  */
 SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
 {
@@ -1621,8 +1629,8 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
                 while (h != R_NilValue)
                 {
                     SETCDR(tail, CONS(eval(CAR(h), rho), R_NilValue));
-                    SET_TAG(CDR(tail), CreateTag(TAG(h)));
                     tail = CDR(tail);
+                    COPY_TAG(tail, h);
                     h = CDR(h);
                 }
             }
@@ -1644,7 +1652,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         {
             SETCDR(tail, CONS(eval(CAR(el), rho), R_NilValue));
             tail = CDR(tail);
-            SET_TAG(tail, CreateTag(TAG(el)));
+            COPY_TAG(tail, el);
         }
         el = CDR(el);
     }
@@ -1683,8 +1691,8 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
                         SETCDR(tail, CONS(R_MissingArg, R_NilValue));
                     else
                         SETCDR(tail, CONS(eval(CAR(h), rho), R_NilValue));
-                    SET_TAG(CDR(tail), CreateTag(TAG(h)));
                     tail = CDR(tail);
+                    COPY_TAG(tail, h);
                     h = CDR(h);
                 }
             }
@@ -1695,13 +1703,13 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
         {
             SETCDR(tail, CONS(R_MissingArg, R_NilValue));
             tail = CDR(tail);
-            SET_TAG(tail, CreateTag(TAG(el)));
+            COPY_TAG(tail, el);
         }
         else
         {
             SETCDR(tail, CONS(eval(CAR(el), rho), R_NilValue));
             tail = CDR(tail);
-            SET_TAG(tail, CreateTag(TAG(el)));
+            COPY_TAG(tail, el);
         }
         el = CDR(el);
     }
@@ -1742,8 +1750,8 @@ SEXP attribute_hidden promiseArgs(SEXP el, SEXP rho)
                 while (h != R_NilValue)
                 {
                     SETCDR(tail, CONS(mkPROMISE(CAR(h), rho), R_NilValue));
-                    SET_TAG(CDR(tail), CreateTag(TAG(h)));
                     tail = CDR(tail);
+                    COPY_TAG(tail, h);
                     h = CDR(h);
                 }
             }
@@ -1754,13 +1762,13 @@ SEXP attribute_hidden promiseArgs(SEXP el, SEXP rho)
         {
             SETCDR(tail, CONS(R_MissingArg, R_NilValue));
             tail = CDR(tail);
-            SET_TAG(tail, CreateTag(TAG(el)));
+            COPY_TAG(tail, el);
         }
         else
         {
             SETCDR(tail, CONS(mkPROMISE(CAR(el), rho), R_NilValue));
             tail = CDR(tail);
-            SET_TAG(tail, CreateTag(TAG(el)));
+            COPY_TAG(tail, el);
         }
         el = CDR(el);
     }
