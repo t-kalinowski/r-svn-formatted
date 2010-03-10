@@ -2,6 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1997-2001   Saikat DebRoy and the
  *			      R Development Core Team
+ *  Copyright (C) 2003-2010   The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -659,7 +660,7 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
      *			 state is not modified in lnsrch (but can be
      *			 modified by fcn).
      *	iretcd	    <--	 return code
-     *	mxtake	    <--	 boolean flag indicating step of maximum length used
+     *	mxtake	    <--  boolean flag indicating step of maximum length used
      *	stepmx	     --> maximum allowable step size
      *	steptl	     --> relative step size at which successive iterates
      *			 considered close enough to terminate algorithm
@@ -680,8 +681,6 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
     double temp1;
     double pfpls = 0., plmbda = 0.; /* -Wall */
 
-    *mxtake = FALSE;
-    *iretcd = 2;
     temp1 = 0.;
     for (i = 0; i < n; ++i)
         temp1 += sx[i] * sx[i] * p[i] * p[i];
@@ -706,7 +705,9 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
 
     /*	check if new iterate satisfactory.  generate new lambda if necessary. */
 
-    while (*iretcd > 1)
+    *mxtake = FALSE;
+    *iretcd = 2;
+    do
     {
         for (i = 0; i < n; ++i)
             xpls[i] = x[i] + lambda * p[i];
@@ -773,7 +774,7 @@ static void lnsrch(int n, double *x, double f, double *g, double *p, double *xpl
                     lambda = tlmbda;
             }
         }
-    }
+    } while (*iretcd > 1);
 } /* lnsrch */
 
 static void dog_1step(int nr, int n, double *g, double *a, double *p, double *sx, double rnwtln, double *dlt,
@@ -921,14 +922,14 @@ static void dogdrv(int nr, int n, double *x, double f, double *g, double *a, dou
     int i;
     double fplsp, rnwtln, eta = 0.0, cln = 0.0, tmp; /* -Wall */
 
-    *iretcd = 4;
-    fstdog = TRUE;
     tmp = 0.;
     for (i = 0; i < n; ++i)
         tmp += sx[i] * sx[i] * p[i] * p[i];
     rnwtln = sqrt(tmp);
 
-    while (*iretcd > 1)
+    *iretcd = 4;
+    fstdog = TRUE;
+    do
     {
         /*	find new step by double dogleg algorithm */
 
@@ -938,7 +939,7 @@ static void dogdrv(int nr, int n, double *x, double f, double *g, double *a, dou
 
         tregup(nr, n, x, f, g, a, (fcn_p)fcn, state, sc, sx, nwtake, stepmx, steptl, dlt, iretcd, wrk3, &fplsp, xpls,
                fpls, mxtake, 2, wrk1);
-    }
+    } while (*iretcd > 1);
 } /* dogdrv */
 
 static void hook_1step(int nr, int n, double *g, double *a, double *udiag, double *p, double *sx, double rnwtln,
@@ -1125,8 +1126,6 @@ static void hookdrv(int nr, int n, double *x, double f, double *g, double *a, do
     int i, j;
     double bet, alpha, fplsp, rnwtln, tmp;
 
-    *iretcd = 4;
-    fstime = TRUE;
     tmp = 0.;
     for (i = 0; i < n; ++i)
         tmp += sx[i] * sx[i] * p[i] * p[i];
@@ -1159,9 +1158,10 @@ static void hookdrv(int nr, int n, double *x, double f, double *g, double *a, do
                 *dlt = stepmx;
         }
     }
-    while (*iretcd > 1)
+    *iretcd = 4;
+    fstime = TRUE;
+    do
     {
-
         /*	find new step by more-hebdon algorithm */
 
         hook_1step(nr, n, g, a, udiag, p, sx, rnwtln, dlt, amu, *dltp, phi, phip0, &fstime, sc, &nwtake, wrk0, epsm);
@@ -1171,7 +1171,7 @@ static void hookdrv(int nr, int n, double *x, double f, double *g, double *a, do
 
         tregup(nr, n, x, f, g, a, (fcn_p)fcn, state, sc, sx, nwtake, stepmx, steptl, dlt, iretcd, xplsp, &fplsp, xpls,
                fpls, mxtake, 3, udiag);
-    }
+    } while (*iretcd > 1);
 } /* hookdrv */
 
 static void secunf(int nr, int n, double *x, double *g, double *a, double *udiag, double *xpls, double *gpls,
@@ -2331,16 +2331,15 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
     double amusav = 0., phpsav = 0.;              /* -Wall */
     double phi = 0., amu = 0., rnf, wrk;
 
-    for (i = 0; i < n; ++i)
-        p[i] = 0.;
-
     *itncnt = 0;
-    iretcd = -1;
     epsm = DBL_EPSILON;
     optchk(n, x, typsiz, sx, &fscale, gradtl, &itnlim, &ndigit, epsm, &dlt, &method, &iexp, &iagflg, &iahflg, &stepmx,
            msg);
     if (*msg < 0)
         return;
+
+    for (i = 0; i < n; ++i)
+        p[i] = 0.;
 
     rnf = pow(10., -ndigit);
     rnf = fmax2(rnf, epsm);
@@ -2368,7 +2367,9 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
                 return;
         }
     }
-    *itrmcd = opt_stop(n, x, f, g, wrk1, *itncnt, &icscmx, gradtl, steptl, sx, fscale, itnlim, iretcd, mxtake, msg);
+    iretcd = -1;
+    *itrmcd = opt_stop(n, x, f, g, wrk1, *itncnt, &icscmx, gradtl, steptl, sx, fscale, itnlim, iretcd,
+                       /* mxtake = */ FALSE, msg);
     if (*itrmcd != 0)
     {
         optdrv_end(nr, n, xpls, x, gpls, g, fpls, f, a, p, *itncnt, 3, msg, prt_result);
