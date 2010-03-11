@@ -1948,6 +1948,7 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     return expr;
 }
 
+/* This is a special .Internal */
 SEXP attribute_hidden do_withVisible(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, nm, ret;
@@ -1967,6 +1968,7 @@ SEXP attribute_hidden do_withVisible(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ret;
 }
 
+/* This is a special .Internal */
 SEXP attribute_hidden do_recall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *cptr;

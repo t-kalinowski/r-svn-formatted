@@ -1546,6 +1546,7 @@ SEXP attribute_hidden do_atan(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* The S4 Math2 group, round and signif */
+/* This is a primitive SPECIALSXP with internal argument matching */
 SEXP attribute_hidden do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP res, ap, call2;
@@ -1623,6 +1624,7 @@ SEXP attribute_hidden do_log1arg(SEXP call, SEXP op, SEXP args, SEXP env)
     return res;
 }
 
+/* This is a primitive SPECIALSXP with internal argument matching */
 SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP res, ap = args, call2;

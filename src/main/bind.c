@@ -766,6 +766,7 @@ static SEXP ExtractOptionals(SEXP ans, int *recurse, int *usenames, SEXP call)
    argument.
 */
 
+/* This is a primitive SPECIALSXP */
 SEXP attribute_hidden do_c(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
@@ -1070,6 +1071,7 @@ SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
 } /* do_unlist */
 
 /* cbind(deparse.level, ...) and rbind(deparse.level, ...) : */
+/* This is a special .Internal */
 SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP a, t, obj, classlist, classname, method, classmethod, rho;

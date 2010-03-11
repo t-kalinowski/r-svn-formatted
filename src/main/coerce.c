@@ -2319,6 +2319,7 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+/* This is a primitive SPECIALSXP */
 SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rest, evargs, rfun;
@@ -2515,6 +2516,7 @@ SEXP attribute_hidden substituteList(SEXP el, SEXP rho)
     return res;
 }
 
+/* This is a primitive SPECIALSXP */
 SEXP attribute_hidden do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP env, s, t;
@@ -2540,6 +2542,7 @@ SEXP attribute_hidden do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
     return CAR(s);
 }
 
+/* This is a primitive SPECIALSXP */
 SEXP attribute_hidden do_quote(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
