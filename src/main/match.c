@@ -231,7 +231,7 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                         error(_("argument %d matches multiple formal arguments"), i);
                     SETCAR(a, CAR(b));
                     if (CAR(b) != R_MissingArg)
-                        SET_MISSING(a, 0); /* not missing this arg */
+                        SET_MISSING(a, 0);
                     SET_ARGUSED(b, 2);
                     fargused[arg_i] = 2;
                 }
@@ -281,7 +281,7 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                         }
                         SETCAR(a, CAR(b));
                         if (CAR(b) != R_MissingArg)
-                            SET_MISSING(a, 0); /* not missing this arg */
+                            SET_MISSING(a, 0);
                         SET_ARGUSED(b, 1);
                         fargused[arg_i] = 1;
                     }
@@ -373,8 +373,7 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
         /* Check that all arguments are used */
         SEXP unused = R_NilValue, last = R_NilValue;
         for (b = supplied; b != R_NilValue; b = CDR(b))
-            /* Uncomment to allow unmatched empty args, as done < 2.4.0 */
-            if (!ARGUSED(b) /* && CAR(b) != R_MissingArg) */)
+            if (!ARGUSED(b))
             {
                 if (last == R_NilValue)
                 {
@@ -394,14 +393,12 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
         {
             /* show bad arguments in call without evaluating them */
             SEXP unusedForError = R_NilValue, last = R_NilValue;
+
             for (b = unused; b != R_NilValue; b = CDR(b))
             {
-                SEXP tagB = TAG(b);
-                SEXP carB = CAR(b);
+                SEXP tagB = TAG(b), carB = CAR(b);
                 if (TYPEOF(carB) == PROMSXP)
-                {
                     carB = PREXPR(carB);
-                }
                 if (last == R_NilValue)
                 {
                     PROTECT(last = CONS(carB, R_NilValue));
