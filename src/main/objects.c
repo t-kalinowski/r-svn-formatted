@@ -892,9 +892,12 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
+/* primitive */
 SEXP attribute_hidden do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
+    check1arg(args, call, "x");
+
     switch (TYPEOF(CAR(args)))
     {
     case ENVSXP:
@@ -1116,6 +1119,10 @@ SEXP attribute_hidden do_standardGeneric(SEXP call, SEXP op, SEXP args, SEXP env
 {
     SEXP arg, value, fdef;
     R_stdGen_ptr_t ptr = R_get_standardGeneric_ptr();
+
+    checkArity(op, args);
+    check1arg(args, call, "f");
+
     if (!ptr)
     {
         warningcall(call, _("standardGeneric called without methods dispatch enabled (will be ignored)"));

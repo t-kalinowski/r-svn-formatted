@@ -61,9 +61,11 @@ SEXP attribute_hidden do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+/* primitives .primTrace and .primUntrace */
 SEXP attribute_hidden do_trace(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
+    check1arg(args, call, "x");
 
     find_char_fun
 
@@ -117,6 +119,7 @@ SEXP attribute_hidden do_tracemem(SEXP call, SEXP op, SEXP args, SEXP rho)
     char buffer[20];
 
     checkArity(op, args);
+    check1arg(args, call, "x");
 
     object = CAR(args);
     if (TYPEOF(object) == CLOSXP || TYPEOF(object) == BUILTINSXP || TYPEOF(object) == SPECIALSXP)
@@ -145,6 +148,7 @@ SEXP attribute_hidden do_untracemem(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP object;
 
     checkArity(op, args);
+    check1arg(args, call, "x");
 
     object = CAR(args);
     if (TYPEOF(object) == CLOSXP || TYPEOF(object) == BUILTINSXP || TYPEOF(object) == SPECIALSXP)
