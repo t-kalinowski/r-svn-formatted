@@ -1477,8 +1477,8 @@ SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_TAG(ap, install("x"));
     SET_TAG(CDR(ap), install("which"));
     SET_TAG(CDDR(ap), install("value"));
-    UNPROTECT(1); /* ap */
     argList = matchArgs(ap, args, call);
+    UNPROTECT(1); /* ap */
     PROTECT(argList);
 
     name = CADR(argList);
