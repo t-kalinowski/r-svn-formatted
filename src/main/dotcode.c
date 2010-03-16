@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2007  The R Development Core Team
+ *  Copyright (C) 1997--2010  The R Development Core Team
  *  Copyright (C) 2003	      The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -537,9 +537,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
         s = allocVector(type, n);
         zptr = (Rcomplex *)p;
         for (i = 0; i < n; i++)
-        {
             COMPLEX(s)[i] = zptr[i];
-        }
         break;
     case STRSXP:
         if (Fort)
@@ -597,9 +595,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
         PROTECT(s = allocVector(VECSXP, n));
         lptr = (SEXP *)p;
         for (i = 0; i < n; i++)
-        {
             SET_VECTOR_ELT(s, i, lptr[i]);
-        }
         UNPROTECT(1);
         break;
     case LISTSXP:
@@ -847,6 +843,9 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     const void *vmax = vmaxget();
     char buf[MaxSymbolBytes];
 
+    if (length(args) < 1)
+        errorcall(call, _("'name' is missing"));
+    check1arg(args, call, "name");
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
     fun = (R_ExternalRoutine)ofun;
 
@@ -887,6 +886,9 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     const void *vmax = vmaxget();
     char buf[MaxSymbolBytes];
 
+    if (length(args) < 1)
+        errorcall(call, _("'name' is missing"));
+    check1arg(args, call, "name");
     nm = CAR(args);
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
     args = CDR(args);
@@ -1485,6 +1487,9 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     void *vmax;
     char symName[MaxSymbolBytes], encname[101];
 
+    if (length(args) < 1)
+        errorcall(call, _("'name' is missing"));
+    check1arg(args, call, "name");
     if (NaokSymbol == NULL || DupSymbol == NULL || PkgSymbol == NULL)
     {
         NaokSymbol = install("NAOK");
