@@ -448,7 +448,7 @@ void attribute_hidden Rf_check1arg(SEXP arg, SEXP call, const char *formal)
     supplied = CHAR(PRINTNAME(tag));
     ns = strlen(supplied);
     if (ns > strlen(formal) || strncmp(supplied, formal, ns))
-        errorcall(call, "argument name does not match");
+        errorcall(call, _("supplied argument name '%s' does not match '%s'"), supplied, formal);
 }
 
 SEXP nthcdr(SEXP s, int n)
