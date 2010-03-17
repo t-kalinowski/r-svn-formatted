@@ -1635,6 +1635,8 @@ SEXP R_do_slot(SEXP obj, SEXP name)
             SEXP input = name, classString;
             if (name == s_dot_S3Class) /* defaults to class(obj) */
                 return R_data_class(obj, FALSE);
+            else if (name == R_NamesSymbol && TYPEOF(obj) == VECSXP) /* needed for namedList class */
+                return value;
             if (isSymbol(name))
             {
                 input = PROTECT(ScalarString(PRINTNAME(name)));
