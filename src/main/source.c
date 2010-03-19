@@ -211,7 +211,10 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (num == 0)
         return (allocVector(EXPRSXP, 0));
+
     PROTECT(text = coerceVector(CAR(args), STRSXP));
+    if (length(CAR(args)) && !length(text))
+        errorcall(call, _("coercion of 'text' to character was unsuccessful"));
     args = CDR(args);
     prompt = CAR(args);
     args = CDR(args);
