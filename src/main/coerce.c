@@ -1139,6 +1139,12 @@ static SEXP coerceSymbol(SEXP v, SEXPTYPE type)
         SET_VECTOR_ELT(rval, 0, v);
         UNPROTECT(1);
     }
+    else if (type == CHARSXP)
+        rval = PRINTNAME(v);
+    else if (type == STRSXP)
+        rval = ScalarString(PRINTNAME(v));
+    else
+        warning(_("(symbol) object cannot be coerced to type '%s'"), type2char(type));
     return rval;
 }
 
