@@ -87,6 +87,11 @@ is 4 there is plenty of room. */
 
 #define COMPILE_WORK_SIZE (4096)
 
+/* The overrun tests check for a slightly smaller size so that they detect the
+overrun before it actually does run off the end of the data block. */
+
+#define WORK_SIZE_CHECK (COMPILE_WORK_SIZE - 100)
+
 /* Table for handling escaped characters in the range '0'-'z'. Positive returns
 are simple data values; negative values are for special things like \d and so
 on. Zero means further processing is needed (for things like \x), or the escape
@@ -272,7 +277,11 @@ the number of relocations needed when a shared library is loaded dynamically,
 it is now one long string. We cannot use a table of offsets, because the
 lengths of inserts such as XSTRING(MAX_NAME_SIZE) are not known. Instead, we
 simply count through to the one we want - this isn't a performance issue
-because these strings are used only when there is a compilation error. */
+because these strings are used only when there is a compilation error.
+
+Each substring ends with \0 to insert a null character. This includes the final
+substring, so that the whole string ends with \0\0, which can be detected when
+counting through. */
 
 static const char error_texts[] =
     "no error\0"
@@ -356,7 +365,7 @@ static const char error_texts[] =
                                            "digit expected after (?+\0"
                                            "] is an invalid data character in JavaScript compatibility mode\0"
                                            /* 65 */
-                                           "different names for subpatterns of the same number are not allowed";
+                                           "different names for subpatterns of the same number are not allowed\0";
 
 /* Table to identify digits and hex digits. This is used when compiling
 patterns. Note that the tables in chartables are dependent on the locale, and
@@ -506,9 +515,13 @@ static const char *find_error_text(int n)
 {
     const char *s = error_texts;
     for (; n > 0; n--)
+    {
         while (*s++ != 0)
         {
         };
+        if (*s == 0)
+            return "Error text not found (please report)";
+    }
     return s;
 }
 
@@ -1506,6 +1519,7 @@ static int find_fixedlength(uschar *code, int options, BOOL atend, compile_data 
         case OP_CALLOUT:
         case OP_SOD:
         case OP_SOM:
+        case OP_SET_SOM:
         case OP_EOD:
         case OP_EODN:
         case OP_CIRC:
@@ -1848,11 +1862,12 @@ Arguments:
   code        points to start of search
   endcode     points to where to stop
   utf8        TRUE if in UTF8 mode
+  cd          contains pointers to tables etc.
 
 Returns:      TRUE if what is matched could be empty
 */
 
-static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOOL utf8)
+static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOOL utf8, compile_data *cd)
 {
     register int c;
     for (code = first_significant_code(code + _pcre_OP_lengths[*code], NULL, 0, TRUE); code < endcode;
@@ -1886,6 +1901,29 @@ static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOO
             continue;
         }
 
+        /* For a recursion/subroutine call, if its end has been reached, which
+        implies a subroutine call, we can scan it. */
+
+        if (c == OP_RECURSE)
+        {
+            BOOL empty_branch = FALSE;
+            const uschar *scode = cd->start_code + GET(code, 1);
+            if (GET(scode, 1) == 0)
+                return TRUE; /* Unclosed */
+            do
+            {
+                if (could_be_empty_branch(scode, endcode, utf8, cd))
+                {
+                    empty_branch = TRUE;
+                    break;
+                }
+                scode += GET(scode, 1);
+            } while (*scode == OP_ALT);
+            if (!empty_branch)
+                return FALSE; /* All branches are non-empty */
+            continue;
+        }
+
         /* For other groups, scan the branches. */
 
         if (c == OP_BRA || c == OP_CBRA || c == OP_ONCE || c == OP_COND)
@@ -1905,7 +1943,7 @@ static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOO
                 empty_branch = FALSE;
                 do
                 {
-                    if (!empty_branch && could_be_empty_branch(code, endcode, utf8))
+                    if (!empty_branch && could_be_empty_branch(code, endcode, utf8, cd))
                         empty_branch = TRUE;
                     code += GET(code, 1);
                 } while (*code == OP_ALT);
@@ -2044,6 +2082,11 @@ static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOO
                 code += _pcre_utf8_table4[code[3] & 0x3f];
             break;
 #endif
+
+            /* None of the remaining opcodes are required to match a character. */
+
+        default:
+            break;
         }
     }
 
@@ -2064,15 +2107,16 @@ Arguments:
   endcode     points to where to stop (current RECURSE item)
   bcptr       points to the chain of current (unclosed) branch starts
   utf8        TRUE if in UTF-8 mode
+  cd          pointers to tables etc
 
 Returns:      TRUE if what is matched could be empty
 */
 
-static BOOL could_be_empty(const uschar *code, const uschar *endcode, branch_chain *bcptr, BOOL utf8)
+static BOOL could_be_empty(const uschar *code, const uschar *endcode, branch_chain *bcptr, BOOL utf8, compile_data *cd)
 {
     while (bcptr != NULL && bcptr->current_branch >= code)
     {
-        if (!could_be_empty_branch(bcptr->current_branch, endcode, utf8))
+        if (!could_be_empty_branch(bcptr->current_branch, endcode, utf8, cd))
             return FALSE;
         bcptr = bcptr->outer;
     }
@@ -2813,7 +2857,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
             if (code > cd->hwm)
                 cd->hwm = code; /* High water info */
 #endif
-            if (code > cd->start_workspace + COMPILE_WORK_SIZE) /* Check for overrun */
+            if (code > cd->start_workspace + WORK_SIZE_CHECK) /* Check for overrun */
             {
                 *errorcodeptr = ERR52;
                 goto FAILED;
@@ -2864,7 +2908,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
         /* In the real compile phase, just check the workspace used by the forward
         reference list. */
 
-        else if (cd->hwm > cd->start_workspace + COMPILE_WORK_SIZE)
+        else if (cd->hwm > cd->start_workspace + WORK_SIZE_CHECK)
         {
             *errorcodeptr = ERR52;
             goto FAILED;
@@ -4502,7 +4546,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                         uschar *scode = bracode;
                         do
                         {
-                            if (could_be_empty_branch(scode, ketcode, utf8))
+                            if (could_be_empty_branch(scode, ketcode, utf8, cd))
                             {
                                 *bracode += OP_SBRA - OP_BRA;
                                 break;
@@ -4602,7 +4646,12 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                         *tempcode = OP_NOTPOSUPTO;
                         break;
 
+                        /* Because we are moving code along, we must ensure that any
+                        pending recursive references are updated. */
+
                     default:
+                        *code = OP_END;
+                        adjust_recurse(tempcode, 1 + LINK_SIZE, utf8, cd, save_hwm);
                         memmove(tempcode + 1 + LINK_SIZE, tempcode, len);
                         code += 1 + LINK_SIZE;
                         len += 1 + LINK_SIZE;
@@ -5320,6 +5369,11 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                                 *errorcodeptr = ERR15;
                                 goto FAILED;
                             }
+
+                            /* Fudge the value of "called" so that when it is inserted as an
+                            offset below, what it actually inserted is the reference number
+                            of the group. */
+
                             called = cd->start_code + recno;
                             PUTINC(cd->hwm, 0, code + 2 + LINK_SIZE - cd->start_code);
                         }
@@ -5328,7 +5382,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                         this is a recursive call. We check to see if this is a left
                         recursion that could loop for ever, and diagnose that case. */
 
-                        else if (GET(called, 1) == 0 && could_be_empty(called, code, bcptr, utf8))
+                        else if (GET(called, 1) == 0 && could_be_empty(called, code, bcptr, utf8, cd))
                         {
                             *errorcodeptr = ERR40;
                             goto FAILED;
@@ -7041,7 +7095,6 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
     case when building a production library. */
 
 #ifdef PCRE_DEBUG
-
     printf("Length = %d top_bracket = %d top_backref = %d\n", length, re->top_bracket, re->top_backref);
 
     printf("Options=%08x\n", re->options);
