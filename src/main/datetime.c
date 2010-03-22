@@ -900,6 +900,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                     strcpy(buf2, q);
+#else
+                strcpy(buf2, q);
 #endif
                 p = strstr(q, "%OS");
                 if (p)
