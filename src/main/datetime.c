@@ -899,10 +899,10 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcat(buf2, p + 2);
                 }
                 else
-#else
-                strcpy(buf2, q);
 #endif
-                    p = strstr(q, "%OS");
+                    strcpy(buf2, q);
+
+                p = strstr(q, "%OS");
                 if (p)
                 {
                     /* FIXME some of this should be outside the loop */
