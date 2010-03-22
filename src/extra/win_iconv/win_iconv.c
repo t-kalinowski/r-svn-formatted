@@ -798,6 +798,9 @@ static size_t win_iconv(iconv_t _cd, const char **inbuf, size_t *inbytesleft, ch
     return 0;
 }
 
+#define FLAG_TRANSLIT 2
+#define FLAG_IGNORE 4
+
 static csconv_t make_csconv(const char *_name)
 {
     CPINFOEX cpinfoex;
