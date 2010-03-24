@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2008  The R Development Core Team.
+ *  Copyright (C) 2000-2010  The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1011,8 +1011,8 @@ static void glibc_fix(struct tm *tm, int *invalid)
 SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, sformat, ans, ansnames, klass, stz, tzone;
-    int i, n, m, N, invalid, isgmt = 0, settz = 0;
-    struct tm tm, tm2;
+    int i, n, m, N, invalid, isgmt = 0, settz = 0, offset;
+    struct tm tm, tm2, *ptm = &tm;
     const char *tz = NULL;
     char oldtz[20] = "";
     double psecs = 0.0;
@@ -1060,8 +1060,9 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_sec = tm.tm_min = tm.tm_hour = 0;
         tm.tm_year = tm.tm_mon = tm.tm_mday = tm.tm_yday = tm.tm_wday = NA_INTEGER;
         tm.tm_isdst = -1;
+        offset = NA_INTEGER;
         invalid = STRING_ELT(x, i % n) == NA_STRING ||
-                  !R_strptime(CHAR(STRING_ELT(x, i % n)), CHAR(STRING_ELT(sformat, i % m)), &tm, &psecs);
+                  !R_strptime(CHAR(STRING_ELT(x, i % n)), CHAR(STRING_ELT(sformat, i % m)), &tm, &psecs, &offset);
         if (!invalid)
         {
             /* Solaris sets missing fields to 0 */
@@ -1070,16 +1071,35 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             if (tm.tm_mon == NA_INTEGER || tm.tm_mday == NA_INTEGER || tm.tm_year == NA_INTEGER)
                 glibc_fix(&tm, &invalid);
             tm.tm_isdst = -1;
-            /* we do want to set wday, yday, isdst, but not to
-               adjust structure at DST boundaries */
-            memcpy(&tm2, &tm, sizeof(struct tm));
-            mktime0(&tm2, 1 - isgmt); /* set wday, yday, isdst */
-            tm.tm_wday = tm2.tm_wday;
-            tm.tm_yday = tm2.tm_yday;
-            tm.tm_isdst = isgmt ? 0 : tm2.tm_isdst;
+            if (offset != NA_INTEGER)
+            {
+                /* we know the offset, but not the timezone
+                   so all we can do is to convert to time_t,
+                   adjust and convert back */
+                double t0;
+                memcpy(&tm2, &tm, sizeof(struct tm));
+                t0 = mktime0(&tm2, 0);
+                if (t0 != -1)
+                {
+                    t0 -= offset; /* offset = -0800 is Seattle */
+                    ptm = localtime0(&t0, 1 - isgmt, &tm2);
+                }
+                else
+                    invalid = 1;
+            }
+            else
+            {
+                /* we do want to set wday, yday, isdst, but not to
+                   adjust structure at DST boundaries */
+                memcpy(&tm2, &tm, sizeof(struct tm));
+                mktime0(&tm2, 1 - isgmt); /* set wday, yday, isdst */
+                tm.tm_wday = tm2.tm_wday;
+                tm.tm_yday = tm2.tm_yday;
+                tm.tm_isdst = isgmt ? 0 : tm2.tm_isdst;
+            }
+            invalid = validate_tm(&tm) != 0;
         }
-        invalid = invalid || validate_tm(&tm) != 0;
-        makelt(&tm, ans, i, !invalid, psecs - floor(psecs));
+        makelt(ptm, ans, i, !invalid, psecs - floor(psecs));
     }
 
     setAttrib(ans, R_NamesSymbol, ansnames);
