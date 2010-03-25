@@ -3047,14 +3047,14 @@ static SEXP xxfuncall(SEXP expr, SEXP args)
     return ans;
 }
 
-static SEXP mkString2(const char *s, int len)
+static SEXP mkString2(const char *s, int len, Rboolean escaped)
 {
     SEXP t;
     cetype_t enc = CE_NATIVE;
 
     if (known_to_be_latin1)
         enc = CE_LATIN1;
-    else if (known_to_be_utf8)
+    else if (!escaped && known_to_be_utf8)
         enc = CE_UTF8;
 
     PROTECT(t = allocVector(STRSXP, 1));
@@ -4434,7 +4434,7 @@ static int StringValue(int c, Rboolean forSymbol)
     char *stext = st0, *bp = st0;
     int wcnt = 0;
     ucs_t wcs[10001];
-    Rboolean use_wcs = FALSE;
+    Rboolean oct_or_hex = FALSE, use_wcs = FALSE;
 
     while ((c = xxgetc()) != R_EOF && c != quote)
     {
@@ -4442,7 +4442,7 @@ static int StringValue(int c, Rboolean forSymbol)
         if (c == '\n')
         {
             xxungetc(c);
-            /* Fix by Mark Bravington to allow multiline strings
+            /* Fix suggested by Mark Bravington to allow multiline strings
              * by pretending we've seen a backslash. Was:
              * return ERROR;
              */
@@ -4476,6 +4476,7 @@ static int StringValue(int c, Rboolean forSymbol)
                     CTEXT_POP();
                 }
                 c = octal;
+                oct_or_hex = TRUE;
             }
             else if (c == 'x')
             {
@@ -4506,6 +4507,7 @@ static int StringValue(int c, Rboolean forSymbol)
                     val = 16 * val + ext;
                 }
                 c = val;
+                oct_or_hex = TRUE;
             }
             else if (c == 'u')
             {
@@ -4703,6 +4705,8 @@ static int StringValue(int c, Rboolean forSymbol)
     {
         if (use_wcs)
         {
+            if (oct_or_hex)
+                warning("mixing Unicode and octal/hex escapes in a string is discouraged");
             if (wcnt < 10000)
                 PROTECT(yylval = mkStringUTF8(wcs, wcnt)); /* include terminator */
             else
@@ -4711,7 +4715,7 @@ static int StringValue(int c, Rboolean forSymbol)
                     ParseState.xxlineno);
         }
         else
-            PROTECT(yylval = mkString2(stext, bp - stext - 1));
+            PROTECT(yylval = mkString2(stext, bp - stext - 1, oct_or_hex));
         if (stext != st0)
             free(stext);
         return STR_CONST;
