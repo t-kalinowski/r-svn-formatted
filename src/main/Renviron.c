@@ -108,7 +108,7 @@ static char *findRbrace(char *s)
 #define BUF_SIZE 10000
 static char *findterm(char *s)
 {
-    char *p, *q, *r, *r2, *ss = s;
+    char *p, *q, *r2, *ss = s;
     static char ans[BUF_SIZE];
     int nans;
 
@@ -128,7 +128,7 @@ static char *findterm(char *s)
         nans = strlen(ans);
         strncat(ans, s, p - s);
         ans[nans + p - s] = '\0';
-        r = (char *)alloca(q - p + 2);
+        char r[q - p + 2];
         strncpy(r, p, q - p + 1);
         r[q - p + 1] = '\0';
         r2 = subterm(r);

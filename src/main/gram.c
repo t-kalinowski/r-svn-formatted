@@ -4385,7 +4385,6 @@ static int mbcs_get_next2(int c, ucs_t *wc)
 static SEXP mkStringUTF8(const ucs_t *wcs, int cnt)
 {
     SEXP t;
-    char *s;
     int nb;
 
 /* NB: cnt includes the terminator */
@@ -4394,7 +4393,7 @@ static SEXP mkStringUTF8(const ucs_t *wcs, int cnt)
 #else
     nb = cnt * 6;
 #endif
-    s = alloca(nb);
+    char s[nb];
     R_CheckStack();
     memset(s, 0, nb); /* safety */
 #ifdef WC_NOT_UNICODE

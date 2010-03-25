@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2009  The R Development Core Team
+ *  Copyright (C) 1997--2010  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1314,7 +1314,6 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
     SEXPTYPE type;
     SEXP s;
     int flags, levs, objf, hasattr, hastag, length, count;
-    char *cbuf;
 
     R_assert(TYPEOF(ref_table) == LISTSXP && TYPEOF(CAR(ref_table)) == VECSXP);
 
@@ -1434,14 +1433,15 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             AddReadRef(ref_table, s);
             break;
         case SPECIALSXP:
-        case BUILTINSXP:
+        case BUILTINSXP: {
             /* These are all short strings */
             length = InInteger(stream);
-            cbuf = alloca(length + 1);
+            char cbuf[length + 1];
             InString(stream, cbuf, length);
             cbuf[length] = '\0';
             PROTECT(s = mkPRIMSXP(StrToInternal(cbuf), type == BUILTINSXP));
-            break;
+        }
+        break;
         case CHARSXP:
             length = InInteger(stream);
             if (length == -1)
@@ -1449,7 +1449,7 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             else if (length < 1000)
             {
                 int enc = CE_NATIVE;
-                cbuf = alloca(length + 1);
+                char cbuf[length + 1];
                 InString(stream, cbuf, length);
                 cbuf[length] = '\0';
                 if (levs & UTF8_MASK)
@@ -1461,7 +1461,7 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             else
             {
                 int enc = CE_NATIVE;
-                cbuf = CallocCharBuf(length);
+                char *cbuf = CallocCharBuf(length);
                 InString(stream, cbuf, length);
                 if (levs & UTF8_MASK)
                     enc = CE_UTF8;

@@ -1237,11 +1237,10 @@ void R_CleanTempDir(void)
 {
     if (Sys_TempDir)
     {
-        wchar_t *w;
         int n = strlen(Sys_TempDir);
         /* Windows cannot delete the current working directory */
         SetCurrentDirectory(R_HomeDir());
-        w = (wchar_t *)alloca(2 * (n + 1));
+        wchar_t w[2 * (n + 1)];
         mbstowcs(w, Sys_TempDir, n + 1);
         R_unlink(w, 1);
     }

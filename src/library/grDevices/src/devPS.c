@@ -790,20 +790,18 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
     const unsigned char *p = NULL, *str1 = str;
     unsigned char p1, p2;
 
-    char *buff;
     int status;
     if (!metrics && (face % 5) != 0)
     {
         /* This is the CID font case, and should only happen for
            non-symbol fonts.  So we assume monospaced with multipliers.
            We need to remap even if we are in a SBCS, should we get to here */
-        ucs2_t *ucs2s;
         size_t ucslen;
         ucslen = mbcsToUcs2((char *)str, NULL, 0, enc);
         if (ucslen != (size_t)-1)
         {
             /* We convert the characters but not the terminator here */
-            ucs2s = (ucs2_t *)alloca(sizeof(ucs2_t) * ucslen);
+            ucs2_t ucs2s[ucslen];
             R_CheckStack();
             status = (int)mbcsToUcs2((char *)str, ucs2s, ucslen, enc);
             if (status >= 0)
@@ -830,7 +828,7 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
               */
              (face % 5) != 0)
     {
-        buff = alloca(strlen((char *)str) + 1);
+        char buff[strlen((char *)str) + 1];
         /* Output string cannot be longer */
         R_CheckStack();
         mbcsToSbcs((char *)str, buff, encoding, enc);
@@ -4510,7 +4508,6 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
         if (ucslen != (size_t)-1)
         {
             void *cd;
-            unsigned char *buf;
             const char *i_buf;
             char *o_buf;
             size_t nb, i_len, o_len, buflen = ucslen * sizeof(ucs2_t);
@@ -4523,7 +4520,7 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
                 return;
             }
 
-            buf = (unsigned char *)alloca(buflen);
+            unsigned char buf[buflen];
             R_CheckStack();
 
             i_buf = (char *)str;
@@ -7803,7 +7800,6 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     if (isCIDFont(gc->fontfamily, PDFFonts, pd->defaultCIDFont) && face != 5)
     {
         /* NB we could be in a SBCS here */
-        unsigned char *buf = NULL /* -Wall */;
         size_t ucslen;
         unsigned char *p;
         int fontIndex;
@@ -7855,13 +7851,12 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
             char *o_buf;
             size_t i, nb, i_len, o_len, buflen = ucslen * sizeof(ucs2_t);
             size_t status;
-            unsigned char *p;
 
             cd = (void *)Riconv_open(cidfont->encoding, (enc == CE_UTF8) ? "UTF-8" : "");
             if (cd == (void *)-1)
                 return;
 
-            buf = (unsigned char *)alloca(buflen);
+            unsigned char buf[buflen];
             R_CheckStack();
 
             i_buf = (char *)str;
@@ -7877,6 +7872,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
                 warning(_("failed in text conversion to encoding '%s'"), cidfont->encoding);
             else
             {
+                unsigned char *p;
                 PDF_SetFill(gc->col, dd);
                 fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm <",
                         PDFfontNumber(gc->fontfamily, face, pd), a, b, -b, a, x, y);

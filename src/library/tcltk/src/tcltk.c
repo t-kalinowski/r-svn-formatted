@@ -621,9 +621,6 @@ SEXP dotTclcallback(SEXP args)
 void tcltk_init(int *TkUp)
 {
     int code;
-#if !defined(Win32) && !defined(HAVE_AQUA)
-    char *p;
-#endif
 
     *TkUp = 0;
 
@@ -643,7 +640,8 @@ void tcltk_init(int *TkUp)
    is in principle independent of whether we want quartz() built.
 */
 #if !defined(Win32) && !defined(HAVE_AQUA)
-    if ((p = getenv("DISPLAY")) && p[0]) /* exclude DISPLAY = "" */
+    char *p = getenv("DISPLAY");
+    if (p && p[0]) /* exclude DISPLAY = "" */
 #endif
     {
         code = Tk_Init(RTcl_interp); /* Load Tk into interpreter */
