@@ -621,23 +621,20 @@ SEXP dotTclcallback(SEXP args)
 void tcltk_init(int *TkUp)
 {
     int code;
+#if !defined(Win32) && !defined(HAVE_AQUA)
     char *p;
+#endif
 
     *TkUp = 0;
 
     /* Absence of the following line is said to be an error with
-     * tcl 8.4 on all platforms, and is known to cause crashes under
+     * tcl >= 8.4 on all platforms, and is known to cause crashes under
      * Windows */
 
     Tcl_FindExecutable(NULL);
 
     RTcl_interp = Tcl_CreateInterp();
-    code = Tcl_Init(RTcl_interp); /* Undocumented... If omitted, you
-                    get the windows but no event
-                    handling. (Update: the
-                    documentation is in the Tcl
-                    sources, just not shipped
-                    w/RedHat) */
+    code = Tcl_Init(RTcl_interp);
     if (code != TCL_OK)
         error(Tcl_GetStringResult(RTcl_interp));
 
