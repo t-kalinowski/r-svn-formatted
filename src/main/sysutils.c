@@ -344,7 +344,7 @@ SEXP attribute_hidden do_getenv(SEXP call, SEXP op, SEXP args, SEXP env)
         for (i = 0, w = _wenviron; *w != NULL; i++, w++)
             n = max(n, wcslen(*w));
         N = 3 * n + 1;
-        char *buf[N];
+        char buf[N];
         PROTECT(ans = allocVector(STRSXP, i));
         for (i = 0, w = _wenviron; *w != NULL; i++, w++)
         {
