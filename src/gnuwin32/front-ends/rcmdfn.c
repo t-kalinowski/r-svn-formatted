@@ -27,7 +27,7 @@
 #define BINDIR "bin"
 #endif
 
-extern char *getRHOME(void), *getRUser(void); /* in ../rhome.c */
+extern char *getRHOME(int), *getRUser(void); /* in ../rhome.c */
 
 void R_Suicide(char *s) /* for use in ../rhome.o */
 {
@@ -118,7 +118,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             return (0);
         }
         /* R --help */
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --help", getRHOME(), BINDIR);
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --help", getRHOME(3), BINDIR);
         system(cmd);
         fprintf(stderr, "%s", "\n\nOr: R CMD command args\n\n");
         rcmdusage(RCMD);
@@ -220,7 +220,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(outfile, ".Rout");
         }
 
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe -f \"%s\" --restore --save", getRHOME(), BINDIR, infile);
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe -f \"%s\" --restore --save", getRHOME(3), BINDIR, infile);
         if (strlen(cmd) + strlen(cmd_extra) >= CMD_LEN)
         {
             fprintf(stderr, "command line too long\n");
@@ -270,7 +270,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         snprintf(cmd, CMD_LEN,
                  "%s/%s/Rterm.exe -e tools:::.install_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore --slave "
                  "--args ",
-                 getRHOME(), BINDIR);
+                 getRHOME(3), BINDIR);
         for (i = cmdarg + 1; i < argc; i++)
         {
             strcat(cmd, "nextArg");
@@ -288,7 +288,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     {
         /* handle Rcmd REMOVE internally */
         snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --slave --args",
-                 getRHOME(), BINDIR, getRHOME());
+                 getRHOME(3), BINDIR, getRHOME(3));
         for (i = cmdarg + 1; i < argc; i++)
         {
             strcat(cmd, " ");
@@ -312,7 +312,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else
     {
-        RHome = getRHOME();
+        RHome = getRHOME(3);
         if (argc > cmdarg + 1 && strcmp(argv[cmdarg + 1], "RHOME") == 0)
         {
             fprintf(stdout, "%s", RHome);
@@ -458,7 +458,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             }
         }
         else
-            snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe", getRHOME(), BINDIR);
+            snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe", getRHOME(3), BINDIR);
 
         for (i = cmdarg + 1; i < argc; i++)
         {
