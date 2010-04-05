@@ -1140,13 +1140,20 @@ static void RQuartz_Raster(unsigned int *raster, int w, int h, double x, double 
     cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 
     /* Create a quartz image from the data provider */
-    img = CGImageCreate(w, h, 8,                                         /* bits per channel */
-                        32,                                              /* bits per pixel */
-                        4 * w,                                           /* bytes per row */
-                        cs,                                              /* color space */
-                        kCGImageAlphaLast | kCGBitmapByteOrder32Big, dp, /* data provider */
-                        NULL,                                            /* decode array */
-                        1,                                               /* interpolate (interpolation type below) */
+    img = CGImageCreate(w, h, 8, /* bits per channel */
+                        32,      /* bits per pixel */
+                        4 * w,   /* bytes per row */
+                        cs,      /* color space */
+    /* R uses AGBR which is so unusual (inverted RGBA) that it corresponds to endinness inverse(!) to the host with
+     * alpha last (=RGBA).  */
+#ifdef __BIG_ENDIAN__
+                        kCGImageAlphaLast | kCGBitmapByteOrder32Little,
+#else
+                        kCGImageAlphaLast | kCGBitmapByteOrder32Big,
+#endif
+                        dp,   /* data provider */
+                        NULL, /* decode array */
+                        1,    /* interpolate (interpolation type below) */
                         kCGRenderingIntentDefault);
 
     if (height < 0)
