@@ -1,4 +1,4 @@
-
+#ifndef W64
 #include <windows.h>
 
 /* The mingw-runtime startup code has _argc and _argv as visible
@@ -21,3 +21,4 @@ int PASCAL WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 
     return 0;
 }
+#endif
