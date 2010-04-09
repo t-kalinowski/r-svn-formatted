@@ -58,7 +58,7 @@ double bessel_i(double x, double alpha, double expo)
          * this may not be quite optimal (CPU and accuracy wise) */
         return (bessel_i(x, -alpha, expo) +
                 ((alpha == na)
-                     ? 0
+                     ? /* sin(pi * alpha) = 0 */ 0
                      : bessel_k(x, -alpha, expo) * ((ize == 1) ? 2. : 2. * exp(-2. * x)) / M_PI * sin(-M_PI * alpha)));
     }
     nb = 1 + (long)na; /* nb-1 <= alpha < nb */
@@ -260,7 +260,7 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
         }
         intx = (long)(*x); /* fine, since *x <= xlrg_BESS_IJ <<< LONG_MAX */
         if (*x >= rtnsig_BESS)
-        {   /* "non-small" x */
+        {   /* "non-small" x ( >= 1e-4 ) */
             /* -------------------------------------------------------------------
                Initialize the forward sweep, the P-sequence of Olver
                ------------------------------------------------------------------- */
@@ -507,25 +507,26 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
             return;
         }
         else
-        {
+        { /* small x  < 1e-4 */
             /* -----------------------------------------------------------
                Two-term ascending series for small X.
                -----------------------------------------------------------*/
             aa = 1.;
             empal = 1. + nu;
+#ifdef IEEE_754
+            /* No need to check for underflow */
+            halfx = .5 * *x;
+#else
             if (*x > enmten_BESS)
-                halfx = .5 * *x;
+                * / halfx = .5 * *x;
             else
                 halfx = 0.;
+#endif
             if (nu != 0.)
                 aa = pow(halfx, nu) / gamma_cody(empal);
             if (*ize == 2)
                 aa *= exp(-(*x));
-            if (*x + 1. > 1.)
-                bb = halfx * halfx;
-            else
-                bb = 0.;
-
+            bb = halfx * halfx;
             bi[1] = aa + aa * bb / empal;
             if (*x != 0. && bi[1] == 0.)
                 *ncalc = 0;
@@ -534,9 +535,7 @@ static void I_bessel(double *x, double *alpha, long *nb, long *ize, double *bi, 
                 if (*x == 0.)
                 {
                     for (n = 2; n <= *nb; ++n)
-                    {
                         bi[n] = 0.;
-                    }
                 }
                 else
                 {
