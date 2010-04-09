@@ -5675,6 +5675,9 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (strcmp(incon->class, "file") == 0 && (strcmp(m, "r") == 0 || strcmp(m, "w") == 0))
         warning(_("using a text-mode 'file' connection may not work correctly"));
 
+    else if (strcmp(incon->class, "textConnection") == 0 && strcmp(m, "w") == 0)
+        error(_("cannot create a gzcon connection from a writable textConnection; maybe use rawConnection"));
+
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
         error(_("allocation of 'gzcon' connection failed"));
