@@ -511,7 +511,14 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
             RAW(s)[i] = rawptr[i];
         break;
     case LGLSXP:
-    /* FIXME: should this not force 0, 1, NA_LOGICAL? */
+        s = allocVector(type, n);
+        iptr = (int *)p;
+        for (i = 0; i < n; i++)
+        {
+            int tmp = iptr[i];
+            LOGICAL(s)[i] = (tmp == NA_INTEGER || tmp == 0) ? tmp : 1;
+        }
+        break;
     case INTSXP:
         s = allocVector(type, n);
         iptr = (int *)p;
