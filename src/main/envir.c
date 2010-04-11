@@ -3627,7 +3627,8 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 {
     SEXP cval, chain;
     unsigned int hashcode;
-    int need_enc, slen = strlen(name);
+    int need_enc;
+    Rboolean embedNul = FALSE;
 
     switch (enc)
     {
@@ -3640,7 +3641,13 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
     default:
         error(_("unknown encoding: %d"), enc);
     }
-    if (slen < len)
+    for (int slen = 0; slen < len; slen++)
+        if (!name[slen])
+        {
+            embedNul = TRUE;
+            break;
+        }
+    if (embedNul)
     {
         SEXP c;
         /* This is tricky: we want to make a reasonable job of
