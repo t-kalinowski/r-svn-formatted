@@ -362,7 +362,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
 {
     SEXP klass, dims, tsp, xnames, ynames, val;
-    int mismatch = 0, nx, ny, xarray, yarray, xts, yts;
+    int mismatch = 0, nx, ny, xarray, yarray, xts, yts, xS4 = 0, yS4 = 0;
     int xattr, yattr;
     SEXP lcall = call;
     PROTECT_INDEX xpi, ypi;
@@ -381,6 +381,7 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         xattr = TRUE;
         xarray = isArray(x);
         xts = isTs(x);
+        xS4 = isS4(x);
     }
     else
         xarray = xts = xattr = FALSE;
@@ -390,6 +391,7 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         yattr = TRUE;
         yarray = isArray(y);
         yts = isTs(y);
+        yS4 = isS4(y);
     }
     else
         yarray = yts = yattr = FALSE;
@@ -567,6 +569,10 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
         setAttrib(val, R_ClassSymbol, klass);
     }
 
+    if (xS4 || yS4)
+    { /* Only set the bit:  no method defined! */
+        val = asS4(val, TRUE, TRUE);
+    }
     UNPROTECT(nprotect);
     return val;
 }
