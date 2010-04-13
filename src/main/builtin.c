@@ -316,6 +316,10 @@ SEXP attribute_hidden do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
     return s;
 }
 
+/** do_newenv() :  .Internal(new.env(hash, parent, size))
+ *
+ * @return a newly created environment()
+ */
 SEXP attribute_hidden do_newenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP enclos, size, ans;
