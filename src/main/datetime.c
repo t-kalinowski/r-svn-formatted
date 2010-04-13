@@ -715,8 +715,8 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(klass = allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 0, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 1, mkChar("POSIXlt"));
     classgets(ans, klass);
     if (isgmt)
     {
@@ -1101,8 +1101,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(klass = allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 0, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 1, mkChar("POSIXlt"));
     classgets(ans, klass);
     if (isgmt)
     {
@@ -1183,8 +1183,8 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(klass = allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 0, mkChar("POSIXt"));
+    SET_STRING_ELT(klass, 1, mkChar("POSIXlt"));
     classgets(ans, klass);
     setAttrib(ans, install("tzone"), mkString("UTC"));
     UNPROTECT(4);
