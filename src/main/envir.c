@@ -1592,19 +1592,18 @@ SEXP attribute_hidden do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /**
- * do_list2env : .Internal(list2env(x, envir, parent, hash, size, inherits))
+ * do_list2env : .Internal(list2env(x, envir, parent, hash, size))
  *
  * 2 cases: 1) envir = NULL -->  create new environment from list
  *             elements, using parent, assuming part of new.env() functionality.
  *
  *          2) envir = environment --> assign x entries to names(x) in
- *             *existing* envir --> use 'inherits'
+ *             *existing* envir
  * @return a newly created environment() or envir {with new content}
  */
 SEXP attribute_hidden do_list2env(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, xnms, envir;
-    Rboolean ginherits = FALSE;
     int n;
     checkArity(op, args);
 
@@ -1620,6 +1619,7 @@ SEXP attribute_hidden do_list2env(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     if (TYPEOF(envir) == NILSXP)
     {
+        /* "copied" from do_newenv()  [ ./builtin.c ] */
         SEXP enclos = CAR(args);
         int hash = asInteger(CADR(args));
         if (!isEnvironment(enclos))
@@ -1637,22 +1637,15 @@ SEXP attribute_hidden do_list2env(SEXP call, SEXP op, SEXP args, SEXP rho)
             envir = NewEnvironment(R_NilValue, R_NilValue, enclos);
     }
     else
-    {
+    { /* assign into existing environment */
         if (TYPEOF(envir) != ENVSXP)
             error(_("invalid '%s' argument: must be NULL or environment"), "envir");
-        int inherits = asLogical(CADDDR(args));
-        if (inherits == NA_LOGICAL)
-            error(_("invalid '%s' argument"), "inherits");
-        ginherits = inherits;
     }
 
     for (int i = 0; i < n; i++)
     {
-        SEXP val = VECTOR_ELT(x, i), name = install(translateChar(STRING_ELT(xnms, i)));
-        if (ginherits)
-            setVar(name, val, envir);
-        else
-            defineVar(name, val, envir);
+        SEXP name = install(translateChar(STRING_ELT(xnms, i)));
+        defineVar(name, VECTOR_ELT(x, i), envir);
     }
 
     return envir;
@@ -2666,7 +2659,7 @@ SEXP attribute_hidden do_env2list(SEXP call, SEXP op, SEXP args, SEXP rho)
             error(_("argument must be an environment"));
     }
 
-    all = asLogical(CADR(args));
+    all = asLogical(CADR(args)); /* all.names = TRUE/FALSE */
     if (all == NA_LOGICAL)
         all = 0;
 
@@ -2963,11 +2956,13 @@ static SEXP matchEnvir(SEXP call, const char *what)
 /* This is primitive */
 SEXP attribute_hidden do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP arg = CAR(args);
+    SEXP arg = CAR(args), ans;
     checkArity(op, args);
     check1arg(args, call, "object");
     if (isEnvironment(arg))
         return arg;
+    if (isObject(arg) && DispatchOrEval(call, op, "as.environment", args, rho, &ans, 0, 1))
+        return ans;
     switch (TYPEOF(arg))
     {
     case STRSXP:
@@ -2979,11 +2974,18 @@ SEXP attribute_hidden do_as_environment(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("using 'as.environment(NULL)' is defunct"));
         return R_BaseEnv; /* -Wall */
     case S4SXP: {
+        /* dispatch was tried above already */
         SEXP dot_xData = R_getS4DataSlot(arg, ENVSXP);
-        if (arg == R_NilValue)
+        if (!isEnvironment(dot_xData))
             errorcall(call, _("S4 object does not extend class \"environment\""));
         else
             return (dot_xData);
+    }
+    case VECSXP: {
+        /* implement as.environment.list() {isObject(.) is false for a list} */
+        return (eval(lang4(install("list2env"), arg,
+                           /*envir = */ R_NilValue, /* parent = */ R_EmptyEnv),
+                     rho));
     }
     default:
         errorcall(call, _("invalid object for 'as.environment'"));
