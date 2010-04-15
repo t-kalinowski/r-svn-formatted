@@ -242,8 +242,16 @@ static double complex mycpow(double complex X, double complex Y)
     int k;
     if (X == 0.0)
     {
-        __real__ Res = R_pow(0.0, __real__ Y);
-        __imag__ Res = 0.0;
+        if (cimag(Y) == 0.0)
+        {
+            __real__ Res = R_pow(0.0, __real__ Y);
+            __imag__ Res = 0.0;
+        }
+        else
+        {
+            __real__ Res = R_NaN;
+            __imag__ Res = R_NaN;
+        }
     }
     else if (__imag__ Y == 0.0 && __real__ Y == (k = (int)__real__ Y) && abs(k) <= 65536)
     {
@@ -280,11 +288,11 @@ static double complex mycpow(double complex X, double complex Y)
 static double complex mycpow(double complex X, double complex Y)
 {
     double iY = cimag(Y);
-    if (iY == 0)
+    if (iY == 0.0)
     { /* X ^ <real> */
         double complex Z;
         int k;
-        if (X == 0.)
+        if (X == 0.0)
         {
             Z = R_pow(0., creal(Y));
         }
