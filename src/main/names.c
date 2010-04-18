@@ -1063,6 +1063,7 @@ static void SymbolShortcuts(void)
     R_RecursiveSymbol = install("recursive");
     R_SrcfileSymbol = install("srcfile");
     R_SrcrefSymbol = install("srcref");
+    R_WholeSrcrefSymbol = install("wholeSrcref");
     R_TmpvalSymbol = install("*tmp*");
     R_UseNamesSymbol = install("use.names");
 }
