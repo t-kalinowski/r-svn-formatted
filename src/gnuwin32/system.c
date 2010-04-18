@@ -567,6 +567,8 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
                         fclose(f);
                         if (del)
                             DeleteFile(file[i]);
+                        /* add a blank line */
+                        R_WriteConsole("", 0);
                     }
                     else
                     {
