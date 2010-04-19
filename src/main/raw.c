@@ -216,7 +216,7 @@ static int mbrtoint(int *w, const char *s)
     }
     else if (byte < 0xE0)
     {
-        if (strlen(s) < 2)
+        if (!s[1])
             return -2;
         if ((s[1] & 0xC0) == 0x80)
         {
@@ -228,7 +228,7 @@ static int mbrtoint(int *w, const char *s)
     }
     else if (byte < 0xF0)
     {
-        if (strlen(s) < 3)
+        if (!s[1] || !s[2])
             return -2;
         if (((s[1] & 0xC0) == 0x80) && ((s[2] & 0xC0) == 0x80))
         {
@@ -245,7 +245,7 @@ static int mbrtoint(int *w, const char *s)
     }
     else if (byte < 0xF8)
     {
-        if (strlen(s) < 4)
+        if (!s[1] || !s[2] || !s[3])
             return -2;
         if (((s[1] & 0xC0) == 0x80) && ((s[2] & 0xC0) == 0x80) && ((s[3] & 0xC0) == 0x80))
         {
@@ -258,7 +258,7 @@ static int mbrtoint(int *w, const char *s)
     }
     else if (byte < 0xFC)
     {
-        if (strlen(s) < 5)
+        if (!s[1] || !s[2] || !s[3] || !s[4])
             return -2;
         if (((s[1] & 0xC0) == 0x80) && ((s[2] & 0xC0) == 0x80) && ((s[3] & 0xC0) == 0x80) && ((s[4] & 0xC0) == 0x80))
         {
@@ -272,7 +272,7 @@ static int mbrtoint(int *w, const char *s)
     }
     else
     {
-        if (strlen(s) < 6)
+        if (!s[1] || !s[2] || !s[3] || !s[4] || !s[5])
             return -2;
         if (((s[1] & 0xC0) == 0x80) && ((s[2] & 0xC0) == 0x80) && ((s[3] & 0xC0) == 0x80) && ((s[4] & 0xC0) == 0x80) &&
             ((s[5] & 0xC0) == 0x80))
@@ -314,8 +314,7 @@ SEXP attribute_hidden do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
     if (used < 0)
         error("invalid UTF-8 string");
     ans = allocVector(INTSXP, j);
-    for (i = 0; i < j; i++)
-        INTEGER(ans)[i] = ians[i];
+    memcpy(INTEGER(ans), ians, sizeof(int) * j);
     return ans;
 }
 
