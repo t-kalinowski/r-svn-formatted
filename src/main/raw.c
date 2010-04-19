@@ -312,7 +312,7 @@ SEXP attribute_hidden do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
         s += used;
     }
     if (used < 0)
-        error("invalid UTF-8 string");
+        error(_("invalid UTF-8 string"));
     ans = allocVector(INTSXP, j);
     memcpy(INTEGER(ans), ians, sizeof(int) * j);
     return ans;
