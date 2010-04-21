@@ -1313,9 +1313,7 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
     {                                                                                                                  \
         PROTECT(sy = allocVector(REALSXP, 0));                                                                         \
         if (na == 0)                                                                                                   \
-        {                                                                                                              \
             DUPLICATE_ATTRIB(sy, sa);                                                                                  \
-        }                                                                                                              \
         UNPROTECT(1);                                                                                                  \
         return (sy);                                                                                                   \
     }                                                                                                                  \
@@ -1363,15 +1361,10 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
 #define FINISH_Math2                                                                                                   \
     if (naflag)                                                                                                        \
         warningcall(lcall, R_MSG_NA);                                                                                  \
-                                                                                                                       \
     if (n == na)                                                                                                       \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
-    }                                                                                                                  \
     else if (n == nb)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sb);                                                                                      \
-    }                                                                                                                  \
     UNPROTECT(3)
 
     FINISH_Math2;
@@ -1805,17 +1798,12 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         warningcall(lcall, R_MSG_NA);                                                                                  \
                                                                                                                        \
     if (n == na)                                                                                                       \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
-    }                                                                                                                  \
     else if (n == nb)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sb);                                                                                      \
-    }                                                                                                                  \
     else if (n == nc)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sc);                                                                                      \
-    }
+    UNPROTECT(4)
 
 static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, double, double, int), SEXP lcall)
 {
@@ -1955,7 +1943,6 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
     return sy;
 } /* math3B */
 
-#define Math3(A, FUN) math3(CAR(A), CADR(A), CADDR(A), FUN, call);
 #define Math3_1(A, FUN) math3_1(CAR(A), CADR(A), CADDR(A), CADDDR(A), FUN, call);
 #define Math3_2(A, FUN) math3_2(CAR(A), CADR(A), CADDR(A), CADDDR(A), CAD4R(A), FUN, call)
 #define Math3B(A, FUN) math3B(CAR(A), CADR(A), CADDR(A), FUN, call);
@@ -2152,21 +2139,13 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
         warningcall(lcall, R_MSG_NA);                                                                                  \
                                                                                                                        \
     if (n == na)                                                                                                       \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
-    }                                                                                                                  \
     else if (n == nb)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sb);                                                                                      \
-    }                                                                                                                  \
     else if (n == nc)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sc);                                                                                      \
-    }                                                                                                                  \
     else if (n == nd)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sd);                                                                                      \
-    }                                                                                                                  \
     UNPROTECT(5)
 
     FINISH_Math4;
@@ -2361,25 +2340,15 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
         warningcall(lcall, R_MSG_NA);                                                                                  \
                                                                                                                        \
     if (n == na)                                                                                                       \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
-    }                                                                                                                  \
     else if (n == nb)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sb);                                                                                      \
-    }                                                                                                                  \
     else if (n == nc)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sc);                                                                                      \
-    }                                                                                                                  \
     else if (n == nd)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, sd);                                                                                      \
-    }                                                                                                                  \
     else if (n == ne)                                                                                                  \
-    {                                                                                                                  \
         DUPLICATE_ATTRIB(sy, se);                                                                                      \
-    }                                                                                                                  \
     UNPROTECT(6)
 
     FINISH_Math5;
