@@ -302,16 +302,29 @@ static void remove_worker(httpd_conn_t *c)
     free(c);
 }
 
+#ifndef Win32
+extern int R_ignore_SIGPIPE; /* defined in src/main/main.c on unix */
+#else
+static int R_ignore_SIGPIPE; /* for simplicity of the code below */
+#endif
+
 static int send_response(SOCKET s, const char *buf, unsigned int len)
 {
     unsigned int i = 0;
+    /* we have to tell R to ignore SIGPIPE otherwise it can raise an error
+       and get us into deep trouble */
+    R_ignore_SIGPIPE = 1;
     while (i < len)
     {
         int n = send(s, buf + i, len - i, 0);
         if (n < 1)
+        {
+            R_ignore_SIGPIPE = 0;
             return -1;
+        }
         i += n;
     }
+    R_ignore_SIGPIPE = 0;
     return 0;
 }
 
@@ -320,7 +333,7 @@ static int send_http_response(httpd_conn_t *c, const char *text)
 {
     char buf[96];
     const char *s = HTTP_SIG(c);
-    int l = strlen(text);
+    int l = strlen(text), res;
     /* reduce the number of packets by sending the payload en-block from buf */
     if (l < sizeof(buf) - 10)
     {
@@ -328,7 +341,10 @@ static int send_http_response(httpd_conn_t *c, const char *text)
         strcpy(buf + 8, text);
         return send_response(c->sock, buf, l + 8);
     }
-    if (send(c->sock, s, 8, 0) < 8)
+    R_ignore_SIGPIPE = 1;
+    res = send(c->sock, s, 8, 0);
+    R_ignore_SIGPIPE = 0;
+    if (res < 8)
         return -1;
     return send_response(c->sock, text, strlen(text));
 }
@@ -822,7 +838,7 @@ static void worker_input_handler(void *data)
                 { /* anything but POST can be processed right away */
                     if (c->attr & CONTENT_LENGTH)
                     {
-                        send(c->sock, "HTTP/1.0 400 Bad Request (GET/HEAD with body)\r\n\r\n", 49, 0);
+                        send_http_response(c, " 400 Bad Request (GET/HEAD with body)\r\n\r\n");
                         remove_worker(c);
                         return;
                     }
@@ -878,7 +894,7 @@ static void worker_input_handler(void *data)
                             LINE_BUF_SIZE) /* one, incomplete line, but the buffer is not full yet, just return */
                             return;
                         /* the buffer is full yet the line is incomplete - we're in trouble */
-                        send(c->sock, "HTTP/1.0 413 Request entity too large\r\nConnection: close\r\n\r\n", 60, 0);
+                        send_http_response(c, " 413 Request entity too large\r\nConnection: close\r\n\r\n");
                         remove_worker(c);
                         return;
                     }
@@ -901,7 +917,7 @@ static void worker_input_handler(void *data)
                         char *url = bol + 5;
                         if (rll < 14 || strncmp(bol + rll - 9, " HTTP/1.", 8))
                         { /* each request must have at least 14 characters [GET / HTTP/1.0] and have HTTP/1.x */
-                            send(c->sock, "HTTP/1.0 400 Bad Request\r\n\r\n", 28, 0);
+                            send_response(c->sock, "HTTP/1.0 400 Bad Request\r\n\r\n", 28);
                             remove_worker(c);
                             return;
                         }
@@ -918,7 +934,7 @@ static void worker_input_handler(void *data)
                             c->method = METHOD_HEAD;
                         if (!c->method)
                         {
-                            send(c->sock, "HTTP/1.0 501 Invalid or unimplemented method\r\n\r\n", 48, 0);
+                            send_http_response(c, " 501 Invalid or unimplemented method\r\n\r\n");
                             remove_worker(c);
                             return;
                         }
