@@ -649,7 +649,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                 R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
                 goto top_of_loop;
             }
-            else if (res == -1 && errno == EILSEQ && sub)
+            else if (res == -1 && sub && (errno == EILSEQ || errno == EINVAL))
             {
                 /* it seems this gets thrown for non-convertible input too */
                 if (strcmp(sub, "byte") == 0)
@@ -834,7 +834,7 @@ next_char:
         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
         goto top_of_loop;
     }
-    else if (res == -1 && errno == EILSEQ)
+    else if (res == -1 && (errno == EILSEQ || errno == EINVAL))
     {
         if (outb < 13)
         {
@@ -936,7 +936,7 @@ next_char:
         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
         goto top_of_loop;
     }
-    else if (res == -1 && errno == EILSEQ)
+    else if (res == -1 && (errno == EILSEQ || errno == EINVAL))
     {
         if (outb < 5)
         {
@@ -1043,7 +1043,7 @@ next_char:
         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
         goto top_of_loop;
     }
-    else if (res == -1 && errno == EILSEQ)
+    else if (res == -1 && (errno == EILSEQ || errno == EINVAL))
     {
         if (outb < 5)
         {
@@ -1181,7 +1181,7 @@ next_char:
         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
         goto top_of_loop;
     }
-    else if (res == -1 && errno == EILSEQ)
+    else if (res == -1 && (errno == EILSEQ || errno == EINVAL))
     {
         switch (subst)
         {
