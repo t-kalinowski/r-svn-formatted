@@ -29,6 +29,7 @@
 #endif
 
 #include <Defn.h>
+#include <float.h> /* for DBL_EPSILON etc */
 #include <Graphics.h>
 #include <GraphicsBase.h> /* setBaseDevice */
 #include <Rmath.h>        /* eg. fmax2() */
@@ -1810,6 +1811,7 @@ void GReset(pGEDevDesc dd)
 
 /*  Is the figure region too big ? */
 
+/* Why is this FLT_EPSILON? */
 static Rboolean validFigureRegion(pGEDevDesc dd)
 {
     return ((gpptr(dd)->fig[0] > 0 - FLT_EPSILON) && (gpptr(dd)->fig[1] < 1 + FLT_EPSILON) &&

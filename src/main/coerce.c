@@ -23,7 +23,8 @@
 #include <config.h>
 #endif
 
-#include <Defn.h> /*-- Maybe modularize into own Coerce.h ..*/
+#include <Defn.h>  /*-- Maybe modularize into own Coerce.h ..*/
+#include <float.h> /* for DBL_DIG */
 #define R_MSG_mode _("invalid 'mode' argument")
 #define R_MSG_list_vec _("applies only to lists and vectors")
 #include <Rmath.h>
