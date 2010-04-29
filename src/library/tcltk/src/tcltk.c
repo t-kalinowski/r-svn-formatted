@@ -335,7 +335,7 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
         {
             elem = Tcl_NewObj();
             Tcl_DStringInit(&s_ds);
-            s = Tcl_ExternalToUtfDString(encoding, translateChar(STRING_ELT(val, i)), -1, &s_ds);
+            s = Tcl_ExternalToUtfDString(encoding, translateCharUTF8(STRING_ELT(val, i)), -1, &s_ds);
             Tcl_SetStringObj(elem, s, -1);
             Tcl_DStringFree(&s_ds);
             Tcl_ListObjAppendElement(RTcl_interp, tclobj, elem);
