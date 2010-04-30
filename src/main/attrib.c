@@ -1622,6 +1622,10 @@ int R_has_slot(SEXP obj, SEXP name)
     return (getAttrib(obj, name) != R_NilValue);
 }
 
+/* the @ operator, and its assignment form.  Processed much like $
+   (see do_subset3) but without S3-style methods.
+*/
+/* currently, R_get_slot() ["methods"] is a trivial wrapper for this: */
 SEXP R_do_slot(SEXP obj, SEXP name)
 {
     R_SLOT_INIT;
@@ -1665,12 +1669,15 @@ SEXP R_do_slot(SEXP obj, SEXP name)
 }
 #undef R_SLOT_INIT
 
-/* the @ operator, and its assignment form.  Processed much like $
-   (see do_subset3) but without S3-style methods.
-*/
-
+/* currently, R_set_slot() ["methods"] is a trivial wrapper for this: */
 SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
 {
+#ifndef _R_ver_le_2_11_x_
+    if (isNull(obj)) /* cannot use !IS_S4_OBJECT(obj), because
+                      *  slot(obj, name, check=FALSE) <- value  must work on
+                      * "pre-objects", currently only in makePrototypeFromClassDef() */
+        error(_("attempt to set slot on NULL object"));
+#endif
     PROTECT(obj);
     PROTECT(value);
     /* Ensure that name is a symbol */
@@ -1687,13 +1694,25 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     if (name == s_dot_Data)
     { /* special handling */
         obj = set_data_part(obj, value);
-        UNPROTECT(2);
-        return obj;
     }
-    if (isNull(value))       /* Slots, but not attributes, can be NULL.*/
-        value = pseudo_NULL; /* Store a special symbol instead. */
+    else
+    {
+        if (isNull(value))       /* Slots, but not attributes, can be NULL.*/
+            value = pseudo_NULL; /* Store a special symbol instead. */
 
-    setAttrib(obj, name, value);
+#ifdef _R_ver_le_2_11_x_
+        setAttrib(obj, name, value);
+#else
+        /* simplified version of setAttrib(obj, name, value);
+           here we do *not* treat "names", "dimnames", "dim", .. specially : */
+        PROTECT(name);
+        if (NAMED(value))
+            value = duplicate(value);
+        SET_NAMED(value, NAMED(value) | NAMED(obj));
+        UNPROTECT(1);
+        installAttrib(obj, name, value);
+#endif
+    }
     UNPROTECT(2);
     return obj;
 }
