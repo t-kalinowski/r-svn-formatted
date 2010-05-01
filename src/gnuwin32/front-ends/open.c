@@ -25,6 +25,7 @@ int main(int argc, char **argv)
 {
     int i, status = 0;
     unsigned int ret;
+    char fn[2001];
 
     if (argc < 2 || strcmp(argv[1], "--help") == 0)
     {
@@ -35,7 +36,12 @@ int main(int argc, char **argv)
     }
     for (i = 1; i < argc; i++)
     {
-        ret = (size_t)ShellExecute(NULL, "open", argv[i], NULL, ".", SW_SHOW);
+        strncpy(fn, argv[i], 2000);
+        fn[2000] = '\0';
+        for (char *p = fn; *p; p++)
+            if (*p == '/')
+                *p = '\\';
+        ret = (size_t)ShellExecute(NULL, "open", fn, NULL, ".", SW_SHOW);
         if (ret <= 32)
         { /* an error condition */
             status = 32 + ret;
