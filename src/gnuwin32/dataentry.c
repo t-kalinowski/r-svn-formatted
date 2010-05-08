@@ -1898,7 +1898,7 @@ static dataeditor newdataeditor(DEstruct DE, const char *title)
     dataeditor c;
     menuitem m;
 
-    DE->p = newconsoledata((consolefn) ? consolefn : FixedFont, pagerrow, pagercol, 0, 0, guiColors, DATAEDITOR, 0);
+    DE->p = newconsoledata((consolefn) ? consolefn : FixedFont, pagerrow, pagercol, 0, 0, guiColors, DATAEDITOR, 0, 0);
     if (!DE->p)
         return NULL;
 

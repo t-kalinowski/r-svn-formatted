@@ -333,7 +333,7 @@ rgb guiColors[numGuiColors] = {
 extern int R_HistorySize; /* from Defn.h */
 
 ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int buflines, rgb *guiColors, int kind,
-                           int buffered)
+                           int buffered, int cursor_blink)
 {
     ConsoleData p;
 
@@ -388,6 +388,7 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
     p->sel = 0;
     p->input = 0;
     p->lazyupdate = buffered;
+    p->cursor_blink = cursor_blink;
     return (p);
 }
 
@@ -545,7 +546,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
 #define WLHELPER(a, b, c, d) writelineHelper(p, a, b, c, d, j, len, s)
 
 /* write line i of the buffer at row j on bitmap */
-static int writeline(ConsoleData p, int i, int j)
+static int writeline(control c, ConsoleData p, int i, int j)
 {
     wchar_t *s, *stmp, *p0;
     int insel, len, col1, d;
@@ -622,8 +623,19 @@ static int writeline(ConsoleData p, int i, int j)
     {
         if (!p->overwrite)
         {
-            r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, FW / 4, FH);
-            gfillrect(p->bm, highlight, r);
+            if (p->cursor_blink)
+            {
+                setcaret(c, BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, p->cursor_blink == 1 ? 1 : FW / 4, FH);
+                showcaret(c, 1);
+            }
+            else
+                showcaret(c, 0);
+
+            if (p->cursor_blink < 2)
+            {
+                r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, FW / 4, FH);
+                gfillrect(p->bm, highlight, r);
+            }
         }
         else if (mbcslocale)
         { /* determine the width of the current char */
@@ -639,12 +651,28 @@ static int writeline(ConsoleData p, int i, int j)
             /* term string '\0' box width = 1 fix */
             w0 = wc ? Ri18n_wcwidth(wc) : 1;
             nn[0] = wc;
-            r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
-            gfillrect(p->bm, highlight, r);
-            gdrawwcs(p->bm, p->f, bg, pt(r.x, r.y), nn);
+            if (p->cursor_blink)
+            {
+                setcaret(c, BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, p->cursor_blink == 1 ? 1 : FW / 4, FH);
+                showcaret(c, 1);
+            }
+            if (p->cursor_blink < 2)
+            {
+                r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
+                gfillrect(p->bm, highlight, r);
+                gdrawwcs(p->bm, p->f, bg, pt(r.x, r.y), nn);
+            }
         }
         else
-            WLHELPER(CURCOL - FC, CURCOL - FC, bg, highlight);
+        {
+            if (p->cursor_blink)
+            {
+                setcaret(c, BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, p->cursor_blink == 1 ? 1 : FW, FH);
+                showcaret(c, 1);
+            }
+            if (p->cursor_blink < 2)
+                WLHELPER(CURCOL - FC, CURCOL - FC, bg, highlight);
+        }
     }
     if (insel != 0)
         return len;
@@ -776,7 +804,7 @@ void setfirstvisible(control c, int fv)
     {
         ww = min(NUMLINES, ROWS) - 1;
         rw = FV + ww;
-        writeline(p, rw, ww);
+        writeline(c, p, rw, ww);
         if (ds == 0)
         {
             RSHOW(RLINE(ww));
@@ -2262,10 +2290,11 @@ int consoler = 25, consolec = 80, consolex = 0, consoley = 0;
 int pagerrow = 25, pagercol = 80;
 int pagerMultiple = 1, haveusedapager = 0;
 int consolebufb = DIMLBUF, consolebufl = MLBUF, consolebuffered = 1;
+int consoleblink = 1;
 
 void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, int cols, int consx, int consy,
                        rgb *nguiColors, int pgr, int pgc, int multiplewindows, int widthonresize, int bufbytes,
-                       int buflines, int buffered)
+                       int buflines, int buffered, int cursor_blink)
 {
     char msg[LF_FACESIZE + 128];
     strncpy(fontname, fnname, LF_FACESIZE);
@@ -2307,6 +2336,7 @@ void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, in
     consolebufb = bufbytes;
     consolebufl = buflines;
     consolebuffered = buffered;
+    consoleblink = cursor_blink;
 }
 
 void consoleprint(console c)
@@ -2555,7 +2585,7 @@ console newconsole(char *name, int flags)
     ConsoleData p;
 
     p = newconsoledata((consolefn) ? consolefn : FixedFont, consoler, consolec, consolebufb, consolebufl, guiColors,
-                       CONSOLE, consolebuffered);
+                       CONSOLE, consolebuffered, consoleblink);
     if (!p)
         return NULL;
     c = (console)newwindow(name, rect(consolex, consoley, WIDTH, HEIGHT), flags | TrackMouse | VScrollbar | HScrollbar);
