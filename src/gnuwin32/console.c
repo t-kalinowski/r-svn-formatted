@@ -656,6 +656,8 @@ static int writeline(control c, ConsoleData p, int i, int j)
                 setcaret(c, BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, p->cursor_blink == 1 ? 1 : FW / 4, FH);
                 showcaret(c, 1);
             }
+            else
+                showcaret(c, 0);
             if (p->cursor_blink < 2)
             {
                 r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
@@ -670,6 +672,8 @@ static int writeline(control c, ConsoleData p, int i, int j)
                 setcaret(c, BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, p->cursor_blink == 1 ? 1 : FW, FH);
                 showcaret(c, 1);
             }
+            else
+                showcaret(c, 0);
             if (p->cursor_blink < 2)
                 WLHELPER(CURCOL - FC, CURCOL - FC, bg, highlight);
         }
