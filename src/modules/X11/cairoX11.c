@@ -395,7 +395,7 @@ static SEXP Cairo_Cap(pDevDesc dd)
     rint = (unsigned int *)INTEGER(raster);
     for (i = 0; i < size; i++)
     {
-        rint[i] = 255 << 24 | ((screenData[i * 4]) << 16 | (screenData[i * 4 + 1]) << 8 | (screenData[i * 4 + 2]));
+        rint[i] = 255u << 24 | ((screenData[i * 4]) << 16 | (screenData[i * 4 + 1]) << 8 | (screenData[i * 4 + 2]));
     }
 
     PROTECT(dim = allocVector(INTSXP, 2));
