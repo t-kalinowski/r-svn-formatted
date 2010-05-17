@@ -249,6 +249,19 @@ void pnorm_both(double x, double *cum, double *ccum, int i_tail, int log_p)
         do_del(x);
         swap_tail;
     }
+    else if (log_p)
+    {
+        if (x > 0)
+        {
+            *cum = 0.;
+            *ccum = R_NegInf;
+        }
+        else
+        {
+            *cum = R_NegInf;
+            *ccum = 0.;
+        }
+    }
     else
     { /* no log_p , large x such that probs are 0 or 1 */
         if (x > 0)
