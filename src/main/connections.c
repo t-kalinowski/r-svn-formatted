@@ -876,9 +876,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode, i
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
 
 typedef struct fifoconn
 {
