@@ -119,7 +119,9 @@ SEXP attribute_hidden do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP en
         /* Poll them */
         while (result == R_NilValue)
         {
+#if (defined(HAVE_AQUA) || defined(Win32))
             R_ProcessEvents();
+#endif
             i = 1;
             devNum = curDevice();
             while (i++ < NumDevices())
