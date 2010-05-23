@@ -1339,6 +1339,8 @@ again:
         {
             FORWARD_NODE(gdd->displayList);
             FORWARD_NODE(gdd->savedSnapshot);
+            if (gdd->dev)
+                FORWARD_NODE(gdd->dev->eventEnv);
         }
     }
 
