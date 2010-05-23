@@ -602,6 +602,8 @@ SEXP do_loadRconsole(SEXP call, SEXP op, SEXP args, SEXP env)
     getActive(&gui); /* Will get defaults if there's no active console */
     if (loadRconsole(&gui, translateChar(STRING_ELT(sfile, 0))))
         applyGUI(&gui);
+    if (strlen(gui.warning))
+        warning(gui.warning);
     return R_NilValue;
 }
 
