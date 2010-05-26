@@ -52,6 +52,7 @@
 #define _(String) (String)
 #endif
 
+extern void R_ProcessEvents(void);
 #if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
 
 #ifdef Win32
@@ -61,7 +62,6 @@
 #define EINPROGRESS WSAEINPROGRESS
 #define EALREADY WSAEALREADY
 #define _WINSOCKAPI_
-extern void R_ProcessEvents(void);
 extern void R_FlushConsole(void);
 #define R_SelectEx(n, rfd, wrd, efd, tv, ih) select(n, rfd, wrd, efd, tv)
 #endif
