@@ -1447,12 +1447,10 @@ int RxmlNanoFTPRead(void *ctx, void *dest, int len)
     while (1)
     {
         int maxfd = 0;
+        R_ProcessEvents();
 #ifdef Unix
-        InputHandler *what;
-
         if (R_wait_usec > 0)
         {
-            R_PolledEvents();
             tv.tv_sec = 0;
             tv.tv_usec = R_wait_usec;
         }
@@ -1464,7 +1462,6 @@ int RxmlNanoFTPRead(void *ctx, void *dest, int len)
 #elif defined(Win32)
         tv.tv_sec = 0;
         tv.tv_usec = 2e5;
-        R_ProcessEvents();
 #else
         tv.tv_sec = 1;
         tv.tv_usec = 0;
@@ -1513,6 +1510,7 @@ int RxmlNanoFTPRead(void *ctx, void *dest, int len)
         if (!FD_ISSET(ctxt->dataFd, &rfd) || res > 1)
         {
             /* was one of the extras */
+            InputHandler *what;
             what = getSelectedHandler(R_InputHandlers, &rfd);
             if (what != NULL)
                 what->handler((void *)NULL);

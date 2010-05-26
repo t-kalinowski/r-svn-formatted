@@ -29,9 +29,6 @@
 #include <Rinterface.h>
 #include <R_ext/GraphicsEngine.h> /* for GEonExit */
 #include <Rmath.h>                /* for imax2 */
-#if !(defined(HAVE_AQUA) || defined(Win32))
-#include <R_ext/eventloop.h> /* for R_PolledEvents */
-#endif
 
 #ifndef min
 #define min(a, b) (a < b ? a : b)
@@ -107,49 +104,19 @@ void R_CheckUserInterrupt(void)
     if (R_interrupts_suspended)
         return;
 
-        /* This is the point where GUI systems need to do enough event
-           processing to determine whether there is a user interrupt event
-           pending.  Need to be careful not to do too much event
-           processing though: if event handlers written in R are allowed
-           to run at this point then we end up with concurrent R
-           evaluations and that can cause problems until we have proper
-           concurrency support. LT */
-#if defined(HAVE_AQUA) || defined(Win32)
-    R_ProcessEvents();
-#else
-    R_PolledEvents();
-    /* the same code is in R_ProcessEvents on Windows and AQUA */
-    if (cpuLimit > 0.0 || elapsedLimit > 0.0)
-    {
-        double cpu, data[5];
-        R_getProcTime(data);
-        cpu = data[0] + data[1] + data[3] + data[4];
-        if (elapsedLimit > 0.0 && data[2] > elapsedLimit)
-        {
-            cpuLimit = elapsedLimit = -1;
-            if (elapsedLimit2 > 0.0 && data[2] > elapsedLimit2)
-            {
-                elapsedLimit2 = -1.0;
-                error(_("reached session elapsed time limit"));
-            }
-            else
-                error(_("reached elapsed time limit"));
-        }
-        if (cpuLimit > 0.0 && cpu > cpuLimit)
-        {
-            cpuLimit = elapsedLimit = -1;
-            if (cpuLimit2 > 0.0 && cpu > cpuLimit2)
-            {
-                cpuLimit2 = -1.0;
-                error(_("reached session CPU time limit"));
-            }
-            else
-                error(_("reached CPU time limit"));
-        }
-    }
+    /* This is the point where GUI systems need to do enough event
+       processing to determine whether there is a user interrupt event
+       pending.  Need to be careful not to do too much event
+       processing though: if event handlers written in R are allowed
+       to run at this point then we end up with concurrent R
+       evaluations and that can cause problems until we have proper
+       concurrency support. LT */
+
+    R_ProcessEvents(); /* Also processes timing limits */
+#ifndef Win32
     if (R_interrupts_pending)
         onintr();
-#endif /* Aqua or Win32 */
+#endif
 }
 
 void onintr()
