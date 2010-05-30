@@ -311,7 +311,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         status = system(cmd);
         return (status);
     }
-    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "nbuild") == 0)
+    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "build") == 0)
     {
         /* handle Rcmd build internally */
         snprintf(cmd, CMD_LEN,
@@ -455,9 +455,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(cmd, RHome);
                 strcat(cmd, "/bin/Rd2dvi.sh --pdf");
             }
-            else if (strcmp(p, "build") == 0)
+            else if (strcmp(p, "obuild") == 0)
             {
-                snprintf(cmd, CMD_LEN, "perl %s/bin/build.pl", RHome);
+                snprintf(cmd, CMD_LEN, "perl %s/bin/obuild.pl", RHome);
             }
             else if (strcmp(p, "check") == 0)
             {
