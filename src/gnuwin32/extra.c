@@ -79,7 +79,12 @@ SEXP do_winver(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (osvi.dwMajorVersion == 6)
         {
             if (osvi.wProductType == VER_NT_WORKSTATION)
-                desc = "Vista";
+            {
+                if (osvi.dwMinorVersion == 0)
+                    desc = "Vista";
+                else
+                    desc = "7";
+            }
             else
                 desc = "Server 2008";
         }
@@ -635,7 +640,12 @@ SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (osvi.dwMajorVersion == 6)
         {
             if (osvi.wProductType == VER_NT_WORKSTATION)
-                strcpy(ver, "Vista");
+            {
+                if (osvi.dwMinorVersion == 0)
+                    strcpy(ver, "Vista");
+                else
+                    strcpy(ver, "7");
+            }
             else
                 strcpy(ver, "Server 2008");
         }
