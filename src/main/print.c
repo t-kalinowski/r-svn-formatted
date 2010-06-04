@@ -532,7 +532,11 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 return;
             }
             else
+            {
+                if (names != R_NilValue)
+                    Rprintf("named ");
                 Rprintf("list()\n");
+            }
         }
         UNPROTECT(1);
     }
