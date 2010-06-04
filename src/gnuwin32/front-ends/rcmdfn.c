@@ -353,11 +353,10 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "Rprof") == 0)
     {
-        /* handle Rcmd check internally */
-        snprintf(
-            cmd, CMD_LEN,
-            "%s/%s/Rterm.exe -e tools:::.Rprof() R_DEFAULT_PACKAGES=NULL LC_COLLATE=C --no-restore --slave --args ",
-            getRHOME(3), BINDIR);
+        /* handle Rcmd Rprof internally */
+        snprintf(cmd, CMD_LEN,
+                 "%s/%s/Rterm.exe -e tools:::.Rprof() R_DEFAULT_PACKAGES=utils LC_COLLATE=C --vanilla --slave --args ",
+                 getRHOME(3), BINDIR);
         for (i = cmdarg + 1; i < argc; i++)
         {
             strcat(cmd, "nextArg");
