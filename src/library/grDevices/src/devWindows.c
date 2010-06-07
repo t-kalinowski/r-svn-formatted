@@ -220,7 +220,7 @@ static void GA_Circle(double x, double y, double r, const pGEcontext gc, pDevDes
 static void GA_Clip(double x0, double x1, double y0, double y1, pDevDesc dd);
 static void GA_Close(pDevDesc dd);
 static void GA_Deactivate(pDevDesc dd);
-static void GA_initEvent(pDevDesc dd, Rboolean start);
+static void GA_eventHelper(pDevDesc dd, int code);
 static Rboolean GA_Locator(double *x, double *y, pDevDesc dd);
 static void GA_Line(double x1, double y1, double x2, double y2, const pGEcontext gc, pDevDesc dd);
 static void GA_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd);
@@ -1811,7 +1811,7 @@ static Rboolean setupScreenDevice(pDevDesc dd, gadesc *xd, double w, double h, R
     xd->replaying = FALSE;
     xd->resizing = resize;
 
-    dd->initEvent = GA_initEvent;
+    dd->eventHelper = GA_eventHelper;
 
     dd->canGenMouseDown = TRUE;
     dd->canGenMouseMove = TRUE;
@@ -4016,11 +4016,11 @@ static Rboolean GA_NewFrameConfirm(pDevDesc dev)
     return TRUE;
 }
 
-static void GA_initEvent(pDevDesc dd, Rboolean start)
+static void GA_eventHelper(pDevDesc dd, int code)
 {
     gadesc *xd = dd->deviceSpecific;
 
-    if (start)
+    if (code == 1)
     {
         show(xd->gawin);
         addto(xd->gawin);
@@ -4037,7 +4037,7 @@ static void GA_initEvent(pDevDesc dd, Rboolean start)
         }
         dd->onExit = GA_onExit; /* install callback for cleanup */
     }
-    else
+    else if (code == 0)
         dd->onExit(dd);
 
     return;
