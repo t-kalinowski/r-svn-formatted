@@ -331,7 +331,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         status = system(cmd);
         return (status);
     }
-    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "ncheck") == 0)
+    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "check") == 0)
     {
         /* handle Rcmd check internally */
         snprintf(cmd, CMD_LEN,
@@ -498,9 +498,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             {
                 snprintf(cmd, CMD_LEN, "perl %s/bin/obuild.pl", RHome);
             }
-            else if (strcmp(p, "check") == 0)
+            else if (strcmp(p, "ocheck") == 0)
             {
-                snprintf(cmd, CMD_LEN, "perl %s/bin/check.pl", RHome);
+                snprintf(cmd, CMD_LEN, "perl %s/bin/ocheck.pl", RHome);
             }
             else if (strcmp(p, "Rprof") == 0)
             {
