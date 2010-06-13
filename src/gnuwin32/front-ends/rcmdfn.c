@@ -71,7 +71,8 @@ void rcmdusage(char *RCMD)
             "  Sd2Rd    Convert S documentation to Rd format.\n",
             "  Stangle  Extract S/R code from Sweave documentation.\n", "  Sweave   Process Sweave documentation.\n",
             "  config   Obtain configuration information about R.\n"
-            "  open     Open a file via Windows file associations.\n");
+            "  open     Open a file via Windows file associations.\n"
+            "  texify   Process a latex file.\n");
 
     fprintf(stderr, "\n%s%s%s%s", "Use\n  ", RCMD, " command --help\n", "for usage information for each command.\n\n");
 }
@@ -365,6 +366,25 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 fprintf(stderr, "command line too long\n");
                 return (27);
             }
+            strcat(cmd, argv[i]);
+        }
+        status = system(cmd);
+        return (status);
+    }
+    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "texify") == 0)
+    {
+        if (argc < cmdarg + 2)
+        {
+            fprintf(stderr, "\nUsage: %s texify [options] filename\n", RCMD);
+            return (1);
+        }
+
+        /* handle Rcmd texify internally */
+        snprintf(cmd, CMD_LEN, "texify.exe -I %s/share/texmf/tex/latex -I %s/share/texmf/bibtex/bst", getRHOME(3),
+                 getRHOME(3));
+        for (int i = cmdarg + 1; i < argc; i++)
+        {
+            strcat(cmd, " ");
             strcat(cmd, argv[i]);
         }
         status = system(cmd);
