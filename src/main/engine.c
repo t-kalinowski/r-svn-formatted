@@ -1448,7 +1448,11 @@ void GERaster(unsigned int *raster, int w, int h, double x, double y, double wid
      * Maybe not too bad because it is just a matter of shaving off
      * some rows and columns from the image? (because R only does
      * rectangular clipping regions) */
-    dd->dev->raster(raster, w, h, x, y, width, height, angle, interpolate, gc, dd->dev);
+
+    if (width != 0 && height != 0)
+    {
+        dd->dev->raster(raster, w, h, x, y, width, height, angle, interpolate, gc, dd->dev);
+    }
 }
 
 /****************************************************************
