@@ -2347,6 +2347,8 @@ static int mkComment(int c)
 
     if (c == R_EOF)
         xxungetc(c);
+    else
+        TEXT_PUSH(c);
 
     PROTECT(yylval = mkString2(stext, bp - stext));
     if (stext != st0)
