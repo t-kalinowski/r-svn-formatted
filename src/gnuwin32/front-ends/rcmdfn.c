@@ -390,6 +390,27 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         status = system(cmd);
         return (status);
     }
+    else if (cmdarg > 0 && argc > cmdarg && strcmp(argv[cmdarg], "SHLIB") == 0)
+    {
+
+        /* handle Rcmd SHLIB internally */
+        snprintf(cmd, CMD_LEN,
+                 "%s/%s/Rterm.exe -e tools:::.SHLIB() R_DEFAULT_PACKAGES=NULL --no-restore --slave --no-site-file "
+                 "--no-init-file --args",
+                 getRHOME(3), BINDIR);
+        for (int i = cmdarg + 1; i < argc; i++)
+        {
+            strcat(cmd, " ");
+            if (strlen(cmd) + strlen(argv[i]) > 9900)
+            {
+                fprintf(stderr, "command line too long\n");
+                return (27);
+            }
+            strcat(cmd, argv[i]);
+        }
+        status = system(cmd);
+        return (status);
+    }
     else
     {
         char RHOME[MAX_PATH], Path[MAX_PATH + 10], Rarch[30], Bindir[30], Tmpdir[MAX_PATH + 10], HOME[MAX_PATH + 10],
@@ -494,10 +515,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else if (strcmp(p, "config") == 0)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/config.sh", RHome);
-            }
-            else if (strcmp(p, "SHLIB") == 0)
-            {
-                snprintf(cmd, CMD_LEN, "sh %s/bin/SHLIB.sh", RHome);
             }
             else if (strcmp(p, "Rdconv") == 0)
             {
