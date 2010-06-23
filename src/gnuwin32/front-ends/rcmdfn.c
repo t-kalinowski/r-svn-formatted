@@ -61,7 +61,7 @@ static int isDir(char *path)
 
 void rcmdusage(char *RCMD)
 {
-    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
+    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
             "  INSTALL  Install add-on packages\n", "  REMOVE   Remove add-on packages\n",
             "  SHLIB    Make a DLL for use with dynload\n", "  BATCH    Run R in batch mode\n",
             "  build    Build add-on packages\n", "  check    Check add-on packages\n",
@@ -71,7 +71,6 @@ void rcmdusage(char *RCMD)
             "  Sd2Rd    Convert S documentation to Rd format\n",
             "  Stangle  Extract S/R code from Sweave documentation\n", "  Sweave   Process Sweave documentation\n",
             "  config   Obtain configuration information about R\n"
-            "  rtags    Create Emacs-style tag files from C, R, and Rd files\n",
             "  open     Open a file via Windows file associations\n"
             "  texify   Process a latex file\n");
 
@@ -516,6 +515,10 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/Rd2dvi.sh", RHome);
             }
+            else if (strcmp(p, "Rd2pdf") == 0)
+            {
+                snprintf(cmd, CMD_LEN, "sh %s/bin/Rd2dvi.sh --pdf", RHome);
+            }
             else if (strcmp(p, "Sweave") == 0)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/Sweave.sh", RHome);
@@ -523,10 +526,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else if (strcmp(p, "Stangle") == 0)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/Stangle.sh", RHome);
-            }
-            else if (strcmp(p, "rtags") == 0)
-            {
-                snprintf(cmd, CMD_LEN, "sh %s/bin/rtags.sh", RHome);
             }
             else if (strcmp(p, "config") == 0)
             {
@@ -539,13 +538,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else if (strcmp(p, "Rd2txt") == 0)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/Rdconv.sh -t txt", RHome);
-            }
-            else if (strcmp(p, "Rd2pdf") == 0)
-            {
-                snprintf(cmd, CMD_LEN, "sh %s/bin/Rd2dvi.sh --pdf", RHome);
-                strcpy(cmd, "sh ");
-                strcat(cmd, RHome);
-                strcat(cmd, "/bin/Rd2dvi.sh --pdf");
             }
             else if (strcmp(p, "Sd2Rd") == 0)
             {
