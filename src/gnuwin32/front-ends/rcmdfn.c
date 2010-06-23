@@ -374,6 +374,18 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
+    else if (cmdarg > 0 && argc > cmdarg && !strcmp(argv[cmdarg], "Sweave"))
+    {
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e \"utils:::.Sweave('%s')\"", getRHOME(3), BINDIR,
+                 argv[cmdarg + 1]);
+        return (system(cmd));
+    }
+    else if (cmdarg > 0 && argc > cmdarg && !strcmp(argv[cmdarg], "Stangle"))
+    {
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e \"utils:::.Stangle('%s')\"", getRHOME(3), BINDIR,
+                 argv[cmdarg + 1]);
+        return (system(cmd));
+    }
     else
     {
         char RHOME[MAX_PATH], Path[MAX_PATH + 10], Rarch[30], Bindir[30], Tmpdir[MAX_PATH + 10], HOME[MAX_PATH + 10],
@@ -462,14 +474,6 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else if (strcmp(p, "Rd2pdf") == 0)
             {
                 snprintf(cmd, CMD_LEN, "sh %s/bin/Rd2dvi.sh --pdf", RHome);
-            }
-            else if (strcmp(p, "Sweave") == 0)
-            {
-                snprintf(cmd, CMD_LEN, "sh %s/bin/Sweave.sh", RHome);
-            }
-            else if (strcmp(p, "Stangle") == 0)
-            {
-                snprintf(cmd, CMD_LEN, "sh %s/bin/Stangle.sh", RHome);
             }
             else if (strcmp(p, "config") == 0)
             {
