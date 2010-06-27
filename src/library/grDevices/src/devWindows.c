@@ -226,6 +226,7 @@ static void GA_Line(double x1, double y1, double x2, double y2, const pGEcontext
 static void GA_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd);
 static void GA_Mode(int mode, pDevDesc dd);
 static void GA_NewPage(const pGEcontext gc, pDevDesc dd);
+static void GA_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd);
 static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
@@ -2891,6 +2892,104 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     SH;
 }
 
+static void GA_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd)
+{
+    const void *vmax = vmaxget();
+    point *points;
+    point *pointIndex;
+    rect r;
+    double devx, devy;
+    int i, mx0 = 0, mx1 = 0, my0 = 0, my1 = 0;
+    gadesc *xd = (gadesc *)dd->deviceSpecific;
+
+    int ntot = 0;
+    for (i = 0; i < npoly; i++)
+    {
+        ntot = ntot + nper[i];
+    }
+
+    TRACEDEVGA("path");
+    points = (point *)R_alloc(ntot, sizeof(point));
+    if (!points)
+        return;
+    for (i = 0; i < ntot; i++)
+    {
+        devx = x[i];
+        devy = y[i];
+        points[i].x = (int)(devx);
+        points[i].y = (int)(devy);
+        mx0 = imin2(mx0, points[i].x);
+        mx1 = imax2(mx1, points[i].x);
+        my0 = imin2(my0, points[i].y);
+        my1 = imax2(my1, points[i].y);
+    }
+    r.x = mx0;
+    r.width = mx1 - mx0;
+    r.y = my0;
+    r.height = my1 - my0;
+
+    if (winding)
+    {
+        DRAW(gsetpolyfillmode(_d, 0));
+    }
+    else
+    {
+        DRAW(gsetpolyfillmode(_d, 1));
+    }
+
+    SetColor(gc->fill, gc->gamma, xd);
+    if (R_OPAQUE(gc->fill))
+    {
+        DRAW(gfillpolypolygon(_d, xd->fgcolor, points, npoly, nper));
+    }
+    else if (R_ALPHA(gc->fill) > 0)
+    {
+        if (xd->have_alpha)
+        {
+            gsetcliprect(xd->bm, xd->clip);
+            gcopy(xd->bm2, xd->bm, r);
+            gfillpolypolygon(xd->bm2, xd->fgcolor, points, npoly, nper);
+            DRAW2(gc->fill);
+        }
+        else
+            WARN_SEMI_TRANS;
+    }
+
+    SetColor(gc->col, gc->gamma, xd);
+    SetLineStyle(gc, dd);
+    if (R_OPAQUE(gc->col))
+    {
+        pointIndex = points;
+        for (i = 0; i < npoly; i++)
+        {
+            DRAW(gdrawpolygon(_d, xd->lwd, xd->lty, xd->fgcolor, pointIndex, nper[i], 0, xd->lend, xd->ljoin,
+                              xd->lmitre));
+            pointIndex = pointIndex + nper[i];
+        }
+    }
+    else if (R_ALPHA(gc->col) > 0)
+    {
+        if (xd->have_alpha)
+        {
+            r = xd->clip;
+            gsetcliprect(xd->bm, xd->clip);
+            gcopy(xd->bm2, xd->bm, r);
+            pointIndex = points;
+            for (i = 0; i < npoly; i++)
+            {
+                gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, pointIndex, nper[i], 0, xd->lend, xd->ljoin,
+                             xd->lmitre);
+                pointIndex = pointIndex + nper[i];
+            }
+            DRAW2(gc->col);
+        }
+        else
+            WARN_SEMI_TRANS;
+    }
+    vmaxset(vmax);
+    SH;
+}
+
 static void doRaster(unsigned int *raster, int x, int y, int w, int h, double rot, pDevDesc dd)
 {
     const void *vmax = vmaxget();
@@ -3471,6 +3570,7 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     dd->line = GA_Line;
     dd->polyline = GA_Polyline;
     dd->polygon = GA_Polygon;
+    dd->path = GA_Path;
     dd->raster = GA_Raster;
     dd->cap = GA_Cap;
     dd->locator = GA_Locator;

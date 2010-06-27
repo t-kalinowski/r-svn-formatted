@@ -3129,6 +3129,7 @@ static Rboolean PS_Open(pDevDesc, PostScriptDesc *);
 static void PS_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PS_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PS_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void PS_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd);
 static void PS_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
 static SEXP PS_Cap(pDevDesc dd);
@@ -3662,6 +3663,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->strWidth = PS_StrWidth;
     dd->metricInfo = PS_MetricInfo;
     dd->rect = PS_Rect;
+    dd->path = PS_Path;
     dd->raster = PS_Raster;
     dd->cap = PS_Cap;
     dd->circle = PS_Circle;
@@ -4304,6 +4306,56 @@ static void PS_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     }
 }
 
+static void PS_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd)
+{
+    PostScriptDesc *pd;
+    int i, j, index, code;
+
+    pd = (PostScriptDesc *)dd->deviceSpecific;
+
+    /* code is set as follows */
+    /* code == 0, nothing to draw */
+    /* code == 1, outline only */
+    /* code == 2, fill only */
+    /* code == 3, outline and fill */
+
+    CheckAlpha(gc->fill, pd);
+    CheckAlpha(gc->col, pd);
+    code = 2 * (R_OPAQUE(gc->fill)) + (R_OPAQUE(gc->col));
+
+    if (code)
+    {
+        if (code & 2)
+        {
+            SetFill(gc->fill, dd);
+            if (!winding)
+                code |= 4;
+        }
+        if (code & 1)
+        {
+            SetColor(gc->col, dd);
+            SetLineStyle(gc, dd);
+        }
+        fprintf(pd->psfp, "np\n");
+        index = 0;
+        for (i = 0; i < npoly; i++)
+        {
+            fprintf(pd->psfp, " %.2f %.2f m\n", x[index], y[index]);
+            index++;
+            for (j = 1; j < nper[i]; j++)
+            {
+                if (j % 100 == 0)
+                    fprintf(pd->psfp, "%.2f %.2f lineto\n", x[index], y[index]);
+                else
+                    PostScriptRLineTo(pd->psfp, x[index - 1], y[index - 1], x[index], y[index]);
+                index++;
+            }
+            fprintf(pd->psfp, "cp\n");
+        }
+        fprintf(pd->psfp, "p%d\n", code);
+    }
+}
+
 static void PS_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
 {
     PostScriptDesc *pd;
@@ -4762,6 +4814,7 @@ static void XFig_NewPage(const pGEcontext gc, pDevDesc dd);
 static void XFig_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void XFig_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void XFig_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void XFig_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd);
 static void XFig_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
                         Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
 static SEXP XFig_Cap(pDevDesc dd);
@@ -5064,6 +5117,7 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     dd->strWidth = XFig_StrWidth;
     dd->metricInfo = XFig_MetricInfo;
     dd->rect = XFig_Rect;
+    dd->path = XFig_Path;
     dd->raster = XFig_Raster;
     dd->cap = XFig_Cap;
     dd->circle = XFig_Circle;
@@ -5263,6 +5317,11 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, const pGEconte
     fprintf(fp, "  %d %d ", ix1, iy1);
     fprintf(fp, "  %d %d ", ix1, iy0);
     fprintf(fp, "  %d %d\n", ix0, iy0);
+}
+
+static void XFig_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd)
+{
+    warning(_("%s not yet implemented for this device"), "Path rendering");
 }
 
 static void XFig_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
@@ -5627,6 +5686,7 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd);
 static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PDF_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd);
 static void PDF_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd);
+static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd);
 static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
                        Rboolean interpolate, const pGEcontext gc, pDevDesc dd);
 static SEXP PDF_Cap(pDevDesc dd);
@@ -6321,6 +6381,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->strWidth = PDF_StrWidth;
     dd->metricInfo = PDF_MetricInfo;
     dd->rect = PDF_Rect;
+    dd->path = PDF_Path;
     dd->raster = PDF_Raster;
     dd->cap = PDF_Cap;
     dd->circle = PDF_Circle;
@@ -7519,6 +7580,74 @@ static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDe
                 break;
             case 3:
                 fprintf(pd->pdffp, "b\n");
+                break;
+            }
+        }
+    }
+}
+
+static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    double xx, yy;
+    int i, j, index, code;
+
+    code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    if (code)
+    {
+        if (pd->inText)
+            textoff(pd);
+        if (code & 2)
+            PDF_SetFill(gc->fill, dd);
+        if (code & 1)
+        {
+            PDF_SetLineColor(gc->col, dd);
+            PDF_SetLineStyle(gc, dd);
+        }
+        index = 0;
+        for (i = 0; i < npoly; i++)
+        {
+            xx = x[index];
+            yy = y[index];
+            index++;
+            fprintf(pd->pdffp, "  %.2f %.2f m\n", xx, yy);
+            for (j = 1; j < nper[i]; j++)
+            {
+                xx = x[index];
+                yy = y[index];
+                index++;
+                fprintf(pd->pdffp, "  %.2f %.2f l\n", xx, yy);
+            }
+            if (i < npoly - 1)
+                fprintf(pd->pdffp, "h\n");
+        }
+        if (winding)
+        {
+            switch (code)
+            {
+            case 1:
+                fprintf(pd->pdffp, "s\n");
+                break;
+            case 2:
+                fprintf(pd->pdffp, "h f\n");
+                break;
+            case 3:
+                fprintf(pd->pdffp, "b\n");
+                break;
+            }
+        }
+        else
+        {
+            switch (code)
+            {
+            case 1:
+                fprintf(pd->pdffp, "s\n");
+                break;
+            case 2:
+                fprintf(pd->pdffp, "h f*\n");
+                break;
+            case 3:
+                fprintf(pd->pdffp, "b*\n");
                 break;
             }
         }
