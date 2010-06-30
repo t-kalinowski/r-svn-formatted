@@ -1,5 +1,5 @@
 /* trees.c -- output deflated data using Huffman coding
- * Copyright (C) 1995-2009 Jean-loup Gailly
+ * Copyright (C) 1995-2010 Jean-loup Gailly
  * detect_data_type() function provided freely by Cosmin Truta, 2006
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
@@ -364,13 +364,13 @@ void gen_trees_header()
         fprintf(header, "{{%2u},{%2u}}%s", static_dtree[i].Code, static_dtree[i].Len, SEPARATOR(i, D_CODES - 1, 5));
     }
 
-    fprintf(header, "const uch _dist_code[DIST_CODE_LEN] = {\n");
+    fprintf(header, "const uch ZLIB_INTERNAL _dist_code[DIST_CODE_LEN] = {\n");
     for (i = 0; i < DIST_CODE_LEN; i++)
     {
         fprintf(header, "%2u%s", _dist_code[i], SEPARATOR(i, DIST_CODE_LEN - 1, 20));
     }
 
-    fprintf(header, "const uch _length_code[MAX_MATCH-MIN_MATCH+1]= {\n");
+    fprintf(header, "const uch ZLIB_INTERNAL _length_code[MAX_MATCH-MIN_MATCH+1]= {\n");
     for (i = 0; i < MAX_MATCH - MIN_MATCH + 1; i++)
     {
         fprintf(header, "%2u%s", _length_code[i], SEPARATOR(i, MAX_MATCH - MIN_MATCH, 20));
@@ -395,7 +395,7 @@ void gen_trees_header()
 /* ===========================================================================
  * Initialize the tree data structures for a new zlib stream.
  */
-void _tr_init(s) deflate_state *s;
+void ZLIB_INTERNAL _tr_init(s) deflate_state *s;
 {
     tr_static_init();
 
@@ -940,7 +940,7 @@ int lcodes, dcodes, blcodes; /* number of codes for each tree */
 /* ===========================================================================
  * Send a stored block
  */
-void _tr_stored_block(s, buf, stored_len, last) deflate_state *s;
+void ZLIB_INTERNAL _tr_stored_block(s, buf, stored_len, last) deflate_state *s;
 charf *buf;     /* input block */
 ulg stored_len; /* length of input block */
 int last;       /* one if this is the last block for a file */
@@ -964,7 +964,7 @@ int last;       /* one if this is the last block for a file */
  * To simplify the code, we assume the worst case of last real code encoded
  * on one bit only.
  */
-void _tr_align(s) deflate_state *s;
+void ZLIB_INTERNAL _tr_align(s) deflate_state *s;
 {
     send_bits(s, STATIC_TREES << 1, 3);
     send_code(s, END_BLOCK, static_ltree);
@@ -993,7 +993,7 @@ void _tr_align(s) deflate_state *s;
  * Determine the best encoding for the current block: dynamic trees, static
  * trees or store, and output the encoded block to the zip file.
  */
-void _tr_flush_block(s, buf, stored_len, last) deflate_state *s;
+void ZLIB_INTERNAL _tr_flush_block(s, buf, stored_len, last) deflate_state *s;
 charf *buf;     /* input block, or NULL if too old */
 ulg stored_len; /* length of input block */
 int last;       /* one if this is the last block for a file */
@@ -1100,7 +1100,7 @@ int last;       /* one if this is the last block for a file */
  * Save the match info and tally the frequency counts. Return true if
  * the current block must be flushed.
  */
-int _tr_tally(s, dist, lc) deflate_state *s;
+int ZLIB_INTERNAL _tr_tally(s, dist, lc) deflate_state *s;
 unsigned dist; /* distance of matched string */
 unsigned lc;   /* match length-MIN_MATCH or unmatched char (if dist==0) */
 {

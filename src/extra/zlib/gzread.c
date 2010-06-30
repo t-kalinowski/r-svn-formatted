@@ -56,7 +56,7 @@ local int gz_avail(state) gz_statep state;
         return -1;
     if (state->eof == 0)
     {
-        if (gz_load(state, state->in, state->size, &(strm->avail_in)) == -1)
+        if (gz_load(state, state->in, state->size, (unsigned *)&(strm->avail_in)) == -1)
             return -1;
         strm->next_in = state->in;
     }
