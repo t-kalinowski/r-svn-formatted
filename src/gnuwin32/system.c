@@ -820,8 +820,8 @@ char *PrintUsage(void)
     char msg0[] = "Start R, a system for statistical computation and graphics, with the\nspecified options\n\nEnvVars: "
                   "Environmental variables can be set by NAME=value strings\n\nOptions:\n  -h, --help            Print "
                   "usage message and exit\n  --version             Print version info and exit\n  --encoding=enc       "
-                  " Specify encoding to be used for stdin\n  --save                Do save workspace at the end of the "
-                  "session\n  --no-save             Don't save it\n",
+                  " Specify encoding to be used for stdin\n\n  --encoding enc\n  --save                Do save "
+                  "workspace at the end of the session\n  --no-save             Don't save it\n",
          msg1[] = "  --no-environ          Don't read the site and user environment files\n  --no-site-file        "
                   "Don't read the site-wide Rprofile\n  --no-init-file        Don't read the .Rprofile or ~/.Rprofile "
                   "files\n  --restore             Do restore previously saved objects at startup\n  --no-restore-data  "
