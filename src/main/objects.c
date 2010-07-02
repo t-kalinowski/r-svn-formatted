@@ -896,31 +896,33 @@ SEXP attribute_hidden do_unclass(SEXP call, SEXP op, SEXP args, SEXP env)
     return CAR(args);
 }
 
-/* static SEXP s_S4inherits; */
-
-SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
+/* NOTE: Fast  inherits(x, what)    in ../include/Rinlinedfuns.h
+ * ----        ----------------- */
+/** C API for  R  inherits(x, what, which)
+ *
+ * @param x any R object
+ * @param what character vector
+ * @param which logical: "want vector result" ?
+ *
+ * @return if which is false, logical TRUE or FALSE
+ *	   if which is true, integer vector of length(what) ..
+ */
+SEXP inherits3(SEXP x, SEXP what, SEXP which)
 {
-    SEXP x, klass, what, which, rval = R_NilValue /* -Wall */;
-    int i, j, nwhat, isvec, nclass;
-
-    checkArity(op, args);
-
-    x = CAR(args);
+    SEXP klass, rval = R_NilValue /* -Wall */;
     if (IS_S4_OBJECT(x))
         PROTECT(klass = R_data_class2(x));
     else
         PROTECT(klass = R_data_class(x, FALSE));
-    nclass = length(klass);
+    int nclass = length(klass);
 
-    what = CADR(args);
     if (!isString(what))
         error(_("'what' must be a character vector"));
-    nwhat = length(what);
+    int j, nwhat = length(what);
 
-    which = CADDR(args);
     if (!isLogical(which) || (length(which) != 1))
         error(_("'which' must be a length 1 logical vector"));
-    isvec = asLogical(which);
+    int isvec = asLogical(which);
 
 #ifdef _be_too_picky_
     if (IS_S4_OBJECT(x) && nwhat == 1 && !isvec && !isNull(R_getClassDef(translateChar(STRING_ELT(what, 0)))))
@@ -933,10 +935,11 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
     for (j = 0; j < nwhat; j++)
     {
         const char *ss = translateChar(STRING_ELT(what, j));
+        int i;
+        if (isvec)
+            INTEGER(rval)[j] = 0;
         for (i = 0; i < nclass; i++)
         {
-            if (isvec)
-                INTEGER(rval)[j] = 0;
             if (!strcmp(translateChar(STRING_ELT(klass, i)), ss))
             {
                 if (isvec)
@@ -957,6 +960,15 @@ SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     UNPROTECT(2);
     return rval;
+}
+
+SEXP attribute_hidden do_inherits(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+
+    return inherits3(/* x = */ CAR(args),
+                     /* what = */ CADR(args),
+                     /* which = */ CADDR(args));
 }
 
 /*
