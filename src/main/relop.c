@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2008  The R Development Core Team
+ *  Copyright (C) 1997--2010  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -657,7 +657,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 
 SEXP bitwiseAnd(SEXP a, SEXP b)
 {
-    int m = LENGTH(a), n = LENGTH(b), mn = fmax2(m, n);
+    int m = LENGTH(a), n = LENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (int i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] & INTEGER(b)[i % n];
@@ -666,7 +666,7 @@ SEXP bitwiseAnd(SEXP a, SEXP b)
 
 SEXP bitwiseOr(SEXP a, SEXP b)
 {
-    int m = LENGTH(a), n = LENGTH(b), mn = fmax2(m, n);
+    int m = LENGTH(a), n = LENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (int i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] | INTEGER(b)[i % n];
@@ -675,7 +675,7 @@ SEXP bitwiseOr(SEXP a, SEXP b)
 
 SEXP bitwiseXor(SEXP a, SEXP b)
 {
-    int m = LENGTH(a), n = LENGTH(b), mn = fmax2(m, n);
+    int m = LENGTH(a), n = LENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (int i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] ^ INTEGER(b)[i % n];
