@@ -4997,8 +4997,8 @@ SEXP attribute_hidden do_sink(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (icon < 0)
         {
-            R_ErrorCon = 2;
             R_ReleaseObject(getConnection(R_ErrorCon)->ex_ptr);
+            R_ErrorCon = 2;
         }
         else
         {
