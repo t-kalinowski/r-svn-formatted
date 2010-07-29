@@ -1098,7 +1098,7 @@ not_matrix:
 
 #define CLICKJ                                                                                                         \
     for (itmp = 0; itmp < n; itmp++)                                                                                   \
-        if (iip[itmp] == INTEGER(dimsr)[itmp] - 1)                                                                     \
+        if (iip[itmp] == isr[itmp] - 1)                                                                                \
             iip[itmp] = 0;                                                                                             \
         else                                                                                                           \
         {                                                                                                              \
@@ -1111,9 +1111,8 @@ not_matrix:
 /* aperm (a, perm, resize = TRUE) */
 SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP a, perm, resize, r, dimsa, dimsr, dna;
+    SEXP a, perm, r, dimsa, dimsr, dna;
     int i, j, n, len, itmp;
-    int *pp, *iip, *stride;
 
     checkArity(op, args);
 
@@ -1123,25 +1122,34 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     PROTECT(dimsa = getAttrib(a, R_DimSymbol));
     n = LENGTH(dimsa);
+    int *isa = INTEGER(dimsa);
 
     /* check the permutation */
 
-    PROTECT(perm = coerceVector(CADR(args), INTSXP));
-    pp = (int *)R_alloc(n, sizeof(int));
+    int *pp = (int *)R_alloc(n, sizeof(int));
+    perm = CADR(args);
     if (length(perm) == 0)
     {
         for (i = 0; i < n; i++)
             pp[i] = n - 1 - i;
     }
-    else if (length(perm) == n)
+    else if (isString(perm))
     {
-        for (i = 0; i < n; i++)
-            pp[i] = INTEGER(perm)[i] - 1; /* no offset! */
     }
     else
-        error(_("'perm' is of wrong length"));
+    {
+        PROTECT(perm = coerceVector(perm, INTSXP));
+        if (length(perm) == n)
+        {
+            for (i = 0; i < n; i++)
+                pp[i] = INTEGER(perm)[i] - 1;
+            UNPROTECT(1);
+        }
+        else
+            error(_("'perm' is of wrong length"));
+    }
 
-    iip = (int *)R_alloc(n, sizeof(int));
+    int *iip = (int *)R_alloc(n, sizeof(int));
     for (i = 0; i < n; iip[i++] = 0)
         ;
     for (i = 0; i < n; i++)
@@ -1155,19 +1163,18 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     /* create the stride object and permute */
 
-    stride = (int *)R_alloc(n, sizeof(int));
-
+    int *stride = (int *)R_alloc(n, sizeof(int));
     for (iip[0] = 1, i = 1; i < n; i++)
-        iip[i] = iip[i - 1] * INTEGER(dimsa)[i - 1];
-
+        iip[i] = iip[i - 1] * isa[i - 1];
     for (i = 0; i < n; i++)
         stride[i] = iip[pp[i]];
 
     /* also need to have the dimensions of r */
 
     PROTECT(dimsr = allocVector(INTSXP, n));
+    int *isr = INTEGER(dimsr);
     for (i = 0; i < n; i++)
-        INTEGER(dimsr)[i] = INTEGER(dimsa)[pp[i]];
+        isr[i] = isa[pp[i]];
 
     /* and away we go! iip will hold the incrementer */
 
@@ -1243,39 +1250,44 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     /* handle the resize */
-    PROTECT(resize = coerceVector(CADDR(args), LGLSXP));
-    if (LOGICAL(resize)[0])
-        setAttrib(r, R_DimSymbol, dimsr);
-    else
-        setAttrib(r, R_DimSymbol, dimsa);
+    int resize = asLogical(CADDR(args));
+    if (resize == NA_LOGICAL)
+        error(_("'resize' must be TRUE or FALSE"));
+    setAttrib(r, R_DimSymbol, resize ? dimsr : dimsa);
 
-    /* and handle the dimnames */
-
-    PROTECT(dna = getAttrib(a, R_DimNamesSymbol));
-
-    if (LOGICAL(resize)[0] && dna != R_NilValue)
+    /* and handle the dimnames, if any */
+    if (resize)
     {
-
-        SEXP dnna, dnr, dnnr;
-
-        PROTECT(dnna = getAttrib(dna, R_NamesSymbol));
-        PROTECT(dnnr = allocVector(STRSXP, n));
-        PROTECT(dnr = allocVector(VECSXP, n));
-
-        for (i = 0; i < n; i++)
+        PROTECT(dna = getAttrib(a, R_DimNamesSymbol));
+        if (dna != R_NilValue)
         {
-            SET_VECTOR_ELT(dnr, i, VECTOR_ELT(dna, pp[i]));
-            if (dnna != R_NilValue)
-                SET_STRING_ELT(dnnr, i, STRING_ELT(dnna, pp[i]));
-        }
+            SEXP dnna, dnr, dnnr;
 
-        if (dnna != R_NilValue)
-            setAttrib(dnr, R_NamesSymbol, dnnr);
-        setAttrib(r, R_DimNamesSymbol, dnr);
-        UNPROTECT(3); /* dnna, dnr, dnnr */
+            PROTECT(dnr = allocVector(VECSXP, n));
+            PROTECT(dnna = getAttrib(dna, R_NamesSymbol));
+            if (dnna != R_NilValue)
+            {
+                PROTECT(dnnr = allocVector(STRSXP, n));
+                for (i = 0; i < n; i++)
+                {
+                    SET_VECTOR_ELT(dnr, i, VECTOR_ELT(dna, pp[i]));
+                    SET_STRING_ELT(dnnr, i, STRING_ELT(dnna, pp[i]));
+                }
+                setAttrib(dnr, R_NamesSymbol, dnnr);
+                UNPROTECT(1);
+            }
+            else
+            {
+                for (i = 0; i < n; i++)
+                    SET_VECTOR_ELT(dnr, i, VECTOR_ELT(dna, pp[i]));
+            }
+            setAttrib(r, R_DimNamesSymbol, dnr);
+            UNPROTECT(2);
+        }
+        UNPROTECT(1);
     }
 
-    UNPROTECT(6); /* dimsa, perm, r, dimsr, resize, dna */
+    UNPROTECT(3); /* dimsa, r, dimsr */
     return r;
 }
 
