@@ -2361,7 +2361,7 @@ yyreduce:
 /* Line 1464 of yacc.c  */
 #line 218 "gramRd.y"
     {
-        (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), STATIC, &(yyloc));
+        (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), HAS_SEXPR, &(yyloc));
         xxpopMode((yyvsp[(2) - (4)]));
         ;
     }
