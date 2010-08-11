@@ -246,6 +246,10 @@ strings to make sure that UTF-8 support works on EBCDIC platforms. */
 #define STRING_Tifinagh0 STR_T STR_i STR_f STR_i STR_n STR_a STR_g STR_h "\0"
 #define STRING_Ugaritic0 STR_U STR_g STR_a STR_r STR_i STR_t STR_i STR_c "\0"
 #define STRING_Vai0 STR_V STR_a STR_i "\0"
+#define STRING_Xan0 STR_X STR_a STR_n "\0"
+#define STRING_Xps0 STR_X STR_p STR_s "\0"
+#define STRING_Xsp0 STR_X STR_s STR_p "\0"
+#define STRING_Xwd0 STR_X STR_w STR_d "\0"
 #define STRING_Yi0 STR_Y STR_i "\0"
 #define STRING_Z0 STR_Z "\0"
 #define STRING_Zl0 STR_Z STR_l "\0"
@@ -267,21 +271,22 @@ const char _pcre_utt_names[] = STRING_Any0 STRING_Arabic0 STRING_Armenian0 STRIN
                                                 STRING_Mc0 STRING_Me0 STRING_Meetei_Mayek0 STRING_Mn0 STRING_Mongolian0 STRING_Myanmar0
                                                     STRING_N0 STRING_Nd0 STRING_New_Tai_Lue0 STRING_Nko0 STRING_Nl0 STRING_No0
                                                         STRING_Ogham0 STRING_Ol_Chiki0 STRING_Old_Italic0 STRING_Old_Persian0 STRING_Old_South_Arabian0
-                                                            STRING_Old_Turkic0 STRING_Oriya0 STRING_Osmanya0 STRING_P0 STRING_Pc0
-                                                                STRING_Pd0 STRING_Pe0 STRING_Pf0 STRING_Phags_Pa0
-                                                                    STRING_Phoenician0 STRING_Pi0 STRING_Po0 STRING_Ps0
-                                                                        STRING_Rejang0 STRING_Runic0 STRING_S0 STRING_Samaritan0
-                                                                            STRING_Saurashtra0 STRING_Sc0 STRING_Shavian0 STRING_Sinhala0
-                                                                                STRING_Sk0 STRING_Sm0 STRING_So0 STRING_Sundanese0 STRING_Syloti_Nagri0
-                                                                                    STRING_Syriac0 STRING_Tagalog0 STRING_Tagbanwa0
-                                                                                        STRING_Tai_Le0 STRING_Tai_Tham0
-                                                                                            STRING_Tai_Viet0 STRING_Tamil0
-                                                                                                STRING_Telugu0 STRING_Thaana0
-                                                                                                    STRING_Thai0 STRING_Tibetan0 STRING_Tifinagh0
-                                                                                                        STRING_Ugaritic0 STRING_Vai0
-                                                                                                            STRING_Yi0 STRING_Z0
-                                                                                                                STRING_Zl0 STRING_Zp0
-                                                                                                                    STRING_Zs0;
+                                                            STRING_Old_Turkic0 STRING_Oriya0 STRING_Osmanya0 STRING_P0 STRING_Pc0 STRING_Pd0
+                                                                STRING_Pe0 STRING_Pf0 STRING_Phags_Pa0 STRING_Phoenician0 STRING_Pi0
+                                                                    STRING_Po0 STRING_Ps0 STRING_Rejang0 STRING_Runic0 STRING_S0 STRING_Samaritan0
+                                                                        STRING_Saurashtra0 STRING_Sc0 STRING_Shavian0 STRING_Sinhala0
+                                                                            STRING_Sk0 STRING_Sm0 STRING_So0 STRING_Sundanese0 STRING_Syloti_Nagri0
+                                                                                STRING_Syriac0 STRING_Tagalog0 STRING_Tagbanwa0
+                                                                                    STRING_Tai_Le0 STRING_Tai_Tham0
+                                                                                        STRING_Tai_Viet0 STRING_Tamil0 STRING_Telugu0 STRING_Thaana0
+                                                                                            STRING_Thai0 STRING_Tibetan0 STRING_Tifinagh0
+                                                                                                STRING_Ugaritic0 STRING_Vai0 STRING_Xan0
+                                                                                                    STRING_Xps0
+                                                                                                        STRING_Xsp0
+                                                                                                            STRING_Xwd0
+                                                                                                                STRING_Yi0 STRING_Z0
+                                                                                                                    STRING_Zl0 STRING_Zp0
+                                                                                                                        STRING_Zs0;
 
 const ucp_type_table _pcre_utt[] = {{0, PT_ANY, 0},
                                     {4, PT_SC, ucp_Arabic},
@@ -409,11 +414,15 @@ const ucp_type_table _pcre_utt[] = {{0, PT_ANY, 0},
                                     {891, PT_SC, ucp_Tifinagh},
                                     {900, PT_SC, ucp_Ugaritic},
                                     {909, PT_SC, ucp_Vai},
-                                    {913, PT_SC, ucp_Yi},
-                                    {916, PT_GC, ucp_Z},
-                                    {918, PT_PC, ucp_Zl},
-                                    {921, PT_PC, ucp_Zp},
-                                    {924, PT_PC, ucp_Zs}};
+                                    {913, PT_ALNUM, 0},
+                                    {917, PT_PXSPACE, 0},
+                                    {921, PT_SPACE, 0},
+                                    {925, PT_WORD, 0},
+                                    {929, PT_SC, ucp_Yi},
+                                    {932, PT_GC, ucp_Z},
+                                    {934, PT_PC, ucp_Zl},
+                                    {937, PT_PC, ucp_Zp},
+                                    {940, PT_PC, ucp_Zs}};
 
 const int _pcre_utt_size = sizeof(_pcre_utt) / sizeof(ucp_type_table);
 
