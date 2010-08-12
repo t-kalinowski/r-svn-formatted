@@ -2958,7 +2958,7 @@ yyreduce:
 #line 310 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
-        (yyval) = xxnewlist((yyvsp[(2) - (2)]));
+        (yyval) = xxnewlist(xxtag((yyvsp[(2) - (2)]), TEXT, &(yyloc)));
         ;
     }
     break;
