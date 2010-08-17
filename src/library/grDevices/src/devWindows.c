@@ -4053,10 +4053,10 @@ SEXP devga(SEXP args)
             free(dev);
             if (display[0])
             {
-                strncpy(type, display);
+                strncpy(type, display, 100);
                 p = strchr(type, ':');
                 if (p)
-                    *p = '\p';
+                    *p = '\0';
             }
             else
                 strcpy(type, "windows");
