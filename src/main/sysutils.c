@@ -718,8 +718,8 @@ cetype_t getCharCE(SEXP x)
 void *Riconv_open(const char *tocode, const char *fromcode)
 {
 #if defined Win32 || __APPLE__
-    const char *cp = "UTF-8";
 #ifdef Win32
+    const char *cp = "ASCII";
 #ifndef SUPPORT_UTF8_WIN32 /* Always, at present */
     char to[20] = "";
     if (localeCP > 0)
@@ -729,6 +729,7 @@ void *Riconv_open(const char *tocode, const char *fromcode)
     }
 #endif
 #else /* __APPLE__ */
+    const char *cp = "UTF-8";
     if (latin1locale)
         cp = "ISO-8859-1";
     else if (!utf8locale)
