@@ -3643,20 +3643,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->canChangeGamma = FALSE;
 
     /*	Start the driver */
-
-    if (!PS_Open(dd, pd))
-    {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        freeDeviceEncList(pd->encodings);
-        pd->fonts = NULL;
-        pd->encodings = NULL;
-        pd->cidfonts = NULL;
-        free(dd);
-        free(pd);
-        error(_("problem in opening the %s() device"), "postscript");
-        return FALSE;
-    }
+    PS_Open(dd, pd);
 
     dd->close = PS_Close;
     dd->activate = PS_Activate;
@@ -3780,6 +3767,18 @@ static void SetFont(int font, int size, pDevDesc dd)
 #undef HAVE_POPEN
 #endif
 
+static void PS_cleanup(pDevDesc dd, PostScriptDesc *pd)
+{
+    freeDeviceFontList(pd->fonts);
+    freeDeviceCIDFontList(pd->cidfonts);
+    freeDeviceEncList(pd->encodings);
+    pd->fonts = NULL;
+    pd->encodings = NULL;
+    pd->cidfonts = NULL;
+    free(dd);
+    free(pd);
+}
+
 static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
 {
     char buf[512];
@@ -3787,7 +3786,8 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     if (strlen(pd->filename) == 0)
     {
 #ifndef HAVE_POPEN
-        warning(_("printing via file = \"\" is not implemented in this version"));
+        PS_cleanup(dd, pd);
+        error(_("printing via file = \"\" is not implemented in this version"));
         return FALSE;
 #else
         if (strlen(pd->command) == 0)
@@ -3797,7 +3797,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
-            warning(_("cannot open 'postscript' pipe to '%s'"), pd->command);
+            PS_cleanup(dd, pd) error(_("cannot open 'postscript' pipe to '%s'"), pd->command);
             return FALSE;
         }
 #endif
@@ -3805,7 +3805,8 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     else if (pd->filename[0] == '|')
     {
 #ifndef HAVE_POPEN
-        warning(_("file = \"|cmd\" is not implemented in this version"));
+        PS_cleanup(dd, pd);
+        error(_("file = \"|cmd\" is not implemented in this version"));
         return FALSE;
 #else
         errno = 0;
@@ -3813,7 +3814,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
-            warning(_("cannot open 'postscript' pipe to '%s'"), pd->filename + 1);
+            PS_cleanup(dd, pd) error(_("cannot open 'postscript' pipe to '%s'"), pd->filename + 1);
             return FALSE;
         }
 #endif
@@ -3826,7 +3827,8 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     }
     if (!pd->psfp)
     {
-        warning(_("cannot open 'postscript' file argument '%s'"), buf);
+        PS_cleanup(dd, pd);
+        error(_("cannot open file '%s'"), buf);
         return FALSE;
     }
 
@@ -4894,7 +4896,11 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
 
     /* allocate new xfig device description */
     if (!(pd = (XFigDesc *)malloc(sizeof(XFigDesc))))
-        return 0;
+    {
+        free(dd);
+        error(_("memory allocation problem in %s()"), "xfig");
+        return FALSE;
+    }
 
     /* from here on, if need to bail out with "error", must also */
     /* free(pd) */
@@ -5101,16 +5107,7 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
 
     /*	Start the driver */
 
-    if (!XFig_Open(dd, pd))
-    {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceEncList(pd->encodings);
-        pd->fonts = NULL;
-        pd->encodings = NULL;
-        free(dd);
-        free(pd);
-        return 0;
-    }
+    XFig_Open(dd, pd);
 
     dd->close = XFig_Close;
     dd->activate = XFig_Activate;
@@ -5139,12 +5136,23 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     return 1;
 }
 
+static void XFig_cleanup(pDevDesc dd, XFigDesc *pd)
+{
+    freeDeviceFontList(pd->fonts);
+    freeDeviceEncList(pd->encodings);
+    pd->fonts = NULL;
+    pd->encodings = NULL;
+    free(dd);
+    free(pd);
+}
+
 static Rboolean XFig_Open(pDevDesc dd, XFigDesc *pd)
 {
     char buf[512], *tmp;
 
     if (strlen(pd->filename) == 0)
     {
+        XFig_cleanup(dd, pd);
         error(_("empty file name"));
         return FALSE;
     }
@@ -5154,7 +5162,11 @@ static Rboolean XFig_Open(pDevDesc dd, XFigDesc *pd)
         pd->psfp = R_fopen(R_ExpandFileName(buf), "w");
     }
     if (!pd->psfp)
+    {
+        XFig_cleanup(dd, pd);
+        error(_("cannot open file '%s'"), buf);
         return FALSE;
+    }
     /* assume tmpname is less than PATH_MAX */
     tmp = R_tmpnam("Rxfig", R_TempDir);
     strcpy(pd->tmpname, tmp);
@@ -5163,6 +5175,8 @@ static Rboolean XFig_Open(pDevDesc dd, XFigDesc *pd)
     if (!pd->tmpfp)
     {
         fclose(pd->psfp);
+        XFig_cleanup(dd, pd);
+        error(_("cannot open file '%s'"), pd->tmpname);
         return FALSE;
     }
     XF_FileHeader(pd->psfp, pd->papername, pd->landscape, pd->onefile);
@@ -6374,14 +6388,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->canChangeGamma = FALSE;
 
     /*	Start the driver */
-
-    if (!PDF_Open(dd, pd))
-    {
-        PDFcleanup(6, pd);
-        free(dd);
-        error(_("problem in opening the %s() device"), "pdf");
-        return FALSE;
-    }
+    PDF_Open(dd, pd); /* errors on failure */
 
     dd->close = PDF_Close;
     dd->activate = PDF_Activate;
@@ -7204,8 +7211,9 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
     pd->pdffp = R_fopen(R_ExpandFileName(buf), "wb");
     if (!pd->pdffp)
     {
-        warning(_("cannot open 'pdf' file argument '%s'"), buf);
-        return FALSE;
+        PDFcleanup(6, pd);
+        free(dd);
+        error(_("cannot open file '%s'"), buf);
     }
 
     PDF_startfile(pd);
