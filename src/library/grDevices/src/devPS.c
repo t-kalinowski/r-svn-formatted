@@ -3237,6 +3237,8 @@ static void SetFont(int, int, pDevDesc);
 static void SetLineStyle(const pGEcontext, pDevDesc dd);
 static void Invalidate(pDevDesc);
 
+static void PS_cleanup(int stage, pDevDesc dd, PostScriptDesc *pd);
+
 Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                         const char *encoding, const char *bg, const char *fg, double width, double height,
                         Rboolean horizontal, double ps, Rboolean onefile, Rboolean pagecentre, Rboolean printit,
@@ -3269,7 +3271,6 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     {
         free(dd);
         error(_("memory allocation problem in %s()"), "postscript");
-        return FALSE;
     }
 
     /* from here on, if need to bail out with "error", must also */
@@ -3285,8 +3286,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
 
     if (strlen(encoding) > PATH_MAX - 1)
     {
-        free(dd);
-        free(pd);
+        PS_cleanup(1, dd, pd);
         error(_("encoding path is too long in %s()"), "postscript");
     }
     /*
@@ -3303,8 +3303,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     }
     else
     {
-        free(dd);
-        free(pd);
+        PS_cleanup(1, dd, pd);
         error(_("failed to load encoding file in %s()"), "postscript");
     }
 
@@ -3356,7 +3355,9 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
             {
                 /*
                  * Should NOT get here.
+                 * AND if we do, we should free
                  */
+                PS_cleanup(3, dd, pd);
                 error(_("Invalid font type"));
             }
         }
@@ -3384,8 +3385,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     }
     if (!gotFont)
     {
-        free(dd);
-        free(pd);
+        PS_cleanup(3, dd, pd);
         error(_("Failed to initialise default PostScript font"));
     }
 
@@ -3432,6 +3432,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
                         /*
                          * Should NOT get here.
                          */
+                        PS_cleanup(4, dd, pd);
                         error(_("Invalid font type"));
                     }
                 }
@@ -3462,12 +3463,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
         }
         if (gotFonts < nfonts)
         {
-            freeDeviceFontList(pd->fonts);
-            freeDeviceEncList(pd->encodings);
-            pd->fonts = NULL;
-            pd->encodings = NULL;
-            free(dd);
-            free(pd);
+            PS_cleanup(4, dd, pd);
             error(_("Failed to initialise additional PostScript fonts"));
         }
     }
@@ -3484,28 +3480,21 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     pointsize = floor(ps);
     if (R_TRANSPARENT(setbg) && R_TRANSPARENT(setfg))
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
-        free(dd);
-        free(pd);
+        PS_cleanup(4, dd, pd);
         error(_("invalid foreground/background color (postscript)"));
     }
     pd->printit = printit;
     if (strlen(cmd) > 2 * PATH_MAX - 1)
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
-        free(dd);
-        free(pd);
+        PS_cleanup(4, dd, pd);
         error(_("'command' is too long"));
     }
     strcpy(pd->command, cmd);
     if (printit && strlen(cmd) == 0)
+    {
+        PS_cleanup(4, dd, pd);
         error(_("postscript(print.it=TRUE) used with an empty print command"));
+    }
     strcpy(pd->command, cmd);
 
     /* Deal with paper and plot size and orientation */
@@ -3556,12 +3545,7 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     }
     else
     {
-        freeDeviceFontList(pd->fonts);
-        freeDeviceCIDFontList(pd->cidfonts);
-        pd->fonts = NULL;
-        pd->cidfonts = NULL;
-        free(dd);
-        free(pd);
+        PS_cleanup(4, dd, pd);
         error(_("invalid page type '%s' (postscript)"), pd->papername);
     }
     pd->pagecentre = pagecentre;
@@ -3767,16 +3751,19 @@ static void SetFont(int font, int size, pDevDesc dd)
 #undef HAVE_POPEN
 #endif
 
-static void PS_cleanup(pDevDesc dd, PostScriptDesc *pd)
+static void PS_cleanup(int stage, pDevDesc dd, PostScriptDesc *pd)
 {
-    freeDeviceFontList(pd->fonts);
-    freeDeviceCIDFontList(pd->cidfonts);
-    freeDeviceEncList(pd->encodings);
-    pd->fonts = NULL;
-    pd->encodings = NULL;
-    pd->cidfonts = NULL;
-    free(dd);
-    free(pd);
+    switch (stage)
+    {
+    case 4: /* Allocated fonts */
+        freeDeviceFontList(pd->fonts);
+        freeDeviceCIDFontList(pd->cidfonts);
+    case 3: /* Allocated encodings */
+        freeDeviceEncList(pd->encodings);
+    case 1: /* Allocated PDFDesc */
+        free(pd);
+        free(dd);
+    }
 }
 
 static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
@@ -3786,7 +3773,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     if (strlen(pd->filename) == 0)
     {
 #ifndef HAVE_POPEN
-        PS_cleanup(dd, pd);
+        PS_cleanup(4, dd, pd);
         error(_("printing via file = \"\" is not implemented in this version"));
         return FALSE;
 #else
@@ -3797,7 +3784,8 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
-            PS_cleanup(dd, pd) error(_("cannot open 'postscript' pipe to '%s'"), pd->command);
+            PS_cleanup(4, dd, pd);
+            error(_("cannot open 'postscript' pipe to '%s'"), pd->command);
             return FALSE;
         }
 #endif
@@ -3805,7 +3793,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     else if (pd->filename[0] == '|')
     {
 #ifndef HAVE_POPEN
-        PS_cleanup(dd, pd);
+        PS_cleanup(4, dd, pd);
         error(_("file = \"|cmd\" is not implemented in this version"));
         return FALSE;
 #else
@@ -3814,7 +3802,8 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
-            PS_cleanup(dd, pd) error(_("cannot open 'postscript' pipe to '%s'"), pd->filename + 1);
+            PS_cleanup(4, dd, pd);
+            error(_("cannot open 'postscript' pipe to '%s'"), pd->filename + 1);
             return FALSE;
         }
 #endif
@@ -3827,7 +3816,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     }
     if (!pd->psfp)
     {
-        PS_cleanup(dd, pd);
+        PS_cleanup(4, dd, pd);
         error(_("cannot open file '%s'"), buf);
         return FALSE;
     }
@@ -8417,7 +8406,7 @@ SEXP PostScript(SEXP args)
         if (!PSDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, (double)horizontal, ps,
                             onefile, pagecentre, printit, cmd, title, fonts, colormodel, useKern, fillOddEven))
         {
-            /* free(dev); No, dev freed inside PSDeviceDrive */
+            /* we no longer get here: error is thrown in PSDeviceDriver */
             error(_("unable to start %s() device"), "postscript");
         }
         gdd = GEcreateDevDesc(dev);
@@ -8497,7 +8486,7 @@ SEXP XFig(SEXP args)
         if (!XFigDeviceDriver(dev, file, paper, family, bg, fg, width, height, (double)horizontal, ps, onefile,
                               pagecentre, defaultfont, textspecial, encoding))
         {
-            /* free(dev); No, freed inside XFigDeviceDriver */
+            /* we no longer get here: error is thrown in XFigDeviceDriver */
             error(_("unable to start %s() device"), "xfig");
         }
         gdd = GEcreateDevDesc(dev);
