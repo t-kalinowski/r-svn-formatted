@@ -4154,6 +4154,14 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             return R_NilValue;
     }
+    /* RAW vectors are limited to 2^31 - 1 bytes */
+    if ((double)len * size > INT_MAX)
+    {
+        if (isRaw)
+            error(_("only 2^31-1 bytes can be written to a raw vector"));
+        else
+            error(_("only 2^31-1 bytes can be written in a single readBin() call"));
+    }
 
     if (!wasopen)
     {
@@ -4370,7 +4378,7 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 
         /* write it now */
         if (isRaw)
-        {
+        { /* We checked size*len < 2^31-1 above */
             PROTECT(ans = allocVector(RAWSXP, size * len));
             memcpy(RAW(ans), buf, size * len);
         }
