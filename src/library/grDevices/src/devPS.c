@@ -3772,7 +3772,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
 
     if (strlen(pd->filename) == 0)
     {
-#ifndef HAVE_POPEN
+#ifdef Win32
         PS_cleanup(4, dd, pd);
         error(_("printing via file = \"\" is not implemented in this version"));
         return FALSE;
@@ -3792,7 +3792,7 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
     }
     else if (pd->filename[0] == '|')
     {
-#ifndef HAVE_POPEN
+#ifdef Win32
         PS_cleanup(4, dd, pd);
         error(_("file = \"|cmd\" is not implemented in this version"));
         return FALSE;

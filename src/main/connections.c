@@ -1115,7 +1115,6 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* ------------------- pipe connections --------------------- */
 
-#ifdef HAVE_POPEN
 static Rboolean pipe_open(Rconnection con)
 {
     FILE *fp;
@@ -1205,7 +1204,6 @@ static Rconnection newpipe(const char *description, int ienc, const char *mode)
     }
     return new;
 }
-#endif
 
 #ifdef Win32
 extern Rconnection newWpipe(const char *description, int enc, const char *mode);
@@ -1213,7 +1211,6 @@ extern Rconnection newWpipe(const char *description, int enc, const char *mode);
 
 SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-#ifdef HAVE_POPEN
     SEXP scmd, sopen, ans, class, enc;
     const char *file, *open;
     int ncon;
@@ -1284,10 +1281,6 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(2);
 
     return ans;
-#else
-    error(_("pipe connections are not available on this system"));
-    return R_NilValue; /* -Wall */
-#endif
 }
 
 /* ------------------- [bgx]zipped file connections --------------------- */
