@@ -1105,11 +1105,10 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             else if (format == CF_UNICODETEXT)
             {
-                char *text;
                 int n, ienc = CE_NATIVE;
                 const wchar_t *wpc = (wchar_t *)pc;
                 n = wcslen(wpc);
-                text = alloca(2 * (n + 1)); /* UTF-8 is at most 1.5x longer */
+                char text[2 * (n + 1)]; /* UTF-8 is at most 1.5x longer */
                 R_CheckStack();
                 wcstoutf8(text, wpc, n + 1);
                 if (!strIsASCII(text))
@@ -1842,7 +1841,8 @@ static void *getDeviceHandle(int dev)
     return getHandle(xd->gawin);
 }
 
-/* This assumes a menuname of the form $Graph<nn>Main, $Graph<nn>Popup, $Graph<nn>LocMain,
+/* This assumes a menuname of the form
+   $Graph<nn>Main, $Graph<nn>Popup, $Graph<nn>LocMain,
    or $Graph<nn>LocPopup where <nn> is the
    device number.  We've already checked the $Graph prefix. */
 
@@ -2017,8 +2017,7 @@ static HKEY find_hive(const char *hkey)
 static SEXP mkCharUcs(wchar_t *name)
 {
     int n = wcslen(name), N = 3 * n + 1;
-    char *buf;
-    buf = alloca(N);
+    char buf[N];
     R_CheckStack();
     wcstombs(buf, name, N);
     buf[N - 1] = '\0';

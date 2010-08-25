@@ -61,11 +61,6 @@ extern void R_ProcessEvents(void);
 #define IsSurrogatePairsHi(_h) (SURROGATE_PAIRS_HI_MIN == ((uint16_t)(_h) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 #define IsSurrogatePairsLo(_l) (SURROGATE_PAIRS_LO_MIN == ((uint16_t)(_l) & ~(uint16_t)SURROGATE_PAIRS_MASK))
 
-#ifdef __GNUC__
-#undef alloca
-#define alloca(x) __builtin_alloca((x))
-#endif
-
 extern UImode CharacterMode;
 
 static void performCompletion(control c);
@@ -302,9 +297,8 @@ static size_t enctowcs(wchar_t *wc, char *s, int n)
 static void xbufadds(xbuf p, const char *s, int user)
 {
     int n = strlen(s) + 1; /* UCS-2 must be shorter */
-    wchar_t *tmp;
+    wchar_t tmp[n];
 
-    tmp = (wchar_t *)alloca(n * sizeof(wchar_t));
     enctowcs(tmp, (char *)s, n);
     xbufaddxs(p, tmp, user);
 }
@@ -466,11 +460,12 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
         if (mbcslocale)
         {
             int i, w0, nc;
-            wchar_t *buff, *P = s, *q;
+            wchar_t *P = s, *q;
             Rboolean leftedge;
 
             nc = (wcslen(s) + 1) * sizeof(wchar_t); /* overkill */
-            q = buff = (wchar_t *)alloca(nc);
+            wchar_t buff[nc];
+            q = buff;
             leftedge = FC && (fch == 0);
             if (leftedge)
                 fch++;
@@ -574,7 +569,8 @@ static int writeline(control c, ConsoleData p, int i, int j)
     {
         int l, l1;
         stmp = LINE(i);
-        s = (wchar_t *)alloca((wcslen(stmp) + 1) * sizeof(wchar_t));
+        wchar_t s0[wcslen(stmp) + 1];
+        s = s0;
         l = p0 - stmp;
         wcsncpy(s, stmp, l);
         stmp = p0 + 1;
@@ -1056,8 +1052,6 @@ static void performCompletion(control c)
     int i, alen, alen2, max_show = 10, cursor_position = p->c - prompt_wid;
     wchar_t *partial_line = LINE(NUMLINES - 1) + prompt_wid;
     const char *additional_text;
-    wchar_t *pline;
-    char *cmd;
     SEXP cmdSexp, cmdexpr, ans = R_NilValue;
     ParseStatus status;
 
@@ -1101,7 +1095,7 @@ static void performCompletion(control c)
     }
 
     /* FIXME: need to escape quotes properly */
-    pline = (wchar_t *)alloca((wcslen(partial_line) + 1) * sizeof(wchar_t));
+    wchar_t pline[wcslen(partial_line) + 1];
     wcscpy(pline, partial_line);
     /* poor attempt at escaping quotes that sort of works */
     alen = wcslen(pline);
@@ -1109,7 +1103,7 @@ static void performCompletion(control c)
         if (pline[i] == '"')
             pline[i] = L'\'';
 
-    cmd = alloca((wcslen(pline) + 100));
+    char cmd[wcslen(pline) + 100];
     sprintf(cmd, "utils:::.win32consoleCompletion(\"%ls\", %d)", pline, cursor_position);
     PROTECT(cmdSexp = mkString(cmd));
     cmdexpr = PROTECT(R_ParseVector(cmdSexp, -1, &status, R_NilValue));
@@ -1143,10 +1137,9 @@ static void performCompletion(control c)
     if (alen)
     {
         /* make a copy of the current string first */
-        char *buf1;
         wchar_t *p1 = LINE(NUMLINES - 1);
         checkpointpos(p->lbuf, 1);
-        buf1 = alloca(MB_CUR_MAX * wcslen(p1) + 1);
+        char buf1[MB_CUR_MAX * wcslen(p1) + 1];
         sprintf(buf1, "%ls\n", p1);
         consolewrites(c, buf1);
 
@@ -1209,7 +1202,7 @@ void consolecmd(control c, const char *cmd)
     if (isUnicodeWindow(c))
     {
         size_t sz = (strlen(cmd) + 1) * sizeof(wchar_t);
-        wchar_t *wcs = (wchar_t *)alloca(sz);
+        wchar_t wcs[strlen(cmd) + 1];
         memset(wcs, 0, sz);
         mbstowcs(wcs, cmd, sz - 1);
         for (i = 0; wcs[i]; i++)

@@ -36,18 +36,17 @@ static char RunError[501] = "";
 
 static char *expandcmd(const char *cmd)
 {
-    char *buf;
     char c;
-    char *s, *p, *q, *f, *dest, *src, *fl, *fn;
+    char *s, *p, *q, *f, *dest, *src;
     int d, ext, len = strlen(cmd) + 1;
+    char buf[len], fl[len], fn[len];
 
     /* make a copy as we manipulate in place */
-    buf = alloca(strlen(cmd) + 1);
     strcpy(buf, cmd);
 
     if (!(s = (char *)malloc(MAX_PATH + strlen(cmd))))
     {
-        strcpy(RunError, _("Insufficient memory (expandcmd)"));
+        strcpy(RunError, "Insufficient memory (expandcmd)");
         return NULL;
     }
     /* skip leading spaces */
@@ -59,14 +58,14 @@ static char *expandcmd(const char *cmd)
             d = d ? 0 : 1;
     if (d)
     {
-        strcpy(RunError, _("A \" is missing (expandcmd)"));
+        strcpy(RunError, "A \" is missing (expandcmd)");
         return NULL;
     }
     c = *q; /* character after the command, normally a space */
     *q = '\0';
 
     /*
-     * I resort to this since SearchPath returned FOUND also
+     * Guido resorted to this since SearchPath returned FOUND also
      * for file name without extension -> explicitly set
      *  extension
      */
@@ -78,10 +77,8 @@ static char *expandcmd(const char *cmd)
             ext = 1;
     }
     /* SearchPath doesn't like ", so strip out quotes */
-    fl = alloca(len);
-    fn = alloca(len);
     for (dest = fl, src = p; *src; src++)
-        if (*src != '\"')
+        if (*src != '"')
             *dest++ = *src;
     *dest = '\0';
     if (ext)
@@ -108,8 +105,7 @@ static char *expandcmd(const char *cmd)
     if (!d)
     {
         free(s);
-        strncpy(RunError, p, 200);
-        strcat(RunError, _(" not found"));
+        snprintf(RunError, 500, "'%s' not found", p);
         *q = c;
         return NULL;
     }
@@ -147,12 +143,12 @@ static void pcreate(const char *cmd, cetype_t enc, int newconsole, int visible, 
     WORD showWindow = SW_SHOWDEFAULT;
     int inpipe;
     char *ecmd;
-    wchar_t *wcmd;
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
 
+    /* FIXME: this might need to be done in wchar */
     if (!(ecmd = expandcmd(cmd))) /* error message already set */
         return;
 
@@ -227,7 +223,7 @@ static void pcreate(const char *cmd, cetype_t enc, int newconsole, int visible, 
     if (enc == CE_UTF8)
     {
         int n = strlen(ecmd); /* max no of chars */
-        wcmd = (wchar_t *)alloca(2 * (n + 1));
+        wchar_t wcmd[n + 1];
         Rf_utf8towcs(wcmd, ecmd, n + 1);
         ret = CreateProcessW(NULL, wcmd, &sa, &sa, TRUE, (newconsole && (visible == 1)) ? CREATE_NEW_CONSOLE : 0, NULL,
                              NULL, &wsi, pi);
@@ -243,14 +239,10 @@ static void pcreate(const char *cmd, cetype_t enc, int newconsole, int visible, 
         CloseHandle(dupERR);
     }
     if (!ret)
-    {
-        strcpy(RunError, _("Impossible to run "));
-        strncat(RunError, ecmd, 200);
-        free(ecmd);
-        return;
-    }
+        snprintf(RunError, 500, _("CreateProcess failed to run '%s'"), ecmd);
+    else
+        CloseHandle(pi->hThread);
     free(ecmd);
-    CloseHandle(pi->hThread);
     return;
 }
 
@@ -293,7 +285,7 @@ static HANDLE getInputHandle(const char *finput)
         HANDLE hIN = CreateFile(finput, GENERIC_READ, 0, &sa, OPEN_EXISTING, 0, NULL);
         if (hIN == INVALID_HANDLE_VALUE)
         {
-            strcpy(RunError, _("Impossible to redirect input"));
+            strcpy(RunError, _("unable to redirect input"));
             return NULL;
         }
         return hIN;
@@ -401,7 +393,7 @@ rpipe *rpipeOpen(const char *cmd, cetype_t enc, int visible, const char *finput,
     if (res == FALSE)
     {
         rpipeClose(r);
-        strcpy(RunError, _("Impossible to create pipe"));
+        strcpy(RunError, "CreatePipe failed");
         return NULL;
     }
     if (io == 1)
@@ -436,7 +428,7 @@ rpipe *rpipeOpen(const char *cmd, cetype_t enc, int visible, const char *finput,
     if (!(r->thread = CreateThread(NULL, 0, threadedwait, r, 0, &id)))
     {
         rpipeClose(r);
-        strcpy(RunError, _("Impossible to create thread/pipe"));
+        strcpy(RunError, "CreateThread failed");
         return NULL;
     }
     return r;
@@ -771,9 +763,10 @@ SEXP do_syswhich(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
     {
-        const char *this = CHAR(STRING_ELT(nm, i)), *that;
-        that = expandcmd(this);
+        const char *this = CHAR(STRING_ELT(nm, i));
+        char *that = expandcmd(this);
         SET_STRING_ELT(ans, i, mkChar(that ? that : ""));
+        free(that);
     }
     setAttrib(ans, R_NamesSymbol, nm);
     UNPROTECT(1);

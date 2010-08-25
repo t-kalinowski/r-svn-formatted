@@ -335,8 +335,7 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
     {
         size_t res, inb = strlen(buf), onb = len;
         const char *ib = buf;
-        char *ob, *obuf;
-        ob = obuf = alloca(len + 1);
+        char obuf[len + 1], *ob = obuf;
         if (!cd)
         {
             cd = Riconv_open("", R_StdinEnc);
