@@ -275,21 +275,40 @@ char *runerror(void)
     return RunError;
 }
 
-static HANDLE getInputHandle(const char *finput)
+static HANDLE getInputHandle(const char *fin)
 {
-    if (finput && finput[0])
+    if (fin && fin[0])
     {
         SECURITY_ATTRIBUTES sa;
         sa.nLength = sizeof(sa);
         sa.lpSecurityDescriptor = NULL;
         sa.bInheritHandle = TRUE;
-        HANDLE hIN = CreateFile(finput, GENERIC_READ, 0, &sa, OPEN_EXISTING, 0, NULL);
+        HANDLE hIN = CreateFile(fin, GENERIC_READ, 0, &sa, OPEN_EXISTING, 0, NULL);
         if (hIN == INVALID_HANDLE_VALUE)
         {
-            strcpy(RunError, _("unable to redirect input"));
+            snprintf(RunError, 500, "unable to redirect input from '%s'", fin);
             return NULL;
         }
         return hIN;
+    }
+    return INVALID_HANDLE_VALUE;
+}
+
+static HANDLE getOutputHandle(const char *fout)
+{
+    if (fout && fout[0])
+    {
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(sa);
+        sa.lpSecurityDescriptor = NULL;
+        sa.bInheritHandle = TRUE;
+        HANDLE hOUT = CreateFile(fout, GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, 0, NULL);
+        if (hOUT == INVALID_HANDLE_VALUE)
+        {
+            snprintf(RunError, 500, "unable to redirect output to '%s'", fout);
+            return NULL;
+        }
+        return hOUT;
     }
     return INVALID_HANDLE_VALUE;
 }
@@ -335,21 +354,21 @@ static int pwait2(HANDLE p)
 
 /*
   Used for external commands in file.show() and edit(), and for
-  system(intern=FALSE).
+  system(intern=FALSE).  Also called from postscript().
 
   wait != 0 says wait for child to terminate before returning.
   visible = -1, 0, 1 for hide, minimized, default
-  finput is either NULL or the name of a file from which to
+  fin is either NULL or the name of a file from which to
   redirect stdin for the child.
 */
-int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *finput)
+int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *fin, const char *fout, const char *ferr)
 {
-    HANDLE hIN = getInputHandle(finput);
+    HANDLE hIN = getInputHandle(fin), hOUT = getOutputHandle(fout), hERR = getOutputHandle(ferr);
     int ret = 0;
     PROCESS_INFORMATION pi;
 
     memset(&pi, 0, sizeof(pi));
-    pcreate(cmd, enc, !wait, visible, hIN, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, &pi);
+    pcreate(cmd, enc, !wait, visible, hIN, hOUT, hERR, &pi);
     if (!pi.hProcess)
         return NOLAUNCH;
     if (wait)
@@ -368,6 +387,10 @@ int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *fin
     CloseHandle(pi.hProcess);
     if (hIN != INVALID_HANDLE_VALUE)
         CloseHandle(hIN);
+    if (hOUT != INVALID_HANDLE_VALUE)
+        CloseHandle(hERR);
+    if (hERR != INVALID_HANDLE_VALUE)
+        CloseHandle(hERR);
     return ret;
 }
 
@@ -376,7 +399,8 @@ int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *fin
      redirect stdin for the child.
    visible = -1, 0, 1 for hide, minimized, default
    io = 0 to read stdout from pipe, 1 to write to pipe,
-   2 to read stdout and stderr from pipe.
+   2 to read stderr from pipe,
+   3 to read both stdout and stderr from pipe.
  */
 rpipe *rpipeOpen(const char *cmd, cetype_t enc, int visible, const char *finput, int io)
 {
@@ -422,7 +446,8 @@ rpipe *rpipeOpen(const char *cmd, cetype_t enc, int visible, const char *finput,
     CloseHandle(hTHIS);
 
     hIN = getInputHandle(finput);
-    pcreate(cmd, enc, 0, visible, hIN, r->write, io > 0 ? r->write : INVALID_HANDLE_VALUE, &(r->pi));
+    pcreate(cmd, enc, 0, visible, hIN, (io == 0 || io == 3) ? r->write : INVALID_HANDLE_VALUE,
+            io >= 2 ? r->write : INVALID_HANDLE_VALUE, &(r->pi));
     if (hIN != INVALID_HANDLE_VALUE)
         CloseHandle(hIN);
 
