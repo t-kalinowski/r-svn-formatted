@@ -269,7 +269,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = -1;
         s = R_ParseVector(text, num, &status, source);
         if (status != PARSE_OK)
-            parseError(call, 0);
+            parseError(call, R_ParseError);
     }
     else if (ifile >= 3)
     { /* file != "" */
@@ -299,7 +299,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             num = 1;
         s = R_ParseBuffer(&R_ConsoleIob, num, &status, prompt, source);
         if (status != PARSE_OK)
-            parseError(call, 0);
+            parseError(call, R_ParseError);
     }
     UNPROTECT(2);
     known_to_be_latin1 = old_latin1;
