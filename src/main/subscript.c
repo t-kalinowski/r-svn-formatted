@@ -281,7 +281,12 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
     for (i = start; i < stop; i++)
     {
         if (!isVectorList(x) && !isPairList(x))
-            errorcall(call, _("recursive indexing failed at level %d\n"), i + 1);
+        {
+            if (i)
+                errorcall(call, _("recursive indexing failed at level %d\n"), i + 1);
+            else
+                errorcall(call, _("attempt to select more than one element"));
+        }
         offset = get1index(thesub, getAttrib(x, R_NamesSymbol), length(x), pok, i, call);
         if (offset < 0 || offset >= length(x))
             errorcall(call, _("no such index at level %d\n"), i + 1);
