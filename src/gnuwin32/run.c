@@ -364,10 +364,15 @@ static int pwait2(HANDLE p)
 */
 int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *fin, const char *fout, const char *ferr)
 {
-    HANDLE hIN = getInputHandle(fin), hOUT = getOutputHandle(fout), hERR = getOutputHandle(ferr);
+    HANDLE hIN = getInputHandle(fin), hOUT, hERR;
     int ret = 0;
     PROCESS_INFORMATION pi;
 
+    hOUT = getOutputHandle(fout);
+    if (streql(fout, ferr))
+        hERR = hOUT;
+    else
+        hERR = getOutputHandle(ferr);
     if (!hOUT || !hERR)
         return 1;
 
@@ -442,6 +447,7 @@ rpipe *rpipeOpen(const char *cmd, cetype_t enc, int visible, const char *finput,
         else
             return r;
     }
+
     /* pipe for R to read from */
     hTHIS = GetCurrentProcess();
     r->write = hWritePipe;
