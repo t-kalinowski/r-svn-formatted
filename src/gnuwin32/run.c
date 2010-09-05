@@ -369,7 +369,7 @@ int runcmd(const char *cmd, cetype_t enc, int wait, int visible, const char *fin
     PROCESS_INFORMATION pi;
 
     hOUT = getOutputHandle(fout);
-    if (streql(fout, ferr))
+    if (fout == ferr || (fout && ferr && streql(fout, ferr)))
         hERR = hOUT;
     else
         hERR = getOutputHandle(ferr);
