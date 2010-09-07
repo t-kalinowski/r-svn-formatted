@@ -1024,34 +1024,61 @@ SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         goto not_matrix;
     PROTECT(r = allocVector(TYPEOF(a), len));
+    int j, l_1 = len - 1;
     switch (TYPEOF(a))
     {
     case LGLSXP:
     case INTSXP:
-        for (i = 0; i < len; i++)
-            INTEGER(r)[i] = INTEGER(a)[(i / ncol) + (i % ncol) * nrow];
+        // filling in columnwise, "accessing row-wise":
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            INTEGER(r)[i] = INTEGER(a)[j];
+        }
         break;
     case REALSXP:
-        for (i = 0; i < len; i++)
-            REAL(r)[i] = REAL(a)[(i / ncol) + (i % ncol) * nrow];
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            REAL(r)[i] = REAL(a)[j];
+        }
         break;
     case CPLXSXP:
-        for (i = 0; i < len; i++)
-            COMPLEX(r)[i] = COMPLEX(a)[(i / ncol) + (i % ncol) * nrow];
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            COMPLEX(r)[i] = COMPLEX(a)[j];
+        }
         break;
     case STRSXP:
-        for (i = 0; i < len; i++)
-            SET_STRING_ELT(r, i, STRING_ELT(a, (i / ncol) + (i % ncol) * nrow));
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            SET_STRING_ELT(r, i, STRING_ELT(a, j));
+        }
         break;
     case VECSXP:
-        for (i = 0; i < len; i++)
-            SET_VECTOR_ELT(r, i, VECTOR_ELT(a, (i / ncol) + (i % ncol) * nrow));
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            SET_VECTOR_ELT(r, i, VECTOR_ELT(a, j));
+        }
         break;
     case RAWSXP:
-        for (i = 0; i < len; i++)
-            RAW(r)[i] = RAW(a)[(i / ncol) + (i % ncol) * nrow];
+        for (i = 0, j = 0; i < len; i++, j += nrow)
+        {
+            if (j > l_1)
+                j -= l_1;
+            RAW(r)[i] = RAW(a)[j];
+        }
         break;
     default:
+        UNPROTECT(1);
         goto not_matrix;
     }
     PROTECT(dims = allocVector(INTSXP, 2));
