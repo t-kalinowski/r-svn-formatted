@@ -33,7 +33,7 @@ static const char *mouseHandlers[] = {"onMouseDown", "onMouseUp", "onMouseMove"}
 
 static const char *keybdHandler = "onKeybd";
 
-static checkHandler(const char *name, SEXP eventEnv)
+static void checkHandler(const char *name, SEXP eventEnv)
 {
     SEXP handler = findVar(install(name), eventEnv);
     if (TYPEOF(handler) == CLOSXP)
