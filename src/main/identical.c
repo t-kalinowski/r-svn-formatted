@@ -240,12 +240,13 @@ Rboolean attribute_hidden R_compute_identical(SEXP x, SEXP y, Rboolean num_eq, R
         return (PRIMOFFSET(x) == PRIMOFFSET(y) ? TRUE : FALSE);
     case ENVSXP:
     case SYMSXP:
-    case EXTPTRSXP:
     case WEAKREFSXP:
 #ifdef BYTECODE
     case BCODESXP: /**** is this the best approach? */
 #endif
         return (x == y ? TRUE : FALSE);
+    case EXTPTRSXP:
+        return (EXTPTR_PTR(x) == EXTPTR_PTR(y) ? TRUE : FALSE);
     case RAWSXP:
         if (length(x) != length(y))
             return FALSE;
