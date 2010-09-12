@@ -1060,8 +1060,10 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
         }                                                                                                              \
     } while (0)
 
-/* Allocate space for loop variable if first time needed, or
-   other vars have linked to previous space so can't modify */
+/* Allocate space for the loop variable value the first time through
+   (when v == R_NilValue) and when the value has been assigned to
+   another variable (NAMED(v) == 2). This should be safe and avoid
+   allocation in many cases. */
 #define ALLOC_LOOP_VAR(v, val_type)                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
