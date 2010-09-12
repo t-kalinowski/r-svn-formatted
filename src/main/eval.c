@@ -3465,7 +3465,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             R_BCNodeStackTop[-1] = value;
             NEXT();
         }
-        OP(SETLOOPVAL, 0) : BCNPOP();
+        OP(SETLOOPVAL, 0) : BCNPOP_IGNORE_VALUE();
         R_BCNodeStackTop[-1] = R_NilValue;
         NEXT();
         OP(INVISIBLE, 0) : R_Visible = FALSE;
