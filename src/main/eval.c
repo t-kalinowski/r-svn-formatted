@@ -1076,11 +1076,10 @@ SEXP attribute_hidden do_if(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    volatile int i, n, bgn; /* Need to declare volatile variables whose */
-    volatile SEXP v, val;   /* changing values are relied on after goto */
-                            /* for_next or for_break.                   */
-    int dbg, val_type;
-    SEXP sym, body, tmp;
+    volatile int i, n, bgn;     /* Need to declare volatile variables whose */
+    volatile SEXP v, val;       /* values are relied on after for_next or   */
+    volatile int dbg, val_type; /* for_break longjmps.                      */
+    volatile SEXP sym, body;
     RCNTXT cntxt;
     PROTECT_INDEX vpi;
 
@@ -1101,7 +1100,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (inherits(val, "factor"))
     {
-        tmp = asCharacterFactor(val);
+        SEXP tmp = asCharacterFactor(val);
         UNPROTECT(1); /* val from above */
         PROTECT(val = tmp);
     }
