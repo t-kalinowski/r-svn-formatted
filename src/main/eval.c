@@ -3442,6 +3442,10 @@ static SEXP bcEval(SEXP body, SEXP rho)
                     value = allocVector(TYPEOF(seq), 1);
                     SET_STRING_ELT(value, 0, STRING_ELT(seq, i));
                     break;
+                case RAWSXP:
+                    value = allocVector(TYPEOF(seq), 1);
+                    RAW(value)[0] = RAW(seq)[i];
+                    break;
                 case EXPRSXP:
                 case VECSXP:
                     value = VECTOR_ELT(seq, i);
@@ -3450,6 +3454,8 @@ static SEXP bcEval(SEXP body, SEXP rho)
                     value = CAR(seq);
                     R_BCNodeStackTop[-4] = CDR(seq);
                     break;
+                default:
+                    error(_("invalid sequence argument in for loop"));
                 }
                 R_SetVarLocValue((R_varloc_t)cell, value);
                 BC_CHECK_SIGINT();
