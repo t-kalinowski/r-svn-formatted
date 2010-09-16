@@ -81,7 +81,7 @@ static Rboolean rsum(double *x, int n, double *value, Rboolean narm)
 
     for (i = 0; i < n; i++)
     {
-        if (!ISNAN(x[i]) || !narm)
+        if (!narm || !ISNAN(x[i]))
         {
             if (!updated)
                 updated = TRUE;
@@ -101,7 +101,7 @@ static Rboolean csum(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
 
     for (i = 0; i < n; i++)
     {
-        if ((!ISNAN(x[i].r) && !ISNAN(x[i].i)) || !narm)
+        if (!narm || (!ISNAN(x[i].r) && !ISNAN(x[i].i)))
         {
             if (!updated)
                 updated = TRUE;
@@ -328,7 +328,7 @@ static Rboolean rprod(double *x, int n, double *value, Rboolean narm)
 
     for (i = 0; i < n; i++)
     {
-        if (!ISNAN(x[i]) || !narm)
+        if (!narm || !ISNAN(x[i]))
         {
             if (!updated)
                 updated = TRUE;
@@ -349,7 +349,7 @@ static Rboolean cprod(Rcomplex *x, int n, Rcomplex *value, Rboolean narm)
     si = 0;
     for (i = 0; i < n; i++)
     {
-        if ((!ISNAN(x[i].r) && !ISNAN(x[i].i)) || !narm)
+        if (!narm || (!ISNAN(x[i].r) && !ISNAN(x[i].i)))
         {
             if (!updated)
                 updated = TRUE;
