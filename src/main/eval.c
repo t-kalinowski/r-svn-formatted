@@ -438,10 +438,17 @@ SEXP eval(SEXP e, SEXP rho)
         }
         else if (TYPEOF(tmp) == PROMSXP)
         {
-            PROTECT(tmp);
-            tmp = eval(tmp, rho);
+            if (PRVALUE(tmp) == R_UnboundValue)
+            {
+                /* not sure the PROTECT is needed here but keep it to
+                   be on the safe side. */
+                PROTECT(tmp);
+                tmp = forcePromise(tmp);
+                UNPROTECT(1);
+            }
+            else
+                tmp = PRVALUE(tmp);
             SET_NAMED(tmp, 2);
-            UNPROTECT(1);
         }
         else if (!isNull(tmp) && NAMED(tmp) < 1)
             SET_NAMED(tmp, 1);
