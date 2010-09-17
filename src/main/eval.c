@@ -1652,6 +1652,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
     SEXP head, tail, ev, h;
 
     head = R_NilValue;
+    tail = R_NilValue; /* to prevent uninitialized variable warnings */
 
     while (el != R_NilValue)
     {
@@ -1724,6 +1725,7 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
     SEXP head, tail, ev, h;
 
     head = R_NilValue;
+    tail = R_NilValue; /* to prevent uninitialized variable warnings */
 
     while (el != R_NilValue)
     {
