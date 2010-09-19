@@ -932,10 +932,23 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case PLUSOP:
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            mod_iterate(n1, n2, i1, i2)
+            if (n2 == 1)
             {
-                REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
+                double tmp = REAL(s2)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] + tmp;
             }
+            else if (n1 == 1)
+            {
+                double tmp = REAL(s1)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = tmp + REAL(s2)[i];
+            }
+            else if (n1 == n2)
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] + REAL(s2)[i];
+            else
+                mod_iterate(n1, n2, i1, i2) REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
         }
         else if (TYPEOF(s1) == INTSXP)
         {
@@ -951,15 +964,27 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
                 REAL(ans)[i] = REAL(s1)[i1] + R_INTEGER(s2, i2);
             }
         }
-
         break;
     case MINUSOP:
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            mod_iterate(n1, n2, i1, i2)
+            if (n2 == 1)
             {
-                REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
+                double tmp = REAL(s2)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] - tmp;
             }
+            else if (n1 == 1)
+            {
+                double tmp = REAL(s1)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = tmp - REAL(s2)[i];
+            }
+            else if (n1 == n2)
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] - REAL(s2)[i];
+            else
+                mod_iterate(n1, n2, i1, i2) REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
         }
         else if (TYPEOF(s1) == INTSXP)
         {
@@ -979,10 +1004,23 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case TIMESOP:
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            mod_iterate(n1, n2, i1, i2)
+            if (n2 == 1)
             {
-                REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
+                double tmp = REAL(s2)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] * tmp;
             }
+            else if (n1 == 1)
+            {
+                double tmp = REAL(s1)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = tmp * REAL(s2)[i];
+            }
+            else if (n1 == n2)
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] * REAL(s2)[i];
+            else
+                mod_iterate(n1, n2, i1, i2) REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
         }
         else if (TYPEOF(s1) == INTSXP)
         {
@@ -1002,10 +1040,23 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case DIVOP:
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
-            mod_iterate(n1, n2, i1, i2)
+            if (n2 == 1)
             {
-                REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
+                double tmp = REAL(s2)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] / tmp;
             }
+            else if (n1 == 1)
+            {
+                double tmp = REAL(s1)[0];
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = tmp / REAL(s2)[i];
+            }
+            else if (n1 == n2)
+                for (i = 0; i < n; i++)
+                    REAL(ans)[i] = REAL(s1)[i] / REAL(s2)[i];
+            else
+                mod_iterate(n1, n2, i1, i2) REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
         }
         else if (TYPEOF(s1) == INTSXP)
         {
