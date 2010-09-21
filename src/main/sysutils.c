@@ -27,7 +27,6 @@
 #include <R_ext/Riconv.h>
 #include <Rinterface.h>
 #include <errno.h>
-#include <R_ext/Random.h> /* for GetRNGstate */
 
 /*
   See ../unix/system.txt for a description of some of these functions.
@@ -1568,7 +1567,6 @@ char *R_tmpnam(const char *prefix, const char *tempdir)
     if (strlen(tempdir) >= PATH_MAX)
         error(_("invalid 'tempdir' in R_tmpnam"));
     strcpy(tmp1, tempdir);
-    GetRNGstate(); /* make sure srand() is called (PR#14381) */
     for (n = 0; n < 100; n++)
     {
         /* try a random number at the end.  Need at least 6 hex digits */

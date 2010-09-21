@@ -300,7 +300,6 @@ static void Randomize(RNGtype kind)
 #else
     /* unlikely, but use random contents */
 #endif
-    srand(seed);
 
     RNG_Init(kind, seed);
 }
