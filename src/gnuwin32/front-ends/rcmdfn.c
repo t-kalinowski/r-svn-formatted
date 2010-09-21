@@ -242,9 +242,10 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             return (27);
         }
         strcat(cmd, cmd_extra);
+
+        /* to get .Last.sys run: see profile/Common.R */
         if (timing)
             putenv("R_BATCH=1234");
-        /* to get .Last.sys run: see profile/Common.R */
 
         /* fprintf(stderr, "%s->%s\n", infile, outfile);
            fprintf(stderr, "%s\n", cmd); */
@@ -435,8 +436,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         strcat(Path, BINDIR);
         strcat(Path, ";");
         strcat(Path, getenv("PATH"));
-        putenv(Path);
-        free(Path);
+        putenv(Path); /* don't free arg of putenv */
 
         if (!getenv("R_ARCH"))
         {
@@ -483,7 +483,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         }
 
         strcpy(env_path, RHome);
-        strcat(env_path, "/etc/rcmd_environ");
+        strcat(env_path, "/etc/Rcmd_environ");
         process_Renviron(env_path);
 
         if (cmdarg > 0 && argc > cmdarg)
