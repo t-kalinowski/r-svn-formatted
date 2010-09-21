@@ -110,6 +110,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     int len = strlen(argv[0]);
     char env_path[MAX_PATH];
     int timing = 1;
+    char *RHome = getRHOME(3);
 
     if (!strncmp(argv[0] + len - 4, "Rcmd", 4) || !strncmp(argv[0] + len - 4, "rcmd", 4) ||
         !strncmp(argv[0] + len - 8, "Rcmd.exe", 8) || !strncmp(argv[0] + len - 8, "rcmd.exe", 8))
@@ -171,7 +172,22 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         return system(cmd);
     }
 
-    /* From here on down, this was called as Rcmd or R CMD */
+    /* From here on down, this was called as Rcmd or R CMD
+       We follow Unix-alikes as from R 2.12.0 in setting environment
+       variables in Rcmd BATCH.
+
+       NB: Rcmd_environ uses R_HOME.
+    */
+    char RHOME[MAX_PATH];
+    strcpy(RHOME, "R_HOME=");
+    strcat(RHOME, RHome);
+    for (p = RHOME; *p; p++)
+        if (*p == '\\')
+            *p = '/';
+    putenv(RHOME);
+    strcpy(env_path, RHome);
+    strcat(env_path, "/etc/Rcmd_environ");
+    process_Renviron(env_path);
 
     if (!strcmp(argv[cmdarg], "BATCH"))
     {
@@ -314,7 +330,81 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         return (pwait(pi.hProcess));
         /* ------- end of BATCH -------- */
     }
-    else if (!strcmp(argv[cmdarg], "INSTALL"))
+
+    /* Now Rcmd <cmd> or R CMD <cmd>: some commands are handled internally,
+       some via batch/Perl files */
+
+    /* Not sure that we still need these set -- they are Windows-only */
+    char Rversion[25];
+    snprintf(Rversion, 25, "R_VERSION=%s.%s", R_MAJOR, R_MINOR);
+    putenv(Rversion);
+
+    putenv("R_CMD=R CMD");
+
+    char *Path = malloc(strlen(getenv("PATH")) + MAX_PATH + 10);
+    if (!Path)
+    {
+        fprintf(stderr, "PATH too long\n");
+        return (4);
+    }
+    strcpy(Path, "PATH=");
+    strcat(Path, RHome);
+    strcat(Path, "\\");
+    strcat(Path, BINDIR);
+    strcat(Path, ";");
+    strcat(Path, getenv("PATH"));
+    putenv(Path);
+    free(Path);
+
+    char Rarch[30];
+    if (!getenv("R_ARCH"))
+    {
+        strcpy(Rarch, "R_ARCH=/");
+        strcat(Rarch, R_ARCH);
+        putenv(Rarch);
+    }
+
+    char Bindir[30];
+    strcpy(Bindir, "BINDIR=");
+    strcat(Bindir, BINDIR);
+    putenv(Bindir);
+
+    char Tmpdir[MAX_PATH + 10];
+    if ((p = getenv("TMPDIR")) && isDir(p))
+    {
+        /* TMPDIR is already set */
+    }
+    else
+    {
+        if ((p = getenv("TEMP")) && isDir(p))
+        {
+            strcpy(Tmpdir, "TMPDIR=");
+            strcat(Tmpdir, p);
+            putenv(Tmpdir);
+        }
+        else if ((p = getenv("TMP")) && isDir(p))
+        {
+            strcpy(Tmpdir, "TMPDIR=");
+            strcat(Tmpdir, p);
+            putenv(Tmpdir);
+        }
+        else
+        {
+            strcpy(Tmpdir, "TMPDIR=");
+            strcat(Tmpdir, getRUser());
+            putenv(Tmpdir);
+        }
+    }
+
+    char HOME[MAX_PATH + 10];
+    if (!getenv("HOME"))
+    {
+        strcpy(HOME, "HOME=");
+        strcat(HOME, getRUser());
+        putenv(HOME);
+    }
+
+    if (!strcmp(argv[cmdarg], "INSTALL"))
     {
         snprintf(cmd, CMD_LEN,
                  "%s/%s/Rterm.exe -e tools:::.install_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore --slave "
@@ -438,84 +528,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else
     {
-        char RHOME[MAX_PATH], Rarch[30], Bindir[30], Tmpdir[MAX_PATH + 10], HOME[MAX_PATH + 10], Rversion[25];
-        char *RHome = getRHOME(3), *Path;
-
-        strcpy(RHOME, "R_HOME=");
-        strcat(RHOME, RHome);
-        for (p = RHOME; *p; p++)
-            if (*p == '\\')
-                *p = '/';
-        putenv(RHOME);
-
-        snprintf(Rversion, 25, "R_VERSION=%s.%s", R_MAJOR, R_MINOR);
-        putenv(Rversion);
-
-        putenv("R_CMD=R CMD");
-
-        Path = malloc(strlen(getenv("PATH")) + MAX_PATH + 10);
-        if (!Path)
-        {
-            fprintf(stderr, "PATH too long\n");
-            return (4);
-        }
-
-        strcpy(Path, "PATH=");
-        strcat(Path, RHome);
-        strcat(Path, "\\");
-        strcat(Path, BINDIR);
-        strcat(Path, ";");
-        strcat(Path, getenv("PATH"));
-        putenv(Path); /* don't free arg of putenv */
-
-        if (!getenv("R_ARCH"))
-        {
-            strcpy(Rarch, "R_ARCH=/");
-            strcat(Rarch, R_ARCH);
-            putenv(Rarch);
-        }
-
-        strcpy(Bindir, "BINDIR=");
-        strcat(Bindir, BINDIR);
-        putenv(Bindir);
-
-        if ((p = getenv("TMPDIR")) && isDir(p))
-        {
-            /* TMPDIR is already set */
-        }
-        else
-        {
-            if ((p = getenv("TEMP")) && isDir(p))
-            {
-                strcpy(Tmpdir, "TMPDIR=");
-                strcat(Tmpdir, p);
-                putenv(Tmpdir);
-            }
-            else if ((p = getenv("TMP")) && isDir(p))
-            {
-                strcpy(Tmpdir, "TMPDIR=");
-                strcat(Tmpdir, p);
-                putenv(Tmpdir);
-            }
-            else
-            {
-                strcpy(Tmpdir, "TMPDIR=");
-                strcat(Tmpdir, getRUser());
-                putenv(Tmpdir);
-            }
-        }
-
-        if (!getenv("HOME"))
-        {
-            strcpy(HOME, "HOME=");
-            strcat(HOME, getRUser());
-            putenv(HOME);
-        }
-
-        strcpy(env_path, RHome);
-        strcat(env_path, "/etc/Rcmd_environ");
-        process_Renviron(env_path);
-
+        /* not one of those handled internally */
         p = argv[cmdarg];
         if (!strcmp(p, "config"))
         {
