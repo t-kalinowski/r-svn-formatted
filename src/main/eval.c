@@ -687,8 +687,6 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
         do_browser(call, op, R_NilValue, newrho);
     }
 
-regdb :
-
     /*  It isn't completely clear that this is the right place to do
     this, but maybe (if the matchArgs above reverses the
     arguments) it might just be perfect.
@@ -698,13 +696,13 @@ regdb :
     */
 
 #ifdef HASHING
-{
-    SEXP R_NewHashTable(int);
-    SEXP R_HashFrame(SEXP);
-    int nargs = length(arglist);
-    HASHTAB(newrho) = R_NewHashTable(nargs);
-    newrho = R_HashFrame(newrho);
-}
+    {
+        SEXP R_NewHashTable(int);
+        SEXP R_HashFrame(SEXP);
+        int nargs = length(arglist);
+        HASHTAB(newrho) = R_NewHashTable(nargs);
+        newrho = R_HashFrame(newrho);
+    }
 #endif
 #undef HASHING
 
@@ -774,21 +772,19 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
         do_browser(call, op, R_NilValue, newrho);
     }
 
-regdb :
-
     /*  It isn't completely clear that this is the right place to do
     this, but maybe (if the matchArgs above reverses the
     arguments) it might just be perfect.  */
 
 #ifdef HASHING
 #define HASHTABLEGROWTHRATE 1.2
-{
-    SEXP R_NewHashTable(int, double);
-    SEXP R_HashFrame(SEXP);
-    int nargs = length(arglist);
-    HASHTAB(newrho) = R_NewHashTable(nargs, HASHTABLEGROWTHRATE);
-    newrho = R_HashFrame(newrho);
-}
+    {
+        SEXP R_NewHashTable(int, double);
+        SEXP R_HashFrame(SEXP);
+        int nargs = length(arglist);
+        HASHTAB(newrho) = R_NewHashTable(nargs, HASHTABLEGROWTHRATE);
+        newrho = R_HashFrame(newrho);
+    }
 #endif
 #undef HASHING
 
