@@ -61,14 +61,13 @@ static int isDir(char *path)
 
 void rcmdusage(char *RCMD)
 {
-    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
+    fprintf(stderr, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "where 'command' is one of:\n",
             "  INSTALL  Install add-on packages\n", "  REMOVE   Remove add-on packages\n",
             "  SHLIB    Make a DLL for use with dynload\n", "  BATCH    Run R in batch mode\n",
             "  build    Build add-on packages\n", "  check    Check add-on packages\n",
             "  Rprof    Post process R profiling files\n", "  Rdconv   Convert Rd format to various other formats\n",
             "  Rdiff    difference R output files\n", "  Rd2dvi   Convert Rd format to DVI\n",
             "  Rd2pdf   Convert Rd format to PDF\n", "  Rd2txt   Convert Rd format to pretty text\n",
-            "  Sd2Rd    Convert S documentation to Rd format\n",
             "  Stangle  Extract S/R code from Sweave documentation\n", "  Sweave   Process Sweave documentation\n",
             "  config   Obtain configuration information about R\n"
             "  open     Open a file via Windows file associations\n"
@@ -531,17 +530,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         /* not one of those handled internally */
         p = argv[cmdarg];
         if (!strcmp(p, "config"))
-        {
             snprintf(cmd, CMD_LEN, "sh %s/bin/config.sh", RHome);
-        }
-        else if (!strcmp(p, "Sd2Rd"))
-        {
-            snprintf(cmd, CMD_LEN, "perl %s/bin/Sd2Rd.pl", RHome);
-        }
         else if (!strcmp(p, "open"))
-        {
             snprintf(cmd, CMD_LEN, "%s/%s/open.exe", RHome, BINDIR);
-        }
         else
         {
             /* RHOME/BINDIR is first in the path, so looks there first */
