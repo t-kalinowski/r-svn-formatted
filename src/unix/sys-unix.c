@@ -301,14 +301,14 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         if ((res & 0xff) == 127)
         { /* 127, aka -1 */
             if (errno)
-                error(_("error in running command: %s'"), strerror(errno));
+                error(_("error in running command: '%s'"), strerror(errno));
             else
                 error(_("error in running command"));
         }
         else if (res)
         {
             if (errno)
-                warningcall(R_NilValue, _("running command '%s' had status %d: and error message '%s'"), cmd, res,
+                warningcall(R_NilValue, _("running command '%s' had status %d and error message '%s'"), cmd, res,
                             strerror(errno));
             else
                 warningcall(R_NilValue, _("running command '%s' had status %d"), cmd, res);
