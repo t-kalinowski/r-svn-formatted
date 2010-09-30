@@ -877,7 +877,6 @@ void R_setupHistory(void)
 }
 
 #include <sys/stat.h>
-#include <time.h>
 static int isDir(char *path)
 {
     struct stat sb;
@@ -1208,8 +1207,8 @@ int cmdlineoptions(int ac, char **av)
                         tm = getenv("R_USER"); /* this one will succeed */
                 }
             }
-            srand((unsigned)time(NULL));
-            sprintf(ifile, "%s/Rscript%x%x", tm, rand(), rand());
+            /* in case getpid() is not unique -- has been seen under Windows */
+            sprintf(ifile, "%s/Rscript%x%x", tm, getpid(), (unsigned int)GetTickCount());
             ifp = fopen(ifile, "w+b");
             if (!ifp)
                 R_Suicide(_("creation of tmpfile failed -- set TMPDIR suitably?"));
