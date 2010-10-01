@@ -285,6 +285,11 @@ static void RNG_Init(RNGtype kind, Int32 seed)
 #include <sys/time.h>
 #endif
 
+#ifdef Win32
+#include <windows.h> /* for GetTickCount */
+#include <process.h> /* for getpid */
+#endif
+
 static void Randomize(RNGtype kind)
 {
     /* Only called by  GetRNGstate() when there is no .Random.seed */
@@ -295,6 +300,10 @@ static void Randomize(RNGtype kind)
         gettimeofday(&tv, NULL);
         seed = ((uint64_t)tv.tv_usec << 16) ^ tv.tv_sec;
     }
+#elif defined(Win32)
+    /* Try to avoid coincidence for processes launched almost
+       simultaneously */
+    seed = (int)GetTickCount() + getpid();
 #elif HAVE_TIME
     seed = (Int32)time(NULL);
 #else
