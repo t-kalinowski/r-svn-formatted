@@ -3,7 +3,7 @@
  *  file extra.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004	      The R Foundation
- *  Copyright (C) 2005--2009  The R Development Core Team
+ *  Copyright (C) 2005--2010  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1215,6 +1215,7 @@ SEXP do_writeClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 const char *formatError(DWORD res);
 
+/* FIXME interpret winslash, mustWork */
 SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, paths = CAR(args), el;
@@ -1244,6 +1245,7 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
                 else
                 {
                     wcstoutf8(tmp, wtmp, wcslen(wtmp) + 1);
+                    /* R_UTF8fixslash(tmp); */
                     result = mkCharCE(tmp, CE_UTF8);
                     warn = 1;
                 }
@@ -1262,6 +1264,7 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (GetFullPathName(translateChar(el), MAX_PATH, tmp, &tmp2))
             {
                 if (GetLongPathName(tmp, longpath, MAX_PATH))
+                    /* R_fixslash(longpath); */
                     result = mkChar(longpath);
                 else
                 {
