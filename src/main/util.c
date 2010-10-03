@@ -699,8 +699,7 @@ SEXP static intern_getwd(void)
             UNPROTECT(1);
         }
     }
-#elif defined(HAVE_GETCWD)
-    /* can we really function without getcwd?  */
+#else
     char *res = getcwd(buf, PATH_MAX); /* can return NULL */
     if (res)
         rval = mkString(buf);
@@ -741,9 +740,7 @@ SEXP attribute_hidden do_setwd(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
     {
         const char *path = R_ExpandFileName(translateChar(STRING_ELT(s, 0)));
-#ifdef HAVE_CHDIR
         if (chdir(path) < 0)
-#endif
             error(_("cannot change working directory"));
     }
 #endif
@@ -965,9 +962,7 @@ SEXP attribute_hidden do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
                 warning("path[%d]=\"%s\": %s", i + 1, path, strerror(errno));
         }
     }
-    UNPROTECT(1);
-    return ans;
-#elif defined(HAVE_GETCWD)
+#else
     Rboolean OK;
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
@@ -990,10 +985,8 @@ SEXP attribute_hidden do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
         }
         /* we need to check that this exists */
-#ifdef HAVE_ACCESS
         if (OK)
             OK = (access(abspath, 0 /* F_OK */) == 0);
-#endif
         if (OK)
             SET_STRING_ELT(ans, i, mkChar(abspath));
         else
@@ -1006,16 +999,9 @@ SEXP attribute_hidden do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
                 warning("path[%d]=\"%s\": %s", i + 1, path, strerror(errno));
         }
     }
+#endif
     UNPROTECT(1);
     return ans;
-#else
-    /* can we really function without getcwd?  */
-    if (mustWork == 1)
-        error("insufficient OS support on this platform");
-    else if (mustWork == NA_LOGICAL)
-        warning("insufficient OS support on this platform");
-    return CAR(args);
-#endif
 }
 #endif
 
