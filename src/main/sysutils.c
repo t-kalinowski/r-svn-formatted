@@ -304,7 +304,8 @@ int R_system(const char *command)
 #else
     res = system(command);
 #endif
-#ifdef HAVE_SYS_WAIT_H
+/* A FreeBSD system had sys/wait.h without these macros */
+#if defined(HAVE_SYS_WAIT_H) && defined(WEXITSTATUS)
     if (WIFEXITED(res))
         res = WEXITSTATUS(res);
     else
