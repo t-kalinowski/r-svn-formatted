@@ -280,6 +280,10 @@ FILE *R_popen(const char *command, const char *type)
     return fp;
 }
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 int R_system(const char *command)
 {
     int res;
@@ -304,8 +308,7 @@ int R_system(const char *command)
 #else
     res = system(command);
 #endif
-/* A FreeBSD system had sys/wait.h without these macros */
-#if defined(HAVE_SYS_WAIT_H) && defined(WEXITSTATUS)
+#ifdef HAVE_SYS_WAIT_H
     if (WIFEXITED(res))
         res = WEXITSTATUS(res);
     else

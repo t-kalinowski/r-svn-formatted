@@ -251,6 +251,10 @@ void R_setStartTime(void)
 }
 #endif /* not _R_HAVE_TIMING_ */
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #define INTERN_BUFSIZE 8096
 SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -288,8 +292,7 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             PROTECT(tlist = CONS(tchar, tlist));
         }
         res = pclose(fp);
-/* A FreeBSD system had sys/wait.h without these macros */
-#if defined(HAVE_SYS_WAIT_H) && defined(WEXITSTATUS)
+#ifdef HAVE_SYS_WAIT_H
         if (WIFEXITED(res))
             res = WEXITSTATUS(res);
         else
