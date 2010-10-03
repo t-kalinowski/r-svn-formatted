@@ -35,7 +35,7 @@
 #endif
 
 #ifdef Win32
-static void R_UTF8fixslash(char *s);
+void R_UTF8fixslash(char *s);
 static void R_wfixslash(wchar_t *s);
 #endif
 
@@ -1373,7 +1373,7 @@ void R_fixslash(char *s)
         s[0] = s[1] = '\\';
 }
 
-static void R_UTF8fixslash(char *s)
+void R_UTF8fixslash(char *s)
 {
     char *p = s;
 
