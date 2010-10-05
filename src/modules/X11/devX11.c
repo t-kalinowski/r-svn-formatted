@@ -2110,10 +2110,10 @@ static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, d
                           * allocated memory for the image data;
                           * each pixel is set separately below
                           */
-                         (char *)rasterImage, imageWidth, imageHeight, depth, /* bitmap_pad */
+                         (char *)rasterImage, imageWidth, imageHeight, depth >= 24 ? 32 : 16, /* bitmap_pad */
                          0); /* bytes_per_line: 0 means auto-calculate*/
 
-    if (XInitImage(image) == 0)
+    if (image == NULL || XInitImage(image) == 0)
         error(_("Unable to create XImage"));
 
     for (i = 0; i < imageHeight; i++)
