@@ -16,7 +16,7 @@
 #include <config.h>
 #endif /* HAVE_CONFIG_H */
 #include <stdio.h>
-#include <assert.h>
+//#include <assert.h>
 #include <string.h>
 
 #include "tre-internal.h"
@@ -27,6 +27,16 @@
 #include "tre-compile.h"
 #include "tre.h"
 #include "xmalloc.h"
+
+/* fake definition */
+extern void error(const char *str);
+#define assert(a) R_assert(a)
+
+static void assert(int expr)
+{
+    if (expr == 0)
+        error("internal error in compiling regexp");
+}
 
 /*
   Algorithms to setup tags so that submatch addressing can be done.
@@ -1742,11 +1752,15 @@ static reg_errcode_t tre_ast_to_tnfa(tre_ast_node_t *node, tre_tnfa_transition_t
 
     case ITERATION:
         iter = (tre_iteration_t *)node->obj;
-        assert(iter->max == -1 || iter->max == 1);
+        // assert(iter->max == -1 || iter->max == 1);
+        if (!(iter->max == -1 || iter->max == 1))
+            return REG_BADBR;
 
         if (iter->max == -1)
         {
-            assert(iter->min == 0 || iter->min == 1);
+            // assert(iter->min == 0 || iter->min == 1);
+            if (!(iter->min == 0 || iter->min == 1))
+                return REG_BADBR;
             /* Add a transition from each last position in the iterated
                expression to each first position. */
             errcode = tre_make_trans(iter->arg->lastpos, iter->arg->firstpos, transitions, counts, offs);

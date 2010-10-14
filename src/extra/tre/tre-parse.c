@@ -16,7 +16,7 @@
 #include <config.h>
 #endif /* HAVE_CONFIG_H */
 #include <string.h>
-#include <assert.h>
+// #include <assert.h>
 #include <limits.h>
 
 #include "xmalloc.h"
@@ -24,6 +24,16 @@
 #include "tre-ast.h"
 #include "tre-stack.h"
 #include "tre-parse.h"
+
+/* fake definition */
+extern void error(const char *str);
+#define assert(a) R_assert(a)
+
+static void assert(int expr)
+{
+    if (expr == 0)
+        error("internal error in TRE");
+}
 
 /* Characters with special meanings in regexp syntax. */
 #define CHAR_PIPE L'|'

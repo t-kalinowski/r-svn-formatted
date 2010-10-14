@@ -50,7 +50,7 @@ char *alloca();
 #endif
 #endif /* TRE_USE_ALLOCA */
 
-#include <assert.h>
+//#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_WCHAR_H
@@ -71,6 +71,15 @@ char *alloca();
 #include "tre-match-utils.h"
 #include "tre.h"
 #include "xmalloc.h"
+/* fake definition */
+extern void error(const char *str);
+#define assert(a) R_assert(a)
+
+static void assert(void *expr)
+{
+    if (!expr)
+        error("internal error in executing regexp");
+}
 
 typedef struct
 {
