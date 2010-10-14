@@ -757,6 +757,12 @@ void setup_Rmainloop(void)
         else
             setlocale(LC_MONETARY, Rlocale);
         /* Windows does not have LC_MESSAGES */
+
+        /* We set R_ARCH here: Unix does it in the shell front-end */
+        char Rarch[30];
+        strcpy(Rarch, "R_ARCH=/");
+        strcat(Rarch, R_ARCH);
+        putenv(Rarch);
     }
 #else /* not Win32 */
     if (!setlocale(LC_CTYPE, ""))
