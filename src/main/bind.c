@@ -517,10 +517,17 @@ static SEXP NewBase(SEXP base, SEXP tag)
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
     { /* test of length */
+        int ienc = 0;
         const char *sb = translateChar(base), *st = translateChar(tag);
         cbuf = R_AllocStringBuffer(strlen(st) + strlen(sb) + 1, &cbuff);
         sprintf(cbuf, "%s.%s", sb, st);
-        ans = mkChar(cbuf);
+        /* This isn't strictly correct as we do not know that all the
+           components of the name were correctly translated. */
+        if (known_to_be_latin1)
+            ienc = CE_LATIN1;
+        if (known_to_be_utf8)
+            ienc = CE_UTF8;
+        ans = mkCharCE(cbuf, ienc);
     }
     else if (*CHAR(tag))
     {
@@ -535,17 +542,18 @@ static SEXP NewBase(SEXP base, SEXP tag)
     return ans;
 }
 
-static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
+static SEXP NewName(SEXP base, SEXP tag, int seqno)
 {
     /* Construct a new Name/Tag, using
      *	base.tag
      *	base<seqno>	or
      *	tag
      *
-     * NOTE: i,n   are NOT used currently */
+     */
 
     SEXP ans;
     char *cbuf;
+    int ienc = 0;
     base = EnsureString(base);
     tag = EnsureString(tag);
     if (*CHAR(base) && *CHAR(tag))
@@ -553,14 +561,22 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
         const char *sb = translateChar(base), *st = translateChar(tag);
         cbuf = R_AllocStringBuffer(strlen(sb) + strlen(st) + 1, &cbuff);
         sprintf(cbuf, "%s.%s", sb, st);
-        ans = mkChar(cbuf);
+        if (known_to_be_latin1)
+            ienc = CE_LATIN1;
+        if (known_to_be_utf8)
+            ienc = CE_UTF8;
+        ans = mkCharCE(cbuf, ienc);
     }
     else if (*CHAR(base))
     {
         const char *sb = translateChar(base);
         cbuf = R_AllocStringBuffer(strlen(sb) + IndexWidth(seqno), &cbuff);
         sprintf(cbuf, "%s%d", sb, seqno);
-        ans = mkChar(cbuf);
+        if (known_to_be_latin1)
+            ienc = CE_LATIN1;
+        if (known_to_be_utf8)
+            ienc = CE_UTF8;
+        ans = mkCharCE(cbuf, ienc);
     }
     else if (*CHAR(tag))
     {
@@ -571,7 +587,11 @@ static SEXP NewName(SEXP base, SEXP tag, int i, int n, int seqno)
             const char *st = translateChar(tag);
             cbuf = R_AllocStringBuffer(strlen(st), &cbuff);
             sprintf(cbuf, "%s", st);
-            ans = mkChar(cbuf);
+            if (known_to_be_latin1)
+                ienc = CE_LATIN1;
+            if (known_to_be_utf8)
+                ienc = CE_UTF8;
+            ans = mkCharCE(cbuf, ienc);
         }
     }
     else
@@ -646,7 +666,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
                 if (namei == R_NilValue && nameData->count == 0)
                     nameData->firstpos = data->ans_nnames;
                 nameData->count++;
-                namei = NewName(base, namei, i, n, ++(nameData->seqno));
+                namei = NewName(base, namei, ++(nameData->seqno));
                 SET_STRING_ELT(data->ans_names, (data->ans_nnames)++, namei);
             }
             v = CDR(v);
@@ -667,7 +687,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
                 if (namei == R_NilValue && nameData->count == 0)
                     nameData->firstpos = data->ans_nnames;
                 nameData->count++;
-                namei = NewName(base, namei, i, n, ++(nameData->seqno));
+                namei = NewName(base, namei, ++(nameData->seqno));
                 SET_STRING_ELT(data->ans_names, (data->ans_nnames)++, namei);
             }
         }
@@ -684,7 +704,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
             if (namei == R_NilValue && nameData->count == 0)
                 nameData->firstpos = data->ans_nnames;
             nameData->count++;
-            namei = NewName(base, namei, i, n, ++(nameData->seqno));
+            namei = NewName(base, namei, ++(nameData->seqno));
             SET_STRING_ELT(data->ans_names, (data->ans_nnames)++, namei);
         }
         break;
@@ -692,7 +712,7 @@ static void NewExtractNames(SEXP v, SEXP base, SEXP tag, int recurse, struct Bin
         if (nameData->count == 0)
             nameData->firstpos = data->ans_nnames;
         nameData->count++;
-        namei = NewName(base, R_NilValue, 0, 1, ++(nameData->seqno));
+        namei = NewName(base, R_NilValue, ++(nameData->seqno));
         SET_STRING_ELT(data->ans_names, (data->ans_nnames)++, namei);
     }
     if (tag != R_NilValue)
