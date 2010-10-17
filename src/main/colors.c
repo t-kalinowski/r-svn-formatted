@@ -151,9 +151,6 @@ SEXP attribute_hidden do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
         if (hh < 0 || hh > 1 || ss < 0 || ss > 1 || vv < 0 || vv > 1 || aa < 0 || aa > 1)
             error(_("invalid hsv color"));
         hsv2rgb(hh, ss, vv, &r, &g, &b);
-        r = pow(r, gg);
-        g = pow(g, gg);
-        b = pow(b, gg);
         SET_STRING_ELT(c, i, mkChar(RGBA2rgb(ScaleColor(r), ScaleColor(g), ScaleColor(b), ScaleAlpha(aa))));
     }
     UNPROTECT(6);
