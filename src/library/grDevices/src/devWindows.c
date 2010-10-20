@@ -3173,8 +3173,8 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
 
     if (interpolate)
     {
-        int newW = (int)width;
-        int newH = (int)height;
+        int newW = (int)(width + .5);
+        int newH = (int)(height + .5);
         unsigned int *newRaster;
 
         newRaster = (unsigned int *)R_alloc(newW * newH, sizeof(unsigned int));
@@ -3191,8 +3191,8 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
          * is the right size AND so that can adjust (x, y)
          * correctly
          */
-        int newW = (int)width;
-        int newH = (int)height;
+        int newW = (int)(width + .5);
+        int newH = (int)(height + .5);
         unsigned int *newRaster;
 
         newRaster = (unsigned int *)R_alloc(newW * newH, sizeof(unsigned int));
@@ -3243,7 +3243,7 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
         imageHeight = newH;
     }
 
-    doRaster(image, (int)x, (int)y, imageWidth, imageHeight, rot, dd);
+    doRaster(image, (int)(x + .5), (int)(y + .5), imageWidth, imageHeight, rot, dd);
 
     vmaxset(vmax);
 }
