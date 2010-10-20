@@ -276,6 +276,9 @@ SEXP attribute_hidden do_bodyCode(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue;
 }
 
+/* get environment from a subclass if possible; else return NULL */
+#define simple_as_environment(arg) (IS_S4_OBJECT(arg) && (TYPEOF(arg) == S4SXP) ? R_getS4DataSlot(arg, ENVSXP) : arg)
+
 SEXP attribute_hidden do_envir(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
@@ -296,7 +299,8 @@ SEXP attribute_hidden do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     env = CADR(args);
 
-    if (TYPEOF(CAR(args)) == CLOSXP && (isEnvironment(env) || isNull(env)))
+    if (TYPEOF(CAR(args)) == CLOSXP &&
+        (isEnvironment(env) || isEnvironment(env = simple_as_environment(env)) || isNull(env)))
     {
         if (isNull(env))
             error(_("use of NULL environment is defunct"));
@@ -309,7 +313,7 @@ SEXP attribute_hidden do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         SET_CLOENV(s, env);
     }
-    else if (isNull(env) || isEnvironment(env))
+    else if (isNull(env) || isEnvironment(env) || isEnvironment(env = simple_as_environment(env)))
         setAttrib(s, R_DotEnvSymbol, env);
     else
         error(_("replacement object is not an environment"));
@@ -335,7 +339,7 @@ SEXP attribute_hidden do_newenv(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("use of NULL environment is defunct"));
         enclos = R_BaseEnv;
     }
-    else if (!isEnvironment(enclos))
+    else if (!isEnvironment(enclos) && !isEnvironment((enclos = simple_as_environment(enclos))))
         error(_("'enclos' must be an environment"));
 
     if (hash)
@@ -351,10 +355,6 @@ SEXP attribute_hidden do_newenv(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = NewEnvironment(R_NilValue, R_NilValue, enclos);
     return ans;
 }
-
-/* get environment from a subclass if possible; else return NULL */
-#define simple_as_environment(arg)                                                                                     \
-    (IS_S4_OBJECT(arg) && (TYPEOF(arg) == S4SXP) ? R_getS4DataSlot(arg, ENVSXP) : R_NilValue)
 
 SEXP attribute_hidden do_parentenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
