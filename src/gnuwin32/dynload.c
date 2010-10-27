@@ -179,7 +179,7 @@ static void R_getDLLError(char *buf, int len)
     LPSTR lpMsgBuf, p;
     char *q;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                  GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &lpMsgBuf, 0, NULL);
+                  GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, NULL);
     strcpy(buf, "LoadLibrary failure:  ");
     q = buf + strlen(buf);
     /* It seems that Win 7 returns error messages with CRLF terminators */
