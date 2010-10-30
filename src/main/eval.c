@@ -3757,17 +3757,19 @@ static SEXP bcEval(SEXP body, SEXP rho)
         NEXT();
         OP(INVISIBLE, 0) : R_Visible = FALSE;
         NEXT();
+        /**** for now LDCONST, LDTRUE, and LDFALSE duplicate/allocate to
+          be defensive agains bad package C code */
         OP(LDCONST, 1) : DO_LDCONST(value);
-        BCNPUSH(value);
+        BCNPUSH(duplicate(value));
         NEXT();
         OP(LDNULL, 0) : R_Visible = TRUE;
         BCNPUSH(R_NilValue);
         NEXT();
         OP(LDTRUE, 0) : R_Visible = TRUE;
-        BCNPUSH(R_TrueValue);
+        BCNPUSH(mkTrue());
         NEXT();
         OP(LDFALSE, 0) : R_Visible = TRUE;
-        BCNPUSH(R_FalseValue);
+        BCNPUSH(mkFalse());
         NEXT();
         OP(GETVAR, 1) : DO_GETVAR(FALSE, FALSE);
         OP(DDVAL, 1) : DO_GETVAR(TRUE, FALSE);
