@@ -30,7 +30,7 @@ extern LZMA_API(size_t) lzma_stream_buffer_bound(size_t uncompressed_size)
     // Catch the possible integer overflow and also prevent the size of
     // the Stream exceeding LZMA_VLI_MAX (theoretically possible on
     // 64-bit systems).
-    if (MIN(SIZE_MAX, LZMA_VLI_MAX) - block_bound < HEADERS_BOUND)
+    if (my_min(SIZE_MAX, LZMA_VLI_MAX) - block_bound < HEADERS_BOUND)
         return 0;
 
     return block_bound + HEADERS_BOUND;
@@ -86,11 +86,11 @@ extern LZMA_API(lzma_ret)
     // Index
     {
         // Create an Index with one Record.
-        lzma_index *i = lzma_index_init(NULL, NULL);
+        lzma_index *i = lzma_index_init(allocator);
         if (i == NULL)
             return LZMA_MEM_ERROR;
 
-        lzma_ret ret = lzma_index_append(i, NULL, lzma_block_unpadded_size(&block), block.uncompressed_size);
+        lzma_ret ret = lzma_index_append(i, allocator, lzma_block_unpadded_size(&block), block.uncompressed_size);
 
         // If adding the Record was successful, encode the Index
         // and get its size which will be stored into Stream Footer.
@@ -101,7 +101,7 @@ extern LZMA_API(lzma_ret)
             stream_flags.backward_size = lzma_index_size(i);
         }
 
-        lzma_index_end(i, NULL);
+        lzma_index_end(i, allocator);
 
         if (ret != LZMA_OK)
             return ret;

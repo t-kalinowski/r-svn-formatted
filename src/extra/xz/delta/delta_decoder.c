@@ -43,7 +43,8 @@ static lzma_ret delta_decode(lzma_coder *coder, lzma_allocator *allocator, const
 extern lzma_ret lzma_delta_decoder_init(lzma_next_coder *next, lzma_allocator *allocator,
                                         const lzma_filter_info *filters)
 {
-    return lzma_delta_coder_init(next, allocator, filters, &delta_decode);
+    next->code = &delta_decode;
+    return lzma_delta_coder_init(next, allocator, filters);
 }
 
 extern lzma_ret lzma_delta_props_decode(void **options, lzma_allocator *allocator, const uint8_t *props,

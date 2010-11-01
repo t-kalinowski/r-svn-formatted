@@ -29,7 +29,7 @@ extern LZMA_API(uint64_t) lzma_crc64(const uint8_t *buf, size_t size, uint64_t c
     crc = ~crc;
 
 #ifdef WORDS_BIGENDIAN
-    crc = bswap_64(crc);
+    crc = bswap64(crc);
 #endif
 
     if (size > 4)
@@ -46,9 +46,9 @@ extern LZMA_API(uint64_t) lzma_crc64(const uint8_t *buf, size_t size, uint64_t c
         while (buf < limit)
         {
 #ifdef WORDS_BIGENDIAN
-            const uint32_t tmp = (crc >> 32) ^ *(uint32_t *)(buf);
+            const uint32_t tmp = (crc >> 32) ^ *(const uint32_t *)(buf);
 #else
-            const uint32_t tmp = crc ^ *(uint32_t *)(buf);
+            const uint32_t tmp = crc ^ *(const uint32_t *)(buf);
 #endif
             buf += 4;
 
@@ -61,7 +61,7 @@ extern LZMA_API(uint64_t) lzma_crc64(const uint8_t *buf, size_t size, uint64_t c
         crc = lzma_crc64_table[0][*buf++ ^ A1(crc)] ^ S8(crc);
 
 #ifdef WORDS_BIGENDIAN
-    crc = bswap_64(crc);
+    crc = bswap64(crc);
 #endif
 
     return ~crc;

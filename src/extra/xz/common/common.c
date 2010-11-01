@@ -65,7 +65,7 @@ extern size_t lzma_bufcpy(const uint8_t *restrict in, size_t *restrict in_pos, s
 {
     const size_t in_avail = in_size - *in_pos;
     const size_t out_avail = out_size - *out_pos;
-    const size_t copy_size = MIN(in_avail, out_avail);
+    const size_t copy_size = my_min(in_avail, out_avail);
 
     memcpy(out + *out_pos, in + *in_pos, copy_size);
 
@@ -78,8 +78,24 @@ extern size_t lzma_bufcpy(const uint8_t *restrict in, size_t *restrict in_pos, s
 extern lzma_ret lzma_next_filter_init(lzma_next_coder *next, lzma_allocator *allocator, const lzma_filter_info *filters)
 {
     lzma_next_coder_init(filters[0].init, next, allocator);
-
+    next->id = filters[0].id;
     return filters[0].init == NULL ? LZMA_OK : filters[0].init(next, allocator, filters);
+}
+
+extern lzma_ret lzma_next_filter_update(lzma_next_coder *next, lzma_allocator *allocator,
+                                        const lzma_filter *reversed_filters)
+{
+    // Check that the application isn't trying to change the Filter ID.
+    // End of filters is indicated with LZMA_VLI_UNKNOWN in both
+    // reversed_filters[0].id and next->id.
+    if (reversed_filters[0].id != next->id)
+        return LZMA_PROG_ERROR;
+
+    if (reversed_filters[0].id == LZMA_VLI_UNKNOWN)
+        return LZMA_OK;
+
+    assert(next->update != NULL);
+    return next->update(next->coder, allocator, NULL, reversed_filters);
 }
 
 extern void lzma_next_end(lzma_next_coder *next, lzma_allocator *allocator)
@@ -140,6 +156,14 @@ extern LZMA_API(lzma_ret) lzma_code(lzma_stream *strm, lzma_action action)
         strm->internal == NULL || strm->internal->next.code == NULL || (unsigned int)(action) > LZMA_FINISH ||
         !strm->internal->supported_actions[action])
         return LZMA_PROG_ERROR;
+
+    // Check if unsupported members have been set to non-zero or non-NULL,
+    // which would indicate that some new feature is wanted.
+    if (strm->reserved_ptr1 != NULL || strm->reserved_ptr2 != NULL || strm->reserved_ptr3 != NULL ||
+        strm->reserved_ptr4 != NULL || strm->reserved_int1 != 0 || strm->reserved_int2 != 0 ||
+        strm->reserved_int3 != 0 || strm->reserved_int4 != 0 || strm->reserved_enum1 != LZMA_RESERVED_ENUM ||
+        strm->reserved_enum2 != LZMA_RESERVED_ENUM)
+        return LZMA_OPTIONS_ERROR;
 
     switch (strm->internal->sequence)
     {

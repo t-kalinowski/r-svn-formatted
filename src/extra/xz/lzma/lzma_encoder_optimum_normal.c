@@ -255,7 +255,7 @@ static inline uint32_t helper1(lzma_coder *restrict coder, lzma_mf *restrict mf,
         matches_count = coder->matches_count;
     }
 
-    const uint32_t buf_avail = MIN(mf_avail(mf) + 1, MATCH_LEN_MAX);
+    const uint32_t buf_avail = my_min(mf_avail(mf) + 1, MATCH_LEN_MAX);
     if (buf_avail < 2)
     {
         *back_res = UINT32_MAX;
@@ -337,7 +337,7 @@ static inline uint32_t helper1(lzma_coder *restrict coder, lzma_mf *restrict mf,
         }
     }
 
-    const uint32_t len_end = MAX(len_main, rep_lens[rep_max_index]);
+    const uint32_t len_end = my_max(len_main, rep_lens[rep_max_index]);
 
     if (len_end < 2)
     {
@@ -417,7 +417,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
     uint32_t matches_count = coder->matches_count;
     uint32_t new_len = coder->longest_match_length;
     uint32_t pos_prev = coder->opts[cur].pos_prev;
-    uint32_t state;
+    lzma_lzma_state state;
 
     if (coder->opts[cur].prev_1_is_literal)
     {
@@ -535,13 +535,13 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
     if (buf_avail_full < 2)
         return len_end;
 
-    const uint32_t buf_avail = MIN(buf_avail_full, nice_len);
+    const uint32_t buf_avail = my_min(buf_avail_full, nice_len);
 
     if (!next_is_literal && match_byte != current_byte)
     { // speed optimization
         // try literal + rep0
         const uint8_t *const buf_back = buf - reps[0] - 1;
-        const uint32_t limit = MIN(buf_avail_full, nice_len + 1);
+        const uint32_t limit = my_min(buf_avail_full, nice_len + 1);
 
         uint32_t len_test = 1;
         while (len_test < limit && buf[len_test] == buf_back[len_test])
@@ -551,7 +551,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
 
         if (len_test >= 2)
         {
-            uint32_t state_2 = state;
+            lzma_lzma_state state_2 = state;
             update_literal(state_2);
 
             const uint32_t pos_state_next = (position + 1) & coder->pos_mask;
@@ -617,7 +617,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
             start_len = len_test + 1;
 
         uint32_t len_test_2 = len_test + 1;
-        const uint32_t limit = MIN(buf_avail_full, len_test_2 + nice_len);
+        const uint32_t limit = my_min(buf_avail_full, len_test_2 + nice_len);
         for (; len_test_2 < limit && buf[len_test_2] == buf_back[len_test_2]; ++len_test_2)
             ;
 
@@ -625,7 +625,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
 
         if (len_test_2 >= 2)
         {
-            uint32_t state_2 = state;
+            lzma_lzma_state state_2 = state;
             update_long_rep(state_2);
 
             uint32_t pos_state_next = (position + len_test) & coder->pos_mask;
@@ -708,7 +708,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
                 // Try Match + Literal + Rep0
                 const uint8_t *const buf_back = buf - cur_back - 1;
                 uint32_t len_test_2 = len_test + 1;
-                const uint32_t limit = MIN(buf_avail_full, len_test_2 + nice_len);
+                const uint32_t limit = my_min(buf_avail_full, len_test_2 + nice_len);
 
                 for (; len_test_2 < limit && buf[len_test_2] == buf_back[len_test_2]; ++len_test_2)
                     ;
@@ -717,7 +717,7 @@ static inline uint32_t helper2(lzma_coder *coder, uint32_t *reps, const uint8_t 
 
                 if (len_test_2 >= 2)
                 {
-                    uint32_t state_2 = state;
+                    lzma_lzma_state state_2 = state;
                     update_match(state_2);
                     uint32_t pos_state_next = (position + len_test) & coder->pos_mask;
 
@@ -790,7 +790,7 @@ extern void lzma_lzma_optimum_normal(lzma_coder *restrict coder, lzma_mf *restri
     }
 
     // TODO: This needs quite a bit of cleaning still. But splitting
-    // the oroginal function to two pieces makes it at least a little
+    // the original function into two pieces makes it at least a little
     // more readable, since those two parts don't share many variables.
 
     uint32_t len_end = helper1(coder, mf, back_res, len_res, position);
@@ -811,7 +811,7 @@ extern void lzma_lzma_optimum_normal(lzma_coder *restrict coder, lzma_mf *restri
             break;
 
         len_end = helper2(coder, reps, mf_ptr(mf) - 1, len_end, position + cur, cur, mf->nice_len,
-                          MIN(mf_avail(mf) + 1, OPTS - 1 - cur));
+                          my_min(mf_avail(mf) + 1, OPTS - 1 - cur));
     }
 
     backward(coder, len_res, back_res, cur);

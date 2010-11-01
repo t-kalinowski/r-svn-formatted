@@ -60,7 +60,7 @@ extern LZMA_API(lzma_ret)
             else
             {
                 // All the input was consumed and output
-                // buffer is full. Now we don't immediatelly
+                // buffer is full. Now we don't immediately
                 // know the reason for the error. Try
                 // decoding one more byte. If it succeeds,
                 // then the output buffer was too small. If

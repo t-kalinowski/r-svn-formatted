@@ -13,7 +13,12 @@
 
 #include "lz_encoder.h"
 #include "lz_encoder_hash.h"
-#include "check.h"
+
+// See lz_encoder_hash.h. This is a bit hackish but avoids making
+// endianness a conditional in makefiles.
+#if defined(WORDS_BIGENDIAN) && !defined(HAVE_SMALL)
+#include "lz_encoder_hash_table.h"
+#endif
 
 struct lzma_coder_s
 {
@@ -79,21 +84,18 @@ static lzma_ret fill_window(lzma_coder *coder, lzma_allocator *allocator, const 
     // (which I find cleanest), but we need size_t here when filling
     // the history window.
     size_t write_pos = coder->mf.write_pos;
-    size_t in_used;
     lzma_ret ret;
     if (coder->next.code == NULL)
     {
         // Not using a filter, simply memcpy() as much as possible.
-        in_used = lzma_bufcpy(in, in_pos, in_size, coder->mf.buffer, &write_pos, coder->mf.size);
+        lzma_bufcpy(in, in_pos, in_size, coder->mf.buffer, &write_pos, coder->mf.size);
 
         ret = action != LZMA_RUN && *in_pos == in_size ? LZMA_STREAM_END : LZMA_OK;
     }
     else
     {
-        const size_t in_start = *in_pos;
         ret = coder->next.code(coder->next.coder, allocator, in, in_pos, in_size, coder->mf.buffer, &write_pos,
                                coder->mf.size, action);
-        in_used = *in_pos - in_start;
     }
 
     coder->mf.write_pos = write_pos;
@@ -210,7 +212,7 @@ static bool lz_encoder_prepare(lzma_mf *mf, lzma_allocator *allocator, const lzm
     mf->nice_len = lz_options->nice_len;
 
     // cyclic_size has to stay smaller than 2 Gi. Note that this doesn't
-    // mean limitting dictionary size to less than 2 GiB. With a match
+    // mean limiting dictionary size to less than 2 GiB. With a match
     // finder that uses multibyte resolution (hashes start at e.g. every
     // fourth byte), cyclic_size would stay below 2 Gi even when
     // dictionary size is greater than 2 GiB.
@@ -327,7 +329,7 @@ static bool lz_encoder_prepare(lzma_mf *mf, lzma_allocator *allocator, const lzm
 
     // Deallocate the old hash array if it exists and has different size
     // than what is needed now.
-    if (mf->hash != NULL && old_count != new_count)
+    if (old_count != new_count)
     {
         lzma_free(mf->hash, allocator);
         mf->hash = NULL;
@@ -337,9 +339,10 @@ static bool lz_encoder_prepare(lzma_mf *mf, lzma_allocator *allocator, const lzm
     mf->depth = lz_options->depth;
     if (mf->depth == 0)
     {
-        mf->depth = 16 + (mf->nice_len / 2);
-        if (!is_bt)
-            mf->depth /= 2;
+        if (is_bt)
+            mf->depth = 16 + mf->nice_len / 2;
+        else
+            mf->depth = 4 + mf->nice_len / 4;
     }
 
     return false;
@@ -409,7 +412,7 @@ static bool lz_encoder_init(lzma_mf *mf, lzma_allocator *allocator, const lzma_l
     {
         // If the preset dictionary is bigger than the actual
         // dictionary, use only the tail.
-        mf->write_pos = MIN(lz_options->preset_dict_size, mf->size);
+        mf->write_pos = my_min(lz_options->preset_dict_size, mf->size);
         memcpy(mf->buffer, lz_options->preset_dict + lz_options->preset_dict_size - mf->write_pos, mf->write_pos);
         mf->action = LZMA_SYNC_FLUSH;
         mf->skip(mf, mf->write_pos);
@@ -426,6 +429,8 @@ extern uint64_t lzma_lz_encoder_memusage(const lzma_lz_options *lz_options)
     lzma_mf mf = {
         .buffer = NULL,
         .hash = NULL,
+        .hash_size_sum = 0,
+        .sons_count = 0,
     };
 
     // Setup the size information into mf.
@@ -452,6 +457,18 @@ static void lz_encoder_end(lzma_coder *coder, lzma_allocator *allocator)
     return;
 }
 
+static lzma_ret lz_encoder_update(lzma_coder *coder, lzma_allocator *allocator,
+                                  const lzma_filter *filters_null lzma_attribute((unused)),
+                                  const lzma_filter *reversed_filters)
+{
+    if (coder->lz.options_update == NULL)
+        return LZMA_PROG_ERROR;
+
+    return_if_error(coder->lz.options_update(coder->lz.coder, reversed_filters));
+
+    return lzma_next_filter_update(&coder->next, allocator, reversed_filters + 1);
+}
+
 extern lzma_ret lzma_lz_encoder_init(lzma_next_coder *next, lzma_allocator *allocator, const lzma_filter_info *filters,
                                      lzma_ret (*lz_init)(lzma_lz_encoder *lz, lzma_allocator *allocator,
                                                          const void *options, lzma_lz_options *lz_options))
@@ -470,6 +487,7 @@ extern lzma_ret lzma_lz_encoder_init(lzma_next_coder *next, lzma_allocator *allo
 
         next->code = &lz_encode;
         next->end = &lz_encoder_end;
+        next->update = &lz_encoder_update;
 
         next->coder->lz.coder = NULL;
         next->coder->lz.code = NULL;
@@ -477,6 +495,8 @@ extern lzma_ret lzma_lz_encoder_init(lzma_next_coder *next, lzma_allocator *allo
 
         next->coder->mf.buffer = NULL;
         next->coder->mf.hash = NULL;
+        next->coder->mf.hash_size_sum = 0;
+        next->coder->mf.sons_count = 0;
 
         next->coder->next = LZMA_NEXT_CODER_INIT;
     }

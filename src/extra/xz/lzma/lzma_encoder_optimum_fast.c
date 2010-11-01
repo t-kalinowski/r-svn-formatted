@@ -32,7 +32,7 @@ extern void lzma_lzma_optimum_fast(lzma_coder *restrict coder, lzma_mf *restrict
     }
 
     const uint8_t *buf = mf_ptr(mf) - 1;
-    const uint32_t buf_avail = MIN(mf_avail(mf) + 1, MATCH_LEN_MAX);
+    const uint32_t buf_avail = my_min(mf_avail(mf) + 1, MATCH_LEN_MAX);
 
     if (buf_avail < 2)
     {
@@ -63,7 +63,7 @@ extern void lzma_lzma_optimum_fast(lzma_coder *restrict coder, lzma_mf *restrict
             ;
 
         // If we have found a repeated match that is at least
-        // nice_len long, return it immediatelly.
+        // nice_len long, return it immediately.
         if (len >= nice_len)
         {
             *back_res = i;

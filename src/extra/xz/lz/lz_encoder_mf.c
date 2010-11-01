@@ -13,7 +13,6 @@
 
 #include "lz_encoder.h"
 #include "lz_encoder_hash.h"
-#include "check.h"
 
 /// \brief      Find matches starting from the current byte
 ///
@@ -447,7 +446,7 @@ static lzma_match *bt_find_func(const uint32_t len_limit, const uint32_t pos, co
         uint32_t *const pair = son + ((cyclic_pos - delta + (delta > cyclic_pos ? cyclic_size : 0)) << 1);
 
         const uint8_t *const pb = cur - delta;
-        uint32_t len = MIN(len0, len1);
+        uint32_t len = my_min(len0, len1);
 
         if (pb[len] == cur[len])
         {
@@ -509,7 +508,7 @@ static void bt_skip_func(const uint32_t len_limit, const uint32_t pos, const uin
 
         uint32_t *pair = son + ((cyclic_pos - delta + (delta > cyclic_pos ? cyclic_size : 0)) << 1);
         const uint8_t *pb = cur - delta;
-        uint32_t len = MIN(len0, len1);
+        uint32_t len = my_min(len0, len1);
 
         if (pb[len] == cur[len])
         {

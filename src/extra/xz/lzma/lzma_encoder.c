@@ -321,7 +321,7 @@ extern lzma_ret lzma_lzma_encode(lzma_coder *restrict coder, lzma_mf *restrict m
 
         // With LZMA2 we need to take care that compressed size of
         // a chunk doesn't get too big.
-        // TODO
+        // FIXME? Check if this could be improved.
         if (limit != UINT32_MAX && (mf->read_pos - mf->read_ahead >= limit ||
                                     *out_pos + rc_pending(&coder->rc) >= LZMA2_CHUNK_MAX - LOOP_INPUT_MAX))
             break;
@@ -457,7 +457,7 @@ extern lzma_ret lzma_lzma_encoder_reset(lzma_coder *coder, const lzma_options_lz
     rc_reset(&coder->rc);
 
     // State
-    coder->state = 0;
+    coder->state = STATE_LIT_LIT;
     for (size_t i = 0; i < REP_DISTANCES; ++i)
         coder->reps[i] = 0;
 
@@ -617,7 +617,7 @@ extern lzma_ret lzma_lzma_props_encode(const void *options, uint8_t *out)
     if (lzma_lzma_lclppb_encode(opt, out))
         return LZMA_PROG_ERROR;
 
-    integer_write_32(out + 1, opt->dict_size);
+    unaligned_write32le(out + 1, opt->dict_size);
 
     return LZMA_OK;
 }

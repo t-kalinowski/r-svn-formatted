@@ -25,7 +25,7 @@ extern lzma_ret lzma_simple_props_decode(void **options, lzma_allocator *allocat
     if (opt == NULL)
         return LZMA_MEM_ERROR;
 
-    opt->start_offset = integer_read_32(props);
+    opt->start_offset = unaligned_read32le(props);
 
     // Don't leave an options structure allocated if start_offset is zero.
     if (opt->start_offset == 0)

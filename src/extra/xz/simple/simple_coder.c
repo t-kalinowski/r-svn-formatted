@@ -78,7 +78,7 @@ static lzma_ret simple_code(lzma_coder *coder, lzma_allocator *allocator, const 
         lzma_bufcpy(coder->buffer, &coder->pos, coder->filtered, out, out_pos, out_size);
 
         // If we couldn't flush all the filtered data, return to
-        // application immediatelly.
+        // application immediately.
         if (coder->pos < coder->filtered)
             return LZMA_OK;
 
@@ -197,6 +197,14 @@ static void simple_coder_end(lzma_coder *coder, lzma_allocator *allocator)
     return;
 }
 
+static lzma_ret simple_coder_update(lzma_coder *coder, lzma_allocator *allocator,
+                                    const lzma_filter *filters_null lzma_attribute((unused)),
+                                    const lzma_filter *reversed_filters)
+{
+    // No update support, just call the next filter in the chain.
+    return lzma_next_filter_update(&coder->next, allocator, reversed_filters + 1);
+}
+
 extern lzma_ret lzma_simple_coder_init(lzma_next_coder *next, lzma_allocator *allocator,
                                        const lzma_filter_info *filters,
                                        size_t (*filter)(lzma_simple *simple, uint32_t now_pos, bool is_encoder,
@@ -216,6 +224,7 @@ extern lzma_ret lzma_simple_coder_init(lzma_next_coder *next, lzma_allocator *al
 
         next->code = &simple_code;
         next->end = &simple_coder_end;
+        next->update = &simple_coder_update;
 
         next->coder->next = LZMA_NEXT_CODER_INIT;
         next->coder->filter = filter;
