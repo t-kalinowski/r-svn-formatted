@@ -304,23 +304,16 @@ SEXP attribute_hidden do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (isNull(env))
             error(_("use of NULL environment is defunct"));
+        if (NAMED(s) > 1)
+            /* this copies but does not duplicate args or code */
+            s = duplicate(s);
 #ifdef BYTECODE
         if (TYPEOF(BODY(s)) == BCODESXP)
-        {
             /* switch to interpreted version if compiled */
-            s = duplicate(s);
             SET_BODY(s, R_ClosureExpr(CAR(args)));
-        }
         else
 #endif
-            if (NAMED(s) > 1)
-        {
-            /* partial duplicate */
-            s = allocSExp(CLOSXP);
-            SET_FORMALS(s, FORMALS(CAR(args)));
-            SET_BODY(s, BODY(CAR(args)));
-        }
-        SET_CLOENV(s, env);
+            SET_CLOENV(s, env);
     }
     else if (isNull(env) || isEnvironment(env) || isEnvironment(env = simple_as_environment(env)))
         setAttrib(s, R_DotEnvSymbol, env);
