@@ -6796,7 +6796,7 @@ static void PDFwritesRGBcolorspace(PDFDesc *pd)
     }
     while (!feof(fp))
     {
-        fgets(line, 50, fp);
+        char *p = fgets(line, 50, fp); /* avoid compiler warning on Fedora */
         fprintf(pd->pdffp, "%s", line);
     }
     fclose(fp);
