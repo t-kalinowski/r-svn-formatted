@@ -1564,7 +1564,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else if (perl_opt)
         {
-            int maxrep, ovector[30], eflag;
+            int ncap, maxrep, ovector[30], eflag;
+            memset(ovector, 0, 30 * sizeof(int)); /* zero for unknown patterns */
             ns = strlen(s);
             /* worst possible scenario is to put a copy of the
                replacement after every character, unless there are
@@ -1585,7 +1586,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             nmatch = 0;
             eflag = 0;
             last_end = -1;
-            while (pcre_exec(re_pcre, re_pe, s, ns, offset, eflag, ovector, 30) >= 0)
+            /* ncap is one more than the number of capturing patterns */
+            while ((ncap = pcre_exec(re_pcre, re_pe, s, ns, offset, eflag, ovector, 30)) >= 0)
             {
                 /* printf("%s, %d, %d %d\n", s, offset,
                ovector[0], ovector[1]); */
