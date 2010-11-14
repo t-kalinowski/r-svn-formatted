@@ -255,7 +255,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             m = asLogical(Stderr) ? 2 : 0;
         if (m && TYPEOF(Stdout) == LGLSXP && asLogical(Stdout))
             m = 3;
-        fp = rpipeOpen(CHAR(STRING_ELT(cmd, 0)), getCharCE(STRING_ELT(cmd, 0)), vis, CHAR(STRING_ELT(cmd, 0)), m, fout,
+        fp = rpipeOpen(CHAR(STRING_ELT(cmd, 0)), getCharCE(STRING_ELT(cmd, 0)), vis, CHAR(STRING_ELT(fin, 0)), m, fout,
                        ferr);
         if (!fp)
         {
