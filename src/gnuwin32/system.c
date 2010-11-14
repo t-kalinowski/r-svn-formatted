@@ -361,7 +361,10 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
     }
 
     if (!R_Interactive && !R_Slave)
+    {
         fputs(buf, stdout);
+        fflush(stdout);
+    }
     return 1;
 }
 
