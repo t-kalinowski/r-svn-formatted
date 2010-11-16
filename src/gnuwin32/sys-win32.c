@@ -268,19 +268,23 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             /* FIXME: use REPROTECT */
             if (flag == 3)
-                PROTECT(tlist);
-            for (i = 0; rpipeGets(fp, buf, INTERN_BUFSIZE); i++)
             {
-                if (flag == 3)
-                { /* intern = TRUE */
-                    ll = strlen(buf) - 1;
-                    if ((ll >= 0) && (buf[ll] == '\n'))
-                        buf[ll] = '\0';
-                    tchar = mkChar(buf);
-                    UNPROTECT(1); /* tlist */
-                    PROTECT(tlist = CONS(tchar, tlist));
-                }
-                else
+                PROTECT(tlist);
+                /* honour intern = FALSE, ignore.stdout = TRUE */
+                if (m > 0 || (!(TYPEOF(Stdout) == LGLSXP && !asLogical(Stdout))))
+                    for (i = 0; rpipeGets(fp, buf, INTERN_BUFSIZE); i++)
+                    {
+                        ll = strlen(buf) - 1;
+                        if ((ll >= 0) && (buf[ll] == '\n'))
+                            buf[ll] = '\0';
+                        tchar = mkChar(buf);
+                        UNPROTECT(1); /* tlist */
+                        PROTECT(tlist = CONS(tchar, tlist));
+                    }
+            }
+            else
+            {
+                for (i = 0; rpipeGets(fp, buf, INTERN_BUFSIZE); i++)
                     R_WriteConsole(buf, strlen(buf));
             }
             ll = rpipeClose(fp);
