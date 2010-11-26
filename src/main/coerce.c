@@ -1348,17 +1348,16 @@ static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
     }
     else if (isVector(u) || isList(u) || isLanguage(u) || (isSymbol(u) && type == EXPRSXP))
     {
-        /* this duplication appears not to be needed in all cases,
+        v = u;
+        /* this duplication may appear not to be needed in all cases,
            but beware that other code relies on it.
            (E.g  we clear attributes in do_asvector and do_ascharacter.)
         */
-        v = NAMED(u) ? duplicate(u) : u;
-        if (type != ANYSXP)
-        {
-            PROTECT(v);
-            v = coerceVector(v, type);
-            UNPROTECT(1);
-        }
+        if (type != ANYSXP && TYPEOF(u) != type)
+            v = coerceVector(u, type);
+        else if (NAMED(u))
+            v = duplicate(u);
+
         /* drop attributes() and class() in some cases: */
         if ((type == LISTSXP
              /* already loses 'names' where it shouldn't:
@@ -1483,9 +1482,10 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         type = str2type(CHAR(STRING_ELT(CADR(args), 0))); /* ASCII */
 
-    if (TYPEOF(x) == type)
+    /* "any" case added in 2.13.0 */
+    if (type == ANYSXP || TYPEOF(x) == type)
     {
-        switch (type)
+        switch (TYPEOF(x))
         {
         case LGLSXP:
         case INTSXP:
