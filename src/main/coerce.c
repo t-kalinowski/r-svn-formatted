@@ -1339,6 +1339,8 @@ static SEXP asFunction(SEXP x)
 static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
 {
     /* -> as.vector(..) or as.XXX(.) : coerce 'u' to 'type' : */
+    /* code assumes u is protected */
+
     SEXP v;
     if (type == CLOSXP)
     {
@@ -1347,7 +1349,9 @@ static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
     else if (isVector(u) || isList(u) || isLanguage(u) || (isSymbol(u) && type == EXPRSXP))
     {
         /* this duplication appears not to be needed in all cases,
-           but beware that other code relies on it */
+           but beware that other code relies on it.
+           (E.g  we clear attributes in do_asvector and do_ascharacter.)
+        */
         v = NAMED(u) ? duplicate(u) : u;
         if (type != ANYSXP)
         {
@@ -1445,8 +1449,14 @@ SEXP attribute_hidden do_ascharacter(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     x = CAR(args);
-    if (TYPEOF(x) == type && ATTRIB(x) == R_NilValue)
-        return x;
+    if (TYPEOF(x) == type)
+    {
+        if (ATTRIB(x) == R_NilValue)
+            return x;
+        ans = NAMED(x) ? duplicate(x) : x;
+        CLEAR_ATTRIB(ans);
+        return ans;
+    }
     ans = ascommon(call, CAR(args), type);
     CLEAR_ATTRIB(ans);
     return ans;
@@ -1483,8 +1493,11 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
         case CPLXSXP:
         case STRSXP:
         case RAWSXP:
-            if (ATTRIB(x) != R_NilValue)
-                break;
+            if (ATTRIB(x) == R_NilValue)
+                return x;
+            ans = NAMED(x) ? duplicate(x) : x;
+            CLEAR_ATTRIB(ans);
+            return ans;
         case EXPRSXP:
         case VECSXP:
             return x;
@@ -1520,7 +1533,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     ans = ascommon(call, x, type);
     switch (TYPEOF(ans))
-    { /* keep attributes for these:*/
+    { /* keep attributes for these: */
     case NILSXP:
     case VECSXP:
     case EXPRSXP:
