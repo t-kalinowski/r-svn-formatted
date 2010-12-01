@@ -7435,7 +7435,7 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
     if (pd->inText)
         textoff(pd);
     /* Save graphics state */
-    fprintf(pd->pdffp, "Q q\n");
+    fprintf(pd->pdffp, "q\n");
     /* translate */
     fprintf(pd->pdffp, "1 0 0 1 %.2f %.2f cm\n", x, y);
     /* rotate */
@@ -7462,7 +7462,7 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
     /* End image */
     fprintf(pd->pdffp, "EI\n");
     /* Restore graphics state */
-    fprintf(pd->pdffp, "Q q\n");
+    fprintf(pd->pdffp, "Q\n");
 }
 #else
 
@@ -7478,8 +7478,8 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
 
     if (pd->inText)
         textoff(pd);
-    /* Set clip region and save graphics state */
-    pdfClip(dd->clipLeft, dd->clipRight, dd->clipBottom, dd->clipTop, pd);
+    /* Save graphics state */
+    fprintf(pd->pdffp, "q\n");
     /* Need to set AIS graphics state parameter ? */
     if (alpha)
     {
@@ -7497,7 +7497,7 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
     /* Refer to XObject which will be written to file when file is closed */
     fprintf(pd->pdffp, "/Im%d Do\n", pd->numRasters - 1);
     /* Restore graphics state */
-    fprintf(pd->pdffp, "Q q\n");
+    fprintf(pd->pdffp, "Q\n");
 }
 
 #endif
