@@ -2049,8 +2049,8 @@ static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, d
                        Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
     int i, j, pixel;
-    int imageWidth = (int)width;
-    int imageHeight = (int)height;
+    int imageWidth = (int)(width + .5);
+    int imageHeight = (int)(height + .5);
     double angle = rot * M_PI / 180;
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     XImage *image;

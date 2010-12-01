@@ -341,14 +341,11 @@ static void Cairo_Path(double *x, double *y, int npoly, int *nper, Rboolean wind
     }
 }
 
-static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
-                         double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+static cairo_surface_t *createImageSurface(unsigned int *raster, int w, int h)
 {
-    const void *vmax = vmaxget();
     int i;
     cairo_surface_t *image;
     unsigned char *imageData;
-    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
     imageData = (unsigned char *)R_alloc(4 * w * h, sizeof(unsigned char));
     /* The R ABGR needs to be converted to a Cairo ARGB
@@ -372,28 +369,73 @@ static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y,
         }
     }
     image = cairo_image_surface_create_for_data(imageData, CAIRO_FORMAT_ARGB32, w, h, 4 * w);
+    return (image);
+}
+
+static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
+                         double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
+{
+    int imageWidth, imageHeight;
+    const void *vmax = vmaxget();
+    cairo_surface_t *image;
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
     cairo_save(xd->cc);
 
-    cairo_translate(xd->cc, x, y);
-    cairo_rotate(xd->cc, -rot * M_PI / 180);
-    cairo_scale(xd->cc, width / w, height / h);
-    /* Flip vertical first */
-    cairo_translate(xd->cc, 0, h / 2.0);
-    cairo_scale(xd->cc, 1, -1);
-    cairo_translate(xd->cc, 0, -h / 2.0);
-
-    cairo_set_source_surface(xd->cc, image, 0, 0);
-
-    if (interpolate)
+    /* If we are going to use the graphics engine for interpolation
+     * the image used for the Cairo surface is going to be a
+     * different size
+     */
+    if (interpolate && CAIRO_VERSION_MAJOR < 2 && CAIRO_VERSION_MINOR < 6)
     {
-        cairo_pattern_set_filter(cairo_get_source(xd->cc), CAIRO_FILTER_BILINEAR);
+        imageWidth = (int)(width + .5);
+        imageHeight = abs((int)(height + .5));
     }
     else
     {
+        imageWidth = w;
+        imageHeight = h;
+    }
+
+    cairo_translate(xd->cc, x, y);
+    cairo_rotate(xd->cc, -rot * M_PI / 180);
+    cairo_scale(xd->cc, width / imageWidth, height / imageHeight);
+    /* Flip vertical first */
+    cairo_translate(xd->cc, 0, imageHeight / 2.0);
+    cairo_scale(xd->cc, 1, -1);
+    cairo_translate(xd->cc, 0, -imageHeight / 2.0);
+
+    if (interpolate)
+    {
+        if (CAIRO_VERSION_MAJOR < 2 && CAIRO_VERSION_MINOR < 6)
+        {
+            /* CAIRO_EXTEND_PAD not supported for image sources
+             * so use graphics engine for interpolation
+             */
+            unsigned int *rasterImage;
+            rasterImage = (unsigned int *)R_alloc(imageWidth * imageHeight, sizeof(unsigned int));
+            R_GE_rasterInterpolate(raster, w, h, rasterImage, imageWidth, imageHeight);
+            image = createImageSurface(rasterImage, imageWidth, imageHeight);
+            cairo_set_source_surface(xd->cc, image, 0, 0);
+        }
+        else
+        {
+            image = createImageSurface(raster, w, h);
+            cairo_set_source_surface(xd->cc, image, 0, 0);
+            cairo_pattern_set_filter(cairo_get_source(xd->cc), CAIRO_FILTER_BILINEAR);
+            cairo_pattern_set_extend(cairo_get_source(xd->cc), CAIRO_EXTEND_PAD);
+        }
+    }
+    else
+    {
+        image = createImageSurface(raster, w, h);
+        cairo_set_source_surface(xd->cc, image, 0, 0);
         cairo_pattern_set_filter(cairo_get_source(xd->cc), CAIRO_FILTER_NEAREST);
     }
 
+    cairo_new_path(xd->cc);
+    cairo_rectangle(xd->cc, 0, 0, imageWidth, imageHeight);
+    cairo_clip(xd->cc);
     cairo_paint(xd->cc);
 
     cairo_restore(xd->cc);
