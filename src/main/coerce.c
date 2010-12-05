@@ -1536,12 +1536,12 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     ans = ascommon(call, x, type);
     switch (TYPEOF(ans))
-    { /* keep attributes for these: */
-    case NILSXP:
+    {             /* keep attributes for these: */
+    case NILSXP:  /* doesn't have any */
+    case LISTSXP: /* but ascommon fiddled */
+    case LANGSXP:
     case VECSXP:
     case EXPRSXP:
-    case LISTSXP:
-    case LANGSXP:
         break;
     default:
         CLEAR_ATTRIB(ans);
