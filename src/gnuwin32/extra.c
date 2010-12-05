@@ -1115,7 +1115,7 @@ SEXP do_readClipboard(SEXP call, SEXP op, SEXP args, SEXP rho)
                     ienc = CE_UTF8;
                 ans = splitClipboardText(text, ienc);
             }
-            else if (format == CF_TEXT || format == CF_OEMTEXT)
+            else if (format == CF_TEXT || format == CF_OEMTEXT || format == CF_DIF)
             {
                 /* can we get the encoding out of a CF_LOCALE entry? */
                 ans = splitClipboardText(pc, 0);
