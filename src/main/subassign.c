@@ -1982,7 +1982,7 @@ SEXP attribute_hidden do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_subassign3_dflt(call, CAR(ans), nlist, CADDR(ans));
 }
 
-/* used in methods_list_dispatch.c */
+/* used in "$<-" (above) and methods_list_dispatch.c */
 SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
 {
     SEXP t;
@@ -2145,7 +2145,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
             }
             else
             {
-                /* We are introducing a new element. */
+                /* We are introducing a new element (=> *no* duplication) */
                 /* Enlarge the list, add the new element */
                 /* and finally, adjust the attributes. */
                 SEXP ans, ansnames;

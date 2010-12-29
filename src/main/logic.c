@@ -427,7 +427,7 @@ SEXP attribute_hidden do_logic3(SEXP call, SEXP op, SEXP args, SEXP env)
     for (s = args; s != R_NilValue; s = CDR(s))
     {
         t = CAR(s);
-        /* Avoid memeory waste from coercing empty inputs, and also
+        /* Avoid memory waste from coercing empty inputs, and also
            avoid warnings with empty lists coming from sapply */
         if (length(t) == 0)
             continue;
