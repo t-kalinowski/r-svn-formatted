@@ -83,8 +83,10 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* This is a special .Internal */
 SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP R_fcall, ans, names = R_NilValue, rowNames = R_NilValue, X, XX, FUN, value;
-    int i, n, commonLen, useNames;
+    SEXP R_fcall, ans, names = R_NilValue, rowNames = R_NilValue, X, XX, FUN, value, dim_v;
+    int i, n, commonLen, useNames,
+        rnk_v = -1; // = array_rank(value) := length(dim(value))
+    Rboolean array_value;
     SEXPTYPE commonType;
     PROTECT_INDEX index;
 
@@ -105,7 +107,8 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     commonLen = length(value);
     commonType = TYPEOF(value);
-
+    dim_v = getAttrib(value, R_DimSymbol);
+    array_value = (TYPEOF(dim_v) == INTSXP && LENGTH(dim_v) >= 1) ? TRUE : FALSE;
     PROTECT(ans = allocVector(commonType, n * commonLen));
     if (useNames)
     {
@@ -115,7 +118,7 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             UNPROTECT(1);
             PROTECT(names = XX);
         }
-        PROTECT_WITH_INDEX(rowNames = getAttrib(value, R_NamesSymbol), &index);
+        PROTECT_WITH_INDEX(rowNames = getAttrib(value, array_value ? R_DimNamesSymbol : R_NamesSymbol), &index);
     }
     /* The R level code has ensured that XX is a vector.
        If it is atomic we can speed things up slightly by
@@ -169,8 +172,7 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             /* Take row names from the first result only */
             if (i == 0 && useNames && isNull(rowNames))
-                REPROTECT(rowNames = getAttrib(tmp, R_NamesSymbol), index);
-
+                REPROTECT(rowNames = getAttrib(tmp, array_value ? R_DimNamesSymbol : R_NamesSymbol), index);
             for (j = 0; j < commonLen; j++)
             {
                 switch (commonType)
@@ -207,9 +209,14 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (commonLen != 1)
     {
         SEXP dim;
-        PROTECT(dim = allocVector(INTSXP, 2));
-        INTEGER(dim)[0] = commonLen;
-        INTEGER(dim)[1] = n;
+        rnk_v = array_value ? LENGTH(dim_v) : 1;
+        PROTECT(dim = allocVector(INTSXP, rnk_v + 1));
+        if (array_value)
+            for (int j = 0; j < rnk_v; j++)
+                INTEGER(dim)[j] = INTEGER(dim_v)[j];
+        else
+            INTEGER(dim)[0] = commonLen;
+        INTEGER(dim)[rnk_v] = n;
         setAttrib(ans, R_DimSymbol, dim);
         UNPROTECT(1);
     }
@@ -226,9 +233,14 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (!isNull(names) || !isNull(rowNames))
             {
                 SEXP dimnames;
-                PROTECT(dimnames = allocVector(VECSXP, 2));
-                SET_VECTOR_ELT(dimnames, 0, rowNames);
-                SET_VECTOR_ELT(dimnames, 1, names);
+                PROTECT(dimnames = allocVector(VECSXP, rnk_v + 1));
+                if (array_value)
+                    for (int j = 0; j < rnk_v; j++)
+                        SET_VECTOR_ELT(dimnames, j, VECTOR_ELT(rowNames, j));
+                else
+                    SET_VECTOR_ELT(dimnames, 0, rowNames);
+
+                SET_VECTOR_ELT(dimnames, rnk_v, names);
                 setAttrib(ans, R_DimNamesSymbol, dimnames);
                 UNPROTECT(1);
             }
