@@ -159,7 +159,7 @@ SEXP showArgs(SEXP args)
     args = CDR(args); /* skip 'name' */
     for (i = 0; args != R_NilValue; i++, args = CDR(args))
     {
-        name = CHAR(PRINTNAME(TAG(args)));
+        name = isNull(TAG(args)) ? "" : CHAR(PRINTNAME(TAG(args)));
         el = CAR(args);
         switch (TYPEOF(el))
         {
