@@ -1085,6 +1085,7 @@ static void SymbolShortcuts(void)
     R_DoubleColonSymbol = install("::");
     R_TripleColonSymbol = install(":::");
     R_ConnIdSymbol = install("conn_id");
+    R_DotDevicesSymbol = install(".Devices");
 }
 
 extern SEXP framenames; /* from model.c */
