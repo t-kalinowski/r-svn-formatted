@@ -1104,7 +1104,7 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
@@ -1278,7 +1278,7 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
@@ -1958,7 +1958,7 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
@@ -2634,7 +2634,7 @@ SEXP attribute_hidden do_rawconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
     return ans;
@@ -3104,7 +3104,7 @@ SEXP attribute_hidden do_textconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
     return ans;
@@ -3186,7 +3186,7 @@ SEXP attribute_hidden do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 #else
@@ -3240,7 +3240,7 @@ SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
@@ -5092,7 +5092,7 @@ SEXP attribute_hidden do_getconnection(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     if (what > 2)
-        setAttrib(ans, install("conn_id"), con->ex_ptr);
+        setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     UNPROTECT(2);
     return ans;
 }
@@ -5323,7 +5323,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), con->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
@@ -5757,7 +5757,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
     new->ex_ptr = R_MakeExternalPtr((void *)new->id, install("connection"), R_NilValue);
-    setAttrib(ans, install("conn_id"), new->ex_ptr);
+    setAttrib(ans, R_ConnIdSymbol, new->ex_ptr);
     R_RegisterCFinalizerEx(new->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
 
