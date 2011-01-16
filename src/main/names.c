@@ -1038,10 +1038,14 @@ int StrToInternal(const char *s)
 
 static void installFunTab(int i)
 {
+    SEXP prim;
+    /* prim needs to be protected since install can (and does here) allocate */
+    PROTECT(prim = mkPRIMSXP(i, R_FunTab[i].eval % 10));
     if ((R_FunTab[i].eval % 100) / 10)
-        SET_INTERNAL(install(R_FunTab[i].name), mkPRIMSXP(i, R_FunTab[i].eval % 10));
+        SET_INTERNAL(install(R_FunTab[i].name), prim);
     else
-        SET_SYMVALUE(install(R_FunTab[i].name), mkPRIMSXP(i, R_FunTab[i].eval % 10));
+        SET_SYMVALUE(install(R_FunTab[i].name), prim);
+    UNPROTECT(1);
 }
 
 static void SymbolShortcuts(void)
@@ -1088,6 +1092,11 @@ extern SEXP framenames; /* from model.c */
 void InitNames()
 {
     int i;
+
+    /* allocate the symbol table */
+    if (!(R_SymbolTable = (SEXP *)calloc(HSIZE, sizeof(SEXP))))
+        R_Suicide("couldn't allocate memory for symbol table");
+
     /* R_UnboundValue */
     R_UnboundValue = allocSExp(SYMSXP);
     SET_SYMVALUE(R_UnboundValue, R_UnboundValue);
@@ -1114,8 +1123,6 @@ void InitNames()
     /* R_BlankString */
     R_BlankString = mkChar("");
     /* Initialize the symbol Table */
-    if (!(R_SymbolTable = (SEXP *)malloc(HSIZE * sizeof(SEXP))))
-        R_Suicide("couldn't allocate memory for symbol table");
     for (i = 0; i < HSIZE; i++)
         R_SymbolTable[i] = R_NilValue;
     /* Set up a set of globals so that a symbol table search can be
