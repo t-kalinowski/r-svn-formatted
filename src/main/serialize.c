@@ -1930,7 +1930,7 @@ static void con_cleanup(void *data)
         con->close(con);
 }
 
-/* Used from .saveRDS().
+/* Used from saveRDS().
    This became public in R 2.13.0, and that version added support for
    connections internally */
 SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -2005,7 +2005,7 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
     return R_NilValue;
 }
 
-/* Used from .readRDS().
+/* Used from readRDS().
    This became public in R 2.13.0, and that version added support for
    connections internally */
 SEXP attribute_hidden do_unserializeFromConn(SEXP call, SEXP op, SEXP args, SEXP env)
