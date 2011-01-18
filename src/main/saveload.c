@@ -2519,11 +2519,6 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     con = getConnection(asInteger(CAR(args)));
-    /* These should be deferred until it is open */
-    if (!con->canread)
-        error(_("cannot read from this connection"));
-    if (con->text)
-        error(_("can only read from a binary connection"));
 
     wasopen = con->isopen;
     if (!wasopen)
@@ -2542,6 +2537,8 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!con->canread)
         error(_("connection not open for reading"));
+    if (con->text)
+        error(_("can only load() from a binary connection"));
 
     aenv = CADR(args);
     if (TYPEOF(aenv) == NILSXP)
@@ -2561,7 +2558,10 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
         /* PROTECT is paranoia: some close() method might allocate */
         PROTECT(res = RestoreToEnv(R_Unserialize(&in), aenv));
         if (!wasopen)
+        {
             endcontext(&cntxt);
+            con->close(con);
+        }
         UNPROTECT(1);
     }
     else

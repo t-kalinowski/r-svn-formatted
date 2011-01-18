@@ -1997,7 +1997,10 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
     R_InitConnOutPStream(&out, con, type, version, hook, fun);
     R_Serialize(object, &out);
     if (!wasopen)
+    {
         endcontext(&cntxt);
+        con->close(con);
+    }
 
     return R_NilValue;
 }
@@ -2047,7 +2050,10 @@ SEXP attribute_hidden do_unserializeFromConn(SEXP call, SEXP op, SEXP args, SEXP
     R_InitConnInPStream(&in, con, R_pstream_any_format, hook, fun);
     PROTECT(ans = R_Unserialize(&in)); /* paranoia about next line */
     if (!wasopen)
+    {
         endcontext(&cntxt);
+        con->close(con);
+    }
     UNPROTECT(1);
     return ans;
 }
