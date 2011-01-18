@@ -1923,6 +1923,13 @@ static SEXP CallHook(SEXP x, SEXP fun)
     return val;
 }
 
+static void con_cleanup(void *data)
+{
+    Rconnection con = data;
+    if (con->isopen)
+        con->close(con);
+}
+
 /* Used from .saveRDS().
    This became public in R 2.13.0, and that version added support for
    connections internally */
@@ -1937,6 +1944,7 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
     struct R_outpstream_st out;
     R_pstream_format_t type;
     SEXP (*hook)(SEXP, SEXP);
+    RCNTXT cntxt;
 
     checkArity(op, args);
 
@@ -1976,25 +1984,21 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
         if (!con->open(con))
             error(_("cannot open the connection"));
         strcpy(con->mode, mode);
-        /* We could set up a context to close the connection on error */
+        /* Set up a context which will close the connection on error */
+        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+        cntxt.cend = &con_cleanup;
+        cntxt.cenddata = con;
     }
     if (!ascii && con->text)
-    {
-        if (!wasopen)
-            con->close(con);
         error(_("binary-mode connection required for ascii=FALSE"));
-    }
     if (!con->canwrite)
-    {
-        if (!wasopen)
-            con->close(con);
         error(_("connection not open for writing"));
-    }
 
     R_InitConnOutPStream(&out, con, type, version, hook, fun);
     R_Serialize(object, &out);
     if (!wasopen)
-        con->close(con);
+        endcontext(&cntxt);
+
     return R_NilValue;
 }
 
@@ -2010,6 +2014,7 @@ SEXP attribute_hidden do_unserializeFromConn(SEXP call, SEXP op, SEXP args, SEXP
     SEXP fun, ans;
     SEXP (*hook)(SEXP, SEXP);
     Rboolean wasopen;
+    RCNTXT cntxt;
 
     checkArity(op, args);
 
@@ -2031,19 +2036,19 @@ SEXP attribute_hidden do_unserializeFromConn(SEXP call, SEXP op, SEXP args, SEXP
         if (!con->open(con))
             error(_("cannot open the connection"));
         strcpy(con->mode, mode);
-        /* We could set up a context to close the connection on error */
+        /* Set up a context which will close the connection on error */
+        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+        cntxt.cend = &con_cleanup;
+        cntxt.cenddata = con;
     }
     if (!con->canread)
-    {
-        if (!wasopen)
-            con->close(con);
         error(_("connection not open for reading"));
-    }
 
     R_InitConnInPStream(&in, con, R_pstream_any_format, hook, fun);
-    ans = R_Unserialize(&in);
+    PROTECT(ans = R_Unserialize(&in)); /* paranoia about next line */
     if (!wasopen)
-        con->close(con);
+        endcontext(&cntxt);
+    UNPROTECT(1);
     return ans;
 }
 

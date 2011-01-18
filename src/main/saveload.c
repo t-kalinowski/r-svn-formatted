@@ -2237,10 +2237,7 @@ SEXP attribute_hidden do_load(SEXP call, SEXP op, SEXP args, SEXP env)
 
     aenv = CADR(args);
     if (TYPEOF(aenv) == NILSXP)
-    {
         error(_("use of NULL environment is defunct"));
-        aenv = R_BaseEnv;
-    }
     else if (TYPEOF(aenv) != ENVSXP)
         error(_("invalid '%s' argument"), "envir");
 
@@ -2372,6 +2369,13 @@ void R_RestoreGlobalEnvFromFile(const char *name, Rboolean quiet)
 
 #include <Rconnections.h>
 
+static void con_cleanup(void *data)
+{
+    Rconnection con = data;
+    if (con->isopen)
+        con->close(con);
+}
+
 /* Ideally it should be possible to do this entirely in R code with
    something like
 
@@ -2400,6 +2404,7 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
     struct R_outpstream_st out;
     R_pstream_format_t type;
     char *magic;
+    RCNTXT cntxt;
 
     checkArity(op, args);
 
@@ -2437,13 +2442,14 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->open(con))
             error(_("cannot open the connection"));
         strcpy(con->mode, mode);
+        /* set up a context which will close the connection
+           if there is an error */
+        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+        cntxt.cend = &con_cleanup;
+        cntxt.cenddata = con;
     }
     if (!con->canwrite)
-    {
-        if (!wasopen)
-            con->close(con);
         error(_("connection not open for writing"));
-    }
 
     if (ascii)
     {
@@ -2498,12 +2504,6 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* Read and checks the magic number, open the connection if needed */
 
-static void load_con_cleanup(void *data)
-{
-    Rconnection con = data;
-    con->close(con);
-}
-
 SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* loadFromConn2(conn, environment) */
@@ -2519,10 +2519,12 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     con = getConnection(asInteger(CAR(args)));
+    /* These should be deferred until it is open */
     if (!con->canread)
         error(_("cannot read from this connection"));
     if (con->text)
         error(_("can only read from a binary connection"));
+
     wasopen = con->isopen;
     if (!wasopen)
     {
@@ -2532,20 +2534,18 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->open(con))
             error(_("cannot open the connection"));
         strcpy(con->mode, mode);
+        /* set up a context which will close the connection
+           if there is an error */
+        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+        cntxt.cend = &con_cleanup;
+        cntxt.cenddata = con;
     }
     if (!con->canread)
-    {
-        if (!wasopen)
-            con->close(con);
         error(_("connection not open for reading"));
-    }
 
     aenv = CADR(args);
     if (TYPEOF(aenv) == NILSXP)
-    {
         error(_("use of NULL environment is defunct"));
-        aenv = R_BaseEnv;
-    }
     else if (TYPEOF(aenv) != ENVSXP)
         error(_("invalid '%s' argument"), "envir");
 
@@ -2557,26 +2557,11 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     if (strncmp((char *)buf, "RDA2\n", 5) == 0 || strncmp((char *)buf, "RDB2\n", 5) == 0 ||
         strncmp((char *)buf, "RDX2\n", 5) == 0)
     {
-        /* FIXME: this is odd: we did not open that connection, so
-           why should we be closing it? */
-        /* set up a context which will close the connection
-           if there is an error */
-        if (wasopen)
-        {
-            begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
-            cntxt.cend = &load_con_cleanup;
-            cntxt.cenddata = con;
-        }
         R_InitConnInPStream(&in, con, R_pstream_any_format, NULL, NULL);
+        /* PROTECT is paranoia: some close() method might allocate */
         PROTECT(res = RestoreToEnv(R_Unserialize(&in), aenv));
-        if (wasopen)
-        {
+        if (!wasopen)
             endcontext(&cntxt);
-        }
-        else
-        {
-            con->close(con);
-        }
         UNPROTECT(1);
     }
     else
