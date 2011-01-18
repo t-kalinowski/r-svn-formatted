@@ -858,6 +858,10 @@ static void ReleaseLargeFreeVectors(void)
             UNSNAP_NODE(s);
             R_LargeVallocSize -= size;
             R_GenHeap[LARGE_NODE_CLASS].AllocCount--;
+#ifdef PROTECTCHECK
+            /*** eventually do this with the other FREESXP settings */
+            TYPEOF(s) = FREESXP;
+#endif
             free(s);
         }
         s = next;
@@ -1529,7 +1533,7 @@ again:
     PROCESS_NODES();
 
 #ifdef PROTECTCHECK
-    for (i = 1; i < NUM_NODE_CLASSES; i++)
+    for (i = 1; i < NUM_SMALL_NODE_CLASSES; i++)
     {
         s = NEXT_NODE(R_GenHeap[i].New);
         while (s != R_GenHeap[i].New)
@@ -1543,6 +1547,22 @@ again:
             }
             s = next;
         }
+    }
+    s = NEXT_NODE(R_GenHeap[LARGE_NODE_CLASS].New);
+    while (s != R_GenHeap[i].New)
+    {
+        SEXP next = NEXT_NODE(s);
+        if (TYPEOF(s) != NEWSXP)
+        {
+#ifdef DODO
+            /* can't to this yet -- need to first encode length for
+               use in the release */
+            TYPEOF(s) = FREESXP;
+#endif
+            if (gc_inhibit_release)
+                FORWARD_NODE(s);
+        }
+        s = next;
     }
     if (gc_inhibit_release)
         PROCESS_NODES();
