@@ -64,7 +64,11 @@ SEXP attribute_hidden do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         if (nx > 0 && ny > 0)
             mismatch = ((nx > ny) ? nx % ny : ny % nx) != 0;
         if (mismatch)
+        {
+            PROTECT(ans);
             warningcall(call, _("longer object length is not a multiple of shorter object length"));
+            UNPROTECT(1);
+        }
         UNPROTECT(2);
         return ans;
     }
