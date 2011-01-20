@@ -1652,7 +1652,7 @@ again:
     PROCESS_NODES();
 
 #ifdef PROTECTCHECK
-    for (i = 1; i < NUM_SMALL_NODE_CLASSES; i++)
+    for (i = 0; i < NUM_SMALL_NODE_CLASSES; i++)
     {
         s = NEXT_NODE(R_GenHeap[i].New);
         while (s != R_GenHeap[i].New)
