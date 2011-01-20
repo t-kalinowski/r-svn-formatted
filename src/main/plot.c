@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2010  The R Development Core Team
+ *  Copyright (C) 1997--2011  The R Development Core Team
  *  Copyright (C) 2002--2009  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1046,7 +1046,7 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("too few arguments"));
     GCheckState(dd);
 
-    PrintDefaults(env); /* prepare for labelformat */
+    PrintDefaults(); /* prepare for labelformat */
 
     /* Required argument: "side" */
     /* Which side of the plot the axis is to appear on. */
@@ -3808,7 +3808,7 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             /* can't use warning because we want to print immediately  */
             /* might want to handle warn=2? */
-            warn = asInteger(GetOption(install("warn"), R_BaseEnv));
+            warn = asInteger(GetOption1(install("warn")));
             if (dmin > tol)
             {
                 if (warn >= 0)

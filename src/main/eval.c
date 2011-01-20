@@ -793,7 +793,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
         SET_RSTEP(op, 0);
     if (RDEBUG(newrho))
     {
-        int old_bl = R_BrowseLines, blines = asInteger(GetOption(install("deparse.max.lines"), R_BaseEnv));
+        int old_bl = R_BrowseLines, blines = asInteger(GetOption1(install("deparse.max.lines")));
 #ifdef BYTECODE
         /* switch to interpreted version when debugging compiled code */
         if (TYPEOF(body) == BCODESXP)

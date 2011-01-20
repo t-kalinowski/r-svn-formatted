@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995,1996  Robert Gentleman, Ross Ihaka
- *  Copyright (C) 1997-2010  The R Development Core Team
+ *  Copyright (C) 1997-2011  The R Development Core Team
  *  Copyright (C) 2003-2009 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -745,7 +745,7 @@ static SEXP coerceToString(SEXP v)
             SET_STRING_ELT(ans, i, StringFromInteger(INTEGER(v)[i], &warn));
         break;
     case REALSXP:
-        PrintDefaults(R_NilValue);
+        PrintDefaults();
         savedigits = R_print.digits;
         R_print.digits = DBL_DIG; /* MAX precision */
         for (i = 0; i < n; i++)
@@ -753,7 +753,7 @@ static SEXP coerceToString(SEXP v)
         R_print.digits = savedigits;
         break;
     case CPLXSXP:
-        PrintDefaults(R_NilValue);
+        PrintDefaults();
         savedigits = R_print.digits;
         R_print.digits = DBL_DIG; /* MAX precision */
         for (i = 0; i < n; i++)
