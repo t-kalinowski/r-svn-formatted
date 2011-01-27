@@ -2463,14 +2463,14 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
                    multiple evaluation after the call to possible_dispatch.
                 */
                 if (dots)
-                    argValue = evalArgs(argValue, rho, dropmissing, call, 0);
+                    PROTECT(argValue = evalArgs(argValue, rho, dropmissing, call, 0));
                 else
                 {
-                    argValue = CONS(x, evalArgs(CDR(argValue), rho, dropmissing, call, 1));
+                    PROTECT(argValue = CONS(x, evalArgs(CDR(argValue), rho, dropmissing, call, 1)));
                     SET_TAG(argValue, CreateTag(TAG(args)));
                 }
-                PROTECT(args = argValue);
                 nprotect++;
+                args = argValue;
                 argsevald = 1;
             }
         }
