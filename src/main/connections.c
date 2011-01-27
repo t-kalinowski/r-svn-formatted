@@ -1529,7 +1529,8 @@ static size_t bzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con
        resulting in truncated text streams while binary streams work fine */
     while (nleft > 0)
     {
-        size_t n = BZ2_bzRead(&bzerror, bz->bfp, ptr + nread, nleft);
+        /* Need a cast as 'nread' needs to be interpreted in bytes */
+        size_t n = BZ2_bzRead(&bzerror, bz->bfp, (char *)ptr + nread, nleft);
         if (bzerror == BZ_STREAM_END)
         { /* this could mean multiple streams so we need to check */
             char *unused, *next_unused = NULL;
