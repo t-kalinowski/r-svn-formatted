@@ -114,6 +114,7 @@ static void complex_div(Rcomplex *c, Rcomplex *a, Rcomplex *b)
 
 static void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
 {
+    printf(" in R_cpow_n, k = %d\n", k);
     if (k == 0)
     {
         r->r = 1.;
@@ -138,9 +139,9 @@ static void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
         {
             double rr;
             if (k & 1)
-            { /* r := r * x */
-                rr = r->r * x->r - r->i * x->i;
-                r->i = r->r * x->i + r->i * x->r;
+            { /* r := r * X */
+                rr = r->r * X.r - r->i * X.i;
+                r->i = r->r * X.i + r->i * X.r;
                 r->r = rr;
             }
             if (k == 1)
