@@ -116,6 +116,11 @@ static void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
         r->r = 1.;
         r->i = 0.;
     }
+    else if (k == 1)
+    {
+        r->r = x->r;
+        r->i = x->i;
+    }
     else if (k < 0)
     {
         Rcomplex h;
@@ -128,9 +133,10 @@ static void R_cpow_n(Rcomplex *r, Rcomplex *x, int k)
     else
     { /* k > 0 */
         Rcomplex X;
-        r->r = X.r = x->r;
-        r->i = X.i = x->i;
-        k--;
+        r->r = 1.;
+        r->i = 0.;
+        X.r = x->r;
+        X.i = x->i;
         while (k > 0)
         {
             double rr;
