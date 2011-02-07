@@ -43,9 +43,11 @@
 #endif
 
 #ifdef Win32
-/* Have these, but do not work for cabs(z) > 1 */
+/* Have these, but do not work for cabs(z) > 1,
+   or at least actually on the branch cuts */
 #undef HAVE_CASIN
 #undef HAVE_CACOS
+#undef HAVE_CASINH
 #undef HAVE_CACOSH
 #endif
 
@@ -457,12 +459,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
     return y;
 }
 
-static void z_rround(Rcomplex *r, Rcomplex *x, Rcomplex *p)
-{
-    r->r = rround(x->r, p->r); /* #defined to fround in Rmath.h */
-    r->i = rround(x->i, p->r);
-}
-
+/* used in format.c and printutils.c */
 #define MAX_DIGITS 22
 void attribute_hidden z_prec_r(Rcomplex *r, Rcomplex *x, double digits)
 {
@@ -515,6 +512,7 @@ void attribute_hidden z_prec_r(Rcomplex *r, Rcomplex *x, double digits)
 #define ctan R_ctan
 static double complex ctan(double complex z)
 {
+    /* A&S 4.3.57 */
     double x2, y2, den, ri;
     x2 = 2.0 * creal(z);
     y2 = 2.0 * cimag(z);
@@ -597,7 +595,7 @@ static double complex cexp(double complex x)
 static double complex ccos(double complex x)
 {
     double xr = creal(x), xi = cimag(x);
-    return cos(xr) * cosh(xi) - sin(xr) * sinh(xi) * I;
+    return cos(xr) * cosh(xi) - sin(xr) * sinh(xi) * I; /* A&S 4.3.56 */
 }
 #endif
 
@@ -606,7 +604,7 @@ static double complex ccos(double complex x)
 static double complex csin(double complex x)
 {
     double xr = creal(x), xi = cimag(x);
-    return sin(xr) * cosh(xi) + cos(xr) * sinh(xi) * I;
+    return sin(xr) * cosh(xi) + cos(xr) * sinh(xi) * I; /* A&S 4.3.55 */
 }
 #endif
 
@@ -614,13 +612,20 @@ static double complex csin(double complex x)
 #define casin R_casin
 static double complex casin(double complex z)
 {
+    /* A&S 4.4.37 */
     double alpha, t1, t2, x = creal(z), y = cimag(z), ri;
     t1 = 0.5 * hypot(x + 1, y);
     t2 = 0.5 * hypot(x - 1, y);
     alpha = t1 + t2;
     ri = log(alpha + sqrt(alpha * alpha - 1));
+    /* This comes from
+       'z_asin() is continuous from below if x >= 1
+        and continuous from above if x <= -1.'
+    Other implementations do not agree: some even have the
+    values on the cuts as errors.
+    */
     if (y < 0 || (y == 0 && x > 1))
-        ri *= -1; /* really, why? */
+        ri *= -1;
 #ifdef __GNUC__
     double complex r;
     __real__ r = asin(t1 - t2);
@@ -654,7 +659,7 @@ static double complex catan(double complex z)
     __imag__ r = ri;
     return r;
 #else
-    return rr + ri * I; /* which may give NaNs */
+    return rr + ri * I;       /* which may give NaNs */
 #endif
 }
 #endif
@@ -663,7 +668,7 @@ static double complex catan(double complex z)
 #define ccosh R_ccosh
 static double complex ccosh(double complex z)
 {
-    return ccos(-cimag(z) + creal(z) * I);
+    return ccos(z * I); /* A&S 4.5.8 */
 }
 #endif
 
@@ -671,8 +676,7 @@ static double complex ccosh(double complex z)
 #define csinh R_csinh
 static double complex csinh(double complex z)
 {
-    double complex a = csin(-cimag(z) + creal(z) * I);
-    return cimag(a) - creal(a) * I;
+    return -I * csin(z * I); /* A&S 4.5.7 */
 }
 #endif
 
@@ -680,8 +684,7 @@ static double complex csinh(double complex z)
 #define ctanh R_ctanh
 static double complex ctanh(double complex z)
 {
-    double complex a = ctan(-cimag(z) + creal(z) * I);
-    return cimag(a) - creal(a) * I;
+    return -I * ctan(z * I); /* A&S 4.5.9 */
 }
 #endif
 
@@ -689,8 +692,17 @@ static double complex ctanh(double complex z)
 #define casinh R_casinh
 static double complex casinh(double complex z)
 {
-    double complex a = casin(-cimag(z) + creal(z) * I);
-    return cimag(a) - creal(a) * I;
+#ifdef __GNUC__
+    double complex a, b, r;
+    __real__ b = -cimag(z);
+    __imag__ b = creal(z);
+    a = casin(b);
+    __real__ r = cimag(a);
+    __imag__ r = -creal(a);
+    return r;
+#else
+    return -I * casin(z * I); /* A&S 4.6.14 */
+#endif
 }
 #endif
 
@@ -705,7 +717,7 @@ static double complex cacosh(double complex z)
     __imag__ r = creal(a);
     return r;
 #else
-    return -cimag(a) + creal(a) * I;
+    return a * I;             /* A&S 4.6.15, has +/- */
 #endif
 }
 #endif
@@ -714,8 +726,7 @@ static double complex cacosh(double complex z)
 #define catanh R_catanh
 static double complex catanh(double complex z)
 {
-    double complex a = catan(-cimag(z) + creal(z) * I);
-    return cimag(a) - creal(a) * I;
+    return -I * catan(z * I); /* A&S 4.6.16 */
 }
 #endif
 
@@ -794,6 +805,12 @@ SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     DUPLICATE_ATTRIB(y, x);
     UNPROTECT(2);
     return y;
+}
+
+static void z_rround(Rcomplex *r, Rcomplex *x, Rcomplex *p)
+{
+    r->r = rround(x->r, p->r); /* #defined to fround in Rmath.h */
+    r->i = rround(x->i, p->r);
 }
 
 static void z_prec(Rcomplex *r, Rcomplex *x, Rcomplex *p)
@@ -886,18 +903,16 @@ SEXP attribute_hidden complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     switch (PRIMVAL(op))
     {
+    case 0:
+        return cmath2(op, CAR(args), CADR(args), z_atan2);
     case 10001:
         return cmath2(op, CAR(args), CADR(args), z_rround);
-    case 10002:
-        return cmath2(op, CAR(args), CADR(args), z_atan2);
-    case 10003:
     case 2: /* passed from do_log1arg */
     case 10:
+    case 10003: /* passed from do_log */
         return cmath2(op, CAR(args), CADR(args), z_logbase);
     case 10004:
         return cmath2(op, CAR(args), CADR(args), z_prec);
-    case 0:
-        return cmath2(op, CAR(args), CADR(args), z_atan2);
     default:
         errorcall_return(call, _("unimplemented complex function"));
     }
