@@ -543,24 +543,6 @@ static double complex z_tan(double complex z)
     return r;
 }
 
-static Rboolean cmath1(double complex (*f)(double complex), Rcomplex *x, Rcomplex *y, int n)
-{
-    int i;
-    Rboolean naflag = FALSE;
-    for (i = 0; i < n; i++)
-    {
-        if (ISNA(x[i].r) || ISNA(x[i].i))
-        {
-            y[i].r = NA_REAL;
-            y[i].i = NA_REAL;
-        }
-        else
-            SET_C99_COMPLEX(y, i, f(toC99(x + i)));
-    }
-
-    return (naflag);
-}
-
 #ifndef HAVE_CLOG
 #define clog R_clog
 /* FIXME: add full IEC60559 support */
@@ -730,11 +712,34 @@ static double complex catanh(double complex z)
 }
 #endif
 
+typedef double complex (*cm1_fun)(double complex);
+static Rboolean cmath1(double complex (*f)(double complex), Rcomplex *x, Rcomplex *y, int n)
+{
+    int i;
+    Rboolean naflag = FALSE;
+    for (i = 0; i < n; i++)
+    {
+        if (ISNA(x[i].r) || ISNA(x[i].i))
+        {
+            y[i].r = NA_REAL;
+            y[i].i = NA_REAL;
+        }
+        else
+        {
+            SET_C99_COMPLEX(y, i, f(toC99(x + i)));
+            if (ISNAN(y[i].r) || ISNAN(y[i].i))
+                naflag = TRUE;
+        }
+    }
+    return naflag;
+}
+
 SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
     int n;
     Rboolean naflag = FALSE;
+
     PROTECT(x = CAR(args));
     n = length(x);
     PROTECT(y = allocVector(CPLXSXP, n));
@@ -744,15 +749,12 @@ SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     case 10003:
         naflag = cmath1(clog, COMPLEX(x), COMPLEX(y), n);
         break;
-
     case 3:
         naflag = cmath1(csqrt, COMPLEX(x), COMPLEX(y), n);
         break;
-
     case 10:
         naflag = cmath1(cexp, COMPLEX(x), COMPLEX(y), n);
         break;
-
     case 20:
         naflag = cmath1(ccos, COMPLEX(x), COMPLEX(y), n);
         break;
@@ -771,7 +773,6 @@ SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     case 25:
         naflag = cmath1(catan, COMPLEX(x), COMPLEX(y), n);
         break;
-
     case 30:
         naflag = cmath1(ccosh, COMPLEX(x), COMPLEX(y), n);
         break;
@@ -790,11 +791,6 @@ SEXP attribute_hidden complex_math1(SEXP call, SEXP op, SEXP args, SEXP env)
     case 35:
         naflag = cmath1(catanh, COMPLEX(x), COMPLEX(y), n);
         break;
-
-#ifdef NOTYET
-        MATH1(40, lgammafn);
-        MATH1(41, gammafn);
-#endif
 
     default:
         /* such as sign, gamma */
@@ -849,25 +845,48 @@ static void z_atan2(Rcomplex *r, Rcomplex *csn, Rcomplex *ccs)
     SET_C99_COMPLEX(r, 0, dr);
 }
 
-/* FIXME : Use the trick in arithmetic.c to eliminate "modulo" ops */
-static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)(Rcomplex *, Rcomplex *, Rcomplex *))
+/* Complex Functions of Two Arguments */
+
+typedef void (*cm2_fun)(Rcomplex *, Rcomplex *, Rcomplex *);
+SEXP attribute_hidden complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, n, na, nb;
     Rcomplex ai, bi, *a, *b, *y;
-    SEXP sy;
-    int naflag = 0;
+    SEXP sa, sb, sy;
+    Rboolean naflag = FALSE;
+    cm2_fun f;
+
+    switch (PRIMVAL(op))
+    {
+    case 0: /* atan2 */
+        f = z_atan2;
+        break;
+    case 10001: /* round */
+        f = z_rround;
+        break;
+    case 2: /* passed from do_log1arg */
+    case 10:
+    case 10003: /* passed from do_log */
+        f = z_logbase;
+        break;
+    case 10004: /* signif */
+        f = z_prec;
+        break;
+    default:
+        errorcall_return(call, _("unimplemented complex function"));
+    }
+
+    PROTECT(sa = coerceVector(CAR(args), CPLXSXP));
+    PROTECT(sb = coerceVector(CADR(args), CPLXSXP));
     na = length(sa);
     nb = length(sb);
     if ((na == 0) || (nb == 0))
         return (allocVector(CPLXSXP, 0));
     n = (na < nb) ? nb : na;
-    PROTECT(sa = coerceVector(sa, CPLXSXP));
-    PROTECT(sb = coerceVector(sb, CPLXSXP));
     PROTECT(sy = allocVector(CPLXSXP, n));
     a = COMPLEX(sa);
     b = COMPLEX(sb);
     y = COMPLEX(sy);
-    naflag = 0;
     for (i = 0; i < n; i++)
     {
         ai = a[i % na];
@@ -880,11 +899,12 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)(Rcomplex *, Rcomplex *, 
         else
         {
             f(&y[i], &ai, &bi);
+            if (ISNAN(y[i].r) || ISNAN(y[i].i))
+                naflag = TRUE;
         }
     }
-    /* should really be warningcall */
     if (naflag)
-        warning("NAs produced in function \"%s\"", PRIMNAME(op));
+        warningcall(call, "NAs produced in function \"%s\"", PRIMNAME(op));
     if (n == na)
     {
         DUPLICATE_ATTRIB(sy, sa);
@@ -895,27 +915,6 @@ static SEXP cmath2(SEXP op, SEXP sa, SEXP sb, void (*f)(Rcomplex *, Rcomplex *, 
     }
     UNPROTECT(3);
     return sy;
-}
-
-/* Complex Functions of Two Arguments */
-
-SEXP attribute_hidden complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    switch (PRIMVAL(op))
-    {
-    case 0:
-        return cmath2(op, CAR(args), CADR(args), z_atan2);
-    case 10001:
-        return cmath2(op, CAR(args), CADR(args), z_rround);
-    case 2: /* passed from do_log1arg */
-    case 10:
-    case 10003: /* passed from do_log */
-        return cmath2(op, CAR(args), CADR(args), z_logbase);
-    case 10004:
-        return cmath2(op, CAR(args), CADR(args), z_prec);
-    default:
-        errorcall_return(call, _("unimplemented complex function"));
-    }
 }
 
 SEXP attribute_hidden do_complex(SEXP call, SEXP op, SEXP args, SEXP rho)
