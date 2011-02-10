@@ -1042,7 +1042,7 @@ static void worker_input_handler(void *data)
                                     if (alloc_buffer(2048, c->headers))
                                     {
                                         c->headers = c->headers->next;
-                                        memcpy(c->headers, bol + fits, l - fits);
+                                        memcpy(c->headers->data, bol + fits, l - fits);
                                         c->headers->length = l - fits;
                                         c->headers->data[c->headers->length++] = '\n';
                                     }
@@ -1159,6 +1159,11 @@ static void worker_input_handler(void *data)
                 free(c->content_type);
                 c->content_type = NULL;
             }
+            if (c->headers)
+            {
+                free_buffer(c->headers);
+                c->headers = NULL;
+            }
             c->line_pos = 0;
             c->body_pos = 0;
             c->method = 0;
@@ -1215,6 +1220,11 @@ static void worker_input_handler(void *data)
                 {
                     free(c->content_type);
                     c->content_type = NULL;
+                }
+                if (c->headers)
+                {
+                    free_buffer(c->headers);
+                    c->headers = NULL;
                 }
                 c->body_pos = 0;
                 c->method = 0;
