@@ -180,7 +180,21 @@ void add_context(object obj, HDC dc, HGDIOBJ old)
     {
         c = &context[empty_slot];
         free_context(c);
-        empty_slot = (empty_slot + 1) % MAX_CONTEXTS;
+        /* Paul 2011-02-11
+         * Improve search for next empty slot
+         */
+        {
+            int old_empty = empty_slot;
+            empty_slot = (empty_slot + 1) % MAX_CONTEXTS;
+            while (context[empty_slot].dc)
+            {
+                empty_slot = (empty_slot + 1) % MAX_CONTEXTS;
+            }
+            if (empty_slot == old_empty)
+            {
+                /* printf("Contexts exhausted; expect instability!"); */
+            }
+        }
     }
     else
     {
