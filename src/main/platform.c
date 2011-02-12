@@ -989,7 +989,7 @@ static SEXP filename(const char *dir, const char *file)
 #include <tre/tre.h>
 
 static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans, Rboolean allfiles, Rboolean recursive,
-                       const regex_t *reg, int *countmax, PROTECT_INDEX idx)
+                       const regex_t *reg, int *countmax, PROTECT_INDEX idx, Rboolean idirs)
 {
     DIR *dir;
     struct dirent *de;
@@ -1026,6 +1026,15 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                     {
                         if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
                         {
+                            if (idirs && (!reg || tre_regexec(reg, de->d_name, 0, NULL, 0) == 0))
+                            {
+                                if (*count == *countmax - 1)
+                                {
+                                    *countmax *= 2;
+                                    REPROTECT(*pans = lengthgets(*pans, *countmax), idx);
+                                }
+                                SET_STRING_ELT(*pans, (*count)++, filename(stem, de->d_name));
+                            }
                             if (stem)
                             {
 #ifdef Win32
@@ -1039,7 +1048,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                             }
                             else
                                 strcpy(stem2, de->d_name);
-                            list_files(p, stem2, count, pans, allfiles, recursive, reg, countmax, idx);
+                            list_files(p, stem2, count, pans, allfiles, recursive, reg, countmax, idx, idirs);
                         }
                         continue;
                     }
@@ -1063,7 +1072,7 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     PROTECT_INDEX idx;
     SEXP d, p, ans;
-    int i, allfiles, fullnames, count, pattern, recursive, igcase, flags;
+    int i, allfiles, fullnames, count, pattern, recursive, igcase, flags, idirs;
     const char *dnp;
     regex_t reg;
     int countmax = 128;
@@ -1082,11 +1091,23 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "pattern");
     allfiles = asLogical(CAR(args));
     args = CDR(args);
+    if (allfiles == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "all.files");
     fullnames = asLogical(CAR(args));
     args = CDR(args);
+    if (fullnames == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "full.names");
     recursive = asLogical(CAR(args));
     args = CDR(args);
+    if (recursive == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "recursive");
     igcase = asLogical(CAR(args));
+    args = CDR(args);
+    if (igcase == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "ignore.case");
+    idirs = asLogical(CAR(args));
+    if (idirs == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "include.dirs");
     flags = REG_EXTENDED;
     if (igcase)
         flags |= REG_ICASE;
@@ -1101,7 +1122,7 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
             continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
         list_files(dnp, fullnames ? dnp : NULL, &count, &ans, allfiles, recursive, pattern ? &reg : NULL, &countmax,
-                   idx);
+                   idx, idirs);
     }
     REPROTECT(ans = lengthgets(ans, count), idx);
     if (pattern)
