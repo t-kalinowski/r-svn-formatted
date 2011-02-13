@@ -4029,7 +4029,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 SET_NAMED(value, 2);
             }
             if (TYPEOF(value) != BUILTINSXP)
-                error(_("not a BUILTIN function"));
+                error(_("\"%s\" is not a BUILTIN function"), CHAR(PRINTNAME(symbol)));
             if (RTRACE(value))
             {
                 Rprintf("trace: ");
@@ -4212,7 +4212,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 PrintValue(symbol);
             }
             if (TYPEOF(fun) != SPECIALSXP)
-                error(_("not a SPECIAL function"));
+                error(_("\"%s\" is not a SPECIAL function"), CHAR(PRINTNAME(symbol)));
             flag = PRIMPRINT(fun);
             R_Visible = flag != 1;
             value = PRIMFUN(fun)(call, fun, CDR(call), rho);
