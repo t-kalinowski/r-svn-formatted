@@ -2309,6 +2309,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             fclose(fp2);
         if (fp1)
             fclose(fp1);
+        /* FIXME: permissions? */
     }
     return nfail;
 }
