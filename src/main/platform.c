@@ -1597,7 +1597,7 @@ static void chmod_one(const char *name)
     if ((sb.st_mode & S_IFDIR) > 0)
     { /* a directory */
 #ifndef Win32
-        chmod(name, sb.st_mode | dirmask);
+        chmod(name, sb.st_mode | mask | dirmask);
 #endif
         if ((dir = opendir(name)) != NULL)
         {
