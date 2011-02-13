@@ -2263,7 +2263,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 #ifdef Win32
         res = mkdir(dest);
 #else
-        res = mkdir(dest, sb.st_mode);
+        res = mkdir(dest, sb.st_mode & 0777); /* the same as cp */
 #endif
         if (res && errno != EEXIST)
             return 1;
@@ -2309,7 +2309,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             fclose(fp2);
         if (fp1)
             fclose(fp1);
-        /* FIXME: permissions? */
+        chmod(dest, sb.st_mode & 0777);
     }
     return nfail;
 }
