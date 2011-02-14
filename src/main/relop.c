@@ -659,6 +659,15 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     return ans;
 }
 
+SEXP bitwiseNot(SEXP a)
+{
+    int m = LENGTH(a);
+    SEXP ans = allocVector(INTSXP, m);
+    for (int i = 0; i < m; i++)
+        INTEGER(ans)[i] = ~INTEGER(a)[i];
+    return ans;
+}
+
 SEXP bitwiseAnd(SEXP a, SEXP b)
 {
     int m = LENGTH(a), n = LENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
