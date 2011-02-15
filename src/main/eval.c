@@ -3010,14 +3010,31 @@ SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
         Relop2(opval, opsym);                                                                                          \
     } while (0)
 
+static R_INLINE SEXP getPrimitive(SEXP symbol, SEXPTYPE type)
+{
+    SEXP value = SYMVALUE(symbol);
+    if (TYPEOF(value) == PROMSXP)
+    {
+        value = forcePromise(value);
+        SET_NAMED(value, 2);
+    }
+    if (TYPEOF(value) != type)
+    {
+        /* probably means a package redefined the base function so
+           try to get the real thing from the internal table of
+           primitives */
+        value = R_Primitive(CHAR(PRINTNAME(symbol)));
+        if (TYPEOF(value) != type)
+            /* if that doesn't work we signal an error */
+            error(_("\"%s\" is not a %s function"), CHAR(PRINTNAME(symbol)),
+                  type == BUILTINSXP ? "BUILTIN" : "SPECIAL");
+    }
+    return value;
+}
+
 static SEXP cmp_relop(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rho)
 {
-    SEXP op = SYMVALUE(opsym);
-    if (TYPEOF(op) == PROMSXP)
-    {
-        op = forcePromise(op);
-        SET_NAMED(op, 2);
-    }
+    SEXP op = getPrimitive(opsym, BUILTINSXP);
     if (isObject(x) || isObject(y))
     {
         SEXP args, ans;
@@ -3033,8 +3050,9 @@ static SEXP cmp_relop(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rho
     return do_relop_dflt(call, op, x, y);
 }
 
-static SEXP cmp_arith1(SEXP call, SEXP op, SEXP x, SEXP rho)
+static SEXP cmp_arith1(SEXP call, SEXP opsym, SEXP x, SEXP rho)
 {
+    SEXP op = getPrimitive(opsym, BUILTINSXP);
     if (isObject(x))
     {
         SEXP args, ans;
@@ -3052,7 +3070,7 @@ static SEXP cmp_arith1(SEXP call, SEXP op, SEXP x, SEXP rho)
 
 static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rho)
 {
-    SEXP op = SYMVALUE(opsym);
+    SEXP op = getPrimitive(opsym, BUILTINSXP);
     if (TYPEOF(op) == PROMSXP)
     {
         op = forcePromise(op);
@@ -3078,16 +3096,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     {                                                                                                                  \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
         R_BCNodeStackTop[-1] = CONS(R_BCNodeStackTop[-1], R_NilValue);                                                 \
-        R_BCNodeStackTop[-1] = do_fun(call, SYMVALUE(which), R_BCNodeStackTop[-1], rho);                               \
-        NEXT();                                                                                                        \
-    } while (0)
-
-#define NewBuiltin1(do_fun, which, rho)                                                                                \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
-        SEXP x = R_BCNodeStackTop[-1];                                                                                 \
-        R_BCNodeStackTop[-1] = do_fun(call, SYMVALUE(which), x, rho);                                                  \
+        R_BCNodeStackTop[-1] = do_fun(call, getPrimitive(which, BUILTINSXP), R_BCNodeStackTop[-1], rho);               \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -3098,7 +3107,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP tmp = CONS(R_BCNodeStackTop[-1], R_NilValue);                                                             \
         R_BCNodeStackTop[-2] = CONS(R_BCNodeStackTop[-2], tmp);                                                        \
         R_BCNodeStackTop--;                                                                                            \
-        R_BCNodeStackTop[-1] = do_fun(call, SYMVALUE(which), R_BCNodeStackTop[-1], rho);                               \
+        R_BCNodeStackTop[-1] = do_fun(call, getPrimitive(which, BUILTINSXP), R_BCNodeStackTop[-1], rho);               \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -3113,7 +3122,15 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         NEXT();                                                                                                        \
     } while (0)
 
-#define Arith1(which) NewBuiltin1(cmp_arith1, which, rho)
+#define Arith1(opsym)                                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
+        SEXP x = R_BCNodeStackTop[-1];                                                                                 \
+        R_BCNodeStackTop[-1] = cmp_arith1(call, opsym, x, rho);                                                        \
+        NEXT();                                                                                                        \
+    } while (0)
+
 #define Arith2(opval, opsym) NewBuiltin2(cmp_arith2, opval, opsym, rho)
 #define Math1(which) Builtin1(do_math1, which, rho)
 #define Relop2(opval, opsym) NewBuiltin2(cmp_relop, opval, opsym, rho)
@@ -4023,26 +4040,11 @@ static SEXP bcEval(SEXP body, SEXP rho)
         {
             /* get the function */
             SEXP symbol = VECTOR_ELT(constants, GETOP());
-            value = SYMVALUE(symbol);
-            if (TYPEOF(value) == PROMSXP)
-            {
-                value = forcePromise(value);
-                SET_NAMED(value, 2);
-            }
+            value = getPrimitive(symbol, BUILTINSXP);
             if (RTRACE(value))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
-            }
-            if (TYPEOF(value) != BUILTINSXP)
-            {
-                /* probably means a package redefined the base function so
-                   try to get the real thing from the internal table of
-                   primitives */
-                value = R_Primitive(CHAR(PRINTNAME(symbol)));
-                if (TYPEOF(value) != BUILTINSXP)
-                    /* if that doesn't work we signal an error */
-                    error(_("\"%s\" is not a BUILTIN function"), CHAR(PRINTNAME(symbol)));
             }
 
             /* push the function and push space for creating the argument list. */
@@ -4207,28 +4209,13 @@ static SEXP bcEval(SEXP body, SEXP rho)
         {
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP symbol = CAR(call);
-            SEXP fun = SYMVALUE(symbol);
+            SEXP fun = getPrimitive(symbol, SPECIALSXP);
             int flag;
             const void *vmax = vmaxget();
             if (RTRACE(fun))
             {
                 Rprintf("trace: ");
                 PrintValue(symbol);
-            }
-            if (TYPEOF(fun) == PROMSXP)
-            {
-                fun = forcePromise(fun);
-                SET_NAMED(fun, 2);
-            }
-            if (TYPEOF(fun) != SPECIALSXP)
-            {
-                /* probably means a package redefined the base function so
-                   try to get the real thing from the internal table of
-                   primitives */
-                fun = R_Primitive(CHAR(PRINTNAME(symbol)));
-                if (TYPEOF(fun) != SPECIALSXP)
-                    /* if that doesn't work we signal an error */
-                    error(_("\"%s\" is not a SPECIAL function"), CHAR(PRINTNAME(symbol)));
             }
             BCNPUSH(fun); /* for GC protection */
             flag = PRIMPRINT(fun);
