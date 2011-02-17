@@ -687,7 +687,7 @@ static R_size_t R_NodesInUse = 0;
 #define CHECK_FOR_FREE_NODE(s)                                                                                         \
     {                                                                                                                  \
         SEXP cf__n__ = (s);                                                                                            \
-        if (TYPEOF(cf__n__) == FREESXP)                                                                                \
+        if (TYPEOF(cf__n__) == FREESXP && !gc_inhibit_release)                                                         \
             register_bad_sexp_type(cf__n__, __LINE__);                                                                 \
     }
 #else
