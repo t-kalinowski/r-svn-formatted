@@ -547,6 +547,11 @@ void PrintWarnings(void)
 
 static char errbuf[BUFSIZE];
 
+const char *R_curErrorBuf()
+{
+    return (const char *)errbuf;
+}
+
 /* temporary hook to allow experimenting with alternate error mechanisms */
 static void (*R_ErrorHook)(SEXP, char *) = NULL;
 
