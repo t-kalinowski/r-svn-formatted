@@ -3866,9 +3866,10 @@ static SEXP bcEval(SEXP body, SEXP rho)
         goto done;
         OP(DOLOOPNEXT, 0) : findcontext(CTXT_NEXT, rho, R_NilValue);
         OP(DOLOOPBREAK, 0) : findcontext(CTXT_BREAK, rho, R_NilValue);
-        OP(STARTFOR, 2) :
+        OP(STARTFOR, 3) :
         {
             SEXP seq = R_BCNodeStackTop[-1];
+            int callidx = GETOP();
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             int label = GETOP();
 
@@ -3889,7 +3890,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             else if (isList(seq) || isNull(seq))
                 INTEGER(value)[1] = length(seq);
             else
-                error(_("invalid sequence argument in for loop"));
+                errorcall(VECTOR_ELT(constants, callidx), _("invalid for() loop sequence"));
             BCNPUSH(value);
 
             /* bump up NAMED count of seq to avoid modification by loop code */
