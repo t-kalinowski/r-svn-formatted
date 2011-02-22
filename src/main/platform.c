@@ -1500,7 +1500,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (STRING_ELT(fn, i) != NA_STRING)
             {
-                names = filenameToWchar(STRING_ELT(fn, i), FALSE);
+                names = filenameToWchar(STRING_ELT(fn, i), TRUE);
                 // Rprintf("do_unlink(%ls)\n", names);
                 res = dos_wglob(names, GLOB_NOCHECK, NULL, &globbuf);
                 if (res == GLOB_NOSPACE)
@@ -1544,7 +1544,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (STRING_ELT(fn, i) != NA_STRING)
             {
-                names = translateChar(STRING_ELT(fn, i));
+                names = R_ExpandFileName(translateChar(STRING_ELT(fn, i)));
 #if defined(HAVE_GLOB)
                 res = glob(names, GLOB_NOCHECK, NULL, &globbuf);
 #ifdef GLOB_ABORTED
@@ -2346,9 +2346,6 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (recursive == NA_LOGICAL)
             error(_("invalid '%s' argument"), "recursive");
         strncpy(dir, R_ExpandFileName(translateChar(STRING_ELT(to, 0))), PATH_MAX);
-        p = R_ExpandFileName(dir); /* expand target */
-        if (p != dir)
-            strncpy(dir, p, PATH_MAX);
         if (*(dir + (strlen(dir) - 1)) != sep)
             strncat(dir, filesep, PATH_MAX);
         for (i = 0; i < nfiles; i++)
@@ -2356,9 +2353,6 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (STRING_ELT(fn, i) != NA_STRING)
             {
                 strncpy(from, R_ExpandFileName(translateChar(STRING_ELT(fn, i))), PATH_MAX);
-                p = R_ExpandFileName(from); /* expand source */
-                if (p != from)
-                    strncpy(from, p, PATH_MAX);
                 /* If there is a trailing sep, this is a mistake */
                 p = from + (strlen(from) - 1);
                 if (*p == sep)
