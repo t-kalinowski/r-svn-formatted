@@ -137,9 +137,10 @@ FILE *R_fopen(const char *filename, const char *mode)
 
 #if defined(Win32)
 
+#define BSIZE 100000
 wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
 {
-    static wchar_t filename[PATH_MAX + 1];
+    static wchar_t filename[BSIZE + 1];
     void *obj;
     const char *from = "", *inbuf;
     char *outbuf;
@@ -164,14 +165,14 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
         inbuf = CHAR(fn);
 
     inb = strlen(inbuf) + 1;
-    outb = 2 * PATH_MAX + 1;
+    outb = 2 * BSIZE;
     outbuf = (char *)filename;
     res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
     Riconv_close(obj);
-    if (res == -1)
-        error(_("file name conversion problem"));
     if (inb > 0)
         error(_("file name conversion problem -- name too long?"));
+    if (res == -1)
+        error(_("file name conversion problem"));
 
     return filename;
 }
