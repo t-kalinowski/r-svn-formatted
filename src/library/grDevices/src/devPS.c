@@ -6559,11 +6559,13 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
             }
             fprintf(pd->pdffp, "%.3f %.3f %.3f %.3f K\n", c, m, y, k);
         }
-        else if (!streql(pd->colormodel, "rgb"))
-            warning(_("unknown 'colormodel', using 'rgb'"));
-        fprintf(pd->pdffp, "/sRGB CS %.3f %.3f %.3f SCN\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                R_BLUE(color) / 255.0);
-
+        else
+        {
+            if (!streql(pd->colormodel, "rgb"))
+                warning(_("unknown 'colormodel', using 'rgb'"));
+            fprintf(pd->pdffp, "/sRGB CS %.3f %.3f %.3f SCN\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+                    R_BLUE(color) / 255.0);
+        }
         pd->current.col = color;
     }
 }
