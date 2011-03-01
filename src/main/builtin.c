@@ -1073,7 +1073,10 @@ SEXP attribute_hidden do_switch(SEXP call, SEXP op, SEXP args, SEXP rho)
             argval = asInteger(x);
             if (argval != NA_INTEGER && argval >= 1 && argval <= length(w))
             {
-                ans = eval(CAR(nthcdr(w, argval - 1)), rho);
+                SEXP alt = CAR(nthcdr(w, argval - 1));
+                if (alt == R_MissingArg)
+                    error("empty alternative in numeric switch");
+                ans = eval(alt, rho);
                 UNPROTECT(2);
                 return ans;
             }
