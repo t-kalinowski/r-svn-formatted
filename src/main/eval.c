@@ -2956,6 +2956,7 @@ enum
     SWAP_OP,
     DUP2ND_OP,
     SWITCH_OP,
+    RETURNJMP_OP,
     OPCOUNT
 };
 
@@ -4662,6 +4663,11 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 pc = codebase + INTEGER(ioffsets)[which];
             }
             NEXT();
+        }
+        OP(RETURNJMP, 0) :
+        {
+            value = BCNPOP();
+            findcontext(CTXT_BROWSER | CTXT_FUNCTION, rho, value);
         }
         LASTOP;
     }
