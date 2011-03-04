@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 
     p = getenv("RHOME");
 #ifdef WIN32
-    if (p && strlen(p))
+    if (p && *p)
         snprintf(cmd, PATH_MAX + 1, "%s\\%s\\Rterm.exe", p, BINDIR);
     else
     {
@@ -140,9 +140,9 @@ int main(int argc, char *argv[])
         snprintf(cmd, PATH_MAX + 1, "%s\\Rterm.exe", rhome);
     }
 #else
-    if (!(p && strlen(p)))
+    if (!(p && *p))
         p = rhome;
-    /* we cannot assume snprintf here */
+    /* avoid snprintf here */
     if (strlen(p) + 6 > PATH_MAX)
     {
         fprintf(stderr, "impossibly long path for RHOME\n");

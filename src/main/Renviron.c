@@ -288,9 +288,10 @@ void process_site_Renviron()
 {
     char buf[PATH_MAX], *p = getenv("R_ENVIRON");
 
-    if (p && strlen(p))
+    if (p)
     {
-        process_Renviron(p);
+        if (*p)
+            process_Renviron(p);
         return;
     }
 #ifdef R_ARCH
@@ -322,9 +323,10 @@ void process_user_Renviron()
 {
     const char *s = getenv("R_ENVIRON_USER");
 
-    if (s && strlen(s))
+    if (s)
     {
-        process_Renviron(R_ExpandFileName(s));
+        if (*s)
+            process_Renviron(R_ExpandFileName(s));
         return;
     }
 
