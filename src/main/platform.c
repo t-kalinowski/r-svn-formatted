@@ -2400,9 +2400,12 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 static int do_copy(const char *from, const char *name, const char *to, int over, int recursive, int perms)
 {
     struct stat sb;
-    int nc, nfail = 0, res;
+    int nc, nfail = 0, res, mask, um;
     char dest[PATH_MAX], this[PATH_MAX];
 
+    um = umask(0);
+    umask(um);
+    mask = 0777 & ~um;
     /* REprintf("from: %s, name: %s, to: %s\n", from, name, to); */
     snprintf(this, PATH_MAX, "%s%s", from, name);
     stat(this, &sb);
@@ -2416,7 +2419,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             return 1;
         nc = strlen(to);
         snprintf(dest, PATH_MAX, "%s%s", to, name);
-        res = mkdir(dest, perms ? (sb.st_mode & 0777) : 0755);
+        res = mkdir(dest, perms ? (sb.st_mode & mask) : mask);
         if (res && errno != EEXIST)
             return 1;
         strcat(dest, "/");
@@ -2462,7 +2465,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
         if (fp1)
             fclose(fp1);
         if (perms)
-            chmod(dest, sb.st_mode & 0777);
+            chmod(dest, sb.st_mode & mask);
     }
     return nfail;
 }
@@ -2629,11 +2632,16 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         res = umask(0);
         umask(res);
+        R_Visible = TRUE;
     }
     else
+    {
         res = umask(mode);
+        R_Visible = FALSE;
+    }
 #else
     warning(_("insufficient OS support on this platform"));
+    R_Visible = FALSE;
 #endif
     PROTECT(ans = ScalarInteger(res));
     setAttrib(ans, R_ClassSymbol, mkString("octmode"));
