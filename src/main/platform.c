@@ -2275,6 +2275,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             return 1;
         nc = wcslen(to);
         wsprintfW(dest, L"%ls%ls", to, name);
+        /* We could set the mode (only the 200 part matters) later */
         res = _wmkdir(dest);
         if (res && errno != EEXIST)
             return 1;
@@ -2320,6 +2321,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             fclose(fp2);
         if (fp1)
             fclose(fp1);
+        /* FIXME: perhaps manipulate mode as we do in Sys.chmod? */
         if (perms)
             _wchmod(dest, sb.st_mode & 0777);
     }
@@ -2423,6 +2425,10 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             return 1;
         nc = strlen(to);
         snprintf(dest, PATH_MAX, "%s%s", to, name);
+        /* FIXME: we might perhaps want to be cleverer here.
+           If a directory does not have write permission for the user,
+           this will fail to create files in that directory, so maybe
+           defer setting mode? */
         res = mkdir(dest, perms ? (sb.st_mode & mask) : mask);
         if (res && errno != EEXIST)
             return 1;
@@ -2587,8 +2593,9 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
         if (mode == NA_INTEGER)
             mode = 0777;
 #ifdef Win32
-        /* Windows' _chmod seems only to support read access
-           or read-write access */
+        /* Windows' _[w]chmod seems only to support read access
+           or read-write access.  _S_IWRITE is 0200.
+        */
         mode = (mode & 0200) ? (_S_IWRITE | _S_IREAD) : _S_IREAD;
 #endif
         if (STRING_ELT(paths, i) != NA_STRING)
