@@ -2278,7 +2278,10 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
         /* We could set the mode (only the 200 part matters) later */
         res = _wmkdir(dest);
         if (res && errno != EEXIST)
+        {
+            warning(_("problem creating directory %s: %s"), this, strerror(errno));
             return 1;
+        }
         // NB Windows' mkdir appears to require \ not /.
         wcscat(dest, L"\\");
         if ((dir = _wopendir(this)) != NULL)
@@ -2293,7 +2296,10 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             _wclosedir(dir);
         }
         else
+        {
+            warning(_("problem reading dir %s: %s"), this, strerror(errno));
             nfail++; /* we were unable to read a dir */
+        }
     }
     else
     { /* a file */
@@ -2305,25 +2311,32 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
         wsprintfW(dest, L"%ls%ls", to, name);
         if (over || !R_WFileExists(dest))
         { /* FIXME */
-            if ((fp1 = _wfopen(this, L"rb")) == NULL)
+            if ((fp1 = _wfopen(this, L"rb")) == NULL || (fp2 = _wfopen(dest, L"wb")) == NULL)
+            {
+                warning(_("problem copying %s to %s: %s"), this, dest, strerror(errno));
+                nfail++;
                 goto copy_error;
-            if ((fp2 = _wfopen(dest, L"wb")) == NULL)
-                goto copy_error;
+            }
             while ((nc = fread(buf, 1, APPENDBUFSIZE, fp1)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp2) != APPENDBUFSIZE)
+                {
+                    nfail++;
                     goto copy_error;
+                }
             if (fwrite(buf, 1, nc, fp2) != nc)
+            {
+                nfail++;
                 goto copy_error;
-            nfail = 0;
+            }
         }
+        /* FIXME: perhaps manipulate mode as we do in Sys.chmod? */
+        if (perms)
+            _wchmod(dest, sb.st_mode & 0777);
     copy_error:
         if (fp2)
             fclose(fp2);
         if (fp1)
             fclose(fp1);
-        /* FIXME: perhaps manipulate mode as we do in Sys.chmod? */
-        if (perms)
-            _wchmod(dest, sb.st_mode & 0777);
     }
     return nfail;
 }
@@ -2425,13 +2438,15 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             return 1;
         nc = strlen(to);
         snprintf(dest, PATH_MAX, "%s%s", to, name);
-        /* FIXME: we might perhaps want to be cleverer here.
-           If a directory does not have write permission for the user,
-           this will fail to create files in that directory, so maybe
-           defer setting mode? */
-        res = mkdir(dest, perms ? (sb.st_mode & mask) : mask);
+        /* If a directory does not have write permission for the user,
+           we will fail to create files in that directory, so defer
+           setting mode */
+        res = mkdir(dest, 0700);
         if (res && errno != EEXIST)
+        {
+            warning(_("problem creating directory %s: %s"), this, strerror(errno));
             return 1;
+        }
         strcat(dest, "/");
         if ((dir = opendir(this)) != NULL)
         {
@@ -2445,7 +2460,11 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             closedir(dir);
         }
         else
+        {
+            warning(_("problem reading directory %s: %s"), this, strerror(errno));
             nfail++; /* we were unable to read a dir */
+        }
+        chmod(dest, perms ? (sb.st_mode & mask) : mask);
     }
     else
     { /* a file */
@@ -2458,24 +2477,31 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
         if (over || !R_FileExists(dest))
         {
             /* REprintf("copying %s to %s\n", this, dest); */
-            if ((fp1 = R_fopen(this, "rb")) == NULL)
+            if ((fp1 = R_fopen(this, "rb")) == NULL || (fp2 = R_fopen(dest, "wb")) == NULL)
+            {
+                warning(_("problem copying %s to %s: %s"), this, dest, strerror(errno));
+                nfail++;
                 goto copy_error;
-            if ((fp2 = R_fopen(dest, "wb")) == NULL)
-                goto copy_error;
+            }
             while ((nc = fread(buf, 1, APPENDBUFSIZE, fp1)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp2) != APPENDBUFSIZE)
+                {
+                    nfail++;
                     goto copy_error;
+                }
             if (fwrite(buf, 1, nc, fp2) != nc)
+            {
+                nfail++;
                 goto copy_error;
-            nfail = 0;
+            }
         }
+        if (perms)
+            chmod(dest, sb.st_mode & mask);
     copy_error:
         if (fp2)
             fclose(fp2);
         if (fp1)
             fclose(fp1);
-        if (perms)
-            chmod(dest, sb.st_mode & mask);
     }
     return nfail;
 }
