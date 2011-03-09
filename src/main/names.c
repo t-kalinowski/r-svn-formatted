@@ -926,6 +926,7 @@ attribute_hidden FUNTAB R_FunTab[] = {
     {"putconst", do_putconst, 0, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
     {"getconst", do_getconst, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
     {"enableJIT", do_enablejit, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
+    {"compilePKGS", do_compilepkgs, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
 #endif
 
     {"setNumMathThreads", do_setnumthreads, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
