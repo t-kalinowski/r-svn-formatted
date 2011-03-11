@@ -214,11 +214,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
 #ifdef SHELL_ESCAPE /* not default */
     if (*state->bufp == '!')
     {
-#ifdef HAVE_SYSTEM
         R_system(&(state->buf[1]));
-#else
-        REprintf(_("error: system commands are not supported in this version of R.\n"));
-#endif /* HAVE_SYSTEM */
         state->buf[0] = '\0';
         return (0);
     }
