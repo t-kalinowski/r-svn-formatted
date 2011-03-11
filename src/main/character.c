@@ -228,7 +228,7 @@ static void substr(char *buf, const char *str, int ienc, int sa, int so)
                 *buf++ = *str++;
         }
     }
-    else if (ienc == CE_LATIN1)
+    else if (ienc == CE_LATIN1 || ienc == CE_BYTES)
     {
         for (str += (sa - 1), i = sa; i <= so; i++)
             *buf++ = *str++;
@@ -335,7 +335,7 @@ static void substrset(char *buf, const char *const str, cetype_t ienc, int sa, i
             memmove(buf + in, buf + out, strlen(buf + out) + 1);
         memcpy(buf, str, in);
     }
-    else if (ienc == CE_LATIN1)
+    else if (ienc == CE_LATIN1 || ienc == CE_BYTES)
     {
         in = strlen(str);
         out = so - sa + 1;

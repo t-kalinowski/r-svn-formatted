@@ -1470,6 +1470,8 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
                     enc = CE_UTF8;
                 else if (levs & LATIN1_MASK)
                     enc = CE_LATIN1;
+                else if (levs & BYTES_MASK)
+                    enc = CE_BYTES;
                 PROTECT(s = mkCharLenCE(cbuf, length, enc));
             }
             else
@@ -1481,6 +1483,8 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
                     enc = CE_UTF8;
                 else if (levs & LATIN1_MASK)
                     enc = CE_LATIN1;
+                else if (levs & BYTES_MASK)
+                    enc = CE_BYTES;
                 PROTECT(s = mkCharLenCE(cbuf, length, enc));
                 Free(cbuf);
             }
