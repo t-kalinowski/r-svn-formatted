@@ -134,7 +134,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     wchar_t *wpt = NULL;
     const char *buf, *split = "", *bufp;
     const unsigned char *tables = NULL;
-    Rboolean use_UTF8 = FALSE;
+    Rboolean use_UTF8 = FALSE, haveBytes = FALSE;
     const void *vmax, *vmax2;
 
     checkArity(op, args);
@@ -174,22 +174,43 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!useBytes)
     {
-        if (perl_opt && mbcslocale)
-            use_UTF8 = TRUE;
-        if (!use_UTF8)
-            for (i = 0; i < tlen; i++)
-                if (getCharCE(STRING_ELT(tok, i)) == CE_UTF8)
-                {
-                    use_UTF8 = TRUE;
-                    break;
-                }
-        if (!use_UTF8)
+        for (i = 0; i < tlen; i++)
+            if (getCharCE(STRING_ELT(tok, i)) == CE_BYTES)
+            {
+                haveBytes = TRUE;
+                break;
+            }
+        if (!haveBytes)
             for (i = 0; i < len; i++)
-                if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
+                if (getCharCE(STRING_ELT(x, i)) == CE_BYTES)
                 {
-                    use_UTF8 = TRUE;
+                    haveBytes = TRUE;
                     break;
                 }
+        if (haveBytes)
+        {
+            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
+            useBytes = TRUE;
+        }
+        else
+        {
+            if (perl_opt && mbcslocale)
+                use_UTF8 = TRUE;
+            if (!use_UTF8)
+                for (i = 0; i < tlen; i++)
+                    if (getCharCE(STRING_ELT(tok, i)) == CE_UTF8)
+                    {
+                        use_UTF8 = TRUE;
+                        break;
+                    }
+            if (!use_UTF8)
+                for (i = 0; i < len; i++)
+                    if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
+                    {
+                        use_UTF8 = TRUE;
+                        break;
+                    }
+        }
     }
 
     /* group by token for efficiency with PCRE/TRE versions */
@@ -846,7 +867,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
     const unsigned char *tables = NULL /* -Wall */;
-    Rboolean use_UTF8 = FALSE, use_WC = FALSE;
+    Rboolean use_UTF8 = FALSE, use_WC = FALSE, haveBytes = FALSE;
     const void *vmax;
 
     checkArity(op, args);
@@ -927,7 +948,22 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
         useBytes = onlyASCII;
     }
-
+    if (!useBytes)
+    {
+        haveBytes = IS_BYTES(STRING_ELT(pat, 0));
+        if (!haveBytes)
+            for (i = 0; i < n; i++)
+                if (IS_BYTES(STRING_ELT(text, i)))
+                {
+                    haveBytes = TRUE;
+                    break;
+                }
+        if (haveBytes)
+        {
+            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
+            useBytes = TRUE;
+        }
+    }
     if (!useBytes)
     {
         /* As from R 2.10.0 we use UTF-8 mode in PCRE in all MBCS locales */
