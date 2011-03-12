@@ -867,7 +867,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
     const unsigned char *tables = NULL /* -Wall */;
-    Rboolean use_UTF8 = FALSE, use_WC = FALSE, haveBytes = FALSE;
+    Rboolean use_UTF8 = FALSE, use_WC = FALSE;
     const void *vmax;
 
     checkArity(op, args);
@@ -950,7 +950,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (!useBytes)
     {
-        haveBytes = IS_BYTES(STRING_ELT(pat, 0));
+        Rboolean haveBytes = IS_BYTES(STRING_ELT(pat, 0));
         if (!haveBytes)
             for (i = 0; i < n; i++)
                 if (IS_BYTES(STRING_ELT(text, i)))
