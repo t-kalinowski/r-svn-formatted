@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000, 2003 The R Development Core Team
+ *  Copyright (C) 2000, 2003, 2011 The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -123,18 +123,17 @@ double log1p(double x)
 }
 #endif
 
+#ifndef HAVE_HYPOT
 /* Used as a substitute for the C99 function hypot, which all currently
    known platforms have */
 
-/* pythag(a,b)	finds sqrt(a^2 + b^2)
+/* hypot(a,b)	finds sqrt(a^2 + b^2)
  *		without overflow or destructive underflow.
  */
 
-double pythag(double a, double b)
+double hypot(double a, double b)
 {
-#ifndef HAVE_HYPOT
     double p, r, s, t, tmp, u;
-#endif
 
     if (ISNAN(a) || ISNAN(b)) /* propagate Na(N)s: */
         return
@@ -147,9 +146,6 @@ double pythag(double a, double b)
     {
         return ML_POSINF;
     }
-#ifdef HAVE_HYPOT
-    return hypot(a, b);
-#else
     p = fmax2(fabs(a), fabs(b));
     if (p != 0.0)
     {
@@ -174,5 +170,5 @@ double pythag(double a, double b)
         }
     }
     return p;
-#endif
 }
+#endif

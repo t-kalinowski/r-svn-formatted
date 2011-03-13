@@ -1612,10 +1612,6 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     return at;
 } /* do_axis */
 
-#ifndef HAVE_HYPOT
-#define hypot pythag
-#endif
-
 SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*	plot.xy(xy, type, pch, lty, col, bg, cex, lwd, ...)
