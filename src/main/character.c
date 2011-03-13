@@ -161,7 +161,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else if (IS_BYTES(sxi))
             {
-                if (!allowNA && nc < 0)
+                if (!allowNA) /* could do chars 0 */
                     error(_("number of characters is not computable for element %d in \"bytes\" encoding"), i + 1);
                 INTEGER(s)[i] = NA_INTEGER;
             }
@@ -191,7 +191,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else if (IS_BYTES(sxi))
             {
-                if (!allowNA && nc < 0)
+                if (!allowNA) /* could do width 0 */
                     error(_("width is not computable for element %d in \"bytes\" encoding"), i + 1);
                 INTEGER(s)[i] = NA_INTEGER;
             }
