@@ -172,8 +172,3 @@ double hypot(double a, double b)
     return p;
 }
 #endif
-
-double pythag(double a, double b)
-{
-    return hypot(a, b);
-}
