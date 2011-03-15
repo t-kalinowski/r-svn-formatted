@@ -750,6 +750,7 @@ static SEXP DataLoad(FILE *fp, int startup, InputRoutines *m, int version, SaveL
         node.OldOffset[j] = m->InInteger(fp, d);
     }
 
+    /* FIXME: could arrange to use 64-bit versions of f[gs]etpos on Windows */
     /* save the file position */
     if (fgetpos(fp, &savepos))
         RestoreError(_("cannot save file position while restoring data"), startup);
