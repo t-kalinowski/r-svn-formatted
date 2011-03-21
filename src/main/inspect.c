@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2009,2010 The R Development Core Team.
+ *  Copyright (C) 2009,2011 The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ static const char *typename(SEXP v)
    the recursion behavior (0 = no recursion, -1 = [sort of] unlimited
    recursion, positive numbers define the maximum recursion depth)
    and pvec is the max. number of vector elements to show  */
-static void inspect(int pre, SEXP v, int deep, int pvec)
+static void inspect_tree(int pre, SEXP v, int deep, int pvec)
 {
     int a = 0;
     pp(pre);
@@ -251,7 +251,7 @@ static void inspect(int pre, SEXP v, int deep, int pvec)
             unsigned int i = 0;
             while (i < LENGTH(v) && i < pvec)
             {
-                inspect(pre + 2, VECTOR_ELT(v, i), deep - 1, pvec);
+                inspect_tree(pre + 2, VECTOR_ELT(v, i), deep - 1, pvec);
                 i++;
             }
             if (i < LENGTH(v))
@@ -265,7 +265,7 @@ static void inspect(int pre, SEXP v, int deep, int pvec)
             unsigned int i = 0;
             while (i < LENGTH(v) && i < pvec)
             {
-                inspect(pre + 2, STRING_ELT(v, i), deep - 1, pvec);
+                inspect_tree(pre + 2, STRING_ELT(v, i), deep - 1, pvec);
                 i++;
             }
             if (i < LENGTH(v))
@@ -285,9 +285,9 @@ static void inspect(int pre, SEXP v, int deep, int pvec)
                     pp(pre + 2);
                     Rprintf(
                         "TAG: "); /* TAG should be a one-liner since it's a symbol so we don't put it on an extra line*/
-                    inspect(0, TAG(lc), deep - 1, pvec);
+                    inspect_tree(0, TAG(lc), deep - 1, pvec);
                 }
-                inspect(pre + 2, CAR(lc), deep - 1, pvec);
+                inspect_tree(pre + 2, CAR(lc), deep - 1, pvec);
                 lc = CDR(lc);
             }
         }
@@ -295,25 +295,25 @@ static void inspect(int pre, SEXP v, int deep, int pvec)
         case ENVSXP:
             pp(pre);
             Rprintf("FRAME:\n");
-            inspect(pre + 2, FRAME(v), deep - 1, pvec);
+            inspect_tree(pre + 2, FRAME(v), deep - 1, pvec);
             pp(pre);
             Rprintf("ENCLOS:\n");
-            inspect(pre + 2, ENCLOS(v), 0, pvec);
+            inspect_tree(pre + 2, ENCLOS(v), 0, pvec);
             pp(pre);
             Rprintf("HASHTAB:\n");
-            inspect(pre + 2, HASHTAB(v), deep - 1, pvec);
+            inspect_tree(pre + 2, HASHTAB(v), deep - 1, pvec);
             break;
 
         case CLOSXP:
             pp(pre);
             Rprintf("FORMALS:\n");
-            inspect(pre + 2, FORMALS(v), deep - 1, pvec);
+            inspect_tree(pre + 2, FORMALS(v), deep - 1, pvec);
             pp(pre);
             Rprintf("BODY:\n");
-            inspect(pre + 2, BODY(v), deep - 1, pvec);
+            inspect_tree(pre + 2, BODY(v), deep - 1, pvec);
             pp(pre);
             Rprintf("CLOENV:\n");
-            inspect(pre + 2, CLOENV(v), 0, pvec);
+            inspect_tree(pre + 2, CLOENV(v), 0, pvec);
             break;
         }
 
@@ -321,7 +321,7 @@ static void inspect(int pre, SEXP v, int deep, int pvec)
     {
         pp(pre);
         Rprintf("ATTRIB:\n");
-        inspect(pre + 2, ATTRIB(v), deep, pvec);
+        inspect_tree(pre + 2, ATTRIB(v), deep, pvec);
     }
 }
 
@@ -340,6 +340,20 @@ SEXP attribute_hidden do_inspect(SEXP call, SEXP op, SEXP args, SEXP env)
             pvec = asInteger(CADDR(args));
     }
 
-    inspect(0, CAR(args), deep, pvec);
+    inspect_tree(0, CAR(args), deep, pvec);
     return obj;
+}
+
+/* the following functions can be use internally and for debugging purposes -
+   so far they are not used in any actual code */
+SEXP attribute_hidden inspect(SEXP x)
+{
+    inspect_tree(0, x, -1, 5);
+    return x;
+}
+
+SEXP attribute_hidden inspect3(SEXP x, int deep, int pvec)
+{
+    inspect_tree(0, x, deep, pvec);
+    return x;
 }
