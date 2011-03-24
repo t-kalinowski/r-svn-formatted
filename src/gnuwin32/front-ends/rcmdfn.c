@@ -515,9 +515,8 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else if (!strcmp(argv[cmdarg], "Sweave"))
     {
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e \"utils:::.Sweave('%s')\"", getRHOME(3), BINDIR,
-                 argv[cmdarg + 1]);
-        return (system(cmd));
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e utils:::.Sweave() --args ", getRHOME(3), BINDIR);
+        PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Stangle"))
     {
