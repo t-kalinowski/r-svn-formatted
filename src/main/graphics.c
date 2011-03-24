@@ -3645,8 +3645,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
             /*	    line = line + 1 - gpptr(dd)->yLineBias;
                 angle = 0;
                 yadj = NA_REAL; */
-            // line += (1/gpptr(dd)->mex)*(1 - dd->dev->yLineBias);
-            line += 1 / gpptr(dd)->mex;
+            line += (1 / gpptr(dd)->mex) * (1 - dd->dev->yLineBias);
             angle = 0;
         }
         break;
@@ -3662,7 +3661,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
                 yadj = NA_REAL; */
             /* The following line is needed for symmetry with plain text
                but changes existing output */
-            // line += (1/gpptr(dd)->mex)*dd->dev->yLineBias;
+            line += (1 / gpptr(dd)->mex) * dd->dev->yLineBias;
             angle = 90;
         }
         break;
@@ -3678,7 +3677,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
              yadj = NA_REAL; */
             /* The following line is needed for symmetry with plain text
                but changes existing output */
-            // line += (1/gpptr(dd)->mex)*dd->dev->yLineBias;
+            line += (1 / gpptr(dd)->mex) * dd->dev->yLineBias;
             angle = 0;
         }
         break;
@@ -3692,8 +3691,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
             /*   line = line + 1 - gpptr(dd)->yLineBias;
              angle = 90;
              yadj = NA_REAL; */
-            // line += (1/gpptr(dd)->mex)*(1 - dd->dev->yLineBias);
-            line += 1 / gpptr(dd)->mex;
+            line += (1 / gpptr(dd)->mex) * (1 - dd->dev->yLineBias);
             angle = 90;
         }
         break;
