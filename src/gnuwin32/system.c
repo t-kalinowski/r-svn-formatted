@@ -732,6 +732,9 @@ void R_SetWin32(Rstart Rp)
     if (strlen(R_Home) >= MAX_PATH)
         R_Suicide("Invalid R_HOME");
     sprintf(RHome, "R_HOME=%s", R_Home);
+    for (char *p = RHome; *p; p++)
+        if (*p == '\\')
+            *p = '/';
     putenv(RHome);
     strcpy(UserRHome, "R_USER=");
     strcat(UserRHome, Rp->home);
