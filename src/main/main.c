@@ -841,7 +841,6 @@ void setup_Rmainloop(void)
     InitGraphics();
     R_Is_Running = 1;
     R_check_locale();
-    /* gc_inhibit_torture = 0; */
 
     /* Initialize the global context for error handling. */
     /* This provides a target for any non-local gotos */
@@ -1010,7 +1009,6 @@ void setup_Rmainloop(void)
         }
         UNPROTECT(1);
     }
-    /* gc_inhibit_torture = 0; */
     {
         int i;
         for (i = 0; i < ndeferred_warnings; i++)

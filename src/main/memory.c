@@ -232,13 +232,8 @@ static const char *sexptype2char(SEXPTYPE type)
 }
 
 #define GC_TORTURE
-#define NEW_GC_TORTURE
 
 #ifdef GC_TORTURE
-#ifdef NEW_GC_TORTURE
-/* **** if this becomes default should remove the public
- **** gc_inhibit_torture variable from Defn.h and any references to
- **** it elsewhere */
 /* **** if the user specified a wait before starting to force
  **** collecitons it might make sense to also wait before starting
  **** to inhibit releases */
@@ -246,9 +241,6 @@ static int gc_force_wait = 0;
 static int gc_force_gap = 0;
 static Rboolean gc_inhibit_release = FALSE;
 #define FORCE_GC (gc_force_wait > 0 ? (--gc_force_wait > 0 ? 0 : (gc_force_wait = gc_force_gap, 1)) : 0)
-#else
-#define FORCE_GC !gc_inhibit_torture
-#endif
 #else
 #define FORCE_GC 0
 #endif
@@ -260,7 +252,6 @@ static void R_ReportNewPage();
 
 extern SEXP framenames;
 
-#ifdef NEW_GC_TORTURE
 #define GC_PROT(X)                                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -272,15 +263,6 @@ extern SEXP framenames;
         gc_force_gap = __gap__;                                                                                        \
         gc_inhibit_release = __release__;                                                                              \
     } while (0)
-#else
-#define GC_PROT(X)                                                                                                     \
-    {                                                                                                                  \
-        int __t = gc_inhibit_torture;                                                                                  \
-        gc_inhibit_torture = 1;                                                                                        \
-        X;                                                                                                             \
-        gc_inhibit_torture = __t;                                                                                      \
-    }
-#endif
 
 static void R_gc_internal(R_size_t size_needed);
 static void R_gc_full(R_size_t size_needed);
@@ -1805,7 +1787,6 @@ again:
     }
 }
 
-#ifdef NEW_GC_TORTURE
 /* public interface for controlling GC torture settings */
 void R_gc_torture(int gap, int wait, Rboolean inhibit)
 {
@@ -1898,19 +1879,6 @@ static void init_gctorture(void)
         }
     }
 }
-#else
-SEXP attribute_hidden do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    int i;
-    SEXP old = ScalarLogical(!gc_inhibit_torture);
-
-    checkArity(op, args);
-    i = asLogical(CAR(args));
-    if (i != NA_LOGICAL)
-        gc_inhibit_torture = !i;
-    return old;
-}
-#endif
 
 SEXP attribute_hidden do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -1998,9 +1966,7 @@ void attribute_hidden InitMemory()
     int i;
     int gen;
 
-#ifdef NEW_GC_TORTURE
     init_gctorture();
-#endif
 
     gc_reporting = R_Verbose;
     R_StandardPPStackSize = R_PPStackSize;
