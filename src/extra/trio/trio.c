@@ -1270,6 +1270,7 @@ TRIO_PRIVATE trio_long_double_t TrioLogarithm TRIO_ARGS2((number, base), trio_lo
  * TrioLogarithmBase
  */
 #if TRIO_FEATURE_FLOAT
+#if TRIO_FEATURE_ROUNDING
 TRIO_PRIVATE double TrioLogarithmBase TRIO_ARGS1((base), int base)
 {
     switch (base)
@@ -1286,6 +1287,7 @@ TRIO_PRIVATE double TrioLogarithmBase TRIO_ARGS1((base), int base)
         return TrioLogarithm((double)base, 2);
     }
 }
+#endif
 #endif /* TRIO_FEATURE_FLOAT */
 
 /*************************************************************************
