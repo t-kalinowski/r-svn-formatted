@@ -3621,7 +3621,7 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
 
     dd->xCharOffset = 0.50;
     dd->yCharOffset = 0.40;
-    dd->yLineBias = 0.1;
+    dd->yLineBias = 0.2;
 
     /* Inches per raster unit */
 
