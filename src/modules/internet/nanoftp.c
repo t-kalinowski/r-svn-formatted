@@ -853,7 +853,7 @@ static int RxmlNanoFTPQuit(void *ctx)
 {
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
-    int len, res;
+    int len;
 
     if ((ctxt == NULL) || (ctxt->controlFd < 0))
         return (-1);
@@ -861,7 +861,7 @@ static int RxmlNanoFTPQuit(void *ctx)
     snprintf(buf, sizeof(buf), "QUIT\r\n");
     len = strlen(buf);
     RxmlMessage(0, "%s", buf);
-    res = send(ctxt->controlFd, buf, len, 0);
+    send(ctxt->controlFd, buf, len, 0);
     return (0);
 }
 
