@@ -1,8 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2009  Robert Gentleman, Ross Ihaka and the
- *			      R Development Core Team
+ *  Copyright (C) 1997--2011  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2712,7 +2711,7 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
 
     dd->xCharOffset = 0.4900;
     dd->yCharOffset = 0.3333;
-    dd->yLineBias = 0.1;
+    dd->yLineBias = 0.2;
 
     /* Device capabilities */
 
@@ -3396,7 +3395,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     xd->lwdscale = res0 / 96.0;
     dd->xCharOffset = 0.4900;
     dd->yCharOffset = 0.3333;
-    dd->yLineBias = 0.1;
+    dd->yLineBias = 0.2;
     dd->canClip = TRUE;
     dd->canHAdj = 2;
     dd->canChangeGamma = FALSE;

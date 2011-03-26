@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2004-8  The R Development Core Team
+ *  Copyright (C) 2004-11  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ static Rboolean nullDeviceDriver(pDevDesc dev)
     dev->cra[1] = 12;
     dev->xCharOffset = 0.4900;
     dev->yCharOffset = 0.3333;
-    dev->yLineBias = 0.1;
+    dev->yLineBias = 0.2;
     dev->ipr[0] = 1.0 / 72;
     dev->ipr[1] = 1.0 / 72;
     /*
