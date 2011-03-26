@@ -2512,9 +2512,10 @@ static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean use
 
    Toby Dylan Hocking 2011-03-10
 */
-static int ovector_extract_start_length(Rboolean use_UTF8, int *ovector, int *mptr, int *lenptr, const char *string)
+static Rboolean ovector_extract_start_length(Rboolean use_UTF8, int *ovector, int *mptr, int *lenptr,
+                                             const char *string)
 {
-    int foundAll = 0;
+    Rboolean foundAll = FALSE;
     int st = ovector[0];
     *mptr = st + 1; /* index from one */
     *lenptr = ovector[1] - st;
@@ -2527,14 +2528,14 @@ static int ovector_extract_start_length(Rboolean use_UTF8, int *ovector, int *mp
             if (*mptr <= 0)
             { /* an invalid string */
                 *mptr = NA_INTEGER;
-                foundAll = 1; /* if we get here, we are done */
+                foundAll = TRUE; /* if we get here, we are done */
             }
         }
         *lenptr = getNc(string + st, *lenptr);
         if (*lenptr < 0)
         { /* an invalid string */
             *lenptr = NA_INTEGER;
-            foundAll = 1;
+            foundAll = TRUE;
         }
     }
     return foundAll;
@@ -2548,16 +2549,15 @@ static int ovector_extract_start_length(Rboolean use_UTF8, int *ovector, int *mp
    the 2.
 
    Toby Dylan Hocking 2011-03-10 */
-static int extract_match_and_groups(Rboolean use_UTF8, int *ovector, int capture_count, int *mptr, int *lenptr,
-                                    int *cptr, int *clenptr, const char *string, int capture_stride)
+static Rboolean extract_match_and_groups(Rboolean use_UTF8, int *ovector, int capture_count, int *mptr, int *lenptr,
+                                         int *cptr, int *clenptr, const char *string, int capture_stride)
 {
-    int foundAll = ovector_extract_start_length(use_UTF8, ovector, mptr, lenptr, string);
+    Rboolean foundAll = ovector_extract_start_length(use_UTF8, ovector, mptr, lenptr, string);
     /* also extract capture locations */
-    int ind, capture_num;
-    for (capture_num = 0; capture_num < capture_count; capture_num++)
+    for (int i = 0; i < capture_count; i++)
     {
-        ind = capture_stride * capture_num;
-        ovector_extract_start_length(use_UTF8, ovector + 2 * (capture_num + 1), cptr + ind, clenptr + ind, string);
+        int ind = capture_stride * i;
+        ovector_extract_start_length(use_UTF8, ovector + 2 * (i + 1), cptr + ind, clenptr + ind, string);
     }
     return foundAll;
 }
@@ -2565,19 +2565,18 @@ static int extract_match_and_groups(Rboolean use_UTF8, int *ovector, int capture
 static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre, pcre_extra *re_pe, Rboolean useBytes,
                           Rboolean use_UTF8, int *ovector, int ovector_size, int capture_count, SEXP capture_names)
 {
-    int matchIndex = -1, foundAll = 0, foundAny = 0, j, start = 0;
+    Rboolean foundAll = FALSE, foundAny = FALSE;
+    int matchIndex = -1, start = 0;
     SEXP ans, matchlen; /* return vect and its attribute */
-    SEXP capture = R_NilValue, capturelen = R_NilValue, capturebuf = R_NilValue, capturelenbuf = R_NilValue; /* -Wall */
+    SEXP capturebuf, capturelenbuf;
     SEXP matchbuf, matchlenbuf; /* buffers for storing multiple matches */
     int bufsize = 1024;         /* starting size for buffers */
-    int capture_num;            /* counter for capture groups */
-    if (capture_count)
-    {
-        PROTECT(capturelenbuf = allocVector(INTSXP, bufsize * capture_count));
-        PROTECT(capturebuf = allocVector(INTSXP, bufsize * capture_count));
-    }
-    PROTECT(matchbuf = allocVector(INTSXP, bufsize));
-    PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
+    PROTECT_INDEX cb, clb, mb, mlb;
+
+    PROTECT_WITH_INDEX(capturebuf = allocVector(INTSXP, bufsize * capture_count), &cb);
+    PROTECT_WITH_INDEX(capturelenbuf = allocVector(INTSXP, bufsize * capture_count), &clb);
+    PROTECT_WITH_INDEX(matchbuf = allocVector(INTSXP, bufsize), &mb);
+    PROTECT_WITH_INDEX(matchlenbuf = allocVector(INTSXP, bufsize), &mlb);
     while (!foundAll)
     {
         int rc, slen = strlen(string);
@@ -2589,48 +2588,31 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
                 /* Reallocate match buffers */
                 int newbufsize = bufsize * 2;
                 SEXP tmp;
-                tmp = allocVector(INTSXP, 2 * bufsize);
-                for (j = 0; j < bufsize; j++)
+                tmp = allocVector(INTSXP, newbufsize);
+                for (int j = 0; j < bufsize; j++) /* or use memcpy */
                     INTEGER(tmp)[j] = INTEGER(matchlenbuf)[j];
-                UNPROTECT(1);
-                matchlenbuf = tmp;
-                PROTECT(matchlenbuf);
-                tmp = allocVector(INTSXP, 2 * bufsize);
-                for (j = 0; j < bufsize; j++)
+                REPROTECT(matchlenbuf = tmp, mlb);
+                tmp = allocVector(INTSXP, newbufsize);
+                for (int j = 0; j < bufsize; j++) /* or use memcpy */
                     INTEGER(tmp)[j] = INTEGER(matchbuf)[j];
-                matchbuf = tmp;
-                UNPROTECT(2);
-                PROTECT(matchbuf);
-                PROTECT(matchlenbuf);
+                REPROTECT(matchbuf = tmp, mb);
                 if (capture_count)
                 {
-                    tmp = allocVector(INTSXP, 2 * bufsize * capture_count);
-                    for (j = 0; j < bufsize; j++)
-                        for (capture_num = 0; capture_num < capture_count; capture_num++)
-                            INTEGER(tmp)
-                            [j + 2 * bufsize * capture_num] = INTEGER(capturebuf)[j + bufsize * capture_num];
-                    capturebuf = tmp;
-                    UNPROTECT(3);
-                    PROTECT(matchbuf);
-                    PROTECT(matchlenbuf);
-                    PROTECT(capturebuf);
-                    tmp = allocVector(INTSXP, 2 * bufsize * capture_count);
-                    for (j = 0; j < bufsize; j++)
-                        for (capture_num = 0; capture_num < capture_count; capture_num++)
-                            INTEGER(tmp)
-                            [j + 2 * bufsize * capture_num] = INTEGER(capturelenbuf)[j + bufsize * capture_num];
-                    capturelenbuf = tmp;
-                    UNPROTECT(4);
-                    PROTECT(matchbuf);
-                    PROTECT(matchlenbuf);
-                    PROTECT(capturebuf);
-                    PROTECT(capturelenbuf);
+                    tmp = allocVector(INTSXP, newbufsize * capture_count);
+                    for (int j = 0; j < bufsize; j++)
+                        for (int i = 0; i < capture_count; i++)
+                            INTEGER(tmp)[j + newbufsize * i] = INTEGER(capturebuf)[j + bufsize * i];
+                    REPROTECT(capturebuf = tmp, cb);
+                    tmp = allocVector(INTSXP, newbufsize * capture_count);
+                    for (int j = 0; j < bufsize; j++)
+                        for (int i = 0; i < capture_count; i++)
+                            INTEGER(tmp)[j + newbufsize * i] = INTEGER(capturelenbuf)[j + bufsize * i];
+                    REPROTECT(capturelenbuf = tmp, clb);
                 }
-
                 bufsize = newbufsize;
             }
             matchIndex++;
-            foundAny = 1;
+            foundAny = TRUE;
             foundAll = extract_match_and_groups(use_UTF8, ovector, capture_count, INTEGER(matchbuf) + matchIndex,
                                                 INTEGER(matchlenbuf) + matchIndex, INTEGER(capturebuf) + matchIndex,
                                                 INTEGER(capturelenbuf) + matchIndex, string, bufsize);
@@ -2644,56 +2626,54 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
         }
         else
         {
-            foundAll = 1;
+            foundAll = TRUE;
             if (!foundAny)
                 matchIndex = 0;
         }
     }
     PROTECT(ans = allocVector(INTSXP, matchIndex + 1));
-    PROTECT(matchlen = allocVector(INTSXP, matchIndex + 1));
+    matchlen = allocVector(INTSXP, matchIndex + 1);
+    setAttrib(ans, install("match.length"), matchlen);
+    if (foundAny)
+    {
+        for (int j = 0; j <= matchIndex; j++)
+        {
+            INTEGER(ans)[j] = INTEGER(matchbuf)[j];
+            INTEGER(matchlen)[j] = INTEGER(matchlenbuf)[j];
+        }
+    }
+    else
+        INTEGER(ans)[0] = INTEGER(matchlen)[0] = -1;
+
     if (capture_count)
     {
-        SEXP dmn;
+        SEXP capture, capturelen, dmn;
         PROTECT(capture = allocMatrix(INTSXP, matchIndex + 1, capture_count));
         PROTECT(capturelen = allocMatrix(INTSXP, matchIndex + 1, capture_count));
         PROTECT(dmn = allocVector(VECSXP, 2));
         SET_VECTOR_ELT(dmn, 1, capture_names);
         setAttrib(capture, R_DimNamesSymbol, dmn);
         setAttrib(capturelen, R_DimNamesSymbol, dmn);
-        UNPROTECT(1);
-    }
-
-    if (foundAny)
-    {
-        /* copy from buffers */
-        for (j = 0; j <= matchIndex; j++)
+        if (foundAny)
         {
-            INTEGER(ans)[j] = INTEGER(matchbuf)[j];
-            INTEGER(matchlen)[j] = INTEGER(matchlenbuf)[j];
-            for (capture_num = 0; capture_num < capture_count; capture_num++)
-            {
-                int return_index = j + (matchIndex + 1) * capture_num;
-                int buffer_index = j + bufsize * capture_num;
-                INTEGER(capture)[return_index] = INTEGER(capturebuf)[buffer_index];
-                INTEGER(capturelen)[return_index] = INTEGER(capturelenbuf)[buffer_index];
-            }
+            for (int j = 0; j <= matchIndex; j++)
+                for (int i = 0; i < capture_count; i++)
+                {
+                    int return_index = j + (matchIndex + 1) * i;
+                    int buffer_index = j + bufsize * i;
+                    INTEGER(capture)[return_index] = INTEGER(capturebuf)[buffer_index];
+                    INTEGER(capturelen)[return_index] = INTEGER(capturelenbuf)[buffer_index];
+                }
         }
-    }
-    else
-    {
-        INTEGER(ans)[0] = INTEGER(matchlen)[0] = -1;
-        for (capture_num = 0; capture_num < capture_count; capture_num++)
-            INTEGER(capture)[capture_num] = INTEGER(capturelen)[capture_num] = -1;
-    }
-    setAttrib(ans, install("match.length"), matchlen);
-    if (capture_count)
-    {
+        else
+            for (int i = 0; i < capture_count; i++)
+                INTEGER(capture)[i] = INTEGER(capturelen)[i] = -1;
         setAttrib(ans, install("capture.start"), capture);
         setAttrib(ans, install("capture.length"), capturelen);
         setAttrib(ans, install("capture.names"), capture_names);
-        UNPROTECT(4);
+        UNPROTECT(3);
     }
-    UNPROTECT(4);
+    UNPROTECT(5); /* 4 with indices, ans */
     return ans;
 }
 
@@ -2732,7 +2712,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     const unsigned char *tables = NULL /* -Wall */;
     Rboolean use_UTF8 = FALSE, use_WC = FALSE;
     const void *vmax;
-    int capture_count, capture_num, *ovector = NULL, ovector_size = 0, /* -Wall */
+    int capture_count, *ovector = NULL, ovector_size = 0, /* -Wall */
         name_count, name_entry_size, info_code;
     char *name_table;
     SEXP capture_names = R_NilValue;
@@ -2868,7 +2848,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             char *entry = name_table + name_entry_size * i;
             PROTECT(thisname = mkChar(entry + 2));
-            capture_num = (entry[0] << 8) + entry[1] - 1;
+            int capture_num = (entry[0] << 8) + entry[1] - 1;
             SET_STRING_ELT(capture_names, capture_num, thisname);
             UNPROTECT(1);
         }
@@ -2957,7 +2937,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else if (perl_opt)
                 {
-                    int rc, ind;
+                    int rc;
                     rc = pcre_exec(re_pcre, re_pe, s, strlen(s), 0, 0, ovector, ovector_size);
                     if (rc >= 0)
                     {
@@ -2968,9 +2948,9 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     else
                     {
                         INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
-                        for (capture_num = 0; capture_num < capture_count; capture_num++)
+                        for (int cn = 0; cn < capture_count; cn++)
                         {
-                            ind = i + capture_num * n;
+                            int ind = i + cn * n;
                             INTEGER(capture_start)[ind] = INTEGER(capturelen)[ind] = -1;
                         }
                     }
