@@ -3096,7 +3096,7 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
            to do this in pieces */
         if (xc != 0)
         {
-            double s = 0.0, rot1 = rot * M_PI / 180.;
+            double rot1 = rot * M_PI / 180.;
             int w = 0;
             short wx;
             for (i = 0; i < n; i++)
@@ -3105,7 +3105,6 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
                 wx = metrics->CharInfo[(int)p1].WX;
                 w += (wx == NA_SHORT) ? 0 : wx;
             }
-            s = w * fac;
             x -= xc * fac * cos(rot1) * w;
             y -= xc * fac * sin(rot1) * w;
         }

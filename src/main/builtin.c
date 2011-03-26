@@ -426,7 +426,6 @@ SEXP attribute_hidden do_envirName(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
 static const char *trChar(SEXP x)
 {
-    static char buf[106];
     int n = strlen(CHAR(x));
     cetype_t ienc = getCharCE(x);
 
@@ -453,6 +452,8 @@ static const char *trChar(SEXP x)
     }
     else
     {
+#ifdef Win32
+        static char buf[106];
         char *p;
         /* Long strings will be rare, and few per cat() call so we
            can afford to be profligate here: translateChar is */
@@ -460,7 +461,6 @@ static const char *trChar(SEXP x)
             p = buf;
         else
             p = R_alloc(n + 7, 1);
-#ifdef Win32
         if (WinUTF8out && ienc == CE_UTF8)
         {
             strcpy(p, UTF8in);
