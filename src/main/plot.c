@@ -2156,8 +2156,7 @@ SEXP attribute_hidden do_path(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* path(x, y, col, border, lty, ...) */
     SEXP sx, sy, nper, rule, col, border, lty;
-    int nx, npoly;
-    int ncol, nborder, nlty, i;
+    int i, nx, npoly;
     double *xx, *yy;
     const void *vmax = NULL /* -Wall */;
 
@@ -2184,15 +2183,10 @@ SEXP attribute_hidden do_path(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(col = FixupCol(CAR(args), R_TRANWHITE));
     args = CDR(args);
-    ncol = LENGTH(col);
-
     PROTECT(border = FixupCol(CAR(args), gpptr(dd)->fg));
     args = CDR(args);
-    nborder = LENGTH(border);
-
     PROTECT(lty = FixupLty(CAR(args), gpptr(dd)->lty));
     args = CDR(args);
-    nlty = length(lty);
 
     GSavePars(dd);
     ProcessInlinePars(args, dd, call);
@@ -4218,11 +4212,9 @@ badargs:
 SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP col;
-    int ncol;
     pGEDevDesc dd = GEcurrentDevice();
     checkArity(op, args);
     PROTECT(col = FixupCol(CAR(args), R_TRANWHITE));
-    ncol = LENGTH(col);
     GSavePars(dd);
     GMode(1, dd);
     GRect(0.0, 0.0, 1.0, 1.0, NDC, INTEGER(col)[0], R_TRANWHITE, dd);

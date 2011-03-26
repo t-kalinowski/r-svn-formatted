@@ -672,7 +672,6 @@ static Rf_DotExternalSymbol *Rf_lookupRegisteredExternalSymbol(DllInfo *info, co
 
 static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_RegisteredNativeSymbol *symbol)
 {
-    int fail = 0;
     NativeSymbolType purpose = R_ANY_SYM;
 
     if (symbol)
@@ -693,7 +692,6 @@ static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_Regis
 
             return ((DL_FUNC)sym->fun);
         }
-        fail = 1;
     }
 
     if ((purpose == R_ANY_SYM || purpose == R_CALL_SYM) && info->numCallSymbols > 0)
@@ -710,7 +708,6 @@ static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_Regis
             }
             return ((DL_FUNC)sym->fun);
         }
-        fail = 1;
     }
 
     if ((purpose == R_ANY_SYM || purpose == R_FORTRAN_SYM) && info->numFortranSymbols > 0)
@@ -727,7 +724,6 @@ static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_Regis
             }
             return ((DL_FUNC)sym->fun);
         }
-        fail = 1;
     }
 
     if ((purpose == R_ANY_SYM || purpose == R_EXTERNAL_SYM) && info->numExternalSymbols > 0)
@@ -744,7 +740,6 @@ static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_Regis
             }
             return ((DL_FUNC)sym->fun);
         }
-        fail = 1;
     }
 
     return ((DL_FUNC)NULL);

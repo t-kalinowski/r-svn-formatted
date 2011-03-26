@@ -1084,7 +1084,6 @@ void gl_hist_init(int size, int beep)
 
 void gl_histadd(const char *buf)
 {
-    static char *prev = 0;
     const char *p = buf;
 
     /* in case we call gl_histadd() before we call getline() */
@@ -1098,7 +1097,6 @@ void gl_histadd(const char *buf)
     if (*p)
     {
         hist_buf[hist_last] = hist_save(buf);
-        prev = hist_buf[hist_last];
         hist_last = hist_last + 1;
         if (hist_last > HIST_SIZE - 1)
         {

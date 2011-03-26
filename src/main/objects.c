@@ -268,7 +268,7 @@ int isBasicClass(const char *ss)
 int usemethod(const char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEXP callrho, SEXP defrho, SEXP *ans)
 {
     SEXP klass, method, sxp, t, s, matchedarg, sort_list;
-    SEXP op, formals, newrho, newcall, match_obj = 0;
+    SEXP op, formals, newrho, newcall;
     char buf[512];
     int i, j, nclass, matched, /* S4toS3, */ nprotect;
     RCNTXT *cptr;
@@ -312,8 +312,6 @@ int usemethod(const char *generic, SEXP obj, SEXP call, SEXP args, SEXP rho, SEX
                 if (TAG(t) == TAG(s))
                 {
                     matched = 1;
-                    if (t == formals)
-                        match_obj = CAR(s); /* remember 1st arg */
                 }
 
             if (!matched)
@@ -547,10 +545,9 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP a, group, basename;
     SEXP callenv, defenv;
     RCNTXT *cptr;
-    int i, j, cftmp;
+    int i, j;
 
     cptr = R_GlobalContext;
-    cftmp = cptr->callflag;
     cptr->callflag = CTXT_GENERIC;
 
     /* get the env NextMethod was called from */

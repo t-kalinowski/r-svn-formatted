@@ -311,12 +311,11 @@ static void xbufadds(xbuf p, const char *s, int user)
 
 static void xbuffixl(xbuf p)
 {
-    wchar_t *ps, *old;
+    wchar_t *ps;
 
     if (!p->ns)
         return;
     ps = p->s[p->ns - 1];
-    old = p->free;
     p->free = ps + wcslen(ps);
     p->av = p->dim - (p->free - p->b);
 }

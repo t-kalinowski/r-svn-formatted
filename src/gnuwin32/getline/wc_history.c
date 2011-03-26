@@ -76,7 +76,6 @@ void wgl_hist_init(int size, int beep)
 
 void wgl_histadd(const wchar_t *buf)
 {
-    static wchar_t *prev = 0;
     const wchar_t *p = buf;
 
     if (wgl_init_done > 0)
@@ -86,7 +85,6 @@ void wgl_histadd(const wchar_t *buf)
     if (*p)
     {
         hist_buf[hist_last] = hist_save(buf);
-        prev = hist_buf[hist_last];
         hist_last = hist_last + 1;
         if (hist_last > HIST_SIZE - 1)
         {

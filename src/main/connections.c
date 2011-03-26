@@ -4494,7 +4494,7 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
 {
     SEXP ans;
     char *buf;
-    int pos, m;
+    int m;
     const void *vmax = vmaxget();
 
     if (utf8locale && !useBytes)
@@ -4527,7 +4527,6 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
                     error(_("invalid UTF-8 input in readChar()"));
             }
         }
-        pos = p - buf;
     }
     else
     {
@@ -4536,7 +4535,6 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
         m = con->read(buf, sizeof(char), len, con);
         if (len && !m)
             return R_NilValue;
-        pos = m;
     }
     /* String may contain nuls which we now (R >= 2.8.0) assume to be
        padding and ignore silently */
@@ -5465,7 +5463,6 @@ static Rboolean gzcon_open(Rconnection con)
 {
     Rgzconn priv = con->private;
     Rconnection icon = priv->con;
-    int err;
 
     if (!icon->isopen && !icon->open(icon))
         return FALSE;
@@ -5537,7 +5534,7 @@ static Rboolean gzcon_open(Rconnection con)
                 (void)get_byte();
         }
         priv->s.next_in = priv->inbuf = (Byte *)malloc(Z_BUFSIZE);
-        err = inflateInit2(&(priv->s), -MAX_WBITS);
+        inflateInit2(&(priv->s), -MAX_WBITS);
     }
     else
     {
@@ -5546,7 +5543,7 @@ static Rboolean gzcon_open(Rconnection con)
         sprintf(head, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1], Z_DEFLATED, 0 /*flags*/, 0, 0, 0, 0 /*time*/,
                 0 /*xflags*/, 0 /*OS_CODE*/);
         icon->write(head, 1, 10, icon);
-        err = deflateInit2(&(priv->s), priv->cp, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
+        deflateInit2(&(priv->s), priv->cp, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
         priv->s.next_out = priv->outbuf = (Byte *)malloc(Z_BUFSIZE);
         priv->s.avail_out = Z_BUFSIZE;
     }
@@ -5571,7 +5568,6 @@ static void gzcon_close(Rconnection con)
 {
     Rgzconn priv = con->private;
     Rconnection icon = priv->con;
-    int err;
 
     if (icon->canwrite)
     {
@@ -5604,13 +5600,13 @@ static void gzcon_close(Rconnection con)
             if (priv->z_err != Z_OK && priv->z_err != Z_STREAM_END)
                 break;
         }
-        err = deflateEnd(&(priv->s));
+        deflateEnd(&(priv->s));
         /* NB: these must be little-endian */
         putLong(icon, priv->crc);
         putLong(icon, (uLong)(priv->s.total_in & 0xffffffff));
     }
     else
-        err = inflateEnd(&(priv->s));
+        inflateEnd(&(priv->s));
     if (priv->inbuf)
     {
         free(priv->inbuf);

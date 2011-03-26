@@ -190,7 +190,7 @@ static int TestLabelIntersection(SEXP label1, SEXP label2)
 {
 
     int i, j, l1, l2;
-    double Ax, Bx, Ay, By, ax, ay, bx, by, q1, q2;
+    double Ax, Bx, Ay, By, ax, ay, bx, by;
     double dom;
     double result1, result2;
 
@@ -206,9 +206,6 @@ static int TestLabelIntersection(SEXP label1, SEXP label2)
             ay = REAL(label2)[j + 4];
             bx = REAL(label2)[(j + 1) % 4];
             by = REAL(label2)[(j + 1) % 4 + 4];
-
-            q1 = Ax * (ay - by);
-            q2 = Ay * (bx - ax);
 
             dom = Bx * by - Bx * ay - Ax * by + Ax * ay - bx * By + bx * Ay + ax * By - ax * Ay;
             if (dom == 0.0)
@@ -726,7 +723,7 @@ static int addContourLines(double *x, int nx, double *y, int ny, double *z, doub
                            int nlines, SEXP container)
 {
     double xend, yend;
-    int i, ii, j, jj, ns, ns2, dir, nc;
+    int i, ii, j, jj, ns, dir, nc;
     SEGP seglist, seg, s, start, end;
     SEXP ctr, level, xsxp, ysxp, names;
     /* Begin following contours. */
@@ -784,12 +781,6 @@ static int addContourLines(double *x, int nx, double *y, int ny, double *z, doub
                 }
                 if (ns == max_contour_segments)
                     warning(_("contour(): circular/long seglist -- bug.report()!"));
-
-                /* countour midpoint : use for labelling sometime (not yet!) */
-                if (ns > 3)
-                    ns2 = ns / 2;
-                else
-                    ns2 = -1;
 
                 /*
                  * "write" the contour locations into the list of contours
@@ -942,10 +933,8 @@ SEXP GEcontourLines(double *x, int nx, double *y, int ny, double *z, double *lev
 
 SEXP attribute_hidden do_contourLines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP oargs, c, x, y, z;
+    SEXP c, x, y, z;
     int nx, ny, nc;
-
-    oargs = args;
 
     x = CAR(args);
     internalTypeCheck(call, x, REALSXP);
@@ -995,20 +984,18 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
     const void *vmax;
 
     double xend, yend;
-    int i, ii, j, jj, ns, ns2, dir;
+    int i, ii, j, jj, ns, dir;
     SEGP seglist, seg, s, start, end;
     double *xxx, *yyy;
 
     double variance, dX, dY, deltaX, deltaY;
-    double dXC, dYC, deltaXC, deltaYC;
+    double dXC, dYC;
     int range = 0, indx = 0, n; /* -Wall */
     double lowestVariance;
-    double squareSum, sum;
+    double squareSum;
     int iii, jjj;
     double distanceSum, labelDistance, avgGradient;
-    int zeroCount;
     char buffer[255];
-    double avg;
     int result;
     double ux, uy, vx, vy;
     double xStart, yStart;
@@ -1086,11 +1073,10 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 if (ns == max_contour_segments)
                     warning(_("contour(): circular/long seglist -- bug.report()!"));
 
-                /* countour midpoint : use for labelling sometime (not yet!) */
-                if (ns > 3)
-                    ns2 = ns / 2;
-                else
-                    ns2 = -1;
+                /* contour midpoint : use for labelling sometime (not yet!)
+                   int ns2;
+                   if (ns > 3) ns2 = ns/2; else ns2 = -1;
+                */
 
                 vmax = vmaxget();
                 xxx = (double *)R_alloc(ns + 1, sizeof(double));
@@ -1216,9 +1202,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                 distanceSum = 0;
                                 avgGradient = 0;
                                 squareSum = 0;
-                                sum = 0;
                                 n = 0;
-                                zeroCount = 0;
                                 jjj = (iii + 1);
                                 while ((jjj < ns - 1) && (distanceSum < labelDistance))
                                 {
@@ -1238,8 +1222,6 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                     */
                                     deltaX = xxx[jjj] - xxx[jjj - 1];
                                     deltaY = yyy[jjj] - yyy[jjj - 1];
-                                    deltaXC = GConvertXUnits(deltaX, USER, INCHES, dd);
-                                    deltaYC = GConvertYUnits(deltaY, USER, INCHES, dd);
                                     if (deltaX == 0)
                                     {
                                         deltaX = 1;
@@ -1275,7 +1257,6 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                                         lowestVariance = variance;
                                         indx = iii;
                                         range = n;
-                                        avg = avgGradient;
                                     }
                                 }
                                 if (lowestVariance < 9999999)
@@ -1751,7 +1732,7 @@ SEXP attribute_hidden do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP oargs, sx, sy, sz, sc, scol;
     double *x, *y, *z, *c;
     rcolor *col;
-    int i, j, k, npt, nx, ny, nz, nc, ncol, colsave, xpdsave;
+    int i, j, k, npt, nx, ny, nc, ncol, colsave, xpdsave;
     double px[8], py[8], pz[8];
     pGEDevDesc dd = GEcurrentDevice();
 
@@ -1773,7 +1754,6 @@ SEXP attribute_hidden do_filledcontour(SEXP call, SEXP op, SEXP args, SEXP env)
 
     sz = CAR(args);
     internalTypeCheck(call, sz, REALSXP);
-    nz = length(sz);
     args = CDR(args);
 
     sc = CAR(args); /* levels */

@@ -710,11 +710,7 @@ static void DoHashing(SEXP table, HashData *d)
 /* invalidate entries */
 static void UndoHashing(SEXP x, SEXP table, HashData *d)
 {
-    int *h, i, n;
-
-    n = LENGTH(x);
-    h = INTEGER(d->HashTable);
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < LENGTH(x); i++)
         removeEntry(table, x, i, d);
 }
 
@@ -1162,7 +1158,7 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
         }
-        INTEGER(ans)[i] = (imatch == NA_INTEGER) ? no_match : imatch;
+        ians[i] = (imatch == NA_INTEGER) ? no_match : imatch;
         vmaxset(vmax);
     }
     UNPROTECT(1);
@@ -1510,7 +1506,7 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SE
 SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
-    int i, j, n, p, ng = 0, offset, offsetg, narm;
+    int i, j, n, p, ng = 0, narm;
     HashData data;
     data.nomatch = 0;
 
@@ -1527,9 +1523,6 @@ SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP s
     PROTECT(matches = HashLookup(uniqueg, g, &data));
 
     PROTECT(ans = allocVector(VECSXP, p));
-
-    offset = 0;
-    offsetg = 0;
 
     for (i = 0; i < p; i++)
     {

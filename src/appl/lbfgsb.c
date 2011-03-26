@@ -286,7 +286,7 @@ void setulb(int n, int m, double *x, double *l, double *u, int *nbd, double *f, 
     char csave[60];
 
     /* Local variables */
-    int lsnd, l1, l2, l3, ld, lr, lt;
+    int lsnd, ld, lr, lt;
     int lz, lwa, lwn, lss, lws, lwt, lsy, lwy;
 
     /* make sure csave is initialized */
@@ -316,9 +316,6 @@ void setulb(int n, int m, double *x, double *l, double *u, int *nbd, double *f, 
         isave[15] = isave[14] + n;
         isave[16] = isave[15] + n;
     }
-    l1 = isave[1];
-    l2 = isave[2];
-    l3 = isave[3];
     lws = isave[4];
     lwy = isave[5];
     lsy = isave[6];

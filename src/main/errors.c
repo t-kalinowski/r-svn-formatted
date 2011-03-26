@@ -611,7 +611,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
             sprintf(errbuf, "%s%s%s", head, dcall, mid);
             if (mbcslocale)
             {
-                int msgline1;
+                int msgline1; // FIXME: unused
                 char *p = strchr(tmp, '\n');
                 if (p)
                 {

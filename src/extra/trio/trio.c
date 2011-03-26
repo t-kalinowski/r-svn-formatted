@@ -2785,7 +2785,9 @@ TRIO_PRIVATE void TrioWriteDouble TRIO_ARGS6((self, number, flags, width, precis
     int fractionDigits;
     int exponentDigits;
     int workDigits;
+#if TRIO_FEATURE_ROUNDING
     int baseDigits;
+#endif
     int integerThreshold;
     int fractionThreshold;
     int expectedWidth;
@@ -2850,17 +2852,23 @@ TRIO_PRIVATE void TrioWriteDouble TRIO_ARGS6((self, number, flags, width, precis
     /* Normal numbers */
     if (flags & FLAGS_LONGDOUBLE)
     {
+#if TRIO_FEATURE_ROUNDING
         baseDigits = (base == 10) ? LDBL_DIG : (int)trio_floor(LDBL_MANT_DIG / TrioLogarithmBase(base));
+#endif
         epsilon = LDBL_EPSILON;
     }
     else if (flags & FLAGS_SHORT)
     {
+#if TRIO_FEATURE_ROUNDING
         baseDigits = (base == BASE_DECIMAL) ? FLT_DIG : (int)trio_floor(FLT_MANT_DIG / TrioLogarithmBase(base));
+#endif
         epsilon = FLT_EPSILON;
     }
     else
     {
+#if TRIO_FEATURE_ROUNDING
         baseDigits = (base == BASE_DECIMAL) ? DBL_DIG : (int)trio_floor(DBL_MANT_DIG / TrioLogarithmBase(base));
+#endif
         epsilon = DBL_EPSILON;
     }
 
