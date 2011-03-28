@@ -611,7 +611,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
             sprintf(errbuf, "%s%s%s", head, dcall, mid);
             if (mbcslocale)
             {
-                int msgline1; // FIXME: unused
+                int msgline1;
                 char *p = strchr(tmp, '\n');
                 if (p)
                 {
@@ -621,7 +621,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
                 }
                 else
                     msgline1 = wd(tmp);
-                if (14 + wd(dcall) + wd(tmp) > LONGWARN)
+                if (14 + wd(dcall) + msgline1 > LONGWARN)
                     strcat(errbuf, tail);
             }
             else

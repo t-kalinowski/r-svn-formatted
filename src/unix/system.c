@@ -446,7 +446,8 @@ int Rf_initialize_R(int ac, char **av)
         if (!ifp)
             R_Suicide(_("creating temporary file for '-e' failed"));
         res = fwrite(cmdlines, strlen(cmdlines) + 1, 1, ifp);
-        /* FIXME: do something with res */
+        if (res != 1)
+            error("fwrite error in initialize_R");
         fflush(ifp);
         rewind(ifp);
     }
