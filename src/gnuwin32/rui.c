@@ -60,7 +60,7 @@ static menubar RMenuBar;
 static popup RConsolePopup;
 static menuitem msource, mdisplay, mload, msave, mloadhistory, msavehistory, mpaste, mpastecmds, mcopy, mcopypaste,
     mlazy, mcomplete, mfncomplete, mconfig, mls, mrm, msearch, mde, mtools, mstatus;
-static int lmanintro, lmanref, lmandata, lmanlang, lmanext, lmanint, lmanadmin;
+static int lmanintro, lmanref, lmandata, lmanlang, lmanext, lmanint, lmanadmin, lmanSweave;
 static menu m;
 static char cmd[1024];
 static HelpMenuItems hmenu;
@@ -673,6 +673,11 @@ static void menumainadmin(control m)
     internal_shellexec("doc\\manual\\R-admin.pdf");
 }
 
+static void menumainSweave(control m)
+{
+    internal_shellexec("library\\utils\\doc\\Sweave.pdf");
+}
+
 static void menuhelpsearch(control m)
 {
     char *s;
@@ -1076,6 +1081,7 @@ static void CheckForManuals(void)
     lmanext = check_doc_file("doc\\manual\\R-exts.pdf");
     lmanint = check_doc_file("doc\\manual\\R-ints.pdf");
     lmanadmin = check_doc_file("doc\\manual\\R-admin.pdf");
+    lmanSweave = check_doc_file("library\\utils\\doc\\Sweave.pdf");
 }
 
 /* Help functions common to all R windows.
@@ -1092,7 +1098,7 @@ int RguiCommonHelp(menu m, HelpMenuItems hmenu)
     if (!check_doc_file("doc\\html\\rw-FAQ.html"))
         disable(hmenu->mrwFAQ);
 
-    if (!lmanintro && !lmanref && !lmandata && !lmanlang && !lmanext && !lmanint && !lmanadmin)
+    if (!lmanintro && !lmanref && !lmandata && !lmanlang && !lmanext && !lmanint && !lmanadmin && !lmanSweave)
     {
         MCHECK(hmenu->mman0 = newmenuitem(G_("Manuals (in PDF)"), 0, NULL));
         disable(hmenu->mman0);
@@ -1121,6 +1127,9 @@ int RguiCommonHelp(menu m, HelpMenuItems hmenu)
         MCHECK(hmenu->mmanadmin = newmenuitem("R Installation and Administration", 0, menumainadmin));
         if (!lmanadmin)
             disable(hmenu->mmanadmin);
+        MCHECK(hmenu->mmanSweave = newmenuitem("Sweave User", 0, menumainSweave));
+        if (!lmanSweave)
+            disable(hmenu->mmanSweave);
     }
 
     addto(m);
