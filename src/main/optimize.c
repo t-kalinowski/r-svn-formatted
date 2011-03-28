@@ -151,8 +151,16 @@ static double fcn2(double x, struct callinfo *info)
             goto badvalue;
         if (!R_FINITE(REAL(s)[0]))
         {
-            warning(_("NA/Inf replaced by maximum positive value"));
-            return DBL_MAX;
+            if (REAL(s)[0] == R_NegInf)
+            { // keep sign for root finding !
+                warning(_("-Inf replaced by maximally negative value"));
+                return -DBL_MAX;
+            }
+            else
+            {
+                warning(_("NA/Inf replaced by maximum positive value"));
+                return DBL_MAX;
+            }
         }
         else
             return REAL(s)[0];
