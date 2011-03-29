@@ -1488,7 +1488,17 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SE
                         INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] = NA_INTEGER;
                 }
                 else if (INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] != NA_INTEGER)
-                    INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] += INTEGER(x)[j + offset];
+                {
+                    /* check for integer overflows */
+                    int itmp = INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg];
+                    double dtmp = itmp;
+                    dtmp += INTEGER(x)[j + offset];
+                    if (dtmp < INT_MIN || dtmp > INT_MAX)
+                        itmp = NA_INTEGER;
+                    else
+                        itmp += INTEGER(x)[j + offset];
+                    INTEGER(ans)[INTEGER(matches)[j] - 1 + offsetg] = itmp;
+                }
             }
             offset += n;
             offsetg += ng;
@@ -1551,7 +1561,16 @@ SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP s
                         INTEGER(col)[INTEGER(matches)[j] - 1] = NA_INTEGER;
                 }
                 else if (INTEGER(col)[INTEGER(matches)[j] - 1] != NA_INTEGER)
-                    INTEGER(col)[INTEGER(matches)[j] - 1] += INTEGER(xcol)[j];
+                {
+                    int itmp = INTEGER(col)[INTEGER(matches)[j] - 1];
+                    double dtmp = itmp;
+                    dtmp += INTEGER(xcol)[j];
+                    if (dtmp < INT_MIN || dtmp > INT_MAX)
+                        itmp = NA_INTEGER;
+                    else
+                        itmp += INTEGER(xcol)[j];
+                    INTEGER(col)[INTEGER(matches)[j] - 1] = itmp;
+                }
             }
             SET_VECTOR_ELT(ans, i, col);
             UNPROTECT(1);
