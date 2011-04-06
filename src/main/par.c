@@ -123,6 +123,7 @@ static const ParTab ParTable[] = {{"adj", 0},
                                   {"yaxp", 0},
                                   {"yaxs", 0},
                                   {"yaxt", 0},
+                                  {"ylbias", 1},
                                   {"ylog", 1},
                                   /* Obsolete pars */
                                   {"gamma", -2},
@@ -238,6 +239,7 @@ static void Specify(const char *what, SEXP value, pGEDevDesc dd, SEXP call)
      *	"pin", "plt", "ps", "pty"
      *	"usr",
      *	"xlog", "ylog"
+     *	"ylbias",
      */
     double x;
     int ix = 0;
@@ -682,6 +684,11 @@ static void Specify(const char *what, SEXP value, pGEDevDesc dd, SEXP call)
         if (ix == NA_LOGICAL)
             par_error(what);
         R_DEV__(ylog) = (ix != 0);
+    }
+    else if (streql(what, "ylbias"))
+    {
+        lengthCheck(what, value, 1, call);
+        dd->dev->yLineBias = asReal(value);
     }
     /* We do not need these as Query will already have warned.
     else if (streql(what, "type")) {
@@ -1205,6 +1212,11 @@ static SEXP Query(const char *what, pGEDevDesc dd)
         buf[0] = dpptr(dd)->yaxt;
         buf[1] = '\0';
         value = mkString(buf);
+    }
+    else if (streql(what, "ylbias"))
+    {
+        value = allocVector(REALSXP, 1);
+        REAL(value)[0] = dd->dev->yLineBias;
     }
     else if (streql(what, "ylog"))
     {
