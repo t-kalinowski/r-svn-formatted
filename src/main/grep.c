@@ -2632,8 +2632,10 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
         }
     }
     PROTECT(ans = allocVector(INTSXP, matchIndex + 1));
-    matchlen = allocVector(INTSXP, matchIndex + 1);
+    /* Protect in case install("match.length") allocates */
+    PROTECT(matchlen = allocVector(INTSXP, matchIndex + 1));
     setAttrib(ans, install("match.length"), matchlen);
+    UNPROTECT(1);
     if (foundAny)
     {
         for (int j = 0; j <= matchIndex; j++)
@@ -2870,8 +2872,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     { /* regexpr */
         SEXP matchlen, capture_start = R_NilValue, capturelen = R_NilValue;
         PROTECT(ans = allocVector(INTSXP, n));
-        matchlen = allocVector(INTSXP, n); /* protected by next line */
+        /* Protect in case install("match.length") allocates */
+        PROTECT(matchlen = allocVector(INTSXP, n));
         setAttrib(ans, install("match.length"), matchlen);
+        UNPROTECT(1);
         if (perl_opt && capture_count)
         {
             SEXP dmn;
