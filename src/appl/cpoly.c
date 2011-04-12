@@ -156,7 +156,7 @@ attribute_hidden void R_cpolyroot(double *opr, double *opi, int *degree, double 
         return;
 
     /* Use a single allocation as these as small */
-    tmp = (double *)R_alloc(10 * nn, sizeof(double));
+    tmp = (double *)R_alloc((size_t)(10 * nn), sizeof(double));
     pr = tmp;
     pi = tmp + nn;
     hr = tmp + 2 * nn;

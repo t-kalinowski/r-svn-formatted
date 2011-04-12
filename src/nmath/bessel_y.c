@@ -65,7 +65,7 @@ double bessel_y(double x, double alpha)
         MATHLIB_ERROR("%s", _("bessel_y allocation error"));
 #else
     vmax = vmaxget();
-    by = (double *)R_alloc(nb, sizeof(double));
+    by = (double *)R_alloc((size_t)nb, sizeof(double));
 #endif
     Y_bessel(&x, &alpha, &nb, by, &ncalc);
     if (ncalc != nb)
