@@ -243,7 +243,7 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
         {
             ;
         }
-        info->CSymbols = (Rf_DotCSymbol *)calloc(num, sizeof(Rf_DotCSymbol));
+        info->CSymbols = (Rf_DotCSymbol *)calloc((size_t)num, sizeof(Rf_DotCSymbol));
         info->numCSymbols = num;
         for (i = 0; i < num; i++)
         {
@@ -257,7 +257,7 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
         {
             ;
         }
-        info->FortranSymbols = (Rf_DotFortranSymbol *)calloc(num, sizeof(Rf_DotFortranSymbol));
+        info->FortranSymbols = (Rf_DotFortranSymbol *)calloc((size_t)num, sizeof(Rf_DotFortranSymbol));
         info->numFortranSymbols = num;
 
         for (i = 0; i < num; i++)
@@ -272,7 +272,7 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
         {
             ;
         }
-        info->CallSymbols = (Rf_DotCallSymbol *)calloc(num, sizeof(Rf_DotCallSymbol));
+        info->CallSymbols = (Rf_DotCallSymbol *)calloc((size_t)num, sizeof(Rf_DotCallSymbol));
         info->numCallSymbols = num;
         for (i = 0; i < num; i++)
         {
@@ -286,7 +286,7 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
         {
             ;
         }
-        info->ExternalSymbols = (Rf_DotExternalSymbol *)calloc(num, sizeof(Rf_DotExternalSymbol));
+        info->ExternalSymbols = (Rf_DotExternalSymbol *)calloc((size_t)num, sizeof(Rf_DotExternalSymbol));
         info->numExternalSymbols = num;
 
         for (i = 0; i < num; i++)
@@ -300,20 +300,20 @@ int R_registerRoutines(DllInfo *info, const R_CMethodDef *const croutines, const
 
 static void R_setPrimitiveArgTypes(const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym)
 {
-    sym->types = (R_NativePrimitiveArgType *)malloc(sizeof(R_NativePrimitiveArgType) * croutine->numArgs);
+    sym->types = (R_NativePrimitiveArgType *)malloc(sizeof(R_NativePrimitiveArgType) * (size_t)croutine->numArgs);
     if (!sym->types)
         error("allocation failure in R_setPrimitiveArgTypes");
     if (sym->types)
-        memcpy(sym->types, croutine->types, sizeof(R_NativePrimitiveArgType) * croutine->numArgs);
+        memcpy(sym->types, croutine->types, sizeof(R_NativePrimitiveArgType) * (size_t)croutine->numArgs);
 }
 
 static void R_setArgStyles(const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym)
 {
-    sym->styles = (R_NativeArgStyle *)malloc(sizeof(R_NativeArgStyle) * croutine->numArgs);
+    sym->styles = (R_NativeArgStyle *)malloc(sizeof(R_NativeArgStyle) * (size_t)croutine->numArgs);
     if (!sym->styles)
         error("allocation failure in R_setArgStyles");
     if (sym->styles)
-        memcpy(sym->styles, croutine->styles, sizeof(R_NativeArgStyle) * croutine->numArgs);
+        memcpy(sym->styles, croutine->styles, sizeof(R_NativeArgStyle) * (size_t)croutine->numArgs);
 }
 
 static void R_addFortranRoutine(DllInfo *info, const R_FortranMethodDef *const croutine, Rf_DotFortranSymbol *sym)

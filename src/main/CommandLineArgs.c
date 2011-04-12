@@ -53,7 +53,7 @@ void R_set_command_line_arguments(int argc, char **argv)
     int i;
 
     NumCommandLineArgs = argc;
-    CommandLineArgs = (char **)calloc(argc, sizeof(char *));
+    CommandLineArgs = (char **)calloc((size_t)argc, sizeof(char *));
 
     for (i = 0; i < argc; i++)
         CommandLineArgs[i] = strdup(argv[i]);
