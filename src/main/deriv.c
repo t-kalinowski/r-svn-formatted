@@ -950,9 +950,9 @@ SEXP attribute_hidden do_deriv(SEXP call, SEXP op, SEXP args, SEXP env)
     /* NOTE: FindSubexprs is destructive, hence the duplication */
     PROTECT(ans = duplicate(expr));
     f_index = FindSubexprs(ans, exprlist, tag);
-    d_index = (int *)R_alloc(nderiv, sizeof(int));
+    d_index = (int *)R_alloc((size_t)nderiv, sizeof(int));
     if (hessian)
-        d2_index = (int *)R_alloc((nderiv * (1 + nderiv)) / 2, sizeof(int));
+        d2_index = (int *)R_alloc((size_t)((nderiv * (1 + nderiv)) / 2), sizeof(int));
     else
         d2_index = d_index; /*-Wall*/
     UNPROTECT(1);
