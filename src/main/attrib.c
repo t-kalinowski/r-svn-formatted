@@ -1335,7 +1335,8 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ap, argList, s, t, tag = R_NilValue, alist, ans;
     const char *str;
-    int n, nargs = length(args), exact = 0;
+    size_t n;
+    int nargs = length(args), exact = 0;
     enum
     {
         NONE,

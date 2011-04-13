@@ -1589,7 +1589,7 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
             amax = av;
     }
     nw = 1 + (long)floor(amax);
-    work = (double *)R_alloc(nw, sizeof(double));
+    work = (double *)R_alloc((size_t)nw, sizeof(double));
 
     mod_iterate(na, nb, ia, ib)
     {
@@ -2002,7 +2002,7 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
             amax = av;
     }
     nw = 1 + (long)floor(amax);
-    work = (double *)R_alloc(nw, sizeof(double));
+    work = (double *)R_alloc((size_t)nw, sizeof(double));
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
