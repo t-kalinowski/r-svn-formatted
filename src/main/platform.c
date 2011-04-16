@@ -1388,62 +1388,65 @@ static int R_unlink(wchar_t *name, int recursive, int force)
     if (!R_WFileExists(name))
         return 0;
     if (force)
-        _wchmod(name, _S_IWRITE)
+        _wchmod(name, _S_IWRITE);
 
-            if (recursive)
-        {
-            _WDIR *dir;
-            struct _wdirent *de;
-            wchar_t p[PATH_MAX];
-            struct _stati64 sb;
-            int n, ans = 0;
+    if (recursive)
+    {
+        _WDIR *dir;
+        struct _wdirent *de;
+        wchar_t p[PATH_MAX];
+        struct _stati64 sb;
+        int n, ans = 0;
 
-            _wstati64(name, &sb);
-            if ((sb.st_mode & S_IFDIR) > 0)
-            { /* a directory */
-                if ((dir = _wopendir(name)) != NULL)
+        _wstati64(name, &sb);
+        if ((sb.st_mode & S_IFDIR) > 0)
+        { /* a directory */
+            if ((dir = _wopendir(name)) != NULL)
+            {
+                while ((de = _wreaddir(dir)))
                 {
-                    while ((de = _wreaddir(dir)))
+                    if (!wcscmp(de->d_name, L".") || !wcscmp(de->d_name, L".."))
+                        continue;
+                    /* On Windows we need to worry about trailing seps */
+                    n = wcslen(name);
+                    if (name[n] == L'/' || name[n] == L'\\')
                     {
-                        if (!wcscmp(de->d_name, L".") || !wcscmp(de->d_name, L".."))
-                            continue;
-                        /* On Windows we need to worry about trailing seps */
-                        n = wcslen(name);
-                        if (name[n] == L'/' || name[n] == L'\\')
-                        {
-                            wcscpy(p, name);
-                            wcscat(p, de->d_name);
-                        }
-                        else
-                        {
-                            wcscpy(p, name);
-                            wcscat(p, L"/");
-                            wcscat(p, de->d_name);
-                        }
-                        /* printf("stat-ing %ls\n", p); */
-                        _wstati64(p, &sb);
-                        if ((sb.st_mode & S_IFDIR) > 0)
-                        { /* a directory */
-                            /* printf("is a directory\n"); */
-                            ans += R_unlink(p, recursive, force);
-                        }
-                        else
-                        {
-                            if (force)
-                                _wchmod(p, _S_IWRITE) ans += (_wunlink(p) == 0) ? 0 : 1;
-                        }
+                        wcscpy(p, name);
+                        wcscat(p, de->d_name);
                     }
-                    _wclosedir(dir);
+                    else
+                    {
+                        wcscpy(p, name);
+                        wcscat(p, L"/");
+                        wcscat(p, de->d_name);
+                    }
+                    /* printf("stat-ing %ls\n", p); */
+                    _wstati64(p, &sb);
+                    if ((sb.st_mode & S_IFDIR) > 0)
+                    { /* a directory */
+                        /* printf("is a directory\n"); */
+                        if (force)
+                            _wchmod(p, _S_IWRITE);
+                        ans += R_unlink(p, recursive, force);
+                    }
+                    else
+                    {
+                        if (force)
+                            _wchmod(p, _S_IWRITE);
+                        ans += (_wunlink(p) == 0) ? 0 : 1;
+                    }
                 }
-                else
-                { /* we were unable to read a dir */
-                    ans++;
-                }
-                ans += (R_rmdir(name) == 0) ? 0 : 1;
-                return ans;
+                _wclosedir(dir);
             }
-            /* drop through */
+            else
+            { /* we were unable to read a dir */
+                ans++;
+            }
+            ans += (R_rmdir(name) == 0) ? 0 : 1;
+            return ans;
         }
+        /* drop through */
+    }
     return _wunlink(name) == 0 ? 0 : 1;
 }
 
@@ -1456,7 +1459,7 @@ void R_CleanTempDir(void)
         SetCurrentDirectory(R_HomeDir());
         wchar_t w[2 * (n + 1)];
         mbstowcs(w, Sys_TempDir, n + 1);
-        R_unlink(w, 1);
+        R_unlink(w, 1, 1); /* recursive=TRUE, force=TRUE */
     }
 }
 #else
