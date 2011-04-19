@@ -129,20 +129,6 @@ static int SinkCons[NSINKS], SinkConsClose[NSINKS], R_SinkSplit[NSINKS];
 */
 static void *current_id = NULL;
 
-#include <zlib.h>
-typedef struct gzconn
-{
-    Rconnection con;
-    int cp; /* compression level */
-    z_stream s;
-    int z_err, z_eof;
-    uLong crc;
-    Byte *inbuf, *outbuf;
-    int nsaved;
-    char saved[2];
-    Rboolean allow;
-} * Rgzconn;
-
 /* ------------- admin functions (see also at end) ----------------- */
 
 static int NextConnection(void)
@@ -1318,6 +1304,20 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* ------------------- [bgx]zipped file connections --------------------- */
 
+#include "gzio.h"
+typedef struct gzconn
+{
+    Rconnection con;
+    int cp; /* compression level */
+    z_stream s;
+    int z_err, z_eof;
+    uLong crc;
+    Byte *inbuf, *outbuf;
+    int nsaved;
+    char saved[2];
+    Rboolean allow;
+} * Rgzconn;
+
 typedef struct gzfileconn
 {
     void *fp;
@@ -1338,7 +1338,7 @@ static Rboolean gzfile_open(Rconnection con)
         sprintf(mode, "ab%1d", gzcon->compress);
     else
         strcpy(mode, "rb");
-    fp = gzopen(R_ExpandFileName(con->description), mode);
+    fp = R_gzopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
         warning(_("cannot open compressed file '%s', probable reason '%s'"), R_ExpandFileName(con->description),
@@ -1357,29 +1357,22 @@ static Rboolean gzfile_open(Rconnection con)
 
 static void gzfile_close(Rconnection con)
 {
-    gzclose(((Rgzfileconn)(con->private))->fp);
+    R_gzclose(((Rgzfileconn)(con->private))->fp);
     con->isopen = FALSE;
 }
 
 static int gzfile_fgetc_internal(Rconnection con)
 {
     gzFile fp = ((Rgzfileconn)(con->private))->fp;
-    int c;
+    unsigned char c;
 
-    /* Looks like eof is signalled one char early
-     -- sometimes! gzgetc may still return EOF
-    if(gzeof(fp)) return R_EOF;
-
-    Removed for zlib 1.2.4
-    */
-    c = gzgetc(fp);
-    return (c == EOF) ? R_EOF : c;
+    return R_gzread(fp, &c, 1) == 1 ? c : R_EOF;
 }
 
 static double gzfile_seek(Rconnection con, double where, int origin, int rw)
 {
     gzFile fp = ((Rgzfileconn)(con->private))->fp;
-    z_off_t pos = gztell(fp);
+    z_off_t pos = R_gzseek(fp, 0L, SEEK_CUR);
     int res, whence = SEEK_SET;
 
     switch (origin)
@@ -1393,7 +1386,7 @@ static double gzfile_seek(Rconnection con, double where, int origin, int rw)
     }
     if (where >= 0)
     {
-        res = gzseek(fp, (z_off_t)where, whence);
+        res = R_gzseek(fp, (z_off_t)where, whence);
         if (res == -1)
             warning(_("seek on a gzfile connection returned an internal error"));
     }
@@ -1402,12 +1395,6 @@ static double gzfile_seek(Rconnection con, double where, int origin, int rw)
 
 static int gzfile_fflush(Rconnection con)
 {
-    /* Degrades compression too much, as Rvprintf calls fflush.
-
-       gzFile fp = ((Rgzfileconn)(con->private))->fp;
-
-       return gzflush(fp, Z_SYNC_FLUSH); */
-
     return 0;
 }
 
@@ -1417,7 +1404,7 @@ static size_t gzfile_read(void *ptr, size_t size, size_t nitems, Rconnection con
     /* uses 'unsigned' for len */
     if ((double)size * (double)nitems > UINT_MAX)
         error(_("too large a block specified"));
-    return gzread(fp, ptr, size * nitems) / size;
+    return R_gzread(fp, ptr, size * nitems) / size;
 }
 
 static size_t gzfile_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
@@ -1426,7 +1413,7 @@ static size_t gzfile_write(const void *ptr, size_t size, size_t nitems, Rconnect
     /* uses 'unsigned' for len */
     if ((double)size * (double)nitems > UINT_MAX)
         error(_("too large a block specified"));
-    return gzwrite(fp, (voidp)ptr, size * nitems) / size;
+    return R_gzwrite(fp, (voidp)ptr, size * nitems) / size;
 }
 
 static Rconnection newgzfile(const char *description, const char *mode, int compress)
@@ -5448,18 +5435,7 @@ size_t R_WriteConnection(Rconnection con, void *buf, size_t n)
 
 /* ------------------- (de)compression functions  --------------------- */
 
-static int gz_magic[2] = {0x1f, 0x8b}; /* gzip magic header */
-
-/* gzip flag byte */
-#define ASCII_FLAG 0x01  /* bit 0 set: file probably ascii text */
-#define HEAD_CRC 0x02    /* bit 1 set: header CRC present */
-#define EXTRA_FIELD 0x04 /* bit 2 set: extra field present */
-#define ORIG_NAME 0x08   /* bit 3 set: original file name present */
-#define COMMENT 0x10     /* bit 4 set: file comment present */
-#define RESERVED 0xE0    /* bits 5..7: reserved */
-
 #define get_byte() (icon->read(&ccc, 1, 1, icon), ccc)
-#define Z_BUFSIZE 16384
 
 static Rboolean gzcon_open(Rconnection con)
 {
