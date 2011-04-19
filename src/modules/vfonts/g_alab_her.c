@@ -207,7 +207,7 @@ static void R_VF_VText(double x, double y, const char *s, double x_justify, doub
     unsigned short *codestring;
     double label_width, label_height;
     double x_offset, y_offset;
-    double x_displacement;
+    /*  double x_displacement; */
 
     /* PAUL MURRELL
        _controlify using R_alloc instead of xmalloc so need to do
@@ -255,7 +255,7 @@ static void R_VF_VText(double x, double y, const char *s, double x_justify, doub
         y_justify = 0.5;
 
     x_offset = 0 - x_justify;
-    x_displacement = 1 - 2 * x_justify;
+    /* x_displacement = 1 - 2 * x_justify; */
 
     y_offset = 0 - y_justify * 1.0;
 
