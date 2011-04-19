@@ -1351,7 +1351,7 @@ size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps)
     {
         /* This gets called from the menu setup in RGui */
         if (!R_Is_Running)
-            return -1;
+            return (size_t)-1;
         /* let's try to print out a readable version */
         char err[4 * strlen(s) + 1], *q;
         const char *p;
@@ -1400,7 +1400,7 @@ char *Rf_strchr(const char *s, int c)
 {
     char *p = (char *)s;
     mbstate_t mb_st;
-    int used;
+    size_t used;
 
     if (!mbcslocale || utf8locale)
         return strchr(s, c);
@@ -1418,7 +1418,7 @@ char *Rf_strrchr(const char *s, int c)
 {
     char *p = (char *)s, *plast = NULL;
     mbstate_t mb_st;
-    int used;
+    size_t used;
 
     if (!mbcslocale || utf8locale)
         return strrchr(s, c);
@@ -1514,7 +1514,7 @@ void F77_SYMBOL(rexitc)(char *msg, int *nchar)
         warning(_("error message truncated to 255 chars"));
         nc = 255;
     }
-    strncpy(buf, msg, nc);
+    strncpy(buf, msg, (size_t)nc);
     buf[nc] = '\0';
     error("%s", buf);
 }
@@ -1528,7 +1528,7 @@ void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
         warning(_("warning message truncated to 255 chars"));
         nc = 255;
     }
-    strncpy(buf, msg, nc);
+    strncpy(buf, msg, (size_t)nc);
     buf[nc] = '\0';
     warning("%s", buf);
 }
@@ -1542,10 +1542,10 @@ void F77_SYMBOL(rchkusr)(void)
 char *acopy_string(const char *in)
 {
     char *out;
-    int len = strlen(in);
+    size_t len = strlen(in);
     if (len > 0)
     {
-        out = (char *)R_alloc(1 + strlen(in), sizeof(char));
+        out = (char *)R_alloc(1 + len, sizeof(char));
         strcpy(out, in);
     }
     else
@@ -1585,19 +1585,19 @@ void *Rf_AdobeSymbol2utf8(char *work, const char *c0, int nwork)
             *t++ = ' ';
         else
         {
-            unsigned int u = s2u[*c - 32];
+            unsigned int u = (unsigned int)s2u[*c - 32];
             if (u < 128)
-                *t++ = u;
+                *t++ = (unsigned char)u;
             else if (u < 0x800)
             {
-                *t++ = 0xc0 | (u >> 6);
-                *t++ = 0x80 | (u & 0x3f);
+                *t++ = (unsigned char)(0xc0 | (u >> 6));
+                *t++ = (unsigned char)(0x80 | (u & 0x3f));
             }
             else
             {
-                *t++ = 0xe0 | (u >> 12);
-                *t++ = 0x80 | ((u >> 6) & 0x3f);
-                *t++ = 0x80 | (u & 0x3f);
+                *t++ = (unsigned char)(0xe0 | (u >> 12));
+                *t++ = (unsigned char)(0x80 | ((u >> 6) & 0x3f));
+                *t++ = (unsigned char)(0x80 | (u & 0x3f));
             }
         }
         if (t + 6 > (unsigned char *)(work + nwork))
