@@ -909,7 +909,8 @@ SEXP attribute_hidden do_match(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, input, target;
-    int i, j, mtch, n_input, n_target, mtch_count, temp, dups_ok, no_match;
+    int i, j, mtch, n_input, n_target, mtch_count, dups_ok, no_match;
+    size_t temp;
     int nexact = 0;
     int *used = NULL, *ians;
     const char **in, **tar;
@@ -932,7 +933,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (no_dups)
     {
-        used = (int *)R_alloc(n_target, sizeof(int));
+        used = (int *)R_alloc((size_t)n_target, sizeof(int));
         for (j = 0; j < n_target; j++)
             used[j] = 0;
     }
@@ -951,8 +952,8 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
             }
 
-    in = (const char **)R_alloc(n_input, sizeof(char *));
-    tar = (const char **)R_alloc(n_target, sizeof(char *));
+    in = (const char **)R_alloc((size_t)n_input, sizeof(char *));
+    tar = (const char **)R_alloc((size_t)n_target, sizeof(char *));
     PROTECT(ans = allocVector(INTSXP, n_input));
     ians = INTEGER(ans);
     if (useUTF8)
@@ -1086,7 +1087,8 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, input, target;
     Rboolean perfect;
-    int i, j, k, imatch, n_input, n_target, temp, no_match, *ians;
+    int i, j, k, imatch, n_input, n_target, no_match, *ians;
+    size_t temp;
     const char *ss, *st;
     Rboolean useUTF8 = FALSE;
     const void *vmax;
@@ -1431,12 +1433,12 @@ SEXP attribute_hidden do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
 #define ZEROINT(X, N, I)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
-        memset(INTEGER(X), 0, N * sizeof(int));                                                                        \
+        memset(INTEGER(X), 0, (size_t)(N) * sizeof(int));                                                              \
     } while (0)
 #define ZERODBL(X, N, I)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
-        memset(REAL(X), 0, N * sizeof(double));                                                                        \
+        memset(REAL(X), 0, (size_t)(N) * sizeof(double));                                                              \
     } while (0)
 
 SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
@@ -1628,7 +1630,8 @@ static SEXP duplicated2(SEXP x, HashData *d)
 SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP names, sep, ans, dup, newx;
-    int i, n, cnt, len, maxlen = 0, *cnts, dp;
+    int i, cnt, *cnts, dp;
+    R_len_t n, len, maxlen = 0;
     HashData data;
     const char *csep, *ss;
     void *vmax;
@@ -1647,7 +1650,7 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         SET_STRING_ELT(ans, i, STRING_ELT(names, i));
-        len = strlen(translateChar(STRING_ELT(names, i)));
+        len = (R_len_t)strlen(translateChar(STRING_ELT(names, i)));
         if (len > maxlen)
             maxlen = len;
         vmaxset(vmax);
@@ -1655,16 +1658,16 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     if (n > 1)
     {
         /* +2 for terminator and rounding error */
-        char buf[maxlen + strlen(csep) + (int)(log((double)n) / log(10.0)) + 2];
+        char buf[maxlen + (R_len_t)strlen(csep) + (R_len_t)(log((double)n) / log(10.0)) + 2];
         if (n < 10000)
         {
-            cnts = (int *)alloca(n * sizeof(int));
+            cnts = (int *)alloca(((size_t)n) * sizeof(int));
         }
         else
         {
             /* This is going to be slow so use expensive allocation
                that will be recovered if interrupted. */
-            cnts = (int *)R_alloc(n, sizeof(int));
+            cnts = (int *)R_alloc((size_t)n, sizeof(int));
         }
         R_CheckStack();
         for (i = 0; i < n; i++)
