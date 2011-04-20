@@ -52,9 +52,48 @@ static int R_mkdir(char *path)
 #endif
 }
 
+#ifdef Win32
+#include <windows.h>
+static void setFileTime(const char *fn, uLong dosdate)
+{
+    HANDLE hFile;
+    FILETIME ftm, ftLocal;
+
+    hFile = CreateFileA(fn, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return;
+    DosDateTimeToFileTime((WORD)(dosdate >> 16), (WORD)dosdate, &ftLocal);
+    LocalFileTimeToFileTime(&ftLocal, &ftm);
+    SetFileTime(hFile, &ftm, NULL, &ftm);
+    CloseHandle(hFile);
+}
+#else
+#include <sys/time.h>
+#include <utime.h>
+static void setFileTime(const char *fn, tm_unz tmu_date)
+{
+    struct tm dt;
+    time_t ftime;
+    struct utimbuf settime;
+    dt.tm_sec = tmu_date.tm_sec;
+    dt.tm_min = tmu_date.tm_min;
+    dt.tm_hour = tmu_date.tm_hour;
+    dt.tm_mday = tmu_date.tm_mday;
+    dt.tm_mon = tmu_date.tm_mon;
+    if (tmu_date.tm_year > 1900)
+        dt.tm_year = tmu_date.tm_year - 1900;
+    else
+        dt.tm_year = tmu_date.tm_year;
+    dt.tm_isdst = -1;
+    ftime = mktime(&dt);
+    settime.actime = settime.modtime = ftime;
+    utime(fn, &settime);
+}
+#endif
+
 #define BUF_SIZE 4096
 static int extract_one(unzFile uf, const char *const dest, const char *const filename, SEXP names, int *nnames,
-                       int overwrite, int junk)
+                       int overwrite, int junk, int setTime)
 {
     int err = UNZ_OK;
     FILE *fout;
@@ -68,19 +107,16 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
         return 1;
     strcpy(outname, dest);
     strcat(outname, FILESEP);
+    unz_file_info64 file_info;
+    char filename_inzip[PATH_MAX];
+    err = unzGetCurrentFileInfo64(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+    fn = filename_inzip; /* might be UTF-8 ... */
     if (filename)
     {
         if (strlen(dest) + strlen(filename) > PATH_MAX - 2)
             return 1;
         strncpy(fn0, filename, PATH_MAX);
         fn = fn0;
-    }
-    else
-    {
-        unz_file_info64 file_info;
-        char filename_inzip[PATH_MAX];
-        err = unzGetCurrentFileInfo64(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
-        fn = filename_inzip; /* might be UTF-8 ... */
     }
 #ifdef Win32
     R_fixslash(fn);
@@ -164,11 +200,18 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
         SET_STRING_ELT(names, (*nnames)++, mkChar(outname));
     }
     unzCloseCurrentFile(uf);
+#ifdef Win32
+    if (setTime)
+        setFileTime(outname, file_info.dosDate);
+#else
+    if (setTime)
+        setFileTime(outname, file_info.tmu_date);
+#endif
     return err;
 }
 
 static int zipunzip(const char *zipname, const char *dest, int nfiles, const char **files, SEXP *pnames, int *nnames,
-                    int overwrite, int junk)
+                    int overwrite, int junk, int setTime)
 {
     int i, err = UNZ_OK;
     unzFile uf;
@@ -194,7 +237,7 @@ static int zipunzip(const char *zipname, const char *dest, int nfiles, const cha
                 PROTECT(names);
                 copyVector(names, onames);
             }
-            if ((err = extract_one(uf, dest, NULL, names, nnames, overwrite, junk)) != UNZ_OK)
+            if ((err = extract_one(uf, dest, NULL, names, nnames, overwrite, junk, setTime)) != UNZ_OK)
                 break;
 #ifdef Win32
             R_ProcessEvents();
@@ -209,7 +252,7 @@ static int zipunzip(const char *zipname, const char *dest, int nfiles, const cha
         {
             if ((err = unzLocateFile(uf, files[i], 1)) != UNZ_OK)
                 break;
-            if ((err = extract_one(uf, dest, files[i], names, nnames, overwrite, junk)) != UNZ_OK)
+            if ((err = extract_one(uf, dest, files[i], names, nnames, overwrite, junk, setTime)) != UNZ_OK)
                 break;
 #ifdef Win32
             R_ProcessEvents();
@@ -280,7 +323,7 @@ SEXP attribute_hidden do_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP fn, ans, names = R_NilValue;
     char zipname[PATH_MAX], dest[PATH_MAX];
     const char *p, **topics = NULL;
-    int i, ntopics, list, overwrite, junk, rc, nnames = 0;
+    int i, ntopics, list, overwrite, junk, setTime, rc, nnames = 0;
 
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         error(_("invalid zip name argument"));
@@ -322,12 +365,16 @@ SEXP attribute_hidden do_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
     junk = asLogical(CAR(args));
     if (junk == NA_LOGICAL)
         error(_("invalid '%s' argument"), "junkpaths");
+    args = CDR(args);
+    setTime = asLogical(CAR(args));
+    if (setTime == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "setTime");
 
     if (ntopics > 0)
         PROTECT(names = allocVector(STRSXP, ntopics));
     else
         PROTECT(names = allocVector(STRSXP, 5000));
-    rc = zipunzip(zipname, dest, ntopics, topics, &names, &nnames, overwrite, junk);
+    rc = zipunzip(zipname, dest, ntopics, topics, &names, &nnames, overwrite, junk, setTime);
     if (rc != UNZ_OK)
         switch (rc)
         {
@@ -1187,7 +1234,7 @@ extern int ZEXPORT unzGetGlobalInfo64(unzFile file, unz_global_info64 *pglobal_i
 }
 
 /*
-   Translate date/time from Dos format to tm_unz (readable more easilty)
+   Translate date/time from Dos format to tm_unz (readable more easily)
 */
 local void unz64local_DosDateToTmuDate(ZPOS64_T ulDosDate, tm_unz *ptm)
 {
