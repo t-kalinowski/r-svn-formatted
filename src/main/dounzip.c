@@ -1548,7 +1548,7 @@ extern int ZEXPORT unzLocateFile(unzFile file, const char *szFileName, int iCase
     if (file == NULL)
         return UNZ_PARAMERROR;
 
-    if (strlen(szFileName) > = UNZ_MAXFILENAMEINZIP)
+    if (strlen(szFileName) >= UNZ_MAXFILENAMEINZIP)
         return UNZ_PARAMERROR;
 
     s = (unz64_s *)file;
@@ -1900,7 +1900,7 @@ static int unzReadCurrentFile(unzFile file, voidp buf, unsigned len)
 
             pfile_in_zip_read_info->pos_in_zipfile += uReadThis;
 
-            pfile_in_zip_read_info->rest_read_compressed - = uReadThis;
+            pfile_in_zip_read_info->rest_read_compressed -= uReadThis;
 
             pfile_in_zip_read_info->stream.next_in = (Bytef *)pfile_in_zip_read_info->read_buffer;
             pfile_in_zip_read_info->stream.avail_in = (uInt)uReadThis;
@@ -1994,7 +1994,7 @@ static int unzReadCurrentFile(unzFile file, voidp buf, unsigned len)
             */
             err = inflate(&pfile_in_zip_read_info->stream, flush);
 
-            if ((err > = 0) && (pfile_in_zip_read_info->stream.msg != NULL))
+            if ((err >= 0) && (pfile_in_zip_read_info->stream.msg != NULL))
                 err = Z_DATA_ERROR;
 
             uTotalOutAfter = pfile_in_zip_read_info->stream.total_out;
