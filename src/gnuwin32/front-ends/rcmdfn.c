@@ -285,6 +285,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcat(outfile, ".Rout");
         }
 
+        /* Unix has --restore --save --no-readline */
         snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe -f \"%s\" --restore --save", getRHOME(3), BINDIR, infile);
         if (strlen(cmd) + strlen(cmd_extra) >= CMD_LEN)
         {
@@ -405,6 +406,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
 
     if (!strcmp(argv[cmdarg], "INSTALL"))
     {
+        /* Unix has --no-restore except for MM's undocumented --use-vanilla */
         snprintf(cmd, CMD_LEN,
                  "%s/%s/Rterm.exe -e tools:::.install_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore --slave "
                  "--args ",
@@ -413,7 +415,8 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else if (!strcmp(argv[cmdarg], "REMOVE"))
     {
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --slave --args",
+        snprintf(cmd, CMD_LEN,
+                 "%s/%s/Rterm.exe -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --slave --args",
                  getRHOME(3), BINDIR, getRHOME(3));
         for (i = cmdarg + 1; i < argc; i++)
         {
@@ -515,14 +518,13 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     }
     else if (!strcmp(argv[cmdarg], "Sweave"))
     {
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --no-save --no-restore --slave -e utils:::.Sweave() --args ",
-                 getRHOME(3), BINDIR);
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --no-restore --slave -e utils:::.Sweave() --args ", getRHOME(3),
+                 BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Stangle"))
     {
-        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --no-save --no-restore --slave -e utils:::.Stangle() --args ",
-                 getRHOME(3), BINDIR);
+        snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e utils:::.Stangle() --args ", getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else
