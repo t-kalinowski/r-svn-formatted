@@ -5814,38 +5814,21 @@ static int *initMaskArray(int numRasters)
     return masks;
 }
 
-static void PDF_maskdata(rcolorPtr raster, int w, int h, PDFDesc *pd)
-{
-    /* Each alpha byte is translated to two hex digits
-     * (representing a number between 0 and 256)
-     * End-of-data signalled by a '>'
-     */
-    int i;
-    for (i = 0; i < w * h; i++)
-    {
-        fprintf(pd->pdffp, "%02x", R_ALPHA(raster[i]));
-    }
-    fprintf(pd->pdffp, ">\n");
-}
-
-static void PDF_imagedata(rcolorPtr raster, int w, int h, PDFDesc *pd)
-{
-    /* Each original byte is translated to two hex digits
-     * (representing a number between 0 and 256)
-     * End-of-data signalled by a '>'
-     */
-    int i;
-    for (i = 0; i < w * h; i++)
-    {
-        fprintf(pd->pdffp, "%02x", R_RED(raster[i]));
-        fprintf(pd->pdffp, "%02x", R_GREEN(raster[i]));
-        fprintf(pd->pdffp, "%02x", R_BLUE(raster[i]));
-    }
-    fprintf(pd->pdffp, ">\n");
-}
-
+#include "zlib.h"
 static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj, PDFDesc *pd)
 {
+    Bytef *buf, *p;
+    uLong inlen = 3 * raster.w * raster.h, outlen = outlen = 1.001 * inlen + 20;
+    p = buf = Calloc(outlen, Bytef);
+    for (int i = 0; i < raster.w * raster.h; i++)
+    {
+        *p++ = R_RED(raster.raster[i]);
+        *p++ = R_GREEN(raster.raster[i]);
+        *p++ = R_BLUE(raster.raster[i]);
+    }
+    int res = compress(buf, &outlen, buf, inlen);
+    if (res != Z_OK)
+        error("internal error %d in writeRasterXObject", res);
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
     fprintf(pd->pdffp, "  /Type /XObject\n");
     fprintf(pd->pdffp, "  /Subtype /Image\n");
@@ -5853,29 +5836,30 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
     fprintf(pd->pdffp, "  /Height %d\n", raster.h);
     fprintf(pd->pdffp, "  /ColorSpace 5 0 R\n"); /* sRGB */
     fprintf(pd->pdffp, "  /BitsPerComponent 8\n");
-    /* Number of bytes in stream: 2 hex digits per original pixel
-     * which has 3 color channels, plus final '>' char*/
-    fprintf(pd->pdffp, "  /Length %d\n", 2 * 3 * raster.w * raster.h + 1);
+    fprintf(pd->pdffp, "  /Length %u\n", (unsigned)outlen);
     if (raster.interpolate)
-    {
         fprintf(pd->pdffp, "  /Interpolate true\n");
-    }
-    fprintf(pd->pdffp, "  /Filter /ASCIIHexDecode\n");
+    fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
     if (mask >= 0)
-    {
         fprintf(pd->pdffp, "  /SMask %d 0 R\n", maskObj);
-    }
     fprintf(pd->pdffp, "  >>\n");
     fprintf(pd->pdffp, "stream\n");
-    /* The image stream */
-    PDF_imagedata(raster.raster, raster.w, raster.h, pd);
-    /* End image */
+    fwrite(buf, 1, outlen, pd->pdffp);
+    Free(buf);
     fprintf(pd->pdffp, "endstream\n");
     fprintf(pd->pdffp, "endobj\n");
 }
 
 static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
 {
+    Bytef *buf, *p;
+    uLong inlen = raster.w * raster.h, outlen = outlen = 1.001 * inlen + 20;
+    p = buf = Calloc(outlen, Bytef);
+    for (int i = 0; i < raster.w * raster.h; i++)
+        *p++ = R_ALPHA(raster.raster[i]);
+    int res = compress(buf, &outlen, buf, inlen);
+    if (res != Z_OK)
+        error("internal error %d in writeMaskXObject", res);
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
     fprintf(pd->pdffp, "  /Type /XObject\n");
     fprintf(pd->pdffp, "  /Subtype /Image\n");
@@ -5883,19 +5867,14 @@ static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
     fprintf(pd->pdffp, "  /Height %d\n", raster.h);
     fprintf(pd->pdffp, "  /ColorSpace /DeviceGray\n");
     fprintf(pd->pdffp, "  /BitsPerComponent 8\n");
-    /* Number of bytes in stream: 2 hex digits per original pixel
-     * which has 1 (alpha) channels, plus final '>' char*/
-    fprintf(pd->pdffp, "  /Length %d\n", 2 * raster.w * raster.h + 1);
+    fprintf(pd->pdffp, "  /Length %u\n", (unsigned)outlen);
     if (raster.interpolate)
-    {
         fprintf(pd->pdffp, "  /Interpolate true\n");
-    }
-    fprintf(pd->pdffp, "  /Filter /ASCIIHexDecode\n");
+    fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
     fprintf(pd->pdffp, "  >>\n");
     fprintf(pd->pdffp, "stream\n");
-    /* The image stream */
-    PDF_maskdata(raster.raster, raster.w, raster.h, pd);
-    /* End image */
+    fwrite(buf, 1, outlen, pd->pdffp);
+    Free(buf);
     fprintf(pd->pdffp, "endstream\n");
     fprintf(pd->pdffp, "endobj\n");
 }
@@ -6798,7 +6777,8 @@ static void PDF_Encodings(PDFDesc *pd)
     }
 }
 
-/* Read HexDecode version of sRGB profile from icc/srgb
+/* Read sRGB profile from icc/srgb.flate
+ * HexCode original from
  * http://code.google.com/p/ghostscript/source/browse/trunk/gs/iccprofiles/srgb.icc
  */
 #define BUFSIZE2 10000
@@ -6807,7 +6787,7 @@ static void PDFwritesRGBcolorspace(PDFDesc *pd)
     char buf[BUFSIZE2];
     FILE *fp;
 
-    snprintf(buf, BUFSIZE2, "%s%slibrary%sgrDevices%sicc%ssrgb", R_Home, FILESEP, FILESEP, FILESEP, FILESEP);
+    snprintf(buf, BUFSIZE2, "%s%slibrary%sgrDevices%sicc%ssrgb.flate", R_Home, FILESEP, FILESEP, FILESEP, FILESEP);
     if (!(fp = R_fopen(R_ExpandFileName(buf), "rb")))
         error(_("Failed to load sRGB colorspace file"));
     size_t res = fread(buf, 1, BUFSIZE2, fp);
