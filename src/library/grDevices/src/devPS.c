@@ -5678,6 +5678,7 @@ typedef struct
     char colormodel[30];
     Rboolean dingbats, useKern;
     Rboolean fillOddEven; /* polygon fill mode */
+    Rboolean useCompression;
 
     /*
      * Fonts and encodings used on the device
@@ -5810,18 +5811,25 @@ static int *initMaskArray(int numRasters)
 #include "zlib.h"
 static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj, PDFDesc *pd)
 {
-    Bytef *buf, *p;
-    uLong inlen = 3 * raster.w * raster.h, outlen = outlen = 1.001 * inlen + 20;
-    p = buf = Calloc(outlen, Bytef);
+    Bytef *buf, *buf2, *p;
+    uLong inlen = 3 * raster.w * raster.h, outlen = inlen;
+    p = buf = Calloc(inlen, Bytef);
     for (int i = 0; i < raster.w * raster.h; i++)
     {
         *p++ = R_RED(raster.raster[i]);
         *p++ = R_GREEN(raster.raster[i]);
         *p++ = R_BLUE(raster.raster[i]);
     }
-    int res = compress(buf, &outlen, buf, inlen);
-    if (res != Z_OK)
-        error("internal error %d in writeRasterXObject", res);
+    if (pd->useCompression)
+    {
+        outlen = 1.001 * inlen + 20;
+        buf2 = Calloc(outlen, Bytef);
+        int res = compress(buf2, &outlen, buf, inlen);
+        if (res != Z_OK)
+            error("internal error %d in writeRasterXObject", res);
+        Free(buf);
+        buf = buf2;
+    }
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
     fprintf(pd->pdffp, "  /Type /XObject\n");
     fprintf(pd->pdffp, "  /Subtype /Image\n");
@@ -5832,7 +5840,10 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
     fprintf(pd->pdffp, "  /Length %u\n", (unsigned)outlen);
     if (raster.interpolate)
         fprintf(pd->pdffp, "  /Interpolate true\n");
-    fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
+    if (pd->useCompression)
+        fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
+    else
+        fprintf(pd->pdffp, "  /Filter /ASCIIHexDecode\n");
     if (mask >= 0)
         fprintf(pd->pdffp, "  /SMask %d 0 R\n", maskObj);
     fprintf(pd->pdffp, "  >>\nstream\n");
@@ -5843,14 +5854,21 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
 
 static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
 {
-    Bytef *buf, *p;
-    uLong inlen = raster.w * raster.h, outlen = outlen = 1.001 * inlen + 20;
+    Bytef *buf, *buf2, *p;
+    uLong inlen = raster.w * raster.h, outlen = inlen;
     p = buf = Calloc(outlen, Bytef);
     for (int i = 0; i < raster.w * raster.h; i++)
         *p++ = R_ALPHA(raster.raster[i]);
-    int res = compress(buf, &outlen, buf, inlen);
-    if (res != Z_OK)
-        error("internal error %d in writeMaskXObject", res);
+    if (pd->useCompression)
+    {
+        outlen = 1.001 * inlen + 20;
+        buf2 = Calloc(outlen, Bytef);
+        int res = compress(buf2, &outlen, buf, inlen);
+        if (res != Z_OK)
+            error("internal error %d in writeRasterXObject", res);
+        Free(buf);
+        buf = buf2;
+    }
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
     fprintf(pd->pdffp, "  /Type /XObject\n");
     fprintf(pd->pdffp, "  /Subtype /Image\n");
@@ -5861,7 +5879,10 @@ static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
     fprintf(pd->pdffp, "  /Length %u\n", (unsigned)outlen);
     if (raster.interpolate)
         fprintf(pd->pdffp, "  /Interpolate true\n");
-    fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
+    if (pd->useCompression)
+        fprintf(pd->pdffp, "  /Filter /FlateDecode\n");
+    else
+        fprintf(pd->pdffp, "  /Filter /ASCIIHexDecode\n");
     fprintf(pd->pdffp, "  >>\nstream\n");
     fwrite(buf, 1, outlen, pd->pdffp);
     Free(buf);
@@ -5963,7 +5984,8 @@ static void PDFcleanup(int stage, PDFDesc *pd)
 Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                          const char *encoding, const char *bg, const char *fg, double width, double height, double ps,
                          int onefile, int pagecentre, const char *title, SEXP fonts, int versionMajor, int versionMinor,
-                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven, int maxRasters)
+                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven, int maxRasters,
+                         Rboolean useCompression)
 {
     /* If we need to bail out with some sort of "error" */
     /* then we must free(dd) */
@@ -6027,6 +6049,12 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     pd->dingbats = (dingbats != 0);
     pd->useKern = (useKern != 0);
     pd->fillOddEven = fillOddEven;
+    pd->useCompression = useCompression;
+    if (useCompression && pd->versionMajor == 1 && pd->versionMinor < 2)
+    {
+        pd->versionMinor = 2;
+        warning(_("increasing the PDF version to 1.2"));
+    }
 
     pd->width = width;
     pd->height = height;
@@ -6702,20 +6730,20 @@ static void PDF_Encodings(PDFDesc *pd)
     while (enclist)
     {
         encodinginfo encoding = enclist->encoding;
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
 
-        fprintf(pd->mainfp, "%d 0 obj\n<<\n/Type /Encoding ", pd->nobjs);
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Encoding ", pd->nobjs);
         if (strcmp(encoding->name, "WinAnsiEncoding") == 0 || strcmp(encoding->name, "MacRomanEncoding") == 0 ||
             strcmp(encoding->name, "PDFDocEncoding") == 0)
         {
-            fprintf(pd->mainfp, "/BaseEncoding /%s\n", encoding->name);
-            fprintf(pd->mainfp, "/Differences [ 45/minus ]\n");
+            fprintf(pd->pdffp, "/BaseEncoding /%s\n", encoding->name);
+            fprintf(pd->pdffp, "/Differences [ 45/minus ]\n");
         }
         else if (strcmp(encoding->name, "ISOLatin1Encoding") == 0)
         {
-            fprintf(pd->mainfp, "/BaseEncoding /WinAnsiEncoding\n");
+            fprintf(pd->pdffp, "/BaseEncoding /WinAnsiEncoding\n");
             fprintf(
-                pd->mainfp,
+                pd->pdffp,
                 "/Differences [ 45/minus 96/quoteleft\n144/dotlessi /grave /acute /circumflex /tilde /macron /breve "
                 "/dotaccent\n/dieresis /.notdef /ring /cedilla /.notdef /hungarumlaut /ogonek /caron /space]\n");
         }
@@ -6730,8 +6758,8 @@ static void PDF_Encodings(PDFDesc *pd)
                 ;
             if (enc_first >= strlen(encoding->enccode))
                 enc_first = 0;
-            fprintf(pd->mainfp, "/BaseEncoding /PDFDocEncoding\n");
-            fprintf(pd->mainfp, "/Differences [\n");
+            fprintf(pd->pdffp, "/BaseEncoding /PDFDocEncoding\n");
+            fprintf(pd->pdffp, "/Differences [\n");
             while (encoding->enccode[enc_first])
             {
                 switch (encoding->enccode[enc_first])
@@ -6752,15 +6780,15 @@ static void PDF_Encodings(PDFDesc *pd)
                     ;
                 memcpy(buf, encoding->enccode + enc_first, len);
                 buf[len] = '\0';
-                fprintf(pd->mainfp, " %d%s", c, buf);
+                fprintf(pd->pdffp, " %d%s", c, buf);
                 if ((c + 1) % 8 == 0)
-                    fprintf(pd->mainfp, "\n");
+                    fprintf(pd->pdffp, "\n");
                 c++;
                 enc_first += len;
             }
-            fprintf(pd->mainfp, "\n]\n");
+            fprintf(pd->pdffp, "\n]\n");
         }
-        fprintf(pd->mainfp, ">>\nendobj\n");
+        fprintf(pd->pdffp, ">>\nendobj\n");
 
         enclist = enclist->next;
     }
@@ -6776,11 +6804,12 @@ static void PDFwritesRGBcolorspace(PDFDesc *pd)
     char buf[BUFSIZE2];
     FILE *fp;
 
-    snprintf(buf, BUFSIZE2, "%s%slibrary%sgrDevices%sicc%ssrgb.flate", R_Home, FILESEP, FILESEP, FILESEP, FILESEP);
+    snprintf(buf, BUFSIZE2, "%s%slibrary%sgrDevices%sicc%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP,
+             pd->useCompression ? "srgb.flate" : "srgb");
     if (!(fp = R_fopen(R_ExpandFileName(buf), "rb")))
         error(_("Failed to load sRGB colorspace file"));
     size_t res = fread(buf, 1, BUFSIZE2, fp);
-    res = fwrite(buf, 1, res, pd->mainfp);
+    res = fwrite(buf, 1, res, pd->pdffp);
     fclose(fp);
 }
 
@@ -6797,25 +6826,24 @@ static void PDF_startfile(PDFDesc *pd)
     /*
      * I destroy it when I open in Japanese environment carelessly
      */
-    fprintf(pd->mainfp, "%%PDF-%i.%i\n%%\x81\xe2\x81\xe3\x81\xcf\x81\xd3\x5c\x72\n", pd->versionMajor,
-            pd->versionMinor);
-    pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
+    fprintf(pd->pdffp, "%%PDF-%i.%i\n%%\x81\xe2\x81\xe3\x81\xcf\x81\xd3\x5c\x72\n", pd->versionMajor, pd->versionMinor);
+    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
 
     /* Object 1 is Info node. Date format is from the PDF manual */
 
     ct = time(NULL);
     ltm = localtime(&ct);
-    fprintf(pd->mainfp, "1 0 obj\n<<\n/CreationDate (D:%04d%02d%02d%02d%02d%02d)\n", 1900 + ltm->tm_year,
+    fprintf(pd->pdffp, "1 0 obj\n<<\n/CreationDate (D:%04d%02d%02d%02d%02d%02d)\n", 1900 + ltm->tm_year,
             ltm->tm_mon + 1, ltm->tm_mday, ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    fprintf(pd->mainfp, "/ModDate (D:%04d%02d%02d%02d%02d%02d)\n", 1900 + ltm->tm_year, ltm->tm_mon + 1, ltm->tm_mday,
+    fprintf(pd->pdffp, "/ModDate (D:%04d%02d%02d%02d%02d%02d)\n", 1900 + ltm->tm_year, ltm->tm_mon + 1, ltm->tm_mday,
             ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    fprintf(pd->mainfp, "/Title (%s)\n", pd->title);
-    fprintf(pd->mainfp, "/Producer (R %s.%s)\n/Creator (R)\n>>\nendobj\n", R_MAJOR, R_MINOR);
+    fprintf(pd->pdffp, "/Title (%s)\n", pd->title);
+    fprintf(pd->pdffp, "/Producer (R %s.%s)\n/Creator (R)\n>>\nendobj\n", R_MAJOR, R_MINOR);
 
     /* Object 2 is the Catalog, pointing to pages list in object 3 (at end) */
 
-    pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-    fprintf(pd->mainfp, "2 0 obj\n<< /Type /Catalog /Pages 3 0 R >>\nendobj\n");
+    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "2 0 obj\n<< /Type /Catalog /Pages 3 0 R >>\nendobj\n");
 
     /* Object 3 will be at the end */
 
@@ -6867,12 +6895,12 @@ static void PDF_endfile(PDFDesc *pd)
 
     /* object 3 lists all the pages */
 
-    pd->pos[3] = (int)ftell(pd->mainfp);
-    fprintf(pd->mainfp, "3 0 obj\n<< /Type /Pages /Kids [ ");
+    pd->pos[3] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "3 0 obj\n<< /Type /Pages /Kids [ ");
     for (i = 0; i < pd->pageno; i++)
-        fprintf(pd->mainfp, "%d 0 R ", pd->pageobj[i]);
+        fprintf(pd->pdffp, "%d 0 R ", pd->pageobj[i]);
 
-    fprintf(pd->mainfp, "] /Count %d /MediaBox [0 0 %d %d] >>\nendobj\n", pd->pageno, (int)(0.5 + pd->paperwidth),
+    fprintf(pd->pdffp, "] /Count %d /MediaBox [0 0 %d %d] >>\nendobj\n", pd->pageno, (int)(0.5 + pd->paperwidth),
             (int)(0.5 + pd->paperheight));
 
     /* Object 4 is the standard resources dict for each page */
@@ -6882,23 +6910,23 @@ static void PDF_endfile(PDFDesc *pd)
     /* Count how many image masks */
     nmask = pd->numMasks;
 
-    pd->pos[4] = (int)ftell(pd->mainfp);
+    pd->pos[4] = (int)ftell(pd->pdffp);
 
     if (nraster > 0)
     {
         if (nmask > 0)
         {
-            fprintf(pd->mainfp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC /ImageB]\n/Font <<");
+            fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC /ImageB]\n/Font <<");
         }
         else
         {
-            fprintf(pd->mainfp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC]\n/Font <<");
+            fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC]\n/Font <<");
         }
     }
     else
     {
         /* fonts */
-        fprintf(pd->mainfp, "4 0 obj\n<<\n/ProcSet [/PDF /Text]\n/Font <<");
+        fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text]\n/Font <<");
     }
 
     /* Count how many encodings will be included
@@ -6918,7 +6946,7 @@ static void PDF_endfile(PDFDesc *pd)
 
     /* Dingbats always F1 */
     if (pd->fontUsed[1])
-        fprintf(pd->mainfp, " /F1 %d 0 R ", ++tempnobj);
+        fprintf(pd->pdffp, " /F1 %d 0 R ", ++tempnobj);
 
     nfonts = 2;
     if (pd->fonts)
@@ -6930,7 +6958,7 @@ static void PDF_endfile(PDFDesc *pd)
             {
                 if (nfonts >= 100 || pd->fontUsed[nfonts])
                 {
-                    fprintf(pd->mainfp, "/F%d %d 0 R ", nfonts, ++tempnobj);
+                    fprintf(pd->pdffp, "/F%d %d 0 R ", nfonts, ++tempnobj);
                     /* Allow for the font descriptor object, if present */
                     if (!isBase14(fontlist->family->fonts[i]->name))
                         tempnobj++;
@@ -6948,20 +6976,20 @@ static void PDF_endfile(PDFDesc *pd)
         {
             for (i = 0; i < 5; i++)
             {
-                fprintf(pd->mainfp, "/F%d %d 0 R ", 1000 + cidnfonts + 1, ++tempnobj);
+                fprintf(pd->pdffp, "/F%d %d 0 R ", 1000 + cidnfonts + 1, ++tempnobj);
                 cidnfonts++;
             }
             fontlist = fontlist->next;
         }
     }
-    fprintf(pd->mainfp, ">>\n");
+    fprintf(pd->pdffp, ">>\n");
 
     if (nraster > 0)
     {
         /* image XObjects */
-        fprintf(pd->mainfp, "/XObject <<\n");
+        fprintf(pd->pdffp, "/XObject <<\n");
         for (i = 0; i < nraster; i++)
-            fprintf(pd->mainfp, "  /Im%d %d 0 R\n", i, ++tempnobj);
+            fprintf(pd->pdffp, "  /Im%d %d 0 R\n", i, ++tempnobj);
 
         if (nmask > 0)
         {
@@ -6969,40 +6997,40 @@ static void PDF_endfile(PDFDesc *pd)
             for (i = 0; i < nraster; i++)
             {
                 if (pd->masks[i] >= 0)
-                    fprintf(pd->mainfp, "  /Mask%d %d 0 R\n", pd->masks[i], ++tempnobj);
+                    fprintf(pd->pdffp, "  /Mask%d %d 0 R\n", pd->masks[i], ++tempnobj);
             }
         }
 
-        fprintf(pd->mainfp, ">>\n");
+        fprintf(pd->pdffp, ">>\n");
     }
 
     /* graphics state parameter dictionaries */
-    fprintf(pd->mainfp, "/ExtGState << ");
+    fprintf(pd->pdffp, "/ExtGState << ");
     /* <FIXME> is this correct now ?
     tempnobj = pd->nobjs + nenc + nfonts + cidnfonts; */
     for (i = 0; i < 256 && pd->colAlpha[i] >= 0; i++)
-        fprintf(pd->mainfp, "/GS%i %d 0 R ", i + 1, ++tempnobj);
+        fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 1, ++tempnobj);
     for (i = 0; i < 256 && pd->fillAlpha[i] >= 0; i++)
-        fprintf(pd->mainfp, "/GS%i %d 0 R ", i + 257, ++tempnobj);
+        fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 257, ++tempnobj);
     /* Special state to set AIS if we have soft masks */
     if (nmask > 0)
-        fprintf(pd->mainfp, "/GSais %d 0 R ", ++tempnobj);
-    fprintf(pd->mainfp, ">>\n");
+        fprintf(pd->pdffp, "/GSais %d 0 R ", ++tempnobj);
+    fprintf(pd->pdffp, ">>\n");
 
     /* The sRGB colorspace */
-    fprintf(pd->mainfp, "/ColorSpace << /sRGB 5 0 R >>\n");
+    fprintf(pd->pdffp, "/ColorSpace << /sRGB 5 0 R >>\n");
 
-    fprintf(pd->mainfp, ">>\nendobj\n");
+    fprintf(pd->pdffp, ">>\nendobj\n");
 
     /* Objects 5 and 6 are the sRGB color space */
 
     /* sRGB colorspace */
-    pd->pos[5] = (int)ftell(pd->mainfp);
-    fprintf(pd->mainfp, "5 0 obj\n[/ICCBased 6 0 R]\nendobj\n");
-    pd->pos[6] = (int)ftell(pd->mainfp);
-    fprintf(pd->mainfp, "6 0 obj\n");
+    pd->pos[5] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "5 0 obj\n[/ICCBased 6 0 R]\nendobj\n");
+    pd->pos[6] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "6 0 obj\n");
     PDFwritesRGBcolorspace(pd);
-    fprintf(pd->mainfp, "endobj\n");
+    fprintf(pd->pdffp, "endobj\n");
 
     /*
      * Write out objects representing the encodings
@@ -7017,8 +7045,8 @@ static void PDF_endfile(PDFDesc *pd)
 
     if (pd->fontUsed[1])
     {
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-        fprintf(pd->mainfp, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /Name /F1 /BaseFont /ZapfDingbats >>\nendobj\n",
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /Name /F1 /BaseFont /ZapfDingbats >>\nendobj\n",
                 pd->nobjs);
     }
 
@@ -7044,9 +7072,9 @@ static void PDF_endfile(PDFDesc *pd)
                     type1fontinfo fn = fontlist->family->fonts[i];
                     int base = isBase14(fn->name);
                     metrics = &fn->metrics;
-                    pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-                    fprintf(pd->mainfp, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /Name /F%d /BaseFont /%s\n",
-                            pd->nobjs, nfonts, fn->name);
+                    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                    fprintf(pd->pdffp, "%d 0 obj\n<< /Type /Font /Subtype /Type1 /Name /F%d /BaseFont /%s\n", pd->nobjs,
+                            nfonts, fn->name);
                     if (!base)
                     {
                         int ii, first, last, tmp;
@@ -7062,23 +7090,23 @@ static void PDF_endfile(PDFDesc *pd)
                                 last = ii + 1;
                                 break;
                             }
-                        fprintf(pd->mainfp, "/FirstChar %d /LastChar %d /Widths [\n", first, last);
+                        fprintf(pd->pdffp, "/FirstChar %d /LastChar %d /Widths [\n", first, last);
                         for (ii = first; ii <= last; ii++)
                         {
                             tmp = metrics->CharInfo[ii].WX;
-                            fprintf(pd->mainfp, " %d", tmp == NA_SHORT ? 0 : tmp);
+                            fprintf(pd->pdffp, " %d", tmp == NA_SHORT ? 0 : tmp);
                             if ((ii + 1) % 15 == 0)
-                                fprintf(pd->mainfp, "\n");
+                                fprintf(pd->pdffp, "\n");
                         }
-                        fprintf(pd->mainfp, "]\n");
-                        fprintf(pd->mainfp, "/FontDescriptor %d 0 R\n", pd->nobjs + 1);
+                        fprintf(pd->pdffp, "]\n");
+                        fprintf(pd->pdffp, "/FontDescriptor %d 0 R\n", pd->nobjs + 1);
                     }
                     if (i < 4)
-                        fprintf(pd->mainfp, "/Encoding %d 0 R ",
+                        fprintf(pd->pdffp, "/Encoding %d 0 R ",
                                 /* Encodings come after dingbats font which is
                                  * object 5 */
                                 encIndex + firstencobj);
-                    fprintf(pd->mainfp, ">>\nendobj\n");
+                    fprintf(pd->pdffp, ">>\nendobj\n");
                     if (!base)
                     {
                         /* write font descriptor */
@@ -7086,8 +7114,8 @@ static void PDF_endfile(PDFDesc *pd)
                                     (metrics->IsFixedPitch > 0 ? 1 : 0) + (isSans(fn->name) ? 0 : 2);
                         /* <FIXME> we have no real way to know
                            if this is serif or not */
-                        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-                        fprintf(pd->mainfp,
+                        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                        fprintf(pd->pdffp,
                                 "%d 0 obj <<\n"
                                 " /Type /FontDescriptor\n"
                                 " /FontName /%s\n"
@@ -7120,8 +7148,8 @@ static void PDF_endfile(PDFDesc *pd)
         {
             for (i = 0; i < 4; i++)
             {
-                pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-                fprintf(pd->mainfp,
+                pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+                fprintf(pd->pdffp,
                         /** format **/
                         "%d 0 obj\n"
                         "<<\n"
@@ -7157,8 +7185,8 @@ static void PDF_endfile(PDFDesc *pd)
                 cidnfonts++;
             }
             /* Symbol face does not use encoding */
-            pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-            fprintf(pd->mainfp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n>>\nendobj\n",
+            pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+            fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/Name /F%d\n/BaseFont /%s\n>>\nendobj\n",
                     pd->nobjs, 1000 + cidnfonts + 1, fontlist->cidfamily->symfont->name);
             cidnfonts++;
             fontlist = fontlist->next;
@@ -7168,7 +7196,7 @@ static void PDF_endfile(PDFDesc *pd)
     /* Write out objects representing the raster images */
     for (i = 0; i < nraster; i++)
     {
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
         writeRasterXObject(pd->rasters[i], pd->nobjs, pd->masks[i], pd->nobjs - i + nraster + pd->masks[i], pd);
     }
 
@@ -7177,7 +7205,7 @@ static void PDF_endfile(PDFDesc *pd)
     {
         if (pd->masks[i] >= 0)
         {
-            pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
+            pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
             writeMaskXObject(pd->rasters[i], pd->nobjs, pd);
         }
     }
@@ -7188,38 +7216,38 @@ static void PDF_endfile(PDFDesc *pd)
      */
     for (i = 0; i < 256 && pd->colAlpha[i] >= 0; i++)
     {
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-        fprintf(pd->mainfp, "%d 0 obj\n<<\n/Type /ExtGState\n/CA %1.3f >>\nendobj\n", pd->nobjs,
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /ExtGState\n/CA %1.3f >>\nendobj\n", pd->nobjs,
                 pd->colAlpha[i] / 255.0);
     }
     for (i = 0; i < 256 && pd->fillAlpha[i] >= 0; i++)
     {
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-        fprintf(pd->mainfp, "%d 0 obj\n<<\n/Type /ExtGState\n/ca %1.3f\n>>\nendobj\n", pd->nobjs,
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /ExtGState\n/ca %1.3f\n>>\nendobj\n", pd->nobjs,
                 pd->fillAlpha[i] / 255.0);
     }
 
     if (nmask > 0)
     {
-        pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
-        fprintf(pd->mainfp, "%d 0 obj\n<<\n/Type /ExtGState\n/AIS false\n>>\nendobj\n", pd->nobjs);
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /ExtGState\n/AIS false\n>>\nendobj\n", pd->nobjs);
     }
 
     /* write out xref table */
 
-    startxref = (int)ftell(pd->mainfp);
+    startxref = (int)ftell(pd->pdffp);
     /* items here must be exactly 20 bytes including terminator */
-    fprintf(pd->mainfp, "xref\n0 %d\n", pd->nobjs + 1);
-    fprintf(pd->mainfp, "0000000000 65535 f \n");
+    fprintf(pd->pdffp, "xref\n0 %d\n", pd->nobjs + 1);
+    fprintf(pd->pdffp, "0000000000 65535 f \n");
     for (i = 1; i <= pd->nobjs; i++)
-        fprintf(pd->mainfp, "%010d 00000 n \n", pd->pos[i]);
-    fprintf(pd->mainfp, "trailer\n<< /Size %d /Info 1 0 R /Root 2 0 R >>\nstartxref\n%d\n", pd->nobjs + 1, startxref);
-    fprintf(pd->mainfp, "%%%%EOF\n");
+        fprintf(pd->pdffp, "%010d 00000 n \n", pd->pos[i]);
+    fprintf(pd->pdffp, "trailer\n<< /Size %d /Info 1 0 R /Root 2 0 R >>\nstartxref\n%d\n", pd->nobjs + 1, startxref);
+    fprintf(pd->pdffp, "%%%%EOF\n");
 
     /* now seek back and update the header */
-    rewind(pd->mainfp);
-    fprintf(pd->mainfp, "%%PDF-%i.%i\n", pd->versionMajor, pd->versionMinor);
-    fclose(pd->mainfp);
+    rewind(pd->pdffp);
+    fprintf(pd->pdffp, "%%PDF-%i.%i\n", pd->versionMajor, pd->versionMinor);
+    fclose(pd->pdffp);
 }
 
 static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
@@ -7271,14 +7299,39 @@ static void PDF_Size(double *left, double *right, double *bottom, double *top, p
 
 static void PDF_endpage(PDFDesc *pd)
 {
-    int here;
     if (pd->inText)
         textoff(pd);
     fprintf(pd->pdffp, "Q\n");
-    here = (int)ftell(pd->pdffp);
-    fprintf(pd->pdffp, "endstream\nendobj\n");
-    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
-    fprintf(pd->pdffp, "%d 0 obj\n%d\nendobj\n", pd->nobjs, here - pd->startstream);
+    if (pd->useCompression)
+    {
+        fflush(pd->pdffp);
+        fseek(pd->pdffp, 0, SEEK_END);
+        unsigned int len = ftell(pd->pdffp);
+        fseek(pd->pdffp, 0, SEEK_SET);
+        Bytef *buf = Calloc(len, Bytef);
+        uLong outlen = 1.001 * len + 20;
+        Bytef *buf2 = Calloc(outlen, Bytef);
+        size_t res = fread(buf, 1, len, pd->pdffp);
+        if (res < len)
+            error("internal error in PDF_endpage");
+        fclose(pd->pdffp);
+        pd->pdffp = pd->mainfp;
+        int res2 = compress(buf2, &outlen, buf, len);
+        if (res2 != Z_OK)
+            error("internal error %d in PDF_endpage", res2);
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Length %d /Filter /FlateDecode\n>>\nstream\n", pd->nobjs, (int)outlen);
+        fwrite(buf2, 1, outlen, pd->pdffp);
+        Free(buf);
+        Free(buf2);
+        fprintf(pd->pdffp, "endstream\nendobj\n");
+    }
+    else
+    {
+        int here = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "endstream\nendobj\n");
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        fprintf(pd->pdffp, "%d 0 obj\n%d\nendobj\n", pd->nobjs, here - pd->startstream);
+    }
 }
 
 #define R_VIS(col) (R_ALPHA(col) > 0)
@@ -7313,13 +7366,24 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
         }
     }
 
-    pd->pos[++pd->nobjs] = (int)ftell(pd->mainfp);
+    pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
     pd->pageobj[pd->pageno++] = pd->nobjs;
-    fprintf(pd->mainfp, "%d 0 obj\n<< /Type /Page /Parent 3 0 R /Contents %d 0 R /Resources 4 0 R >>\nendobj\n",
+    fprintf(pd->pdffp, "%d 0 obj\n<< /Type /Page /Parent 3 0 R /Contents %d 0 R /Resources 4 0 R >>\nendobj\n",
             pd->nobjs, pd->nobjs + 1);
     pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
-    fprintf(pd->pdffp, "%d 0 obj\n<<\n/Length %d 0 R\n>>\nstream\r\n", pd->nobjs, pd->nobjs + 1);
-    pd->startstream = (int)ftell(pd->pdffp);
+    if (pd->useCompression)
+    {
+        char *tmp = R_tmpnam("pdf", R_TempDir);
+        pd->pdffp = fopen(tmp, "w+b");
+        if (!pd->pdffp)
+            error("cannot open file '%s', reason %s", tmp, strerror(errno));
+    }
+    else
+    {
+        fprintf(pd->pdffp, "%d 0 obj\n<<\n/Length %d 0 R\n>>\nstream\n", pd->nobjs, pd->nobjs + 1);
+        pd->startstream = (int)ftell(pd->pdffp);
+    }
+
     /*
      * Line end/join/mitre now controlled by user
      * Same old defaults
@@ -7329,14 +7393,14 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
      * but not so about M because Invalidate uses 0 yet the default used to be
      * 10.
      *
-     * fprintf(pd->mainfp, "1 J 1 j 10 M q\n");
+     * fprintf(pd->pdffp, "1 J 1 j 10 M q\n");
      */
-    fprintf(pd->mainfp, "1 J 1 j q\n");
+    fprintf(pd->pdffp, "1 J 1 j q\n");
     PDF_Invalidate(dd);
     if (R_VIS(gc->fill))
     {
         PDF_SetFill(gc->fill, dd);
-        fprintf(pd->mainfp, "0 0 %.2f %.2f re f\n", 72.0 * pd->width, 72.0 * pd->height);
+        fprintf(pd->pdffp, "0 0 %.2f %.2f re f\n", 72.0 * pd->width, 72.0 * pd->height);
     }
     pd->inText = FALSE;
 }
@@ -8562,7 +8626,7 @@ SEXP PDF(SEXP args)
     const char *file, *paper, *encoding, *family = NULL /* -Wall */, *bg, *fg, *title, call[] = "PDF", *colormodel;
     const char *afms[5];
     double height, width, ps;
-    int i, onefile, pagecentre, major, minor, dingbats, useKern, maxRasters;
+    int i, onefile, pagecentre, major, minor, dingbats, useKern, maxRasters, useCompression;
     SEXP fam, fonts;
     Rboolean fillOddEven;
 
@@ -8627,8 +8691,13 @@ SEXP PDF(SEXP args)
     if (fillOddEven == NA_LOGICAL)
         error(_("invalid value of '%s'"), "fillOddEven");
     maxRasters = asInteger(CAR(args));
+    args = CDR(args);
     if (maxRasters == NA_INTEGER || maxRasters <= 0)
         error(_("invalid 'maxRasters' parameter in %s"), call);
+    useCompression = asLogical(CAR(args));
+    args = CDR(args);
+    if (useCompression == NA_LOGICAL)
+        error(_("invalid value of '%s'"), "useCompression");
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -8638,7 +8707,8 @@ SEXP PDF(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!PDFDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, ps, onefile, pagecentre,
-                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven, maxRasters))
+                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven, maxRasters,
+                             useCompression))
         {
             /* we no longer get here: error is thrown in PDFDeviceDriver */
             error(_("unable to start %s() device"), "pdf");
