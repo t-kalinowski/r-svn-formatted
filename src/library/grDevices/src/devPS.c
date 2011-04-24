@@ -53,13 +53,10 @@ extern int errno;
 
 #include "zlib.h"
 
-#define USE_GZIO
-
-#ifdef USE_GZIO
+/* from connections.o */
 extern gzFile R_gzopen(const char *path, const char *mode);
 extern char *R_gzgets(gzFile file, char *buf, int len);
 extern int R_gzclose(gzFile file);
-#endif
 
 #define INVALID_COL 0xff0a0b0c
 
@@ -581,33 +578,20 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
 {
     char buf[BUFSIZE], *p, truth[10];
     int mode, i = 0, j, ii, nKPX = 0;
-#ifdef USE_GZIO
     gzFile fp;
-#else
-    FILE *fp;
-#endif
 
     if (strchr(fontpath, FILESEP[0]))
         strcpy(buf, fontpath);
     else
-#ifdef USE_GZIO
         snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%safm%s%s.gz", R_Home, FILESEP, FILESEP, FILESEP, FILESEP,
                  fontpath);
-#else
-        snprintf(buf, BUFSIZE, "%s%slibrary%sgrDevices%safm%s%s", R_Home, FILESEP, FILESEP, FILESEP, FILESEP, fontpath);
-#endif
 #ifdef DEBUG_PS
     Rprintf("afmpath is %s\n", buf);
     Rprintf("reencode is %d\n", reencode);
 #endif
 
-#ifdef USE_GZIO
     if (!(fp = R_gzopen(R_ExpandFileName(buf), "rb")))
     {
-#else
-    if (!(fp = R_fopen(R_ExpandFileName(buf), "r")))
-    {
-#endif
         warning(_("afm file '%s' could not be opened"), R_ExpandFileName(buf));
         return 0;
     }
@@ -625,13 +609,8 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
         for (j = 0; j < 4; j++)
             metrics->CharInfo[ii].BBox[j] = 0;
     }
-#ifdef USE_GZIO
     while (R_gzgets(fp, buf, BUFSIZE))
     {
-#else
-    while (fgets(buf, BUFSIZE, fp))
-    {
-#endif
         switch (KeyType(buf))
         {
 
@@ -746,11 +725,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
         }
     }
     metrics->nKP = i;
-#ifdef USE_GZIO
     R_gzclose(fp);
-#else
-    fclose(fp);
-#endif
     /* Make an index for kern-pair searches: relies on having contiguous
        blocks by first char for efficiency, but works in all cases. */
     {
@@ -773,11 +748,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
     }
     return 1;
 pserror:
-#ifdef USE_GZIO
     R_gzclose(fp);
-#else
-    fclose(fp);
-#endif
     return 0;
 }
 
