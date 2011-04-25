@@ -2986,22 +2986,20 @@ static void GA_Path(double *x, double *y, int npoly, int *nper, Rboolean winding
 static void doRaster(unsigned int *raster, int x, int y, int w, int h, double rot, pDevDesc dd)
 {
     const void *vmax = vmaxget();
-    int i;
     gadesc *xd = (gadesc *)dd->deviceSpecific;
     rect sr, dr;
     image img, mask;
     byte *imageData, *maskData;
     /* If there are any fully transparent pixels in the image
      * then we will need to create a mask.
-     */
-    Rboolean fullTrans = FALSE;
-    /* If there are any semitransparent pixels in the image
+     *
+     * If there are any semitransparent pixels in the image
      * then we will need to do alpha blending.
      * NOTE though that we can only handle 1 level of semitransparency
      * BUT we can handle some pixels fully transparent AND some
      * pixels semitransparent.
      */
-    Rboolean semiTrans = FALSE;
+    Rboolean fullTrans = FALSE, semiTrans = FALSE, warned = FALSE;
     /* Index to pixel that contains fixed alpha for image */
     int fixedAlpha = -1;
 
@@ -3014,9 +3012,9 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
 
     /* Set the image pixels from the raster */
     /* Need to swap ABGR to ARGB */
-    /* NOTE that graphapp usese 0 for opaque and 255 for transparent! */
+    /* NOTE that graphapp uses 0 for opaque and 255 for transparent */
     imageData = (byte *)R_alloc(4 * w * h, sizeof(byte));
-    for (i = 0; i < w * h; i++)
+    for (int i = 0; i < w * h; i++)
     {
         byte alpha = R_ALPHA(raster[i]);
         if (alpha < 255)
@@ -3046,11 +3044,10 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
              * a single constant alpha across the image
              */
             if (alpha > 0 && fixedAlpha < 0)
-            {
                 fixedAlpha = i;
-            }
-            if (alpha > 0 && fixedAlpha >= 0 && alpha != R_ALPHA(raster[fixedAlpha]))
+            if (!warned && alpha > 0 && fixedAlpha >= 0 && alpha != R_ALPHA(raster[fixedAlpha]))
             {
+                warned = TRUE;
                 warning("Per-pixel alpha not supported on this device");
             }
         }
@@ -3073,7 +3070,7 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
         /* Create mask (b&w) */
         mask = newimage(w, h, 32);
         maskData = (byte *)R_alloc(4 * w * h, sizeof(byte));
-        for (i = 0; i < w * h; i++)
+        for (int i = 0; i < w * h; i++)
         {
             byte alpha = R_ALPHA(raster[i]);
             if (alpha == 0)
@@ -3153,26 +3150,23 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     const void *vmax = vmaxget();
     double angle = rot * M_PI / 180;
     unsigned int *image = raster;
-    int imageWidth = w;
-    int imageHeight = h;
-    int adjustXY = 0;
+    int imageWidth = w, imageHeight = h;
+    Rboolean adjustXY = FALSE;
 
     /* The alphablend code cannot handle negative width or height */
     if (height < 0)
     {
         height = -height;
-        adjustXY = 1;
+        adjustXY = TRUE;
     }
 
     if (interpolate)
     {
-        int newW = (int)(width + .5);
-        int newH = (int)(height + .5);
+        int newW = (int)(width + .5), newH = (int)(height + .5);
         unsigned int *newRaster;
 
         newRaster = (unsigned int *)R_alloc(newW * newH, sizeof(unsigned int));
         R_GE_rasterInterpolate(image, w, h, newRaster, newW, newH);
-
         image = newRaster;
         imageWidth = newW;
         imageHeight = newH;
@@ -3184,13 +3178,11 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
          * is the right size AND so that can adjust (x, y)
          * correctly
          */
-        int newW = (int)(width + .5);
-        int newH = (int)(height + .5);
+        int newW = (int)(width + .5), newH = (int)(height + .5);
         unsigned int *newRaster;
 
         newRaster = (unsigned int *)R_alloc(newW * newH, sizeof(unsigned int));
         R_GE_rasterScale(image, w, h, newRaster, newW, newH);
-
         image = newRaster;
         imageWidth = newW;
         imageHeight = newH;
@@ -3199,11 +3191,9 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
     if (adjustXY)
     {
         /* convert (x, y) from bottom-left to top-right */
-        y = y - imageHeight * cos(angle);
+        y -= imageHeight * cos(angle);
         if (angle != 0)
-        {
-            x = x - imageHeight * sin(angle);
-        }
+            x -= imageHeight * sin(angle);
     }
 
     if (angle != 0)
@@ -3228,8 +3218,8 @@ static void GA_Raster(unsigned int *raster, int w, int h, double x, double y, do
         /*
          * Adjust (x, y) for resized and rotated image
          */
-        x = x - (newW - imageWidth) / 2 - xoff;
-        y = y - (newH - imageHeight) / 2 + yoff;
+        x -= (newW - imageWidth) / 2 - xoff;
+        y -= (newH - imageHeight) / 2 + yoff;
 
         image = rotatedRaster;
         imageWidth = newW;
@@ -3256,17 +3246,12 @@ static SEXP GA_Cap(pDevDesc dd)
     {
         img = bitmaptoimage(xd->gawin);
         if (imagedepth(img) == 8)
-        {
             img = convert8to32(img);
-        }
     }
 
     if (img)
     {
-        int i;
-        int width = imagewidth(img);
-        int height = imageheight(img);
-        int size = width * height;
+        int width = imagewidth(img), height = imageheight(img), size = width * height;
         unsigned int *rint;
 
         screenData = getpixels(img);
@@ -3276,10 +3261,8 @@ static SEXP GA_Cap(pDevDesc dd)
         /* Copy each byte of screen to an R matrix.
          * The ARGB32 needs to be converted to an R ABGR32 */
         rint = (unsigned int *)INTEGER(raster);
-        for (i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++)
             rint[i] = R_RGBA(screenData[i * 4 + 2], screenData[i * 4 + 1], screenData[i * 4 + 0], 255);
-        }
         PROTECT(dim = allocVector(INTSXP, 2));
         INTEGER(dim)[0] = height;
         INTEGER(dim)[1] = width;
