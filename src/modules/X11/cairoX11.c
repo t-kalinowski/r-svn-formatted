@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2010  R Development Core Team
+ *  Copyright (C) 1997--2011  R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -82,17 +82,6 @@
     pango_layout_set_text
 
 */
-
-static void Cairo_update(pX11Desc xd)
-{
-    /* We could first paint the canvas colour and
-       then the backing surface. */
-    if (xd->xcc)
-    {
-        cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
-        cairo_paint(xd->xcc);
-    }
-}
 
 static void CairoColor(unsigned int col, pX11Desc xd)
 {
@@ -183,20 +172,6 @@ static void Cairo_Clip(double x0, double x1, double y0, double y1, pDevDesc dd)
     /* Add 1 per X11_Clip */
     cairo_rectangle(xd->cc, x0, y0, x1 - x0 + 1, y1 - y0 + 1);
     cairo_clip(xd->cc);
-}
-
-static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
-{
-    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
-
-    cairo_reset_clip(xd->cc);
-    xd->fill = R_OPAQUE(gc->fill) ? gc->fill : xd->canvas;
-    CairoColor(xd->fill, xd);
-    cairo_new_path(xd->cc);
-    cairo_paint(xd->cc);
-    Cairo_update(xd);
-    /* Apparently needed */
-    XSync(display, 0);
 }
 
 static void Cairo_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd)
@@ -372,6 +347,33 @@ static cairo_surface_t *createImageSurface(unsigned int *raster, int w, int h)
     return (image);
 }
 
+#ifndef Win32
+static void Cairo_update(pX11Desc xd)
+{
+    /* We could first paint the canvas colour and
+       then the backing surface. */
+    if (xd->xcc)
+    {
+        cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+        cairo_paint(xd->xcc);
+    }
+}
+
+static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
+{
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+
+    cairo_reset_clip(xd->cc);
+    xd->fill = R_OPAQUE(gc->fill) ? gc->fill : xd->canvas;
+    CairoColor(xd->fill, xd);
+    cairo_new_path(xd->cc);
+    cairo_paint(xd->cc);
+    Cairo_update(xd);
+    /* Apparently needed */
+    XSync(display, 0);
+}
+#endif
+
 static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
                          double rot, Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
@@ -444,6 +446,7 @@ static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y,
     vmaxset(vmax);
 }
 
+#ifndef Win32
 static SEXP Cairo_Cap(pDevDesc dd)
 {
     int i, width, height, size;
@@ -488,6 +491,7 @@ static SEXP Cairo_Cap(pDevDesc dd)
     UNPROTECT(2);
     return raster;
 }
+#endif
 
 #ifdef HAVE_PANGOCAIRO
 /* ------------- pangocairo section --------------- */
