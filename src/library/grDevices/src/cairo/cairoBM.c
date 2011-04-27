@@ -57,7 +57,7 @@ static void cbm_Size(double *left, double *right, double *bottom, double *top, p
 /* copied from devWindows.c */
 #include <windows.h>
 typedef int (*R_SaveAsBitmap)(/* variable set of args */);
-static R_SaveAsBitmap R_SaveAsPng, R_SaveAsJpeg, R_SaveAsBmp, R_SaveAsTIFF;
+static R_SaveAsBitmap R_SaveAsJpeg, R_SaveAsBmp, R_SaveAsTIFF;
 
 static int RbitmapAlreadyLoaded = 0;
 static HINSTANCE hRbitmapDll;
@@ -72,7 +72,6 @@ static int Load_Rbitmap_Dll()
         strcat(szFullPath, R_ARCH);
         strcat(szFullPath, "\\Rbitmap.dll");
         if (((hRbitmapDll = LoadLibrary(szFullPath)) != NULL) &&
-            ((R_SaveAsPng = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsPng")) != NULL) &&
             ((R_SaveAsBmp = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsBmp")) != NULL) &&
             ((R_SaveAsJpeg = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsJpeg")) != NULL) &&
             ((R_SaveAsTIFF = (R_SaveAsBitmap)GetProcAddress(hRbitmapDll, "R_SaveAsTIFF")) != NULL))
@@ -115,13 +114,17 @@ static void null_Mode(int mode, pDevDesc dd)
 static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 {
     cairo_status_t res;
-    if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
+    if (xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
     {
         if (!Load_Rbitmap_Dll())
         {
             warning("Unable to load Rbitmap.dll");
             return FALSE;
         }
+        xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
+    }
+    else if (xd->type == PNG)
+    {
         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
     }
     else if (xd->type == SVG || xd->type == PDF || xd->type == PS)
@@ -166,9 +169,13 @@ static void BM_Close_bitmap(pX11Desc xd)
         return;
     }
 
-    stride = xd->windowWidth;
+    stride = cairo_image_surface_get_stride(xd->cs) / 4;
     if (xd->type == PNG)
-        R_SaveAsPng(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, xd->fp, 0, xd->res_dpi);
+    {
+        char buf[PATH_MAX];
+        snprintf(buf, PATH_MAX, xd->filename, xd->npages);
+        cairo_surface_write_to_png(xd->cs, buf);
+    }
     else if (xd->type == JPEG)
         R_SaveAsJpeg(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, xd->quality, xd->fp, xd->res_dpi);
     else if (xd->type == BMP)
@@ -188,7 +195,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     cairo_status_t res;
 
     xd->npages++;
-    if (xd->type == PNG || xd->type == JPEG || xd->type == BMP)
+    if (xd->type == JPEG || xd->type == BMP)
     {
         if (xd->npages > 1)
         {
@@ -202,8 +209,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         if (!xd->fp)
             error(_("could not open file '%s'"), buf);
     }
-#ifdef HAVE_TIFF
-    else if (xd->type == TIFF)
+    else if (xd->type == PNG || xd->type == TIFF)
     {
         if (xd->npages > 1)
         {
@@ -212,7 +218,6 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             xd->npages++;
         }
     }
-#endif
 #ifdef HAVE_CAIRO_SVG
     else if (xd->type == SVG)
     {
