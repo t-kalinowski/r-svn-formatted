@@ -22,13 +22,13 @@
 #include <config.h>
 #endif
 
+/* This module is only compiled if HAVE_WORKING_CAIRO is true */
+
 #ifdef Win32
-#define HAVE_WORKING_CAIRO 1
 #define HAVE_PANGOCAIRO 1
 #define HAVE_CAIRO_SVG 1
 #define HAVE_CAIRO_PDF 1
 #define HAVE_CAIRO_PS 1
-#define HAVE_TIFF 1
 
 #define raise our_raise
 #include <Defn.h>
@@ -67,7 +67,6 @@ static void cbm_Size(double *left, double *right, double *bottom, double *top, p
 #include "bitmap.h"
 #endif
 
-#ifdef HAVE_WORKING_CAIRO
 static void null_Activate(pDevDesc dd)
 {
 }
@@ -88,7 +87,7 @@ static void null_Mode(int mode, pDevDesc dd)
 static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 {
     cairo_status_t res;
-    if (xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
+    if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
     {
 #ifdef Win32
         if (!Load_Rbitmap_Dll())
@@ -99,7 +98,7 @@ static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 #endif
         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
     }
-    else if (xd->type == PNG)
+    else if (xd->type == PNGdirect)
     {
         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
     }
@@ -149,6 +148,8 @@ static void BM_Close_bitmap(pX11Desc xd)
 
     stride = cairo_image_surface_get_stride(xd->cs) / 4;
     if (xd->type == PNG)
+        R_SaveAsPng(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, xd->fp, 0, xd->res_dpi);
+    else if (xd->type == PNGdirect)
     {
         char buf[PATH_MAX];
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
@@ -173,7 +174,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
     cairo_status_t res;
 
     xd->npages++;
-    if (xd->type == JPEG || xd->type == BMP)
+    if (xd->type == PNG || xd->type == JPEG || xd->type == BMP)
     {
         if (xd->npages > 1)
         {
@@ -187,7 +188,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         if (!xd->fp)
             error(_("could not open file '%s'"), buf);
     }
-    else if (xd->type == PNG || xd->type == TIFF)
+    else if (xd->type == PNGdirect || xd->type == TIFF)
     {
         if (xd->npages > 1)
         {
@@ -442,9 +443,8 @@ const static struct
 {
     const char *const name;
     X_GTYPE gtype;
-} devtable[] = {{"", WINDOW},       {"", XIMAGE},       {"png", PNG},   {"jpeg", JPEG},
-                {"svg", SVG},       {"png", PNGdirect}, /* defunct in 2.10.0 */
-                {"cairo_pdf", PDF}, {"cairo_ps", PS},   {"tiff", TIFF}, {"bmp", BMP}};
+} devtable[] = {{"", WINDOW},       {"", XIMAGE},       {"png", PNG},     {"jpeg", JPEG}, {"svg", SVG},
+                {"png", PNGdirect}, {"cairo_pdf", PDF}, {"cairo_ps", PS}, {"tiff", TIFF}, {"bmp", BMP}};
 
 /*
    cairo(filename, type, width, height, pointsize, bg, res, antialias, quality)
@@ -464,7 +464,6 @@ SEXP in_Cairo(SEXP args)
     type = asInteger(CAR(args));
     if (type == NA_INTEGER || type <= 0)
         error(_("invalid '%s' argument"), "type");
-    //    printf("winCairo(%s) device\n", devtable[type].name);
     args = CDR(args);
     width = asInteger(CAR(args));
     if (width == NA_INTEGER || width <= 0)
@@ -514,11 +513,3 @@ SEXP in_Cairo(SEXP args)
 
     return R_NilValue;
 }
-
-#else
-static SEXP in_Cairo(SEXP args)
-{
-    error(_("cairo-based devices are not supported on this build"));
-    return R_NilValue;
-}
-#endif
