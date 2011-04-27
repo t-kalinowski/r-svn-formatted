@@ -3009,9 +3009,9 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
         byte alpha = R_ALPHA(raster[i]);
         double fac = alpha / 255.0;
         imageData[i * 4 + 3] = alpha;
-        imageData[i * 4 + 2] = 0.5 + fac * R_RED(raster[i]);
-        imageData[i * 4 + 1] = 0.5 + fac * R_GREEN(raster[i]);
-        imageData[i * 4 + 0] = 0.5 + fac * R_BLUE(raster[i]);
+        imageData[i * 4 + 2] = 0.49 + fac * R_RED(raster[i]);
+        imageData[i * 4 + 1] = 0.49 + fac * R_GREEN(raster[i]);
+        imageData[i * 4 + 0] = 0.49 + fac * R_BLUE(raster[i]);
     }
     setpixels(img, imageData);
     gsetcliprect(xd->bm, xd->clip);
