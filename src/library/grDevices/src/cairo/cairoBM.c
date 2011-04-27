@@ -22,6 +22,7 @@
 #include <config.h>
 #endif
 
+#ifdef Win32
 #define HAVE_WORKING_CAIRO 1
 #define HAVE_PANGOCAIRO 1
 #define HAVE_CAIRO_SVG 1
@@ -32,10 +33,15 @@
 #define raise our_raise
 #include <Defn.h>
 #undef raise
+#else
+#include <Defn.h>
+#endif
 
 #define R_USE_PROTOTYPES 1
 #include <R_ext/GraphicsEngine.h>
+#include <Defn.h>
 #include "Fileio.h" /* R_fopen */
+
 #include "cairoBM.h"
 
 static double RedGamma = 1.0;
@@ -52,8 +58,14 @@ static void cbm_Size(double *left, double *right, double *bottom, double *top, p
     *top = 0.0;
 }
 
+#define NO_X11 1
 #include "cairoX11.c"
+
+#ifdef Win32
 #include "rbitmap.h"
+#else
+#include "bitmap.h"
+#endif
 
 #ifdef HAVE_WORKING_CAIRO
 static void null_Activate(pDevDesc dd)
@@ -78,11 +90,13 @@ static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
     cairo_status_t res;
     if (xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
     {
+#ifdef Win32
         if (!Load_Rbitmap_Dll())
         {
             warning("Unable to load Rbitmap.dll");
             return FALSE;
         }
+#endif
         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (double)xd->windowWidth, (double)xd->windowHeight);
     }
     else if (xd->type == PNG)

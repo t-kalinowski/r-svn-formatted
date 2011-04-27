@@ -347,7 +347,7 @@ static cairo_surface_t *createImageSurface(unsigned int *raster, int w, int h)
     return (image);
 }
 
-#ifndef Win32
+#ifndef NO_X11
 static void Cairo_update(pX11Desc xd)
 {
     /* We could first paint the canvas colour and
@@ -446,7 +446,7 @@ static void Cairo_Raster(unsigned int *raster, int w, int h, double x, double y,
     vmaxset(vmax);
 }
 
-#ifndef Win32
+#ifndef NO_X11
 static SEXP Cairo_Cap(pDevDesc dd)
 {
     int i, width, height, size;
