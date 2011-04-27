@@ -3974,7 +3974,7 @@ static void GA_eventHelper(pDevDesc dd, int code)
     return;
 }
 
-static R_SaveAsBitmap R_winCairo;
+static R_SaveAsBitmap R_devCairo;
 static int RcairoAlreadyLoaded = 0;
 static HINSTANCE hRcairoDll;
 
@@ -3988,7 +3988,7 @@ static int Load_Rcairo_Dll()
         strcat(szFullPath, R_ARCH);
         strcat(szFullPath, "\\winCairo.dll");
         if (((hRcairoDll = LoadLibrary(szFullPath)) != NULL) &&
-            ((R_winCairo = (R_SaveAsBitmap)GetProcAddress(hRcairoDll, "Cairo")) != NULL))
+            ((R_devCairo = (R_SaveAsBitmap)GetProcAddress(hRcairoDll, "in_Cairo")) != NULL))
         {
             RcairoAlreadyLoaded = 1;
         }
@@ -4008,15 +4008,11 @@ static int Load_Rcairo_Dll()
 /*
    cairo(filename, type, width, height, pointsize, bg, res, antialias, quality)
 */
-SEXP winCairo(SEXP args)
+SEXP devCairo(SEXP args)
 {
     if (!Load_Rcairo_Dll())
-    {
         warning(_("Unable to load winCairo.dll"));
-    }
     else
-    {
-        (R_winCairo)(args);
-    }
+        (R_devCairo)(args);
     return R_NilValue;
 }

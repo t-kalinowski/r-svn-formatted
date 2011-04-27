@@ -90,9 +90,9 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
     }
 
 static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16), EXTDEF(XFig, 11),
-                                                 EXTDEF(PDF, 16),
+                                                 EXTDEF(PDF, 16),   EXTDEF(devCairo, 9),
 #ifdef WIN32
-                                                 EXTDEF(devga, 17), EXTDEF(savePlot, 3),    EXTDEF(winCairo, 9),
+                                                 EXTDEF(devga, 17), EXTDEF(savePlot, 3),
 #else
                                                  EXTDEF(Quartz, 12),
 #endif
