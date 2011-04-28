@@ -79,19 +79,27 @@ static void my_png_warning(png_structp png_ptr, png_const_charp msg)
 __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
                                       FILE *fp, unsigned int transparent, int res)
 {
+    printf("transparent: %x\n", transparent);
     png_structp png_ptr;
     png_infop info_ptr;
     unsigned int col, palette[256];
     png_color pngpalette[256];
-    png_bytep pscanline, scanline = (png_bytep)calloc(3 * width, sizeof(png_byte));
+    png_bytep pscanline;
+    png_bytep scanline = (png_bytep)calloc((size_t)(4 * width), sizeof(png_byte));
     png_byte trans[256];
     png_color_16 trans_values[1];
-    int i, j, r, ncols, mid, high, low, withpalette;
-    DECLARESHIFTS;
+    int i, j, r, ncols, mid, high, low, withpalette, have_alpha;
+    volatile DECLARESHIFTS;
 
     /* Have we enough memory?*/
     if (scanline == NULL)
         return 0;
+
+    if (fp == NULL)
+    {
+        free(scanline);
+        return 0;
+    }
 
     /* Create and initialize the png_struct with the desired error handler
      * functions.  If you want to use the default stderr and longjump method,
@@ -139,11 +147,14 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
         palette[ncols++] = transparent & 0xFFFFFF;
     mid = ncols;
     withpalette = 1;
+    have_alpha = 0;
     for (i = 0; (i < height) && withpalette; i++)
     {
         for (j = 0; (j < width) && withpalette; j++)
         {
-            col = gp(d, i, j) & 0xFFFFFF;
+            col = gp(d, i, j);
+            if (GETALPHA(col) < 255)
+                have_alpha = 1;
             /* binary search the palette: */
             low = 0;
             high = ncols - 1;
@@ -175,6 +186,9 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
         }
     }
 
+    have_alpha &= (transparent == 0);
+
+    printf("have_alpha: %d\n", have_alpha);
     /* Set the image information here.  Width and height are up to 2^31,
      * bit_depth is one of 1, 2, 4, 8, or 16, but valid values also depend on
      * the color_type selected. color_type is one of PNG_COLOR_TYPE_GRAY,
@@ -183,7 +197,8 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
      * PNG_INTERLACE_ADAM7, and the compression_type and filter_type MUST
      * currently be PNG_COMPRESSION_TYPE_BASE and PNG_FILTER_TYPE_BASE. REQUIRED
      */
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, withpalette ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_RGB,
+    png_set_IHDR(png_ptr, info_ptr, width, height, 8,
+                 withpalette ? PNG_COLOR_TYPE_PALETTE : (have_alpha ? PNG_COLOR_TYPE_RGB_ALPHA : PNG_COLOR_TYPE_RGB),
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     if (withpalette)
@@ -191,26 +206,42 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
         for (i = 0; i < ncols; i++)
         {
             col = palette[i];
-            pngpalette[i].red = GETRED(col);
-            pngpalette[i].green = GETGREEN(col);
-            pngpalette[i].blue = GETBLUE(col);
+            if (transparent)
+            {
+                trans[i] = (col == transparent) ? 0 : 255;
+                pngpalette[i].red = GETRED(col);
+                pngpalette[i].green = GETGREEN(col);
+                pngpalette[i].blue = GETBLUE(col);
+            }
+            else
+            {
+                /* PNG needs NON-premultiplied alpha */
+                int a = GETALPHA(col);
+                trans[i] = a;
+                if (a == 255 || a == 0)
+                {
+                    pngpalette[i].red = GETRED(col);
+                    pngpalette[i].green = GETGREEN(col);
+                    pngpalette[i].blue = GETBLUE(col);
+                }
+                else
+                {
+                    pngpalette[i].red = 0.49 + 255.0 * GETRED(col) / a;
+                    pngpalette[i].green = 0.49 + 255.0 * GETGREEN(col) / a;
+                    pngpalette[i].blue = 0.49 + 255.0 * GETBLUE(col) / a;
+                }
+            }
         }
         png_set_PLTE(png_ptr, info_ptr, pngpalette, ncols);
+        if (transparent || have_alpha)
+            png_set_tRNS(png_ptr, info_ptr, trans, ncols, trans_values);
     }
     /* Deal with transparency */
-    if (transparent)
+    if (transparent && !withpalette)
     {
-        if (withpalette)
-        {
-            for (i = 0; i < ncols; i++)
-                trans[i] = (palette[i] == (transparent & 0xFFFFFF)) ? 0 : 255;
-        }
-        else
-        {
-            trans_values[0].red = GETRED(transparent);
-            trans_values[0].blue = GETBLUE(transparent);
-            trans_values[0].green = GETGREEN(transparent);
-        }
+        trans_values[0].red = GETRED(transparent);
+        trans_values[0].blue = GETBLUE(transparent);
+        trans_values[0].green = GETGREEN(transparent);
         png_set_tRNS(png_ptr, info_ptr, trans, ncols, trans_values);
     }
 
@@ -229,7 +260,7 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
         pscanline = scanline;
         for (j = 0; j < width; j++)
         {
-            col = gp(d, i, j) & 0xFFFFFF;
+            col = gp(d, i, j);
             if (withpalette)
             {
                 /* binary search the palette (the colour must be there): */
@@ -249,9 +280,31 @@ __declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned i
             }
             else
             {
-                *pscanline++ = GETRED(col);
-                *pscanline++ = GETGREEN(col);
-                *pscanline++ = GETBLUE(col);
+                if (have_alpha)
+                {
+                    /* PNG needs NON-premultiplied alpha */
+                    int a = GETALPHA(col);
+                    if (a == 255 || a == 0)
+                    {
+                        *pscanline++ = GETRED(col);
+                        *pscanline++ = GETGREEN(col);
+                        *pscanline++ = GETBLUE(col);
+                        *pscanline++ = a;
+                    }
+                    else
+                    {
+                        *pscanline++ = 0.49 + 255.0 * GETRED(col) / a;
+                        *pscanline++ = 0.49 + 255.0 * GETGREEN(col) / a;
+                        *pscanline++ = 0.49 + 255.0 * GETBLUE(col) / a;
+                        *pscanline++ = a;
+                    }
+                }
+                else
+                {
+                    *pscanline++ = GETRED(col);
+                    *pscanline++ = GETGREEN(col);
+                    *pscanline++ = GETBLUE(col);
+                }
             }
         }
         png_write_row(png_ptr, scanline);
@@ -329,6 +382,12 @@ __declspec(dllexport) int R_SaveAsJpeg(void *d, int width, int height, unsigned 
     /* Have we enough memory?*/
     if (scanline == NULL)
         return 0;
+
+    if (outfile == NULL)
+    {
+        free(scanline);
+        return 0;
+    }
 
     /* Step 1: allocate and initialize JPEG compression object */
 
@@ -423,16 +482,16 @@ __declspec(dllexport) int R_SaveAsTIFF(void *d, int width, int height, unsigned 
 
     DECLARESHIFTS;
 
-#if 0
     for (i = 0; i < height; i++)
-	for (j = 0; j < width; j++) {
-	    col = gp(d,i,j);
-	    if (GETALPHA(col) < 255) {
-		have_alpha = 1;
-		break;
-	    }
-	}
-#endif
+        for (j = 0; j < width; j++)
+        {
+            col = gp(d, i, j);
+            if (GETALPHA(col) < 255)
+            {
+                have_alpha = 1;
+                break;
+            }
+        }
     sampleperpixel = 3 + have_alpha;
 
     out = TIFFOpen(outfile, "w");
@@ -535,6 +594,9 @@ __declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned i
     unsigned int dwrd;
     int lres;
     DECLARESHIFTS;
+
+    if (fp == NULL)
+        return 0;
 
     /* Have we less than 256 different colors? */
     ncols = mid = 0;
