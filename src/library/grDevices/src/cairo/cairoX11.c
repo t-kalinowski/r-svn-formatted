@@ -501,7 +501,11 @@ static PangoFontDescription *PG_getFont(const pGEcontext gc, double fs)
     PangoFontDescription *fontdesc;
     gint face = gc->fontface;
     double size = gc->cex * gc->ps * fs, ssize = PANGO_SCALE * size;
-
+#ifdef WIN32
+    char *times = "Times New Roman", *hv = "Arial";
+#else
+    char *times = "times", *hv = "Helvetica";
+#endif
     if (face < 1 || face > 5)
         face = 1;
 
@@ -514,10 +518,10 @@ static PangoFontDescription *PG_getFont(const pGEcontext gc, double fs)
         if (streql(fm, "mono"))
             fm = "courier";
         else if (streql(fm, "serif"))
-            fm = "times";
+            fm = times;
         else if (streql(fm, "sans"))
-            fm = "helvetica";
-        pango_font_description_set_family(fontdesc, fm[0] ? fm : "helvetica");
+            fm = hv;
+        pango_font_description_set_family(fontdesc, fm[0] ? fm : hv);
         if (face == 2 || face == 4)
             pango_font_description_set_weight(fontdesc, PANGO_WEIGHT_BOLD);
         if (face == 3 || face == 4)
@@ -846,16 +850,17 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
     double size = gc->cex * gc->ps * fs;
     char *family = "Helvetica";
     int slant = CAIRO_FONT_SLANT_NORMAL, wt = CAIRO_FONT_WEIGHT_NORMAL;
+#ifdef WIN32
+    char *times = "Times New Roman", *hv = "Arial";
+#else
+    char *times = "times", *hv = "Helvetica";
+#endif
 
     char *fm = gc->fontfamily;
     if (streql(fm, "mono"))
         family = "courier";
     else if (streql(fm, "serif"))
-        family = "times";
-    else if (streql(fm, "sans"))
-        family = "helvetica";
-    else if (fm[0])
-        family = fm;
+        family = times else if (streql(fm, "sans")) family = hv else if (fm[0]) family = fm;
     if (face < 1 || face > 5)
         face = 1;
     if (face == 5)
