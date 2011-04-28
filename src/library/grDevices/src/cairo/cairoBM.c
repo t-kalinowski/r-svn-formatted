@@ -293,7 +293,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
         error(_("unimplemented cairo-based device"));
 
     cairo_reset_clip(xd->cc);
-    if (xd->type == PNG || xd->type == TIFF)
+    if (xd->type == PNG || xd->type == TIFF || xd->type == PNGdirect)
     {
         /* First clear it */
         cairo_set_operator(xd->cc, CAIRO_OPERATOR_CLEAR);
@@ -313,7 +313,7 @@ static void BM_Close(pDevDesc dd)
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 
     if (xd->npages)
-        if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP)
+        if (xd->type == PNG || xd->type == JPEG || xd->type == TIFF || xd->type == BMP || xd->type == PNGdirect)
             BM_Close_bitmap(xd);
     if (xd->fp)
         fclose(xd->fp);
