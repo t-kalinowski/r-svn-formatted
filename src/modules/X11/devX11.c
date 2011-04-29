@@ -2518,7 +2518,8 @@ static void X11_Mode(int mode, pDevDesc dd)
 
 Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, double height, double pointsize,
                          double gamma_fac, X_COLORTYPE colormodel, int maxcube, int bgcolor, int canvascolor,
-                         SEXP sfonts, int res, int xpos, int ypos, const char *title, int useCairo, int antialias)
+                         SEXP sfonts, int res, int xpos, int ypos, const char *title, int useCairo, int antialias,
+                         const char *family)
 {
     pX11Desc xd;
     const char *fn;
@@ -2574,7 +2575,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
             strcpy(xd->symbolfamily, fn);
     }
     else
-        strcpy(xd->basefontfamily, "sans");
+        strcpy(xd->basefontfamily, family);
 
     /*	Start the Device Driver and Hardcopy.  */
 
@@ -2873,7 +2874,7 @@ static char *SaveString(SEXP sxp, int offset)
 
 static void Rf_addX11Device(const char *display, double width, double height, double ps, double gamma, int colormodel,
                             int maxcubesize, int bgcolor, int canvascolor, const char *devname, SEXP sfonts, int res,
-                            int xpos, int ypos, const char *title, int useCairo, int antialias)
+                            int xpos, int ypos, const char *title, int useCairo, int antialias, const char *family)
 {
     pDevDesc dev = NULL;
     pGEDevDesc dd;
@@ -2886,7 +2887,7 @@ static void Rf_addX11Device(const char *display, double width, double height, do
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return;
         if (!X11DeviceDriver(dev, display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor,
-                             sfonts, res, xpos, ypos, title, useCairo, antialias))
+                             sfonts, res, xpos, ypos, title, useCairo, antialias, family))
         {
             free(dev);
             errorcall(gcall, _("unable to start device %s"), devname);
@@ -2899,7 +2900,7 @@ static void Rf_addX11Device(const char *display, double width, double height, do
 
 static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    const char *display, *cname, *devname, *title;
+    const char *display, *cname, *devname, *title, *family;
     const void *vmax;
     double height, width, ps, gamma;
     int colormodel, maxcubesize, bgcolor, canvascolor, res, xpos, ypos, useCairo, antialias;
@@ -2980,6 +2981,11 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     antialias = asInteger(CAR(args));
     if (antialias == NA_INTEGER)
         errorcall(call, _("invalid '%s' value"), "antialias");
+    args = CDR(args);
+    sc = CAR(args);
+    if (!isString(sc) || LENGTH(sc) != 1)
+        errorcall(call, _("invalid '%s' value"), "family");
+    family = CHAR(STRING_ELT(sc, 0));
 
     if (!strncmp(display, "png::", 5))
         devname = "PNG";
@@ -2997,7 +3003,7 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "X11";
 
     Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor, devname, sfonts,
-                    res, xpos, ypos, title, useCairo, antialias);
+                    res, xpos, ypos, title, useCairo, antialias, family);
     vmaxset(vmax);
     return R_NilValue;
 }
