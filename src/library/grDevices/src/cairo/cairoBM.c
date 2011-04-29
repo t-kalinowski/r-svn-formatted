@@ -329,7 +329,7 @@ static void BM_Close(pDevDesc dd)
 }
 
 static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int quality, int width, int height, int ps,
-                               int bg, int res, int antialias)
+                               int bg, int res, int antialias, const char *family)
 {
     pX11Desc xd;
     int res0 = (res > 0) ? res : 72;
@@ -342,6 +342,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     xd->quality = quality;
     xd->windowWidth = width;
     xd->windowHeight = height;
+    strncpy(xd->basefontfamily, family, 500);
 #ifdef HAVE_PANGOCAIRO
     /* Pango's default resolution is 96 dpi */
     dps *= res0 / 96.0;
@@ -449,13 +450,14 @@ const static struct
                 {"png", PNGdirect}, {"cairo_pdf", PDF}, {"cairo_ps", PS}, {"tiff", TIFF}, {"bmp", BMP}};
 
 /*
-   cairo(filename, type, width, height, pointsize, bg, res, antialias, quality)
+   cairo(filename, type, width, height, pointsize, bg, res, antialias,
+         quality, family)
 */
 SEXP in_Cairo(SEXP args)
 {
     pGEDevDesc gdd;
     SEXP sc;
-    const char *filename;
+    const char *filename, *family;
     int type, quality, width, height, pointsize, bgcolor, res, antialias;
 
     args = CDR(args); /* skip entry point name */
@@ -493,6 +495,10 @@ SEXP in_Cairo(SEXP args)
     quality = asInteger(CAR(args));
     if (quality == NA_INTEGER || quality < 0 || quality > 100)
         error(_("invalid '%s' argument"), "quality");
+    args = CDR(args);
+    if (!isString(CAR(args)) || LENGTH(CAR(args)) < 1)
+        error(_("invalid '%s' argument"), "family");
+    family = translateChar(STRING_ELT(CAR(args), 0));
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -503,7 +509,7 @@ SEXP in_Cairo(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!BMDeviceDriver(dev, devtable[type].gtype, filename, quality, width, height, pointsize, bgcolor, res,
-                            antialias))
+                            antialias, family))
         {
             free(dev);
             error(_("unable to start device '%s'"), devtable[type].name);
