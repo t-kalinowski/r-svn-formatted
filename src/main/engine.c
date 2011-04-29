@@ -1729,7 +1729,7 @@ void GEText(double x, double y, const char *const str, cetype_t enc, double xc, 
     }
     else
     {
-        /* PR#7397: this seems to reset R_Visible */
+        /* PR#7397: this seemed to reset R_Visible */
         Rboolean savevis = R_Visible;
         int noMetricInfo = -1;
         char *sbuf = NULL;
@@ -1749,11 +1749,12 @@ void GEText(double x, double y, const char *const str, cetype_t enc, double xc, 
                 enc2 = (dd->dev->hasTextUTF8 == TRUE) ? CE_UTF8 : CE_NATIVE;
             else if (dd->dev->wantSymbolUTF8 == TRUE)
                 enc2 = CE_UTF8;
-            if (gc->fontface == 5)
+            else if (dd->dev->wantSymbolUTF8 == NA_LOGICAL)
             {
                 enc = CE_LATIN1;
                 enc2 = CE_UTF8;
             }
+
 #ifdef DEBUG_MI
             printf("string %s, enc %d, %d\n", str, enc, enc2);
 #endif
