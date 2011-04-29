@@ -635,10 +635,17 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
 #else
 /* ------------- cairo-ft section --------------- */
 
+/* This uses what cairo refers to as its 'toy' interface:
+   http://cairographics.org/manual/cairo-text.html
+
+   No diagnostics that glyphs are present, no kerning.
+ */
+
 /* FIXME: although this should work on all platforms, I didn't get to
    test it (yet) anywhere else, hence the __APPLE__ condition for now [SU]
    r44621: now works on Linux, just finds the same fonts as before. [BDR]
 */
+
 #if CAIRO_HAS_FT_FONT && __APPLE__
 
 /* FT implies FC in Cairo */
@@ -849,6 +856,9 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
         slant = CAIRO_FONT_SLANT_ITALIC;
     if (face != 5)
     {
+        /* This is a 'toy', remember?
+           The manual recommnends the CSS2 names "serif", "sans-serif",
+           "monospace" */
         char *fm = gc->fontfamily;
         if (!fm[0])
             fm = xd->basefontfamily;
@@ -863,7 +873,8 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
     }
 
     cairo_select_font_face(xd->cc, family, slant, wt);
-    /* FIXME: this should really use a matrix if pixels are non-square */
+    /* FIXME: this should really use a cairo_set_font_matrix
+       if pixels are non-square on a screen device. */
     cairo_set_font_size(xd->cc, size);
 }
 #endif
