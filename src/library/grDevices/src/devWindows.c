@@ -64,7 +64,7 @@ extern size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
 static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
                                Rboolean buffered, SEXP psenv, Rboolean restoreConsole, const char *title,
-                               Rboolean clickToConfirm, Rboolean fillOddEven);
+                               Rboolean clickToConfirm, Rboolean fillOddEven, const char *family);
 
 /* a colour used to represent the background on png if transparent
    NB: used as RGB and BGR
@@ -295,7 +295,7 @@ static void SaveAsWin(pDevDesc dd, const char *display, Rboolean restoreConsole)
     if (GADeviceDriver(ndd, display, fromDeviceWidth(toDeviceWidth(1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        fromDeviceHeight(toDeviceHeight(-1.0, GE_NDC, gdd), GE_INCHES, gdd),
                        ((gadesc *)dd->deviceSpecific)->basefontsize, 0, 1, White, White, 1, NA_INTEGER, NA_INTEGER,
-                       FALSE, R_GlobalEnv, restoreConsole, "", FALSE, ((gadesc *)dd->deviceSpecific)->fillOddEven))
+                       FALSE, R_GlobalEnv, restoreConsole, "", FALSE, ((gadesc *)dd->deviceSpecific)->fillOddEven, ""))
         PrivateCopyDevice(dd, ndd, display);
 }
 
@@ -635,7 +635,10 @@ static void SetFont(pGEcontext gc, double rot, gadesc *xd)
          * If specify face > 4 then get font from face via Rdevga
          * (whether specifed family or not).
          */
-        fontfamily = translateFontFamily(gc->fontfamily);
+        char *fm = gc->fontfamily;
+        if (!fm[0])
+            fm = xd->basefontfamily;
+        fontfamily = translateFontFamily(fm);
         if (fontfamily && face <= 4)
         {
             xd->font = gnewfont(xd->gawin, fontfamily, fontstyle[face - 1], size, rot, usePoints);
@@ -3368,7 +3371,7 @@ static void GA_Mode(int mode, pDevDesc dd)
 static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, double height, double pointsize,
                                Rboolean recording, int resize, int bg, int canvas, double gamma, int xpos, int ypos,
                                Rboolean buffered, SEXP psenv, Rboolean restoreConsole, const char *title,
-                               Rboolean clickToConfirm, Rboolean fillOddEven)
+                               Rboolean clickToConfirm, Rboolean fillOddEven, const char *family)
 {
     /* if need to bail out with some sort of "error" then */
     /* must free(dd) */
@@ -3407,6 +3410,8 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     xd->warn_trans = FALSE;
     strncpy(xd->title, title, 101);
     xd->title[100] = '\0';
+    strncpy(xd->basefontfamily, family, 101);
+    xd->basefontfamily[100] = '\0';
     xd->doSetPolyFill = TRUE; /* will only set it once */
     xd->fillOddEven = fillOddEven;
 
@@ -3792,7 +3797,7 @@ static void SaveAsTiff(pDevDesc dd, const char *fn)
 SEXP devga(SEXP args)
 {
     pGEDevDesc gdd;
-    const char *display, *title;
+    const char *display, *title, *family;
     const void *vmax;
     double height, width, ps, xpinch, ypinch, gamma;
     int recording = 0, resize = 1, bg, canvas, xpos, ypos, buffered;
@@ -3857,6 +3862,11 @@ SEXP devga(SEXP args)
     fillOddEven = asLogical(CAR(args));
     if (fillOddEven == NA_LOGICAL)
         error(_("invalid value of '%s'"), "fillOddEven");
+    args = CDR(args);
+    sc = CAR(args);
+    if (!isString(sc) || LENGTH(sc) != 1)
+        error(_("invalid value of '%s'"), "family");
+    family = CHAR(STRING_ELT(sc, 0));
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -3868,7 +3878,7 @@ SEXP devga(SEXP args)
             return 0;
         GAsetunits(xpinch, ypinch);
         if (!GADeviceDriver(dev, display, width, height, ps, (Rboolean)recording, resize, bg, canvas, gamma, xpos, ypos,
-                            (Rboolean)buffered, psenv, restoreConsole, title, clickToConfirm, fillOddEven))
+                            (Rboolean)buffered, psenv, restoreConsole, title, clickToConfirm, fillOddEven, family))
         {
             char type[100], *p;
             free(dev);
