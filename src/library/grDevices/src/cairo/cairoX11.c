@@ -727,7 +727,8 @@ static cairo_font_face_t *FC_getFont(const char *family, int style)
     {
         int j = 0, index = 0;
         while (j < fs->nfont)
-        { /* find the font file + face index and use it with FreeType */
+        {
+            /* find the font file + face index and use it with FreeType */
             if (FcPatternGetString(fs->fonts[j], FC_FILE, 0, &file) == FcResultMatch &&
                 FcPatternGetInteger(fs->fonts[j], FC_INDEX, 0, &index) == FcResultMatch)
             {
@@ -737,14 +738,18 @@ static cairo_font_face_t *FC_getFont(const char *family, int style)
                     FcFontSetDestroy(fs);
                     return NULL;
                 }
-                /* some FreeType versions have broken index support, fall back to index 0 */
+                /* some FreeType versions have broken index support,
+                   fall back to index 0 */
                 if (!FT_New_Face(ft_library, (const char *)file, index, &face) ||
                     (index && !FT_New_Face(ft_library, (const char *)file, 0, &face)))
                 {
                     FcFontSetDestroy(fs);
-#ifdef __APPLE__ /* FreeType is broken on OS X in that face index is often wrong (unfortunately                        \
-            even for Helvetica!) - we try to find the best match through enumeration */
-                    /* And italic and bold are swapped */
+
+#ifdef __APPLE__ /* But this function is Apple-only */
+                    /* FreeType is broken on OS X in that face index
+                       is often wrong (unfortunately even for Helvetica!)
+                       - we try to find the best match through enumeration.
+                       And italic and bold are swapped */
                     if (style == 2)
                         style = 1;
                     else if (style == 1)
@@ -767,6 +772,7 @@ static cairo_font_face_t *FC_getFont(const char *family, int style)
                             }
                     }
 #endif
+
                     return cairo_ft_font_face_create_for_ft_face(face, FT_LOAD_DEFAULT);
                 }
             }
@@ -804,12 +810,13 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
         else if (streql(family, "mono"))
             family = "Courier";
     }
+    /* check the cache first */
     cairo_face = Rc_findFont(family, face);
     if (!cairo_face)
     {
         cairo_face = FC_getFont(family, face - 1);
         if (!cairo_face)
-            return;
+            return; /* No message? */
         Rc_addFont(family, face, cairo_face);
     }
     cairo_set_font_face(xd->cc, cairo_face);
@@ -832,11 +839,6 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
     char *times = "times", *hv = "Helvetica";
 #endif
 
-    char *fm = gc->fontfamily;
-    if (streql(fm, "mono"))
-        family = "courier";
-    else if (streql(fm, "serif"))
-        family = times else if (streql(fm, "sans")) family = hv else if (fm[0]) family = fm;
     if (face < 1 || face > 5)
         face = 1;
     if (face == 5)
@@ -845,6 +847,20 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
         wt = CAIRO_FONT_WEIGHT_BOLD;
     if (face == 3 || face == 4)
         slant = CAIRO_FONT_SLANT_ITALIC;
+    if (face != 5)
+    {
+        char *fm = gc->fontfamily;
+        if (!fm[0])
+            fm = xd->basefontfamily;
+        if (streql(fm, "mono"))
+            family = "courier";
+        else if (streql(fm, "serif"))
+            family = times;
+        else if (streql(fm, "sans"))
+            family = hv;
+        else if (fm[0])
+            family = fm;
+    }
 
     cairo_select_font_face(xd->cc, family, slant, wt);
     /* FIXME: this should really use a matrix if pixels are non-square */
@@ -883,10 +899,6 @@ static void Cairo_MetricInfo(int c, pGEcontext gc, double *ascent, double *desce
     *ascent = -exts.y_bearing;
     *descent = exts.height + exts.y_bearing;
     *width = exts.x_advance;
-#if 0
-    printf("c = %d, '%s', face %d %f %f %f\n",
-	   c, str, gc->fontface, *width, *ascent, *descent);
-#endif
 }
 
 static double Cairo_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
