@@ -947,7 +947,7 @@ void gwcharmetric(drawing d, font f, int c, int *ascent, int *descent, int *widt
     SelectObject(dc, old);
 }
 
-font gnewfont(drawing d, const char *face, int style, int size, double rot, int usePoints)
+font gnewfont2(drawing d, const char *face, int style, int size, double rot, int usePoints, int quality)
 {
     font obj;
     HFONT hf;
@@ -972,7 +972,7 @@ font gnewfont(drawing d, const char *face, int style, int size, double rot, int 
     else
         lf.lfCharSet = DEFAULT_CHARSET;
     lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-    lf.lfQuality = DEFAULT_QUALITY;
+    lf.lfQuality = quality;
     lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
     if ((strlen(face) > 1) && (face[0] == 'T') && (face[1] == 'T'))
     {
@@ -1015,6 +1015,11 @@ font gnewfont(drawing d, const char *face, int style, int size, double rot, int 
     }
 
     return (font)obj;
+}
+
+font gnewfont(drawing d, const char *face, int style, int size, double rot, int usePoints)
+{
+    return gnewfont2(d, face, style, size, rot, usePoints, DEFAULT_QUALITY);
 }
 
 static int measuredev(drawing dev, int what)

@@ -368,6 +368,8 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     case 4:
         xd->antialias = CAIRO_ANTIALIAS_SUBPIXEL;
         break;
+    default:
+        xd->antialias = CAIRO_ANTIALIAS_DEFAULT;
     }
     xd->npages = 0;
     xd->col = R_RGB(0, 0, 0);
