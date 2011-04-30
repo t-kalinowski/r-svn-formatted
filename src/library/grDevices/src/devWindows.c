@@ -3994,9 +3994,9 @@ static int Load_Rcairo_Dll()
     {
         char szFullPath[PATH_MAX];
         strcpy(szFullPath, R_HomeDir());
-        strcat(szFullPath, "\\library\\grDevices\\libs\\");
+        strcat(szFullPath, "/library/grDevices/libs/");
         strcat(szFullPath, R_ARCH);
-        strcat(szFullPath, "\\winCairo.dll");
+        strcat(szFullPath, "/winCairo.dll");
         if (((hRcairoDll = LoadLibrary(szFullPath)) != NULL) &&
             ((R_devCairo = (R_SaveAsBitmap)GetProcAddress(hRcairoDll, "in_Cairo")) != NULL))
         {
@@ -4021,7 +4021,7 @@ static int Load_Rcairo_Dll()
 SEXP devCairo(SEXP args)
 {
     if (!Load_Rcairo_Dll())
-        warning(_("Unable to load winCairo.dll"));
+        error(_("Unable to load winCairo.dll: was it built?"));
     else
         (R_devCairo)(args);
     return R_NilValue;
