@@ -1873,7 +1873,7 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
         xd->kind = (dsp[0] == 'p') ? PNG : BMP;
         if (strlen(dsp + 4) >= 512)
             error(_("filename too long in %s() call"), (dsp[0] == 'p') ? "png" : "bmp");
-        strcpy(xd->filename, dsp + 4);
+        strcpy(xd->filename, R_ExpandFileName(sp + 4));
         if (!Load_Rbitmap_Dll())
         {
             warning(_("Unable to load Rbitmap.dll"));
@@ -1925,7 +1925,7 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
         *p = ':';
         if (strlen(p + 1) >= 512)
             error(_("filename too long in jpeg() call"));
-        strcpy(xd->filename, p + 1);
+        strcpy(xd->filename, R_ExpandFileName(p + 1));
         if (w < 20 && h < 20)
             warning(_("'width=%d, height=%d' are unlikely values in pixels"), (int)w, (int)h);
         if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
@@ -1966,7 +1966,7 @@ static Rboolean GA_Open(pDevDesc dd, gadesc *xd, const char *dsp, double w, doub
         *p = ':';
         if (strlen(p + 1) >= 512)
             error(_("filename too long in tiff() call"));
-        strcpy(xd->filename, p + 1);
+        strcpy(xd->filename, R_ExpandFileName(p + 1));
         if (w < 20 && h < 20)
             warning(_("'width=%d, height=%d' are unlikely values in pixels"), (int)w, (int)h);
         if ((xd->gawin = newbitmap(w, h, 256)) == NULL)
