@@ -1280,6 +1280,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         *trs_cnt_ptr = trs_cnt->next;
         for (xtable_cnt = 0; wtr_get_next_char_from_spec(trs_cnt_ptr); xtable_cnt++)
             ;
+        wtr_free_spec(trs_cnt);
         Free(trs_cnt_ptr);
         xtable = (xtable_t *)R_alloc(xtable_cnt + 1, sizeof(xtable_t));
 
