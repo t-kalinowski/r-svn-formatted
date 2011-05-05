@@ -772,8 +772,12 @@ void setup_Rmainloop(void)
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MESSAGES failed, using \"C\"\n");
 #endif
         /* NB: we do not set LC_NUMERIC */
+#ifdef LC_MONETARY
+    if (!setlocale(LC_MONETARY, ""))
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed, using \"C\"\n");
+#endif
 #ifdef LC_PAPER
-    if (!setlocale(LC_PAPER, ""))
+    if (!setlocale(LC_MONETARY, ""))
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed, using \"C\"\n");
 #endif
 #ifdef LC_MEASUREMENT
