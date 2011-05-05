@@ -193,11 +193,8 @@ static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
     CairoColor(xd->fill, xd);
     cairo_new_path(xd->cc);
     cairo_paint(xd->cc);
-    if (xd->xcc)
-    {
-        cairo_new_path(xd->xcc);
+    if (xd->buffered)
         cairo_paint(xd->xcc);
-    }
     /* Apparently needed */
     XSync(display, 0);
 }
@@ -636,7 +633,7 @@ static void handleEvent(XEvent event)
 #if defined HAVE_WORKING_CAIRO
             if (xd->useCairo)
             {
-                if (xd->xcc)
+                if (xd->buffered)
                 {
                     cairo_xlib_surface_set_size(xd->xcs, xd->windowWidth, xd->windowHeight);
                     cairo_surface_destroy(xd->cs);
@@ -645,6 +642,7 @@ static void handleEvent(XEvent event)
                                                         (double)xd->windowHeight);
                     xd->cc = cairo_create(xd->cs);
                     cairo_set_antialias(xd->cc, xd->antialias);
+                    cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                 }
                 else
                 {
@@ -687,11 +685,8 @@ static void handleEvent(XEvent event)
             if (gdd->dirty)
             {
 #ifdef HAVE_WORKING_CAIRO
-                if (xd->useCairo && xd->xcc && do_update == 1)
-                {
-                    cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+                if (xd->buffered && do_update == 1)
                     cairo_paint(xd->xcc);
-                }
                 else
 #endif
                     GEplayDisplayList(gdd);
@@ -1494,6 +1489,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
 
                     xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
                                                         (double)xd->windowHeight);
+                    cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                 }
                 else
                     xd->cs = cairo_xlib_surface_create(display, xd->window, visual, (double)xd->windowWidth,
@@ -1516,6 +1512,9 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                 cairo_set_operator(xd->cc, CAIRO_OPERATOR_OVER);
                 cairo_set_antialias(xd->cc, xd->antialias);
             }
+            CairoColor(xd->canvas, xd);
+            cairo_new_path(xd->cc);
+            cairo_paint(xd->cc);
 #endif
         }
         /* Save the pDevDesc with the window for event dispatching */
@@ -2490,11 +2489,8 @@ static void X11_Mode(int mode, pDevDesc dd)
     {
 #ifdef HAVE_WORKING_CAIRO
         pX11Desc xd = (pX11Desc)dd->deviceSpecific;
-        if (xd->useCairo && xd->xcc)
-        {
-            cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+        if (xd->buffered)
             cairo_paint(xd->xcc);
-        }
 #endif
         XSync(display, 0);
     }
