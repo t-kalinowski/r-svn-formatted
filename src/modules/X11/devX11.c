@@ -2048,6 +2048,14 @@ static void X11_Close(pDevDesc dd)
 
     if (xd->type == WINDOW)
     {
+        int bf = xd->buffered;
+#ifdef USE_TIMERS
+        if (bf > 1)
+        {
+            removeBuffering(xd);
+            xd->buffered = 0; /* for safety */
+        }
+#endif
         /* process pending events */
         /* set block on destroy events */
         inclose = TRUE;
@@ -2056,18 +2064,16 @@ static void X11_Close(pDevDesc dd)
 #ifdef HAVE_WORKING_CAIRO
         if (xd->useCairo)
         {
-#ifdef USE_TIMERS
-            if (xd->buffered > 1)
-                removeBuffering(xd);
-            if (xd->im)
-                XFree(xd->im); /* See comment in X11_Raster */
-#endif
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
             if (xd->xcs)
                 cairo_surface_destroy(xd->xcs);
             if (xd->xcc)
                 cairo_destroy(xd->xcc);
+#ifdef USE_TIMERS
+            if (xd->im)
+                XFree(xd->im); /* See comment in X11_Raster */
+#endif
         }
 #endif
 
