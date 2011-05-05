@@ -29,6 +29,8 @@
 #include <config.h>
 #endif
 
+/* #define USE_TIMERS 1 */
+
 #include <Defn.h>
 
 #ifdef HAVE_RINT
@@ -184,6 +186,19 @@ static double BlueGamma = 1.0;
 #ifdef HAVE_WORKING_CAIRO
 #include "cairoFns.c"
 
+static void Cairo_update(pX11Desc xd)
+{
+    if (!xd || !xd->buffered)
+        return;
+#ifdef USE_TIMERS
+    if (xd->buffered == 3)
+        XPutImage(display, xd->window, xd->wgc, xd->im, 0, 0, 0, 0, xd->windowWidth, xd->windowHeight);
+    else
+#endif
+        cairo_paint(xd->xcc);
+    XSync(display, 0);
+}
+
 static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
@@ -194,10 +209,81 @@ static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
     cairo_new_path(xd->cc);
     cairo_paint(xd->cc);
     if (xd->buffered)
-        cairo_paint(xd->xcc);
-    /* Apparently needed */
-    XSync(display, 0);
+        Cairo_update(xd);
+    else
+        XSync(display, 0);
 }
+
+#ifdef USE_TIMERS
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
+
+extern double R_getClockIncrement(void);
+static clock_t last = 0;
+static struct tms timeinfo;
+static double incr;
+
+static void (*OldHandler)(void);
+static int OldRwait;
+
+struct xd_list
+{
+    pX11Desc this;
+    struct xd_list *next;
+};
+
+typedef struct xd_list *Xdl;
+static Xdl xdl = NULL;
+
+static void CairoHandler(void)
+{
+    static int buffer_lock = 0; /* reentrancy guard */
+    if (!buffer_lock && xdl)
+    {
+        clock_t current = times(&timeinfo);
+        if ((current - last) * incr < 0.25)
+            return;
+        buffer_lock = 1;
+        for (Xdl z = xdl; z; z = z->next)
+            Cairo_update(z->this);
+        last = times(&timeinfo);
+        buffer_lock = 0;
+    }
+    OldHandler();
+}
+
+static void addBuffering(pX11Desc xd)
+{
+    static int loaded = 0;
+    Xdl xdln = (Xdl)malloc(sizeof(struct xd_list));
+    xdln->this = xd;
+    xdln->next = xdl;
+    xdl = xdln;
+    if (loaded)
+        return;
+    loaded = 1;
+    OldHandler = R_PolledEvents;
+    OldRwait = R_wait_usec;
+    R_PolledEvents = CairoHandler;
+    incr = R_getClockIncrement();
+    if (R_wait_usec > 50000 || R_wait_usec == 0)
+        R_wait_usec = 50000;
+}
+
+static void removeBuffering(pX11Desc xd)
+{
+    for (Xdl z = xdl; z; z = z->next)
+        if (z->this == xd)
+        {
+            z->this = NULL;
+            break;
+        }
+}
+#endif
 #endif
 
 /* Variables Used To Store Colormap Information */
@@ -635,7 +721,10 @@ static void handleEvent(XEvent event)
             {
                 if (xd->buffered)
                 {
-                    cairo_xlib_surface_set_size(xd->xcs, xd->windowWidth, xd->windowHeight);
+                    int bf = xd->buffered;
+                    xd->buffered = 0; /* inhibit any redraws */
+                    if (bf != 3)
+                        cairo_xlib_surface_set_size(xd->xcs, xd->windowWidth, xd->windowHeight);
                     cairo_surface_destroy(xd->cs);
                     cairo_destroy(xd->cc);
                     xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
@@ -643,6 +732,23 @@ static void handleEvent(XEvent event)
                     xd->cc = cairo_create(xd->cs);
                     cairo_set_antialias(xd->cc, xd->antialias);
                     cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+#ifdef USE_TIMERS
+                    if (bf == 3)
+                    {
+                        void *xi = cairo_image_surface_get_data(xd->cs);
+                        xd->im = XCreateImage(display, visual, depth, ZPixmap, 0, (char *)xi, xd->windowWidth,
+                                              xd->windowHeight, depth >= 24 ? 32 : depth, 0);
+                        if (!xd->im || XInitImage(xd->im) == 0)
+                        {
+                            warning("XCreateImage failed");
+                            /* FIXME */
+                        }
+                    }
+#endif
+                    xd->buffered = bf;
+#ifdef USE_TIMERS
+                    last = times(&timeinfo);
+#endif
                 }
                 else
                 {
@@ -1469,27 +1575,52 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                 cairo_status_t res;
                 if (xd->buffered)
                 {
-                    xd->xcs = cairo_xlib_surface_create(display, xd->window, visual, (double)xd->windowWidth,
-                                                        (double)xd->windowHeight);
-                    res = cairo_surface_status(xd->xcs);
-                    if (res != CAIRO_STATUS_SUCCESS)
+                    int bf = xd->buffered;
+                    xd->buffered = 0; /* inhibit any redraws */
+                    if (bf != 3)
                     {
-                        warning("cairo error '%s'", cairo_status_to_string(res));
-                        /* bail out */
-                        return FALSE;
-                    }
-                    xd->xcc = cairo_create(xd->xcs);
-                    res = cairo_status(xd->xcc);
-                    if (res != CAIRO_STATUS_SUCCESS)
-                    {
-                        warning("cairo error '%s'", cairo_status_to_string(res));
-                        /* bail out */
-                        return FALSE;
+                        xd->xcs = cairo_xlib_surface_create(display, xd->window, visual, (double)xd->windowWidth,
+                                                            (double)xd->windowHeight);
+                        res = cairo_surface_status(xd->xcs);
+                        if (res != CAIRO_STATUS_SUCCESS)
+                        {
+                            warning("cairo error '%s'", cairo_status_to_string(res));
+                            /* bail out */
+                            return FALSE;
+                        }
+                        xd->xcc = cairo_create(xd->xcs);
+                        res = cairo_status(xd->xcc);
+                        if (res != CAIRO_STATUS_SUCCESS)
+                        {
+                            warning("cairo error '%s'", cairo_status_to_string(res));
+                            /* bail out */
+                            return FALSE;
+                        }
                     }
 
                     xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
                                                         (double)xd->windowHeight);
-                    cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+#ifdef USE_TIMERS
+                    if (bf == 3)
+                    {
+                        void *xi = cairo_image_surface_get_data(xd->cs);
+                        xd->im = XCreateImage(display, visual, depth, ZPixmap, 0, (char *)xi, xd->windowWidth,
+                                              xd->windowHeight, depth >= 24 ? 32 : depth, 0);
+                        // printf("allocated %p at depth %d\n", xd->im, depth);
+                        if (!xd->im || XInitImage(xd->im) == 0)
+                        {
+                            warning("XCreateImage failed");
+                            return FALSE;
+                        }
+                    }
+                    else
+#endif
+                        cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
+                    xd->buffered = bf;
+#ifdef USE_TIMERS
+                    if (bf > 1)
+                        addBuffering(xd);
+#endif
                 }
                 else
                     xd->cs = cairo_xlib_surface_create(display, xd->window, visual, (double)xd->windowWidth,
@@ -1925,6 +2056,12 @@ static void X11_Close(pDevDesc dd)
 #ifdef HAVE_WORKING_CAIRO
         if (xd->useCairo)
         {
+#ifdef USE_TIMERS
+            if (xd->buffered > 1)
+                removeBuffering(xd);
+            if (xd->im)
+                XFree(xd->im); /* See comment in X11_Raster */
+#endif
             cairo_surface_destroy(xd->cs);
             cairo_destroy(xd->cc);
             if (xd->xcs)
@@ -2489,6 +2626,8 @@ static void X11_Mode(int mode, pDevDesc dd)
     {
 #ifdef HAVE_WORKING_CAIRO
         pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+        if (xd->buffered > 1)
+            return;
         if (xd->buffered)
             cairo_paint(xd->xcc);
 #endif
@@ -2520,7 +2659,21 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     xd->bg = bgcolor;
 #ifdef HAVE_WORKING_CAIRO
     xd->useCairo = useCairo != 0;
-    xd->buffered = useCairo == 1;
+    xd->buffered = 0;
+    switch (useCairo)
+    {
+    case 1:
+        xd->buffered = 1;
+        break;
+#ifdef USE_TIMERS
+    case 3:
+        xd->buffered = 2;
+        break;
+    case 4:
+        xd->buffered = 3;
+        break;
+#endif
+    }
     if (useCairo)
     {
         switch (antialias)
