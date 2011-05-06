@@ -2815,6 +2815,7 @@ static SEXP R_SubassignSym = NULL;
 static SEXP R_CSym = NULL;
 static SEXP R_Subset2Sym = NULL;
 static SEXP R_Subassign2Sym = NULL;
+static SEXP R_valueSym = NULL;
 static SEXP R_TrueValue = NULL;
 static SEXP R_FalseValue = NULL;
 
@@ -2845,6 +2846,7 @@ attribute_hidden void R_initialize_bcode(void)
     R_CSym = install("c");
     R_Subset2Sym = R_Bracket2Symbol; /* "[[" */
     R_Subassign2Sym = install("[[<-");
+    R_valueSym = install("value");
 
     R_TrueValue = mkTrue();
     SET_NAMED(R_TrueValue, 2);
@@ -2978,6 +2980,7 @@ SEXP do_subset2_dflt(SEXP, SEXP, SEXP, SEXP);
 SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
 
 #define GETSTACK(i) R_BCNodeStackTop[i]
+
 #define SETSTACK(i, v)                                                                                                 \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -3886,8 +3889,6 @@ static SEXP bcEval(SEXP body, SEXP rho)
             int cond;
             SEXP call = VECTOR_ELT(constants, callidx);
             value = BCNPOP();
-            /**** should probably inline this and avoid looking up call
-                  unless it is needed */
             cond = asLogicalNoNA(value, call);
             if (!cond)
             {
@@ -4612,7 +4613,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
             case BUILTINSXP:
                 /* push RHS value onto arguments with 'value' tag */
                 PUSHCALLARG(rhs);
-                SET_TAG(GETSTACK(-1), install("value"));
+                SET_TAG(GETSTACK(-1), R_valueSym);
                 /* replace first argument with LHS value */
                 args = GETSTACK(-2);
                 SETCAR(args, lhs);
@@ -4643,7 +4644,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
                 prom = mkPROMISE(vexpr, rho);
                 SET_PRVALUE(prom, rhs);
                 PUSHCALLARG(prom);
-                SET_TAG(GETSTACK(-1), install("value"));
+                SET_TAG(GETSTACK(-1), R_valueSym);
                 /* replace first argument with evaluated promise for LHS */
                 prom = mkPROMISE(R_TmpvalSymbol, rho);
                 SET_PRVALUE(prom, lhs);
