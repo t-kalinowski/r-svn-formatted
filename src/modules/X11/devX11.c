@@ -188,11 +188,9 @@ static void Cairo_update(pX11Desc xd)
 {
     if (inclose || !xd || !xd->buffered)
         return;
-#ifdef USE_TIMERS
     if (xd->buffered == 3)
         XPutImage(display, xd->window, xd->wgc, xd->im, 0, 0, 0, 0, xd->windowWidth, xd->windowHeight);
     else
-#endif
         cairo_paint(xd->xcc);
     XSync(display, 0);
 }
@@ -212,7 +210,7 @@ static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
         XSync(display, 0);
 }
 
-#ifdef USE_TIMERS
+#ifdef HAVE_TIMES
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -220,7 +218,7 @@ static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
 #include <sys/times.h>
 #endif
 
-extern double R_getClockIncrement(void);
+extern double R_getClockIncrement(void); /* From src/unix/sys-unix.c */
 static clock_t last = 0, last_activity = 0;
 static struct tms timeinfo;
 static double incr;
@@ -228,6 +226,11 @@ static double incr;
 static void (*OldHandler)(void);
 static int OldRwait;
 
+/*
+   We record a linked list of devices which are open and double-buffered.
+   The head of the list is a dummy entry to make removals the same for
+   any element.
+*/
 struct xd_list
 {
     pX11Desc this;
@@ -242,7 +245,7 @@ static double update_interval = 0.10;
 static void CairoHandler(void)
 {
     static int buffer_lock = 0; /* reentrancy guard */
-    if (!buffer_lock && xdl)
+    if (!buffer_lock && xdl->next)
     {
         /* We could do the timing tests on a per-device basis */
         if (last > last_activity)
@@ -251,7 +254,7 @@ static void CairoHandler(void)
         if ((current - last) * incr < update_interval)
             return;
         buffer_lock = 1;
-        for (Xdl z = xdl; z; z = z->next)
+        for (Xdl z = xdl->next; z; z = z->next)
             Cairo_update(z->this);
         last = times(&timeinfo);
         buffer_lock = 0;
@@ -259,27 +262,29 @@ static void CairoHandler(void)
     OldHandler();
 }
 
+// check for updates every 50ms: only run >= 100ms after last update.
+#define WAIT 50000
+static int timingInstalled = 0;
 static void addBuffering(pX11Desc xd)
 {
-    static int loaded = 0;
     Xdl xdln = (Xdl)malloc(sizeof(struct xd_list));
     xdln->this = xd;
     xdln->next = xdl->next;
     xdl->next = xdln;
-    if (loaded)
+    if (timingInstalled)
         return;
-    loaded = 1;
+    timingInstalled = 1;
     OldHandler = R_PolledEvents;
     OldRwait = R_wait_usec;
     R_PolledEvents = CairoHandler;
     incr = R_getClockIncrement();
-    if (R_wait_usec > 50000 || R_wait_usec == 0)
-        R_wait_usec = 50000;
+    if (R_wait_usec > WAIT || R_wait_usec == 0)
+        R_wait_usec = WAIT;
 }
 
 static void removeBuffering(pX11Desc xd)
 {
-    for (Xdl z = xdl; z; z = z->next)
+    for (Xdl z = xdl; z->next; z = z->next)
         if (z->next->this == xd)
         {
             Xdl old = z->next;
@@ -287,9 +292,18 @@ static void removeBuffering(pX11Desc xd)
             free(old);
             break;
         }
+    /* We removed the last buffered device: is it OK to remove the
+       handler?  Only if we are at the front of the chain.
+     */
+    if (xdl->next == NULL && R_PolledEvents == CairoHandler)
+    {
+        R_PolledEvents = OldHandler;
+        R_wait_usec = OldRwait;
+        timingInstalled = 0;
+    }
 }
-#endif
-#endif
+#endif /* HAVE_TIMES */
+#endif /* HAVE_WORKING_CAIRO */
 
 /* Variables Used To Store Colormap Information */
 static struct
@@ -735,7 +749,6 @@ static void handleEvent(XEvent event)
                     if (bf != 3)
                         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
                                                             (double)xd->windowHeight);
-#ifdef USE_TIMERS
                     else
                     {
                         cairo_format_t format = -1 /* -Wall */;
@@ -761,13 +774,12 @@ static void handleEvent(XEvent event)
                             /* FIXME */
                         }
                     }
-#endif
                     xd->cc = cairo_create(xd->cs);
                     cairo_set_antialias(xd->cc, xd->antialias);
                     if (xd->xcc)
                         cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                     xd->buffered = bf;
-#ifdef USE_TIMERS
+#ifdef HAVE_TIMES
                     last = times(&timeinfo);
 #endif
                 }
@@ -1622,7 +1634,6 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                     if (bf != 3)
                         xd->cs = cairo_image_surface_create(CAIRO_FORMAT_RGB24, (double)xd->windowWidth,
                                                             (double)xd->windowHeight);
-#ifdef USE_TIMERS
                     else
                     {
                         cairo_format_t format = -1 /* -Wall */;
@@ -1649,11 +1660,10 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                             return FALSE;
                         }
                     }
-#endif
                     if (xd->xcc)
                         cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                     xd->buffered = bf;
-#ifdef USE_TIMERS
+#ifdef HAVE_TIMES
                     if (bf > 1)
                         addBuffering(xd);
 #endif
@@ -2084,7 +2094,7 @@ static void X11_Close(pDevDesc dd)
 
     if (xd->type == WINDOW)
     {
-#ifdef USE_TIMERS
+#if defined(HAVE_WORKING_CAIRO) && defined(HAVE_TIMES)
         if (xd->buffered > 1)
             removeBuffering(xd);
 #endif
@@ -2102,10 +2112,8 @@ static void X11_Close(pDevDesc dd)
                 cairo_surface_destroy(xd->xcs);
             if (xd->xcc)
                 cairo_destroy(xd->xcc);
-#ifdef USE_TIMERS
             if (xd->im)
                 XFree(xd->im); /* See comment in X11_Raster */
-#endif
         }
 #endif
 
@@ -2664,13 +2672,13 @@ static void X11_Mode(int mode, pDevDesc dd)
     {
 #ifdef HAVE_WORKING_CAIRO
         pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+#ifdef HAVE_TIMES
         if (xd->buffered > 1)
         {
-#ifdef USE_TIMERS
             last_activity = times(&timeinfo);
-#endif
             return;
         }
+#endif
         if (xd->buffered)
             cairo_paint(xd->xcc);
 #endif
@@ -2705,17 +2713,25 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     xd->buffered = 0;
     switch (useCairo)
     {
+    case 0:
+        break; /* Xlib */
     case 1:
         xd->buffered = 1;
-        break;
-#ifdef USE_TIMERS
+        break; /* cairo */
+    case 2:
+        xd->buffered = 0;
+        break; /* nbcairo */
+#ifdef HAVE_TIMES
     case 3:
         xd->buffered = 2;
-        break;
+        break; /* cairob2 */
     case 4:
         xd->buffered = 3;
-        break;
+        break; /* cairob3 */
 #endif
+    default:
+        warning("that type is not supported on this platform - using \"nbcairo\"");
+        xd->buffered = 0;
     }
     if (useCairo)
     {
@@ -2738,7 +2754,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
 #else
     if (useCairo)
     {
-        warning(_("type=\"cairo\" is not supported on this build -- using \"Xlib\""));
+        warning("cairo-based types are not supported on this build - using \"Xlib\"");
         useCairo = FALSE;
     }
 #endif
