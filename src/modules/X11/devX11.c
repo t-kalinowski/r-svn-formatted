@@ -2792,7 +2792,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     {
         SEXP timeouts = GetOption1(install("X11updates"));
         double tm = asReal(timeouts);
-        update_interval = (ISNAN(tm) || tm < 0) ? 0.25 : tm;
+        update_interval = (ISNAN(tm) || tm < 0) ? 0.10 : tm;
     }
 
     if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor, canvascolor, res, xpos,
