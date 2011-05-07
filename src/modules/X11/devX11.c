@@ -31,6 +31,11 @@
 
 #include <Defn.h>
 
+#if defined(HAVE_GETTIMEOFDAY) || defined(HAVE_TIMES)
+#define USE_TIMERS 1
+#endif
+
+/* rint is C99 */
 #ifdef HAVE_RINT
 #define R_rint(x) rint(x)
 #else
@@ -195,21 +200,32 @@ static void Cairo_update(pX11Desc xd)
     XSync(display, 0);
 }
 
-#ifdef HAVE_TIMES
+#ifdef USE_TIMERS
+#ifdef HAVE_GETTIMEOFDAY
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+static double currentTime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec;
+}
+
+#elif defined(HAVE_TIMES)
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
 
 extern double R_getClockIncrement(void); /* From src/unix/sys-unix.c */
-static clock_t last = 0, last_activity = 0;
-static struct tms timeinfo;
 static double incr;
 
-static void (*OldHandler)(void);
-static int OldRwait;
+static double currentTime()
+{
+    static struct tms timeinfo;
+    return incr * times(&timeinfo);
+}
+#endif
 
 /*
    We record a linked list of devices which are open and double-buffered.
@@ -225,29 +241,36 @@ struct xd_list
 typedef struct xd_list *Xdl;
 static struct xd_list xdl0;
 static Xdl xdl = &xdl0;
-static double update_interval = 0.10;
 
 static void CairoHandler(void)
 {
     static int buffer_lock = 0; /* reentrancy guard */
     if (!buffer_lock && xdl->next)
     {
-        /* We could do the timing tests on a per-device basis */
-        if (last > last_activity)
-            return;
-        clock_t current = times(&timeinfo);
-        if ((current - last) * incr < update_interval)
-            return;
+        double current = currentTime();
         buffer_lock = 1;
         for (Xdl z = xdl->next; z; z = z->next)
-            Cairo_update(z->this);
-        last = times(&timeinfo);
+        {
+            pX11Desc xd = z->this;
+            if (xd->last > xd->last_activity)
+                continue;
+            if ((current - xd->last) < xd->update_interval)
+                continue;
+            Cairo_update(xd);
+            xd->last = currentTime();
+        }
         buffer_lock = 0;
     }
-    OldHandler();
 }
 
-// check for updates every 50ms: only run >= 100ms after last update.
+/* private hooks in sys-std.c */
+extern void (*Rg_PolledEvents)(void);
+extern int Rg_wait_usec;
+
+/*
+  check for updates every 50ms:
+  by default the updater is only run >= 100ms after last update.
+*/
 #define WAIT 50000
 static int timingInstalled = 0;
 static void addBuffering(pX11Desc xd)
@@ -259,12 +282,11 @@ static void addBuffering(pX11Desc xd)
     if (timingInstalled)
         return;
     timingInstalled = 1;
-    OldHandler = R_PolledEvents;
-    OldRwait = R_wait_usec;
-    R_PolledEvents = CairoHandler;
+    Rg_PolledEvents = CairoHandler;
+#ifndef HAVE_GETTIMEOFDAY
     incr = R_getClockIncrement();
-    if (R_wait_usec > WAIT || R_wait_usec == 0)
-        R_wait_usec = WAIT;
+#endif
+    Rg_wait_usec = WAIT;
 }
 
 static void removeBuffering(pX11Desc xd)
@@ -277,17 +299,13 @@ static void removeBuffering(pX11Desc xd)
             free(old);
             break;
         }
-    /* We removed the last buffered device: is it OK to remove the
-       handler?  Only if we are at the front of the chain.
-     */
-    if (xdl->next == NULL && R_PolledEvents == CairoHandler)
+    if (xdl->next == NULL)
     {
-        R_PolledEvents = OldHandler;
-        R_wait_usec = OldRwait;
+        Rg_wait_usec = 0;
         timingInstalled = 0;
     }
 }
-#endif /* HAVE_TIMES */
+#endif /* USE_TIMERS */
 
 static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
 {
@@ -301,8 +319,8 @@ static void Cairo_NewPage(const pGEcontext gc, pDevDesc dd)
     if (xd->buffered)
     {
         Cairo_update(xd);
-#ifdef HAVE_TIMES
-        last = times(&timeinfo);
+#ifdef USE_TIMERS
+        xd->last = currentTime();
 #endif
     }
     else
@@ -784,8 +802,8 @@ static void handleEvent(XEvent event)
                     if (xd->xcc)
                         cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                     xd->buffered = bf;
-#ifdef HAVE_TIMES
-                    last = times(&timeinfo);
+#ifdef USE_TIMERS
+                    xd->last = currentTime();
 #endif
                 }
                 else
@@ -1668,7 +1686,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                     if (xd->xcc)
                         cairo_set_source_surface(xd->xcc, xd->cs, 0, 0);
                     xd->buffered = bf;
-#ifdef HAVE_TIMES
+#ifdef USE_TIMERS
                     if (bf > 1)
                         addBuffering(xd);
 #endif
@@ -2099,7 +2117,7 @@ static void X11_Close(pDevDesc dd)
 
     if (xd->type == WINDOW)
     {
-#if defined(HAVE_WORKING_CAIRO) && defined(HAVE_TIMES)
+#if defined(HAVE_WORKING_CAIRO) && defined(USE_TIMERS)
         if (xd->buffered > 1)
             removeBuffering(xd);
 #endif
@@ -2677,10 +2695,10 @@ static void X11_Mode(int mode, pDevDesc dd)
     {
 #ifdef HAVE_WORKING_CAIRO
         pX11Desc xd = (pX11Desc)dd->deviceSpecific;
-#ifdef HAVE_TIMES
+#ifdef USE_TIMERS
         if (xd->buffered > 1)
         {
-            last_activity = times(&timeinfo);
+            xd->last_activity = currentTime();
             return;
         }
 #endif
@@ -2726,7 +2744,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     case 2:
         xd->buffered = 0;
         break; /* nbcairo */
-#ifdef HAVE_TIMES
+#ifdef USE_TIMERS
     case 3:
         xd->buffered = 2;
         break; /* cairob2 */
@@ -2789,11 +2807,13 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     strncpy(xd->title, title, 100);
     xd->title[100] = '\0';
 
+#ifdef USE_TIMERS
     {
         SEXP timeouts = GetOption1(install("X11updates"));
         double tm = asReal(timeouts);
-        update_interval = (ISNAN(tm) || tm < 0) ? 0.10 : tm;
+        xd->update_interval = (ISNAN(tm) || tm < 0) ? 0.10 : tm;
     }
+#endif
 
     if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor, canvascolor, res, xpos,
                   ypos))
@@ -3071,23 +3091,10 @@ int Rf_setX11Display(Display *dpy, double gamma_fac, X_COLORTYPE colormodel, int
 
 typedef Rboolean (*X11DeviceDriverRoutine)(pDevDesc, char *, double, double, double, double, X_COLORTYPE, int, int);
 
-static SEXP gcall;
-
-/* Return a non-relocatable copy of a string */
-
-static char *SaveString(SEXP sxp, int offset)
-{
-    char *s;
-    if (!isString(sxp) || length(sxp) <= offset)
-        errorcall(gcall, _("invalid string argument"));
-    s = R_alloc(strlen(CHAR(STRING_ELT(sxp, offset))) + 1, sizeof(char));
-    strcpy(s, CHAR(STRING_ELT(sxp, offset)));
-    return s;
-}
-
 static void Rf_addX11Device(const char *display, double width, double height, double ps, double gamma, int colormodel,
                             int maxcubesize, int bgcolor, int canvascolor, const char *devname, SEXP sfonts, int res,
-                            int xpos, int ypos, const char *title, int useCairo, int antialias, const char *family)
+                            int xpos, int ypos, const char *title, int useCairo, int antialias, const char *family,
+                            SEXP call)
 {
     pDevDesc dev = NULL;
     pGEDevDesc dd;
@@ -3103,7 +3110,7 @@ static void Rf_addX11Device(const char *display, double width, double height, do
                              sfonts, res, xpos, ypos, title, useCairo, antialias, family))
         {
             free(dev);
-            errorcall(gcall, _("unable to start device %s"), devname);
+            errorcall(call, _("unable to start device %s"), devname);
         }
         dd = GEcreateDevDesc(dev);
         GEaddDevice2(dd, devname);
@@ -3120,11 +3127,10 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP sc, sfonts;
 
     checkArity(op, args);
-    gcall = call;
     vmax = vmaxget();
 
     /* Decode the arguments */
-    display = SaveString(CAR(args), 0);
+    display = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     width = asReal(CAR(args));
     args = CDR(args);
@@ -3216,7 +3222,7 @@ static SEXP in_do_X11(SEXP call, SEXP op, SEXP args, SEXP env)
         devname = "X11";
 
     Rf_addX11Device(display, width, height, ps, gamma, colormodel, maxcubesize, bgcolor, canvascolor, devname, sfonts,
-                    res, xpos, ypos, title, useCairo, antialias, family);
+                    res, xpos, ypos, title, useCairo, antialias, family, call);
     vmaxset(vmax);
     return R_NilValue;
 }
