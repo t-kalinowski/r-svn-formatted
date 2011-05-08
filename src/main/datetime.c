@@ -547,6 +547,10 @@ double currentTime(void)
 
 #ifndef HAVE_POSIX_LEAPSECONDS
     /* No known current OSes */
+    /* Disallowed by POSIX (1988-):
+       http://www.mail-archive.com/leapsecs@rom.usno.navy.mil/msg00109.html
+       http://en.wikipedia.org/wiki/Unix_time
+    */
     if (!ISNAN(ans))
     {
         if (n_leapseconds < 0)
