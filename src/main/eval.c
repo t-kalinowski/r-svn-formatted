@@ -3430,37 +3430,53 @@ typedef int BCODE;
 #define BCCODE(e) INTEGER(BCODE_CODE(e))
 #endif
 
+static void MISSING_ARGUMENT_ERROR(SEXP symbol)
+{
+    const char *n = CHAR(PRINTNAME(symbol));
+    if (*n)
+        error(_("argument \"%s\" is missing, with no default"), n);
+    else
+        error(_("argument is missing, with no default"));
+}
+
+#define MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss)                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (!keepmiss)                                                                                                 \
+            MISSING_ARGUMENT_ERROR(symbol);                                                                            \
+    } while (0)
+
+static void UNBOUND_VARIABLE_ERROR(SEXP symbol)
+{
+    error(_("object '%s' not found"), CHAR(PRINTNAME(symbol)));
+}
+
+static R_INLINE SEXP FORCE_PROMISE(SEXP value, SEXP symbol, SEXP rho, Rboolean keepmiss)
+{
+    if (PRVALUE(value) == R_UnboundValue)
+    {
+        /**** R_isMissing is inefficient */
+        if (keepmiss && R_isMissing(symbol, rho))
+            value = R_MissingArg;
+        else
+            value = forcePromise(value);
+    }
+    else
+        value = PRVALUE(value);
+    SET_NAMED(value, 2);
+    return value;
+}
+
 static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmiss)
 {
     SEXP value = (dd) ? ddfindVar(symbol, rho) : findVar(symbol, rho);
     if (value == R_UnboundValue)
-        error(_("object '%s' not found"), CHAR(PRINTNAME(symbol)));
+        UNBOUND_VARIABLE_ERROR(symbol);
     else if (value == R_MissingArg)
-    {
-        if (!keepmiss)
-        {
-            const char *n = CHAR(PRINTNAME(symbol));
-            if (*n)
-                error(_("argument \"%s\" is missing, with no default"), n);
-            else
-                error(_("argument is missing, with no default"));
-        }
-    }
+        MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
     else if (TYPEOF(value) == PROMSXP)
-    {
-        if (PRVALUE(value) == R_UnboundValue)
-        {
-            /**** R_isMissing is inefficient */
-            if (keepmiss && R_isMissing(symbol, rho))
-                value = R_MissingArg;
-            else
-                value = forcePromise(value);
-        }
-        else
-            value = PRVALUE(value);
-        SET_NAMED(value, 2);
-    }
-    else if (!isNull(value) && NAMED(value) < 1)
+        value = FORCE_PROMISE(value, symbol, rho, keepmiss);
+    else if (NAMED(value) == 0 && value != R_NilValue)
         SET_NAMED(value, 1);
     return value;
 }
@@ -4249,7 +4265,7 @@ static SEXP bcEval(SEXP body, SEXP rho)
         OP(LDCONST, 1) : R_Visible = TRUE;
         value = VECTOR_ELT(constants, GETOP());
         /* make sure NAMED = 2 -- lower values might be safe in some cases but
-       not ingeneral, especially if the constant pool was created by
+       not in general, especially if the constant pool was created by
        unserializing a compiled expression. */
         /*if (NAMED(value) < 2) SET_NAMED(value, 2);*/
         BCNPUSH(duplicate(value));
