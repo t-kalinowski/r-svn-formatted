@@ -3437,10 +3437,7 @@ static R_INLINE SEXP GET_BINDING_CELL(SEXP symbol, SEXP rho)
     else
     {
         SEXP loc = (SEXP)R_findVarLocInFrame(rho, symbol);
-        if (loc != NULL && !(BINDING_IS_LOCKED(loc) || IS_ACTIVE_BINDING(loc)) && CAR(loc) != R_UnboundValue)
-            return loc;
-        else
-            return R_NilValue;
+        return (loc != NULL) ? loc : R_NilValue;
     }
 }
 
