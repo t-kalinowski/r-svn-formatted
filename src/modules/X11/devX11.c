@@ -824,7 +824,7 @@ static void handleEvent(XEvent event)
             if (gdd->dirty)
             {
 #ifdef HAVE_WORKING_CAIRO
-                if (xd->buffered && do_update == 1)
+                if (xd->buffered == 1 && do_update == 1)
                     cairo_paint(xd->xcc);
                 else
 #endif
