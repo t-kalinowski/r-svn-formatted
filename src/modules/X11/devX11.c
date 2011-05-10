@@ -827,9 +827,13 @@ static void handleEvent(XEvent event)
             /* avoid replaying a display list until something has been drawn */
             if (gdd->dirty)
             {
+                /* We can use the buffered copy where we have it */
 #ifdef HAVE_WORKING_CAIRO
                 if (xd->buffered == 1 && do_update == 1)
                     cairo_paint(xd->xcc);
+                else if (xd->buffered > 1 && do_update == 1)
+                    /* rely on timer to repaint eventually */
+                    xd->last_activity = currentTime();
                 else
 #endif
                     GEplayDisplayList(gdd);
