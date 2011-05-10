@@ -77,8 +77,11 @@ typedef int (*X11IOhandler)(Display *);
 
 #include <Rmodules/RX11.h>
 
-#define CURSOR XC_crosshair /* Default cursor */
-#define MM_PER_INCH 25.4    /* mm -> inch conversion */
+static Cursor watch_cursor = (Cursor)0;
+static Cursor arrow_cursor = (Cursor)0;
+static Cursor cross_cursor = (Cursor)0;
+
+#define MM_PER_INCH 25.4 /* mm -> inch conversion */
 
 #define X_BELL_VOLUME                                                                                                  \
     0 /* integer between -100 and 100 for the volume                                                                   \
@@ -198,6 +201,7 @@ static void Cairo_update(pX11Desc xd)
         XPutImage(display, xd->window, xd->wgc, xd->im, 0, 0, 0, 0, xd->windowWidth, xd->windowHeight);
     else
         cairo_paint(xd->xcc);
+    XDefineCursor(display, xd->window, arrow_cursor);
     XSync(display, 0);
 }
 
@@ -1594,14 +1598,20 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
 
             XStoreName(display, xd->window, xd->title);
 
-            xd->gcursor = XCreateFontCursor(display, CURSOR);
-            XDefineCursor(display, xd->window, xd->gcursor);
-
             /* set up protocols so that window manager sends */
             /* me an event when user "destroys" window */
             _XA_WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", 0);
             protocol = XInternAtom(display, "WM_DELETE_WINDOW", 0);
             XSetWMProtocols(display, xd->window, &protocol, 1);
+
+            if (!arrow_cursor)
+                arrow_cursor = XCreateFontCursor(display, XC_left_ptr);
+            if (!cross_cursor)
+                cross_cursor = XCreateFontCursor(display, XC_crosshair);
+            if (!watch_cursor)
+                watch_cursor = XCreateFontCursor(display, XC_watch);
+            XDefineCursor(display, xd->window, arrow_cursor);
+
 #ifdef HAVE_WORKING_CAIRO
             if (xd->useCairo)
             {
@@ -2117,7 +2127,6 @@ static void X11_Close(pDevDesc dd)
         }
 #endif
 
-        XFreeCursor(display, xd->gcursor);
         XFreeGC(display, xd->wgc);
         XDestroyWindow(display, xd->window);
         XSync(display, 0);
@@ -2142,6 +2151,13 @@ static void X11_Close(pDevDesc dd)
         nfonts = 0;
         if (xd->handleOwnEvents == FALSE)
             removeInputHandler(&R_InputHandlers, getInputHandler(R_InputHandlers, fd));
+        if (arrow_cursor)
+            XFreeCursor(display, arrow_cursor);
+        if (cross_cursor)
+            XFreeCursor(display, cross_cursor);
+        if (watch_cursor)
+            XFreeCursor(display, watch_cursor);
+        arrow_cursor = cross_cursor = watch_cursor = (Cursor)0;
         XCloseDisplay(display);
         displayOpen = FALSE;
     }
@@ -2497,6 +2513,7 @@ static Rboolean X11_Locator(double *x, double *y, pDevDesc dd)
     if (xd->type > WINDOW)
         return 0;
     R_ProcessX11Events((void *)NULL); /* discard pending events */
+    XDefineCursor(display, xd->window, cross_cursor);
     XSync(display, 1);
     /* handle X events as normal until get a button */
     /* click in the desired device */
@@ -2530,6 +2547,8 @@ static Rboolean X11_Locator(double *x, double *y, pDevDesc dd)
             handleEvent(event);
     }
     /* if it was a Button1 succeed, otherwise fail */
+    XDefineCursor(display, xd->window, arrow_cursor);
+    XSync(display, 0);
     return (done == 1);
 }
 
@@ -2668,20 +2687,31 @@ static void X11_eventHelper(pDevDesc dd, int code)
 
 static void X11_Mode(int mode, pDevDesc dd)
 {
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    if (mode == 1)
+    {
+        XDefineCursor(display, xd->window, watch_cursor);
+        XSync(display, 0);
+    }
     if (mode == 0)
     {
 #ifdef HAVE_WORKING_CAIRO
-        pX11Desc xd = (pX11Desc)dd->deviceSpecific;
 #ifdef USE_TIMERS
         if (xd->buffered > 1)
         {
             xd->last_activity = currentTime();
+            if ((currentTime() - xd->last) > 0.5 /* 5*xd->update_interval */)
+            {
+                Cairo_update(xd);
+                xd->last = currentTime();
+            }
             return;
         }
 #endif
         if (xd->buffered)
             cairo_paint(xd->xcc);
 #endif
+        XDefineCursor(display, xd->window, arrow_cursor);
         XSync(display, 0);
     }
 }
