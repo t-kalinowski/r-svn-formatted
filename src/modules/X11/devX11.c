@@ -1683,7 +1683,20 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                             error("depth %d is unsupported\n", depth);
                         }
                         xd->cs = cairo_image_surface_create(format, (double)xd->windowWidth, (double)xd->windowHeight);
+                        /* This is checked later, but maybe next line
+                           needes it to have worked */
+                        res = cairo_surface_status(xd->cs);
+                        if (res != CAIRO_STATUS_SUCCESS)
+                        {
+                            warning("cairo error '%s'", cairo_status_to_string(res));
+                            return FALSE;
+                        }
                         void *xi = cairo_image_surface_get_data(xd->cs);
+                        if (!xi)
+                        {
+                            warning("cairo_image_surface_get_data failed");
+                            return FALSE;
+                        }
                         xd->im = XCreateImage(display, visual, depth, ZPixmap, 0, (char *)xi, xd->windowWidth,
                                               xd->windowHeight, depth >= 24 ? 32 : depth, 0);
                         // printf("allocated %p at depth %d\n", xd->im, depth);
