@@ -3001,8 +3001,7 @@ SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
             SETSTACK(i, __ssl_v__ ? R_TrueValue : R_FalseValue);                                                       \
     } while (0)
 
-typedef struct
-{
+typedef union {
     double dval;
     int ival;
 } scalar_value_t;
@@ -3045,6 +3044,7 @@ static R_INLINE int bcStackScalar(int i, scalar_value_t *v)
             else
                 return 0;
         default:
+            v->ival = 0; /* keep gcc -Wall happy */
             return 0;
         }
     }
