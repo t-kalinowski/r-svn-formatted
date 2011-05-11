@@ -756,7 +756,8 @@ static void handleEvent(XEvent event)
         if (xd->windowWidth != event.xconfigure.width || xd->windowHeight != event.xconfigure.height)
         {
 
-            /* windows resize */
+            /* ----- windows resize ------ */
+
             xd->windowWidth = event.xconfigure.width;
             xd->windowHeight = event.xconfigure.height;
             do_update = 2;
@@ -786,8 +787,9 @@ static void handleEvent(XEvent event)
                         case 16:
                             format = CAIRO_FORMAT_RGB16_565;
                             break;
+                            /* for completeness: will not have got here */
                         default:
-                            error("depth %d is unsupported\n", depth);
+                            error("depth %d is unsupported", depth);
                         }
                         xd->cs = cairo_image_surface_create(format, (double)xd->windowWidth, (double)xd->windowHeight);
                         void *xi = cairo_image_surface_get_data(xd->cs);
@@ -1680,11 +1682,12 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                             format = CAIRO_FORMAT_RGB16_565;
                             break;
                         default:
-                            error("depth %d is unsupported\n", depth);
+                            warning("depth %d is unsupported", depth);
+                            return FALSE;
                         }
                         xd->cs = cairo_image_surface_create(format, (double)xd->windowWidth, (double)xd->windowHeight);
                         /* This is checked later, but maybe next line
-                           needes it to have worked */
+                           needs it to have worked */
                         res = cairo_surface_status(xd->cs);
                         if (res != CAIRO_STATUS_SUCCESS)
                         {
@@ -1714,9 +1717,10 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                         addBuffering(xd);
 #endif
                 }
-                else
+                else /* non-buffered */
                     xd->cs = cairo_xlib_surface_create(display, xd->window, visual, (double)xd->windowWidth,
                                                        (double)xd->windowHeight);
+
                 res = cairo_surface_status(xd->cs);
                 if (res != CAIRO_STATUS_SUCCESS)
                 {
