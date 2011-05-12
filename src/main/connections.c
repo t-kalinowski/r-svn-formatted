@@ -2559,6 +2559,7 @@ static size_t raw_read(void *ptr, size_t size, size_t nitems, Rconnection con)
         error(_("too large a block specified"));
     used = (request < available) ? request : available;
     memmove(ptr, RAW(this->data) + this->pos, used);
+    this->pos += used;
     return used / size;
 }
 

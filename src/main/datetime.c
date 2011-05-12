@@ -940,7 +940,10 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                         ns = 6;
                     if (ns > 0)
                     {
-                        sprintf(p2, "%0*.*f", ns + 3, ns, secs);
+                        /* truncate to avoid nuisances such as PR#14579 */
+                        double s = secs, t = pow(10.0, (double)ns);
+                        s = ((int)(s * t)) / t;
+                        sprintf(p2, "%0*.*f", ns + 3, ns, s);
                         strcat(buf2, p + nused);
                     }
                     else
