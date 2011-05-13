@@ -1729,7 +1729,6 @@ char *R_tmpnam2(const char *prefix, const char *tempdir, const char *fileext)
 }
 
 SEXP attribute_hidden do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
-#ifdef _R_HAVE_TIMING_
 {
     SEXP ans, nm;
 
@@ -1747,16 +1746,9 @@ SEXP attribute_hidden do_proctime(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(2);
     return ans;
 }
-#else
-{
-    error(_("proc.time() is not implemented on this system"));
-    return R_NilValue; /* -Wall */
-}
-#endif
 
 void attribute_hidden resetTimeLimits()
 {
-#ifdef _R_HAVE_TIMING_
     double data[5];
     R_getProcTime(data);
 
@@ -1771,13 +1763,10 @@ void attribute_hidden resetTimeLimits()
 #endif
     if (cpuLimit2 > 0.0 && (cpuLimit <= 0.0 || cpuLimit2 < cpuLimit))
         cpuLimit = cpuLimit2;
-
-#endif
 }
 
 SEXP attribute_hidden do_setTimeLimit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef _R_HAVE_TIMING_
     double cpu, elapsed, old_cpu = cpuLimitValue, old_elapsed = elapsedLimitValue;
     int transient;
 
@@ -1803,16 +1792,12 @@ SEXP attribute_hidden do_setTimeLimit(SEXP call, SEXP op, SEXP args, SEXP rho)
         cpuLimitValue = old_cpu;
         elapsedLimitValue = old_elapsed;
     }
-#else
-    error(_("setTimelimit() is not implemented on this system"));
-#endif
 
     return R_NilValue;
 }
 
 SEXP attribute_hidden do_setSessionTimeLimit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef _R_HAVE_TIMING_
     double cpu, elapsed, data[5];
 
     checkArity(op, args);
@@ -1833,9 +1818,6 @@ SEXP attribute_hidden do_setSessionTimeLimit(SEXP call, SEXP op, SEXP args, SEXP
         elapsedLimit2 = elapsed + data[2];
     else
         elapsedLimit2 = -1;
-#else
-    error(_("setSessionTimelimit() is not implemented on this system"));
-#endif
 
     return R_NilValue;
 }
