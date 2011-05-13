@@ -137,7 +137,7 @@ static drawing _d;
     }
 
 #define SHOW                                                                                                           \
-    if (xd->kind == SCREEN && GA_xd)                                                                                   \
+    if (xd->kind == SCREEN)                                                                                            \
     {                                                                                                                  \
         gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));                                                         \
         GALastUpdate = GetTickCount();                                                                                 \
@@ -238,10 +238,11 @@ static int GA_holdflush(pDevDesc dd, int level)
     }
     if (old == 0 && xd->holdlevel > 0)
     {
-        GA_xd = NULL;
-        gsetcursor(xd->gawin, WatchCursor);
         if (TimerNo != 0)
             KillTimer(0, TimerNo);
+        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+        GA_xd = NULL;
+        gsetcursor(xd->gawin, WatchCursor);
     }
     return xd->holdlevel;
 }
