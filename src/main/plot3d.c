@@ -1104,7 +1104,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                         Rprintf(" (%g,%g)%s", xxx[iii], yyy[iii], (iii < ns - 1) ? "," : "\n");
 #endif
 
-                GMode(1, dd);
+                //	    GMode(1, dd);
 
                 if (drawLabels)
                 {
@@ -1393,7 +1393,7 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                     GPolyline(ns, xxx, yyy, USER, dd);
                 }
 
-                GMode(0, dd);
+                //	    GMode(0, dd);
                 vmaxset(vmax);
             }              /* while */
         }                  /* for(i .. )  for(j ..) */
