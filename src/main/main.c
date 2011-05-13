@@ -701,6 +701,8 @@ unsigned int TimeToSeed(void); /* datetime.c */
 #include <process.h> /* for getpid */
 #endif
 
+const char *get_workspace_name(); /* from startup.c */
+
 void setup_Rmainloop(void)
 {
     volatile int doneit;
@@ -950,7 +952,12 @@ void setup_Rmainloop(void)
         R_InitialData();
     }
     else
-        R_Suicide(_("unable to restore saved data in .RData\n"));
+    {
+        if (!SETJMP(R_Toplevel.cjmpbuf))
+        {
+            warning(_("unable to restore saved data in %s\n"), get_workspace_name());
+        }
+    }
 
     /* Initial Loading is done.
        At this point we try to invoke the .First Function.
