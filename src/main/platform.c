@@ -2844,8 +2844,10 @@ static void winSetFileTime(const char *fn, time_t ftime)
     CloseHandle(hFile);
 }
 #else
-#include <sys/time.h>
+/* # include <sys/time.h>  should not be needed */
+#ifdef HAVE_UTIME_H
 #include <utime.h>
+#endif
 #endif
 
 SEXP attribute_hidden R_setFileTime(SEXP name, SEXP time)
@@ -2855,7 +2857,7 @@ SEXP attribute_hidden R_setFileTime(SEXP name, SEXP time)
 
 #ifdef Win32
     winSetFileTime(fn, (time_t)ftime);
-#else
+#elif defined(HAVE_UTIME_H)
     struct utimbuf settime;
 
     settime.actime = settime.modtime = ftime;
