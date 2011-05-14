@@ -1842,9 +1842,7 @@ SEXP do_enc2(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #ifdef USE_ICU
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 #ifdef USE_ICU_APPLE
 /* Mac OS X is missing the headers */
 typedef int UErrorCode; /* really an enum these days */

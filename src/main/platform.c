@@ -192,9 +192,7 @@ int static R_strieql(const char *a, const char *b)
 }
 #endif
 
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 #ifdef HAVE_LANGINFO_CODESET
 #include <langinfo.h>
 #endif
@@ -1706,7 +1704,6 @@ SEXP attribute_hidden do_dirchmod(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef HAVE_LOCALE_H
     int cat;
     char *p = NULL;
 
@@ -1755,9 +1752,6 @@ SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (cat != NA_INTEGER)
         p = setlocale(cat, NULL);
     return mkString(p ? p : "");
-#else
-    return R_NilValue;
-#endif
 }
 
 extern void invalidate_cached_recodings(void); /* from sysutils.c */
@@ -1767,7 +1761,6 @@ extern void resetICUcollator(void); /* from util.c */
 /* Locale specs are always ASCII */
 SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef HAVE_LOCALE_H
     SEXP locale = CADR(args), ans;
     int cat;
     const char *p;
@@ -1857,14 +1850,10 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     R_check_locale();
     invalidate_cached_recodings();
     return ans;
-#else
-    return R_NilValue;
-#endif
 }
 
 SEXP attribute_hidden do_localeconv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-#ifdef HAVE_LOCALE_H
     SEXP ans, ansnames;
     struct lconv *lc = localeconv();
     int i = 0;
@@ -1919,9 +1908,6 @@ SEXP attribute_hidden do_localeconv(SEXP call, SEXP op, SEXP args, SEXP rho)
     setAttrib(ans, R_NamesSymbol, ansnames);
     UNPROTECT(2);
     return ans;
-#else
-    return R_NilValue;
-#endif
 }
 
 /* .Internal function for path.expand */
