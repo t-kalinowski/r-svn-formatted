@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
  *  Copyright (C) 1998--2005  Guido Masarotto and Brian Ripley
- *  Copyright (C) 2004--2009  The R Foundation
+ *  Copyright (C) 2004--2011  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -526,26 +526,9 @@ static void menupkgupdate(control m)
 {
     if (!ConsoleAcceptCmd)
         return;
-    consolecmd(RConsole, "update.packages(ask='graphics')");
+    consolecmd(RConsole, "update.packages(ask='graphics',checkBuilt=TRUE)");
     /*    show(RConsole); */
 }
-
-#if 0
-static void menupkgupdatebioc(control m)
-{
-    if (!ConsoleAcceptCmd) return;
-    consolecmd(RConsole,
-	       "update.packages(repos=getOption(\"BIOC\"))");
-/*    show(RConsole); */
-}
-
-
-static void menupkginstallbioc(control m)
-{
-    if (!ConsoleAcceptCmd) return;
-    consolecmd(RConsole, "utils:::menuInstallBioc()");
-}
-#endif
 
 static void menupkgcranmirror(control m)
 {
@@ -1064,11 +1047,6 @@ int RguiPackageMenu(PkgMenuItems pmenu)
     MCHECK(pmenu->mpkgu = newmenuitem(G_("Update packages..."), 0, menupkgupdate));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(pmenu->mpkgil = newmenuitem(G_("Install package(s) from local zip files..."), 0, menupkginstalllocal));
-    /*    MCHECK(newmenuitem("-", 0, NULL));
-        MCHECK(mpkgb = newmenuitem(G_("Install package(s) from Bioconductor..."),
-                       0, menupkginstallbioc));
-        MCHECK(mpkgbu = newmenuitem(G_("Update packages from Bioconductor"),
-        0, menupkgupdatebioc)); */
     return 0;
 }
 
