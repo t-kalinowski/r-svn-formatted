@@ -784,9 +784,9 @@ static void handleEvent(XEvent event)
         pGEDevDesc gdd = desc2GEDesc(dd);
         if (gdd->dirty)
         {
+#ifdef HAVE_WORKING_CAIRO
             pX11Desc xd = (pX11Desc)dd->deviceSpecific;
             /* We can use the buffered copy where we have it */
-#ifdef HAVE_WORKING_CAIRO
             if (xd->buffered == 1)
                 cairo_paint(xd->xcc);
             else if (xd->buffered > 1)
@@ -2616,10 +2616,12 @@ static Rboolean X11_Locator(double *x, double *y, pDevDesc dd)
 
     if (xd->type > WINDOW)
         return 0;
+#ifdef HAVE_WORKING_CAIRO
     if (xd->holdlevel > 0)
         error(_("attempt to use the locator after dev.hold()"));
     if (xd->buffered)
         Cairo_update(xd);
+#endif
     R_ProcessX11Events((void *)NULL); /* discard pending events */
     XDefineCursor(display, xd->window, cross_cursor);
     XSync(display, 1);
@@ -2891,6 +2893,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
         }
     }
 #else
+    /* Currently this gets caught at R level */
     if (useCairo)
     {
         warning("cairo-based types are not supported on this build - using \"Xlib\"");
@@ -2923,11 +2926,13 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
     strncpy(xd->title, title, 100);
     xd->title[100] = '\0';
 
+#ifdef HAVE_WORKING_CAIRO
     {
         SEXP timeouts = GetOption1(install("X11updates"));
         double tm = asReal(timeouts);
         xd->update_interval = (ISNAN(tm) || tm < 0) ? 0.10 : tm;
     }
+#endif
 
     if (!X11_Open(dd, xd, disp_name, width, height, gamma_fac, colormodel, maxcube, bgcolor, canvascolor, res, xpos,
                   ypos))
