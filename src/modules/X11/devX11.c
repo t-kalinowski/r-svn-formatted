@@ -2773,7 +2773,7 @@ Rboolean X11DeviceDriver(pDevDesc dd, const char *disp_name, double width, doubl
         break; /* nbcairo */
     case 3:
         xd->buffered = 2;
-        break; /* cairob2 */
+        break; /* dbcairo */
     default:
         warning("that type is not supported on this platform - using \"nbcairo\"");
         xd->buffered = 0;
