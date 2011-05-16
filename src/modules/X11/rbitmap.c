@@ -328,7 +328,7 @@ int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, 
 }
 #else
 int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, FILE *fp,
-                unsigned int transparent)
+                unsigned int transparent, int res)
 {
     warning("No png support in this version of R");
     return 0;
