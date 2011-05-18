@@ -294,8 +294,13 @@ static HANDLE getInputHandle(const char *fin)
         }
         return hIN;
     }
-    else if (fin && CharacterMode != RGui)
-        return GetStdHandle(STD_INPUT_HANDLE);
+    else if (fin)
+    {
+        /* GetStdHandle returns NULL for processes like RGui with no standard handles defined */
+        HANDLE result = GetStdHandle(STD_INPUT_HANDLE);
+        if (result)
+            return result;
+    }
     return INVALID_HANDLE_VALUE;
 }
 
@@ -317,7 +322,12 @@ static HANDLE getOutputHandle(const char *fout, int type)
             return hOUT;
     }
     else if (fout)
-        return GetStdHandle(type ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
+    {
+        /* GetStdHandle returns NULL for processes like RGui */
+        HANDLE result = GetStdHandle(type ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
+        if (result)
+            return result;
+    }
     return INVALID_HANDLE_VALUE;
 }
 
