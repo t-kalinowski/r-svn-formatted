@@ -3502,17 +3502,20 @@ static R_INLINE SEXP BINDING_VALUE(SEXP loc)
 #ifdef CACHE_ON_STACK
 typedef R_bcstack_t *R_binding_cache_t;
 #define GET_CACHED_BINDING_CELL(vcache, sidx) vcache[CACHEIDX(sidx)]
+#define GET_SMALLCACHE_BINDING_CELL(vcache, sidx) vcache[sidx]
 
 #define SET_CACHED_BINDING(cvache, sidx, cell) vcache[CACHEIDX(sidx)] = (cell)
 #else
 typedef SEXP R_binding_cache_t;
 #define GET_CACHED_BINDING_CELL(vcache, sidx) (vcache ? VECTOR_ELT(vcache, CACHEIDX(sidx)) : R_NilValue)
+#define GET_SMALLCACHE_BINDING_CELL(vcache, sidx) (vcache ? VECTOR_ELT(vcache, sidx) : R_NilValue)
 
 #define SET_CACHED_BINDING(vcache, sidx, cell) SET_VECTOR_ELT(vcache, CACHEIDX(sidx), cell)
 #endif
 #else
 typedef void *R_binding_cache_t;
 #define GET_CACHED_BINDING_CELL(vcache, sidx) R_NilValue
+#define GET_SMALLCACHE_BINDING_CELL(vcache, sidx) R_NilValue
 
 #define SET_CACHED_BINDING(vcache, sidx, cell)
 #endif
@@ -3520,18 +3523,21 @@ typedef void *R_binding_cache_t;
 static R_INLINE SEXP GET_BINDING_CELL_CACHE(SEXP symbol, SEXP rho, R_binding_cache_t vcache, int idx)
 {
     SEXP cell = GET_CACHED_BINDING_CELL(vcache, idx);
-    if (cell == R_NilValue || TAG(cell) != symbol)
+    /* The value returned by GET_CACHED_BINDING_CELL is either a
+       binding cell or R_NilValue.  TAG(R_NilValue) is R_NilVelue, and
+       that will no equal symbol. So a separate test for cell !=
+       R_NilValue is not needed. */
+    if (TAG(cell) == symbol && CAR(cell) != R_UnboundValue)
+        return cell;
+    else
     {
-        cell = GET_BINDING_CELL(symbol, rho);
-        if (cell != R_NilValue)
-            SET_CACHED_BINDING(vcache, idx, cell);
+        SEXP ncell = GET_BINDING_CELL(symbol, rho);
+        if (ncell != R_NilValue)
+            SET_CACHED_BINDING(vcache, idx, ncell);
+        else if (cell != R_NilValue && CAR(cell) == R_UnboundValue)
+            SET_CACHED_BINDING(vcache, idx, R_NilValue);
+        return ncell;
     }
-    else if (CAR(cell) == R_UnboundValue)
-    {
-        cell = GET_BINDING_CELL(symbol, rho);
-        SET_CACHED_BINDING(vcache, idx, cell);
-    }
-    return cell;
 }
 
 static void MISSING_ARGUMENT_ERROR(SEXP symbol)
@@ -3609,6 +3615,53 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
     return value;
 }
 
+#define INLINE_GETVAR
+#ifdef INLINE_GETVAR
+/* Try to handle the most common case as efficiently as possible.  If
+   smallcache is true then a modulus operation on the index is not
+   needed, nor is a check that a non-null value corresponds to the
+   requested symbol. The symbol from the constant pool is also usually
+   not needed. The test TYPOF(value) != SYMBOL rules out R_MissingArg
+   and R_UnboundValue as these are implemented s symbols.  It also
+   rules other symbols, but as those are rare they are handled by the
+   getvar() call. */
+#define DO_GETVAR(dd, keepmiss)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        int sidx = GETOP();                                                                                            \
+        if (!dd && smallcache)                                                                                         \
+        {                                                                                                              \
+            SEXP cell = GET_SMALLCACHE_BINDING_CELL(vcache, sidx);                                                     \
+            if (cell != R_NilValue && !IS_ACTIVE_BINDING(cell))                                                        \
+            {                                                                                                          \
+                value = CAR(cell);                                                                                     \
+                if (TYPEOF(value) != SYMSXP)                                                                           \
+                {                                                                                                      \
+                    if (TYPEOF(value) == PROMSXP)                                                                      \
+                    {                                                                                                  \
+                        SEXP pv = PRVALUE(value);                                                                      \
+                        if (pv == R_UnboundValue)                                                                      \
+                        {                                                                                              \
+                            SEXP symbol = VECTOR_ELT(constants, sidx);                                                 \
+                            value = FORCE_PROMISE(value, symbol, rho, keepmiss);                                       \
+                        }                                                                                              \
+                        else                                                                                           \
+                            value = pv;                                                                                \
+                    }                                                                                                  \
+                    else if (NAMED(value) == 0)                                                                        \
+                        SET_NAMED(value, 1);                                                                           \
+                    R_Visible = TRUE;                                                                                  \
+                    BCNPUSH(value);                                                                                    \
+                    NEXT();                                                                                            \
+                }                                                                                                      \
+            }                                                                                                          \
+        }                                                                                                              \
+        SEXP symbol = VECTOR_ELT(constants, sidx);                                                                     \
+        R_Visible = TRUE;                                                                                              \
+        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
+        NEXT();                                                                                                        \
+    } while (0)
+#else
 #define DO_GETVAR(dd, keepmiss)                                                                                        \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -3618,6 +3671,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
         NEXT();                                                                                                        \
     } while (0)
+#endif
 
 #define PUSHCALLARG(v) PUSHCALLARG_CELL(CONS(v, R_NilValue))
 
@@ -4179,12 +4233,16 @@ static SEXP bcEval(SEXP body, SEXP rho)
     constants = BCCONSTS(body);
 
     R_binding_cache_t vcache = NULL;
+    Rboolean smallcache = TRUE;
 #ifdef USE_BINDING_CACHE
     {
         R_len_t n = LENGTH(constants);
 #ifdef CACHE_MAX
         if (n > CACHE_MAX)
+        {
             n = CACHE_MAX;
+            smallcache = FALSE;
+        }
 #endif
 #ifdef CACHE_ON_STACK
         /* initialize binding cache on the stack */
