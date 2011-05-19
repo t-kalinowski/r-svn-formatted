@@ -2999,9 +2999,9 @@ typedef union {
    value and the value is returned in the structure pointed to by the
    second argument; if not, then zero is returned as the function
    value. */
-static R_INLINE int bcStackScalar(int i, scalar_value_t *v)
+static R_INLINE int bcStackScalar(R_bcstack_t *s, scalar_value_t *v)
 {
-    SEXP x = GETSTACK(i);
+    SEXP x = *s;
     if (ATTRIB(x) == R_NilValue)
     {
         switch (TYPEOF(x))
@@ -3052,8 +3052,8 @@ static R_INLINE int bcStackScalar(int i, scalar_value_t *v)
     {                                                                                                                  \
         scalar_value_t vx;                                                                                             \
         scalar_value_t vy;                                                                                             \
-        int typex = bcStackScalar(-2, &vx);                                                                            \
-        int typey = bcStackScalar(-1, &vy);                                                                            \
+        int typex = bcStackScalar(R_BCNodeStackTop - 2, &vx);                                                          \
+        int typey = bcStackScalar(R_BCNodeStackTop - 1, &vy);                                                          \
         if (typex == REALSXP && !ISNAN(vx.dval))                                                                       \
         {                                                                                                              \
             if (typey == REALSXP && !ISNAN(vy.dval))                                                                   \
@@ -3225,8 +3225,8 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     {                                                                                                                  \
         scalar_value_t vx;                                                                                             \
         scalar_value_t vy;                                                                                             \
-        int typex = bcStackScalar(-2, &vx);                                                                            \
-        int typey = bcStackScalar(-1, &vy);                                                                            \
+        int typex = bcStackScalar(R_BCNodeStackTop - 2, &vx);                                                          \
+        int typey = bcStackScalar(R_BCNodeStackTop - 1, &vy);                                                          \
         if (typex == REALSXP)                                                                                          \
         {                                                                                                              \
             if (typey == REALSXP)                                                                                      \
@@ -3886,9 +3886,9 @@ static R_INLINE Rboolean checkVectorSubscript(SEXP vec, int k)
     }
 }
 
-static R_INLINE int bcStackIndex(int i)
+static R_INLINE int bcStackIndex(R_bcstack_t *s)
 {
-    SEXP idx = GETSTACK(i);
+    SEXP idx = *s;
     switch (TYPEOF(idx))
     {
     case INTSXP:
@@ -3916,7 +3916,7 @@ static R_INLINE void DO_NVECELT(SEXP rho)
 {
     SEXP idx, args, value;
     SEXP vec = GETSTACK(-2);
-    int i = bcStackIndex(-1);
+    int i = bcStackIndex(R_BCNodeStackTop - 1);
 
     if (ATTRIB(vec) == R_NilValue && i > 0)
     {
@@ -3981,8 +3981,8 @@ static R_INLINE void DO_NMATELT(SEXP rho)
 
     if (dim != R_NilValue)
     {
-        int i = bcStackIndex(-2);
-        int j = bcStackIndex(-1);
+        int i = bcStackIndex(R_BCNodeStackTop - 2);
+        int j = bcStackIndex(R_BCNodeStackTop - 1);
         if (i > 0 && j > 0)
         {
             int nrow = INTEGER(dim)[0];
@@ -4077,11 +4077,11 @@ static R_INLINE void DO_SETNVECELT(SEXP rho)
 
     if (ATTRIB(vec) == R_NilValue)
     {
-        int i = bcStackIndex(-1);
+        int i = bcStackIndex(R_BCNodeStackTop - 1);
         if (i > 0)
         {
             scalar_value_t v;
-            int typev = bcStackScalar(-2, &v);
+            int typev = bcStackScalar(R_BCNodeStackTop - 2, &v);
             if (setElementFromScalar(vec, i - 1, typev, &v))
             {
                 R_BCNodeStackTop -= 2;
@@ -4121,12 +4121,12 @@ static R_INLINE void DO_SETNMATELT(SEXP rho)
 
     if (dim != R_NilValue)
     {
-        int i = bcStackIndex(-2);
-        int j = bcStackIndex(-1);
+        int i = bcStackIndex(R_BCNodeStackTop - 2);
+        int j = bcStackIndex(R_BCNodeStackTop - 1);
         if (i > 0 && j > 0)
         {
             scalar_value_t v;
-            int typev = bcStackScalar(-3, &v);
+            int typev = bcStackScalar(R_BCNodeStackTop - 3, &v);
             int nrow = INTEGER(dim)[0];
             int k = i - 1 + nrow * (j - 1);
             if (setElementFromScalar(mat, k, typev, &v))
