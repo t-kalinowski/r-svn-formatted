@@ -4556,8 +4556,14 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(SETVAR, 1) :
         {
             int sidx = GETOP();
-            SEXP symbol = VECTOR_ELT(constants, sidx);
-            SEXP loc = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
+            SEXP loc;
+            if (smallcache)
+                loc = GET_SMALLCACHE_BINDING_CELL(vcache, sidx);
+            else
+            {
+                SEXP symbol = VECTOR_ELT(constants, sidx);
+                loc = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
+            }
             value = GETSTACK(-1);
             switch (NAMED(value))
             {
@@ -4569,7 +4575,12 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 break;
             }
             if (!SET_BINDING_VALUE(loc, value))
+            {
+                SEXP symbol = VECTOR_ELT(constants, sidx);
+                PROTECT(value);
                 defineVar(symbol, value, rho);
+                UNPROTECT(1);
+            }
             NEXT();
         }
         OP(GETFUN, 1) :
