@@ -40,11 +40,11 @@ struct lzma_coder_s
     uint32_t crc32;
 };
 
-static lzma_ret index_encode(lzma_coder *coder, lzma_allocator *allocator lzma_attribute((unused)),
-                             const uint8_t *restrict in lzma_attribute((unused)),
-                             size_t *restrict in_pos lzma_attribute((unused)), size_t in_size lzma_attribute((unused)),
-                             uint8_t *restrict out, size_t *restrict out_pos, size_t out_size,
-                             lzma_action action lzma_attribute((unused)))
+static lzma_ret index_encode(lzma_coder *coder, lzma_allocator *allocator lzma_attribute((__unused__)),
+                             const uint8_t *restrict in lzma_attribute((__unused__)),
+                             size_t *restrict in_pos lzma_attribute((__unused__)),
+                             size_t in_size lzma_attribute((__unused__)), uint8_t *restrict out,
+                             size_t *restrict out_pos, size_t out_size, lzma_action action lzma_attribute((__unused__)))
 {
     // Position where to start calculating CRC32. The idea is that we
     // need to call lzma_crc32() only once per call to index_encode().

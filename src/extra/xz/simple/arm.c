@@ -13,8 +13,8 @@
 
 #include "simple_private.h"
 
-static size_t arm_code(lzma_simple *simple lzma_attribute((unused)), uint32_t now_pos, bool is_encoder, uint8_t *buffer,
-                       size_t size)
+static size_t arm_code(lzma_simple *simple lzma_attribute((__unused__)), uint32_t now_pos, bool is_encoder,
+                       uint8_t *buffer, size_t size)
 {
     size_t i;
     for (i = 0; i + 4 <= size; i += 4)

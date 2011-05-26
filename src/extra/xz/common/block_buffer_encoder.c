@@ -212,14 +212,20 @@ static lzma_ret block_encode_normal(lzma_block *block, lzma_allocator *allocator
 extern LZMA_API(lzma_ret) lzma_block_buffer_encode(lzma_block *block, lzma_allocator *allocator, const uint8_t *in,
                                                    size_t in_size, uint8_t *out, size_t *out_pos, size_t out_size)
 {
-    // Sanity checks
-    if (block == NULL || block->filters == NULL || (in == NULL && in_size != 0) || out == NULL || out_pos == NULL ||
-        *out_pos > out_size)
+    // Validate the arguments.
+    if (block == NULL || (in == NULL && in_size != 0) || out == NULL || out_pos == NULL || *out_pos > out_size)
         return LZMA_PROG_ERROR;
 
-    // Check the version field.
+    // The contents of the structure may depend on the version so
+    // check the version before validating the contents of *block.
     if (block->version != 0)
         return LZMA_OPTIONS_ERROR;
+
+    if ((unsigned int)(block->check) > LZMA_CHECK_ID_MAX || block->filters == NULL)
+        return LZMA_PROG_ERROR;
+
+    if (!lzma_check_is_supported(block->check))
+        return LZMA_UNSUPPORTED_CHECK;
 
     // Size of a Block has to be a multiple of four, so limit the size
     // here already. This way we don't need to check it again when adding
@@ -228,8 +234,7 @@ extern LZMA_API(lzma_ret) lzma_block_buffer_encode(lzma_block *block, lzma_alloc
 
     // Get the size of the Check field.
     const size_t check_size = lzma_check_size(block->check);
-    if (check_size == UINT32_MAX)
-        return LZMA_PROG_ERROR;
+    assert(check_size != UINT32_MAX);
 
     // Reserve space for the Check field.
     if (out_size - *out_pos <= check_size)

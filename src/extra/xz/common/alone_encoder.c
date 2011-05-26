@@ -29,7 +29,7 @@ struct lzma_coder_s
     uint8_t header[ALONE_HEADER_SIZE];
 };
 
-static lzma_ret alone_encode(lzma_coder *coder, lzma_allocator *allocator lzma_attribute((unused)),
+static lzma_ret alone_encode(lzma_coder *coder, lzma_allocator *allocator lzma_attribute((__unused__)),
                              const uint8_t *restrict in, size_t *restrict in_pos, size_t in_size, uint8_t *restrict out,
                              size_t *restrict out_pos, size_t out_size, lzma_action action)
 {
@@ -91,7 +91,7 @@ static lzma_ret alone_encoder_init(lzma_next_coder *next, lzma_allocator *alloca
     if (options->dict_size < LZMA_DICT_SIZE_MIN)
         return LZMA_OPTIONS_ERROR;
 
-    // Round up to to the next 2^n or 2^n + 2^(n - 1) depending on which
+    // Round up to the next 2^n or 2^n + 2^(n - 1) depending on which
     // one is the next unless it is UINT32_MAX. While the header would
     // allow any 32-bit integer, we do this to keep the decoder of liblzma
     // accepting the resulting files.

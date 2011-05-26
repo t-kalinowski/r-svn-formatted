@@ -13,7 +13,7 @@
 
 #include "simple_private.h"
 
-static size_t armthumb_code(lzma_simple *simple lzma_attribute((unused)), uint32_t now_pos, bool is_encoder,
+static size_t armthumb_code(lzma_simple *simple lzma_attribute((__unused__)), uint32_t now_pos, bool is_encoder,
                             uint8_t *buffer, size_t size)
 {
     size_t i;

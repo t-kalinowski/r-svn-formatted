@@ -261,6 +261,7 @@ extern lzma_ret lzma_stream_encoder_init(lzma_next_coder *next, lzma_allocator *
         next->end = &stream_encoder_end;
         next->update = &stream_encoder_update;
 
+        next->coder->filters[0].id = LZMA_VLI_UNKNOWN;
         next->coder->block_encoder = LZMA_NEXT_CODER_INIT;
         next->coder->index_encoder = LZMA_NEXT_CODER_INIT;
         next->coder->index = NULL;
@@ -270,7 +271,6 @@ extern lzma_ret lzma_stream_encoder_init(lzma_next_coder *next, lzma_allocator *
     next->coder->sequence = SEQ_STREAM_HEADER;
     next->coder->block_options.version = 0;
     next->coder->block_options.check = check;
-    next->coder->filters[0].id = LZMA_VLI_UNKNOWN;
 
     // Initialize the Index
     lzma_index_end(next->coder->index, allocator);
