@@ -2180,10 +2180,9 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
         dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
+    case NILSXP:
     case LGLSXP:
     case INTSXP:
-    case STRSXP:
-    case RAWSXP:
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = 0;
         break;
@@ -2195,48 +2194,8 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = (R_IsNaN(COMPLEX(x)[i].r) || R_IsNaN(COMPLEX(x)[i].i));
         break;
-
-        /* Same code for LISTSXP and VECSXP : */
-
-#define LIST_VEC_NAN(s)                                                                                                \
-    if (!isVector(s) || length(s) != 1)                                                                                \
-        LOGICAL(ans)[i] = 0;                                                                                           \
-    else                                                                                                               \
-    {                                                                                                                  \
-        switch (TYPEOF(s))                                                                                             \
-        {                                                                                                              \
-        case LGLSXP:                                                                                                   \
-        case INTSXP:                                                                                                   \
-        case STRSXP:                                                                                                   \
-            LOGICAL(ans)[i] = 0;                                                                                       \
-            break;                                                                                                     \
-        case REALSXP:                                                                                                  \
-            LOGICAL(ans)[i] = R_IsNaN(REAL(s)[0]);                                                                     \
-            break;                                                                                                     \
-        case CPLXSXP:                                                                                                  \
-            LOGICAL(ans)[i] = (R_IsNaN(COMPLEX(s)[0].r) || R_IsNaN(COMPLEX(s)[0].i));                                  \
-            break;                                                                                                     \
-        }                                                                                                              \
-    }
-
-    case LISTSXP:
-        for (i = 0; i < n; i++)
-        {
-            LIST_VEC_NAN(CAR(x));
-            x = CDR(x);
-        }
-        break;
-    case VECSXP:
-        for (i = 0; i < n; i++)
-        {
-            SEXP s = VECTOR_ELT(x, i);
-            LIST_VEC_NAN(s);
-        }
-        break;
     default:
-        warningcall(call, _("%s() applied to non-(list or vector) of type '%s'"), "is.nan", type2char(TYPEOF(x)));
-        for (i = 0; i < n; i++)
-            LOGICAL(ans)[i] = 0;
+        errorcall(call, _("default method only implemented for numeric atomic vectors"));
     }
     if (dims != R_NilValue)
         setAttrib(ans, R_DimSymbol, dims);
@@ -2288,6 +2247,8 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = (INTEGER(x)[i] != NA_INTEGER);
         break;
+    case NILSXP:
+        break;
     case REALSXP:
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = R_FINITE(REAL(x)[i]);
@@ -2297,8 +2258,7 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
             LOGICAL(ans)[i] = (R_FINITE(COMPLEX(x)[i].r) && R_FINITE(COMPLEX(x)[i].i));
         break;
     default:
-        for (i = 0; i < n; i++)
-            LOGICAL(ans)[i] = 0;
+        errorcall(call, _("default method only implemented for numeric atomic vectors"));
     }
     if (dims != R_NilValue)
         setAttrib(ans, R_DimSymbol, dims);
@@ -2342,6 +2302,12 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
+    case NILSXP:
+    case LGLSXP:
+    case INTSXP:
+        for (i = 0; i < n; i++)
+            LOGICAL(ans)[i] = 0;
+        break;
     case REALSXP:
         for (i = 0; i < n; i++)
         {
@@ -2364,8 +2330,7 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        for (i = 0; i < n; i++)
-            LOGICAL(ans)[i] = 0;
+        errorcall(call, _("default method only implemented for numeric atomic vectors"));
     }
     if (!isNull(dims))
         setAttrib(ans, R_DimSymbol, dims);
