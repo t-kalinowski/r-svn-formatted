@@ -2207,6 +2207,7 @@ static size_t clp_read(void *ptr, size_t size, size_t nitems, Rconnection con)
         error(_("too large a block specified"));
     used = (request < available) ? request : available;
     strncpy(ptr, this->buff, used);
+    this->pos += used;
     return (size_t)used / size;
 }
 
